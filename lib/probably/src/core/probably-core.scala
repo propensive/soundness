@@ -64,10 +64,10 @@ extension (value: Double)
   @targetName("plusOrMinus")
   infix def +/- (tolerance: Double): Tolerance = Tolerance(value, tolerance)
 
-def test[ReportType](name: Text)(using suite: Testable, codepoint: Codepoint): TestId =
+def test[ReportType](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
   TestId(name, suite, codepoint)
 
-def suite[ReportType](name: Text)(using suite: Testable, runner: Runner[ReportType])
+def suite[ReportType](name: Message)(using suite: Testable, runner: Runner[ReportType])
    (block: Testable ?=> Unit)
 :     Unit =
 

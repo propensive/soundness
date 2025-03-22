@@ -213,7 +213,7 @@ object Producer extends Derivation[Producer]:
   inline def split[DerivationType: SumOf]: Producer[DerivationType] = input =>
     inline if choice then Some(singleton(input)) else compiletime.error("not a choice")
 
-object Tests extends Suite(t"Wisteria tests"):
+object Tests extends Suite(m"Wisteria tests"):
   def run(): Unit =
     val george = Person("George Washington".tt, 61, true)
     val ronald = User(Person("Ronald Reagan".tt, 51, true), "ronald@whitehouse.gov".tt)

@@ -53,7 +53,7 @@ import strategies.throwUnsafely
 case class User(id: Int, email: Text, privilege: List[Privilege])
 case class Privilege(name: Text, grant: Boolean)
 
-object Tests extends Suite(t"CoDL tests"):
+object Tests extends Suite(m"CoDL tests"):
 
   given Realm = realm"tests"
 
@@ -61,115 +61,115 @@ object Tests extends Suite(t"CoDL tests"):
     import CodlToken.*
     import Arity.*
 
-    suite(t"Reader tests"):
+    suite(m"Reader tests"):
       def interpret(text: Text)(using Log[Text]): PositionReader = PositionReader(Stream(text))
 
-      test(t"Character can store line"):
+      test(m"Character can store line"):
         Character('©', 123, 456).line
       .assert(_ == 123)
 
-      test(t"Character can store column"):
+      test(m"Character can store column"):
         Character('©', 123, 456).column
       .assert(_ == 456)
 
-      test(t"Character can store Char"):
+      test(m"Character can store Char"):
         Character('©', 123, 456).char
       .assert(_ == '©')
 
-      test(t"Initial position is line 0"):
+      test(m"Initial position is line 0"):
         val reader = interpret(t"abc")
         reader.next().line
       .assert(_ == 0)
 
-      test(t"Initial position is column 0"):
+      test(m"Initial position is column 0"):
         val reader = interpret(t"abc")
         reader.next().column
       .assert(_ == 0)
 
-      test(t"Initial character is correct"):
+      test(m"Initial character is correct"):
         val reader = interpret(t"abc")
         reader.next().char
       .assert(_ == 'a')
 
-      test(t"Initial linefeed character is correct"):
+      test(m"Initial linefeed character is correct"):
         val reader = interpret(t"\nabc")
         reader.next().char
       .assert(_ == '\n')
 
-      test(t"Initial carriage return and linefeed gives linefeed"):
+      test(m"Initial carriage return and linefeed gives linefeed"):
         val reader = interpret(t"\r\nabc")
         reader.next().char
       .assert(_ == '\n')
 
-      test(t"Character following CR/LF is correct"):
+      test(m"Character following CR/LF is correct"):
         val reader = interpret(t"\r\nabc")
         reader.next()
         reader.next().char
       .assert(_ == 'a')
 
-      test(t"Read a character gives column 1"):
+      test(m"Read a character gives column 1"):
         val reader = interpret(t"abc")
         reader.next()
         reader.next().column
       .assert(_ == 1)
 
-      test(t"Read a character gives correct line"):
+      test(m"Read a character gives correct line"):
         val reader = interpret(t"abc")
         reader.next()
         reader.next().line
       .assert(_ == 0)
 
-      test(t"Character after newline gives correct line"):
+      test(m"Character after newline gives correct line"):
         val reader = interpret(t"\nabc")
         reader.next()
         reader.next().line
       .assert(_ == 1)
 
-      test(t"Character after newline gives correct column"):
+      test(m"Character after newline gives correct column"):
         val reader = interpret(t"\nabc")
         reader.next()
         reader.next().column
       .assert(_ == 0)
 
-      test(t"Read a CR/LF character gives correct line"):
+      test(m"Read a CR/LF character gives correct line"):
         val reader = interpret(t"\r\nabc")
         reader.next()
         reader.next().line
       .assert(_ == 1)
 
-      test(t"character after CR/LF gives correct column"):
+      test(m"character after CR/LF gives correct column"):
         val reader = interpret(t"\r\nabc")
         reader.next()
         reader.next().column
       .assert(_ == 0)
 
-      test(t"after LF next newline does not fail"):
+      test(m"after LF next newline does not fail"):
         val reader = interpret(t"a\nbc\n")
         for i <- 0 until 4 do reader.next()
         reader.next().char
       .assert(_ == '\n')
 
-      test(t"after LF next newline must not include CR"):
+      test(m"after LF next newline must not include CR"):
         val reader = interpret(t"a\nbc\r\n")
         for i <- 0 until 4 do reader.next()
         capture[CodlError](reader.next().char)
       .matches:
         case CodlError(_, _, _, CodlError.Reason.CarriageReturnMismatch(false)) =>
 
-      test(t"after CR/LF next CR/LF does not fail"):
+      test(m"after CR/LF next CR/LF does not fail"):
         val reader = interpret(t"a\r\nbc\r\n")
         for i <- 0 until 4 do reader.next()
         reader.next().char
       .assert(_ == '\n')
 
-      test(t"after CR/LF next newline must include CR"):
+      test(m"after CR/LF next newline must include CR"):
         val reader = interpret(t"a\r\nbc\n")
         for i <- 0 until 4 do reader.next()
         capture[CodlError](reader.next().char)
       .matches:
         case CodlError(_, _, _, CodlError.Reason.CarriageReturnMismatch(true)) =>
 
-      test(t"can capture start of text"):
+      test(m"can capture start of text"):
         val reader = interpret(t"abcdef")
         reader.put(reader.next())
         reader.put(reader.next())
@@ -177,7 +177,7 @@ object Tests extends Suite(t"CoDL tests"):
         reader.get()
       .assert(_ == t"abc")
 
-      test(t"capture is empty after get"):
+      test(m"capture is empty after get"):
         val reader = interpret(t"abcdef")
         for i <- 0 until 3 do reader.put(reader.next())
         reader.get()
@@ -185,7 +185,7 @@ object Tests extends Suite(t"CoDL tests"):
         reader.get()
       .assert(_ == t"def")
 
-      test(t"capture position is correct"):
+      test(m"capture position is correct"):
         val reader = interpret(t"abcdef")
         for i <- 0 until 3 do reader.put(reader.next())
         reader.get()
@@ -193,103 +193,103 @@ object Tests extends Suite(t"CoDL tests"):
         reader.get()
       .assert(_ == t"def")
 
-      test(t"read end character"):
+      test(m"read end character"):
         val reader = interpret(t"")
         reader.next()
       .matches:
         case Character.End =>
 
-      // test(t"cannot read end twice"):
+      // test(m"cannot read end twice"):
       //   val reader = interpret(t"")
       //   reader.next()
       //   capture(reader.next())
       // .matches:
       //   case _: IllegalStateException =>
 
-    suite(t"Tokenizer tests"):
+    suite(m"Tokenizer tests"):
       def parseText(text: Text)(using Log[Text]): (Int, Stream[CodlToken]) =
         val result = Codl.tokenize(Stream(text))
         result(1).length
         result
 
-      test(t"Parse two words with single space"):
+      test(m"Parse two words with single space"):
         parseText(t"alpha beta")
       .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Item(t"beta", 0, 6))))
 
-      test(t"Parse a completely empty document"):
+      test(m"Parse a completely empty document"):
         parseText(t"")
       .assert(_ == (0, Stream()))
 
-      test(t"Parse two words with trailing spaces"):
+      test(m"Parse two words with trailing spaces"):
         parseText(t"alpha beta   ")
       .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Item(t"beta", 0, 6))))
 
-      test(t"Parse two words with three spaces"):
+      test(m"Parse two words with three spaces"):
         parseText(t"alpha   beta")
       .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Item(t"beta", 0, 8))))
 
-      test(t"Parse two words with newline"):
+      test(m"Parse two words with newline"):
         parseText(t"alpha beta\n")
       .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Item(t"beta", 0, 6))))
 
-      test(t"Parse two words with two lines"):
+      test(m"Parse two words with two lines"):
         parseText(t"alpha\nbeta")
       .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Peer, Item(t"beta", 1, 0))))
 
-      test(t"Parse two words on two lines with indentation"):
+      test(m"Parse two words on two lines with indentation"):
         parseText(t"alpha\n  beta")
       .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Indent, Item(t"beta", 1, 2))))
 
-      test(t"Parse two words on two lines with initial indentation"):
+      test(m"Parse two words on two lines with initial indentation"):
         parseText(t" alpha\n   beta")
       .assert(_ == (1, Stream(Item(t"alpha", 0, 1), Indent, Item(t"beta", 1, 3))))
 
-      test(t"Parse two words on two lines with initial newline"):
+      test(m"Parse two words on two lines with initial newline"):
         parseText(t"\nalpha\n  beta")
       .assert(_ == (0, Stream(Item(t"alpha", 1, 0), Indent, Item(t"beta", 2, 2))))
 
-      test(t"Parse text with whitespace on blank lines"):
+      test(m"Parse text with whitespace on blank lines"):
         parseText(t"root\n  two\n\n \npeer")
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Indent, Item(t"two", 1, 2), Blank, Blank,
           Outdent(1), Item(t"peer", 4, 0))))
 
-      test(t"Parse shebang"):
+      test(m"Parse shebang"):
         parseText(t"""|#!/bin/bash
                       |root
                       |""".s.stripMargin.show)
       .assert(_ == (0, Stream(Comment(t"!/bin/bash", 0, 0), Peer, Item(t"root", 1, 0))))
 
-      test(t"Parse initial comment"):
+      test(m"Parse initial comment"):
         parseText(t"""|# Initial comment
                       |root""".s.stripMargin.show)
       .assert(_ == (0, Stream(Comment(t" Initial comment", 0, 0), Peer, Item(t"root", 1, 0))))
 
-      test(t"Parse two-line comment"):
+      test(m"Parse two-line comment"):
         parseText(t"""|# Line 1
                       |# Line 2
                       |root""".s.stripMargin.show)
       .assert(_ == (0, Stream(Comment(t" Line 1", 0, 0), Peer, Comment(t" Line 2", 1, 0),
           Peer, Item(t"root", 2, 0))))
 
-      test(t"Parse remark"):
+      test(m"Parse remark"):
         parseText(t"""|root # remark""".s.stripMargin.show)
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Comment(t"remark", 0, 6))))
 
-      test(t"Parse non-remark"):
+      test(m"Parse non-remark"):
         parseText(t"""|root #not-a-remark""".s.stripMargin.show)
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"#not-a-remark", 0, 5))))
 
-      test(t"Parse multi-word remark"):
+      test(m"Parse multi-word remark"):
         parseText(t"""|root # remark words""".s.stripMargin.show)
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Comment(t"remark words", 0, 6))))
 
-      test(t"Parse double indentation"):
+      test(m"Parse double indentation"):
         parseText(t"""|root
                       |    child content
                       |""".s.stripMargin.show)
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content", 1, 4, true))))
 
-      test(t"Unindented line does not terminate long content"):
+      test(m"Unindented line does not terminate long content"):
         parseText(t"""|root
                       |    one
                       |    two
@@ -298,7 +298,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"one\ntwo\n\nthree", 1, 4, true))))
 
 
-      test(t"Parse double indentation then peer"):
+      test(m"Parse double indentation then peer"):
         parseText(t"""|root
                       |    child content
                       |next
@@ -306,7 +306,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content", 1, 4, true), Peer,
           Item(t"next", 2, 0))))
 
-      test(t"Parse double indentation then peer as children"):
+      test(m"Parse double indentation then peer as children"):
         parseText(t"""|root
                       |  child
                       |      content
@@ -315,7 +315,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == List(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2, false),
           Item(t"content", 2, 6, true), Peer, Item(t"next", 3, 2, false)))
 
-      test(t"Parse triple indentation then peer as children"):
+      test(m"Parse triple indentation then peer as children"):
         parseText(t"""|root
                       |  child
                       |    grandchild
@@ -326,7 +326,7 @@ object Tests extends Suite(t"CoDL tests"):
           Item(t"grandchild", 2, 4, false), Item(t"content", 3, 8, true), Peer,
           Item(t"next", 4, 4, false)).to(List))
 
-      test(t"Parse triple indentation then outdent"):
+      test(m"Parse triple indentation then outdent"):
         parseText(t"""|root
                       |  child
                       |    grandchild
@@ -337,7 +337,7 @@ object Tests extends Suite(t"CoDL tests"):
           Item(t"grandchild", 2, 4, false), Item(t"content", 3, 8, true), Outdent(1),
           Item(t"next", 4, 2, false)))
 
-      test(t"Parse triple indentation then double outdent"):
+      test(m"Parse triple indentation then double outdent"):
         parseText(t"""|root
                       |  child
                       |    grandchild
@@ -348,7 +348,7 @@ object Tests extends Suite(t"CoDL tests"):
           Item(t"grandchild", 2, 4, false), Item(t"content", 3, 8, true), Outdent(2),
           Item(t"next", 4, 0, false)))
 
-      test(t"Parse double indentation then peer with margin"):
+      test(m"Parse double indentation then peer with margin"):
         parseText(t"""| root
                       |     child content
                       | next
@@ -356,7 +356,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == (1, Stream(Item(t"root", 0, 1), Item(t"child content", 1, 5, true), Peer,
           Item(t"next", 2, 1))))
 
-      test(t"Parse double indentation then peer with margin and indent"):
+      test(m"Parse double indentation then peer with margin and indent"):
         parseText(t"""| root
                       |     child content
                       |   next
@@ -364,14 +364,14 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == (1, Stream(Item(t"root", 0, 1), Item(t"child content", 1, 5, true), Indent,
           Item(t"next", 2, 3))))
 
-      test(t"Parse multiline content"):
+      test(m"Parse multiline content"):
         parseText(t"""|root
                       |    child content
                       |    more
                       |""".s.stripMargin.show)
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true))))
 
-      test(t"Parse multiline content then peer"):
+      test(m"Parse multiline content then peer"):
         parseText(t"""|root
                       |    child content
                       |    more
@@ -380,45 +380,45 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true), Peer,
           Item(t"next", 3, 0))))
 
-      test(t"Terminated content"):
+      test(m"Terminated content"):
         parseText(t"""|root child
                       |##
                       |""".s.stripMargin.show)(1)
       .assert(_ == Stream(Item(t"root", 0, 0), Item(t"child", 0, 5), Peer, Body(Stream())))
 
-      test(t"Terminated content 2"):
+      test(m"Terminated content 2"):
         parseText(t"root\n  one two\n##\n")(1)
 
       . assert(_ == Stream(Item(t"root", 0, 0), Indent, Item(t"one", 1, 2), Item(t"two", 1, 6), Outdent(1), Body(Stream())))
 
-      test(t"Terminated content after child"):
+      test(m"Terminated content after child"):
         parseText(t"""|root
                       |  child
                       |##
                       |""".s.stripMargin.show)(1)
       .assert(_ == Stream(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2), Outdent(1), Body(Stream())))
 
-      test(t"Terminated content after long parameter"):
+      test(m"Terminated content after long parameter"):
         parseText(t"""|root
                       |    child
                       |##
                       |""".s.stripMargin.show)(1).to(List)
       .assert(_ == Stream(Item(t"root", 0, 0), Item(t"child", 1, 4, true), Peer, Body(Stream())).to(List))
 
-      test(t"Terminated content with body"):
+      test(m"Terminated content with body"):
         parseText(t"""|root
                       |##
                       | follow""".s.stripMargin.show)(1)
       .assert(_ == Stream(Item(t"root", 0, 0), Peer, Body(Stream(' ', 'f', 'o', 'l', 'l', 'o', 'w'))))
 
-      test(t"Terminated content with body and newline"):
+      test(m"Terminated content with body and newline"):
         parseText(t"""|root
                       |##
                       | follow
                       |""".s.stripMargin.show)(1)
       .assert(_ == Stream(Item(t"root", 0, 0), Peer, Body(Stream(' ', 'f', 'o', 'l', 'l', 'o', 'w', '\n'))))
 
-      test(t"Parse multiline content then indent"):
+      test(m"Parse multiline content then indent"):
         parseText(t"""|root
                       |    child content
                       |    more
@@ -427,7 +427,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true), Indent,
           Item(t"next", 3, 2))))
 
-      test(t"Parse multiline content then indented comment"):
+      test(m"Parse multiline content then indented comment"):
         parseText(t"""|root
                       |    child content
                       |    more
@@ -436,7 +436,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true), Indent,
           Comment(t" comment", 3, 2))))
 
-      test(t"Parse multiline content including a hash"):
+      test(m"Parse multiline content including a hash"):
         parseText(t"""|root
                       |    content
                       |    # not a comment
@@ -444,45 +444,45 @@ object Tests extends Suite(t"CoDL tests"):
       .assert: value =>
         value == (0, Stream(Item(t"root", 0, 0), Item(t"content\n# not a comment", 1, 4, true)))
 
-      test(t"Parse multiline content including a additional indentation"):
+      test(m"Parse multiline content including a additional indentation"):
         parseText(t"""|root
                       |    content
                       |     indented
                       |""".s.stripMargin.show)
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"content\n indented", 1, 4, true))))
 
-      test(t"Surplus indentation"):
+      test(m"Surplus indentation"):
         parseText(t"""|root
                       |     surplus-indented
                       |""".s.stripMargin.show)(1)
       .assert(_ contains CodlToken.Error(CodlError(1, 5, 1, CodlError.Reason.SurplusIndent)))
 
-      test(t"Uneven indentation"):
+      test(m"Uneven indentation"):
         parseText(t"""|root
                       | uneven indented
                       |""".s.stripMargin.show)(1)
       .assert(_ contains CodlToken.Error(CodlError(1, 1, 1, CodlError.Reason.UnevenIndent(0, 1))))
 
-      test(t"Uneven indentation 2"):
+      test(m"Uneven indentation 2"):
         parseText(t"""|root
                       |   uneven indented
                       |""".s.stripMargin.show)(1)
       .assert(_ contains CodlToken.Error(CodlError(1, 3, 1, CodlError.Reason.UnevenIndent(0, 3))))
 
-      test(t"Insufficient indentation"):
+      test(m"Insufficient indentation"):
         parseText(t"""|     root
                       |    uneven indented
                       |""".s.stripMargin.show)(1)
       .assert(_ contains CodlToken.Error(CodlError(1, 4, 1, CodlError.Reason.InsufficientIndent)))
 
-      test(t"Uneven de-indentation"):
+      test(m"Uneven de-indentation"):
         parseText(t"""|root
                       |  child
                       | deindentation
                       |""".s.stripMargin.show)(1)
       .assert(_ contains CodlToken.Error(CodlError(2, 1, 1, CodlError.Reason.UnevenIndent(0, 1))))
 
-    suite(t"Access tests"):
+    suite(m"Access tests"):
       import dynamicCodlAccess.enabled
       val doc = CodlDoc(
         CodlNode(t"term")(
@@ -495,161 +495,161 @@ object Tests extends Suite(t"CoDL tests"):
         CodlNode(t"element")()
       )
 
-      test(t"Access first element"):
+      test(m"Access first element"):
         doc.term().key
       .assert(_ == t"term")
 
-      test(t"Access second element"):
+      test(m"Access second element"):
         doc.element().key
       .assert(_ == t"element")
 
-      test(t"Access nested element"):
+      test(m"Access nested element"):
         doc.term().kind().key
       .assert(_ == t"kind")
 
-      test(t"Access multiple keys"):
+      test(m"Access multiple keys"):
         doc.term().name.length
       .assert(_ == 2)
 
-      test(t"Access deeper nested key"):
+      test(m"Access deeper nested key"):
         doc.term(0).name(1)()
       .assert(_ == CodlNode(Data(t"gamma")))
 
-      test(t"Access deeper nested param"):
+      test(m"Access deeper nested param"):
         doc.term().name()(1)
       .assert(_ == CodlNode(Data(t"beta")))
 
     def read(text: Text)(using Log[Text]): CodlDoc = Codl.parse(text)
 
-    suite(t"Untyped parsing tests"):
-      test(t"Empty document"):
+    suite(m"Untyped parsing tests"):
+      test(m"Empty document"):
         read(t"")
       .assert(_ == CodlDoc())
 
-      test(t"Simplest non-empty document"):
+      test(m"Simplest non-empty document"):
         read(t"root").wiped
       .assert(_ == CodlDoc(CodlNode(Data(t"root"))))
 
-      test(t"Root peers"):
+      test(m"Root peers"):
         read(t"root\nelement\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(), CodlNode(t"element")()))
 
-      test(t"Single child"):
+      test(m"Single child"):
         read(t"root\n  child").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")())))
 
-      test(t"Single child and peer"):
+      test(m"Single child and peer"):
         read(t"root\n  child\npeer").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")()), CodlNode(t"peer")()))
 
-      test(t"Single child and grandchild"):
+      test(m"Single child and grandchild"):
         read(t"root\n  child\n    grandchild").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"grandchild")()))))
 
-      test(t"Single child and grandchild and peer"):
+      test(m"Single child and grandchild and peer"):
         read(t"root\n  child\n    grandchild\npeer").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"grandchild")())), CodlNode(t"peer")()))
 
-      test(t"Peers at multiple levels"):
+      test(m"Peers at multiple levels"):
         read(t"root\n  child\n    grandchild\n  child\n    grandchild\npeer").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"grandchild")()),
           CodlNode(t"child")(CodlNode(t"grandchild")())), CodlNode(t"peer")()))
 
-      test(t"Data with parameter"):
+      test(m"Data with parameter"):
         read(t"root param").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"param")())))
 
-      test(t"Data with remark"):
+      test(m"Data with remark"):
         read(t"root # remark").untyped
       .assert(_ == CodlDoc(CodlNode(Data(t"root"), Extra(0, Nil, t"remark"))))
 
-      test(t"Data after comment"):
+      test(m"Data after comment"):
         read(t"# comment\nroot").untyped
       .assert(_ == CodlDoc(CodlNode(Data(t"root"), Extra(0, List(t" comment"), Unset))))
 
-      test(t"Data after two comments"):
+      test(m"Data after two comments"):
         read(t"# comment 1\n# comment 2\nroot").untyped
       .assert(_ == CodlDoc(CodlNode(Data(t"root"), Extra(0, List(t" comment 1", t" comment 2"), Unset))))
 
-      test(t"Comment on child"):
+      test(m"Comment on child"):
         read(t"root\n  # comment\n  child").untyped
       .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(0, List(t" comment"),
           Unset)))))))
 
-      test(t"Comment and blank line on child"):
+      test(m"Comment and blank line on child"):
         read(t"root\n\n  # comment\n  child").untyped
       .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(1, List(t" comment"),
           Unset)))))))
 
-      test(t"Data with multiple parameters"):
+      test(m"Data with multiple parameters"):
         read(t"root param1 param2").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"param1")(), CodlNode(t"param2")())))
 
-      test(t"Blank line before child"):
+      test(m"Blank line before child"):
         read(t"root\n\n  child").untyped
       .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(1, Nil)))))))
 
-      test(t"Two blank lines before child"):
+      test(m"Two blank lines before child"):
         read(t"root\n\n \n  child").untyped
       .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child", IArray()), Extra(2, Nil, Unset)))))))
 
-      test(t"Data with multiple parameters, remark and comment"):
+      test(m"Data with multiple parameters, remark and comment"):
         read(t"# comment\nroot param1 param2 # remark").untyped
       .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Extra(0,
           List(t" comment"), t"remark"))))
 
-      test(t"Data with multiple parameters, remark, comment and peer"):
+      test(m"Data with multiple parameters, remark, comment and peer"):
         read(t"# comment\nroot param1 param2 # remark\npeer").untyped
       .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Extra(0,
           List(t" comment"), t"remark")), CodlNode(t"peer")()))
 
-      test(t"Comment on blank node"):
+      test(m"Comment on blank node"):
         read(t"# comment\n\nroot").untyped
       .assert(_ == CodlDoc(CodlNode(Unset, Extra(0, List(t" comment"), Unset)), CodlNode(Data(t"root"), Extra(1,
           Nil, Unset))))
 
-      test(t"Remark after blank line"):
+      test(m"Remark after blank line"):
         read(t"root\n\npeer # remark").untyped
       .assert(_ == CodlDoc(CodlNode(t"root")(), CodlNode(Data(t"peer"), Extra(0, Nil, t"remark"))))
 
-      test(t"Long item"):
+      test(m"Long item"):
         read(t"root\n    one two\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")())))
 
-      test(t"Unindented blank line does not terminate long content"):
+      test(m"Unindented blank line does not terminate long content"):
         read(t"root\n    one\n    two\n\n    three").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one\ntwo\n\nthree")())))
 
-      test(t"Multiline item"):
+      test(m"Multiline item"):
         read(t"root\n  child\n    this\n        one two\n        three four\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"this")(CodlNode(t"one two\nthree four")())))))
 
-      test(t"Terminated content"):
+      test(m"Terminated content"):
         read(t"ROOT\n  one two\n##\nfoobar\nbaz").wiped
       .assert(_ == CodlDoc(CodlNode(t"ROOT")(CodlNode(t"one")(CodlNode(t"two")()))))
 
-      test(t"Terminated content without newline"):
+      test(m"Terminated content without newline"):
         read(t"root\n    one two\n##").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")())))
 
-      test(t"Terminated content with body"):
+      test(m"Terminated content with body"):
         read(t"root\n    one two\n##\nunparsed").body
       .assert(_ == Stream('u', 'n', 'p', 'a', 'r', 's', 'e', 'd'))
 
-      test(t"Terminated content with newline before body"):
+      test(m"Terminated content with newline before body"):
         read(t"root\n    one two\n##\n\nunparsed").body
       .assert(_ == Stream('\n', 'u', 'n', 'p', 'a', 'r', 's', 'e', 'd'))
 
-      test(t"Terminated content with newline after body"):
+      test(m"Terminated content with newline after body"):
         read(t"root\n    one two\n##\nunparsed\n").body
       .assert(_ == Stream('u', 'n', 'p', 'a', 'r', 's', 'e', 'd', '\n'))
 
-      test(t"Teminator without newline and spurious content"):
+      test(m"Teminator without newline and spurious content"):
         capture(read(t"root\n    one two\n##spurious"))
       .assert(_ == CodlError(2, 2, 1, BadTermination))
 
 
-    suite(t"Schema tests"):
+    suite(m"Schema tests"):
       import dynamicCodlAccess.enabled
       val childSchema = Struct(AtMostOne,
                           t"one" -> Field(AtMostOne),
@@ -674,59 +674,59 @@ object Tests extends Suite(t"CoDL tests"):
 
       val topSchema = Struct(AtMostOne, t"root" -> rootSchema)
 
-      test(t"Root node has correct name"):
+      test(m"Root node has correct name"):
         topSchema.parse(t"root").untyped()
       .assert(_ == CodlNode(Data(t"root")))
 
-      test(t"Root node has correct schema"):
+      test(m"Root node has correct schema"):
         topSchema.parse(t"root").schema
       .assert(_ == topSchema)
 
-      test(t"First child of root param is validated"):
+      test(m"First child of root param is validated"):
         topSchema.parse(t"root\n  child").root()(0).schema
       .assert(_ == childSchema)
 
-      test(t"Third child of root param is validated"):
+      test(m"Third child of root param is validated"):
         val doc = topSchema.parse(t"root\n  child\n  second\n  third value\n")
         doc.root()(2).schema
       .assert(_ == Field(AtMostOne))
 
-      test(t"Second child of root param is validated"):
+      test(m"Second child of root param is validated"):
         val doc = topSchema.parse(t"root\n  child\n  second")
         doc.root()(1).schema
       .assert(_ == childSchema2)
 
-      test(t"Child is validated"):
+      test(m"Child is validated"):
         topSchema.parse(t"root\n  child").root().child().schema
       .assert(_ == childSchema)
 
-      test(t"Different-named child is validated"):
+      test(m"Different-named child is validated"):
         topSchema.parse(t"root\n  second").root().second().schema
       .assert(_ == childSchema2)
 
-      test(t"Grandchild nodes are validated"):
+      test(m"Grandchild nodes are validated"):
         topSchema.parse(t"root\n  second\n    alpha").root().second().alpha().schema
       .assert(_ == grandchildSchema)
 
-      test(t"Invalid top-level node"):
+      test(m"Invalid top-level node"):
         capture[AggregateError[CodlError]](topSchema.parse(t"riot")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(0, 0, 4, InvalidKey(t"riot", t"riot")))
 
-      test(t"Indent after comment forbidden"):
+      test(m"Indent after comment forbidden"):
         capture[AggregateError[CodlError]](Codl.parse(t"root\n  # comment\n    child")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(1, 2, 1, CodlError.Reason.IndentAfterComment))
 
-      test(t"Validate second top-level node"):
+      test(m"Validate second top-level node"):
         rootSchema.parse(t"child\nsecond").second().schema
       .assert(_ == childSchema2)
 
-      test(t"Validate second top-level node out of order"):
+      test(m"Validate second top-level node out of order"):
         rootSchema.parse(t"second\nchild").second().schema
       .assert(_ == childSchema2)
 
-      test(t"Validate second top-level node after child"):
+      test(m"Validate second top-level node after child"):
         rootSchema.parse(t"child\n  one\nsecond").second().schema
       .assert(_ == childSchema2)
 
@@ -736,12 +736,12 @@ object Tests extends Suite(t"CoDL tests"):
                             )
                           )
 
-      test(t"Missing required node throws exception"):
+      test(m"Missing required node throws exception"):
         capture[AggregateError[CodlError]](requiredChild.parse(t"root")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(0, 0, 4, MissingKey(t"root", t"child")))
 
-      test(t"Present required node does not throw exception"):
+      test(m"Present required node does not throw exception"):
         requiredChild.parse(t"root\n  child").untyped.root().child()
       .assert(_ == Data(t"child"))
 
@@ -751,12 +751,12 @@ object Tests extends Suite(t"CoDL tests"):
                               )
                             )
 
-      test(t"Duplicated unique child is forbidden"):
+      test(m"Duplicated unique child is forbidden"):
         capture[AggregateError[CodlError]](requiredChild.parse(t"root\n  child\n  child")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(2, 2, 5, DuplicateKey(t"child", t"child")))
 
-      test(t"Duplicated repeatable child is permitted"):
+      test(m"Duplicated repeatable child is permitted"):
         repeatableChild.parse(t"root\n  child\n  child").untyped.root().child(1)
       .assert(_ == Data(t"child"))
 
@@ -766,15 +766,15 @@ object Tests extends Suite(t"CoDL tests"):
                               )
                             )
 
-      test(t"'At least one' may mean one"):
+      test(m"'At least one' may mean one"):
         atLeastOneChild.parse(t"root\n  child").untyped.root().child()
       .assert(_ == Data(t"child"))
 
-      test(t"'At least one' may mean two"):
+      test(m"'At least one' may mean two"):
         atLeastOneChild.parse(t"root\n  child\n  child").untyped.root().child(1)
       .assert(_ == Data(t"child"))
 
-      test(t"'At least one' may not mean zero"):
+      test(m"'At least one' may not mean zero"):
         capture[AggregateError[CodlError]](requiredChild.parse(t"root")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(0, 0, 4, MissingKey(t"root", t"child")))
@@ -797,100 +797,100 @@ object Tests extends Suite(t"CoDL tests"):
           )
         )
 
-      test(t"Access parameters by name"):
+      test(m"Access parameters by name"):
         childWithTwoParams(One, One).parse(t"root\n  child first second").root().child().beta()
       .assert(_ == Data(t"second", IArray(), schema = Field(One), layout = Layout(0, false, 14)))
 
-      test(t"Surplus parameters"):
+      test(m"Surplus parameters"):
         capture[AggregateError[CodlError]](childWithTwoParams(One, One).parse(t"root\n  child one two three")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
 
-      test(t"Two surplus parameters"):
+      test(m"Two surplus parameters"):
         capture[AggregateError[CodlError]](childWithTwoParams(One, One).parse(t"root\n  child one two three four")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
 
-      test(t"Two optional parameters not specified"):
+      test(m"Two optional parameters not specified"):
         childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child").root().child().layout
         . params
       .assert(_ == 0)
 
-      test(t"Two optional parameters with one specified"):
+      test(m"Two optional parameters with one specified"):
         childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child one").root().child().layout.params
       .assert(_ == 1)
 
-      test(t"Two optional parameters with both specified"):
+      test(m"Two optional parameters with both specified"):
         childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child one two").root().child().layout.params
       .assert(_ == 2)
 
-      test(t"Two optional parameters with one surplus"):
+      test(m"Two optional parameters with one surplus"):
         capture[AggregateError[CodlError]](childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child one two three").root().child()) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
 
-      test(t"Variadic parameters are counted"):
+      test(m"Variadic parameters are counted"):
         childWithTwoParams(One, Many).parse(t"root\n  child one two three four").root().child().layout.params
       .assert(_ == 4)
 
-      test(t"Variadic parameter has right number of values"):
+      test(m"Variadic parameter has right number of values"):
         childWithTwoParams(One, Many).parse(t"root\n  child one two three four").root().child().beta.length
       .assert(_ == 3)
 
-      test(t"Variadic parameters are optional"):
+      test(m"Variadic parameters are optional"):
         childWithTwoParams(One, Many).parse(t"root\n  child one").root().child().layout.params
       .assert(_ == 1)
 
-      test(t"'at least one' parameters are not optional"):
+      test(m"'at least one' parameters are not optional"):
         capture[AggregateError[CodlError]](childWithTwoParams(One, AtLeastOne).parse(t"root\n  child one")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(1, 2, 5, MissingKey(t"child", t"beta")))
 
-      test(t"Variadic first parameters don't count for second"):
+      test(m"Variadic first parameters don't count for second"):
         capture[AggregateError[CodlError]](childWithTwoParams(AtLeastOne, AtLeastOne).parse(t"root\n  child one two three")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(1, 2, 5, MissingKey(t"child", t"beta")))
 
-      test(t"Two optional parameters not specified on root"):
+      test(m"Two optional parameters not specified on root"):
         rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child").child().layout.params
       .assert(_ == 0)
 
-      test(t"Two optional parameters with one specified on root"):
+      test(m"Two optional parameters with one specified on root"):
         rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child one").child().layout.params
       .assert(_ == 1)
 
-      test(t"Two optional parameters with both specified on root"):
+      test(m"Two optional parameters with both specified on root"):
         rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child one two").child().layout.params
       .assert(_ == 2)
 
-      test(t"Two optional parameters with one surplus on root"):
+      test(m"Two optional parameters with one surplus on root"):
         capture[AggregateError[CodlError]](rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child one two three").child()) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(0, 16, 5, SurplusParams(t"three", t"child")))
 
-      test(t"Variadic parameters are counted on root"):
+      test(m"Variadic parameters are counted on root"):
         rootWithTwoParams(One, Many).parse(t"  child one two three four").child().layout.params
       .assert(_ == 4)
 
-      test(t"Variadic parameter has right number of values on root"):
+      test(m"Variadic parameter has right number of values on root"):
         rootWithTwoParams(One, Many).parse(t"child one two three four").child().beta.length
       .assert(_ == 3)
 
-      test(t"Variadic parameters are optional on root"):
+      test(m"Variadic parameters are optional on root"):
         rootWithTwoParams(One, Many).parse(t"  child one").child().layout.params
       .assert(_ == 1)
 
-      test(t"'at least one' parameters are not optional on root"):
+      test(m"'at least one' parameters are not optional on root"):
         capture[AggregateError[CodlError]](rootWithTwoParams(One, AtLeastOne).parse(t"  child one")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(0, 2, 5, MissingKey(t"child", t"beta")))
 
-      test(t"Variadic first parameters don't count for second on root"):
+      test(m"Variadic first parameters don't count for second on root"):
         capture[AggregateError[CodlError]](rootWithTwoParams(AtLeastOne, AtLeastOne).parse(t"  child one two three")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(0, 2, 5, MissingKey(t"child", t"beta")))
 
-    suite(t"Path tests"):
+    suite(m"Path tests"):
       import dynamicCodlAccess.enabled
       val schema = Struct(AtMostOne,
         t"root" -> Struct(AtMostOne,
@@ -909,23 +909,23 @@ object Tests extends Suite(t"CoDL tests"):
       )
 
 
-      test(t"CodlNode contains reference to an ident param"):
+      test(m"CodlNode contains reference to an ident param"):
         schema.parse(t"""root\n  field apple Braeburn red""").root().ids
       .assert(_ == Set(t"apple"))
 
-      test(t"CodlNode contains reference to an ident param with children"):
+      test(m"CodlNode contains reference to an ident param with children"):
         schema.parse(t"""root\n  field apple Braeburn\n    description red""").root().ids
       .assert(_ == Set(t"apple"))
 
-      test(t"CodlNode contains reference to an ident param as a child"):
+      test(m"CodlNode contains reference to an ident param as a child"):
         schema.parse(t"""root\n  another\n    id jack\n    name Jack\n    color blue\n    size 8""").root().ids
       .assert(_ == Set(t"jack"))
 
-      test(t"CodlNode contains multiple ids"):
+      test(m"CodlNode contains multiple ids"):
         schema.parse(t"""root\n  another jill\n    name Jill\n    color foo\n  another\n    id jack\n    name Jack\n""").root().ids
       .assert(_ == Set(t"jack", t"jill"))
 
-      test(t"CodlNode contains multiple ids (tweaked)"):
+      test(m"CodlNode contains multiple ids (tweaked)"):
         schema.parse(t"""root\n  another jill\n    name Jill\n  another\n    id jack\n    name Jack\n    color blue\n    size 8""").root().ids
       .assert(_ == Set(t"jack", t"jill"))
 
@@ -936,12 +936,12 @@ object Tests extends Suite(t"CoDL tests"):
         )
       )
 
-      test(t"Cannot have duplicate IDs of the same type"):
+      test(m"Cannot have duplicate IDs of the same type"):
         capture[AggregateError[CodlError]](repetitionSchema.parse(t"ABC first One\nABC second Two\nABC first Primary")) match
           case AggregateError[CodlError](errors) => errors.head
       .assert(_ == CodlError(2, 4, 5, CodlError.Reason.DuplicateId(t"first", 0, 4)))
 
-    suite(t"Binary tests"):
+    suite(m"Binary tests"):
 
       val schema = Struct(Arity.AtMostOne,
         t"field" -> Struct(Arity.AtMostOne,
@@ -955,174 +955,174 @@ object Tests extends Suite(t"CoDL tests"):
 
       val doc = schema.parse(t"field")
 
-      test(t"Serialize and deserialize one node"):
+      test(m"Serialize and deserialize one node"):
         roundtrip(doc)
       .assert(_ == doc.uncommented)
 
       val doc2 = schema.parse(t"field\n  child\n")
-      test(t"Serialize and deserialize one node and child"):
+      test(m"Serialize and deserialize one node and child"):
         roundtrip(doc2)
       .assert(_ == doc2.uncommented)
 
       val doc3 = schema.parse(t"field\n  child value")
-      test(t"Serialize and deserialize one node and child/param"):
+      test(m"Serialize and deserialize one node and child/param"):
         roundtrip(doc3)
       .assert(_ == doc3.uncommented)
 
       val doc4 = schema.parse(t"field\n  child value value2 value3")
-      test(t"Serialize and deserialize one node and child with three params"):
+      test(m"Serialize and deserialize one node and child with three params"):
         roundtrip(doc4)
       .assert(_ == doc4.uncommented)
 
       val doc5 = schema.parse(t"field\n  child value value2\nfield2\nfield3")
-      test(t"Serialize and deserialize document with indent, outdent and peer"):
+      test(m"Serialize and deserialize document with indent, outdent and peer"):
         roundtrip(doc5)
       .assert(_ == doc5.uncommented)
 
-    suite(t"Serialization tests"):
+    suite(m"Serialization tests"):
 
-      test(t"Serialize a node"):
+      test(m"Serialize a node"):
         CodlDoc(CodlNode(Data(t"root"))).write
       .assert(_ == t"root\n")
 
-      test(t"Serialize a node and a child"):
+      test(m"Serialize a node and a child"):
         CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")))))).write
       .assert(_ == t"root\n  child\n")
 
-      test(t"Serialize a node and a child with params layout"):
+      test(m"Serialize a node and a child with params layout"):
         CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"))), Layout(1, false, 0))))
         . write
       .assert(_ == t"root child\n")
 
-      test(t"Serialize a node and a child with block param"):
+      test(m"Serialize a node and a child with block param"):
         CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello World"))), Layout(2, true, 0)))).write
       .assert(_ == t"root child\n    Hello World\n")
 
-      test(t"Serialize a node and a child with multiline block param"):
+      test(m"Serialize a node and a child with multiline block param"):
         CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello\nWorld"))), Layout(2, true, 0)))).write
       .assert(_ == t"root child\n    Hello\n    World\n")
 
-      test(t"Serialize a node and a child with comment"):
+      test(m"Serialize a node and a child with comment"):
         CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(comments = List(t" comment"))))))).write
       .assert(_ == t"root\n  # comment\n  child\n")
 
-      test(t"Serialize a node and a child with multiline comment"):
+      test(m"Serialize a node and a child with multiline comment"):
         CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(comments = List(t" line 1", t" line 2"))))))).write
       .assert(_ == t"root\n  # line 1\n  # line 2\n  child\n")
 
-      test(t"Serialize a node and a child with multiline comment and blank lines"):
+      test(m"Serialize a node and a child with multiline comment and blank lines"):
         CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(blank = 2, comments = List(t" line 1", t" line 2"))))))).write
       .assert(_ == t"root\n\n\n  # line 1\n  # line 2\n  child\n")
 
-      test(t"Serialize a node and a child with blank lines"):
+      test(m"Serialize a node and a child with blank lines"):
         CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(blank = 2)))))).write
       .assert(_ == t"root\n\n\n  child\n")
 
-      test(t"Serialize a node and a child with a remark"):
+      test(m"Serialize a node and a child with a remark"):
         CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(remark = t"some remark")))))).write
       .assert(_ == t"root\n  child # some remark\n")
 
-    suite(t"Double-spacing tests"):
-      test(t"Single-space-separated"):
+    suite(m"Double-spacing tests"):
+      test(m"Single-space-separated"):
         read(t"root one two\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
 
-      test(t"Double-space-separated"):
+      test(m"Double-space-separated"):
         read(t"root  one  two\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
 
-      test(t"Short/long spacing"):
+      test(m"Short/long spacing"):
         read(t"root one  two\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")())))
 
-      test(t"Long/short spacing"):
+      test(m"Long/short spacing"):
         read(t"root  one two\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")())))
 
-      test(t"Long/short/long spacing"):
+      test(m"Long/short/long spacing"):
         read(t"root  one two  three\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")(), CodlNode(t"three")())))
 
-      test(t"Short/short/long spacing"):
+      test(m"Short/short/long spacing"):
         read(t"root one two  three\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two")(), CodlNode(t"three")())))
 
-      test(t"Short/Long/short spacing"):
+      test(m"Short/Long/short spacing"):
         read(t"root one  two three\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")())))
 
-      test(t"Short/Long/short/Long/short spacing"):
+      test(m"Short/Long/short/Long/short spacing"):
         read(t"root one  two three  four five\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")(), CodlNode(t"four five")())))
 
 
     def roundtrip[T: CodlEncoder: CodlDecoder](value: T): T = value.codl.as[T]
 
-    suite(t"Generic Derivation tests"):
+    suite(m"Generic Derivation tests"):
 
       case class Person(name: Text, age: Int)
       case class Organisation(name: Text, ceo: Person)
       case class Player(name: Text, rank: Optional[Int])
 
-      test(t"write a simple case class"):
+      test(m"write a simple case class"):
         Person(t"John Smith", 65).codl.untyped
       .assert(_ == CodlDoc(CodlNode(t"name")(CodlNode(t"John Smith")()), CodlNode(t"age")(CodlNode(t"65")())))
 
-      test(t"write a nested case class"):
+      test(m"write a nested case class"):
         val person1 = Person(t"Alpha", 1)
         Organisation(t"Acme", person1).codl.untyped
       .assert(_ == CodlDoc(CodlNode(t"name")(CodlNode(t"Acme")()), CodlNode(t"ceo")(CodlNode(t"name")(CodlNode(t"Alpha")()),
           CodlNode(t"age")(CodlNode(t"1")()))))
 
-      test(t"write a case class with optional field specified"):
+      test(m"write a case class with optional field specified"):
         Player(t"Barry", 1).codl.untyped
       .assert(_ == CodlDoc(CodlNode(t"name")(CodlNode(t"Barry")()), CodlNode(t"rank")(CodlNode(t"1")())))
 
-      test(t"write a case class with optional field unspecified"):
+      test(m"write a case class with optional field unspecified"):
         Player(t"Barry", Unset).codl.untyped
       .assert(_ == CodlDoc(CodlNode(t"name")(CodlNode(t"Barry")())))
 
-      test(t"serialize a List of case classes"):
+      test(m"serialize a List of case classes"):
         List(Person(t"John Smith", 65), Person(t"Jim Calvin", 11)).codl.untyped
       .assert(_ == CodlDoc(
         CodlNode(t"name")(CodlNode(t"John Smith")()), CodlNode(t"age")(CodlNode(t"65")()),
         CodlNode(t"name")(CodlNode(t"Jim Calvin")()), CodlNode(t"age")(CodlNode(t"11")())
       ))
 
-      test(t"serialize a List of integers"):
+      test(m"serialize a List of integers"):
         List(1, 2, 3).codl.untyped
       .assert(_ == CodlDoc(CodlNode(t"1")(), CodlNode(t"2")(), CodlNode(t"3")()))
 
-      test(t"serialize a List of booleans"):
+      test(m"serialize a List of booleans"):
         List(true, false, true).codl.untyped
       .assert(_ == CodlDoc(CodlNode(t"yes")(), CodlNode(t"no")(), CodlNode(t"yes")()))
 
-      test(t"roundtrip a true boolean"):
+      test(m"roundtrip a true boolean"):
         roundtrip[Boolean](true)
       .assert(_ == true)
 
-      test(t"roundtrip a false boolean"):
+      test(m"roundtrip a false boolean"):
         roundtrip[Boolean](false)
       .assert(_ == false)
 
-      test(t"roundtrip an integer"):
+      test(m"roundtrip an integer"):
         roundtrip[Int](42)
       .assert(_ == 42)
 
-      test(t"roundtrip some text"):
+      test(m"roundtrip some text"):
         roundtrip[Text](t"hello world")
       .assert(_ == t"hello world")
 
-      test(t"roundtrip a list of strings"):
+      test(m"roundtrip a list of strings"):
         roundtrip[List[Text]](List(t"hello", t"world"))
       .assert(_ == List(t"hello", t"world"))
 
       case class Foo(alpha: Text, beta: Optional[Text])
-      test(t"roundtrip a case class with an optional parameter"):
+      test(m"roundtrip a case class with an optional parameter"):
         roundtrip(Foo(t"one", t"two"))
       .assert(_ == Foo(t"one", t"two"))
 
-      test(t"roundtrip a case class with an optional parameter, unset"):
+      test(m"roundtrip a case class with an optional parameter, unset"):
         roundtrip(Foo(t"one", Unset))
       .assert(_ == Foo(t"one", Unset))
 
@@ -1132,7 +1132,7 @@ object Tests extends Suite(t"CoDL tests"):
 
       val complex = Bar(List(Baz(t"a", 2, Unset), Baz(t"c", 6, 'e')), Quux(t"e", List(1, 2, 4)))
 
-      test(t"roundtrip a complex case class"):
+      test(m"roundtrip a complex case class"):
         summon[CodlDecoder[Baz]]
         summon[CodlDecoder[List[Baz]]]
         roundtrip(complex)
@@ -1143,28 +1143,28 @@ object Tests extends Suite(t"CoDL tests"):
         Printer.print(writer, value.codl)
         writer.toString().show
 
-      test(t"print a simple case class"):
+      test(m"print a simple case class"):
         print(Foo(t"one", t"two"))
       .assert(_ == t"alpha one\nbeta two\n")
 
-      test(t"print a complex case class"):
+      test(m"print a complex case class"):
         print(complex)
       .assert(_ == t"foo\n  gamma a\n  delta 2\nfoo\n  gamma c\n  delta 6\n  eta e\nquux\n  alpha e\n  beta 1\n  beta 2\n  beta 4\n")
 
-      test(t"roundtrip a complex case class "):
+      test(m"roundtrip a complex case class "):
         read(print(complex)).as[Bar]
       .assert(_ == complex)
 
-      test(t"Print a case class using positional parameters"):
+      test(m"Print a case class using positional parameters"):
         print(User(12, t"user@example.com", List(Privilege(t"read", true), Privilege(t"write", false))))
       .assert(_ == t"")
 
-    suite(t"Extra tests"):
-      test(t"Tabs are recorded"):
+    suite(m"Extra tests"):
+      test(m"Tabs are recorded"):
         read(t"# some comment\nroot   param1    param2\n  child1 param3")().extra
       .assert(_ == Extra())
 
-    // // suite(t"Record tests"):
+    // // suite(m"Record tests"):
 
     // //   val record = GreekRecords(example1)
 
@@ -1172,7 +1172,7 @@ object Tests extends Suite(t"CoDL tests"):
     // //     record.alpha
     // //   .assert(_ == t"one")
 
-    // //   test(t"Test return value"):
+    // //   test(m"Test return value"):
     // //     record.beta
     // //   .assert(_ == t"two")
 
@@ -1184,17 +1184,17 @@ object Tests extends Suite(t"CoDL tests"):
     // //     record.eta
     // //   .assert(_ == t"eight")
 
-    // //   test(t"Test many return value"):
+    // //   test(m"Test many return value"):
     // //     record.gamma
     // //   .assert(_ == List(t"three", t"four", t"five"))
 
-    // //   test(t"Test multiple return value"):
+    // //   test(m"Test multiple return value"):
     // //     record.kappa
     // //   .assert(_ == List(t"nine", t"ten", t"eleven"))
 
-    // suite(t"Interpolation suite"):
+    // suite(m"Interpolation suite"):
 
-    //   test(t"Interpolator with no substitutions"):
+    //   test(m"Interpolator with no substitutions"):
     //     codl"""
     //       root
     //         child value
@@ -1202,7 +1202,7 @@ object Tests extends Suite(t"CoDL tests"):
     //     """.untyped.copy(margin = 0)
     //   .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"value")())), CodlNode(t"test")()))
 
-    //   test(t"Interpolator with one substitutions"):
+    //   test(m"Interpolator with one substitutions"):
     //     val bar = t"Hello"
 
     //     codl"""
@@ -1212,7 +1212,7 @@ object Tests extends Suite(t"CoDL tests"):
     //     """.untyped.copy(margin = 0)
     //   .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"Hello")(), CodlNode(t"child")(CodlNode(t"value")())), CodlNode(t"test")()))
 
-    //   test(t"Interpolator with substitution containing space"):
+    //   test(m"Interpolator with substitution containing space"):
     //     val bar = t"Hello World"
 
     //     codl"""

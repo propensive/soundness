@@ -34,10 +34,11 @@ package probably
 
 import anticipation.*
 import digression.*
+import fulminate.*
 import rudiments.*
 import vacuous.*
 
-class Testable(val name: Text, val parent: Optional[Testable] = Unset)
+class Testable(val name: Message, val parent: Optional[Testable] = Unset)
    (using codepoint: Codepoint):
 
   override def equals(that: Any): Boolean = that.matchable(using Unsafe) match

@@ -42,40 +42,40 @@ case class IdName(id: Text, name: Text)
 given Similarity[IdName] = _.id == _.id
 import Juxtaposition.*
 
-object Tests extends Suite(t"Chiaroscuro tests"):
+object Tests extends Suite(m"Chiaroscuro tests"):
   def run(): Unit =
-    suite(t"RDiff tests"):
-      test(t"Two identical, short Vectors"):
+    suite(m"RDiff tests"):
+      test(m"Two identical, short Vectors"):
         Vector(1, 2, 3).contrast(Vector(1, 2, 3))
 
       . assert(_ == Same(t"⟨ 1 2 3 ⟩"))
 
-      test(t"compare two two-parameter case class instances"):
+      test(m"compare two two-parameter case class instances"):
         Person(t"Jack", 12)
 
       . assert(_ == Person(t"Jill", 12))
 
-      test(t"nested comparison"):
+      test(m"nested comparison"):
         Organization(t"Acme Inc", Person(t"Jack", 12), Nil)
 
       . assert(_ == Organization(t"Acme Inc", Person(t"Jill", 12), Nil))
 
-      test(t"nested comparison 2"):
+      test(m"nested comparison 2"):
         Organization(t"Acme Inc.", Person(t"Jack", 12), Nil)
 
       . assert(_ == Organization(t"Acme Inc", Person(t"Jack", 12), Nil))
 
-      test(t"nested comparison 3"):
+      test(m"nested comparison 3"):
         Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jerry", 18)))
 
       . assert(_ == Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jill", 32), Person(t"Jerry", 18))))
 
-      test(t"nested comparison 4"):
+      test(m"nested comparison 4"):
         Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jerry", 18)))
 
       . assert(_ == Organization(t"Acme", Person(t"Jack", 12), List(Person(t"Jerry", 18))))
 
-      test(t"diff list"):
+      test(m"diff list"):
         val xs = List(t"one", t"two", t"three", t"four")
         val ys = List(t"one", t"two", t"three", t"vier")
         diff(xs.to(Vector), ys.to(Vector)).edits
@@ -88,7 +88,7 @@ object Tests extends Suite(t"Chiaroscuro tests"):
                    Del(3, t"four"),
                    Ins(3, t"vier"))
 
-      test(t"recurse on similar list entries"):
+      test(m"recurse on similar list entries"):
         val xs = List(IdName(t"one", t"One"), IdName(t"two", t"Two"),  IdName(t"three", t"Three"), IdName(t"four", t"Four"))
         val ys = List(IdName(t"one", t"Ein"), IdName(t"two", t"Zwei"),  IdName(t"three", t"Three"), IdName(t"vier", t"Vier"))
         val result = xs.contrast(ys)

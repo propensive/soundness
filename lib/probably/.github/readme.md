@@ -39,7 +39,7 @@ is simple. For example,
 ```scala
 import probably.*
 
-test(t"the sum of two identical integers is divisible by two"):
+test(m"the sum of two identical integers is divisible by two"):
   val x: Int = 7
   x + x
 .assert(_%2 == 0)
@@ -74,7 +74,7 @@ It is important to note that a test can be defined anywhere, such as,
 Regardless of where the test is defined, the behavior is always the same: it will be evaluated, checked, and the
 result will be recorded in the `Runner`, as a side-effect. Tests may be run more than once (in which case they
 are recorded more than once, and aggregated) or not at all if, by virtue of some runtime criterion, they are
-simply not executed. The question of whether the test is executed is the same for 
+simply not executed. The question of whether the test is executed is the same for
 
 The decision to make the `Runner` mutable reflects the power of Scala's hybrid nature. The state of the `Runner`
 is write-only while the tests are being run, so many of the common concurrency problems which arise with mutable
@@ -91,7 +91,7 @@ so,
 import probably.*
 
 def runTest(x: Int): Unit =
-  test(t"the sum of three identical integers is divisible by 3"):
+  test(m"the sum of three identical integers is divisible by 3"):
     x + x + x
   .assert(_%3 == 0)
 
@@ -106,7 +106,7 @@ can be logged by including them as additional named parameters after the test na
 import probably.*
 
 def runTest(x: Int): Unit =
-  test(t"the sum of three identical integers is divisible by 3", input = x):
+  test(m"the sum of three identical integers is divisible by 3", input = x):
     x + x + x
   .assert(_%3 == 0)
 ```
@@ -129,7 +129,7 @@ import probably.*
 case class Person(name: Text, age: Int)
 
 Generate.stream[Person](1000).foreach { person =>
-  test(t"all persons have realistic ages", v = person):
+  test(m"all persons have realistic ages", v = person):
     person.age
   .assert { a => a >= 0 && a < 100 }
 }
@@ -146,7 +146,7 @@ the tests, in order, like so:
 ```scala
 object ProjectTests extends Suite("Project tests"):
   def run(using Runner): Unit =
-    test(t"first test"):
+    test(m"first test"):
       // test body
     .assert(/* predicate */)
 ```
@@ -161,7 +161,7 @@ _Probably_ provides a second way of defining a test: as an expression. For examp
 import probably.*
 import java.io.*
 
-test(t"check the backup exists"):
+test(m"check the backup exists"):
   File("data.bak")
 .check(_.exists).setReadOnly()
 ```
@@ -181,7 +181,7 @@ A test suite is a convenient grouping of related tests, and can be launched from
 the following example) like so:
 ```scala
 test.suite("integration tests") { test =>
-  test(t"end-to-end process"):
+  test(m"end-to-end process"):
     System.process()
   .assert(_.isSuccess)
 }
@@ -229,7 +229,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Probably?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Probably's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -246,7 +246,7 @@ answer to the question, "how can I try Probably?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -306,4 +306,3 @@ The logo shows a twenty-sided die, an icosahedron, alluding to probabilistic cha
 
 Probably is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

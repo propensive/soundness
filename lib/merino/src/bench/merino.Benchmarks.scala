@@ -48,43 +48,43 @@ import LogFormat.standardAnsi
 val OutSink = Out.sink
 given Log({ case _ => OutSink })
 
-object Benchmarks extends Suite(t"Merino tests"):
+object Benchmarks extends Suite(m"Merino tests"):
   def run(): Unit =
-    suite(t"Parse example 1"):
-      test(t"Parse file with Jawn"):
+    suite(m"Parse example 1"):
+      test(m"Parse file with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample1).nn)
 
       . benchmark
          (warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
 
-      test(t"Parse file with Merino"):
+      test(m"Parse file with Merino"):
         JsonAst.parse(jsonExample1.nn.immutable(using Unsafe))
 
       . benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
 
-    suite(t"Parse example 2"):
-      test(t"Parse file with Jawn"):
+    suite(m"Parse example 2"):
+      test(m"Parse file with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample2).nn)
 
       . benchmark
          (warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
 
-      test(t"Parse file with Merino"):
+      test(m"Parse file with Merino"):
         JsonAst.parse(jsonExample2.nn.immutable(using Unsafe))
 
       . benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
 
-    suite(t"Parse example 3"):
-      test(t"Parse file with Jawn"):
+    suite(m"Parse example 3"):
+      test(m"Parse file with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample3).nn)
 
       . benchmark
          (warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
 
-      test(t"Parse file with Merino"):
+      test(m"Parse file with Merino"):
         JsonAst.parse(jsonExample3.nn.immutable(using Unsafe))
 
       . benchmark(warmup = 1000L, duration = 1000L, confidence = 99)

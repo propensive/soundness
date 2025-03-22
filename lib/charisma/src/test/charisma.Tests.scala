@@ -35,6 +35,6 @@ package charisma
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Charisma Tests"):
+object Tests extends Suite(m"Charisma Tests"):
   def run(): Unit =
     ()

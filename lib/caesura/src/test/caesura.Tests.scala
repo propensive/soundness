@@ -42,167 +42,167 @@ import spectacular.*
 
 given decimalizer: Decimalizer = Decimalizer(1)
 
-object Tests extends Suite(t"Caesura tests"):
+object Tests extends Suite(m"Caesura tests"):
   def run(): Unit =
-    suite(t"Parsing tests"):
+    suite(m"Parsing tests"):
       import dsvFormats.csv
 
-      test(t"simple parse"):
+      test(m"simple parse"):
         Dsv.parse(t"""hello,world""").rows.head
       .assert(_ == Row(t"hello", t"world"))
 
-      test(t"simple parse with quotes"):
+      test(m"simple parse with quotes"):
         Dsv.parse(t""""hello","world"""").rows.head
       .assert(_ == Row(t"hello", t"world"))
 
-      test(t"empty unquoted field at start"):
+      test(m"empty unquoted field at start"):
         Dsv.parse(t",hello,world").rows.head
       .assert(_ == Row(t"", t"hello", t"world"))
 
-      test(t"empty unquoted field at end"):
+      test(m"empty unquoted field at end"):
         Dsv.parse(t"hello,world,").rows.head
       .assert(_ == Row(t"hello", t"world", t""))
 
-      test(t"empty unquoted field in middle"):
+      test(m"empty unquoted field in middle"):
         Dsv.parse(t"hello,,world").rows.head
       .assert(_ == Row(t"hello", t"", t"world"))
 
-      test(t"empty quoted field at start"):
+      test(m"empty quoted field at start"):
         Dsv.parse(t""""","hello","world"""").rows.head
       .assert(_ == Row(t"", t"hello", t"world"))
 
-      test(t"empty quoted field at end"):
+      test(m"empty quoted field at end"):
         Dsv.parse(t""""hello","world",""""").rows.head
       .assert(_ == Row(t"hello", t"world", t""))
 
-      test(t"empty quoted field in middle"):
+      test(m"empty quoted field in middle"):
         Dsv.parse(t""""hello","","world"""").rows.head
       .assert(_ == Row(t"hello", t"", t"world"))
 
-      test(t"quoted comma"):
+      test(m"quoted comma"):
         Dsv.parse(t""""hello,world"""").rows.head
       .assert(_ == Row(t"hello,world"))
 
-      test(t"escaped quotes"):
+      test(m"escaped quotes"):
         Dsv.parse(t""""hello""world"""").rows.head
       .assert(_ == Row(t"""hello"world"""))
 
-      test(t"misplaced quote"):
+      test(m"misplaced quote"):
         capture(Dsv.parse(t"""hello,wo"rld"""))
       .assert(_ == DsvError(summon[DsvFormat], DsvError.Reason.MisplacedQuote))
 
-      test(t"multi-line CSV without trailing newline"):
+      test(m"multi-line CSV without trailing newline"):
         Dsv.parse(t"""foo,bar\nbaz,quux""").rows
       .assert(_ == Stream(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
 
-      test(t"multi-line CSV with trailing newline"):
+      test(m"multi-line CSV with trailing newline"):
         Dsv.parse(t"""foo,bar\nbaz,quux\n""").rows
       .assert(_ == Stream(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
 
-      test(t"multi-line CSV with CR and LF"):
+      test(m"multi-line CSV with CR and LF"):
         Dsv.parse(t"""foo,bar\r\nbaz,quux\r\n""").rows
       .assert(_ == Stream(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
 
-      test(t"multi-line CSV with quoted newlines"):
+      test(m"multi-line CSV with quoted newlines"):
         Dsv.parse(t""""foo","bar"\n"baz","quux"\n""").rows
       .assert(_ == Stream(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
 
-      test(t"multi-line CSV with newlines and quotes in cells"):
+      test(m"multi-line CSV with newlines and quotes in cells"):
         Dsv.parse(t""""f""oo","Hello\nWorld"\nbaz,"1\n2\n3\n"\n""").rows
       .assert(_ == Stream(Row(t"f\"oo", t"Hello\nWorld"), Row(t"baz", t"1\n2\n3\n")))
 
-      test(t"multi-line CSV with quoted quotes adjacent to newlines"):
+      test(m"multi-line CSV with quoted quotes adjacent to newlines"):
         Dsv.parse(t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""").rows
       .assert(_ == Stream(Row(t"f\"oo", t"Hello\nWorld"), Row(t"baz", t"1\"\n\"2\n3\n")))
 
-      test(t"multi-line CSV with quoted quotes adjacent to open/close quotes"):
+      test(m"multi-line CSV with quoted quotes adjacent to open/close quotes"):
         Dsv.parse(t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""").rows
       .assert(_ == Stream(Row(t"f\"oo", t"\"Hello\nWorld\"")))
 
-    suite(t"Alternative formats"):
-      test(t"Parse TSV data"):
+    suite(m"Alternative formats"):
+      test(m"Parse TSV data"):
         import dsvFormats.tsv
         Dsv.parse(t"Hello\tWorld\n").rows
       .assert(_ == Stream(Row(t"Hello", t"World")))
 
-      test(t"Parse TSV data"):
+      test(m"Parse TSV data"):
         import dsvFormats.tsvWithHeader
         Dsv.parse(t"Greeting\tAddressee\nHello\tWorld\n")
       .assert(_ == Dsv(Stream(Row(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeader, IArray(t"Greeting", t"Addressee")))
 
-    suite(t"Dynamic JSON access"):
+    suite(m"Dynamic JSON access"):
       import dynamicDsvAccess.enabled
 
-      test(t"Access field by name"):
+      test(m"Access field by name"):
         import dsvFormats.tsvWithHeader
         import dsvRedesignations.unchanged
         val dsv = Dsv.parse(t"greeting\taddressee\nHello\tWorld\n")
         dsv.rows.head.addressee[Text]
       .assert(_ == t"World")
 
-      test(t"Access field by mapped name"):
+      test(m"Access field by mapped name"):
         import dsvFormats.tsvWithHeader
         import dsvRedesignations.capitalizedWords
         val dsv = Dsv.parse(t"Personal Greeting\tTarget Person\nHello\tWorld\n")
         dsv.rows.head.targetPerson[Text]
       .assert(_ == t"World")
 
-      test(t"Access field by name 2"):
+      test(m"Access field by name 2"):
         import dsvFormats.tsvWithHeader
         import dsvRedesignations.unchanged
         val dsv = Dsv.parse(t"greeting\tnumber\nHello\t23\n")
         dsv.rows.head.number[Int]
       .assert(_ == 23)
 
-    test(t"decode case class"):
+    test(m"decode case class"):
       import dsvFormats.csv
       Dsv.parse(t"""hello,world""").rows.head.as[Foo]
     .assert(_ == Foo(t"hello", t"world"))
 
-    test(t"decode complex case class"):
+    test(m"decode complex case class"):
       import dsvFormats.csv
       Dsv.parse(t"""0.1,two,three,4,five,six""").rows.head.as[Bar]
     .assert(_ == Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
 
-    test(t"encode case class"):
+    test(m"encode case class"):
       Foo(t"hello", t"world").dsv
     .assert(_ == Row(t"hello", t"world"))
 
-    test(t"encode complex case class"):
+    test(m"encode complex case class"):
       Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")).dsv
     .assert(_ == Row(t"0.1", t"two", t"three", t"4", t"five", t"six"))
 
-    test(t"convert simple row to string"):
+    test(m"convert simple row to string"):
       import dsvFormats.csv
       Dsv(Stream(Row(t"hello", t"world"))).show
     .assert(_ == t"""hello,world""")
 
-    test(t"convert complex row to string"):
+    test(m"convert complex row to string"):
       import dsvFormats.csv
       Dsv(Stream(Row(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
     .assert(_ == t"""0.1,two,three,4,five,six""")
 
-    test(t"convert row with escaped quote"):
+    test(m"convert row with escaped quote"):
       import dsvFormats.csv
       Dsv(Stream(Row(t"hello\"world"))).show
     .assert(_ == t""""hello""world"""")
 
-    test(t"simple parse TSV"):
+    test(m"simple parse TSV"):
       import dsvFormats.tsv
       Dsv.parse(t"hello\tworld")
     .assert(_ == Dsv(Stream(Row(t"hello", t"world")), format = dsvFormats.tsv))
 
-    test(t"decode case class from TSV"):
+    test(m"decode case class from TSV"):
       import dsvFormats.tsv
       Dsv.parse(t"hello\tworld").rows.head.as[Foo]
     .assert(_ == Foo(t"hello", t"world"))
 
-    test(t"decode case class from CSV by headings"):
+    test(m"decode case class from CSV by headings"):
       import dsvFormats.csvWithHeader
       Dsv.parse(t"greeting,name\nhello,world").rows.head.as[Quux]
     .assert(_ == Quux(t"world", t"hello"))
 
-    test(t"convert case class to TSV"):
+    test(m"convert case class to TSV"):
       import dsvFormats.tsv
       Seq(Foo(t"hello", t"world")).dsv.show
     .assert(_ == t"hello\tworld")

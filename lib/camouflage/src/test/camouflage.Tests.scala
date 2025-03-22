@@ -36,9 +36,9 @@ import anticipation.*
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Camouflage tests"):
+object Tests extends Suite(m"Camouflage tests"):
   def run(): Unit =
-    test(t"Check first entry is removed"):
+    test(m"Check first entry is removed"):
       val cache = LruCache[Int, Text](4)
       cache(1)(t"one") // should be evicted
       cache(2)(t"two")
@@ -48,7 +48,7 @@ object Tests extends Suite(t"Camouflage tests"):
       cache(1)(t"ein")
     .assert(_ == t"ein")
 
-    test(t"Check that an access stops an element being evicted"):
+    test(m"Check that an access stops an element being evicted"):
       val cache = LruCache[Int, Text](4)
       cache(1)(t"one")
       cache(2)(t"two")
@@ -59,7 +59,7 @@ object Tests extends Suite(t"Camouflage tests"):
       cache(1)(t"un")
     .assert(_ == t"one")
 
-    test(t"Check that an series of accesses causes least-recently-used key to be evicted"):
+    test(m"Check that an series of accesses causes least-recently-used key to be evicted"):
       val cache = LruCache[Int, Text](4)
       cache(1)(t"one")
       cache(2)(t"two")

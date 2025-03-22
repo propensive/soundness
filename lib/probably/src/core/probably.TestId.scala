@@ -34,6 +34,7 @@ package probably
 
 import anticipation.*
 import digression.*
+import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import hypotenuse.*
@@ -42,7 +43,7 @@ import vacuous.*
 object TestId:
   given Ordering[TestId] = math.Ordering.Implicits.seqOrdering[List, Text].on(_.ids.reverse)
 
-case class TestId(name: Text, suite: Optional[Testable], codepoint: Codepoint):
+case class TestId(name: Message, suite: Optional[Testable], codepoint: Codepoint):
   val timestamp: Long = System.currentTimeMillis
   import textMetrics.uniform
   lazy val id: Text = (suite.hashCode ^ name.hashCode).hex.pad(6, Rtl, '0').keep(6, Rtl)

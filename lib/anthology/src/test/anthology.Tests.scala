@@ -34,6 +34,6 @@ package anthology
 
 import soundness.*
 
-object Tests extends Suite(t"Anthology Tests"):
+object Tests extends Suite(m"Anthology Tests"):
   def run(): Unit =
     ()

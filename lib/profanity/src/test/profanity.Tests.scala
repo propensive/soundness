@@ -35,6 +35,6 @@ package profanity
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Profanity Tests"):
+object Tests extends Suite(m"Profanity Tests"):
   def run(): Unit =
     ()

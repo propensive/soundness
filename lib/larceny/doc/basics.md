@@ -120,7 +120,7 @@ Larceny should work with any Scala unit testing framework or library. For
 example, with [Probably](https://github.com/propensive/probably/), we could
 write a compile error test with:
 ```scala
-test(t"cannot sort data without an Ordering"):
+test(m"cannot sort data without an Ordering"):
   demilitarize(data.sorted).head.message
 .assert(_.startsWith("No implicit Ordering"))
 ```

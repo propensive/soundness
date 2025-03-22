@@ -35,6 +35,6 @@ package yossarian
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Yossarian Tests"):
+object Tests extends Suite(m"Yossarian Tests"):
   def run(): Unit =
     ()

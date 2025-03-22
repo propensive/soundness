@@ -42,7 +42,7 @@ import probably.*
 import spectacular.*
 import turbulence.*, stdioSources.virtualMachine
 
-object Tests extends Suite(t"Eucalyptus tests"):
+object Tests extends Suite(m"Eucalyptus tests"):
   def run(): Unit =
     import Level.*
     given LogFormat[Out.type, Display] = logFormats.standardColor[Out.type]
@@ -54,7 +54,7 @@ object Tests extends Suite(t"Eucalyptus tests"):
         case Fail() => Out
         case _      => Out//Syslog(t"tab")
 
-      test(t"Log something"):
+      test(m"Log something"):
         given realm: Realm = realm"test"
         Log.fine(t"Fine message")
         Log.info(t"Info message")

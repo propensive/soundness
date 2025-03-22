@@ -36,45 +36,45 @@ import soundness.*
 
 import randomization.unseeded
 
-object Tests extends Suite(t"Zephyrine tests"):
+object Tests extends Suite(m"Zephyrine tests"):
   val bytes = Bytes.fill(1000)(_.toByte)
   def run(): Unit = stochastic:
     for i <- 1 to 100 do
       val stream = Stream(bytes).shred(10.0, 10.0)//.filter(!_.isEmpty)
-      test(t"Conduit always starts at first byte"):
+      test(m"Conduit always starts at first byte"):
         val conduit = Conduit(stream)
         conduit.datum
 
       . assert(_ == 0.toByte)
 
-      test(t"Conduit second byte is always 1"):
+      test(m"Conduit second byte is always 1"):
         val conduit = Conduit(stream)
         conduit.next()
         conduit.datum
 
       . assert(_ == 1.toByte)
 
-      test(t"Can capture first ten bytes"):
+      test(m"Can capture first ten bytes"):
         val conduit = Conduit(stream)
         conduit.take(10)
 
       . assert(_ === Bytes(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
 
-      test(t"Can capture second ten bytes"):
+      test(m"Can capture second ten bytes"):
         val conduit = Conduit(stream)
         conduit.skip(10)
         conduit.take(10)
 
       . assert(_ === Bytes(10, 11, 12, 13, 14, 15, 16, 17, 18, 19))
 
-      test(t"Next ten times reaches same datum"):
+      test(m"Next ten times reaches same datum"):
         val conduit = Conduit(stream)
         for i <- 1 to 10 do conduit.next()
         conduit.datum
 
       . assert(_ == 10.toByte)
 
-      test(t"Position on next after save"):
+      test(m"Position on next after save"):
         val conduit = Conduit(stream)
 
         conduit.skip(15)
@@ -84,7 +84,7 @@ object Tests extends Suite(t"Zephyrine tests"):
 
       . assert(_ == (24.toByte, 25.toByte))
 
-      test(t"Position on next after take"):
+      test(m"Position on next after take"):
         val conduit = Conduit(stream)
 
         conduit.skip(15)
@@ -92,7 +92,7 @@ object Tests extends Suite(t"Zephyrine tests"):
 
       . assert(_ == (24.toByte, 25.toByte))
 
-      test(t"Breaking before starts on consistent datum"):
+      test(m"Breaking before starts on consistent datum"):
         val conduit = Conduit(stream)
 
         conduit.skip(15)
@@ -101,7 +101,7 @@ object Tests extends Suite(t"Zephyrine tests"):
 
       . assert(_ == 15.toByte)
 
-      test(t"Breaking after starts on consistent datum"):
+      test(m"Breaking after starts on consistent datum"):
         val conduit = Conduit(stream)
 
         conduit.skip(15)

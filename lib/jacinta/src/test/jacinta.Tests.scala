@@ -51,115 +51,115 @@ case class Foo(x: Int, y: Text) derives CanEqual
 
 case class InvalidState(name: String) extends Exception("Not a valid state: "+name)
 
-object Tests extends Suite(t"Jacinta Tests"):
+object Tests extends Suite(m"Jacinta Tests"):
   def run(): Unit =
-    suite(t"Parsing tests"):
-      test(t"Parse a number"):
+    suite(m"Parsing tests"):
+      test(m"Parse a number"):
         Json.parse(t"42").as[Int]
       .assert(_ == 42)
 
-      test(t"Parse a string"):
+      test(m"Parse a string"):
         val s = Json.parse(t"\"string\"")
         s.as[Text]
       .assert(_ == t"string")
 
-      test(t"Parse true"):
+      test(m"Parse true"):
         Json.parse(t"true").as[Boolean]
       .assert(identity)
 
-      test(t"Parse false"):
+      test(m"Parse false"):
         Json.parse(t"false").as[Boolean]
       .assert(!_)
 
-      test(t"Parse float"):
+      test(m"Parse float"):
         Json.parse(t"3.1415").as[Float]
       .assert(_ == 3.1415f)
 
-      test(t"Parse double"):
+      test(m"Parse double"):
         Json.parse(t"3.1415926").as[Double]
       .assert(_ == 3.1415926)
 
-    suite(t"Serialization"):
-      test(t"Serialize string"):
+    suite(m"Serialization"):
+      test(m"Serialize string"):
         t"foo".json.show
       .assert(_ == t""""foo"""")
 
-      test(t"Serialize double"):
+      test(m"Serialize double"):
         3.14159.json.show
       .assert(_ == t"3.14159")
 
-      test(t"Serialize true"):
+      test(m"Serialize true"):
         true.json.show
       .assert(_ == t"true")
 
-      test(t"Serialize false"):
+      test(m"Serialize false"):
         false.json.show
       .assert(_ == t"false")
 
-      test(t"Serialize case class with Option as None"):
+      test(m"Serialize case class with Option as None"):
         case class Foo(x: Int, y: Option[Int])
         Foo(1, None).json.show
       .assert(_ == t"""{"x":1}""")
 
-      test(t"Serialize case class with Option as Some"):
+      test(m"Serialize case class with Option as Some"):
         case class Foo(x: Int, y: Option[Int])
         Foo(1, Some(2)).json.show
       .assert(_ == t"""{"x":1,"y":2}""")
 
-      test(t"Serialize case class with Optional as Unset"):
+      test(m"Serialize case class with Optional as Unset"):
         case class Foo(x: Int, y: Optional[Int])
         Foo(1, Unset).json.show
       .assert(_ == t"""{"x":1}""")
 
-      test(t"Serialize case class with present Optional"):
+      test(m"Serialize case class with present Optional"):
         case class Foo(x: Int, y: Optional[Int])
         Foo(1, 2).json.show
       .assert(_ == t"""{"x":1,"y":2}""")
 
-    suite(t"Misc tests"):
-      test(t"Serialize to Json"):
+    suite(m"Misc tests"):
+      test(m"Serialize to Json"):
         Foo(1, t"two").json
       .assert(_ == Json.of(x = 1.json, y = t"two".json))
 
-      test(t"Parse from JSON"):
+      test(m"Parse from JSON"):
         Json.parse(t"""{"x": 1}""")
       .assert(_ == Json.of(x = 1.json))
 
-      test(t"Read case class"):
+      test(m"Read case class"):
         Json.parse(t"""{"x": 1, "y": "two"}""").as[Foo]
       .assert(_ == Foo(1, t"two"))
 
-      test(t"Extract an absent Option"):
+      test(m"Extract an absent Option"):
         case class OptFoo(x: Option[Int])
         Json.parse(t"""{"y": 1}""").as[OptFoo].x
       .assert(_ == None)
 
-      test(t"Extract an option"):
+      test(m"Extract an option"):
         case class OptFoo(x: Option[Int])
         Json.parse(t"""{"x": 1}""").as[OptFoo].x
       .assert(_ == Some(1))
 
-      test(t"Extract a present Optional"):
+      test(m"Extract a present Optional"):
         case class OptionalFoo(x: Optional[Int])
         Json.parse(t"""{"x": 1}""").as[OptionalFoo].x
       .assert(_ == 1)
 
-      test(t"Extract an absent Optional"):
+      test(m"Extract an absent Optional"):
         case class OptionalFoo(x: Optional[Int])
         Json.parse(t"""{"y": 1}""").as[OptionalFoo].x
       .assert(_ == Unset)
 
-      test(t"Extract a None"):
+      test(m"Extract a None"):
         case class OptFoo(x: Option[Int])
         Json.parse(t"""{"y": 1}""").as[OptFoo].x
       .assert(_ == None)
 
-    suite(t"Generic derivation tests"):
+    suite(m"Generic derivation tests"):
       case class Person(name: Text, age: Int)
       case class Band(guitarists: List[Person], drummer: Person, bassist: Option[Person])
 
       val paul =
-        test(t"Serialize a simple case class"):
+        test(m"Serialize a simple case class"):
           Person(t"Paul", 81).json.show
         .check(_ == t"""{"name":"Paul","age":81}""")
 
@@ -169,15 +169,15 @@ object Tests extends Suite(t"Jacinta Tests"):
 
       val beatles = t"""{"guitarists": [$john, $george], "drummer": $ringo, "bassist": $paul}"""
 
-      val paulObj = test(t"Extract a Person"):
+      val paulObj = test(m"Extract a Person"):
         Json.parse(paul).as[Person]
       .check(_ == Person(t"Paul", 81))
 
-      val ringoObj = test(t"Extract a different person"):
+      val ringoObj = test(m"Extract a different person"):
         Json.parse(ringo).as[Person]
       .check(_ == Person(t"Ringo", 82))
 
-      test(t"Extract a band"):
+      test(m"Extract a band"):
         Json.parse(beatles).as[Band]
       .assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
 
@@ -186,17 +186,17 @@ object Tests extends Suite(t"Jacinta Tests"):
         case Drummer(person: Person)
         case Bassist(person: Person)
 
-      val paulCoproduct = test(t"Serialize a coproduct"):
+      val paulCoproduct = test(m"Serialize a coproduct"):
         val paul: Player = Player.Bassist(paulObj)
         paul.json.show
       .check(_ == t"""{"_type":"Bassist","person":{"name":"Paul","age":81}}""")
 
-      test(t"Decode a coproduct"):
+      test(m"Decode a coproduct"):
         summon[Int is Decodable in Json]
         Json.parse(paulCoproduct).as[Player]
       .assert(_ == Player.Bassist(paulObj))
 
-      test(t"Decode a coproduct as a precise subtype"):
+      test(m"Decode a coproduct as a precise subtype"):
         Json.parse(paulCoproduct).as[Player.Bassist]
       .assert(_ == Player.Bassist(paulObj))
 
@@ -206,10 +206,10 @@ object Tests extends Suite(t"Jacinta Tests"):
       val newBand = NewBand(Set(Bassist(paulObj), Drummer(ringoObj), Guitarist(Person(t"John", 40)),
           Guitarist(Person(t"George", 58))))
 
-      val newBandText = test(t"Serialize NewBand"):
+      val newBandText = test(m"Serialize NewBand"):
         newBand.json.show
       .check(_ == t"""{"members":[{"_type":"Bassist","person":{"name":"Paul","age":81}},{"_type":"Drummer","person":{"name":"Ringo","age":82}},{"_type":"Guitarist","person":{"name":"John","age":40}},{"_type":"Guitarist","person":{"name":"George","age":58}}]}""")
 
-      test(t"Decode a NewBand"):
+      test(m"Decode a NewBand"):
         Json.parse(newBandText).as[NewBand]
       .assert(_ == newBand)

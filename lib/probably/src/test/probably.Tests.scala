@@ -34,6 +34,6 @@ package probably
 
 import gossamer.*
 
-object Tests extends Suite(t"Probably Tests"):
+object Tests extends Suite(m"Probably Tests"):
   def run(): Unit =
     ()

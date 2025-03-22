@@ -40,89 +40,89 @@ import quantitative.*
 import rudiments.*
 import spectacular.*
 
-object Tests extends Suite(t"Mosquito tests"):
+object Tests extends Suite(m"Mosquito tests"):
   def run(): Unit =
-    test(t"Create a Vector of Ints"):
+    test(m"Create a Vector of Ints"):
       Vector(1, 2, 3)
     .assert(_ == Vector(1, 2, 3))
 
-    test(t"A Vector of Ints infers the correct size"):
+    test(m"A Vector of Ints infers the correct size"):
       demilitarize:
         val vector: Vector[Int, 3] = Vector(1, 3, 4)
       .map(_.message)
     .assert(_ == Nil)
 
-    test(t"Type error if size is incorrect"):
+    test(m"Type error if size is incorrect"):
       demilitarize:
         val vector: Vector[Int, 2] = Vector(1, 3, 4)
     .assert(_.nonEmpty)
 
-    test(t"Type error if type is incorrect"):
+    test(m"Type error if type is incorrect"):
       demilitarize:
         val vector: Vector[String, 3] = Vector(1, 3, 4)
     .assert(_.nonEmpty)
 
-    test(t"Calculate integer dot-product"):
+    test(m"Calculate integer dot-product"):
       Vector(1, 2, 3).dot(Vector(4, 3, 7))
     .assert(_ == 31)
 
-    test(t"Calculate Double dot-product"):
+    test(m"Calculate Double dot-product"):
       Vector(0.1, 0.2, 0.3).dot(Vector(0.4, 0.3, 0.7))
     .assert(_ === 0.31 +/- 0.000001)
 
-    test(t"Calculate integer cross-product"):
+    test(m"Calculate integer cross-product"):
       Vector(1, 2, 3).cross(Vector(4, 3, 7))
     .assert(_ == Vector(5, 5, -5))
 
-    test(t"Calculate Double cross-product"):
+    test(m"Calculate Double cross-product"):
       Vector(1.4, 2.4, 3.8).cross(Vector(4.9, 3.6, 0.7))
     .assert(_ == Vector(-12.0, 17.64, -6.72))
 
-    test(t"Show Vector 3-vector"):
+    test(m"Show Vector 3-vector"):
       Vector(1, 3, 6).show
     .assert(_ == t"\u239b 1 \u239e\n\u239c 3 \u239f\n\u239d 6 \u23a0")
 
-    test(t"Add two vectors"):
+    test(m"Add two vectors"):
       Vector(1, 2, 3) + Vector(3, 4, 5)
     .assert(_ == Vector(4, 6, 8))
 
-    suite(t"Quantity operations"):
-      test(t"Add two quantity vectors"):
+    suite(m"Quantity operations"):
+      test(m"Add two quantity vectors"):
         Vector(1*Metre, 2*Metre, 3*Metre) + Vector(3*Metre, 4*Metre, 5*Metre)
       .assert(_ == Vector(4*Metre, 6*Metre, 8*Metre))
 
-      test(t"Add two mixed-quantity vectors"):
+      test(m"Add two mixed-quantity vectors"):
         Vector(1*Foot, 1*Foot, 1*Foot) + Vector(3*Metre, 4*Metre, 5*Metre)
       .assert(_ == Vector(3.3048*Metre, 4.3048*Metre, 5.3048*Metre))
 
-      test(t"Map from m to m²"):
+      test(m"Map from m to m²"):
         Vector(1*Metre, 2*Metre, 3*Metre, 4*Metre).map(_*Metre)
       .assert(_ == Vector(1*Metre*Metre, 2*Metre*Metre, 3*Metre*Metre, 4*Metre*Metre))
 
-    suite(t"Matrix tests"):
+    suite(m"Matrix tests"):
       val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
       val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
 
-      test(t"Access matrix elements"):
+      test(m"Access matrix elements"):
         m1(0, 0)
       .assert(_ == 1)
 
-      test(t"Access matrix elements2"):
+      test(m"Access matrix elements2"):
         m1(1, 1)
       .assert(_ == 5)
 
-      test(t"Access matrix elements 3"):
+      test(m"Access matrix elements 3"):
         m1(1, 2)
       .assert(_ == 6)
 
-      test(t"Multiply matrices"):
+      test(m"Multiply matrices"):
         m1*m2
       .assert(_ == Matrix[2, 2]((58, 139), (64, 154)))
 
-      test(t"Scalar multiply matrices"):
+      test(m"Scalar multiply matrices"):
         m1*10
       .assert(_ == Matrix[2, 3]((10, 20, 30), (40, 50, 60)))
 
-      test(t"Scalar divide matrices"):
+      test(m"Scalar divide matrices"):
         m1/2
       .assert(_ == Matrix[2, 3]((0, 1, 1), (2, 2, 3)))

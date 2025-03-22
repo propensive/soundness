@@ -40,197 +40,197 @@ import spectacular.*
 
 case class Person(name: Text, age: Int)
 
-object Tests extends Suite(t"Spectacular Tests"):
+object Tests extends Suite(m"Spectacular Tests"):
   def run(): Unit =
-    suite(t"Debug tests"):
-      test(t"serialize boring string"):
+    suite(m"Debug tests"):
+      test(m"serialize boring string"):
         t"Hello world!".inspect
       .assert(_ == t"t\"Hello world!\"")
 
-      test(t"serialize string with newline"):
+      test(m"serialize string with newline"):
         t"Hello\nworld".inspect
       .assert(_ == t"t\"Hello\\nworld\"")
 
-      test(t"serialize string with tab"):
+      test(m"serialize string with tab"):
         t"Hello\tworld".inspect
       .assert(_ == t"t\"Hello\\tworld\"")
 
-      test(t"serialize string with apostrophe"):
+      test(m"serialize string with apostrophe"):
         t"Hell' world".inspect
       .assert(_ == t"t\"Hell\\' world\"")
 
-      test(t"serialize string with quote"):
+      test(m"serialize string with quote"):
         t"Hello \"world\"".inspect
       .assert(_ == t"t\"Hello \\\"world\\\"\"")
 
-      test(t"serialize string with backslash"):
+      test(m"serialize string with backslash"):
         t"Hello\\world".inspect
       .assert(_ == t"t\"Hello\\\\world\"")
 
-      test(t"serialize string with linefeed"):
+      test(m"serialize string with linefeed"):
         t"Hello world\r".inspect
       .assert(_ == t"t\"Hello world\\r\"")
 
-      test(t"serialize string with unicode escapes"):
+      test(m"serialize string with unicode escapes"):
         t"Hello мир".inspect
       .assert(_ == t"t\"Hello \\u043c\\u0438\\u0440\"")
 
-      test(t"pattern match on Text"):
+      test(m"pattern match on Text"):
         var text = t"Hello"
         text match
           case t"Hello" => true
           case _        => false
       .assert(_ == true)
 
-      test(t"pattern non-match on Text"):
+      test(m"pattern non-match on Text"):
         var text = t"Hello"
         text match
           case t"World" => true
           case _        => false
       .assert(_ == false)
 
-      test(t"serialize double"):
+      test(m"serialize double"):
         3.1.inspect
       .assert(_ == t"3.1")
 
-      test(t"serialize float"):
+      test(m"serialize float"):
         3.1f.inspect
       .assert(_ == t"3.1F")
 
-      test(t"serialize long"):
+      test(m"serialize long"):
         3L.inspect
       .assert(_ == t"3L")
 
-      test(t"serialize int"):
+      test(m"serialize int"):
         3.inspect
       .assert(_ == t"3")
 
-      test(t"serialize short"):
+      test(m"serialize short"):
         3.toShort.inspect
       .assert(_ == t"3.toShort")
 
-      test(t"serialize +infinity"):
+      test(m"serialize +infinity"):
         (1.0/0.0).inspect
       .assert(_ == t"Double.PositiveInfinity")
 
-      test(t"serialize -infinity"):
+      test(m"serialize -infinity"):
         (-1.0/0.0).inspect
       .assert(_ == t"Double.NegativeInfinity")
 
-      test(t"serialize NaN"):
+      test(m"serialize NaN"):
         (0.0/0.0).inspect
       .assert(_ == t"Double.NaN")
 
-      test(t"serialize float +infinity"):
+      test(m"serialize float +infinity"):
         (1.0F/0.0F).inspect
       .assert(_ == t"Float.PositiveInfinity")
 
-      test(t"serialize float -infinity"):
+      test(m"serialize float -infinity"):
         (-1.0F/0.0F).inspect
       .assert(_ == t"Float.NegativeInfinity")
 
-      test(t"serialize float NaN"):
+      test(m"serialize float NaN"):
         (0.0F/0.0F).inspect
       .assert(_ == t"Float.NaN")
 
-      test(t"serialize tab char"):
+      test(m"serialize tab char"):
         '\t'.inspect
       .assert(_ == t"'\\t'")
 
-      test(t"serialize backslash char"):
+      test(m"serialize backslash char"):
         '\\'.inspect
       .assert(_ == t"'\\\\'")
 
-      test(t"serialize newline char"):
+      test(m"serialize newline char"):
         '\n'.inspect
       .assert(_ == t"'\\n'")
 
-      test(t"serialize backspace char"):
+      test(m"serialize backspace char"):
         '\b'.inspect
       .assert(_ == t"'\\b'")
 
-      test(t"serialize unicode char"):
+      test(m"serialize unicode char"):
         '«'.inspect
       .assert(_ == t"'\\u00ab'")
 
-      test(t"serialize apostrophe char"):
+      test(m"serialize apostrophe char"):
         '\''.inspect
       .assert(_ == t"'\\''")
 
-      test(t"serialize quote char"):
+      test(m"serialize quote char"):
         '\"'.inspect
       .assert(_ == t"'\\\"'")
 
-      test(t"serialize case class"):
+      test(m"serialize case class"):
         Person(t"Simon", 72).inspect
       .assert(_ == t"Person(name:t\"Simon\" ╱ age:72)")
 
-      test(t"serialize tuple"):
+      test(m"serialize tuple"):
         (t"Simon", 72).inspect
       .assert(_ == t"(t\"Simon\" ╱ 72)")
 
-      test(t"serialize list of strings"):
+      test(m"serialize list of strings"):
         List(t"one", t"two", t"three").inspect
       .assert(_ == t"""[t"one", t"two", t"three"]""")
 
-      test(t"serialize set of strings"):
+      test(m"serialize set of strings"):
         Set(t"one", t"two", t"three").inspect
       .assert(_ == t"""{t"one", t"two", t"three"}""")
 
-      test(t"serialize Array of strings"):
+      test(m"serialize Array of strings"):
         Array(t"one", t"two", t"three").inspect
       .assert(_ == t"""⦋🅻₀t"one"∣₁t"two"∣₂t"three"⦌""")
 
-      test(t"serialize Array of ints"):
+      test(m"serialize Array of ints"):
         Array(1, 2, 3).inspect
       .assert(_ == t"""⦋🅸₀1∣₁2∣₂3⦌""")
 
-      test(t"serialize Vector of shorts"):
+      test(m"serialize Vector of shorts"):
         Vector(1.toShort, 2.toShort, 3.toShort).inspect
       .assert(_ == t"""⟨ 1.toShort 2.toShort 3.toShort ⟩""")
 
-      test(t"serialize Array of Longs"):
+      test(m"serialize Array of Longs"):
         Array(1L, 2L, 3L).inspect
       .assert(_ == t"""⦋🅹₀1L∣₁2L∣₂3L⦌""")
 
-      test(t"serialize IArray of booleans"):
+      test(m"serialize IArray of booleans"):
         IArray(true, false, true).inspect
       .assert(_ == t"""🆉⁅₀true╱₁false╱₂true⁆""")
 
-      test(t"serialize IArray of strings"):
+      test(m"serialize IArray of strings"):
         IArray(t"one", t"two", t"three").inspect
       .assert(_ == t"""🅻⁅₀t"one"╱₁t"two"╱₂t"three"⁆""")
 
-    suite(t"Show tests"):
-      test(t"Show a string"):
+    suite(m"Show tests"):
+      test(m"Show a string"):
         t"Hello world".show
       .assert(_ == t"Hello world")
 
-      test(t"Show an Int"):
+      test(m"Show an Int"):
         43.show
       .assert(_ == t"43")
 
-      test(t"Show yes/no booleans"):
+      test(m"Show yes/no booleans"):
         import booleanStyles.yesNo
         t"${true} ${false}"
       .assert(_ == t"yes no")
 
-      test(t"Show true/false booleans"):
+      test(m"Show true/false booleans"):
         import booleanStyles.trueFalse
         t"${true} ${false}"
       .assert(_ == t"true false")
 
-      test(t"Show on/off booleans"):
+      test(m"Show on/off booleans"):
         import booleanStyles.onOff
         t"${true} ${false}"
       .assert(_ == t"on off")
 
-      test(t"Show 1/0 booleans"):
+      test(m"Show 1/0 booleans"):
         import booleanStyles.oneZero
         t"${true} ${false}"
       .assert(_ == t"1 0")
 
-      test(t"Show a locally-declared showable"):
+      test(m"Show a locally-declared showable"):
         given Exception is Showable = e => txt"<exception>"
         Exception("error message").inspect
       .assert(_ == t"<exception>")

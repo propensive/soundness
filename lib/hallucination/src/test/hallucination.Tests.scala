@@ -35,6 +35,6 @@ package hallucination
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Hallucination Tests"):
+object Tests extends Suite(m"Hallucination Tests"):
   def run(): Unit =
     ()

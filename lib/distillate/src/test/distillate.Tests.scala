@@ -34,15 +34,15 @@ package distillate
 
 import soundness.*
 
-object Tests extends Suite(t"Distillate Tests"):
+object Tests extends Suite(m"Distillate Tests"):
   def run(): Unit =
-    test(t"Extract an int"):
+    test(m"Extract an int"):
       t"123" match
         case As[Int](n) => n
         case _ => 0
     . assert(_ == 123)
 
-    test(t"Extract three ints from inside a regex"):
+    test(m"Extract three ints from inside a regex"):
       t"12:13:14" match
         case r"${As[Int](first)}(\d+):${As[Int](second)}(\d+):${As[Int](third)}(\d+)" =>
           List(first, second, third)
@@ -50,7 +50,7 @@ object Tests extends Suite(t"Distillate Tests"):
           List(0, 0, 0)
     . assert(_ == List(12, 13, 14))
 
-    test(t"Extract three listed ints"):
+    test(m"Extract three listed ints"):
       List(t"12", t"13", t"14") match
         case As[Int](first) :: As[Int](second) :: As[Int](third) :: Nil =>
           (first, second, third)
@@ -58,14 +58,14 @@ object Tests extends Suite(t"Distillate Tests"):
           (0, 0, 0)
     . assert(_ == (12, 13, 14))
 
-    test(t"Extract an email address"):
+    test(m"Extract an email address"):
       t"foo@bar.com" match
         case As[EmailAddress](email) => email
         case _                       => email"something@else.com"
 
     . assert(_ == email"foo@bar.com")
 
-    test(t"Do not extract an invalid email address"):
+    test(m"Do not extract an invalid email address"):
       t"foobar.com" match
         case As[EmailAddress](email) => email
         case _                       => email"something@else.com"

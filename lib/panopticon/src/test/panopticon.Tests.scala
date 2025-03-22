@@ -38,31 +38,31 @@ case class Organization(name: String, leader: Person)
 case class Person(name: String, age: Int, role: Role)
 case class Role(name: String, salary: Int)
 
-object Tests extends Suite(t"Panopticon tests"):
+object Tests extends Suite(m"Panopticon tests"):
   def run(): Unit =
-    test(t"Check that correct type is inferred"):
+    test(m"Check that correct type is inferred"):
       val salary = Lens[Organization](_.leader.role.salary)
       salary: Lens[Organization, ("salary", "role", "leader"), Int]
     .assert()
 
-    test(t"Check that non-existant fields are inaccessible"):
+    test(m"Check that non-existant fields are inaccessible"):
       demilitarize:
         Lens[Organization](_.age)
       . map(_.message)
     .assert(_ == List("panopticon: the field age is not a member of panopticon.Organization"))
 
-    test(t"Check that indirect non-existant fields are inaccessible"):
+    test(m"Check that indirect non-existant fields are inaccessible"):
       demilitarize(Lens[Organization](_.leader.size)).map(_.message)
 
     . assert(_ == List("panopticon: the field size is not a member of panopticon.Person"))
 
-    test(t"Check that two compatible lenses can be added"):
+    test(m"Check that two compatible lenses can be added"):
       val orgLeader = Lens[Organization](_.leader)
       val personName = Lens[Person](_.name)
       orgLeader ++ personName
     .assert()
 
-    test(t"Check that two incompatible lenses can be added"):
+    test(m"Check that two incompatible lenses can be added"):
       demilitarize:
         val orgLeader = Lens[Organization](_.leader)
         val roleName = Lens[Role](_.name)
@@ -74,26 +74,26 @@ object Tests extends Suite(t"Panopticon tests"):
     val leader = Person("Jack Smith", 59, ceo)
     val org = Organization("Acme Inc", leader)
 
-    test(t"Can apply a simple lens to get a value"):
+    test(m"Can apply a simple lens to get a value"):
       val lens = Lens[Organization](_.leader)
       lens.get(org)
     .assert(_ == leader)
 
-    test(t"Can apply a lens to get a value"):
+    test(m"Can apply a lens to get a value"):
       val lens = Lens[Organization](_.leader.role.salary)
       lens.get(org)
     .assert(_ == 120000)
 
-    test(t"Can updatea value with a simple lens"):
+    test(m"Can updatea value with a simple lens"):
       val lens = Lens[Role](_.salary)
       val newRole: Role = lens.set(ceo, 100)
       newRole.salary
     .assert(_ == 100)
 
-    test(t"Get a value with a deep lens"):
+    test(m"Get a value with a deep lens"):
       val lens = Lens[Organization](_.leader.role.salary)
 
-    test(t"Can update a value with a deep lens"):
+    test(m"Can update a value with a deep lens"):
       val lens = Lens[Organization](_.leader.role.salary)
       val newOrganization: Organization = lens.set(org, 1000)
       newOrganization.leader.role.salary
@@ -108,17 +108,17 @@ object Tests extends Suite(t"Panopticon tests"):
 
     val date = new Date(1, 3, 2000)
 
-    test(t"Test non-case-class get"):
+    test(m"Test non-case-class get"):
       val lens = Lens[Date](_.month)
       lens.get(date)
     .assert(_ == 3)
 
     // val orgName = Lens[Organization, Mono["name"], String](_.name, (org, name) => org.copy(name = name))
 
-    // test(t"Manual lens can access field"):
+    // test(m"Manual lens can access field"):
     //   orgName(org)
     // .assert(_ == "Acme Inc")
 
-    // test(t"Manual lens can update field"):
+    // test(m"Manual lens can update field"):
     //   orgName(org) = "Emca Inc"
     // .assert(_.name == "Emca Inc")

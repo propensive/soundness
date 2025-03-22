@@ -35,5 +35,5 @@ package scintillate
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Scintillate tests"):
+object Tests extends Suite(m"Scintillate tests"):
   def run(): Unit = ()

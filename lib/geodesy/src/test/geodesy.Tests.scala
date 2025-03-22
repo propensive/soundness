@@ -36,33 +36,33 @@ import soundness.*
 
 import strategies.throwUnsafely
 
-object Tests extends Suite(t"Geodesy tests"):
+object Tests extends Suite(m"Geodesy tests"):
   def run(): Unit =
-    test(t"render a simple angle"):
+    test(m"render a simple angle"):
       val angle = Angle.degrees(45)
       angle.show
 
     . assert(_ == t"45.0°")
 
-    test(t"render an angle to 1 decimal place"):
+    test(m"render an angle to 1 decimal place"):
       val angle = Angle.degrees(7.25)
       angle.show
 
     . assert(_ == t"7.3°")
 
-    test(t"render zero degrees"):
+    test(m"render zero degrees"):
       val angle = Angle.degrees(0)
       angle.show
 
     . assert(_ == t"0.0°")
 
-    test(t"render principal angle"):
+    test(m"render principal angle"):
       val angle = Angle.degrees(375)
       angle.principal.show
 
     . assert(_ == t"15.0°")
 
-    test(t"render canonical angle"):
+    test(m"render canonical angle"):
       val angle = Angle.degrees(355)
       angle.canonical.show
 

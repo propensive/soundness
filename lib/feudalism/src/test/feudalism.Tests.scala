@@ -37,9 +37,9 @@ import probably.*
 
 import language.experimental.captureChecking
 
-object Tests extends Suite(t"Feudalism tests"):
+object Tests extends Suite(m"Feudalism tests"):
   def run(): Unit =
-    test(t"read mutex"):
+    test(m"read mutex"):
       val mutex = Mutex[String]("Hello")
 
       val result = mutex.read: ref =>
