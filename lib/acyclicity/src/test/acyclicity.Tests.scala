@@ -35,6 +35,6 @@ package acyclicity
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Acyclicity Tests"):
+object Tests extends Suite(m"Acyclicity Tests"):
   def run(): Unit =
     ()

@@ -40,19 +40,19 @@ import gossamer.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite(t"Cosmopolite Tests"):
+object Tests extends Suite(m"Cosmopolite Tests"):
   def run(): Unit =
-    test(t"extract language from string (English)"):
+    test(m"extract language from string (English)"):
       val two = en"two" & fr"deux"
       two[En]
     .assert(_ == t"two")
 
-    test(t"extract language from string (French)"):
+    test(m"extract language from string (French)"):
       val two = en"two" & fr"deux"
       two[Fr]
     .assert(_ == t"deux")
 
-    test(t"extract default language"):
+    test(m"extract default language"):
       val two = en"two" & fr"deux"
       given Language[Fr] = Language[Fr]("fr")
       two()

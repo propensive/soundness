@@ -35,6 +35,6 @@ package harlequin
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Harlequin Tests"):
+object Tests extends Suite(m"Harlequin Tests"):
   def run(): Unit =
     ()

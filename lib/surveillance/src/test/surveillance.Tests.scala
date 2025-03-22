@@ -35,5 +35,5 @@ package surveillance
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Surveillance tests"):
+object Tests extends Suite(m"Surveillance tests"):
   def run(): Unit = ()

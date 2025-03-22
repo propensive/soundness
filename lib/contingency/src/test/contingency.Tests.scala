@@ -37,12 +37,12 @@ import soundness.*
 case class VarargsError(args: Text*)(using Diagnostics) extends Error(m"Varargs error")
 case class VarargsError2(arg: Text, args: Text*)(using Diagnostics) extends Error(m"Varargs error 2")
 
-object Tests extends Suite(t"Contingency tests"):
+object Tests extends Suite(m"Contingency tests"):
 
   def action(): Unit raises VarargsError = ()
 
   def run(): Unit =
-    test(t"Ensure varargs parameter is handled exhaustively"):
+    test(m"Ensure varargs parameter is handled exhaustively"):
       demilitarize:
         mend:
           case VarargsError(args) => ()
@@ -50,7 +50,7 @@ object Tests extends Suite(t"Contingency tests"):
 
     . assert(_.nonEmpty)
 
-    test(t"Varargs are handled safely"):
+    test(m"Varargs are handled safely"):
       mend:
         case VarargsError(args*) => ()
       . within(action())

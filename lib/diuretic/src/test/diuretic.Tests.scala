@@ -35,6 +35,6 @@ package diuretic
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Diuretic Tests"):
+object Tests extends Suite(m"Diuretic Tests"):
   def run(): Unit =
     ()

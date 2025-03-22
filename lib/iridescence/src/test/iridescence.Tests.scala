@@ -37,47 +37,47 @@ import probably.*
 
 given ColorProfile = colorProfiles.daylight
 
-object Tests extends Suite(t"Iridescence tests"):
+object Tests extends Suite(m"Iridescence tests"):
   def run(): Unit =
-    // suite(t"Roundtrip tests"):
+    // suite(m"Roundtrip tests"):
     //   for color <- colors.all.reverse do
-    //     test(t"sRGB to L*a*b*"):
+    //     test(m"sRGB to L*a*b*"):
     //       color.srgb.cielab.srgb
     //     .assert(_ ~~ color.srgb)
 
-    //     test(t"HSV to sRGB and back"):
+    //     test(m"HSV to sRGB and back"):
     //       color.srgb.hsv.srgb.hsv
     //     .assert(_ ~~ color.srgb.hsv)
 
-    //     test(t"sRGB to CMY and back"):
+    //     test(m"sRGB to CMY and back"):
     //       color.srgb.cmy.srgb
     //     .assert(_ ~~ color.srgb)
 
-    //     test(t"sRGB to CMYK and back"):
+    //     test(m"sRGB to CMYK and back"):
     //       color.srgb.cmyk.srgb
     //     .assert(_ ~~ color.srgb)
 
-    //     test(t"sRGB to XYZ and back"):
+    //     test(m"sRGB to XYZ and back"):
     //       color.srgb.xyz.srgb
     //     .assert(_ ~~ color.srgb)
 
-    //     test(t"sRGB to HSL and back"):
+    //     test(m"sRGB to HSL and back"):
     //       color.srgb.hsl.srgb
     //     .assert(_ ~~ color.srgb)
 
-    suite(t"Interpolator tests"):
-      test(t"Read a hex value with a leading hash"):
+    suite(m"Interpolator tests"):
+      test(m"Read a hex value with a leading hash"):
         rgb"#abcdef"
       .assert(_ == Rgb24(171, 205, 239))
 
-      test(t"Read a hex value without a leading hash"):
+      test(m"Read a hex value without a leading hash"):
         rgb"abcdef"
       .assert(_ == Rgb24(171, 205, 239))
 
-      test(t"Read black"):
+      test(m"Read black"):
         rgb"#000000"
       .assert(_ == Rgb24(0, 0, 0))
 
-      test(t"Read white"):
+      test(m"Read white"):
         rgb"#ffffff"
       .assert(_ == Rgb24(255, 255, 255))

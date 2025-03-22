@@ -35,6 +35,6 @@ package superlunary
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Superlunary Tests"):
+object Tests extends Suite(m"Superlunary Tests"):
   def run(): Unit =
     ()

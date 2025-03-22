@@ -38,23 +38,23 @@ import larceny.*
 import probably.*
 import rudiments.*
 
-object Tests extends Suite(t"Cardinality tests"):
+object Tests extends Suite(m"Cardinality tests"):
   def run(): Unit =
-    suite(t"Compile-time tests"):
+    suite(m"Compile-time tests"):
 
-      test(t"Value is less than lower bound"):
+      test(m"Value is less than lower bound"):
         demilitarize:
           val x: -1.0 ~ 1.0 = -1.01
         .map(_.errorId)
       .assert(_ == List(ErrorId.TypeMismatchID))
 
-      test(t"Value is greater than upper bound"):
+      test(m"Value is greater than upper bound"):
         demilitarize:
           val x: -1.0 ~ 1.0 = 1.01
         .map(_.errorId)
       .assert(_ == List(ErrorId.TypeMismatchID))
 
-      test(t"Doubling a number doubles its range"):
+      test(m"Doubling a number doubles its range"):
         demilitarize:
           val x: -1.0 ~ 1.0 = 0.0
           val y: -2.0 ~ 2.0 = x*2.0

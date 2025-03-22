@@ -34,7 +34,7 @@ package vexillology
 
 import soundness.*
 
-object Tests extends Suite(t"Vexillology tests"):
+object Tests extends Suite(m"Vexillology tests"):
   def run(): Unit =
 
     enum Color:
@@ -42,36 +42,36 @@ object Tests extends Suite(t"Vexillology tests"):
 
     import Color.*
 
-    test(t"Empty flags"):
+    test(m"Empty flags"):
       val flags = Flags[Color]()
       flags.set
 
     . assert(_.isEmpty)
 
-    test(t"Value is initially unset"):
+    test(m"Value is initially unset"):
       val flags = Flags[Color]()
       flags(Orange)
     . assert(_ == false)
 
-    test(t"Value can be set"):
+    test(m"Value can be set"):
       var flags = Flags[Color]()
       flags = flags(Orange) = true
       flags(Orange)
     . assert(_ == true)
 
-    test(t"Setting one value does not set others"):
+    test(m"Setting one value does not set others"):
       var flags = Flags[Color]()
       flags = flags(Orange) = true
       flags(Red) || flags(Yellow) || flags(Green) || flags(Blue) || flags(Indigo) || flags(Violet)
     . assert(_ == false)
 
-    test(t"Single value"):
+    test(m"Single value"):
       var flags = Flags[Color]()
       flags = flags(Orange) = true
       flags.set
     . assert(_ == Set(Orange))
 
-    test(t"Multiple values"):
+    test(m"Multiple values"):
       var flags = Flags[Color]()
       flags = flags(Orange) = true
       flags = flags(Green) = true
@@ -79,7 +79,7 @@ object Tests extends Suite(t"Vexillology tests"):
       flags.set
     . assert(_ == Set(Orange, Green, Violet))
 
-    test(t"Unset a value"):
+    test(m"Unset a value"):
       var flags = Flags[Color]()
       flags = flags(Orange) = true
       flags = flags(Green) = true

@@ -35,6 +35,6 @@ package cataclysm
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Cataclysm Tests"):
+object Tests extends Suite(m"Cataclysm Tests"):
   def run(): Unit =
     ()

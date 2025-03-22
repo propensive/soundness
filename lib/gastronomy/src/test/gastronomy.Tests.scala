@@ -43,7 +43,7 @@ import spectacular.*
 
 import alphabets.hex.upperCase
 
-object Tests extends Suite(t"Gastronomy tests"):
+object Tests extends Suite(m"Gastronomy tests"):
 
   val request: Text = t"""
     |-----BEGIN CERTIFICATE REQUEST-----
@@ -64,31 +64,31 @@ object Tests extends Suite(t"Gastronomy tests"):
   val pangram: Text = t"The quick brown fox jumps over the lazy dog"
 
   def run(): Unit =
-    test(t"Sha256, Hex"):
+    test(m"Sha256, Hex"):
       t"Hello world".digest[Sha2[256]].serialize[Hex]
     .assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
 
-    test(t"Md5, Base64"):
+    test(m"Md5, Base64"):
       import alphabets.base64.standard
       t"Hello world".digest[Md5].serialize[Base64]
     .assert(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
 
-    test(t"Sha1, Base64Url"):
+    test(m"Sha1, Base64Url"):
       import alphabets.base64.url
       println(t"Hello world".digest[Sha1].serialize[Base64])
       t"Hello world".digest[Sha1].bytes.serialize[Base64]
     .assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
 
-    test(t"Sha384, Base64"):
+    test(m"Sha384, Base64"):
       import alphabets.base64.standard
       t"Hello world".digest[Sha2[384]].serialize[Base64]
     .assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
 
-    test(t"Sha512, Base64"):
+    test(m"Sha512, Base64"):
       import alphabets.base64.standard
       t"Hello world".digest[Sha2[512]].serialize[Base64]
     .assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
 
-    test(t"Encode to Binary"):
+    test(m"Encode to Binary"):
       IArray[Byte](1, 2, 3, 4).serialize[Binary]
     .assert(_ == t"00000001000000100000001100000100")

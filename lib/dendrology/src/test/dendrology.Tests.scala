@@ -41,7 +41,7 @@ import turbulence.*, stdioSources.virtualMachine
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite(t"Dendrology tests"):
+object Tests extends Suite(m"Dendrology tests"):
 
   case class Tree(value: Text, children: List[Tree] = Nil)
 

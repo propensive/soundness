@@ -50,219 +50,219 @@ import unsafeExceptions.canThrowAny
 
 given SimpleLogger = logging.silent
 
-object Tests extends Suite(t"Guillotine tests"):
+object Tests extends Suite(m"Guillotine tests"):
   def run(): Unit =
-    suite(t"Parsing tests"):
-      test(t"parse simple command"):
+    suite(m"Parsing tests"):
+      test(m"parse simple command"):
         sh"ls -la"
       .assert(_ == Command(t"ls", t"-la"))
 
-      test(t"parse a substitution"):
+      test(m"parse a substitution"):
         val flags = t"-la"
         val file = t"filename"
         sh"ls $flags"
       .assert(_ == Command(t"ls", t"-la"))
 
-      test(t"parse two substitutions"):
+      test(m"parse two substitutions"):
         val flags = t"-la"
         val file = t"filename"
         sh"ls $flags $file"
       .assert(_ == Command(t"ls", t"-la", t"filename"))
 
-      test(t"parse irregular spacing"):
+      test(m"parse irregular spacing"):
         val flags = t"-la"
         val file = t"filename"
         sh"ls  $flags     $file"
       .assert(_ == Command(t"ls", t"-la", t"filename"))
 
-      test(t"parse irregular spacing 2"):
+      test(m"parse irregular spacing 2"):
         val flags = t"-la"
         val file = t"filename"
         sh"ls  $flags $file"
       .assert(_ == Command(t"ls", t"-la", t"filename"))
 
-      test(t"adjacent substitutions"):
+      test(m"adjacent substitutions"):
         val a = t"a"
         val b = t"b"
         sh"ls $a$b"
       .assert(_ == Command(t"ls", t"ab"))
 
-      test(t"substitute a list"):
+      test(m"substitute a list"):
         val a = List(t"a", t"b")
         sh"ls $a"
       .assert(_ == Command(t"ls", t"a", t"b"))
 
-      test(t"substitute a single-quoted list"):
+      test(m"substitute a single-quoted list"):
         val a = List(t"a", t"b")
         sh"ls '$a'"
       .assert(_ == Command(t"ls", t"a b"))
 
-      test(t"substitute in a double-quoted list"):
+      test(m"substitute in a double-quoted list"):
         val a = List(t"a", t"b")
         sh"""ls "$a""""
       .assert(_ == Command(t"ls", t"a b"))
 
-      test(t"insertion after arg"):
+      test(m"insertion after arg"):
         val a = List(t"a", t"b")
         sh"""ls ${a}x"""
       .assert(_ == Command(t"ls", t"a", t"bx"))
 
-      test(t"insertion before arg"):
+      test(m"insertion before arg"):
         val a = List(t"a", t"b")
         sh"""ls x${a}"""
       .assert(_ == Command(t"ls", t"xa", t"b"))
 
-      test(t"insertion before quoted arg"):
+      test(m"insertion before quoted arg"):
         val a = List(t"a", t"b")
         sh"""ls ${a}'x'"""
       .assert(_ == Command(t"ls", t"a", t"bx"))
 
-      test(t"insertion after quoted arg"):
+      test(m"insertion after quoted arg"):
         val a = List(t"a", t"b")
         sh"""ls 'x'${a}"""
       .assert(_ == Command(t"ls", t"xa", t"b"))
 
-      test(t"empty list insertion"):
+      test(m"empty list insertion"):
         val a = List()
         sh"""ls ${a}"""
       .assert(_ == Command(t"ls"))
 
-      test(t"empty list insertion"):
+      test(m"empty list insertion"):
         val a = List()
         sh"""ls '${a}'"""
       .assert(_ == Command(t"ls", t""))
 
-      test(t"empty parameters"):
+      test(m"empty parameters"):
         sh"""ls '' ''"""
       .assert(_ == Command(t"ls", t"", t""))
 
-      test(t"one empty parameter, specified twice"):
+      test(m"one empty parameter, specified twice"):
         sh"""ls ''''"""
       .assert(_ == Command(t"ls", t""))
 
-      test(t"single quote inside double quotes"):
+      test(m"single quote inside double quotes"):
         sh"""ls "'" """
       .assert(_ == Command(t"ls", t"'"))
 
-      test(t"double quote inside single quotes"):
+      test(m"double quote inside single quotes"):
         sh"""ls '"' """
       .assert(_ == Command(t"ls", t"\""))
 
-      test(t"escaped double quote"):
+      test(m"escaped double quote"):
         sh"""ls \" """
       .assert(_ == Command(t"ls", t"\""))
 
-      test(t"escaped single quote"):
+      test(m"escaped single quote"):
         sh"""ls \' """
       .assert(_ == Command(t"ls", t"'"))
 
-    suite(t"rendering Debug")
-      test(t"simple command"):
+    suite(m"rendering Debug")
+      test(m"simple command"):
         sh"echo Hello World".inspect
       .check(_ == t"""sh"echo Hello World"""")
 
       println(sh"echo 'Hello World'".inspect)
-      test(t"simple command with space"):
+      test(m"simple command with space"):
         sh"echo 'Hello World'".inspect
       .check(_ == t"""sh"echo 'Hello World'"""")
 
-      test(t"simple command with quote and space"):
+      test(m"simple command with quote and space"):
         Command(t"echo", t"Don't stop").inspect
       .check(_ == t"sh\"\"\"echo \"Don't stop\"\"\"\"")
 
-      test(t"simple command with single and double quote"):
+      test(m"simple command with single and double quote"):
         Command(t"echo", t"single ' and double \" quotes").inspect
       .check(_ == t"sh\"\"\"echo \"single ' and double \\\" quotes\"\"\"\"")
 
-      test(t"render pipeline of commands"):
+      test(m"render pipeline of commands"):
         (sh"echo Hello" | sh"sed s/e/a/g").inspect
       .check(_ == t"""sh"echo Hello" | sh"sed s/e/a/g"""")
 
-    suite(t"equality tests"):
-      test(t"check that two commands written differently are equivalent"):
+    suite(m"equality tests"):
+      test(m"check that two commands written differently are equivalent"):
         sh"echo 'hello world'"
       .assert(_ == sh"""echo "hello world"""")
 
-      test(t"check that two commands written with different whitespace are equivalent"):
+      test(m"check that two commands written with different whitespace are equivalent"):
         sh"one two   three"
       .assert(_ == sh"one   two three")
 
-    suite(t"Execution tests"):
+    suite(m"Execution tests"):
 
       given Environment = environments.virtualMachine
 
-      test(t"Echo string"):
+      test(m"Echo string"):
         sh"echo hello".exec[Text]()
       .check(_ == t"hello")
 
-      test(t"substitute string into echo"):
+      test(m"substitute string into echo"):
         val text = t"Hello world!"
         sh"echo $text".exec[Text]()
       .check(_ == t"Hello world!")
 
-      test(t"pipe output through two commands"):
+      test(m"pipe output through two commands"):
         (sh"echo 'Hello world'" | sh"sed s/e/a/g").exec[Text]()
       .check(_ == t"Hallo world")
 
-      test(t"read stream of strings"):
+      test(m"read stream of strings"):
         sh"echo 'Hello world'".exec[Stream[Text]]().to(List)
       .assert(_ == List("Hello world"))
 
-      test(t"read stream of bytes"):
+      test(m"read stream of bytes"):
         sh"echo 'Hello world'".exec[Stream[Bytes]]().read[Bytes].to(List)
       .assert(_ == Bytes(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to(List))
 
-      test(t"fork sleeping process"):
+      test(m"fork sleeping process"):
         val t0 = System.currentTimeMillis
         sh"sleep 0.2".fork[Unit]()
         System.currentTimeMillis - t0
       .assert(_ <= 100L)
 
-      test(t"exec sleeping process"):
+      test(m"exec sleeping process"):
         val t0 = System.currentTimeMillis
         sh"sleep 0.2".exec[Unit]()
         System.currentTimeMillis - t0
       .assert(_ >= 200L)
 
-      test(t"fork and await sleeping process"):
+      test(m"fork and await sleeping process"):
         val t0 = System.currentTimeMillis
         val proc = sh"sleep 0.2".fork[Unit]()
         proc.await()
         System.currentTimeMillis - t0
       .assert(_ >= 200L)
 
-      test(t"fork and abort sleeping process"):
+      test(m"fork and abort sleeping process"):
         val t0 = System.currentTimeMillis
         val proc = sh"sleep 0.2".fork[Unit]()
         proc.abort()
         System.currentTimeMillis - t0
       .assert(_ <= 100L)
 
-      test(t"fork and kill sleeping process"):
+      test(m"fork and kill sleeping process"):
         val t0 = System.currentTimeMillis
         val proc = sh"sleep 0.2".fork[Unit]()
         proc.kill()
         System.currentTimeMillis - t0
       .assert(_ <= 100L)
 
-      test(t"successful exit status"):
+      test(m"successful exit status"):
         sh"echo hello".exec[Exit]()
       .assert(_ == Exit.Ok)
 
-      test(t"failed exit status"):
+      test(m"failed exit status"):
         sh"false".exec[Exit]()
       .assert(_ == Exit.Fail(1))
 
-      test(t"nested command"):
+      test(m"nested command"):
         val cmd = sh"echo 'Hello world'"
         sh"sh -c '$cmd'".exec[Text]()
       .check(_ == t"Hello world")
 
-      test(t"implied return type"):
+      test(m"implied return type"):
         sh"echo 'Hello world'"()
       .assert(_ == t"Hello world")
 
-      test(t"implied return type for `which`"):
+      test(m"implied return type for `which`"):
         import filesystemApi.galileiPath
         sh"which cat"()
       .assert(_ == Unix / p"bin" / p"cat")

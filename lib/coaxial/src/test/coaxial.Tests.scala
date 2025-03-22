@@ -46,7 +46,7 @@ import spectacular.*
 import superlunary.*
 import vacuous.*
 
-object Tests extends Suite(t"Coaxial tests"):
+object Tests extends Suite(m"Coaxial tests"):
   def run(): Unit = unsafely:
 
     val u = udp"3876".json.show
@@ -64,12 +64,12 @@ object Tests extends Suite(t"Coaxial tests"):
               promise.await()
         })
 
-        test(t"Test UDP server"):
+        test(m"Test UDP server"):
           udpServer(udp"3962")
         .assert()
 
 
-      test(t"Send UDP messages until port opens"):
+      test(m"Send UDP messages until port opens"):
         Thread.sleep(5000)
         println("transmitting")
         udp"3962".transmit(jvmInstanceId.show)

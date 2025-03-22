@@ -39,49 +39,49 @@ import spectacular.*
 
 import html5.*
 
-object Tests extends Suite(t"Honeycomb Tests"):
+object Tests extends Suite(m"Honeycomb Tests"):
   def run(): Unit =
-    suite(t"Showing HTML"):
-      test(t"empty normal tag"):
+    suite(m"Showing HTML"):
+      test(m"empty normal tag"):
         Div.show
       .check(_ == t"<div/>")
 
-      test(t"empty unclosed tag"):
+      test(m"empty unclosed tag"):
         Br.show
       .check(_ == t"<br>")
 
-      test(t"tag with one attribute"):
+      test(m"tag with one attribute"):
         P(id = id"abc").show
       .check(_ == t"""<p id="abc"/>""")
 
-      test(t"tag with two attributes"):
+      test(m"tag with two attributes"):
         P(id = id"abc", style = t"def").show
       .check(_ == t"""<p id="abc" style="def"/>""")
 
-      test(t"unclosed tag with one attribute"):
+      test(m"unclosed tag with one attribute"):
         Hr(id = id"foo").show
       .check(_ == t"""<hr id="foo">""")
 
-      test(t"unclosed tag with two attributes"):
+      test(m"unclosed tag with two attributes"):
         Hr(id = id"foo", style = t"bar").show
       .check(_ == t"""<hr id="foo" style="bar">""")
 
-      test(t"non-self-closing tag"):
+      test(m"non-self-closing tag"):
         Script.show
       .check(_ == t"""<script></script>""")
 
-      test(t"tag with no attributes and children"):
+      test(m"tag with no attributes and children"):
         Div(Hr, Br).show
       .check(_ == t"""<div><hr><br></div>""")
 
-      test(t"tag with text child"):
+      test(m"tag with text child"):
         P(t"hello world").show
       .check(_ == t"<p>hello world</p>")
 
-      test(t"tag with mixed children"):
+      test(m"tag with mixed children"):
         P(t"hello ", Em(t"world"), t"!").show
       .check(_ == t"<p>hello <em>world</em>!</p>")
 
-      test(t"deeper-nested elements"):
+      test(m"deeper-nested elements"):
         Table(Tbody(Tr(Td(t"A")))).show
       .check(_ == t"<table><tbody><tr><td>A</td></tr></tbody></table>")

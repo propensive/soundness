@@ -30,39 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package gesticulate
+package austronesian
 
-import contingency.*
-import gossamer.*
-import probably.*
-import rudiments.*
-
-import strategies.throwUnsafely
-
-object Tests extends Suite(m"Gesticulate tests"):
-  def run(): Unit =
-    test(m"parse media type's type"):
-      Media.parse(t"application/json").group
-    .assert(_ == Media.Group.Application)
-
-    test(m"parse media type's subtype"):
-      Media.parse(t"application/json").subtype
-    .assert(_ == Media.Subtype.Standard(t"json"))
-
-    test(m"parse media type suffix"):
-      Media.parse(t"application/epub+zip").suffixes
-    .assert(_ == List(Media.Suffix.Zip))
-
-    test(m"parse full media type"):
-      Media.parse(t"application/json")
-    .assert(_ == Medium(Media.Group.Application, Media.Subtype.Standard(t"json")))
-
-    test(m"parse full media type with parameter"):
-      Media.parse(t"application/json; charset=UTF-8")
-    .assert(_ == Medium(Media.Group.Application, Media.Subtype.Standard(t"json"),
-        parameters = List((t"charset", t"UTF-8"))))
-
-    test(m"invalid media type"):
-      capture(Media.parse(t"applicationjson"))
-    .assert(_ == MediumError(t"applicationjson",
-        MediumError.Reason.NotOneSlash))
+object Example:
+  def run(name: Any): Unit =
+    println(s"Hello, $name!")

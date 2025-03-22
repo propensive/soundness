@@ -37,6 +37,6 @@ import probably.*
 
 import unsafeExceptions.canThrowAny
 
-object Tests extends Suite(t"Exoskeleton Tests"):
+object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
     ()

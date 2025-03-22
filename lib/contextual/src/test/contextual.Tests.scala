@@ -35,6 +35,6 @@ package contextual
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Contextual Tests"):
+object Tests extends Suite(m"Contextual Tests"):
   def run(): Unit =
     ()

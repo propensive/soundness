@@ -37,13 +37,14 @@ import anticipation.*
 import contingency.*
 import digression.*
 import escapade.*
+import fulminate.*
 import hieroglyph.*, textMetrics.uniform
 import turbulence.*
 import vacuous.*
 
 import language.adhocExtensions
 
-abstract class Suite(suiteName: Text) extends Testable(suiteName):
+abstract class Suite(suiteName: Message) extends Testable(suiteName):
   val suiteIo = safely(stdioSources.virtualMachine.ansi).vouch
 
   given runner: Runner[Report] =

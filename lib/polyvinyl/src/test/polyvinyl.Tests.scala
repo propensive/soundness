@@ -35,5 +35,5 @@ package polyvinyl
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Polyvinyl tests"):
+object Tests extends Suite(m"Polyvinyl tests"):
   def run(): Unit = ()

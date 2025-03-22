@@ -35,6 +35,6 @@ package ethereal
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Ethereal Tests"):
+object Tests extends Suite(m"Ethereal Tests"):
   def run(): Unit =
     ()

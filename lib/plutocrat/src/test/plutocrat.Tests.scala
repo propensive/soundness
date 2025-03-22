@@ -38,87 +38,87 @@ import probably.*
 
 import currencies.*
 
-object Tests extends Suite(t"Plutocrat tests"):
+object Tests extends Suite(m"Plutocrat tests"):
   def run(): Unit =
-    suite(t"Money tests"):
-      test(t"Show a local monetary value"):
+    suite(m"Money tests"):
+      test(m"Show a local monetary value"):
         import currencyStyles.local
         val amount: Money[Eur] = Eur(3.01)
         t"Received $amount"
 
       . assert(_ == t"Received €3.01")
 
-      test(t"Show a monetary value"):
+      test(m"Show a monetary value"):
         import currencyStyles.generic
         val amount = Eur(3.01)
         t"Received $amount"
 
       . assert(_ == t"Received 3.01 EUR")
 
-      test(t"Add two amounts"):
+      test(m"Add two amounts"):
         Eur(3.01) + Eur(0.02)
 
       . assert(_ == Eur(3.03))
 
-      test(t"Subtract an amounts"):
+      test(m"Subtract an amounts"):
         Eur(3.01) - Eur(0.02)
 
       . assert(_ == Eur(2.99))
 
-      test(t"Multiply an amount"):
+      test(m"Multiply an amount"):
         Eur(3.01)*3
 
       . assert(_ == Eur(9.03))
 
-      test(t"Divide an amount"):
+      test(m"Divide an amount"):
         Eur(3.01)/3
 
       . assert(_ == Eur(1.00))
 
-      test(t"Split an amount"):
+      test(m"Split an amount"):
         Eur(3.01).split(3).total
 
       . assert(_ == Eur(3.01))
 
-      /*test(t"Different currencies cannot be combined"):
+      /*test(m"Different currencies cannot be combined"):
         demilitarize:
           Eur(1.00) + Gbp(1.00)
         .map(_.id)
 
       . assert(_ == List(CompileErrorId.MissingImplicitArgument))*/
 
-      test(t"Monetary values can be negated"):
+      test(m"Monetary values can be negated"):
         -Eur(1.99)
 
       . assert(_ == Eur(-1.99))
 
-      test(t"Compare amounts"):
+      test(m"Compare amounts"):
         Eur(1.01) > Eur(2.10)
 
       . assert(_ == false)
 
-      test(t"Compare equal amounts"):
+      test(m"Compare equal amounts"):
         Eur(1.01) > Eur(1.01)
 
       . assert(_ == false)
 
-      test(t"Compare equal amounts"):
+      test(m"Compare equal amounts"):
         Eur(1.01) >= Eur(1.01)
 
       . assert(_ == true)
 
-    suite(t"Price tests"):
-      test(t"Construct new price"):
+    suite(m"Price tests"):
+      test(m"Construct new price"):
         Gbp(2.30).tax(0.2)
 
       . assert(_ == Price(Gbp(2.30), Gbp(0.46)))
 
-      test(t"Tax amount is rounded up correctly"):
+      test(m"Tax amount is rounded up correctly"):
         Gbp(2.94).tax(0.2)
 
       . assert(_ == Price(Gbp(2.94), Gbp(0.59)))
 
-      test(t"Prices in different currencies cannot be combined"):
+      test(m"Prices in different currencies cannot be combined"):
         demilitarize(Eur(1.00).tax(0.175) + Gbp(1.00).tax(0.2)).map(_.message)
 
       . assert(_ == List(t"Found:    plutocrat.Price[plutocrat.currencies.Gbp.type]\nRequired: plutocrat.Price[plutocrat.currencies.Eur.type]"))

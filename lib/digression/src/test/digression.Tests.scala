@@ -43,10 +43,10 @@ import unsafeExceptions.canThrowAny
 
 case class Person(name: Text, age: Int)
 
-object Tests extends Suite(t"Rudiments Tests"):
+object Tests extends Suite(m"Rudiments Tests"):
   def run(): Unit =
-    suite(t"Exception tests"):
-      test(t"Show exception"):
+    suite(m"Exception tests"):
+      test(m"Show exception"):
         try
           List(1, 2, 3).map(_ / 0)
           ???

@@ -35,6 +35,6 @@ package fulminate
 import gossamer.*
 import probably.*
 
-object Tests extends Suite(t"Fulminate Tests"):
+object Tests extends Suite(m"Fulminate Tests"):
   def run(): Unit =
     ()

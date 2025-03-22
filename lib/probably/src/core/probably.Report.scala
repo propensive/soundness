@@ -360,7 +360,8 @@ class Report(using Environment):
         Ribbon(DarkGreen.srgb, MediumSeaGreen.srgb, PaleGreen.srgb)
 
       Out.println:
-        ribbon.fill(e"${suite.lay(t"")(_.id.id)}", e"Benchmarks", e"${suite.lay(t"")(_.name)}")
+        val suiteName = suite.let(_.name.teletype).or(e"")
+        ribbon.fill(e"${suite.lay(t"")(_.id.id)}", e"Benchmarks", suiteName)
 
       val comparisons: List[ReportLine.Bench] =
         benchmarks.filter(!_.benchmark.baseline.absent).to(List)

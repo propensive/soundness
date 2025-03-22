@@ -52,73 +52,73 @@ given SystemProperties =
 
 given Text is SpecificPath = identity(_)
 
-object Tests extends Suite(t"Imperial tests"):
+object Tests extends Suite(m"Imperial tests"):
   def run(): Unit =
 
-    test(t"Home directory"):
+    test(m"Home directory"):
       Home()
     .assert(_ == t"/home/work")
 
-    test(t"Cache directory"):
+    test(m"Cache directory"):
       Home.Cache()
     .assert(_ == t"/home/work/.cache")
 
-    test(t"~/.local/bin path"):
+    test(m"~/.local/bin path"):
       Home.Local.Bin()
     .assert(_ == t"/home/work/.local/bin")
 
-    test(t"/ path"):
+    test(m"/ path"):
       Base()
     .assert(_ == t"/")
 
-    test(t"/boot path"):
+    test(m"/boot path"):
       Base.Boot()
     .assert(_ == t"/boot")
 
-    test(t"/efi path"):
+    test(m"/efi path"):
       Base.Efi()
     .assert(_ == t"/efi")
 
-    test(t"/etc path"):
+    test(m"/etc path"):
       Base.Etc()
     .assert(_ == t"/etc")
 
-    test(t"/home path"):
+    test(m"/home path"):
       Base.Home()
     .assert(_ == t"/home")
 
-    test(t"/root path"):
+    test(m"/root path"):
       Base.Root()
     .assert(_ == t"/root")
 
-    test(t"/srv path"):
+    test(m"/srv path"):
       Base.Srv()
     .assert(_ == t"/srv")
 
-    test(t"/tmp path"):
+    test(m"/tmp path"):
       Base.Tmp()
     .assert(_ == t"/tmp")
 
-    test(t"/usr path"):
+    test(m"/usr path"):
       Base.Usr()
     .assert(_ == t"/usr")
 
-    test(t"/usr/share path"):
+    test(m"/usr/share path"):
       Base.Usr.Share()
     .assert(_ == t"/usr/share")
 
-    test(t"/usr/bin path"):
+    test(m"/usr/bin path"):
       Base.Usr.Bin()
     .assert(_ == t"/usr/bin")
 
-    test(t"/usr/share/doc path"):
+    test(m"/usr/share/doc path"):
       Base.Usr.Share.Doc()
     .assert(_ == t"/usr/share/doc")
 
-    test(t"/usr/share/factory/etc path"):
+    test(m"/usr/share/factory/etc path"):
       Base.Usr.Share.Factory.Etc()
     .assert(_ == t"/usr/share/factory/etc")
 
-    test(t"/proc PID path"):
+    test(m"/proc PID path"):
       Base.Proc(Pid(2000))()
     .assert(_ == t"/proc/2000")
