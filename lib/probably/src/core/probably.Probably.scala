@@ -75,7 +75,7 @@ object Probably:
           Expr.summon[testType is Decomposable].getOrElse('{Decomposable.primitive[testType]})
 
         val contrast = Expr.summon[testType is Contrastable].getOrElse:
-          halt(m"Can't contrast ${Type.of[testType]}")
+          halt(m"Can't find a `Contrastable` instance for ${Type.of[testType]}")
 
         '{
           assertion[testType, TestType, ReportType, ResultType]
