@@ -45,4 +45,4 @@ import wisteria.*
 import html5.*
 
 trait Formulation:
-  def form(content: List[Html[Flow]], action: Text, method: Method = Method.Post): Html[Flow]
+  def form(content: List[Html[Flow]]): Html[Flow]

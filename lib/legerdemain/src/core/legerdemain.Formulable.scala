@@ -49,23 +49,21 @@ object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
   =>    (renderable: elicitable.Operand is Renderable into Html[Flow])
   =>    ValueType is Formulable:
 
-    def elements(prefix: Text, label: Text, value: ValueType): List[Html[Flow]] =
-      renderable.html(elicitable.widget(prefix, label, elicitable.input(value)))
+    def elements(prefix: Text, label: Text, query: Query): List[Html[Flow]] =
+      renderable.html(elicitable.widget(prefix, label, query().or(t"")))
 
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Formulable =
-    new Formulable:
-      type Self = DerivationType
+    (prefix, label0, query) =>
+      val content: IArray[Html[Flow]] =
+        contexts:
+          [FieldType] => context =>
+            val label2 = if prefix == t"" then label else t"$prefix.$label"
+            context.elements(label2, label.uncamel.map(_.upper).spaced, query(label))
 
-      def elements(prefix: Text, label0: Text, value: Self): List[Html[Flow]] =
-        val content: IArray[Html[Flow]] =
-          fields(value):
-            [FieldType] => field =>
-              context.elements(if prefix == t"" then label else t"$prefix.$label", label0, field)
+        . flatten
 
-          . flatten
-
-        List(Fieldset(Legend(label0), content))
+      List(Fieldset(Legend(label0), content))
 
 trait Formulable:
   type Self
-  def elements(prefix: Text, label: Text, value: Self): List[Html[Flow]]
+  def elements(prefix: Text, label: Text, query: Query): List[Html[Flow]]
