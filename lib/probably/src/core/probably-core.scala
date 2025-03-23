@@ -39,7 +39,6 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
-import spectacular.*
 
 given realm: Realm = realm"probably"
 

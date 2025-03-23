@@ -36,11 +36,8 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
-import gossamer.*
 import prepositional.*
 import proscenium.*
-import spectacular.*
-import vacuous.*
 
 object Legerdemain:
   def query(values: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Query] =

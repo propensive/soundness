@@ -68,7 +68,7 @@ object Juxtaposition:
   given (measurable: Text is Measurable) => Juxtaposition is Teletypeable =
     case Juxtaposition.Collation(comparison, _, _) =>
       import tableStyles.default
-      import webColors.{Black, Gray, White}
+      import webColors.{Gray, White}
 
       val columns = 110
       val length = comparison.length

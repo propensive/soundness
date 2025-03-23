@@ -39,5 +39,5 @@ import parasite.*
 import telekinesis.*
 
 trait RequestServable:
-  def handle(handle: (connection: HttpConnection) ?=> Http.Response)(using Monitor, Codicil)
+  def handle(handle: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
   :     Service logs HttpServerEvent raises ServerError

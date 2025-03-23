@@ -33,17 +33,6 @@
 package legerdemain
 
 import anticipation.*
-import distillate.*
-import fulminate.*
-import gossamer.*
-import honeycomb.*
-import nomenclature.*
-import prepositional.*
-import spectacular.*
-import vacuous.*
-import wisteria.*
-
-import html5.*
 
 trait Widget:
   def name: Text

@@ -88,7 +88,7 @@ object Aviation:
 
     given showable: (Endianness, DateNumerics, DateSeparation, YearFormat) => Date is Showable =
       date =>
-        import DateNumerics.*, Endianness.*, YearFormat.*
+        import DateNumerics.*, YearFormat.*
         import textMetrics.uniform
         given RomanCalendar = calendars.gregorian
 

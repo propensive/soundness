@@ -32,17 +32,7 @@
                                                                                                   */
 package legerdemain
 
-import anticipation.*
-import distillate.*
-import fulminate.*
-import gossamer.*
 import honeycomb.*
-import nomenclature.*
-import prepositional.*
-import vacuous.*
-import wisteria.*
-
-import html5.*
 
 trait Formulation:
   def form(content: List[Html[Flow]]): Html[Flow]

@@ -33,9 +33,7 @@
 package chiaroscuro
 
 import anticipation.*
-import dissonance.*
 import gossamer.*
-import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import spectacular.*

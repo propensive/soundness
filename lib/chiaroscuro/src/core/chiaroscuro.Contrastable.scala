@@ -36,16 +36,12 @@ import anticipation.*
 import dissonance.*
 import gossamer.*
 import hieroglyph.*
-import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-import wisteria.*
 
-import scala.deriving.*
 import scala.reflect.*
-import java.text.CollationKey
 
 trait Contrastable:
   type Self

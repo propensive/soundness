@@ -32,7 +32,6 @@
                                                                                                   */
 package probably
 
-import anticipation.*
 import digression.*
 import fulminate.*
 import rudiments.*

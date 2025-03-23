@@ -38,8 +38,6 @@ import gossamer.*
 import hypotenuse.*
 import iridescence.*
 import proscenium.*
-import rudiments.*
-import vacuous.*
 
 import language.experimental.pureFunctions
 
