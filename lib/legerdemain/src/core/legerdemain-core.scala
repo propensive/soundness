@@ -37,11 +37,8 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import honeycomb.*
-import nomenclature.*
 import prepositional.*
-import spectacular.*
 import vacuous.*
-import wisteria.*
 
 import html5.*
 
