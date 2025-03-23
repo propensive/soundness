@@ -45,19 +45,11 @@ import wisteria.*
 
 import html5.*
 
-given Realm = realm"legerdemain"
+object Selection:
+  given renderable: Selection is Renderable into Html[Flow] = selection =>
+    List(Label(Select(name = selection.name):
+      selection.options.map: option =>
+        html5.Option(value = option.key, label = option.value)))
 
-def elicit[ValueType: Formulable](legend: Text, query: Optional[Query] = Unset)
-   (using formulation: Formulation)
-:     Html[Flow] =
-  formulation.form(ValueType.elements(t"", legend, query.or(Query())))
-
-extension [ValueType: {Formulable, Encodable in Query}](value: ValueType)
-   (using formulation: Formulation)
-  def edit(legend: Text): Html[Flow] =
-    formulation.form(ValueType.elements(t"", legend, Query(value)))
-
-package formulations:
-  given default: Formulation:
-    def form(content: List[Html[Flow]]): Html[Flow] =
-      Form(action = t".", method = Method.Post)(content*)
+case class Selection(name: Text, options: List[(key: Text, value: Text)], value: Text)
+extends Widget

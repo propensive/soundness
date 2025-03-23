@@ -45,19 +45,17 @@ import wisteria.*
 
 import html5.*
 
-given Realm = realm"legerdemain"
+object RadioGroup:
+  given renderable: RadioGroup is Renderable into Html[Flow] = group =>
+    List:
+      Fieldset
+       (Legend(group.label),
+        group.options.map: option =>
+          Label(Input.Radio(name = group.name, value = option.value), option.label))
 
-def elicit[ValueType: Formulable](legend: Text, query: Optional[Query] = Unset)
-   (using formulation: Formulation)
-:     Html[Flow] =
-  formulation.form(ValueType.elements(t"", legend, query.or(Query())))
-
-extension [ValueType: {Formulable, Encodable in Query}](value: ValueType)
-   (using formulation: Formulation)
-  def edit(legend: Text): Html[Flow] =
-    formulation.form(ValueType.elements(t"", legend, Query(value)))
-
-package formulations:
-  given default: Formulation:
-    def form(content: List[Html[Flow]]): Html[Flow] =
-      Form(action = t".", method = Method.Post)(content*)
+case class RadioGroup
+   (name:    Text,
+    label:   Text,
+    options: List[(key: Text, value: Text, label: Text)],
+    value:   Text)
+extends Widget

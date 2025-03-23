@@ -45,19 +45,8 @@ import wisteria.*
 
 import html5.*
 
-given Realm = realm"legerdemain"
+object Checkbox:
+  given renderable: Checkbox is Renderable into Html[Flow] = checkbox =>
+    List(Input.Checkbox(name = checkbox.name, checked = (checkbox.value != t"")))
 
-def elicit[ValueType: Formulable](legend: Text, query: Optional[Query] = Unset)
-   (using formulation: Formulation)
-:     Html[Flow] =
-  formulation.form(ValueType.elements(t"", legend, query.or(Query())))
-
-extension [ValueType: {Formulable, Encodable in Query}](value: ValueType)
-   (using formulation: Formulation)
-  def edit(legend: Text): Html[Flow] =
-    formulation.form(ValueType.elements(t"", legend, Query(value)))
-
-package formulations:
-  given default: Formulation:
-    def form(content: List[Html[Flow]]): Html[Flow] =
-      Form(action = t".", method = Method.Post)(content*)
+case class Checkbox(name: Text, value: Text) extends Widget

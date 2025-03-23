@@ -45,19 +45,8 @@ import wisteria.*
 
 import html5.*
 
-given Realm = realm"legerdemain"
+object Field:
+  given Field is Renderable into Html[Flow] = field =>
+    List(Label(field.label, Input.Text(name = field.name, value = field.value)))
 
-def elicit[ValueType: Formulable](legend: Text, query: Optional[Query] = Unset)
-   (using formulation: Formulation)
-:     Html[Flow] =
-  formulation.form(ValueType.elements(t"", legend, query.or(Query())))
-
-extension [ValueType: {Formulable, Encodable in Query}](value: ValueType)
-   (using formulation: Formulation)
-  def edit(legend: Text): Html[Flow] =
-    formulation.form(ValueType.elements(t"", legend, Query(value)))
-
-package formulations:
-  given default: Formulation:
-    def form(content: List[Html[Flow]]): Html[Flow] =
-      Form(action = t".", method = Method.Post)(content*)
+case class Field(label: Text, name: Text, value: Text) extends Widget
