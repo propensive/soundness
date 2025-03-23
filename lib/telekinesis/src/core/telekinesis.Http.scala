@@ -40,6 +40,7 @@ import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*
+import legerdemain.*
 import nettlesome.*
 import prepositional.*
 import proscenium.*

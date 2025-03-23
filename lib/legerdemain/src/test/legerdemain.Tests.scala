@@ -30,31 +30,63 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package denominative
+package legerdemain
 
-import scala.annotation.targetName
+import soundness.*
+import telekinesis.*
 
-final val Prim: Ordinal = Ordinal.natural(1)
-final val Sec: Ordinal  = Ordinal.natural(2)
-final val Ter: Ordinal  = Ordinal.natural(3)
-final val Quat: Ordinal = Ordinal.natural(4)
-final val Quin: Ordinal = Ordinal.natural(5)
-final val Sen: Ordinal  = Ordinal.natural(6)
-final val Sept: Ordinal = Ordinal.natural(7)
+import formulations.default
+import strategies.throwUnsafely
+import httpServers.stdlib
+import asyncTermination.cancel
+import logging.silent
+import html5.*
+import charEncoders.utf8
+import threadModels.platform
+import errorDiagnostics.stackTraces
 
-inline def Ult: Countback   = Countback(0)
-inline def Pen: Countback   = Countback(1)
-inline def Ant: Countback   = Countback(2)
+case class Organization(leader: Person, name: Name[Person])
 
-extension (inline cardinal: Int)
-  @targetName("plus")
-  inline infix def + (inline ordinal: Ordinal): Ordinal =
-    (cardinal + ordinal.n0).z
+object Person:
+  erased given Person is Nominative under MustMatch["[A-Z][a-z]+"] = !!
 
-  inline def z: Ordinal = Ordinal.zerary(cardinal)
+case class Person(name: Name[Person], description: Text, email: EmailAddress)
 
-extension [ValueType: Countable](value: ValueType)
-  inline def full: Interval = Interval(Prim, (ValueType.size(value) - 1).z)
+object Tests extends Suite(m"Legerdemain tests"):
+  def run(): Unit =
 
-export Denominative.{Ordinal, Interval}
-export Denominative2.{Countback, Bounds}
+    // test(m"Create a simple form"):
+    //   val person = Person(t"John", t"A generic person", true)
+    //   elicit[Person](t"Sample form", Query(person))
+    // .assert(_ == html5.Form)
+
+    // test(m"Create a form from nested fields"):
+    //   val organization = Organization(Person(t"Paul", t"Generic", false), t"My org")
+    //   elicit[Organization](t"Sample", Query(organization))
+    // .assert(_ == html5.Form)
+
+    summon[Boolean is Decodable in Query]
+
+    supervise:
+      tcp"8082".serve[Http]:
+        orchestrate[Organization]:
+          case Submission.Complete(organization) =>
+            println("Got organization: "+organization.inspect)
+            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(H1(organization.inspect)))))
+
+          case Submission.Incomplete(form) =>
+            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(form))))
+
+          case Submission.Invalid(query) =>
+            val errors =
+              trace[Text](Errors()):
+                case error@EmailAddressError(_) => accrual + (focus.or(t"unknown"), error)
+                case error@NameError(_, _, _)   => accrual + (focus.or(t"unknown"), error)
+
+              . within:
+                  println(query.inspect)
+                  query.decode[Organization]
+
+            val form = elicit[Organization](query, errors)
+            println(errors.errors)
+            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(form))))

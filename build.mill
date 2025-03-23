@@ -153,7 +153,7 @@ object soundness extends ScalaModule {
     def moduleDeps = Seq(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
         honeycomb.core, nettlesome.core, nettlesome.url, hallucination.core, phoenicia.core,
         punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
-        telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html)
+        telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, legerdemain.core)
   }
 
   object all extends BaseScalaModule with RecursivePublishModule {
@@ -861,6 +861,16 @@ object larceny extends SoundnessModule {
   }
 }
 
+object legerdemain extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(honeycomb.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core, scintillate.server)
+  }
+}
+
 object mercator extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(fulminate.core)
@@ -1246,7 +1256,7 @@ object tarantula extends SoundnessModule {
 
 object telekinesis extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(monotonous.core, gesticulate.core, nettlesome.url, coaxial.core)
+    def moduleDeps = Seq(monotonous.core, gesticulate.core, nettlesome.url, coaxial.core, legerdemain.core)
   }
 
   object test extends ProbablyTestModule {

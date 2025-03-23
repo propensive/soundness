@@ -30,31 +30,46 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package denominative
+package legerdemain
 
-import scala.annotation.targetName
+import scala.quoted.*
 
-final val Prim: Ordinal = Ordinal.natural(1)
-final val Sec: Ordinal  = Ordinal.natural(2)
-final val Ter: Ordinal  = Ordinal.natural(3)
-final val Quat: Ordinal = Ordinal.natural(4)
-final val Quin: Ordinal = Ordinal.natural(5)
-final val Sen: Ordinal  = Ordinal.natural(6)
-final val Sept: Ordinal = Ordinal.natural(7)
+import anticipation.*
+import fulminate.*
+import prepositional.*
+import proscenium.*
 
-inline def Ult: Countback   = Countback(0)
-inline def Pen: Countback   = Countback(1)
-inline def Ant: Countback   = Countback(2)
+object Legerdemain:
+  def query(values: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Query] =
 
-extension (inline cardinal: Int)
-  @targetName("plus")
-  inline infix def + (inline ordinal: Ordinal): Ordinal =
-    (cardinal + ordinal.n0).z
+    def recur(exprs: List[Expr[(Label, Any)]], done: List[Expr[List[(Text, Text)]]] = Nil)
+    :     Expr[Query] =
 
-  inline def z: Ordinal = Ordinal.zerary(cardinal)
+      exprs match
+        case '{ type keyType <: Label
+                ($key: keyType, $value: valueType) } :: tail =>
 
-extension [ValueType: Countable](value: ValueType)
-  inline def full: Interval = Interval(Prim, (ValueType.size(value) - 1).z)
+          Expr.summon[keyType is Parametric into (? >: valueType)].getOrElse:
+            Expr.summon[keyType is Parametric].absolve match
+              case Some('{ $parametric: (Parametric { type Result = resultType }) }) =>
+                halt(m"""the parameter ${key.valueOrAbort} takes values of ${Type.of[resultType]}
+                         but the provided value had type ${Type.of[valueType]}""")
 
-export Denominative.{Ordinal, Interval}
-export Denominative2.{Countback, Bounds}
+              case None =>
+                halt(m"could not find a contextual Parametric value for ${key.valueOrAbort}")
+
+
+          val encodable = Expr.summon[valueType is Encodable in Query].getOrElse:
+            halt(m"""there is no contextual ${Type.of[Encodable in Query]} instance for values
+                     of ${Type.of[valueType]}""")
+
+          val parameters = '{ given valueType is Encodable in Query = $encodable
+                              $value.encode.prefix($key.tt).values }
+
+          recur(tail, parameters :: done)
+
+        case _ =>
+          '{Query.of(${Expr.ofList(done.reverse)}.flatten)}
+
+    values.absolve match
+      case Varargs(exprs) => recur(exprs.to(List))

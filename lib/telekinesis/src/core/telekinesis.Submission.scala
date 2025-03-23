@@ -30,31 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package denominative
+package telekinesis
 
-import scala.annotation.targetName
+import honeycomb.*
+import legerdemain.*
 
-final val Prim: Ordinal = Ordinal.natural(1)
-final val Sec: Ordinal  = Ordinal.natural(2)
-final val Ter: Ordinal  = Ordinal.natural(3)
-final val Quat: Ordinal = Ordinal.natural(4)
-final val Quin: Ordinal = Ordinal.natural(5)
-final val Sen: Ordinal  = Ordinal.natural(6)
-final val Sept: Ordinal = Ordinal.natural(7)
-
-inline def Ult: Countback   = Countback(0)
-inline def Pen: Countback   = Countback(1)
-inline def Ant: Countback   = Countback(2)
-
-extension (inline cardinal: Int)
-  @targetName("plus")
-  inline infix def + (inline ordinal: Ordinal): Ordinal =
-    (cardinal + ordinal.n0).z
-
-  inline def z: Ordinal = Ordinal.zerary(cardinal)
-
-extension [ValueType: Countable](value: ValueType)
-  inline def full: Interval = Interval(Prim, (ValueType.size(value) - 1).z)
-
-export Denominative.{Ordinal, Interval}
-export Denominative2.{Countback, Bounds}
+enum Submission[ValueType]:
+  case Complete(value: ValueType)
+  case Invalid(query: Query)
+  case Incomplete(form: Html[Flow])

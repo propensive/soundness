@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package legerdemain
 
 import language.dynamics
 
@@ -48,6 +48,9 @@ import vacuous.*
 import wisteria.*
 
 object Query extends Dynamic:
+  def apply(): Query = new Query(Nil)
+  def apply[ValueType: Encodable in Query](value: ValueType): Query = value.encode
+
   given encodable: Query is Encodable in Text =
     _.values.map { (key, value) => t"${key.urlEncode}=${value.urlEncode}" }
     . join(t"&")
@@ -70,12 +73,20 @@ object Query extends Dynamic:
           . flatMap(_.values)
 
   object DecodableDerivation extends ProductDerivation[[Type] =>> Type is Decodable in Query]:
-      inline def join[DerivationType <: Product: ProductReflection]
-      :     DerivationType is Decodable in Query =
+    inline def join[DerivationType <: Product: ProductReflection]
+    :     DerivationType is Decodable in Query =
 
+      summonInline[Foci[Text]].give:
         value =>
           construct:
-            [FieldType] => _.decoded(value(label))
+            [FieldType] => context =>
+              focus(prior.lay(label) { prefix => t"$prefix.$label" }):
+                context.decoded(value(label))
+
+  given booleanEncodable: Boolean is Encodable in Query =
+    boolean => if boolean then Query.of(t"on") else Query()
+
+  given booleanDecodable: Boolean is Decodable in Query = _().present
 
   inline given encodable: [ValueType] => ValueType is Encodable in Query = summonFrom:
     case given (ValueType is Encodable in Text) =>
@@ -101,7 +112,7 @@ object Query extends Dynamic:
         DecodableDerivation.join[ValueType & Product].asInstanceOf[ValueType is Decodable in Query]
 
   inline def applyDynamicNamed(method: "apply")(inline parameters: (Label, Any)*): Query =
-    ${Telekinesis.query('parameters)}
+    ${Legerdemain.query('parameters)}
 
   def of(parameters: List[(Text, Text)]): Query = new Query(parameters)
   def of(parameter: Text): Query = new Query(List(t"" -> parameter))

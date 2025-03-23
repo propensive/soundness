@@ -30,10 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package legerdemain
 
-import proscenium.*
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import honeycomb.*
+import prepositional.*
+import vacuous.*
 
-trait Parametric:
-  type Self <: Label
-  type Result
+import html5.*
+
+given Realm = realm"legerdemain"
+
+def elicit[ValueType: Formulable](query: Optional[Query] = Unset, errors: Optional[Errors] = Unset)
+   (using formulation: Formulation)
+:     Html[Flow] =
+  formulation.form(ValueType.fields(t"", t"", query.or(Query()), errors))
+
+extension [ValueType: {Formulable, Encodable in Query}](value: ValueType)
+   (using formulation: Formulation)
+  def edit(validation: Optional[Errors] = Unset): Html[Flow] =
+    formulation.form(ValueType.fields(t"", t"", Query(value), validation))
+
+package formulations:
+  given default: Formulation:
+    def form(content: List[Html[Flow]]): Html[Flow] =
+      Form(action = t".", method = Method.Post)(content, Input.Submit(t"Submit"))

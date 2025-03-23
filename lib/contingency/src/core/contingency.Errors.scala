@@ -30,31 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package denominative
+package contingency
 
-import scala.annotation.targetName
+import language.experimental.pureFunctions
 
-final val Prim: Ordinal = Ordinal.natural(1)
-final val Sec: Ordinal  = Ordinal.natural(2)
-final val Ter: Ordinal  = Ordinal.natural(3)
-final val Quat: Ordinal = Ordinal.natural(4)
-final val Quin: Ordinal = Ordinal.natural(5)
-final val Sen: Ordinal  = Ordinal.natural(6)
-final val Sept: Ordinal = Ordinal.natural(7)
+import scala.annotation.*
 
-inline def Ult: Countback   = Countback(0)
-inline def Pen: Countback   = Countback(1)
-inline def Ant: Countback   = Countback(2)
+import anticipation.*
+import fulminate.*
+import vacuous.*
 
-extension (inline cardinal: Int)
-  @targetName("plus")
-  inline infix def + (inline ordinal: Ordinal): Ordinal =
-    (cardinal + ordinal.n0).z
+object Errors:
+  private def format(errors: List[(Text, Error)]): Message =
+    val joined =
+      errors.reverse.map: (focus, error) =>
+        s"${error.message.text} at $focus".tt
+      . mkString("; ")
+      . tt
 
-  inline def z: Ordinal = Ordinal.zerary(cardinal)
+    m"${errors.size} accrued errors: $joined"
 
-extension [ValueType: Countable](value: ValueType)
-  inline def full: Interval = Interval(Prim, (ValueType.size(value) - 1).z)
+case class Errors(errors: List[(Text, Error)] = Nil)(using Diagnostics)
+extends Error(Errors.format(errors)):
+  private lazy val errorMap: Map[Text, Error] = errors.to(Map)
 
-export Denominative.{Ordinal, Interval}
-export Denominative2.{Countback, Bounds}
+  @targetName("add")
+  infix def + (focus: Text, error: Error): Errors = Errors((focus, error) :: errors)
+
+  def apply(focus: Text): Optional[Error] =
+    if errorMap.contains(focus) then errorMap(focus) else Unset

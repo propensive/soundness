@@ -34,9 +34,13 @@ package honeycomb
 
 import anticipation.*
 import prepositional.*
+import spectacular.*
 
 object Renderable:
-  given [ValueType: Abstractable across HtmlContent into List[Sgml]] => ValueType is Renderable =
+  given [ValueType: Showable] => ValueType is Renderable into Html[?] = value => List(value.show)
+
+  given [ValueType: Abstractable across HtmlContent into List[Sgml]]
+  =>    ValueType is Renderable into Html[?] =
     new Renderable:
       type Self = ValueType
       type Result = Html[?]

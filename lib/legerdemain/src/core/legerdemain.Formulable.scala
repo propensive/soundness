@@ -30,31 +30,48 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package denominative
+package legerdemain
 
-import scala.annotation.targetName
+import anticipation.*
+import contingency.*
+import gossamer.*
+import honeycomb.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
+import wisteria.*
 
-final val Prim: Ordinal = Ordinal.natural(1)
-final val Sec: Ordinal  = Ordinal.natural(2)
-final val Ter: Ordinal  = Ordinal.natural(3)
-final val Quat: Ordinal = Ordinal.natural(4)
-final val Quin: Ordinal = Ordinal.natural(5)
-final val Sen: Ordinal  = Ordinal.natural(6)
-final val Sept: Ordinal = Ordinal.natural(7)
+import html5.*
 
-inline def Ult: Countback   = Countback(0)
-inline def Pen: Countback   = Countback(1)
-inline def Ant: Countback   = Countback(2)
+object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
+  given [ValueType] => (elicitable: ValueType is Elicitable)
+  =>    (renderable: elicitable.Operand is Renderable into Html[Flow])
+  =>    ValueType is Formulable:
 
-extension (inline cardinal: Int)
-  @targetName("plus")
-  inline infix def + (inline ordinal: Ordinal): Ordinal =
-    (cardinal + ordinal.n0).z
+    def fields(prefix: Text, label: Text, query: Query, validation: Optional[Errors])
+    :     List[Html[Flow]] =
+      renderable.html
+       (elicitable.widget
+         (prefix, label, query().or(t""), validation.let(_(t"$prefix.$label")).let(_.message)))
 
-  inline def z: Ordinal = Ordinal.zerary(cardinal)
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Formulable =
+    (prefix, label0, query, validation) =>
+      val content: IArray[Html[Flow]] =
+        contexts:
+          [FieldType] => context =>
+            val label2 = if prefix == t"" then label else t"$prefix.$label"
+            context.fields
+              (label2,
+              label.uncamel.map(_.lower.capitalize).spaced,
+              query(label),
+              validation)
 
-extension [ValueType: Countable](value: ValueType)
-  inline def full: Interval = Interval(Prim, (ValueType.size(value) - 1).z)
+        . flatten
 
-export Denominative.{Ordinal, Interval}
-export Denominative2.{Countback, Bounds}
+      List(Fieldset(Legend(label0), content))
+
+trait Formulable:
+  type Self
+
+  def fields(prefix: Text, label: Text, query: Query, validation: Optional[Errors])
+  :     List[Html[Flow]]

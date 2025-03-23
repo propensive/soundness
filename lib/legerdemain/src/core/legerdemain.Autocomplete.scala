@@ -30,31 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package denominative
+package legerdemain
 
-import scala.annotation.targetName
+import anticipation.*
+import fulminate.*
+import honeycomb.*
+import prepositional.*
+import vacuous.*
 
-final val Prim: Ordinal = Ordinal.natural(1)
-final val Sec: Ordinal  = Ordinal.natural(2)
-final val Ter: Ordinal  = Ordinal.natural(3)
-final val Quat: Ordinal = Ordinal.natural(4)
-final val Quin: Ordinal = Ordinal.natural(5)
-final val Sen: Ordinal  = Ordinal.natural(6)
-final val Sept: Ordinal = Ordinal.natural(7)
+import html5.*
 
-inline def Ult: Countback   = Countback(0)
-inline def Pen: Countback   = Countback(1)
-inline def Ant: Countback   = Countback(2)
+object Autocomplete:
+  given renderable: Autocomplete is Renderable into Html[Flow] = autocomplete => List:
+    Label
+     (Input(list = DomId(autocomplete.name)),
+      Datalist(id = DomId(autocomplete.name)):
+        autocomplete.options.map: option =>
+          html5.Option(value = option))
 
-extension (inline cardinal: Int)
-  @targetName("plus")
-  inline infix def + (inline ordinal: Ordinal): Ordinal =
-    (cardinal + ordinal.n0).z
-
-  inline def z: Ordinal = Ordinal.zerary(cardinal)
-
-extension [ValueType: Countable](value: ValueType)
-  inline def full: Interval = Interval(Prim, (ValueType.size(value) - 1).z)
-
-export Denominative.{Ordinal, Interval}
-export Denominative2.{Countback, Bounds}
+case class Autocomplete
+   (name:        Text,
+    options:     List[Text],
+    value:       Text,
+    instruction: Optional[Text],
+    validation:  Optional[Text])
+extends Widget
