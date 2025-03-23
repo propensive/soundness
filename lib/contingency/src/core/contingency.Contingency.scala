@@ -190,6 +190,29 @@ object Contingency:
         '{Tracking[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
             focus, accrual))}
 
+  def trace[AccrualType: Type, FocusType: Type]
+     (accrual: Expr[AccrualType],
+      handler: Expr[(Optional[FocusType], AccrualType) ?=> Exception ~> AccrualType])
+     (using Quotes)
+  :     Expr[Any] =
+
+    import quotes.reflect.*
+
+    val errors = mapping(handler.asTerm)
+    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
+    val functionType = defn.FunctionClass(errors.size, true).typeRef
+
+    val typeLambda =
+      TypeLambda
+       (List("ResultType"),
+        _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+        typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
+
+    typeLambda.asType.absolve match
+      case '[type typeLambda[_]; typeLambda] =>
+        '{Tracing[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
+            focus, accrual))}
+
   def accrue[AccrualType <: Exception: Type]
      (accrual: Expr[AccrualType],
       handler: Expr[AccrualType ?=> Exception ~> AccrualType])
@@ -367,5 +390,40 @@ object Contingency:
           case Some(value) =>
             if foci.success then value
             else $tactic.abort(foci.fold[AccrualType]($track.initial)($track.lambda(using _, _)))
+
+    }
+
+  def traceWithin
+     [AccrualType <: Exception: Type, ContextType[_]: Type, FocusType: Type]
+     (trace:       Expr[Tracing[AccrualType, ContextType, FocusType]],
+      lambda:      Expr[Foci[FocusType] ?=> ContextType[Any]],
+      diagnostics: Expr[Diagnostics])
+     (using Quotes)
+  :     Expr[AccrualType] =
+
+    '{  val foci: Foci[FocusType] = TrackFoci()
+
+        boundary[Any]: label ?=>
+          ${  import quotes.reflect.*
+
+              val cases = unwrap(trace.asTerm) match
+                case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
+                  mapping(unwrap(block))
+
+                case other => halt:
+                  m"argument to `trace` should be a partial function implemented as match cases"
+
+              val tactics = cases.map: (_, _) =>
+                '{TrackTactic(label, $trace.initial, foci)(using $diagnostics)}.asTerm
+
+              val contextTypeRepr = TypeRepr.of[ContextType[Any]]
+              val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
+
+              val term =
+                '{$lambda(using foci)}.asTerm.select(method).appliedToArgs(tactics.to(List))
+
+              term.asExpr  }
+
+        foci.fold[AccrualType]($trace.initial)($trace.lambda(using _, _))
 
     }

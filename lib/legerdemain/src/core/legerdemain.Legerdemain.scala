@@ -63,8 +63,8 @@ object Legerdemain:
             halt(m"""there is no contextual ${Type.of[Encodable in Query]} instance for values
                      of ${Type.of[valueType]}""")
 
-          val parameters = '{  given valueType is Encodable in Query = $encodable
-                               $value.encode.prefix($key.tt).values  }
+          val parameters = '{ given valueType is Encodable in Query = $encodable
+                              $value.encode.prefix($key.tt).values }
 
           recur(tail, parameters :: done)
 

@@ -33,6 +33,7 @@
 package legerdemain
 
 import anticipation.*
+import contingency.*
 import fulminate.*
 import gossamer.*
 import honeycomb.*
@@ -43,17 +44,17 @@ import html5.*
 
 given Realm = realm"legerdemain"
 
-def elicit[ValueType: Formulable](legend: Text, query: Optional[Query] = Unset)
+def elicit[ValueType: Formulable](query: Optional[Query] = Unset, errors: Optional[Errors] = Unset)
    (using formulation: Formulation)
 :     Html[Flow] =
-  formulation.form(ValueType.elements(t"", legend, query.or(Query())))
+  formulation.form(ValueType.fields(t"", t"", query.or(Query()), errors))
 
 extension [ValueType: {Formulable, Encodable in Query}](value: ValueType)
    (using formulation: Formulation)
-  def edit(legend: Text): Html[Flow] =
-    formulation.form(ValueType.elements(t"", legend, Query(value)))
+  def edit(validation: Optional[Errors] = Unset): Html[Flow] =
+    formulation.form(ValueType.fields(t"", t"", Query(value), validation))
 
 package formulations:
   given default: Formulation:
     def form(content: List[Html[Flow]]): Html[Flow] =
-      Form(action = t".", method = Method.Post)(content*)
+      Form(action = t".", method = Method.Post)(content, Input.Submit(t"Submit"))

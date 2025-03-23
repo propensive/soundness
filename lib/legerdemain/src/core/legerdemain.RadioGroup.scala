@@ -45,12 +45,14 @@ object RadioGroup:
     List:
       Fieldset
        (Legend(group.label),
+        group.validation.let(P.alert(_)),
         group.options.map: option =>
           Label(Input.Radio(name = group.name, value = option.value), option.label))
 
 case class RadioGroup
-   (name:    Text,
-    label:   Text,
-    options: List[(key: Text, value: Text, label: Text)],
-    value:   Text)
+   (name:       Text,
+    label:      Text,
+    options:    List[(key: Text, value: Text, label: Text)],
+    value:      Text,
+    validation: Optional[Text])
 extends Widget

@@ -30,35 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package legerdemain
+package telekinesis
 
-import anticipation.*
-import distillate.*
-import fulminate.*
-import gossamer.*
-import prepositional.*
-import vacuous.*
+import honeycomb.*
+import legerdemain.*
 
-object Elicitable:
-  given Boolean is Elicitable:
-    type Operand = Checkbox
-    def input(value: Boolean): Text = if value then t"on" else t""
-    def output(value: Text): Boolean = value != t""
-
-    def widget(id: Text, label: Text, value: Text, validation: Optional[Message]): Checkbox =
-      Checkbox(id, value, validation)
-
-  given [ValueType: {Decodable in Text, Encodable in Text}] => ValueType is Elicitable:
-    type Operand = Field
-    def input(value: ValueType): Text = value.encode
-    def output(value: Text): ValueType = value.decode
-
-    def widget(id: Text, label: Text, value: Text, validation: Optional[Message]): Field =
-      Field(label, id, value, validation)
-
-trait Elicitable:
-  type Self
-  type Operand
-  def input(value: Self): Text
-  def output(value: Text): Self
-  def widget(id: Text, label: Text, value: Text, validation: Optional[Message]): Operand
+enum Submission[ValueType]:
+  case Complete(value: ValueType)
+  case Invalid(query: Query)
+  case Incomplete(form: Html[Flow])

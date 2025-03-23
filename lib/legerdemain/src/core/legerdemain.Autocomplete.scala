@@ -48,4 +48,10 @@ object Autocomplete:
         autocomplete.options.map: option =>
           html5.Option(value = option))
 
-case class Autocomplete(name: Text, options: List[Text], value: Text) extends Widget
+case class Autocomplete
+   (name:        Text,
+    options:     List[Text],
+    value:       Text,
+    instruction: Optional[Text],
+    validation:  Optional[Text])
+extends Widget

@@ -33,9 +33,11 @@
 package legerdemain
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import honeycomb.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import wisteria.*
 
@@ -46,16 +48,23 @@ object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
   =>    (renderable: elicitable.Operand is Renderable into Html[Flow])
   =>    ValueType is Formulable:
 
-    def elements(prefix: Text, label: Text, query: Query): List[Html[Flow]] =
-      renderable.html(elicitable.widget(prefix, label, query().or(t"")))
+    def fields(prefix: Text, label: Text, query: Query, validation: Optional[Errors])
+    :     List[Html[Flow]] =
+      renderable.html
+       (elicitable.widget
+         (prefix, label, query().or(t""), validation.let(_(t"$prefix.$label")).let(_.message)))
 
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Formulable =
-    (prefix, label0, query) =>
+    (prefix, label0, query, validation) =>
       val content: IArray[Html[Flow]] =
         contexts:
           [FieldType] => context =>
             val label2 = if prefix == t"" then label else t"$prefix.$label"
-            context.elements(label2, label.uncamel.map(_.upper).spaced, query(label))
+            context.fields
+              (label2,
+              label.uncamel.map(_.lower.capitalize).spaced,
+              query(label),
+              validation)
 
         . flatten
 
@@ -63,4 +72,6 @@ object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
 
 trait Formulable:
   type Self
-  def elements(prefix: Text, label: Text, query: Query): List[Html[Flow]]
+
+  def fields(prefix: Text, label: Text, query: Query, validation: Optional[Errors])
+  :     List[Html[Flow]]

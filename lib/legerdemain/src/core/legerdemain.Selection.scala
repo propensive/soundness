@@ -42,9 +42,14 @@ import html5.*
 
 object Selection:
   given renderable: Selection is Renderable into Html[Flow] = selection =>
-    List(Label(Select(name = selection.name):
-      selection.options.map: option =>
-        html5.Option(value = option.key, label = option.value)))
+    List
+     (Div
+       (selection.validation.let(P.alert(_)),
+        Label
+        (Select(name = selection.name):
+            selection.options.map: option =>
+              html5.Option(value = option.key, label = option.value))))
 
-case class Selection(name: Text, options: List[(key: Text, value: Text)], value: Text)
+case class Selection
+   (name: Text, options: List[(key: Text, value: Text)], value: Text, validation: Optional[Text])
 extends Widget
