@@ -156,13 +156,13 @@ object Data:
 
           Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
-  def plan(start: StationRow, destination: StationRow, time: Text)(using Online)
+  def plan(start: StationRow, end: StationRow, time: Text)(using Online)
   :     Plan raises UserError =
 
     val modes = t"tube,elizabeth-line,dlr,overground"
 
     val sourceUrl =
-      url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$destination/?mode=$modes&time=$time"
+      url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$end/?mode=$modes&time=$time"
     given Optional[JsonPointer] is Communicable = _.lay(t"<unknown>")(_.show).communicate
 
     track[JsonPointer](UserError()):

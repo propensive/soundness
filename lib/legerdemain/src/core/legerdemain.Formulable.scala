@@ -37,7 +37,6 @@ import contingency.*
 import gossamer.*
 import honeycomb.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 import wisteria.*
 

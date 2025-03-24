@@ -35,7 +35,6 @@ package telekinesis
 import anticipation.*
 import distillate.*
 import fulminate.*
-import honeycomb.*
 import legerdemain.*
 import nettlesome.*
 import prepositional.*
