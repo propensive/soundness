@@ -34,4 +34,4 @@ package anthology
 
 import anticipation.*
 
-case class ScalacOption[-VersionType <: Scalac.All](flags: Text*)
+case class ScalacOption[-version <: Scalac.All](flags: Text*)

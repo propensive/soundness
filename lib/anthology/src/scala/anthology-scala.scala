@@ -58,13 +58,13 @@ package scalacOptions:
     val nonUnitStatement = ScalacOption[3.4 | 3.5 | 3.6](t"-Wnonunit-statement")
     val valueDiscard = ScalacOption[3.4 | 3.5 | 3.6](t"-Wvalue-discard")
 
-    def unused[VersionType <: Scalac.All](selection: Unused[VersionType]) =
+    def unused[version <: Scalac.All](selection: Unused[version]) =
       val option = selection.absolve match
         case Unused.All              => t"-Wunused:all"
         case Unused.None             => t"-Wunused:none"
         case Unused.Subset(features) => features.map(_.name).join(t"-Wunused:", t",", t"")
 
-      ScalacOption[VersionType](option)
+      ScalacOption[version](option)
 
     package lint:
       val privateShadow = ScalacOption[3.4 | 3.5 | 3.6](t"-Wshadow:private-shadow")

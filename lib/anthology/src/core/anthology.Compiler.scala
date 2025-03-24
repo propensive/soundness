@@ -40,7 +40,7 @@ import parasite.*
 import prepositional.*
 
 trait Compiler:
-  def apply(classpath: LocalClasspath)[PathType: Abstractable across Paths into Text]
-     (sources: Map[Text, Text], out: PathType)
+  def apply(classpath: LocalClasspath)[path: Abstractable across Paths into Text]
+     (sources: Map[Text, Text], out: path)
      (using SystemProperties, Monitor)
   :     CompileProcess logs CompileEvent raises CompilerError

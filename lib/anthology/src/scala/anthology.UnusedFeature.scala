@@ -35,7 +35,7 @@ package anthology
 import anticipation.*
 import gossamer.*
 
-enum UnusedFeature[VersionType](val name: Text):
+enum UnusedFeature[version](val name: Text):
   case Imports(strict: Boolean) extends UnusedFeature[3.3](t"imports")
   case Privates extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6](t"privates")
   case Locals extends UnusedFeature[3.3 | 3.4 | 3.5 | 3.6](t"locals")
