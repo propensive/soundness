@@ -34,6 +34,6 @@ package octogenarian
 
 import proscenium.*
 
-class GitProcess[+ResultType](val progress: Stream[Progress])(closure: => ResultType):
-  lazy val result: ResultType/*^{closure*}*/ = closure
-  def complete(): ResultType/*^{closure*}*/ = result
+class GitProcess[+result](val progress: Stream[Progress])(closure: => result):
+  lazy val result: result = closure
+  def complete(): result = result

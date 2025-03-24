@@ -58,7 +58,7 @@ import pathNavigation.posix
 import GitError.Reason.*
 
 object GitRepo:
-  def apply[PathType: Abstractable across Paths into Text](path: PathType)
+  def apply[path: Abstractable across Paths into Text](path: path)
      (using gitError: Tactic[GitError], io: Tactic[IoError])
   :     GitRepo raises PathError raises NameError =
 
@@ -160,7 +160,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       case Exit.Ok => ()
       case failure       => abort(GitError(BranchFailed))
 
-  def add[PathType: Abstractable across Paths into Text](path: PathType)
+  def add[path: Abstractable across Paths into Text](path: path)
      (using GitCommand, WorkingDirectory, Tactic[ExecError], Tactic[GitError])
   :     Unit logs GitEvent raises PathError raises NameError =
 
