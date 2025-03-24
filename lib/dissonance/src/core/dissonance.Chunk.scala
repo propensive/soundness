@@ -36,5 +36,5 @@ import language.experimental.captureChecking
 
 import proscenium.*
 
-case class Chunk[ElemType]
-   (pos: Int, rpos: Int, dels: List[Del[ElemType]], inss: List[Ins[ElemType]])
+case class Chunk[element]
+   (pos: Int, rpos: Int, dels: List[Del[element]], inss: List[Ins[element]])

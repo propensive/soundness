@@ -37,13 +37,13 @@ import language.experimental.captureChecking
 import anticipation.*
 import proscenium.*
 
-def diff[ElemType]
-   (left:    IndexedSeq[ElemType],
-    right:   IndexedSeq[ElemType],
-    compare: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b })
-:     Diff[ElemType] =
+def diff[element]
+   (left:    IndexedSeq[element],
+    right:   IndexedSeq[element],
+    compare: (element, element) -> Boolean = { (a: element, b: element) => a == b })
+:     Diff[element] =
 
-  type Edits = List[Edit[ElemType]]
+  type Edits = List[Edit[element]]
 
   @tailrec
   def count(pos: Int, off: Int): Int =
@@ -52,7 +52,7 @@ def diff[ElemType]
     else pos
 
   @tailrec
-  def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[Array[Int]]): Diff[ElemType] =
+  def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[Array[Int]]): Diff[element] =
     val delPos = if deletes == 0 then 0 else count(rows.head(deletes - 1) + 1, inserts - deletes)
     val insPos = if inserts == 0 then 0 else count(rows.head(deletes), inserts - deletes)
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
