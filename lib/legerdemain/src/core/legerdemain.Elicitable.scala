@@ -48,10 +48,10 @@ object Elicitable:
     def widget(id: Text, label: Text, value: Text, validation: Optional[Message]): Checkbox =
       Checkbox(id, value, validation)
 
-  given [ValueType: {Decodable in Text, Encodable in Text}] => ValueType is Elicitable:
+  given [value: {Decodable in Text, Encodable in Text}] => value is Elicitable:
     type Operand = Field
-    def input(value: ValueType): Text = value.encode
-    def output(value: Text): ValueType = value.decode
+    def input(value: value): Text = value.encode
+    def output(value: Text): value = value.decode
 
     def widget(id: Text, label: Text, value: Text, validation: Optional[Message]): Field =
       Field(label, id, value, validation)
