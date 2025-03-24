@@ -33,7 +33,7 @@
 package wisteria
 
 object VariantIndex:
-  inline def apply[VariantType](int: Int): Int & VariantIndex[VariantType] =
-    int.asInstanceOf[Int & VariantIndex[VariantType]]
+  inline def apply[variant](int: Int): Int & VariantIndex[variant] =
+    int.asInstanceOf[Int & VariantIndex[variant]]
 
-erased trait VariantIndex[VariantType]
+erased trait VariantIndex[variant]

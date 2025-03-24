@@ -37,11 +37,11 @@ import vacuous.*
 import scala.quoted.*
 
 object Wisteria:
-  inline def default[ProductType, FieldType](index: Int): Optional[FieldType] =
-    ${getDefault[ProductType, FieldType]('index)}
+  inline def default[ProductType, field](index: Int): Optional[field] =
+    ${getDefault[ProductType, field]('index)}
 
-  def getDefault[ProductType: Type, FieldType: Type](index: Expr[Int])(using Quotes)
-  :     Expr[Optional[FieldType]] =
+  def getDefault[ProductType: Type, field: Type](index: Expr[Int])(using Quotes)
+  :     Expr[Optional[field]] =
 
     import quotes.reflect.*
 
@@ -57,4 +57,4 @@ object Wisteria:
           case Nil  => selection
           case args => selection.appliedToTypes(args)
 
-    . map(_.asExprOf[FieldType]).getOrElse('{Unset})
+    . map(_.asExprOf[field]).getOrElse('{Unset})

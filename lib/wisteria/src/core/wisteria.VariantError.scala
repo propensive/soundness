@@ -39,8 +39,8 @@ import scala.deriving.*
 import scala.compiletime.*
 
 object VariantError:
-  inline def apply[DerivationType](inputLabel: Text)
-     (using reflection: SumReflection[DerivationType], diagnostics: Diagnostics)
+  inline def apply[derivation](inputLabel: Text)
+     (using reflection: SumReflection[derivation], diagnostics: Diagnostics)
   :     VariantError =
 
     val variants = constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)

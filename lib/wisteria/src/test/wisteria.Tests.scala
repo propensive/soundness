@@ -43,9 +43,9 @@ object SumOnly extends SumDerivation[SumOnly]:
   given SumOnly[SumOnlyEnum.Alpha] = alpha => println(s"$alpha is an alpha")
   given SumOnly[SumOnlyEnum.Beta] = beta => println(s"$beta is a beta")
 
-  inline def split[DerivationType: SumReflection]: SumOnly[DerivationType] =
+  inline def split[derivation: SumReflection]: SumOnly[derivation] =
     value => variant(value):
-      [VariantType <: DerivationType] => value =>
+      [variant <: derivation] => value =>
         context.applyTo(value)
 
 trait SumOnly[Type]:
@@ -73,23 +73,23 @@ object Presentation extends Derivation[Presentation]:
   given Presentation[Boolean] = boolean => if boolean then "yes".tt else "no".tt
   given Presentation[Int] = _.toString.tt
 
-  inline def join[DerivationType <: Product: ProductReflection]: Presentation[DerivationType] = value =>
+  inline def join[derivation <: Product: ProductReflection]: Presentation[derivation] = value =>
     inline if singleton then typeName else
       val prefix = inline if tuple then "".tt else typeName
       fields(value):
-        [FieldType] => field => s"$index:$label=${field.present}".tt
+        [field] => field => s"$index:$label=${field.present}".tt
       .mkString((prefix.s+"("), ", ", ")").tt
 
-  inline def split[DerivationType: SumReflection]: Presentation[DerivationType] = value =>
+  inline def split[derivation: SumReflection]: Presentation[derivation] = value =>
     variant(value):
-      [VariantType <: DerivationType] =>
+      [variant <: derivation] =>
         variant => (typeName.s+"."+variant.present).tt
 
-trait Presentation[ValueType]:
-  def present(value: ValueType): Text
+trait Presentation[value]:
+  def present(value: value): Text
 
-extension [ValueType](value: ValueType)
-  def present(using presentation: Presentation[ValueType]): Text = presentation.present(value)
+extension [value](value: value)
+  def present(using presentation: Presentation[value]): Text = presentation.present(value)
 
 sealed trait Human
 case class President(name: Text = "nobody".tt, number: Int = 42) extends Human
@@ -104,32 +104,32 @@ object Readable extends Derivation[Readable]:
   given int: Readable[Int] = _.s.toInt
   given boolean: Readable[Boolean] = _ == "yes".tt
 
-  inline def join[DerivationType <: Product: ProductReflection]: Readable[DerivationType] = text =>
+  inline def join[derivation <: Product: ProductReflection]: Readable[derivation] = text =>
     text.s.split(",").nn.to(List).map(_.nn).pipe:
       array =>
         construct:
-          [FieldType] =>
+          [field] =>
             readable =>
               if index < array.length then readable.read(array(index).tt) else default().or(???)
 
-  inline def split[DerivationType: SumReflection]: Readable[DerivationType] = text =>
+  inline def split[derivation: SumReflection]: Readable[derivation] = text =>
     text.s.split(":").nn.to(List).map(_.nn.tt) match
       case List(variant, text2) => delegate(variant):
-        [VariantType <: DerivationType] =>
+        [variant <: derivation] =>
           context => context.read(text2)
 
-trait Readable[ValueType]:
-  def read(text: Text): ValueType
+trait Readable[value]:
+  def read(text: Text): value
 
 extension (text: Text)
-  def read[ValueType](using readable: Readable[ValueType]): ValueType = readable.read(text)
+  def read[value](using readable: Readable[value]): value = readable.read(text)
 
-trait Eq[ValueType]:
-  def equal(left: ValueType, right: ValueType): Boolean
+trait Eq[value]:
+  def equal(left: value, right: value): Boolean
 
-extension [ValueType](left: ValueType)
+extension [value](left: value)
   @targetName("eq")
-  infix def ===(right: ValueType)(using eq: Eq[ValueType]): Boolean = eq.equal(left, right)
+  infix def ===(right: value)(using eq: Eq[value]): Boolean = eq.equal(left, right)
 
 object Eq extends Derivation[Eq]:
   given iarray[ElementType](using eq: Eq[ElementType]): Eq[IArray[ElementType]] = (left, right) =>
@@ -141,21 +141,21 @@ object Eq extends Derivation[Eq]:
   given boolean: Eq[Boolean] = _ & _
   given double: Eq[Double] = (left, right) => math.abs(left - right) < 0.1
 
-  inline def join[DerivationType <: Product: ProductReflection]: Eq[DerivationType] =
+  inline def join[derivation <: Product: ProductReflection]: Eq[derivation] =
     (left, right) =>
       fields(left):
-        [FieldType] => leftValue => leftValue === complement(right)
+        [field] => leftValue => leftValue === complement(right)
       .all { boolean => boolean }
 
-  inline def split[DerivationType: SumReflection]: Eq[DerivationType] =
+  inline def split[derivation: SumReflection]: Eq[derivation] =
     (left, right) =>
       variant(left):
-        [VariantType <: DerivationType] => leftValue =>
+        [variant <: derivation] => leftValue =>
           complement(right).lay(false): rightValue =>
             leftValue === rightValue
 
-trait Parser[ValueType]:
-  def parse(s: String): Option[ValueType]
+trait Parser[value]:
+  def parse(s: String): Option[value]
 
 object Parser extends ProductDerivation[Parser]:
   given Parser[Int] with
@@ -164,12 +164,12 @@ object Parser extends ProductDerivation[Parser]:
   given Parser[Boolean] with
     def parse(s: String): Option[Boolean] = s.toBooleanOption
 
-  inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = input =>
+  inline def join[derivation <: Product: ProductReflection]: Parser[derivation] = input =>
     IArray.from(input.split(',')).pipe: inputArr =>
       constructWith[Option](
         [MonadicTypeIn, MonadicTypeOut] => _.flatMap,
-        [MonadicType] => Some(_),
-        [FieldType] => context =>
+        [monadic] => Some(_),
+        [field] => context =>
           if index < inputArr.length then context.parse(inputArr(index))
           else None
       )
@@ -184,13 +184,13 @@ extension[T: Show](value: T)
 
 object Show extends Derivation[Show]:
 
-  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] = value =>
+  inline def join[derivation <: Product: ProductReflection]: Show[derivation] = value =>
     typeName.s
 
-  inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
+  inline def split[derivation: SumReflection]: Show[derivation] = value =>
     inline if choice then
       variant(value):
-        [VariantType <: DerivationType] =>
+        [variant <: derivation] =>
           variant => typeName.s+"."+variant.show
     else
       compiletime.error("cannot derive Show for adt")
@@ -204,13 +204,13 @@ enum Adt:
   case First
   case Second(a: Boolean)
 
-trait Producer[ValueType]:
-  def produce(s: String): Option[ValueType]
+trait Producer[value]:
+  def produce(s: String): Option[value]
 
 object Producer extends Derivation[Producer]:
-  inline def join[DerivationType <: Product: ProductOf]: Producer[DerivationType] = ???
+  inline def join[derivation <: Product: ProductOf]: Producer[derivation] = ???
 
-  inline def split[DerivationType: SumOf]: Producer[DerivationType] = input =>
+  inline def split[derivation: SumOf]: Producer[derivation] = input =>
     inline if choice then Some(singleton(input)) else compiletime.error("not a choice")
 
 object Tests extends Suite(m"Wisteria tests"):

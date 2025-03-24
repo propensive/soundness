@@ -35,11 +35,11 @@ package wisteria
 import scala.deriving.*
 import scala.compiletime.*
 
-trait SumDerivation[TypeclassType[_]] extends SumDerivationMethods[TypeclassType]:
-  inline given derived[DerivationType](using Reflection[DerivationType])
-  :     TypeclassType[DerivationType] =
+trait SumDerivation[typeclass[_]] extends SumDerivationMethods[typeclass]:
+  inline given derived[derivation](using Reflection[derivation])
+  :     typeclass[derivation] =
 
-    inline summon[Reflection[DerivationType]] match
+    inline summon[Reflection[derivation]] match
       case reflection: SumReflection[derivationType] =>
         split[derivationType](using reflection).asMatchable match
-          case typeclass: TypeclassType[DerivationType] => typeclass
+          case typeclass: typeclass[`derivation`] => typeclass

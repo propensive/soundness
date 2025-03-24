@@ -41,17 +41,17 @@ object ContextRequirement:
   given required: ContextRequirement:
     type Optionality[Type] = Type
     type Required = true
-    def wrap[ValueType](optional: Optional[ValueType]): ValueType = optional.vouch
+    def wrap[value](optional: Optional[value]): value = optional.vouch
 
   object relaxed extends ContextRequirement:
     type Optionality[Type] = Optional[Type]
     type Required = false
-    def wrap[ValueType](optional: Optional[ValueType]): Optional[ValueType] = optional
+    def wrap[value](optional: Optional[value]): Optional[value] = optional
 
 trait ContextRequirement:
   type Optionality[Type] <: Optional[Type]
   type Required <: Boolean
-  def wrap[ValueType](optional: Optional[ValueType]): Optionality[ValueType]
+  def wrap[value](optional: Optional[value]): Optionality[value]
 
   inline def summon[ContextualType]: Optionality[ContextualType] =
     inline if erasedValue[Required] then wrap(summonInline[ContextualType]) else summonFrom:
