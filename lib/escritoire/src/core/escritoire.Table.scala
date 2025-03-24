@@ -40,27 +40,27 @@ import scala.collection.immutable as sci
 
 object Table:
   @targetName("make")
-  def apply[RowType](using erased Void)[TextType: ClassTag: Textual]
-     (columns0: Column[RowType, TextType]*)
-  :     Table[RowType, TextType] =
+  def apply[row](using erased Void)[text: ClassTag: Textual]
+     (columns0: Column[row, text]*)
+  :     Table[row, text] =
 
     new Table(columns0*)
 
-case class Table[RowType, TextType: {ClassTag, Textual as textual}]
-   (columns0: Column[RowType, TextType]*):
+case class Table[row, text: {ClassTag, Textual as textual}]
+   (columns0: Column[row, text]*):
   table =>
 
-  val columns: IArray[Column[RowType, TextType]] = IArray.from(columns0)
-  val titles: Seq[IArray[IArray[TextType]]] =
+  val columns: IArray[Column[row, text]] = IArray.from(columns0)
+  val titles: Seq[IArray[IArray[text]]] =
     Seq(IArray.from(columns.map { column => IArray.from(column.title.cut(t"\n")) }))
 
-  def tabulate(data: Seq[RowType]): Tabulation[TextType] { type Row = RowType } =
-    new Tabulation[TextType]:
-      type Row = RowType
+  def tabulate(data: Seq[row]): Tabulation[text] { type Row = row } =
+    new Tabulation[text]:
+      type Row = row
 
-      val columns: IArray[Column[Row, TextType]] = table.columns
-      val titles: Seq[IArray[IArray[TextType]]] = table.titles
+      val columns: IArray[Column[Row, text]] = table.columns
+      val titles: Seq[IArray[IArray[text]]] = table.titles
       val dataLength: Int = data.length
 
-      val rows: Seq[IArray[IArray[TextType]]] =
+      val rows: Seq[IArray[IArray[text]]] =
         data.map { row => columns.map { column => IArray.from(column.get(row).lines) } }

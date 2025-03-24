@@ -32,9 +32,9 @@
                                                                                                   */
 package escritoire
 
-trait Tabular[TextType]:
+trait Tabular[text]:
   type Self
   type Element
-  def table(value: Self): Table[Element, TextType]
+  def table(value: Self): Table[Element, text]
   def rows(value: Self): Seq[Element]
-  def tabulate(value: Self): Tabulation[TextType] = table(value).tabulate(rows(value))
+  def tabulate(value: Self): Tabulation[text] = table(value).tabulate(rows(value))

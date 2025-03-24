@@ -46,14 +46,14 @@ import scala.collection.immutable as sci
 import language.experimental.pureFunctions
 
 object Grid:
-  given [TextType: {Textual, Printable as printable}] => (Text is Measurable)
-  =>    Grid[TextType] is Printable =
+  given [text: {Textual, Printable as printable}] => (Text is Measurable)
+  =>    Grid[text] is Printable =
     (layout, termcap) =>
       layout.render.map(printable.print(_, termcap)).join(t"\n")
 
-case class Grid[TextType](sections: List[TableSection[TextType]], style: TableStyle):
+case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
 
-  def render(using metrics: Text is Measurable, textual: TextType is Textual): Stream[TextType] =
+  def render(using metrics: Text is Measurable, textual: text is Textual): Stream[text] =
     val pad = t" "*style.padding
     val leftEdge = Textual(t"${style.charset(top = style.sideLines, bottom = style.sideLines)}$pad")
 
@@ -63,7 +63,7 @@ case class Grid[TextType](sections: List[TableSection[TextType]], style: TableSt
     val midEdge =
       Textual(t"$pad${style.charset(top = style.innerLines, bottom = style.innerLines)}$pad")
 
-    def recur(widths: IArray[Int], rows: Stream[TableRow[TextType]]): Stream[TextType] =
+    def recur(widths: IArray[Int], rows: Stream[TableRow[text]]): Stream[text] =
       rows match
         case row #:: tail =>
           val lines = (0 until row.height).map: lineNumber =>
@@ -83,7 +83,7 @@ case class Grid[TextType](sections: List[TableSection[TextType]], style: TableSt
         case _ =>
           Stream()
 
-    def rule(above: Optional[IArray[Int]], below: Optional[IArray[Int]]): TextType =
+    def rule(above: Optional[IArray[Int]], below: Optional[IArray[Int]]): text =
       val width = above.or(below).vouch.pipe: widths =>
         widths.sum + style.cost(widths.length)
 

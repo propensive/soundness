@@ -32,6 +32,6 @@
                                                                                                   */
 package escritoire
 
-case class TableCell[TextType]
-   (width: Int, span: Int, lines: IndexedSeq[TextType], minHeight: Int, textAlign: TextAlignment):
-  def apply(line: Int): TextType = lines(line)
+case class TableCell[text]
+   (width: Int, span: Int, lines: IndexedSeq[text], minHeight: Int, textAlign: TextAlignment):
+  def apply(line: Int): text = lines(line)
