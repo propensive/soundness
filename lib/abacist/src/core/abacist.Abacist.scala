@@ -49,7 +49,7 @@ given Realm = realm"abacist"
 object Abacist:
   import Quantitative.*
 
-  def make[UnitsType <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Count[UnitsType]] =
+  def make[units <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Count[units]] =
     val inputs: List[Expr[Int]] = values.absolve match
       case Varargs(values) => values.to(List).reverse
 
@@ -79,7 +79,7 @@ object Abacist:
             m"""${inputs.length} unit values were provided, but this Count only has
                 ${multipliers.length} units"""
 
-    '{Count.fromLong[UnitsType](${recur(multipliers[UnitsType].reverse, inputs, '{0L})})}
+    '{Count.fromLong[units](${recur(multipliers[units].reverse, inputs, '{0L})})}
 
   def describeCount[CountUnits <: Tuple: Type](count: Expr[Count[CountUnits]])(using Quotes)
   :     Expr[ListMap[Text, Long]] =
@@ -99,59 +99,59 @@ object Abacist:
 
     recur(multipliers[CountUnits], '{ListMap()})
 
-  def multiplyCount[CountUnitsType <: Tuple: Type]
-     (count: Expr[Count[CountUnitsType]], multiplier: Expr[Double], division: Boolean)
+  def multiplyCount[countUnits <: Tuple: Type]
+     (count: Expr[Count[countUnits]], multiplier: Expr[Double], division: Boolean)
      (using Quotes)
   :     Expr[Any] =
 
-    if division then '{Count.fromLong[CountUnitsType](($count.longValue/$multiplier + 0.5).toLong)}
-    else '{Count.fromLong[CountUnitsType](($count.longValue*$multiplier + 0.5).toLong)}
+    if division then '{Count.fromLong[countUnits](($count.longValue/$multiplier + 0.5).toLong)}
+    else '{Count.fromLong[countUnits](($count.longValue*$multiplier + 0.5).toLong)}
 
-  def toQuantity[CountUnitsType <: Tuple: Type](count: Expr[Count[CountUnitsType]])(using Quotes)
+  def toQuantity[countUnits <: Tuple: Type](count: Expr[Count[countUnits]])(using Quotes)
   :     Expr[Any] =
-    val lastUnit = multipliers[CountUnitsType].last
+    val lastUnit = multipliers[countUnits].last
     val quantityUnit = lastUnit.unitPower.ref.dimensionRef.principal
     val ratioExpr = ratio(lastUnit.unitPower.ref, quantityUnit, lastUnit.unitPower.power)
 
     quantityUnit.power(1).asType.absolve match
-      case '[type quantityType <: Measure; quantityType] =>
-        '{Quantity[quantityType]($count.longValue*$ratioExpr)}
+      case '[type quantity <: Measure; quantity] =>
+        '{Quantity[quantity]($count.longValue*$ratioExpr)}
 
-  def fromQuantity[QuantityType <: Measure: Type, CountUnitsType <: Tuple: Type]
-     (quantity: Expr[Quantity[QuantityType]])
+  def fromQuantity[quantity <: Measure: Type, countUnits <: Tuple: Type]
+     (quantity: Expr[Quantity[quantity]])
      (using Quotes)
-  :     Expr[Count[CountUnitsType]] =
+  :     Expr[Count[countUnits]] =
 
     import quotes.reflect.*
 
-    val lastUnit = multipliers[CountUnitsType].last.unitPower
-    val quantityUnit = readUnitPower(TypeRepr.of[QuantityType].dealias)
+    val lastUnit = multipliers[countUnits].last.unitPower
+    val quantityUnit = readUnitPower(TypeRepr.of[quantity].dealias)
     val ratioExpr = ratio(quantityUnit.ref, lastUnit.ref, lastUnit.power)
 
-    '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[Count[CountUnitsType]]}
+    '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[Count[countUnits]]}
 
-  def get[UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type]
-     (value: Expr[Count[UnitsType]])
+  def get[units <: Tuple: Type, unit <: Units[1, ? <: Dimension]: Type]
+     (value: Expr[Count[units]])
      (using Quotes)
   :     Expr[Int] =
 
     import quotes.reflect.*
 
-    val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
+    val lookupUnit = readUnitPower(TypeRepr.of[unit])
 
-    val multiplier: Multiplier = multipliers[UnitsType].where(_.unitPower == lookupUnit).or:
+    val multiplier: Multiplier = multipliers[units].where(_.unitPower == lookupUnit).or:
       halt(m"the Count does not include this unit")
 
     '{(($value.longValue/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
 
   private case class Multiplier(unitPower: UnitPower, subdivision: Int, max: Int)
 
-  private def multipliers[UnitsType: Type](using Quotes): List[Multiplier] =
+  private def multipliers[units: Type](using Quotes): List[Multiplier] =
     import quotes.reflect.*
 
-    def untuple[TupleType: Type](dimension: Optional[DimensionRef], result: List[UnitPower])
+    def untuple[tuple: Type](dimension: Optional[DimensionRef], result: List[UnitPower])
     :     List[UnitPower] =
-      TypeRepr.of[TupleType].dealias.asType match
+      TypeRepr.of[tuple].dealias.asType match
         case '[head *: tail] =>
           val unitPower = readUnitPower(TypeRepr.of[head])
 
@@ -166,7 +166,7 @@ object Abacist:
         case _ =>
           result
 
-    val cascade: List[UnitPower] = untuple[UnitsType](Unset, Nil)
+    val cascade: List[UnitPower] = untuple[units](Unset, Nil)
 
     def recur(todo: List[UnitPower], units: List[Multiplier] = Nil): List[Multiplier] = todo match
       case Nil =>
