@@ -56,8 +56,8 @@ object Austronesian:
     given boolean: Boolean is Encodable in Stdlib = identity(_)
     given byte: Byte is Encodable in Stdlib = identity(_)
 
-    given list: [CollectionType <: Iterable, ElementType: Encodable in Stdlib]
-    =>     CollectionType[ElementType] is Encodable in Stdlib =
+    given list: [collection <: Iterable, element: Encodable in Stdlib]
+    =>     collection[element] is Encodable in Stdlib =
       iterable => IArray.from(iterable.map(_.encode))
 
     given text2: Tactic[StdlibError] => Text is Decodable in Stdlib =
@@ -92,10 +92,10 @@ object Austronesian:
       case boolean: Boolean => boolean
       case _                => raise(StdlibError()) yet false
 
-    given collection: [CollectionType <: Iterable, ElementType: Decodable in Stdlib]
+    given collection: [collection <: Iterable, element: Decodable in Stdlib]
     =>    Tactic[StdlibError]
-    =>    (factory: Factory[ElementType, CollectionType[ElementType]])
-    =>    CollectionType[ElementType] is Decodable in Stdlib =
+    =>    (factory: Factory[element, collection[element]])
+    =>    collection[element] is Decodable in Stdlib =
 
       case array: Array[Stdlib] =>
         factory.newBuilder.pipe: builder =>
@@ -106,8 +106,8 @@ object Austronesian:
         raise(StdlibError()) yet factory.newBuilder.result()
 
   trait Stdlib2:
-    inline given encodable: [ValueType: Reflection] => ValueType is Encodable in Stdlib =
+    inline given encodable: [value: Reflection] => value is Encodable in Stdlib =
       Austronesian2.EncodableDerivation.derived
 
-    inline given decodable: [ValueType: Reflection] => ValueType is Decodable in Stdlib =
+    inline given decodable: [value: Reflection] => value is Decodable in Stdlib =
       Austronesian2.DecodableDerivation.derived

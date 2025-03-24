@@ -44,16 +44,16 @@ import wisteria.*
 object Austronesian2:
   object EncodableDerivation extends Derivation[[Type] =>> Type is Encodable in Stdlib]:
 
-    inline def join[DerivationType <: Product: ProductReflection]
-    :     DerivationType is Encodable in _root_.austronesian.Austronesian.Stdlib =
+    inline def join[derivation <: Product: ProductReflection]
+    :     derivation is Encodable in _root_.austronesian.Austronesian.Stdlib =
 
       fields(_):
-        [FieldType] => _.encode
+        [field] => _.encode
       .asInstanceOf[Stdlib]
 
-    inline def split[DerivationType: SumReflection]: DerivationType is Encodable in Stdlib =
+    inline def split[derivation: SumReflection]: derivation is Encodable in Stdlib =
       variant(_):
-        [VariantType <: DerivationType] => value =>
+        [variant <: derivation] => value =>
           IArray.create[Stdlib](2): array =>
             array(0) = label.s.asInstanceOf[Stdlib]
             array(1) = value.encode
@@ -61,19 +61,19 @@ object Austronesian2:
           . asInstanceOf[Stdlib]
 
   object DecodableDerivation extends Derivable[Decodable in Stdlib]:
-    inline def join[DerivationType <: Product: ProductReflection]
-    :     DerivationType is Decodable in Stdlib =
+    inline def join[derivation <: Product: ProductReflection]
+    :     derivation is Decodable in Stdlib =
 
       case array: Array[Stdlib] =>
-        construct: [FieldType] =>
+        construct: [field] =>
           _.decoded(array(index))
 
       case other =>
         summonInline[Tactic[StdlibError]].give(abort(StdlibError()))
 
-    inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Stdlib =
+    inline def split[derivation: SumReflection]: derivation is Decodable in Stdlib =
       case Array(label: String, stdlib: Stdlib) =>
-        delegate(label): [VariantType <: DerivationType] =>
+        delegate(label): [variant <: derivation] =>
           _.decoded(stdlib)
 
       case other =>
