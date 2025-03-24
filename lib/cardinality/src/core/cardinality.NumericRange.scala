@@ -42,71 +42,71 @@ import Cardinality.{Asym, Min4, Max4}
 
 object NumericRange:
   @annotation.targetName("Range")
-  opaque infix type ~ [MinValueType <: Double, MaxValueType <: Double] = Double
+  opaque infix type ~ [min <: Double, max <: Double] = Double
 
-  def apply[MinValueType <: Double, MaxValueType <: Double](value: Double)
-  :     MinValueType ~ MaxValueType =
+  def apply[min <: Double, max <: Double](value: Double)
+  :     min ~ max =
     value
 
   @annotation.targetName("Range")
   object `~`:
-    given comparable[MinValueType <: Double & Singleton, MaxValueType <: Double & Singleton]
-       (using min: ValueOf[MinValueType], max: ValueOf[MaxValueType])
-    :     TypeTest[Double, MinValueType ~ MaxValueType] =
+    given comparable[min <: Double & Singleton, max <: Double & Singleton]
+       (using min: ValueOf[min], max: ValueOf[max])
+    :     TypeTest[Double, min ~ max] =
 
       value =>
         if value >= min.value && value <= max.value
-        then Some(value.asInstanceOf[(MinValueType ~ MaxValueType) & value.type])
+        then Some(value.asInstanceOf[(min ~ max) & value.type])
         else None
 
-    class RangeParser[MinValueType <: Double, MaxValueType <: Double]
-    extends FromDigits.Decimal[MinValueType ~ MaxValueType]:
+    class RangeParser[min <: Double, max <: Double]
+    extends FromDigits.Decimal[min ~ max]:
       def fromDigits(digits: String): Double = apply(digits.toDouble)
 
-    given cardinality[MinValueType <: Double, MaxValueType <: Double]
-    :     RangeParser[MinValueType, MaxValueType] with
-      override inline def fromDigits(digits: String): MinValueType ~ MaxValueType =
+    given cardinality[min <: Double, max <: Double]
+    :     RangeParser[min, max] with
+      override inline def fromDigits(digits: String): min ~ max =
         ${Cardinality('digits)}
 
-    extension [LeftMinType <: Double, LeftMaxType <: Double](left: LeftMinType ~ LeftMaxType)
+    extension [leftMin <: Double, leftMax <: Double](left: leftMin ~ leftMax)
       def double: Double = left
 
       @annotation.targetName("add")
-      infix def + [RightMinType <: Double, RightMaxType <: Double]
-         (right: RightMinType ~ RightMaxType)
-      :     (LeftMinType + RightMinType) ~ (LeftMaxType + RightMaxType) =
+      infix def + [rightMin <: Double, rightMax <: Double]
+         (right: rightMin ~ rightMax)
+      :     (leftMin + rightMin) ~ (leftMax + rightMax) =
         left + right
 
       @annotation.targetName("add2")
       infix def + [E <: Double & Singleton](right: E)
-      :     (LeftMinType + right.type) ~ (LeftMaxType + right.type) =
+      :     (leftMin + right.type) ~ (leftMax + right.type) =
         left + right
 
       @annotation.targetName("add3")
       infix def + (right: Double): Double = left + right
 
       @annotation.targetName("times")
-      infix def * [RightMinType <: Double, RightMaxType <: Double]
-         (right: RightMinType ~ RightMaxType)
+      infix def * [rightMin <: Double, rightMax <: Double]
+         (right: rightMin ~ rightMax)
       :     (Min4
-              [LeftMinType*RightMinType,
-               LeftMinType*RightMaxType,
-               LeftMaxType*RightMaxType,
-               LeftMaxType*RightMinType]) ~ (Max4
-                                              [LeftMinType*RightMinType,
-                                               LeftMinType*RightMaxType,
-                                               LeftMaxType*RightMaxType,
-                                               LeftMaxType*RightMinType]) =
+              [leftMin*rightMin,
+               leftMin*rightMax,
+               leftMax*rightMax,
+               leftMax*rightMin]) ~ (Max4
+                                              [leftMin*rightMin,
+                                               leftMin*rightMax,
+                                               leftMax*rightMax,
+                                               leftMax*rightMin]) =
 
         left*right
 
       @annotation.targetName("times2")
-      infix def * [RightType <: Double & Singleton](right: RightType)
+      infix def * [right <: Double & Singleton](right: right)
       :     Min
-             [LeftMinType*RightType,
-              LeftMaxType*RightType] ~ Max
-                                        [LeftMinType*RightType,
-                                         LeftMaxType*RightType] =
+             [leftMin*right,
+              leftMax*right] ~ Max
+                                        [leftMin*right,
+                                         leftMax*right] =
 
         left*right
 
@@ -114,22 +114,22 @@ object NumericRange:
       infix def * (right: Double): Double = left*right
 
       @annotation.targetName("minus")
-      infix def - [RightMinType <: Double, RightMaxType <: Double]
-         (right: RightMinType ~ RightMaxType)
+      infix def - [rightMin <: Double, rightMax <: Double]
+         (right: rightMin ~ rightMax)
       :     Min
-             [LeftMinType - RightMinType,
-              LeftMinType - RightMaxType] ~ Max
-                                             [LeftMaxType - RightMinType,
-                                              LeftMaxType - RightMaxType] =
+             [leftMin - rightMin,
+              leftMin - rightMax] ~ Max
+                                             [leftMax - rightMin,
+                                              leftMax - rightMax] =
         left - right
 
       @annotation.targetName("minus2")
-      infix def - [RightType <: Double & Singleton](right: RightType)
+      infix def - [right <: Double & Singleton](right: right)
       :     Min
-             [LeftMinType - RightType,
-              LeftMaxType - RightType] ~ Max
-                                          [LeftMinType - RightType,
-                                           LeftMaxType - RightType] =
+             [leftMin - right,
+              leftMax - right] ~ Max
+                                          [leftMin - right,
+                                           leftMax - right] =
 
         left - right
 
@@ -137,32 +137,32 @@ object NumericRange:
       infix def - (right: Double): Double = left - right
 
       @annotation.targetName("divide")
-      infix def / [RightType <: Double & Singleton](right: RightType)
+      infix def / [right <: Double & Singleton](right: right)
       :     Min
-             [LeftMinType/RightType,
-              LeftMaxType/RightType] ~ Max
-                                        [LeftMinType/RightType,
-                                         LeftMaxType/RightType] =
+             [leftMin/right,
+              leftMax/right] ~ Max
+                                        [leftMin/right,
+                                         leftMax/right] =
 
         left/right
 
       @annotation.targetName("divide2")
-      infix def / [RightMinType <: Double, RightMaxType <: Double]
-         (right: RightMinType ~ RightMaxType)
+      infix def / [rightMin <: Double, rightMax <: Double]
+         (right: rightMin ~ rightMax)
       :     Asym
-             [RightMinType*RightMaxType,
+             [rightMin*rightMax,
               Min4
-               [LeftMinType/RightMinType,
-                LeftMaxType/RightMinType,
-                LeftMinType/RightMaxType,
-                LeftMaxType/RightMaxType],
+               [leftMin/rightMin,
+                leftMax/rightMin,
+                leftMin/rightMax,
+                leftMax/rightMax],
               -1.0/0.0] ~ Asym
-                           [RightMinType*RightMaxType,
+                           [rightMin*rightMax,
                             Max4
-                             [LeftMinType/RightMinType,
-                              LeftMaxType/RightMinType,
-                              LeftMinType/RightMaxType,
-                              LeftMaxType/RightMaxType],
+                             [leftMin/rightMin,
+                              leftMax/rightMin,
+                              leftMin/rightMax,
+                              leftMax/rightMax],
                             1.0/0.0] =
         left/right
 
