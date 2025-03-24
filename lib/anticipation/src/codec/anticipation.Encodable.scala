@@ -53,9 +53,9 @@ trait Encodable:
 
   extension (value: Self) def encode: Format = encoded(value)
 
-  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Encodable in Format =
+  def contramap[self2](lambda: self2 => Self): self2 is Encodable in Format =
     new Encodable:
-      type Self = SelfType2
+      type Self = self2
       type Format = encodable.Format
 
       def encoded(value: Self): Format = encodable.encoded(lambda(value))

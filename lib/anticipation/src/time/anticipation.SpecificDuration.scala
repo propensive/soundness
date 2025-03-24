@@ -39,7 +39,7 @@ trait SpecificDuration:
   def duration(milliseconds: Long): Self
 
 object SpecificDuration:
-  def apply[DurationType: SpecificDuration](milliseconds: Long): DurationType =
-    DurationType.duration(milliseconds)
+  def apply[duration: SpecificDuration](milliseconds: Long): duration =
+    duration.duration(milliseconds)
 
   given Long is SpecificDuration = identity(_)

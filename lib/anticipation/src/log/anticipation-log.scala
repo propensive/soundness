@@ -32,8 +32,8 @@
                                                                                                   */
 package anticipation
 
-infix type logs [ResultType, EventType] = (EventType is Loggable) ?=> ResultType
+infix type logs [result, event] = (event is Loggable) ?=> result
 
-infix type transcribes [EventType, EventType2] = Transcribable:
-  type Self = EventType2
-  type Result = EventType
+infix type transcribes [event, event2] = Transcribable:
+  type Self = event2
+  type Result = event

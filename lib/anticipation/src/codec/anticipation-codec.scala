@@ -48,8 +48,8 @@ object Bytes:
   def fill(count: Int)(lambda: Int => Byte): Bytes = construct(count): array =>
     for index <- 0 until count do array(index) = lambda(index)
 
-extension [ValueType: Encodable in Bytes](value: ValueType)
-  def bytestream: Bytes = ValueType.encode(value)
+extension [encodable: Encodable in Bytes](value: encodable)
+  def bytestream: Bytes = encodable.encode(value)
 
 extension (long: Long)
   def bytes: Bytes = IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)

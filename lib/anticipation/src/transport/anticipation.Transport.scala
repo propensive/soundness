@@ -36,8 +36,8 @@ import language.experimental.captureChecking
 
 trait Transport:
   type Self
-  type Writer[-DataType]
-  type Reader[DataType]
+  type Writer[-data]
+  type Reader[data]
 
-  def write[DataType: Writer](value: DataType): LazyList[IArray[Byte]]
-  def read[DataType: Reader](value: LazyList[IArray[Byte]]): DataType
+  def write[data: Writer](value: data): LazyList[IArray[Byte]]
+  def read[data: Reader](value: LazyList[IArray[Byte]]): data
