@@ -43,4 +43,4 @@ object Scheme:
   object Http extends Scheme["http"](t"http")
   object Https extends Scheme["https"](t"https")
 
-case class Scheme[+SchemeType <: Label](name: Text)
+case class Scheme[+scheme <: Label](name: Text)

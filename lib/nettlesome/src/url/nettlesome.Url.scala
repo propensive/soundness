@@ -50,8 +50,8 @@ import serpentine.*
 import spectacular.*
 import vacuous.*
 
-case class Url[+SchemeType <: Label]
-   (origin:    Origin[SchemeType],
+case class Url[+scheme <: Label]
+   (origin:    Origin[scheme],
     pathText:  Text,
     query:     Optional[Text]      = Unset,
     fragment:  Optional[Text]      = Unset)
@@ -60,7 +60,7 @@ extends Root
           Case.Sensitive):
   type Platform = HttpUrl
 
-  def scheme: Scheme[SchemeType] = origin.scheme
+  def scheme: Scheme[scheme] = origin.scheme
   def authority: Optional[Authority] = origin.authority
   def requestTarget: Text = pathText+query.lay(t"")(t"?"+_)
   def host: Optional[Hostname] = authority.let(_.host)
@@ -97,25 +97,25 @@ object Url:
   given instantiable: (Tactic[UrlError]) => HttpUrl is Instantiable across Urls from Text =
     Url.parse(_)
 
-  given showable: [SchemeType <: Label] => Url[SchemeType] is Showable = url =>
+  given showable: [scheme <: Label] => Url[scheme] is Showable = url =>
     val auth = url.authority.lay(t"")(t"//"+_.show)
     val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
 
-  given [SchemeType <: Label] => Tactic[UrlError] => Url[SchemeType] is Decodable in Text =
+  given [scheme <: Label] => Tactic[UrlError] => Url[scheme] is Decodable in Text =
 
     parse(_)
 
-  given [SchemeType <: Label] => Url[SchemeType] is Encodable in Text = _.show
+  given [scheme <: Label] => Url[scheme] is Encodable in Text = _.show
 
-  given teletype: [SchemeType <: Label] => Url[SchemeType] is Teletypeable =
+  given teletype: [scheme <: Label] => Url[scheme] is Teletypeable =
     url => e"$Underline(${Fg(0x00bfff)}(${url.show}))"
 
-  given communicable: [SchemeType <: Label] => Url[SchemeType] is Communicable =
+  given communicable: [scheme <: Label] => Url[scheme] is Communicable =
     url => Message(url.show)
 
-  def parse[SchemeType <: Label](value: Text)
-  :     Url[SchemeType] raises UrlError =
+  def parse[scheme <: Label](value: Text)
+  :     Url[scheme] raises UrlError =
     import UrlError.Expectation.*
 
     safely(value.where(_ == ':')).asMatchable match

@@ -44,8 +44,8 @@ object UrlFragment:
   given Substitution[UrlFragment, Raw, "x"] = raw => UrlFragment.RawTextual(raw.text)
   given Substitution[UrlFragment, Int, "80"] = UrlFragment.Integral(_)
 
-  given [ValueType: Encodable in Text] => Substitution[UrlFragment, ValueType, "x"] =
-    value => UrlFragment.Textual(ValueType.encode(value))
+  given [encodable: Encodable in Text] => Substitution[UrlFragment, encodable, "x"] =
+    value => UrlFragment.Textual(encodable.encode(value))
 
 enum UrlFragment:
   case Integral(value: Int)

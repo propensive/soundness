@@ -53,8 +53,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
     val constant = context.value.get.parts.head.split(":").nn.head.nn
 
     ConstantType(StringConstant(constant)).asType.absolve match
-      case '[type labelType <: Label; labelType] =>
-        '{${expand(context, parts)}.asInstanceOf[Url[labelType]]}
+      case '[type label <: Label; label] => '{${expand(context, parts)}.asInstanceOf[Url[label]]}
 
   def complete(value: Text): Url[Label] =
     try throwErrors(Url.parse(value)) catch
