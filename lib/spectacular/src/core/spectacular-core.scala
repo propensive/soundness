@@ -36,10 +36,8 @@ import anticipation.*
 
 import language.experimental.captureChecking
 
-extension [ValueType: Showable](value: ValueType)
-  def show: Text = ValueType.text(value)
-
-extension [ValueType: Inspectable](value: ValueType) def inspect: Text = ValueType.text(value)
+extension [showable: Showable](value: showable) def show: Text = showable.text(value)
+extension [inspectable: Inspectable](value: inspectable) def inspect: Text = inspectable.text(value)
 
 package booleanStyles:
   given yesNo: BooleanStyle = BooleanStyle("yes".tt, "no".tt)

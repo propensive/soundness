@@ -33,6 +33,7 @@
 package spectacular
 
 import anticipation.*
+import fulminate.*
 import gossamer.*
 import probably.*
 import rudiments.*

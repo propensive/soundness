@@ -39,7 +39,7 @@ import proscenium.*
 import rudiments.*
 
 object TextConversion:
-  given [ValueType: Textualizer] => ValueType is Showable = ValueType.textual(_)
+  given [value: Textualizer] => value is Showable = value.textual(_)
 
   given Text is Showable = identity(_)
   given string: String is Showable = _.tt
@@ -53,20 +53,20 @@ object TextConversion:
   //given pid: Pid is Showable = pid => ("\u21af"+pid.value).tt
   given boolean: (booleanStyle: BooleanStyle) => Boolean is Showable = booleanStyle(_)
 
-  given option: [ValueType: Showable] => Option[ValueType] is Showable =
-    _.fold("none".tt)(ValueType.text(_))
+  given option: [value: Showable] => Option[value] is Showable =
+    _.fold("none".tt)(value.text(_))
 
   given uid: Uuid is Showable = _.text
   given memory: Memory is Showable = _.text
-  given enumeration: [EnumType <: reflect.Enum] => EnumType is Showable = _.toString.tt
+  given enumeration: [enumeration <: reflect.Enum] => enumeration is Showable = _.toString.tt
 
-  given set: [ElemType: Showable] => Set[ElemType] is Showable =
+  given set: [element: Showable] => Set[element] is Showable =
     _.map(_.show).mkString("{", ", ", "}").tt
 
-  given list: [ElemType: Showable] => List[ElemType] is Showable =
+  given list: [element: Showable] => List[element] is Showable =
     _.map(_.show).mkString("[", ", ", "]").tt
 
-  given trie: [ElemType: Showable] => Trie[ElemType] is Showable =
+  given trie: [element: Showable] => Trie[element] is Showable =
     _.map(_.show).mkString("[ ", " ", " ]").tt
 
   given none: None.type is Showable = none => "none".tt
