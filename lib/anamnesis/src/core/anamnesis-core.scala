@@ -35,24 +35,22 @@ package anamnesis
 import contingency.*
 import prepositional.*
 
-infix type -< [LeftType, RightType] = Database.Relation[LeftType, RightType]
-infix type >- [LeftType, RightType] = Database.Relation[RightType, LeftType]
+infix type -< [left, right] = Database.Relation[left, right]
+infix type >- [left, right] = Database.Relation[right, left]
 
-extension [LeftType](using db: Database)(left: Ref of LeftType in db.type)
-  inline def unassign[RightType](right: Ref of RightType in db.type)
-     (using db.Has[LeftType -< RightType])
+extension [left](using db: Database)(left: Ref of left in db.type)
+  inline def unassign[right](right: Ref of right in db.type)(using db.Has[left -< right])
   :     Unit raises DataError =
     db.unassign(left, right)
 
-  inline def lookup[RightType](using db.Has[LeftType -< RightType])
-  :     Set[Ref of RightType in db.type] raises DataError =
-    db.lookup[LeftType, RightType](left)
+  inline def lookup[right](using db.Has[left -< right])
+  :     Set[Ref of right in db.type] raises DataError =
+    db.lookup[left, right](left)
 
-  inline def assign[RightType](right: Ref of RightType in db.type)
-     (using db.Has[LeftType -< RightType])
+  inline def assign[right](right: Ref of right in db.type)(using db.Has[left -< right])
   :     Unit raises DataError =
       db.assign(left, right)
 
-extension [LeftType](using db: Database)(left: LeftType)
-  inline def store(): Ref of LeftType in db.type = db.store(left)
-  inline def ref(): Ref of LeftType in db.type raises DataError = db.ref(left)
+extension [left](using db: Database)(left: left)
+  inline def store(): Ref of left in db.type = db.store(left)
+  inline def ref(): Ref of left in db.type raises DataError = db.ref(left)
