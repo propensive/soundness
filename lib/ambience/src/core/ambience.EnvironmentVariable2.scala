@@ -41,10 +41,10 @@ import prepositional.*
 import proscenium.*
 
 trait EnvironmentVariable2:
-  given generic[UnknownType <: Label]: EnvironmentVariable[UnknownType, Text] =
+  given generic[unknown <: Label]: EnvironmentVariable[unknown, Text] =
     identity(_)
 
-  given decoder[UnknownType <: Label, VariableType: Decodable in Text]
-  :     EnvironmentVariable[UnknownType, VariableType] =
+  given decoder[unknown <: Label, variable: Decodable in Text]
+  :     EnvironmentVariable[unknown, variable] =
 
-    VariableType.decoded(_)
+    variable.decoded(_)

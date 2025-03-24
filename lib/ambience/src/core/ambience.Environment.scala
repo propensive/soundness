@@ -45,20 +45,20 @@ trait Environment:
   def knownVariables: Set[Text] = Set()
 
 object Environment extends Dynamic:
-  def apply[VariableType](variable: Text)
+  def apply[variable](variable: Text)
      (using environment:      Environment,
-            reader:           EnvironmentVariable[Label, VariableType],
+            reader:           EnvironmentVariable[Label, variable],
             environmentError: Tactic[EnvironmentError])
-  :     VariableType =
+  :     variable =
 
     environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable)))
     . yet(reader.read("".tt))
 
-  inline def selectDynamic[VariableType](key: String)
+  inline def selectDynamic[variable](key: String)
      (using environment:      Environment,
-            reader:           EnvironmentVariable[key.type, VariableType],
+            reader:           EnvironmentVariable[key.type, variable],
             environmentError: Tactic[EnvironmentError])
-  :     VariableType =
+  :     variable =
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:
       raise(EnvironmentError(reader.defaultName)) yet reader.read(Text(""))

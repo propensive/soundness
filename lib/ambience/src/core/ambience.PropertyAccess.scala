@@ -42,24 +42,24 @@ import contingency.*
 import proscenium.*
 import vacuous.*
 
-case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
-  def selectDynamic(key: String): PropertyAccess[NameType+"."+key.type] =
-    PropertyAccess[NameType+"."+key.type](property+"."+key)
+case class PropertyAccess[name <: String](property: String) extends Dynamic:
+  def selectDynamic(key: String): PropertyAccess[name+"."+key.type] =
+    PropertyAccess[name+"."+key.type](property+"."+key)
 
-  def applyDynamic[PropertyType](key: String)()
+  def applyDynamic[property](key: String)()
      (using properties:     SystemProperties,
-            reader:         SystemProperty[NameType+"."+key.type, PropertyType],
+            reader:         SystemProperty[name+"."+key.type, property],
             systemProperty: Tactic[SystemPropertyError])
-  :     PropertyType =
+  :     property =
 
     properties((property+"."+key).tt).let(reader.read(_)).or:
       abort(SystemPropertyError((property+"."+key).tt))
 
-  inline def apply[PropertyType]()
+  inline def apply[property]()
      (using properties: SystemProperties,
-            reader: SystemProperty[NameType, PropertyType],
+            reader: SystemProperty[name, property],
             systemProperty: Tactic[SystemPropertyError])
-  :     PropertyType =
+  :     property =
 
-    properties(valueOf[NameType].tt).let(reader.read(_)).or:
-      abort(SystemPropertyError(valueOf[NameType].tt))
+    properties(valueOf[name].tt).let(reader.read(_)).or:
+      abort(SystemPropertyError(valueOf[name].tt))

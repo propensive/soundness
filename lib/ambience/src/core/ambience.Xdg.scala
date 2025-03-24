@@ -42,43 +42,43 @@ import rudiments.*
 import vacuous.*
 
 object Xdg:
-  def dataHome[PathType: Instantiable across Paths from Text]
+  def dataHome[path: Instantiable across Paths from Text]
      (using environment: Environment, home: HomeDirectory)
-  :     PathType =
-    safely(Environment.xdgDataHome[PathType]).or(PathType(t"${home.directory()}/.local/share"))
+  :     path =
+    safely(Environment.xdgDataHome[path]).or(path(t"${home.directory()}/.local/share"))
 
-  def configHome[PathType: Instantiable across Paths from Text]
+  def configHome[path: Instantiable across Paths from Text]
      (using environment: Environment, home: HomeDirectory)
-  :     PathType =
-    safely(Environment.xdgConfigHome[PathType]).or(PathType(t"${home.directory()}/.config"))
+  :     path =
+    safely(Environment.xdgConfigHome[path]).or(path(t"${home.directory()}/.config"))
 
-  def cacheHome[PathType: Instantiable across Paths from Text]
+  def cacheHome[path: Instantiable across Paths from Text]
      (using environment: Environment, home: HomeDirectory)
-  :     PathType =
+  :     path =
 
-    safely(Environment.xdgCacheHome[PathType]).or(PathType(t"${home.directory()}/.cache"))
+    safely(Environment.xdgCacheHome[path]).or(path(t"${home.directory()}/.cache"))
 
-  def stateHome[PathType: Instantiable across Paths from Text]
+  def stateHome[path: Instantiable across Paths from Text]
      (using environment: Environment, home: HomeDirectory)
-  :     PathType =
+  :     path =
 
-    safely(Environment.xdgStateHome[PathType]).or(PathType(t"${home.directory()}/.local/state"))
+    safely(Environment.xdgStateHome[path]).or(path(t"${home.directory()}/.local/state"))
 
-  def runtimeDir[PathType: Instantiable across Paths from Text]
-     (using environment: Environment): Optional[PathType] =
-    safely(Environment.xdgRuntimeDir[PathType])
+  def runtimeDir[path: Instantiable across Paths from Text]
+     (using environment: Environment): Optional[path] =
+    safely(Environment.xdgRuntimeDir[path])
 
-  def bin[PathType: Instantiable across Paths from Text]
+  def bin[path: Instantiable across Paths from Text]
      (using environment: Environment, home: HomeDirectory)
-  :     PathType =
-    safely(Environment.xdgConfigHome[PathType]).or(PathType(t"${home.directory()}/.local/bin"))
+  :     path =
+    safely(Environment.xdgConfigHome[path]).or(path(t"${home.directory()}/.local/bin"))
 
-  def dataDirs[PathType: Instantiable across Paths from Text]
+  def dataDirs[path: Instantiable across Paths from Text]
      (using environment: Environment, systemProperties: SystemProperties)
-  :     List[PathType] =
-    safely(Environment.xdgDataDirs[List[PathType]]).or:
-      List(t"/usr/local/share", t"/usr/share").map(PathType(_))
+  :     List[path] =
+    safely(Environment.xdgDataDirs[List[path]]).or:
+      List(t"/usr/local/share", t"/usr/share").map(path(_))
 
-  def configDirs[PathType: Instantiable across Paths from Text](using Environment, SystemProperties)
-  :     List[PathType] =
-    safely(Environment.xdgConfigDirs[List[PathType]]).or(List(t"/etc/xdg").map(PathType(_)))
+  def configDirs[path: Instantiable across Paths from Text](using Environment, SystemProperties)
+  :     List[path] =
+    safely(Environment.xdgConfigDirs[List[path]]).or(List(t"/etc/xdg").map(path(_)))

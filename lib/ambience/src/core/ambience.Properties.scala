@@ -40,11 +40,11 @@ import contingency.*
 import vacuous.*
 
 object Properties extends Dynamic:
-  def apply[PropertyType](property: Text)
+  def apply[property](property: Text)
      (using properties:     SystemProperties,
-            reader:         SystemProperty[String, PropertyType],
+            reader:         SystemProperty[String, property],
             systemProperty: Tactic[SystemPropertyError])
-  :     PropertyType =
+  :     property =
 
     properties(property).let(reader.read).lest(SystemPropertyError(property))
 
