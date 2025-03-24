@@ -32,6 +32,7 @@
                                                                                                   */
 package baroque
 
+import fulminate.*
 import gossamer.*
 import probably.*
 import quantitative.*
