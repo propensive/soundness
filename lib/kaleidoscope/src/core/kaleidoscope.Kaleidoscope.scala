@@ -96,10 +96,10 @@ object Kaleidoscope:
           if found then scanner.nextStart = matcher.start
           found
 
-  class RExtractor[ResultType](parts: Seq[String]):
-    def unapply(scrutinee: Text)(using scanner: Scanner): ResultType =
+  class RExtractor[result](parts: Seq[String]):
+    def unapply(scrutinee: Text)(using scanner: Scanner): result =
       val result = Regex.make(parts)(using Unsafe).matchGroups(scrutinee)
       val result2 = result.asInstanceOf[Option[IArray[List[Text | Char] | Optional[Text | Char]]]]
 
-      if parts.length == 2 then result2.map(_.head).asInstanceOf[ResultType]
-      else result2.map(Tuple.fromIArray(_)).asInstanceOf[ResultType]
+      if parts.length == 2 then result2.map(_.head).asInstanceOf[result]
+      else result2.map(Tuple.fromIArray(_)).asInstanceOf[result]
