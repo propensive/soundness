@@ -43,21 +43,21 @@ import java.nio.channels as jnc
 import java.nio.file as jnf
 
 object Openable:
-  given [PlatformType <: Filesystem]
+  given [platform <: Filesystem]
   =>   (read:        ReadAccess,
         write:       WriteAccess,
         dereference: DereferenceSymlinks,
-        create:      CreateNonexistent on PlatformType,
+        create:      CreateNonexistent on platform,
         streamError: Tactic[StreamError],
         ioError:     Tactic[IoError])
-  =>    (Path on PlatformType) is Openable by jnf.OpenOption into Handle = new Openable:
+  =>    (Path on platform) is Openable by jnf.OpenOption into Handle = new Openable:
 
-    type Self = Path on PlatformType
+    type Self = Path on platform
     type Operand = jnf.OpenOption
     type Result = Handle
     protected type Carrier = jnc.FileChannel
 
-    def init(path: Path on PlatformType, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
+    def init(path: Path on platform, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
       val options =
         read.options() ++ write.options() ++ dereference.options() ++ create.options()
         ++ extraOptions
