@@ -36,23 +36,23 @@ import prepositional.*
 import proscenium.*
 import symbolism.*
 
-case class Price[CurrencyType <: Currency & Singleton: ValueOf]
-   (principal: Money[CurrencyType], tax: Money[CurrencyType]):
+case class Price[currency <: Currency & Singleton: ValueOf]
+   (principal: Money[currency], tax: Money[currency]):
 
   def effectiveTaxRate: Double = tax/principal
 
   @targetName("add")
-  infix def + (right: Price[CurrencyType]): Price[CurrencyType] =
+  infix def + (right: Price[currency]): Price[currency] =
     Price(principal + right.principal, tax + right.tax)
 
   @targetName("subtract")
-  infix def - (right: Price[CurrencyType]): Price[CurrencyType] =
+  infix def - (right: Price[currency]): Price[currency] =
     Price(principal - right.principal, tax - right.tax)
 
   @targetName("negate")
-  def `unary_-`: Price[CurrencyType] = Price(-principal, -tax)
+  def `unary_-`: Price[currency] = Price(-principal, -tax)
 
   @targetName("divide")
-  infix def / (right: Double): Price[CurrencyType] = Price(principal/right, tax/right)
+  infix def / (right: Double): Price[currency] = Price(principal/right, tax/right)
 
-  def inclusive: Money[CurrencyType] = principal + tax
+  def inclusive: Money[currency] = principal + tax
