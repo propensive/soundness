@@ -61,4 +61,4 @@ def orchestrate[ValueType: Formulable](using request: Http.Request)
         . or(Submission.Invalid(request.query))
 
       case _ =>
-        Submission.Incomplete(elicit[ValueType](Query(), Errors(("foo".tt, new Error(m"somithng") {}) :: Nil)))
+        Submission.Incomplete(elicit[ValueType](Query(), Errors()))
