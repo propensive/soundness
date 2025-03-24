@@ -53,7 +53,7 @@ import Markdown.Ast.Block.*
 import Markdown.Ast.TablePart
 import Markdown.Ast.ListItem
 
-case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
+case class Markdown[+markdown <: Markdown.Ast.Node](nodes: markdown*):
   def serialize: Text =
     val buf = StringBuilder()
 
@@ -165,9 +165,9 @@ object Markdown:
       Markdown[Markdown.Ast.Inline]()
 
   @tailrec
-  private def coalesce[MdType >: Prose <: Markdown.Ast.Inline]
-     (xs: List[MdType], done: List[MdType] = Nil)
-  :     List[MdType] =
+  private def coalesce[markdown >: Prose <: Markdown.Ast.Inline]
+     (xs: List[markdown], done: List[markdown] = Nil)
+  :     List[markdown] =
 
     xs match
       case Nil                               => done.reverse

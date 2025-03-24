@@ -38,7 +38,7 @@ import vacuous.*
 
 import scala.collection.mutable as scm
 
-extension [TestType](test: Test[TestType])
+extension [test](test: Test[test])
   inline def benchmark[duration, ReportType]
      (confidence: Optional[Benchmark.Percentiles] = Unset,
       iterations: Optional[Int]                   = Unset,

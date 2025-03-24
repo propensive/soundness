@@ -116,7 +116,7 @@ extends Pathlike:
 
   override def hashCode: Int = ascent*31 + textDescent.hashCode
 
-  def on[PlatformType: Navigable]: Relative by PlatformType.Operand =
+  def on[platform: Navigable]: Relative by platform.Operand =
     Relative.parse(Relative.encodable.encode(this))
 
   @targetName("child")

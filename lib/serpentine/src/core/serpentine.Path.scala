@@ -48,92 +48,92 @@ import scala.compiletime.*
 object Path:
   given encodable: [PathType <: Path] => PathType is Encodable in Text = _.text
 
-  given decoder: [PlatformType: {Navigable, Radical}]
-  =>    (Path on PlatformType) is Decodable in Text =
+  given decoder: [platform: {Navigable, Radical}]
+  =>    (Path on platform) is Decodable in Text =
 
     Path.parse(_)
 
-  given showable: [PlatformType] => (Path on PlatformType) is Showable = _.text
+  given showable: [platform] => (Path on platform) is Showable = _.text
 
-  given generic: [PlatformType] => (Path on PlatformType) is Abstractable across Paths into Text =
+  given generic: [platform] => (Path on platform) is Abstractable across Paths into Text =
     _.text
 
-  given nominable: [PlatformType] => (Path on PlatformType) is Nominable = path =>
+  given nominable: [platform] => (Path on platform) is Nominable = path =>
     path.textDescent.prim.or(path.textRoot)
 
-  given specific: [PlatformType: {Navigable, Radical}]
-  =>    Path on PlatformType is Instantiable across Paths from Text =
-    _.decode[Path on PlatformType]
+  given specific: [platform: {Navigable, Radical}]
+  =>    Path on platform is Instantiable across Paths from Text =
+    _.decode[Path on platform]
 
   given communicable: Path is Communicable = path =>
     Message(path.textDescent.reverse.join(path.textRoot, path.separator, t""))
 
-  given addable: [PlatformType: Navigable] => Tactic[PathError]
-  =>    (Path on PlatformType) is Addable by (Relative by PlatformType.Operand) into
-        (Path on PlatformType) =
+  given addable: [platform: Navigable] => Tactic[PathError]
+  =>    (Path on platform) is Addable by (Relative by platform.Operand) into
+        (Path on platform) =
     (left, right) =>
-      def recur(descent: List[Text], ascent: Int): Path on PlatformType =
+      def recur(descent: List[Text], ascent: Int): Path on platform =
         if ascent > 0 then
           if descent.isEmpty then
             abort(PathError(PathError.Reason.RootParent))
 
-            Path.from[PlatformType]
+            Path.from[platform]
              (left.textRoot, Nil, left.separator, left.caseSensitivity)
           else recur(descent.tail, ascent - 1)
         else
-          Path.from[PlatformType]
+          Path.from[platform]
            (left.textRoot,
             right.textDescent ++ descent,
-            PlatformType.separator,
-            PlatformType.caseSensitivity)
+            platform.separator,
+            platform.caseSensitivity)
 
       recur(left.textDescent, right.ascent)
 
   def apply
-     [RootType <: Root on PlatformType,
+     [RootType <: Root on platform,
       ElementType,
-      PlatformType: {Navigable by ElementType, Radical from RootType}]
+      platform: {Navigable by ElementType, Radical from RootType}]
      (root0: RootType, elements: List[ElementType])
-  :     Path on PlatformType =
+  :     Path on platform =
     if elements.isEmpty then root0 else
-      Path.from[PlatformType]
-       (PlatformType.rootText(root0),
-        elements.map(PlatformType.makeElement(_)),
-        PlatformType.separator,
-        PlatformType.caseSensitivity)
+      Path.from[platform]
+       (platform.rootText(root0),
+        elements.map(platform.makeElement(_)),
+        platform.separator,
+        platform.caseSensitivity)
 
-  private def from[PlatformType]
+  private def from[platform]
      (root0: Text, elements: List[Text], separator: Text, caseSensitivity: Case)
-  :     Path on PlatformType =
+  :     Path on platform =
     new Path(root0, elements, separator, caseSensitivity):
-      type Platform = PlatformType
+      type Platform = platform
 
-  def parse[PlatformType: {Navigable, Radical}](path: Text): Path on PlatformType =
-    val root = PlatformType.root(path)
+  def parse[platform: {Navigable, Radical}](path: Text): Path on platform =
+    val root = platform.root(path)
 
     val descent =
       path
-      . skip(PlatformType.rootLength(path))
-      . cut(PlatformType.separator)
+      . skip(platform.rootLength(path))
+      . cut(platform.separator)
       . filter(_ != t"")
       . reverse
-      . map(PlatformType.element(_))
+      . map(platform.element(_))
 
     Path(root, descent)
 
-  given [PlatformType: Navigable]
-  =>    (Path on PlatformType) is Divisible by PlatformType.Operand into (Path on PlatformType) =
+  given [platform: Navigable]
+  =>    (Path on platform) is Divisible by platform.Operand into (Path on platform) =
     new Divisible:
-      type Operand = PlatformType.Operand
-      type Self = Path on PlatformType
-      type Result = Path on PlatformType
+      type Operand = platform.Operand
+      type Self = Path on platform
+      type Result = Path on platform
 
-      def divide(path: Path on PlatformType, child: PlatformType.Operand): Path on PlatformType =
+      def divide(path: Path on platform, child: platform.Operand): Path on platform =
         Path.from[path.Platform]
          (path.textRoot,
-          PlatformType.makeElement(child) :: path.textDescent,
-          PlatformType.separator,
-          PlatformType.caseSensitivity)
+          platform.makeElement(child) :: path.textDescent,
+          platform.separator,
+          platform.caseSensitivity)
 
 open class Path
    (val textRoot: Text,
@@ -186,12 +186,12 @@ extends Pathlike:
   def ancestors: List[Path on Platform] =
     parent.let { parent => parent :: parent.ancestors }.or(Nil)
 
-  transparent inline def on [PlatformType]: Path on PlatformType =
-    inline erasedValue[PlatformType & Matchable] match
-      case _: Platform => this.asInstanceOf[Path on PlatformType]
+  transparent inline def on [platform]: Path on platform =
+    inline erasedValue[platform & Matchable] match
+      case _: Platform => this.asInstanceOf[Path on platform]
       case _ =>
-        summonInline[PlatformType is Navigable].give:
-          summonInline[PlatformType is Radical].give(Path.parse(text))
+        summonInline[platform is Navigable].give:
+          summonInline[platform is Radical].give(Path.parse(text))
 
   def conjunction(right: Path on Platform): Path on Platform =
     val difference = depth - right.depth

@@ -36,4 +36,4 @@ import anticipation.*
 
 sealed trait SvgDef
 
-case class LinearGradient[ColorType: Chromatic](stops: Stop[ColorType]*) extends SvgDef
+case class LinearGradient[color: Chromatic](stops: Stop[color]*) extends SvgDef
