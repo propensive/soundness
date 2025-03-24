@@ -48,17 +48,17 @@ import turbulence.*
 import vacuous.*
 
 object Process:
-  given writable: [ChunkType, CommandType <: Label, ResultType]
-  =>    ji.OutputStream is Writable by ChunkType
-  =>    Process[CommandType, ResultType] is Writable by ChunkType =
+  given writable: [chunk, command <: Label, result]
+  =>    ji.OutputStream is Writable by chunk
+  =>    Process[command, result] is Writable by chunk =
 
     (process, stream) => process.stdin(stream)
 
-  given writableText: [CommandType <: Label, ResultType] => Tactic[StreamError]
-  =>    Process[CommandType, ResultType] is Writable by Text =
+  given writableText: [command <: Label, result] => Tactic[StreamError]
+  =>    Process[command, result] is Writable by Text =
     (process, stream) => process.stdin(stream.map(_.sysBytes))
 
-class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
+class Process[+exec <: Label, result](process: java.lang.Process) extends ProcessRef:
   def pid: Pid = Pid(process.pid)
   def alive: Boolean = process.isAlive
   def attend(): Unit = process.waitFor()
@@ -69,13 +69,13 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
   def stderr(): Stream[Bytes] raises StreamError =
     Readable.inputStream.stream(process.getErrorStream.nn)
 
-  def stdin[ChunkType](stream: Stream[ChunkType])
-     (using writable: ji.OutputStream is Writable by ChunkType)
+  def stdin[chunk](stream: Stream[chunk])
+     (using writable: ji.OutputStream is Writable by chunk)
   :     Unit =
 
     writable.write(process.getOutputStream.nn, stream)
 
-  def await()(using computable: ResultType is Computable): ResultType = computable.compute(process)
+  def await()(using computable: result is Computable): result = computable.compute(process)
 
   def exitStatus(): Exit = process.waitFor() match
     case 0     => Exit.Ok

@@ -144,5 +144,5 @@ object Sh:
   given Insertion[Parameters, List[Text]] = xs => Parameters(xs*)
   given Insertion[Parameters, Command] = command => Parameters(command.arguments*)
 
-  given [ValueType: Parameterizable]: Insertion[Parameters, ValueType] = value =>
-    Parameters(ValueType.show(value))
+  given [parameterizable: Parameterizable]: Insertion[Parameters, parameterizable] = value =>
+    Parameters(parameterizable.show(value))

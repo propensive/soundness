@@ -136,8 +136,8 @@ trait PosixCommands:
   erased given waitCommand: ("wait" is Intelligible into Text) = !!
   erased given wc: ("wc" is Intelligible into Text) = !!
 
-  erased given which: [PathType] => (erased PathType is Instantiable across Paths from Text)
-  =>    ("which" is Intelligible into PathType) = !!
+  erased given which: [path] => (erased path is Instantiable across Paths from Text)
+  =>    ("which" is Intelligible into path) = !!
 
   erased given who: ("who" is Intelligible into Text) = !!
   erased given write: ("write" is Intelligible into Text) = !!

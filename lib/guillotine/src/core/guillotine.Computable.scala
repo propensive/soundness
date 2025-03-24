@@ -71,12 +71,12 @@ object Computable:
 
   given Unit is Computable = exitStatus.map(_ => ())
 
-  given [PathType: Instantiable across Paths from Text] => PathType is Computable =
-    path => PathType(text.compute(path))
+  given [instantiable: Instantiable across Paths from Text] => instantiable is Computable =
+    path => instantiable(text.compute(path))
 
 trait Computable:
   type Self
   def compute(process: java.lang.Process): Self
 
-  def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Computable =
+  def map[self2](lambda: Self => self2): self2 is Computable =
     process => lambda(compute(process))

@@ -52,14 +52,14 @@ import spectacular.*
 sealed trait Executable:
   type Exec <: Label
 
-  def fork[ResultType]()(using working: WorkingDirectory)
-  :     Process[Exec, ResultType] logs ExecEvent raises ExecError
+  def fork[result]()(using working: WorkingDirectory)
+  :     Process[Exec, result] logs ExecEvent raises ExecError
 
-  def exec[ResultType: Computable]()
+  def exec[result: Computable]()
      (using working: WorkingDirectory)
-  :     ResultType logs ExecEvent raises ExecError =
+  :     result logs ExecEvent raises ExecError =
 
-    fork[ResultType]().await()
+    fork[result]().await()
 
   def apply()
      (using erased intelligible: Exec is Intelligible,
@@ -104,8 +104,8 @@ object Command:
   given Command is Showable = command => formattedArguments(command.arguments)
 
 case class Command(arguments: Text*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory)
-      : Process[Exec, ResultType] logs ExecEvent raises ExecError =
+  def fork[result]()(using working: WorkingDirectory)
+      : Process[Exec, result] logs ExecEvent raises ExecError =
 
     val processBuilder = ProcessBuilder(arguments.ss*)
     processBuilder.directory(ji.File(working.directory().s))
@@ -123,8 +123,8 @@ object Pipeline:
   given Pipeline is Showable = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory)
-      : Process[Exec, ResultType] logs ExecEvent raises ExecError =
+  def fork[result]()(using working: WorkingDirectory)
+      : Process[Exec, result] logs ExecEvent raises ExecError =
 
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.arguments.ss*)
@@ -136,4 +136,4 @@ case class Pipeline(commands: Command*) extends Executable:
     Log.info(ExecEvent.PipelineStart(commands))
 
     val pipeline = ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last
-    new Process[Exec, ResultType](pipeline)
+    new Process[Exec, result](pipeline)
