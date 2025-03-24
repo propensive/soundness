@@ -34,5 +34,5 @@ package dendrology
 
 import language.experimental.captureChecking
 
-trait DagStyle[LineType]:
-  def serialize(tiles: List[DagTile], node: LineType): LineType
+trait DagStyle[line]:
+  def serialize(tiles: List[DagTile], node: line): line

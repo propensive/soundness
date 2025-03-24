@@ -42,16 +42,16 @@ import spectacular.*
 import TreeTile.*
 
 object TreeDiagram:
-  def apply[NodeType: Expandable](roots: NodeType*): TreeDiagram[NodeType] =
-    by[NodeType](NodeType.children(_))(roots*)
+  def apply[node: Expandable](roots: node*): TreeDiagram[node] =
+    by[node](node.children(_))(roots*)
 
-  given [NodeType: Showable] => (style: TreeStyle[Text]) => TreeDiagram[NodeType] is Printable =
+  given [node: Showable] => (style: TreeStyle[Text]) => TreeDiagram[node] is Printable =
     (diagram, termcap) =>
       (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
-  def by[NodeType](getChildren: NodeType => Seq[NodeType])(roots: NodeType*)
-  :     TreeDiagram[NodeType] =
-    def recur(level: List[TreeTile], input: Seq[NodeType]): Stream[(List[TreeTile], NodeType)] =
+  def by[node](getChildren: node => Seq[node])(roots: node*)
+  :     TreeDiagram[node] =
+    def recur(level: List[TreeTile], input: Seq[node]): Stream[(List[TreeTile], node)] =
       val last = input.size - 1
       input.zipWithIndex.to(Stream).flatMap: (item, idx) =>
         val tiles: List[TreeTile] = ((if idx == last then Last else Branch) :: level).reverse
@@ -61,13 +61,12 @@ object TreeDiagram:
 
     new TreeDiagram(recur(Nil, roots))
 
-case class TreeDiagram[NodeType](lines: Stream[(List[TreeTile], NodeType)]):
-  def render[LineType](line: NodeType => LineType)(using style: TreeStyle[LineType])
-  :     Stream[LineType] =
-    map[LineType] { node => style.serialize(tiles, line(node)) }
+case class TreeDiagram[node](lines: Stream[(List[TreeTile], node)]):
+  def render[line](line: node => line)(using style: TreeStyle[line]): Stream[line] = map[line]:
+    node => style.serialize(tiles, line(node))
 
-  def map[RowType](line: (tiles: List[TreeTile]) ?=> NodeType => RowType): Stream[RowType] =
+  def map[row](line: (tiles: List[TreeTile]) ?=> node => row): Stream[row] =
     lines.map(line(using _)(_))
 
-  def nodes: Stream[NodeType] = lines.map(_(1))
+  def nodes: Stream[node] = lines.map(_(1))
   def tiles: Stream[List[TreeTile]] = lines.map(_(0))

@@ -37,12 +37,11 @@ import language.experimental.captureChecking
 import anticipation.*
 import gossamer.*
 
-case class TextualTreeStyle[LineType: Textual]
-   (space: Text, last: Text, branch: Text, extender: Text)
-extends TreeStyle[LineType]:
+case class TextualTreeStyle[line: Textual](space: Text, last: Text, branch: Text, extender: Text)
+extends TreeStyle[line]:
 
-  def serialize(tiles: List[TreeTile], node: LineType): LineType =
-    LineType(tiles.map(text(_)).join)+node
+  def serialize(tiles: List[TreeTile], node: line): line =
+    line(tiles.map(text(_)).join)+node
 
   def text(tile: TreeTile): Text = tile match
     case TreeTile.Space    => space
