@@ -181,10 +181,10 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
   def mv(): Unit = ()
 
   object config:
-    def get[ValueType: Decodable in Text](variable: Text)
+    def get[value: Decodable in Text](variable: Text)
        (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-    :     ValueType logs GitEvent =
-      sh"$git $repoOptions config --get $variable".exec[Text]().decode[ValueType]
+    :     value logs GitEvent =
+      sh"$git $repoOptions config --get $variable".exec[Text]().decode[value]
 
   def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[GitTag] logs GitEvent =
     sh"$git $repoOptions tag".exec[Stream[Text]]().to(List).map(GitTag.unsafe(_))
