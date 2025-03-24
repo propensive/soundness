@@ -37,7 +37,7 @@ import language.experimental.captureChecking
 class Semaphore():
   private var count: Int = 0
 
-  def access[ResultType](evaluate: => ResultType): ResultType =
+  def access[result](evaluate: => result): result =
     synchronized:
       while count == -1 do wait()
       count += 1
@@ -46,7 +46,7 @@ class Semaphore():
       count -= 1
       notify()
 
-  def isolate[ResultType](evaluate: => ResultType): ResultType =
+  def isolate[result](evaluate: => result): result =
     synchronized:
       while count != 0 do wait()
       count = -1
