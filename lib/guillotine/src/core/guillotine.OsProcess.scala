@@ -65,10 +65,10 @@ class OsProcess private (java: ProcessHandle) extends ProcessRef:
   def children: List[OsProcess] =
     java.children.nn.iterator.nn.asScala.map(new OsProcess(_)).to(List)
 
-  def startTime[InstantType: Instantiable across Instants from Long]: Optional[InstantType] =
+  def startTime[instantiable: Instantiable across Instants from Long]: Optional[instantiable] =
     val instant = java.info.nn.startInstant.nn
-    if instant.isPresent then InstantType(instant.get.nn.toEpochMilli) else Unset
+    if instant.isPresent then instantiable(instant.get.nn.toEpochMilli) else Unset
 
-  def cpuUsage[DurationType: SpecificDuration]: Optional[DurationType] =
+  def cpuUsage[duration: SpecificDuration]: Optional[duration] =
     val duration = java.info.nn.totalCpuDuration.nn
     if duration.isPresent then SpecificDuration(duration.get.nn.toMillis) else Unset

@@ -38,7 +38,7 @@ import anticipation.*
 import parasite.*
 import proscenium.*
 
-class Pulsar[DurationType: GenericDuration](duration: DurationType):
+class Pulsar[duration: GenericDuration](duration: duration):
   private var continue: Boolean = true
   def stop(): Unit = continue = false
 

@@ -42,5 +42,5 @@ trait ProcessRef:
   def abort(): Unit logs ExecEvent
   def alive: Boolean
   def attend(): Unit
-  def startTime[InstantType: Instantiable across Instants from Long]: Optional[InstantType]
-  def cpuUsage[DurationType: SpecificDuration]: Optional[DurationType]
+  def startTime[instant: Instantiable across Instants from Long]: Optional[instant]
+  def cpuUsage[duration: SpecificDuration]: Optional[duration]

@@ -237,12 +237,12 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
     import filesystemOptions.createNonexistentParents.enabled
     symlinkTo(unsafely(destination.child(path.textDescent.head)))
 
-  def modified[InstantType: Instantiable across Instants from Long](): InstantType =
-    InstantType(jnf.Files.getLastModifiedTime(path.javaPath).nn.toInstant.nn.toEpochMilli)
+  def modified[instant: Instantiable across Instants from Long](): instant =
+    instant(jnf.Files.getLastModifiedTime(path.javaPath).nn.toInstant.nn.toEpochMilli)
 
-  def accessed[InstantType: Instantiable across Instants from Long](): InstantType =
+  def accessed[instant: Instantiable across Instants from Long](): instant =
     val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
-    InstantType(attributes.lastAccessTime().nn.toInstant.nn.toEpochMilli)
+    instant(attributes.lastAccessTime().nn.toInstant.nn.toEpochMilli)
 
   def readable: FilesystemAttribute.Readable[PlatformType] = FilesystemAttribute.Readable(path)
   def writable: FilesystemAttribute.Writable[PlatformType] = FilesystemAttribute.Writable(path)
@@ -257,10 +257,10 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
   def make[EntryType: Makable on PlatformType](): EntryType.Result = EntryType.make(path)
 
 extension [PlatformType <: Windows](path: Path on PlatformType)
-  def created[InstantType: Instantiable across Instants from Long](): InstantType raises IoError =
+  def created[instant: Instantiable across Instants from Long](): instant raises IoError =
     path.protect(Operation.Metadata):
       val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
-      InstantType(attributes.creationTime().nn.toInstant.nn.toEpochMilli)
+      instant(attributes.creationTime().nn.toInstant.nn.toEpochMilli)
 
 extension [PlatformType <: Posix](path: Path on PlatformType)
   def executable: FilesystemAttribute.Executable[PlatformType] =

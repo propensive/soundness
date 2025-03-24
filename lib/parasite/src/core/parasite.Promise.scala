@@ -113,9 +113,9 @@ final case class Promise[ValueType]():
     case Incomplete(waiting) => waiting.each(jucl.LockSupport.unpark)
     case _                   => ()
 
-  def await[DurationType: GenericDuration](duration: DurationType)
+  def await[generic: GenericDuration](duration: generic)
   :     ValueType raises AsyncError =
-    val deadline = System.nanoTime() + DurationType.milliseconds(duration)*1000000L
+    val deadline = System.nanoTime() + generic.milliseconds(duration)*1000000L
 
     @tailrec
     def recur(): ValueType =
@@ -128,8 +128,8 @@ final case class Promise[ValueType]():
 
     recur()
 
-  def attend[DurationType: GenericDuration](duration: DurationType): Unit =
-    val deadline = System.nanoTime() + DurationType.milliseconds(duration)*1000000L
+  def attend[generic: GenericDuration](duration: generic): Unit =
+    val deadline = System.nanoTime() + generic.milliseconds(duration)*1000000L
 
     @tailrec
     def recur(): Unit =

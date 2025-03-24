@@ -72,7 +72,7 @@ trait Task[+ResultType]:
   def attend(): Unit
   def cancel(): Unit
 
-  def await[DurationType: GenericDuration](duration: DurationType): ResultType raises AsyncError
+  def await[duration: GenericDuration](duration: duration): ResultType raises AsyncError
 
   def bind[ResultType2](lambda: ResultType => Task[ResultType2])(using Monitor, Codicil)
   :     Task[ResultType2] raises AsyncError

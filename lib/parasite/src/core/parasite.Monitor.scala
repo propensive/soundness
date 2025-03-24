@@ -65,8 +65,8 @@ sealed trait Monitor:
   def remove(monitor: Worker): Unit = workers -= monitor
   def supervisor: Supervisor
 
-  def snooze[DurationType: GenericDuration](duration: DurationType): Unit =
-    jucl.LockSupport.parkNanos(DurationType.nanoseconds(duration))
+  def snooze[generic: GenericDuration](duration: generic): Unit =
+    jucl.LockSupport.parkNanos(generic.nanoseconds(duration))
 
   def handle(throwable: Throwable): Transgression
   def intercept(handler: Throwable ~> Transgression): Monitor
@@ -201,7 +201,7 @@ extends Monitor:
         case other                => panic(m"impossible state")
 
 
-  def await[DurationType: GenericDuration](duration: DurationType): Result raises AsyncError =
+  def await[duration: GenericDuration](duration: duration): Result raises AsyncError =
     promise.attend(duration)
     thread.join()
     result()

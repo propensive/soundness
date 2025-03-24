@@ -46,12 +46,12 @@ trait Tenacity:
       if attempt.n1 > n then abort(RetryError(attempt.n1 - 1)) else tenacity.delay(attempt)
 
 object Tenacity:
-  def exponential[DurationType: GenericDuration](initial: DurationType, base: Double): Tenacity =
+  def exponential[duration: GenericDuration](initial: duration, base: Double): Tenacity =
     new:
       def delay(attempt: Ordinal): Optional[Long] raises RetryError =
         if attempt == Prim then 0L
-        else (DurationType.milliseconds(initial)*math.pow(base, attempt.n1)).toLong
+        else (duration.milliseconds(initial)*math.pow(base, attempt.n1)).toLong
 
-  def fixed[DurationType: GenericDuration](duration: DurationType): Tenacity = new:
+  def fixed[generic: GenericDuration](duration: generic): Tenacity = new:
     def delay(attempt: Ordinal): Optional[Long] raises RetryError =
-      if attempt == Prim then 0L else DurationType.milliseconds(duration)
+      if attempt == Prim then 0L else generic.milliseconds(duration)

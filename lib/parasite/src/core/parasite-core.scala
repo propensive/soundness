@@ -92,17 +92,17 @@ def trap(lambda: Throwable ~> Transgression)(using monitor: Monitor): Trap = Tra
 def relent[ResultType]()(using Worker): Unit = monitor.relent()
 def cancel[ResultType]()(using Monitor): Unit = monitor.cancel()
 
-def snooze[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
+def snooze[duration: GenericDuration](duration: duration)(using Monitor): Unit =
   monitor.snooze(duration)
 
-def delay[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
-  hibernate(System.currentTimeMillis + DurationType.milliseconds(duration))
+def delay[generic: GenericDuration](duration: generic)(using Monitor): Unit =
+  hibernate(System.currentTimeMillis + generic.milliseconds(duration))
 
-def sleep[InstantType: Abstractable across Instants into Long](instant: InstantType)(using Monitor)
+def sleep[instant: Abstractable across Instants into Long](instant: instant)(using Monitor)
 :     Unit =
   monitor.snooze(instant.generic - System.currentTimeMillis)
 
-def hibernate[InstantType: Abstractable across Instants into Long](instant: InstantType)
+def hibernate[instant: Abstractable across Instants into Long](instant: instant)
    (using Monitor)
 :     Unit =
   while instant.generic > System.currentTimeMillis

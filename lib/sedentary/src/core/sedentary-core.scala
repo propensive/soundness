@@ -39,16 +39,16 @@ import vacuous.*
 import scala.collection.mutable as scm
 
 extension [TestType](test: Test[TestType])
-  inline def benchmark[DurationType, ReportType]
+  inline def benchmark[duration, ReportType]
      (confidence: Optional[Benchmark.Percentiles] = Unset,
       iterations: Optional[Int]                   = Unset,
-      duration:   Optional[DurationType]          = Unset,
-      warmup:     Optional[DurationType]          = Unset,
+      duration:   Optional[duration]          = Unset,
+      warmup:     Optional[duration]          = Unset,
       baseline:   Optional[Baseline]              = Unset)
      (using runner:           Runner[ReportType],
             inc:              Inclusion[ReportType, Benchmark],
-            specificDuration: DurationType is SpecificDuration = durationApi.javaLong,
-            genericDuration:  DurationType is GenericDuration  = durationApi.javaLong)
+            specificDuration: duration is SpecificDuration = durationApi.javaLong,
+            genericDuration:  duration is GenericDuration  = durationApi.javaLong)
   :     Unit =
 
     val action = test.action

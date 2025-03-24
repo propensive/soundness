@@ -111,16 +111,15 @@ extension [ElementType](stream: Stream[ElementType])
 
   def strict: Stream[ElementType] = stream.length yet stream
 
-  def rate[DurationType: GenericDuration: SpecificDuration](duration: DurationType)
-     (using Monitor, Tactic[AsyncError])
-  :     Stream[ElementType] =
+  def rate[generic: {GenericDuration, SpecificDuration}](duration: generic)(using Monitor)
+  :     Stream[ElementType] raises AsyncError =
 
     def recur(stream: Stream[ElementType], last: Long): Stream[ElementType] =
       stream.flow(Stream()):
         val duration2 =
-          SpecificDuration(DurationType.milliseconds(duration) - (System.currentTimeMillis - last))
+          SpecificDuration(generic.milliseconds(duration) - (System.currentTimeMillis - last))
 
-        if DurationType.milliseconds(duration2) > 0 then snooze(duration2)
+        if generic.milliseconds(duration2) > 0 then snooze(duration2)
         stream
 
     async(recur(stream, System.currentTimeMillis)).await()
@@ -159,7 +158,7 @@ extension [ElementType](stream: Stream[ElementType])
 
     Stream.defer(recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil))
 
-  def cluster[DurationType: GenericDuration](duration: DurationType, maxSize: Optional[Int] = Unset)
+  def cluster[duration: GenericDuration](duration: duration, maxSize: Optional[Int] = Unset)
      (using Monitor)
   :     Stream[List[ElementType]] =
 
@@ -228,12 +227,12 @@ extension (obj: Stream.type)
   def defer[ElemType](stream: => Stream[ElemType]): Stream[ElemType] =
     (null.asInstanceOf[ElemType] #:: stream).tail
 
-  def pulsar[DurationType: GenericDuration](duration: DurationType)(using Monitor): Stream[Unit] =
+  def pulsar[generic: GenericDuration](duration: generic)(using Monitor): Stream[Unit] =
     val startTime: Long = System.currentTimeMillis
 
     def recur(iteration: Int): Stream[Unit] =
       try
-        snooze(startTime + DurationType.milliseconds(duration)*iteration)
+        snooze(startTime + generic.milliseconds(duration)*iteration)
         () #:: pulsar(duration)
       catch case err: AsyncError => Stream()
 

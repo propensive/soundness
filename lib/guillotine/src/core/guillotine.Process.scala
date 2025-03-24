@@ -91,14 +91,14 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
 
   def osProcess(using Tactic[PidError]) = OsProcess(pid)
 
-  def startTime[InstantType: Instantiable across Instants from Long]: Optional[InstantType] =
+  def startTime[instant: Instantiable across Instants from Long]: Optional[instant] =
     try
       import strategies.throwUnsafely
-      osProcess.startTime[InstantType]
+      osProcess.startTime[instant]
     catch case _: PidError => Unset
 
-  def cpuUsage[InstantType: SpecificDuration]: Optional[InstantType] =
+  def cpuUsage[instant: SpecificDuration]: Optional[instant] =
     try
       import strategies.throwUnsafely
-      osProcess.cpuUsage[InstantType]
+      osProcess.cpuUsage[instant]
     catch case _: PidError => Unset
