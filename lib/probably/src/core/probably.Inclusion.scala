@@ -32,5 +32,5 @@
                                                                                                   */
 package probably
 
-trait Inclusion[ReportType, DataType]:
-  def include(report: ReportType, testId: TestId, data: DataType): ReportType
+trait Inclusion[report, data]:
+  def include(report: report, testId: TestId, data: data): report

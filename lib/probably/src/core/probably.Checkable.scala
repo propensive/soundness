@@ -35,8 +35,7 @@ package probably
 import prepositional.*
 
 object Checkable:
-  given [LeftType, RightType] => IArray[LeftType] is Checkable against IArray[RightType] =
-    _.sameElements(_)
+  given [left, right] => IArray[left] is Checkable against IArray[right] = _.sameElements(_)
 
   given Double is Checkable against Tolerance = (double, tolerance) => tolerance.covers(double)
 

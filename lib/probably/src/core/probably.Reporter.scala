@@ -35,11 +35,11 @@ package probably
 import ambience.*
 import turbulence.*
 
-trait Reporter[ReportType]:
-  def make(): ReportType
-  def fail(report: ReportType, error: Throwable, active: Set[TestId]): Unit
-  def declareSuite(report: ReportType, suite: Testable): Unit
-  def complete(report: ReportType): Unit
+trait Reporter[report]:
+  def make(): report
+  def fail(report: report, error: Throwable, active: Set[TestId]): Unit
+  def declareSuite(report: report, suite: Testable): Unit
+  def complete(report: report): Unit
 
 object Reporter:
   given (using Stdio, Environment): Reporter[Report] with

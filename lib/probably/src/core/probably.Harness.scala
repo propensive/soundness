@@ -41,6 +41,6 @@ import scala.collection.mutable as scm
 open class Harness():
   private[probably] val captured: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
 
-  def capture[ValueType: Decomposable](name: Text, value: ValueType): ValueType =
+  def capture[value: Decomposable](name: Text, value: value): value =
     captured.append(name -> value.decompose.inspect)
     value
