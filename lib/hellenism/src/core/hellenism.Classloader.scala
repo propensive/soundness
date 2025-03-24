@@ -42,7 +42,7 @@ import vacuous.*
 
 object Classloader:
   def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
-  inline def apply[ClassType <: AnyKind]: Classloader = ClassRef[ClassType].classloader
+  inline def apply[template <: AnyKind]: Classloader = ClassRef[template].classloader
 
 class Classloader(val java: ClassLoader) extends Root("/".tt, "/".tt, Case.Sensitive):
   type Platform = Classpath

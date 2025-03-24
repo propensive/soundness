@@ -61,8 +61,9 @@ case class BaseLayout(private val part: Optional[Text], readOnly: Boolean = fals
 
   given BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
 
-  def apply[PathType: Instantiable across Paths from Text]()(using SystemProperties, Environment)
-  :     PathType raises SystemPropertyError raises EnvironmentError =
+  def apply[instantiable: Instantiable across Paths from Text]()
+     (using SystemProperties, Environment)
+  :     instantiable raises SystemPropertyError raises EnvironmentError =
 
     val path: Text = absolutePath
-    PathType(path)
+    instantiable(path)

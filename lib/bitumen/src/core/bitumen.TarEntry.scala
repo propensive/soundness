@@ -47,9 +47,9 @@ import turbulence.*
 import vacuous.*
 
 object TarEntry:
-  def apply[DataType: Readable by Bytes, instant: GenericInstant]
+  def apply[data: Readable by Bytes, instant: GenericInstant]
      (name:  TarRef,
-      data:  DataType,
+      data:  data,
       mode:  UnixMode              = UnixMode(),
       user:  UnixUser              = UnixUser(0),
       group: UnixGroup             = UnixGroup(0),

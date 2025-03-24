@@ -406,45 +406,45 @@ inline def ln(f64: into F64): F64 = F64(math.log(f64.double))
 inline def log10(f64: into F64): F64 = F64(math.log10(f64.double))
 inline def log1p(f64: into F64): F64 = F64(math.log1p(f64.double))
 
-extension [LeftType](inline left: LeftType)
+extension [left](inline left: left)
   @targetName("lt")
-  inline infix def < [RightType](inline right: RightType)
-     (using inline commensurable: LeftType is Commensurable by RightType)
+  inline infix def < [right](inline right: right)
+     (using inline commensurable: left is Commensurable by right)
   :     Boolean =
 
     commensurable.compare(left, right, true, false)
 
   @targetName("lte")
-  inline infix def <= [RightType](inline right: RightType)
-     (using inline commensurable: LeftType is Commensurable by RightType)
+  inline infix def <= [right](inline right: right)
+     (using inline commensurable: left is Commensurable by right)
   :     Boolean =
 
     commensurable.compare(left, right, false, false)
 
   @targetName("gt")
-  inline infix def > [RightType](inline right: RightType)
-     (using inline commensurable: LeftType is Commensurable by RightType)
+  inline infix def > [right](inline right: right)
+     (using inline commensurable: left is Commensurable by right)
   :     Boolean =
 
     commensurable.compare(left, right, true, true)
 
   @targetName("gte")
-  inline infix def >= [RightType](inline right: RightType)
-    (using inline commensurable: LeftType is Commensurable by RightType)
+  inline infix def >= [right](inline right: right)
+    (using inline commensurable: left is Commensurable by right)
   :     Boolean =
 
     commensurable.compare(left, right, false, true)
 
-  inline infix def min (inline right: LeftType)(using LeftType is Orderable): LeftType =
+  inline infix def min (inline right: left)(using left is Orderable): left =
     if left < right then left else right
 
-  inline infix def max (inline right: LeftType)(using LeftType is Orderable): LeftType =
+  inline infix def max (inline right: left)(using left is Orderable): left =
     if left >= right then left else right
 
 package arithmeticOptions:
   object division:
     inline given unchecked: DivisionByZero:
-      type Wrap[ResultType] = ResultType
+      type Wrap[result] = result
 
       inline def divideU64(left: U64, right: U64): U64 =
         U64((Long(left.bits)/Long(right.bits)).bits)
@@ -461,7 +461,7 @@ package arithmeticOptions:
       inline def divideS8(left: S8, right: S8): S8 = S8((left.byte/right.byte).toByte.bits)
 
     inline given checked: DivisionByZero:
-      type Wrap[ResultType] = ResultType raises DivisionError
+      type Wrap[result] = result raises DivisionError
 
       inline def divideU64(left: U64, right: U64): U64 raises DivisionError =
         if Long(right.bits) == 0 then raise(DivisionError()) yet U64(0.bits)
@@ -497,7 +497,7 @@ package arithmeticOptions:
 
   object overflow:
     inline given unchecked: CheckOverflow:
-      type Wrap[ResultType] = ResultType
+      type Wrap[result] = result
       inline def addU64(left: U64, right: U64): U64 = U64((Long(left.bits) + Long(right.bits)).bits)
       inline def addS64(left: S64, right: S64): S64 = S64((left.long + right.long).bits)
       inline def addU32(left: U32, right: U32): U32 = U32((Int(left.bits) + Int(right.bits)).bits)
@@ -511,7 +511,7 @@ package arithmeticOptions:
       inline def addS8(left: S8, right: S8): S8 = S8((left.byte + right.byte).toByte.bits)
 
     inline given checked: CheckOverflow:
-      type Wrap[ResultType] = ResultType raises OverflowError
+      type Wrap[result] = result raises OverflowError
 
       inline def addU64(left: U64, right: U64): U64 raises OverflowError =
         val result: B64 = (Long(left.bits) + Long(right.bits)).bits

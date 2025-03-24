@@ -53,9 +53,9 @@ object Media:
   given Text is Media:
     extension (value: Text) def medium: Medium = Medium(Group.Text, Subtype.Standard(t"plain"))
 
-  given [ValueType: Nominable] => ValueType is Media:
-    extension (value: ValueType)
-      def medium: Medium = Extensions.guess(ValueType.name(value).cut(t".").last)
+  given [nominable: Nominable] => nominable is Media:
+    extension (value: nominable)
+      def medium: Medium = Extensions.guess(nominable.name(value).cut(t".").last)
 
   object Group:
     given Group is Inspectable = _.name

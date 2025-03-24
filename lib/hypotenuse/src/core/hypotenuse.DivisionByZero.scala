@@ -35,7 +35,7 @@ package hypotenuse
 import language.experimental.into
 
 trait DivisionByZero:
-  type Wrap[ResultType]
+  type Wrap[result]
   inline def divideU64(left: U64, right: U64): Wrap[U64]
   inline def divideS64(left: S64, right: S64): Wrap[S64]
   inline def divideU32(left: U32, right: U32): Wrap[U32]

@@ -37,8 +37,8 @@ import escapade.*
 
 import scala.quoted.*
 
-transparent inline def introspect[ValueType](inline value: ValueType): Text =
-  ${Hyperbole.introspection[ValueType]('value)}
+transparent inline def introspect[value](inline value: value): Text =
+  ${Hyperbole.introspection[value]('value)}
 
-extension [ValueType](expr: Expr[ValueType])(using Quotes)
-  def introspect: Teletype = Hyperbole.introspect[ValueType](expr)
+extension [value](expr: Expr[value])(using Quotes)
+  def introspect: Teletype = Hyperbole.introspect[value](expr)

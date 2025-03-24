@@ -41,11 +41,11 @@ import prepositional.*
 import vacuous.*
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
-  override def apply[PathType: Instantiable across Paths from Text]()
+  override def apply[path: Instantiable across Paths from Text]()
      (using SystemProperties, Environment)
-  :     PathType raises SystemPropertyError raises EnvironmentError =
+  :     path raises SystemPropertyError raises EnvironmentError =
 
-    PathType(t"/")
+    path(t"/")
 
   object Boot extends BaseLayout(t"boot", readOnly = true)
   object Efi extends BaseLayout(t"efi", readOnly = true)

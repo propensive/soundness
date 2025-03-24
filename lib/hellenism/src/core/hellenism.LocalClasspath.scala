@@ -64,9 +64,9 @@ object LocalClasspath:
   :     LocalClasspath =
     new LocalClasspath(entries, entries.to(Set))
 
-  given [PathType: Abstractable across Paths into Text]
+  given [path: Abstractable across Paths into Text]
   =>    (Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks)
-  =>    LocalClasspath is Addable by PathType into LocalClasspath =
+  =>    LocalClasspath is Addable by path into LocalClasspath =
     (classpath, path) =>
       Path.parse[Filesystem](path.generic).pipe: path =>
         val entry: ClasspathEntry.Directory | ClasspathEntry.Jar = path.entry() match

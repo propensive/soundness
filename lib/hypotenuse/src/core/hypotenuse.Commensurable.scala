@@ -40,13 +40,13 @@ import denominative.*
 import rudiments.*
 
 object Commensurable:
-  inline given numeric: [OperandType <: Long | Int | Double | Char | Byte | Short | Float]
+  inline given numeric: [operand <: Long | Int | Double | Char | Byte | Short | Float]
   =>    Boolean is Commensurable:
-    type Operand = OperandType
+    type Operand = operand
 
     inline def compare
        (inline left:        Boolean,
-        inline right:       OperandType,
+        inline right:       operand,
         inline strict:      Boolean,
         inline greaterThan: Boolean)
     :     Boolean =

@@ -148,8 +148,7 @@ object Contingency:
       case other                              => List(other)
 
 
-  def tend[ErrorTypes <: Exception: Type](handler: Expr[Exception ~> ErrorTypes])(using Quotes)
-  :     Expr[Any] =
+  def tend[errors <: Exception: Type](handler: Expr[Exception ~> errors])(using Quotes): Expr[Any] =
 
     import quotes.reflect.*
 
