@@ -62,9 +62,8 @@ extension [value](value: value)
         compiletime.summonInline[value is Readable by Text].give:
           aggregable.aggregate(value.stream[Text])
 
-  def writeTo[TargetType](target: TargetType)[element]
-     (using readable: value is Readable by element,
-            writable: TargetType is Writable by element)
+  def writeTo[target](target: target)[element]
+     (using readable: value is Readable by element, writable: target is Writable by element)
   :     Unit =
 
     writable.write(target, readable.stream(value))
@@ -212,20 +211,20 @@ package lineSeparation:
     case _: String => adaptiveLinefeed
 
 extension (obj: Stream.type)
-  def multiplex[ElemType](streams: Stream[ElemType]*)(using Monitor)
-  :     Stream[ElemType] =
+  def multiplex[element](streams: Stream[element]*)(using Monitor)
+  :     Stream[element] =
 
     multiplexer(streams*).stream
 
-  def multiplexer[ElemType](streams: Stream[ElemType]*)(using Monitor)
-  :     Multiplexer[Any, ElemType] =
+  def multiplexer[element](streams: Stream[element]*)(using Monitor)
+  :     Multiplexer[Any, element] =
 
-    val multiplexer = Multiplexer[Any, ElemType]()
+    val multiplexer = Multiplexer[Any, element]()
     streams.zipWithIndex.map(_.swap).each(multiplexer.add)
     multiplexer
 
-  def defer[ElemType](stream: => Stream[ElemType]): Stream[ElemType] =
-    (null.asInstanceOf[ElemType] #:: stream).tail
+  def defer[element](stream: => Stream[element]): Stream[element] =
+    (null.asInstanceOf[element] #:: stream).tail
 
   def pulsar[generic: GenericDuration](duration: generic)(using Monitor): Stream[Unit] =
     val startTime: Long = System.currentTimeMillis
@@ -270,11 +269,11 @@ extension (stream: Stream[Bytes])
 
     recur(stream, memory)
 
-  def compress[CompressionType <: CompressionAlgorithm: Compression]: Stream[Bytes] =
-    summon[Compression].compress(stream)
+  def compress[compression <: CompressionAlgorithm: Compression]: Stream[Bytes] =
+    compression.compress(stream)
 
-  def decompress[CompressionType <: CompressionAlgorithm: Compression]: Stream[Bytes] =
-    summon[Compression].decompress(stream)
+  def decompress[compression <: CompressionAlgorithm: Compression]: Stream[Bytes] =
+    compression.decompress(stream)
 
   def shred(mean: Double, variance: Double)(using Random): Stream[Bytes] =
     given gamma: Distribution = Gamma.approximate(mean, variance)

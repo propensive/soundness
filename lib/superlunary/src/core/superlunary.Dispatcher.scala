@@ -61,7 +61,7 @@ trait Dispatcher:
 
   inline def dispatch[output: Decodable in Json]
      (body: References ?=> Quotes ?=> Expr[output])
-     [ScalacVersionType <: Scalac.All]
+     [version <: Scalac.All]
      (using codepoint:   Codepoint,
             classloader: Classloader,
             properties:  SystemProperties,

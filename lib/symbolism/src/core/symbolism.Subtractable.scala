@@ -37,14 +37,14 @@ import prepositional.*
 import scala.annotation.targetName
 
 object Subtractable:
-  def apply[minuend, subtrahend, ResultType]
-     (lambda: (minuend, subtrahend) => ResultType)
-  :     minuend is Subtractable by subtrahend into ResultType = new Subtractable:
+  def apply[minuend, subtrahend, result]
+     (lambda: (minuend, subtrahend) => result)
+  :     minuend is Subtractable by subtrahend into result = new Subtractable:
     type Self = minuend
-    type Result = ResultType
+    type Result = result
     type Operand = subtrahend
 
-    def subtract(minuend: minuend, subtrahend: subtrahend): ResultType =
+    def subtract(minuend: minuend, subtrahend: subtrahend): result =
       lambda(minuend, subtrahend)
 
   given Double is Subtractable by Double into Double = Subtractable(_ - _)

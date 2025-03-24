@@ -47,18 +47,18 @@ object Vicarious:
   :     Expr[Catalog[key, value]] =
     import quotes.reflect.*
 
-    def fields[ProductType: Type](term: Term): List[Term] =
-      TypeRepr.of[ProductType].typeSymbol.caseFields.flatMap: field =>
+    def fields[product: Type](term: Term): List[Term] =
+      TypeRepr.of[product].typeSymbol.caseFields.flatMap: field =>
         term.select(field).asExpr.absolve match
-          case '{ $field: fieldType } =>
-            '{$lambda[fieldType]($field)}.asTerm :: fields[fieldType](field.asTerm)
+          case '{ $field: field } =>
+            '{$lambda[field]($field)}.asTerm :: fields[field](field.asTerm)
 
     '{ given ClassTag[value] = $classTag
        Catalog(IArray(${Varargs(fields[key](value.asTerm).map(_.asExprOf[value]))}*))  }
 
-  def fieldNames[ProductType: Type](prefix: String)(using Quotes): List[String] =
+  def fieldNames[product: Type](prefix: String)(using Quotes): List[String] =
     import quotes.reflect.*
-    TypeRepr.of[ProductType].typeSymbol.caseFields.flatMap: field =>
+    TypeRepr.of[product].typeSymbol.caseFields.flatMap: field =>
       val label = if prefix == "" then field.name else prefix+"."+field.name
       field.info.asType.absolve match
         case '[fieldType] => label :: fieldNames[fieldType](label)
@@ -76,7 +76,7 @@ object Vicarious:
 
     val label = fields(index)+"."+key.valueOrAbort
     ConstantType(IntConstant(fields.indexOf(label))).asType.absolve match
-      case '[ type idType <: Nat; idType ] => '{Proxy[key, value, idType]()}
+      case '[ type id <: Nat; id ] => '{Proxy[key, value, id]()}
 
   def proxy[key: Type, value: Type](using Quotes): Expr[Proxy[key, value, 0]] =
     import quotes.reflect.*

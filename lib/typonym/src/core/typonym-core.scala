@@ -36,7 +36,7 @@ import scala.quoted.*
 
 //transparent inline def erase(inline value: Any): Any = ${Typonym.erase(value)}
 
-transparent inline def reify[PhantomType]: Any = ${Typonym.reify[PhantomType]}
+transparent inline def reify[phantom]: Any = ${Typonym.reify[phantom]}
 
-def reify[PhantomType](phantomType: Type[PhantomType])(using Quotes): Expr[Any] =
-  Typonym.reify[PhantomType](using phantomType)
+def reify[phantom](phantomType: Type[phantom])(using Quotes): Expr[Any] =
+  Typonym.reify[phantom](using phantomType)

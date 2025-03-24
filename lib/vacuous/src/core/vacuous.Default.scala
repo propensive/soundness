@@ -43,9 +43,9 @@ object Default:
   given default: Default[Long] = () => 0L
   given text: Default[Text] = () => "".tt
   given string: Default[String] = () => ""
-  given list[ElemType]: Default[List[ElemType]] = () => Nil
-  given set[ElemType]: Default[Set[ElemType]] = () => Set()
-  given vector[ElemType]: Default[sci.Vector[ElemType]] = () => sci.Vector()
+  given list[element]: Default[List[element]] = () => Nil
+  given set[element]: Default[Set[element]] = () => Set()
+  given vector[element]: Default[sci.Vector[element]] = () => sci.Vector()
 
 trait Default[+value]:
   def apply(): value

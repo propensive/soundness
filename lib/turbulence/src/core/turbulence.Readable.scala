@@ -45,7 +45,7 @@ import vacuous.*
 
 object Readable:
   given bytes: Bytes is Readable by Bytes = Stream(_)
-  given text: [TextType <: Text] => TextType is Readable by Text = Stream(_)
+  given text: [textual <: Text] => textual is Readable by Text = Stream(_)
 
   given encodingAdapter: [readable: Readable by Text] => (encoder: CharEncoder)
   =>    readable is Readable by Bytes =
@@ -75,8 +75,7 @@ object Readable:
 
     Stream.defer(recur(0L.b))
 
-  given reader: [InType <: ji.Reader] => Tactic[StreamError]
-  =>    InType is Readable by Char = reader =>
+  given reader: [input <: ji.Reader] => Tactic[StreamError] => input is Readable by Char = reader =>
     def recur(count: Memory): Stream[Char] =
       try reader.read() match
         case -1  => Stream()
@@ -87,9 +86,8 @@ object Readable:
 
     Stream.defer(recur(0L.b))
 
-  given bufferedReader: [InType <: ji.BufferedReader]
-  =>    Tactic[StreamError]
-  =>    InType is Readable by Line =
+  given bufferedReader: [input <: ji.BufferedReader] => Tactic[StreamError]
+  =>    input is Readable by Line =
     reader =>
       def recur(count: Memory): Stream[Line] =
         try reader.readLine() match
@@ -101,9 +99,8 @@ object Readable:
 
       Stream.defer(recur(0L.b))
 
-  given inputStream: [InType <: ji.InputStream]
-  =>    Tactic[StreamError]
-  =>    InType is Readable by Bytes =
+  given inputStream: [input <: ji.InputStream] => Tactic[StreamError]
+  =>    input is Readable by Bytes =
     channel.contramap(jn.channels.Channels.newChannel(_).nn)
 
   given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Readable by Bytes =

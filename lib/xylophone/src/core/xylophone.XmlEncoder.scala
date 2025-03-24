@@ -43,8 +43,8 @@ object XmlEncoder extends Derivation[XmlEncoder]:
   given XmlEncoder[String] =
     string => XmlAst.Element(XmlName(t"String"), List(XmlAst.Textual(string.tt)))
 
-  given [value: XmlEncoder, CollectionType[element] <: Seq[element]]
-  =>    XmlEncoder[CollectionType[value]] = elements =>
+  given [value: XmlEncoder, collection[element] <: Seq[element]]
+  =>    XmlEncoder[collection[value]] = elements =>
       XmlAst.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[value]].write(_)))
 
   given XmlEncoder[Int] = int =>

@@ -41,31 +41,31 @@ object Typonym:
     import quotes.reflect.*
 
     Type.of[tuple] match
-      case '[type tailType <: Tuple; headType *: tailType] =>
-        TypeRepr.of[headType] :: untuple[tailType]
+      case '[type tail <: Tuple; head *: tail] =>
+        TypeRepr.of[head] :: untuple[tail]
 
       case _ =>
         Nil
 
-  def reify[PhantomType: Type](using Quotes): Expr[Any] =
+  def reify[phantom: Type](using Quotes): Expr[Any] =
     import quotes.reflect.*
 
-    Type.of[PhantomType] match
-      case '[type listType <: Tuple; TypeList[listType]] =>
-        untuple[listType].map(_.asType).map:
+    Type.of[phantom] match
+      case '[type list <: Tuple; TypeList[list]] =>
+        untuple[list].map(_.asType).map:
           _.runtimeChecked match
-            case '[elementType] => reify[elementType]
+            case '[element] => reify[element]
 
         . reverse
         . foldLeft('{Nil}) { (list, next) => '{$next :: $list} }
 
-      case '[type mapType <: Tuple; TypeMap[mapType]] =>
+      case '[type map <: Tuple; TypeMap[map]] =>
         val entries =
-          val pairs: List[TypeRepr] = untuple[mapType]
+          val pairs: List[TypeRepr] = untuple[map]
 
           val keyValues: List[Expr[(Any, Any)]] = pairs.map(_.asType).map:
             _.runtimeChecked match
-              case '[(keyType, valueType)] => '{(${reify[keyType]}, ${reify[valueType]})}
+              case '[(key, value)] => '{(${reify[key]}, ${reify[value]})}
 
           def recur(todo: List[Expr[(Any, Any)]]): Expr[List[(Any, Any)]] = todo match
             case Nil => '{Nil}
@@ -75,7 +75,7 @@ object Typonym:
 
         '{$entries.to(Map)}
 
-      case other => TypeRepr.of[PhantomType].runtimeChecked match
+      case other => TypeRepr.of[phantom].runtimeChecked match
         case ConstantType(BooleanConstant(boolean)) => Expr(boolean)
         case ConstantType(IntConstant(int))         => Expr(int)
         case ConstantType(DoubleConstant(double))   => Expr(double)
@@ -93,8 +93,8 @@ object Typonym:
       case list: List[?] =>
         val tuple = list.map(reflect).reverse.foldLeft(TypeRepr.of[Zero]): (tuple, next) =>
           tuple.asType.runtimeChecked match
-            case '[type tupleType <: Tuple; tupleType] => next.asType.runtimeChecked match
-              case '[nextType] => TypeRepr.of[nextType *: tupleType]
+            case '[type tuple <: Tuple; tuple] => next.asType.runtimeChecked match
+              case '[next] => TypeRepr.of[next *: tuple]
 
         tuple.asType.runtimeChecked match
-          case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[TypeList[tupleType]]
+          case '[type tuple <: Tuple; tuple] => TypeRepr.of[TypeList[tuple]]
