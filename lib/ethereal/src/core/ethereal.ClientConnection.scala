@@ -45,12 +45,12 @@ import java.io as ji
 
 import language.experimental.pureFunctions
 
-case class ClientConnection[BusType <: Matchable](pid: Pid):
+case class ClientConnection[bus <: Matchable](pid: Pid):
   val stderr: Promise[ji.OutputStream] = Promise()
   val signals: Spool[Signal] = Spool()
-  val bus: Spool[BusType] = Spool()
+  val bus: Spool[bus] = Spool()
   val terminatePid: Promise[Pid] = Promise()
   val exitPromise: Promise[Exit] = Promise()
-  def receive(message: BusType): Unit = bus.put(message)
+  def receive(message: bus): Unit = bus.put(message)
   val socket: Promise[jn.Socket] = Promise()
   def close(): Unit = safely(socket.await(1000L).close())
