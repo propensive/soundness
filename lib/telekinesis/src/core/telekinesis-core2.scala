@@ -45,15 +45,23 @@ import errorDiagnostics.stackTraces
 def orchestrate[ValueType: Formulable](using request: Http.Request)
    (using decodable: Tactic[Exception] ?=> (ValueType is Decodable in Query))
    [ResultType]
-   (process: Http.Request ?=> Submission[ValueType] => ResultType)
+   (process: Tactic[Errors] ?=> Http.Request ?=> Submission[ValueType] => ResultType)
    (using Formulation)
 :     ResultType =
-  process:
-    request.method match
-      case Http.Post =>
-        safely(request.query.decode[ValueType])
-        . let(Submission.Complete(_))
-        . or(Submission.Invalid(request.query))
+  mend:
+    case errors: Errors =>
+      mend:
+        case Errors(errors*) => panic(m"Reentrant more than once")
+      . within:
+          process(Submission.Incomplete(elicit[ValueType](Query(), errors)))
 
-      case _ =>
-        Submission.Incomplete(elicit[ValueType](Query(), Errors()))
+  . within:
+      process:
+        request.method match
+          case Http.Post =>
+            safely(request.query.decode[ValueType])
+            . let(Submission.Complete(_))
+            . or(Submission.Invalid(request.query))
+
+          case _ =>
+            Submission.Incomplete(elicit[ValueType](Query(), Errors()))

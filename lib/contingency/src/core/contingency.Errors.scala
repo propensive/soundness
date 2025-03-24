@@ -41,7 +41,7 @@ import fulminate.*
 import vacuous.*
 
 object Errors:
-  private def format(errors: List[(Text, Error)]): Message =
+  private def format(errors: Seq[(Text, Error)]): Message =
     val joined =
       errors.reverse.map: (focus, error) =>
         s"${error.message.text} at $focus".tt
@@ -50,12 +50,11 @@ object Errors:
 
     m"${errors.size} accrued errors: $joined"
 
-case class Errors(errors: List[(Text, Error)] = Nil)(using Diagnostics)
-extends Error(Errors.format(errors)):
+case class Errors(errors: (Text, Error)*)(using Diagnostics) extends Error(Errors.format(errors)):
   private lazy val errorMap: Map[Text, Error] = errors.to(Map)
 
   @targetName("add")
-  infix def + (focus: Text, error: Error): Errors = Errors((focus, error) :: errors)
+  infix def + (focus: Text, error: Error): Errors = Errors((focus, error) +: errors*)
 
   def apply(focus: Text): Optional[Error] =
     if errorMap.contains(focus) then errorMap(focus) else Unset
