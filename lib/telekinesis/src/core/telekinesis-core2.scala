@@ -53,7 +53,7 @@ def orchestrate[value: Formulable](using request: Http.Request)
       mend:
         case Errors(errors*) => panic(m"Reentrant more than once")
       . within:
-          process(Submission.Incomplete(elicit[value](Query(), errors)))
+          process(Submission.Incomplete(elicit[value](Query.empty, errors)))
 
   . within:
       process:
@@ -64,4 +64,4 @@ def orchestrate[value: Formulable](using request: Http.Request)
             . or(Submission.Invalid(request.query))
 
           case _ =>
-            Submission.Incomplete(elicit[value](Query(), Errors()))
+            Submission.Incomplete(elicit[value](Query.empty, Errors()))

@@ -48,8 +48,7 @@ import vacuous.*
 import wisteria.*
 
 object Query extends Dynamic:
-  def apply(): Query = new Query(Nil)
-  def apply[value: Encodable in Query](value: value): Query = value.encode
+  def empty: Query = new Query(Nil)
 
   given encodable: Query is Encodable in Text =
     _.values.map { (key, value) => t"${key.urlEncode}=${value.urlEncode}" }
@@ -84,7 +83,7 @@ object Query extends Dynamic:
                 context.decoded(value(label))
 
   given booleanEncodable: Boolean is Encodable in Query =
-    boolean => if boolean then Query.of(t"on") else Query()
+    boolean => if boolean then Query.of(t"on") else Query.empty
 
   given booleanDecodable: Boolean is Decodable in Query = _().present
 
