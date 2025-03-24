@@ -39,27 +39,27 @@ import proscenium.*
 import symbolism.*
 
 object PathAscent:
-  given [ElementType] => (Navigable by ElementType)
-  =>    PathAscent is Divisible by ElementType into (Relative by ElementType) =
+  given [element] => (Navigable by element)
+  =>    PathAscent is Divisible by element into (Relative by element) =
     new Divisible:
       type Self = PathAscent
-      type Result = Relative by ElementType
-      type Operand = ElementType
+      type Result = Relative by element
+      type Operand = element
 
-      def divide(path: PathAscent, child: ElementType): Relative by ElementType =
+      def divide(path: PathAscent, child: element): Relative by element =
         Relative(path.ascent, List(child))
 
-  given [ElementType, RootType: Navigable by ElementType] => PathAscent is Encodable in Text =
+  given [element, root: Navigable by element] => PathAscent is Encodable in Text =
     pathAscent =>
       if pathAscent.textDescent.isEmpty
       then
-        if pathAscent.ascent == 0 then RootType.selfText
-        else List.fill(pathAscent.ascent)(RootType.parentElement).join(RootType.separator)
+        if pathAscent.ascent == 0 then root.selfText
+        else List.fill(pathAscent.ascent)(root.parentElement).join(root.separator)
       else
         pathAscent
         . textDescent
         . reverse
-        . join(RootType.ascent*pathAscent.ascent, RootType.separator, t"")
+        . join(root.ascent*pathAscent.ascent, root.separator, t"")
 
 case class PathAscent(ascent0: Int) extends Relative(ascent0, Nil, t"/"):
   type Operand = Nothing

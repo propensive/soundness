@@ -37,13 +37,13 @@ import prepositional.*
 import scala.annotation.targetName
 
 object Addable:
-  def apply[AugendType, AddendType, ResultType](lambda: (AugendType, AddendType) => ResultType)
-  :     AugendType is Addable by AddendType into ResultType = new Addable:
+  def apply[AugendType, augend, result](lambda: (AugendType, augend) => result)
+  :     AugendType is Addable by augend into result = new Addable:
     type Self = AugendType
-    type Result = ResultType
-    type Operand = AddendType
+    type Result = result
+    type Operand = augend
 
-    def add(augend: AugendType, addend: AddendType): ResultType = lambda(augend, addend)
+    def add(augend: AugendType, addend: augend): result = lambda(augend, addend)
 
   given Double is Addable by Double into Double = Addable:
     (augend, addend) => augend + addend

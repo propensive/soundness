@@ -44,8 +44,8 @@ import vacuous.*
 import scala.compiletime.*
 
 object Relative:
-  given encodable: [RelativeType <: Relative] => (navigable: Navigable)
-  =>    RelativeType is Encodable in Text = relative =>
+  given encodable: [relative <: Relative] => (navigable: Navigable)
+  =>    relative is Encodable in Text = relative =>
     if relative.textDescent.isEmpty then
       if relative.ascent == 0 then navigable.selfText
       else List.fill(relative.ascent)(navigable.parentElement).join(navigable.separator)
@@ -55,17 +55,17 @@ object Relative:
       . reverse
       . join(navigable.ascent*relative.ascent, navigable.separator, t"")
 
-  given [ElementType, RootType: Navigable by ElementType] => (Relative by ElementType) is Showable =
+  given [element, root: Navigable by element] => (Relative by element) is Showable =
     encodable.encode(_)
 
-  given decoder: [ElementType] => (Navigable by ElementType)
-  =>    (Relative by ElementType) is Decodable in Text =
+  given decoder: [element] => (Navigable by element)
+  =>    (Relative by element) is Decodable in Text =
 
     parse(_)
 
-  def parse[ElementType](using navigable: Navigable by ElementType)(text: Text)
-  :     Relative by ElementType =
-    def recur(start: Int, ascent: Int, elements: List[ElementType]): Relative by ElementType =
+  def parse[element](using navigable: Navigable by element)(text: Text)
+  :     Relative by element =
+    def recur(start: Int, ascent: Int, elements: List[element]): Relative by element =
       if start >= text.length then Relative(ascent, elements)
       else
         val end = text.s.indexOf(navigable.separator.s, start).puncture(-1).or(text.length)
@@ -79,20 +79,20 @@ object Relative:
 
     if text == navigable.selfText then Relative(0, Nil) else recur(0, 0, Nil)
 
-  def apply[ElementType](using navigable: Navigable by ElementType)
-     (ascent0: Int, descent0: List[ElementType])
-  :     Relative by ElementType =
-    Relative.from[ElementType](ascent0, descent0.map(navigable.makeElement(_)), navigable.separator)
+  def apply[element](using navigable: Navigable by element)
+     (ascent0: Int, descent0: List[element])
+  :     Relative by element =
+    Relative.from[element](ascent0, descent0.map(navigable.makeElement(_)), navigable.separator)
 
-  private def from[ElementType](ascent0: Int, descent0: List[Text], separator: Text)
-  :     Relative by ElementType =
+  private def from[element](ascent0: Int, descent0: List[Text], separator: Text)
+  :     Relative by element =
     new Relative(ascent0, descent0, separator):
-      type Operand = ElementType
+      type Operand = element
 
-  given [ElementType] => (Relative by ElementType) is Addable by (Relative by ElementType) into
-          (Relative by ElementType) =
+  given [element] => (Relative by element) is Addable by (Relative by element) into
+          (Relative by element) =
     (left, right) =>
-      def recur(ascent: Int, descent: List[Text], ascent2: Int): Relative by ElementType =
+      def recur(ascent: Int, descent: List[Text], ascent2: Int): Relative by element =
         if ascent2 > 0 then
           if descent.isEmpty then recur(ascent + 1, Nil, ascent - 1)
           else recur(ascent, descent.tail, ascent - 1)

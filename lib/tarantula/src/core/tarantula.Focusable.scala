@@ -44,9 +44,9 @@ trait Focusable:
   def focus(value: Self): Text
 
 object Focusable:
-  def apply[ElementType](strategy0: Text, focus0: ElementType => Text): ElementType is Focusable =
+  def apply[element](strategy0: Text, focus0: element => Text): element is Focusable =
     new Focusable:
-      type Self = ElementType
+      type Self = element
       def strategy: Text = strategy0
       def focus(value: Self): Text = focus0(value)
 

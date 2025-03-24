@@ -148,7 +148,7 @@ object Markdown:
 
   private val parser = Parser.builder(options).nn.build().nn
 
-  def parse[ValueType: Readable by Text](value: ValueType)(using Tactic[MarkdownError])
+  def parse[readable: Readable by Text](value: readable)(using Tactic[MarkdownError])
   :     Markdown[Markdown.Ast.Block] =
     val text = value.stream[Text].read[Text]
     val root = parser.parse(text.s).nn

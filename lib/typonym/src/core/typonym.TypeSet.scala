@@ -32,4 +32,4 @@
                                                                                                   */
 package typonym
 
-erased trait TypeSet[+ElementType <: TypeElement[?]]
+erased trait TypeSet[+element <: TypeElement[?]]

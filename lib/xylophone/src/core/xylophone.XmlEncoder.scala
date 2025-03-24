@@ -43,9 +43,9 @@ object XmlEncoder extends Derivation[XmlEncoder]:
   given XmlEncoder[String] =
     string => XmlAst.Element(XmlName(t"String"), List(XmlAst.Textual(string.tt)))
 
-  given [ValueType: XmlEncoder, CollectionType[ElementType] <: Seq[ElementType]]
-  =>    XmlEncoder[CollectionType[ValueType]] = elements =>
-      XmlAst.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[ValueType]].write(_)))
+  given [value: XmlEncoder, CollectionType[element] <: Seq[element]]
+  =>    XmlEncoder[CollectionType[value]] = elements =>
+      XmlAst.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[value]].write(_)))
 
   given XmlEncoder[Int] = int =>
     XmlAst.Element(XmlName(t"Int"), List(XmlAst.Textual(int.show)))
@@ -73,8 +73,8 @@ object XmlEncoder extends Derivation[XmlEncoder]:
   private def textElements(value: XmlAst.Element): Text =
     value.children.collect { case XmlAst.Textual(txt) => txt }.join
 
-trait XmlEncoder[-ValueType]:
-  def write(value: ValueType): XmlAst.Element
+trait XmlEncoder[-value]:
+  def write(value: value): XmlAst.Element
 
-  def contramap[ValueType2](lambda: ValueType2 => ValueType): XmlEncoder[ValueType2] =
+  def contramap[value2](lambda: value2 => value): XmlEncoder[value2] =
     value => write(lambda(value))

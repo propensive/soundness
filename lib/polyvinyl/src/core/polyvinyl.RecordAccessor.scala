@@ -36,6 +36,6 @@ import prepositional.*
 import proscenium.*
 
 trait RecordAccessor
-   [record <: Record in data, data, LabelType <: Label, TypeConstructorType[_]]:
+   [record <: Record in data, data, LabelType <: Label, typeConstructor[_]]:
 
-  def transform(data: data, make: data => record): TypeConstructorType[record]
+  def transform(data: data, make: data => record): typeConstructor[record]

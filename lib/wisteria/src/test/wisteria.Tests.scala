@@ -132,7 +132,7 @@ extension [value](left: value)
   infix def ===(right: value)(using eq: Eq[value]): Boolean = eq.equal(left, right)
 
 object Eq extends Derivation[Eq]:
-  given iarray[ElementType](using eq: Eq[ElementType]): Eq[IArray[ElementType]] = (left, right) =>
+  given iarray[element](using eq: Eq[element]): Eq[IArray[element]] = (left, right) =>
     left.length == right.length && left.indices.all: index =>
       eq.equal(left(index), right(index))
 

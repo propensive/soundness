@@ -46,7 +46,7 @@ object Serpentine:
 
   @targetName("Slash")
   object `/`:
-    def unapply[platform <: AnyRef & Matchable: {Navigable, Radical}, ElementType]
+    def unapply[platform <: AnyRef & Matchable: {Navigable, Radical}, element]
        (path: Path on platform)
     :     Option[(Path on platform, platform.Operand)] =
       path.textDescent match

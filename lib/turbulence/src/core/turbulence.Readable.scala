@@ -57,7 +57,7 @@ object Readable:
 
     source => decoder.decoded(SourceType.stream(source))
 
-  given stream: [ElementType] => Stream[ElementType] is Readable by ElementType = identity(_)
+  given stream: [element] => Stream[element] is Readable by element = identity(_)
 
   given inCharReader: (stdio: Stdio) => In.type is Readable by Char = in =>
     def recur(count: Memory): Stream[Char] =

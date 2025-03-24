@@ -46,7 +46,7 @@ import vacuous.*
 import scala.compiletime.*
 
 object Path:
-  given encodable: [PathType <: Path] => PathType is Encodable in Text = _.text
+  given encodable: [path <: Path] => path is Encodable in Text = _.text
 
   given decoder: [platform: {Navigable, Radical}]
   =>    (Path on platform) is Decodable in Text =
@@ -90,10 +90,10 @@ object Path:
       recur(left.textDescent, right.ascent)
 
   def apply
-     [RootType <: Root on platform,
-      ElementType,
-      platform: {Navigable by ElementType, Radical from RootType}]
-     (root0: RootType, elements: List[ElementType])
+     [root <: Root on platform,
+      element,
+      platform: {Navigable by element, Radical from root}]
+     (root0: root, elements: List[element])
   :     Path on platform =
     if elements.isEmpty then root0 else
       Path.from[platform]

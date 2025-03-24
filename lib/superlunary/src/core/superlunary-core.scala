@@ -37,8 +37,8 @@ import jacinta.*
 
 import scala.quoted.*
 
-extension [ValueType](value: ValueType)(using Quotes)
-  inline def put(using references: References): Expr[ValueType] =
+extension [value](value: value)(using Quotes)
+  inline def put(using references: References): Expr[value] =
     '{  import strategies.throwUnsafely
-        ${references.array}(${ToExpr.IntToExpr(references.allocate[ValueType](value))})
-        . as[ValueType]  }
+        ${references.array}(${ToExpr.IntToExpr(references.allocate[value](value))})
+        . as[value]  }

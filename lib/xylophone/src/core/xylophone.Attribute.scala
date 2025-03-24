@@ -39,10 +39,10 @@ import rudiments.*
 import vacuous.*
 
 case class Attribute(node: XmlNode, attribute: Text):
-  def as[ValueType: XmlDecoder]: ValueType raises XmlReadError raises XmlAccessError =
+  def as[value: XmlDecoder]: value raises XmlReadError raises XmlAccessError =
     val attributes = Xml.normalize(node).prim match
       case XmlAst.Element(_, _, attributes, _) => attributes
       case _                                   => abort(XmlReadError())
 
-    ValueType.read
+    value.read
      (List(XmlAst.Element(XmlName(t"empty"), List(XmlAst.Textual(attributes(XmlName(attribute)))))))

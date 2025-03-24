@@ -61,7 +61,7 @@ class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
 
   def each(lambda: ZipEntry => Unit): Unit raises ZipError = map[Unit](lambda)
 
-  def map[ElementType](lambda: ZipEntry => ElementType): Stream[ElementType] raises ZipError =
+  def map[element](lambda: ZipEntry => element): Stream[element] raises ZipError =
     val zipIn = juz.ZipInputStream(stream().inputStream)
 
     def recur(): Stream[ZipEntry] =

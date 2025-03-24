@@ -35,5 +35,5 @@ package polyvinyl
 import prepositional.*
 import proscenium.*
 
-trait Schematic[record <: Record in data, data, LabelType <: Label, ValueType]:
-  def transform(data: data, params: List[String]): ValueType
+trait Schematic[record <: Record in data, data, LabelType <: Label, value]:
+  def transform(data: data, params: List[String]): value

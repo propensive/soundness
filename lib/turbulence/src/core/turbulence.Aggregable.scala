@@ -57,9 +57,9 @@ object Aggregable:
     source.each { chunk => buffer.append(chunk.s) }
     buffer.toString.tt
 
-  given stream: [ElementType, ElementType2]
-  =>   (aggregable: ElementType2 is Aggregable by ElementType)
-  =>    Stream[ElementType2] is Aggregable by ElementType =
+  given stream: [element, ElementType2]
+  =>   (aggregable: ElementType2 is Aggregable by element)
+  =>    Stream[ElementType2] is Aggregable by element =
     element => Stream(aggregable.aggregate(element))
 
 trait Aggregable:

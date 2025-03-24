@@ -39,29 +39,29 @@ import scala.compiletime.*
 import anticipation.*
 import fulminate.*
 
-inline def default[ValueType]: ValueType = summonInline[Default[ValueType]]()
+inline def default[value]: value = summonInline[Default[value]]()
 
-inline def optimizable[ValueType](lambda: Optional[ValueType] => Optional[ValueType])
-:     Optional[ValueType] =
+inline def optimizable[value](lambda: Optional[value] => Optional[value])
+:     Optional[value] =
   lambda(Unset)
 
-extension [ValueType](iterable: Iterable[Optional[ValueType]])
-  transparent inline def compact: Iterable[ValueType] =
+extension [value](iterable: Iterable[Optional[value]])
+  transparent inline def compact: Iterable[value] =
     iterable.filter(!_.absent).map(_.vouch)
 
-extension [ValueType](option: Option[ValueType])
-  inline def optional: Unset.type | ValueType = option.getOrElse(Unset)
+extension [value](option: Option[value])
+  inline def optional: Unset.type | value = option.getOrElse(Unset)
 
-extension [ValueType](value: ValueType)
-  def puncture(point: ValueType): Optional[ValueType] = if value == point then Unset else value
+extension [value](value: value)
+  def puncture(point: value): Optional[value] = if value == point then Unset else value
 
-  def only[ValueType2](partial: PartialFunction[ValueType, ValueType2]): Optional[ValueType2] =
+  def only[value2](partial: PartialFunction[value, value2]): Optional[value2] =
     (partial.orElse { _ => Unset })(value)
 
-  def unless(predicate: (value: ValueType) ?=> Boolean) =
+  def unless(predicate: (value: value) ?=> Boolean) =
     if predicate(using value) then Unset else value
 
-extension [ValueType](java: ju.Optional[ValueType])
-  def optional: Optional[ValueType] = if java.isEmpty then Unset else java.get.nn
+extension [value](java: ju.Optional[value])
+  def optional: Optional[value] = if java.isEmpty then Unset else java.get.nn
 
 given Realm = realm"vacuous"

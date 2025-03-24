@@ -47,10 +47,10 @@ enum Stroke:
   case Draw(coords: Shift | Point)
   case Close
 
-  case Cubic[PointType <: (Shift | Point)]
-     (ctrl1: Optional[PointType], ctrl2: PointType, point: PointType)
+  case Cubic[point <: (Shift | Point)]
+     (ctrl1: Optional[point], ctrl2: point, point: point)
 
-  case Quadratic[PointType <: (Shift | Point)](ctrl1: Optional[PointType], point: PointType)
+  case Quadratic[point <: (Shift | Point)](ctrl1: Optional[point], point: point)
 
   case Arc
      (rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, coords: Point | Shift)

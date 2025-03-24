@@ -32,4 +32,4 @@
                                                                                                   */
 package typonym
 
-erased trait TypeElement[ElementType]
+erased trait TypeElement[element]

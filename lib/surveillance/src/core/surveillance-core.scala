@@ -39,13 +39,13 @@ import prepositional.*
 import rudiments.*
 
 extension [PathType: Abstractable across Paths into Text](path: PathType)
-  def watch[ResultType](lambda: Watch => ResultType): ResultType raises WatchError =
+  def watch[result](lambda: Watch => result): result raises WatchError =
     val watchSet = Watch(List(path))
     lambda(watchSet).also:
       watchSet.unregister()
 
 extension [PathType: Abstractable across Paths into Text](paths: Iterable[PathType])
-  def watch[ResultType](lambda: Watch => ResultType): ResultType raises WatchError =
+  def watch[result](lambda: Watch => result): result raises WatchError =
     val watchSet = Watch(paths)
 
     lambda(watchSet).also:

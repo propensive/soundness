@@ -34,5 +34,5 @@ package serpentine
 
 export Serpentine.{?, ^, /}
 
-extension [ValueType](value: ValueType)(using substantiable: ValueType is Substantiable)
+extension [value](value: value)(using substantiable: value is Substantiable)
   def exists(): Boolean = substantiable.exists(value)

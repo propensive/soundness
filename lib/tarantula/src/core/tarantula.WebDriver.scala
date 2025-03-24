@@ -57,7 +57,7 @@ case class WebDriver(server: Browser#Server):
   case class Session(sessionId: Text):
     def webDriver: WebDriver = wd
 
-    private def safe[ResultType](block: => ResultType): ResultType = block
+    private def safe[result](block: => result): result = block
       // try block catch case error: HttpError => error match
       //   case HttpError(status, body) => error.read[Json]
       //     throw WebDriverError(json.error.as[Text], json.message.as[Text],
@@ -94,18 +94,18 @@ case class WebDriver(server: Browser#Server):
         post(t"value", Data(text).json)
 
       @targetName("at")
-      infix def / [ElementType: Focusable](value: ElementType): List[Element] logs HttpEvent =
+      infix def / [element: Focusable](value: element): List[Element] logs HttpEvent =
         case class Data(`using`: Text, value: Text)
 
-        post(t"elements", Data(ElementType.strategy, ElementType.focus(value)).json)
+        post(t"elements", Data(element.strategy, element.focus(value)).json)
         . value
         . as[List[Json]]
         . map(_(Wei).as[Text])
         . map(Element(_))
 
-      def element[ElementType: Focusable](value: ElementType): Element logs HttpEvent =
+      def element[element: Focusable](value: element): Element logs HttpEvent =
         case class Data(`using`: Text, value: Text)
-        val e = post(t"element", Data(ElementType.strategy, ElementType.focus(value)).json)
+        val e = post(t"element", Data(element.strategy, element.focus(value)).json)
         Element(e.value.selectDynamic(Wei.s).as[Text])
 
     private def get(address: Text): Json logs HttpEvent = safe:
@@ -133,22 +133,22 @@ case class WebDriver(server: Browser#Server):
       UrlType(get(t"url").url.as[Text])
 
     @targetName("at")
-    infix def / [ElementType: Focusable](value: ElementType)
+    infix def / [element: Focusable](value: element)
     :     List[Element] logs HttpEvent =
 
       case class Data(`using`: Text, value: Text)
 
-      post(t"elements", Data(ElementType.strategy, ElementType.focus(value)).json)
+      post(t"elements", Data(element.strategy, element.focus(value)).json)
       . value
       . as[List[Json]]
       . map(_(Wei).as[Text])
       . map(Element(_))
 
-    def element[ElementType: Focusable](value: ElementType)
+    def element[element: Focusable](value: element)
     :     Element logs HttpEvent =
 
       case class Data(`using`: Text, value: Text)
-      val e = post(t"element", Data(ElementType.strategy, ElementType.focus(value)).json)
+      val e = post(t"element", Data(element.strategy, element.focus(value)).json)
 
       Element(e.value.selectDynamic(Wei.s).as[Text])
 

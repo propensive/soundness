@@ -41,11 +41,11 @@ import guillotine.*
 import rudiments.*
 
 object remote extends Dispatcher:
-  type Result[OutputType] = OutputType
+  type Result[output] = output
 
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
-  protected def invoke[OutputType](dispatch: Dispatch[OutputType]): OutputType =
+  protected def invoke[output](dispatch: Dispatch[output]): output =
     import workingDirectories.virtualMachine
     import logging.silent
 
