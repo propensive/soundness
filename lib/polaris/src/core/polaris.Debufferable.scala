@@ -38,11 +38,11 @@ import rudiments.*
 import wisteria.*
 
 object Debufferable extends ProductDerivable[Debufferable]:
-  def apply[DataType](byteWidth: Int)(lambda: (Bytes, Int) => DataType): DataType is Debufferable =
+  def apply[data](byteWidth: Int)(lambda: (Bytes, Int) => data): data is Debufferable =
     new:
       def width: Int = byteWidth
 
-      def debuffer(buffer: Buffer): DataType =
+      def debuffer(buffer: Buffer): data =
         lambda(buffer.bytes, buffer.offset).also(buffer.advance(width))
 
   given B8 is Debufferable = Debufferable(1)(_(_).bits)
@@ -65,16 +65,16 @@ object Debufferable extends ProductDerivable[Debufferable]:
   given Int is Debufferable = Debufferable(4)(B32(_, _).s32.int)
   given Long is Debufferable = Debufferable(8)(B64(_, _).s64.long)
 
-  class Join[DerivationType <: Product: ProductReflection]
-     (val width: Int, debuffer0: Buffer => DerivationType)
+  class Join[derivation <: Product: ProductReflection]
+     (val width: Int, debuffer0: Buffer => derivation)
   extends Debufferable:
-    type Self = DerivationType
-    def debuffer(buffer: Buffer): DerivationType = debuffer0(buffer)
+    type Self = derivation
+    def debuffer(buffer: Buffer): derivation = debuffer0(buffer)
 
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Debufferable =
-    Join[DerivationType]
-     (contexts { [FieldType] => _.width }.sum,
-      buffer => construct { [FieldType] => context => context.debuffer(buffer) })
+  inline def join[derivation <: Product: ProductReflection]: derivation is Debufferable =
+    Join[derivation]
+     (contexts { [field] => _.width }.sum,
+      buffer => construct { [field] => context => context.debuffer(buffer) })
 
 trait Debufferable:
   type Self
