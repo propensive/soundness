@@ -46,7 +46,7 @@ case class Seed(value: Bytes):
   def entropy: Int = value.length*8
   def long: Long = Long(value)
 
-  inline def stochastic[ResultType](block: Random ?=> ResultType): ResultType =
+  inline def stochastic[result](block: Random ?=> result): result =
     given seed: Seed = this
     val randomization = summonInline[Randomization]
     block(using new Random(randomization.make()))

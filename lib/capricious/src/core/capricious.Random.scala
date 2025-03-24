@@ -46,7 +46,7 @@ class Random(private val generator: su.Random):
   def long(): Long = generator.nextLong()
   def gaussian(): Double = generator.nextGaussian()
   def unitInterval(): Double = generator.nextDouble()
-  def apply[ValueType: Randomizable](): ValueType = ValueType.from(this)
+  def apply[value: Randomizable](): value = value.from(this)
 
-  transparent inline def shuffle[ElementType](seq: Seq[ElementType]): Seq[ElementType] =
+  transparent inline def shuffle[element](seq: Seq[element]): Seq[element] =
     generator.shuffle(seq)

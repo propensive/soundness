@@ -41,7 +41,7 @@ import scala.compiletime.*
 
 import language.experimental.genericNumberLiterals
 
-object Randomizable extends Derivation[[DerivationType] =>> DerivationType is Randomizable]:
+object Randomizable extends Derivation[[derivation] =>> derivation is Randomizable]:
   given byte: Byte is Randomizable = _.long().toByte
   given short: Short is Randomizable = _.long().toShort
   given int: Int is Randomizable = _.long().toInt
@@ -50,33 +50,33 @@ object Randomizable extends Derivation[[DerivationType] =>> DerivationType is Ra
   given seed: Seed is Randomizable = _.long().pipe(Seed(_))
   given boolean: Boolean is Randomizable = _.long() < 0L
 
-  given [ElementType: Randomizable] => (size: RandomSize) => List[ElementType] is Randomizable =
+  given [element: Randomizable] => (size: RandomSize) => List[element] is Randomizable =
     random =>
       given Random = random
-      List.fill(size.generate(random))(arbitrary[ElementType]())
+      List.fill(size.generate(random))(arbitrary[element]())
 
-  given [ElementType: Randomizable] => (size: RandomSize) => Set[ElementType] is Randomizable =
+  given [element: Randomizable] => (size: RandomSize) => Set[element] is Randomizable =
     random =>
       given Random = random
-      Set.fill(size.generate(random))(arbitrary[ElementType]())
+      Set.fill(size.generate(random))(arbitrary[element]())
 
-  given [ElementType: {Randomizable, ClassTag}] => (size: RandomSize)
-  =>    IArray[ElementType] is Randomizable =
+  given [element: {Randomizable, ClassTag}] => (size: RandomSize)
+  =>    IArray[element] is Randomizable =
     random =>
       given Random = random
-      IArray.fill(size.generate(random))(arbitrary[ElementType]())
+      IArray.fill(size.generate(random))(arbitrary[element]())
 
   given Distribution => Double is Randomizable = summon[Distribution].transform(_)
 
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Randomizable =
+  inline def join[derivation <: Product: ProductReflection]: derivation is Randomizable =
     random =>
       stochastic(using summonInline[Randomization]):
-        construct { [FieldType] => _.from(summon[Random]) }
+        construct { [field] => _.from(summon[Random]) }
 
-  inline def split[DerivationType: SumReflection]: DerivationType is Randomizable = random =>
+  inline def split[derivation: SumReflection]: derivation is Randomizable = random =>
     stochastic(using summonInline[Randomization]):
       delegate(variantLabels(random.long().abs.toInt%variantLabels.length)):
-        [VariantType <: DerivationType] => _.from(summon[Random])
+        [variant <: derivation] => _.from(summon[Random])
 
 trait Randomizable:
   type Self

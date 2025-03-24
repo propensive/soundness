@@ -157,8 +157,8 @@ randomness from any other source).
 
 ### Random sequences
 
-If a type `ValueType` is `Randomizable`, then `List[ValueType]` and
-`IArray[ValueType]` are also `Randomizable`, provided a `RandomSize` instance
+If a type `value` is `Randomizable`, then `List[value]` and
+`IArray[value]` are also `Randomizable`, provided a `RandomSize` instance
 is in scope, for example by importing,
 ```scala
 import randomization.sizes.uniformUpto1000
@@ -166,7 +166,7 @@ import randomization.sizes.uniformUpto1000
 
 Instances of `RandomSize` exist for other powers of 10, up to `100000`.
 
-It's also possible to construct random `Set[ValueType]`s in the same way, but
+It's also possible to construct random `Set[value]`s in the same way, but
 their sizes may be smaller due to deduplication. For example, whatever the
 range of `RandomSize`, a `Set[Boolean]` would never have more than two elements,
 `true` and `false`.
