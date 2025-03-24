@@ -40,13 +40,13 @@ import prepositional.*
 import spectacular.*
 
 object Hmac:
-  def apply[SchemeType <: Algorithm](bytes: Bytes) = new Hmac(bytes):
-    type Format = SchemeType
+  def apply[scheme <: Algorithm](bytes: Bytes) = new Hmac(bytes):
+    type Format = scheme
 
-  given [HmacType <: Algorithm] => Alphabet[Base64] => Hmac in HmacType is Showable = hmac =>
+  given [hmac <: Algorithm] => Alphabet[Base64] => Hmac in hmac is Showable = hmac =>
     t"Hmac(${hmac.bytes.serialize[Base64]})"
 
-  given [HmacType <: Algorithm] => Hmac in HmacType is Encodable in Bytes = _.bytes
+  given [hmac <: Algorithm] => Hmac in hmac is Encodable in Bytes = _.bytes
 
 class Hmac(val bytes: Bytes):
   type Format <: Algorithm

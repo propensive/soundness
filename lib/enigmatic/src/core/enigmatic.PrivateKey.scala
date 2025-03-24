@@ -42,25 +42,25 @@ import prepositional.*
 import spectacular.*
 
 object PrivateKey:
-  def generate[CipherType <: Cipher]()(using cipher: CipherType): PrivateKey[CipherType] =
+  def generate[cipher <: Cipher]()(using cipher: cipher): PrivateKey[cipher] =
     PrivateKey(cipher.genKey())
 
-  given [KeyType <: Cipher] => PrivateKey[KeyType] is Showable = key =>
+  given [key <: Cipher] => PrivateKey[key] is Showable = key =>
     import alphabets.base64.standard
     t"PrivateKey(${key.privateBytes.digest[Sha2[256]].serialize[Base64]})"
 
-open case class PrivateKey[CipherType <: Cipher](private[enigmatic] val privateBytes: Bytes):
-  def public(using cipher: CipherType): PublicKey[CipherType] =
+open case class PrivateKey[cipher <: Cipher](private[enigmatic] val privateBytes: Bytes):
+  def public(using cipher: cipher): PublicKey[cipher] =
     PublicKey(cipher.privateToPublic(privateBytes))
 
-  def decrypt[ValueType: Decodable in Bytes](bytes: Bytes)(using cipher: CipherType & Encryption)
-  :     ValueType raises CryptoError =
+  def decrypt[decodable: Decodable in Bytes](bytes: Bytes)(using cipher: cipher & Encryption)
+  :     decodable raises CryptoError =
 
-    ValueType.decoded(cipher.decrypt(bytes, privateBytes))
+    decodable.decoded(cipher.decrypt(bytes, privateBytes))
 
-  def sign[ValueType: Encodable in Bytes](value: ValueType)(using cipher: CipherType & Signing)
-  :     Signature[CipherType] =
+  def sign[encodable: Encodable in Bytes](value: encodable)(using cipher: cipher & Signing)
+  :     Signature[cipher] =
 
-    Signature(cipher.sign(ValueType.encode(value), privateBytes))
+    Signature(cipher.sign(encodable.encode(value), privateBytes))
 
   def pem(reveal: ExposeSecretKey.type): Pem = Pem(PemLabel.PrivateKey, privateBytes)

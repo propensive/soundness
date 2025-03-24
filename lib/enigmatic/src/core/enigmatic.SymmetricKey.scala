@@ -36,20 +36,20 @@ import anticipation.*
 import prepositional.*
 
 object SymmetricKey:
-  given [CipherType <: Cipher] => SymmetricKey[CipherType] is Encodable in Bytes = _.bytes
-  def generate[CipherType <: Cipher & Symmetric]()(using cipher: CipherType)
-  :     SymmetricKey[CipherType] =
+  given [cipher <: Cipher] => SymmetricKey[cipher] is Encodable in Bytes = _.bytes
+  def generate[cipher <: Cipher & Symmetric]()(using cipher: cipher)
+  :     SymmetricKey[cipher] =
 
     SymmetricKey(cipher.genKey())
 
-class SymmetricKey[CipherType <: Cipher](private[enigmatic] val bytes: Bytes)
-extends PrivateKey[CipherType](bytes):
-  def encrypt[ValueType: Encodable in Bytes](value: ValueType)(using CipherType & Encryption)
+class SymmetricKey[cipher <: Cipher](private[enigmatic] val bytes: Bytes)
+extends PrivateKey[cipher](bytes):
+  def encrypt[value: Encodable in Bytes](value: value)(using cipher & Encryption)
   :     Bytes =
     public.encrypt(value)
 
-  def verify[ValueType: Encodable in Bytes](value: ValueType, signature: Signature[CipherType])
-     (using CipherType & Signing)
+  def verify[value: Encodable in Bytes](value: value, signature: Signature[cipher])
+     (using cipher & Signing)
   :     Boolean =
 
     public.verify(value, signature)

@@ -44,9 +44,9 @@ import vacuous.*
 object Rsa:
   given [I <: 1024 | 2048: ValueOf] => Rsa[I] = Rsa()
 
-class Rsa[BitsType <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
-  type Size = BitsType
-  def keySize: BitsType = valueOf[BitsType]
+class Rsa[bits <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
+  type Size = bits
+  def keySize: bits = valueOf[bits]
 
   def privateToPublic(bytes: Bytes): Bytes =
     val javaKey = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(unsafely(bytes.mutable))).nn

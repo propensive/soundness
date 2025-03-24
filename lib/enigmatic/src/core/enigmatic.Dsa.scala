@@ -40,11 +40,11 @@ import rudiments.*
 import vacuous.*
 
 object Dsa:
-  given [BitsType <: 512 | 1024 | 2048 | 3072: ValueOf] => Dsa[BitsType] = Dsa()
+  given [bits <: 512 | 1024 | 2048 | 3072: ValueOf] => Dsa[bits] = Dsa()
 
-class Dsa[BitsType <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signing:
-  type Size = BitsType
-  def keySize: BitsType = valueOf[BitsType]
+class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signing:
+  type Size = bits
+  def keySize: bits = valueOf[bits]
 
   def genKey(): Bytes =
     val generator = js.KeyPairGenerator.getInstance("DSA").nn

@@ -42,11 +42,10 @@ import gastronomy.*
 import prepositional.*
 import rudiments.*
 
-extension [ValueType: Encodable in Bytes](value: ValueType)
-  def hmac[HashType <: Algorithm](key: Bytes)(using function: HashFunction in HashType)
-  :     Hmac in HashType =
+extension [encodable: Encodable in Bytes](value: encodable)
+  def hmac[hash <: Algorithm](key: Bytes)(using function: HashFunction in hash): Hmac in hash =
 
     val mac = function.hmac0
     mac.init(SecretKeySpec(key.to(Array), function.name.s))
 
-    Hmac(unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable))
+    Hmac(unsafely(mac.doFinal(encodable.encode(value).mutable).nn.immutable))
