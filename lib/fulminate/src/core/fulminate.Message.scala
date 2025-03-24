@@ -63,10 +63,9 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
      (textParts.init ++ ((textParts.last+right.textParts.head) :: right.textParts.tail),
       subs ++ right.subs)
 
-  def fold[RenderType](initial: RenderType)(append: (RenderType, Text, Int) => RenderType)
-  :     RenderType =
-    def recur(done: RenderType, textTodo: List[Text], subsTodo: List[Message], level: Int)
-    :     RenderType =
+  def fold[render](initial: render)(append: (render, Text, Int) => render): render =
+    def recur(done: render, textTodo: List[Text], subsTodo: List[Message], level: Int)
+    :     render =
       subsTodo match
         case Nil =>
           append(done, textTodo.head, level)

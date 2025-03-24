@@ -37,11 +37,11 @@ package cosmopolite
 erased trait Localization
 erased trait Language extends Localization
 erased trait Country extends Localization
-erased trait Dialect[language <: Language, CountryType <: Country]
+erased trait Dialect[language <: Language, country <: Country]
 
-infix type -[language <: Language, CountryType <: Country] = Dialect[language, CountryType]
+infix type -[language <: Language, country <: Country] = Dialect[language, country]
 
-erased trait Intercession[language <: Language, DialectsType <: Tuple]
+erased trait Intercession[language <: Language, dialects <: Tuple]
 
 erased given Intercession[en, (en-US, en-GB, en-AU)] = !!
 erased given Intercession[fr, (fr-FR, fr-CA, fr-BE, fr-CH)] = !!

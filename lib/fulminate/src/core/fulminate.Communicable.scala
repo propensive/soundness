@@ -46,12 +46,12 @@ object Communicable:
   given Long is Communicable = long => Message(long.toString.tt)
   given Message is Communicable = identity(_)
 
-  given [TypeType] => Quotes => Type[TypeType] is Communicable =
+  given [meta] => Quotes => Type[meta] is Communicable =
     tpe => Message(quotes.reflect.TypeRepr.of(using tpe).show.tt)
 
   given (quotes: Quotes) => quotes.reflect.TypeRepr is Communicable = tpe => Message(tpe.show)
   given (quotes: Quotes) => quotes.reflect.Term is Communicable = term => Message(term.show)
-  given [ExprType] => Quotes => Expr[ExprType] is Communicable = tpe => Message(tpe.show)
+  given [expr] => Quotes => Expr[expr] is Communicable = tpe => Message(tpe.show)
 
   given specializable: Specializable is Communicable = value =>
     Message(value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt)
