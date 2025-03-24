@@ -43,21 +43,21 @@ import spectacular.*
 import scala.compiletime.*
 
 object Nomenclature:
-  opaque type Name[-PlatformType] = Text
+  opaque type Name[-platform] = Text
 
   object Name:
-    given [PlatformType] => Name[PlatformType] is Communicable = name => Message(name.text)
-    given [PlatformType] => Name[PlatformType] is Encodable in Text = _.text
+    given [platform] => Name[platform] is Communicable = name => Message(name.text)
+    given [platform] => Name[platform] is Encodable in Text = _.text
 
-    inline given [PlatformType] => (PlatformType is Nominative, Tactic[NameError])
-    =>    Name[PlatformType] is Decodable in Text =
+    inline given [platform] => (platform is Nominative, Tactic[NameError])
+    =>    Name[platform] is Decodable in Text =
 
-      val decoder: Name[PlatformType] is Decodable in Text = apply[PlatformType](_)
+      val decoder: Name[platform] is Decodable in Text = apply[platform](_)
 
       decoder
 
-    private inline def check[CheckType <: Matchable](name: Text): Unit raises NameError =
-      inline erasedValue[CheckType] match
+    private inline def check[check <: Matchable](name: Text): Unit raises NameError =
+      inline erasedValue[check] match
         case _: Zero           => ()
         case _: (head *: tail) => inline erasedValue[head & Matchable] match
           case _: Check[param] =>
@@ -71,14 +71,14 @@ object Nomenclature:
 
             check[tail](name)
 
-    inline def apply[PlatformType](name: Text)(using nominative: PlatformType is Nominative)
-    :     Name[PlatformType] raises NameError =
+    inline def apply[platform](name: Text)(using nominative: platform is Nominative)
+    :     Name[platform] raises NameError =
 
       inline disintersect[nominative.Constraint] match
         case v => check[v.type](name)
 
-      name.asInstanceOf[Name[PlatformType]]
+      name.asInstanceOf[Name[platform]]
 
-    given [PlatformType] => Name[PlatformType] is Showable = identity(_)
+    given [platform] => Name[platform] is Showable = identity(_)
 
-  extension [RulesType](name: Name[RulesType]) def text: Text = name
+  extension [rules](name: Name[rules]) def text: Text = name

@@ -34,4 +34,4 @@ package nomenclature
 
 import proscenium.*
 
-trait Check[ParamType <: Label]
+trait Check[param <: Label]

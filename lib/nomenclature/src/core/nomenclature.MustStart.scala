@@ -39,4 +39,4 @@ import proscenium.*
 
 object MustStart extends Rule({ text => m"must start with $text" }, _.starts(_))
 
-erased trait MustStart[TextType <: Label] extends Check[TextType]
+erased trait MustStart[text <: Label] extends Check[text]

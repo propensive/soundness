@@ -36,9 +36,9 @@ import proscenium.*
 
 import scala.quoted.*
 
-class NameExtractor[TextType <: Label]():
-  inline def apply[PlatformType: Nominative](): Name[PlatformType] =
-    ${Nomenclature2.parse[PlatformType, TextType]}
+class NameExtractor[text <: Label]():
+  inline def apply[platform: Nominative](): Name[platform] =
+    ${Nomenclature2.parse[platform, text]}
 
-  inline def unapply[PlatformType](inline scrutinee: Name[PlatformType]): Boolean =
-    ${Nomenclature2.parse2[PlatformType, TextType]('scrutinee)}
+  inline def unapply[platform](inline scrutinee: Name[platform]): Boolean =
+    ${Nomenclature2.parse2[platform, text]('scrutinee)}
