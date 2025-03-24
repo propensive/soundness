@@ -39,7 +39,7 @@ import proscenium.*
 import telekinesis.*
 
 object Redirect:
-  def apply[LinkType: Abstractable across Urls into Text](location: LinkType, permanent: Boolean)
+  def apply[link: Abstractable across Urls into Text](location: link, permanent: Boolean)
   :     Redirect =
     new Redirect(location.generic, permanent)
 

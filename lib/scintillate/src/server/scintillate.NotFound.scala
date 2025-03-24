@@ -35,8 +35,8 @@ package scintillate
 import telekinesis.*
 
 object NotFound:
-  given [ContentType: Servable] => NotFound[ContentType] is Servable = notFound =>
-    val response = ContentType.serve(notFound.content)
+  given [content: Servable] => NotFound[content] is Servable = notFound =>
+    val response = content.serve(notFound.content)
     Http.Response.make(Http.NotFound, response.textHeaders, response.body)
 
-case class NotFound[ContentType](content: ContentType)
+case class NotFound[content](content: content)

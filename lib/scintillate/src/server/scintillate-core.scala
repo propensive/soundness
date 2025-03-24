@@ -79,7 +79,7 @@ inline def request: Http.Request = compiletime.summonInline[Http.Request]
 given realm: Realm = realm"scintillate"
 
 extension (request: Http.Request)
-  def as[BodyType: Acceptable]: BodyType = BodyType.accept(request)
+  def as[body: Acceptable]: body = body.accept(request)
 
   def path(using connection: HttpConnection)
   :     HttpUrl raises PathError raises UrlError raises HostnameError =
