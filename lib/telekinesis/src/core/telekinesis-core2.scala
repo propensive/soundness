@@ -32,16 +32,11 @@
                                                                                                   */
 package telekinesis
 
-import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
-import honeycomb.*
 import legerdemain.*
-import nettlesome.*
 import prepositional.*
-import proscenium.*
-import rudiments.*
 import vacuous.*
 
 import language.dynamics
