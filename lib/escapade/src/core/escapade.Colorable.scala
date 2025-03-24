@@ -37,18 +37,17 @@ import anticipation.*
 import language.experimental.pureFunctions
 
 object Colorable:
-  def apply[ValueType](using erased Void)[ColorType: Chromatic](color0: ColorType)
-  :     ValueType is Colorable =
+  def apply[value](using erased Void)[color: Chromatic](color0: color): value is Colorable =
     new Colorable:
-      type Self = ValueType
-      extension (value: ValueType) def color: Fg = Fg(color0.asRgb24Int)
+      type Self = value
+      extension (value: value) def color: Fg = Fg(color0.asRgb24Int)
 
-  def apply[ValueType](using erased Void)[ColorType: Chromatic]
-     (chooseColor: ValueType -> ColorType)
-  :     ValueType is Colorable =
+  def apply[value](using erased Void)[color: Chromatic]
+     (chooseColor: value -> color)
+  :     value is Colorable =
     new Colorable:
-      type Self = ValueType
-      extension (value: ValueType) def color: Fg = Fg(chooseColor(value).asRgb24Int)
+      type Self = value
+      extension (value: value) def color: Fg = Fg(chooseColor(value).asRgb24Int)
 
 trait Colorable:
   type Self

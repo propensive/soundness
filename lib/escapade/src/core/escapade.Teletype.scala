@@ -70,7 +70,7 @@ object Teletype:
         stream.flow(())(Err.print(head) yet write(target, tail))
 
   given Teletype is Textual:
-    type Show[ValueType] = ValueType is Teletypeable
+    type Show[value] = value is Teletypeable
     def classTag: ClassTag[Teletype] = summon[ClassTag[Teletype]]
     def size(text: Teletype): Int = text.plain.s.length
     def text(teletype: Teletype): Text = teletype.plain
@@ -94,7 +94,7 @@ object Teletype:
     def indexOf(text: Teletype, sub: Text, start: Ordinal): Optional[Ordinal] =
       text.plain.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)
 
-    def show[ValueType: Teletypeable](value: ValueType) = value.teletype
+    def show[value: Teletypeable](value: value) = value.teletype
     def builder(size: Optional[Int] = Unset): TeletypeBuilder = TeletypeBuilder(size)
 
   val empty: Teletype = Teletype(t"")
@@ -120,7 +120,7 @@ object Teletype:
 
   given Ordering[Teletype] = Ordering.by(_.plain)
 
-  def make[ValueType: Showable](value: ValueType, transform: Ansi.Transform): Teletype =
+  def make[value: Showable](value: value, transform: Ansi.Transform): Teletype =
     val text: Text = value.show
     Teletype(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 

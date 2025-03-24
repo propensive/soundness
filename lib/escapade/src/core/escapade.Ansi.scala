@@ -50,16 +50,16 @@ import errorDiagnostics.empty
 
 trait Ansi2:
 
-  class TeletypeSubstitution[ValueType](teletype: ValueType => Teletype)
-  extends Substitution[Ansi.Input, ValueType, "t"]:
-    def embed(value: ValueType) = Ansi.Input.TextInput(teletype(value))
+  class TeletypeSubstitution[value](teletype: value => Teletype)
+  extends Substitution[Ansi.Input, value, "t"]:
+    def embed(value: value) = Ansi.Input.TextInput(teletype(value))
 
-  inline given teletype: [ValueType] => Substitution[Ansi.Input, ValueType, "t"] =
-    val teletype: ValueType => Teletype = value => compiletime.summonFrom:
-      case given (ValueType is Teletypeable) => value.teletype
-      case given (ValueType is Showable)    => Teletype(value.show)
+  inline given teletype: [value] => Substitution[Ansi.Input, value, "t"] =
+    val teletype: value => Teletype = value => compiletime.summonFrom:
+      case given (`value` is Teletypeable) => value.teletype
+      case given (`value` is Showable)    => Teletype(value.show)
 
-    TeletypeSubstitution[ValueType](teletype)
+    TeletypeSubstitution[value](teletype)
 
 object Ansi extends Ansi2:
   type Transform = TextStyle => TextStyle
@@ -68,7 +68,7 @@ object Ansi extends Ansi2:
 
   given Stylize[Escape] = identity(_)
 
-  given [ColorType: Chromatic as color] => Stylize[ColorType] =
+  given [color: Chromatic as color] => Stylize[color] =
     color => Stylize(_.copy(fg = color.asRgb24Int))
 
   given Stylize[Bg] = bgColor => Stylize(_.copy(bg = bgColor.color))
