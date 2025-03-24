@@ -42,24 +42,23 @@ import wisteria.*
 
 import scala.deriving.*
 
-trait CodlDecoder[ValueType]:
-  def decoded(value: List[Indexed]): ValueType raises CodlReadError
+trait CodlDecoder[value]:
+  def decoded(value: List[Indexed]): value raises CodlReadError
   def schema: CodlSchema
 
 object CodlDecoder:
 
-  def apply[ValueType]
-     (schema0: => CodlSchema, decode0: Tactic[CodlReadError] ?=> List[Indexed] => ValueType)
-  :     CodlDecoder[ValueType] = new:
-    def decoded(value: List[Indexed]): ValueType raises CodlReadError = decode0(value)
+  def apply[value]
+     (schema0: => CodlSchema, decode0: Tactic[CodlReadError] ?=> List[Indexed] => value)
+  :     CodlDecoder[value] = new:
+    def decoded(value: List[Indexed]): value raises CodlReadError = decode0(value)
     def schema: CodlSchema  = schema0
 
-  inline given derived[ValueType]: CodlDecoder[ValueType] = compiletime.summonFrom:
-    case given (ValueType is Decodable in Text) => field[ValueType]
-    case given ProductReflection[ValueType]     => CodlDecoderDerivation.derived[ValueType]
+  inline given derived[value]: CodlDecoder[value] = compiletime.summonFrom:
+    case given (`value` is Decodable in Text) => field[`value`]
+    case given ProductReflection[`value`]     => CodlDecoderDerivation.derived[`value`]
 
-  def field[ValueType: Decodable in Text]: CodlDecoder[ValueType] =
-    CodlFieldReader(ValueType.decoded(_))
+  def field[value: Decodable in Text]: CodlDecoder[value] = CodlFieldReader(value.decoded(_))
 
   given boolean: CodlDecoder[Boolean] = CodlFieldReader(_ == t"yes")
   given text: CodlDecoder[Text] = CodlFieldReader(identity(_))
@@ -68,41 +67,41 @@ object CodlDecoder:
     val schema: CodlSchema = Field(Arity.One)
     def decoded(nodes: List[Indexed]): Unit raises CodlReadError = ()
 
-  given optional: [ValueType: CodlDecoder] => CodlDecoder[Optional[ValueType]]:
-    def schema: CodlSchema = ValueType.schema.optional
+  given optional: [value: CodlDecoder] => CodlDecoder[Optional[value]]:
+    def schema: CodlSchema = value.schema.optional
 
-    def decoded(value: List[Indexed]): Optional[ValueType] raises CodlReadError =
-      if value.isEmpty then Unset else ValueType.decoded(value)
+    def decoded(nodes: List[Indexed]): Optional[value] raises CodlReadError =
+      if nodes.isEmpty then Unset else value.decoded(nodes)
 
-  given option: [ValueType: CodlDecoder] => CodlDecoder[Option[ValueType]]:
-    def schema: CodlSchema = ValueType.schema.optional
+  given option: [value: CodlDecoder] => CodlDecoder[Option[value]]:
+    def schema: CodlSchema = value.schema.optional
 
-    def decoded(value: List[Indexed]): Option[ValueType] raises CodlReadError =
-      if value.isEmpty then None else Some(ValueType.decoded(value))
+    def decoded(nodes: List[Indexed]): Option[value] raises CodlReadError =
+      if nodes.isEmpty then None else Some(value.decoded(nodes))
 
-  given list: [ElementType: CodlDecoder] => CodlDecoder[List[ElementType]] =
-    new CodlDecoder[List[ElementType]]:
-      def schema: CodlSchema = ElementType.schema match
+  given list: [element: CodlDecoder] => CodlDecoder[List[element]] =
+    new CodlDecoder[List[element]]:
+      def schema: CodlSchema = element.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-      def decoded(value: List[Indexed]): List[ElementType] raises CodlReadError =
-        ElementType.schema match
+      def decoded(value: List[Indexed]): List[element] raises CodlReadError =
+        element.schema match
           case Field(_, validator) => value.flatMap(_.children).map: node =>
-            ElementType.decoded(List(CodlDoc(node)))
+            element.decoded(List(CodlDoc(node)))
 
           case struct: Struct =>
-            value.map { v => ElementType.decoded(List(v)) }
+            value.map { v => element.decoded(List(v)) }
 
-  given set: [ElementType: CodlDecoder] => CodlDecoder[Set[ElementType]]:
-    def schema: CodlSchema = ElementType.schema match
+  given set: [element: CodlDecoder] => CodlDecoder[Set[element]]:
+    def schema: CodlSchema = element.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-    def decoded(value: List[Indexed]): Set[ElementType] raises CodlReadError =
-      ElementType.schema match
+    def decoded(value: List[Indexed]): Set[element] raises CodlReadError =
+      element.schema match
         case Field(_, validator) =>
-          value.flatMap(_.children).map { node => ElementType.decoded(List(CodlDoc(node))) }.to(Set)
+          value.flatMap(_.children).map { node => element.decoded(List(CodlDoc(node))) }.to(Set)
 
         case struct: Struct =>
-          value.map { v => ElementType.decoded(List(v)) }.to(Set)
+          value.map { v => element.decoded(List(v)) }.to(Set)

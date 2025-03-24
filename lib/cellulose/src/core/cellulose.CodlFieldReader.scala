@@ -36,11 +36,10 @@ import anticipation.*
 import contingency.*
 import rudiments.*
 
-class CodlFieldReader[ValueType](lambda: Text => ValueType)
-extends CodlDecoder[ValueType]:
+class CodlFieldReader[value](lambda: Text => value) extends CodlDecoder[value]:
   val schema: CodlSchema = Field(Arity.One)
 
-  def decoded(nodes: List[Indexed]): ValueType raises CodlReadError =
+  def decoded(nodes: List[Indexed]): value raises CodlReadError =
     nodes.prim.lest(CodlReadError()).children match
       case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
       case _                                         => abort(CodlReadError())

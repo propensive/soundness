@@ -34,8 +34,7 @@ package cellulose
 
 import anticipation.*
 
-trait CodlFieldWriter[ValueType] extends CodlEncoder[ValueType]:
+trait CodlFieldWriter[value] extends CodlEncoder[value]:
   def schema: CodlSchema = Field(Arity.One)
-  def encodeField(value: ValueType): Text
-  def encode(value: ValueType): List[IArray[CodlNode]] =
-    List(IArray(CodlNode(Data(encodeField(value)))))
+  def encodeField(value: value): Text
+  def encode(value: value): List[IArray[CodlNode]] = List(IArray(CodlNode(Data(encodeField(value)))))

@@ -39,55 +39,55 @@ import spectacular.*
 import vacuous.*
 import wisteria.*
 
-trait CodlEncoder[ValueType]:
-  def encode(value: ValueType): List[IArray[CodlNode]]
+trait CodlEncoder[value]:
+  def encode(value: value): List[IArray[CodlNode]]
   def schema: CodlSchema
 
 object CodlEncoder:
-  def apply[ValueType](schema0: CodlSchema, encode0: ValueType => List[IArray[CodlNode]])
-  :     CodlEncoder[ValueType] =
+  def apply[value](schema0: CodlSchema, encode0: value => List[IArray[CodlNode]])
+  :     CodlEncoder[value] =
     new:
       def schema: CodlSchema = schema0
-      def encode(value: ValueType): List[IArray[CodlNode]] = encode0(value)
+      def encode(value: value): List[IArray[CodlNode]] = encode0(value)
 
-  inline given derived: [ValueType] => CodlEncoder[ValueType] = compiletime.summonFrom:
-    case given (ValueType is Encodable in Text) => field[ValueType]
-    case given ProductReflection[ValueType]     => CodlEncoderDerivation.derived[ValueType]
+  inline given derived: [value] => CodlEncoder[value] = compiletime.summonFrom:
+    case given (`value` is Encodable in Text) => field[value]
+    case given ProductReflection[`value`]     => CodlEncoderDerivation.derived[value]
 
-  def field[ValueType: Encodable in Text]: CodlEncoder[ValueType] = new CodlEncoder[ValueType]:
+  def field[encodable: Encodable in Text]: CodlEncoder[encodable] = new CodlEncoder[encodable]:
     def schema: CodlSchema = Field(Arity.One)
 
-    def encode(value: ValueType): List[IArray[CodlNode]] =
-      List(IArray(CodlNode(Data(ValueType.encode(value)))))
+    def encode(value: encodable): List[IArray[CodlNode]] =
+      List(IArray(CodlNode(Data(encodable.encode(value)))))
 
-  given optional: [ValueType: CodlEncoder] => CodlEncoder[Optional[ValueType]]:
-    def schema: CodlSchema = ValueType.schema.optional
+  given optional: [encodable: CodlEncoder] => CodlEncoder[Optional[encodable]]:
+    def schema: CodlSchema = encodable.schema.optional
 
-    def encode(value: Optional[ValueType]): List[IArray[CodlNode]] =
-      value.let(ValueType.encode(_)).or(List())
+    def encode(value: Optional[encodable]): List[IArray[CodlNode]] =
+      value.let(encodable.encode(_)).or(List())
 
   given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
   given text: CodlFieldWriter[Text] = _.show
 
-  given option: [ValueType: CodlEncoder] => CodlEncoder[Option[ValueType]]:
-    def schema: CodlSchema = ValueType.schema.optional
+  given option: [encodable: CodlEncoder] => CodlEncoder[Option[encodable]]:
+    def schema: CodlSchema = encodable.schema.optional
 
-    def encode(value: Option[ValueType]): List[IArray[CodlNode]] = value match
+    def encode(value: Option[encodable]): List[IArray[CodlNode]] = value match
       case None        => List()
-      case Some(value) => ValueType.encode(value)
+      case Some(value) => encodable.encode(value)
 
-  given list: [ElementType: CodlEncoder] => CodlEncoder[List[ElementType]]:
-    def schema: CodlSchema = ElementType.schema match
+  given list: [element: CodlEncoder] => CodlEncoder[List[element]]:
+    def schema: CodlSchema = element.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-    def encode(value: List[ElementType]): List[IArray[CodlNode]] =
-      value.map(ElementType.encode(_).head)
+    def encode(value: List[element]): List[IArray[CodlNode]] =
+      value.map(element.encode(_).head)
 
-  given set: [ElementType: CodlEncoder] => CodlEncoder[Set[ElementType]]:
-    def schema: CodlSchema = ElementType.schema match
+  given set: [element: CodlEncoder] => CodlEncoder[Set[element]]:
+    def schema: CodlSchema = element.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-    def encode(value: Set[ElementType]): List[IArray[CodlNode]] =
-      value.map(ElementType.encode(_).head).to(List)
+    def encode(value: Set[element]): List[IArray[CodlNode]] =
+      value.map(element.encode(_).head).to(List)
