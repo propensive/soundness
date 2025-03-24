@@ -44,13 +44,13 @@ import spectacular.*
 import vacuous.*
 
 object Digest:
-  def apply[HashType <: Algorithm](bytes: Bytes): Digest in HashType = new Digest(bytes):
-    type Format = HashType
+  def apply[hash <: Algorithm](bytes: Bytes): Digest in hash = new Digest(bytes):
+    type Format = hash
 
-  given [DigestType <: Algorithm] => Alphabet[Base64] => Digest in DigestType is Showable =
+  given [digest <: Algorithm] => Alphabet[Base64] => Digest in digest is Showable =
     _.bytes.serialize[Base64]
 
-  given [DigestType <: Algorithm] => Digest in DigestType is Encodable in Bytes = _.bytes
+  given [digest <: Algorithm] => Digest in digest is Encodable in Bytes = _.bytes
 
 class Digest(val bytes: Bytes):
   type Format <: Algorithm

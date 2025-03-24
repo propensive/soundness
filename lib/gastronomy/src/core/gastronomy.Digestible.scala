@@ -47,33 +47,32 @@ import vacuous.*
 import wisteria.*
 
 object Digestible extends Derivable[Digestible]:
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Digestible =
+  inline def join[derivation <: Product: ProductReflection]: derivation is Digestible =
     (digestion, value) => fields(value):
-      [FieldType] => field => context.digest(digestion, field)
+      [field] => field => context.digest(digestion, field)
 
-  inline def split[DerivationType: SumReflection]: DerivationType is Digestible =
+  inline def split[derivation: SumReflection]: derivation is Digestible =
     (digestion, value) =>
       variant(value):
-        [VariantType <: DerivationType] => variant =>
+        [variant <: derivation] => variant =>
           int.digest(digestion, index)
           context.digest(digestion, variant)
 
-  given optional: [ValueType: Digestible] => util.NotGiven[Unset.type <:< ValueType]
-  =>    Optional[ValueType] is Digestible =
-    (acc, value) => value.let(ValueType.digest(acc, _))
+  given optional: [digestible: Digestible] => util.NotGiven[Unset.type <:< digestible]
+  =>    Optional[digestible] is Digestible =
+    (acc, value) => value.let(digestible.digest(acc, _))
 
-  given iterable: [IterableType <: Iterable, ValueType: Digestible]
-  =>    IterableType[ValueType] is Digestible =
-    (digestion, iterable) => iterable.each(ValueType.digest(digestion, _))
+  given iterable: [collection <: Iterable, value: Digestible] => collection[value] is Digestible =
+    (digestion, iterable) => iterable.each(value.digest(digestion, _))
 
-  given map: [KeyType: Digestible, ValueType: Digestible]
-  =>    Map[KeyType, ValueType] is Digestible =
+  given map: [digestible: Digestible, digestible2: Digestible]
+  =>    Map[digestible, digestible2] is Digestible =
     (digestion, map) => map.each: (key, value) =>
-      KeyType.digest(digestion, key)
-      ValueType.digest(digestion, value)
+      digestible.digest(digestion, key)
+      digestible2.digest(digestion, value)
 
-  given stream: [ValueType: Digestible] => Stream[ValueType] is Digestible =
-    (digestion, iterable) => iterable.each(ValueType.digest(digestion, _))
+  given stream: [value: Digestible] => Stream[value] is Digestible =
+    (digestion, iterable) => iterable.each(value.digest(digestion, _))
 
   given int: Int is Digestible = (digestion, value) =>
     digestion.append((24 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))
@@ -104,8 +103,8 @@ object Digestible extends Derivable[Digestible]:
   given bytes: Bytes is Digestible = _.append(_)
   given Digest is Digestible = (digestion, digest) => digestion.append(digest.bytes)
 
-  given [ValueType: Encodable in Bytes] => ValueType is Digestible =
-    bytes.contramap(ValueType.encode)
+  given [value: Encodable in Bytes] => value is Digestible =
+    bytes.contramap(value.encode)
 
 trait Digestible:
   digestible =>
@@ -113,8 +112,8 @@ trait Digestible:
   type Self
   def digest(digestion: Digestion, value: Self): Unit
 
-  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Digestible = new Digestible:
-    type Self = SelfType2
+  def contramap[self2](lambda: self2 => Self): self2 is Digestible = new Digestible:
+    type Self = self2
 
     def digest(digestion: Digestion, value: Self): Unit =
       digestible.digest(digestion, lambda(value))
