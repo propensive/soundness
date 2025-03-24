@@ -33,28 +33,27 @@
 package adversaria
 
 import anticipation.*
+import prepositional.*
 import proscenium.*
 
 import language.experimental.captureChecking
 
 object CaseField:
-  def apply[TargetType <: Product, AnnotationType <: StaticAnnotation, InitFieldType]
-     (name: Text, access: TargetType -> InitFieldType, annotation: AnnotationType)
-  :     CaseField[TargetType, AnnotationType] { type FieldType = InitFieldType } =
+  def apply[target <: Product, annotation <: StaticAnnotation, field]
+     (name: Text, access: target -> field, annotation0: annotation)
+  :     CaseField[target, annotation] of field =
 
-    inline def annotation0 = annotation
+    new CaseField[target, annotation](name):
+      type Subject = field
+      def apply(value: target) = access(value)
+      def annotation: annotation = annotation0
 
-    new CaseField[TargetType, AnnotationType](name):
-      type FieldType = InitFieldType
-      def apply(value: TargetType) = access(value)
-      def annotation: AnnotationType = annotation0
+  transparent inline given[target <: Product, annotation <: StaticAnnotation]
+  :     CaseField[target, annotation] =
 
-  transparent inline given[TargetType <: Product, AnnotationType <: StaticAnnotation]
-  :     CaseField[TargetType, AnnotationType] =
+    Annotations.firstField[target, annotation]
 
-    Annotations.firstField[TargetType, AnnotationType]
-
-trait CaseField[TargetType <: Product, AnnotationType <: StaticAnnotation](val name: Text):
-  type FieldType
-  def apply(value: TargetType): FieldType
-  def annotation: AnnotationType
+trait CaseField[target <: Product, annotation <: StaticAnnotation](val name: Text):
+  type Subject
+  def apply(value: target): Subject
+  def annotation: annotation

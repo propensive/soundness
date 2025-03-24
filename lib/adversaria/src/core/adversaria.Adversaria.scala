@@ -41,52 +41,52 @@ import scala.quoted.*
 import language.experimental.captureChecking
 
 object Adversaria:
-  def firstField[TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type]
+  def firstField[target <: Product: Type, annotation <: StaticAnnotation: Type]
      (using Quotes)
-  :     Expr[CaseField[TargetType, AnnotationType]] =
+  :     Expr[CaseField[target, annotation]] =
 
     import quotes.reflect.*
 
-    val targetType = TypeRepr.of[TargetType]
+    val targetType = TypeRepr.of[target]
     val fields = targetType.typeSymbol.caseFields
 
     fields.flatMap: field =>
       field.annotations.map(_.asExpr).collect:
-        case '{$annotation: AnnotationType} => annotation
+        case '{$annotation: `annotation`} => annotation
 
       . map: annotation =>
-          '{CaseField(Text(${Expr(field.name)}), (target: TargetType) =>
+          '{CaseField(Text(${Expr(field.name)}), (target: target) =>
               ${'target.asTerm.select(field).asExpr}, $annotation)}
       . reverse
     . head
 
-  def fields[TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type](using Quotes)
-  :     Expr[List[CaseField[TargetType, AnnotationType]]] =
+  def fields[target <: Product: Type, annotation <: StaticAnnotation: Type](using Quotes)
+  :     Expr[List[CaseField[target, annotation]]] =
 
     import quotes.reflect.*
 
-    val targetType = TypeRepr.of[TargetType]
+    val targetType = TypeRepr.of[target]
     val fields = targetType.typeSymbol.caseFields
 
-    val elements: List[Expr[CaseField[TargetType, AnnotationType]]] = fields.flatMap: field =>
+    val elements: List[Expr[CaseField[target, annotation]]] = fields.flatMap: field =>
       val name = Expr(field.name)
       field.annotations.map(_.asExpr).collect:
-        case '{$annotation: AnnotationType} => annotation
+        case '{$annotation: `annotation`} => annotation
 
       . map: annotation =>
-          '{CaseField(Text($name), (target: TargetType) => ${'target.asTerm.select(field).asExpr},
+          '{CaseField(Text($name), (target: target) => ${'target.asTerm.select(field).asExpr},
               $annotation)}
 
       . reverse
 
     Expr.ofList(elements)
 
-  def fieldAnnotations[TargetType: Type](lambda: Expr[TargetType => Any])(using Quotes)
+  def fieldAnnotations[target: Type](lambda: Expr[target => Any])(using Quotes)
   :     Expr[List[StaticAnnotation]] =
 
     import quotes.reflect.*
 
-    val targetType = TypeRepr.of[TargetType]
+    val targetType = TypeRepr.of[target]
 
     val field = lambda.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
@@ -100,17 +100,17 @@ object Adversaria:
       field.annotations.map(_.asExpr).collect:
         case '{ $annotation: StaticAnnotation } => annotation
 
-  def typeAnnotations[AnnotationType <: StaticAnnotation: Type, TargetType: Type](using Quotes)
-  :     Expr[Annotations[AnnotationType, TargetType]] =
+  def typeAnnotations[annotation <: StaticAnnotation: Type, target: Type](using Quotes)
+  :     Expr[Annotations[annotation, target]] =
 
     import quotes.reflect.*
 
-    val targetType = TypeRepr.of[TargetType]
+    val targetType = TypeRepr.of[target]
     val annotations = targetType.typeSymbol.annotations.map(_.asExpr).collect:
-      case '{$annotation: AnnotationType} => annotation
+      case '{$annotation: `annotation`} => annotation
 
     if annotations.isEmpty
     then
-      val typeName = TypeRepr.of[AnnotationType].show
+      val typeName = TypeRepr.of[annotation].show
       panic(m"the type ${targetType.show} did not have the annotation $typeName")
-    else '{Annotations[AnnotationType, TargetType](${Expr.ofList(annotations)}*)}
+    else '{Annotations[annotation, target](${Expr.ofList(annotations)}*)}

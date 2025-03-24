@@ -102,7 +102,7 @@ object Tests extends Suite(m"Adversaria tests"):
     .assert(_ == List(ErrorId.MissingImplicitArgumentID))*/
 
     test(m"extract annotation value generically"):
-      def getId[T <: Product](value: T)(using ann: CaseField[T, id]): ann.FieldType = ann(value)
+      def getId[T <: Product](value: T)(using ann: CaseField[T, id]): ann.Subject = ann(value)
 
       getId(Employee(Person(t"John Smith", t"test@example.com"), 3141592))
     .assert(_ == 3141592)
