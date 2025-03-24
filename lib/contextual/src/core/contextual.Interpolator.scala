@@ -41,37 +41,37 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-trait Interpolator[InputType, StateType, ResultType]:
+trait Interpolator[input, state, result]:
   given CanThrow[InterpolationError] = !!
   given Realm = realm"contextual"
 
-  protected def initial: StateType
-  protected def parse(state: StateType, next: Text): StateType
-  protected def skip(state: StateType): StateType
-  protected def substitute(state: StateType, value: Text): StateType = parse(state, value)
-  protected def insert(state: StateType, value: InputType): StateType
-  protected def complete(value: StateType): ResultType
+  protected def initial: state
+  protected def parse(state: state, next: Text): state
+  protected def skip(state: state): state
+  protected def substitute(state: state, value: Text): state = parse(state, value)
+  protected def insert(state: state, value: input): state
+  protected def complete(value: state): result
 
   case class PositionalError(positionalMessage: Message, start: Int, end: Int)(using Diagnostics)
   extends Error(m"error $positionalMessage at position $start")
 
   def expand(context: Expr[StringContext], seq: Expr[Seq[Any]])(using thisType: Type[this.type])
-     (using Quotes, Type[InputType], Type[StateType], Type[ResultType])
-  :     Expr[ResultType] =
+     (using Quotes, Type[input], Type[state], Type[result])
+  :     Expr[result] =
 
     expansion(context, seq)(1)
 
   def expansion
      (context: Expr[StringContext], seq: Expr[Seq[Any]])
      (using thisType: Type[this.type])
-     (using Quotes, Type[InputType], Type[StateType], Type[ResultType])
-  :     (StateType, Expr[ResultType]) =
+     (using Quotes, Type[input], Type[state], Type[result])
+  :     (state, Expr[result]) =
     import quotes.reflect.*
 
     val ref = Ref(TypeRepr.of(using thisType).typeSymbol.companionModule)
-    val target = ref.asExprOf[Interpolator[InputType, StateType, ResultType]]
+    val target = ref.asExprOf[Interpolator[input, state, result]]
 
-    def rethrow[SuccessType](block: => SuccessType, start: Int, end: Int): SuccessType =
+    def rethrow[success](block: => success, start: Int, end: Int): success =
       try block catch case err: InterpolationError => err match
         case InterpolationError(msg, off, len) =>
           erased given CanThrow[PositionalError] = unsafeExceptions.canThrowAny
@@ -84,22 +84,22 @@ trait Interpolator[InputType, StateType, ResultType]:
        (seq:       Seq[Expr[Any]],
         parts:     Seq[String],
         positions: Seq[Position],
-        state:     StateType,
-        expr:      Expr[StateType])
-    :     (StateType, Expr[ResultType]) throws PositionalError =
+        state:     state,
+        expr:      Expr[state])
+    :     (state, Expr[result]) throws PositionalError =
 
       seq match
-        case '{$head: headType} +: tail =>
+        case '{$head: head} +: tail =>
           def notFound: Nothing =
-            val typeName: String = TypeRepr.of[headType].widen.show
+            val typeName: String = TypeRepr.of[head].widen.show
 
             halt
              (m"can't substitute ${Text(typeName)} into this interpolated string", head.asTerm.pos)
 
-          val (newState, typeclass) = Expr.summon[Insertion[InputType, headType]].fold(notFound):
+          val (newState, typeclass) = Expr.summon[Insertion[input, head]].fold(notFound):
             _.absolve match
-              case '{$typeclass: Substitution[InputType, headType, subType]} =>
-                val substitution: String = TypeRepr.of[subType].asMatchable.absolve match
+              case '{$typeclass: Substitution[input, head, sub]} =>
+                val substitution: String = TypeRepr.of[sub].asMatchable.absolve match
                   case ConstantType(StringConstant(string)) =>
                     string
 
@@ -114,7 +114,7 @@ trait Interpolator[InputType, StateType, ResultType]:
                    positions.head.end),
                  typeclass)
 
-              case '{$typeclass: eType} =>
+              case typeclass =>
                 (rethrow
                   (parse
                     (rethrow(skip(state), expr.asTerm.pos.start, expr.asTerm.pos.end),
