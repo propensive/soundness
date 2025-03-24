@@ -32,6 +32,7 @@
                                                                                                   */
 package acyclicity
 
+import fulminate.*
 import gossamer.*
 import probably.*
 

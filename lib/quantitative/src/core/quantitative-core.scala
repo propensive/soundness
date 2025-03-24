@@ -40,47 +40,47 @@ import gossamer.*
 import proscenium.*
 import symbolism.*
 
-extension [UnitsType <: Measure](quantity: Quantity[UnitsType])
-  transparent inline def in[UnitsType2[power <: Nat] <: Units[power, ?]]: Any =
-    ${Quantitative.norm[UnitsType, UnitsType2]('quantity)}
+extension [units <: Measure](quantity: Quantity[units])
+  transparent inline def in[units2[power <: Nat] <: Units[power, ?]]: Any =
+    ${Quantitative.norm[units, units2]('quantity)}
 
-extension [UnitsType <: Measure](quantity: into Quantity[UnitsType])
+extension [units <: Measure](quantity: into Quantity[units])
   @targetName("plus")
-  transparent inline infix def + [UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
-    ${Quantitative.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{false})}
+  transparent inline infix def + [units2 <: Measure](quantity2: Quantity[units2]): Any =
+    ${Quantitative.add[units, units2]('quantity, 'quantity2, '{false})}
 
   @targetName("minus")
-  transparent inline infix def - [UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
-    ${Quantitative.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{true})}
+  transparent inline infix def - [units2 <: Measure](quantity2: Quantity[units2]): Any =
+    ${Quantitative.add[units, units2]('quantity, 'quantity2, '{true})}
 
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
 
   @targetName("times2")
-  transparent inline infix def * [UnitsType2 <: Measure](inline quantity2: Quantity[UnitsType2])
+  transparent inline infix def * [units2 <: Measure](inline quantity2: Quantity[units2])
   :     Any =
 
-    ${Quantitative.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
+    ${Quantitative.multiply[units, units2]('quantity, 'quantity2, false)}
 
   @targetName("times3")
-  transparent inline infix def * [UnitsType2 <: Measure](inline double: into Double): Any =
+  transparent inline infix def * [units2 <: Measure](inline double: into Double): Any =
     quantity*Quantity(double)
 
   @targetName("divide2")
-  transparent inline infix def / [UnitsType2 <: Measure](inline quantity2: Quantity[UnitsType2])
+  transparent inline infix def / [units2 <: Measure](inline quantity2: Quantity[units2])
   :     Any =
 
-    ${Quantitative.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
+    ${Quantitative.multiply[units, units2]('quantity, 'quantity2, true)}
 
   @targetName("divide3")
-  transparent inline infix def / [UnitsType2 <: Measure](inline double: into Double): Any =
+  transparent inline infix def / [units2 <: Measure](inline double: into Double): Any =
     quantity/Quantity(double)
 
-  inline def sqrt(using root: Quantity[UnitsType] is Rootable[2]): root.Result =
+  inline def sqrt(using root: Quantity[units] is Rootable[2]): root.Result =
     root.root(quantity)
 
-  inline def cbrt(using root: Quantity[UnitsType] is Rootable[3]): root.Result =
+  inline def cbrt(using root: Quantity[units] is Rootable[3]): root.Result =
     root.root(quantity)
 
-  inline def units: Map[Text, Int] = ${Quantitative.collectUnits[UnitsType]}
+  inline def units: Map[Text, Int] = ${Quantitative.collectUnits[units]}
   inline def express(using Decimalizer): Text = t"${quantity.value} ${Quantity.expressUnits(units)}"
-  inline def dimension: Text = ${Quantitative.describe[UnitsType]}
+  inline def dimension: Text = ${Quantitative.describe[units]}

@@ -33,9 +33,9 @@
 package parasite
 
 object Parasite:
-  opaque type Stale[ValueType] = ValueType
+  opaque type Stale[value] = value
 
-  extension [ValueType](stale: Stale[ValueType]) def apply(): ValueType = stale
+  extension [value](stale: Stale[value]) def apply(): value = stale
 
   object Stale:
-    def apply[ValueType](value: ValueType): Stale[ValueType] = value
+    def apply[value](value: value): Stale[value] = value

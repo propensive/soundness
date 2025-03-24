@@ -43,11 +43,11 @@ trait Transmissible:
   def serialize(message: Self): Stream[Bytes]
 
 object Transmissible:
-  given bytes: [BytesType <: Bytes] => BytesType is Transmissible = Stream(_)
-  given stream: [StreamType <: Stream[Bytes]] => StreamType is Transmissible = identity(_)
+  given bytes: [bytes <: Bytes] => bytes is Transmissible = Stream(_)
+  given stream: [stream <: Stream[Bytes]] => stream is Transmissible = identity(_)
 
-  given text: [TextType <: Text] => CharEncoder => TextType is Transmissible =
+  given text: [text <: Text] => CharEncoder => text is Transmissible =
     text => Stream(text.bytes)
 
-  given encoder: [MessageType: Encodable in Text] => CharEncoder => MessageType is Transmissible =
+  given encoder: [message: Encodable in Text] => CharEncoder => message is Transmissible =
     value => Stream(value.encode.bytes)

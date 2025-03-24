@@ -43,18 +43,18 @@ import language.dynamics
 object ClearTag:
   given ClearTag[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
-case class ClearTag[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
-   (labelString: NameType)
-extends Node[NameType], Dynamic:
+case class ClearTag[+name <: Label, child <: Label, attribute <: Label]
+   (labelString: name)
+extends Node[name], Dynamic:
 
   def attributes: Attributes = Map()
   def children: Seq[Node[?] | Text | Int | HtmlXml] = Nil
   def label: Text = labelString.tt
 
-  inline def applyDynamicNamed(method: String)(inline attributes: (AttributeType, Any)*)
-  :     StartTag[NameType, ChildType] =
+  inline def applyDynamicNamed(method: String)(inline attributes: (attribute, Any)*)
+  :     StartTag[name, child] =
 
-    ${  Honeycomb.read[NameType, ChildType, ChildType]('this, 'method, 'labelString, 'attributes)  }
+    ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
 
   def applyDynamic[Return <: Label](method: "apply")
      (children: (Optional[Html[Return]] | Seq[Html[Return]])*)

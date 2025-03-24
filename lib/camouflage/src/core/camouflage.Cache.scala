@@ -38,16 +38,16 @@ import rudiments.*
 import vacuous.*
 
 object Cache:
-  def apply[DurationType: GenericDuration, ValueType](duration: DurationType): Cache[ValueType] =
-    new Cache[ValueType](DurationType.milliseconds(duration))
+  def apply[generic: GenericDuration, value](duration: generic): Cache[value] =
+    new Cache[value](generic.milliseconds(duration))
 
-  def apply[ValueType](): Cache[ValueType] = new Cache(Unset)
+  def apply[value](): Cache[value] = new Cache(Unset)
 
-class Cache[ValueType](lifetime: Optional[Long]):
+class Cache[value](lifetime: Optional[Long]):
   private var expiry: Long = Long.MaxValue
-  private var value: Promise[ValueType] = Promise()
+  private var value: Promise[value] = Promise()
 
-  def establish(block: => ValueType): ValueType = value.synchronized:
+  def establish(block: => value): value = value.synchronized:
     if expiry < System.currentTimeMillis then value = Promise()
 
     if value.ready then value().vouch else block.tap: result =>

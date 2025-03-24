@@ -50,14 +50,14 @@ object Cataclysm:
     import quotes.reflect.*
 
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[CssProperty]] = exprs match
-      case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
-        val exp: Expr[keyType is PropertyDef[valueType]] =
-          Expr.summon[keyType is PropertyDef[valueType]].getOrElse:
-            val typeName = TypeRepr.of[valueType].show
+      case '{type key <: Label; ($key: key, $value: value)} +: tail =>
+        val exp: Expr[key is PropertyDef[value]] =
+          Expr.summon[key is PropertyDef[value]].getOrElse:
+            val typeName = TypeRepr.of[value].show
             halt(m"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
 
         '{
-            CssProperty(Text($key).uncamel.kebab, compiletime.summonInline[ShowProperty[valueType]]
+            CssProperty(Text($key).uncamel.kebab, compiletime.summonInline[ShowProperty[value]]
             . show($value))  }
         :: recur(tail)
 

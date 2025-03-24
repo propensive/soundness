@@ -36,9 +36,9 @@ import anticipation.*
 import prepositional.*
 
 object DomainSocket:
-  def apply[PathType: Abstractable across Paths into Text](path: PathType): DomainSocket =
+  def apply[path: Abstractable across Paths into Text](path: path): DomainSocket =
     DomainSocket(path.generic)
 
 case class DomainSocket(private[coaxial] val address: Text):
-  def path[PathType: Instantiable across Paths from Text] = PathType(address)
+  def path[path: Instantiable across Paths from Text] = path(address)
   def at(path: Text): DomainSocketEndpoint = DomainSocketEndpoint(this, path)

@@ -46,10 +46,10 @@ object Serpentine:
 
   @targetName("Slash")
   object `/`:
-    def unapply[PlatformType <: AnyRef & Matchable: {Navigable, Radical}, ElementType]
-       (path: Path on PlatformType)
-    :     Option[(Path on PlatformType, PlatformType.Operand)] =
+    def unapply[platform <: AnyRef & Matchable: {Navigable, Radical}, element]
+       (path: Path on platform)
+    :     Option[(Path on platform, platform.Operand)] =
       path.textDescent match
         case Nil          => None
-        case head :: Nil  => Some((PlatformType.root(path.textRoot), PlatformType.element(head)))
-        case head :: tail => Some((unsafely(path.parent.vouch), PlatformType.element(head)))
+        case head :: Nil  => Some((platform.root(path.textRoot), platform.element(head)))
+        case head :: tail => Some((unsafely(path.parent.vouch), platform.element(head)))

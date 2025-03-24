@@ -32,9 +32,9 @@
                                                                                                   */
 package anthology
 
-enum Unused[VersionType]:
+enum Unused[version]:
   case All extends Unused[3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6]
   case None extends Unused[3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6]
 
-  case Subset[VersionType <: 3.3](features: List[UnusedFeature[VersionType]])
-  extends Unused[VersionType]
+  case Subset[version <: 3.3](features: List[UnusedFeature[version]])
+  extends Unused[version]

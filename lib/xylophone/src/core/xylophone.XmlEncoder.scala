@@ -43,25 +43,25 @@ object XmlEncoder extends Derivation[XmlEncoder]:
   given XmlEncoder[String] =
     string => XmlAst.Element(XmlName(t"String"), List(XmlAst.Textual(string.tt)))
 
-  given [ValueType: XmlEncoder, CollectionType[ElementType] <: Seq[ElementType]]
-  =>    XmlEncoder[CollectionType[ValueType]] = elements =>
-      XmlAst.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[ValueType]].write(_)))
+  given [value: XmlEncoder, collection[element] <: Seq[element]]
+  =>    XmlEncoder[collection[value]] = elements =>
+      XmlAst.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[value]].write(_)))
 
   given XmlEncoder[Int] = int =>
     XmlAst.Element(XmlName(t"Int"), List(XmlAst.Textual(int.show)))
 
   private val attributeAttribute = xmlAttribute()
 
-  inline def join[DerivationType <: Product: ProductReflection]: XmlEncoder[DerivationType] =
+  inline def join[derivation <: Product: ProductReflection]: XmlEncoder[derivation] =
     value =>
       val elements = fields(value):
-        [FieldType] => field => context.write(field).copy(name = XmlName(label))
+        [field] => field => context.write(field).copy(name = XmlName(label))
 
       XmlAst.Element(XmlName(typeName), elements.to(List))
 
-  inline def split[DerivationType: SumReflection]: XmlEncoder[DerivationType] = value =>
+  inline def split[derivation: SumReflection]: XmlEncoder[derivation] = value =>
     variant(value):
-      [VariantType <: DerivationType] => variant =>
+      [variant <: derivation] => variant =>
         val xml = context.write(variant)
 
         XmlAst.Element
@@ -73,8 +73,8 @@ object XmlEncoder extends Derivation[XmlEncoder]:
   private def textElements(value: XmlAst.Element): Text =
     value.children.collect { case XmlAst.Textual(txt) => txt }.join
 
-trait XmlEncoder[-ValueType]:
-  def write(value: ValueType): XmlAst.Element
+trait XmlEncoder[-value]:
+  def write(value: value): XmlAst.Element
 
-  def contramap[ValueType2](lambda: ValueType2 => ValueType): XmlEncoder[ValueType2] =
+  def contramap[value2](lambda: value2 => value): XmlEncoder[value2] =
     value => write(lambda(value))

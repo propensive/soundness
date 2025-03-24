@@ -48,8 +48,7 @@ import vacuous.*
 import wisteria.*
 
 object Query extends Dynamic:
-  def apply(): Query = new Query(Nil)
-  def apply[ValueType: Encodable in Query](value: ValueType): Query = value.encode
+  def empty: Query = new Query(Nil)
 
   given encodable: Query is Encodable in Text =
     _.values.map { (key, value) => t"${key.urlEncode}=${value.urlEncode}" }
@@ -63,53 +62,53 @@ object Query extends Dynamic:
         case _                => (t"", t"")
 
   object EncodableDerivation extends ProductDerivation[[Type] =>> Type is Encodable in Query]:
-    inline def join[DerivationType <: Product: ProductReflection]
-    :     DerivationType is Encodable in Query =
+    inline def join[derivation <: Product: ProductReflection]
+    :     derivation is Encodable in Query =
 
       value =>
         Query.of:
-          fields(value) { [FieldType] => field => context.encoded(field).prefix(label) }
+          fields(value) { [field] => field => context.encoded(field).prefix(label) }
           . to(List)
           . flatMap(_.values)
 
   object DecodableDerivation extends ProductDerivation[[Type] =>> Type is Decodable in Query]:
-    inline def join[DerivationType <: Product: ProductReflection]
-    :     DerivationType is Decodable in Query =
+    inline def join[derivation <: Product: ProductReflection]
+    :     derivation is Decodable in Query =
 
       summonInline[Foci[Text]].give:
         value =>
           construct:
-            [FieldType] => context =>
+            [field] => context =>
               focus(prior.lay(label) { suffix => t"$label.$suffix" }):
                 context.decoded(value(label))
 
   given booleanEncodable: Boolean is Encodable in Query =
-    boolean => if boolean then Query.of(t"on") else Query()
+    boolean => if boolean then Query.of(t"on") else Query.empty
 
   given booleanDecodable: Boolean is Decodable in Query = _().present
 
-  inline given encodable: [ValueType] => ValueType is Encodable in Query = summonFrom:
-    case given (ValueType is Encodable in Text) =>
+  inline given encodable: [value] => value is Encodable in Query = summonFrom:
+    case given (`value` is Encodable in Text) =>
       value => Query.of(value.encode)
 
-    case given ProductReflection[ValueType & Product] =>
-      EncodableDerivation.join[ValueType & Product].asInstanceOf[ValueType is Encodable in Query]
+    case given ProductReflection[`value` & Product] =>
+      EncodableDerivation.join[value & Product].asInstanceOf[value is Encodable in Query]
 
   given Query is Showable = _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
 
-  inline given decodable: [ValueType] => ValueType is Decodable in Query =
+  inline given decodable: [value] => value is Decodable in Query =
     summonFrom:
-      case given (ValueType is Decodable in Text) =>
+      case given (`value` is Decodable in Text) =>
         summonInline[Tactic[QueryError]].give:
           summonFrom:
-            case given Default[ValueType] =>
-              _().let(_.decode).or(raise(QueryError()) yet default[ValueType])
+            case given Default[`value`] =>
+              _().let(_.decode).or(raise(QueryError()) yet default[value])
 
             case _ =>
               _().lest(QueryError()).decode
 
-      case given ProductReflection[ValueType & Product] =>
-        DecodableDerivation.join[ValueType & Product].asInstanceOf[ValueType is Decodable in Query]
+      case given ProductReflection[`value` & Product] =>
+        DecodableDerivation.join[value & Product].asInstanceOf[value is Decodable in Query]
 
   inline def applyDynamicNamed(method: "apply")(inline parameters: (Label, Any)*): Query =
     ${Legerdemain.query('parameters)}
@@ -125,14 +124,13 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
   @targetName("appendAll")
   infix def ++ (query: Query) = Query(values ++ query.values)
 
-  def selectDynamic[ResultType](label: String)
-     (using erased (label.type is Parametric into ResultType))
-     (using decodable: ResultType is Decodable in Query)
-  :     ResultType =
+  def selectDynamic[result](label: String)(using erased (label.type is Parametric into result))
+     (using decodable: result is Decodable in Query)
+  :     result =
     decodable.decoded(apply(label.tt))
 
-  def at[ValueType: Decodable in Text](name: Text): Optional[Text] = apply(name)().let(_.decode)
-  def as[ValueType: Decodable in Query]: ValueType tracks Text = ValueType.decoded(this)
+  def at[value: Decodable in Text](name: Text): Optional[Text] = apply(name)().let(_.decode)
+  def as[value: Decodable in Query]: value tracks Text = value.decoded(this)
 
   def apply(): Optional[Text] = values match
     case List((t"", value)) => value

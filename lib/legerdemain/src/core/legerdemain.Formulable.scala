@@ -43,20 +43,20 @@ import wisteria.*
 import html5.*
 
 object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
-  given [ValueType] => (elicitable: ValueType is Elicitable)
+  given [value] => (elicitable: value is Elicitable)
   =>    (renderable: elicitable.Operand is Renderable into Html[Flow])
-  =>    ValueType is Formulable:
+  =>    value is Formulable:
 
     def fields(prefix: Text, label: Text, query: Query, errors: Errors)
     :     List[Html[Flow]] =
       renderable.html
        (elicitable.widget(prefix, label, query().or(t""), errors(prefix).let(_.message)))
 
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Formulable =
+  inline def join[derivation <: Product: ProductReflection]: derivation is Formulable =
     (prefix, label0, query, validation) =>
       val content: IArray[Html[Flow]] =
         contexts:
-          [FieldType] => context =>
+          [field] => context =>
             val label2 = if prefix == t"" then label else t"$prefix.$label"
             context.fields
               (label2,

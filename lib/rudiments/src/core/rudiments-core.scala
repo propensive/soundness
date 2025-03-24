@@ -49,53 +49,53 @@ import proscenium.*
 import symbolism.*
 import vacuous.*
 
-def fixpoint[ValueType](initial: ValueType)
-   (fn: (recur: (ValueType => ValueType)) ?=> (ValueType => ValueType)): ValueType =
+def fixpoint[value](initial: value)
+   (fn: (recur: (value => value)) ?=> (value => value)): value =
 
-  def recurrence(fn: (recur: ValueType => ValueType) ?=> ValueType => ValueType)
-  :       ValueType => ValueType =
+  def recurrence(fn: (recur: value => value) ?=> value => value)
+  :       value => value =
     fn(using recurrence(fn(_)))
 
   recurrence(fn)(initial)
 
-extension [ValueType](value: ValueType)
+extension [value](value: value)
   def unit: Unit = ()
-  def waive: Any => ValueType = _ => value
-  def twin: (ValueType, ValueType) = (value, value)
-  def triple: (ValueType, ValueType, ValueType) = (value, value, value)
+  def waive: Any => value = _ => value
+  def twin: (value, value) = (value, value)
+  def triple: (value, value, value) = (value, value, value)
 
-  inline def iff(inline predicate: Boolean)(inline lambda: ValueType => ValueType): ValueType =
+  inline def iff(inline predicate: Boolean)(inline lambda: value => value): value =
     if predicate then lambda(value) else value
 
-  inline def iff(inline predicate: ValueType => Boolean)(inline lambda: ValueType => ValueType)
-  :       ValueType =
+  inline def iff(inline predicate: value => Boolean)(inline lambda: value => value)
+  :       value =
     if predicate(value) then lambda(value) else value
 
-  inline def is[ValueSubtype <: ValueType]: Boolean = value.isInstanceOf[ValueSubtype]
+  inline def is[ValueSubtype <: value]: Boolean = value.isInstanceOf[ValueSubtype]
 
-  transparent inline def matchable(using Unsafe): ValueType & Matchable =
-    value.asInstanceOf[ValueType & Matchable]
+  transparent inline def matchable(using Unsafe): value & Matchable =
+    value.asInstanceOf[value & Matchable]
 
-  def give[ResultType](block: ValueType ?=> ResultType): ResultType = block(using value)
+  def give[result](block: value ?=> result): result = block(using value)
 
-extension [InputType, ResultType](inline lambda: (=> InputType) => ResultType)
-  inline def upon(inline value: => InputType): ResultType = lambda(value)
+extension [input, result](inline lambda: (=> input) => result)
+  inline def upon(inline value: => input): result = lambda(value)
 
-extension [ValueType](inline value: => ValueType)
-  inline def pipe[ResultType](inline lambda: ValueType => ResultType): ResultType = lambda(value)
+extension [value](inline value: => value)
+  inline def pipe[result](inline lambda: value => result): result = lambda(value)
 
-  inline def tap(inline block: ValueType => Unit): ValueType =
-    val result: ValueType = value
+  inline def tap(inline block: value => Unit): value =
+    val result: value = value
     block(result)
     result
 
-  inline def also(inline block: => Unit): ValueType =
-    val result: ValueType = value
+  inline def also(inline block: => Unit): value =
+    val result: value = value
     block
     result
 
 extension (inline statement: => Unit)
-  inline infix def yet [ResultType](inline block: => ResultType): ResultType =
+  inline infix def yet [result](inline block: => result): result =
     statement
     block
 
@@ -104,23 +104,23 @@ def loop(block: => Unit): Loop = Loop({ () => block })
 export Rudiments.&
 
 @targetName("erasedValue")
-erased def !![ErasedType] : ErasedType = scala.compiletime.erasedValue
+erased def !![erasure] : erasure = scala.compiletime.erasedValue
 
-extension [ValueType <: Matchable](iterable: Iterable[ValueType])
-  transparent inline def sift[FilterType <: ValueType: Typeable]: Iterable[FilterType] =
-    iterable.flatMap(FilterType.unapply(_))
+extension [value <: Matchable](iterable: Iterable[value])
+  transparent inline def sift[filter <: value: Typeable]: Iterable[filter] =
+    iterable.flatMap(filter.unapply(_))
 
-  inline def has(value: ValueType): Boolean = iterable.exists(_ == value)
+  inline def has(value: value): Boolean = iterable.exists(_ == value)
 
-  inline def where(inline predicate: ValueType => Boolean): Optional[ValueType] =
+  inline def where(inline predicate: value => Boolean): Optional[value] =
     iterable.find(predicate).getOrElse(Unset)
 
-  transparent inline def interleave(right: Iterable[ValueType]): Iterable[ValueType] =
+  transparent inline def interleave(right: Iterable[value]): Iterable[value] =
     iterable.zip(right).flatMap(Iterable(_, _))
 
-extension [ValueType](iterator: Iterator[ValueType])
+extension [value](iterator: Iterator[value])
   transparent inline def each
-    (predicate: (ordinal: Ordinal) ?=> ValueType => Unit)
+    (predicate: (ordinal: Ordinal) ?=> value => Unit)
   :     Unit =
 
     var ordinal: Ordinal = Prim
@@ -128,28 +128,28 @@ extension [ValueType](iterator: Iterator[ValueType])
       predicate(using ordinal)(value)
       ordinal += 1
 
-  inline def all(predicate: ValueType => Boolean): Boolean = iterator.forall(predicate)
+  inline def all(predicate: value => Boolean): Boolean = iterator.forall(predicate)
 
-extension [ValueType](iterable: Iterable[ValueType])
-  def total(using zeroic:   ValueType is Zeroic,
-                  addable:  ValueType is Addable by ValueType,
-                  equality: addable.Result =:= ValueType)
-  :    ValueType =
+extension [value](iterable: Iterable[value])
+  def total(using zeroic:   value is Zeroic,
+                  addable:  value is Addable by value,
+                  equality: addable.Result =:= value)
+  :    value =
     iterable.foldLeft(zeroic.zero)(addable.add)
 
-  def mean(using zeroic:    ValueType is Zeroic,
-                 addable:   ValueType is Addable by ValueType,
-                 equality:  addable.Result =:= ValueType,
-                 divisible: ValueType is Divisible by Double)
+  def mean(using zeroic:    value is Zeroic,
+                 addable:   value is Addable by value,
+                 equality:  addable.Result =:= value,
+                 divisible: value is Divisible by Double)
   :     divisible.Result =
     iterable.total/iterable.size
 
   def variance
-     (using zeroic:        ValueType is Zeroic,
-            addable:       ValueType is Addable by ValueType,
-            equality:      addable.Result =:= ValueType,
-            divisible:     ValueType is Divisible by Double,
-            subtractable:  ValueType is Subtractable by divisible.Result,
+     (using zeroic:        value is Zeroic,
+            addable:       value is Addable by value,
+            equality:      addable.Result =:= value,
+            divisible:     value is Divisible by Double,
+            subtractable:  value is Subtractable by divisible.Result,
             multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
             addable2:      multiplicable.Result is Addable by multiplicable.Result,
             zeroic2:       multiplicable.Result is Zeroic,
@@ -160,11 +160,11 @@ extension [ValueType](iterable: Iterable[ValueType])
     iterable.map(_ - mean).map { value => value*value }.total/iterable.size
 
   def standardDeviation
-     (using zeroic:        ValueType is Zeroic,
-            addable:       ValueType is Addable by ValueType,
-            equality:      addable.Result =:= ValueType,
-            divisible:     ValueType is Divisible by Double,
-            subtractable:  ValueType is Subtractable by divisible.Result,
+     (using zeroic:        value is Zeroic,
+            addable:       value is Addable by value,
+            equality:      addable.Result =:= value,
+            divisible:     value is Divisible by Double,
+            subtractable:  value is Subtractable by divisible.Result,
             multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
             addable2:      multiplicable.Result is Addable by multiplicable.Result,
             zeroic2:       multiplicable.Result is Zeroic,
@@ -176,52 +176,52 @@ extension [ValueType](iterable: Iterable[ValueType])
     (iterable.map(_ - mean).map { value => value*value }.total/iterable.size).sqrt
 
   def product
-     (using unital:        ValueType is Unital,
-            multiplicable: ValueType is Multiplicable by ValueType,
-            equality:      multiplicable.Result =:= ValueType)
-  :     ValueType =
+     (using unital:        value is Unital,
+            multiplicable: value is Multiplicable by value,
+            equality:      multiplicable.Result =:= value)
+  :     value =
     iterable.foldLeft(unital.one)(multiplicable.multiply)
 
-  transparent inline def each(lambda: (ordinal: Ordinal) ?=> ValueType => Unit): Unit =
+  transparent inline def each(lambda: (ordinal: Ordinal) ?=> value => Unit): Unit =
     var ordinal: Ordinal = Prim
     iterable.iterator.foreach: value =>
       lambda(using ordinal)(value)
       ordinal += 1
 
-  inline def fuse[StateType](base: StateType)
-     (lambda: (state: StateType, next: ValueType) ?=> StateType)
-  :     StateType =
+  inline def fuse[state](base: state)
+     (lambda: (state: state, next: value) ?=> state)
+  :     state =
 
-    val iterator: Iterator[ValueType] = iterable.iterator
-    var state: StateType = base
+    val iterator: Iterator[value] = iterable.iterator
+    var state: state = base
     while iterator.hasNext do state = lambda(using state, iterator.next)
 
     state
 
-  def sumBy[NumberType: Numeric](lambda: ValueType => NumberType): NumberType =
-    var count = NumberType.zero
+  def sumBy[number: Numeric](lambda: value => number): number =
+    var count = number.zero
 
     iterable.foreach: value =>
-      count = NumberType.plus(count, lambda(value))
+      count = number.plus(count, lambda(value))
 
     count
 
-  inline def all(predicate: ValueType => Boolean): Boolean = iterable.forall(predicate)
-  transparent inline def bi: Iterable[(ValueType, ValueType)] = iterable.map { x => (x, x) }
+  inline def all(predicate: value => Boolean): Boolean = iterable.forall(predicate)
+  transparent inline def bi: Iterable[(value, value)] = iterable.map { x => (x, x) }
 
-  transparent inline def tri: Iterable[(ValueType, ValueType, ValueType)] =
+  transparent inline def tri: Iterable[(value, value, value)] =
     iterable.map { x => (x, x, x) }
 
-  def indexBy[ValueType2](lambda: ValueType => ValueType2): Map[ValueType2, ValueType] =
+  def indexBy[value2](lambda: value => value2): Map[value2, value] =
     iterable.map: value =>
       (lambda(value), value)
 
     . to(Map)
 
-  def longestTrain(predicate: ValueType => Boolean): (Int, Int) =
+  def longestTrain(predicate: value => Boolean): (Int, Int) =
     @tailrec
     def recur
-       (index: Int, iterable: Iterable[ValueType], bestStart: Int, bestLength: Int, length: Int)
+       (index: Int, iterable: Iterable[value], bestStart: Int, bestLength: Int, length: Int)
     :       (Int, Int) =
 
       if iterable.isEmpty then (bestStart, bestLength) else
@@ -233,58 +233,58 @@ extension [ValueType](iterable: Iterable[ValueType])
 
     recur(0, iterable, 0, 0, 0)
 
-extension [ElemType](value: IArray[ElemType])
-  inline def mutable(using Unsafe): Array[ElemType] = value.asMatchable.runtimeChecked match
-    case array: (Array[ElemType] @unchecked) => array
+extension [element](value: IArray[element])
+  inline def mutable(using Unsafe): Array[element] = value.asMatchable.runtimeChecked match
+    case array: (Array[`element`] @unchecked) => array
 
-extension [ElemType](array: Array[ElemType])
-  def immutable(using Unsafe): IArray[ElemType] = array.runtimeChecked match
-    case array: (IArray[ElemType] @unchecked) => array
+extension [element](array: Array[element])
+  def immutable(using Unsafe): IArray[element] = array.runtimeChecked match
+    case array: (IArray[`element`] @unchecked) => array
 
-  def snapshot(using ClassTag[ElemType]): IArray[ElemType] =
-    val newArray = new Array[ElemType](array.length)
+  def snapshot(using ClassTag[element]): IArray[element] =
+    val newArray = new Array[element](array.length)
     System.arraycopy(array, 0, newArray, 0, array.length)
     newArray.immutable(using Unsafe)
 
-  inline def place(value: IArray[ElemType], ordinal: Ordinal = Prim): Unit =
-    System.arraycopy(value.asInstanceOf[Array[ElemType]], 0, array, ordinal.n0, value.length)
+  inline def place(value: IArray[element], ordinal: Ordinal = Prim): Unit =
+    System.arraycopy(value.asInstanceOf[Array[element]], 0, array, ordinal.n0, value.length)
 
-extension [KeyType, ValueType](map: sc.Map[KeyType, ValueType])
-  inline def has(key: KeyType): Boolean = map.contains(key)
-  inline def bijection: Bijection[KeyType, ValueType] = Bijection(map.to(Map))
+extension [key, value](map: sc.Map[key, value])
+  inline def has(key: key): Boolean = map.contains(key)
+  inline def bijection: Bijection[key, value] = Bijection(map.to(Map))
 
-extension [KeyType, ValueType](map: Map[KeyType, ValueType])
-  def upsert(key: KeyType, op: Optional[ValueType] => ValueType): Map[KeyType, ValueType] =
+extension [key, value](map: Map[key, value])
+  def upsert(key: key, op: Optional[value] => value): Map[key, value] =
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
 
-  def collate(right: Map[KeyType, ValueType])(merge: (ValueType, ValueType) => ValueType)
-  :       Map[KeyType, ValueType] =
+  def collate(right: Map[key, value])(merge: (value, value) => value)
+  :       Map[key, value] =
 
     right.fuse(map)(state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1)))))
 
-extension [KeyType, ValueType](map: scm.Map[KeyType, ValueType])
-  inline def establish(key: KeyType)(evaluate: => ValueType): ValueType =
+extension [key, value](map: scm.Map[key, value])
+  inline def establish(key: key)(evaluate: => value): value =
     map.getOrElseUpdate(key, evaluate)
 
-extension [KeyType, ValueType](map: Map[KeyType, List[ValueType]])
-  def plus(key: KeyType, value: ValueType): Map[KeyType, List[ValueType]] =
+extension [key, value](map: Map[key, List[value]])
+  def plus(key: key, value: value): Map[key, List[value]] =
     map.updated(key, map.get(key).fold(List(value))(value :: _))
 
-extension [ValueType](list: List[ValueType])
-  def unwind(tail: List[ValueType]): List[ValueType] = tail.reverse_:::(list)
+extension [value](list: List[value])
+  def unwind(tail: List[value]): List[value] = tail.reverse_:::(list)
 
-extension [ElemType](seq: Seq[ElemType])
-  def runs: List[List[ElemType]] = runsBy(identity)
+extension [element](seq: Seq[element])
+  def runs: List[List[element]] = runsBy(identity)
 
-  inline def prim: Optional[ElemType] = if seq.isEmpty then Unset else seq.head
-  inline def sec: Optional[ElemType] = if seq.length < 2 then Unset else seq(1)
-  inline def ter: Optional[ElemType] = if seq.length < 3 then Unset else seq(2)
-  inline def unique: Optional[ElemType] = if seq.length == 1 then seq.head else Unset
+  inline def prim: Optional[element] = if seq.isEmpty then Unset else seq.head
+  inline def sec: Optional[element] = if seq.length < 2 then Unset else seq(1)
+  inline def ter: Optional[element] = if seq.length < 3 then Unset else seq(2)
+  inline def unique: Optional[element] = if seq.length == 1 then seq.head else Unset
 
-  def runsBy(lambda: ElemType => Any): List[List[ElemType]] =
+  def runsBy(lambda: element => Any): List[List[element]] =
     @tailrec
-    def recur(current: Any, todo: Seq[ElemType], run: List[ElemType], done: List[List[ElemType]])
-    :       List[List[ElemType]] =
+    def recur(current: Any, todo: Seq[element], run: List[element], done: List[List[element]])
+    :       List[List[element]] =
       if todo.isEmpty then (run.reverse :: done).reverse
       else
         val focus = lambda(todo.head)
@@ -293,27 +293,27 @@ extension [ElemType](seq: Seq[ElemType])
 
     if seq.isEmpty then Nil else recur(lambda(seq.head), seq.tail, List(seq.head), Nil)
 
-extension [ElemType](seq: IndexedSeq[ElemType])
+extension [element](seq: IndexedSeq[element])
   transparent inline def has(index: Int): Boolean = index >= 0 && index < seq.length
 
 extension (iarray: IArray.type)
-  def create[ElemType: ClassTag](size: Int)(lambda: Array[ElemType] => Unit): IArray[ElemType] =
-    val array: Array[ElemType] = new Array[ElemType](size)
+  def create[element: ClassTag](size: Int)(lambda: Array[element] => Unit): IArray[element] =
+    val array: Array[element] = new Array[element](size)
     lambda(array)
     array.immutable(using Unsafe)
 
 extension (bytes: Bytes)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
 
-extension [ValueType: Indexable](inline value: ValueType)
-  inline def has(index: ValueType.Operand): Boolean = ValueType.contains(value, index)
+extension [indexable: Indexable](inline value: indexable)
+  inline def has(index: indexable.Operand): Boolean = indexable.contains(value, index)
 
-  inline def at(index: ValueType.Operand): Optional[ValueType.Result] =
-    optimizable[ValueType.Result]: default =>
-      if ValueType.contains(value, index) then ValueType.access(value, index) else default
+  inline def at(index: indexable.Operand): Optional[indexable.Result] =
+    optimizable[indexable.Result]: default =>
+      if indexable.contains(value, index) then indexable.access(value, index) else default
 
-extension [ValueType: Segmentable as segmentable](inline value: ValueType)
-  inline def segment(interval: Interval): ValueType = segmentable.segment(value, interval)
+extension [value: Segmentable as segmentable](inline value: value)
+  inline def segment(interval: Interval): value = segmentable.segment(value, interval)
 
 extension (bs: Int)
   def b: Memory = Memory(bs)
@@ -332,23 +332,21 @@ extension (bs: Long)
 extension (bytes: Bytes)
   def memory: Memory = Memory(bytes.size)
 
-def workingDirectory[PathType: Instantiable across Paths from Text]
-   (using directory: WorkingDirectory)
-:     PathType =
+def workingDirectory[path: Instantiable across Paths from Text](using directory: WorkingDirectory)
+:     path =
 
-  directory.path[PathType]
+  directory.path[path]
 
-def homeDirectory[PathType: Instantiable across Paths from Text]
-   (using directory: HomeDirectory)
-:     PathType =
+def homeDirectory[path: Instantiable across Paths from Text](using directory: HomeDirectory)
+:     path =
 
-  directory.path[PathType]
+  directory.path[path]
 
-def temporaryDirectory[PathType: Instantiable across Paths from Text]
+def temporaryDirectory[path: Instantiable across Paths from Text]
    (using directory: TemporaryDirectory)
-:     PathType =
+:     path =
 
-  directory.path[PathType]
+  directory.path[path]
 
 package workingDirectories:
   given systemProperty: WorkingDirectory = () =>
@@ -377,42 +375,42 @@ package temporaryDirectories:
     List("TMPDIR", "TMP", "TEMP").map(System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt).or:
       panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set")
 
-extension [ValueType: Countable](inline value: ValueType)
+extension [countable: Countable](inline value: countable)
   inline def ult: Optional[Ordinal] =
-    if ValueType.size(value) >= 1 then (ValueType.size(value) - 1).z else Unset
+    if countable.size(value) >= 1 then (countable.size(value) - 1).z else Unset
 
   inline def pen: Optional[Ordinal] =
-    if ValueType.size(value) >= 1 then (ValueType.size(value) - 2).z else Unset
+    if countable.size(value) >= 1 then (countable.size(value) - 2).z else Unset
 
   inline def ant: Optional[Ordinal] =
-    if ValueType.size(value) >= 1 then (ValueType.size(value) - 3).z else Unset
+    if countable.size(value) >= 1 then (countable.size(value) - 3).z else Unset
 
-extension [ProductType <: Product: Mirror.ProductOf](product: ProductType)
-  def tuple: ProductType.MirroredElemTypes = Tuple.fromProductTyped(product)
+extension [product <: Product: Mirror.ProductOf](value: product)
+  def tuple: product.MirroredElemTypes = Tuple.fromProductTyped(value)
 
-extension [TupleType <: Tuple](tuple: TupleType)
-  def to[ProductType: Mirror.ProductOf]: ProductType = ProductType.fromProduct(tuple)
+extension [tuple <: Tuple](tuple: tuple)
+  def to[product: Mirror.ProductOf]: product = product.fromProduct(tuple)
 
 extension (erased tuple: Tuple)
-  inline def keep[NatType <: Nat] = !![Tuple.Take[tuple.type, NatType]]
-  inline def skip[NatType <: Nat] = !![Tuple.Drop[tuple.type, NatType]]
-  inline def contains[ElementType]: Boolean = indexOf[ElementType] >= 0
-  inline def indexOf[ElementType]: Int = recurIndex[tuple.type, ElementType](0)
+  inline def keep[nat <: Nat] = !![Tuple.Take[tuple.type, nat]]
+  inline def skip[nat <: Nat] = !![Tuple.Drop[tuple.type, nat]]
+  inline def contains[element]: Boolean = indexOf[element] >= 0
+  inline def indexOf[element]: Int = recurIndex[tuple.type, element](0)
 
   transparent inline def subtypes[Supertype]: Tuple =
     recurSubtypes[tuple.type, Supertype, Zero]
 
-  private transparent inline def recurSubtypes[TupleType <: Tuple, Supertype, DoneType <: Tuple]
+  private transparent inline def recurSubtypes[tuple <: Tuple, Supertype, done <: Tuple]
   :     Tuple =
 
-    inline !![TupleType] match
-      case _: Zero                  => !![Tuple.Reverse[DoneType]]
+    inline !![tuple] match
+      case _: Zero                  => !![Tuple.Reverse[done]]
       case _: (head *: tail)        => inline !![head] match
-        case _: Supertype             => recurSubtypes[tail, Supertype, head *: DoneType]
-        case _                        => recurSubtypes[tail, Supertype, DoneType]
+        case _: Supertype             => recurSubtypes[tail, Supertype, head *: done]
+        case _                        => recurSubtypes[tail, Supertype, done]
 
-  private inline def recurIndex[TupleType <: Tuple, ElementType](index: Int): Int =
-    inline !![TupleType] match
+  private inline def recurIndex[tuple <: Tuple, element](index: Int): Int =
+    inline !![tuple] match
       case _: Zero                  => -1
-      case _: (ElementType *: tail) => index
-      case _: (other *: tail)       => recurIndex[tail, ElementType](index + 1)
+      case _: (element *: tail) => index
+      case _: (other *: tail)       => recurIndex[tail, element](index + 1)

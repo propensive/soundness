@@ -36,9 +36,9 @@ import language.experimental.captureChecking
 
 import vacuous.*
 
-case class RDiff[ElemType](changes: Change[ElemType]*):
-  def flip: RDiff[Optional[ElemType]] =
-    val changes2: Seq[Change[Optional[ElemType]]] = changes.map:
+case class RDiff[element](changes: Change[element]*):
+  def flip: RDiff[Optional[element]] =
+    val changes2: Seq[Change[Optional[element]]] = changes.map:
       case Par(left, right, value)                 => Par(right, left, value)
       case Del(left, value)                        => Ins(left, value)
       case Ins(right, value)                       => Del(right, value)
@@ -46,5 +46,5 @@ case class RDiff[ElemType](changes: Change[ElemType]*):
 
     RDiff(changes2*)
 
-  def map[ElemType2](lambda: ElemType => ElemType2): RDiff[ElemType2^{lambda}] =
+  def map[element2](lambda: element => element2): RDiff[element2^{lambda}] =
     RDiff(changes.map(_.map(lambda))*)

@@ -65,5 +65,5 @@ open case class Image(private[hallucination] val image: jai.BufferedImage):
     out.stream
 
 object Image:
-  def apply[InputType: Readable by Bytes](inputType: InputType): Image =
+  def apply[input: Readable by Bytes](inputType: input): Image =
     Image(ji.ImageIO.read(inputType.read[Bytes].javaInputStream).nn)

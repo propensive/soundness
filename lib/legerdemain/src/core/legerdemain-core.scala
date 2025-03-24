@@ -44,15 +44,15 @@ import html5.*
 
 given Realm = realm"legerdemain"
 
-def elicit[ValueType: Formulable](query: Optional[Query] = Unset, errors: Errors)
+def elicit[value: Formulable](query: Optional[Query] = Unset, errors: Errors)
    (using formulation: Formulation)
 :     Html[Flow] =
-  formulation.form(ValueType.fields(t"", t"", query.or(Query()), errors))
+  formulation.form(value.fields(t"", t"", query.or(Query.empty), errors))
 
-extension [ValueType: {Formulable, Encodable in Query}](value: ValueType)
+extension [formulable: {Formulable, Encodable in Query}](value: formulable)
    (using formulation: Formulation)
   def edit(errors: Errors): Html[Flow] =
-    formulation.form(ValueType.fields(t"", t"", Query(value), errors))
+    formulation.form(formulable.fields(t"", t"", formulable.encoded(value), errors))
 
 package formulations:
   given default: Formulation:

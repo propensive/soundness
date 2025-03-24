@@ -35,12 +35,12 @@ package contingency
 import fulminate.*
 import proscenium.*
 
-class EscapeTactic[ResultType](label: boundary.Label[ResultType])
-extends Tactic[Break[ResultType]]:
+class EscapeTactic[result](label: boundary.Label[result])
+extends Tactic[Break[result]]:
 
   given diagnostics: Diagnostics = Diagnostics.omit
 
-  def abort(escape: Diagnostics ?=> Break[ResultType]): Nothing =
+  def abort(escape: Diagnostics ?=> Break[result]): Nothing =
     boundary.break(escape.value)(using label)
 
-  def record(escape: Diagnostics ?=> Break[ResultType]): Unit = abort(escape)
+  def record(escape: Diagnostics ?=> Break[result]): Unit = abort(escape)

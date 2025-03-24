@@ -47,13 +47,13 @@ import turbulence.*
 import vacuous.*
 
 object TarEntry:
-  def apply[DataType: Readable by Bytes, InstantType: GenericInstant]
+  def apply[data: Readable by Bytes, instant: GenericInstant]
      (name:  TarRef,
-      data:  DataType,
+      data:  data,
       mode:  UnixMode              = UnixMode(),
       user:  UnixUser              = UnixUser(0),
       group: UnixGroup             = UnixGroup(0),
-      mtime: Optional[InstantType] = Unset)
+      mtime: Optional[instant] = Unset)
           : TarEntry =
 
     val mtimeU32: U32 =

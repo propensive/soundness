@@ -40,10 +40,10 @@ import proscenium.*
 import rudiments.*
 import wisteria.*
 
-trait XmlDecoder[ValueType]:
-  def read(xml: List[XmlAst]): ValueType
+trait XmlDecoder[value]:
+  def read(xml: List[XmlAst]): value
 
-  def map[ValueType2](lambda: ValueType => ValueType2): XmlDecoder[ValueType2] =
+  def map[value2](lambda: value => value2): XmlDecoder[value2] =
     list => lambda(read(list))
 
 object XmlDecoder extends Derivation[XmlDecoder]:
@@ -51,16 +51,16 @@ object XmlDecoder extends Derivation[XmlDecoder]:
     val elements = childElements(list).collect { case XmlAst.Textual(text) => text }
     if elements.length == 0 then raise(XmlReadError()) yet "".tt else elements.head
 
-  given [ValueType: Decodable in Text]: XmlDecoder[ValueType] = value =>
+  given [value: Decodable in Text]: XmlDecoder[value] = value =>
     value.absolve match
-      case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decode[ValueType]
+      case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decode[value]
 
-  inline def join[DerivationType <: Product: ProductReflection]: XmlDecoder[DerivationType] =
+  inline def join[derivation <: Product: ProductReflection]: XmlDecoder[derivation] =
     list =>
       val elements = childElements(list)
 
       construct:
-        [FieldType] => context =>
+        [field] => context =>
           val element =
             elements.find:
               case element: XmlAst.Element if element.name.name == label => true
@@ -70,11 +70,11 @@ object XmlDecoder extends Derivation[XmlDecoder]:
 
           context.read(List(element))
 
-  inline def split[DerivationType: SumReflection]: XmlDecoder[DerivationType] = list =>
+  inline def split[derivation: SumReflection]: XmlDecoder[derivation] = list =>
     list.head.absolve match
       case XmlAst.Element(_, children, attributes, _) =>
         delegate(attributes.get(XmlName("type".tt)).get):
-          [VariantType <: DerivationType] => decoder =>
+          [variant <: derivation] => decoder =>
             decoder.read(list)
 
   private def childElements(seq: List[XmlAst]): Seq[XmlAst] =

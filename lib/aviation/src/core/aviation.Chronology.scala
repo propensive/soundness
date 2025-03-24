@@ -58,7 +58,7 @@ object Chronology:
 
       result
 
-open class Chronology[DenominationType]():
+open class Chronology[denomination]():
   def ambiguousTimes: Chronology.AmbiguousTimes = Chronology.AmbiguousTimes.Dilate
   def monthArithmetic: Chronology.MonthArithmetic = Chronology.MonthArithmetic.Scale
   def leapDayArithmetic: Chronology.LeapDayArithmetic = Chronology.LeapDayArithmetic.PreferFeb28

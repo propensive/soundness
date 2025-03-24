@@ -44,8 +44,8 @@ import rudiments.*
 import vacuous.*
 
 object Writable:
-  given outputStreamBytes: [OutType <: ji.OutputStream] => (streamCut: Tactic[StreamError])
-  =>    OutType is Writable by Bytes =
+  given outputStreamBytes: [output <: ji.OutputStream] => (streamCut: Tactic[StreamError])
+  =>    output is Writable by Bytes =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
@@ -63,13 +63,13 @@ object Writable:
 
       outputStream.close()
 
-  given decodingAdapter: [TargetType: Writable by Text] => (decoder: CharDecoder)
-  =>    TargetType is Writable by Bytes =
-    (target, stream) => TargetType.write(target, decoder.decoded(stream))
+  given decodingAdapter: [writable: Writable by Text] => (decoder: CharDecoder)
+  =>    writable is Writable by Bytes =
+    (target, stream) => writable.write(target, decoder.decoded(stream))
 
-  given encodingAdapter: [TargetType: Writable by Bytes] => (encoder: CharEncoder)
-  =>    TargetType is Writable by Text =
-    (target, stream) => TargetType.write(target, encoder.encoded(stream))
+  given encodingAdapter: [writable: Writable by Bytes] => (encoder: CharEncoder)
+  =>    writable is Writable by Text =
+    (target, stream) => writable.write(target, encoder.encoded(stream))
 
   given channel: Tactic[StreamError]
   =>    jn.channels.WritableByteChannel is Writable by Bytes = (channel, stream) =>
@@ -88,5 +88,5 @@ trait Writable:
   type Operand
   def write(target: Self, stream: Stream[Operand]): Unit
 
-  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Writable by Operand =
+  def contramap[self2](lambda: self2 => Self): self2 is Writable by Operand =
     (target, stream) => write(lambda(target), stream)

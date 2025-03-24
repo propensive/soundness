@@ -42,4 +42,4 @@ object ColumnAlignment:
   given long: ColumnAlignment[Long] = ColumnAlignment(TextAlignment.Right, VerticalAlignment.Top)
   given text: ColumnAlignment[Text] = ColumnAlignment(TextAlignment.Left, VerticalAlignment.Top)
 
-case class ColumnAlignment[-ColumnType](text: TextAlignment, vertical: VerticalAlignment)
+case class ColumnAlignment[-column](text: TextAlignment, vertical: VerticalAlignment)

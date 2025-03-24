@@ -34,9 +34,9 @@ package parasite
 
 import language.experimental.pureFunctions
 
-enum Completion[+ValueType]:
+enum Completion[+value]:
   case Initializing, Cancelled
   case Active(startTime: Long)
-  case Completed(duration: Long, value: ValueType)
-  case Delivered(duration: Long, value: ValueType)
+  case Completed(duration: Long, value: value)
+  case Delivered(duration: Long, value: value)
   case Failed(error: Throwable)

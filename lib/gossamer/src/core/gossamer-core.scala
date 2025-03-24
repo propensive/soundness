@@ -57,16 +57,16 @@ import language.experimental.into
 
 export Gossamer.opaques.Ascii
 
-def append[TextType: Textual, ValueType](using builder: Builder[TextType])(value: ValueType)
-   (using TextType.Show[ValueType])
+def append[textual: Textual, value](using builder: Builder[textual])(value: value)
+   (using textual.Show[value])
 :     Unit =
-  builder.append(TextType.show(value))
+  builder.append(textual.show(value))
 
-def appendln[TextType: Textual, ValueType](using builder: Builder[TextType])(value: ValueType)
-   (using TextType.Show[ValueType])
+def appendln[textual: Textual, value](using builder: Builder[textual])(value: value)
+   (using textual.Show[value])
 :     Unit =
-  builder.append(TextType.show(value))
-  builder.append(TextType("\n".tt))
+  builder.append(textual.show(value))
+  builder.append(textual("\n".tt))
 
 extension (textObject: Text.type)
   def construct(block: (builder: TextBuilder) ?=> Unit): Text =
@@ -104,38 +104,38 @@ extension (bytes: Bytes)
 
     . mkString.tt
 
-extension [TextType](text: TextType)
-  def cut[DelimiterType](delimiter: DelimiterType, limit: Int = Int.MaxValue)
-     (using cuttable: TextType is Cuttable by DelimiterType)
-  :     List[TextType] =
+extension [textual](text: textual)
+  def cut[delimiter](delimiter: delimiter, limit: Int = Int.MaxValue)
+     (using cuttable: textual is Cuttable by delimiter)
+  :     List[textual] =
 
     cuttable.cut(text, delimiter, limit)
 
-extension [TextType: Textual](words: Iterable[TextType])
-  def pascal: TextType = words.map(_.lower.capitalize).join
-  def camel: TextType = pascal.uncapitalize
-  def snake: TextType = words.join(TextType("_".tt))
-  def kebab: TextType = words.join(TextType("-".tt))
-  def spaced: TextType = words.join(TextType(" ".tt))
+extension [textual: Textual](words: Iterable[textual])
+  def pascal: textual = words.map(_.lower.capitalize).join
+  def camel: textual = pascal.uncapitalize
+  def snake: textual = words.join(textual("_".tt))
+  def kebab: textual = words.join(textual("-".tt))
+  def spaced: textual = words.join(textual(" ".tt))
 
-extension [TextType: Textual](text: TextType)
-  inline def length: Int = TextType.length(text)
-  inline def populated: Optional[TextType] = if text == TextType.empty then Unset else text
-  inline def lower: TextType = TextType.map(text, _.toLower)
-  inline def upper: TextType = TextType.map(text, _.toUpper)
-  def plain: Text = TextType.text(text)
+extension [textual: Textual](text: textual)
+  inline def length: Int = textual.length(text)
+  inline def populated: Optional[textual] = if text == textual.empty then Unset else text
+  inline def lower: textual = textual.map(text, _.toLower)
+  inline def upper: textual = textual.map(text, _.toUpper)
+  def plain: Text = textual.text(text)
 
-  def broken(predicate: (Char, Char) => Boolean, break: Char = '\u200b'): TextType =
-    val breakText = TextType(break.toString.tt)
-    val builder = TextType.builder()
+  def broken(predicate: (Char, Char) => Boolean, break: Char = '\u200b'): textual =
+    val breakText = textual(break.toString.tt)
+    val builder = textual.builder()
 
     @tailrec
-    def recur(from: Ordinal = Prim, index: Ordinal = Sec): TextType =
+    def recur(from: Ordinal = Prim, index: Ordinal = Sec): textual =
         if index >= Ult.of(text) then
           builder.append(text.from(from))
           builder()
         else
-          if !predicate(TextType.unsafeChar(text, index - 1), TextType.unsafeChar(text, index))
+          if !predicate(textual.unsafeChar(text, index - 1), textual.unsafeChar(text, index))
           then recur(from, index + 1)
           else
             builder.append(text.segment(from ~ index.previous))
@@ -145,68 +145,68 @@ extension [TextType: Textual](text: TextType)
     recur()
 
   // FIXME
-  def justify(width: Int): TextType =
+  def justify(width: Int): textual =
     val words = text.words
     val extra = width - text.length
 
-    def recur(word: Ordinal, spaces: Int, result: TextType): TextType =
+    def recur(word: Ordinal, spaces: Int, result: textual): textual =
       if word == Prim then result else
         val gap = ((spaces.toDouble/word.n0) + 0.5).toInt
-        recur(word - 1, spaces - gap, result+TextType(t" "*(gap + 1))+words(words.length - word.n0))
+        recur(word - 1, spaces - gap, result+textual(t" "*(gap + 1))+words(words.length - word.n0))
 
     recur(Prim, extra, words(0))
 
-  def before(ordinal: Ordinal): TextType = text.segment(Prim ~ (ordinal - 1))
-  def after(ordinal: Ordinal): TextType = text.segment((ordinal + 1) ~ Ult.of(text))
-  def upto(ordinal: Ordinal): TextType = text.segment(Prim ~ ordinal)
-  def from(ordinal: Ordinal): TextType = text.segment(ordinal ~ Ult.of(text))
+  def before(ordinal: Ordinal): textual = text.segment(Prim ~ (ordinal - 1))
+  def after(ordinal: Ordinal): textual = text.segment((ordinal + 1) ~ Ult.of(text))
+  def upto(ordinal: Ordinal): textual = text.segment(Prim ~ ordinal)
+  def from(ordinal: Ordinal): textual = text.segment(ordinal ~ Ult.of(text))
 
-  def slices(size: Int): List[TextType] =
+  def slices(size: Int): List[textual] =
     val length = text.length
-    List.tabulate[TextType]((length - 1)/size + 1): i =>
+    List.tabulate[textual]((length - 1)/size + 1): i =>
       text.segment((i*size).z ~ Ordinal.natural(((i + 1)*size).min(length)))
 
-  def skip(count: Int, bidi: Bidi = Ltr): TextType = bidi match
+  def skip(count: Int, bidi: Bidi = Ltr): textual = bidi match
     case Ltr => text.segment(count.z ~ Ult.of(text))
     case Rtl => text.segment(Prim ~ Countback(count).of(text))
 
-  def keep(count: Int, bidi: Bidi = Ltr): TextType = bidi match
+  def keep(count: Int, bidi: Bidi = Ltr): textual = bidi match
     case Ltr => text.segment(Interval.initial(count))
     case Rtl => text.segment(Countback(count - 1).of(text) ~ Ult.of(text))
 
-  def capitalize: TextType = TextType.concat(text.keep(1).upper, text.after(Prim))
-  def uncapitalize: TextType = TextType.concat(text.keep(1).lower, text.after(Prim))
+  def capitalize: textual = textual.concat(text.keep(1).upper, text.after(Prim))
+  def uncapitalize: textual = textual.concat(text.keep(1).lower, text.after(Prim))
 
-  inline def tail: TextType = text.skip(1, Ltr)
-  inline def init: TextType = text.skip(1, Rtl)
+  inline def tail: textual = text.skip(1, Ltr)
+  inline def init: textual = text.skip(1, Rtl)
   inline def empty: Boolean = text.length == 0
 
-  def chars: IArray[Char] = TextType.text(text).s.toCharArray.nn.immutable(using Unsafe)
+  def chars: IArray[Char] = textual.text(text).s.toCharArray.nn.immutable(using Unsafe)
 
-  def snip(n: Int): (TextType, TextType) =
+  def snip(n: Int): (textual, textual) =
     (text.segment(Prim ~ (n - 1).z), text.segment(n.z ~ Ult.of(text)))
 
-  def punch(n: Ordinal): (TextType, TextType) =
+  def punch(n: Ordinal): (textual, textual) =
     (text.segment(Prim ~ (n - 1)), text.segment((n + 1) ~ Ult.of(text)))
 
-  def reverse: TextType =
-    def recur(index: Ordinal, result: TextType): TextType =
+  def reverse: textual =
+    def recur(index: Ordinal, result: textual): textual =
       if index <= Ult.of(text)
-      then recur(index + 1, TextType.concat(text.segment(index ~ index), result))
+      then recur(index + 1, textual.concat(text.segment(index ~ index), result))
       else result
 
-    recur(Prim, TextType.empty)
+    recur(Prim, textual.empty)
 
-  def contains(substring: into Text): Boolean = TextType.indexOf(text, substring).present
-  def contains(char: Char): Boolean = TextType.indexOf(text, char.show).present
+  def contains(substring: into Text): Boolean = textual.indexOf(text, substring).present
+  def contains(char: Char): Boolean = textual.indexOf(text, char.show).present
 
-  def search(regex: Regex, overlap: Boolean = false): Stream[TextType] =
-    regex.search(TextType.text(text), overlap = overlap).map(text.segment(_))
+  def search(regex: Regex, overlap: Boolean = false): Stream[textual] =
+    regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
 
-  def extract[ValueType](start: Ordinal)(lambda: Scanner ?=> TextType ~> ValueType)
-  :     Stream[ValueType] =
+  def extract[value](start: Ordinal)(lambda: Scanner ?=> textual ~> value)
+  :     Stream[value] =
 
-    val input = TextType.text(text)
+    val input = textual.text(text)
     if start.n0 < input.s.length then
       val scanner = Scanner(start.n0)
       lambda(using scanner).lift(text) match
@@ -215,9 +215,9 @@ extension [TextType: Textual](text: TextType)
 
     else Stream()
 
-  def seek(regex: Regex): Optional[TextType] = regex.seek(TextType.text(text)).let(text.segment(_))
+  def seek(regex: Regex): Optional[textual] = regex.seek(textual.text(text)).let(text.segment(_))
 
-  inline def trim: TextType =
+  inline def trim: textual =
     val start = text.where(!_.isWhitespace).or(Ult.of(text))
     val end = text.where(!_.isWhitespace, bidi = Rtl).or(Prim)
     text.segment(start ~ end)
@@ -234,82 +234,82 @@ extension [TextType: Textual](text: TextType)
 
     def recur(ordinal: Ordinal): Optional[Ordinal] =
       if ordinal > Ult.of(text) || ordinal < Prim then Unset
-      else if pred(TextType.unsafeChar(text, ordinal)) then ordinal
+      else if pred(textual.unsafeChar(text, ordinal)) then ordinal
       else recur(ordinal + step)
 
     recur(first)
 
-  def before(pred: Char => Boolean): TextType =
+  def before(pred: Char => Boolean): textual =
     val end: Ordinal = text.where(pred).or(Ult.of(text))
     text.before(end)
 
-  def upto(pred: Char => Boolean): TextType =
+  def upto(pred: Char => Boolean): textual =
     val end: Ordinal = text.where(pred).or(Ult.of(text))
     text.upto(end)
 
-  def dropWhile(pred: Char => Boolean): TextType =
-    text.where(!pred(_)).lay(TextType.empty): ordinal =>
+  def dropWhile(pred: Char => Boolean): textual =
+    text.where(!pred(_)).lay(textual.empty): ordinal =>
       text.segment(ordinal ~ Ult.of(text))
 
-  def whilst(pred: Char => Boolean): TextType =
-    text.where(!pred(_)).lay(TextType.empty): ordinal =>
+  def whilst(pred: Char => Boolean): textual =
+    text.where(!pred(_)).lay(textual.empty): ordinal =>
       text.before(ordinal)
 
-  def snip(pred: Char => Boolean, index: Ordinal = Prim): Optional[(TextType, TextType)] =
+  def snip(pred: Char => Boolean, index: Ordinal = Prim): Optional[(textual, textual)] =
     text.where(pred, index).let(_.n0).let(text.snip(_))
 
-  def mapChars(lambda: Char => Char): TextType = TextType.map(text, lambda)
+  def mapChars(lambda: Char => Char): textual = textual.map(text, lambda)
 
   inline def count(pred: Char => Boolean): Int =
     def recur(index: Ordinal, sum: Int): Int = if index > Ult.of(text) then sum else
-      val increment = if pred(TextType.unsafeChar(text, index)) then 1 else 0
+      val increment = if pred(textual.unsafeChar(text, index)) then 1 else 0
       recur(index + 1, sum + increment)
 
     recur(Prim, 0)
 
-  def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): TextType =
+  def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): textual =
     if text.plain.metrics >= length then text else
-      val padding = TextType(char.toString.tt)*(length - text.plain.metrics + 1)
+      val padding = textual(char.toString.tt)*(length - text.plain.metrics + 1)
 
       bidi match
-        case Ltr => TextType.concat(text, padding)
-        case Rtl => TextType.concat(padding, text)
+        case Ltr => textual.concat(text, padding)
+        case Rtl => textual.concat(padding, text)
 
-  def center(length: Int, char: Char = ' ')(using Text is Measurable): TextType =
+  def center(length: Int, char: Char = ' ')(using Text is Measurable): textual =
     text.pad((length + text.plain.metrics)/2, char = char).pad(length, Rtl, char = char)
 
-  def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): TextType =
+  def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): textual =
     bidi match
       case Ltr => text.pad(length, bidi, char).keep(length, Ltr)
       case Rtl => text.pad(length, bidi, char).keep(length, Rtl)
 
-  def uncamel: List[TextType] =
-    def recur(text: TextType): List[TextType] =
+  def uncamel: List[textual] =
+    def recur(text: textual): List[textual] =
       text.where(_.isUpper, Sec).lay(List(text.lower)): index =>
         text.before(index).lower :: recur(text.from(index))
 
     recur(text)
 
-  def words: List[TextType] = text.cut(" ".tt)
-  def lines: List[TextType] = text.cut("\n".tt)
-  def unkebab: List[TextType] = text.cut("-".tt)
-  def unsnake: List[TextType] = text.cut("_".tt)
+  def words: List[textual] = text.cut(" ".tt)
+  def lines: List[textual] = text.cut("\n".tt)
+  def unkebab: List[textual] = text.cut("-".tt)
+  def unsnake: List[textual] = text.cut("_".tt)
 
   def starts(prefix: into Text): Boolean =
     def recur(index: Ordinal): Boolean =
       index > (prefix.length - 1).z
-      || TextType.unsafeChar(text, index) == prefix.s.charAt(index.n0) && recur(index + 1)
+      || textual.unsafeChar(text, index) == prefix.s.charAt(index.n0) && recur(index + 1)
 
     prefix.length <= text.length && recur(Prim)
 
   def ends(suffix: into Text): Boolean = text.keep(suffix.length, Rtl) == suffix
 
-  inline def tr(from: Char, to: Char): TextType =
-    TextType.map(text, char => if char == from then to else char)
+  inline def tr(from: Char, to: Char): textual =
+    textual.map(text, char => if char == from then to else char)
 
   // Extension method is applied explicitly because it appears ambiguous otherwise
-  inline def subscripts: TextType = TextType.map(text, _.subscript.or(' '))
-  inline def superscripts: TextType = TextType.map(text, _.superscript.or(' '))
+  inline def subscripts: textual = textual.map(text, _.subscript.or(' '))
+  inline def superscripts: textual = textual.map(text, _.superscript.or(' '))
 
 package proximityMeasures:
   given jaroDistance: Proximity = (left, right) =>
@@ -396,21 +396,21 @@ extension (text: into Text)
 
 extension (iarray: IArray[Char]) def text: Text = String(iarray.mutable(using Unsafe)).tt
 
-extension [TextType: Joinable](values: Iterable[TextType])
-  def join: TextType = TextType.join(values)
+extension [textual: Joinable](values: Iterable[textual])
+  def join: textual = textual.join(values)
 
-  def join(separator: TextType): TextType =
-    TextType.join(values.flatMap(Iterable(separator, _)).drop(1))
+  def join(separator: textual): textual =
+    textual.join(values.flatMap(Iterable(separator, _)).drop(1))
 
-  def join(left: TextType, separator: TextType, right: TextType): TextType =
+  def join(left: textual, separator: textual, right: textual): textual =
     Iterable(left, join(separator), right).join
 
-  def join(separator: TextType, penultimate: TextType): TextType = values.size match
+  def join(separator: textual, penultimate: textual): textual = values.size match
     case 0 => Iterable().join
     case 1 => values.head
     case _ => Iterable(values.init.join(separator), penultimate, values.last).join
 
-  def join(left: TextType, separator: TextType, penultimate: TextType, right: TextType): TextType =
+  def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
     Iterable(left, join(separator, penultimate), right).join
 
 extension (builder: StringBuilder)
@@ -423,14 +423,14 @@ package decimalFormatters:
     def decimalize(double: Double): Text = double.toString.tt
 
 package enumIdentification:
-  given kebabCase: [EnumType <: reflect.Enum] => EnumType is Identifiable =
+  given kebabCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(_.uncamel.kebab, _.unkebab.pascal)
 
-  given snakeCase: [EnumType <: reflect.Enum] => EnumType is Identifiable =
+  given snakeCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(_.uncamel.snake, _.unsnake.pascal)
 
-  given pascalCase: [EnumType <: reflect.Enum] => EnumType is Identifiable =
+  given pascalCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(identity(_), identity(_))
 
-  given camelCase: [EnumType <: reflect.Enum] => EnumType is Identifiable =
+  given camelCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(_.uncamel.camel, _.unsnake.pascal)

@@ -32,4 +32,4 @@
                                                                                                   */
 package probably
 
-case class Test[+ReturnType](id: TestId, action: Harness => ReturnType)
+case class Test[+result](id: TestId, action: Harness => result)

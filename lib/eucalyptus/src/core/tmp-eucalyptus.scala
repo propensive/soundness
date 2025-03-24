@@ -45,12 +45,12 @@ package eucalyptus
 // object Eucalyptus:
 //   given Realm = realm"eucalyptus"
 
-//   def record[MessageType: Type, TextType: Type]
+//   def record[message: Type, text: Type]
 //       (level:          Expr[Level],
-//        message:        Expr[MessageType],
-//        log:            Expr[Log[TextType]],
+//        message:        Expr[message],
+//        log:            Expr[Log[text]],
 //        realm:          Expr[Realm],
-//        presentational: Expr[TextType is Presentational],
+//        presentational: Expr[text is Presentational],
 //        show:           Expr[Any])
 //       (using Quotes)
 //   :     Expr[Unit] =
@@ -59,7 +59,7 @@ package eucalyptus
 //         val presentationalValue = $presentational
 
 //         try
-//           val castShow = $show.asInstanceOf[presentationalValue.Show[MessageType]]
+//           val castShow = $show.asInstanceOf[presentationalValue.Show[message]]
 //           $log.record
 //            (Entry
 //              ($realm,
@@ -69,12 +69,12 @@ package eucalyptus
 //               $log.envelopes))
 //         catch case e: Exception => ()  }
 
-//   def route[TextType: Type]
-//       (routes:         Expr[PartialFunction[Entry[TextType], Any]],
+//   def route[text: Type]
+//       (routes:         Expr[PartialFunction[Entry[text], Any]],
 //        monitor:        Expr[Monitor],
-//        presentational: Expr[TextType is Presentational])
+//        presentational: Expr[text is Presentational])
 //       (using Quotes)
-//   :     Expr[Log[TextType]] =
+//   :     Expr[Log[text]] =
 
 //     import quotes.reflect.*
 
@@ -89,10 +89,10 @@ package eucalyptus
 //         invalidRoutes()
 
 //     '{
-//       val loggers: Array[Logger[TextType] | Null] = new Array(${Expr(count)})
+//       val loggers: Array[Logger[text] | Null] = new Array(${Expr(count)})
 
-//       new TextLog[TextType]($presentational(_)):
-//         def record(entry: Entry[TextType]): Unit =
+//       new TextLog[text]($presentational(_)):
+//         def record(entry: Entry[text]): Unit =
 //           ${
 //             def partialFunction(index: Int) = routes.asTerm match
 //               case Inlined(_, _, Block(List(defDef), term)) => defDef match
@@ -102,9 +102,9 @@ package eucalyptus
 //                       case '{$target: targetType} =>
 //                         def typeName = TypeRepr.of[targetType].show
 
-//                         val logWriter: Expr[LogWriter[targetType, TextType]] =
-//                           Expr.summon[LogWriter[targetType, TextType]].getOrElse:
-//                             val writerName = TypeRepr.of[LogWriter[targetType, TextType]].show.tt
+//                         val logWriter: Expr[LogWriter[targetType, text]] =
+//                           Expr.summon[LogWriter[targetType, text]].getOrElse:
+//                             val writerName = TypeRepr.of[LogWriter[targetType, text]].show.tt
 //                             halt(m"could not get an instance of $writerName")
 
 //                         val action =
@@ -122,7 +122,7 @@ package eucalyptus
 //                   val definition =
 //                     DefDef.copy(defDef)(ident, scrutineeType, returnType, matchCase)
 
-//                   Block(List(definition), term).asExprOf[PartialFunction[Entry[TextType], Any]]
+//                   Block(List(definition), term).asExprOf[PartialFunction[Entry[text], Any]]
 
 //                 case _ =>
 //                   invalidRoutes()

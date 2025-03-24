@@ -38,10 +38,10 @@ import vacuous.*
 object Runner:
   private[probably] val harnessThreadLocal: ThreadLocal[Option[Harness]] = ThreadLocal()
 
-class Runner[ReportType]()(using reporter: Reporter[ReportType]):
+class Runner[report]()(using reporter: Reporter[report]):
   private var active: Set[TestId] = Set()
   def skip(id: TestId): Boolean = false
-  val report: ReportType = reporter.make()
+  val report: report = reporter.make()
 
   def maybeRun[T, S](test: Test[T]): Optional[Trial[T]] =
     if skip(test.id) then Unset else run[T, S](test)

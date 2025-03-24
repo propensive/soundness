@@ -37,15 +37,15 @@ import prepositional.*
 import spectacular.*
 
 object Renderable:
-  given [ValueType: Showable] => ValueType is Renderable into Html[?] = value => List(value.show)
+  given [value: Showable] => value is Renderable into Html[?] = value => List(value.show)
 
-  given [ValueType: Abstractable across HtmlContent into List[Sgml]]
-  =>    ValueType is Renderable into Html[?] =
+  given [value: Abstractable across HtmlContent into List[Sgml]]
+  =>    value is Renderable into Html[?] =
     new Renderable:
-      type Self = ValueType
+      type Self = value
       type Result = Html[?]
 
-      def html(value: ValueType): List[Html[?]] = value.generic.map(convert)
+      def html(value: value): List[Html[?]] = value.generic.map(convert)
 
       private def convert(html: Sgml): Html[?] = html match
         case Sgml.Textual(text)               => text

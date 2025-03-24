@@ -47,30 +47,30 @@ object ShowProperty:
     case length: Length => length.show
     case int: Int       => int.show
 
-  given [PropertyType: ShowProperty, PropertyType2: ShowProperty]
-  :     ShowProperty[(PropertyType, PropertyType2)] = tuple =>
-    t"${PropertyType.show(tuple(0))} ${PropertyType2.show(tuple(1))}"
+  given [property: ShowProperty, property2: ShowProperty]
+  :     ShowProperty[(property, property2)] = tuple =>
+    t"${property.show(tuple(0))} ${property2.show(tuple(1))}"
 
-  given [PropertyType: ShowProperty, PropertyType2: ShowProperty, PropertyType3: ShowProperty]
-  :     ShowProperty[(PropertyType, PropertyType2, PropertyType3)] =
+  given [property: ShowProperty, property2: ShowProperty, property3: ShowProperty]
+  :     ShowProperty[(property, property2, property3)] =
 
     tuple =>
       List
-       (PropertyType.show(tuple(0)),
-        PropertyType2.show(tuple(1)),
-        PropertyType3.show(tuple(2)))
+       (property.show(tuple(0)),
+        property2.show(tuple(1)),
+        property3.show(tuple(2)))
       . join(t" ")
 
-  given [PropertyType:  ShowProperty,
-         PropertyType2: ShowProperty,
-         PropertyType3: ShowProperty,
-         PropertyType4: ShowProperty]
-  =>    ShowProperty[(PropertyType, PropertyType2, PropertyType3, PropertyType4)] = tuple =>
+  given [property:  ShowProperty,
+         property2: ShowProperty,
+         property3: ShowProperty,
+         property4: ShowProperty]
+  =>    ShowProperty[(property, property2, property3, property4)] = tuple =>
     List
-     (PropertyType.show(tuple(0)),
-      PropertyType2.show(tuple(1)),
-      PropertyType3.show(tuple(2)),
-      PropertyType4.show(tuple(3))).join(t" ")
+     (property.show(tuple(0)),
+      property2.show(tuple(1)),
+      property3.show(tuple(2)),
+      property4.show(tuple(3))).join(t" ")
 
   given ShowProperty[Font] = _.names.map: f =>
     if f.contains(t" ") then t"'$f'" else f
@@ -79,14 +79,14 @@ object ShowProperty:
 
   //given ShowProperty[SimplePath] = path => t"url('${path}')"
 
-  given [PathType: Abstractable across Paths into Text] => ShowProperty[PathType] =
+  given [path: Abstractable across Paths into Text] => ShowProperty[path] =
     path => t"url('${path.generic}')"
 
   given ShowProperty[Text] = identity(_)
   given ShowProperty[Int] = _.show
 
-  given [ColorType: Chromatic]: ShowProperty[ColorType] = color =>
-    t"rgb(${ColorType.red(color)},${ColorType.green(color)},${ColorType.blue(color)})"
+  given [chromatic: Chromatic]: ShowProperty[chromatic] = color =>
+    t"rgb(${chromatic.red(color)},${chromatic.green(color)},${chromatic.blue(color)})"
 
   //given ShowProperty[Relative] = rel => t"url('$rel')"
   //given ShowProperty[GenericPath] = rel => t"url('$rel')"
@@ -95,5 +95,5 @@ object ShowProperty:
   given ShowProperty[Transparent.type] = c => t"transparent"
   given ShowProperty[Initial.type] = c => t"initial"
 
-trait ShowProperty[-PropertyType]:
-  def show(value: PropertyType): Text
+trait ShowProperty[-property]:
+  def show(value: property): Text

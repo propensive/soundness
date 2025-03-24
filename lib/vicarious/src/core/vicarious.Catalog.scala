@@ -37,34 +37,34 @@ import vacuous.*
 
 import language.dynamics
 
-//case class Catalog[KeyType, ValueType](values: Map[Text, ValueType]):
-case class Catalog[KeyType, ValueType: ClassTag](values: IArray[ValueType]):
+//case class Catalog[key, value](values: Map[Text, value]):
+case class Catalog[key, value: ClassTag](values: IArray[value]):
   def size: Int = values.length
 
-  inline def apply(accessor: (`*`: Proxy[KeyType, ValueType, 0]) ?=> Proxy[KeyType, ValueType, ?])
-  :     ValueType =
+  inline def apply(accessor: (`*`: Proxy[key, value, 0]) ?=> Proxy[key, value, ?])
+  :     value =
     values(accessor(using Proxy()).id.vouch)
 
-  def map[ValueType2: ClassTag](lambda: ValueType => ValueType2): Catalog[KeyType, ValueType2] =
+  def map[value2: ClassTag](lambda: value => value2): Catalog[key, value2] =
     Catalog(values.map(lambda))
 
-  def tie[ResultType](using proxy: Proxy[KeyType, ValueType, 0])
-     (lambda: (catalog: this.type, `*`: proxy.type) ?=> ResultType)
-  :     ResultType =
+  def tie[result](using proxy: Proxy[key, value, 0])
+     (lambda: (catalog: this.type, `*`: proxy.type) ?=> result)
+  :     result =
     lambda(using this, proxy)
 
-  def braid[ValueType2: ClassTag](right: Catalog[KeyType, ValueType2])[ResultType: ClassTag]
-     (lambda: (ValueType, ValueType2) => ResultType)
-  :     Catalog[KeyType, ResultType] =
+  def braid[value2: ClassTag](right: Catalog[key, value2])[result: ClassTag]
+     (lambda: (value, value2) => result)
+  :     Catalog[key, result] =
     Catalog(IArray.tabulate(values.length) { index => lambda(values(index), right.values(index)) })
 
-extension [KeyType, ValueType: ClassTag](catalog: Catalog[KeyType, ValueType])
-  def brush(using proxy: Proxy[KeyType, ValueType, Nat])
-     (lambda: (`*`: proxy.type) ?=> Proxy[KeyType, ValueType, Nat] ~> ValueType)
-  :     Catalog[KeyType, ValueType] =
+extension [key, value: ClassTag](catalog: Catalog[key, value])
+  def brush(using proxy: Proxy[key, value, Nat])
+     (lambda: (`*`: proxy.type) ?=> Proxy[key, value, Nat] ~> value)
+  :     Catalog[key, value] =
 
     val partialFunction = lambda(using proxy)
 
     Catalog(IArray.tabulate(catalog.size): index =>
       partialFunction.applyOrElse
-       (Proxy[KeyType, ValueType, index.type](), _ => catalog.values(index)))
+       (Proxy[key, value, index.type](), _ => catalog.values(index)))

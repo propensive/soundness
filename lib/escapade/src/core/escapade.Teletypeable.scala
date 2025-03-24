@@ -44,7 +44,7 @@ object Teletypeable:
   given Teletype is Teletypeable = identity(_)
   given Text is Teletypeable = text => Teletype(text)
 
-  given [ValueType: {Showable as showable, Colorable as colorable}] => ValueType is Teletypeable =
+  given [value: {Showable as showable, Colorable as colorable}] => value is Teletypeable =
     value => e"${value.color}(${value.show})"
 
   given Message is Teletypeable = _.fold[Teletype](e""): (acc, next, level) =>
@@ -53,11 +53,11 @@ object Teletypeable:
       case 1 => e"$acc$Italic(${Fg(0xffd600)}($next))"
       case _ => e"$acc$Italic($Bold(${Fg(0xffff00)}($next)))"
 
-  given [ValueType: Teletypeable] => Option[ValueType] is Teletypeable =
+  given [value: Teletypeable] => Option[value] is Teletypeable =
     case None        => Teletype("empty".show)
     case Some(value) => value.teletype
 
-  given [ValueType: Showable] => ValueType is Teletypeable = value => Teletype(value.show)
+  given [value: Showable] => value is Teletypeable = value => Teletype(value.show)
 
   given (Text is Measurable) => Exception is Teletypeable = exception =>
     summon[StackTrace is Teletypeable].teletype(StackTrace(exception))

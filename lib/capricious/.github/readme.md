@@ -7,7 +7,7 @@
 __Generation of random values__
 
 Being able to calculate random values is useful for a variety of tasks, not least as test data.
-__Capricious__ provides a more convenient interface to the standard pseudorandom number generators 
+__Capricious__ provides a more convenient interface to the standard pseudorandom number generators
 available on the JVM.
 
 ## Features
@@ -187,8 +187,8 @@ randomness from any other source).
 
 ### Random sequences
 
-If a type `ValueType` is `Randomizable`, then `List[ValueType]` and
-`IArray[ValueType]` are also `Randomizable`, provided a `RandomSize` instance
+If a type `value` is `Randomizable`, then `List[value]` and
+`IArray[value]` are also `Randomizable`, provided a `RandomSize` instance
 is in scope, for example by importing,
 ```scala
 import randomization.sizes.uniformUpto1000
@@ -196,7 +196,7 @@ import randomization.sizes.uniformUpto1000
 
 Instances of `RandomSize` exist for other powers of 10, up to `100000`.
 
-It's also possible to construct random `Set[ValueType]`s in the same way, but
+It's also possible to construct random `Set[value]`s in the same way, but
 their sizes may be smaller due to deduplication. For example, whatever the
 range of `RandomSize`, a `Set[Boolean]` would never have more than two elements,
 `true` and `false`.
@@ -239,7 +239,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Capricious?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Capricious's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -256,7 +256,7 @@ answer to the question, "how can I try Capricious?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -316,4 +316,3 @@ The logo shows a stylized pollen cell, the canonical body used to illustrate Bro
 
 Capricious is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

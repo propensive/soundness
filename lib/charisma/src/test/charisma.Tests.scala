@@ -32,6 +32,7 @@
                                                                                                   */
 package charisma
 
+import fulminate.*
 import gossamer.*
 import probably.*
 

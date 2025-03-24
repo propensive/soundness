@@ -39,7 +39,7 @@ import spectacular.*
 import language.experimental.captureChecking
 import language.implicitConversions
 
-trait UnitName[-ValueType]:
+trait UnitName[-value]:
   def siPrefix: MetricPrefix = NoPrefix
   def name(): Text
   def text: Text = t"${siPrefix.symbol}${name()}"

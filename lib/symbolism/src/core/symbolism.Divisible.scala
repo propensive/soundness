@@ -37,14 +37,14 @@ import prepositional.*
 import scala.annotation.targetName
 
 object Divisible:
-  def apply[DividendType, DivisorType, ResultType]
-     (lambda: (DividendType, DivisorType) => ResultType)
-  :     DividendType is Divisible by DivisorType into ResultType = new Divisible:
-    type Self = DividendType
-    type Result = ResultType
-    type Operand = DivisorType
+  def apply[dividend, divisor, result]
+     (lambda: (dividend, divisor) => result)
+  :     dividend is Divisible by divisor into result = new Divisible:
+    type Self = dividend
+    type Result = result
+    type Operand = divisor
 
-    def divide(dividend: DividendType, divisor: DivisorType): ResultType = lambda(dividend, divisor)
+    def divide(dividend: dividend, divisor: divisor): result = lambda(dividend, divisor)
 
   given double: Double is Divisible by Double into Double = Divisible:
     (dividend, divisor) => dividend/divisor

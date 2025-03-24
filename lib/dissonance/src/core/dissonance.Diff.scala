@@ -78,26 +78,26 @@ object Diff:
 
     recur(lines, 1, Nil, 0, 0, 0)
 
-case class Diff[ElemType](edits: Edit[ElemType]*):
+case class Diff[element](edits: Edit[element]*):
   def size: Int = edits.count:
     case Par(_, _, _) => false
     case _            => true
 
-  def flip: Diff[Optional[ElemType]] =
-    val edits2: Seq[Edit[Optional[ElemType]]] = edits.map:
+  def flip: Diff[Optional[element]] =
+    val edits2: Seq[Edit[Optional[element]]] = edits.map:
       case Par(left, right, value) => Par(right, left, value)
       case Del(left, value)        => Ins(left, value)
       case Ins(right, value)       => Del(right, value)
 
     Diff(edits2*)
 
-  def map[ElemType2](lambda: ElemType => ElemType2): Diff[ElemType2] =
+  def map[element2](lambda: element => element2): Diff[element2] =
     Diff(edits.map(_.map(lambda))*)
 
-  def patch(seq: Seq[ElemType], update: (ElemType, ElemType) => ElemType = (left, right) => left)
-  :     Stream[ElemType] =
+  def patch(seq: Seq[element], update: (element, element) => element = (left, right) => left)
+  :     Stream[element] =
 
-    def recur(todo: List[Edit[ElemType]], seq: Seq[ElemType]): Stream[ElemType] = todo match
+    def recur(todo: List[Edit[element]], seq: Seq[element]): Stream[element] = todo match
       case Nil                   => seq.to(Stream)
       case Ins(_, value) :: tail => value #:: recur(tail, seq)
       case Del(_, _) :: tail     => recur(tail, seq.tail)
@@ -107,7 +107,7 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
 
     recur(edits.to(List), seq)
 
-  def rdiff(similar: (ElemType, ElemType) => Boolean, subSize: Int = 1): RDiff[ElemType] =
+  def rdiff(similar: (element, element) => Boolean, subSize: Int = 1): RDiff[element] =
     val changes = collate.flatMap:
       case Region.Unchanged(pars)    => pars
       case Region.Changed(dels, Nil) => dels
@@ -129,29 +129,29 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
 
     RDiff(changes*)
 
-  def collate: List[Region[ElemType]] =
+  def collate: List[Region[element]] =
     edits.runsBy:
       case Par(_, _, _) => true
       case _            => false
     . map:
         case xs@(Par(_, _, _) :: _) => Region.Unchanged
-                                        (xs.collect { case par: Par[ElemType] => par })
+                                        (xs.collect { case par: Par[element] => par })
         case xs                     => Region.Changed
-                                        (xs.collect { case del: Del[ElemType] => del },
-                                         xs.collect { case ins: Ins[ElemType] => ins })
+                                        (xs.collect { case del: Del[element] => del },
+                                         xs.collect { case ins: Ins[element] => ins })
 
-  def chunks: Stream[Chunk[ElemType]] =
-    def recur(todo: List[Edit[ElemType]], pos: Int, rpos: Int): Stream[Chunk[ElemType]] =
+  def chunks: Stream[Chunk[element]] =
+    def recur(todo: List[Edit[element]], pos: Int, rpos: Int): Stream[Chunk[element]] =
       todo match
         case Nil                         => Stream()
         case Par(pos2, rpos2, _) :: tail => recur(tail, pos2 + 1, rpos2 + 1)
 
         case _ =>
-          val dels = todo.takeWhile(_.is[Del[ElemType]]).collect:
-            case del: Del[ElemType] => del
+          val dels = todo.takeWhile(_.is[Del[element]]).collect:
+            case del: Del[element] => del
 
-          val inss = todo.drop(dels.length).takeWhile(_.is[Ins[ElemType]]).collect:
-            case ins: Ins[ElemType] => ins
+          val inss = todo.drop(dels.length).takeWhile(_.is[Ins[element]]).collect:
+            case ins: Ins[element] => ins
 
           Chunk(pos, rpos, dels, inss) #::
               recur(todo.drop(dels.size + inss.size), pos + dels.length, pos + inss.length)

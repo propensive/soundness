@@ -55,18 +55,18 @@ object Dispatcher:
   private var cache: Map[Codepoint, (Path, Text => Text)] = Map()
 
 trait Dispatcher:
-  type Result[OutputType]
+  type Result[output]
   protected def scalac: Scalac[?]
-  protected def invoke[OutputType](dispatch: Dispatch[OutputType]): Result[OutputType]
+  protected def invoke[output](dispatch: Dispatch[output]): Result[output]
 
-  inline def dispatch[OutputType: Decodable in Json]
-     (body: References ?=> Quotes ?=> Expr[OutputType])
-     [ScalacVersionType <: Scalac.All]
+  inline def dispatch[output: Decodable in Json]
+     (body: References ?=> Quotes ?=> Expr[output])
+     [version <: Scalac.All]
      (using codepoint:   Codepoint,
             classloader: Classloader,
             properties:  SystemProperties,
             directory:   TemporaryDirectory)
-  :     Result[OutputType] raises CompilerError =
+  :     Result[output] raises CompilerError =
    try
     import strategies.throwUnsafely
     val uuid = Uuid()
@@ -117,11 +117,11 @@ trait Dispatcher:
         LocalClasspath:
           ClasspathEntry.Directory(out.encode) :: systemClasspath.decode[LocalClasspath].entries
 
-    invoke[OutputType]
+    invoke[output]
      (Dispatch
        (out,
-        classpath, () => fn(references()).decode[Json].as[OutputType],
-        (fn: Text => Text) => fn(references()).decode[Json].as[OutputType]))
+        classpath, () => fn(references()).decode[Json].as[output],
+        (fn: Text => Text) => fn(references()).decode[Json].as[output]))
    catch case throwable: Throwable =>
      println("Failed, somehow")
      println(throwable)

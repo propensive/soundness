@@ -36,17 +36,17 @@ import gossamer.*
 import vacuous.*
 
 object Column:
-  def apply[RowType, CellType, TextType: Textual]
-     (title:         TextType,
+  def apply[row, cell, text: Textual]
+     (title:         text,
       textAlign:     Optional[TextAlignment]     = Unset,
       verticalAlign: Optional[VerticalAlignment] = Unset,
       sizing:     Columnar                    = columnar.Prose)
-     (get: RowType => CellType)
-     (using columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.topLeft)
-     (using TextType.Show[CellType])
-  :     Column[RowType, TextType] =
+     (get: row => cell)
+     (using columnAlignment: ColumnAlignment[cell] = ColumnAlignment.topLeft)
+     (using text.Show[cell])
+  :     Column[row, text] =
 
-    def contents(row: RowType): TextType = TextType.show(get(row))
+    def contents(row: row): text = text.show(get(row))
 
     Column
      (title,
@@ -55,14 +55,14 @@ object Column:
       verticalAlign.or(columnAlignment.vertical),
       sizing)
 
-case class Column[RowType, TextType: Textual]
-   (title:         TextType,
-    get:           RowType => TextType,
+case class Column[row, text: Textual]
+   (title:         text,
+    get:           row => text,
     textAlign:     TextAlignment,
     verticalAlign: VerticalAlignment,
     sizing:        Columnar):
 
-  def contramap[RowType2](lambda: RowType2 => RowType): Column[RowType2, TextType] =
-    Column[RowType2, TextType](title, row => get(lambda(row)), textAlign, verticalAlign, sizing)
+  def contramap[row2](lambda: row2 => row): Column[row2, text] =
+    Column[row2, text](title, row => get(lambda(row)), textAlign, verticalAlign, sizing)
 
-  def retitle(title: TextType): Column[RowType, TextType] = copy(title = title)
+  def retitle(title: text): Column[row, text] = copy(title = title)

@@ -146,7 +146,7 @@ object Geodesy:
 
       2*math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-    def bearing[CompassType: Directional](right: Location): CompassType =
+    def bearing[compass: Directional](right: Location): compass =
       val dLng = math.abs(left.longitude - right.longitude)
 
       val result: Double =
@@ -155,4 +155,4 @@ object Geodesy:
           math.cos(left.latitude)*math.sin(right.latitude) -
               math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng))
 
-      CompassType.direction(Angle(result))
+      compass.direction(Angle(result))

@@ -38,11 +38,11 @@ import prepositional.*
 import rudiments.*
 
 case class Digester(run: Digestion => Unit):
-  def apply[HashType <: Algorithm](using function: HashFunction in HashType): Digest in HashType =
+  def apply[hash <: Algorithm](using function: HashFunction in hash): Digest in hash =
     function.init().pipe: accumulator =>
       run(accumulator)
-      Digest[HashType](accumulator.digest())
+      Digest[hash](accumulator.digest())
 
-  def digest[ValueType: Digestible](value: ValueType): Digester = Digester: accumulator =>
+  def digest[digestible: Digestible](value: digestible): Digester = Digester: accumulator =>
     run(accumulator)
-    ValueType.digest(accumulator, value)
+    digestible.digest(accumulator, value)

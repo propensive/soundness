@@ -37,10 +37,10 @@ import gossamer.*
 import hellenism.*
 import serpentine.*
 
-case class Dispatch[OutputType]
+case class Dispatch[output]
    (path:      Path,
     classpath: LocalClasspath,
-    local:     () => OutputType,
-    remote:    (Text => Text) => OutputType):
+    local:     () => output,
+    remote:    (Text => Text) => output):
 
   def mainClass: Text = t"superlunary.Executor"

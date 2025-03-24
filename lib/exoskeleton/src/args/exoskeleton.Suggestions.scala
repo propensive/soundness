@@ -35,7 +35,7 @@ package exoskeleton
 import language.experimental.pureFunctions
 
 object Suggestions:
-  def noSuggestions[OperandType]: Suggestions[OperandType] = () => Nil
+  def noSuggestions[operand]: Suggestions[operand] = () => Nil
 
-trait Suggestions[-OperandType]:
+trait Suggestions[-operand]:
   def suggest(): Iterable[Suggestion]

@@ -37,8 +37,8 @@ import vacuous.*
 import language.experimental.captureChecking
 
 trait FlagParameters:
-  def read[OperandType](flag: Flag)
-     (using Cli, FlagInterpreter[OperandType], Suggestions[OperandType])
-  :     Optional[OperandType]
+  def read[operand](flag: Flag)
+     (using Cli, FlagInterpreter[operand], Suggestions[operand])
+  :     Optional[operand]
 
   def focusFlag: Optional[Argument]

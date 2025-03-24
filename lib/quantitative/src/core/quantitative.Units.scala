@@ -34,7 +34,7 @@ package quantitative
 
 import proscenium.*
 
-trait Units[PowerType <: Nat, DimensionType <: Dimension] extends Measure
+trait Units[power <: Nat, dimension <: Dimension] extends Measure
 
 erased trait Metres[Power <: Nat] extends Units[Power, Distance]
 erased trait Kilograms[Power <: Nat] extends Units[Power, Mass]

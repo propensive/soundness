@@ -47,7 +47,7 @@ object Rudiments:
 
   @annotation.targetName("And")
   object `&`:
-    def unapply[ValueType](value: ValueType): Some[(ValueType, ValueType)] = Some((value, value))
+    def unapply[value](value: value): Some[(value, value)] = Some((value, value))
 
   object Digit:
     def apply(char: Char): Optional[Digit] = apply(char - '0')
@@ -64,7 +64,7 @@ object Rudiments:
     def apply(long: Long): Memory = long
     given ordering: Ordering[Memory] = Ordering.Long.on(_.long)
 
-    given communicable: [MemoryType <: Memory] => MemoryType is Communicable =
+    given communicable: [memory <: Memory] => memory is Communicable =
       memory => Message(memory.text)
 
     given addable: Memory is Addable by Memory into Memory = _ + _

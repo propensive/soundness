@@ -34,4 +34,4 @@ package escritoire
 
 import proscenium.*
 
-case class TableSection[TextType](widths: IArray[Int], rows: Stream[TableRow[TextType]])
+case class TableSection[text](widths: IArray[Int], rows: Stream[TableRow[text]])

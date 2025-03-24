@@ -37,5 +37,5 @@ import anticipation.*
 transparent trait Language(val code: Text):
   type Code
 
-  def apply[ValueType](value: Locale[Code] ?=> ValueType): Polyglot[ValueType, Code] =
-    Polyglot(Map[Language, ValueType](this -> value(using Locale(this))))
+  def apply[value](value: Locale[Code] ?=> value): Polyglot[value, Code] =
+    Polyglot(Map[Language, value](this -> value(using Locale(this))))

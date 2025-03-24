@@ -37,14 +37,14 @@ import prepositional.*
 import scala.annotation.targetName
 
 object Multiplicable:
-  def apply[MultiplicandType, MultiplierType, ResultType]
-     (lambda: (MultiplicandType, MultiplierType) => ResultType)
-  :     MultiplicandType is Multiplicable by MultiplierType into ResultType = new Multiplicable:
-    type Self = MultiplicandType
-    type Result = ResultType
-    type Operand = MultiplierType
+  def apply[multiplicand, multiplier, result]
+     (lambda: (multiplicand, multiplier) => result)
+  :     multiplicand is Multiplicable by multiplier into result = new Multiplicable:
+    type Self = multiplicand
+    type Result = result
+    type Operand = multiplier
 
-    def multiply(multiplicand: MultiplicandType, multiplier: MultiplierType): ResultType =
+    def multiply(multiplicand: multiplicand, multiplier: multiplier): result =
       lambda(multiplicand, multiplier)
 
   given Double is Multiplicable by Double into Double = Multiplicable:

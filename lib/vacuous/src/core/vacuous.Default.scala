@@ -37,15 +37,15 @@ import scala.collection.immutable as sci
 import anticipation.*
 
 object Default:
-  def apply[ValueType](value: => ValueType): Default[ValueType] = () => value
+  def apply[value](value: => value): Default[value] = () => value
   given int: Default[Int] = () => 0
-  given singleton[ValueType: ValueOf]: Default[ValueType] = () => valueOf[ValueType]
+  given singleton[value: ValueOf]: Default[value] = () => valueOf[value]
   given default: Default[Long] = () => 0L
   given text: Default[Text] = () => "".tt
   given string: Default[String] = () => ""
-  given list[ElemType]: Default[List[ElemType]] = () => Nil
-  given set[ElemType]: Default[Set[ElemType]] = () => Set()
-  given vector[ElemType]: Default[sci.Vector[ElemType]] = () => sci.Vector()
+  given list[element]: Default[List[element]] = () => Nil
+  given set[element]: Default[Set[element]] = () => Set()
+  given vector[element]: Default[sci.Vector[element]] = () => sci.Vector()
 
-trait Default[+ValueType]:
-  def apply(): ValueType
+trait Default[+value]:
+  def apply(): value

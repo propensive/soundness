@@ -36,13 +36,10 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 
-sealed trait Sha2[BitsType <: 224 | 256 | 384 | 512] extends Algorithm:
-  type Bits = BitsType
+sealed trait Sha2[bits <: 224 | 256 | 384 | 512] extends Algorithm:
+  type Bits = bits
 
 object Sha2:
-  given hashFunction: [BitsType <: 224 | 256 | 384 | 512: ValueOf]
-  =>    JavaHashFunction in Sha2[BitsType]:
-
-    private val bits: Int = valueOf[BitsType]
-    val name: Text = t"SHA-$bits"
-    val hmacName: Text = t"HmacSHA$bits"
+  given hashFunction: [bits <: 224 | 256 | 384 | 512: ValueOf] => JavaHashFunction in Sha2[bits]:
+    val name: Text = t"SHA-${valueOf[bits]}"
+    val hmacName: Text = t"HmacSHA${valueOf[bits]}"

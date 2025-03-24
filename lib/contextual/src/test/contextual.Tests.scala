@@ -32,6 +32,7 @@
                                                                                                   */
 package contextual
 
+import fulminate.*
 import gossamer.*
 import probably.*
 

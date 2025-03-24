@@ -43,25 +43,25 @@ import wisteria.*
 
 object Inspectable extends Inspectable2:
   object Derivation extends Derivable[Inspectable]:
-    inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Inspectable =
+    inline def join[derivation <: Product: ProductReflection]: derivation is Inspectable =
       value =>
         fields(value):
-          [FieldType] => field =>
+          [field] => field =>
             val text = context.text(field)
             if tuple then text else s"$label:$text"
 
         . mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
-    inline def split[DerivationType: SumReflection]: DerivationType is Inspectable = value =>
+    inline def split[derivation: SumReflection]: derivation is Inspectable = value =>
       variant(value):
-        [VariantType <: DerivationType] => variant =>
+        [variant <: derivation] => variant =>
           context.give(variant.inspect)
 
-  inline given derived: [ValueType] => ValueType is Inspectable = compiletime.summonFrom:
-    case given (ValueType is Encodable in Text) => _.encode
-    case given (ValueType is Showable)          => _.show
-    case given Reflection[ValueType]            => Derivation.derived[ValueType].text(_)
-    case _                                      => value => ("“"+value+"”").tt
+  inline given derived: [value] => value is Inspectable = compiletime.summonFrom:
+    case given (`value` is Encodable in Text) => _.encode
+    case given (`value` is Showable)          => _.show
+    case given Reflection[`value`]            => Derivation.derived[value].text(_)
+    case _                                    => value => ("“"+value+"”").tt
 
   given char: Char is Inspectable = char => ("'"+escape(char).s+"'").tt
   given long: Long is Inspectable = long => (long.toString+"L").tt
@@ -105,37 +105,37 @@ object Inspectable extends Inspectable2:
       if char < 128 && char >= 32
       then char.toString.tt else String.format("\\u%04x", char.toInt).nn.tt
 
-  given set: [ElemType: Inspectable] => Set[ElemType] is Inspectable =
+  given set: [element: Inspectable] => Set[element] is Inspectable =
     _.map(_.inspect).mkString("{", ", ", "}").tt
 
-  given vector: [ElemType: Inspectable] => Trie[ElemType] is Inspectable =
+  given vector: [element: Inspectable] => Trie[element] is Inspectable =
     _.map(_.inspect).mkString("⟨ ", " ", " ⟩").tt
 
-  given indexedSeq: [ElemType: Inspectable] => IndexedSeq[ElemType] is Inspectable =
+  given indexedSeq: [element: Inspectable] => IndexedSeq[element] is Inspectable =
     _.map(_.inspect).mkString("⟨ ", " ", " ⟩ᵢ").tt
 
-  given iterable: [ElemType: Inspectable] => Iterable[ElemType] is Inspectable =
+  given iterable: [element: Inspectable] => Iterable[element] is Inspectable =
     _.map(_.inspect).mkString("⦗", ", ", "⦘").tt
 
-  given list: [ElemType: Inspectable] => List[ElemType] is Inspectable =
+  given list: [element: Inspectable] => List[element] is Inspectable =
     _.map(_.inspect).mkString("[", ", ", "]").tt
 
-  given array: [ElemType: Inspectable] => Array[ElemType] is Inspectable = array =>
+  given array: [element: Inspectable] => Array[element] is Inspectable = array =>
     array.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       (subscript+value.inspect.s).tt
 
     . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
 
-  given arraySeq: [ElemType: Inspectable] => scm.ArraySeq[ElemType] is Inspectable = array =>
+  given arraySeq: [element: Inspectable] => scm.ArraySeq[element] is Inspectable = array =>
     array.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       (subscript+value.inspect.s).tt
 
     . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
 
-  given stream: [ElemType: Inspectable] => Stream[ElemType] is Inspectable = stream =>
-    def recur(stream: Stream[ElemType], todo: Int): Text =
+  given stream: [element: Inspectable] => Stream[element] is Inspectable = stream =>
+    def recur(stream: Stream[element], todo: Int): Text =
       if todo <= 0 then "..?".tt
       else if stream.toString == "Stream(<not computed>)" then "∿∿∿".tt
       else if stream.isEmpty then "⯁ ".tt
@@ -143,7 +143,7 @@ object Inspectable extends Inspectable2:
 
     recur(stream, 3)
 
-  given iarray: [ElemType: Inspectable] => IArray[ElemType] is Inspectable = iarray =>
+  given iarray: [element: Inspectable] => IArray[element] is Inspectable = iarray =>
     iarray.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       subscript+value.inspect.s.tt
@@ -169,15 +169,15 @@ object Inspectable extends Inspectable2:
 
     arrayType+dimension//+renderBraille(str.split("@").nn(1).nn)
 
-  given option: [ValueType: Inspectable] => Option[ValueType] is Inspectable =
+  given option: [value: Inspectable] => Option[value] is Inspectable =
     case None        => "None".tt
     case Some(value) => s"Some(${value.inspect.s})".tt
 
   given None.type is Inspectable = none => "None".tt
 
 trait Inspectable2:
-  given optional: [ValueType: Inspectable] => Optional[ValueType] is Inspectable =
-    _.let { value => s"⸂${ValueType.text(value)}⸃".tt }.or("⸄⸅".tt)
+  given optional: [inspectable: Inspectable] => Optional[inspectable] is Inspectable =
+    _.let { value => s"⸂${inspectable.text(value)}⸃".tt }.or("⸄⸅".tt)
 
 trait Inspectable extends TextConversion:
   type Self

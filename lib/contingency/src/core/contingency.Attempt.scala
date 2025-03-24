@@ -36,9 +36,9 @@ import proscenium.*
 
 import language.experimental.pureFunctions
 
-enum Attempt[+SuccessType, +ErrorType <: Exception]:
-  case Success(value: SuccessType)
-  case Failure(value: ErrorType)
+enum Attempt[+success, +error <: Exception]:
+  case Success(value: success)
+  case Failure(value: error)
 
   def failure: Boolean = this match
     case Success(_) => false
@@ -46,29 +46,29 @@ enum Attempt[+SuccessType, +ErrorType <: Exception]:
 
   def success: Boolean = !failure
 
-  def map[SuccessType2](lambda: SuccessType => SuccessType2): Attempt[SuccessType2, ErrorType] =
+  def map[success2](lambda: success => success2): Attempt[success2, error] =
     this match
       case Success(success) => Success(lambda(success))
       case Failure(failure) => Failure(failure)
 
-  def handle(block: ErrorType ~> Exception): Attempt[SuccessType, Exception] =
+  def handle(block: error ~> Exception): Attempt[success, Exception] =
     this match
       case Success(value) => Success(value)
       case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
 
-  def acknowledge(block: ErrorType ~> Unit): Attempt[SuccessType, ErrorType] =
+  def acknowledge(block: error ~> Unit): Attempt[success, error] =
     this match
       case Failure(value) => if block.isDefinedAt(value) then block(value)
       case _              => ()
 
     this
 
-  transparent inline def apply(): SuccessType raises ErrorType = this match
+  transparent inline def apply(): success raises error = this match
     case Success(value) => value
     case Failure(error) => abort(error)
 
-  def recover[SuccessType2 >: SuccessType](block: ErrorType ~> SuccessType2)
-  :     SuccessType2 =
+  def recover[success2 >: success](block: error ~> success2)
+  :     success2 =
 
     this match
       case Success(value) => value

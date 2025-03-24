@@ -40,7 +40,7 @@ import spectacular.*
 import language.experimental.pureFunctions
 
 object Bg:
-  def apply[ColorType: Chromatic](color: ColorType): Bg = Bg(color.asRgb24Int)
+  def apply[color: Chromatic](color: color): Bg = Bg(color.asRgb24Int)
 
 case class Bg(color: Int):
   def fg: Fg = Fg(color)

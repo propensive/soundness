@@ -45,8 +45,8 @@ import spectacular.*
 
 object Prefixable:
   // Request headers
-  given contentEncoding: [EncodingType <: Encoding]
-  =>    ("contentEncoding" is Prefixable of EncodingType) = _.name
+  given contentEncoding: [encoding <: Encoding]
+  =>    ("contentEncoding" is Prefixable of encoding) = _.name
 
   given accept: ("accept" is Prefixable of Medium) = _.show
   given accept2: ("accept" is Prefixable of List[Medium]) = _.map(_.show).join(t",")
@@ -70,8 +70,8 @@ object Prefixable:
   given ifRange: ("ifRange" is Prefixable of Text) = identity(_)
   given ifUnmodifiedSince: ("ifUnmodifiedSince" is Prefixable of Text) = identity(_)
   given maxForwards: ("maxForwards" is Prefixable of Int) = _.toString.tt
-  given origin: [UrlType: Abstractable across Urls into Text]
-  =>    ("origin" is Prefixable of UrlType) = _.generic
+  given origin: [url: Abstractable across Urls into Text]
+  =>    ("origin" is Prefixable of url) = _.generic
   given pragma: ("pragma" is Prefixable of Text) = identity(_)
   given prefer: ("prefer" is Prefixable of Text) = identity(_)
   given proxyAuthorization: ("proxyAuthorization" is Prefixable of Text) = identity(_)

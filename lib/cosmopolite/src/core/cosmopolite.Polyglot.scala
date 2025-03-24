@@ -34,16 +34,16 @@ package cosmopolite
 
 import proscenium.*
 
-case class Polyglot[+ValueType, LanguageType](values: Map[Language, ValueType]):
+case class Polyglot[+value, language](values: Map[Language, value]):
   @targetName("or")
-  transparent inline infix def | [ValueType2 >: ValueType, LanguageType2]
-    (polyglot: Polyglot[ValueType2, LanguageType2])
-  :     Polyglot[ValueType2, LanguageType & LanguageType2] | ValueType2 =
+  transparent inline infix def | [value2 >: value, language2]
+    (polyglot: Polyglot[value2, language2])
+  :     Polyglot[value2, language & language2] | value2 =
     compiletime.summonFrom:
-      case locale: Locale[LanguageType & LanguageType2] =>
+      case locale: Locale[language & language2] =>
         (values ++ polyglot.values)(locale.language)
 
       case _ =>
-        Polyglot[ValueType2, LanguageType & LanguageType2](values ++ polyglot.values)
+        Polyglot[value2, language & language2](values ++ polyglot.values)
 
-  def apply()(using locale: Locale[LanguageType]): ValueType = values(locale.language)
+  def apply()(using locale: Locale[language]): value = values(locale.language)

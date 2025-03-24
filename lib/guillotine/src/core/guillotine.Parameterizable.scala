@@ -38,7 +38,7 @@ import anticipation.*
 import prepositional.*
 
 object Parameterizable:
-  given [PathType: Encodable in Text] => PathType is Parameterizable = _.encode
+  given [path: Encodable in Text] => path is Parameterizable = _.encode
 
 trait Parameterizable:
   type Self

@@ -40,5 +40,5 @@ object ChemicalElement:
   given ChemicalElement is Showable = _.symbol
 
 case class ChemicalElement(number: Int, symbol: Text, name: Text) extends Molecular:
-  def apply[CountType <: Nat: ValueOf]: Molecule = Molecule(Map(this -> valueOf[CountType]), 0)
+  def apply[count <: Nat: ValueOf]: Molecule = Molecule(Map(this -> valueOf[count]), 0)
   def molecule: Molecule = apply[1]

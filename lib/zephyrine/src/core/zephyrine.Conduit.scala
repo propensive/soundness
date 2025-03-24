@@ -163,6 +163,6 @@ class Conduit(input0: Stream[Bytes]):
     skip(count)
     save()
 
-  final inline def lookahead[ResultType](inline action: => ResultType): ResultType =
+  final inline def lookahead[result](inline action: => result): result =
     mark()
     try action finally revert()

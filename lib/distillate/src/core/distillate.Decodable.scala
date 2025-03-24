@@ -43,7 +43,7 @@ import wisteria.*
 import vacuous.*
 
 object Decodable:
-  given [ValueType] => ValueType is Decodable in ValueType = identity(_)
+  given [value] => value is Decodable in value = identity(_)
 
   given int: (number: Tactic[NumberError]) => Int is Decodable in Text = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
@@ -81,13 +81,13 @@ object Decodable:
 
   given char: Char is Decodable in Text = _.s(0)
 
-  given [EnumType <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
+  given [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
   =>    Tactic[VariantError]
-  =>    EnumType is Decodable in Text = value =>
+  =>    enumeration is Decodable in Text = value =>
 
-    EnumType.value(identifiable.decode(value)).or:
-      val names = EnumType.values.to(List).map(EnumType.name(_)).map(EnumType.encode(_))
-      raise(VariantError(value, EnumType.name, names)) yet EnumType.value(Prim).vouch
+    enumeration.value(identifiable.decode(value)).or:
+      val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))
+      raise(VariantError(value, enumeration.name, names)) yet enumeration.value(Prim).vouch
 
 trait Decodable:
   inline def decodable: this.type = this
@@ -96,5 +96,5 @@ trait Decodable:
 
   def decoded(value: Format): Self
 
-  def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Decodable in Format =
+  def map[self2](lambda: Self => self2): self2 is Decodable in Format =
     value => lambda(decodable.decoded(value))

@@ -35,7 +35,7 @@ package cellulose
 import anticipation.*
 import vacuous.*
 
-trait CodlRelabelling[+TargetType]:
+trait CodlRelabelling[+target]:
   def relabelling(): Map[Text, Text]
   private lazy val labels: Map[Text, Text] = relabelling()
 

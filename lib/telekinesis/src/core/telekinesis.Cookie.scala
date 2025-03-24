@@ -51,17 +51,17 @@ object Cookie:
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
   // For some reason it seems necessary to use `DummyImplicit` instead of `Void` here
-  def apply[ValueType: {Encodable in Text, Decodable in Text}](using DummyImplicit)
-     [DurationType: GenericDuration]
+  def apply[value: {Encodable in Text, Decodable in Text}](using DummyImplicit)
+     [duration: GenericDuration]
      (name:     Text,
       domain:   Optional[Hostname]     = Unset,
-      expiry:   Optional[DurationType] = Unset,
+      expiry:   Optional[duration] = Unset,
       secure:   Boolean                = false,
       httpOnly: Boolean                = false,
       path:    Optional[Text]         = Unset) =
 
-    new Cookie[ValueType]
-         (name, domain, expiry.let(DurationType.milliseconds(_)), secure, httpOnly, path)
+    new Cookie[value]
+         (name, domain, expiry.let(duration.milliseconds(_)), secure, httpOnly, path)
 
   object Value:
     given Value is Showable = cookie =>
@@ -98,7 +98,7 @@ object Cookie:
       secure:   Boolean        = false,
       httpOnly: Boolean        = false)
 
-case class Cookie[ValueType: {Encodable in Text, Decodable in Text}]
+case class Cookie[value: {Encodable in Text, Decodable in Text}]
    (name:     Text,
     domain:   Optional[Hostname],
     expiry:   Optional[Long],
@@ -106,8 +106,8 @@ case class Cookie[ValueType: {Encodable in Text, Decodable in Text}]
     httpOnly: Boolean,
     path:     Optional[Text]):
 
-  def apply(value: ValueType): Cookie.Value =
+  def apply(value: value): Cookie.Value =
     Cookie.Value(name, value.encode, domain.let(_.show), path, expiry.let(_/1000), secure, httpOnly)
 
-  inline def apply()(using Http.Request): Optional[ValueType] =
+  inline def apply()(using Http.Request): Optional[value] =
     summon[Http.Request].textCookies.at(name).let(_.decode)

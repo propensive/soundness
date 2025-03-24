@@ -263,8 +263,8 @@ object Http:
 
     inline def request: this.type = this
 
-    def on[SchemeType <: "http" | "https"](origin: Origin[SchemeType]): HttpUrl =
-      Url[SchemeType](origin, target)
+    def on[scheme <: "http" | "https"](origin: Origin[scheme]): HttpUrl =
+      Url[scheme](origin, target)
 
     private lazy val queryText: Text = target.s.indexOf('?') match
       case -1    => t""
@@ -310,13 +310,10 @@ object Http:
       def apply(body: Stream[Bytes] = Stream()): Response =
         Response(1.1, status0.or(Ok), headers.to(List), body)
 
-      def apply[BodyType: Servable](body: BodyType): Response =
-        val response = BodyType.serve(body)
+      def apply[servable: Servable](body: servable): Response =
+        val response = servable.serve(body)
         Response
-         (1.1,
-          status0.or(response.status),
-          headers.to(List) ++ response.textHeaders,
-          response.body)
+         (1.1, status0.or(response.status), headers.to(List) ++ response.textHeaders, response.body)
 
     given readable: Tactic[HttpError] => Response is Readable by Bytes = response =>
       val body = response.status.category match
@@ -417,7 +414,7 @@ object Http:
     def successBody: Optional[Stream[Bytes]] =
       body.unless(status.category != Http.Status.Category.Successful)
 
-    def receive[BodyType: Receivable as receivable]: BodyType = receivable.read(this)
+    def receive[body: Receivable as receivable]: body = receivable.read(this)
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
@@ -428,51 +425,51 @@ object Http:
         textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
     @targetName("add")
-    infix def + [ValueType: Encodable in Http.Header](value: ValueType): Response =
-      val header: Http.Header = ValueType.encode(value)
+    infix def + [value: Encodable in Http.Header](value: value): Response =
+      val header: Http.Header = value.encode
       copy(textHeaders = header :: textHeaders)
 
-  case class Submit[TargetType](originForm: Text, target: TargetType, host: Hostname)
+  case class Submit[target](originForm: Text, target: target, host: Hostname)
   extends Dynamic:
-    inline def applyDynamicNamed[PayloadType]
+    inline def applyDynamicNamed[payload]
        (id: "apply")
        (inline headers: (Label, Any)*)
-       (payload: PayloadType)
+       (payload: payload)
        (using online:   Online,
               loggable: HttpEvent is Loggable,
-              postable: PayloadType is Postable,
-              client:   HttpClient onto TargetType)
+              postable: payload is Postable,
+              client:   HttpClient onto target)
     :     Http.Response =
 
       ${
-          Telekinesis.submit[TargetType, PayloadType]
+          Telekinesis.submit[target, payload]
            ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client)  }
 
-    inline def applyDynamic[PayloadType: Postable as postable](id: "apply")(inline headers: Any*)
-       (payload: PayloadType)
+    inline def applyDynamic[payload: Postable as postable](id: "apply")(inline headers: Any*)
+       (payload: payload)
        (using online:   Online,
               loggable: HttpEvent is Loggable,
-              client:   HttpClient onto TargetType)
+              client:   HttpClient onto target)
     :     Http.Response =
 
       ${
-          Telekinesis.submit[TargetType, PayloadType]
+          Telekinesis.submit[target, payload]
            ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client)  }
 
-  case class Fetch[TargetType](originForm: Text, target: TargetType, host: Hostname)
+  case class Fetch[target](originForm: Text, target: target, host: Hostname)
     extends Dynamic:
 
     inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
        (using online:   Online,
               loggable: HttpEvent is Loggable,
               postable: Unit is Postable,
-              client:   HttpClient onto TargetType)
+              client:   HttpClient onto target)
     :     Http.Response =
 
       ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
 
-    inline def applyDynamic[PayloadType](id: "apply")(inline headers: Any*)
-       (using online: Online, loggable: HttpEvent is Loggable, client: HttpClient onto TargetType)
+    inline def applyDynamic[payload](id: "apply")(inline headers: Any*)
+       (using online: Online, loggable: HttpEvent is Loggable, client: HttpClient onto target)
     :     Http.Response =
 
       ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}

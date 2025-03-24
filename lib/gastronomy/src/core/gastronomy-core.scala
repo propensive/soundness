@@ -41,14 +41,14 @@ package hashFunctions:
   given md5: HashFunction in Md5 = Md5.hashFunction
   given sha1: HashFunction in Sha1 = Sha1.hashFunction
 
-  given sha2: [BitsType <: 224 | 256 | 384 | 512: ValueOf] => HashFunction in Sha2[BitsType] =
-    Sha2.hashFunction[BitsType]
+  given sha2: [bits <: 224 | 256 | 384 | 512: ValueOf] => HashFunction in Sha2[bits] =
+    Sha2.hashFunction[bits]
 
-extension [ValueType: Digestible](value: ValueType)
-  def digest[HashType <: Algorithm](using HashFunction in HashType): Digest in HashType =
-    val digester = Digester(ValueType.digest(_, value))
+extension [digestible: Digestible](value: digestible)
+  def digest[hash <: Algorithm](using HashFunction in hash): Digest in hash =
+    val digester = Digester(digestible.digest(_, value))
     digester.apply
 
-extension [SourceType: Readable by Bytes](source: SourceType)
-  def checksum[HashType <: Algorithm](using HashFunction in HashType): Digest in HashType =
-    source.stream[Bytes].digest[HashType]
+extension [source: Readable by Bytes](source: source)
+  def checksum[hash <: Algorithm](using HashFunction in hash): Digest in hash =
+    source.stream[Bytes].digest[hash]

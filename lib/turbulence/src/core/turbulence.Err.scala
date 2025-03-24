@@ -38,11 +38,11 @@ import rudiments.*
 object Err:
   def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.writeErr(bytes)
 
-  def print[TextType: Printable as printable](text: Termcap ?=> TextType)(using stdio: Stdio)
+  def print[textual: Printable as printable](text: Termcap ?=> textual)(using stdio: Stdio)
   :     Unit =
     stdio.printErr(printable.print(text(using stdio.termcap), stdio.termcap))
 
-  def println[TextType: Printable](lines: Termcap ?=> TextType*)(using stdio: Stdio): Unit =
+  def println[textual: Printable](lines: Termcap ?=> textual*)(using stdio: Stdio): Unit =
     lines.map(_(using stdio.termcap)).pipe: lines =>
       stdio.err.synchronized:
         lines.foreach: line =>

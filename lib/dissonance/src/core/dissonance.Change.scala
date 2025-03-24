@@ -36,28 +36,28 @@ import language.experimental.pureFunctions
 
 import vacuous.*
 
-sealed trait Change[+ElemType] extends Product:
-  def map[ElemType2](lambda: ElemType => ElemType2): Change[ElemType2] = this match
+sealed trait Change[+element] extends Product:
+  def map[element2](lambda: element => element2): Change[element2] = this match
     case Sub(left, right, leftValue, rightValue) =>
       Sub(left, right, leftValue.let(lambda), rightValue.let(lambda))
 
-    case edit: Edit[ElemType] =>
+    case edit: Edit[element] =>
       edit.map(lambda)
 
-sealed trait Edit[+ElemType] extends Change[ElemType]:
-  def value: Optional[ElemType]
+sealed trait Edit[+element] extends Change[element]:
+  def value: Optional[element]
 
-  override def map[ElemType2](lambda: ElemType => ElemType2): Edit[ElemType2] = this match
+  override def map[element2](lambda: element => element2): Edit[element2] = this match
     case Par(left, right, value) => Par(left, right, value.let(lambda))
     case Del(left, value)        => Del(left, value.let(lambda))
     case Ins(right, value)       => Ins(right, lambda(value))
 
-case class Del[+ElemType](left: Int, value: Optional[ElemType] = Unset) extends Edit[ElemType]
-case class Ins[+ElemType](right: Int, value: ElemType) extends Edit[ElemType]
+case class Del[+element](left: Int, value: Optional[element] = Unset) extends Edit[element]
+case class Ins[+element](right: Int, value: element) extends Edit[element]
 
-case class Par[+ElemType](left: Int, right: Int, value: Optional[ElemType] = Unset)
-extends Edit[ElemType]
+case class Par[+element](left: Int, right: Int, value: Optional[element] = Unset)
+extends Edit[element]
 
-case class Sub[+ElemType]
-   (left: Int, right: Int, leftValue: Optional[ElemType], rightValue: Optional[ElemType])
-extends Change[ElemType]
+case class Sub[+element]
+   (left: Int, right: Int, leftValue: Optional[element], rightValue: Optional[element])
+extends Change[element]

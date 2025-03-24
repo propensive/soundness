@@ -39,33 +39,33 @@ import spectacular.*
 import vacuous.*
 import wisteria.*, derivationContext.required
 
-trait Tabulable[TextType]:
+trait Tabulable[text]:
   type Self
-  def table(): Table[Self, TextType]
-  private lazy val tableValue: Table[Self, TextType] = table()
-  def tabulate(data: Seq[Self]): Tabulation[TextType] = tableValue.tabulate(data)
+  def table(): Table[Self, text]
+  private lazy val tableValue: Table[Self, text] = table()
+  def tabulate(data: Seq[Self]): Tabulation[text] = tableValue.tabulate(data)
 
-object Tabulable extends ProductDerivation[[RowType] =>> RowType is Tabulable[Text]]:
+object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
 
-  class JoinTabulable[DerivationType <: Product](columns: IArray[Column[DerivationType, Text]])
+  class JoinTabulable[derivation <: Product](columns: IArray[Column[derivation, Text]])
   extends Tabulable[Text]:
-    type Self = DerivationType
-    def table(): Table[DerivationType, Text] = Table[DerivationType](columns*)
+    type Self = derivation
+    def table(): Table[derivation, Text] = Table[derivation](columns*)
 
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Tabulable[Text] =
+  inline def join[derivation <: Product: ProductReflection]: derivation is Tabulable[Text] =
     val labels: Map[Text, Text] = compiletime.summonFrom:
-      case labels: TableRelabelling[DerivationType] => labels.relabelling()
+      case labels: TableRelabelling[derivation] => labels.relabelling()
       case _                                        => Map()
 
-    val columns: IArray[Column[DerivationType, Text]] =
+    val columns: IArray[Column[derivation, Text]] =
       contexts:
-        [FieldType] => tabulable =>
+        [field] => tabulable =>
           tabulable.table().columns.map(_.contramap(dereference).retitle:
             labels.get(label).getOrElse(label.uncamel.join(t" ").capitalize))
 
       . flatten
 
-    new JoinTabulable[DerivationType](columns)
+    new JoinTabulable[derivation](columns)
 
   given Int is Tabulable[Text] = () =>
     Table[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))

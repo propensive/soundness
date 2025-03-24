@@ -89,10 +89,10 @@ package currencies:
 
 export Plutocrat.Money
 
-extension [CurrencyType <: Currency & Singleton: ValueOf](seq: Iterable[Money[CurrencyType]])
-  def total: Money[CurrencyType] =
-    def recur(seq: Iterable[Money[CurrencyType]], total: Money[CurrencyType]): Money[CurrencyType] =
+extension [currency <: Currency & Singleton: ValueOf](seq: Iterable[Money[currency]])
+  def total: Money[currency] =
+    def recur(seq: Iterable[Money[currency]], total: Money[currency]): Money[currency] =
       if seq.isEmpty then total else recur(seq.tail, total + seq.head)
 
-    val currency: CurrencyType = summon[ValueOf[CurrencyType]].value
+    val currency: currency = summon[ValueOf[currency]].value
     recur(seq, currency.zero)

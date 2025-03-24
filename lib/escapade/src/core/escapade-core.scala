@@ -49,8 +49,8 @@ object Conceal
 extension (inline ctx: StringContext)
   transparent inline def e(inline parts: Any*): Teletype = ${Ansi.Interpolator.expand('ctx, 'parts)}
 
-extension [ValueType: Teletypeable](value: ValueType) def teletype: Teletype =
-  ValueType.teletype(value)
+extension [teletypeable: Teletypeable](value: teletypeable) def teletype: Teletype =
+  teletypeable.teletype(value)
 
 package printableTypes:
   given message: Message is Printable = summon[Teletype is Printable].contramap(_.teletype)

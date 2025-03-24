@@ -48,7 +48,7 @@ import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.config.CompilerConfiguration
 
 case class Kotlinc
-   [CompilerType <: KotlinVersions]
+   [compiler <: KotlinVersions]
    (sources: Map[Text, Text], classpath: LocalClasspath, out: Path):
   def apply()(using SystemProperties): List[Diagnostic] raises KotlinError =
     val compiler = K2JVMCompiler()

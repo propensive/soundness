@@ -44,15 +44,15 @@ import dotty.tools.dotc.util as dtdu
 import scala.quoted.*
 
 object Probably:
-  protected def general[TestType: Type, ReportType: Type, ResultType: Type]
-     (test:      Expr[Test[TestType]],
-      predicate: Expr[TestType => Boolean],
-      runner:    Expr[Runner[ReportType]],
-      inc:       Expr[Inclusion[ReportType, Verdict]],
-      inc2:      Expr[Inclusion[ReportType, Verdict.Detail]],
-      action:    Expr[Trial[TestType] => ResultType])
+  protected def general[test: Type, report: Type, result: Type]
+     (test:      Expr[Test[test]],
+      predicate: Expr[test => Boolean],
+      runner:    Expr[Runner[report]],
+      inc:       Expr[Inclusion[report, Verdict]],
+      inc2:      Expr[Inclusion[report, Verdict.Detail]],
+      action:    Expr[Trial[test] => result])
      (using Quotes)
-  :     Expr[ResultType] =
+  :     Expr[result] =
 
     import quotes.reflect.*
 
@@ -70,7 +70,7 @@ object Probably:
     val exp: Option[Expr[Any]] = decompose(predicate)
 
     exp match
-      case Some('{type testType >: TestType; $expr: testType}) =>
+      case Some('{type testType >: test; $expr: testType}) =>
         val decomposable: Expr[testType is Decomposable] =
           Expr.summon[testType is Decomposable].getOrElse('{Decomposable.primitive[testType]})
 
@@ -78,69 +78,69 @@ object Probably:
           halt(m"Can't find a `Contrastable` instance for ${Type.of[testType]}")
 
         '{
-          assertion[testType, TestType, ReportType, ResultType]
+          assertion[testType, test, report, result]
            ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $decomposable)
         }
 
       case _ =>
         '{
-          assertion[TestType, TestType, ReportType, ResultType]
+          assertion[test, test, report, result]
            ($runner,
             $test,
             $predicate,
             $action,
-            Contrastable.nothing[TestType],
+            Contrastable.nothing[test],
             None,
             $inc,
             $inc2,
-            Decomposable.primitive[TestType])
+            Decomposable.primitive[test])
         }
 
-  def check[TestType: Type, ReportType: Type]
-     (test:      Expr[Test[TestType]],
-      predicate: Expr[TestType => Boolean],
-      runner:    Expr[Runner[ReportType]],
-      inc:       Expr[Inclusion[ReportType, Verdict]],
-      inc2:      Expr[Inclusion[ReportType, Verdict.Detail]])
+  def check[test: Type, report: Type]
+     (test:      Expr[Test[test]],
+      predicate: Expr[test => Boolean],
+      runner:    Expr[Runner[report]],
+      inc:       Expr[Inclusion[report, Verdict]],
+      inc2:      Expr[Inclusion[report, Verdict.Detail]])
      (using Quotes)
-  :     Expr[TestType] =
+  :     Expr[test] =
 
-    general[TestType, ReportType, TestType]
-     (test, predicate, runner, inc, inc2, '{ (t: Trial[TestType]) => t.get })
+    general[test, report, test]
+     (test, predicate, runner, inc, inc2, '{ (t: Trial[test]) => t.get })
 
-  def assert[TestType: Type, ReportType: Type]
-     (test:      Expr[Test[TestType]],
-      predicate: Expr[TestType => Boolean],
-      runner:    Expr[Runner[ReportType]],
-      inc:       Expr[Inclusion[ReportType, Verdict]],
-      inc2:      Expr[Inclusion[ReportType, Verdict.Detail]])
-     (using Quotes)
-  :     Expr[Unit] =
-    general[TestType, ReportType, Unit](test, predicate, runner, inc, inc2, '{ _ => () })
-
-  def aspire[TestType: Type, ReportType: Type]
-     (test:   Expr[Test[TestType]],
-      runner: Expr[Runner[ReportType]],
-      inc:    Expr[Inclusion[ReportType, Verdict]],
-      inc2:   Expr[Inclusion[ReportType, Verdict.Detail]])
+  def assert[test: Type, report: Type]
+     (test:      Expr[Test[test]],
+      predicate: Expr[test => Boolean],
+      runner:    Expr[Runner[report]],
+      inc:       Expr[Inclusion[report, Verdict]],
+      inc2:      Expr[Inclusion[report, Verdict.Detail]])
      (using Quotes)
   :     Expr[Unit] =
+    general[test, report, Unit](test, predicate, runner, inc, inc2, '{ _ => () })
 
-    general[TestType, ReportType, Unit](test, '{ _ => true }, runner, inc, inc2, '{ _ => () })
+  def aspire[test: Type, report: Type]
+     (test:   Expr[Test[test]],
+      runner: Expr[Runner[report]],
+      inc:    Expr[Inclusion[report, Verdict]],
+      inc2:   Expr[Inclusion[report, Verdict.Detail]])
+     (using Quotes)
+  :     Expr[Unit] =
+
+    general[test, report, Unit](test, '{ _ => true }, runner, inc, inc2, '{ _ => () })
 
   def succeed: Any => Boolean = (value: Any) => true
 
-  def assertion[TestType, TestType2 <: TestType, ReportType, ResultType]
-     (runner:       Runner[ReportType],
-      test:         Test[TestType2],
-      predicate:    TestType2 => Boolean,
-      result:       Trial[TestType2] => ResultType,
-      contrast:     TestType is Contrastable,
-      exp:          Option[TestType],
-      inc:          Inclusion[ReportType, Verdict],
-      inc2:         Inclusion[ReportType, Verdict.Detail],
-      decomposable: TestType is Decomposable)
-  :     ResultType =
+  def assertion[test, test2 <: test, report, result]
+     (runner:       Runner[report],
+      test:         Test[test2],
+      predicate:    test2 => Boolean,
+      result:       Trial[test2] => result,
+      contrast:     test is Contrastable,
+      exp:          Option[test],
+      inc:          Inclusion[report, Verdict],
+      inc2:         Inclusion[report, Verdict.Detail],
+      decomposable: test is Decomposable)
+  :     result =
 
     runner.run(test).pipe: run =>
       val verdict = run match
@@ -172,8 +172,8 @@ object Probably:
       inc.include(runner.report, test.id, verdict)
       result(run)
 
-  def debug[TestType: Type](expr: Expr[TestType], test: Expr[Harness])(using Quotes)
-  :     Expr[TestType] =
+  def debug[test: Type](expr: Expr[test], test: Expr[Harness])(using Quotes)
+  :     Expr[test] =
     import quotes.reflect.*
 
     val exprName: Text = expr.asTerm.pos match
@@ -183,7 +183,7 @@ object Probably:
       case _ =>
         t"<unknown>"
 
-    val decomposable: Expr[TestType is Decomposable] =
-      Expr.summon[TestType is Decomposable].get
+    val decomposable: Expr[test is Decomposable] =
+      Expr.summon[test is Decomposable].get
 
     '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $decomposable) }

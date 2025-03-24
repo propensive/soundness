@@ -48,20 +48,20 @@ import juc.locks as jucl
 import Completion.*
 
 object Promise:
-  enum State[+ValueType]:
+  enum State[+value]:
     case Incomplete(waiting: Set[Thread])
-    case Complete(value: ValueType)
+    case Complete(value: value)
     case Cancelled
 
-final case class Promise[ValueType]():
+final case class Promise[value]():
   import Promise.State, State.{Incomplete, Complete, Cancelled}
 
-  private val state: juca.AtomicReference[State[ValueType]] =
+  private val state: juca.AtomicReference[State[value]] =
     juca.AtomicReference(Incomplete(Set()))
 
   def cancelled: Boolean = state.get() == Cancelled
 
-  def apply(): Optional[ValueType] = state.get() match
+  def apply(): Optional[value] = state.get() match
      case Complete(value) => value
      case _               => Unset
 
@@ -73,28 +73,28 @@ final case class Promise[ValueType]():
     case Complete(_) => true
     case _           => false
 
-  private def completeIncomplete(supplied: ValueType)(current: State[ValueType] | Null)
-  :     State[ValueType] =
+  private def completeIncomplete(supplied: value)(current: State[value] | Null)
+  :     State[value] =
     current.nn match
       case Incomplete(waiting) => Complete(supplied.nn).also(waiting.each(jucl.LockSupport.unpark))
       case current             => current
 
-  def fulfill(supplied: => ValueType): Unit raises AsyncError =
+  def fulfill(supplied: => value): Unit raises AsyncError =
     state.getAndUpdate(completeIncomplete(supplied)).nn match
       case Cancelled           => raise(AsyncError(AsyncError.Reason.Cancelled))
       case Complete(_)         => raise(AsyncError(AsyncError.Reason.AlreadyComplete))
       case Incomplete(waiting) => ()
 
-  def offer(supplied: => ValueType): Unit = state.updateAndGet(completeIncomplete(supplied))
+  def offer(supplied: => value): Unit = state.updateAndGet(completeIncomplete(supplied))
 
-  private def enqueue(thread: Thread)(current: State[ValueType] | Null): State[ValueType] =
+  private def enqueue(thread: Thread)(current: State[value] | Null): State[value] =
     current.nn match
       case Incomplete(waiting) => Incomplete(waiting + thread)
       case Complete(value)     => Complete(value)
       case _                   => Cancelled
 
   @tailrec
-  def await(): ValueType raises AsyncError =
+  def await(): value raises AsyncError =
     state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
       case Incomplete(_)   => jucl.LockSupport.park(this) yet await()
       case Complete(value) => value
@@ -105,7 +105,7 @@ final case class Promise[ValueType]():
     case Incomplete(_) => jucl.LockSupport.park(this) yet attend()
     case _             => ()
 
-  private def cancelIncomplete(current: State[ValueType] | Null): State[ValueType] = current match
+  private def cancelIncomplete(current: State[value] | Null): State[value] = current match
     case Incomplete(_) => Cancelled
     case current       => current.nn
 
@@ -113,12 +113,12 @@ final case class Promise[ValueType]():
     case Incomplete(waiting) => waiting.each(jucl.LockSupport.unpark)
     case _                   => ()
 
-  def await[DurationType: GenericDuration](duration: DurationType)
-  :     ValueType raises AsyncError =
-    val deadline = System.nanoTime() + DurationType.milliseconds(duration)*1000000L
+  def await[generic: GenericDuration](duration: generic)
+  :     value raises AsyncError =
+    val deadline = System.nanoTime() + generic.milliseconds(duration)*1000000L
 
     @tailrec
-    def recur(): ValueType =
+    def recur(): value =
       if deadline < System.nanoTime then abort(AsyncError(AsyncError.Reason.Timeout))
       else state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
         case Incomplete(_)   => jucl.LockSupport.parkUntil(this, deadline - System.nanoTime())
@@ -128,8 +128,8 @@ final case class Promise[ValueType]():
 
     recur()
 
-  def attend[DurationType: GenericDuration](duration: DurationType): Unit =
-    val deadline = System.nanoTime() + DurationType.milliseconds(duration)*1000000L
+  def attend[generic: GenericDuration](duration: generic): Unit =
+    val deadline = System.nanoTime() + generic.milliseconds(duration)*1000000L
 
     @tailrec
     def recur(): Unit =

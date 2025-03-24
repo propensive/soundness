@@ -43,72 +43,72 @@ import spectacular.*
 import symbolism.*
 
 object Plutocrat:
-  opaque type Money[+CurrencyType <: Currency & Singleton] = Long
+  opaque type Money[+currency <: Currency & Singleton] = Long
 
   object Money:
-    erased given underlying[CurrencyType <: Currency & Singleton]
-    :     Underlying[Money[CurrencyType], Int] =
+    erased given underlying[currency <: Currency & Singleton]
+    :     Underlying[Money[currency], Int] =
       !!
 
     def apply(currency: Currency & Singleton)(wholePart: Long, subunit: Int): Money[currency.type] =
       wholePart*currency.modulus + subunit
 
-    given [CurrencyType <: Currency & Singleton]: Ordering[Money[CurrencyType]] =
+    given [currency <: Currency & Singleton]: Ordering[Money[currency]] =
       Ordering.Long match
-        case ordering: Ordering[Money[CurrencyType]] => ordering
+        case ordering: Ordering[Money[currency]] => ordering
 
-    given [CurrencyType <: Currency & Singleton: ValueOf] => (currencyStyle: CurrencyStyle)
-    =>    Money[CurrencyType] is Showable =
+    given [currency <: Currency & Singleton: ValueOf] => (currencyStyle: CurrencyStyle)
+    =>    Money[currency] is Showable =
 
       money =>
-        val currency = valueOf[CurrencyType]
+        val currency = valueOf[currency]
         val units = (money/currency.modulus).toString.show
         val subunit = (money%currency.modulus).toString.show.pad(2, Rtl, '0')
 
         currencyStyle.format(currency, units, subunit)
 
-    given addable: [CurrencyType <: Currency & Singleton]
-    =>    Money[CurrencyType] is Addable by Money[CurrencyType] into Money[CurrencyType] =
+    given addable: [currency <: Currency & Singleton]
+    =>    Money[currency] is Addable by Money[currency] into Money[currency] =
       _ + _
 
-    given subtractable: [CurrencyType <: Currency & Singleton]
-    =>    Money[CurrencyType] is Subtractable by Money[CurrencyType] into Money[CurrencyType] =
+    given subtractable: [currency <: Currency & Singleton]
+    =>    Money[currency] is Subtractable by Money[currency] into Money[currency] =
       _ - _
 
-    given multiplicable: [CurrencyType <: Currency & Singleton]
-    =>    Money[CurrencyType] is Multiplicable by Double into Money[CurrencyType] =
+    given multiplicable: [currency <: Currency & Singleton]
+    =>    Money[currency] is Multiplicable by Double into Money[currency] =
       (left, right) =>
         val value = left*right
         (value + value.signum/2).toLong
 
-  extension [CurrencyType <: Currency & Singleton: ValueOf](left: Money[CurrencyType])
+  extension [currency <: Currency & Singleton: ValueOf](left: Money[currency])
     @targetName("greaterThan")
-    infix def > (right: Money[CurrencyType]): Boolean = (left: Long) > (right: Long)
+    infix def > (right: Money[currency]): Boolean = (left: Long) > (right: Long)
 
     @targetName("greaterThanOrEqual")
-    infix def >= (right: Money[CurrencyType]): Boolean = (left: Long) >= (right: Long)
+    infix def >= (right: Money[currency]): Boolean = (left: Long) >= (right: Long)
 
     @targetName("lessThan")
-    infix def < (right: Money[CurrencyType]): Boolean = (left: Long) < (right: Long)
+    infix def < (right: Money[currency]): Boolean = (left: Long) < (right: Long)
 
     @targetName("lessThanOrEqual")
-    infix def <= (right: Money[CurrencyType]): Boolean = (left: Long) <= (right: Long)
+    infix def <= (right: Money[currency]): Boolean = (left: Long) <= (right: Long)
 
     @targetName("divide")
-    infix def / (right: Double): Money[CurrencyType] =
+    infix def / (right: Double): Money[currency] =
       val value = left/right
       (value + value.signum/2).toLong
 
     @targetName("divide2")
-    infix def / (right: Money[CurrencyType]): Double = left.toDouble/right.toDouble
+    infix def / (right: Money[currency]): Double = left.toDouble/right.toDouble
 
     @targetName("negate")
-    def `unary_-`: Money[CurrencyType] = -left
-    def tax(rate: Double): Price[CurrencyType] = Price(left, (left*rate + 0.5).toLong)
+    def `unary_-`: Money[currency] = -left
+    def tax(rate: Double): Price[currency] = Price(left, (left*rate + 0.5).toLong)
 
     @tailrec
-    def split(right: Int, result: List[Money[CurrencyType]] = Nil): List[Money[CurrencyType]] =
+    def split(right: Int, result: List[Money[currency]] = Nil): List[Money[currency]] =
       if right == 1 then left :: result else
-        val share: Money[CurrencyType] = left/right
-        val remainder: Money[CurrencyType] = (left - share)
+        val share: Money[currency] = left/right
+        val remainder: Money[currency] = (left - share)
         remainder.split(right - 1, share :: result)

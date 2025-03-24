@@ -40,7 +40,7 @@ import turbulence.*
 
 trait Executive:
   type Return
-  type CliType <: Cli
+  type Interface <: Cli
 
   def invocation
      (fullArguments:    Iterable[Text],
@@ -49,6 +49,6 @@ trait Executive:
       stdio:            Stdio,
       signals:          Spool[Signal])
      (using interpreter: CliInterpreter)
-  :     CliType
+  :     Interface
 
-  def process(cli: CliType)(result: CliType ?=> Return): Exit
+  def process(cli: Interface)(result: Interface ?=> Return): Exit

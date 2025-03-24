@@ -34,12 +34,12 @@ package wisteria
 
 import scala.deriving.*
 
-type Reflection[DerivationType] = Mirror.Of[DerivationType]
-type ProductReflection[DerivationType <: Product] = Mirror.ProductOf[DerivationType]
-type SumReflection[DerivationType] = Mirror.SumOf[DerivationType]
+type Reflection[derivation] = Mirror.Of[derivation]
+type ProductReflection[derivation <: Product] = Mirror.ProductOf[derivation]
+type SumReflection[derivation] = Mirror.SumOf[derivation]
 
-type Derivable[DerivationType <: { type Self }] =
-  Derivation[[SelfType] =>> DerivationType { type Self = SelfType }]
+type Derivable[derivation <: { type Self }] =
+  Derivation[[self] =>> derivation { type Self = self }]
 
-type ProductDerivable[DerivationType <: { type Self }] =
-  ProductDerivation[[SelfType] =>> DerivationType { type Self = SelfType }]
+type ProductDerivable[derivation <: { type Self }] =
+  ProductDerivation[[self] =>> derivation { type Self = self }]

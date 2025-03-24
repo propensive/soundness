@@ -39,15 +39,15 @@ import scala.quoted.*
 import anticipation.*
 import vacuous.*
 
-trait Verifier[ResultType]
-extends Interpolator[Nothing, Optional[ResultType], ResultType]:
-  def verify(text: Text): ResultType
-  protected def initial: Optional[ResultType] = Unset
-  protected def parse(state: Optional[ResultType], next: Text): Optional[ResultType] = verify(next)
-  protected def skip(state: Optional[ResultType]): Optional[ResultType] = state
-  protected def insert(state: Optional[ResultType], value: Nothing): Optional[ResultType] = state
-  protected def complete(value: Optional[ResultType]): ResultType = value.option.get
+trait Verifier[result]
+extends Interpolator[Nothing, Optional[result], result]:
+  def verify(text: Text): result
+  protected def initial: Optional[result] = Unset
+  protected def parse(state: Optional[result], next: Text): Optional[result] = verify(next)
+  protected def skip(state: Optional[result]): Optional[result] = state
+  protected def insert(state: Optional[result], value: Nothing): Optional[result] = state
+  protected def complete(value: Optional[result]): result = value.option.get
 
-  def expand(context: Expr[StringContext])(using Quotes, Type[ResultType])
+  def expand(context: Expr[StringContext])(using Quotes, Type[result])
      (using thisType: Type[this.type])
-  :     Expr[ResultType] = expand(context, '{Nil})(using thisType)
+  :     Expr[result] = expand(context, '{Nil})(using thisType)

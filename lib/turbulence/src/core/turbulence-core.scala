@@ -47,24 +47,23 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-extension [ValueType](value: ValueType)
-  def stream[ElementType](using readable: ValueType is Readable by ElementType)
-  :     Stream[ElementType] =
+extension [value](value: value)
+  def stream[element](using readable: value is Readable by element)
+  :     Stream[element] =
     readable.stream(value)
 
-  inline def read[ResultType]: ResultType =
+  inline def read[result]: result =
     compiletime.summonFrom:
-      case aggregable: (ResultType is Aggregable by Bytes) =>
-        compiletime.summonInline[ValueType is Readable by Bytes].give:
+      case aggregable: (`result` is Aggregable by Bytes) =>
+        compiletime.summonInline[value is Readable by Bytes].give:
           aggregable.aggregate(value.stream[Bytes])
 
-      case aggregable: (ResultType is Aggregable by Text) =>
-        compiletime.summonInline[ValueType is Readable by Text].give:
+      case aggregable: (`result` is Aggregable by Text) =>
+        compiletime.summonInline[value is Readable by Text].give:
           aggregable.aggregate(value.stream[Text])
 
-  def writeTo[TargetType](target: TargetType)[ElementType]
-     (using readable: ValueType is Readable by ElementType,
-            writable: TargetType is Writable by ElementType)
+  def writeTo[target](target: target)[element]
+     (using readable: value is Readable by element, writable: target is Writable by element)
   :     Unit =
 
     writable.write(target, readable.stream(value))
@@ -94,55 +93,54 @@ package stdioSources:
 
       Stdio(stdout, stderr, stdin, termcapDefinitions.xterm256)
 
-extension [ElementType](stream: Stream[ElementType])
-  def deduplicate: Stream[ElementType] =
-    def recur(last: ElementType, stream: Stream[ElementType]): Stream[ElementType] =
+extension [element](stream: Stream[element])
+  def deduplicate: Stream[element] =
+    def recur(last: element, stream: Stream[element]): Stream[element] =
       stream.flow(Stream()):
         if last == head then recur(last, tail) else head #:: recur(head, tail)
 
     stream.flow(Stream())(head #:: recur(head, tail))
 
-  inline def flow[ResultType](inline termination: => ResultType)
-     (inline proceed: (head: ElementType, tail: Stream[ElementType]) ?=> ResultType)
-  :     ResultType =
+  inline def flow[result](inline termination: => result)
+     (inline proceed: (head: element, tail: Stream[element]) ?=> result)
+  :     result =
     stream match
       case head #:: tail => proceed(using head, tail)
       case _             => termination
 
-  def strict: Stream[ElementType] = stream.length yet stream
+  def strict: Stream[element] = stream.length yet stream
 
-  def rate[DurationType: GenericDuration: SpecificDuration](duration: DurationType)
-     (using Monitor, Tactic[AsyncError])
-  :     Stream[ElementType] =
+  def rate[generic: {GenericDuration, SpecificDuration}](duration: generic)(using Monitor)
+  :     Stream[element] raises AsyncError =
 
-    def recur(stream: Stream[ElementType], last: Long): Stream[ElementType] =
+    def recur(stream: Stream[element], last: Long): Stream[element] =
       stream.flow(Stream()):
         val duration2 =
-          SpecificDuration(DurationType.milliseconds(duration) - (System.currentTimeMillis - last))
+          SpecificDuration(generic.milliseconds(duration) - (System.currentTimeMillis - last))
 
-        if DurationType.milliseconds(duration2) > 0 then snooze(duration2)
+        if generic.milliseconds(duration2) > 0 then snooze(duration2)
         stream
 
     async(recur(stream, System.currentTimeMillis)).await()
 
-  def multiplexWith(that: Stream[ElementType])(using Monitor): Stream[ElementType] =
+  def multiplexWith(that: Stream[element])(using Monitor): Stream[element] =
     unsafely(Stream.multiplex(stream, that))
 
-  def regulate(tap: Tap)(using Monitor): Stream[ElementType] =
+  def regulate(tap: Tap)(using Monitor): Stream[element] =
     def defer
        (active: Boolean,
-        stream: Stream[Some[ElementType] | Tap.Regulation],
-        buffer: List[ElementType])
-    :     Stream[ElementType] =
+        stream: Stream[Some[element] | Tap.Regulation],
+        buffer: List[element])
+    :     Stream[element] =
 
       recur(active, stream, buffer)
 
     @tailrec
     def recur
        (active: Boolean,
-        stream: Stream[Some[ElementType] | Tap.Regulation],
-        buffer: List[ElementType])
-    :     Stream[ElementType] =
+        stream: Stream[Some[element] | Tap.Regulation],
+        buffer: List[element])
+    :     Stream[element] =
 
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.isEmpty then Stream()
@@ -159,14 +157,14 @@ extension [ElementType](stream: Stream[ElementType])
 
     Stream.defer(recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil))
 
-  def cluster[DurationType: GenericDuration](duration: DurationType, maxSize: Optional[Int] = Unset)
+  def cluster[duration: GenericDuration](duration: duration, maxSize: Optional[Int] = Unset)
      (using Monitor)
-  :     Stream[List[ElementType]] =
+  :     Stream[List[element]] =
 
     val Limit = maxSize.or(Int.MaxValue)
 
-    def recur(stream: Stream[ElementType], list: List[ElementType], count: Int)
-    :     Stream[List[ElementType]] =
+    def recur(stream: Stream[element], list: List[element], count: Int)
+    :     Stream[List[element]] =
 
       count match
         case 0 => safely(async(stream.isEmpty).await()) match
@@ -184,10 +182,10 @@ extension [ElementType](stream: Stream[ElementType])
 
     Stream.defer(recur(stream, Nil, 0))
 
-  def parallelMap[ElementType2](lambda: ElementType => ElementType2)(using Monitor)
-  :     Stream[ElementType2] =
+  def parallelMap[element2](lambda: element => element2)(using Monitor)
+  :     Stream[element2] =
 
-    val out: Spool[ElementType2] = Spool()
+    val out: Spool[element2] = Spool()
 
     async:
       stream.map: elem =>
@@ -213,27 +211,27 @@ package lineSeparation:
     case _: String => adaptiveLinefeed
 
 extension (obj: Stream.type)
-  def multiplex[ElemType](streams: Stream[ElemType]*)(using Monitor)
-  :     Stream[ElemType] =
+  def multiplex[element](streams: Stream[element]*)(using Monitor)
+  :     Stream[element] =
 
     multiplexer(streams*).stream
 
-  def multiplexer[ElemType](streams: Stream[ElemType]*)(using Monitor)
-  :     Multiplexer[Any, ElemType] =
+  def multiplexer[element](streams: Stream[element]*)(using Monitor)
+  :     Multiplexer[Any, element] =
 
-    val multiplexer = Multiplexer[Any, ElemType]()
+    val multiplexer = Multiplexer[Any, element]()
     streams.zipWithIndex.map(_.swap).each(multiplexer.add)
     multiplexer
 
-  def defer[ElemType](stream: => Stream[ElemType]): Stream[ElemType] =
-    (null.asInstanceOf[ElemType] #:: stream).tail
+  def defer[element](stream: => Stream[element]): Stream[element] =
+    (null.asInstanceOf[element] #:: stream).tail
 
-  def pulsar[DurationType: GenericDuration](duration: DurationType)(using Monitor): Stream[Unit] =
+  def pulsar[generic: GenericDuration](duration: generic)(using Monitor): Stream[Unit] =
     val startTime: Long = System.currentTimeMillis
 
     def recur(iteration: Int): Stream[Unit] =
       try
-        snooze(startTime + DurationType.milliseconds(duration)*iteration)
+        snooze(startTime + generic.milliseconds(duration)*iteration)
         () #:: pulsar(duration)
       catch case err: AsyncError => Stream()
 
@@ -271,11 +269,11 @@ extension (stream: Stream[Bytes])
 
     recur(stream, memory)
 
-  def compress[CompressionType <: CompressionAlgorithm: Compression]: Stream[Bytes] =
-    summon[Compression].compress(stream)
+  def compress[compression <: CompressionAlgorithm: Compression]: Stream[Bytes] =
+    compression.compress(stream)
 
-  def decompress[CompressionType <: CompressionAlgorithm: Compression]: Stream[Bytes] =
-    summon[Compression].decompress(stream)
+  def decompress[compression <: CompressionAlgorithm: Compression]: Stream[Bytes] =
+    compression.decompress(stream)
 
   def shred(mean: Double, variance: Double)(using Random): Stream[Bytes] =
     given gamma: Distribution = Gamma.approximate(mean, variance)
@@ -370,7 +368,6 @@ extension (stream: Stream[Bytes])
           offset += count
           count
 
-def spool[ItemType](using erased Void)[ResultType](lambda: Spool[ItemType] => ResultType)
-:     ResultType =
-  val spool: Spool[ItemType] = Spool()
+def spool[item](using erased Void)[result](lambda: Spool[item] => result): result =
+  val spool: Spool[item] = Spool()
   try lambda(spool) finally spool.stop()

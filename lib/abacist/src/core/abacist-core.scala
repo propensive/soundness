@@ -41,6 +41,6 @@ export Abacist2.Count
 type TimeMinutes = (Hours[1], Minutes[1])
 type TimeSeconds = (Hours[1], Minutes[1], Seconds[1])
 
-extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
-  inline def count[CountType <: Tuple]: Count[CountType] =
-    ${Abacist.fromQuantity[UnitsType, CountType]('quantity)}
+extension [units <: Measure](inline quantity: Quantity[units])
+  inline def count[count <: Tuple]: Count[count] =
+    ${Abacist.fromQuantity[units, count]('quantity)}

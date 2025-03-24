@@ -39,11 +39,11 @@ import rudiments.*
 import vacuous.*
 
 object Aes:
-  given [BitsType <: 128 | 192 | 256: ValueOf] => Aes[BitsType] = Aes()
+  given [bits <: 128 | 192 | 256: ValueOf] => Aes[bits] = Aes()
 
-class Aes[BitsType <: 128 | 192 | 256: ValueOf]() extends Cipher, Encryption, Symmetric:
-  type Size = BitsType
-  def keySize: BitsType = valueOf[BitsType]
+class Aes[bits <: 128 | 192 | 256: ValueOf]() extends Cipher, Encryption, Symmetric:
+  type Size = bits
+  def keySize: bits = valueOf[bits]
 
   private def init() = jc.Cipher.getInstance("AES/ECB/PKCS5Padding")
   private def makeKey(key: Bytes): SecretKeySpec = SecretKeySpec(key.mutable(using Unsafe), "AES")

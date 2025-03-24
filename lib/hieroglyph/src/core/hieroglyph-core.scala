@@ -101,5 +101,4 @@ extension (char: Char)
   def lower: Char = char.toLower
   def upper: Char = char.toUpper
 
-extension [ElementType: Measurable](element: ElementType)
-  def metrics: Int = ElementType.width(element)
+extension [measurable: Measurable](element: measurable) def metrics: Int = measurable.width(element)

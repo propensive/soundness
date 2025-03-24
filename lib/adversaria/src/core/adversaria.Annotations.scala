@@ -38,24 +38,24 @@ import scala.quoted.*
 
 import language.experimental.captureChecking
 
-case class Annotations[AnnotationType <: StaticAnnotation, TargetType](annotations: AnnotationType*)
+case class Annotations[annotation <: StaticAnnotation, target](annotations: annotation*)
 
 object Annotations:
-  inline given[AnnotationType <: StaticAnnotation, TargetType]
-  :     Annotations[AnnotationType, TargetType] =
+  inline given[annotation <: StaticAnnotation, target]
+  :     Annotations[annotation, target] =
 
-    ${Adversaria.typeAnnotations[AnnotationType, TargetType]}
+    ${Adversaria.typeAnnotations[annotation, target]}
 
-  transparent inline def field[TargetType](inline lambda: TargetType => Any)
+  transparent inline def field[target](inline lambda: target => Any)
   :     List[StaticAnnotation] =
-    ${Adversaria.fieldAnnotations[TargetType]('lambda)}
+    ${Adversaria.fieldAnnotations[target]('lambda)}
 
-  transparent inline def fields[TargetType <: Product, AnnotationType <: StaticAnnotation]
-  :     List[CaseField[TargetType, AnnotationType]] =
+  transparent inline def fields[target <: Product, annotation <: StaticAnnotation]
+  :     List[CaseField[target, annotation]] =
 
-    ${Adversaria.fields[TargetType, AnnotationType]}
+    ${Adversaria.fields[target, annotation]}
 
-  transparent inline def firstField[TargetType <: Product, AnnotationType <: StaticAnnotation]
-  :     CaseField[TargetType, AnnotationType] =
+  transparent inline def firstField[target <: Product, annotation <: StaticAnnotation]
+  :     CaseField[target, annotation] =
 
-    ${Adversaria.firstField[TargetType, AnnotationType]}
+    ${Adversaria.firstField[target, annotation]}

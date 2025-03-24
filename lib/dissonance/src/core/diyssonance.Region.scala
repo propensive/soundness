@@ -34,6 +34,6 @@ package dissonance
 
 import language.experimental.captureChecking
 
-enum Region[ElemType]:
-  case Changed(deletions: List[Del[ElemType]], insertions: List[Ins[ElemType]])
-  case Unchanged(retentions: List[Par[ElemType]])
+enum Region[element]:
+  case Changed(deletions: List[Del[element]], insertions: List[Ins[element]])
+  case Unchanged(retentions: List[Par[element]])

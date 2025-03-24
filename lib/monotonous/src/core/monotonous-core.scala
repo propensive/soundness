@@ -146,15 +146,15 @@ package alphabets:
       Alphabet(Text(IArray.tabulate(256) { byte => (byte + '\u2800').toChar }), false)
 
 extension (value: Text)
-  def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType)
+  def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme)
   :     Bytes =
     deserializable.deserialize(value)
 
 extension (stream: Stream[Text])
-  def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType)
+  def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme)
   :     Stream[Bytes] =
     deserializable.deserialize(stream)
 
-extension [ValueType: Encodable in Bytes](value: ValueType)
-  def serialize[SchemeType <: Serialization](using encodable: Serializable in SchemeType): Text =
+extension [value: Encodable in Bytes](value: value)
+  def serialize[scheme <: Serialization](using encodable: Serializable in scheme): Text =
     encodable.encode(value.bytestream)

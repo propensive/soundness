@@ -46,20 +46,17 @@ import vacuous.*
 erased trait Codl
 
 object Codl:
-  def read
-     [ValueType: CodlDecoder]
-     (source: Any)
-     (using readable:  source.type is Readable by Text)
-  :     ValueType raises CodlError raises CodlReadError =
+  def read[value: CodlDecoder](source: Any)(using readable: source.type is Readable by Text)
+  :     value raises CodlError raises CodlReadError =
 
-    summon[CodlDecoder[ValueType]].schema.parse(readable.stream(source)).as[ValueType]
+    summon[CodlDecoder[value]].schema.parse(readable.stream(source)).as[value]
 
-  def parse[SourceType]
-     (source:    SourceType,
+  def parse[source]
+     (source:    source,
       schema:    CodlSchema = CodlSchema.Free,
       subs:      List[Data] = Nil,
       fromStart: Boolean    = false)
-     (using readable: SourceType is Readable by Text, aggregate: Tactic[CodlError])
+     (using readable: source is Readable by Text, aggregate: Tactic[CodlError])
   :     CodlDoc =
 
     val (margin, stream) = tokenize(readable.stream(source), fromStart)(using aggregate.diagnostics)

@@ -32,6 +32,7 @@
                                                                                                   */
 package mosquito
 
+import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import larceny.*

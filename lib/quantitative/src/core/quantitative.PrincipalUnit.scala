@@ -36,7 +36,7 @@ import language.experimental.captureChecking
 
 import proscenium.*
 
-trait PrincipalUnit[DimensionType <: Dimension, UnitType[_ <: Nat] <: Measure]()
+trait PrincipalUnit[dimension <: Dimension, unit[_ <: Nat] <: Measure]()
 
 object PrincipalUnit:
   given distance: PrincipalUnit[Distance, Metres]()

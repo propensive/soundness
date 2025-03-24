@@ -81,11 +81,11 @@ package daemonConfig:
   given doNotSupportStderr: StderrSupport = () => false
   given supportStderr: StderrSupport = () => true
 
-def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] =
+def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] =
   service
 
-def cli[BusType <: Matchable](using executive: Executive)
-   (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
+def cli[bus <: Matchable](using executive: Executive)
+   (block: DaemonService[bus] ?=> executive.Interface ?=> executive.Return)
    (using interpreter:   CliInterpreter,
           stderrSupport: StderrSupport = daemonConfig.supportStderr,
           model:         ThreadModel,
@@ -142,10 +142,10 @@ def cli[BusType <: Matchable](using executive: Executive)
   val baseDir: Path on Linux = runtimeDir.or(stateHome) / Name(name)
   val portFile: Path on Linux = baseDir / n"port"
   val pidFile: Path on Linux = baseDir / n"pid"
-  val clients: scc.TrieMap[Pid, ClientConnection[BusType]] = scc.TrieMap()
+  val clients: scc.TrieMap[Pid, ClientConnection[bus]] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
 
-  def client(pid: Pid): ClientConnection[BusType] =
+  def client(pid: Pid): ClientConnection[bus] =
     clients.getOrElseUpdate(pid, ClientConnection(pid))
 
   lazy val termination: Unit =
@@ -259,12 +259,12 @@ def cli[BusType <: Matchable](using executive: Executive)
             Stdio
              (ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
 
-          def deliver(sourcePid: Pid, message: BusType): Unit =
+          def deliver(sourcePid: Pid, message: bus): Unit =
             clients.each: (pid, client) =>
               if sourcePid != pid then client.receive(message)
 
-          val service: DaemonService[BusType] =
-            DaemonService[BusType]
+          val service: DaemonService[bus] =
+            DaemonService[bus]
              (pid,
               () => shutdown(pid),
               shellInput,
@@ -276,7 +276,7 @@ def cli[BusType <: Matchable](using executive: Executive)
           Log.fine(DaemonLogEvent.NewCli)
 
           try
-            val cli: executive.CliType =
+            val cli: executive.Interface =
               executive.invocation
                (textArguments, environment, () => directory, stdio, connection.signals)
 

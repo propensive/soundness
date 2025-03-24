@@ -34,16 +34,16 @@ package prepositional
 
 object Prepositional
 
-infix type across [Type <: { type Domain }, DomainType] = Type { type Domain = DomainType }
-infix type by [Type <: { type Operand }, OperandType] = Type { type Operand = OperandType }
-infix type from [Type <: { type Source }, SourceType] = Type { type Source = SourceType }
-infix type in [Type, FormatType] = Type { type Format = FormatType }
-infix type into [Type <: { type Result }, ResultType] = Type { type Result = ResultType }
-infix type of [Type <: { type Subject }, SubjectType] = Type { type Subject = SubjectType }
-infix type on [Type <: { type Platform }, PlatformType] = Type { type Platform = PlatformType }
-infix type onto [Type <: { type Target }, TargetType] = Type { type Target = TargetType }
-infix type over [Type <: { type Carrier }, CarrierType] = Type { type Carrier = CarrierType }
-infix type against [Type <: { type Contrast }, ContrastType] = Type { type Contrast = ContrastType }
+infix type across [refined <: { type Domain }, domain] = refined { type Domain = domain }
+infix type by [refined <: { type Operand }, operand] = refined { type Operand = operand }
+infix type from [refined <: { type Source }, source] = refined { type Source = source }
+infix type in [refined, format] = refined { type Format = format }
+infix type into [refined <: { type Result }, result] = refined { type Result = result }
+infix type of [refined <: { type Subject }, subject] = refined { type Subject = subject }
+infix type on [refined <: { type Platform }, platform] = refined { type Platform = platform }
+infix type onto [refined <: { type Target }, target] = refined { type Target = target }
+infix type over [refined <: { type Carrier }, carrier] = refined { type Carrier = carrier }
+infix type against [refined <: { type Contrast }, contrast] = refined { type Contrast = contrast }
 
-infix type under [Type <: { type Constraint }, ConstraintType] =
-  Type { type Constraint = ConstraintType }
+infix type under [refined <: { type Constraint }, constraint] =
+  refined { type Constraint = constraint }

@@ -39,4 +39,4 @@ import proscenium.*
 
 object MustContain extends Rule({ text => m"must contain $text" }, _.contains(_))
 
-erased trait MustContain[TextType <: Label] extends Check[TextType]
+erased trait MustContain[text <: Label] extends Check[text]

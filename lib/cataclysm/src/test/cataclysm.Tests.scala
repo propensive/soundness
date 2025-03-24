@@ -32,6 +32,7 @@
                                                                                                   */
 package cataclysm
 
+import fulminate.*
 import gossamer.*
 import probably.*
 

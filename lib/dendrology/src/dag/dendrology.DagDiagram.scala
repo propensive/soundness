@@ -44,9 +44,9 @@ import spectacular.*
 import DagTile.*
 
 object DagDiagram:
-  def apply[NodeType: ClassTag](dag: Dag[NodeType]): DagDiagram[NodeType] =
+  def apply[node: ClassTag](dag: Dag[node]): DagDiagram[node] =
     val nodes = Array.from(dag.sorted)
-    val indexes: Map[NodeType, Int] = nodes.zipWithIndex.to(Map)
+    val indexes: Map[node, Int] = nodes.zipWithIndex.to(Map)
 
     val layout: Array[Array[Int]] = Array.from:
       nodes.indices.map: i =>
@@ -67,14 +67,13 @@ object DagDiagram:
         val tiles = row.to(List).map(DagTile.fromOrdinal)
         (tiles, nodes(row.length))
 
-  given [NodeType: Showable] => (style: DagStyle[Text]) => DagDiagram[NodeType] is Printable =
+  given [node: Showable] => (style: DagStyle[Text]) => DagDiagram[node] is Printable =
     (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
-case class DagDiagram[NodeType](lines: List[(List[DagTile], NodeType)]):
+case class DagDiagram[node](lines: List[(List[DagTile], node)]):
   val size: Int = lines.length
-  def render[LineType](line: NodeType => LineType)(using style: DagStyle[LineType])
-  :     List[LineType] =
+  def render[line](line: node => line)(using style: DagStyle[line]): List[line] =
     lines.map { (tiles, node) => style.serialize(tiles, line(node)) }
 
-  def nodes: List[NodeType] = lines.map(_(1))
+  def nodes: List[node] = lines.map(_(1))
   def tiles: List[List[DagTile]] = lines.map(_(0))

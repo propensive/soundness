@@ -36,4 +36,4 @@ import anticipation.*
 
 import IpAddressError.Reason, Reason.*
 
-case class Endpoint[+PortType](remote: Text, port: PortType)
+case class Endpoint[+port](remote: Text, port: port)

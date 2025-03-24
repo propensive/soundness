@@ -53,7 +53,7 @@ case class Dsv
     format:  Optional[DsvFormat]    = Unset,
     columns: Optional[IArray[Text]] = Unset):
 
-  def as[ValueType: DsvDecodable]: Stream[ValueType] tracks CellRef = rows.map(_.as[ValueType])
+  def as[value: DsvDecodable]: Stream[value] tracks CellRef = rows.map(_.as[value])
 
   override def hashCode: Int =
     (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
@@ -88,7 +88,7 @@ object Dsv:
           Column[Row, Text, Text](name, sizing = columnar.Collapsible(0.5))
            (_[Text](name).or(t"")))*)
 
-  def parse[SourceType: Readable by Text](source: SourceType)(using format: DsvFormat)
+  def parse[source: Readable by Text](source: source)(using format: DsvFormat)
   :     Dsv raises DsvError =
     val rows = recur(source.stream[Text])
     if format.header then Dsv(rows, format, rows.prim.let(_.header)) else Dsv(rows, format)

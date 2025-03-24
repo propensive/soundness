@@ -116,8 +116,7 @@ extension (json: JsonAst)
     if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
     else expected(JsonPrimitive.Number) yet 0L
 
-extension [ValueType: Encodable in Json](value: ValueType)
-  def json: Json = ValueType.encode(value)
+extension [encodable: Encodable in Json](value: encodable) def json: Json = encodable.encode(value)
 
 package jsonPrinters:
   given indented: JsonPrinter = JsonPrinter.print(_, true)

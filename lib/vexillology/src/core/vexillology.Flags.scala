@@ -37,22 +37,22 @@ import java.lang as jl
 import distillate.*
 
 object Vexillology:
-  opaque type Flags[EnumType] = Long
+  opaque type Flags[enumeration] = Long
 
   object Flags:
-    def apply[EnumType](): Flags[EnumType] = 0L
+    def apply[enumeration](): Flags[enumeration] = 0L
 
-  extension [EnumType: Enumerable](flags: Flags[EnumType])
-    def apply(value: EnumType & Singleton): Boolean =
-      (flags & (1L << EnumType.index(value))) > 0
+  extension [enumeration: Enumerable](flags: Flags[enumeration])
+    def apply(value: enumeration & Singleton): Boolean =
+      (flags & (1L << enumeration.index(value))) > 0
 
-    def update(value: EnumType & Singleton, enabled: Boolean): Flags[EnumType] =
-      if enabled then flags | (1L << EnumType.index(value))
-      else flags & ~(1L << EnumType.index(value))
+    def update(value: enumeration & Singleton, enabled: Boolean): Flags[enumeration] =
+      if enabled then flags | (1L << enumeration.index(value))
+      else flags & ~(1L << enumeration.index(value))
 
-    def set(using enumerable: EnumType is Enumerable): Set[EnumType] =
+    def set(using enumerable: enumeration is Enumerable): Set[enumeration] =
       var value: Long = flags
-      var set: Set[EnumType] = Set()
+      var set: Set[enumeration] = Set()
 
       while (value != 0) do
         val position = jl.Long.numberOfTrailingZeros(value)

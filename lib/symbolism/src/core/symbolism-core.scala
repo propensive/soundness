@@ -34,8 +34,8 @@ package symbolism
 
 import language.experimental.captureChecking
 
-extension [ValueType: Rootable[2] as rootable](value: ValueType)
+extension [value: Rootable[2] as rootable](value: value)
   def sqrt: rootable.Result = rootable.root(value)
 
-extension [ValueType: Rootable[3] as rootable](value: ValueType)
+extension [value: Rootable[3] as rootable](value: value)
   def cbrt: rootable.Result = rootable.root(value)

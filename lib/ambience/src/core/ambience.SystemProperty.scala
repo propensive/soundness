@@ -45,38 +45,38 @@ import prepositional.*
 import proscenium.*
 import vacuous.*
 
-trait SystemProperty[NameType <: String, PropertyType]:
-  def read(value: Text): PropertyType
+trait SystemProperty[name <: String, property]:
+  def read(value: Text): property
 
 object SystemProperty:
-  given generic: [UnknownType <: String & Singleton] => (erased Void)
-  =>    SystemProperty[UnknownType, Text] =
+  given generic: [unknown <: String & Singleton] => (erased Void)
+  =>    SystemProperty[unknown, Text] =
     identity(_)
 
-  given javaHome: [PathType: Instantiable across Paths from Text]
-  =>    SystemProperty["java.home", PathType] =
-    PathType(_)
+  given javaHome: [path: Instantiable across Paths from Text]
+  =>    SystemProperty["java.home", path] =
+    path(_)
 
-  given javaLibraryPath[PathType: Instantiable across Paths from Text]
+  given javaLibraryPath[path: Instantiable across Paths from Text]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-  :     SystemProperty["java.library.path", List[PathType]] =
+  :     SystemProperty["java.library.path", List[path]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 
-  given javaClassPath[PathType: Instantiable across Paths from Text]
+  given javaClassPath[path: Instantiable across Paths from Text]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-  :     SystemProperty["java.class.path", List[PathType]] =
+  :     SystemProperty["java.class.path", List[path]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 
   given javaVersion: SystemProperty["java.version", Text] = identity(_)
   given javaRuntimeVersion: SystemProperty["java.runtime.version", Text] = identity(_)
 
-  given javaExtDirs[PathType: Instantiable across Paths from Text]
+  given javaExtDirs[path: Instantiable across Paths from Text]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-  :     SystemProperty["java.ext.dirs", List[PathType]] =
+  :     SystemProperty["java.ext.dirs", List[path]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 
   given fileSeparator: SystemProperty["file.separator", Char] = _.decode[Char]
   given pathSeparator: SystemProperty["path.separator", Char] = _.decode[Char]
@@ -84,20 +84,20 @@ object SystemProperty:
 
   given userName: SystemProperty["user.name", Text] = identity(_)
 
-  given userHome: [PathType: Instantiable across Paths from Text]
-  =>    SystemProperty["user.home", PathType] =
-    PathType(_)
+  given userHome: [path: Instantiable across Paths from Text]
+  =>    SystemProperty["user.home", path] =
+    path(_)
 
-  given userDir: [PathType: Instantiable across Paths from Text]
-  =>    SystemProperty["user.dir", PathType] =
-    PathType(_)
+  given userDir: [path: Instantiable across Paths from Text]
+  =>    SystemProperty["user.dir", path] =
+    path(_)
 
   given osName: SystemProperty["os.name", Text] = identity(_)
   given osVersion: SystemProperty["os.version", Text] = identity(_)
   given osArch: SystemProperty["os.arch", Text] = identity(_)
 
-  given decoder: [UnknownType <: String & Singleton, PropertyType]
-  =>   (decoder: PropertyType is Decodable in Text)
-  =>    SystemProperty[UnknownType, PropertyType] =
+  given decoder: [unknown <: Label, property]
+  =>   (decoder: property is Decodable in Text)
+  =>    SystemProperty[unknown, property] =
 
     decoder.decoded(_)

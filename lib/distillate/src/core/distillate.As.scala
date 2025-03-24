@@ -37,7 +37,6 @@ import language.experimental.captureChecking
 import prepositional.*
 
 object As:
-  def unapply[MatchType](scrutinee: Any)
-     (using extractable: scrutinee.type is Extractable into MatchType)
-  :       Option[MatchType] =
+  def unapply[result](scrutinee: Any)(using extractable: scrutinee.type is Extractable into result)
+  :       Option[result] =
     extractable.unapply(scrutinee)

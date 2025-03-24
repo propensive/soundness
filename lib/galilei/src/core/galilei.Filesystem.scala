@@ -51,7 +51,7 @@ object Filesystem:
       MustNotMatch["(?i)(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(\\.[^.]+)?"] & MustNotEqual["."] &
       MustNotEqual[".."] & MustNotEqual[""]
 
-  given [FilesystemType <: Filesystem] => (Path on FilesystemType) is Substantiable =
+  given [filesystem <: Filesystem] => (Path on filesystem) is Substantiable =
     path => jnf.Files.exists(path.javaPath)
 
   given radical: Tactic[PathError]

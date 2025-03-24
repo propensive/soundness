@@ -73,17 +73,17 @@ case class Permutation(factoradic: Factoradic):
 
   def apply(n: Int): Int = expansion(n)
 
-  def apply[ElementType](sequence: List[ElementType]): List[ElementType] raises PermutationError =
+  def apply[element](sequence: List[element]): List[element] raises PermutationError =
     if sequence.length < lehmer.length then
       raise(PermutationError(PermutationError.Reason.TooShort(sequence.length, lehmer.length)))
 
     def recur
        (lehmer:  List[Int],
-        prefix:  List[ElementType],
-        list:    List[ElementType],
+        prefix:  List[element],
+        list:    List[element],
         current: Int,
-        result:  List[ElementType])
-    :     List[ElementType] =
+        result:  List[element])
+    :     List[element] =
 
       lehmer match
         case head :: tail =>

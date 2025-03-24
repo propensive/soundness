@@ -35,6 +35,6 @@ package contingency
 import proscenium.*
 import vacuous.*
 
-class Tracking[AccrualType <: Exception, LambdaType[_], FocusType]
-   (val initial: AccrualType,
-    val lambda: (Optional[FocusType], AccrualType) ?=> Exception ~> AccrualType)
+class Tracking[accrual <: Exception, lambda[_], focus]
+   (val initial: accrual,
+    val lambda: (Optional[focus], accrual) ?=> Exception ~> accrual)

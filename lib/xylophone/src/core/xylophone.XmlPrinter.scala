@@ -34,8 +34,8 @@ package xylophone
 
 import anticipation.*
 
-trait XmlPrinter[OutputType]:
-  def print(doc: Xml): OutputType
+trait XmlPrinter[output]:
+  def print(doc: Xml): output
 
 object XmlPrinter:
   given XmlPrinter[Text] = StandardXmlPrinter(false)

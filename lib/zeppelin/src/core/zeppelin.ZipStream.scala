@@ -46,7 +46,7 @@ import vacuous.*
 import java.util.zip as juz
 
 object ZipStream:
-  def apply[SourceType: Readable by Bytes](source: SourceType): ZipStream logs Text =
+  def apply[readable: Readable by Bytes](source: readable): ZipStream logs Text =
     new ZipStream(() => source.stream[Bytes], _ => true)
 
 class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
@@ -61,7 +61,7 @@ class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
 
   def each(lambda: ZipEntry => Unit): Unit raises ZipError = map[Unit](lambda)
 
-  def map[ElementType](lambda: ZipEntry => ElementType): Stream[ElementType] raises ZipError =
+  def map[element](lambda: ZipEntry => element): Stream[element] raises ZipError =
     val zipIn = juz.ZipInputStream(stream().inputStream)
 
     def recur(): Stream[ZipEntry] =

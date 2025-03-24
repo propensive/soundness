@@ -37,7 +37,7 @@ import contingency.*
 import gossamer.*
 import rudiments.*
 
-case class Alphabet[EncodingType <: Serialization]
+case class Alphabet[encoding <: Serialization]
    (chars: Text, padding: Boolean, tolerance: Map[Char, Int] = Map()):
 
   def apply(index: Int): Char = chars.s.charAt(index)

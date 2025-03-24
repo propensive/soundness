@@ -40,17 +40,17 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 
-trait Interaction[ResultType, QuestionType]:
+trait Interaction[result, question]:
   def before(): Unit = ()
-  def render(state: Optional[QuestionType], menu: QuestionType): Unit
+  def render(state: Optional[question], menu: question): Unit
   def after(): Unit = ()
-  def result(state: QuestionType): ResultType
+  def result(state: question): result
 
   @tailrec
   final def recur
-     (stream: Stream[TerminalEvent], state: QuestionType, oldState: Optional[QuestionType])
-     (key: (QuestionType, TerminalEvent) => QuestionType)
-  :     Optional[(ResultType, Stream[TerminalEvent])] =
+     (stream: Stream[TerminalEvent], state: question, oldState: Optional[question])
+     (key: (question, TerminalEvent) => question)
+  :     Optional[(result, Stream[TerminalEvent])] =
 
     render(oldState, state)
 
@@ -61,24 +61,24 @@ trait Interaction[ResultType, QuestionType]:
       case other #:: tail                    => recur(tail, key(state, other), state)(key)
       case _                                 => Unset
 
-  def apply(stream: Stream[TerminalEvent], state: QuestionType)
-     (key: (QuestionType, TerminalEvent) => QuestionType)
-  :     Optional[(ResultType, Stream[TerminalEvent])] =
+  def apply(stream: Stream[TerminalEvent], state: question)
+     (key: (question, TerminalEvent) => question)
+  :     Optional[(result, Stream[TerminalEvent])] =
 
     before()
     recur(stream, state, Unset)(key).also(after())
 
 object Interaction:
-  given selectMenu: [ItemType: Showable] => Stdio => Interaction[ItemType, SelectMenu[ItemType]]:
+  given selectMenu: [item: Showable] => Stdio => Interaction[item, SelectMenu[item]]:
     override def before(): Unit = Out.print(t"\e[?25l")
     override def after(): Unit = Out.print(t"\e[J\e[?25h")
 
-    def render(old: Optional[SelectMenu[ItemType]], menu: SelectMenu[ItemType]) =
+    def render(old: Optional[SelectMenu[item]], menu: SelectMenu[item]) =
       menu.options.each: option =>
         Out.print((if option == menu.current then t" > $option" else t"   $option")+t"\e[K\n")
       Out.print(t"\e[${menu.options.length}A")
 
-    def result(state: SelectMenu[ItemType]): ItemType = state.current
+    def result(state: SelectMenu[item]): item = state.current
 
   given lineEditor(using Stdio): Interaction[Text, LineEditor] with
     override def after(): Unit = Out.println()

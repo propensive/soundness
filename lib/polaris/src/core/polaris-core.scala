@@ -35,12 +35,12 @@ package polaris
 import anticipation.*
 
 extension (bytes: Bytes)
-  def unpackFrom[DataType: Unpackable](offset: Int): DataType.Result =
-    DataType.unpack(Buffer(bytes, offset))
+  def unpackFrom[data: Unpackable](offset: Int): data.Result =
+    data.unpack(Buffer(bytes, offset))
 
-  def buffer[ResultType](lambda: Buffer ?=> ResultType): ResultType = lambda(using Buffer(bytes))
+  def buffer[result](lambda: Buffer ?=> result): result = lambda(using Buffer(bytes))
 
-def unpack[ValueType: Unpackable](using buffer: Buffer): ValueType.Result =
-  ValueType.unpack(buffer)
+def unpack[value: Unpackable](using buffer: Buffer): value.Result =
+  value.unpack(buffer)
 
-def byteWidth[DataType: Debufferable]: Int = DataType.width
+def byteWidth[data: Debufferable]: Int = data.width

@@ -52,7 +52,7 @@ object Contingency:
       case Block(List(DefDef(_, _, _, Some(Inlined(_, _, block)))), _) => unwrap(block)
       case ast                                                         => ast
 
-  private def caseDefs[ErrorType <: Exception: Type](using Quotes)(handler: quotes.reflect.Term)
+  private def caseDefs[error <: Exception: Type](using Quotes)(handler: quotes.reflect.Term)
   :     List[quotes.reflect.CaseDef] =
     import quotes.reflect.*
 
@@ -65,7 +65,7 @@ object Contingency:
       case other =>
         halt(m"unexpected AST: ${other.toString}")
 
-  private def mapping[ErrorType <: Exception: Type](using Quotes)
+  private def mapping[error <: Exception: Type](using Quotes)
      (handler: quotes.reflect.Term)
   :     Map[quotes.reflect.Symbol, quotes.reflect.Symbol] =
 
@@ -117,7 +117,7 @@ object Contingency:
       case OrType(left, right) => unpack(left) ++ unpack(right)
       case other               => Set(other)
 
-    val requiredHandlers = unpack(TypeRepr.of[ErrorType]).map(_.typeSymbol)
+    val requiredHandlers = unpack(TypeRepr.of[error]).map(_.typeSymbol)
 
     def patternType(pattern: Tree): List[TypeRepr] = pattern match
       case Typed(_, matchType)   => List(matchType.tpe)
@@ -126,7 +126,7 @@ object Contingency:
       case Wildcard()            => halt(m"wildcard")
 
       case Unapply(select, _, _) =>
-        if exhaustive(pattern, TypeRepr.of[ErrorType]) then List(TypeRepr.of[ErrorType])
+        if exhaustive(pattern, TypeRepr.of[error]) then List(TypeRepr.of[error])
         else halt(m"Unapply ${select.symbol.declaredType.toString}")
 
       case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
@@ -148,9 +148,7 @@ object Contingency:
       case other                              => List(other)
 
 
-  def tend[ErrorTypes <: Exception: Type](handler: Expr[Exception ~> ErrorTypes])
-     (using Quotes)
-  :     Expr[Any] =
+  def tend[errors <: Exception: Type](handler: Expr[Exception ~> errors])(using Quotes): Expr[Any] =
 
     import quotes.reflect.*
 
@@ -160,16 +158,16 @@ object Contingency:
 
     val typeLambda =
       TypeLambda
-       (List("ResultType"),
+       (List("result"),
         _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
     typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] => '{Tend[typeLambda]($handler)}
 
-  def track[AccrualType <: Exception: Type, FocusType: Type]
-     (accrual: Expr[AccrualType],
-      handler: Expr[(Optional[FocusType], AccrualType) ?=> Exception ~> AccrualType])
+  def track[accrual <: Exception: Type, focus: Type]
+     (accrual: Expr[accrual],
+      handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
      (using Quotes)
   :     Expr[Any] =
 
@@ -181,18 +179,18 @@ object Contingency:
 
     val typeLambda =
       TypeLambda
-       (List("ResultType"),
+       (List("result"),
         _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
     typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] =>
-        '{Tracking[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
+        '{Tracking[accrual, typeLambda, focus]($accrual, (focus, accrual) ?=> $handler(using
             focus, accrual))}
 
-  def validate[AccrualType: Type, FocusType: Type]
-     (accrual: Expr[AccrualType],
-      handler: Expr[(Optional[FocusType], AccrualType) ?=> Exception ~> AccrualType])
+  def validate[accrual: Type, focus: Type]
+     (accrual: Expr[accrual],
+      handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
      (using Quotes)
   :     Expr[Any] =
 
@@ -204,18 +202,18 @@ object Contingency:
 
     val typeLambda =
       TypeLambda
-       (List("ResultType"),
+       (List("result"),
         _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
     typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] =>
-        '{Validate[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
+        '{Validate[accrual, typeLambda, focus]($accrual, (focus, accrual) ?=> $handler(using
             focus, accrual))}
 
-  def accrue[AccrualType <: Exception: Type]
-     (accrual: Expr[AccrualType],
-      handler: Expr[AccrualType ?=> Exception ~> AccrualType])
+  def accrue[accrual <: Exception: Type]
+     (accrual: Expr[accrual],
+      handler: Expr[accrual ?=> Exception ~> accrual])
      (using Quotes)
   :     Expr[Any] =
 
@@ -227,15 +225,15 @@ object Contingency:
 
     val typeLambda =
       TypeLambda
-       (List("ResultType"),
+       (List("result"),
         _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
     typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] =>
-        '{Accrue[AccrualType, typeLambda]($accrual, accrual ?=> $handler(using accrual))}
+        '{Accrue[accrual, typeLambda]($accrual, accrual ?=> $handler(using accrual))}
 
-  def mend[ResultType: Type](handler: Expr[Exception ~> ResultType])(using Quotes)
+  def mend[result: Type](handler: Expr[Exception ~> result])(using Quotes)
   :     Expr[Any] =
 
     import quotes.reflect.*
@@ -246,17 +244,17 @@ object Contingency:
 
     val typeLambda =
       TypeLambda
-       (List("ResultType"),
+       (List("result"),
         _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
     typeLambda.asType.absolve match
-      case '[type typeLambda[_]; typeLambda] => '{Mend[ResultType, typeLambda]($handler)}
+      case '[type typeLambda[_]; typeLambda] => '{Mend[result, typeLambda]($handler)}
 
-  def tendWithin[ContextType[_]: Type, ResultType: Type]
-        (tend: Expr[Tend[ContextType]], lambda: Expr[ContextType[ResultType]])
+  def tendWithin[context[_]: Type, result: Type]
+        (tend: Expr[Tend[context]], lambda: Expr[context[result]])
         (using Quotes)
-    :     Expr[ResultType] =
+    :     Expr[result] =
       import quotes.reflect.*
 
       val tactics = unwrap(tend.asTerm) match
@@ -275,19 +273,19 @@ object Contingency:
         case _ =>
           halt(m"argument to `tend` should be a partial function implemented as match cases")
 
-      val method = TypeRepr.of[ContextType[ResultType]].typeSymbol.declaredMethod("apply").head
-      lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[ResultType]
+      val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
+      lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
 
-  def mendWithin[ContextType[_]: Type, ResultType: Type]
-     (mend: Expr[Mend[?, ContextType]], lambda: Expr[ContextType[ResultType]])
+  def mendWithin[context[_]: Type, result: Type]
+     (mend: Expr[Mend[?, context]], lambda: Expr[context[result]])
      (using Quotes)
-  :     Expr[ResultType] =
+  :     Expr[result] =
 
-    type ContextResult = ContextType[ResultType]
+    type ContextResult = context[result]
 
     '{
-        boundary[ResultType]: label ?=>
-          val tactic: Tactic[Break[ResultType]] = EscapeTactic(label)
+        boundary[result]: label ?=>
+          val tactic: Tactic[Break[result]] = EscapeTactic(label)
           ${
               import quotes.reflect.*
               val partialFunction = unwrap(mend.asTerm) match
@@ -297,28 +295,28 @@ object Contingency:
                   halt:
                     m"argument to `mend` should be a partial function implemented as match cases"
 
-              val pfExpr = partialFunction.asExprOf[Exception ~> ResultType]
+              val pfExpr = partialFunction.asExprOf[Exception ~> result]
 
               val tactics = mapping(partialFunction).map: (_, _) =>
                 '{
                     tactic.contramap: error =>
-                      Break[ResultType]($pfExpr(error))
+                      Break[result]($pfExpr(error))
                 }.asTerm
 
               val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head
-              lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[ResultType]  }
+              lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]  }
     }
 
-  def accrueWithin[AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type]
-     (accrue:      Expr[Accrue[AccrualType, ContextType]],
-      lambda:      Expr[ContextType[ResultType]],
-      tactic:      Expr[Tactic[AccrualType]],
+  def accrueWithin[accrual <: Exception: Type, context[_]: Type, result: Type]
+     (accrue:      Expr[Accrue[accrual, context]],
+      lambda:      Expr[context[result]],
+      tactic:      Expr[Tactic[accrual]],
       diagnostics: Expr[Diagnostics])
      (using Quotes)
-  :     Expr[ResultType] =
+  :     Expr[result] =
 
-    '{  val ref: juca.AtomicReference[AccrualType] = juca.AtomicReference(null)
-        val result = boundary[Option[ResultType]]: label ?=>
+    '{  val ref: juca.AtomicReference[accrual] = juca.AtomicReference(null)
+        val result = boundary[Option[result]]: label ?=>
           ${  import quotes.reflect.*
 
               val cases = unwrap(accrue.asTerm) match
@@ -332,10 +330,10 @@ object Contingency:
                 '{AccrueTactic(label, ref, $accrue.initial)($accrue.lambda)(using $diagnostics)}
                 . asTerm
 
-              val contextTypeRepr = TypeRepr.of[ContextType[ResultType]]
+              val contextTypeRepr = TypeRepr.of[context[result]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
               val term = lambda.asTerm.select(method).appliedToArgs(tactics.to(List))
-              val expr = term.asExprOf[ResultType]
+              val expr = term.asExprOf[result]
 
               '{Some($expr)}  }
 
@@ -350,17 +348,17 @@ object Contingency:
     }
 
   def trackWithin
-     [AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, FocusType: Type]
-     (track:       Expr[Tracking[AccrualType, ContextType, FocusType]],
-      lambda:      Expr[Foci[FocusType] ?=> ContextType[ResultType]],
-      tactic:      Expr[Tactic[AccrualType]],
+     [accrual <: Exception: Type, context[_]: Type, result: Type, focus: Type]
+     (track:       Expr[Tracking[accrual, context, focus]],
+      lambda:      Expr[Foci[focus] ?=> context[result]],
+      tactic:      Expr[Tactic[accrual]],
       diagnostics: Expr[Diagnostics])
      (using Quotes)
-  :     Expr[ResultType] =
+  :     Expr[result] =
 
-    '{  val foci: Foci[FocusType] = TrackFoci()
+    '{  val foci: Foci[focus] = TrackFoci()
 
-        val result: Option[ResultType] = boundary[Option[ResultType]]: label ?=>
+        val result: Option[result] = boundary[Option[result]]: label ?=>
           ${  import quotes.reflect.*
 
               val cases = unwrap(track.asTerm) match
@@ -373,35 +371,35 @@ object Contingency:
               val tactics = cases.map: (_, _) =>
                 '{TrackTactic(label, $track.initial, foci)(using $diagnostics)}.asTerm
 
-              val contextTypeRepr = TypeRepr.of[ContextType[ResultType]]
+              val contextTypeRepr = TypeRepr.of[context[result]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
 
               val term =
                 '{$lambda(using foci)}.asTerm.select(method).appliedToArgs(tactics.to(List))
 
-              val expr = term.asExprOf[ResultType]
+              val expr = term.asExprOf[result]
 
               '{Some($expr)}  }
 
         result match
           case None =>
-            $tactic.abort(foci.fold[AccrualType]($track.initial)($track.lambda(using _, _)))
+            $tactic.abort(foci.fold[accrual]($track.initial)($track.lambda(using _, _)))
 
           case Some(value) =>
             if foci.success then value
-            else $tactic.abort(foci.fold[AccrualType]($track.initial)($track.lambda(using _, _)))
+            else $tactic.abort(foci.fold[accrual]($track.initial)($track.lambda(using _, _)))
 
     }
 
   def validateWithin
-     [AccrualType <: Exception: Type, ContextType[_]: Type, FocusType: Type]
-     (validate:  Expr[Validate[AccrualType, ContextType, FocusType]],
-      lambda:      Expr[Foci[FocusType] ?=> ContextType[Any]],
+     [accrual <: Exception: Type, context[_]: Type, focus: Type]
+     (validate:    Expr[Validate[accrual, context, focus]],
+      lambda:      Expr[Foci[focus] ?=> context[Any]],
       diagnostics: Expr[Diagnostics])
      (using Quotes)
-  :     Expr[AccrualType] =
+  :     Expr[accrual] =
 
-    '{  val foci: Foci[FocusType] = TrackFoci()
+    '{  val foci: Foci[focus] = TrackFoci()
 
         boundary[Any]: label ?=>
           ${  import quotes.reflect.*
@@ -416,7 +414,7 @@ object Contingency:
               val tactics = cases.map: (_, _) =>
                 '{TrackTactic(label, $validate.initial, foci)(using $diagnostics)}.asTerm
 
-              val contextTypeRepr = TypeRepr.of[ContextType[Any]]
+              val contextTypeRepr = TypeRepr.of[context[Any]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
 
               val term =
@@ -424,6 +422,6 @@ object Contingency:
 
               term.asExpr  }
 
-        foci.fold[AccrualType]($validate.initial)($validate.lambda(using _, _))
+        foci.fold[accrual]($validate.initial)($validate.lambda(using _, _))
 
     }

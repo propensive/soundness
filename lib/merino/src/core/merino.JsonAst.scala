@@ -105,12 +105,10 @@ object JsonAst:
 
     value
 
-  def parse[SourceType: Readable by Bytes](source: SourceType)
-     (using jsonParse: Tactic[JsonParseError])
-  :     JsonAst/*^{readable, jsonParse}*/ =
+  def parse[readable: Readable by Bytes](source: readable): JsonAst raises JsonParseError =
 
     // FIXME: This is a horrible hack to avoid the problems with streaming
-    val stream: Stream[Bytes] = Stream(SourceType.stream(source).read[Bytes])
+    val stream: Stream[Bytes] = Stream(readable.stream(source).read[Bytes])
     var line: Int = 0
     var colStart: Int = 0
 

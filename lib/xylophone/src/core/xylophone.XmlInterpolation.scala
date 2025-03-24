@@ -48,7 +48,7 @@ object XmlInterpolation:
     case Flat(text: Text)
     case Structured(xml: XmlAst.Element)
 
-  enum ContextType:
+  enum XmlContext:
     case AttributeValue, InTagName, SelfClosingTagName, TagClose, ClosingTag, InAttributeName,
         InTagBody, AttributeEquals, Body, InBodyEntity, InAttributeEntity
 
@@ -59,17 +59,17 @@ object XmlInterpolation:
   case class ParseStateNode(name: Text, namespaces: Set[Text])
 
   case class ParseState
-     (offset: Int,
-      context: ContextType,
-      stack: List[ParseStateNode],
+     (offset:  Int,
+      context: XmlContext,
+      stack:   List[ParseStateNode],
       current: Text,
-      source: Text,
-      ns: Boolean):
+      source:  Text,
+      ns:      Boolean):
 
-    def apply(newContext: ContextType, char: Char) =
+    def apply(newContext: XmlContext, char: Char) =
       copy(context = newContext, current = t"$current$char", offset = offset + 1)
 
-    def apply(newContext: ContextType): ParseState =
+    def apply(newContext: XmlContext): ParseState =
       copy(context = newContext, offset = offset + 1, ns = false)
 
     def apply(char: Char): ParseState = copy(offset = offset + 1, current = t"$current$char")
@@ -102,17 +102,17 @@ object XmlInterpolation:
   given Substitution[XmlInput, Text, "t"] with
     def embed(value: Text) = XmlInput.Flat(value)
 
-  given genInsert: [ValueType] => (writer: XmlEncoder[ValueType])
-  =>    Insertion[XmlInput, ValueType] =
+  given genInsert: [value] => (writer: XmlEncoder[value])
+  =>    Insertion[XmlInput, value] =
     value => XmlInput.Structured(writer.write(value))
 
   object XmlInterpolator extends Interpolator[XmlInput, ParseState, XmlDoc]:
-    import ContextType.*
+    import XmlContext.*
 
     val Letters = ('a' to 'z').to(Set) ++ ('A' to 'Z').to(Set)
     val Digits = ('0' to '9').to(Set)
     val TagChar = CharExtractor(Letters ++ Digits + '.' + '-' + '_')
-    def initial: ParseState = ParseState(0, ContextType.Body, Nil, t"", t"", false)
+    def initial: ParseState = ParseState(0, XmlContext.Body, Nil, t"", t"", false)
 
     private def escape(str: Text): Text =
       str

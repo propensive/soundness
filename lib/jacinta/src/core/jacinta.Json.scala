@@ -56,49 +56,49 @@ import wisteria.*
 import JsonError.Reason
 
 trait Json2:
-  given optionalEncodable: [ValueType: Encodable in Json as encodable]
-  =>    Optional[ValueType] is Encodable in Json =
+  given optionalEncodable: [value: Encodable in Json as encodable]
+  =>    Optional[value] is Encodable in Json =
     new Encodable:
-      type Self = Optional[ValueType]
+      type Self = Optional[value]
       type Format = Json
 
-      def encoded(value: Optional[ValueType]): Json =
+      def encoded(value: Optional[value]): Json =
         value.let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
 
-  given optional: [ValueType: Decodable in Json] => Tactic[JsonError]
-  =>    Optional[ValueType] is Decodable in Json = json =>
-    if json.root.isAbsent then Unset else ValueType.decoded(json)
+  given optional: [value: Decodable in Json] => Tactic[JsonError]
+  =>    Optional[value] is Decodable in Json = json =>
+    if json.root.isAbsent then Unset else value.decoded(json)
 
   given memory: Tactic[JsonError] => Memory is Decodable in Json = json => json.root.long.b
 
-  inline given decodable: [ValueType] => ValueType is Decodable in Json = summonFrom:
-    case given (ValueType is Decodable in Text) =>
-      summonInline[Tactic[JsonError]].give(_.root.string.decode[ValueType])
+  inline given decodable: [value] => value is Decodable in Json = summonFrom:
+    case given (`value` is Decodable in Text) =>
+      summonInline[Tactic[JsonError]].give(_.root.string.decode[value])
 
-    case given Reflection[ValueType] =>
+    case given Reflection[`value`] =>
       DecodableDerivation.derived
 
-  inline given encodable: [ValueType] => ValueType is Encodable in Json = summonFrom:
-    case given (ValueType is Encodable in Text) => value => Json.ast(JsonAst(value.encode.s))
-    case given Reflection[ValueType]            => EncodableDerivation.derived
+  inline given encodable: [value] => value is Encodable in Json = summonFrom:
+    case given (`value` is Encodable in Text) => value => Json.ast(JsonAst(value.encode.s))
+    case given Reflection[`value`]            => EncodableDerivation.derived
 
   object DecodableDerivation extends Derivable[Decodable in Json]:
-    inline def join[DerivationType <: Product: ProductReflection]
-    :     DerivationType is Decodable in Json =
+    inline def join[derivation <: Product: ProductReflection]
+    :     derivation is Decodable in Json =
       json =>
         summonInline[Foci[JsonPointer]].give:
           summonInline[Tactic[JsonError]].give:
             val keyValues = json.root.obj
             val values = keyValues(0).zip(keyValues(1)).to(Map)
 
-            construct: [FieldType] =>
+            construct: [field] =>
               context =>
                 focus(prior.or(JsonPointer()) / label):
                   if !values.contains(label.s)
                   then default().or(context.decoded(new Json(JsonAst(Unset))))
                   else context.decoded(new Json(values(label.s)))
 
-    inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Json =
+    inline def split[derivation: SumReflection]: derivation is Decodable in Json =
       json =>
         summonInline[Tactic[JsonError]].give:
           summonInline[Tactic[VariantError]].give:
@@ -110,19 +110,17 @@ trait Json2:
                   abort(JsonError(Reason.Absent))
 
               case index =>
-                delegate(values(1)(index).string): [VariantType <: DerivationType] =>
+                delegate(values(1)(index).string): [variant <: derivation] =>
                   context => context.decoded(json)
 
   object EncodableDerivation extends Derivable[Encodable in Json]:
-    inline def join[DerivationType <: Product: ProductReflection]
-    :     DerivationType is Encodable in Json =
-
+    inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Json =
       value =>
         summonInline[Foci[JsonPointer]].give:
           val labels: scm.ArrayBuffer[String] = scm.ArrayBuffer()
           val values: scm.ArrayBuffer[JsonAst] = scm.ArrayBuffer()
 
-          fields(value): [FieldType] =>
+          fields(value): [field] =>
             field => focus(prior.or(JsonPointer()) / label):
               context.encode(field).root.tap: encoded =>
                 if !encoded.isAbsent then
@@ -133,8 +131,8 @@ trait Json2:
            (JsonAst
              ((labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))))
 
-    inline def split[DerivationType: SumReflection]: DerivationType is Encodable in Json = value =>
-      variant(value): [VariantType <: DerivationType] =>
+    inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
+      variant(value): [variant <: derivation] =>
         value =>
           Json.ast:
             context.encode(value).root.asMatchable.absolve match
@@ -143,9 +141,9 @@ trait Json2:
                   case values: IArray[JsonAst] =>
                     JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
 
-  // given integral: [IntegralType: Numeric](using Tactic[JsonError])
-  // =>    IntegralType is Decodable in Json =
-  //   (value, omit) => IntegralType.fromInt(value.root.long.toInt)
+  // given integral: [integral: Numeric](using Tactic[JsonError])
+  // =>    integral is Decodable in Json =
+  //   (value, omit) => integral.fromInt(value.root.long.toInt)
 
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
@@ -168,23 +166,23 @@ object Json extends Json2, Dynamic:
   given string: Tactic[JsonError] => String is Decodable in Json =
     value => value.root.string.s
 
-  given option: [ValueType: Decodable in Json] => Tactic[JsonError]
-  =>    Option[ValueType] is Decodable in Json =
+  given option: [value: Decodable in Json] => Tactic[JsonError]
+  =>    Option[value] is Decodable in Json =
 
-    json => if json.root.isAbsent then None else Some(ValueType.decoded(json))
+    json => if json.root.isAbsent then None else Some(value.decoded(json))
 
-  given optionEncodable: [ValueType: Encodable in Json as encodable]
-  =>    Option[ValueType] is Encodable in Json =
+  given optionEncodable: [value: Encodable in Json as encodable]
+  =>    Option[value] is Encodable in Json =
     new Encodable:
-      type Self = Option[ValueType]
+      type Self = Option[value]
       type Format = Json
 
-      def encoded(value: Option[ValueType]): Json = value match
+      def encoded(value: Option[value]): Json = value match
         case None        => Json.ast(JsonAst(Unset))
         case Some(value) => encodable.encode(value)
 
-  given integralEncodable: [IntegralType: Integral] => IntegralType is Encodable in Json =
-    integral => Json.ast(JsonAst(IntegralType.toLong(integral)))
+  given integralEncodable: [integral: Integral] => integral is Encodable in Json =
+    int => Json.ast(JsonAst(integral.toLong(int)))
 
   given textEncodableInJson: Text is Encodable in Json = text => Json.ast(JsonAst(text.s))
   given stringEncodable: String is Encodable in Json = string => Json.ast(JsonAst(string))
@@ -194,40 +192,38 @@ object Json extends Json2, Dynamic:
   given booleanEncodable: Boolean is Encodable in Json = boolean => Json.ast(JsonAst(boolean))
   given jsonEncodable: Json is Encodable in Json = identity(_)
 
-  given [CollectionType <: Iterable, ElementType: Encodable in Json as encodable]
-  =>    CollectionType[ElementType] is Encodable in Json =
+  given [collection <: Iterable, element: Encodable in Json as encodable]
+  =>    collection[element] is Encodable in Json =
     values => Json.ast(JsonAst(IArray.from(values.map(encodable.encode(_).root))))
 
-  given array: [CollectionType <: Iterable, ElementType: Decodable in Json]
-  =>   (factory:    Factory[ElementType, CollectionType[ElementType]],
+  given array: [collection <: Iterable, element: Decodable in Json]
+  =>   (factory:    Factory[element, collection[element]],
         jsonAccess: Tactic[JsonError],
         foci:       Foci[JsonPointer])
-  =>    CollectionType[ElementType] is Decodable in Json =
+  =>    collection[element] is Decodable in Json =
     value =>
       val builder = factory.newBuilder
       value.root.array.each: json =>
         focus(prior.or(JsonPointer()) / ordinal)
-         (builder += ElementType.decoded(Json.ast(json)))
+         (builder += element.decoded(Json.ast(json)))
 
       builder.result()
 
-  given map: [ElementType: Decodable in Json] => Tactic[JsonError]
-  =>    Map[Text, ElementType] is Decodable in Json =
+  given map: [element: Decodable in Json] => Tactic[JsonError]
+  =>    Map[Text, element] is Decodable in Json =
 
     value =>
       val (keys, values) = value.root.obj
 
-      keys.indices.fuse(Map[Text, ElementType]()):
+      keys.indices.fuse(Map[Text, element]()):
         focus(prior.or(JsonPointer()) / keys(next).tt):
-          state.updated(keys(next).tt, ElementType.decoded(Json.ast(values(next))))
+          state.updated(keys(next).tt, element.decoded(Json.ast(values(next))))
 
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
-  inline def parse[SourceType](value: SourceType): Json raises JsonParseError =
-    summonFrom:
-      case given (SourceType is Readable by Bytes) => Json(JsonAst.parse(value))
-      case given (SourceType is Readable by Text)  =>
-        Json(JsonAst.parse(value.read[Bytes]))
+  inline def parse[source](value: source): Json raises JsonParseError = summonFrom:
+      case given (`source` is Readable by Bytes) => Json(JsonAst.parse(value))
+      case given (`source` is Readable by Text)  => Json(JsonAst.parse(value.read[Bytes]))
 
   given JsonPrinter => Json is Showable = json =>
     try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
@@ -351,5 +347,5 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[ValueType: Decodable in Json]: ValueType raises JsonError tracks JsonPointer =
-    ValueType.decoded(this)
+  def as[value: Decodable in Json]: value raises JsonError tracks JsonPointer =
+    value.decoded(this)

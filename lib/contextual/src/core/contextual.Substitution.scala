@@ -36,5 +36,5 @@ import language.experimental.captureChecking
 
 import proscenium.*
 
-trait Substitution[InputType, -ValueType, SubstitutionType <: Label]
-extends Insertion[InputType, ValueType]
+trait Substitution[input, -value, substitution <: Label]
+extends Insertion[input, value]

@@ -32,6 +32,7 @@
                                                                                                   */
 package ambience
 
+import fulminate.*
 import gossamer.*
 import probably.*
 

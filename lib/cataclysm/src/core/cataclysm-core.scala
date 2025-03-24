@@ -45,29 +45,29 @@ private[cataclysm] type Label = String & Singleton
 
 given Decimalizer = Decimalizer(6)
 
-def select[SelectorType: Selectable](sel: SelectorType)(css: CssStyle) =
-  CssRule(SelectorType.selector(sel), css)
+def select[selector: Selectable](sel: selector)(css: CssStyle) =
+  CssRule(selector.selector(sel), css)
 
-extension [SelectorType: Selectable](left: SelectorType)
+extension [selector: Selectable](left: selector)
   @targetName("descendant")
-  infix def >> [SelectorType2: Selectable](right: SelectorType2): Selector =
-    SelectorType.selector(left) >> SelectorType2.selector(right)
+  infix def >> [selector2: Selectable](right: selector2): Selector =
+    selector.selector(left) >> selector2.selector(right)
 
   @targetName("after")
-  infix def ~ [SelectorType2: Selectable](right: SelectorType2): Selector =
-    SelectorType.selector(left) + SelectorType2.selector(right)
+  infix def ~ [selector2: Selectable](right: selector2): Selector =
+    selector.selector(left) + selector2.selector(right)
 
   @targetName("or")
-  infix def || [SelectorType2: Selectable](right: SelectorType2): Selector =
-    SelectorType.selector(left) | SelectorType2.selector(right)
+  infix def || [selector2: Selectable](right: selector2): Selector =
+    selector.selector(left) | selector2.selector(right)
 
   @targetName("and")
-  infix def && [SelectorType2: Selectable](right: SelectorType2): Selector =
-    SelectorType.selector(left) & SelectorType2.selector(right)
+  infix def && [selector2: Selectable](right: selector2): Selector =
+    selector.selector(left) & selector2.selector(right)
 
   @targetName("before")
-  infix def ~~ [SelectorType2: Selectable](right: SelectorType2): Selector =
-    SelectorType.selector(left) ~ SelectorType2.selector(right)
+  infix def ~~ [selector2: Selectable](right: selector2): Selector =
+    selector.selector(left) ~ selector2.selector(right)
 
 def max(head: Length, tail: Length*): Length = tail.fuse(head)(state.function(t"max", next))
 def min(head: Length, tail: Length*): Length = tail.fuse(head)(state.function(t"min", next))
@@ -75,8 +75,8 @@ def min(head: Length, tail: Length*): Length = tail.fuse(head)(state.function(t"
 package pseudo:
   def dir(direction: Dir) = Selector.PseudoClass(t"dir(${direction.show.lower})")
 
-  def has[SelectorType: Selectable](selector: SelectorType) =
-     Selector.PseudoClass(t"has(${SelectorType.selector(selector).value})")
+  def has[selectable: Selectable](selector: selectable) =
+     Selector.PseudoClass(t"has(${selectable.selector(selector).value})")
 
   def webkitScrollbar = Selector.PseudoClass(t":-webkit-scrollbar")
   def lang(language: Text) = Selector.PseudoClass(t"lang($language)")

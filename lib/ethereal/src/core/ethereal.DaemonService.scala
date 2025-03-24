@@ -42,14 +42,14 @@ import serpentine.*
 
 import language.experimental.pureFunctions
 
-case class DaemonService[BusType <: Matchable]
+case class DaemonService[bus <: Matchable]
    (pid:        Pid,
     shutdown:   () => Unit,
     cliInput:   CliInput,
     script:     Path on Linux,
-    deliver:    BusType => Unit,
-    bus:        Stream[BusType],
+    deliver:    bus => Unit,
+    bus:        Stream[bus],
     scriptName: Text)
 extends ShellContext:
 
-  def broadcast(message: BusType): Unit = deliver(message)
+  def broadcast(message: bus): Unit = deliver(message)

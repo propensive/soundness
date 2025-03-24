@@ -33,14 +33,14 @@
 package mercator
 
 object Functor:
-  inline given general: [FunctorType[_]] => Functor[FunctorType] = ${Mercator.functor[FunctorType]}
+  inline given general: [functor[_]] => Functor[functor] = ${Mercator.functor[functor]}
 
-trait Functor[FunctorType[_]]:
-  def point[ValueType](value: ValueType): FunctorType[ValueType]
+trait Functor[functor[_]]:
+  def point[value](value: value): functor[value]
 
-  extension [ValueType](value: FunctorType[ValueType])
-    def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2] =
+  extension [value](value: functor[value])
+    def map[value2](lambda: value => value2): functor[value2] =
       apply(value)(lambda)
 
-  def apply[ValueType, ValueType2](value: FunctorType[ValueType])(lambda: ValueType => ValueType2)
-  :     FunctorType[ValueType2]
+  def apply[value, value2](value: functor[value])(lambda: value => value2)
+  :     functor[value2]

@@ -39,7 +39,7 @@ import gossamer.*
 
 import DagTile.*
 
-case class TextualDagStyle[LineType: Textual]
+case class TextualDagStyle[line: Textual]
    (space:      Text,
     corner:     Text,
     vertical:   Text,
@@ -48,9 +48,9 @@ case class TextualDagStyle[LineType: Textual]
     midLast:    Text,
     cross:      Text,
     overlap:    Text)
-extends DagStyle[LineType]:
-  def serialize(tiles: List[DagTile], node: LineType): LineType =
-    LineType(tiles.map(text(_)).join)+node
+extends DagStyle[line]:
+  def serialize(tiles: List[DagTile], node: line): line =
+    line(tiles.map(text(_)).join)+node
 
   def text(tile: DagTile) = tile match
     case Space      => space

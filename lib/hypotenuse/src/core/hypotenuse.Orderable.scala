@@ -37,14 +37,14 @@ import language.experimental.captureChecking
 import scala.annotation.*
 
 object Orderable:
-  given [ValueType: Ordering] => ValueType is Orderable:
+  given [value: Ordering] => value is Orderable:
     inline def compare
-       (inline left:    ValueType,
-        inline right:   ValueType,
+       (inline left:    value,
+        inline right:   value,
         inline strict:  Boolean,
         inline greater: Boolean)
     :     Boolean =
-      val n = ValueType.compare(left, right)
+      val n = value.compare(left, right)
       inline if greater
       then inline if strict then n > 0 else n >= 0
       else inline if strict then n < 0 else n <= 0

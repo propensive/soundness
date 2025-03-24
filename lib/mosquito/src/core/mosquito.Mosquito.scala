@@ -42,24 +42,24 @@ import symbolism.*
 import vacuous.*
 
 object Mosquito:
-  opaque type Vector[ValueType, SizeType <: Int] = Tuple
+  opaque type Vector[value, size <: Int] = Tuple
 
   object Vector:
     def apply(elems: Tuple): Vector[Tuple.Union[elems.type], Tuple.Size[elems.type]] = elems
 
-    def take[ElementType](list: List[ElementType], size: Int)
-    :     Optional[Vector[ElementType, size.type]] =
+    def take[element](list: List[element], size: Int)
+    :     Optional[Vector[element, size.type]] =
       if size == 0 then Zero else list match
         case Nil          => Unset
         case head :: tail => take(tail, size - 1).let(head *: _)
 
-    given showable: [SizeType <: Int: ValueOf, ElemType: Showable] => Text is Measurable
-    =>    Vector[ElemType, SizeType] is Showable =
+    given showable: [size <: Int: ValueOf, element: Showable] => Text is Measurable
+    =>    Vector[element, size] is Showable =
 
       vector =>
         val items = vector.list.map(_.show)
         val width = items.maxBy(_.length).length
-        val size = valueOf[SizeType]
+        val size = valueOf[size]
         if size == 1 then t"( ${items(0)} )"
         else
           val top = t"⎛ ${items.head.pad(width, Rtl)} ⎞"
@@ -70,9 +70,9 @@ object Mosquito:
 
           (top :: middle ::: bottom :: Nil).join(t"\n")
 
-  extension [LeftType](left: Vector[LeftType, 3])
-    def cross[RightType](right: Vector[RightType, 3])
-       (using multiplication: LeftType is Multiplicable by RightType,
+  extension [left](left: Vector[left, 3])
+    def cross[right](right: Vector[right, 3])
+       (using multiplication: left is Multiplicable by right,
               addition:      multiplication.Result is Addable by multiplication.Result,
               subtraction:    multiplication.Result is Subtractable by multiplication.Result)
     :     Vector[addition.Result, 3] =
@@ -82,55 +82,55 @@ object Mosquito:
           (left.element(0)*right.element(1) - left.element(1)*right.element(0)) *:
           Zero
 
-  extension [SizeType <: Int, LeftType](left: Vector[LeftType, SizeType])
-    def element(index: Int): LeftType = left.toArray(index).asInstanceOf[LeftType]
-    def apply(index: Int): LeftType = left.toArray(index).asInstanceOf[LeftType]
-    def list: List[LeftType] = left.toList.asInstanceOf[List[LeftType]]
-    def iarray: IArray[LeftType] = left.toIArray.asInstanceOf[IArray[LeftType]]
-    def size(using ValueOf[SizeType]): Int = valueOf[SizeType]
+  extension [size <: Int, left](left: Vector[left, size])
+    def element(index: Int): left = left.toArray(index).asInstanceOf[left]
+    def apply(index: Int): left = left.toArray(index).asInstanceOf[left]
+    def list: List[left] = left.toList.asInstanceOf[List[left]]
+    def iarray: IArray[left] = left.toIArray.asInstanceOf[IArray[left]]
+    def size(using ValueOf[size]): Int = valueOf[size]
 
-    def norm[SquareType]
-       (using multiplicable: LeftType is Multiplicable by LeftType into SquareType,
-              addable:      SquareType is Addable by SquareType into SquareType,
-              rootable:     SquareType is Rootable[2] into LeftType)
-    :     LeftType =
+    def norm[square]
+       (using multiplicable: left is Multiplicable by left into square,
+              addable:      square is Addable by square into square,
+              rootable:     square is Rootable[2] into left)
+    :     left =
 
-      def recur(sum: multiplicable.Result, i: Int): LeftType =
+      def recur(sum: multiplicable.Result, i: Int): left =
         if i == 0 then sum.sqrt else recur(sum + left.element(i)*left.element(i), i - 1)
 
       recur(left.element(0)*left.element(0), size - 1)
 
-    def map[LeftType2](fn: LeftType => LeftType2): Vector[LeftType2, SizeType] =
+    def map[left2](fn: left => left2): Vector[left2, size] =
       def recur(tuple: Tuple): Tuple = tuple match
-        case head *: tail => fn(head.asInstanceOf[LeftType]) *: recur(tail)
+        case head *: tail => fn(head.asInstanceOf[left]) *: recur(tail)
         case _            => Zero
 
       recur(left)
 
-    def unitary[SquareType]
-       (using multiplicable: LeftType is Multiplicable by LeftType into SquareType,
-              addable:      SquareType is Addable by SquareType into SquareType,
-              rootable:     SquareType is Rootable[2] into LeftType,
-              divisible:    LeftType is Divisible by LeftType into Double)
-    :     Vector[Double, SizeType] =
+    def unitary[square]
+       (using multiplicable: left is Multiplicable by left into square,
+              addable:      square is Addable by square into square,
+              rootable:     square is Rootable[2] into left,
+              divisible:    left is Divisible by left into Double)
+    :     Vector[Double, size] =
 
-      val magnitude: LeftType = left.norm
+      val magnitude: left = left.norm
 
       def recur(tuple: Tuple): Tuple = tuple match
-        case head *: tail => (head.asInstanceOf[LeftType]/magnitude) *: recur(tail)
+        case head *: tail => (head.asInstanceOf[left]/magnitude) *: recur(tail)
         case _            => Zero
 
       recur(left)
 
     @targetName("add")
-    def + [RightType](right: Vector[RightType, SizeType])
-       (using addition: LeftType is Addable by RightType)
-    :     Vector[addition.Result, SizeType] =
+    def + [right](right: Vector[right, size])
+       (using addition: left is Addable by right)
+    :     Vector[addition.Result, size] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
         case leftHead *: leftTail => right match
           case rightHead *: rightTail =>
-            (leftHead.asInstanceOf[LeftType] + rightHead.asInstanceOf[RightType])
+            (leftHead.asInstanceOf[left] + rightHead.asInstanceOf[right])
             *: recur(leftTail, rightTail)
 
           case _ =>
@@ -142,14 +142,14 @@ object Mosquito:
       recur(left, right)
 
     @targetName("sub")
-    def - [RightType](right: Vector[RightType, SizeType])
-       (using sub: LeftType is Subtractable by RightType)
-    :     Vector[sub.Result, SizeType] =
+    def - [right](right: Vector[right, size])
+       (using sub: left is Subtractable by right)
+    :     Vector[sub.Result, size] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
         case leftHead *: leftTail => right match
           case rightHead *: rightTail =>
-            (leftHead.asInstanceOf[LeftType] - rightHead.asInstanceOf[RightType])
+            (leftHead.asInstanceOf[left] - rightHead.asInstanceOf[right])
             *: recur(leftTail, rightTail)
           case _ =>
             Zero
@@ -160,21 +160,21 @@ object Mosquito:
       recur(left, right)
 
     @targetName("scalarMul")
-    def * [RightType](right: RightType)
-       (using multiplication: LeftType is Multiplicable by RightType)
-    :     Vector[multiplication.Result, SizeType] =
+    def * [right](right: right)
+       (using multiplication: left is Multiplicable by right)
+    :     Vector[multiplication.Result, size] =
 
       map(_*right)
 
     @targetName("scalarDiv")
-    def / [RightType](right: RightType)(using div: LeftType is Divisible by RightType)
-    :     Vector[div.Result, SizeType] =
+    def / [right](right: right)(using div: left is Divisible by right)
+    :     Vector[div.Result, size] =
 
       map(_/right)
 
-    def dot[RightType](right: Vector[RightType, SizeType])
-       (using multiply: LeftType is Multiplicable by RightType,
-              size:     ValueOf[SizeType],
+    def dot[right](right: Vector[right, size])
+       (using multiply: left is Multiplicable by right,
+              size:     ValueOf[size],
               addition: multiply.Result is Addable by multiply.Result,
               equality: addition.Result =:= multiply.Result)
     :     multiply.Result =
@@ -185,7 +185,7 @@ object Mosquito:
       val start = size.value - 1
       recur(start - 1, left.element(start)*right.element(start))
 
-extension [ElementType](list: List[ElementType])
-  def slide(size: Int): Stream[Vector[ElementType, size.type]] = list match
+extension [element](list: List[element])
+  def slide(size: Int): Stream[Vector[element, size.type]] = list match
     case Nil          => Stream()
     case head :: tail => Vector.take(list, size).lay(Stream())(_ #:: tail.slide(size))

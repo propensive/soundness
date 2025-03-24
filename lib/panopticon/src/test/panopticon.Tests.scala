@@ -101,7 +101,7 @@ object Tests extends Suite(m"Panopticon tests"):
 
     object Date:
       given Dereferencer[Date, "month"] with
-        type FieldType = Int
+        type Field = Int
         def field(target: Date): Int = target.month
 
     class Date(val day: Int, val month: Int, val year: Int)

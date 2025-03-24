@@ -43,14 +43,13 @@ sealed trait ClasspathEntry
 
 object ClasspathEntry:
   case class Directory(path: Text) extends ClasspathEntry:
-    def apply[DirectoryType: Instantiable across Paths from Text](): DirectoryType =
-      DirectoryType(path)
+    def apply[directory: Instantiable across Paths from Text](): directory = directory(path)
 
   case class Jar(path: Text) extends ClasspathEntry:
-    def apply[FileType: Instantiable across Paths from Text](): FileType = FileType(path)
+    def apply[file: Instantiable across Paths from Text](): file = file(path)
 
   case class Url(url: Text) extends ClasspathEntry:
-    def apply[UrlType: Instantiable across Urls from Text](): UrlType = UrlType(url)
+    def apply[instantiable: Instantiable across Urls from Text](): instantiable = instantiable(url)
 
   case object JavaRuntime extends ClasspathEntry
 

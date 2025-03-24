@@ -39,62 +39,62 @@ import scala.compiletime.*
 import scala.quoted.*
 
 object Vicarious:
-  def catalog[KeyType: Type, ValueType: Type]
-     (lambda: Expr[[FieldType] => (field: FieldType) => ValueType],
-      value: Expr[KeyType],
-      classTag: Expr[ClassTag[ValueType]])
+  def catalog[key: Type, value: Type]
+     (lambda: Expr[[field] => (field: field) => value],
+      value: Expr[key],
+      classTag: Expr[ClassTag[value]])
      (using Quotes)
-  :     Expr[Catalog[KeyType, ValueType]] =
+  :     Expr[Catalog[key, value]] =
     import quotes.reflect.*
 
-    def fields[ProductType: Type](term: Term): List[Term] =
-      TypeRepr.of[ProductType].typeSymbol.caseFields.flatMap: field =>
+    def fields[product: Type](term: Term): List[Term] =
+      TypeRepr.of[product].typeSymbol.caseFields.flatMap: field =>
         term.select(field).asExpr.absolve match
-          case '{ $field: fieldType } =>
-            '{$lambda[fieldType]($field)}.asTerm :: fields[fieldType](field.asTerm)
+          case '{ $field: field } =>
+            '{$lambda[field]($field)}.asTerm :: fields[field](field.asTerm)
 
-    '{ given ClassTag[ValueType] = $classTag
-       Catalog(IArray(${Varargs(fields[KeyType](value.asTerm).map(_.asExprOf[ValueType]))}*))  }
+    '{ given ClassTag[value] = $classTag
+       Catalog(IArray(${Varargs(fields[key](value.asTerm).map(_.asExprOf[value]))}*))  }
 
-  def fieldNames[ProductType: Type](prefix: String)(using Quotes): List[String] =
+  def fieldNames[product: Type](prefix: String)(using Quotes): List[String] =
     import quotes.reflect.*
-    TypeRepr.of[ProductType].typeSymbol.caseFields.flatMap: field =>
+    TypeRepr.of[product].typeSymbol.caseFields.flatMap: field =>
       val label = if prefix == "" then field.name else prefix+"."+field.name
       field.info.asType.absolve match
         case '[fieldType] => label :: fieldNames[fieldType](label)
 
-  def dereference[KeyType: Type, ValueType: Type, IdType <: Nat: Type]
+  def dereference[key: Type, value: Type, id <: Nat: Type]
      (key: Expr[String])(using Quotes)
-  :     Expr[ValueType | Proxy[KeyType, ValueType, Nat]] =
+  :     Expr[value | Proxy[key, value, Nat]] =
 
     import quotes.reflect.*
 
-    val index = TypeRepr.of[IdType].asMatchable.absolve match
+    val index = TypeRepr.of[id].asMatchable.absolve match
       case ConstantType(IntConstant(index)) => index
 
-    val fields = fieldNames[KeyType]("")
+    val fields = fieldNames[key]("")
 
     val label = fields(index)+"."+key.valueOrAbort
     ConstantType(IntConstant(fields.indexOf(label))).asType.absolve match
-      case '[ type idType <: Nat; idType ] => '{Proxy[KeyType, ValueType, idType]()}
+      case '[ type id <: Nat; id ] => '{Proxy[key, value, id]()}
 
-  def proxy[KeyType: Type, ValueType: Type](using Quotes): Expr[Proxy[KeyType, ValueType, 0]] =
+  def proxy[key: Type, value: Type](using Quotes): Expr[Proxy[key, value, 0]] =
     import quotes.reflect.*
 
-    val fields = fieldNames[KeyType]("")
+    val fields = fieldNames[key]("")
 
     def recur(prefix: String, repr: TypeRepr): TypeRepr =
       val index: Int = if prefix == "" then 0 else fields.indexOf(prefix)
       val nat = ConstantType(IntConstant(index))
 
       val base =
-        TypeRepr.of[Proxy].appliedTo(List(TypeRepr.of[KeyType], TypeRepr.of[ValueType], nat))
+        TypeRepr.of[Proxy].appliedTo(List(TypeRepr.of[key], TypeRepr.of[value], nat))
 
       repr.typeSymbol.caseFields.fuse(base):
         val label = if prefix == "" then next.name else prefix+"."+next.name
         val fieldType: TypeRepr = next.info
         Refinement(state, next.name, recur(label, fieldType))
 
-    recur("", TypeRepr.of[KeyType]).asType.absolve match
-      case '[type proxyType <: Proxy[KeyType, ValueType, 0]; proxyType] =>
+    recur("", TypeRepr.of[key]).asType.absolve match
+      case '[type proxyType <: Proxy[key, value, 0]; proxyType] =>
         '{Proxy().asInstanceOf[proxyType]}

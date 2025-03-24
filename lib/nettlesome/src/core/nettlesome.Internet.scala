@@ -38,8 +38,8 @@ import vacuous.*
 import language.experimental.captureChecking
 
 class Internet(val online: Boolean):
-  def require[ResultType](block: Online ?=> ResultType)(using Tactic[OfflineError]): ResultType =
+  def require[result](block: Online ?=> result)(using Tactic[OfflineError]): result =
     if online then block(using Online) else abort(OfflineError())
 
-  def appropriate[ResultType](block: Online ?=> ResultType): Optional[ResultType] =
+  def appropriate[result](block: Online ?=> result): Optional[result] =
     if online then block(using Online) else Unset

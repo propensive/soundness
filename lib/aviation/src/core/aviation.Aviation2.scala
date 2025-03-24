@@ -76,7 +76,7 @@ object Aviation2:
     def subtract(left: Instant, right: Self): Result
 
   object Instant:
-    def apply[InstantType: Abstractable across Instants into Long](instant: InstantType): Instant =
+    def apply[instant: Abstractable across Instants into Long](instant: instant): Instant =
       of(instant.generic)
 
     erased given underlying: Underlying[Instant, Long] = !!
@@ -110,9 +110,9 @@ object Aviation2:
       def add(instant: Instant, duration: Duration): Instant =
         instant + (duration.value/1000.0).toLong
 
-    given minus: [OperandType: InstantSubtractable]
-    =>    Instant is Subtractable by OperandType into OperandType.Result =
-      OperandType.subtract(_, _)
+    given minus: [operand: InstantSubtractable]
+    =>    Instant is Subtractable by operand into operand.Result =
+      operand.subtract(_, _)
 
   type Duration = Quantity[Seconds[1]]
 

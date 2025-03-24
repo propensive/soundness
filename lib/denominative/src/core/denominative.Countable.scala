@@ -35,9 +35,9 @@ package denominative
 import anticipation.*
 
 object Countable:
-  given [ElementType] => Seq[ElementType] is Countable = _.length
-  given [ElementType] => IArray[ElementType] is Countable = _.length
-  given [ElementType] => IndexedSeq[ElementType] is Countable = _.length
+  given [element] => Seq[element] is Countable = _.length
+  given [element] => IArray[element] is Countable = _.length
+  given [element] => IndexedSeq[element] is Countable = _.length
   given Text is Countable = _.s.length
   given Int is Countable = identity(_)
 

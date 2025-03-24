@@ -36,13 +36,13 @@ import prepositional.*
 import serpentine.*
 
 package filesystemApi:
-  given serpentinePath: [PlatformType: {Navigable, Radical}]
-  =>    (Path on PlatformType) is (Abstractable & Instantiable) across Paths from Text into Text =
+  given serpentinePath: [platform: {Navigable, Radical}]
+  =>    (Path on platform) is (Abstractable & Instantiable) across Paths from Text into Text =
     new Abstractable with Instantiable:
-      type Self = Path on PlatformType
+      type Self = Path on platform
       type Domain = Paths
       type Source = Text
       type Result = Text
 
-      def genericize(path: Path on PlatformType): Text = path.text
-      def apply(text: Text): Path on PlatformType = Path.parse[PlatformType](text)
+      def genericize(path: Path on platform): Text = path.text
+      def apply(text: Text): Path on platform = Path.parse[platform](text)

@@ -42,25 +42,25 @@ import turbulence.*
 
 import javax.imageio as ji
 
-abstract class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
-  inline def codec: ImageCodec[ImageFormatType] = this
+abstract class ImageCodec[format <: ImageFormat](name: Text):
+  inline def codec: ImageCodec[format] = this
   protected def medium: Medium
   protected lazy val reader: ji.ImageReader = ji.ImageIO.getImageReaders(name.s).nn.next().nn
   protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
 
   given response
-  :     (Image in ImageFormatType) is Abstractable across HttpStreams into HttpStreams.Content =
+  :     (Image in format) is Abstractable across HttpStreams into HttpStreams.Content =
     new Abstractable:
-      type Self = Image in ImageFormatType
+      type Self = Image in format
       type Domain = HttpStreams
       type Result = HttpStreams.Content
 
-      def genericize(image: Image in ImageFormatType): HttpStreams.Content =
+      def genericize(image: Image in format): HttpStreams.Content =
         (medium.show, image.serialize(using codec))
 
-  def read[InputType: Readable by Bytes](inputType: InputType): Image in ImageFormatType =
+  def read[input: Readable by Bytes](inputType: input): Image in format =
     reader.synchronized:
       reader.setInput(ji.ImageIO.createImageInputStream(inputType.read[Bytes].javaInputStream).nn)
 
-      (new Image(reader.read(0).nn) { type Format = ImageFormatType }).also:
+      (new Image(reader.read(0).nn) { type Format = format }).also:
         reader.dispose()

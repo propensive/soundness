@@ -35,12 +35,12 @@ package symbolism
 import prepositional.*
 
 object Rootable:
-  def apply[RootType <: Int & Singleton, OperandType, ResultType](lambda: OperandType => ResultType)
-  :     OperandType is Rootable[RootType] into ResultType = new Rootable[RootType]:
-    type Self = OperandType
-    type Result = ResultType
+  def apply[root <: Int & Singleton, operand, result](lambda: operand => result)
+  :     operand is Rootable[root] into result = new Rootable[root]:
+    type Self = operand
+    type Result = result
 
-    def root(operand: OperandType): ResultType = lambda(operand)
+    def root(operand: operand): result = lambda(operand)
 
   given sqrt: Double is Rootable[2] into Double = math.sqrt(_)
   given cbrt: Double is Rootable[3] into Double = math.cbrt(_)
@@ -48,7 +48,7 @@ object Rootable:
   given sqrtFloat: Float is Rootable[2] into Float = math.sqrt(_).toFloat
   given cbrtFloat: Float is Rootable[3] into Float = math.cbrt(_).toFloat
 
-trait Rootable[RootType <: Int & Singleton]:
+trait Rootable[root <: Int & Singleton]:
   type Self
   type Result
   def root(value: Self): Result

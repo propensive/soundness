@@ -39,13 +39,13 @@ import proscenium.*
 object Spool:
   private object Termination
 
-class Spool[ItemType]():
-  private val queue: juc.LinkedBlockingQueue[ItemType | Spool.Termination.type] =
+class Spool[item]():
+  private val queue: juc.LinkedBlockingQueue[item | Spool.Termination.type] =
     juc.LinkedBlockingQueue()
 
-  def put(item: ItemType): Unit = queue.put(item)
+  def put(item: item): Unit = queue.put(item)
   def stop(): Unit = queue.put(Spool.Termination)
 
-  def stream: Stream[ItemType] =
+  def stream: Stream[item] =
     Stream.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
-    . asInstanceOf[Stream[ItemType]]
+    . asInstanceOf[Stream[item]]

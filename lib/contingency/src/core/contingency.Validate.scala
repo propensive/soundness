@@ -35,6 +35,6 @@ package contingency
 import proscenium.*
 import vacuous.*
 
-class Validate[AccrualType, LambdaType[_], FocusType]
-   (val initial: AccrualType,
-    val lambda: (Optional[FocusType], AccrualType) ?=> Exception ~> AccrualType)
+class Validate[accrual, lambda[_], focus]
+   (val initial: accrual,
+    val lambda: (Optional[focus], accrual) ?=> Exception ~> accrual)

@@ -63,8 +63,8 @@ trait Deserializable:
     recur(stream, t"", 0)
 
 object Deserializable:
-  def base[BaseType <: Serialization](base: Int)(using alphabet: Alphabet[BaseType])
-  :     Deserializable in BaseType raises SerializationError =
+  def base[base <: Serialization](base: Int)(using alphabet: Alphabet[base])
+  :     Deserializable in base raises SerializationError =
     new:
       override protected val atomicity = 8.lcm(base)/base
 

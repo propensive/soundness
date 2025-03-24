@@ -44,30 +44,30 @@ import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 
 object BloomFilter:
-  def apply[ElementType: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)
-    [HashType <: Algorithm]
-    (using HashFunction in HashType)
-  :     BloomFilter[ElementType, HashType] =
+  def apply[element: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)
+    [hash <: Algorithm]
+    (using HashFunction in hash)
+  :     BloomFilter[element, hash] =
 
     val bitSize: Int = (-1.44*approximateSize*ln(targetErrorRate.double).double).toInt
     val hashCount: Int = ((bitSize.toDouble/approximateSize.toDouble)*ln(2.0).double + 0.5).toInt
     new BloomFilter(bitSize, hashCount, sci.BitSet())
 
-case class BloomFilter[ElementType: Digestible, HashType <: Algorithm]
+case class BloomFilter[element: Digestible, hash <: Algorithm]
    (bitSize: Int, hashCount: Int, bits: sci.BitSet)
-   (using HashFunction in HashType):
+   (using HashFunction in hash):
 
   private val requiredEntropyBits = ln(bitSize ** hashCount).double.toInt + 1
 
-  private def hash(value: ElementType): BigInt =
+  private def hash(value: element): BigInt =
     def recur(count: Int = 0, bytes: List[Array[Byte]] = Nil): BigInt =
       if bytes.map(_.length).sum*8 < requiredEntropyBits
-      then recur(count + 1, (count, value).digest[HashType].bytes.mutable(using Unsafe) :: bytes)
+      then recur(count + 1, (count, value).digest[hash].bytes.mutable(using Unsafe) :: bytes)
       else BigInt(bytes.to(Array).flatten).abs
 
     recur()
 
-  private def additions(value: ElementType, bitSet: scm.BitSet): Unit =
+  private def additions(value: element, bitSet: scm.BitSet): Unit =
     @tailrec
     def recur(hash: BigInt, count: Int): Unit =
       if count < hashCount then
@@ -77,18 +77,18 @@ case class BloomFilter[ElementType: Digestible, HashType <: Algorithm]
     recur(hash(value), 0)
 
   @targetName("add")
-  infix def + (value: ElementType): BloomFilter[ElementType, HashType] =
+  infix def + (value: element): BloomFilter[element, hash] =
     val bitSet = scm.BitSet()
     additions(value, bitSet)
     BloomFilter(bitSize, hashCount, bits | bitSet)
 
   @targetName("addAll")
-  infix def ++ (elements: Iterable[ElementType]): BloomFilter[ElementType, HashType] =
+  infix def ++ (elements: Iterable[element]): BloomFilter[element, hash] =
     val bitSet = scm.BitSet()
     elements.each(additions(_, bitSet))
     BloomFilter(bitSize, hashCount, bits | bitSet)
 
-  def mayContain(value: ElementType): Boolean =
+  def mayContain(value: element): Boolean =
     val bitSet = scm.BitSet()
     additions(value, bitSet)
     bitSet.subsetOf(bits)

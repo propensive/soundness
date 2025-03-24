@@ -69,15 +69,15 @@ package randomization:
   given secureSeeded: (seed: Seed) => Randomization = () =>
     su.Random(js.SecureRandom(seed.value.to(Array)))
 
-def stochastic[ResultType](using randomization: Randomization)(block: Random ?=> ResultType)
-:     ResultType =
+def stochastic[result](using randomization: Randomization)(block: Random ?=> result)
+:     result =
   block(using new Random(randomization.make()))
 
-def arbitrary[ValueType: Randomizable]()(using Random): ValueType = ValueType()
+def arbitrary[value: Randomizable]()(using Random): value = value()
 
-def random[ValueType: Randomizable](): ValueType =
+def random[value: Randomizable](): value =
   given Random = Random.global
-  ValueType()
+  value()
 
 def toss()(using Random): Boolean = math.random < 0.5
 

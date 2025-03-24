@@ -45,29 +45,29 @@ import scala.collection.immutable as sci
 import language.experimental.pureFunctions
 
 object Tabulation:
-  given [TextType: {Textual as textual, Printable as printable}]
+  given [text: {Textual as textual, Printable as printable}]
   =>   (Text is Measurable, TableStyle, Attenuation)
-  =>    Tabulation[TextType] is Printable =
+  =>    Tabulation[text] is Printable =
     (tabulation, termcap) =>
       tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
 
-abstract class Tabulation[TextType: ClassTag]():
+abstract class Tabulation[text: ClassTag]():
   type Row
 
-  def columns: IArray[Column[Row, TextType]]
-  def titles: Seq[IArray[IArray[TextType]]]
-  def rows: Seq[IArray[IArray[TextType]]]
+  def columns: IArray[Column[Row, text]]
+  def titles: Seq[IArray[IArray[text]]]
+  def rows: Seq[IArray[IArray[text]]]
   def dataLength: Int
 
   def grid(width: Int)
-     (using style: TableStyle, metrics: Text is Measurable, textual: TextType is Textual)
+     (using style: TableStyle, metrics: Text is Measurable, textual: text is Textual)
      (using attenuation: Attenuation)
-  :     Grid[TextType] =
+  :     Grid[text] =
 
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
       lazy val include: sci.BitSet = indices.to(sci.BitSet)
 
-      lazy val columnWidths: IArray[(Int, Column[Row, TextType], Int)] = IArray.from:
+      lazy val columnWidths: IArray[(Int, Column[Row, text], Int)] = IArray.from:
         indices.indices.map: index =>
           val columnIndex = indices(index)
           (columnIndex, columns(columnIndex), widths(index))
@@ -78,13 +78,13 @@ abstract class Tabulation[TextType: ClassTag]():
           columns.indices.map: index =>
             val dataMax =
               if !include(index) then 0 else rows.map: cells =>
-                columns(index).sizing.width[TextType](cells(index), width, slack).or(0)
+                columns(index).sizing.width[text](cells(index), width, slack).or(0)
 
               . maxOption.getOrElse(0)
 
             val titleMax =
               if !include(index) then 0 else titles.map: cells =>
-                columns(index).sizing.width[TextType](cells(index), width, slack).or(0)
+                columns(index).sizing.width[text](cells(index), width, slack).or(0)
 
               . maxOption.getOrElse(0)
 
@@ -114,7 +114,7 @@ abstract class Tabulation[TextType: ClassTag]():
     // We may be able to increase the slack in some of the remaining columns
     if rowLayout2.totalWidth > width then attenuation(rowLayout2.totalWidth, width)
 
-    def lines(data: Seq[IArray[IArray[TextType]]]): Stream[TableRow[TextType]] =
+    def lines(data: Seq[IArray[IArray[text]]]): Stream[TableRow[text]] =
       data.to(Stream).map: cells =>
         val tableCells = rowLayout2.columnWidths.map: (index, column, width) =>
           val lines = column.sizing.fit(cells(index), width, column.textAlign)

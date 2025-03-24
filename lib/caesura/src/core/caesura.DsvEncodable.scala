@@ -37,18 +37,18 @@ import prepositional.*
 import wisteria.*
 
 object DsvEncodable extends ProductDerivable[DsvEncodable]:
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is DsvEncodable =
+  inline def join[derivation <: Product: ProductReflection]: derivation is DsvEncodable =
     value =>
       val cells =
         fields(value):
-          [FieldType] => field => context.encode(field).data
+          [field] => field => context.encode(field).data
         . to(List)
         . flatten
 
       Row(cells)
 
-  given encoder: [ValueType: Encodable in Text] => ValueType is DsvEncodable =
-    value => Row(ValueType.encode(value))
+  given encoder: [encodable: Encodable in Text] => encodable is DsvEncodable =
+    value => Row(encodable.encode(value))
 
 trait DsvEncodable:
   type Self

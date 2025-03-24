@@ -32,6 +32,7 @@
                                                                                                   */
 package abacist
 
+import fulminate.*
 import gossamer.{t, Decimalizer}
 import larceny.*
 import probably.*

@@ -35,33 +35,33 @@ package coaxial
 import anticipation.*
 import vacuous.*
 
-sealed trait Control[+StateType]
+sealed trait Control[+state]
 
 object Control:
   sealed trait Interactive
 
-  case class Conclude[+StateType](message: Bytes, state: Optional[StateType])
-  extends Control[StateType]
+  case class Conclude[+state](message: Bytes, state: Optional[state])
+  extends Control[state]
 
   case object Terminate extends Control[Nothing]
 
-  case class Continue[+StateType](state: Optional[StateType] = Unset)
-  extends Control[StateType], Interactive
+  case class Continue[+state](state: Optional[state] = Unset)
+  extends Control[state], Interactive
 
-  case class Reply[+StateType](message: Bytes, state: Optional[StateType])
-  extends Control[StateType], Interactive
+  case class Reply[+state](message: Bytes, state: Optional[state])
+  extends Control[state], Interactive
 
 
   object Conclude:
-    def apply[MessageType: Transmissible, StateType]
-       (message: MessageType, state: Optional[StateType] = Unset)
-    :     Conclude[StateType] =
+    def apply[transmissible: Transmissible, state]
+       (message: transmissible, state: Optional[state] = Unset)
+    :     Conclude[state] =
 
-      Conclude(MessageType.serialize(message), state)
+      Conclude(transmissible.serialize(message), state)
 
   object Reply:
-    def apply[MessageType: Transmissible, StateType]
-       (message: MessageType, state: Optional[StateType] = Unset)
-    :     Reply[StateType] =
+    def apply[transmissible: Transmissible, state]
+       (message: transmissible, state: Optional[state] = Unset)
+    :     Reply[state] =
 
-      Reply(MessageType.serialize(message), state)
+      Reply(transmissible.serialize(message), state)

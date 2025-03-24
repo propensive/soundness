@@ -37,12 +37,12 @@ import language.experimental.pureFunctions
 import fulminate.*
 import proscenium.*
 
-class AmalgamateTactic[ErrorType <: Exception, SuccessType]
-   (label: boundary.Label[SuccessType | ErrorType])
+class AmalgamateTactic[error <: Exception, success]
+   (label: boundary.Label[success | error])
    (using Diagnostics)
-extends Tactic[ErrorType]:
-  type Result = SuccessType | ErrorType
-  type Return = SuccessType | ErrorType
+extends Tactic[error]:
+  type Result = success | error
+  type Return = success | error
   def diagnostics: Diagnostics = summon[Diagnostics]
-  def record(error: Diagnostics ?=> ErrorType): Unit = boundary.break(error)(using label)
-  def abort(error: Diagnostics ?=> ErrorType): Nothing = boundary.break(error)(using label)
+  def record(error: Diagnostics ?=> error): Unit = boundary.break(error)(using label)
+  def abort(error: Diagnostics ?=> error): Nothing = boundary.break(error)(using label)

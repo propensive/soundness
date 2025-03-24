@@ -42,11 +42,11 @@ import scala.annotation.targetName
 object Message:
   def apply(value: Text): Message = Message(List(value))
   given Message is Printable = (message, termcap) => message.text
-  given [EventType: Communicable] => Message transcribes EventType = _.communicate
+  given [event: Communicable] => Message transcribes event = _.communicate
 
-  transparent inline def make[TupleType <: Tuple](inline subs: TupleType, done: List[Message])
+  transparent inline def make[tuple <: Tuple](inline subs: tuple, done: List[Message])
   :     List[Message] =
-    inline erasedValue[TupleType] match
+    inline erasedValue[tuple] match
       case _: (messageType *: tailType) => subs.absolve match
         case message *: tail =>
           val message2 = message.asInstanceOf[messageType]
@@ -63,10 +63,9 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
      (textParts.init ++ ((textParts.last+right.textParts.head) :: right.textParts.tail),
       subs ++ right.subs)
 
-  def fold[RenderType](initial: RenderType)(append: (RenderType, Text, Int) => RenderType)
-  :     RenderType =
-    def recur(done: RenderType, textTodo: List[Text], subsTodo: List[Message], level: Int)
-    :     RenderType =
+  def fold[render](initial: render)(append: (render, Text, Int) => render): render =
+    def recur(done: render, textTodo: List[Text], subsTodo: List[Message], level: Int)
+    :     render =
       subsTodo match
         case Nil =>
           append(done, textTodo.head, level)

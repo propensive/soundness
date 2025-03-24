@@ -38,21 +38,21 @@ import vacuous.*
 import wisteria.*
 
 object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
-  inline def join[DerivationType <: Product: ProductReflection]: CodlEncoder[DerivationType] =
+  inline def join[derivation <: Product: ProductReflection]: CodlEncoder[derivation] =
     val mapping: Map[Text, Text] = compiletime.summonFrom:
-      case relabelling: CodlRelabelling[DerivationType] => relabelling.relabelling()
-      case _                                            => Map()
+      case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
+      case _                                        => Map()
 
     val schema: CodlSchema =
       val elements = contexts:
-        [FieldType] => context => CodlSchema.Entry(mapping.at(label).or(label), context.schema)
+        [field] => context => CodlSchema.Entry(mapping.at(label).or(label), context.schema)
 
       Struct(elements.to(List), Arity.One)
 
-    def encode(product: DerivationType): List[IArray[CodlNode]] = List:
+    def encode(product: derivation): List[IArray[CodlNode]] = List:
       IArray.from:
         fields(product):
-          [FieldType] => field =>
+          [field] => field =>
             val label2 = mapping.at(label).or(label)
 
             context.encode(field).map: value =>

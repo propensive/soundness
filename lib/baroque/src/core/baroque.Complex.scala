@@ -42,59 +42,59 @@ import symbolism.*
 import scala.annotation.*
 
 object Complex:
-  given show: [ComponentType: Showable] => Complex[ComponentType] is Showable = complex =>
+  given show: [component: Showable] => Complex[component] is Showable = complex =>
    t"${complex.real.show} + ${complex.imaginary.show}𝒾"
 
-  inline given [UnitsType <: Measure] => Decimalizer => Complex[Quantity[UnitsType]] is Showable:
-    def text(value: Complex[Quantity[UnitsType]]): Text =
+  inline given [units <: Measure] => Decimalizer => Complex[Quantity[units]] is Showable:
+    def text(value: Complex[Quantity[units]]): Text =
       t"${value.real.value} + ${value.imaginary.value}𝒾 ${Quantity.expressUnits(value.real.units)}"
 
-  inline given addable: [ComponentType: Addable by ComponentType as addable]
-  =>    Complex[ComponentType] is Addable by Complex[ComponentType] =
-    Addable[Complex[ComponentType], Complex[ComponentType], Complex[addable.Result]]:
+  inline given addable: [component: Addable by component as addable]
+  =>    Complex[component] is Addable by Complex[component] =
+    Addable[Complex[component], Complex[component], Complex[addable.Result]]:
       (left, right) =>
         Complex[addable.Result](left.real + right.real, left.imaginary + right.imaginary)
 
-  inline given subtractable: [ComponentType: Subtractable by ComponentType as subtractable]
-  =>   Complex[ComponentType] is Subtractable by Complex[ComponentType] =
-    Subtractable[Complex[ComponentType], Complex[ComponentType], Complex[subtractable.Result]]:
+  inline given subtractable: [component: Subtractable by component as subtractable]
+  =>   Complex[component] is Subtractable by Complex[component] =
+    Subtractable[Complex[component], Complex[component], Complex[subtractable.Result]]:
       (left, right) =>
         Complex[subtractable.Result](left.real - right.real, left.imaginary - right.imaginary)
 
-  inline given multiplicable: [ComponentType]
-  =>   (multiplication: ComponentType is Multiplicable by ComponentType,
+  inline given multiplicable: [component]
+  =>   (multiplication: component is Multiplicable by component,
         addition:       multiplication.Result is Addable by multiplication.Result,
         subtraction:    multiplication.Result is Subtractable by multiplication.Result)
-  =>    Complex[ComponentType] is Multiplicable by Complex[ComponentType] =
-    Multiplicable[Complex[ComponentType],
-                  Complex[ComponentType],
+  =>    Complex[component] is Multiplicable by Complex[component] =
+    Multiplicable[Complex[component],
+                  Complex[component],
                   Complex[addition.Result | subtraction.Result]]:
       (left, right) =>
         Complex
          (left.real*right.real - left.imaginary*right.imaginary,
           left.real*right.imaginary + left.imaginary*right.real)
 
-  def polar[ComponentType: Multiplicable by Double as multiplication]
-     (modulus: ComponentType, argument: Double)
+  def polar[component: Multiplicable by Double as multiplication]
+     (modulus: component, argument: Double)
   :     Complex[multiplication.Result] =
     Complex(modulus*math.cos(argument), modulus*math.sin(argument))
 
-case class Complex[ComponentType](real: ComponentType, imaginary: ComponentType):
+case class Complex[component](real: component, imaginary: component):
   @targetName("add")
-  inline infix def + [ComponentType2](right: Complex[ComponentType2])
-     (using addition: ComponentType is Addable by ComponentType2)
+  inline infix def + [component2](right: Complex[component2])
+     (using addition: component is Addable by component2)
   :     Complex[addition.Result] =
     Complex(this.real + right.real, this.imaginary + right.imaginary)
 
   @targetName("sub")
-  inline infix def - [ComponentType2](right: Complex[ComponentType2])
-     (using subtraction: ComponentType is Subtractable by ComponentType2)
+  inline infix def - [component2](right: Complex[component2])
+     (using subtraction: component is Subtractable by component2)
   :     Complex[subtraction.Result] =
     Complex(this.real - right.real, this.imaginary - right.imaginary)
 
   @targetName("mul")
-  inline infix def * [ComponentType2](right: Complex[ComponentType2])
-     (using multiplication: ComponentType is Multiplicable by ComponentType2,
+  inline infix def * [component2](right: Complex[component2])
+     (using multiplication: component is Multiplicable by component2,
             addition:      multiplication.Result is Addable by multiplication.Result,
             subtraction:    multiplication.Result is Subtractable by multiplication.Result)
   :     Complex[subtraction.Result | addition.Result] =
@@ -103,9 +103,9 @@ case class Complex[ComponentType](real: ComponentType, imaginary: ComponentType)
      (real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real)
 
   @targetName("div")
-  inline infix def / [ComponentType2](right: Complex[ComponentType2])
-     (using multiplication:  ComponentType is Multiplicable by ComponentType2,
-            multiplication2: ComponentType2 is Multiplicable by ComponentType2,
+  inline infix def / [component2](right: Complex[component2])
+     (using multiplication:  component is Multiplicable by component2,
+            multiplication2: component2 is Multiplicable by component2,
             addition:     multiplication.Result is Addable by multiplication.Result,
             addition2:      multiplication2.Result is Addable by multiplication2.Result,
             subtraction:    multiplication.Result is Subtractable by multiplication.Result,
@@ -119,27 +119,27 @@ case class Complex[ComponentType](real: ComponentType, imaginary: ComponentType)
       (imaginary*right.real - real*right.imaginary)/divisor)
 
   inline def argument
-     (using multiplication: ComponentType is Multiplicable by ComponentType,
+     (using multiplication: component is Multiplicable by component,
             addition:      multiplication.Result is Addable by multiplication.Result,
             sqrt:        addition.Result is Rootable[2],
-            division:      ComponentType is Divisible by sqrt.Result,
+            division:      component is Divisible by sqrt.Result,
             equality:      division.Result =:= Double)
   :     Double =
 
     scala.math.atan2(imaginary/modulus, real/modulus)
 
   inline def modulus
-     (using multiplication: ComponentType is Multiplicable by ComponentType,
+     (using multiplication: component is Multiplicable by component,
             addition:      multiplication.Result is Addable by multiplication.Result,
             squareRoot:    addition.Result is Rootable[2])
   :     squareRoot.Result =
     squareRoot.root(real*real + imaginary*imaginary)
 
   inline def sqrt
-     (using multiplication:  ComponentType is Multiplicable by ComponentType,
+     (using multiplication:  component is Multiplicable by component,
             addition:     multiplication.Result is Addable by multiplication.Result,
             sqrt:         addition.Result is Rootable[2],
-            division:     ComponentType is Divisible by sqrt.Result,
+            division:     component is Divisible by sqrt.Result,
             equality:     division.Result =:= Double,
             sqrt2:        sqrt.Result is Rootable[2],
             multiplication2: sqrt2.Result is Multiplicable by Double)
@@ -147,9 +147,9 @@ case class Complex[ComponentType](real: ComponentType, imaginary: ComponentType)
     Complex.polar(modulus.sqrt, argument/2.0)
 
   @targetName("conjugate")
-  inline def unary_~(using neg: ComponentType is Negatable): Complex[ComponentType | neg.Result] =
+  inline def unary_~(using neg: component is Negatable): Complex[component | neg.Result] =
     Complex(real, -imaginary)
 
   @targetName("neg")
-  inline def unary_-(using neg: ComponentType is Negatable): Complex[ComponentType | neg.Result] =
+  inline def unary_-(using neg: component is Negatable): Complex[component | neg.Result] =
     Complex(-real, -imaginary)

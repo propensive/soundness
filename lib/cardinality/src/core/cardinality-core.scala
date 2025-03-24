@@ -39,5 +39,5 @@ import language.experimental.genericNumberLiterals
 export NumericRange.`~`
 
 extension (value: Double)
-  def force[MinValueType <: Double, MaxValueType <: Double]: MinValueType ~ MaxValueType =
-    value.asInstanceOf[MinValueType ~ MaxValueType]
+  def force[min <: Double, max <: Double]: min ~ max =
+    value.asInstanceOf[min ~ max]

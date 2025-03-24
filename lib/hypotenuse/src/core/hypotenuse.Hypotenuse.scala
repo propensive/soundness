@@ -49,7 +49,7 @@ import fulminate.*
 object Hypotenuse:
   given Realm = realm"hypotenuse"
 
-  type Bits[BitCountType <: 8 | 16 | 32 | 64] <: B8 | B16 | B32 | B64 = BitCountType match
+  type Bits[bits <: 8 | 16 | 32 | 64] <: B8 | B16 | B32 | B64 = bits match
     case 8  => B8
     case 16 => B16
     case 32 => B32

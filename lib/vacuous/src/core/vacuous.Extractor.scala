@@ -34,6 +34,6 @@ package vacuous
 
 import language.experimental.pureFunctions
 
-trait Extractor[-ScrutineeType, +ExtractionType]:
-  def extract(value: ScrutineeType): Optional[ExtractionType]
-  def unapply(value: ScrutineeType): Option[ExtractionType] = extract(value).option
+trait Extractor[-scrutinee, +extraction]:
+  def extract(value: scrutinee): Optional[extraction]
+  def unapply(value: scrutinee): Option[extraction] = extract(value).option

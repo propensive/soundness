@@ -37,15 +37,15 @@ import scala.quoted.*
 import fulminate.*
 
 object Vacuous:
-  def check[ValueType: Type](using Quotes): Expr[Optionality[ValueType]] =
+  def check[value: Type](using Quotes): Expr[Optionality[value]] =
     import quotes.reflect.*
-    if TypeRepr.of[Unset.type] <:< TypeRepr.of[ValueType].widen
-    then '{null.asInstanceOf[Optionality[ValueType]]}
-    else halt(m"the type ${TypeRepr.of[ValueType].widen.show} is not an `Optional`")
+    if TypeRepr.of[Unset.type] <:< TypeRepr.of[value].widen
+    then '{null.asInstanceOf[Optionality[value]]}
+    else halt(m"the type ${TypeRepr.of[value].widen.show} is not an `Optional`")
 
-  def optimizeOr[ValueType: Type]
-     (optional: Expr[Optional[ValueType]], default: Expr[ValueType])(using Quotes)
-  :     Expr[ValueType] =
+  def optimizeOr[value: Type]
+     (optional: Expr[Optional[value]], default: Expr[value])(using Quotes)
+  :     Expr[value] =
 
     import quotes.reflect.*
 
@@ -62,7 +62,7 @@ object Vacuous:
           case term =>
             ' { $optional match
                   case Unset => $default
-                  case term  => term.asInstanceOf[ValueType] } . asTerm
+                  case term  => term.asInstanceOf[value] } . asTerm
 
       case Inlined(call, bindings, term) =>
         Inlined(call, bindings, optimize(term))
@@ -70,6 +70,6 @@ object Vacuous:
       case term =>
         ' { $optional match
               case Unset => $default
-              case term  => term.asInstanceOf[ValueType] } . asTerm
+              case term  => term.asInstanceOf[value] } . asTerm
 
-    '{${optimize(optional.asTerm).asExpr}.asInstanceOf[ValueType]}.asExprOf[ValueType]
+    '{${optimize(optional.asTerm).asExpr}.asInstanceOf[value]}.asExprOf[value]

@@ -38,8 +38,8 @@ import rudiments.*
 import vacuous.*
 
 object Enumerable:
-  inline given derived: [EnumType <: reflect.Enum] => EnumType is Enumerable =
-    ${Distillate.enumerable[EnumType]}
+  inline given derived: [enumeration <: reflect.Enum] => enumeration is Enumerable =
+    ${Distillate.enumerable[enumeration]}
 
 trait Enumerable:
   type Self <: reflect.Enum

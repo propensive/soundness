@@ -50,7 +50,7 @@ class References():
   def array: Expr[List[Json]] = ref.vouch
   def current: Int = allocations.length
 
-  def allocate[ValueType](value: => ValueType)(using ValueType is Encodable in Json): Int =
+  def allocate[value](value: => value)(using value is Encodable in Json): Int =
     allocations.length.also { allocations ::= value.json }
 
   def apply(): Text =

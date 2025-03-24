@@ -35,10 +35,10 @@ package nomenclature
 import prepositional.*
 
 object Nominative:
-  def apply[SelfType, ConstraintType](): SelfType is Nominative under ConstraintType =
+  def apply[self, constraint](): self is Nominative under constraint =
     new Nominative:
-      type Self = SelfType
-      type Constraint = ConstraintType
+      type Self = self
+      type Constraint = constraint
 
 trait Nominative:
   type Self

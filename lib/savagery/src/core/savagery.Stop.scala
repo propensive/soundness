@@ -35,4 +35,4 @@ package savagery
 import anticipation.*
 import cardinality.*
 
-case class Stop[ColorType: Chromatic](offset: 0.0 ~ 1.0, color: ColorType)
+case class Stop[color: Chromatic](offset: 0.0 ~ 1.0, color: color)

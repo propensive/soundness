@@ -40,10 +40,10 @@ import anticipation.*
 import fulminate.*
 
 object Cardinality:
-  type Asym[ValueType <: Double, TrueValueType <: Double, FalseValueType <: Double] <: Double =
-    (ValueType > 0.0) match
-      case true  => TrueValueType
-      case false => FalseValueType
+  type Asym[value <: Double, truth <: Double, falsehood <: Double] <: Double =
+    (value > 0.0) match
+      case true  => truth
+      case false => falsehood
 
   type Min4
      [Value1Type <: Double, Value2Type <: Double, Value3Type <: Double, Value4Type <: Double] =
@@ -55,17 +55,17 @@ object Cardinality:
 
   given Realm = realm"cardinality"
 
-  def apply[LeftDoubleType <: Double: Type, RightDoubleType <: Double: Type](digits: Expr[String])
+  def apply[left <: Double: Type, right <: Double: Type](digits: Expr[String])
      (using Quotes)
-  :     Expr[LeftDoubleType ~ RightDoubleType] =
+  :     Expr[left ~ right] =
 
     import quotes.reflect.*
 
     digits.value match
       case Some(string) =>
-        TypeRepr.of[LeftDoubleType].asMatchable match
+        TypeRepr.of[left].asMatchable match
           case ConstantType(DoubleConstant(lowerBound)) =>
-            TypeRepr.of[RightDoubleType].asMatchable match
+            TypeRepr.of[right].asMatchable match
               case ConstantType(DoubleConstant(upperBound)) =>
                 val value = string.toDouble
 
@@ -77,7 +77,7 @@ object Cardinality:
                 then halt(m"""the value $string is greater than the upper bound for this value,
                     ${upperBound.toString}""")
 
-                '{${Expr(value)}.asInstanceOf[LeftDoubleType ~ RightDoubleType]}
+                '{${Expr(value)}.asInstanceOf[left ~ right]}
 
               case _ =>
                 halt(m"the upper bound must be a Double singleton literal types")

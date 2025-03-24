@@ -43,4 +43,4 @@ trait pl
 object pl extends Language(t"pl"):
   type Code = pl
 
-infix type via [ValueType, LanguageType] = Locale[LanguageType] ?=> ValueType
+infix type via [value, language] = Locale[language] ?=> value

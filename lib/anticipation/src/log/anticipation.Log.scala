@@ -35,14 +35,14 @@ package anticipation
 import language.experimental.into
 
 object Log:
-  def fine[MessageType: Loggable](message: MessageType)(using realm: Realm): Unit =
-    MessageType.log(Level.Fine, realm, System.currentTimeMillis, message)
+  def fine[loggable: Loggable](message: loggable)(using realm: Realm): Unit =
+    loggable.log(Level.Fine, realm, System.currentTimeMillis, message)
 
-  def info[MessageType: Loggable](message: MessageType)(using realm: Realm): Unit =
-    MessageType.log(Level.Info, realm, System.currentTimeMillis, message)
+  def info[loggable: Loggable](message: loggable)(using realm: Realm): Unit =
+    loggable.log(Level.Info, realm, System.currentTimeMillis, message)
 
-  def warn[MessageType: Loggable](message: MessageType)(using realm: Realm): Unit =
-    MessageType.log(Level.Warn, realm, System.currentTimeMillis, message)
+  def warn[loggable: Loggable](message: loggable)(using realm: Realm): Unit =
+    loggable.log(Level.Warn, realm, System.currentTimeMillis, message)
 
-  def fail[MessageType: Loggable](message: MessageType)(using realm: Realm): Unit =
-    MessageType.log(Level.Fail, realm, System.currentTimeMillis, message)
+  def fail[loggable: Loggable](message: loggable)(using realm: Realm): Unit =
+    loggable.log(Level.Fail, realm, System.currentTimeMillis, message)

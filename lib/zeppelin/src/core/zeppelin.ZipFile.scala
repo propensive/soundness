@@ -103,7 +103,7 @@ object Zipfile:
 
   private val cache: scc.TrieMap[Text, Semaphore] = scc.TrieMap()
 
-  def write[PathType: Abstractable across Paths into Text](path: PathType)(stream: Stream[ZipEntry])
+  def write[path: Abstractable across Paths into Text](path: path)(stream: Stream[ZipEntry])
   :     Unit =
 
     val filename = path.generic

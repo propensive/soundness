@@ -90,7 +90,7 @@ def warn(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = n
   if pos == null then report.warning(text) else report.warning(text, pos)
 
 extension (inline context: StringContext)
-  transparent inline def m[ParamType](inline subs: ParamType = Zero): Message =
+  transparent inline def m[param](inline subs: param = Zero): Message =
     inline subs.asMatchable match
       case tuple: Tuple =>
         import unsafeExceptions.canThrowAny
@@ -109,5 +109,5 @@ extension (inline context: StringContext)
 extension (inline context: StringContext)
   inline def realm(): Realm = ${Fulminate.realm('context)}
 
-extension [ValueType: Communicable](value: ValueType)
-  def communicate: Message = ValueType.message(value)
+extension [communicable: Communicable](value: communicable)
+  def communicate: Message = communicable.message(value)

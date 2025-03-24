@@ -39,11 +39,11 @@ import scala.collection.mutable as scm
 
 import java.util.concurrent.atomic as juca
 
-class LruCache[KeyType, ValueType](maxSize: Int):
+class LruCache[key, value](maxSize: Int):
   private val counter: juca.AtomicInteger = juca.AtomicInteger(0)
-  private val values: scm.HashMap[Int, ValueType] = scm.HashMap()
-  private val ids: scm.HashMap[KeyType, Int] = scm.HashMap()
-  private val keys: scm.TreeMap[Int, KeyType] = scm.TreeMap()
+  private val values: scm.HashMap[Int, value] = scm.HashMap()
+  private val ids: scm.HashMap[key, Int] = scm.HashMap()
+  private val keys: scm.TreeMap[Int, key] = scm.TreeMap()
 
   protected def evict(): Unit = while values.size > maxSize do
     val id = keys.firstKey
@@ -52,22 +52,22 @@ class LruCache[KeyType, ValueType](maxSize: Int):
     keys -= id
     values -= id
 
-  protected def touch(oldId: Int, newId: Int, key: KeyType, value: ValueType): Unit =
+  protected def touch(oldId: Int, newId: Int, key: key, value: value): Unit =
     keys(newId) = key
     values(newId) = value
     ids(key) = newId
     keys -= oldId
     values -= oldId
 
-  def contains(key: KeyType): Boolean = ids.contains(key)
+  def contains(key: key): Boolean = ids.contains(key)
 
-  def remove(key: KeyType): Unit =
+  def remove(key: key): Unit =
     ids.getOrElse(key, Unset).let: id =>
       values -= id
       ids -= key
       keys -= id
 
-  def apply(key: KeyType)(value: => ValueType): ValueType =
+  def apply(key: key)(value: => value): value =
     val newId = counter.getAndIncrement()
 
     ids.getOrElse(key, Unset).let: oldId =>

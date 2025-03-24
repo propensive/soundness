@@ -37,8 +37,8 @@ import prepositional.*
 import rudiments.*
 
 object Serializable:
-  def base[BaseType <: Serialization](bits: Int)(using alphabet: Alphabet[BaseType])
-  :     Serializable in BaseType = new:
+  def base[base <: Serialization](bits: Int)(using alphabet: Alphabet[base])
+  :     Serializable in base = new:
 
     def encode(bytes: Bytes): Text =
       val mask = (1 << bits) - 1

@@ -38,11 +38,11 @@ import fulminate.*
 import gossamer.{where as _, *}
 import vacuous.*
 
-case class SelectMenu[ItemType](options: List[ItemType], current: ItemType)
-extends Question[ItemType]:
+case class SelectMenu[item](options: List[item], current: item)
+extends Question[item]:
   import Keypress.*
 
-  def apply(keypress: TerminalEvent): SelectMenu[ItemType] = try keypress match
+  def apply(keypress: TerminalEvent): SelectMenu[item] = try keypress match
     case Up   => copy(current = options(0 max options.indexOf(current) - 1))
     case Down => copy(current = options(options.size - 1 min options.indexOf(current) + 1))
     case Home => copy(current = options.head)
@@ -53,10 +53,10 @@ extends Question[ItemType]:
 
   def ask
      (using interactivity: Interactivity[TerminalEvent],
-            interaction: Interaction[ItemType, SelectMenu[ItemType]])
-     [ResultType]
-     (lambda: Interactivity[TerminalEvent] ?=> ItemType => ResultType)
-  :     ResultType raises DismissError =
+            interaction: Interaction[item, SelectMenu[item]])
+     [result]
+     (lambda: Interactivity[TerminalEvent] ?=> item => result)
+  :     result raises DismissError =
 
     interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())):
       (result, stream) => lambda(using Interactivity(stream))(result)

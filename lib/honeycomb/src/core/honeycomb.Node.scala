@@ -39,14 +39,14 @@ import spectacular.*
 import vacuous.*
 
 object Node:
-  given html: [HtmlType <: Html[?]] => HtmlType is Showable = html => html.absolve match
+  given html: [html <: Html[?]] => html is Showable = html => html.absolve match
     case text: Text    => text
     case int: Int      => int.show
     case node: Node[?] => node.show
 
   given seq: Seq[Html[?]] is Showable = _.map(_.show).join
 
-  given node: [NodeType <: Node[?]] => NodeType is Showable = item =>
+  given node: [node <: Node[?]] => node is Showable = item =>
     val filling =
       item.attributes.map: keyValue =>
         keyValue.absolve match
@@ -65,7 +65,7 @@ object Node:
     def attributes = attributes0
     def children: Seq[Node[?] | Text | Int | HtmlXml] = children0
 
-trait Node[+NameType <: Label]:
+trait Node[+name <: Label]:
   def label: Text
   def attributes: Attributes
   def children: Seq[Html[?]]

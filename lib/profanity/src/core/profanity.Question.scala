@@ -32,5 +32,5 @@
                                                                                                   */
 package profanity
 
-trait Question[AnswerType]:
-  def apply(keypress: TerminalEvent): Question[AnswerType]
+trait Question[answer]:
+  def apply(keypress: TerminalEvent): Question[answer]

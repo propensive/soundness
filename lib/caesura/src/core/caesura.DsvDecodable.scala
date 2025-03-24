@@ -44,28 +44,28 @@ import wisteria.*
 import scala.compiletime.*
 
 object DsvDecodable extends ProductDerivable[DsvDecodable]:
-  class DsvProductDecoder[DerivationType](count: Int, lambda: Row => DerivationType)
+  class DsvProductDecoder[derivation](count: Int, lambda: Row => derivation)
   extends DsvDecodable:
-    type Self = DerivationType
+    type Self = derivation
     override def width: Int = count
-    def decoded(row: Row): DerivationType = lambda(row)
+    def decoded(row: Row): derivation = lambda(row)
 
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is DsvDecodable =
-    val sum = contexts { [FieldType] => context => context.width }.sum
+  inline def join[derivation <: Product: ProductReflection]: derivation is DsvDecodable =
+    val sum = contexts { [field] => context => context.width }.sum
     var rowNumber: Ordinal = Prim
     var count = 0
 
     summonInline[Foci[CellRef]].give:
-      DsvProductDecoder[DerivationType](sum, (row: Row) => construct:
-        [FieldType] => context =>
+      DsvProductDecoder[derivation](sum, (row: Row) => construct:
+        [field] => context =>
           val index = row.columns.let(_.at(label)).or(count)
           val row2 = Row(row.data.drop(index))
           count += context.width
           focus(CellRef(rowNumber, label)):
             typeclass.decoded(row2))
 
-  given decoder: [ValueType: Decodable in Text] => ValueType is DsvDecodable =
-    value => ValueType.decoded(value.data.head)
+  given decoder: [decodable: Decodable in Text] => decodable is DsvDecodable =
+    value => decodable.decoded(value.data.head)
 
 trait DsvDecodable:
   type Self

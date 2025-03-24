@@ -41,7 +41,7 @@ object Hellenism extends Hellenism2:
 
   object ClassRef:
     def apply(javaClass: Class[?]): ClassRef = javaClass
-    inline def apply[ClassType <: AnyKind]: ClassRef = ${Hellenism.makeClass[ClassType]}
+    inline def apply[template <: AnyKind]: ClassRef = ${Hellenism.makeClass[template]}
 
   extension (classRef: ClassRef)
     def classloader: Classloader = new Classloader(classRef.getClassLoader().nn)
@@ -52,7 +52,7 @@ object Hellenism extends Hellenism2:
 export Hellenism.ClassRef
 
 trait Hellenism2:
-  def makeClass[ClassType <: AnyKind: Type](using Quotes): Expr[ClassRef] =
+  def makeClass[template <: AnyKind: Type](using Quotes): Expr[ClassRef] =
     import quotes.reflect.*
 
-    '{ClassRef(Class.forName(${Expr(TypeRepr.of[ClassType].classSymbol.get.fullName)}).nn)}
+    '{ClassRef(Class.forName(${Expr(TypeRepr.of[template].classSymbol.get.fullName)}).nn)}

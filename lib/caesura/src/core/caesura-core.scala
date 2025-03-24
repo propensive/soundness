@@ -50,7 +50,7 @@ package dsvRedesignations:
   given capitalizedWords: DsvRedesignation = _.uncamel.map(_.capitalize).join(t" ")
   given lowerWords: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
 
-extension [ValueType: DsvEncodable](value: ValueType) def dsv: Row = ValueType.encode(value)
+extension [encodable: DsvEncodable](value: encodable) def dsv: Row = encodable.encode(value)
 
-extension [ValueType: DsvEncodable](value: Seq[ValueType])
-  def dsv: Dsv = Dsv(value.to(Stream).map(ValueType.encode(_)))
+extension [encodable: DsvEncodable](value: Seq[encodable])
+  def dsv: Dsv = Dsv(value.to(Stream).map(encodable.encode(_)))

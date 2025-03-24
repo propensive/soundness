@@ -37,24 +37,24 @@ import vacuous.*
 import scala.quoted.*
 
 object Wisteria:
-  inline def default[ProductType, FieldType](index: Int): Optional[FieldType] =
-    ${getDefault[ProductType, FieldType]('index)}
+  inline def default[product, field](index: Int): Optional[field] =
+    ${getDefault[product, field]('index)}
 
-  def getDefault[ProductType: Type, FieldType: Type](index: Expr[Int])(using Quotes)
-  :     Expr[Optional[FieldType]] =
+  def getDefault[product: Type, field: Type](index: Expr[Int])(using Quotes)
+  :     Expr[Optional[field]] =
 
     import quotes.reflect.*
 
     val methodName: String = "$lessinit$greater$default$"+(index.valueOrAbort + 1)
-    val productSymbol = TypeRepr.of[ProductType].classSymbol
+    val productSymbol = TypeRepr.of[product].classSymbol
 
     productSymbol.flatMap: symbol =>
       symbol.companionClass.declaredMethod(methodName).headOption.map: method =>
         Ref(symbol.companionModule).select(method)
 
     . map: selection =>
-        TypeRepr.of[ProductType].typeArgs match
+        TypeRepr.of[product].typeArgs match
           case Nil  => selection
           case args => selection.appliedToTypes(args)
 
-    . map(_.asExprOf[FieldType]).getOrElse('{Unset})
+    . map(_.asExprOf[field]).getOrElse('{Unset})

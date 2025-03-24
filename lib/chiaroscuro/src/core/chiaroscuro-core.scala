@@ -32,9 +32,9 @@
                                                                                                   */
 package chiaroscuro
 
-extension [ValueType](left: ValueType)
-  def decompose(using decomposable: ValueType is Decomposable): Decomposition =
+extension [value](left: value)
+  def decompose(using decomposable: value is Decomposable): Decomposition =
     decomposable.decompose(left)
 
-  def contrast(right: ValueType)(using contrastable: ValueType is Contrastable): Juxtaposition =
+  def contrast(right: value)(using contrastable: value is Contrastable): Juxtaposition =
     contrastable.contrast(left, right)

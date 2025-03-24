@@ -37,4 +37,4 @@ import serpentine.*
 
 trait DeleteRecursively:
   type Platform <: Filesystem
-  def conditionally[ResultType](path: Path on Platform)(operation: => ResultType): ResultType
+  def conditionally[result](path: Path on Platform)(operation: => result): result

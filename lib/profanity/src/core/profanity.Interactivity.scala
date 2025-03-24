@@ -35,7 +35,7 @@ package profanity
 import proscenium.*
 
 object Interactivity:
-  def apply[EventType](stream: Stream[EventType]): Interactivity[EventType] = () => stream
+  def apply[event](stream: Stream[event]): Interactivity[event] = () => stream
 
-trait Interactivity[EventType]:
-  def eventStream(): Stream[EventType]
+trait Interactivity[event]:
+  def eventStream(): Stream[event]

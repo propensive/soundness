@@ -85,11 +85,11 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
     import Context.{Normal, Escape, Csi, Csi2, Osc, Osc2}
 
     object SgrParam:
-      def unapply[DefaultType <: Int: ValueOf](params: Text): Some[Int] = params match
-        case t""          => Some(valueOf[DefaultType])
+      def unapply[default <: Int: ValueOf](params: Text): Some[Int] = params match
+        case t""          => Some(valueOf[default])
         case As[Int](int) => Some(int)
         case text         =>
-          raise(PtyEscapeError(NonintegerSgrParameter(text))) yet Some(valueOf[DefaultType])
+          raise(PtyEscapeError(NonintegerSgrParameter(text))) yet Some(valueOf[default])
 
     object SgrParams:
       def unapplySeq(params: Text): Some[List[Int]] =

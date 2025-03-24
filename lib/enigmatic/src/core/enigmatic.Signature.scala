@@ -39,10 +39,10 @@ import prepositional.*
 import spectacular.*
 
 object Signature:
-  given [SignatureType <: Cipher] => Signature[SignatureType] is Showable = sig =>
+  given [signature <: Cipher] => Signature[signature] is Showable = sig =>
     import alphabets.base64.standard
     t"Signature(${sig.bytes.serialize[Base64]})"
 
-  given [CipherType <: Cipher] => Signature[CipherType] is Encodable in Bytes = _.bytes
+  given [cipher <: Cipher] => Signature[cipher] is Encodable in Bytes = _.bytes
 
-case class Signature[+CipherType <: Cipher](bytes: Bytes)
+case class Signature[+cipher <: Cipher](bytes: Bytes)

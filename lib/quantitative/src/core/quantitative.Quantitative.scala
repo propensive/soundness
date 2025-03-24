@@ -47,33 +47,32 @@ import language.implicitConversions
 import language.experimental.captureChecking
 
 object Quantitative extends Quantitative2:
-  opaque type Quantity[UnitsType <: Measure] = Double
-  opaque type MetricUnit[UnitsType <: Measure] <: Quantity[UnitsType] = Double
+  opaque type Quantity[units <: Measure] = Double
+  opaque type MetricUnit[units <: Measure] <: Quantity[units] = Double
 
-  extension [UnitsType <: Measure](quantity: Quantity[UnitsType])
+  extension [units <: Measure](quantity: Quantity[units])
     def underlying: Double = quantity
 
     inline def value: Double =
       val double: Double = compiletime.summonFrom:
-        case unitsOffset: UnitsOffset[UnitsType] => (quantity - unitsOffset.value()): Double
+        case unitsOffset: UnitsOffset[`units`] => (quantity - unitsOffset.value()): Double
         case _                                   => quantity: Double
 
       double
 
   object MetricUnit:
-    erased given underlying: [UnitsType <: Measure] => Underlying[MetricUnit[UnitsType], Double] =
-      !!
+    erased given underlying: [units <: Measure] => Underlying[MetricUnit[units], Double] = !!
 
-    def apply[UnitsType <: Measure](value: Double): MetricUnit[UnitsType] = value
+    def apply[units <: Measure](value: Double): MetricUnit[units] = value
 
     @targetName("makeDerivedUnit")
-    def apply[UnitsType <: Measure](value: Quantity[UnitsType]): MetricUnit[UnitsType] = value
+    def apply[units <: Measure](value: Quantity[units]): MetricUnit[units] = value
 
   object Quantity:
-    erased given underlying: [UnitsType <: Measure] => Underlying[Quantity[UnitsType], Double] = !!
-    erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = !!
-    given [UnitsType <: Measure] => Quantity[UnitsType] is Zeroic = () => Quantity(0.0)
-    given numeric: [UnitsType <: Measure] => Numeric[Quantity[UnitsType]] = summon[Numeric[Double]]
+    erased given underlying: [units <: Measure] => Underlying[Quantity[units], Double] = !!
+    erased given [units <: Measure]: CanEqual[Quantity[units], Quantity[units]] = !!
+    given [units <: Measure] => Quantity[units] is Zeroic = () => Quantity(0.0)
+    given numeric: [units <: Measure] => Numeric[Quantity[units]] = summon[Numeric[Double]]
 
     given genericDuration: Quantity[Seconds[1]] is GenericDuration =
       quantity => (quantity*1000.0).toLong
@@ -82,93 +81,92 @@ object Quantitative extends Quantitative2:
     given specificDuration: Quantity[Seconds[1]] is SpecificDuration =
       long => Quantity(long/1000.0)
 
-    transparent inline given addable: [LeftType <: Measure, RightType <: Measure]
-    =>    Quantity[LeftType] is Addable by Quantity[RightType] =
-      ${Quantitative.addTypeclass[LeftType, RightType]}
+    transparent inline given addable: [left <: Measure, right <: Measure]
+    =>    Quantity[left] is Addable by Quantity[right] =
+      ${Quantitative.addTypeclass[left, right]}
 
-    transparent inline given subtractable: [LeftType <: Measure, RightType <: Measure]
-    =>    Quantity[LeftType] is Subtractable by Quantity[RightType] =
-      ${Quantitative.subTypeclass[LeftType, RightType]}
+    transparent inline given subtractable: [left <: Measure, right <: Measure]
+    =>    Quantity[left] is Subtractable by Quantity[right] =
+      ${Quantitative.subTypeclass[left, right]}
 
-    transparent inline given multiplicable: [LeftType <: Measure, RightType <: Measure]
-    =>    Quantity[LeftType] is Multiplicable by Quantity[RightType] =
-      ${Quantitative.mulTypeclass[LeftType, RightType]}
+    transparent inline given multiplicable: [left <: Measure, right <: Measure]
+    =>    Quantity[left] is Multiplicable by Quantity[right] =
+      ${Quantitative.mulTypeclass[left, right]}
 
-    given multiplicable2: [LeftType <: Measure]
-    =>    Quantity[LeftType] is Multiplicable by Double into Quantity[LeftType] =
+    given multiplicable2: [left <: Measure]
+    =>    Quantity[left] is Multiplicable by Double into Quantity[left] =
       new Multiplicable:
-        type Self = Quantity[LeftType]
+        type Self = Quantity[left]
         type Operand = Double
-        type Result = Quantity[LeftType]
+        type Result = Quantity[left]
 
-        inline def multiply(left: Quantity[LeftType], right: Double): Quantity[LeftType] =
+        inline def multiply(left: Quantity[left], right: Double): Quantity[left] =
           left*right
 
-    given multiplicable3: [RightType <: Measure]
-    =>    Double is Multiplicable by Quantity[RightType] into Quantity[RightType] =
+    given multiplicable3: [right <: Measure]
+    =>    Double is Multiplicable by Quantity[right] into Quantity[right] =
       new Multiplicable:
         type Self = Double
-        type Operand = Quantity[RightType]
-        type Result = Quantity[RightType]
+        type Operand = Quantity[right]
+        type Result = Quantity[right]
 
-        inline def multiply(left: Double, right: Quantity[RightType]): Quantity[RightType] =
+        inline def multiply(left: Double, right: Quantity[right]): Quantity[right] =
           left*right
 
-    transparent inline given divisible: [LeftType <: Measure, RightType <: Measure]
-    =>    Quantity[LeftType] is Divisible by Quantity[RightType] =
-      ${Quantitative.divTypeclass[LeftType, RightType]}
+    transparent inline given divisible: [left <: Measure, right <: Measure]
+    =>    Quantity[left] is Divisible by Quantity[right] =
+      ${Quantitative.divTypeclass[left, right]}
 
-    given divisibleDouble: [LeftType <: Measure] => Quantity[LeftType] is Divisible by Double =
+    given divisibleDouble: [left <: Measure] => Quantity[left] is Divisible by Double =
       new Divisible:
-        type Self = Quantity[LeftType]
-        type Result = Quantity[LeftType]
+        type Self = Quantity[left]
+        type Result = Quantity[left]
         type Operand = Double
-        inline def divide(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
+        inline def divide(left: Quantity[left], right: Double): Quantity[left] = left/right
 
-    transparent inline given squareRoot: [ValueType <: Measure]
-    =>    Quantity[ValueType] is Rootable[2] =
-      ${Quantitative.sqrtTypeclass[ValueType]}
+    transparent inline given squareRoot: [value <: Measure]
+    =>    Quantity[value] is Rootable[2] =
+      ${Quantitative.sqrtTypeclass[value]}
 
-    transparent inline given cubeRoot: [ValueType <: Measure]
-    =>    Quantity[ValueType] is Rootable[3] =
-      ${Quantitative.cbrtTypeclass[ValueType]}
+    transparent inline given cubeRoot: [value <: Measure]
+    =>    Quantity[value] is Rootable[3] =
+      ${Quantitative.cbrtTypeclass[value]}
 
-    inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
+    inline def apply[units <: Measure](value: Double): Quantity[units] = value
 
     given convertDouble: Conversion[Double, Quantity[Measure]] = Quantity[Measure](_)
     given convertInt: Conversion[Int, Quantity[Measure]] = int => Quantity[Measure](int.toDouble)
 
-    given commensurable: [UnitsType <: Measure, UnitsType2 <: Measure]
-    =>    Quantity[UnitsType] is Commensurable:
+    given commensurable: [units <: Measure, units2 <: Measure]
+    =>    Quantity[units] is Commensurable:
 
-      type Operand = Quantity[UnitsType2]
+      type Operand = Quantity[units2]
 
       inline def compare
-         (inline left:        Quantity[UnitsType],
-          inline right:       Quantity[UnitsType2],
+         (inline left:        Quantity[units],
+          inline right:       Quantity[units2],
           inline strict:      Boolean,
           inline greaterThan: Boolean)
       :     Boolean =
 
-        ${Quantitative.greaterThan[UnitsType, UnitsType2]('left, 'right, 'strict, 'greaterThan)}
+        ${Quantitative.greaterThan[units, units2]('left, 'right, 'strict, 'greaterThan)}
 
-    class ShowableQuantity[UnitsType <: Measure](fn: Quantity[UnitsType] => Text)
+    class ShowableQuantity[units <: Measure](fn: Quantity[units] => Text)
        (using Decimalizer)
     extends Showable:
-      type Self = Quantity[UnitsType]
-      def text(value: Quantity[UnitsType]): Text = fn(value)
+      type Self = Quantity[units]
+      def text(value: Quantity[units]): Text = fn(value)
 
-    class InspectableQuantity[UnitsType <: Measure](fn: Quantity[UnitsType] => Text)
-       (using Decimalizer)
+    class InspectableQuantity[units <: Measure](fn: Quantity[units] => Text)(using Decimalizer)
     extends Inspectable:
-      type Self = Quantity[UnitsType]
-      def text(value: Quantity[UnitsType]): Text = fn(value)
+      type Self = Quantity[units]
+      def text(value: Quantity[units]): Text = fn(value)
 
-    inline given [UnitsType <: Measure] => Decimalizer => Quantity[UnitsType] is Showable =
-      ShowableQuantity[UnitsType](_.express)
+    inline given [units <: Measure] => Decimalizer => Quantity[units] is Showable =
+      ShowableQuantity[units](_.express)
 
-    inline given [UnitsType <: Measure] => Decimalizer => Quantity[UnitsType] is Inspectable =
-      InspectableQuantity[UnitsType](_.express)
+    inline given [units <: Measure] => Decimalizer => Quantity[units] is Inspectable =
+      InspectableQuantity[units](_.express)
 
     def expressUnits(units: Map[Text, Int]): Text =
       units.to(List).map: (unit, power) =>

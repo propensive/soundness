@@ -59,10 +59,10 @@ object Nomenclature2:
       case AndType(left, right) => decompose(left) ++ decompose(right)
       case other                => Set(other)
 
-  def disintersection[IntersectionType: Type](using Quotes): Expr[Tuple] =
+  def disintersection[intersection: Type](using Quotes): Expr[Tuple] =
     import quotes.reflect.*
 
-    build(decompose(TypeRepr.of[IntersectionType]).to(List)).asType.absolve match
+    build(decompose(TypeRepr.of[intersection]).to(List)).asType.absolve match
       case '[type tupleType <: Tuple; tupleType] => '{null.asInstanceOf[tupleType]}
 
   def extractor(context: Expr[StringContext])(using Quotes): Expr[Any] =
@@ -74,38 +74,38 @@ object Nomenclature2:
       case _ =>
         panic(m"StringContext did not contains Strings")
 
-  def parse2[PlatformType: Type, NameType <: String: Type](scrutinee: Expr[Name[PlatformType]])
+  def parse2[platform: Type, name <: String: Type](scrutinee: Expr[Name[platform]])
      (using Quotes)
   :     Expr[Boolean] =
-    parse[PlatformType, NameType]
-    '{${Expr(constant[NameType])}.tt == $scrutinee.text}
+    parse[platform, name]
+    '{${Expr(constant[name])}.tt == $scrutinee.text}
 
-  def constant[TextType <: String: Type](using Quotes): TextType =
+  def constant[text <: String: Type](using Quotes): text =
     import quotes.reflect.*
-    TypeRepr.of[TextType].asMatchable.absolve match
-      case ConstantType(StringConstant(value)) => value.tt.asInstanceOf[TextType]
+    TypeRepr.of[text].asMatchable.absolve match
+      case ConstantType(StringConstant(value)) => value.tt.asInstanceOf[text]
 
-  def companion[CompanionType: Typeable](using Quotes)(symbol: quotes.reflect.Symbol)
-  :     CompanionType =
+  def companion[companion: Typeable](using Quotes)(symbol: quotes.reflect.Symbol)
+  :     companion =
     Class.forName(s"${symbol.companionModule.fullName}$$").nn.getField("MODULE$").nn.get(null) match
-      case module: CompanionType => module
-      case _                     => halt(m"The companion object did not have the expected type.")
+      case module: `companion` => module
+      case _                   => halt(m"The companion object did not have the expected type.")
 
-  def parse[PlatformType: Type, NameType <: String: Type](using Quotes): Expr[Name[PlatformType]] =
+  def parse[platform: Type, name <: String: Type](using Quotes): Expr[Name[platform]] =
     import quotes.reflect.*
 
-    val name: Text = constant[NameType].tt
+    val name: Text = constant[name].tt
 
-    Expr.summon[PlatformType is Nominative] match
-      case Some('{ type constraintType
-                   type nominativeType <: Nominative { type Constraint = constraintType }
-                   $value: nominativeType }) =>
-        decompose(TypeRepr.of[constraintType]).to(List).each: repr =>
+    Expr.summon[platform is Nominative] match
+      case Some('{ type constraint
+                   type nominative <: Nominative { type Constraint = constraint }
+                   $value: nominative }) =>
+        decompose(TypeRepr.of[constraint]).to(List).each: repr =>
           val text = repr.asMatchable match
             case AppliedType(_, List(param)) => param.asMatchable match
               case ConstantType(StringConstant(text)) => text.tt
-              case _ => halt(m"Bad type")
-            case _                                                        => halt(m"Bad type")
+              case _                                  => halt(m"Bad type")
+            case _                           => halt(m"Bad type")
           val rule = companion[Rule](repr.typeSymbol)
           if !rule.check(name, text)
           then halt(m"the name is not valid because it ${rule.describe(text)}")
@@ -113,4 +113,4 @@ object Nomenclature2:
         halt(m"Could not access constraint")
 
 
-    '{${Expr(name)}.asInstanceOf[Name[PlatformType]]}
+    '{${Expr(name)}.asInstanceOf[Name[platform]]}

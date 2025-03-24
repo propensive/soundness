@@ -44,10 +44,10 @@ import vacuous.*
 
 import scala.compiletime.*, ops.int.*
 
-class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
-   (val rows: Int, val columns: Int, val elements: IArray[ElementType]):
+class Matrix[element, rows <: Int, columns <: Int]
+   (val rows: Int, val columns: Int, val elements: IArray[element]):
 
-  def apply(row: Int, column: Int): ElementType = elements(columns*row + column)
+  def apply(row: Int, column: Int): element = elements(columns*row + column)
 
   override def equals(right: Any): Boolean = right.asMatchable match
     case matrix: Matrix[?, ?, ?] => elements.sameElements(matrix.elements)
@@ -59,10 +59,10 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
   override def toString(): String = t"[${elements.inspect}]".s
 
   @targetName("scalarMul")
-  def * [RightType](right: RightType)
-     (using multiplication: ElementType is Multiplicable by RightType)
+  def * [right](right: right)
+     (using multiplication: element is Multiplicable by right)
      (using ClassTag[multiplication.Result])
-  :     Matrix[multiplication.Result, RowsType, ColumnsType] =
+  :     Matrix[multiplication.Result, rows, columns] =
 
     val elements2 = IArray.create[multiplication.Result](elements.length): array =>
       elements.indices.foreach: index =>
@@ -71,9 +71,9 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
     new Matrix(rows, columns, elements2)
 
   @targetName("scalarDiv")
-  def / [RightType](right: RightType)(using div: ElementType is Divisible by RightType)
+  def / [right](right: right)(using div: element is Divisible by right)
      (using ClassTag[div.Result])
-  :     Matrix[div.Result, RowsType, ColumnsType] =
+  :     Matrix[div.Result, rows, columns] =
 
     val elements2 = IArray.create[div.Result](elements.length): array =>
       elements.indices.foreach: index =>
@@ -82,18 +82,18 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
     new Matrix(rows, columns, elements2)
 
   @targetName("mul")
-  def * [RightType, RightColumnsType <: Int: ValueOf]
-     (right: Matrix[RightType, ColumnsType, RightColumnsType])
-     (using multiplication: ElementType is Multiplicable by RightType,
+  def * [right, rightColumns <: Int: ValueOf]
+     (right: Matrix[right, columns, rightColumns])
+     (using multiplication: element is Multiplicable by right,
             addition:       multiplication.Result is Addable by multiplication.Result,
             equality:       addition.Result =:= multiplication.Result,
-            rowValue:       ValueOf[RowsType],
-            columnValue:    ValueOf[ColumnsType],
+            rowValue:       ValueOf[rows],
+            columnValue:    ValueOf[columns],
             classTag:       ClassTag[multiplication.Result])
-  :     Matrix[multiplication.Result, RowsType, RightColumnsType] =
+  :     Matrix[multiplication.Result, rows, rightColumns] =
 
-    val columns2 = valueOf[RightColumnsType]
-    val inner = valueOf[ColumnsType]
+    val columns2 = valueOf[rightColumns]
+    val inner = valueOf[columns]
 
     val elements = IArray.create[multiplication.Result](rows*columns2): array =>
       for row <- 0 until rows; column <- 0 until columns2
@@ -103,7 +103,7 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
     new Matrix(rows, columns2, elements)
 
 object Matrix:
-  given [ElementType: Showable] => Text is Measurable => Matrix[ElementType, ?, ?] is Showable =
+  given [element: Showable] => Text is Measurable => Matrix[element, ?, ?] is Showable =
     matrix =>
       val textElements = matrix.elements.map(_.show)
       val sizes = textElements.map(_.length)
@@ -125,28 +125,28 @@ object Matrix:
       . join(t"\n")
 
   transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using erased Void)
-     [ElementType]
+     [element]
      (rows: Tuple)
      (using Tuple.Union
              [Tuple.Fold
                [rows.type,
                 Zero,
                 [left, right] =>>
-                  Tuple.Concat[left & Tuple, right & Tuple]] & Tuple] <:< ElementType,
+                  Tuple.Concat[left & Tuple, right & Tuple]] & Tuple] <:< element,
             Columns =:= Tuple.Union[Tuple.Map[rows.type, [tuple] =>> Tuple.Size[tuple & Tuple]]],
             Rows =:= Tuple.Size[rows.type],
-            ClassTag[ElementType])
+            ClassTag[element])
       : Any =
 
     val rowCount: Int = valueOf[Rows]
     val columnCount = valueOf[Columns]
 
-    new Matrix[ElementType, Rows, Columns]
+    new Matrix[element, Rows, Columns]
      (rowCount,
       columnCount,
-      IArray.create[ElementType](columnCount*rowCount): array =>
+      IArray.create[element](columnCount*rowCount): array =>
         for row <- 0 until rowCount; column <- 0 until columnCount
         do rows.productElement(row).asMatchable.absolve match
           case tuple: Tuple =>
             array(columnCount*row + column) =
-              tuple.productElement(column).asInstanceOf[ElementType])
+              tuple.productElement(column).asInstanceOf[element])

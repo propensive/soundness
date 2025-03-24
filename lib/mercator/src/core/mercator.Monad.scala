@@ -33,14 +33,14 @@
 package mercator
 
 object Monad:
-  inline given [MonadType[_]]: Monad[MonadType] = ${Mercator.monad[MonadType]}
+  inline given [monad[_]]: Monad[monad] = ${Mercator.monad[monad]}
 
-trait Monad[MonadType[_]] extends Functor[MonadType]:
-  def bind[ValueType, ValueType2](value: MonadType[ValueType])
-     (lambda: ValueType => MonadType[ValueType2])
-  :     MonadType[ValueType2]
+trait Monad[monad[_]] extends Functor[monad]:
+  def bind[value, value2](value: monad[value])
+     (lambda: value => monad[value2])
+  :     monad[value2]
 
-  extension [ValueType](value: MonadType[ValueType])
-    def flatMap[ValueType2](lambda: ValueType => MonadType[ValueType2])
-    :     MonadType[ValueType2] =
+  extension [value](value: monad[value])
+    def flatMap[value2](lambda: value => monad[value2])
+    :     monad[value2] =
       bind(value)(lambda)

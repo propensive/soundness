@@ -36,10 +36,10 @@ import anticipation.*
 import denominative.*
 
 object Segmentable:
-  given [ElementType] => IndexedSeq[ElementType] is Segmentable =
+  given [element] => IndexedSeq[element] is Segmentable =
     (seq, interval) => seq.slice(interval.start.n0, interval.end.n0)
 
-  given iarray: [ElementType] => IArray[ElementType] is Segmentable =
+  given iarray: [element] => IArray[element] is Segmentable =
     (iarray, interval) => iarray.slice(interval.start.n0, interval.end.n0)
 
   given Text is Segmentable = (text, interval) =>

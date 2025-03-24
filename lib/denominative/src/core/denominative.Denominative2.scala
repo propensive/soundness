@@ -48,7 +48,7 @@ object Denominative2:
     inline def next: Countback = end - 1
     inline def previous: Ordinal = start - 1
 
-    inline def of[ValueType: Countable](value: ValueType): Interval =
+    inline def of[value: Countable](value: value): Interval =
       Interval(bounds.start, Ult.of(value))
 
   extension (countback: Countback)
@@ -75,5 +75,5 @@ object Denominative2:
     inline def next: Countback = (countback - 1).max(0)
     inline def previous: Countback = countback + 1
 
-    inline def of[ValueType: Countable](inline value: ValueType): Ordinal =
-      Ordinal.natural(ValueType.size(value) - countback)
+    inline def of[countable: Countable](inline value: countable): Ordinal =
+      Ordinal.natural(countable.size(value) - countback)

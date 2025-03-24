@@ -44,90 +44,90 @@ import prepositional.*
 import proscenium.*
 import vacuous.*
 
-trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
-  inline def defaultName: Text = name.or(valueOf[AliasType].tt.uncamel.snake.upper)
+trait EnvironmentVariable[alias <: Label, +variable] extends Pure:
+  inline def defaultName: Text = name.or(valueOf[alias].tt.uncamel.snake.upper)
   def name: Optional[Text] = Unset
-  def read(value: Text): VariableType
+  def read(value: Text): variable
 
 object EnvironmentVariable extends EnvironmentVariable2:
-  given path: [PathType: Instantiable across Paths from Text]
+  given path: [path: Instantiable across Paths from Text]
   =>   (systemProperties: SystemProperties)
-  =>    EnvironmentVariable["path", List[PathType]] =
+  =>    EnvironmentVariable["path", List[path]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 
-  given xdgDataDirs: [PathType: Instantiable across Paths from Text]
+  given xdgDataDirs: [path: Instantiable across Paths from Text]
   =>   (systemProperties: SystemProperties)
-  =>    EnvironmentVariable["xdgDataDirs", List[PathType]] =
+  =>    EnvironmentVariable["xdgDataDirs", List[path]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 
-  given xdgConfigDirs: [PathType: Instantiable across Paths from Text]
+  given xdgConfigDirs: [path: Instantiable across Paths from Text]
   =>   (systemProperties: SystemProperties)
-  =>    EnvironmentVariable["xdgConfigDirs", List[PathType]] =
+  =>    EnvironmentVariable["xdgConfigDirs", List[path]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 
-  given xdgDataHome: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["xdgDataHome", PathType] =
+  given xdgDataHome: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["xdgDataHome", path] =
 
-    PathType(_)
+    path(_)
 
-  given xdgConfigHome: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["xdgConfigHome", PathType] =
-    PathType(_)
+  given xdgConfigHome: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["xdgConfigHome", path] =
+    path(_)
 
-  given xdgStateHome: [PathType: Instantiable across Paths from Text]
-  =>    (EnvironmentVariable["xdgStateHome", PathType]) =
-    PathType(_)
+  given xdgStateHome: [path: Instantiable across Paths from Text]
+  =>    (EnvironmentVariable["xdgStateHome", path]) =
+    path(_)
 
-  given xdgCacheHome: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["xdgCacheHome", PathType] =
+  given xdgCacheHome: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["xdgCacheHome", path] =
 
-    PathType(_)
+    path(_)
 
-  given xdgRuntimeDir: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["xdgRuntimeDir", PathType] =
-    PathType(_)
+  given xdgRuntimeDir: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["xdgRuntimeDir", path] =
+    path(_)
 
-  given home: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["home", PathType] =
-    PathType(_)
+  given home: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["home", path] =
+    path(_)
 
-  given mail: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["mail", PathType] =
-    PathType(_)
+  given mail: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["mail", path] =
+    path(_)
 
-  given shell: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["shell", PathType] =
-    PathType(_)
+  given shell: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["shell", path] =
+    path(_)
 
-  given oldpwd: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["oldpwd", PathType] =
-    PathType(_)
+  given oldpwd: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["oldpwd", path] =
+    path(_)
 
-  given windowid: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["windowid", PathType] =
-    PathType(_)
+  given windowid: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["windowid", path] =
+    path(_)
 
-  given editor: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["editor", PathType] =
-    PathType(_)
+  given editor: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["editor", path] =
+    path(_)
 
-  given pager: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["pager", PathType] =
-    PathType(_)
+  given pager: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["pager", path] =
+    path(_)
 
   given sshAgentPid: Tactic[NumberError] => EnvironmentVariable["sshAgentPid", Pid] =
     text => Pid(text.decode[Int])
 
-  given sshAuthSock: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["sshAuthSock", PathType] =
-    PathType(_)
+  given sshAuthSock: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["sshAuthSock", path] =
+    path(_)
 
-  given manpager: [PathType: Instantiable across Paths from Text]
-  =>    EnvironmentVariable["manpager", PathType] =
-    PathType(_)
+  given manpager: [path: Instantiable across Paths from Text]
+  =>    EnvironmentVariable["manpager", path] =
+    path(_)
 
   given columns: (Int is Decodable in Text) => EnvironmentVariable["columns", Int] = _.decode[Int]
   given lang: EnvironmentVariable["lang", Text] = identity(_)

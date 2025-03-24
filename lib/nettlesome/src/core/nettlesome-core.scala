@@ -49,17 +49,17 @@ extension (inline context: StringContext)
   inline def tcp(): TcpPort = ${Nettlesome.tcpPort('context)}
   inline def udp(): UdpPort = ${Nettlesome.udpPort('context)}
 
-extension [RemoteType: Connectable](value: RemoteType)
-  infix def via [PortType](port: PortType): Endpoint[PortType] =
-    Endpoint(RemoteType.remote(value), port)
+extension [remote: Connectable](value: remote)
+  infix def via [port](port: port): Endpoint[port] =
+    Endpoint(remote.remote(value), port)
 
-extension [PortType](port: PortType)
-  def serve[ProtocolType: Protocolic over PortType]
-     (handler: ProtocolType.Request ?=> ProtocolType.Response)
-  :     ProtocolType.Server =
-    ProtocolType.server(port)(handler)
+extension [port](port: port)
+  def serve[protocol: Protocolic over port]
+     (handler: protocol.Request ?=> protocol.Response)
+  :     protocol.Server =
+    protocol.server(port)(handler)
 
-def internet[ResultType](online: Boolean)(block: Internet ?=> ResultType): ResultType =
+def internet[result](online: Boolean)(block: Internet ?=> result): result =
   block(using Internet(online))
 
 def online(using internet: Internet): Boolean = internet.online

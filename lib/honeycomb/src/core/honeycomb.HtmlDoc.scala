@@ -53,9 +53,9 @@ object HtmlDoc:
       def genericize(doc: HtmlDoc): HttpStreams.Content =
         (t"text/html; charset=${encoder.encoding.name}", Stream(HtmlDoc.serialize(doc).bytes))
 
-  def serialize[OutputType](doc: HtmlDoc, maxWidth: Int = -1)
-     (using serializer: HtmlSerializer[OutputType])
-  :     OutputType =
+  def serialize[output](doc: HtmlDoc, maxWidth: Int = -1)
+     (using serializer: HtmlSerializer[output])
+  :     output =
     serializer.serialize(doc, maxWidth)
 
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
