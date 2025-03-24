@@ -45,6 +45,7 @@ import charEncoders.utf8
 import threadModels.platform
 import errorDiagnostics.stackTraces
 
+case class Group(org: Organization)
 case class Organization(leader: Person, name: Name[Person])
 
 object Person:
@@ -78,13 +79,11 @@ object Tests extends Suite(m"Legerdemain tests"):
 
           case Submission.Invalid(query) =>
             val errors =
-              trace[Text](Errors()):
+              validate[Text](Errors()):
                 case error@EmailAddressError(_) => accrual + (focus.or(t"unknown"), error)
                 case error@NameError(_, _, _)   => accrual + (focus.or(t"unknown"), error)
 
-              . within:
-                  println(query.inspect)
-                  query.decode[Organization]
+              . within(query.as[Group])
 
             val form = elicit[Organization](query, errors)
             Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(form))))

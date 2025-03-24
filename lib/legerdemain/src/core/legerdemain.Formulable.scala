@@ -48,11 +48,10 @@ object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
   =>    (renderable: elicitable.Operand is Renderable into Html[Flow])
   =>    ValueType is Formulable:
 
-    def fields(prefix: Text, label: Text, query: Query, validation: Optional[Errors])
+    def fields(prefix: Text, label: Text, query: Query, errors: Errors)
     :     List[Html[Flow]] =
       renderable.html
-       (elicitable.widget
-         (prefix, label, query().or(t""), validation.let(_(t"$prefix.$label")).let(_.message)))
+       (elicitable.widget(prefix, label, query().or(t""), errors(prefix).let(_.message)))
 
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Formulable =
     (prefix, label0, query, validation) =>
@@ -73,5 +72,4 @@ object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
 trait Formulable:
   type Self
 
-  def fields(prefix: Text, label: Text, query: Query, validation: Optional[Errors])
-  :     List[Html[Flow]]
+  def fields(prefix: Text, label: Text, query: Query, validation: Errors): List[Html[Flow]]
