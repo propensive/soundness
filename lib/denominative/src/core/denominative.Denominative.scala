@@ -103,12 +103,12 @@ object Denominative:
         lambda(i)
         i = i.next
 
-    inline def fuse[ValueType](inline initial: ValueType)
-       (inline lambda: (state: ValueType, next: Ordinal) ?=> ValueType)
-    :     ValueType =
+    inline def fuse[value](inline initial: value)
+       (inline lambda: (state: value, next: Ordinal) ?=> value)
+    :     value =
 
       var i: Ordinal = start
-      var acc: ValueType = initial
+      var acc: value = initial
 
       while i <= end do
         acc = lambda(using acc, i)

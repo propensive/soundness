@@ -53,8 +53,8 @@ extension (inline cardinal: Int)
 
   inline def z: Ordinal = Ordinal.zerary(cardinal)
 
-extension [ValueType: Countable](value: ValueType)
-  inline def full: Interval = Interval(Prim, (ValueType.size(value) - 1).z)
+extension [countable: Countable](value: countable)
+  inline def full: Interval = Interval(Prim, (countable.size(value) - 1).z)
 
 export Denominative.{Ordinal, Interval}
 export Denominative2.{Countback, Bounds}
