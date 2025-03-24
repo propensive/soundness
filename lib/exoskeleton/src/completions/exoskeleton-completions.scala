@@ -52,7 +52,7 @@ def explain(explanation: (prior: Optional[Text]) ?=> Optional[Text])(using cli: 
 
 package executives:
   given completions: (handler: UnhandledErrorHandler) => Executive:
-    type CliType = Cli
+    type Interface = Cli
     type Return = Execution
 
     def invocation

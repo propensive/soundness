@@ -83,7 +83,7 @@ package unhandledErrors:
 package executives:
   given direct: (handler: UnhandledErrorHandler) => Executive:
     type Return = Exit
-    type CliType = CliInvocation
+    type Interface = CliInvocation
 
     def invocation
        (arguments:        Iterable[Text],
@@ -101,7 +101,7 @@ package executives:
         stdio,
         signals)
 
-    def process(cli: CliInvocation)(exitStatus: CliType ?=> Exit): Exit =
+    def process(cli: CliInvocation)(exitStatus: Interface ?=> Exit): Exit =
       try exitStatus(using cli)
       catch case error: Throwable => handler.handle(error)(using cli.stdio)
       //handler.handle(exitStatus(using cli))(using cli.stdio)

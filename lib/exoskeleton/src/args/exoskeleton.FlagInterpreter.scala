@@ -45,10 +45,10 @@ object FlagInterpreter:
     override def operand: Boolean = false
     def interpret(arguments: List[Argument]): Unit = ()
 
-  given decoder: [OperandType: Decodable in Text] => FlagInterpreter[OperandType] = arguments =>
+  given decoder: [operand: Decodable in Text] => FlagInterpreter[operand] = arguments =>
     arguments.take(1).absolve match
-      case List(value) => value().decode[OperandType]
+      case List(value) => value().decode[operand]
 
-trait FlagInterpreter[OperandType]:
+trait FlagInterpreter[operand]:
   def operand: Boolean = true
-  def interpret(arguments: List[Argument]): Optional[OperandType]
+  def interpret(arguments: List[Argument]): Optional[operand]

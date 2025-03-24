@@ -46,7 +46,7 @@ object Transmissible:
   given bytes: [bytes <: Bytes] => bytes is Transmissible = Stream(_)
   given stream: [stream <: Stream[Bytes]] => stream is Transmissible = identity(_)
 
-  given text: [TextType <: Text] => CharEncoder => TextType is Transmissible =
+  given text: [text <: Text] => CharEncoder => text is Transmissible =
     text => Stream(text.bytes)
 
   given encoder: [message: Encodable in Text] => CharEncoder => message is Transmissible =

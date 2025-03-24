@@ -45,11 +45,11 @@ case class PosixParameters
     focusFlag:     Optional[Argument]            = Unset)
 extends FlagParameters:
 
-  def read[OperandType](flag: Flag)
+  def read[operand](flag: Flag)
      (using cli:         Cli,
-            interpreter: FlagInterpreter[OperandType],
-            suggestions: Suggestions[OperandType])
-  :     Optional[OperandType] =
+            interpreter: FlagInterpreter[operand],
+            suggestions: Suggestions[operand])
+  :     Optional[operand] =
 
     cli.register(flag, suggestions)
 

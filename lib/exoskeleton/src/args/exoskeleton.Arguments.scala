@@ -37,9 +37,9 @@ import vacuous.*
 import language.experimental.captureChecking
 
 case class Arguments(sequence: Argument*) extends FlagParameters:
-  def read[OperandType](flag: Flag)
-     (using Cli, FlagInterpreter[OperandType], Suggestions[OperandType])
-  :     Optional[OperandType] =
+  def read[operand](flag: Flag)
+     (using Cli, FlagInterpreter[operand], Suggestions[operand])
+  :     Optional[operand] =
     Unset // FIXME
 
   def focusFlag: Optional[Argument] = Unset

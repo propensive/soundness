@@ -85,7 +85,7 @@ def service[BusType <: Matchable](using service: DaemonService[BusType]): Daemon
   service
 
 def cli[BusType <: Matchable](using executive: Executive)
-   (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
+   (block: DaemonService[BusType] ?=> executive.Interface ?=> executive.Return)
    (using interpreter:   CliInterpreter,
           stderrSupport: StderrSupport = daemonConfig.supportStderr,
           model:         ThreadModel,
@@ -276,7 +276,7 @@ def cli[BusType <: Matchable](using executive: Executive)
           Log.fine(DaemonLogEvent.NewCli)
 
           try
-            val cli: executive.CliType =
+            val cli: executive.Interface =
               executive.invocation
                (textArguments, environment, () => directory, stdio, connection.signals)
 

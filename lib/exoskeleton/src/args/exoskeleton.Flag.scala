@@ -59,7 +59,7 @@ case class Flag
     description: Optional[Text] = Unset,
     secret: Boolean             = false):
 
-  def suggest[OperandType: FlagInterpreter](suggestions: Suggestions[OperandType])(using cli: Cli)
+  def suggest[operand: FlagInterpreter](suggestions: Suggestions[operand])(using cli: Cli)
   :     Unit =
     cli.register(this, suggestions)
 
@@ -70,27 +70,27 @@ case class Flag
 
     flag == name || aliases.contains(flag)
 
-  def apply[OperandType]()
+  def apply[operand]()
      (using cli:             Cli,
             interpreter:     CliInterpreter,
-            flagInterpreter: FlagInterpreter[OperandType],
-            suggestions:     Suggestions[OperandType] = Suggestions.noSuggestions)
-  :     Optional[OperandType] =
+            flagInterpreter: FlagInterpreter[operand],
+            suggestions:     Suggestions[operand] = Suggestions.noSuggestions)
+  :     Optional[operand] =
 
     cli.register(this, suggestions)
     cli.readParameter(this)
 
-  def select[OperandType](options: Iterable[OperandType])
-     (using cli: Cli, interpreter: CliInterpreter, suggestible: OperandType is Suggestible)
-  :     Optional[OperandType] =
+  def select[operand](options: Iterable[operand])
+     (using cli: Cli, interpreter: CliInterpreter, suggestible: operand is Suggestible)
+  :     Optional[operand] =
 
-    val mapping: Map[Text, OperandType] =
+    val mapping: Map[Text, operand] =
       options.map { option => (suggestible.suggest(option).text, option) }.to(Map)
 
-    given FlagInterpreter[OperandType] =
+    given FlagInterpreter[operand] =
       case List(value) => mapping.at(value())
       case _           => Unset
 
-    given Suggestions[OperandType] = () => options.map(suggestible.suggest(_))
+    given Suggestions[operand] = () => options.map(suggestible.suggest(_))
 
     this()

@@ -54,9 +54,9 @@ trait Cli extends ProcessContext:
   def environment: Environment
   def workingDirectory: WorkingDirectory
 
-  def readParameter[OperandType](flag: Flag)
-     (using FlagInterpreter[OperandType], Suggestions[OperandType])
-  :     Optional[OperandType]
+  def readParameter[operand](flag: Flag)
+     (using FlagInterpreter[operand], Suggestions[operand])
+  :     Optional[operand]
 
   def register(flag: Flag, suggestions: Suggestions[?]): Unit = ()
   def present(flag: Flag): Unit = ()
