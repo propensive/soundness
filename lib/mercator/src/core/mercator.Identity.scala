@@ -34,9 +34,9 @@ package mercator
 
 object Identity:
   given Identity[[Type] =>> Either[?, Type]]:
-    def point[ValueType](value: ValueType): Either[Nothing, ValueType] = Right(value)
+    def point[value](value: value): Either[Nothing, value] = Right(value)
 
-  inline given [IdentityType[_]]: Identity[IdentityType] = ${Mercator.point[IdentityType]}
+  inline given [ident[_]]: Identity[ident] = ${Mercator.point[ident]}
 
-trait Identity[IdentityType[_]]:
-  def point[ValueType](value: ValueType): IdentityType[ValueType]
+trait Identity[ident[_]]:
+  def point[value](value: value): ident[value]

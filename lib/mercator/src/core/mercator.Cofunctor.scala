@@ -32,11 +32,8 @@
                                                                                                   */
 package mercator
 
-trait Cofunctor[CofunctorType[-_]]:
-  extension [ValueType](value: CofunctorType[ValueType])
-    def contramap[ValueType2](lambda: ValueType2 => ValueType): CofunctorType[ValueType2] =
-      apply(value)(lambda)
+trait Cofunctor[cofunctor[-_]]:
+  extension [value](value: cofunctor[value])
+    def contramap[value2](lambda: value2 => value): cofunctor[value2] = apply(value)(lambda)
 
-  def apply[ValueType, ValueType2]
-     (value: CofunctorType[ValueType])(lambda: ValueType2 => ValueType)
-  :       CofunctorType[ValueType2]
+  def apply[value, value2](value: cofunctor[value])(lambda: value2 => value): cofunctor[value2]

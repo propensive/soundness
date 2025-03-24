@@ -39,10 +39,10 @@ import scala.compiletime.*
 import scala.quoted.*
 
 object Mercator:
-  def point[TypeConstructorType[_]: Type](using Quotes): Expr[Identity[TypeConstructorType]] =
+  def point[typeConstructor[_]: Type](using Quotes): Expr[Identity[typeConstructor]] =
     import quotes.reflect.*
 
-    val identityType = TypeRepr.of[TypeConstructorType].typeSymbol
+    val identityType = TypeRepr.of[typeConstructor].typeSymbol
     val companion = Ref(identityType.companionModule)
 
     val applyMethods = companion.symbol.typeRef.typeSymbol.methodMembers.filter: method =>
@@ -61,78 +61,78 @@ object Mercator:
 
     if applyMethods.length == 1
     then '{
-      new Identity[TypeConstructorType]:
-        def point[ValueType](value: ValueType): TypeConstructorType[ValueType] =
+      new Identity[typeConstructor]:
+        def point[value](value: value): typeConstructor[value] =
           ${
             companion
             . select(applyMethods(0))
-            . appliedToType(TypeRepr.of[ValueType])
+            . appliedToType(TypeRepr.of[value])
             . appliedTo('value.asTerm)
-            . asExprOf[TypeConstructorType[ValueType]]
+            . asExprOf[typeConstructor[value]]
           }
     }
     else if applyMethods.length == 0
     then halt(m"the companion object ${identityType.name} has no candidate apply methods")
     else halt(m"the companion object ${identityType.name} has more than one candidate apply method")
 
-  def functor[FunctorType[_]](using Type[FunctorType], Quotes): Expr[Functor[FunctorType]] =
+  def functor[functor[_]](using Type[functor], Quotes): Expr[Functor[functor]] =
     import quotes.reflect.*
 
-    val functorType = TypeRepr.of[FunctorType].typeSymbol
+    val functorType = TypeRepr.of[functor].typeSymbol
 
     val mapMethods = functorType.methodMembers.filter: method =>
       method.tree match
         case DefDef("map", _, _, _) => true
         case _                      => false
 
-    val pointExpr: Expr[Identity[FunctorType]] = Expr.summon[Identity[FunctorType]].getOrElse:
+    val pointExpr: Expr[Identity[functor]] = Expr.summon[Identity[functor]].getOrElse:
       halt(m"could not find Identity value for ${functorType.name}")
 
     lazy val makeFunctor = '{
-      new Functor[FunctorType]:
-        def point[ValueType](value: ValueType): FunctorType[ValueType] = ${pointExpr}.point(value)
+      new Functor[functor]:
+        def point[value](value: value): functor[value] = ${pointExpr}.point(value)
 
-        def apply[ValueType, ValueType2](value: FunctorType[ValueType])
-           (lambda: ValueType => ValueType2)
-        :     FunctorType[ValueType2] =
-          ${'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[ValueType2])
-            . appliedTo('lambda.asTerm).asExprOf[FunctorType[ValueType2]]}
+        def apply[value, value2](value: functor[value])
+           (lambda: value => value2)
+        :     functor[value2] =
+          ${'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[value2])
+            . appliedTo('lambda.asTerm).asExprOf[functor[value2]]}
     }
 
     if mapMethods.length == 1 then makeFunctor
     else if mapMethods.length == 0 then halt(m"the type ${functorType.name} has no map methods")
     else halt(m"the type ${functorType.name} has more than one possible map method")
 
-  def monad[MonadType[_]](using Type[MonadType], Quotes): Expr[Monad[MonadType]] =
+  def monad[monad[_]](using Type[monad], Quotes): Expr[Monad[monad]] =
     import quotes.reflect.*
-    val monadType = TypeRepr.of[MonadType].typeSymbol
+    val monadType = TypeRepr.of[monad].typeSymbol
 
     val flatMapMethods = monadType.methodMembers.filter: method =>
       method.tree match
         case DefDef("flatMap", _, _, _) => true
         case _                      => false
 
-    val functorExpr: Expr[Functor[MonadType]] = Expr.summon[Functor[MonadType]].getOrElse:
+    val functorExpr: Expr[Functor[monad]] = Expr.summon[Functor[monad]].getOrElse:
       halt(m"could not find Functor value for ${monadType.name}")
 
     lazy val makeMonad = '{
-      new Monad[MonadType]:
-        def point[ValueType](value: ValueType): MonadType[ValueType] = ${functorExpr}.point(value)
+      new Monad[monad]:
+        def point[value](value: value): monad[value] = ${functorExpr}.point(value)
 
         def apply
-           [ValueType, ValueType2]
-           (value: MonadType[ValueType])(lambda: ValueType => ValueType2): MonadType[ValueType2] =
+           [value, value2]
+           (value: monad[value])(lambda: value => value2): monad[value2] =
           ${functorExpr}.map(value)(lambda)
 
         def bind
-           [ValueType, ValueType2]
-           (value: MonadType[ValueType])(lambda: ValueType => MonadType[ValueType2])
-        :     MonadType[ValueType2] =
+           [value, value2]
+           (value: monad[value])(lambda: value => monad[value2])
+        :     monad[value2] =
           ${'value.asTerm
             . select(flatMapMethods(0))
-            . appliedToType(TypeRepr.of[ValueType2])
+            . appliedToType(TypeRepr.of[value2])
             . appliedTo('lambda.asTerm)
-            . asExprOf[MonadType[ValueType2]]}
+            . asExprOf[monad[value2]]}
     }
 
     if flatMapMethods.length == 1 then makeMonad
