@@ -44,7 +44,7 @@ import turbulence.*
 import vacuous.*
 
 object Ttf:
-  def apply[SourceType: Readable by Bytes](source: SourceType): Ttf =
+  def apply[source: Readable by Bytes](source: source): Ttf =
     val data = source.read[Bytes]
     Ttf(data)
 
