@@ -88,11 +88,6 @@ object Query extends Dynamic:
 
   given booleanDecodable: Boolean is Decodable in Query = _().present
 
-  given booleanEncodable: Boolean is Encodable in Query =
-    boolean => if boolean then Query.of(t"on") else Query()
-
-  given booleanDecodable: Boolean is Decodable in Query = _().present
-
   inline given encodable: [ValueType] => ValueType is Encodable in Query = summonFrom:
     case given (ValueType is Encodable in Text) =>
       value => Query.of(value.encode)

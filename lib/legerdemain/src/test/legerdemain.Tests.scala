@@ -70,9 +70,9 @@ object Tests extends Suite(m"Legerdemain tests"):
 
     supervise:
       tcp"8082".serve[Http]:
-        orchestrate[Organization]:
-          case Submission.Complete(organization) =>
-            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(H1(organization.inspect)))))
+        orchestrate[Group]:
+          case Submission.Complete(group) =>
+            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(H1(group.inspect)))))
 
           case Submission.Incomplete(form) =>
             Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(form))))
@@ -85,5 +85,5 @@ object Tests extends Suite(m"Legerdemain tests"):
 
               . within(query.as[Group])
 
-            val form = elicit[Organization](query, errors)
-            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(form))))
+            val form = elicit[Group](query, errors)
+            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Invalid")), Body(form))))
