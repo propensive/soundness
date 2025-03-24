@@ -46,19 +46,19 @@ import scala.compiletime.*
 import language.dynamics
 
 case class Row(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
-  def as[CellType: DsvDecodable]: CellType = CellType.decoded(this)
+  def as[cell: DsvDecodable]: cell = cell.decoded(this)
 
   def header: Optional[IArray[Text]] = columns.let: map =>
     val columns = map.map(_.swap)
     IArray.tabulate(columns.size)(columns(_))
 
-  def selectDynamic[ValueType: Decodable in Text](field: String)
+  def selectDynamic[value: Decodable in Text](field: String)
      (using DynamicDsvEnabler, DsvRedesignation)
-  :     Optional[ValueType] =
+  :     Optional[value] =
     apply(summon[DsvRedesignation].transform(field.tt))
 
-  def apply[ValueType: Decodable in Text](field: Text): Optional[ValueType] =
-    columns.let(_.at(field)).let { index => data.at(index.z) }.let(ValueType.decoded(_))
+  def apply[value: Decodable in Text](field: Text): Optional[value] =
+    columns.let(_.at(field)).let { index => data.at(index.z) }.let(value.decoded(_))
 
   override def hashCode: Int = data.indices.fuse(0)(state*31 + data(next).hashCode)
 
