@@ -33,6 +33,7 @@
 package camouflage
 
 import anticipation.*
+import fulminate.*
 import gossamer.*
 import probably.*
 
