@@ -49,5 +49,5 @@ object Transmissible:
   given text: [TextType <: Text] => CharEncoder => TextType is Transmissible =
     text => Stream(text.bytes)
 
-  given encoder: [MessageType: Encodable in Text] => CharEncoder => MessageType is Transmissible =
+  given encoder: [message: Encodable in Text] => CharEncoder => message is Transmissible =
     value => Stream(value.encode.bytes)

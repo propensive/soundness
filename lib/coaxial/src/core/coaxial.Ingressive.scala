@@ -46,5 +46,5 @@ object Ingressive:
   given bytes: Bytes is Ingressive = identity(_)
   given text: CharDecoder => Text is Ingressive = _.text
 
-  given decoder: [MessageType: Decodable in Text] => CharDecoder => MessageType is Ingressive =
-    _.text.decode[MessageType]
+  given decoder: [message: Decodable in Text] => CharDecoder => message is Ingressive =
+    _.text.decode[message]

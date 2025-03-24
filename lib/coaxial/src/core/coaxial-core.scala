@@ -42,8 +42,8 @@ import vacuous.*
 
 import Control.*
 
-extension [SocketType: Bindable as bindable](socket: SocketType)
-  def listen[InputType](using Monitor, Codicil)[ResultType]
+extension [bindable: Bindable](socket: bindable)
+  def listen[input](using Monitor, Codicil)[result]
      (lambda: bindable.Input => bindable.Output)
   :     SocketService raises BindError =
 
@@ -61,23 +61,23 @@ extension [SocketType: Bindable as bindable](socket: SocketType)
         bindable.stop(binding)
         safely(task.await())
 
-extension [EndpointType: Serviceable as serviceable](endpoint: EndpointType)
-  def transmit[MessageType: Transmissible](input: MessageType)
+extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
+  def transmit[message: Transmissible](input: message)
   :     Stream[Bytes] =
     val connection = serviceable.connect(endpoint)
 
-    serviceable.transmit(connection, MessageType.serialize(input))
+    serviceable.transmit(connection, message.serialize(input))
     serviceable.receive(connection)
 
-  def exchange[StateType](initialState: StateType)[MessageType: Ingressive]
-     (initialMessage: MessageType = Bytes())
-     (handle: (state: StateType) ?=> MessageType => Control[StateType])
-  :     StateType =
+  def exchange[state](initialState: state)[message: Ingressive]
+     (initialMessage: message = Bytes())
+     (handle: (state: state) ?=> message => Control[state])
+  :     state =
 
     val connection = serviceable.connect(endpoint)
 
-    def recur(input: Stream[Bytes], state: StateType): StateType = input.flow(state):
-      handle(using state)(MessageType.deserialize(head)) match
+    def recur(input: Stream[Bytes], state: state): state = input.flow(state):
+      handle(using state)(message.deserialize(head)) match
         case Continue(state2) => recur(tail, state2.or(state))
         case Terminate        => state
 
@@ -91,8 +91,8 @@ extension [EndpointType: Serviceable as serviceable](endpoint: EndpointType)
 
     recur(serviceable.receive(connection), initialState).also(serviceable.close(connection))
 
-extension [EndpointType: Addressable as addressable](endpoint: EndpointType)
-  def transmit[MessageType: Transmissible](message: MessageType)(using Monitor)
+extension [endpoint: Addressable as addressable](endpoint: endpoint)
+  def transmit[transmissible: Transmissible](message: transmissible)(using Monitor)
   :     Unit raises StreamError =
 
-    addressable.transmit(addressable.connect(endpoint), MessageType.serialize(message))
+    addressable.transmit(addressable.connect(endpoint), transmissible.serialize(message))
