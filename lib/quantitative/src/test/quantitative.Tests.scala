@@ -32,7 +32,8 @@
                                                                                                   */
 package quantitative
 
-import gossamer.{t, Decimalizer}
+import fulminate.*
+import gossamer.*
 import hypotenuse.*
 import larceny.*
 import probably.*

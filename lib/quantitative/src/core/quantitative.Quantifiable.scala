@@ -32,5 +32,5 @@
                                                                                                   */
 package quantitative
 
-trait Quantifiable[QuantityType, UnitsType <: Units[?, ?]]:
-  extension (value: QuantityType) def quantify: Quantity[UnitsType]
+trait Quantifiable[quantity, units <: Units[?, ?]]:
+  extension (value: quantity) def quantify: Quantity[units]

@@ -38,7 +38,7 @@ import language.implicitConversions
 import proscenium.*
 import rudiments.*
 
-erased trait PhysicalQuantity[DimensionType <: Units[?, ?], LabelType <: Label]()
+erased trait PhysicalQuantity[dimension <: Units[?, ?], label <: Label]()
 
 object PhysicalQuantity:
   // base units

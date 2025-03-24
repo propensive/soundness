@@ -37,7 +37,7 @@ import language.experimental.captureChecking
 import hypotenuse.*
 
 class MetricPrefix(val name: String, val symbol: String, val exponent: Int, val base: 2 | 10):
-  def apply[UnitsType <: Measure](unit: MetricUnit[UnitsType]): Quantity[UnitsType] =
+  def apply[units <: Measure](unit: MetricUnit[units]): Quantity[units] =
     Quantity(unit*Quantity(base**exponent))
 
 object NoPrefix extends MetricPrefix("", "", 0, 10)

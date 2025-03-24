@@ -38,7 +38,7 @@ import gossamer.*
 import language.implicitConversions
 import language.experimental.captureChecking
 
-trait SubstituteUnits[UnitsType <: Measure](val name: Text)
+trait SubstituteUnits[units <: Measure](val name: Text)
 
 object SubstituteUnits:
   given joules: SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
