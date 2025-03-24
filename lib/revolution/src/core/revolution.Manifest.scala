@@ -45,7 +45,7 @@ import turbulence.*
 import vacuous.*
 
 object Manifest:
-  protected def parse[SourceType: Readable by Bytes](source: SourceType): Manifest =
+  protected def parse[readable: Readable by Bytes](source: readable): Manifest =
     val java = juj.Manifest(source.read[Stream[Bytes]].inputStream)
 
     Manifest:
@@ -66,14 +66,14 @@ object Manifest:
   given Manifest is Addable by ManifestEntry into Manifest = (manifest, entry) =>
     Manifest(manifest.entries.updated(entry.key, entry.value))
 
-  given [KeyType <: Label] => Manifest is Subtractable by ManifestAttribute[KeyType] into Manifest =
+  given [key <: Label] => Manifest is Subtractable by ManifestAttribute[key] into Manifest =
     (manifest, attribute) => Manifest(manifest.entries - attribute.key)
 
 case class Manifest(entries: Map[Text, Text]):
-  def apply[KeyType <: Label: DecodableManifest](attribute: ManifestAttribute[KeyType])
-  :     Optional[KeyType.Subject] =
+  def apply[key <: Label: DecodableManifest](attribute: ManifestAttribute[key])
+  :     Optional[key.Subject] =
 
-    if entries.contains(attribute.key) then KeyType.decoded(entries(attribute.key)) else Unset
+    if entries.contains(attribute.key) then key.decoded(entries(attribute.key)) else Unset
 
   def serialize: Bytes =
     val manifest = juj.Manifest()

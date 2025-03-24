@@ -35,11 +35,11 @@ package revolution
 import anticipation.*
 import proscenium.*
 
-abstract class ManifestAttribute[KeyType <: Label: ValueOf]():
-  val key: Text = valueOf[KeyType].tt
+abstract class ManifestAttribute[label <: Label: ValueOf]():
+  val key: Text = valueOf[label].tt
 
-  def parse(value: Text)(using decoder: KeyType is DecodableManifest): decoder.Subject =
+  def parse(value: Text)(using decoder: label is DecodableManifest): decoder.Subject =
     decoder.decoded(value)
 
-  def apply(using encoder: KeyType is EncodableManifest)(value: encoder.Subject): ManifestEntry =
-    ManifestEntry(valueOf[KeyType].tt, encoder.encode(value))
+  def apply(using encoder: label is EncodableManifest)(value: encoder.Subject): ManifestEntry =
+    ManifestEntry(key, encoder.encode(value))
