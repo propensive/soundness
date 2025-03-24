@@ -35,6 +35,6 @@ package contingency
 import proscenium.*
 import vacuous.*
 
-class Tracing[AccrualType, LambdaType[_], FocusType]
+class Validate[AccrualType, LambdaType[_], FocusType]
    (val initial: AccrualType,
     val lambda: (Optional[FocusType], AccrualType) ?=> Exception ~> AccrualType)

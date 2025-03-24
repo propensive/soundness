@@ -190,7 +190,7 @@ object Contingency:
         '{Tracking[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
             focus, accrual))}
 
-  def trace[AccrualType: Type, FocusType: Type]
+  def validate[AccrualType: Type, FocusType: Type]
      (accrual: Expr[AccrualType],
       handler: Expr[(Optional[FocusType], AccrualType) ?=> Exception ~> AccrualType])
      (using Quotes)
@@ -210,7 +210,7 @@ object Contingency:
 
     typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] =>
-        '{Tracing[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
+        '{Validate[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
             focus, accrual))}
 
   def accrue[AccrualType <: Exception: Type]
@@ -393,9 +393,9 @@ object Contingency:
 
     }
 
-  def traceWithin
+  def validateWithin
      [AccrualType <: Exception: Type, ContextType[_]: Type, FocusType: Type]
-     (trace:       Expr[Tracing[AccrualType, ContextType, FocusType]],
+     (validate:  Expr[Validate[AccrualType, ContextType, FocusType]],
       lambda:      Expr[Foci[FocusType] ?=> ContextType[Any]],
       diagnostics: Expr[Diagnostics])
      (using Quotes)
@@ -406,15 +406,15 @@ object Contingency:
         boundary[Any]: label ?=>
           ${  import quotes.reflect.*
 
-              val cases = unwrap(trace.asTerm) match
+              val cases = unwrap(validate.asTerm) match
                 case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
                   mapping(unwrap(block))
 
                 case other => halt:
-                  m"argument to `trace` should be a partial function implemented as match cases"
+                  m"argument to `validate` should be a partial function implemented as match cases"
 
               val tactics = cases.map: (_, _) =>
-                '{TrackTactic(label, $trace.initial, foci)(using $diagnostics)}.asTerm
+                '{TrackTactic(label, $validate.initial, foci)(using $diagnostics)}.asTerm
 
               val contextTypeRepr = TypeRepr.of[ContextType[Any]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
@@ -424,6 +424,6 @@ object Contingency:
 
               term.asExpr  }
 
-        foci.fold[AccrualType]($trace.initial)($trace.lambda(using _, _))
+        foci.fold[AccrualType]($validate.initial)($validate.lambda(using _, _))
 
     }

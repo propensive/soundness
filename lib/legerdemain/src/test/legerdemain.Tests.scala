@@ -45,6 +45,7 @@ import charEncoders.utf8
 import threadModels.platform
 import errorDiagnostics.stackTraces
 
+case class Group(org: Organization)
 case class Organization(leader: Person, name: Name[Person])
 
 object Person:
@@ -69,24 +70,20 @@ object Tests extends Suite(m"Legerdemain tests"):
 
     supervise:
       tcp"8082".serve[Http]:
-        orchestrate[Organization]:
-          case Submission.Complete(organization) =>
-            println("Got organization: "+organization.inspect)
-            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(H1(organization.inspect)))))
+        orchestrate[Group]:
+          case Submission.Complete(group) =>
+            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(H1(group.inspect)))))
 
           case Submission.Incomplete(form) =>
             Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(form))))
 
           case Submission.Invalid(query) =>
             val errors =
-              trace[Text](Errors()):
+              validate[Text](Errors()):
                 case error@EmailAddressError(_) => accrual + (focus.or(t"unknown"), error)
                 case error@NameError(_, _, _)   => accrual + (focus.or(t"unknown"), error)
 
-              . within:
-                  println(query.inspect)
-                  query.decode[Organization]
+              . within(query.as[Group])
 
-            val form = elicit[Organization](query, errors)
-            println(errors.errors)
-            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(form))))
+            val form = elicit[Group](query, errors)
+            Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Invalid")), Body(form))))

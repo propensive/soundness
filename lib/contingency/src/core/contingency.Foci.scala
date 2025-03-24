@@ -39,7 +39,7 @@ import vacuous.*
 import scala.collection.mutable as scm
 
 object Foci:
-  given [FocusType] => Foci[FocusType] = new:
+  given [FocusType] => Foci[FocusType]:
     def length: Int = 0
     def success: Boolean = false
     def register(error: Exception): Unit = ()

@@ -80,7 +80,7 @@ object Query extends Dynamic:
         value =>
           construct:
             [FieldType] => context =>
-              focus(prior.lay(label) { prefix => t"$prefix.$label" }):
+              focus(prior.lay(label) { suffix => t"$label.$suffix" }):
                 context.decoded(value(label))
 
   given booleanEncodable: Boolean is Encodable in Query =
@@ -132,6 +132,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
     decodable.decoded(apply(label.tt))
 
   def at[ValueType: Decodable in Text](name: Text): Optional[Text] = apply(name)().let(_.decode)
+  def as[ValueType: Decodable in Query]: ValueType tracks Text = ValueType.decoded(this)
 
   def apply(): Optional[Text] = values match
     case List((t"", value)) => value

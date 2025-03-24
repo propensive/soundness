@@ -45,6 +45,7 @@ import rudiments.*
 import vacuous.*
 
 import language.dynamics
+import errorDiagnostics.stackTraces
 
 def orchestrate[ValueType: Formulable](using request: Http.Request)
    (using decodable: Tactic[Exception] ?=> (ValueType is Decodable in Query))
@@ -60,4 +61,4 @@ def orchestrate[ValueType: Formulable](using request: Http.Request)
         . or(Submission.Invalid(request.query))
 
       case _ =>
-        Submission.Incomplete(elicit[ValueType]())
+        Submission.Incomplete(elicit[ValueType](Query(), Errors()))
