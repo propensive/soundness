@@ -77,20 +77,20 @@ transparent inline def monitor(using Monitor): Monitor = summonInline[Monitor]
 def daemon(using Codepoint)(evaluate: Worker ?=> Unit)(using Monitor, Codicil): Daemon =
   Daemon(evaluate(using _))
 
-def async[ResultType](using Codepoint)(evaluate: Worker ?=> ResultType)(using Monitor, Codicil)
-:     Task[ResultType] =
+def async[result](using Codepoint)(evaluate: Worker ?=> result)(using Monitor, Codicil)
+:     Task[result] =
 
   Task(evaluate(using _), daemon = false, name = Unset)
 
-def task[ResultType](using Codepoint)(name: into Text)(evaluate: Worker ?=> ResultType)
+def task[result](using Codepoint)(name: into Text)(evaluate: Worker ?=> result)
    (using Monitor, Codicil)
-:     Task[ResultType] =
+:     Task[result] =
 
   Task(evaluate(using _), daemon = false, name = name)
 
 def trap(lambda: Throwable ~> Transgression)(using monitor: Monitor): Trap = Trap(lambda, monitor)
-def relent[ResultType]()(using Worker): Unit = monitor.relent()
-def cancel[ResultType]()(using Monitor): Unit = monitor.cancel()
+def relent[result]()(using Worker): Unit = monitor.relent()
+def cancel[result]()(using Monitor): Unit = monitor.cancel()
 
 def snooze[duration: GenericDuration](duration: duration)(using Monitor): Unit =
   monitor.snooze(duration)
@@ -108,33 +108,33 @@ def hibernate[instant: Abstractable across Instants into Long](instant: instant)
   while instant.generic > System.currentTimeMillis
   do sleep(instant.generic)
 
-extension [ResultType](tasks: Seq[Task[ResultType]])
-  def sequence(using Monitor, Codicil): Task[Seq[ResultType]] raises AsyncError =
+extension [result](tasks: Seq[Task[result]])
+  def sequence(using Monitor, Codicil): Task[Seq[result]] raises AsyncError =
     async(tasks.map(_.await()))
 
-extension [ResultType](tasks: Iterable[Task[ResultType]])
-  def race()(using Monitor, Codicil): ResultType raises AsyncError =
-    val promise: Promise[ResultType] = Promise()
+extension [result](tasks: Iterable[Task[result]])
+  def race()(using Monitor, Codicil): result raises AsyncError =
+    val promise: Promise[result] = Promise()
     tasks.foreach(_.map(promise.offer(_)))
 
     promise.await()
 
-extension [ResultType](stream: Stream[ResultType])
-  def concurrent(using Monitor, Codicil): Stream[ResultType] raises AsyncError =
+extension [result](stream: Stream[result])
+  def concurrent(using Monitor, Codicil): Stream[result] raises AsyncError =
     if async(stream.isEmpty).await() then Stream() else stream.head #:: stream.tail.concurrent
 
-def supervise[ResultType](block: Monitor ?=> ResultType)
+def supervise[result](block: Monitor ?=> result)
    (using model: ThreadModel, codepoint: Codepoint)
-:     ResultType raises AsyncError =
+:     result raises AsyncError =
   block(using model.supervisor())
 
-def retry[ValueType](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> ValueType)
+def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)
    (using Tenacity, Monitor)
-:     ValueType raises RetryError =
+:     value raises RetryError =
 
   @tailrec
-  def recur(attempt: Ordinal): ValueType =
-    boundary[Perseverance[ValueType]]: label ?=>
+  def recur(attempt: Ordinal): value =
+    boundary[Perseverance[value]]: label ?=>
       sleep(summon[Tenacity].delay(attempt).or(abort(RetryError(attempt.n1))))
       def surrender = boundary.break(Perseverance.Surrender)
       def persevere = boundary.break(Perseverance.Persevere)

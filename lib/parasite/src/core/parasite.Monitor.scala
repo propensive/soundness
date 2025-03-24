@@ -165,13 +165,13 @@ extends Monitor:
       case Failed(_)       => panic(m"should not be relenting after failure")
       case Cancelled       => panic(m"should not be relenting after cancellation")
 
-  def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Codicil)
-  :     Task[ResultType2] raises AsyncError =
+  def map[result2](lambda: Result => result2)(using Monitor, Codicil)
+  :     Task[result2] raises AsyncError =
 
     async(lambda(await()))
 
-  def bind[ResultType2](lambda: Result => Task[ResultType2])(using Monitor, Codicil)
-  :     Task[ResultType2] raises AsyncError =
+  def bind[result2](lambda: Result => Task[result2])(using Monitor, Codicil)
+  :     Task[result2] raises AsyncError =
 
     async(lambda(await()).await())
 

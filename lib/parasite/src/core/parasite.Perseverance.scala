@@ -32,8 +32,7 @@
                                                                                                   */
 package parasite
 
-enum Perseverance[+ValueType]:
+enum Perseverance[+value]:
   case Persevere
   case Surrender
-  case Prevail(value: ValueType)
-
+  case Prevail(value: value)

@@ -42,40 +42,40 @@ import mercator.*
 import vacuous.*
 
 object Task:
-  def apply[ResultType]
-     (evaluate: Worker => ResultType, daemon: Boolean, name: Optional[Text])
+  def apply[result]
+     (evaluate: Worker => result, daemon: Boolean, name: Optional[Text])
      (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
-  :     Task[ResultType] =
-    inline def evaluate0: Worker => ResultType = evaluate
+  :     Task[result] =
+    inline def evaluate0: Worker => result = evaluate
     inline def name0: Optional[Text] = name
 
-    new Worker(codepoint, monitor, codicil, Unset) with Task[ResultType]:
-      type Result = ResultType
+    new Worker(codepoint, monitor, codicil, Unset) with Task[result]:
+      type Result = result
       def name: Optional[Text] = name0
       def daemon: Boolean = false
       def evaluate(worker: Worker): Result = evaluate0(worker)
 
   given (Monitor, Codicil, Tactic[AsyncError]) => Monad[Task]:
-    def bind[ValueType, ValueType2](value: Task[ValueType])(lambda: ValueType => Task[ValueType2])
-    :     Task[ValueType2] =
+    def bind[value, value2](value: Task[value])(lambda: value => Task[value2])
+    :     Task[value2] =
       value.bind(lambda)
 
-    def point[ValueType](value: ValueType): Task[ValueType] = async(value)
+    def point[value](value: value): Task[value] = async(value)
 
-    def apply[ValueType, ValueType2](value: Task[ValueType])(lambda: ValueType -> ValueType2)
-    :     Task[ValueType2] =
+    def apply[value, value2](value: Task[value])(lambda: value -> value2)
+    :     Task[value2] =
       value.map(lambda)
 
-trait Task[+ResultType]:
+trait Task[+result]:
   def ready: Boolean
-  def await(): ResultType raises AsyncError
+  def await(): result raises AsyncError
   def attend(): Unit
   def cancel(): Unit
 
-  def await[duration: GenericDuration](duration: duration): ResultType raises AsyncError
+  def await[duration: GenericDuration](duration: duration): result raises AsyncError
 
-  def bind[ResultType2](lambda: ResultType => Task[ResultType2])(using Monitor, Codicil)
-  :     Task[ResultType2] raises AsyncError
+  def bind[result2](lambda: result => Task[result2])(using Monitor, Codicil)
+  :     Task[result2] raises AsyncError
 
-  def map[ResultType2](lambda: ResultType => ResultType2)(using Monitor, Codicil)
-  :     Task[ResultType2] raises AsyncError
+  def map[result2](lambda: result => result2)(using Monitor, Codicil)
+  :     Task[result2] raises AsyncError

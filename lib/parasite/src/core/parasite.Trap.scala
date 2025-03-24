@@ -35,5 +35,5 @@ package parasite
 import proscenium.*
 
 class Trap(lambda: Throwable ~> Transgression, monitor: Monitor):
-  def within[ResultType](block: Monitor ?=> ResultType): ResultType =
+  def within[result](block: Monitor ?=> result): result =
     block(using monitor.intercept(lambda))
