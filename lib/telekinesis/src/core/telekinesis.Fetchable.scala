@@ -40,15 +40,15 @@ import prepositional.*
 import vacuous.*
 
 object Fetchable:
-  given httpUrl: [UrlType <: HttpUrl] => UrlType is Fetchable onto Origin["http" | "https"] =
+  given httpUrl: [url <: HttpUrl] => url is Fetchable onto Origin["http" | "https"] =
     new Fetchable:
-      type Self = UrlType
+      type Self = url
       type Target = Origin["http" | "https"]
 
-      def target(httpUrl: UrlType): Origin["http" | "https"] = httpUrl.origin
-      def text(httpUrl: UrlType): Text = httpUrl.requestTarget
+      def target(httpUrl: url): Origin["http" | "https"] = httpUrl.origin
+      def text(httpUrl: url): Text = httpUrl.requestTarget
 
-      def hostname(httpUrl: UrlType): Hostname = httpUrl.host.or:
+      def hostname(httpUrl: url): Hostname = httpUrl.host.or:
         panic(m"The HTTP URL does not have a hostname")
 
   given unixSocket: DomainSocketEndpoint is Fetchable onto DomainSocket =

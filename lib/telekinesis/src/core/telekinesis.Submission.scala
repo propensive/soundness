@@ -35,7 +35,7 @@ package telekinesis
 import honeycomb.*
 import legerdemain.*
 
-enum Submission[ValueType]:
-  case Complete(value: ValueType)
+enum Submission[value]:
+  case Complete(value: value)
   case Invalid(query: Query)
   case Incomplete(form: Html[Flow])

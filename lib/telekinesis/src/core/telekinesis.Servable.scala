@@ -42,9 +42,9 @@ import spectacular.*
 import turbulence.*
 
 object Servable:
-  def apply[ResponseType](medium: ResponseType => Medium)
-     (lambda: ResponseType => Stream[Bytes])
-  :     ResponseType is Servable = response =>
+  def apply[response](medium: response => Medium)
+     (lambda: response => Stream[Bytes])
+  :     response is Servable = response =>
 
     val headers = List(Http.Header(t"content-type", medium(response).show))
     Http.Response.make(Http.Ok, headers, lambda(response))
@@ -55,25 +55,22 @@ object Servable:
 
       Http.Response.make(Http.Ok, headers, content.stream)
 
-  given bytes: [ResponseType: Abstractable across HttpStreams into HttpStreams.Content]
-  =>    ResponseType is Servable =
+  given bytes: [response: Abstractable across HttpStreams into HttpStreams.Content]
+  =>    response is Servable =
 
-    Servable[ResponseType](value => unsafely(Media.parse(ResponseType.generic(value)(0)))): value =>
-      ResponseType.generic(value)(1)
+    Servable[response](value => unsafely(Media.parse(response.generic(value)(0)))): value =>
+      response.generic(value)(1)
 
   given data: Bytes is Servable = Servable[Bytes](_ => media"application/octet-stream")(Stream(_))
 
-  inline given media: [ValueType: Media] => ValueType is Servable =
-    scala.compiletime.summonFrom:
-      case encodable: (ValueType is Encodable in Bytes) => value =>
-        val headers =
-          List(Http.Header(t"content-type", ValueType.medium(value).show))
-
+  inline given media: [media: Media] => media is Servable =
+    compiletime.summonFrom:
+      case encodable: (`media` is Encodable in Bytes) => value =>
+        val headers = List(Http.Header(t"content-type", media.medium(value).show))
         Http.Response.make(Http.Ok, headers, Stream(encodable.encode(value)))
-      case given (ValueType is Readable by Bytes)       => value =>
-        val headers =
-          List(Http.Header(t"content-type", ValueType.medium(value).show))
 
+      case given (`media` is Readable by Bytes)       => value =>
+        val headers = List(Http.Header(t"content-type", media.medium(value).show))
         Http.Response.make(Http.Ok, headers, value.stream[Bytes])
 
 trait Servable:

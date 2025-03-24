@@ -52,12 +52,12 @@ import vacuous.*
 import alphabets.base256.alphanumericOrBraille
 
 object Postable:
-  def apply[ResponseType](medium0: Medium, stream0: ResponseType => Stream[Bytes])
-  :     ResponseType is Postable =
+  def apply[response](medium0: Medium, stream0: response => Stream[Bytes])
+  :     response is Postable =
     new Postable:
-      type Self = ResponseType
-      def medium(response: ResponseType): Medium = medium0
-      def stream(response: ResponseType): Stream[Bytes] = stream0(response)
+      type Self = response
+      def medium(response: response): Medium = medium0
+      def stream(response: response): Stream[Bytes] = stream0(response)
 
   given text: (encoder: CharEncoder) => Text is Postable =
     Postable(media"text/plain", value => Stream(IArray.from(value.bytes)))
@@ -74,15 +74,15 @@ object Postable:
     import charEncoders.utf8
     Postable(media"application/x-www-form-urlencoded", query => Stream(query.queryString.bytes))
 
-  given dataStream: [ResponseType: Abstractable across HttpStreams into HttpStreams.Content]
+  given dataStream: [response: Abstractable across HttpStreams into HttpStreams.Content]
   =>    Tactic[MediumError]
-  =>    ResponseType is Postable =
+  =>    response is Postable =
 
     new Postable:
-      type Self = ResponseType
+      type Self = response
 
-      def medium(content: ResponseType): Medium = content.generic(0).decode[Medium]
-      def stream(content: ResponseType): Stream[Bytes] = content.generic(1)
+      def medium(content: response): Medium = content.generic(0).decode[Medium]
+      def stream(content: response): Stream[Bytes] = content.generic(1)
 
 trait Postable:
   type Self

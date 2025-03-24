@@ -40,12 +40,11 @@ import prepositional.*
 import vacuous.*
 
 object Parameter:
-  def apply[ValueType: {Decodable in Query, Encodable in Query}](name: Text)
-  :     Parameter of ValueType =
+  def apply[value: {Decodable in Query, Encodable in Query}](name: Text): Parameter of value =
     new Parameter(name):
-      type Subject = ValueType
-      def decode(query: Query): Subject = ValueType.decoded(query)
-      def encode(value: Subject): Query = ValueType.encoded(value)
+      type Subject = value
+      def decode(query: Query): Subject = value.decoded(query)
+      def encode(value: Subject): Query = value.encode
 
 trait Parameter(val name: Text):
   type Subject

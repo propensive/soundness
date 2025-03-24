@@ -46,15 +46,15 @@ object Receivable:
   given bytes: Bytes is Receivable = _.body.read[Bytes]
   given byteStream: Stream[Bytes] is Receivable = _.body
 
-  given readable: [StreamType: Aggregable by Bytes] => Tactic[HttpError]
-  =>    StreamType is Receivable =
+  given readable: [stream: Aggregable by Bytes] => Tactic[HttpError]
+  =>    stream is Receivable =
     response =>
-      response.successBody.let(StreamType.aggregate(_)).lest:
+      response.successBody.let(stream.aggregate(_)).lest:
         HttpError(response.status, response.textHeaders)
 
-  given instantiable: [ContentType: Instantiable across HttpRequests from Text] => Tactic[HttpError]
-  =>    ContentType is Receivable = response =>
-    response.successBody.let(_.read[Bytes].utf8).let(ContentType(_)).lest:
+  given instantiable: [content: Instantiable across HttpRequests from Text] => Tactic[HttpError]
+  =>    content is Receivable = response =>
+    response.successBody.let(_.read[Bytes].utf8).let(content(_)).lest:
       HttpError(response.status, response.textHeaders)
 
   given httpStatus: Http.Status is Receivable = _.status

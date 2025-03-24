@@ -53,9 +53,9 @@ object Telekinesis:
   :     (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
     import quotes.reflect.*
 
-    def unnamed[ValueType: Type](value: Expr[ValueType], tail: Seq[Expr[Any]]) =
-      Expr.summon[Prefixable of ? >: ValueType].getOrElse:
-        val typeName = TypeRepr.of[ValueType].show
+    def unnamed[value: Type](value: Expr[value], tail: Seq[Expr[Any]]) =
+      Expr.summon[Prefixable of ? >: value].getOrElse:
+        val typeName = TypeRepr.of[value].show
         halt(m"the type $typeName does not uniquely identify a particular HTTP header")
 
       . absolve
@@ -104,14 +104,14 @@ object Telekinesis:
       case Seq() =>
         (method, status, Expr.ofList(done.reverse))
 
-  def submit[TargetType: Type, PayloadType: Type]
-     (submit:   Expr[Http.Submit[TargetType]],
+  def submit[target: Type, payload: Type]
+     (submit:   Expr[Http.Submit[target]],
       headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable],
-      payload:  Expr[PayloadType],
-      postable: Expr[PayloadType is Postable],
-      client:   Expr[HttpClient onto TargetType])
+      payload:  Expr[payload],
+      postable: Expr[payload is Postable],
+      client:   Expr[HttpClient onto target])
      (using Quotes)
   :     Expr[Http.Response] =
 
@@ -124,7 +124,7 @@ object Telekinesis:
           case method: Expr[Http.Method] => method
 
         '{  given Online = $online
-            given PayloadType is Postable = $postable
+            given payload is Postable = $postable
             given HttpEvent is Loggable = $loggable
             val host: Hostname = $submit.host
             val body = $postable.stream($payload)
@@ -136,12 +136,12 @@ object Telekinesis:
 
             $client.request(request, $submit.target)  }
 
-  def fetch[TargetType: Type]
-     (fetch:    Expr[Http.Fetch[TargetType]],
+  def fetch[target: Type]
+     (fetch:    Expr[Http.Fetch[target]],
       headers:  Expr[Seq[Any]],
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable],
-      client:   Expr[HttpClient onto TargetType])
+      client:   Expr[HttpClient onto target])
      (using Quotes)
   :     Expr[Http.Response] =
 

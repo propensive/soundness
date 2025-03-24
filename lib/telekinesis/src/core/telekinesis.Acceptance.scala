@@ -36,6 +36,6 @@ import contingency.*
 import honeycomb.*
 import legerdemain.*
 
-enum Acceptance[ValueType]:
-  case Accept(value: ValueType)
+enum Acceptance[value]:
+  case Accept(value: value)
   case Reject(errors: Errors)

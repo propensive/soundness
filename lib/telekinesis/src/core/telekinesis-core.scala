@@ -47,19 +47,17 @@ import language.dynamics
 given Realm = realm"telekinesis"
 
 package queryParameters:
-  erased given arbitrary: [KeyType <: Label, ValueType] => KeyType is Parametric into ValueType = !!
+  erased given arbitrary: [key <: Label, value] => key is Parametric into value = !!
 
-extension [ValueType: Encodable in Query](value: ValueType)
-  def query: Query = ValueType.encoded(value)
+extension [value: Encodable in Query](value: value)
+  def query: Query = value.encode
 
-extension [EndpointType: Fetchable](endpoint: EndpointType)
-  def fetch: Http.Fetch[EndpointType.Target] =
-    Http.Fetch
-     (EndpointType.text(endpoint), EndpointType.target(endpoint), EndpointType.hostname(endpoint))
+extension [fetchable: Fetchable](endpoint: fetchable)
+  def fetch: Http.Fetch[fetchable.Target] =
+    Http.Fetch(fetchable.text(endpoint), fetchable.target(endpoint), fetchable.hostname(endpoint))
 
-  def submit: Http.Submit[EndpointType.Target] =
-    Http.Submit
-     (EndpointType.text(endpoint), EndpointType.target(endpoint), EndpointType.hostname(endpoint))
+  def submit: Http.Submit[fetchable.Target] =
+    Http.Submit(fetchable.text(endpoint), fetchable.target(endpoint), fetchable.hostname(endpoint))
 
 extension (url: HttpUrl)
   @targetName("withQuery")
