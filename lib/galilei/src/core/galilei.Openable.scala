@@ -79,14 +79,14 @@ object Openable:
 
     def close(channel: jnc.FileChannel): Unit = channel.close()
 
-  given openable: [FileType] => (openable: FileType is Openable by jnf.OpenOption)
-  =>   Eof[FileType] is Openable by jnf.OpenOption into openable.Result = new Openable:
-    type Self = Eof[FileType]
+  given openable: [file] => (openable: file is Openable by jnf.OpenOption)
+  =>   Eof[file] is Openable by jnf.OpenOption into openable.Result = new Openable:
+    type Self = Eof[file]
     type Operand = jnf.OpenOption
     type Result = openable.Result
     protected type Carrier = openable.Carrier
 
-    def init(eof: Eof[FileType], options: List[Operand]): Carrier =
+    def init(eof: Eof[file], options: List[Operand]): Carrier =
       openable.init(eof.file, jnf.StandardOpenOption.APPEND :: options)
 
     def handle(carrier: Carrier): Result = openable.handle(carrier)
@@ -101,8 +101,8 @@ trait Openable:
   def init(value: Self, options: List[Operand]): Carrier
   def handle(carrier: Carrier): Result
 
-  def open[ResultType](value: Self, lambda: Result => ResultType, options: List[Operand])
-  :     ResultType =
+  def open[result](value: Self, lambda: Result => result, options: List[Operand])
+  :     result =
     val carrier = init(value, options)
     try lambda(handle(carrier)) finally close(carrier)
 

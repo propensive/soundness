@@ -72,8 +72,8 @@ extension [openable: Openable](value: openable)
     openable.open(value, lambda, options)
 
 extension [platform <: Filesystem](path: Path on platform)
-  private[galilei] def protect[ResultType](operation: Operation)(block: => ResultType)
-  :     ResultType raises IoError =
+  private[galilei] def protect[result](operation: Operation)(block: => result)
+  :     result raises IoError =
     import Reason.*
     try block catch
       case break: boundary.Break[?]          => throw break
@@ -253,7 +253,7 @@ extension [platform <: Filesystem](path: Path on platform)
     jnf.Files.setLastModifiedTime
      (path.javaPath, jnfa.FileTime.fromMillis(System.currentTimeMillis))
 
-  def make[EntryType: Makable on platform](): EntryType.Result = EntryType.make(path)
+  def make[entry: Makable on platform](): entry.Result = entry.make(path)
 
 extension [platform <: Windows](path: Path on platform)
   def created[instant: Instantiable across Instants from Long](): instant raises IoError =
@@ -274,20 +274,20 @@ extension [platform <: Posix](path: Path on platform)
 package filesystemOptions:
   object readAccess:
     given enabled: ReadAccess:
-      type Transform[HandleType] = HandleType & ReadAccess.Ability
+      type Transform[handle] = handle & ReadAccess.Ability
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.READ)
 
     given disabled: ReadAccess:
-      type Transform[HandleType] = HandleType
+      type Transform[handle] = handle
       def options(): List[jnf.OpenOption] = Nil
 
   object writeAccess:
     given enabled: WriteAccess:
-      type Transform[HandleType] = HandleType & WriteAccess.Ability
+      type Transform[handle] = handle & WriteAccess.Ability
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.WRITE)
 
     given disabled: WriteAccess:
-      type Transform[HandleType] = HandleType
+      type Transform[handle] = handle
       def options(): List[jnf.OpenOption] = Nil
 
   object dereferenceSymlinks:
@@ -319,7 +319,7 @@ package filesystemOptions:
         path.children.each(recur(_))
         jnf.Files.delete(path.javaPath)
 
-      def conditionally[ResultType](path: Path on Platform)(operation: => ResultType): ResultType =
+      def conditionally[result](path: Path on Platform)(operation: => result): result =
         path.children.each(recur(_)) yet operation
 
     given disabled: [platform <: Filesystem] => Tactic[IoError]
@@ -327,7 +327,7 @@ package filesystemOptions:
 
       type Platform = platform
 
-      def conditionally[ResultType](path: Path on Platform)(operation: => ResultType): ResultType =
+      def conditionally[result](path: Path on Platform)(operation: => result): result =
         import filesystemOptions.dereferenceSymlinks.disabled
         if !path.children.isEmpty
         then abort(IoError(path, IoError.Operation.Delete, Reason.DirectoryNotEmpty))
@@ -339,7 +339,7 @@ package filesystemOptions:
     =>    OverwritePreexisting on platform:
       type Platform = platform
 
-      def apply[ResultType](path: Path on Platform)(operation: => ResultType): ResultType =
+      def apply[result](path: Path on Platform)(operation: => result): result =
         deleteRecursively.conditionally(path)(operation)
 
     given disabled: [platform <: Filesystem] => Tactic[IoError]
@@ -347,7 +347,7 @@ package filesystemOptions:
 
       type Platform = platform
 
-      def apply[ResultType](path: Path on Platform)(operation: => ResultType): ResultType =
+      def apply[result](path: Path on Platform)(operation: => result): result =
         try operation catch case error: jnf.FileAlreadyExistsException =>
           abort(IoError(path, IoError.Operation.Write, Reason.AlreadyExists))
 
@@ -356,7 +356,7 @@ package filesystemOptions:
     =>   (Path on platform) is Substantiable
     =>    CreateNonexistentParents on platform:
 
-      def apply[ResultType](path: Path on platform)(operation: => ResultType): ResultType =
+      def apply[result](path: Path on platform)(operation: => result): result =
         path.parent.let: parent =>
           import dereferenceSymlinks.disabled
 
@@ -369,7 +369,7 @@ package filesystemOptions:
     =>    CreateNonexistentParents on platform:
       type Platform = platform
 
-      def apply[ResultType](path: Path on platform)(block: => ResultType): ResultType =
+      def apply[result](path: Path on platform)(block: => result): result =
         path.protect(Operation.Write)(block)
 
   object createNonexistent:

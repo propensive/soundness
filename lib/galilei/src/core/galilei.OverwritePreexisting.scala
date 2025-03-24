@@ -37,4 +37,4 @@ import serpentine.*
 
 trait OverwritePreexisting:
   type Platform <: Filesystem
-  def apply[ResultType](path: Path on Platform)(operation: => ResultType): ResultType
+  def apply[result](path: Path on Platform)(operation: => result): result
