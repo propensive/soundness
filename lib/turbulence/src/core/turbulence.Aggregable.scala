@@ -57,9 +57,9 @@ object Aggregable:
     source.each { chunk => buffer.append(chunk.s) }
     buffer.toString.tt
 
-  given stream: [element, ElementType2]
-  =>   (aggregable: ElementType2 is Aggregable by element)
-  =>    Stream[ElementType2] is Aggregable by element =
+  given stream: [element, element2]
+  =>   (aggregable: element2 is Aggregable by element)
+  =>    Stream[element2] is Aggregable by element =
     element => Stream(aggregable.aggregate(element))
 
 trait Aggregable:
@@ -68,5 +68,5 @@ trait Aggregable:
   type Operand
   def aggregate(source: Stream[Operand]): Self
 
-  def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Aggregable by Operand = source =>
+  def map[self2](lambda: Self => self2): self2 is Aggregable by Operand = source =>
     lambda(aggregable.aggregate(source))

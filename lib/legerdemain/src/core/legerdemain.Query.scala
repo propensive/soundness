@@ -79,7 +79,7 @@ object Query extends Dynamic:
       summonInline[Foci[Text]].give:
         value =>
           construct:
-            [FieldType] => context =>
+            [field] => context =>
               focus(prior.lay(label) { suffix => t"$label.$suffix" }):
                 context.decoded(value(label))
 

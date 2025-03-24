@@ -37,34 +37,34 @@ import vacuous.*
 
 import language.dynamics
 
-//case class Catalog[KeyType, value](values: Map[Text, value]):
-case class Catalog[KeyType, value: ClassTag](values: IArray[value]):
+//case class Catalog[key, value](values: Map[Text, value]):
+case class Catalog[key, value: ClassTag](values: IArray[value]):
   def size: Int = values.length
 
-  inline def apply(accessor: (`*`: Proxy[KeyType, value, 0]) ?=> Proxy[KeyType, value, ?])
+  inline def apply(accessor: (`*`: Proxy[key, value, 0]) ?=> Proxy[key, value, ?])
   :     value =
     values(accessor(using Proxy()).id.vouch)
 
-  def map[value2: ClassTag](lambda: value => value2): Catalog[KeyType, value2] =
+  def map[value2: ClassTag](lambda: value => value2): Catalog[key, value2] =
     Catalog(values.map(lambda))
 
-  def tie[result](using proxy: Proxy[KeyType, value, 0])
+  def tie[result](using proxy: Proxy[key, value, 0])
      (lambda: (catalog: this.type, `*`: proxy.type) ?=> result)
   :     result =
     lambda(using this, proxy)
 
-  def braid[value2: ClassTag](right: Catalog[KeyType, value2])[result: ClassTag]
+  def braid[value2: ClassTag](right: Catalog[key, value2])[result: ClassTag]
      (lambda: (value, value2) => result)
-  :     Catalog[KeyType, result] =
+  :     Catalog[key, result] =
     Catalog(IArray.tabulate(values.length) { index => lambda(values(index), right.values(index)) })
 
-extension [KeyType, value: ClassTag](catalog: Catalog[KeyType, value])
-  def brush(using proxy: Proxy[KeyType, value, Nat])
-     (lambda: (`*`: proxy.type) ?=> Proxy[KeyType, value, Nat] ~> value)
-  :     Catalog[KeyType, value] =
+extension [key, value: ClassTag](catalog: Catalog[key, value])
+  def brush(using proxy: Proxy[key, value, Nat])
+     (lambda: (`*`: proxy.type) ?=> Proxy[key, value, Nat] ~> value)
+  :     Catalog[key, value] =
 
     val partialFunction = lambda(using proxy)
 
     Catalog(IArray.tabulate(catalog.size): index =>
       partialFunction.applyOrElse
-       (Proxy[KeyType, value, index.type](), _ => catalog.values(index)))
+       (Proxy[key, value, index.type](), _ => catalog.values(index)))

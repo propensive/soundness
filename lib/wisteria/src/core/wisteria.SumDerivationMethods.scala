@@ -68,7 +68,7 @@ trait SumDerivationMethods[typeclass[_]]:
     val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
 
     fold[derivation, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
-      [VariantType2 <: derivation] => field =>
+      [variant2 <: derivation] => field =>
         if index == variantIndex then field.asInstanceOf[variant] else Unset
 
   protected inline def variantLabels[derivation]

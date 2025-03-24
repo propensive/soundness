@@ -52,16 +52,16 @@ object XmlEncoder extends Derivation[XmlEncoder]:
 
   private val attributeAttribute = xmlAttribute()
 
-  inline def join[DerivationType <: Product: ProductReflection]: XmlEncoder[DerivationType] =
+  inline def join[derivation <: Product: ProductReflection]: XmlEncoder[derivation] =
     value =>
       val elements = fields(value):
-        [FieldType] => field => context.write(field).copy(name = XmlName(label))
+        [field] => field => context.write(field).copy(name = XmlName(label))
 
       XmlAst.Element(XmlName(typeName), elements.to(List))
 
-  inline def split[DerivationType: SumReflection]: XmlEncoder[DerivationType] = value =>
+  inline def split[derivation: SumReflection]: XmlEncoder[derivation] = value =>
     variant(value):
-      [VariantType <: DerivationType] => variant =>
+      [variant <: derivation] => variant =>
         val xml = context.write(variant)
 
         XmlAst.Element

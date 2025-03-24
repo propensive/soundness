@@ -46,7 +46,7 @@ import vacuous.*
 import java.util.zip as juz
 
 object ZipStream:
-  def apply[SourceType: Readable by Bytes](source: SourceType): ZipStream logs Text =
+  def apply[readable: Readable by Bytes](source: readable): ZipStream logs Text =
     new ZipStream(() => source.stream[Bytes], _ => true)
 
 class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):

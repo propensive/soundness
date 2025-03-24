@@ -56,7 +56,7 @@ object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
     (prefix, label0, query, validation) =>
       val content: IArray[Html[Flow]] =
         contexts:
-          [FieldType] => context =>
+          [field] => context =>
             val label2 = if prefix == t"" then label else t"$prefix.$label"
             context.fields
               (label2,

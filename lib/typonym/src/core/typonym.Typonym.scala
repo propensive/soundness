@@ -37,10 +37,10 @@ import scala.quoted.*
 import proscenium.*
 
 object Typonym:
-  private def untuple[TupleType <: Tuple: Type](using Quotes): List[quotes.reflect.TypeRepr] =
+  private def untuple[tuple <: Tuple: Type](using Quotes): List[quotes.reflect.TypeRepr] =
     import quotes.reflect.*
 
-    Type.of[TupleType] match
+    Type.of[tuple] match
       case '[type tailType <: Tuple; headType *: tailType] =>
         TypeRepr.of[headType] :: untuple[tailType]
 

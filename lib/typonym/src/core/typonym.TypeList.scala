@@ -32,4 +32,4 @@
                                                                                                   */
 package typonym
 
-erased trait TypeList[+TupleType <: Tuple]
+erased trait TypeList[+tuple <: Tuple]

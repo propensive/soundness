@@ -32,4 +32,4 @@
                                                                                                   */
 package turbulence
 
-case class Eof[FileType](file: FileType)
+case class Eof[file](file: file)

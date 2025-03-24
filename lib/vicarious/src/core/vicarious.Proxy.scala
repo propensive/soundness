@@ -35,14 +35,14 @@ package vicarious
 import proscenium.*
 
 object Proxy:
-  transparent inline given derived[KeyType, value]: Proxy[KeyType, value, 0] =
-    ${Vicarious.proxy[KeyType, value]}
+  transparent inline given derived[key, value]: Proxy[key, value, 0] =
+    ${Vicarious.proxy[key, value]}
 
-class Proxy[KeyType, value, +IdType <: Nat]() extends Selectable:
-  transparent inline def selectDynamic(key: String)(using catalog: Catalog[KeyType, value])
-  :     value | Proxy[KeyType, value, Nat] =
-    ${Vicarious.dereference[KeyType, value, IdType]('key)}
+class Proxy[key, value, +id <: Nat]() extends Selectable:
+  transparent inline def selectDynamic(key: String)(using catalog: Catalog[key, value])
+  :     value | Proxy[key, value, Nat] =
+    ${Vicarious.dereference[key, value, id]('key)}
 
-  inline def id: Int = compiletime.summonInline[ValueOf[IdType]].value
-  inline def apply()(using catalog: Catalog[KeyType, value]): value = catalog.values(id)
-  inline def unapply(scrutinee: Proxy[KeyType, value, Nat]): Boolean = scrutinee.id == id
+  inline def id: Int = compiletime.summonInline[ValueOf[id]].value
+  inline def apply()(using catalog: Catalog[key, value]): value = catalog.values(id)
+  inline def unapply(scrutinee: Proxy[key, value, Nat]): Boolean = scrutinee.id == id

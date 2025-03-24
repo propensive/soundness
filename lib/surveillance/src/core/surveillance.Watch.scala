@@ -77,7 +77,7 @@ object Watch:
 
         key.reset()
 
-  def apply[PathType: Abstractable across Paths into Text](paths: Iterable[PathType]): Watch =
+  def apply[path: Abstractable across Paths into Text](paths: Iterable[path]): Watch =
     Watch.register:
       val pathGroups: Map[jnf.Path, Iterable[Text => Boolean]] =
         paths.map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>

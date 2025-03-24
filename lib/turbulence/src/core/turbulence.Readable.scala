@@ -47,15 +47,15 @@ object Readable:
   given bytes: Bytes is Readable by Bytes = Stream(_)
   given text: [TextType <: Text] => TextType is Readable by Text = Stream(_)
 
-  given encodingAdapter: [SourceType: Readable by Text] => (encoder: CharEncoder)
-  =>    SourceType is Readable by Bytes =
+  given encodingAdapter: [readable: Readable by Text] => (encoder: CharEncoder)
+  =>    readable is Readable by Bytes =
 
-    source => encoder.encoded(SourceType.stream(source))
+    source => encoder.encoded(readable.stream(source))
 
-  given decodingAdapter: [SourceType: Readable by Bytes] => (decoder: CharDecoder)
-  =>    SourceType is Readable by Text =
+  given decodingAdapter: [readable: Readable by Bytes] => (decoder: CharDecoder)
+  =>    readable is Readable by Text =
 
-    source => decoder.decoded(SourceType.stream(source))
+    source => decoder.decoded(readable.stream(source))
 
   given stream: [element] => Stream[element] is Readable by element = identity(_)
 
@@ -133,5 +133,5 @@ trait Readable:
   type Operand
   def stream(value: Self): Stream[Operand]
 
-  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Readable by Operand =
+  def contramap[self2](lambda: self2 => Self): self2 is Readable by Operand =
     source => stream(lambda(source))

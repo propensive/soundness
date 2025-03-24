@@ -41,7 +41,7 @@ import turbulence.*
 import java.nio.file as jnf
 
 object ZipEntry:
-  def apply[ResourceType: Readable by Bytes](path: Path on Zip, resource: ResourceType): ZipEntry =
+  def apply[resource: Readable by Bytes](path: Path on Zip, resource: resource): ZipEntry =
     new ZipEntry(path, () => resource.stream[Bytes])
 
   given ZipEntry is Readable by Bytes = Readable.stream[Bytes].contramap(_.content())

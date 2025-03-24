@@ -88,5 +88,5 @@ trait Writable:
   type Operand
   def write(target: Self, stream: Stream[Operand]): Unit
 
-  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Writable by Operand =
+  def contramap[self2](lambda: self2 => Self): self2 is Writable by Operand =
     (target, stream) => write(lambda(target), stream)

@@ -47,11 +47,11 @@ enum WatchEvent:
 
   def dir: Text
 
-  def path[DirectoryType: Instantiable across Paths from Text]: DirectoryType = unsafely:
+  def path[directory: Instantiable across Paths from Text]: directory = unsafely:
     val relPath = this match
       case NewFile(_, file)      => file
       case NewDirectory(_, path) => path
       case Modify(_, file)       => file
       case Delete(_, path)       => path
 
-      DirectoryType(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
+      directory(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)

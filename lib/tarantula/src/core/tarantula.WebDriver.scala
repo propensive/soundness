@@ -121,7 +121,7 @@ case class WebDriver(server: Browser#Server):
       . read[Text]
       . decode[Json]
 
-    def navigateTo[UrlType: Abstractable across Urls into Text](url: UrlType): Json logs HttpEvent =
+    def navigateTo[url: Abstractable across Urls into Text](url: url): Json logs HttpEvent =
       case class Data(url: Text)
       post(t"url", Data(url.generic).json)
 
@@ -129,8 +129,8 @@ case class WebDriver(server: Browser#Server):
     def forward(): Unit logs HttpEvent = post(t"forward", Json.parse(t"{}")).as[Json]
     def back(): Unit logs HttpEvent = post(t"back", Json.parse(t"{}")).as[Json]
     def title(): Text logs HttpEvent = get(t"title").as[Json].value.as[Text]
-    def url[UrlType: Instantiable across Urls from Text](): UrlType logs HttpEvent =
-      UrlType(get(t"url").url.as[Text])
+    def url[url: Instantiable across Urls from Text](): url logs HttpEvent =
+      url(get(t"url").url.as[Text])
 
     @targetName("at")
     infix def / [element: Focusable](value: element)

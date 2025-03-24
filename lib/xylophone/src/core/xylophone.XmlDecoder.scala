@@ -55,12 +55,12 @@ object XmlDecoder extends Derivation[XmlDecoder]:
     value.absolve match
       case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decode[value]
 
-  inline def join[DerivationType <: Product: ProductReflection]: XmlDecoder[DerivationType] =
+  inline def join[derivation <: Product: ProductReflection]: XmlDecoder[derivation] =
     list =>
       val elements = childElements(list)
 
       construct:
-        [FieldType] => context =>
+        [field] => context =>
           val element =
             elements.find:
               case element: XmlAst.Element if element.name.name == label => true
@@ -70,11 +70,11 @@ object XmlDecoder extends Derivation[XmlDecoder]:
 
           context.read(List(element))
 
-  inline def split[DerivationType: SumReflection]: XmlDecoder[DerivationType] = list =>
+  inline def split[derivation: SumReflection]: XmlDecoder[derivation] = list =>
     list.head.absolve match
       case XmlAst.Element(_, children, attributes, _) =>
         delegate(attributes.get(XmlName("type".tt)).get):
-          [VariantType <: DerivationType] => decoder =>
+          [variant <: derivation] => decoder =>
             decoder.read(list)
 
   private def childElements(seq: List[XmlAst]): Seq[XmlAst] =

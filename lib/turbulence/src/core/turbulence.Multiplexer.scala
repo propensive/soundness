@@ -44,8 +44,8 @@ import rudiments.*
 object Multiplexer:
   private object Termination
 
-case class Multiplexer[KeyType, element]()(using Monitor):
-  private val tasks: TrieMap[KeyType, Task[Unit]] = TrieMap()
+case class Multiplexer[key, element]()(using Monitor):
+  private val tasks: TrieMap[key, Task[Unit]] = TrieMap()
 
   private val queue: juc.LinkedBlockingQueue[element | Multiplexer.Termination.type] =
     juc.LinkedBlockingQueue()
@@ -53,15 +53,15 @@ case class Multiplexer[KeyType, element]()(using Monitor):
   def close(): Unit = tasks.keys.each(remove(_))
 
   @tailrec
-  private def pump(key: KeyType, stream: Stream[element])(using Worker): Unit =
+  private def pump(key: key, stream: Stream[element])(using Worker): Unit =
     if stream.isEmpty then remove(key) else
       relent()
       queue.put(stream.head)
       pump(key, stream.tail)
 
-  def add(key: KeyType, stream: Stream[element]): Unit = tasks(key) = async(pump(key, stream))
+  def add(key: key, stream: Stream[element]): Unit = tasks(key) = async(pump(key, stream))
 
-  private def remove(key: KeyType): Unit = synchronized:
+  private def remove(key: key): Unit = synchronized:
     tasks -= key
     if tasks.isEmpty then queue.put(Multiplexer.Termination)
 

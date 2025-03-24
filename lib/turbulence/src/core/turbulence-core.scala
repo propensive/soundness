@@ -183,10 +183,10 @@ extension [element](stream: Stream[element])
 
     Stream.defer(recur(stream, Nil, 0))
 
-  def parallelMap[ElementType2](lambda: element => ElementType2)(using Monitor)
-  :     Stream[ElementType2] =
+  def parallelMap[element2](lambda: element => element2)(using Monitor)
+  :     Stream[element2] =
 
-    val out: Spool[ElementType2] = Spool()
+    val out: Spool[element2] = Spool()
 
     async:
       stream.map: elem =>
