@@ -40,8 +40,8 @@ import spectacular.*
 import vacuous.*
 import xylophone.*
 
-trait HtmlSerializer[ResultType]:
-  def serialize(doc: HtmlDoc, maxWidth: Int = -1): ResultType
+trait HtmlSerializer[result]:
+  def serialize(doc: HtmlDoc, maxWidth: Int = -1): result
 
 object HtmlSerializer:
   given HtmlSerializer[Text] = (doc, maxWidth) =>

@@ -43,13 +43,13 @@ import scala.quoted.*
 object Honeycomb:
   given Realm = realm"honeycomb"
 
-  def read[NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
-     (node:       Expr[Node[NameType]],
+  def read[name <: Label: Type, child <: Label: Type, result <: Label: Type]
+     (node:       Expr[Node[name]],
       className:  Expr[String],
-      name:       Expr[NameType],
+      name:       Expr[name],
       attributes: Expr[Seq[(Label, Any)]])
      (using Quotes)
-  :     Expr[StartTag[NameType, ReturnType]] =
+  :     Expr[StartTag[name, result]] =
 
     import quotes.reflect.*
 
@@ -59,7 +59,7 @@ object Honeycomb:
       exprs match
         case '{("", $value: valueType)} +: tail =>
           val expr: Expr[HtmlAttribute[valueType]] =
-            Expr.summon[HtmlAttribute[valueType] onto NameType]
+            Expr.summon[HtmlAttribute[valueType] onto name]
             . orElse(Expr.summon[HtmlAttribute[valueType]])
             . getOrElse:
                 val typeName = TypeRepr.of[valueType]
@@ -82,7 +82,7 @@ object Honeycomb:
           val attribute: String = key.value.get
 
           val expr: Expr[keyType is HtmlAttribute[valueType]] =
-            Expr.summon[keyType is HtmlAttribute[valueType] onto NameType]
+            Expr.summon[keyType is HtmlAttribute[valueType] onto name]
             . orElse(Expr.summon[keyType is HtmlAttribute[valueType]])
             . getOrElse:
                 val typeName = TypeRepr.of[valueType]

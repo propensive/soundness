@@ -38,14 +38,14 @@ import vacuous.*
 
 import language.dynamics
 
-extension [ValueType: Renderable](value: ValueType)
-  def html: List[ValueType.Result] = ValueType.html(value)
+extension [renderable: Renderable](value: renderable)
+  def html: List[renderable.Result] = renderable.html(value)
 
 extension (context: StringContext)
   def cls(): CssClass = CssClass(context.parts.head.tt)
   def id(): DomId = DomId(context.parts.head.tt)
 
-type Html[+ChildType <: Label] = Node[ChildType] | Text | Int | HtmlXml
+type Html[+child <: Label] = Node[child] | Text | Int | HtmlXml
 
 type Interactive =
   "a" | "audio" | "button" | "details" | "embed" | "iframe" | "img" | "input" | "label" | "select"

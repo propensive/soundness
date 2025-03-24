@@ -41,26 +41,26 @@ import language.dynamics
 
 object Element:
   @targetName("make")
-  def apply[NodeType <: Label, ChildType <: Label]
+  def apply[node <: Label, child <: Label]
      (labelString: String,
       attributes:  Attributes,
-      children:    Seq[Optional[Html[ChildType]] | Seq[Html[ChildType]]] = Nil)
-  :     Element[NodeType] =
+      children:    Seq[Optional[Html[child]] | Seq[Html[child]]] = Nil)
+  :     Element[node] =
 
     new Element(labelString, attributes, flatten(children))
 
-  private def flatten[ChildType <: Label]
-     (nodes: Seq[Optional[Html[ChildType]] | Seq[Html[ChildType]]])
-  :     Seq[Html[ChildType]] =
+  private def flatten[child <: Label]
+     (nodes: Seq[Optional[Html[child]] | Seq[Html[child]]])
+  :     Seq[Html[child]] =
 
     nodes.flatMap:
-      case Unset                                => Seq()
-      case seq: Seq[Html[ChildType] @unchecked] => seq
-      case node: Html[ChildType] @unchecked     => Seq(node)
+      case Unset                              => Seq()
+      case seq: Seq[Html[`child`] @unchecked] => seq
+      case node: Html[`child`] @unchecked     => Seq(node)
 
-case class Element[+NameType <: Label]
+case class Element[+name <: Label]
    (labelString: String, attributes: Map[String, Optional[Text]], children: Seq[Html[?]])
-extends Node[NameType]:
+extends Node[name]:
 
   def label: Text = labelString.show
 
