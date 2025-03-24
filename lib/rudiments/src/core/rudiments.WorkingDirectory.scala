@@ -37,12 +37,10 @@ import language.experimental.captureChecking
 import anticipation.*
 import prepositional.*
 
-  def apply[PathType: Abstractable across Paths into Text](path: PathType)
-  :     WorkingDirectory =
+  def apply[path: Abstractable across Paths into Text](path: path): WorkingDirectory =
     () => path.generic
 
 trait WorkingDirectory:
   def directory(): Text
 
-  def path[PathType: Instantiable across Paths from Text]: PathType =
-    PathType(directory())
+  def path[path: Instantiable across Paths from Text]: path = path(directory())

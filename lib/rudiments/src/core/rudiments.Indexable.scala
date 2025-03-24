@@ -41,29 +41,29 @@ import denominative.*
 import prepositional.*
 
 object Indexable:
-  given iarray: [ElementType] => IArray[ElementType] is Indexable by Ordinal into ElementType =
+  given iarray: [element] => IArray[element] is Indexable by Ordinal into element =
     new Indexable:
-      type Self = IArray[ElementType]
+      type Self = IArray[element]
       type Operand = Ordinal
-      type Result = ElementType
+      type Result = element
 
-      def contains(array: IArray[ElementType], index: Ordinal): Boolean =
+      def contains(array: IArray[element], index: Ordinal): Boolean =
         index.n0 >= 0 && index.n0 <= Ult.of(array).n0
 
-      def access(array: IArray[ElementType], index: Ordinal): Result = array(index.n0)
+      def access(array: IArray[element], index: Ordinal): Result = array(index.n0)
 
-  given seq: [ElementType] => IndexedSeq[ElementType] is Indexable by Ordinal into ElementType =
+  given seq: [element] => IndexedSeq[element] is Indexable by Ordinal into element =
     new Indexable:
-      type Self = IndexedSeq[ElementType]
+      type Self = IndexedSeq[element]
       type Operand = Ordinal
-      type Result = ElementType
+      type Result = element
 
-      def contains(seq: IndexedSeq[ElementType], index: Ordinal): Boolean =
+      def contains(seq: IndexedSeq[element], index: Ordinal): Boolean =
         index.n0 >= 0 && index.n0 <= Ult.of(seq).n0
 
-      def access(seq: IndexedSeq[ElementType], index: Ordinal): Result = seq(index.n0)
+      def access(seq: IndexedSeq[element], index: Ordinal): Result = seq(index.n0)
 
-  given [ElementType] => Text is Indexable by Ordinal into Char = new Indexable:
+  given [element] => Text is Indexable by Ordinal into Char = new Indexable:
     type Self = Text
     type Operand = Ordinal
     type Result = Char
@@ -73,35 +73,32 @@ object Indexable:
 
     def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
 
-  given [KeyType, ValueType]
-  =>    Map[KeyType, ValueType] is Indexable by KeyType into ValueType =
+  given [key, value] => Map[key, value] is Indexable by key into value =
     new Indexable:
-      type Self = Map[KeyType, ValueType]
-      type Operand = KeyType
-      type Result = ValueType
+      type Self = Map[key, value]
+      type Operand = key
+      type Result = value
 
-      def contains(value: Self, index: KeyType): Boolean = value.contains(index)
-      def access(value: Self, index: KeyType): ValueType = value(index)
+      def contains(value: Self, index: key): Boolean = value.contains(index)
+      def access(value: Self, index: key): value = value(index)
 
-  given bijection: [KeyType, ValueType]
-  =>    Bijection[KeyType, ValueType] is Indexable by KeyType into ValueType =
+  given bijection: [key, value] => Bijection[key, value] is Indexable by key into value =
     new Indexable:
-      type Self = Bijection[KeyType, ValueType]
-      type Operand = KeyType
-      type Result = ValueType
+      type Self = Bijection[key, value]
+      type Operand = key
+      type Result = value
 
-      def contains(value: Self, index: KeyType): Boolean = value.map.contains(index)
-      def access(value: Self, index: KeyType): ValueType = value.map(index)
+      def contains(value: Self, index: key): Boolean = value.map.contains(index)
+      def access(value: Self, index: key): value = value.map(index)
 
-  given hashMap: [KeyType, ValueType]
-  =>    scm.HashMap[KeyType, ValueType] is Indexable by KeyType into ValueType =
+  given hashMap: [key, value] => scm.HashMap[key, value] is Indexable by key into value =
     new Indexable:
-      type Self = scm.HashMap[KeyType, ValueType]
-      type Operand = KeyType
-      type Result = ValueType
+      type Self = scm.HashMap[key, value]
+      type Operand = key
+      type Result = value
 
-      def contains(value: Self, index: KeyType): Boolean = value.contains(index)
-      def access(value: Self, index: KeyType): ValueType = value(index)
+      def contains(value: Self, index: key): Boolean = value.contains(index)
+      def access(value: Self, index: key): value = value(index)
 
 
 trait Indexable:

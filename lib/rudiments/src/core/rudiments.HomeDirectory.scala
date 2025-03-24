@@ -40,5 +40,4 @@ import prepositional.*
 trait HomeDirectory:
   def directory(): Text
 
-  def path[PathType: Instantiable across Paths from Text]: PathType =
-    PathType(directory())
+  def path[path: Instantiable across Paths from Text]: path = path(directory())
