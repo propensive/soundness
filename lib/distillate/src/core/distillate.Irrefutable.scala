@@ -38,12 +38,12 @@ import prepositional.*
 object Irrefutable:
   given stringText: String is Irrefutable into Text = _.tt
 
-  given [ResultType] => (irrefutable: Text is Irrefutable into ResultType)
-  =>    String is Irrefutable into ResultType =
+  given [result] => (irrefutable: Text is Irrefutable into result)
+  =>    String is Irrefutable into result =
     string => irrefutable.unapply(string.tt)
 
-  given textString: [TextType <: Text] => TextType is Irrefutable into String = _.s
-  given ident: [ResultType] => ResultType is Irrefutable into ResultType = identity(_)
+  given textString: [text <: Text] => text is Irrefutable into String = _.s
+  given ident: [result] => result is Irrefutable into result = identity(_)
 
   given byteShort: Byte is Irrefutable into Short = _.toShort
   given byteInt: Byte is Irrefutable into Int = _.toInt

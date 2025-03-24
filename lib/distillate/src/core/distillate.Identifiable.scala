@@ -35,9 +35,9 @@ package distillate
 import anticipation.*
 
 object Identifiable:
-  def apply[IdentType](encoder: Text => Text, decoder: Text => Text): IdentType is Identifiable =
+  def apply[ident](encoder: Text => Text, decoder: Text => Text): ident is Identifiable =
     new Identifiable:
-      type Self = IdentType
+      type Self = ident
       def encode(text: Text): Text = encoder(text)
       def decode(text: Text): Text = decoder(text)
 

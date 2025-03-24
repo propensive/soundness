@@ -38,18 +38,18 @@ import anticipation.*
 import proscenium.*
 
 object Distillate:
-  def enumerable[EnumType <: reflect.Enum: Type](using Quotes): Expr[EnumType is Enumerable] =
+  def enumerable[enumeration <: reflect.Enum: Type](using Quotes): Expr[enumeration is Enumerable] =
     import quotes.reflect.*
 
-    val companion = Ref(TypeRepr.of[EnumType].typeSymbol.companionModule).asExpr
+    val companion = Ref(TypeRepr.of[enumeration].typeSymbol.companionModule).asExpr
 
     '{
         new Enumerable:
-          type Self = EnumType
-          val name: Text = ${Expr(TypeRepr.of[EnumType].show)}.tt
-          val values: IArray[EnumType] =
+          type Self = enumeration
+          val name: Text = ${Expr(TypeRepr.of[enumeration].show)}.tt
+          val values: IArray[enumeration] =
             ${  companion.absolve match
                   case '{ $companion: companionType } =>
                     val ref = TypeRepr.of[companionType].typeSymbol.declaredMethod("values").head
-                    companion.asTerm.select(ref).asExprOf[Array[EnumType]]  }
-            . asInstanceOf[IArray[EnumType]]  }
+                    companion.asTerm.select(ref).asExprOf[Array[enumeration]]  }
+            . asInstanceOf[IArray[enumeration]]  }

@@ -43,7 +43,7 @@ import spectacular.*
 import scala.compiletime.*
 
 object Nomenclature:
-  opaque type Name[-platform] = Text
+  opaque type Name[-platform] = anticipation.Text
 
   object Name:
     given [platform] => Name[platform] is Communicable = name => Message(name.text)

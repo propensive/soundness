@@ -34,10 +34,10 @@ package distillate
 
 import prepositional.*
 
-extension [FormatType](value: FormatType)
-  def decode[ResultType](using decodable: ResultType is Decodable in FormatType): ResultType =
+extension [format](value: format)
+  def decode[result](using decodable: result is Decodable in format): result =
     decodable.decoded(value)
 
 extension (value: Any)
-  def as[ResultType](irrefutable: value.type is Irrefutable into ResultType): ResultType =
+  def as[result](irrefutable: value.type is Irrefutable into result): result =
     irrefutable.unapply(value)
