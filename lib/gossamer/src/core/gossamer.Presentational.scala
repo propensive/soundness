@@ -41,9 +41,9 @@ import language.experimental.captureChecking
 
 object Presentational:
   given text: Text is Textual:
-    type Show[ValueType] = ValueType is spectacular.Showable
+    type Show[value] = value is spectacular.Showable
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
-    def show[ValueType](value: ValueType)(using show: Show[ValueType]): Text = show.text(value)
+    def show[value](value: value)(using show: Show[value]): Text = show.text(value)
     def text(text: Text): Text = text
     def length(text: Text): Int = text.s.length
     def apply(text: Text): Text = text
@@ -68,6 +68,6 @@ object Presentational:
 
 trait Presentational:
   type Self
-  type Show[ValueType]
-  def show[ValueType](value: ValueType)(using show: Show[ValueType]): Self
+  type Show[value]
+  def show[value](value: value)(using show: Show[value]): Self
   def apply(text: Text): Self

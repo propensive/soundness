@@ -48,25 +48,25 @@ import language.experimental.pureFunctions
 import language.experimental.into
 
 object Cuttable:
-  given [TextType: {Textual, Countable}] => TextType is Cuttable by Text =
+  given [textual: {Textual, Countable}] => textual is Cuttable by Text =
     (text, delimiter, limit) =>
-      val string = TextType.text(text).s
+      val string = textual.text(text).s
       val dLength = delimiter.s.length
 
       @tailrec
-      def recur(start: Ordinal, results: List[TextType]): List[TextType] =
-        TextType.indexOf
+      def recur(start: Ordinal, results: List[textual]): List[textual] =
+        textual.indexOf
          (text, delimiter, start).lay(text.segment(start ~ (text.length - 1).z) :: results):
           index => recur(index + dLength, text.segment(start ~ (index - 1)) :: results)
 
       recur(Prim, Nil).reverse
 
-  given [TextType: {Textual, Countable}] => TextType is Cuttable by Regex = (text, regex, limit) =>
-    val string = TextType.text(text).s
+  given [textual: {Textual, Countable}] => textual is Cuttable by Regex = (text, regex, limit) =>
+    val string = textual.text(text).s
     val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
 
     @tailrec
-    def recur(start: Ordinal, results: List[TextType]): List[TextType] =
+    def recur(start: Ordinal, results: List[textual]): List[textual] =
       if matcher.find(start.n0)
       then
         val interval = Ordinal.zerary(matcher.start) ~ Ordinal.zerary(matcher.end)
@@ -81,7 +81,7 @@ object Cuttable:
   given Text is Cuttable by Regex = (text, regex, limit) =>
     text.s.split(regex.pattern.s, limit).nn.map(_.nn.tt).to(List)
 
-  given [TextType] => (cuttable: TextType is Cuttable by Text) => TextType is Cuttable by Char =
+  given [textual] => (cuttable: textual is Cuttable by Text) => textual is Cuttable by Char =
     (text, delimiter, limit) =>
       cuttable.cut(text, delimiter.toString.tt, limit)
 

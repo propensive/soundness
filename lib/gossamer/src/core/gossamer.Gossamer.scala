@@ -46,7 +46,7 @@ object Gossamer:
   given Realm = realm"gossamer"
 
   object opaques:
-    opaque type Ascii = Bytes
+    opaque type Ascii = anticipation.Bytes
 
     object Ascii:
       def apply(bytes: Bytes): Ascii = bytes
@@ -56,7 +56,7 @@ object Gossamer:
       extension (ascii: Ascii) def bytes: Bytes = ascii
 
       given Ascii is Textual:
-        type Show[ValueType] = ValueType is Showable
+        type Show[value] = value is Showable
 
         val empty: Ascii = IArray.from[Byte](Nil)
         val classTag: ClassTag[Ascii] = summon[ClassTag[Ascii]]
@@ -79,7 +79,7 @@ object Gossamer:
         def indexOf(ascii: Ascii, sub: Text, start: Ordinal): Optional[Ordinal] =
           ascii.indexOfSlice(apply(sub)).puncture(-1).let(_.z)
 
-        def show[ValueType](value: ValueType)(using show: Show[ValueType]): Ascii =
+        def show[value](value: value)(using show: Show[value]): Ascii =
           Ascii(show.text(value).sysBytes)
 
         def segment(ascii: Ascii, interval: Interval): Ascii =

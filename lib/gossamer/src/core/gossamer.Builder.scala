@@ -35,18 +35,18 @@ package gossamer
 import rudiments.*
 import vacuous.*
 
-abstract class Builder[TextType](size: Optional[Int] = Unset):
-  protected def put(text: TextType): Unit
+abstract class Builder[textual](size: Optional[Int] = Unset):
+  protected def put(text: textual): Unit
   protected def wipe(): Unit
-  protected def result(): TextType
+  protected def result(): textual
 
-  def append(text: TextType): this.type = this.also(put(text))
+  def append(text: textual): this.type = this.also(put(text))
 
-  def build(block: this.type ?=> Unit): TextType =
+  def build(block: this.type ?=> Unit): textual =
     block(using this)
     apply()
 
-  def apply(): TextType = result()
+  def apply(): textual = result()
   def clear(): this.type = this.also(wipe())
   def empty: Boolean = length == 0
   def length: Int

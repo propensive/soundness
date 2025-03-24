@@ -65,4 +65,4 @@ trait Textual extends Presentational, Countable, Segmentable:
     infix def + (right: Self): Self = concat(left, right)
 
 object Textual:
-  def apply[TextType: Textual](text: Text): TextType = TextType(text)
+  def apply[textual: Textual](text: Text): textual = textual(text)

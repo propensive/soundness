@@ -39,8 +39,8 @@ import language.experimental.pureFunctions
 import language.experimental.into
 
 object Joinable:
-  given [TextType: Textual] => TextType is Joinable = elements =>
-    val builder = TextType.builder(elements.sumBy(_.length))
+  given [textual: Textual] => textual is Joinable = elements =>
+    val builder = textual.builder(elements.sumBy(_.length))
     elements.each(builder.append(_))
     builder()
 
