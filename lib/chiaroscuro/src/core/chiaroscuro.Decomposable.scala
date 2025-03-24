@@ -49,15 +49,15 @@ trait Decomposable:
 
 object Decomposable extends Derivable[Decomposable], Decomposable2:
 
-  def primitive[ValueType]: ValueType is Decomposable =
+  def primitive[value]: value is Decomposable =
     value => Decomposition.Primitive(t"", value.toString.tt, value)
 
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Decomposable =
+  inline def join[derivation <: Product: ProductReflection]: derivation is Decomposable =
     value =>
       val map: Map[Text, Decomposition] =
         import derivationContext.relaxed
         fields(value):
-          [FieldType] => field =>
+          [field] => field =>
             val value =
               context.let(_.decompose(field)).or(Decomposition.Primitive(typeName, t"?", field))
 
@@ -66,11 +66,11 @@ object Decomposable extends Derivable[Decomposable], Decomposable2:
 
       Decomposition.Product(typeName, map, value)
 
-  inline def split[DerivationType: SumReflection]: DerivationType is Decomposable =
+  inline def split[derivation: SumReflection]: derivation is Decomposable =
     value =>
       import derivationContext.relaxed
       variant(value):
-        [VariantType <: DerivationType] => variant =>
+        [variant <: derivation] => variant =>
           Decomposition.Sum
            (typeName,
             context.let(_.decompose(variant)).or:
@@ -79,23 +79,23 @@ object Decomposable extends Derivable[Decomposable], Decomposable2:
 
   given text: Text is Decomposable = value => Decomposition.Primitive(t"Text", value, value)
 
-  given optional: [ValueType: Decomposable] => Optional[ValueType] is Decomposable = value =>
+  given optional: [value: Decomposable] => Optional[value] is Decomposable = value =>
     value.let: value =>
       Decomposition.Sum(t"Optional", value.decompose, value)
     . or(Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Unset", t"∅", value), value))
 
 trait Decomposable2:
-  inline given textual: [ValueType] => ValueType is Decomposable = compiletime.summonFrom:
-    case given (ValueType is Showable) =>
+  inline given textual: [value] => value is Decomposable = compiletime.summonFrom:
+    case given (`value` is Showable) =>
       value => Decomposition.Primitive(t"Showable", value.show, value)
 
-    case given (ValueType is Encodable in Text) =>
+    case given (`value` is Encodable in Text) =>
       value => Decomposition.Primitive(t"Encodable", value.encode, value)
 
     case _ =>
       value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
-  given collection: [CollectionType <: Iterable, ValueType: Decomposable]
-  =>    CollectionType[ValueType] is Decomposable =
+  given collection: [collection <: Iterable, value: Decomposable]
+  =>    collection[value] is Decomposable =
     collection =>
       Decomposition.Sequence(IArray.from(collection.map(_.decompose)), collection)

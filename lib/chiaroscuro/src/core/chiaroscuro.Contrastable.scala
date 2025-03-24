@@ -48,12 +48,12 @@ trait Contrastable:
   def contrast(left: Self, right: Self): Juxtaposition
 
 trait Contrastable2 extends Contrastable3:
-  given showable: [ValueType: Showable] => ValueType is Contrastable = (left, right) =>
+  given showable: [value: Showable] => value is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.show)
     else Juxtaposition.Different(left.show, right.show)
 
 trait Contrastable3:
-  given showable: [ValueType] => ValueType is Contrastable = (left, right) =>
+  given showable: [value] => value is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.toString.tt)
     else Juxtaposition.Different(left.toString.tt, right.toString.tt)
 
@@ -80,11 +80,11 @@ object Contrastable extends Contrastable2:
         Decomposition.Primitive(t"Char", char.show, char)
       compareSeq[Char](decompose(left.chars), decompose(right.chars), left, right)
 
-  inline def nothing[ValueType]: ValueType is Contrastable = (left, right) =>
-    compiletime.summonInline[ValueType is Decomposable].give:
+  inline def nothing[value]: value is Contrastable = (left, right) =>
+    compiletime.summonInline[value is Decomposable].give:
       Juxtaposition.Same(left.decompose.text)
 
-  given [ValueType: Decomposable] => ValueType is Contrastable = (left, right) =>
+  given [value: Decomposable] => value is Contrastable = (left, right) =>
     juxtaposition(left.decompose, right.decompose)
 
   def juxtaposition(left: Decomposition, right: Decomposition): Juxtaposition =
@@ -120,7 +120,7 @@ object Contrastable extends Contrastable2:
       if left.getClass == right.getClass && leftMsg == rightMsg then Juxtaposition.Same(leftMsg)
       else Juxtaposition.Different(leftMsg, rightMsg)
 
-  def compareSeq[ValueType]
+  def compareSeq[value]
      (left:       IArray[Decomposition],
       right:      IArray[Decomposition],
       leftDebug:  Text,

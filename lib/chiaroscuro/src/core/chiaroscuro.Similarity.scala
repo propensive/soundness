@@ -33,7 +33,7 @@
 package chiaroscuro
 
 object Similarity:
-  given [ValueType] => Similarity[ValueType] = (left, right) => left == right
+  given [value] => Similarity[value] = (left, right) => left == right
 
-trait Similarity[-ValueType]:
-  def similar(left: ValueType, right: ValueType): Boolean
+trait Similarity[-value]:
+  def similar(left: value, right: value): Boolean
