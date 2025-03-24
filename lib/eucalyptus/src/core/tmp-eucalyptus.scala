@@ -45,9 +45,9 @@ package eucalyptus
 // object Eucalyptus:
 //   given Realm = realm"eucalyptus"
 
-//   def record[MessageType: Type, TextType: Type]
+//   def record[message: Type, TextType: Type]
 //       (level:          Expr[Level],
-//        message:        Expr[MessageType],
+//        message:        Expr[message],
 //        log:            Expr[Log[TextType]],
 //        realm:          Expr[Realm],
 //        presentational: Expr[TextType is Presentational],
@@ -59,7 +59,7 @@ package eucalyptus
 //         val presentationalValue = $presentational
 
 //         try
-//           val castShow = $show.asInstanceOf[presentationalValue.Show[MessageType]]
+//           val castShow = $show.asInstanceOf[presentationalValue.Show[message]]
 //           $log.record
 //            (Entry
 //              ($realm,

@@ -55,72 +55,66 @@ package logFormats:
     case Level.Warn => t"WARN"
     case Level.Fail => t"FAIL"
 
-  given standard: [EventType: Communicable] => EventType is Inscribable in Text =
+  given standard: [event: Communicable] => event is Inscribable in Text =
     (event, level, realm, timestamp) =>
       t"${dateFormat.format(timestamp).nn} [$level] ${realm.name.fit(10)} > ${event.communicate}\n"
 
-  given untimestamped: [EventType: Communicable] => EventType is Inscribable in Text =
+  given untimestamped: [event: Communicable] => event is Inscribable in Text =
     (event, level, realm, timestamp) =>
       t"[$level] ${realm.name.fit(10)} > ${event.communicate}\n"
 
-  given lightweight: [EventType: Communicable] => EventType is Inscribable in Text =
+  given lightweight: [event: Communicable] => event is Inscribable in Text =
     (event, level, realm, timestamp) =>
       t"[$level] ${event.communicate}\n"
 
 val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
-def mute[FormatType](using erased Void)[ResultType]
-   (lambda: (FormatType is Loggable) ?=> ResultType)
-:     ResultType =
-  lambda(using Log.silent[FormatType])
+def mute[format](using erased Void)[result](lambda: (format is Loggable) ?=> result): result =
+  lambda(using Log.silent[format])
 
 extension (logObject: Log.type)
-  def envelop[TagType, EventType: {Taggable by TagType, Loggable as loggable}](value: TagType)
-     [ResultType]
-     (lambda: (EventType is Loggable) ?=> ResultType)
-  :     ResultType =
+  def envelop[tag, event: {Taggable by tag, Loggable as loggable}](value: tag)[result]
+     (lambda: (event is Loggable) ?=> result)
+  :     result =
     lambda(using loggable.contramap(_.tag(value)))
 
-  def ignore[EventType, MessageType]: MessageType transcribes EventType = new Transcribable:
-    type Self = EventType
-    type Result = MessageType
-    override def skip(event: EventType): Boolean = true
-    def record(event: EventType): MessageType =
-      panic(m"`skip` should prevent this from ever running")
+  def ignore[event, message]: message transcribes event = new Transcribable:
+    type Self = event
+    type Result = message
+    override def skip(event: event): Boolean = true
+    def record(event: event): message = panic(m"`skip` should prevent this from ever running")
 
-  def silent[FormatType]: FormatType is Loggable = new Loggable:
-    type Self = FormatType
-    def log(level: Level, realm: Realm, timestamp: Long, event: FormatType): Unit = ()
+  def silent[format]: format is Loggable = new Loggable:
+    type Self = format
+    def log(level: Level, realm: Realm, timestamp: Long, event: format): Unit = ()
 
-  def route[FormatType](using erased Void)
-     [EntryType: Inscribable in FormatType, TargetType: Writable by FormatType]
-     (target: TargetType)
+  def route[format](using erased Void)[entry: Inscribable in format, writable: Writable by format]
+     (target: writable)
      (using Monitor)
-  :     EntryType is Loggable =
+  :     entry is Loggable =
 
     new:
-      type Self = EntryType
+      type Self = entry
 
-      private lazy val spool: Spool[TargetType.Operand] =
-        Spool().tap: spool =>
-          val task = async(spool.stream.writeTo(target))
+      private lazy val spool: Spool[writable.Operand] = Spool().tap: spool =>
+        val task = async(spool.stream.writeTo(target))
 
-          Hook.onShutdown:
-            spool.stop()
-            unsafely(task.await())
+        Hook.onShutdown:
+          spool.stop()
+          unsafely(task.await())
 
-      def log(level: Level, realm: Realm, timestamp: Long, event: EntryType): Unit =
+      def log(level: Level, realm: Realm, timestamp: Long, event: entry): Unit =
         spool.put(event.format(level, realm, timestamp))
 
 package logging:
-  given silent: [FormatType] => FormatType is Loggable = Log.silent[FormatType]
+  given silent: [format] => format is Loggable = Log.silent[format]
 
-  given stdout: [FormatType: Printable, EventType: Inscribable in FormatType] => Stdio
-  =>    EventType is Loggable =
+  given stdout: [format: Printable, inscribable: Inscribable in format] => Stdio
+  =>    inscribable is Loggable =
     (level, realm, timestamp, event) =>
-      Out.println(EventType.formatter(event, level, realm, timestamp))
+      Out.println(inscribable.formatter(event, level, realm, timestamp))
 
-  given stderr: [EventType: Inscribable in FormatType, FormatType: Printable] => Stdio
-  =>    EventType is Loggable =
+  given stderr: [inscribable: Inscribable in format, format: Printable] => Stdio
+  =>    inscribable is Loggable =
     (level, realm, timestamp, event) =>
-      Err.println(EventType.formatter(event, level, realm, timestamp))
+      Err.println(inscribable.formatter(event, level, realm, timestamp))
