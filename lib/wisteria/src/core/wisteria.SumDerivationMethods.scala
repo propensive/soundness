@@ -52,8 +52,8 @@ trait SumDerivationMethods[typeclass[_]]:
     inline erasedValue[derivation.MirroredElemTypes] match
       case _: (variant *: variants) => all[variant, variants]
 
-  private transparent inline def all[variant, VariantTypes <: Tuple]: Boolean = summonFrom:
-    case given (variant <:< Singleton) => inline erasedValue[VariantTypes] match
+  private transparent inline def all[variant, variants <: Tuple]: Boolean = summonFrom:
+    case given (variant <:< Singleton) => inline erasedValue[variants] match
       case _: Zero                           => true
       case _: (variant *: variants)  => all[variant, variants]
     case _                                 => false
