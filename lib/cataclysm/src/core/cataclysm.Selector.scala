@@ -60,11 +60,11 @@ sealed trait Selector(val value: Text):
   infix def ~ (that: Selector): Selector = Selector.Before(this, that)
 
 object Selector:
-  // given [SelectorType: Selectable, SelectorType2: Selectable]
-  //     => CompareGreater[SelectorType, SelectorType2, Selector] as childSelector:
+  // given [selector: Selectable, selector2: Selectable]
+  //     => CompareGreater[selector, selector2, Selector] as childSelector:
 
-  //   inline def greaterThan(inline left: SelectorType, inline right: SelectorType2): Selector =
-  //     Selector.Child(SelectorType.selector(left), SelectorType2.selector(right))
+  //   inline def greaterThan(inline left: selector, inline right: selector2): Selector =
+  //     Selector.Child(selector.selector(left), selector2.selector(right))
 
   case class Element(element: Text) extends Selector(element):
     def normalize: Selector = this
