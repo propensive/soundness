@@ -40,28 +40,28 @@ import scala.util.NotGiven
 import scala.quoted.*
 import scala.compiletime.*
 
-case class Polyglot[+ValueType, +LocalizationType <: Localization](value: Map[String, ValueType]):
-  def apply[LocalizationType <: LocalizationType & Singleton] =
+case class Polyglot[+value, +localization <: Localization](value: Map[String, value]):
+  def apply[localization <: localization & Singleton] =
     ${Cosmopolite.access}
 
-  def map[ValueType2](lambda: ValueType => ValueType2): Polyglot[ValueType2, LocalizationType] =
+  def map[value2](lambda: value => value2): Polyglot[value2, localization] =
     Polyglot(value.mapValues(lambda))
 
-  def ap(polyglotFn: Polyglot[ValueType => ValueType2, LocalizationType])
+  def ap(polyglotFn: Polyglot[value => value2, localization])
 
-  infix def & [ValueType2 >: ValueType, LocalizationType2]
-     (other: Polyglot[ValueType2, LocalizationType2])
-  :     Polyglot[ValueType2, LocalizationType2]
+  infix def & [value2 >: value, LocalizationType2]
+     (other: Polyglot[value2, LocalizationType2])
+  :     Polyglot[value2, LocalizationType2]
 
 object Cosmopolite:
-  def access[ValueType: Type, LocalizationType <: Localization: Type]
-     (value: Expr[Map[String, ValueType]])
+  def access[value: Type, localization <: Localization: Type]
+     (value: Expr[Map[String, value]])
      (using Quotes)
-  :     Expr[ValueType] =
+  :     Expr[value] =
 
     import quotes.reflect.*
 
-    val choice: String = summon[LocalizationType].value
+    val choice: String = summon[localization].value
 
     def recur(
 

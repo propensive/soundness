@@ -37,17 +37,14 @@ import language.experimental.pureFunctions
 import fulminate.*
 import proscenium.*
 
-class TrackTactic
-   [ErrorType <: Exception, AccrualType, ResultType, SupplementType]
-   (label: boundary.Label[Option[ResultType]],
-    initial: AccrualType,
-    foci: Foci[SupplementType])
+class TrackTactic[error <: Exception, accrual, result, supplement]
+   (label: boundary.Label[Option[result]], initial: accrual, foci: Foci[supplement])
    (using Diagnostics)
-extends Tactic[ErrorType]:
+extends Tactic[error]:
   def diagnostics: Diagnostics = summon[Diagnostics]
-  def record(error: Diagnostics ?=> ErrorType): Unit = foci.register(error)
+  def record(error: Diagnostics ?=> error): Unit = foci.register(error)
   def finish(): Unit = ()
 
-  def abort(error: Diagnostics ?=> ErrorType): Nothing =
+  def abort(error: Diagnostics ?=> error): Nothing =
     foci.register(error)
     boundary.break(None)(using label)

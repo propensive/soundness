@@ -36,10 +36,10 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-class ThrowTactic[ErrorType <: Exception, SuccessType]()
-   (using @annotation.constructorOnly error: CanThrow[ErrorType])
-extends Tactic[ErrorType]:
+class ThrowTactic[error <: Exception, success]()
+   (using @annotation.constructorOnly error: CanThrow[error])
+extends Tactic[error]:
 
   def diagnostics: Diagnostics = Diagnostics.capture
-  def record(error: Diagnostics ?=> ErrorType): Unit = throw error(using diagnostics)
-  def abort(error: Diagnostics ?=> ErrorType): Nothing = throw error(using diagnostics)
+  def record(error: Diagnostics ?=> error): Unit = throw error(using diagnostics)
+  def abort(error: Diagnostics ?=> error): Nothing = throw error(using diagnostics)

@@ -34,4 +34,4 @@ package contingency
 
 import proscenium.*
 
-class Mend[ResultType, LambdaType[_]](val lambda: Exception ~> ResultType)
+class Mend[result, lambda[_]](val lambda: Exception ~> result)

@@ -34,4 +34,4 @@ package contingency
 
 import proscenium.*
 
-class Tend[LambdaType[_]](val lambda: Exception ~> Exception)
+class Tend[lambda[_]](val lambda: Exception ~> Exception)

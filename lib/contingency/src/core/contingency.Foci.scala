@@ -39,32 +39,32 @@ import vacuous.*
 import scala.collection.mutable as scm
 
 object Foci:
-  given [FocusType] => Foci[FocusType]:
+  given [focus] => Foci[focus]:
     def length: Int = 0
     def success: Boolean = false
     def register(error: Exception): Unit = ()
 
-    def fold[AccrualType](initial: AccrualType)
-       (lambda: (Optional[FocusType], AccrualType) => Exception ~> AccrualType)
-    :     AccrualType =
+    def fold[accrual](initial: accrual)
+       (lambda: (Optional[focus], accrual) => Exception ~> accrual)
+    :     accrual =
       initial
 
-    def supplement(count: Int, transform: Optional[FocusType] => FocusType): Unit = ()
+    def supplement(count: Int, transform: Optional[focus] => focus): Unit = ()
 
-trait Foci[FocusType]:
+trait Foci[focus]:
   def length: Int
   def success: Boolean
   def register(error: Exception): Unit
 
-  def fold[AccrualType](initial: AccrualType)
-     (lambda: (Optional[FocusType], AccrualType) => Exception ~> AccrualType)
-  :     AccrualType
+  def fold[accrual](initial: accrual)
+     (lambda: (Optional[focus], accrual) => Exception ~> accrual)
+  :     accrual
 
-  def supplement(count: Int, transform: Optional[FocusType] => FocusType): Unit
+  def supplement(count: Int, transform: Optional[focus] => focus): Unit
 
-class TrackFoci[FocusType]() extends Foci[FocusType]:
+class TrackFoci[focus]() extends Foci[focus]:
   private val errors: scm.ArrayBuffer[Exception] = scm.ArrayBuffer()
-  private val focuses: scm.ArrayBuffer[Optional[FocusType]] = scm.ArrayBuffer()
+  private val focuses: scm.ArrayBuffer[Optional[focus]] = scm.ArrayBuffer()
 
   def length: Int = errors.length
   def success: Boolean = length == 0
@@ -73,11 +73,11 @@ class TrackFoci[FocusType]() extends Foci[FocusType]:
     errors.append(error)
     focuses.append(Unset)
 
-  def fold[AccrualType](initial: AccrualType)
-     (lambda: (Optional[FocusType], AccrualType) => Exception ~> AccrualType)
-  :     AccrualType =
+  def fold[accrual](initial: accrual)
+     (lambda: (Optional[focus], accrual) => Exception ~> accrual)
+  :     accrual =
     (0 until errors.length).fuse(initial)(lambda(focuses(next), state)(errors(next)))
 
-  def supplement(count: Int, transform: Optional[FocusType] => FocusType): Unit =
+  def supplement(count: Int, transform: Optional[focus] => focus): Unit =
     for i <- (errors.length - count) until errors.length
     do focuses(i) = transform(focuses(i))

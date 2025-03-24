@@ -39,8 +39,8 @@ import scala.quoted.*
 import fulminate.*
 import anticipation.*
 
-open class HaltTactic[ErrorType <: Error, SuccessType]()(using Quotes, Realm)
-extends Tactic[ErrorType]:
+open class HaltTactic[error <: Error, success]()(using Quotes, Realm)
+extends Tactic[error]:
   given diagnostics: Diagnostics = Diagnostics.omit
-  def record(error: Diagnostics ?=> ErrorType): Unit = halt(error.message)
-  def abort(error: Diagnostics ?=> ErrorType): Nothing = halt(error.message)
+  def record(error: Diagnostics ?=> error): Unit = halt(error.message)
+  def abort(error: Diagnostics ?=> error): Nothing = halt(error.message)

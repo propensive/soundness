@@ -35,4 +35,4 @@ package contingency
 import anticipation.*
 import fulminate.*
 
-case class Break[ResultType](value: ResultType) extends Error(m"Escaping")(using Diagnostics.omit)
+case class Break[result](value: result) extends Error(m"Escaping")(using Diagnostics.omit)

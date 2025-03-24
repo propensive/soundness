@@ -40,18 +40,18 @@ import fulminate.*
 import proscenium.*
 
 class AccrueTactic
-   [ErrorType <: Exception, AccrualType, ResultType]
-   (label: boundary.Label[Option[ResultType]],
-    ref: juca.AtomicReference[AccrualType],
-    initial: AccrualType)
-   (lambda: (accrual: AccrualType) ?=> Exception ~> AccrualType)
+   [error <: Exception, accrual, result]
+   (label: boundary.Label[Option[result]],
+    ref: juca.AtomicReference[accrual],
+    initial: accrual)
+   (lambda: (accrual: accrual) ?=> Exception ~> accrual)
    (using val diagnostics: Diagnostics)
-extends Tactic[ErrorType]:
+extends Tactic[error]:
 
-  def record(error: Diagnostics ?=> ErrorType): Unit = ref.getAndUpdate: accrual =>
+  def record(error: Diagnostics ?=> error): Unit = ref.getAndUpdate: accrual =>
     lambda(using if accrual == null then initial else accrual.nn)(error)
 
-  def abort(error: Diagnostics ?=> ErrorType): Nothing =
+  def abort(error: Diagnostics ?=> error): Nothing =
     record(error)
     boundary.break(None)(using label)
 
