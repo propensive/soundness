@@ -42,10 +42,7 @@ import vacuous.*
 import html5.*
 
 object Checkbox:
-  given renderable: Checkbox is Renderable into Html[Flow] = checkbox =>
-    List
-     (Div
-       (checkbox.validation.let { message => P.alert(message.text) },
-        Input.Checkbox(name = checkbox.name, checked = (checkbox.value != t""))))
+  given renderable: Checkbox is Renderable into Phrasing = checkbox =>
+    List(Input.Checkbox(name = checkbox.name, checked = (checkbox.value != t"")))
 
-case class Checkbox(name: Text, value: Text, validation: Optional[Message]) extends Widget
+case class Checkbox(name: Text, value: Text) extends Widget

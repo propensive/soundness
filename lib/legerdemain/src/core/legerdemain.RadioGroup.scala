@@ -41,18 +41,9 @@ import vacuous.*
 import html5.*
 
 object RadioGroup:
-  given renderable: RadioGroup is Renderable into Html[Flow] = group =>
-    List:
-      Fieldset
-       (Legend(group.label),
-        group.validation.let(P.alert(_)),
-        group.options.map: option =>
-          Label(Input.Radio(name = group.name, value = option.value), option.label))
+  given renderable: RadioGroup is Renderable into Phrasing = group =>
+    group.options.map: option =>
+      Label(Input.Radio(name = group.name, value = option.value), option.label)
 
-case class RadioGroup
-   (name:       Text,
-    label:      Text,
-    options:    List[(key: Text, value: Text, label: Text)],
-    value:      Text,
-    validation: Optional[Text])
+case class RadioGroup(name: Text, options: List[(key: Text, value: Text, label: Text)], value: Text)
 extends Widget

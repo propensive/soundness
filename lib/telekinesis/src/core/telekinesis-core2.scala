@@ -32,6 +32,7 @@
                                                                                                   */
 package telekinesis
 
+import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
@@ -42,26 +43,24 @@ import vacuous.*
 import language.dynamics
 import errorDiagnostics.stackTraces
 
-def orchestrate[value: Formulable](using request: Http.Request)
-   (using decodable: Tactic[Exception] ?=> (value is Decodable in Query))
-   [result]
-   (process: Tactic[Errors] ?=> Http.Request ?=> Submission[value] => result)
-   (using Formulation)
-:     result =
-  mend:
-    case errors: Errors =>
-      mend:
-        case Errors(errors*) => panic(m"Reentrant more than once")
-      . within:
-          process(Submission.Incomplete(elicit[value](Query.empty, errors)))
+def orchestrate[formulable: Formulable](submit: Optional[Text])(using request: Http.Request)[result]
+   (using Tactic[Exception] ?=> (formulable is Decodable in Query), Formulation)
+   (process: Tactic[Errors] ?=> Http.Request ?=> Submission[formulable] => result)
+: result =
+    mend:
+      case errors: Errors =>
+        mend:
+          case Errors(errors*) => panic(m"Reentrant more than once")
+        . within:
+            process(Submission.Incomplete(elicit[formulable](Query.empty, errors, submit)))
 
-  . within:
-      process:
-        request.method match
-          case Http.Post =>
-            safely(request.query.decode[value])
-            . let(Submission.Complete(_))
-            . or(Submission.Invalid(request.query))
+    . within:
+        process:
+          request.method match
+            case Http.Post =>
+              safely(request.query.decode[formulable])
+              . let(Submission.Complete(_))
+              . or(Submission.Invalid(request.query))
 
-          case _ =>
-            Submission.Incomplete(elicit[value](Query.empty, Errors()))
+            case _ =>
+              Submission.Incomplete(elicit[formulable](Query.empty, Errors(), submit))

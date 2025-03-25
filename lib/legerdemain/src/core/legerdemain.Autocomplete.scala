@@ -41,17 +41,11 @@ import vacuous.*
 import html5.*
 
 object Autocomplete:
-  given renderable: Autocomplete is Renderable into Html[Flow] = autocomplete => List:
-    Label
+  given renderable: Autocomplete is Renderable into Phrasing = autocomplete => List:
+    Span
      (Input(list = DomId(autocomplete.name)),
       Datalist(id = DomId(autocomplete.name)):
         autocomplete.options.map: option =>
           html5.Option(value = option))
 
-case class Autocomplete
-   (name:        Text,
-    options:     List[Text],
-    value:       Text,
-    instruction: Optional[Text],
-    validation:  Optional[Text])
-extends Widget
+case class Autocomplete(name: Text, options: List[Text], value: Text) extends Widget

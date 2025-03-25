@@ -81,7 +81,7 @@ object Abacist2:
         val nonzeroComponents = count.components.filter(_(1) != 0)
         val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
         val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
-        units.interleave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
+        units.weave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
 
       case _ => count =>
         val nonzeroComponents = count.components.filter(_(1) != 0)

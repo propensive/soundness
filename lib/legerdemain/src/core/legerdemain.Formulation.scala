@@ -32,7 +32,14 @@
                                                                                                   */
 package legerdemain
 
+import anticipation.*
+import fulminate.*
 import honeycomb.*
+import vacuous.*
 
 trait Formulation:
-  def form(content: List[Html[Flow]]): Html[Flow]
+  def form(content: List[Html[Flow]], submit: Optional[Text]): Html[Flow]
+
+  def element
+     (widget: List[Html[Phrasing]], legend: Text, validation: Optional[Message], required: Boolean)
+  :     Html[Flow]

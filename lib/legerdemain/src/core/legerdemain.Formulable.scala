@@ -34,6 +34,7 @@ package legerdemain
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import honeycomb.*
 import prepositional.*
@@ -44,31 +45,34 @@ import html5.*
 
 object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
   given [value] => (elicitable: value is Elicitable)
-  =>    (renderable: elicitable.Operand is Renderable into Html[Flow])
+  =>    (renderable: elicitable.Operand is Renderable into Phrasing)
   =>    value is Formulable:
 
-    def fields(prefix: Text, label: Text, query: Query, errors: Errors)
+    def fields(prefix: Text, legend: Text, query: Query, errors: Errors)
+       (using formulation: Formulation)
     :     List[Html[Flow]] =
-      renderable.html
-       (elicitable.widget(prefix, label, query().or(t""), errors(prefix).let(_.message)))
+      val validation: Optional[Message] = errors(prefix).let(_.message)
+      val widget = renderable.html(elicitable.widget(prefix, legend, query().or(t"")))
+      List(formulation.element(widget, legend, validation, false))
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Formulable =
-    (prefix, label0, query, validation) =>
-      val content: IArray[Html[Flow]] =
-        contexts:
-          [field] => context =>
-            val label2 = if prefix == t"" then label else t"$prefix.$label"
-            context.fields
-              (label2,
-              label.uncamel.map(_.lower.capitalize).spaced,
-              query(label),
-              validation)
+    new Formulable:
+      type Self = derivation
+      def fields(prefix: Text, legend: Text, query: Query, errors: Errors)(using Formulation)
+      :     List[Html[Flow]] =
+        val content: IArray[Html[Flow]] =
+          contexts:
+            [field] => context =>
+              val label2 = if prefix == t"" then label else t"$prefix.$label"
+              val legend = label.uncamel.map(_.lower.capitalize).spaced
+              context.fields(label2, legend, query(label), errors)
 
-        . flatten
+          . flatten
 
-      List(Fieldset(Legend(label0), content))
+        List(Fieldset(Legend(legend), content))
 
 trait Formulable:
   type Self
 
-  def fields(prefix: Text, label: Text, query: Query, validation: Errors): List[Html[Flow]]
+  def fields(prefix: Text, legend: Text, query: Query, errors: Errors)(using Formulation)
+  : List[Html[Flow]]
