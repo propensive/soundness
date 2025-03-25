@@ -43,6 +43,6 @@ trait Fahrenheit[Power <: Nat] extends Units[Power, Temperature]
 object Fahrenheit:
   private final val zero = 459.67
   def apply(value: Double): Quantity[Fahrenheit[1]] = Quantity[Fahrenheit[1]](value + zero)
-  given offset: UnitsOffset[Fahrenheit[1]] = () => zero
-  given designation: UnitName[Fahrenheit[1]] = () => "°F".tt
+  given offset: Offset[Fahrenheit[1]] = () => zero
+  given designation: Designation[Fahrenheit[1]] = () => "°F".tt
   erased given ratio: Ratio[Fahrenheit[1] & Kelvins[-1], 1.8] = !!

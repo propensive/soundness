@@ -32,26 +32,17 @@
                                                                                                   */
 package quantitative
 
-import anticipation.*
-import gossamer.*
-import spectacular.*
-
 import language.experimental.captureChecking
-import language.implicitConversions
 
-trait UnitName[-value]:
-  def siPrefix: MetricPrefix = NoPrefix
-  def name(): Text
-  def text: Text = t"${siPrefix.symbol}${name()}"
+import proscenium.*
 
-object UnitName:
-  given metres: UnitName[Metres[1]] = () => t"m"
-  given candelas: UnitName[Candelas[1]] = () => t"cd"
-  given moles: UnitName[Moles[1]] = () => t"mol"
-  given amperes: UnitName[Amperes[1]] = () => t"A"
-  given kelvins: UnitName[Kelvins[1]] = () => t"K"
-  given seconds: UnitName[Seconds[1]] = () => t"s"
+trait Principal[dimension <: Dimension, unit[_ <: Nat] <: Measure]()
 
-  given kilograms: UnitName[Kilograms[1]]:
-    override def siPrefix: MetricPrefix = Kilo
-    def name(): Text = t"g"
+object Principal:
+  given distance: Principal[Distance, Metres]()
+  given mass: Principal[Mass, Kilograms]()
+  given time: Principal[Time, Seconds]()
+  given current: Principal[Current, Amperes]()
+  given luminosity: Principal[Luminosity, Candelas]()
+  given temperature: Principal[Temperature, Kelvins]()
+  given amountOfSubstance: Principal[AmountOfSubstance, Moles]()

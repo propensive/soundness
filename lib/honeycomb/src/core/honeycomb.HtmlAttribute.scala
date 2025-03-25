@@ -66,8 +66,7 @@ object HtmlAttribute:
   given accesskey: ("accesskey" is HtmlAttribute[Char]) = _.show
   given action: ("action" is HtmlAttribute[Text]) = identity(_)
 
-  given action2: [url: Abstractable across Urls into Text]
-        => ("action" is HtmlAttribute[url]) =
+  given action2: [url: Abstractable across Urls into Text] => ("action" is HtmlAttribute[url]) =
     _.generic
 
   given allowfullscreen: ("allowfullscreen" is HtmlAttribute[Boolean]) = _ => Unset
@@ -97,8 +96,7 @@ object HtmlAttribute:
   given code: ("code" is HtmlAttribute[Text]) = identity(_) // MediaError
   given codebase: ("codebase" is HtmlAttribute[Text]) = identity(_)
 
-  given codebase2: [url: Abstractable across Urls into Text]
-        => ("codebase" is HtmlAttribute[url]) =
+  given codebase2: [url: Abstractable across Urls into Text] => ("codebase" is HtmlAttribute[url]) =
     _.generic
 
   given cols: ("cols" is HtmlAttribute[Int]) = _.show
@@ -164,8 +162,7 @@ object HtmlAttribute:
   given high: ("high" is HtmlAttribute[Double]) = _.toString.show
   given href: ("href" is HtmlAttribute[Text]) = identity(_)
 
-  given href2: [url: Abstractable across Urls into Text]
-        => ("href" is HtmlAttribute[url]) =
+  given href2: [url: Abstractable across Urls into Text] => ("href" is HtmlAttribute[url]) =
     _.generic
 
   // Needs to be provided by Cosmopolite
@@ -213,8 +210,7 @@ object HtmlAttribute:
   given playsinline: ("playsinline" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given poster: ("poster" is HtmlAttribute[Text]) = identity(_)
 
-  given poster2: [url: Abstractable across Urls into Text]
-        => ("poster" is HtmlAttribute[url]) =
+  given poster2: [url: Abstractable across Urls into Text] => ("poster" is HtmlAttribute[url]) =
     _.generic
 
   given preload: ("preload" is HtmlAttribute[Preload]) = _.show
@@ -237,13 +233,10 @@ object HtmlAttribute:
   given spellcheck: ("spellcheck" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given src: ("src" is HtmlAttribute[Text]) = identity(_)
 
-  given src2: [path: Abstractable across Paths into Text]
-        => ("src" is HtmlAttribute[path]) =
+  given src2: [path: Abstractable across Paths into Text] => ("src" is HtmlAttribute[path]) =
     _.generic
 
-  given src3: [url: Abstractable across Urls into Text] => ("src" is HtmlAttribute[url]) =
-    _.generic
-
+  given src3: [url: Abstractable across Urls into Text] => ("src" is HtmlAttribute[url]) = _.generic
   given srcdoc: ("srcdoc" is HtmlAttribute[Html[?]]) = _.show
   given srclang: ("srclang" is HtmlAttribute[Text]) = identity(_)
 

@@ -95,7 +95,7 @@ object Abacist:
             unitPower.power.toString.tt.mapChars(_.superscript.or(' '))
 
           val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
-          recur(tail, '{$expr.updated(${unitPower.ref.unitName}+${Expr(power)}, $value)})
+          recur(tail, '{$expr.updated(${unitPower.ref.designation}+${Expr(power)}, $value)})
 
     recur(multipliers[CountUnits], '{ListMap()})
 

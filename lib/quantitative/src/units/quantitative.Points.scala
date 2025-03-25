@@ -41,5 +41,5 @@ import rudiments.*
 trait Points[Power <: Nat] extends Units[Power, Distance]
 
 object Points:
-  given designation: UnitName[Points[1]] = () => "pt".tt
+  given designation: Designation[Points[1]] = () => "pt".tt
   erased given ratio: Ratio[Points[-1] & Metres[1], 3.5277777777777776E-4] = !!

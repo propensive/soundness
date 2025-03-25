@@ -43,6 +43,6 @@ trait Celsius[Power <: Nat] extends Units[Power, Temperature]
 object Celsius:
   private final val zero: Double = 273.15
   def apply(value: Double): Quantity[Celsius[1]] = Quantity[Celsius[1]](value + zero)
-  given offset: UnitsOffset[Celsius[1]] = () => zero
-  given designation: UnitName[Celsius[1]] = () => "°C".tt
+  given offset: Offset[Celsius[1]] = () => zero
+  given designation: Designation[Celsius[1]] = () => "°C".tt
   erased given ratio: Ratio[Celsius[1] & Kelvins[-1], 1.0] = !!
