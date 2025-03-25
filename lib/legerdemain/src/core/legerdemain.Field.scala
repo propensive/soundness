@@ -41,10 +41,7 @@ import vacuous.*
 import html5.*
 
 object Field:
-  given Field is Renderable into Html[Flow] = field =>
-    List
-     (Div
-       (field.validation.let { message => P.alert(message.text) },
-        Label(field.label, Input.Text(name = field.name, value = field.value))))
+  given Field is Renderable into Phrasing = field =>
+    List(Input.Text(name = field.name, value = field.value))
 
-case class Field(label: Text, name: Text, value: Text, validation: Optional[Message]) extends Widget
+case class Field(label: Text, name: Text, value: Text) extends Widget

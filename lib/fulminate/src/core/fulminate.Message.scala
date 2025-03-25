@@ -44,37 +44,43 @@ object Message:
   given Message is Printable = (message, termcap) => message.text
   given [event: Communicable] => Message transcribes event = _.communicate
 
-  transparent inline def make[tuple <: Tuple](inline subs: tuple, done: List[Message])
+  transparent inline def make[tuple <: Tuple](inline messages: tuple, done: List[Message])
   :     List[Message] =
     inline erasedValue[tuple] match
-      case _: (messageType *: tailType) => subs.absolve match
+      case _: (message *: tail) => messages.absolve match
         case message *: tail =>
-          val message2 = message.asInstanceOf[messageType]
-          val communicable = summonInline[(? >: messageType) is Communicable]
-          make[tailType](tail.asInstanceOf[tailType], communicable.message(message2) :: done)
+          val message2 = message.asInstanceOf[message]
+          val communicable = summonInline[(? >: message) is Communicable]
+          make[tail](tail.asInstanceOf[tail], communicable.message(message2) :: done)
 
       case _ =>
         done.reverse
 
-case class Message(textParts: List[Text], subs: List[Message] = Nil):
+case class Message(texts: List[Text], messages: List[Message] = Nil):
   @targetName("append")
   infix def + (right: Message): Message =
     Message
-     (textParts.init ++ ((textParts.last+right.textParts.head) :: right.textParts.tail),
-      subs ++ right.subs)
+     (texts.init ++ ((texts.last+right.texts.head) :: right.texts.tail),
+      messages ++ right.messages)
+
+  def segments: List[Text | Message] =
+    def recur(parts: List[Text], messages: List[Message]): List[Text | Message] = parts match
+      case head :: tail => head :: messages.head :: recur(tail, messages.tail)
+      case Nil          => Nil
+
+    texts.head :: recur(texts.tail, messages)
 
   def fold[render](initial: render)(append: (render, Text, Int) => render): render =
-    def recur(done: render, textTodo: List[Text], subsTodo: List[Message], level: Int)
-    :     render =
-      subsTodo match
+    def recur(done: render, textTodo: List[Text], messagesTodo: List[Message], level: Int): render =
+      messagesTodo match
         case Nil =>
           append(done, textTodo.head, level)
 
-        case sub :: subs =>
-          val prefix = recur(append(done, textTodo.head, level), sub.textParts, sub.subs, level + 1)
-          recur(prefix, textTodo.tail, subs, level)
+        case sub :: messages =>
+          val prefix = recur(append(done, textTodo.head, level), sub.texts, sub.messages, level + 1)
+          recur(prefix, textTodo.tail, messages, level)
 
-    recur(initial, textParts, subs, 0)
+    recur(initial, texts, messages, 0)
 
   def text: Text = unwrap(fold[String]("") { (acc, next, level) => acc+next })
 

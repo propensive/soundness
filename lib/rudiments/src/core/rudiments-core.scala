@@ -49,11 +49,8 @@ import proscenium.*
 import symbolism.*
 import vacuous.*
 
-def fixpoint[value](initial: value)
-   (fn: (recur: (value => value)) ?=> (value => value)): value =
-
-  def recurrence(fn: (recur: value => value) ?=> value => value)
-  :       value => value =
+def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => value)): value =
+  def recurrence(fn: (recur: value => value) ?=> value => value): value => value =
     fn(using recurrence(fn(_)))
 
   recurrence(fn)(initial)
@@ -67,8 +64,7 @@ extension [value](value: value)
   inline def iff(inline predicate: Boolean)(inline lambda: value => value): value =
     if predicate then lambda(value) else value
 
-  inline def iff(inline predicate: value => Boolean)(inline lambda: value => value)
-  :       value =
+  inline def iff(inline predicate: value => Boolean)(inline lambda: value => value): value =
     if predicate(value) then lambda(value) else value
 
   inline def is[ValueSubtype <: value]: Boolean = value.isInstanceOf[ValueSubtype]
@@ -115,14 +111,11 @@ extension [value <: Matchable](iterable: Iterable[value])
   inline def where(inline predicate: value => Boolean): Optional[value] =
     iterable.find(predicate).getOrElse(Unset)
 
-  transparent inline def interleave(right: Iterable[value]): Iterable[value] =
+  transparent inline def weave(right: Iterable[value]): Iterable[value] =
     iterable.zip(right).flatMap(Iterable(_, _))
 
 extension [value](iterator: Iterator[value])
-  transparent inline def each
-    (predicate: (ordinal: Ordinal) ?=> value => Unit)
-  :     Unit =
-
+  transparent inline def each(predicate: (ordinal: Ordinal) ?=> value => Unit): Unit =
     var ordinal: Ordinal = Prim
     iterator.foreach: value =>
       predicate(using ordinal)(value)
@@ -188,10 +181,7 @@ extension [value](iterable: Iterable[value])
       lambda(using ordinal)(value)
       ordinal += 1
 
-  inline def fuse[state](base: state)
-     (lambda: (state: state, next: value) ?=> state)
-  :     state =
-
+  inline def fuse[state](base: state)(lambda: (state: state, next: value) ?=> state): state =
     val iterator: Iterator[value] = iterable.iterator
     var state: state = base
     while iterator.hasNext do state = lambda(using state, iterator.next)
@@ -209,8 +199,7 @@ extension [value](iterable: Iterable[value])
   inline def all(predicate: value => Boolean): Boolean = iterable.forall(predicate)
   transparent inline def bi: Iterable[(value, value)] = iterable.map { x => (x, x) }
 
-  transparent inline def tri: Iterable[(value, value, value)] =
-    iterable.map { x => (x, x, x) }
+  transparent inline def tri: Iterable[(value, value, value)] = iterable.map { x => (x, x, x) }
 
   def indexBy[value2](lambda: value => value2): Map[value2, value] =
     iterable.map: value =>
@@ -220,8 +209,7 @@ extension [value](iterable: Iterable[value])
 
   def longestTrain(predicate: value => Boolean): (Int, Int) =
     @tailrec
-    def recur
-       (index: Int, iterable: Iterable[value], bestStart: Int, bestLength: Int, length: Int)
+    def recur(index: Int, iterable: Iterable[value], bestStart: Int, bestLength: Int, length: Int)
     :       (Int, Int) =
 
       if iterable.isEmpty then (bestStart, bestLength) else
@@ -257,14 +245,11 @@ extension [key, value](map: Map[key, value])
   def upsert(key: key, op: Optional[value] => value): Map[key, value] =
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
 
-  def collate(right: Map[key, value])(merge: (value, value) => value)
-  :       Map[key, value] =
-
+  def collate(right: Map[key, value])(merge: (value, value) => value): Map[key, value] =
     right.fuse(map)(state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1)))))
 
 extension [key, value](map: scm.Map[key, value])
-  inline def establish(key: key)(evaluate: => value): value =
-    map.getOrElseUpdate(key, evaluate)
+  inline def establish(key: key)(evaluate: => value): value = map.getOrElseUpdate(key, evaluate)
 
 extension [key, value](map: Map[key, List[value]])
   def plus(key: key, value: value): Map[key, List[value]] =
@@ -397,20 +382,17 @@ extension (erased tuple: Tuple)
   inline def contains[element]: Boolean = indexOf[element] >= 0
   inline def indexOf[element]: Int = recurIndex[tuple.type, element](0)
 
-  transparent inline def subtypes[Supertype]: Tuple =
-    recurSubtypes[tuple.type, Supertype, Zero]
+  transparent inline def subtypes[Supertype]: Tuple = recurSubtypes[tuple.type, Supertype, Zero]
 
-  private transparent inline def recurSubtypes[tuple <: Tuple, Supertype, done <: Tuple]
-  :     Tuple =
-
+  private transparent inline def recurSubtypes[tuple <: Tuple, Supertype, done <: Tuple]: Tuple =
     inline !![tuple] match
-      case _: Zero                  => !![Tuple.Reverse[done]]
-      case _: (head *: tail)        => inline !![head] match
-        case _: Supertype             => recurSubtypes[tail, Supertype, head *: done]
-        case _                        => recurSubtypes[tail, Supertype, done]
+      case _: Zero           => !![Tuple.Reverse[done]]
+      case _: (head *: tail) => inline !![head] match
+        case _: Supertype       => recurSubtypes[tail, Supertype, head *: done]
+        case _                  => recurSubtypes[tail, Supertype, done]
 
   private inline def recurIndex[tuple <: Tuple, element](index: Int): Int =
     inline !![tuple] match
-      case _: Zero                  => -1
+      case _: Zero              => -1
       case _: (element *: tail) => index
-      case _: (other *: tail)       => recurIndex[tail, element](index + 1)
+      case _: (other *: tail)   => recurIndex[tail, element](index + 1)

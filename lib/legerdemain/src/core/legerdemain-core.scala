@@ -44,17 +44,26 @@ import html5.*
 
 given Realm = realm"legerdemain"
 
-def elicit[value: Formulable](query: Optional[Query] = Unset, errors: Errors)
+def elicit[value: Formulable]
+   (query: Optional[Query] = Unset, errors: Errors, submit: Optional[Text])
    (using formulation: Formulation)
 :     Html[Flow] =
-  formulation.form(value.fields(t"", t"", query.or(Query.empty), errors))
+  formulation.form(value.fields(t"", t"", query.or(Query.empty), errors), submit)
 
 extension [formulable: {Formulable, Encodable in Query}](value: formulable)
-   (using formulation: Formulation)
-  def edit(errors: Errors): Html[Flow] =
-    formulation.form(formulable.fields(t"", t"", formulable.encoded(value), errors))
+  def edit(errors: Errors, submit: Optional[Text])(using formulation: Formulation): Html[Flow] =
+    formulation.form(formulable.fields(t"", t"", formulable.encoded(value), errors), submit)
 
 package formulations:
   given default: Formulation:
-    def form(content: List[Html[Flow]]): Html[Flow] =
-      Form(action = t".", method = Method.Post)(content, Input.Submit(t"Submit"))
+    def form(content: List[Html[Flow]], submit: Optional[Text]): Html[Flow] =
+      Form(action = t".", method = Method.Post)(content, Input.Submit(value = submit.or(t"Submit")))
+
+    def element
+       (widget:     List[Html[Phrasing]],
+        legend:     Text,
+        validation: Optional[Message],
+        required:   Boolean)
+    :     Html[Flow] =
+      val validation2 = validation.let(_.html)
+      Div(validation2.let(P.alert(_)), Label(legend, widget), Span.required(t"*").unless(!required))

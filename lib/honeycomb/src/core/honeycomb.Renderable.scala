@@ -33,29 +33,35 @@
 package honeycomb
 
 import anticipation.*
+import fulminate.*
 import prepositional.*
+import proscenium.*
 import spectacular.*
 
 object Renderable:
-  given [value: Showable] => value is Renderable into Html[?] = value => List(value.show)
+  given [value: Showable] => value is Renderable into Phrasing = value => List(value.show)
 
-  given [value: Abstractable across HtmlContent into List[Sgml]]
-  =>    value is Renderable into Html[?] =
-    new Renderable:
-      type Self = value
-      type Result = Html[?]
+  given Message is Renderable into Phrasing = message =>
+    message.segments.flatMap:
+      case text: Text       => List(text)
+      case message: Message => message.html
 
-      def html(value: value): List[Html[?]] = value.generic.map(convert)
 
-      private def convert(html: Sgml): Html[?] = html match
-        case Sgml.Textual(text)               => text
-        case Sgml.Comment(_)                  => "".tt
-        case Sgml.ProcessingInstruction(_, _) => "".tt
+  given [value: Abstractable across HtmlContent into List[Sgml]] => value is Renderable:
+    type Self = value
+    type Result = Label
 
-        case Sgml.Element(label, attributes, children) =>
-          Node(label, attributes.map(_.s -> _), children.map(convert(_)))
+    def html(value: value): List[Html[Result]] = value.generic.map(convert)
+
+    private def convert(html: Sgml): Html[?] = html match
+      case Sgml.Textual(text)               => text
+      case Sgml.Comment(_)                  => "".tt
+      case Sgml.ProcessingInstruction(_, _) => "".tt
+
+      case Sgml.Element(label, attributes, children) =>
+        Node(label, attributes.map(_.s -> _), children.map(convert(_)))
 
 trait Renderable:
   type Self
-  type Result <: Html[?]
-  def html(value: Self): List[Result]
+  type Result <: Label
+  def html(value: Self): List[Html[Result]]
