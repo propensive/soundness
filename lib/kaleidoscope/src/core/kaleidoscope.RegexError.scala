@@ -44,7 +44,7 @@ object RegexError:
         IncompleteRepetition, InvalidPattern, UnclosedEscape, EmptyCharClass, ZeroMaximum
 
   object Reason:
-    given Reason is Communicable =
+    given communicable: Reason is Communicable =
       case UnclosedGroup =>
         m"a capturing group was not closed"
 

@@ -38,16 +38,16 @@ import spectacular.*
 import wisteria.*
 
 object XmlEncoder extends Derivation[XmlEncoder]:
-  given XmlEncoder[Text] = text => XmlAst.Element(XmlName(t"Text"), List(XmlAst.Textual(text)))
+  given text: XmlEncoder[Text] = text => XmlAst.Element(XmlName(t"Text"), List(XmlAst.Textual(text)))
 
-  given XmlEncoder[String] =
+  given string: XmlEncoder[String] =
     string => XmlAst.Element(XmlName(t"String"), List(XmlAst.Textual(string.tt)))
 
-  given [value: XmlEncoder, collection[element] <: Seq[element]]
-  =>    XmlEncoder[collection[value]] = elements =>
+  given seq: [value: XmlEncoder, collection[element] <: Seq[element]]
+        =>  XmlEncoder[collection[value]] = elements =>
       XmlAst.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[value]].write(_)))
 
-  given XmlEncoder[Int] = int =>
+  given int: XmlEncoder[Int] = int =>
     XmlAst.Element(XmlName(t"Int"), List(XmlAst.Textual(int.show)))
 
   private val attributeAttribute = xmlAttribute()

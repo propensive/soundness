@@ -128,7 +128,7 @@ object Juxtaposition:
 
         case class Row(treeLine: Text, left: Teletype, right: Teletype)
 
-        given (Text is Textual) => TreeStyle[Row] = (tiles, row) =>
+        given treeStyle: (Text is Textual) => TreeStyle[Row] = (tiles, row) =>
           row.copy(treeLine = tiles.map(treeStyles.default.text(_)).join+row.treeLine)
 
         def line(data: (Text, Juxtaposition)): Row =

@@ -33,12 +33,12 @@
 package symbolism
 
 object Unital:
-  given Long is Unital = () => 1L
-  given Int is Unital = () => 1
-  given Short is Unital = () => 1.toShort
-  given Byte is Unital = () => 1.toByte
-  given Double is Unital = () => 1.0
-  given Float is Unital = () => 1.0f
+  given long: Long is Unital = () => 1L
+  given int: Int is Unital = () => 1
+  given short: Short is Unital = () => 1.toShort
+  given byte: Byte is Unital = () => 1.toByte
+  given double: Double is Unital = () => 1.0
+  given float: Float is Unital = () => 1.0f
 
 trait Unital:
   type Self

@@ -40,7 +40,7 @@ import rudiments.*
 import scala.quoted.*
 import scala.compiletime.*
 
-given Realm = realm"nomenclature"
+given realm: Realm = realm"nomenclature"
 
 object Nomenclature2:
   def build(using Quotes)(todo: List[quotes.reflect.TypeRepr]): quotes.reflect.TypeRepr =

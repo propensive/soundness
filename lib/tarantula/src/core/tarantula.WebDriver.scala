@@ -68,7 +68,7 @@ case class WebDriver(server: Browser#Server):
     case class Element(elementId: Text):
 
       private def get(address: Text): Json logs HttpEvent = safe:
-        given Online = Online
+        given online: Online = Online
 
         val url: HttpUrl =
           url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
@@ -76,7 +76,7 @@ case class WebDriver(server: Browser#Server):
         url.fetch(contentType = media"application/json").receive[Json]
 
       private def post(address: Text, content: Json): Json logs HttpEvent = safe:
-        given Online = Online
+        given online: Online = Online
 
         url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
         . submit()(content)
@@ -109,14 +109,14 @@ case class WebDriver(server: Browser#Server):
         Element(e.value.selectDynamic(Wei.s).as[Text])
 
     private def get(address: Text): Json logs HttpEvent = safe:
-      given Online = Online
+      given online: Online = Online
 
       url"http://localhost:${server.port}/session/$sessionId/$address"
       . fetch(contentType = media"application/json")
       . receive[Json]
 
     private def post(address: Text, content: Json): Json logs HttpEvent = safe:
-      given Online = Online
+      given online: Online = Online
       url"http://localhost:${server.port}/session/$sessionId/$address".submit()(content)
       . read[Text]
       . decode[Json]
@@ -156,7 +156,7 @@ case class WebDriver(server: Browser#Server):
       Element(get(t"element/active").value.selectDynamic(Wei.s).as[Text])
 
   def startSession(): Session logs HttpEvent =
-    given Online = Online
+    given online: Online = Online
     val url = url"http://localhost:${server.port}/session"
     val json = url.submit()(Json.parse(t"""{"capabilities":{}}""")).read[Text].decode[Json]
 

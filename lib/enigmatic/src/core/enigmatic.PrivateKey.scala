@@ -45,7 +45,7 @@ object PrivateKey:
   def generate[cipher <: Cipher]()(using cipher: cipher): PrivateKey[cipher] =
     PrivateKey(cipher.genKey())
 
-  given [key <: Cipher] => PrivateKey[key] is Showable = key =>
+  given showable: [key <: Cipher] => PrivateKey[key] is Showable = key =>
     import alphabets.base64.standard
     t"PrivateKey(${key.privateBytes.digest[Sha2[256]].serialize[Base64]})"
 

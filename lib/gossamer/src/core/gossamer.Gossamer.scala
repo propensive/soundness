@@ -43,7 +43,7 @@ import vacuous.*
 import scala.quoted.*
 
 object Gossamer:
-  given Realm = realm"gossamer"
+  given realm: Realm = realm"gossamer"
 
   object opaques:
     opaque type Ascii = anticipation.Bytes
@@ -51,11 +51,12 @@ object Gossamer:
     object Ascii:
       def apply(bytes: Bytes): Ascii = bytes
 
-      given Ascii is Showable = ascii => String(ascii.mutable(using Unsafe), "ASCII").nn.tt
+      given showable: Ascii is Showable =
+        ascii => String(ascii.mutable(using Unsafe), "ASCII").nn.tt
 
       extension (ascii: Ascii) def bytes: Bytes = ascii
 
-      given Ascii is Textual:
+      given textual: Ascii is Textual:
         type Show[value] = value is Showable
 
         val empty: Ascii = IArray.from[Byte](Nil)

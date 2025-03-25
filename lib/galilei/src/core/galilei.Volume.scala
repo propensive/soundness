@@ -39,6 +39,6 @@ import gossamer.*
 import spectacular.*
 
 object Volume:
-  given Volume is Inspectable = volume => t"volume[${volume.name}:${volume.volumeType}]"
+  given inspectable: Volume is Inspectable = volume => t"volume[${volume.name}:${volume.volumeType}]"
 
 case class Volume(name: Text, volumeType: Text)

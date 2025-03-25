@@ -41,8 +41,8 @@ import rudiments.*
 trait Celsius[Power <: Nat] extends Units[Power, Temperature]
 
 object Celsius:
-  private final val offset = 273.15
-  def apply(value: Double): Quantity[Celsius[1]] = Quantity[Celsius[1]](value + offset)
-  given UnitsOffset[Celsius[1]] = () => offset
-  given UnitName[Celsius[1]] = () => "°C".tt
-  erased given celsiusPerKelvin: Ratio[Celsius[1] & Kelvins[-1], 1.0] = !!
+  private final val zero: Double = 273.15
+  def apply(value: Double): Quantity[Celsius[1]] = Quantity[Celsius[1]](value + zero)
+  given offset: UnitsOffset[Celsius[1]] = () => zero
+  given designation: UnitName[Celsius[1]] = () => "°C".tt
+  erased given ratio: Ratio[Celsius[1] & Kelvins[-1], 1.0] = !!

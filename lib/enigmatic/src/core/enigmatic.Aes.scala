@@ -39,7 +39,7 @@ import rudiments.*
 import vacuous.*
 
 object Aes:
-  given [bits <: 128 | 192 | 256: ValueOf] => Aes[bits] = Aes()
+  given value: [bits <: 128 | 192 | 256: ValueOf] => Aes[bits] = Aes()
 
 class Aes[bits <: 128 | 192 | 256: ValueOf]() extends Cipher, Encryption, Symmetric:
   type Size = bits

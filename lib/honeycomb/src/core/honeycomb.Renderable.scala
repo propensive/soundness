@@ -39,15 +39,16 @@ import proscenium.*
 import spectacular.*
 
 object Renderable:
-  given [value: Showable] => value is Renderable into Phrasing = value => List(value.show)
+  given showable: [value: Showable] => value is Renderable into Phrasing = value => List(value.show)
 
-  given Message is Renderable into Phrasing = message =>
+  given message: Message is Renderable into Phrasing = message =>
     message.segments.flatMap:
       case text: Text       => List(text)
       case message: Message => message.html
 
 
-  given [value: Abstractable across HtmlContent into List[Sgml]] => value is Renderable:
+  given abstractable: [value: Abstractable across HtmlContent into List[Sgml]]
+        => value is Renderable:
     type Self = value
     type Result = Label
 

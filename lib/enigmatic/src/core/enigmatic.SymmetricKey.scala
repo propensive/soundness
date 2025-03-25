@@ -36,7 +36,7 @@ import anticipation.*
 import prepositional.*
 
 object SymmetricKey:
-  given [cipher <: Cipher] => SymmetricKey[cipher] is Encodable in Bytes = _.bytes
+  given encodable: [cipher <: Cipher] => SymmetricKey[cipher] is Encodable in Bytes = _.bytes
   def generate[cipher <: Cipher & Symmetric]()(using cipher: cipher)
   :     SymmetricKey[cipher] =
 

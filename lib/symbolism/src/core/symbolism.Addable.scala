@@ -45,22 +45,22 @@ object Addable:
 
     def add(augend: augend, addend: addend): result = lambda(augend, addend)
 
-  given Double is Addable by Double into Double = Addable:
+  given double: Double is Addable by Double into Double = Addable:
     (augend, addend) => augend + addend
 
-  given Float is Addable by Float into Float = Addable:
+  given float: Float is Addable by Float into Float = Addable:
     (augend, addend) => augend + addend
 
-  given Long is Addable by Long into Long = Addable:
+  given long: Long is Addable by Long into Long = Addable:
     (augend, addend) => augend + addend
 
-  given Int is Addable by Int into Int = Addable:
+  given int: Int is Addable by Int into Int = Addable:
     (augend, addend) => augend + addend
 
-  given Short is Addable by Short into Short = Addable:
+  given short: Short is Addable by Short into Short = Addable:
     (augend, addend) => (augend + addend).toShort
 
-  given Byte is Addable by Byte into Byte = Addable:
+  given byte: Byte is Addable by Byte into Byte = Addable:
     (augend, addend) => (augend + addend).toByte
 
 trait Addable:

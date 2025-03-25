@@ -42,7 +42,7 @@ object MultipartError:
     case Expected(char: Char)
     case StreamContinues, BadBoundaryEnding, Medium, BadDisposition
 
-  given Reason is Communicable =
+  given communicable: Reason is Communicable =
     case Reason.Expected(char)    => m"the character '$char' was expected"
     case Reason.StreamContinues   => m"the stream continues beyond the last part"
     case Reason.BadBoundaryEnding => m"unexpected content followed the boundary"

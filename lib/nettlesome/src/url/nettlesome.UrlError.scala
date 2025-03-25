@@ -40,7 +40,7 @@ case class UrlError(text: Text, offset: Ordinal, reason: UrlError.Reason)(using 
 extends Error(m"the URL $text is not valid: $reason at ${offset.n0}")
 
 object UrlError:
-  given Reason is Communicable =
+  given communicable: Reason is Communicable =
     case Reason.Expected(expectation)         => m"$expectation was expected"
     case Reason.BadHostname(hostname, reason) => m"$hostname was not valid because $reason"
 
@@ -52,7 +52,7 @@ object UrlError:
     case Colon, More, LowerCaseLetter, PortRange, Number
 
   object Expectation:
-    given Expectation is Communicable =
+    given communicable: Expectation is Communicable =
       case Colon           => m"a colon"
       case More            => m"more characters"
       case LowerCaseLetter => m"a lowercase letter"

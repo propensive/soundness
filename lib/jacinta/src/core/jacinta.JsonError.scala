@@ -45,7 +45,7 @@ object JsonError:
     case Absent
 
   object Reason:
-    given Reason is Communicable =
+    given communicable: Reason is Communicable =
       case OutOfRange                => m"the array index is out of range"
       case NotType(found, primitive) => m"the JSON value had type $found instead of $primitive"
       case Absent                    => m"the JSON value was not present"

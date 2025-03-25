@@ -40,7 +40,7 @@ enum PhysicalState:
   case Solid, Liquid, Gas, Aqueous
 
 object PhysicalState:
-  given PhysicalState is Showable =
+  given showable: PhysicalState is Showable =
     case Solid   => t"(s)"
     case Liquid  => t"(l)"
     case Gas     => t"(g)"

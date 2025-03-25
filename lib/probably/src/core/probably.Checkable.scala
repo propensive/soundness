@@ -35,9 +35,10 @@ package probably
 import prepositional.*
 
 object Checkable:
-  given [left, right] => IArray[left] is Checkable against IArray[right] = _.sameElements(_)
+  given iarray: [left, right] => IArray[left] is Checkable against IArray[right] = _.sameElements(_)
 
-  given Double is Checkable against Tolerance = (double, tolerance) => tolerance.covers(double)
+  given tolerance: Double is Checkable against Tolerance =
+    (double, tolerance) => tolerance.covers(double)
 
 trait Checkable:
   type Self

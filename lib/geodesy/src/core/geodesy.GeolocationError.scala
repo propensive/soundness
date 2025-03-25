@@ -39,7 +39,7 @@ object GeolocationError:
     case MissingEquals, MultipleEquals, BadScheme, ExpectedSemicolon, UnexpectedSuffix,
         ExpectedCoordinates, BadUncertainty
 
-  given Reason is Communicable =
+  given communicable: Reason is Communicable =
     case Reason.MissingEquals       => m"the parameter does not contain an `=`"
     case Reason.MultipleEquals      => m"the parameter contains more than one `=`"
     case Reason.BadScheme           => m"the value does not begin with the `geo:` URI scheme"

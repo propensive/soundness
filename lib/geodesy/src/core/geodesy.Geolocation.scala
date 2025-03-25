@@ -44,7 +44,7 @@ import vacuous.*
 
 object Geolocation:
   import GeolocationError.Reason.*
-  private given Decimalizer = Decimalizer(decimalPlaces = 6)
+  private given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 6)
 
   private def parseParams(text: Text): List[(Text, Text)] raises GeolocationError =
     text.cut(t";").map: parameter =>

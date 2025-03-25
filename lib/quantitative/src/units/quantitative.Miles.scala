@@ -41,5 +41,5 @@ import rudiments.*
 trait Miles[Power <: Nat] extends Units[Power, Distance]
 
 object Miles:
-  given UnitName[Miles[1]] = () => "mi".tt
-  erased given milesPerMetre: Ratio[Miles[-1] & Metres[1], 1609.344] = !!
+  given designation: UnitName[Miles[1]] = () => "mi".tt
+  erased given ratio: Ratio[Miles[-1] & Metres[1], 1609.344] = !!

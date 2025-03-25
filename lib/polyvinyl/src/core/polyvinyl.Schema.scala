@@ -50,7 +50,7 @@ trait Schema[data, record <: Record in data]:
 
     import quotes.reflect.*
 
-    given Realm = realm"polyvinyl"
+    given realm: Realm = realm"polyvinyl"
 
     val target = thisType.absolve match
       case '[thisType] =>

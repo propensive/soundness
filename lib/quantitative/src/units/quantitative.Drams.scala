@@ -41,5 +41,5 @@ import rudiments.*
 trait Drams[Power <: Nat] extends Units[Power, Mass]
 
 object Drams:
-  given UnitName[Drams[1]] = () => "dr".tt
-  erased given kilogramsPerDram: Ratio[Kilograms[1] & Drams[-1], 0.00177184375] = !!
+  given designation: UnitName[Drams[1]] = () => "dr".tt
+  erased given ratio: Ratio[Kilograms[1] & Drams[-1], 0.00177184375] = !!

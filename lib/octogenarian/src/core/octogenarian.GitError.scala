@@ -44,7 +44,7 @@ object GitError:
 
   import Reason.*
 
-  given Reason is Communicable =
+  given communicable: Reason is Communicable =
     case CannotExecuteGit   => m"the `git` command could not be executed"
     case CloneFailed        => m"the repository could not be cloned"
     case InvalidRepoPath    => m"the repository path was not valid"

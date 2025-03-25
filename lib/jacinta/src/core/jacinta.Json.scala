@@ -57,7 +57,7 @@ import JsonError.Reason
 
 trait Json2:
   given optionalEncodable: [value: Encodable in Json as encodable]
-  =>    Optional[value] is Encodable in Json =
+        =>  Optional[value] is Encodable in Json =
     new Encodable:
       type Self = Optional[value]
       type Format = Json
@@ -66,7 +66,7 @@ trait Json2:
         value.let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
 
   given optional: [value: Decodable in Json] => Tactic[JsonError]
-  =>    Optional[value] is Decodable in Json = json =>
+        =>  Optional[value] is Decodable in Json = json =>
     if json.root.isAbsent then Unset else value.decoded(json)
 
   given memory: Tactic[JsonError] => Memory is Decodable in Json = json => json.root.long.b
@@ -142,7 +142,7 @@ trait Json2:
                     JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
 
   // given integral: [integral: Numeric](using Tactic[JsonError])
-  // =>    integral is Decodable in Json =
+  //       =>  integral is Decodable in Json =
   //   (value, omit) => integral.fromInt(value.root.long.toInt)
 
 object Json extends Json2, Dynamic:
@@ -167,12 +167,12 @@ object Json extends Json2, Dynamic:
     value => value.root.string.s
 
   given option: [value: Decodable in Json] => Tactic[JsonError]
-  =>    Option[value] is Decodable in Json =
+        =>  Option[value] is Decodable in Json =
 
     json => if json.root.isAbsent then None else Some(value.decoded(json))
 
   given optionEncodable: [value: Encodable in Json as encodable]
-  =>    Option[value] is Encodable in Json =
+        =>  Option[value] is Encodable in Json =
     new Encodable:
       type Self = Option[value]
       type Format = Json
@@ -192,15 +192,15 @@ object Json extends Json2, Dynamic:
   given booleanEncodable: Boolean is Encodable in Json = boolean => Json.ast(JsonAst(boolean))
   given jsonEncodable: Json is Encodable in Json = identity(_)
 
-  given [collection <: Iterable, element: Encodable in Json as encodable]
-  =>    collection[element] is Encodable in Json =
+  given encodable: [collection <: Iterable, element: Encodable in Json as encodable]
+        =>  collection[element] is Encodable in Json =
     values => Json.ast(JsonAst(IArray.from(values.map(encodable.encode(_).root))))
 
   given array: [collection <: Iterable, element: Decodable in Json]
-  =>   (factory:    Factory[element, collection[element]],
-        jsonAccess: Tactic[JsonError],
-        foci:       Foci[JsonPointer])
-  =>    collection[element] is Decodable in Json =
+        => (factory:    Factory[element, collection[element]],
+            jsonAccess: Tactic[JsonError],
+            foci:       Foci[JsonPointer])
+        =>  collection[element] is Decodable in Json =
     value =>
       val builder = factory.newBuilder
       value.root.array.each: json =>
@@ -210,7 +210,7 @@ object Json extends Json2, Dynamic:
       builder.result()
 
   given map: [element: Decodable in Json] => Tactic[JsonError]
-  =>    Map[Text, element] is Decodable in Json =
+        =>  Map[Text, element] is Decodable in Json =
 
     value =>
       val (keys, values) = value.root.obj
@@ -225,11 +225,11 @@ object Json extends Json2, Dynamic:
       case given (`source` is Readable by Bytes) => Json(JsonAst.parse(value))
       case given (`source` is Readable by Text)  => Json(JsonAst.parse(value.read[Bytes]))
 
-  given JsonPrinter => Json is Showable = json =>
+  given showable: JsonPrinter => Json is Showable = json =>
     try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
 
-  given (encoder: CharEncoder, printer: JsonPrinter)
-  =>    Json is Abstractable across HttpStreams into HttpStreams.Content =
+  given abstractable: (encoder: CharEncoder, printer: JsonPrinter)
+        =>  Json is Abstractable across HttpStreams into HttpStreams.Content =
     new Abstractable:
       type Self = Json
       type Domain = HttpStreams
@@ -238,10 +238,10 @@ object Json extends Json2, Dynamic:
       def genericize(json: Json): HttpStreams.Content =
         (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.bytes))
 
-  given Tactic[JsonParseError] => Json is Decodable in Text =
+  given decodable: Tactic[JsonParseError] => Json is Decodable in Text =
     text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
-  given Tactic[JsonParseError] => Json is Instantiable across HttpRequests from Text =
+  given instantiable: Tactic[JsonParseError] => Json is Instantiable across HttpRequests from Text =
     text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =

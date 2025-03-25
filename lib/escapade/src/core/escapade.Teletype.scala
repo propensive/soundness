@@ -69,7 +69,7 @@ object Teletype:
     def write(target: Self, stream: Stream[Teletype]): Unit =
         stream.flow(())(Err.print(head) yet write(target, tail))
 
-  given Teletype is Textual:
+  given textual: Teletype is Textual:
     type Show[value] = value is Teletypeable
     def classTag: ClassTag[Teletype] = summon[ClassTag[Teletype]]
     def size(text: Teletype): Int = text.plain.s.length
@@ -118,7 +118,7 @@ object Teletype:
 
     recur(text, limit, Nil)
 
-  given Ordering[Teletype] = Ordering.by(_.plain)
+  given ordering: Ordering[Teletype] = Ordering.by(_.plain)
 
   def make[value: Showable](value: value, transform: Ansi.Transform): Teletype =
     val text: Text = value.show

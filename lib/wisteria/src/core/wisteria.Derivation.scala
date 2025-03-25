@@ -39,7 +39,7 @@ trait Derivation[typeclass[_]]
 extends ProductDerivationMethods[typeclass], SumDerivationMethods[typeclass]:
 
   inline given derived: [derivation] => (Reflection[derivation])
-  =>    typeclass[derivation] =
+               =>  typeclass[derivation] =
 
     inline summon[Reflection[derivation]] match
       case reflection: ProductReflection[derivationType] =>

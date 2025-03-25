@@ -63,17 +63,17 @@ object TarRef:
   @targetName("child")
   infix def / (name: Name[InvalidTarNames]): TarRef = TarRef(List(name))
 
-  given TarRef is Navigable[InvalidTarNames, Unset.type] as navigable:
+  given navigable: TarRef is Navigable[InvalidTarNames, Unset.type] as navigable:
     def root(path: TarRef): Unset.type = Unset
     def descent(path: TarRef): List[Name[InvalidTarNames]] = path.descent
     def prefix(ref: Unset.type): Text = t""
     def separator(path: TarRef): Text = t"/"
 
-  given RootParser[TarRef, Unset.type] as rootParser:
+  given rootParser: RootParser[TarRef, Unset.type] as rootParser:
     def parse(text: Text): (Unset.type, Text) =
       (Unset, if text.at(Prim) == '/' then text.skip(1) else text)
 
-  given PathCreator[TarRef, InvalidTarNames, Unset.type] as pathCreator =
+  given pathCreator: PathCreator[TarRef, InvalidTarNames, Unset.type] as pathCreator =
     (root, descent) => TarRef(descent)
 
-  given TarRef is Showable as showable = _.descent.reverse.map(_.render).join(t"/")
+  given showable: TarRef is Showable as showable = _.descent.reverse.map(_.render).join(t"/")

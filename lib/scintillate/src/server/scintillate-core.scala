@@ -48,7 +48,7 @@ import vacuous.*
 
 package httpServers:
   given stdlib: (Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable)
-  =>    Http is Protocolic:
+        =>  Http is Protocolic:
 
     type Carrier = TcpPort
     type Self = Http

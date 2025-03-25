@@ -68,13 +68,13 @@ object Character:
       case _ =>
         End
 
-  given Typeable[Character]:
+  given typeable: Typeable[Character]:
     def unapply(value: Any): Option[value.type & Character] = value.matchable(using Unsafe) match
       case char: Char => Some(value.asInstanceOf[value.type & Character])
       case _          => None
 
-  erased given CanEqual[Char, Character] = !!
-  erased given CanEqual[Character, Char] = !!
+  erased given charCharacter: CanEqual[Char, Character] = !!
+  erased given characterChar: CanEqual[Character, Char] = !!
 
   extension (char: Character)
     def char: Char = if char == -1 then '\u0000' else char.toChar

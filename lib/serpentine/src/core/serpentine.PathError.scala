@@ -41,7 +41,7 @@ import scala.compiletime.*
 
 object PathError:
   object Reason:
-    given Reason is Communicable =
+    given communicable: Reason is Communicable =
       case Reason.RootParent     => m"the root has no parent"
       case Reason.InvalidRoot    => m"the root is not valid"
       case Reason.DifferentRoots => m"it does not have the same root as the source"

@@ -41,6 +41,6 @@ enum HttpServerEvent:
   case Processed(request: Http.Request, duration: Long)
 
 object HttpServerEvent:
-  given HttpServerEvent is Communicable =
+  given communicable: HttpServerEvent is Communicable =
     case Received(request)            => m"Received request ${request.show}"
     case Processed(request, duration) => m"Processed request ${request.show} in ${duration}ms"

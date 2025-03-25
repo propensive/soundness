@@ -51,11 +51,11 @@ object Filesystem:
       MustNotMatch["(?i)(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(\\.[^.]+)?"] & MustNotEqual["."] &
       MustNotEqual[".."] & MustNotEqual[""]
 
-  given [filesystem <: Filesystem] => (Path on filesystem) is Substantiable =
+  given substantiable: [filesystem <: Filesystem] => (Path on filesystem) is Substantiable =
     path => jnf.Files.exists(path.javaPath)
 
   given radical: Tactic[PathError]
-  =>    Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root =
+        =>  Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root =
     val os = System.getProperty("os.name").nn.tt
 
     val delegate =
@@ -66,7 +66,7 @@ object Filesystem:
       case radical: (Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root) => radical
 
   given navigable: Tactic[NameError]
-  =>    Filesystem is Navigable by Name[Filesystem] under Rules =
+        =>  Filesystem is Navigable by Name[Filesystem] under Rules =
     val os = System.getProperty("os.name").nn.tt
 
     val delegate =

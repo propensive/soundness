@@ -76,7 +76,7 @@ object Abacist2:
 
       def divide(left: Count[units], right: Double): Count[units] = left.divide(right)
 
-    inline given [units <: Tuple] => Count[units] is Showable = summonFrom:
+    inline given showable: [units <: Tuple] => Count[units] is Showable = summonFrom:
       case names: UnitsNames[units] => count =>
         val nonzeroComponents = count.components.filter(_(1) != 0)
         val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)

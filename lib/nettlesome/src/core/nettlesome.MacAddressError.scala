@@ -42,7 +42,7 @@ object MacAddressError:
     case NotHex(group: Int, content: Text)
 
   object Reason:
-    given Reason is Communicable =
+    given communicable: Reason is Communicable =
       case WrongGroupCount(count) =>
         m"there should be six colon-separated groups, but there were $count"
 

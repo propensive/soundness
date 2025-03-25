@@ -62,19 +62,19 @@ object Contrastable extends Contrastable2:
     if left == right then Juxtaposition.Same(left.show)
     else Juxtaposition.Different(left.show, right.show, t"${math.abs(right - left)}")
 
-  given Double is Contrastable = (left, right) =>
-    given Decimalizer = Decimalizer(3)
+  given double: Double is Contrastable = (left, right) =>
+    given decimalizer: Decimalizer = Decimalizer(3)
     if left == right then Juxtaposition.Same(left.show)
     else
       val size = 100*(right - left)/left
       val sizeText = if size.isFinite then t"${if size > 0 then t"+" else t""}$size%" else t""
       Juxtaposition.Different(left.show, right.show, sizeText)
 
-  given Char is Contrastable = (left, right) =>
+  given char: Char is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.show)
     else Juxtaposition.Different(left.show, right.show)
 
-  given Text is Contrastable =
+  given text: Text is Contrastable =
     (left, right) =>
       def decompose(chars: IArray[Char]): IArray[Decomposition] = chars.map: char =>
         Decomposition.Primitive(t"Char", char.show, char)
@@ -84,7 +84,7 @@ object Contrastable extends Contrastable2:
     compiletime.summonInline[value is Decomposable].give:
       Juxtaposition.Same(left.decompose.text)
 
-  given [value: Decomposable] => value is Contrastable = (left, right) =>
+  given decomposable: [value: Decomposable] => value is Contrastable = (left, right) =>
     juxtaposition(left.decompose, right.decompose)
 
   def juxtaposition(left: Decomposition, right: Decomposition): Juxtaposition =
@@ -112,7 +112,7 @@ object Contrastable extends Contrastable2:
 
         Juxtaposition.Different(kind(left), kind(right))
 
-  given Exception is Contrastable:
+  given exception: Exception is Contrastable:
     def contrast(left: Exception, right: Exception): Juxtaposition =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.tt)
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.tt)

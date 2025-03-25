@@ -44,7 +44,7 @@ import vacuous.*
 import language.dynamics
 
 object CodlNode:
-  given CodlNode is Inspectable = _.data.option.fold(t"!"): data =>
+  given inspectable: CodlNode is Inspectable = _.data.option.fold(t"!"): data =>
     t"${data.key}[${data.children.map(_.inspect).join(t",")}]"
 
   val empty: CodlNode = CodlNode()

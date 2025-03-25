@@ -37,7 +37,7 @@ import gossamer.*
 import spectacular.*
 
 object XmlAst:
-  given XmlAst is Showable =
+  given showable: XmlAst is Showable =
     case Comment(content)                       => t"<!--$content-->"
     case ProcessingInstruction(target, content) => t"<?$target $content?>"
     case Textual(content)                       => content

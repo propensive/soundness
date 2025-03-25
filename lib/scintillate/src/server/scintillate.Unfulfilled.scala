@@ -35,7 +35,7 @@ package scintillate
 import telekinesis.*
 
 object Unfulfilled:
-  given [content: Servable] => Unfulfilled[content] is Servable = unfulfilled =>
+  given servable: [content: Servable] => Unfulfilled[content] is Servable = unfulfilled =>
     val response = content.serve(unfulfilled.content)
     Http.Response.make(Http.InternalServerError, response.textHeaders, response.body)
 

@@ -44,7 +44,7 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-given Realm = realm"abacist"
+given realm: Realm = realm"abacist"
 
 object Abacist:
   import Quantitative.*

@@ -103,7 +103,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     new Matrix(rows, columns2, elements)
 
 object Matrix:
-  given [element: Showable] => Text is Measurable => Matrix[element, ?, ?] is Showable =
+  given showable: [element: Showable] => Text is Measurable => Matrix[element, ?, ?] is Showable =
     matrix =>
       val textElements = matrix.elements.map(_.show)
       val sizes = textElements.map(_.length)

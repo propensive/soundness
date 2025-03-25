@@ -46,9 +46,10 @@ import symbolism.*
 
 object LocalClasspath:
 
-  given SystemProperties => LocalClasspath is Encodable in Text = _()
+  given encodable: SystemProperties => LocalClasspath is Encodable in Text = _()
 
-  given (SystemProperties, Tactic[SystemPropertyError]) => LocalClasspath is Decodable in Text =
+  given decodable: (SystemProperties, Tactic[SystemPropertyError])
+        => LocalClasspath is Decodable in Text =
     classpath =>
       val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
         classpath.cut(Properties.path.separator()).map: path =>
@@ -64,9 +65,9 @@ object LocalClasspath:
   :     LocalClasspath =
     new LocalClasspath(entries, entries.to(Set))
 
-  given [path: Abstractable across Paths into Text]
-  =>    (Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks)
-  =>    LocalClasspath is Addable by path into LocalClasspath =
+  given paths: [path: Abstractable across Paths into Text]
+        => (Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks)
+        =>  LocalClasspath is Addable by path into LocalClasspath =
     (classpath, path) =>
       Path.parse[Filesystem](path.generic).pipe: path =>
         val entry: ClasspathEntry.Directory | ClasspathEntry.Jar = path.entry() match

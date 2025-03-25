@@ -29,7 +29,7 @@ object CasualDiffError:
     case BadLineStart(content: Text)
     case DoesNotMatch(content: Text)
 
-  given Reason is Communicable =
+  given communicable: Reason is Communicable =
     case Reason.BadLineStart(content) =>
       m"the line $content did not begin with either ${"'+ '".tt}, ${"'- '".tt} or ${"'  '".tt}"
 

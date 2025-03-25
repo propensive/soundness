@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object Method:
-  given Method is Showable = _.toString.show.lower
+  given showable: Method is Showable = _.toString.show.lower
 
 enum Method:
   case Post, Get, Dialog

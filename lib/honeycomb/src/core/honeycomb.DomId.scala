@@ -37,6 +37,6 @@ import gossamer.*
 import spectacular.*
 
 object DomId:
-  given DomId is GenericCssSelection = id => t"#${id.name}"
+  given generic: DomId is GenericCssSelection = id => t"#${id.name}"
 
 case class DomId(name: Text)

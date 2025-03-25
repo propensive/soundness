@@ -63,7 +63,7 @@ object Zip:
   extends Root(t"", t"/", Case.Sensitive):
     type Platform = Zip
 
-  given Tactic[NameError] => Zip is Radical from Zip.ZipRoot = new Radical:
+  given radical: Tactic[NameError] => Zip is Radical from Zip.ZipRoot = new Radical:
     type Self = Zip
     type Source = ZipRoot
 
@@ -71,7 +71,7 @@ object Zip:
     def rootText(root: Source): Text = t""
     def root(path: Text): Source = ZipRoot()
 
-  given Tactic[NameError] => Zip is Navigable by Name[Zip] under Rules = new Navigable:
+  given navigable: Tactic[NameError] => Zip is Navigable by Name[Zip] under Rules = new Navigable:
     type Self = Zip
     type Operand = Name[Zip]
     type Constraint = Rules
@@ -87,7 +87,7 @@ object Zip:
 erased trait Zip
 
 object Zipfile:
-  given Zipfile is Openable over jnf.FileSystem = new Openable:
+  given openable: Zipfile is Openable over jnf.FileSystem = new Openable:
     type Self = Zipfile
     type Operand = Unit
     type Result = Root

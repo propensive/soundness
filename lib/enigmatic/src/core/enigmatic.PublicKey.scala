@@ -39,11 +39,11 @@ import prepositional.*
 import spectacular.*
 
 object PublicKey:
-  given [key <: Cipher] => PublicKey[key] is Showable = key =>
+  given showable: [key <: Cipher] => PublicKey[key] is Showable = key =>
     import alphabets.hex.lowerCase
     t"PublicKey(${key.bytes.serialize[Hex]})"
 
-  given [cipher <: Cipher] => PublicKey[cipher] is Encodable in Bytes = _.bytes
+  given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Bytes = _.bytes
 
 case class PublicKey[cipher <: Cipher](bytes: Bytes):
   def encrypt[value: Encodable in Bytes](value: value)

@@ -42,13 +42,13 @@ import symbolism.*
 
 object Geodesy:
   private val range = math.pow(2, 32) - 2
-  private given Decimalizer = Decimalizer(decimalPlaces = 6)
+  private given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 6)
 
   opaque type Location = Long
   opaque type Angle = Double
 
   object Location:
-    given Location is Encodable in Text = location =>
+    given encodable: Location is Encodable in Text = location =>
       t"${location.latitude.degrees},${location.longitude.degrees}"
 
     private def fromAngle(latitude: Angle, longitude: Angle): Location =
@@ -85,7 +85,7 @@ object Geodesy:
       (left, right) => (left*right)%c
 
     given showable: Angle is Showable = angle =>
-      given Decimalizer = Decimalizer(decimalPlaces = 1)
+      given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
       t"${angle.degrees}°"
 
   extension (angle: Angle)

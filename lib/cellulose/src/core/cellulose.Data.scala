@@ -47,7 +47,7 @@ object Data:
       summon[CodlEncoder[T]].encode(value).head.to(List).map(_.data).collect:
         case data: Data => data
 
-  given Data is Inspectable = data => t"Data(${data.key}, ${data.children.length})"
+  given inspectable: Data is Inspectable = data => t"Data(${data.key}, ${data.children.length})"
 
 case class Data(key: Text, children: IArray[CodlNode] = IArray(), layout: Layout = Layout.empty,
                     schema: CodlSchema = CodlSchema.Free)

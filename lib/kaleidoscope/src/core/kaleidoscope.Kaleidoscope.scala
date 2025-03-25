@@ -44,7 +44,7 @@ import fulminate.*
 import vacuous.*
 
 object Kaleidoscope:
-  given Realm = realm"kaleidoscope"
+  given realm: Realm = realm"kaleidoscope"
 
   def glob(context: Expr[StringContext])(using Quotes): Expr[Any] =
     val parts = context.value.get.parts.map(Text(_)).map(Glob.parse(_).regex.s).to(List)

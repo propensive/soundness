@@ -43,7 +43,7 @@ import prepositional.*
 import spectacular.*
 
 package logFormats:
-  given Level is Teletypeable = level =>
+  given teleypeable: Level is Teletypeable = level =>
     val color = level match
       case Level.Fine => LightSeaGreen
       case Level.Info => YellowGreen

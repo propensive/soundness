@@ -37,7 +37,7 @@ import fulminate.*
 
 import scala.collection.BuildFrom
 
-given Realm = realm"mercator"
+given realm: Realm = realm"mercator"
 
 extension [value, functor[_]](using functor: Functor[functor])
    (value: functor[value])

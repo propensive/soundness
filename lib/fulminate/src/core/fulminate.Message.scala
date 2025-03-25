@@ -41,8 +41,8 @@ import scala.annotation.targetName
 
 object Message:
   def apply(value: Text): Message = Message(List(value))
-  given Message is Printable = (message, termcap) => message.text
-  given [event: Communicable] => Message transcribes event = _.communicate
+  given printable: Message is Printable = (message, termcap) => message.text
+  given communicable: [event: Communicable] => Message transcribes event = _.communicate
 
   transparent inline def make[tuple <: Tuple](inline messages: tuple, done: List[Message])
   :     List[Message] =

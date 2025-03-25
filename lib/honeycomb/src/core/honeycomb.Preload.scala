@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object Preload:
-  given Preload is Showable = _.toString.show.lower
+  given showable: Preload is Showable = _.toString.show.lower
 
 enum Preload:
   case None, Metadata, Auto

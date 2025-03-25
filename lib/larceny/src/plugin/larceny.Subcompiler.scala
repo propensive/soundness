@@ -83,7 +83,7 @@ object Subcompiler:
           val sourceFile: SourceFile = SourceFile.virtual("<subcompilation>", source)
           val ctx = currentCtx.fresh
 
-          given Context =
+          given ctx0: Context =
             ctx
             . setReporter(reporter)
             . setSetting(ctx.settings.language, language)

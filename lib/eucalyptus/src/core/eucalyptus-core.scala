@@ -110,11 +110,11 @@ package logging:
   given silent: [format] => format is Loggable = Log.silent[format]
 
   given stdout: [format: Printable, inscribable: Inscribable in format] => Stdio
-  =>    inscribable is Loggable =
+        =>  inscribable is Loggable =
     (level, realm, timestamp, event) =>
       Out.println(inscribable.formatter(event, level, realm, timestamp))
 
   given stderr: [inscribable: Inscribable in format, format: Printable] => Stdio
-  =>    inscribable is Loggable =
+        =>  inscribable is Loggable =
     (level, realm, timestamp, event) =>
       Err.println(inscribable.formatter(event, level, realm, timestamp))

@@ -57,14 +57,14 @@ trait HttpClient:
 object HttpClient:
   private lazy val client: jnh.HttpClient = jnh.HttpClient.newHttpClient().nn
 
-  given Tactic[StreamError] => HttpClient onto DomainSocket = new HttpClient:
+  given domainSocket: Tactic[StreamError] => HttpClient onto DomainSocket = new HttpClient:
     type Target = DomainSocket
 
     def request(request: Http.Request, socket: DomainSocket): Http.Response logs HttpEvent =
 
       unsafely(Http.Response.parse(socket.transmit(request)))
 
-  given Tactic[ConnectError] => Online => HttpClient onto Origin["http" | "https"] = new HttpClient:
+  given http: Tactic[ConnectError] => Online => HttpClient:
     type Target = Origin["http" | "https"]
 
     def request(httpRequest: Http.Request, origin: Origin["http" | "https"])

@@ -36,14 +36,14 @@ import proscenium.*
 import rudiments.*
 
 object Unpackable:
-  given [pack: Debufferable] => ClassTag[pack] => IArray[pack] is Unpackable:
+  given iarray: [pack: Debufferable] => ClassTag[pack] => IArray[pack] is Unpackable:
     type Wrap[Type] = Int => Type
     def unpack(buffer: Buffer): Int => IArray[pack] = count =>
       IArray.create[pack](count): array =>
         array.indices.each: index =>
           array(index) = pack.debuffer(buffer)
 
-  given [pack: Debufferable] => pack is Unpackable:
+  given debufferable: [pack: Debufferable] => pack is Unpackable:
     type Wrap[Type] = Type
     def unpack(buffer: Buffer): pack = pack.debuffer(buffer)
 

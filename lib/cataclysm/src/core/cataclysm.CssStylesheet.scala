@@ -41,8 +41,8 @@ import proscenium.*
 import language.dynamics
 
 object CssStylesheet:
-  given (charEncoder: CharEncoder)
-  =>    CssStylesheet is Abstractable across HttpStreams into HttpStreams.Content =
+  given abstractable: (charEncoder: CharEncoder)
+        =>  CssStylesheet is Abstractable across HttpStreams into HttpStreams.Content =
     new Abstractable:
       type Self = CssStylesheet
       type Domain = HttpStreams

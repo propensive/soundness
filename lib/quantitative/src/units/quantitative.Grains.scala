@@ -41,5 +41,5 @@ import rudiments.*
 trait Grains[Power <: Nat] extends Units[Power, Mass]
 
 object Grains:
-  given UnitName[Grains[1]] = () => "gr".tt
-  erased given kilogramsPerGrain: Ratio[Kilograms[1] & Grains[-1], 0.0000647989] = !!
+  given designation: UnitName[Grains[1]] = () => "gr".tt
+  erased given ratio: Ratio[Kilograms[1] & Grains[-1], 0.0000647989] = !!

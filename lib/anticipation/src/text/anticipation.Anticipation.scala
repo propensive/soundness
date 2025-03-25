@@ -52,7 +52,7 @@ object Anticipation:
 
     extension (text: Text) inline def s: String = text
 
-    given Text is Addable by Text into Text = _ + _
+    given addable: Text is Addable by Text into Text = _ + _
 
     private def recur(text: Text, n: Int, acc: Text): Text =
       if n == 0 then acc else recur(text, n - 1, acc+text)
@@ -63,23 +63,23 @@ object Anticipation:
       type Result = Text
       def multiply(text: Text, n: Int): Text = recur(text, n.max(0), "".tt)
 
-    given Ordering[Text] = Ordering.String.on[Text](identity)
-    given CommandLineParser.FromString[Text] = identity(_)
+    given ordering: Ordering[Text] = Ordering.String.on[Text](identity)
+    given fromString: CommandLineParser.FromString[Text] = identity(_)
 
     given fromExpr: (fromExpr: FromExpr[String]) => FromExpr[Text]:
       def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr)
 
-    given ToExpr[Text]:
+    given toExpr: ToExpr[Text]:
       def apply(text: Text)(using Quotes) =
         import quotes.reflect.*
         val expr = Literal(StringConstant(text)).asExprOf[String]
         '{Text($expr)}
 
-    given Conversion[String, Text] = identity(_)
+    given conversion: Conversion[String, Text] = identity(_)
 
-    erased given CanEqual[Text, Text] = erasedValue
+    erased given canEqual: CanEqual[Text, Text] = erasedValue
 
-    given Typeable[Text]:
+    given typeable: Typeable[Text]:
       def unapply(value: Any): Option[value.type & Text] = value.asMatchable match
         case str: String => Some(str)
         case _           => None

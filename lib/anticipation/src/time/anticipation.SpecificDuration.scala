@@ -42,4 +42,4 @@ object SpecificDuration:
   def apply[duration: SpecificDuration](milliseconds: Long): duration =
     duration.duration(milliseconds)
 
-  given Long is SpecificDuration = identity(_)
+  given long: Long is SpecificDuration = identity(_)

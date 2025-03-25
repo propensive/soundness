@@ -41,7 +41,8 @@ import hypotenuse.*
 import vacuous.*
 
 object TestId:
-  given Ordering[TestId] = math.Ordering.Implicits.seqOrdering[List, Text].on(_.ids.reverse)
+  given ordering: Ordering[TestId] =
+    math.Ordering.Implicits.seqOrdering[List, Text].on(_.ids.reverse)
 
 case class TestId(name: Message, suite: Optional[Testable], codepoint: Codepoint):
   val timestamp: Long = System.currentTimeMillis

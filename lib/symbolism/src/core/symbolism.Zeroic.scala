@@ -33,13 +33,13 @@
 package symbolism
 
 object Zeroic:
-  given Long is Zeroic = () => 0L
-  given Int is Zeroic = () => 0
-  given Short is Zeroic = () => 0.toShort
-  given Byte is Zeroic = () => 0.toByte
-  given Double is Zeroic = () => 0.0
-  given Float is Zeroic = () => 0.0f
-  given String is Zeroic = () => ""
+  given long: Long is Zeroic = () => 0L
+  given int: Int is Zeroic = () => 0
+  given short: Short is Zeroic = () => 0.toShort
+  given byte: Byte is Zeroic = () => 0.toByte
+  given double: Double is Zeroic = () => 0.0
+  given float: Float is Zeroic = () => 0.0f
+  given string: String is Zeroic = () => ""
 
 trait Zeroic:
   type Self

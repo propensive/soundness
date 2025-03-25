@@ -41,5 +41,5 @@ import rudiments.*
 trait Rankines[Power <: Nat] extends Units[Power, Temperature]
 
 object Rankines:
-  given UnitName[Rankines[1]] = () => "°R".tt
-  erased given rankinesPerKelvin: Ratio[Rankines[1] & Kelvins[-1], 1.8] = !!
+  given designation: UnitName[Rankines[1]] = () => "°R".tt
+  erased given ratio: Ratio[Rankines[1] & Kelvins[-1], 1.8] = !!

@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object IntercardinalWind:
-  given IntercardinalWind is Showable =
+  given showable: IntercardinalWind is Showable =
     case Northeast => t"↗"
     case Southeast => t"↘"
     case Southwest => t"↙"

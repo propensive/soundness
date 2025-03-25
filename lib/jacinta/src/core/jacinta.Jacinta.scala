@@ -45,7 +45,7 @@ object Jacinta:
   opaque type JsonPointer = List[Text | Ordinal]
 
   object JsonPointer:
-    given JsonPointer is Showable = pointer =>
+    given showable: JsonPointer is Showable = pointer =>
       def recur(elements: List[Ordinal | Text], result: Text): Text =
         elements.asMatchable.absolve match
           case Nil         => if result.empty then t"." else result

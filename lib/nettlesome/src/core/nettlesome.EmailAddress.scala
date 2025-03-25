@@ -52,10 +52,10 @@ import scala.compiletime.*
 import EmailAddressError.Reason.*
 
 object EmailAddress:
-  given Realm = realm"nettlesome"
+  given realm: Realm = realm"nettlesome"
 
-  given Tactic[EmailAddressError] => EmailAddress is Decodable in Text = EmailAddress.parse(_)
-  given EmailAddress is Encodable in Text = _.text
+  given decodable: Tactic[EmailAddressError] => EmailAddress is Decodable in Text = EmailAddress.parse(_)
+  given encodable: EmailAddress is Encodable in Text = _.text
 
   def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = abortive:
     val text: Text = context.valueOrAbort.parts.head.tt

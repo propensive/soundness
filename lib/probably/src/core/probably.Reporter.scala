@@ -42,7 +42,7 @@ trait Reporter[report]:
   def complete(report: report): Unit
 
 object Reporter:
-  given (using Stdio, Environment): Reporter[Report] with
+  given report: (Stdio, Environment) => Reporter[Report]:
     def make(): Report = Report()
     def declareSuite(report: Report, suite: Testable): Unit = report.declareSuite(suite)
 

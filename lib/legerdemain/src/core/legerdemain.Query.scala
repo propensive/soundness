@@ -94,7 +94,7 @@ object Query extends Dynamic:
     case given ProductReflection[`value` & Product] =>
       EncodableDerivation.join[value & Product].asInstanceOf[value is Encodable in Query]
 
-  given Query is Showable = _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
+  given showable: Query is Showable = _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
 
   inline given decodable: [value] => value is Decodable in Query =
     summonFrom:

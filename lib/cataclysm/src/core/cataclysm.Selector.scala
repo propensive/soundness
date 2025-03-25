@@ -60,8 +60,8 @@ sealed trait Selector(val value: Text):
   infix def ~ (that: Selector): Selector = Selector.Before(this, that)
 
 object Selector:
-  // given [selector: Selectable, selector2: Selectable]
-  //     => CompareGreater[selector, selector2, Selector] as childSelector:
+  // given childSelector: [selector: Selectable, selector2: Selectable]
+  //     => CompareGreater[selector, selector2, Selector]:
 
   //   inline def greaterThan(inline left: selector, inline right: selector2): Selector =
   //     Selector.Child(selector.selector(left), selector2.selector(right))

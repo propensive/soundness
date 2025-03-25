@@ -41,5 +41,5 @@ import rudiments.*
 trait Yards[Power <: Nat] extends Units[Power, Distance]
 
 object Yards:
-  given UnitName[Yards[1]] = () => "yd".tt
-  erased given yardsPerMetre: Ratio[Yards[-1] & Metres[1], 0.9144] = !!
+  given designation: UnitName[Yards[1]] = () => "yd".tt
+  erased given ratio: Ratio[Yards[-1] & Metres[1], 0.9144] = !!

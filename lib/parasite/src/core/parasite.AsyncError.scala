@@ -38,7 +38,7 @@ import fulminate.*
 
 object AsyncError:
   object Reason:
-    given Reason is Communicable =
+    given communicable: Reason is Communicable =
       case Cancelled       => m"the operation was cancelled"
       case Incomplete      => m"the task was not completed"
       case AlreadyComplete => m"the promise was already completed"

@@ -46,8 +46,8 @@ import scala.collection.immutable as sci
 import language.experimental.pureFunctions
 
 object Grid:
-  given [text: {Textual, Printable as printable}] => (Text is Measurable)
-  =>    Grid[text] is Printable =
+  given printable: [text: {Textual, Printable as printable}] => (Text is Measurable)
+        =>  Grid[text] is Printable =
     (layout, termcap) =>
       layout.render.map(printable.print(_, termcap)).join(t"\n")
 

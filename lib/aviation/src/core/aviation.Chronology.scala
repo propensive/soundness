@@ -42,7 +42,7 @@ object Chronology:
   enum LeapDayArithmetic:
     case Throw, PreferFeb28, PreferMar1
 
-  given Chronology[StandardTime]:
+  given standardTime: Chronology[StandardTime]:
     override def simplify(timespan: Timespan): Timespan =
       val timespan2 = if timespan.seconds < 60 then timespan else
         val adjust = timespan.seconds/60

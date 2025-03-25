@@ -47,7 +47,7 @@ import denominative.*
 import fulminate.*
 
 object Hypotenuse:
-  given Realm = realm"hypotenuse"
+  given realm: Realm = realm"hypotenuse"
 
   type Bits[bits <: 8 | 16 | 32 | 64] <: B8 | B16 | B32 | B64 = bits match
     case 8  => B8
@@ -203,7 +203,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[U64]:
       inline def fromDigits(digits: String): U64 = ${Hypotenuse2.parseU64('digits)}
 
-    given U64 is Textualizer = JLong.toUnsignedString(_).nn.tt
+    given textualizer: U64 is Textualizer = JLong.toUnsignedString(_).nn.tt
     inline def apply(inline bits: B64): U64 = bits
 
     inline given orderable: U64 is Orderable:
@@ -228,7 +228,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[S64]:
       inline def fromDigits(digits: String): S64 = ${Hypotenuse2.parseS64('digits)}
 
-    given S64 is Textualizer = _.toString.tt
+    given textualizer: S64 is Textualizer = _.toString.tt
     inline def apply(inline bits: B64): S64 = bits
 
     inline given orderable: S64 is Orderable:
@@ -249,7 +249,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[U32]:
       inline def fromDigits(digits: String): U32 = ${Hypotenuse2.parseU32('digits)}
 
-    given U32 is Textualizer = JInt.toUnsignedString(_).nn.tt
+    given textualizer: U32 is Textualizer = JInt.toUnsignedString(_).nn.tt
     inline def apply(inline bits: B32): U32 = bits
 
     inline given orderable: U32 is Orderable:
@@ -273,7 +273,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[S32]:
       inline def fromDigits(digits: String): S32 = ${Hypotenuse2.parseS32('digits)}
 
-    given S32 is Textualizer = _.toString.tt
+    given textualizer: S32 is Textualizer = _.toString.tt
     inline def apply(inline bits: B32): S32 = bits
 
     inline given orderable: S32 is Orderable:
@@ -293,7 +293,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[U16]:
       inline def fromDigits(digits: String): U16 = ${Hypotenuse2.parseU16('digits)}
 
-    given U16 is Textualizer = u16 => JShort.toUnsignedInt(u16).toString.nn.tt
+    given textualizer: U16 is Textualizer = u16 => JShort.toUnsignedInt(u16).toString.nn.tt
     inline def apply(inline bits: B16): U16 = bits
 
     inline given orderable: U16 is Orderable:
@@ -319,7 +319,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[S16]:
       inline def fromDigits(digits: String): S16 = ${Hypotenuse2.parseS16('digits)}
 
-    given S16 is Textualizer = _.toString.tt
+    given textualizer: S16 is Textualizer = _.toString.tt
     inline def apply(inline bits: B16): S16 = bits
 
     inline given orderable: S16 is Orderable:
@@ -338,7 +338,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[U8]:
       inline def fromDigits(digits: String): U8 = ${Hypotenuse2.parseU8('digits)}
 
-    given U8 is Textualizer = u8 => JByte.toUnsignedInt(u8).toString.nn.tt
+    given textualizer: U8 is Textualizer = u8 => JByte.toUnsignedInt(u8).toString.nn.tt
     inline def apply(inline bits: B8): U8 = bits
 
     inline given orderable: U8 is Orderable:
@@ -364,7 +364,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[S8]:
       inline def fromDigits(digits: String): S8 = ${Hypotenuse2.parseS8('digits)}
 
-    given S8 is Textualizer = _.toString.tt
+    given textualizer: S8 is Textualizer = _.toString.tt
     inline def apply(inline bits: B8): S8 = bits
 
     inline given inquality: S8 is Orderable:

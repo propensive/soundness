@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object Kind:
-  given Kind is Showable = _.toString.show.lower
+  given showable: Kind is Showable = _.toString.show.lower
 
 enum Kind:
   case Subtitles, Captions, Descriptions, Chapters, Metadata

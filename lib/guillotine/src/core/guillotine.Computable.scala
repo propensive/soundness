@@ -69,9 +69,10 @@ object Computable:
     case 0     => Exit.Ok
     case other => Exit.Fail(other)
 
-  given Unit is Computable = exitStatus.map(_ => ())
+  given unit: Unit is Computable = exitStatus.map(_ => ())
 
-  given [instantiable: Instantiable across Paths from Text] => instantiable is Computable =
+  given instantiable: [instantiable: Instantiable across Paths from Text]
+        =>  instantiable is Computable =
     path => instantiable(text.compute(path))
 
 trait Computable:

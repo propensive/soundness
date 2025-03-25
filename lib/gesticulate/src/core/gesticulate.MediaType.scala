@@ -62,13 +62,13 @@ extends Dynamic:
     copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
 
 object Medium:
-  given Medium is Inspectable = mt => t"""media"${mt}""""
+  given inspectable: Medium is Inspectable = mt => t"""media"${mt}""""
 
   given showable: Medium is Showable =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
 
-  given Medium is Encodable in Text = _.show
-  given Tactic[MediumError] => Medium is Decodable in Text = Media.parse(_)
+  given encodable: Medium is Encodable in Text = _.show
+  given decodable: Tactic[MediumError] => Medium is Decodable in Text = Media.parse(_)
 
   given formenctype: ("formenctype" is GenericHtmlAttribute[Medium]):
     def name: Text = t"formenctype"

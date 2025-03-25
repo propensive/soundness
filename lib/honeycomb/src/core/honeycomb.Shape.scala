@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object Shape:
-  given Shape is Showable = _.toString.show.lower
+  given showable: Shape is Showable = _.toString.show.lower
 
 enum Shape:
   case Circle, Default, Poly, Rect

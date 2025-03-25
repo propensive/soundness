@@ -173,7 +173,7 @@ object Inspectable extends Inspectable2:
     case None        => "None".tt
     case Some(value) => s"Some(${value.inspect.s})".tt
 
-  given None.type is Inspectable = none => "None".tt
+  given none: None.type is Inspectable = none => "None".tt
 
 trait Inspectable2:
   given optional: [inspectable: Inspectable] => Optional[inspectable] is Inspectable =

@@ -41,7 +41,7 @@ import scala.quoted.*
 import language.dynamics
 
 object ClearTag:
-  given ClearTag[?, ?, ?] is GenericCssSelection = _.labelString.tt
+  given generic: ClearTag[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
 case class ClearTag[+name <: Label, child <: Label, attribute <: Label]
    (labelString: name)

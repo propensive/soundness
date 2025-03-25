@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object Autocomplete:
-  given Autocomplete is Showable = _.toString.show.lower
+  given showable: Autocomplete is Showable = _.toString.show.lower
 
 enum Autocomplete:
   case On, Off

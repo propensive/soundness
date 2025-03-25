@@ -43,7 +43,7 @@ import wisteria.*
 import vacuous.*
 
 object Decodable:
-  given [value] => value is Decodable in value = identity(_)
+  given generic: [value] => value is Decodable in value = identity(_)
 
   given int: (number: Tactic[NumberError]) => Int is Decodable in Text = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
@@ -81,9 +81,9 @@ object Decodable:
 
   given char: Char is Decodable in Text = _.s(0)
 
-  given [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
-  =>    Tactic[VariantError]
-  =>    enumeration is Decodable in Text = value =>
+  given enumeration: [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
+        =>  Tactic[VariantError]
+        =>  enumeration is Decodable in Text = value =>
 
     enumeration.value(identifiable.decode(value)).or:
       val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))

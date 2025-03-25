@@ -43,7 +43,7 @@ enum CompileEvent:
   case Running(args: List[Text])
 
 object CompileEvent:
-  given CompileEvent is Communicable =
+  given communicable: CompileEvent is Communicable =
     case Start              => m"Starting compilation"
     case CompilerCrash      => m"Compiler crashed"
     case Notice(diagnostic) => m"The compiler emitted a diagnostic message: $diagnostic"

@@ -46,11 +46,11 @@ object Nomenclature:
   opaque type Name[-platform] = anticipation.Text
 
   object Name:
-    given [platform] => Name[platform] is Communicable = name => Message(name.text)
-    given [platform] => Name[platform] is Encodable in Text = _.text
+    given communicable: [platform] => Name[platform] is Communicable = name => Message(name.text)
+    given encodable: [platform] => Name[platform] is Encodable in Text = _.text
 
-    inline given [platform] => (platform is Nominative, Tactic[NameError])
-    =>    Name[platform] is Decodable in Text =
+    inline given decodable: [platform] => (platform is Nominative, Tactic[NameError])
+                 =>  Name[platform] is Decodable in Text =
 
       val decoder: Name[platform] is Decodable in Text = apply[platform](_)
 
@@ -79,6 +79,6 @@ object Nomenclature:
 
       name.asInstanceOf[Name[platform]]
 
-    given [platform] => Name[platform] is Showable = identity(_)
+    given showable: [platform] => Name[platform] is Showable = identity(_)
 
   extension [rules](name: Name[rules]) def text: Text = name

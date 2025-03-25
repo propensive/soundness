@@ -76,7 +76,7 @@ def stochastic[result](using randomization: Randomization)(block: Random ?=> res
 def arbitrary[value: Randomizable]()(using Random): value = value()
 
 def random[value: Randomizable](): value =
-  given Random = Random.global
+  given random: Random = Random.global
   value()
 
 def toss()(using Random): Boolean = math.random < 0.5

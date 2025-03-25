@@ -41,7 +41,7 @@ import vacuous.*
 import scala.quoted.*
 
 object Honeycomb:
-  given Realm = realm"honeycomb"
+  given realm: Realm = realm"honeycomb"
 
   def read[name <: Label: Type, child <: Label: Type, result <: Label: Type]
      (node:       Expr[Node[name]],

@@ -48,8 +48,8 @@ import language.dynamics
 object CodlDoc:
   def apply(nodes: CodlNode*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
 
-  given CodlDoc is Inspectable = _.write
-  given (printer: CodlPrinter) => CodlDoc is Showable = printer.serialize(_)
+  given inspectable: CodlDoc is Inspectable = _.write
+  given showable: (printer: CodlPrinter) => CodlDoc is Showable = printer.serialize(_)
 
   given similarity: Similarity[CodlDoc] = _.schema == _.schema
 

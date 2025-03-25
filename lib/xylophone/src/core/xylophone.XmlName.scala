@@ -38,7 +38,7 @@ import vacuous.*
 import spectacular.*
 
 object XmlName:
-  given XmlName is Showable = name => name.namespace match
+  given showable: XmlName is Showable = name => name.namespace match
     case Unset                => name.name
     case Namespace(prefix, _) => t"$prefix:${name.name}"
 

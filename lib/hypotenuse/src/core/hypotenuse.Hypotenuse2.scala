@@ -43,7 +43,7 @@ import fulminate.*
 import rudiments.*
 
 object Hypotenuse2:
-  given Realm = realm"hypotenuse"
+  given realm: Realm = realm"hypotenuse"
 
   def bin(expr: Expr[StringContext])(using Quotes): Expr[AnyVal] =
     import quotes.reflect.*

@@ -44,7 +44,7 @@ import vacuous.*
 
 import language.dynamics
 
-given Realm = realm"telekinesis"
+given realm: Realm = realm"telekinesis"
 
 package queryParameters:
   erased given arbitrary: [key <: Label, value] => key is Parametric into value = !!

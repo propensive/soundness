@@ -70,7 +70,7 @@ extends Cli:
      (using FlagInterpreter[operand], Suggestions[operand])
   :     Optional[operand] =
 
-    given Cli = this
+    given cli: Cli = this
     parameters.read(flag)
 
   def focus: Argument = arguments(currentArgument)

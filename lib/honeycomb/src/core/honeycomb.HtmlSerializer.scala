@@ -44,7 +44,7 @@ trait HtmlSerializer[result]:
   def serialize(doc: HtmlDoc, maxWidth: Int = -1): result
 
 object HtmlSerializer:
-  given HtmlSerializer[Text] = (doc, maxWidth) =>
+  given text: HtmlSerializer[Text] = (doc, maxWidth) =>
     var indent: Int = 0
     var linebreak: Boolean = false
     val buf: StringBuilder = StringBuilder()

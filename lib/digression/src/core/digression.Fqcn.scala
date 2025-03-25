@@ -60,7 +60,7 @@ object Fqcn:
 
     new Fqcn(parts.map(_.tt))
 
-  given Fqcn is Encodable in Text = _.text
+  given encodable: Fqcn is Encodable in Text = _.text
 
 class Fqcn(val parts: IArray[Text]):
   def text: Text = parts.mkString(".").tt

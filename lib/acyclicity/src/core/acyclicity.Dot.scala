@@ -60,7 +60,7 @@ object Dot:
 
   object Attachment:
     // FIXME: This needs to include the port
-    given Attachment is Showable = _.id.key
+    given showable: Attachment is Showable = _.id.key
 
   case class Attachment(id: Id, compass: Option[CompassPoint] = None)
 

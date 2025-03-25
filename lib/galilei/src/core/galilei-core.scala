@@ -107,7 +107,7 @@ extension [platform <: Filesystem](path: Path on platform)
 
   def size(): Memory raises IoError =
     import filesystemOptions.dereferenceSymlinks.disabled
-    given TraversalOrder = TraversalOrder.PreOrder
+    given traversalOrder: TraversalOrder = TraversalOrder.PreOrder
     descendants.fuse(jnf.Files.size(path.javaPath).b)(state + next.size())
 
   def delete()(using deleteRecursively: DeleteRecursively on platform)
@@ -170,7 +170,7 @@ extension [platform <: Filesystem](path: Path on platform)
             substantiable:        (Path on platform) is Substantiable)
   :     Path on platform raises IoError =
 
-    given CreateNonexistentParents on platform =
+    given createNonexistentParents: CreateNonexistentParents on platform =
       filesystemOptions.createNonexistentParents.enabled[platform]
 
     copyTo(unsafely(destination.child(path.textDescent.head)))
@@ -309,7 +309,7 @@ package filesystemOptions:
 
   object deleteRecursively:
     given enabled: [platform <: Filesystem] => Tactic[IoError]
-    =>    DeleteRecursively on platform:
+          =>  DeleteRecursively on platform:
 
       import filesystemOptions.dereferenceSymlinks.disabled
 
@@ -323,7 +323,7 @@ package filesystemOptions:
         path.children.each(recur(_)) yet operation
 
     given disabled: [platform <: Filesystem] => Tactic[IoError]
-    =>    DeleteRecursively on platform:
+          =>  DeleteRecursively on platform:
 
       type Platform = platform
 
@@ -335,15 +335,15 @@ package filesystemOptions:
 
   object overwritePreexisting:
     given enabled: [platform <: Filesystem]
-    =>   (deleteRecursively: DeleteRecursively on platform)
-    =>    OverwritePreexisting on platform:
+          => (deleteRecursively: DeleteRecursively on platform)
+          =>  OverwritePreexisting on platform:
       type Platform = platform
 
       def apply[result](path: Path on Platform)(operation: => result): result =
         deleteRecursively.conditionally(path)(operation)
 
     given disabled: [platform <: Filesystem] => Tactic[IoError]
-    =>   OverwritePreexisting on platform:
+          =>  OverwritePreexisting on platform:
 
       type Platform = platform
 
@@ -353,8 +353,8 @@ package filesystemOptions:
 
   object createNonexistentParents:
     given enabled: [platform <: Filesystem] => Tactic[IoError]
-    =>   (Path on platform) is Substantiable
-    =>    CreateNonexistentParents on platform:
+          => (Path on platform) is Substantiable
+          =>  CreateNonexistentParents on platform:
 
       def apply[result](path: Path on platform)(operation: => result): result =
         path.parent.let: parent =>
@@ -366,7 +366,7 @@ package filesystemOptions:
         operation
 
     given disabled: [platform <: Filesystem] => Tactic[IoError]
-    =>    CreateNonexistentParents on platform:
+          =>  CreateNonexistentParents on platform:
       type Platform = platform
 
       def apply[result](path: Path on platform)(block: => result): result =
@@ -374,9 +374,9 @@ package filesystemOptions:
 
   object createNonexistent:
     given enabled: [platform <: Filesystem]
-    =>   (create: CreateNonexistentParents on platform)
-    =>    (Path on platform) is Substantiable
-    =>    CreateNonexistent on platform:
+          => (create: CreateNonexistentParents on platform)
+          => (Path on platform) is Substantiable
+          =>  CreateNonexistent on platform:
       type Platform = platform
 
       def error(path: Path on Platform, operation: IoError.Operation): Nothing =
@@ -389,7 +389,7 @@ package filesystemOptions:
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.CREATE)
 
     given disabled: [platform <: Filesystem] => Tactic[IoError]
-    =>    CreateNonexistent on platform:
+          =>  CreateNonexistent on platform:
 
       type Platform = platform
 

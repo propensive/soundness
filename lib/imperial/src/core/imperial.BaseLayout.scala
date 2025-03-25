@@ -59,7 +59,8 @@ case class BaseLayout(private val part: Optional[Text], readOnly: Boolean = fals
     val home2: Text = if home.ends(t"/") then home.skip(1, Rtl) else home
     part.let(baseDir / _).or(baseDir).render(home2)
 
-  given BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
+  given dir: BaseLayout.Dir =
+    BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
 
   def apply[instantiable: Instantiable across Paths from Text]()
      (using SystemProperties, Environment)

@@ -63,7 +63,7 @@ class Runner[report]()(using reporter: Reporter[report]):
       val ns: Long = System.nanoTime - ns0
 
       def lazyException(): Nothing =
-        given CanThrow[Exception] = unsafeExceptions.canThrowAny
+        given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
         throw err
 
       Trial.Throws(lazyException, ns, ctx.captured.to(Map)).also:

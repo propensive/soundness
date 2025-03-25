@@ -56,7 +56,7 @@ object Servable:
       Http.Response.make(Http.Ok, headers, content.stream)
 
   given bytes: [response: Abstractable across HttpStreams into HttpStreams.Content]
-  =>    response is Servable =
+        =>  response is Servable =
 
     Servable[response](value => unsafely(Media.parse(response.generic(value)(0)))): value =>
       response.generic(value)(1)

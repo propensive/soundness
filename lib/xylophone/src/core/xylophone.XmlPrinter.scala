@@ -38,4 +38,4 @@ trait XmlPrinter[output]:
   def print(doc: Xml): output
 
 object XmlPrinter:
-  given XmlPrinter[Text] = StandardXmlPrinter(false)
+  given text: XmlPrinter[Text] = StandardXmlPrinter(false)

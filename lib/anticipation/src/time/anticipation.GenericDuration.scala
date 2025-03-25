@@ -40,4 +40,4 @@ trait GenericDuration:
   def nanoseconds(duration: Self): Long = milliseconds(duration)*1_000_000L
 
 object GenericDuration:
-  given Long is GenericDuration = identity(_)
+  given long: Long is GenericDuration = identity(_)

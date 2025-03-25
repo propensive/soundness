@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object CardinalWind:
-  given CardinalWind is Showable =
+  given showable: CardinalWind is Showable =
     case North => t"↑"
     case East  => t"→"
     case South => t"↓"

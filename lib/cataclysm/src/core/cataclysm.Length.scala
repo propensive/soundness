@@ -38,7 +38,7 @@ import proscenium.*
 import spectacular.*
 
 object Length:
-  given Length is Showable =
+  given showable: Length is Showable =
     case Auto        => t"auto"
     case Px(value)   => t"${value}px"
     case Pt(value)   => t"${value}pt"

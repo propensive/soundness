@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object Rev:
-  given Rev is Showable = _.toString.show.lower
+  given showable: Rev is Showable = _.toString.show.lower
 
 enum Rev:
   case Alternate, Stylesheet, Start, Next, Prev, Contents, Index, Glossary, Copyright, Chapter,

@@ -41,5 +41,5 @@ import rudiments.*
 trait Furlongs[Power <: Nat] extends Units[Power, Distance]
 
 object Furlongs:
-  given UnitName[Furlongs[1]] = () => "fur".tt
-  erased given metresPerFurlong: Ratio[Metres[1] & Furlongs[-1], 201.168] = !!
+  given designation: UnitName[Furlongs[1]] = () => "fur".tt
+  erased given ratio: Ratio[Metres[1] & Furlongs[-1], 201.168] = !!

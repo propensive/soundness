@@ -49,7 +49,7 @@ object Md:
     case Inline(content: Text)
 
   object Input:
-    given Insertion[Input, Text] = Input.Inline(_)
+    given insertion: Insertion[Input, Text] = Input.Inline(_)
 
   object Interpolator extends contextual.Interpolator[Input, Input, Markdown[Markdown.Ast.Node]]:
 

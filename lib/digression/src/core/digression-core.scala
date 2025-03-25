@@ -42,4 +42,4 @@ extension (error: Throwable) def stackTrace: StackTrace = StackTrace(error)
 extension (inline context: StringContext)
   inline def fqcn(): Fqcn = ${Digression.fqcn('context)}
 
-given Realm = realm"digression"
+given realm: Realm = realm"digression"

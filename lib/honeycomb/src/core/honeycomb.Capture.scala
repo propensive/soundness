@@ -37,7 +37,7 @@ import gossamer.*
 import spectacular.*
 
 object Capture:
-  given Capture is Showable = _.toString.tt.lower
+  given showable: Capture is Showable = _.toString.tt.lower
 
 enum Capture:
   case Environment, User

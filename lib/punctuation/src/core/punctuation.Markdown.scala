@@ -67,7 +67,7 @@ case class Markdown[+markdown <: Markdown.Ast.Node](nodes: markdown*):
 object Markdown:
   given decoder: Tactic[MarkdownError] => InlineMd is Decodable in Text = parseInline(_)
   given encodable: InlineMd is Encodable in Text = _.serialize
-  given InlineMd is Showable = _.serialize
+  given showable: InlineMd is Showable = _.serialize
 
   object Ast:
     type Node = Block | Inline

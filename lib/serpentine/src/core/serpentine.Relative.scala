@@ -45,7 +45,7 @@ import scala.compiletime.*
 
 object Relative:
   given encodable: [relative <: Relative] => (navigable: Navigable)
-  =>    relative is Encodable in Text = relative =>
+        =>  relative is Encodable in Text = relative =>
     if relative.textDescent.isEmpty then
       if relative.ascent == 0 then navigable.selfText
       else List.fill(relative.ascent)(navigable.parentElement).join(navigable.separator)
@@ -55,12 +55,11 @@ object Relative:
       . reverse
       . join(navigable.ascent*relative.ascent, navigable.separator, t"")
 
-  given [element, root: Navigable by element] => (Relative by element) is Showable =
+  given showable: [element, root: Navigable by element] => (Relative by element) is Showable =
     encodable.encode(_)
 
   given decoder: [element] => (Navigable by element)
-  =>    (Relative by element) is Decodable in Text =
-
+        => (Relative by element) is Decodable in Text =
     parse(_)
 
   def parse[element](using navigable: Navigable by element)(text: Text)
@@ -89,7 +88,7 @@ object Relative:
     new Relative(ascent0, descent0, separator):
       type Operand = element
 
-  given [element] => (Relative by element) is Addable by (Relative by element) into
+  given addable: [element] => (Relative by element) is Addable by (Relative by element) into
           (Relative by element) =
     (left, right) =>
       def recur(ascent: Int, descent: List[Text], ascent2: Int): Relative by element =

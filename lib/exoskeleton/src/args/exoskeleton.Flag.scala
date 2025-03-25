@@ -48,7 +48,7 @@ object Flag:
     case char: Char => t"-$char"
     case text: Text => t"--$text"
 
-  given Flag is Communicable = flag => flag.name.absolve match
+  given communicable: Flag is Communicable = flag => flag.name.absolve match
     case name: Text => Message(t"--$name")
     case name: Char => Message(t"-$name")
 
@@ -87,10 +87,10 @@ case class Flag
     val mapping: Map[Text, operand] =
       options.map { option => (suggestible.suggest(option).text, option) }.to(Map)
 
-    given FlagInterpreter[operand] =
+    given flagInterpreter: FlagInterpreter[operand] =
       case List(value) => mapping.at(value())
       case _           => Unset
 
-    given Suggestions[operand] = () => options.map(suggestible.suggest(_))
+    given suggestions: Suggestions[operand] = () => options.map(suggestible.suggest(_))
 
     this()

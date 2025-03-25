@@ -49,7 +49,7 @@ import vacuous.*
 object Tar:
   val zeroBlock: Bytes = IArray.fill[Byte](512)(0)
 
-  given Tar is Readable by Bytes as readable = _.serialize
+  given readable: Tar is Readable by Bytes as readable = _.serialize
 
 case class Tar(entries: LazyList[TarEntry]):
   def serialize: LazyList[Bytes] =

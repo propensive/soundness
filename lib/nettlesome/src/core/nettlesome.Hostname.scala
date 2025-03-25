@@ -48,9 +48,9 @@ import scala.quoted.*
 import HostnameError.Reason.*
 
 object Hostname:
-  given Realm = realm"nettlesome"
+  given realm: Realm = realm"nettlesome"
 
-  given Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
+  given showable: Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
 
   def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = abortive:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))

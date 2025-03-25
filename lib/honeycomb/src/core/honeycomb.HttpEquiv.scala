@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object HttpEquiv:
-  given HttpEquiv is Showable = _.toString.show.uncamel.kebab
+  given showable: HttpEquiv is Showable = _.toString.show.uncamel.kebab
 
 enum HttpEquiv:
   case ContentSecurityPolicy, ContentType, DefaultStyle, Refresh

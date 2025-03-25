@@ -45,7 +45,7 @@ import spectacular.*
 object Auth:
   import alphabets.base64.standard
 
-  given Auth is Showable =
+  given showable: Auth is Showable =
     case Basic(username, password) => t"Basic ${t"$username:$password".bytes.serialize[Base64]}"
     case Bearer(token)             => t"Bearer $token"
     case Digest(digest)            => t"Digest $digest"
@@ -57,24 +57,23 @@ object Auth:
     case ScramSha256(text)         => t"SCRAM-SHA-256 $text"
     case Vapid(text)               => t"vapid $text"
 
-  given decoder: Tactic[AuthError] => Auth is Decodable in Text = value =>
-    value match
-      case r"Bearer $token(.*)"        => Bearer(token)
-      case r"Digest $digest(.*)"       => Digest(digest)
-      case r"HOBA $value(.*)"          => Hoba(value)
-      case r"Mutual $value(.*)"        => Mutual(value)
-      case r"Negotiate $value(.*)"     => Negotiate(value)
-      case r"OAuth $value(.*)"         => OAuth(value)
-      case r"SCRAM-SHA-1 $value(.*)"   => ScramSha1(value)
-      case r"SCRAM-SHA-256 $value(.*)" => ScramSha256(value)
-      case r"vapid $value(.*)"         => Vapid(value)
+  given decodable: Tactic[AuthError] => Auth is Decodable in Text = value => value match
+    case r"Bearer $token(.*)"        => Bearer(token)
+    case r"Digest $digest(.*)"       => Digest(digest)
+    case r"HOBA $value(.*)"          => Hoba(value)
+    case r"Mutual $value(.*)"        => Mutual(value)
+    case r"Negotiate $value(.*)"     => Negotiate(value)
+    case r"OAuth $value(.*)"         => OAuth(value)
+    case r"SCRAM-SHA-1 $value(.*)"   => ScramSha1(value)
+    case r"SCRAM-SHA-256 $value(.*)" => ScramSha256(value)
+    case r"vapid $value(.*)"         => Vapid(value)
 
-      case r"Basic $username(.*):$password(.*)" =>
-        safely(Basic(username.deserialize[Base64].utf8, password.deserialize[Base64].utf8)).lest:
-          AuthError(value)
+    case r"Basic $username(.*):$password(.*)" =>
+      safely(Basic(username.deserialize[Base64].utf8, password.deserialize[Base64].utf8)).lest:
+        AuthError(value)
 
-      case value =>
-        abort(AuthError(value))
+    case value =>
+      abort(AuthError(value))
 
 enum Auth:
   case Basic(username: Text, password: Text)

@@ -50,8 +50,8 @@ case class Example(name: Text, count: Long)
 
 @main
 def run(): Unit =
-  given Tactic[JsonError] = strategies.throwUnsafely
-  given Tactic[CompilerError] = strategies.throwUnsafely
+  given jsonError: Tactic[JsonError] = strategies.throwUnsafely
+  given compilerError: Tactic[CompilerError] = strategies.throwUnsafely
 
   def offset(input: Long): Text = remote.dispatch:
     '{  t"${System.currentTimeMillis - ${System.currentTimeMillis.put}}"  }

@@ -36,4 +36,4 @@ enum Level:
   case Fine, Info, Warn, Fail
 
 object Level:
-  given Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
+  given ordering: Ordering[Level] = Ordering[Int].on[Level](_.ordinal)

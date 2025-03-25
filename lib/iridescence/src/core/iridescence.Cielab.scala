@@ -40,7 +40,7 @@ import anticipation.*
 import hypotenuse.*
 
 object Cielab:
-  given ColorProfile => Cielab is Chromatic = _.srgb.rgb24.asInt
+  given chromatic: ColorProfile => Cielab is Chromatic = _.srgb.rgb24.asInt
 
 case class Cielab(l: Double, a: Double, b: Double):
   def srgb(using ColorProfile): Srgb = xyz.srgb

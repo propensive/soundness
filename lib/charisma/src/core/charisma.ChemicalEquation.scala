@@ -37,7 +37,7 @@ import gossamer.*
 import spectacular.*
 
 object ChemicalEquation:
-  given ChemicalEquation is Showable = equation =>
+  given showable: ChemicalEquation is Showable = equation =>
     t"${equation.lhs} ${equation.reaction} ${equation.rhs}"
 
 case class ChemicalEquation(lhs: ChemicalFormula, reaction: Reaction, rhs: ChemicalFormula):

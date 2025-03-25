@@ -44,7 +44,7 @@ case class HtmlDoc(root: Node["html"])
 
 object HtmlDoc:
   given generic: (encoder: CharEncoder)
-  =>    HtmlDoc is Abstractable across HttpStreams into HttpStreams.Content =
+        =>  HtmlDoc is Abstractable across HttpStreams into HttpStreams.Content =
     new Abstractable:
       type Self = HtmlDoc
       type Domain = HttpStreams

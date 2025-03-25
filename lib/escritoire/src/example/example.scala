@@ -42,7 +42,7 @@ import rudiments.*
 import spectacular.*
 import turbulence.*, stdioSources.virtualMachine.ansi
 
-given Decimalizer = Decimalizer(3)
+given decimalizer: Decimalizer = Decimalizer(3)
 
 case class Library(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
 

@@ -41,7 +41,7 @@ object FontError:
     case UnknownFormat
     case MagicNumber
 
-  given Reason is Communicable =
+  given communicable: Reason is Communicable =
     case Reason.MissingTable(tag) => m"the table ${tag.text} was not found"
     case Reason.UnknownFormat     => m"the table contains data in an unknown format"
     case Reason.MagicNumber       => m"the font did not contain expected check data"

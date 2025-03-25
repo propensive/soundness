@@ -40,11 +40,11 @@ object UrlFragment:
   def apply(value: Text): UrlFragment = UrlFragment.Textual(value)
   def apply(value: Int): UrlFragment = UrlFragment.Integral(value)
 
-  given Substitution[UrlFragment, Text, "x"] = UrlFragment.Textual(_)
-  given Substitution[UrlFragment, Raw, "x"] = raw => UrlFragment.RawTextual(raw.text)
-  given Substitution[UrlFragment, Int, "80"] = UrlFragment.Integral(_)
+  given text: Substitution[UrlFragment, Text, "x"] = UrlFragment.Textual(_)
+  given raw: Substitution[UrlFragment, Raw, "x"] = raw => UrlFragment.RawTextual(raw.text)
+  given int: Substitution[UrlFragment, Int, "80"] = UrlFragment.Integral(_)
 
-  given [encodable: Encodable in Text] => Substitution[UrlFragment, encodable, "x"] =
+  given encodable: [encodable: Encodable in Text] => Substitution[UrlFragment, encodable, "x"] =
     value => UrlFragment.Textual(encodable.encode(value))
 
 enum UrlFragment:

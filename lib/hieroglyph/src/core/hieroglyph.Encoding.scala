@@ -43,8 +43,8 @@ import java.nio as jn, jn.charset as jnc
 import language.experimental.captureChecking
 
 object Encoding:
-  given Encoding is Textualizer = _.name
-  given Encoding is Communicable = encoding => Message(encoding.name)
+  given textualizer: Encoding is Textualizer = _.name
+  given communicable: Encoding is Communicable = encoding => Message(encoding.name)
 
   private val allCharsets: Set[jnc.Charset] =
     jnc.Charset.availableCharsets.nn.asScala.to(Map).values.to(Set)

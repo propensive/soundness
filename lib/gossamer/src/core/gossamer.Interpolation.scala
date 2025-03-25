@@ -47,8 +47,8 @@ import errorDiagnostics.empty
 object Interpolation:
   case class Input(txt: Text)
 
-  given [value: Showable] => Insertion[Input, value] = value => Input(value.show)
-  given Insertion[Input, Nothing] = value => Input("".tt)
+  given showable: [value: Showable] => Insertion[Input, value] = value => Input(value.show)
+  given input: Insertion[Input, Nothing] = value => Input("".tt)
 
   object T extends Interpolator[Input, Text, Text]:
     def initial: Text = anticipation.Text("")

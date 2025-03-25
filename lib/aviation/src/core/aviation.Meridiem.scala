@@ -35,7 +35,7 @@ package aviation
 import spectacular.*
 
 object Meridiem:
-  given Meridiem is Showable =
+  given showable: Meridiem is Showable =
     case Am => "AM"
     case Pm => "PM"
 

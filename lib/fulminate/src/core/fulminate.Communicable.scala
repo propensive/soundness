@@ -39,19 +39,21 @@ import scala.quoted.*
 import anticipation.*
 
 object Communicable:
-  given Text is Communicable = Message(_)
-  given String is Communicable = string => Message(string.tt)
-  given Char is Communicable = char => Message(char.toString.tt)
-  given Int is Communicable = int => Message(int.toString.tt)
-  given Long is Communicable = long => Message(long.toString.tt)
-  given Message is Communicable = identity(_)
+  given text: Text is Communicable = Message(_)
+  given string: String is Communicable = string => Message(string.tt)
+  given char: Char is Communicable = char => Message(char.toString.tt)
+  given int: Int is Communicable = int => Message(int.toString.tt)
+  given long: Long is Communicable = long => Message(long.toString.tt)
+  given message: Message is Communicable = identity(_)
 
-  given [meta] => Quotes => Type[meta] is Communicable =
+  given meta: [meta] => Quotes => Type[meta] is Communicable =
     tpe => Message(quotes.reflect.TypeRepr.of(using tpe).show.tt)
 
-  given (quotes: Quotes) => quotes.reflect.TypeRepr is Communicable = tpe => Message(tpe.show)
-  given (quotes: Quotes) => quotes.reflect.Term is Communicable = term => Message(term.show)
-  given [expr] => Quotes => Expr[expr] is Communicable = tpe => Message(tpe.show)
+  given typeRepr: (quotes: Quotes) => quotes.reflect.TypeRepr is Communicable =
+    tpe => Message(tpe.show)
+
+  given term: (quotes: Quotes) => quotes.reflect.Term is Communicable = term => Message(term.show)
+  given expr: [expr] => Quotes => Expr[expr] is Communicable = tpe => Message(tpe.show)
 
   given specializable: Specializable is Communicable = value =>
     Message(value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt)

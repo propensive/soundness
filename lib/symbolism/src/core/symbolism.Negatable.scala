@@ -44,16 +44,15 @@ object Negatable:
 
     def negate(operand: Self): Result = lambda(operand)
 
-  given Double is Negatable into Double = Negatable(-_)
-  given Float is Negatable into Float = Negatable(-_)
-  given Long is Negatable into Long = Negatable(-_)
+  given double: Double is Negatable into Double = Negatable(-_)
+  given float: Float is Negatable into Float = Negatable(-_)
+  given long: Long is Negatable into Long = Negatable(-_)
+  given int: Int is Negatable into Int = Negatable(-_)
 
-  given Int is Negatable into Int = Negatable(-_)
-
-  given Short is Negatable into Short = Negatable:
+  given short: Short is Negatable into Short = Negatable:
     operand => (-operand).toShort
 
-  given Byte is Negatable into Byte = Negatable:
+  given byte: Byte is Negatable into Byte = Negatable:
     operand => (-operand).toByte
 
 trait Negatable:

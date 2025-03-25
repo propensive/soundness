@@ -67,11 +67,11 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
 
     new JoinTabulable[derivation](columns)
 
-  given Int is Tabulable[Text] = () =>
+  given int: Int is Tabulable[Text] = () =>
     Table[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
 
-  given Decimalizer => Double is Tabulable[Text] = () =>
+  given double: Decimalizer => Double is Tabulable[Text] = () =>
     Table[Double, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
 
-  given Text is Tabulable[Text] = () =>
+  given text: Text is Tabulable[Text] = () =>
     Table[Text, Text](Column(t"", TextAlignment.Left, Unset, columnar.Prose)(identity))

@@ -50,23 +50,23 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
   given seed: Seed is Randomizable = _.long().pipe(Seed(_))
   given boolean: Boolean is Randomizable = _.long() < 0L
 
-  given [element: Randomizable] => (size: RandomSize) => List[element] is Randomizable =
+  given list: [element: Randomizable] => (size: RandomSize) => List[element] is Randomizable =
     random =>
-      given Random = random
+      given random0: Random = random
       List.fill(size.generate(random))(arbitrary[element]())
 
-  given [element: Randomizable] => (size: RandomSize) => Set[element] is Randomizable =
+  given set: [element: Randomizable] => (size: RandomSize) => Set[element] is Randomizable =
     random =>
-      given Random = random
+      given random0: Random = random
       Set.fill(size.generate(random))(arbitrary[element]())
 
-  given [element: {Randomizable, ClassTag}] => (size: RandomSize)
-  =>    IArray[element] is Randomizable =
+  given iarray: [element: {Randomizable, ClassTag}] => (size: RandomSize)
+        =>  IArray[element] is Randomizable =
     random =>
-      given Random = random
+      given random0: Random = random
       IArray.fill(size.generate(random))(arbitrary[element]())
 
-  given Distribution => Double is Randomizable = summon[Distribution].transform(_)
+  given doubl: Distribution => Double is Randomizable = summon[Distribution].transform(_)
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Randomizable =
     random =>

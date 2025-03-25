@@ -41,7 +41,7 @@ import gossamer.*
 import spectacular.*
 
 object ExecEvent:
-  given ExecEvent is Communicable =
+  given communicable: ExecEvent is Communicable =
     case AbortProcess(pid)       => m"The process with PID $pid was aborted"
     case PipelineStart(commands) => m"Started pipeline ${commands.map(_.show).join(t" ")}"
     case KillProcess(pid)        => m"Killed process with PID $pid"

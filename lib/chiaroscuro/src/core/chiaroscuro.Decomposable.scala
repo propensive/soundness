@@ -96,6 +96,6 @@ trait Decomposable2:
       value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
   given collection: [collection <: Iterable, value: Decomposable]
-  =>    collection[value] is Decomposable =
+        =>  collection[value] is Decomposable =
     collection =>
       Decomposition.Sequence(IArray.from(collection.map(_.decompose)), collection)
