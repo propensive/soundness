@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object Crossorigin:
-  given Crossorigin is Showable = _.toString.show.uncamel.kebab
+  given showable: Crossorigin is Showable = _.toString.show.uncamel.kebab
 
 enum Crossorigin:
   case UseCredentials, Anonymous

@@ -42,7 +42,7 @@ import vacuous.*
 package syntaxHighlighting:
   import Accent.*
 
-  given SourceToken is Teletypeable =
+  given teletypeable: SourceToken is Teletypeable =
     case SourceToken(text, Error)    => e"${rgb"#cc0033"}($text)"
     case SourceToken(text, Number)   => e"${rgb"#cc3366"}($text)"
     case SourceToken(text, Modifier) => e"${rgb"#ff9966"}($text)"
@@ -55,7 +55,7 @@ package syntaxHighlighting:
     case SourceToken(text, Symbol)   => e"${rgb"#cc3366"}($text)"
     case SourceToken(text, Unparsed) => e"${rgb"#2288aa"}($Italic($text))"
 
-  given SourceCode is Teletypeable as numbered = source =>
+  given numbered: SourceCode is Teletypeable = source =>
     val indent = source.lastLine.show.length
     lazy val error = e"${rgb"#cc0033"}(║)"
 
@@ -82,7 +82,7 @@ package syntaxHighlighting:
 
     . join(e"", e"\n", markup)
 
-  given SourceCode is Teletypeable as unnumbered = source =>
+  given unnumbered: SourceCode is Teletypeable = source =>
     (source.offset to source.lastLine).map: lineNo =>
       source(lineNo).map(_.teletype).join
 

@@ -36,7 +36,7 @@ import fulminate.*
 import spectacular.*
 
 object JsonPrimitive:
-  given JsonPrimitive is Communicable = primitive => Message(primitive.show)
+  given communicable: JsonPrimitive is Communicable = primitive => Message(primitive.show)
 
 enum JsonPrimitive:
   case Array, Object, Number, Null, Boolean, String

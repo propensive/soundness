@@ -41,10 +41,10 @@ import fulminate.*
 import prepositional.*
 
 object Pid:
-  given Pid is Communicable = pid => Message(pid.toString.tt)
-  given Pid is Encodable in Text = _.toString.tt
+  given communicable: Pid is Communicable = pid => Message(pid.toString.tt)
+  given encodable: Pid is Encodable in Text = _.toString.tt
 
-  given Tactic[NumberError] => Pid is Decodable in Text = text =>
+  given decodable: Tactic[NumberError] => Pid is Decodable in Text = text =>
     try Pid(text.s.toLong) catch case error: Exception => abort(NumberError(text, Int))
 
 case class Pid(value: Long):

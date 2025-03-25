@@ -50,16 +50,16 @@ import errorDiagnostics.empty
 import proximityMeasures.levenshteinDistance
 
 object Media:
-  given Text is Media:
+  given text: Text is Media:
     extension (value: Text) def medium: Medium = Medium(Group.Text, Subtype.Standard(t"plain"))
 
-  given [nominable: Nominable] => nominable is Media:
+  given nominable: [nominable: Nominable] => nominable is Media:
     extension (value: nominable)
       def medium: Medium = Extensions.guess(nominable.name(value).cut(t".").last)
 
   object Group:
-    given Group is Inspectable = _.name
-    given Group is Showable = _.name.lower
+    given inspectable: Group is Inspectable = _.name
+    given showable: Group is Showable = _.name.lower
 
   enum Group:
     case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
@@ -67,7 +67,7 @@ object Media:
     def name: Text = this.toString.tt.lower
 
   object Subtype:
-    given Subtype is Showable = _.name
+    given showable: Subtype is Showable = _.name
 
   enum Subtype:
     case Standard(value: Text)
@@ -82,7 +82,7 @@ object Media:
       case X(value)        => t"x-$value"
 
   object Suffix:
-    given Suffix is Showable = _.toString.tt.lower
+    given showable: Suffix is Showable = _.toString.tt.lower
 
   enum Suffix:
     case Xml, Json, Ber, Cbor, Der, FastInfoset, Wbxml, Zip, Tlv, JsonSeq, Sqlite3, Jwt, Gzip,

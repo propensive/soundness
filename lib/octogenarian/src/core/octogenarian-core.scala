@@ -48,11 +48,11 @@ import pathNavigation.posix
 
 import GitError.Reason.*
 
-given Realm = realm"octogenarian"
+given realm: Realm = realm"octogenarian"
 
 package gitCommands:
   given environmentDefault: (WorkingDirectory, GitEvent is Loggable)
-  =>    GitCommand raises NameError raises PathError raises IoError raises ExecError =
+        =>  GitCommand raises NameError raises PathError raises IoError raises ExecError =
 
     val path: Path on Posix = sh"which git"()
     GitCommand(path)

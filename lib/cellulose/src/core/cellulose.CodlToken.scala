@@ -47,7 +47,7 @@ enum CodlToken:
   case Body(stream: Stream[Char])
 
 object CodlToken:
-  given CodlToken is Inspectable =
+  given inspectable: CodlToken is Inspectable =
     case Indent                       => t"Indent"
     case Peer                         => t"Peer"
     case Blank                        => t"Blank"

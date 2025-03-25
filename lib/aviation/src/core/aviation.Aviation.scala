@@ -90,7 +90,7 @@ object Aviation:
       date =>
         import DateNumerics.*, YearFormat.*
         import textMetrics.uniform
-        given RomanCalendar = calendars.gregorian
+        given calendar: RomanCalendar = calendars.gregorian
 
         def pad(n: Int): Text = (n%100).show.pad(2, Rtl, '0')
 

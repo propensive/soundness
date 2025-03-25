@@ -37,7 +37,7 @@ import digression.*
 import gossamer.*
 
 object Juncture:
-  given Ordering[Juncture] = Ordering.by[Juncture, Int](_.start).orElseBy(-_.end)
+  given ordering: Ordering[Juncture] = Ordering.by[Juncture, Int](_.start).orElseBy(-_.end)
 
 case class Juncture
    (id:         Int,

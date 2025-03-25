@@ -67,7 +67,7 @@ object DagDiagram:
         val tiles = row.to(List).map(DagTile.fromOrdinal)
         (tiles, nodes(row.length))
 
-  given [node: Showable] => (style: DagStyle[Text]) => DagDiagram[node] is Printable =
+  given printable: [node: Showable] => (style: DagStyle[Text]) => DagDiagram[node] is Printable =
     (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
 case class DagDiagram[node](lines: List[(List[DagTile], node)]):

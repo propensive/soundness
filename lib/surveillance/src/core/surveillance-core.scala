@@ -53,4 +53,4 @@ extension [path: Abstractable across Paths into Text](paths: Iterable[path])
 
 export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
 
-given Realm = realm"surveillance"
+given realm: Realm = realm"surveillance"

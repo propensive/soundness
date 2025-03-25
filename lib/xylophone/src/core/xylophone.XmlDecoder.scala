@@ -51,7 +51,7 @@ object XmlDecoder extends Derivation[XmlDecoder]:
     val elements = childElements(list).collect { case XmlAst.Textual(text) => text }
     if elements.length == 0 then raise(XmlReadError()) yet "".tt else elements.head
 
-  given [value: Decodable in Text]: XmlDecoder[value] = value =>
+  given decodable: [value: Decodable in Text] => XmlDecoder[value] = value =>
     value.absolve match
       case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decode[value]
 

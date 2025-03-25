@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object Wrap:
-  given Wrap is Showable = _.toString.show.lower
+  given showable: Wrap is Showable = _.toString.show.lower
 
 enum Wrap:
   case Soft, Hard

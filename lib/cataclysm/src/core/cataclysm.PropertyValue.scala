@@ -36,6 +36,6 @@ import gossamer.*
 import spectacular.*
 
 object PropertyValue:
-  given PropertyValue is Showable = _.toString.show.uncamel.kebab
+  given showable: PropertyValue is Showable = _.toString.show.uncamel.kebab
 
 trait PropertyValue

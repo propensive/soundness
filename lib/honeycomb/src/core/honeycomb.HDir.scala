@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object HDir:
-  given HDir is Showable = _.toString.show.lower
+  given showable: HDir is Showable = _.toString.show.lower
 
 enum HDir:
   case Ltr, Rtl, Auto

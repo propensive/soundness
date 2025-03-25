@@ -64,13 +64,13 @@ object Serializable:
       Text(chars)
 
 
-  given Alphabet[Binary] => Serializable in Binary = base(1)
-  given Alphabet[Quaternary] => Serializable in Quaternary = base(2)
-  given Alphabet[Octal] => Serializable in Octal = base(3)
-  given Alphabet[Hex] => Serializable in Hex = base(4)
-  given Alphabet[Base32] => Serializable in Base32 = base(5)
-  given Alphabet[Base64] => Serializable in Base64 = base(6)
-  given Alphabet[Base256] => Serializable in Base256 = base(8)
+  given binary: Alphabet[Binary] => Serializable in Binary = base(1)
+  given quaternary: Alphabet[Quaternary] => Serializable in Quaternary = base(2)
+  given octal: Alphabet[Octal] => Serializable in Octal = base(3)
+  given hex: Alphabet[Hex] => Serializable in Hex = base(4)
+  given base32: Alphabet[Base32] => Serializable in Base32 = base(5)
+  given base64: Alphabet[Base64] => Serializable in Base64 = base(6)
+  given base256: Alphabet[Base256] => Serializable in Base256 = base(8)
 
 trait Serializable:
   type Format <: Serialization

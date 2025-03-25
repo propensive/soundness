@@ -82,7 +82,7 @@ sealed trait Executable:
   infix def | (command: Executable): Pipeline = command(this)
 
 object Command:
-  given Command is Communicable =
+  given communicable: Command is Communicable =
     command => Message(formattedArguments(command.arguments))
 
   private def formattedArguments(arguments: Seq[Text]): Text =
@@ -97,11 +97,11 @@ object Command:
 
     . join(t" ")
 
-  given Command is Inspectable = command =>
+  given inspectable: Command is Inspectable = command =>
     val commandText: Text = formattedArguments(command.arguments)
     if commandText.contains(t"\"") then t"sh\"\"\"$commandText\"\"\"" else t"sh\"$commandText\""
 
-  given Command is Showable = command => formattedArguments(command.arguments)
+  given showable: Command is Showable = command => formattedArguments(command.arguments)
 
 case class Command(arguments: Text*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
@@ -116,11 +116,11 @@ case class Command(arguments: Text*) extends Executable:
     catch case errror: ji.IOException => abort(ExecError(this, Stream(), Stream()))
 
 object Pipeline:
-  given Pipeline is Communicable =
+  given communicable: Pipeline is Communicable =
     pipeline => m"${pipeline.commands.map(_.show).join(t" | ")}"
 
-  given Pipeline is Inspectable = _.commands.map(_.inspect).join(t" | ")
-  given Pipeline is Showable = _.commands.map(_.show).join(t" | ")
+  given inspectable: Pipeline is Inspectable = _.commands.map(_.inspect).join(t" | ")
+  given showable: Pipeline is Showable = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)

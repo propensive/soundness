@@ -45,9 +45,9 @@ import scala.collection.immutable as sci
 import language.experimental.pureFunctions
 
 object Tabulation:
-  given [text: {Textual as textual, Printable as printable}]
-  =>   (Text is Measurable, TableStyle, Attenuation)
-  =>    Tabulation[text] is Printable =
+  given printable: [text: {Textual as textual, Printable as printable}]
+        => (Text is Measurable, TableStyle, Attenuation)
+        =>  Tabulation[text] is Printable =
     (tabulation, termcap) =>
       tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
 

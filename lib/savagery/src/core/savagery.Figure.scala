@@ -47,7 +47,7 @@ sealed trait Figure:
 case class Rectangle(position: Point, width: Float, height: Float) extends Figure:
   def xml: Xml = unsafely:
     Xml.parse:
-      given Float is Showable = _.toString.tt
+      given showable: Float is Showable = _.toString.tt
       t"""<rect x="${position.x} y="${position.y}" width="$width" height="$height"/>"""
 
 case class Outline
@@ -100,7 +100,7 @@ case class Ellipse(center: Point, xRadius: Float, yRadius: Float, angle: Angle) 
 
   def xml: Xml = unsafely:
     Xml.parse:
-      given Float is Showable = _.toString.tt
+      given showable: Float is Showable = _.toString.tt
       if circle
       then t"""<circle cx="${center.x}" cy="${center.y}" r="${xRadius}"/>"""
       else t"""<ellipse cx="${center.x}" cy="${center.y}" rx="${xRadius}" ry="${yRadius}"/>"""

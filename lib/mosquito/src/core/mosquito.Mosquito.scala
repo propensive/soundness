@@ -54,7 +54,7 @@ object Mosquito:
         case head :: tail => take(tail, size - 1).let(head *: _)
 
     given showable: [size <: Int: ValueOf, element: Showable] => Text is Measurable
-    =>    Vector[element, size] is Showable =
+          =>  Vector[element, size] is Showable =
 
       vector =>
         val items = vector.list.map(_.show)

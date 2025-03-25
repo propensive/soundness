@@ -49,7 +49,7 @@ object Path:
   given encodable: [path <: Path] => path is Encodable in Text = _.text
 
   given decoder: [platform: {Navigable, Radical}]
-  =>    (Path on platform) is Decodable in Text =
+        => (Path on platform) is Decodable in Text =
 
     Path.parse(_)
 
@@ -62,15 +62,14 @@ object Path:
     path.textDescent.prim.or(path.textRoot)
 
   given specific: [platform: {Navigable, Radical}]
-  =>    Path on platform is Instantiable across Paths from Text =
+        =>  Path on platform is Instantiable across Paths from Text =
     _.decode[Path on platform]
 
   given communicable: Path is Communicable = path =>
     Message(path.textDescent.reverse.join(path.textRoot, path.separator, t""))
 
   given addable: [platform: Navigable] => Tactic[PathError]
-  =>    (Path on platform) is Addable by (Relative by platform.Operand) into
-        (Path on platform) =
+        => (Path on platform) is Addable by (Relative by platform.Operand) into (Path on platform) =
     (left, right) =>
       def recur(descent: List[Text], ascent: Int): Path on platform =
         if ascent > 0 then
@@ -121,8 +120,8 @@ object Path:
 
     Path(root, descent)
 
-  given [platform: Navigable]
-  =>    (Path on platform) is Divisible by platform.Operand into (Path on platform) =
+  given divisible: [platform: Navigable]
+        => (Path on platform) is Divisible by platform.Operand into (Path on platform) =
     new Divisible:
       type Operand = platform.Operand
       type Self = Path on platform

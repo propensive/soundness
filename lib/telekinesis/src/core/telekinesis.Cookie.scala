@@ -64,7 +64,7 @@ object Cookie:
          (name, domain, expiry.let(duration.milliseconds(_)), secure, httpOnly, path)
 
   object Value:
-    given Value is Showable = cookie =>
+    given showable: Value is Showable = cookie =>
       List
        (t"${cookie.name}=${cookie.value}",
         cookie.expiry.let { expiry => t"Max-Age=$expiry" },
@@ -75,14 +75,15 @@ object Cookie:
 
       . compact.join(t"; ")
 
-    given Cookie.Value is Encodable in Http.Header = cookie =>
+    given encodable: Cookie.Value is Encodable in Http.Header = cookie =>
       Http.Header("Set-Cookie", cookie.show)
 
-    given Http.Response is Addable by Cookie.Value into Http.Response = (response, cookie) =>
-      val header = Http.Header(t"set-cookie", cookie.show)
-      Http.Response.make(response.status, header :: response.textHeaders, response.body)
+    given addable: Http.Response is Addable by Cookie.Value into Http.Response =
+      (response, cookie) =>
+        val header = Http.Header(t"set-cookie", cookie.show)
+        Http.Response.make(response.status, header :: response.textHeaders, response.body)
 
-    given List[Cookie.Value] is Decodable in Text = value =>
+    given decodable: List[Cookie.Value] is Decodable in Text = value =>
       value.cut(t"; ").flatMap:
         _.cut(t"=", 2) match
           case List(key, value) => List(Cookie.Value(key.urlDecode, value.urlDecode))

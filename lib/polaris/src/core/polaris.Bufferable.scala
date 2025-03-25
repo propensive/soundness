@@ -36,25 +36,25 @@ import wisteria.*
 
 object Bufferable extends ProductDerivable[Bufferable]:
 
-  // given B8 is Bufferable = Bufferable(1)(_(_).bits)
-  // given B16 is Bufferable = Bufferable(2)(B16(_, _))
-  // given B32 is Bufferable = Bufferable(4)(B32(_, _))
-  //given B64 is Bufferable = Bufferable(8)(B64(_, _))
+  // given b8: B8 is Bufferable = Bufferable(1)(_(_).bits)
+  // given b16: B16 is Bufferable = Bufferable(2)(B16(_, _))
+  // given b32: B32 is Bufferable = Bufferable(4)(B32(_, _))
+  // given b64: B64 is Bufferable = Bufferable(8)(B64(_, _))
 
-  // given I8 is Bufferable = Bufferable(1)(_(_).bits.i8)
-  // given I16 is Bufferable = Bufferable(2)(B16(_, _).i16)
-  // given I32 is Bufferable = Bufferable(4)(B32(_, _).i32)
-  // given I64 is Bufferable = Bufferable(8)(B64(_, _).i64)
+  // given i8: I8 is Bufferable = Bufferable(1)(_(_).bits.i8)
+  // given i16: I16 is Bufferable = Bufferable(2)(B16(_, _).i16)
+  // given i32: I32 is Bufferable = Bufferable(4)(B32(_, _).i32)
+  // given i64: I64 is Bufferable = Bufferable(8)(B64(_, _).i64)
 
-  // given U8 is Bufferable = Bufferable(1)(_(_).bits.u8)
-  // given U16 is Bufferable = Bufferable(2)(B16(_, _).u16)
-  // given U32 is Bufferable = Bufferable(4)(B32(_, _).u32)
-  // given U64 is Bufferable = Bufferable(8)(B64(_, _).u64)
+  // given u8: U8 is Bufferable = Bufferable(1)(_(_).bits.u8)
+  // given u16: U16 is Bufferable = Bufferable(2)(B16(_, _).u16)
+  // given u32: U32 is Bufferable = Bufferable(4)(B32(_, _).u32)
+  // given u64: U64 is Bufferable = Bufferable(8)(B64(_, _).u64)
 
-  // given Byte is Bufferable = Bufferable(1)(_(_))
-  // given Short is Bufferable = Bufferable(2)(B16(_, _).i16.short)
-  // given Int is Bufferable = Bufferable(4)(B32(_, _).i32.int)
-  // given Long is Bufferable = Bufferable(8)(B64(_, _).i64.long)
+  // given byte: Byte is Bufferable = Bufferable(1)(_(_))
+  // given short: Short is Bufferable = Bufferable(2)(B16(_, _).i16.short)
+  // given int: Int is Bufferable = Bufferable(4)(B32(_, _).i32.int)
+  // given long: Long is Bufferable = Bufferable(8)(B64(_, _).i64.long)
 
   class Join[derivation <: Product: ProductReflection]
      (val width: Int, buffer0: (Buffer, derivation) => Unit)

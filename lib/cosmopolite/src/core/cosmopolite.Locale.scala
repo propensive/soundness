@@ -38,9 +38,9 @@ import gossamer.*
 import prepositional.*
 
 object Locale:
-  given [language] => Locale[language] is Encodable in Text = _.language.code
+  given encodable: [language] => Locale[language] is Encodable in Text = _.language.code
 
-  given Locale[en & pl] is Decodable in Text =
+  given decodable: Locale[en & pl] is Decodable in Text =
     case t"pl" => Locale(pl)
     case _     => Locale(en)
 

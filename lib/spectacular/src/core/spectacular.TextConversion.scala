@@ -39,9 +39,9 @@ import proscenium.*
 import rudiments.*
 
 object TextConversion:
-  given [value: Textualizer] => value is Showable = value.textual(_)
+  given showable: [value: Textualizer] => value is Showable = value.textual(_)
 
-  given Text is Showable = identity(_)
+  given text: Text is Showable = identity(_)
   given string: String is Showable = _.tt
   given char: Char is Showable = char => char.toString.tt
   given long: Long is Showable = long => long.toString.tt

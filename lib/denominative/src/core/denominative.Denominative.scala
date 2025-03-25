@@ -76,7 +76,7 @@ object Denominative:
     inline def zerary(inline cardinal: Int): Ordinal = cardinal
     inline def natural(inline cardinal: Int): Ordinal = cardinal - 1
 
-    given Ordinal is Textualizer =
+    given textualizer: Ordinal is Textualizer =
       case Prim    => "prim".tt
       case Sec     => "sec".tt
       case Ter     => "ter".tt

@@ -42,7 +42,7 @@ enum HttpEvent:
   case Send(method: Http.Method, url: HttpUrl, headers: Seq[Http.Header])
 
 object HttpEvent:
-  given HttpEvent is Communicable =
+  given communicable: HttpEvent is Communicable =
     case Response(status)           => m"Received response with status $status"
     case Request(preview)           => m"Request [$preview]"
     case Send(method, url, headers) => m"Send $method request to $url"

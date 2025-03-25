@@ -49,7 +49,7 @@ import scala.quoted.*
 import IpAddressError.Reason, Reason.*
 
 object Nettlesome:
-  given Realm = realm"nettlesome"
+  given realm: Realm = realm"nettlesome"
 
   object Opaques:
     opaque type Ipv4 <: Matchable = Int
@@ -59,7 +59,7 @@ object Nettlesome:
     opaque type UdpPort <: Port = Int & Port
 
     object DnsLabel:
-      given DnsLabel is Showable = identity(_)
+      given showable: DnsLabel is Showable = identity(_)
 
       def apply(text: Text): DnsLabel = text
 
@@ -69,7 +69,7 @@ object Nettlesome:
     object Ipv4:
       erased given underlying: Underlying[Ipv4, Int] = !!
 
-      given Ipv4 is Showable = ip =>
+      given showable: Ipv4 is Showable = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
       given encodable: Ipv4 is Encodable in Text = _.show
@@ -87,7 +87,7 @@ object Nettlesome:
         if bytes.length == 4 then
           tend:
             case error@NumberError(text, _) =>
-              given Diagnostics = error.diagnostics
+              given diagnostics: Diagnostics = error.diagnostics
               IpAddressError(Ipv4ByteNotNumeric(text))
 
           . within:
@@ -103,7 +103,7 @@ object Nettlesome:
     object MacAddress:
       import MacAddressError.Reason.*
       erased given underlying: Underlying[MacAddress, Long] = !!
-      given MacAddress is Showable = _.text
+      given showable: MacAddress is Showable = _.text
       given encodable: MacAddress is Encodable in Text = _.text
       given decoder: Tactic[MacAddressError] => MacAddress is Decodable in Text = parse(_)
 
@@ -155,7 +155,7 @@ object Nettlesome:
 
     object UdpPort:
       erased given underlying: Underlying[UdpPort, Int] = !!
-      given UdpPort is Showable = port => TextConversion.int.text(port.number)
+      given showable: UdpPort is Showable = port => TextConversion.int.text(port.number)
       given encodable: UdpPort is Encodable in Text = port => TextConversion.int.text(port.number)
 
       given decoder: (Tactic[NumberError], Tactic[PortError]) => UdpPort is Decodable in Text =
@@ -195,7 +195,7 @@ object Nettlesome:
       def int: Int = ip
 
   object Ipv4Subnet:
-    given Ipv4Subnet is Showable = subnet => t"${subnet.ipv4}/${subnet.size}"
+    given showable: Ipv4Subnet is Showable = subnet => t"${subnet.ipv4}/${subnet.size}"
 
   case class Ipv4Subnet(ipv4: Ipv4, size: Int)
 
@@ -238,7 +238,7 @@ object Nettlesome:
       def apply(ipv6: Ipv6)(using Quotes): Expr[Ipv6] =
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
-    given Ipv6 is Showable = ip =>
+    given showable: Ipv6 is Showable = ip =>
       def unpack(long: Long, groups: List[Int] = Nil): List[Int] =
         if groups.length == 4 then groups else unpack(long >>> 16, (long & 65535).toInt :: groups)
 

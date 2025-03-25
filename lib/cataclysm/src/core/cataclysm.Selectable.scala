@@ -38,7 +38,7 @@ import proscenium.*
 object Selectable:
   given ident: Selector is Selectable = identity(_)
 
-  given [selectable: GenericCssSelection] => selectable is Selectable =
+  given generic: [selectable: GenericCssSelection] => selectable is Selectable =
     selectable.selection(_).s match
       case s".$cls" => Selector.Class(cls.tt)
       case s"#$id"  => Selector.Id(id.tt)

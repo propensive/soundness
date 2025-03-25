@@ -111,7 +111,7 @@ object Aviation2:
         instant + (duration.value/1000.0).toLong
 
     given minus: [operand: InstantSubtractable]
-    =>    Instant is Subtractable by operand into operand.Result =
+          =>  Instant is Subtractable by operand into operand.Result =
       operand.subtract(_, _)
 
   type Duration = Quantity[Seconds[1]]

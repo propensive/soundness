@@ -43,7 +43,7 @@ object PermutationError:
 
   import Reason.*
 
-  given Reason is Communicable =
+  given communicable: Reason is Communicable =
     case BaseRange(value, base) =>
       m"the value $value is too large for its positional base $base"
 

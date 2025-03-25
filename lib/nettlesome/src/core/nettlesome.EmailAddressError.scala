@@ -56,7 +56,7 @@ object EmailAddressError:
     case InvalidChar(char: Char)
 
   object Reason:
-    given Reason is Communicable =
+    given communicable: Reason is Communicable =
       case Empty             => m"it is empty"
       case LongLocalPart     => m"the local part is more than 64 characters long"
       case TerminalPeriod    => m"the local part ends in a period, which is not allowed"

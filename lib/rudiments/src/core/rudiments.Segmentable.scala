@@ -36,13 +36,13 @@ import anticipation.*
 import denominative.*
 
 object Segmentable:
-  given [element] => IndexedSeq[element] is Segmentable =
+  given indexedSeq: [element] => IndexedSeq[element] is Segmentable =
     (seq, interval) => seq.slice(interval.start.n0, interval.end.n0)
 
   given iarray: [element] => IArray[element] is Segmentable =
     (iarray, interval) => iarray.slice(interval.start.n0, interval.end.n0)
 
-  given Text is Segmentable = (text, interval) =>
+  given text: Text is Segmentable = (text, interval) =>
     text.s.substring(interval.start.n0, interval.end.n0).nn.tt
 
 trait Segmentable:

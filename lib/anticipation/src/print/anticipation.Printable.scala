@@ -35,9 +35,9 @@ package anticipation
 import scala.annotation.*
 
 object Printable:
-  given Text is Printable = (text, termcap) => text
-  given String is Printable = (string, termcap) => string.tt
-  given Char is Printable = (char, termcap) => char.toString.tt
+  given text: Text is Printable = (text, termcap) => text
+  given string: String is Printable = (string, termcap) => string.tt
+  given char: Char is Printable = (char, termcap) => char.toString.tt
 
 trait Printable:
   type Self

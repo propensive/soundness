@@ -41,7 +41,7 @@ object PemLabel:
   lazy val index: Map[Text, PemLabel] =
     (0 to 17).map(fromOrdinal(_)).indexBy(_.toString.tt.uncamel.map(_.upper).join(t" "))
 
-  given PemLabel is Showable =
+  given showable: PemLabel is Showable =
     case Proprietary(label) => label
     case other              => other.toString.tt.uncamel.map(_.upper).join(t" ")
 

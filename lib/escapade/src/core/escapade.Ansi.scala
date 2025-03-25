@@ -66,20 +66,20 @@ object Ansi extends Ansi2:
 
   def strip(txt: Text): Text = txt.sub(t"""\e\\[?.*?[\\@-~]""", t"")
 
-  given Stylize[Escape] = identity(_)
+  given escape: Stylize[Escape] = identity(_)
 
-  given [color: Chromatic as color] => Stylize[color] =
+  given chromatic: [color: Chromatic as color] => Stylize[color] =
     color => Stylize(_.copy(fg = color.asRgb24Int))
 
-  given Stylize[Bg] = bgColor => Stylize(_.copy(bg = bgColor.color))
-  given Stylize[Fg] = fgColor => Stylize(_.copy(fg = fgColor.color))
+  given bg: Stylize[Bg] = bgColor => Stylize(_.copy(bg = bgColor.color))
+  given fg: Stylize[Fg] = fgColor => Stylize(_.copy(fg = fgColor.color))
 
-  given Stylize[Bold.type] = _ => Stylize(_.copy(bold = true))
-  given Stylize[Italic.type] = _ => Stylize(_.copy(italic = true))
-  given Stylize[Underline.type] = _ => Stylize(_.copy(underline = true))
-  given Stylize[Strike.type] = _ => Stylize(_.copy(strike = true))
-  given Stylize[Conceal.type] = _ => Stylize(_.copy(conceal = true))
-  given Stylize[Reverse.type] = _ => Stylize(_.copy(reverse = true))
+  given bold: Stylize[Bold.type] = _ => Stylize(_.copy(bold = true))
+  given italic: Stylize[Italic.type] = _ => Stylize(_.copy(italic = true))
+  given underline: Stylize[Underline.type] = _ => Stylize(_.copy(underline = true))
+  given strike: Stylize[Strike.type] = _ => Stylize(_.copy(strike = true))
+  given conceal: Stylize[Conceal.type] = _ => Stylize(_.copy(conceal = true))
+  given reverse: Stylize[Reverse.type] = _ => Stylize(_.copy(reverse = true))
 
   enum Input:
     case TextInput(text: Teletype)

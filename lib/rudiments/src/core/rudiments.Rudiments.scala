@@ -41,7 +41,7 @@ import symbolism.*
 import vacuous.*
 
 object Rudiments:
-  given Realm = realm"rudiments"
+  given realm: Realm = realm"rudiments"
   opaque type Memory = Long
   opaque type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 

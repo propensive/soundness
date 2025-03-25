@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object Sandbox:
-  given Sandbox is Showable = _.toString.show.uncamel.kebab
+  given showable: Sandbox is Showable = _.toString.show.uncamel.kebab
 
 enum Sandbox:
   case AllowForms, AllowPointerLock, AllowPopups, AllowPresentation, AllowSameOrigin, AllowScripts,

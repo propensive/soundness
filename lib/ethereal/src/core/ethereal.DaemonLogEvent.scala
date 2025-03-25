@@ -51,7 +51,7 @@ enum DaemonLogEvent:
   case Init(pid: Pid)
 
 object DaemonLogEvent:
-  given DaemonLogEvent is Communicable =
+  given communicable: DaemonLogEvent is Communicable =
     case WriteExecutable(location) => m"Writing executable to $location"
     case Shutdown                  => m"Shutting down"
     case Termination               => m"Terminating client connection"

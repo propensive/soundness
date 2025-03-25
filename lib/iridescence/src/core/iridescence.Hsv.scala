@@ -39,7 +39,7 @@ import scala.util.chaining.*
 import anticipation.*
 
 object Hsv:
-  given Hsv is Chromatic = _.srgb.rgb24.asInt
+  given chromatic: Hsv is Chromatic = _.srgb.rgb24.asInt
 
 case class Hsv(hue: Double, saturation: Double, value: Double):
   def saturate: Hsv = Hsv(hue, 1, value)

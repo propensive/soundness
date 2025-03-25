@@ -35,7 +35,7 @@ package contextual
 import language.experimental.captureChecking
 
 object Insertion:
-  given [value: Embeddable] => Substitution[value.Operand, value, "x"] =
+  given embeddable: [value: Embeddable] => Substitution[value.Operand, value, "x"] =
     value.embed(_)
 
 trait Insertion[input, -value]:

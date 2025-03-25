@@ -38,8 +38,8 @@ import prepositional.*
 object Irrefutable:
   given stringText: String is Irrefutable into Text = _.tt
 
-  given [result] => (irrefutable: Text is Irrefutable into result)
-  =>    String is Irrefutable into result =
+  given irrefutable: [result] => (irrefutable: Text is Irrefutable into result)
+        =>  String is Irrefutable into result =
     string => irrefutable.unapply(string.tt)
 
   given textString: [text <: Text] => text is Irrefutable into String = _.s

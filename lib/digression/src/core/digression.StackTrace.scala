@@ -229,7 +229,7 @@ object StackTrace:
 
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).optional)
 
-  given StackTrace is Communicable = stack =>
+  given communicable: StackTrace is Communicable = stack =>
     val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
     val classWidth = stack.frames.map(_.method.className.s.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.s.length).maxOption.getOrElse(0)

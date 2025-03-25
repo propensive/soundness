@@ -39,7 +39,7 @@ import scala.util.chaining.*
 import anticipation.*
 
 object Cmy:
-  given Cmy is Chromatic = _.srgb.rgb24.asInt
+  given chromatic: Cmy is Chromatic = _.srgb.rgb24.asInt
 
 case class Cmy(cyan: Double, magenta: Double, yellow: Double):
   def srgb: Srgb = Srgb((1 - cyan), (1 - magenta), (1 - yellow))

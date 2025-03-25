@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object Rel:
-  given Rel is Showable = _.toString.show.uncamel.kebab
+  given showable: Rel is Showable = _.toString.show.uncamel.kebab
 
 enum Rel:
   case Alternate, Author, Bookmark, Canonical, DnsPrefetch, External, Help, Icon, License, Manifest,

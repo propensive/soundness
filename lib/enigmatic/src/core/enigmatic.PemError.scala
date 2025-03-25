@@ -36,7 +36,7 @@ import anticipation.*
 import fulminate.*
 
 object PemError:
-  given Reason is Communicable =
+  given communicable: Reason is Communicable =
     case Reason.BadBase64    => m"could not parse the BASE-64 PEM message"
     case Reason.BeginMissing => m"the BEGIN line could not be found"
     case Reason.EndMissing   => m"the END line could not be found"

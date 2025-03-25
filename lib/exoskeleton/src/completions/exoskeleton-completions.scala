@@ -89,7 +89,7 @@ package executives:
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
       case completion: CliCompletion =>
-        given Stdio = completion.stdio
+        given stdio: Stdio = completion.stdio
         completion.serialize.each(Out.println(_))
         Exit.Ok
 

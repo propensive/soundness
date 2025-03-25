@@ -63,10 +63,11 @@ object Manifest:
 
     . to(Map)
 
-  given Manifest is Addable by ManifestEntry into Manifest = (manifest, entry) =>
+  given addable: Manifest is Addable by ManifestEntry into Manifest = (manifest, entry) =>
     Manifest(manifest.entries.updated(entry.key, entry.value))
 
-  given [key <: Label] => Manifest is Subtractable by ManifestAttribute[key] into Manifest =
+  given subtractable: [key <: Label]
+        =>  Manifest is Subtractable by ManifestAttribute[key] into Manifest =
     (manifest, attribute) => Manifest(manifest.entries - attribute.key)
 
 case class Manifest(entries: Map[Text, Text]):

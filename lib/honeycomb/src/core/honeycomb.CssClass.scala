@@ -37,6 +37,6 @@ import gossamer.*
 import spectacular.*
 
 object CssClass:
-  given CssClass is GenericCssSelection = cls => t".${cls.name}"
+  given generic: CssClass is GenericCssSelection = cls => t".${cls.name}"
 
 case class CssClass(name: Text)

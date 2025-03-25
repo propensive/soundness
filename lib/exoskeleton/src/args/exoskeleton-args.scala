@@ -37,7 +37,7 @@ import fulminate.*
 
 import language.experimental.captureChecking
 
-given Realm = realm"exoskeleton"
+given realm: Realm = realm"exoskeleton"
 
 package parameterInterpretation:
   given simple: SimpleParameterInterpreter.type = SimpleParameterInterpreter

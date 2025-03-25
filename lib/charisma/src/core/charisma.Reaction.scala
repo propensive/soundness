@@ -40,7 +40,7 @@ enum Reaction:
   case NetForward, BothDirections, Equilibrium, Stoichiometric, Resonance
 
 object Reaction:
-  given Reaction is Showable =
+  given showable: Reaction is Showable =
     case NetForward     => t"→"
     case BothDirections => t"⇄"
     case Equilibrium    => t"⇋"

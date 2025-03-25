@@ -85,10 +85,10 @@ object Http:
 
     given communicable: Method is Communicable = method => Message(method.show.upper)
 
-    given Method is Showable =
+    given showable: Method is Showable =
       case method    => method.toString.tt.upper
 
-    given Method is Decodable in Text = _.upper match
+    given decodable: Method is Decodable in Text = _.upper match
       case t"HEAD"    => Http.Head
       case t"POST"    => Http.Post
       case t"PUT"     => Http.Put
@@ -119,7 +119,7 @@ object Http:
 
     def unapply(code: Int): Option[Status] = all.get(code)
 
-    given Status is Communicable = status => m"${status.code} (${status.description})"
+    given communicable: Status is Communicable = status => m"${status.code} (${status.description})"
 
     enum Category:
       case Informational, Successful, Redirection, ClientError, ServerError
@@ -193,7 +193,7 @@ object Http:
   export Status.*
 
   object Request:
-    given Request is Showable = request =>
+    given showable: Request is Showable = request =>
       val bodySample: Text =
         try request.body.stream.read[Bytes].utf8 catch
           case err: StreamError  => t"[-/-]"
@@ -222,7 +222,7 @@ object Http:
         t"params"   -> params
       ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
-    given Request is Transmissible = request =>
+    given transmissible: Request is Transmissible = request =>
       import charEncoders.ascii
 
       val text: Text = Text.construct:

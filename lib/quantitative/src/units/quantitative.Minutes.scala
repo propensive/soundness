@@ -41,5 +41,5 @@ import rudiments.*
 trait Minutes[Power <: Nat] extends Units[Power, Time]
 
 object Minutes:
-  given UnitName[Minutes[1]] = () => "min".tt
-  erased given secondsPerMinute: Ratio[Seconds[1] & Minutes[-1], 60.0] = !!
+  given designation: UnitName[Minutes[1]] = () => "min".tt
+  erased given ratio: Ratio[Seconds[1] & Minutes[-1], 60.0] = !!

@@ -120,12 +120,12 @@ object Telekinesis:
         val (method0, _, headers) = expand(exprs)
 
         val method = method0 match
-          case Unset                    => '{Http.Post}
+          case Unset                     => '{Http.Post}
           case method: Expr[Http.Method] => method
 
-        '{  given Online = $online
+        '{  given online0: Online = $online
             given payload is Postable = $postable
-            given HttpEvent is Loggable = $loggable
+            given loggable0: HttpEvent is Loggable = $loggable
             val host: Hostname = $submit.host
             val body = $postable.stream($payload)
             val path = $submit.originForm
@@ -153,8 +153,8 @@ object Telekinesis:
           case Unset                    => '{Http.Get}
           case method: Expr[Http.Method] => method
 
-        '{  given Online = $online
-            given HttpEvent is Loggable = $loggable
+        '{  given online0: Online = $online
+            given loggable0: HttpEvent is Loggable = $loggable
 
             val path = $fetch.originForm
             val request = Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), Stream())

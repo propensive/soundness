@@ -43,7 +43,7 @@ enum TabCompletionsInstallation:
       fish: TabCompletionsInstallation.InstallResult)
 
 object TabCompletionsInstallation:
-  given TabCompletionsInstallation is Communicable =
+  given communicable: TabCompletionsInstallation is Communicable =
     case CommandNotOnPath(script) =>
       m"The ${script} command is not on the PATH, so completions scripts cannot be installed."
 
@@ -51,7 +51,7 @@ object TabCompletionsInstallation:
       m"$zsh\n\n$bash\n\n$fish"
 
   object InstallResult:
-    given InstallResult is Communicable =
+    given communicable: InstallResult is Communicable =
       case Installed(shell, path) =>
         m"The $shell completion script was installed to $path."
 

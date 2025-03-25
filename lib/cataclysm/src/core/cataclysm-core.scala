@@ -39,11 +39,11 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 
-given Realm = realm"cataclysm"
+given realm: Realm = realm"cataclysm"
 
 private[cataclysm] type Label = String & Singleton
 
-given Decimalizer = Decimalizer(6)
+given decimalizer: Decimalizer = Decimalizer(6)
 
 def select[selector: Selectable](sel: selector)(css: CssStyle) =
   CssRule(selector.selector(sel), css)

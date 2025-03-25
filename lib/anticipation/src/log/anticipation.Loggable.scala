@@ -37,7 +37,7 @@ import language.experimental.into
 import prepositional.*
 
 object Loggable:
-  given [input: Loggable, output: Transcribable into input] => output is Loggable =
+  given transcribable: [input: Loggable, output: Transcribable into input] => output is Loggable =
     (level, realm, timestamp, event) =>
       if !output.skip(event)
       then input.log(level, realm, timestamp, output.record(event))

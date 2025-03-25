@@ -42,7 +42,7 @@ import rudiments.*
 import vacuous.*
 
 object Rsa:
-  given [I <: 1024 | 2048: ValueOf] => Rsa[I] = Rsa()
+  given value: [bits <: 1024 | 2048: ValueOf] => Rsa[bits] = Rsa()
 
 class Rsa[bits <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
   type Size = bits

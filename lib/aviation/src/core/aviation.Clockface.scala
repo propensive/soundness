@@ -38,7 +38,7 @@ import spectacular.*
 
 object Clockface:
   given showable: (TimeFormat, TimeNumerics, TimeSeparation, TimeSpecificity)
-  =>    Clockface is Showable =
+        =>  Clockface is Showable =
     clockface =>
       val hour = if summon[TimeFormat].halfDay then clockface.hour%12 else clockface.hour
 

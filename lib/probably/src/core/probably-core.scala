@@ -42,7 +42,7 @@ import proscenium.*
 
 given realm: Realm = realm"probably"
 
-given Decimalizer = Decimalizer(3)
+given decimalizer: Decimalizer = Decimalizer(3)
 
 export Baseline.Compare.{Min, Mean, Max}
 export Baseline.Metric.{BySpeed, ByTime}

@@ -41,5 +41,5 @@ import rudiments.*
 trait Hundredweights[Power <: Nat] extends Units[Power, Mass]
 
 object Hundredweights:
-  given UnitName[Hundredweights[1]] = () => "cwt".tt
-  erased given gramsPerHundredweight: Ratio[Kilograms[1] & Hundredweights[-1], 50.80234544] = !!
+  given designation: UnitName[Hundredweights[1]] = () => "cwt".tt
+  erased given ratio: Ratio[Kilograms[1] & Hundredweights[-1], 50.80234544] = !!

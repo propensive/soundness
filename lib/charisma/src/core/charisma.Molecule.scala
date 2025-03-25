@@ -48,7 +48,7 @@ extends Molecular:
 object Molecule:
   def empty: Molecule = Molecule(Map(), 0)
 
-  given Molecule is Showable = molecule =>
+  given showable: Molecule is Showable = molecule =>
     val orderedElements =
       if !molecule.elements.contains(PeriodicTable.C)
       then molecule.elements.to(List).sortBy(_(0).symbol)

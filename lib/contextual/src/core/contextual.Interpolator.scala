@@ -42,8 +42,8 @@ import rudiments.*
 import vacuous.*
 
 trait Interpolator[input, state, result]:
-  given CanThrow[InterpolationError] = !!
-  given Realm = realm"contextual"
+  given canThrow: CanThrow[InterpolationError] = !!
+  given realm: Realm = realm"contextual"
 
   protected def initial: state
   protected def parse(state: state, next: Text): state
@@ -74,8 +74,8 @@ trait Interpolator[input, state, result]:
     def rethrow[success](block: => success, start: Int, end: Int): success =
       try block catch case err: InterpolationError => err match
         case InterpolationError(msg, off, len) =>
-          erased given CanThrow[PositionalError] = unsafeExceptions.canThrowAny
-          given Diagnostics = Diagnostics.omit
+          erased given canThrow: CanThrow[PositionalError] = unsafeExceptions.canThrowAny
+          given diagnostics: Diagnostics = Diagnostics.omit
 
           throw PositionalError
                  (msg, start + off.or(0), start + off.or(0) + len.or(end - start - off.or(0)))

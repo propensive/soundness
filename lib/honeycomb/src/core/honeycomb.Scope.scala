@@ -36,7 +36,7 @@ import gossamer.*
 import spectacular.*
 
 object Scope:
-  given Scope is Showable = _.toString.show.lower
+  given showable: Scope is Showable = _.toString.show.lower
 
 enum Scope:
   case Row, Col, Rowgroup, Colgroup

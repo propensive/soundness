@@ -41,7 +41,7 @@ import contingency.*
 import fulminate.*
 
 object Inimitable:
-  given Realm = realm"inimitable"
+  given realm: Realm = realm"inimitable"
 
   def uuid(expr: Expr[StringContext])(using Quotes): Expr[Uuid] =
     val uuid = abortive(Uuid.parse(expr.valueOrAbort.parts.head.tt))

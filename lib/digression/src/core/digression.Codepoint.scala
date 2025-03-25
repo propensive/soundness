@@ -37,7 +37,7 @@ import language.experimental.pureFunctions
 import anticipation.*
 
 object Codepoint:
-  inline given Codepoint = ${Digression.location}
+  inline given default: Codepoint = ${Digression.location}
 
 case class Codepoint(source: Text, line: Int):
   def text: Text = Text(s"${source.s.split("/").nn.last.nn}:$line")

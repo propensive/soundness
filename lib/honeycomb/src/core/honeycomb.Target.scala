@@ -37,7 +37,7 @@ import gossamer.*
 import spectacular.*
 
 object Target:
-  given Target is Showable =
+  given showable: Target is Showable =
     case Browse(value) => value
     case Self          => t"_self"
     case Blank         => t"_blank"

@@ -42,7 +42,7 @@ import vacuous.*
 
 import html5.*
 
-given Realm = realm"legerdemain"
+given realm: Realm = realm"legerdemain"
 
 def elicit[value: Formulable]
    (query: Optional[Query] = Unset, errors: Errors, submit: Optional[Text])

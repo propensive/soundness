@@ -41,7 +41,7 @@ import rudiments.*
 
 object Commensurable:
   inline given numeric: [operand <: Long | Int | Double | Char | Byte | Short | Float]
-  =>    Boolean is Commensurable:
+        =>  Boolean is Commensurable:
     type Operand = operand
 
     inline def compare
@@ -63,7 +63,7 @@ object Commensurable:
 
       !strict && left.long == right.long || (left.long < right.long) ^ greater
 
-  inline given Countback is Orderable:
+  inline given countback: Countback is Orderable:
     inline def compare
        (inline left:    Countback,
         inline right:   Countback,
@@ -74,7 +74,7 @@ object Commensurable:
       inline if greater then inline if strict then left.gt(right) else left.ge(right)
       else inline if strict then left.lt(right) else left.le(right)
 
-  inline given Ordinal is Orderable:
+  inline given ordinal: Ordinal is Orderable:
     inline def compare
        (inline left:    Ordinal,
         inline right:   Ordinal,

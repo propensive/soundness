@@ -45,13 +45,13 @@ trait UnitName[-value]:
   def text: Text = t"${siPrefix.symbol}${name()}"
 
 object UnitName:
-  given UnitName[Metres[1]] = () => t"m"
-  given UnitName[Candelas[1]] = () => t"cd"
-  given UnitName[Moles[1]] = () => t"mol"
-  given UnitName[Amperes[1]] = () => t"A"
-  given UnitName[Kelvins[1]] = () => t"K"
-  given UnitName[Seconds[1]] = () => t"s"
+  given metres: UnitName[Metres[1]] = () => t"m"
+  given candelas: UnitName[Candelas[1]] = () => t"cd"
+  given moles: UnitName[Moles[1]] = () => t"mol"
+  given amperes: UnitName[Amperes[1]] = () => t"A"
+  given kelvins: UnitName[Kelvins[1]] = () => t"K"
+  given seconds: UnitName[Seconds[1]] = () => t"s"
 
-  given UnitName[Kilograms[1]] with
+  given kilograms: UnitName[Kilograms[1]]:
     override def siPrefix: MetricPrefix = Kilo
     def name(): Text = t"g"

@@ -47,7 +47,7 @@ object IpAddressError:
     case Ipv6MultipleDoubleColons
 
   object Reason:
-    given Reason is Communicable =
+    given communicable: Reason is Communicable =
       case Ipv4ByteOutOfRange(byte)       => m"the number $byte is not in the range 0-255"
       case Ipv4ByteNotNumeric(byte)       => m"the part $byte is not a number"
       case Ipv6GroupNotHex(group)         => m"the group '$group' is not a hexadecimal number"

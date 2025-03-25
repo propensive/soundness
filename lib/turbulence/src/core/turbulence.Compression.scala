@@ -49,7 +49,7 @@ trait Compression:
   def decompress(stream: Stream[Bytes]): Stream[Bytes]
 
 object Compression:
-  given Gzip is Compression:
+  given gzip: Gzip is Compression:
     def compress(stream: Stream[Bytes]): Stream[Bytes] =
       val out = ji.ByteArrayOutputStream()
       val out2 = juz.GZIPOutputStream(out)

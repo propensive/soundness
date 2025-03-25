@@ -46,7 +46,7 @@ object Escapade:
 
   object CharSpan:
     def apply(start: Int, end: Int): CharSpan = (start.toLong << 32) + (Int.MaxValue - end)
-    given Ordering[CharSpan] = Ordering.Long.on[CharSpan](identity(_))
+    given ordering: Ordering[CharSpan] = Ordering.Long.on[CharSpan](identity(_))
     val Nowhere: CharSpan = CharSpan(Int.MaxValue, Int.MaxValue)
 
   extension (span: CharSpan)

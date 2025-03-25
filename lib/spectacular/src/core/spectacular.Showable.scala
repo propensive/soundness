@@ -49,7 +49,7 @@ object Showable:
 
   given zerary: Ordinal is Showable = ordinal => s"${ordinal.n0}.₀".tt
 
-  given StackTrace is Showable = stack =>
+  given stackTrace: StackTrace is Showable = stack =>
     val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
     val classWidth = stack.frames.map(_.method.className.s.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.s.length).maxOption.getOrElse(0)

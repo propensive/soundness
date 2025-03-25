@@ -37,4 +37,6 @@ import anticipation.*
 trait CodlFieldWriter[value] extends CodlEncoder[value]:
   def schema: CodlSchema = Field(Arity.One)
   def encodeField(value: value): Text
-  def encode(value: value): List[IArray[CodlNode]] = List(IArray(CodlNode(Data(encodeField(value)))))
+
+  def encode(value: value): List[IArray[CodlNode]] =
+    List(IArray(CodlNode(Data(encodeField(value)))))

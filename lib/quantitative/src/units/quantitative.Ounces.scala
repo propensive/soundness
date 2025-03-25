@@ -41,5 +41,5 @@ import rudiments.*
 trait Ounces[Power <: Nat] extends Units[Power, Mass]
 
 object Ounces:
-  given UnitName[Ounces[1]] = () => "oz".tt
-  erased given kilogramsPerOunce: Ratio[Kilograms[1] & Ounces[-1], 0.0283495] = !!
+  given designation: UnitName[Ounces[1]] = () => "oz".tt
+  erased given ratio: Ratio[Kilograms[1] & Ounces[-1], 0.0283495] = !!

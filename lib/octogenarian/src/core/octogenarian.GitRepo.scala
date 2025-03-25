@@ -212,7 +212,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       def commit(): Stream[Commit] =
         if hash.absent || tree.absent || author.absent || committer.absent then Stream()
         else
-          given Unsafe = Unsafe
+          given unsafe: Unsafe = Unsafe
           val pem = parsePem(signature.join(t"\n"))
 
           Stream:

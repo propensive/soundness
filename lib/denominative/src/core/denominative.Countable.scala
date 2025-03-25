@@ -35,11 +35,11 @@ package denominative
 import anticipation.*
 
 object Countable:
-  given [element] => Seq[element] is Countable = _.length
-  given [element] => IArray[element] is Countable = _.length
-  given [element] => IndexedSeq[element] is Countable = _.length
-  given Text is Countable = _.s.length
-  given Int is Countable = identity(_)
+  given seq: [element] => Seq[element] is Countable = _.length
+  given iarray: [element] => IArray[element] is Countable = _.length
+  given indexedSeq: [element] => IndexedSeq[element] is Countable = _.length
+  given text: Text is Countable = _.s.length
+  given int: Int is Countable = identity(_)
 
 trait Countable:
   type Self

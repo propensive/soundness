@@ -72,7 +72,7 @@ import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
-given Message transcribes DaemonLogEvent = _.communicate
+given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
 
 import java.net as jn
 import java.io as ji
@@ -92,7 +92,7 @@ def cli[bus <: Matchable](using executive: Executive)
           handler:       UnhandledErrorHandler)
       : Unit =
 
-  given Realm: Realm = realm"ethereal"
+  given realm: Realm = realm"ethereal"
 
   import environments.virtualMachine
   import strategies.throwUnsafely
@@ -304,7 +304,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
     supervise:
       import logFormats.standard
-      given Message is Loggable = Log.route(Syslog(t"ethereal"))
+      given loggable: Message is Loggable = Log.route(Syslog(t"ethereal"))
 
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort

@@ -45,25 +45,25 @@ object Debufferable extends ProductDerivable[Debufferable]:
       def debuffer(buffer: Buffer): data =
         lambda(buffer.bytes, buffer.offset).also(buffer.advance(width))
 
-  given B8 is Debufferable = Debufferable(1)(_(_).bits)
-  given B16 is Debufferable = Debufferable(2)(B16(_, _))
-  given B32 is Debufferable = Debufferable(4)(B32(_, _))
-  given B64 is Debufferable = Debufferable(8)(B64(_, _))
+  given b8: B8 is Debufferable = Debufferable(1)(_(_).bits)
+  given b16: B16 is Debufferable = Debufferable(2)(B16(_, _))
+  given b32: B32 is Debufferable = Debufferable(4)(B32(_, _))
+  given b64: B64 is Debufferable = Debufferable(8)(B64(_, _))
 
-  given S8 is Debufferable = Debufferable(1)(_(_).bits.s8)
-  given S16 is Debufferable = Debufferable(2)(B16(_, _).s16)
-  given S32 is Debufferable = Debufferable(4)(B32(_, _).s32)
-  given S64 is Debufferable = Debufferable(8)(B64(_, _).s64)
+  given s8: S8 is Debufferable = Debufferable(1)(_(_).bits.s8)
+  given s16: S16 is Debufferable = Debufferable(2)(B16(_, _).s16)
+  given s32: S32 is Debufferable = Debufferable(4)(B32(_, _).s32)
+  given s64: S64 is Debufferable = Debufferable(8)(B64(_, _).s64)
 
-  given U8 is Debufferable = Debufferable(1)(_(_).bits.u8)
-  given U16 is Debufferable = Debufferable(2)(B16(_, _).u16)
-  given U32 is Debufferable = Debufferable(4)(B32(_, _).u32)
-  given U64 is Debufferable = Debufferable(8)(B64(_, _).u64)
+  given u8: U8 is Debufferable = Debufferable(1)(_(_).bits.u8)
+  given u16: U16 is Debufferable = Debufferable(2)(B16(_, _).u16)
+  given u32: U32 is Debufferable = Debufferable(4)(B32(_, _).u32)
+  given u64: U64 is Debufferable = Debufferable(8)(B64(_, _).u64)
 
-  given Byte is Debufferable = Debufferable(1)(_(_))
-  given Short is Debufferable = Debufferable(2)(B16(_, _).s16.short)
-  given Int is Debufferable = Debufferable(4)(B32(_, _).s32.int)
-  given Long is Debufferable = Debufferable(8)(B64(_, _).s64.long)
+  given byte: Byte is Debufferable = Debufferable(1)(_(_))
+  given short: Short is Debufferable = Debufferable(2)(B16(_, _).s16.short)
+  given int: Int is Debufferable = Debufferable(4)(B32(_, _).s32.int)
+  given long: Long is Debufferable = Debufferable(8)(B64(_, _).s64.long)
 
   class Join[derivation <: Product: ProductReflection]
      (val width: Int, debuffer0: Buffer => derivation)

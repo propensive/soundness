@@ -45,7 +45,7 @@ object TreeDiagram:
   def apply[node: Expandable](roots: node*): TreeDiagram[node] =
     by[node](node.children(_))(roots*)
 
-  given [node: Showable] => (style: TreeStyle[Text]) => TreeDiagram[node] is Printable =
+  given printable: [node: Showable] => (style: TreeStyle[Text]) => TreeDiagram[node] is Printable =
     (diagram, termcap) =>
       (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 

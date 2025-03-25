@@ -46,7 +46,7 @@ import errorDiagnostics.stackTraces
 
 
 object Acceptable:
-  given Tactic[MultipartError] => Multipart is Acceptable = request =>
+  given multipart: Tactic[MultipartError] => Multipart is Acceptable = request =>
     tend:
       case _: MediumError => MultipartError(MultipartError.Reason.Medium)
 

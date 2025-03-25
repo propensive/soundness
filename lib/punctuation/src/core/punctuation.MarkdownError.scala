@@ -43,7 +43,7 @@ object MarkdownError:
     case UnexpectedNode
 
   object Reason:
-    given Reason is Communicable =
+    given communicable: Reason is Communicable =
       case BlockInsideInline => m"the markdown contains block-level elements"
       case BrokenImageRef    => m"the image reference could not be resolved"
       case BadHeadingLevel   => m"the heading level is not in the range 1-6"

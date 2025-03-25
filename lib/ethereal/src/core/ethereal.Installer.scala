@@ -62,10 +62,10 @@ import filesystemOptions.writeAccess.enabled
 import pathNavigation.linux
 
 object Installer:
-  given Realm = realm"ethereal"
+  given realm: Realm = realm"ethereal"
 
   object Result:
-    given Result is Communicable =
+    given communicable: Result is Communicable =
       case AlreadyOnPath(script, path) => m"The $script command is already installed at $path."
       case Installed(script, path)     => m"The $script command was installed to $path."
 

@@ -46,7 +46,7 @@ import unsafeExceptions.canThrowAny
 import LogFormat.standardAnsi
 
 val OutSink = Out.sink
-given Log({ case _ => OutSink })
+given log: Log({ case _ => OutSink })
 
 object Benchmarks extends Suite(m"Merino tests"):
   def run(): Unit =

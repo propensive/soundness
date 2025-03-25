@@ -40,7 +40,7 @@ import rudiments.*
 import vacuous.*
 
 object Dsa:
-  given [bits <: 512 | 1024 | 2048 | 3072: ValueOf] => Dsa[bits] = Dsa()
+  given value: [bits <: 512 | 1024 | 2048 | 3072: ValueOf] => Dsa[bits] = Dsa()
 
 class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signing:
   type Size = bits

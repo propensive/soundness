@@ -42,16 +42,16 @@ import vacuous.*
 
 object Extractable:
   given decodable: [text <: Text, result]
-  =>    (decodable: Tactic[Exception] ?=> result is Decodable in Text)
-  =>    text is Extractable into result =
+        => (decodable: Tactic[Exception] ?=> result is Decodable in Text)
+        =>  text is Extractable into result =
      value => safely(decodable(using strategies.throwUnsafely).decoded(value))
 
   given optional: [result: Extractable]
-  =>    Optional[result] is Extractable into result.Result =
+        =>  Optional[result] is Extractable into result.Result =
     value => value.let(result.extract(_))
 
   given irrefutable: [result] => (irrefutable: Text is Irrefutable into result)
-  =>    String is Irrefutable into result =
+        =>  String is Irrefutable into result =
     value => irrefutable.unapply(value.tt)
 
   given textChar: [text <: Text] => text is Extractable into Char =
@@ -133,7 +133,7 @@ object Extractable:
     double => double.toFloat.unless(value.toDouble != double)
 
   given valueOf: [enumeration <: Enum: Mirror.SumOf as mirror, text <: Text]
-  =>    text is Extractable into enumeration =
+        =>  text is Extractable into enumeration =
     text =>
       import Selectable.reflectiveSelectable
 
@@ -142,7 +142,7 @@ object Extractable:
           try mirror.valueOf(text.s) catch case error: Exception => Unset
 
   given fromOrdinal: [enumeration <: Enum: Mirror.SumOf as mirror, int <: Int]
-  =>    int is Extractable into enumeration =
+        =>  int is Extractable into enumeration =
     ordinal =>
       import Selectable.reflectiveSelectable
       mirror match

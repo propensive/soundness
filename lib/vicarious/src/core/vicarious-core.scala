@@ -36,7 +36,7 @@ import anticipation.*
 import proscenium.*
 import fulminate.*
 
-given Realm = realm"vicarious"
+given realm: Realm = realm"vicarious"
 
 inline def catalog[key](key: key)[value]
    (inline lambda: [field] => (field: field) => value)

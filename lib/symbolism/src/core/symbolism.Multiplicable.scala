@@ -47,22 +47,22 @@ object Multiplicable:
     def multiply(multiplicand: multiplicand, multiplier: multiplier): result =
       lambda(multiplicand, multiplier)
 
-  given Double is Multiplicable by Double into Double = Multiplicable:
+  given double: Double is Multiplicable by Double into Double = Multiplicable:
     (multiplicand, multiplier) => multiplicand*multiplier
 
-  given Long is Multiplicable by Long into Long = Multiplicable:
+  given long: Long is Multiplicable by Long into Long = Multiplicable:
     (multiplicand, multiplier) => multiplicand*multiplier
 
-  given Int is Multiplicable by Int into Int = Multiplicable:
+  given int: Int is Multiplicable by Int into Int = Multiplicable:
     (multiplicand, multiplier) => multiplicand*multiplier
 
-  given Float is Multiplicable by Float into Float = Multiplicable:
+  given float: Float is Multiplicable by Float into Float = Multiplicable:
     (multiplicand, multiplier) => multiplicand*multiplier
 
-  given Short is Multiplicable by Short into Short = Multiplicable:
+  given short: Short is Multiplicable by Short into Short = Multiplicable:
     (multiplicand, multiplier) => (multiplicand*multiplier).toByte
 
-  given Byte is Multiplicable by Byte into Byte = Multiplicable:
+  given byte: Byte is Multiplicable by Byte into Byte = Multiplicable:
     (multiplicand, multiplier) => (multiplicand*multiplier).toByte
 
 trait Multiplicable:

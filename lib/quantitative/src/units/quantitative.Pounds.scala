@@ -41,5 +41,5 @@ import rudiments.*
 trait Pounds[Power <: Nat] extends Units[Power, Mass]
 
 object Pounds:
-  given UnitName[Pounds[1]] = () => "lb".tt
-  erased given kilogramsPerPound: Ratio[Kilograms[1] & Pounds[-1], 0.453592] = !!
+  given designation: UnitName[Pounds[1]] = () => "lb".tt
+  erased given ratio: Ratio[Kilograms[1] & Pounds[-1], 0.453592] = !!

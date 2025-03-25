@@ -69,7 +69,7 @@ object Url:
   type Rules = MustMatch["[A-Za-z0-9_.~-]*"]
 
   given radical: (Tactic[UrlError], Tactic[NameError])
-  =>    HttpUrl is Radical from HttpUrl = new Radical:
+        =>  HttpUrl is Radical from HttpUrl = new Radical:
     type Self = HttpUrl
     type Source = HttpUrl
 
@@ -78,7 +78,7 @@ object Url:
     def rootText(url: HttpUrl): Text = url.show
 
   given navigable: (Tactic[UrlError], Tactic[NameError])
-  =>    HttpUrl is Navigable by Name[HttpUrl] under Rules = new Navigable:
+        =>  HttpUrl is Navigable by Name[HttpUrl] under Rules = new Navigable:
 
     type Operand = Name[HttpUrl]
     type Self = HttpUrl
@@ -102,11 +102,11 @@ object Url:
     val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
 
-  given [scheme <: Label] => Tactic[UrlError] => Url[scheme] is Decodable in Text =
+  given decodable: [scheme <: Label] => Tactic[UrlError] => Url[scheme] is Decodable in Text =
 
     parse(_)
 
-  given [scheme <: Label] => Url[scheme] is Encodable in Text = _.show
+  given encodable: [scheme <: Label] => Url[scheme] is Encodable in Text = _.show
 
   given teletype: [scheme <: Label] => Url[scheme] is Teletypeable =
     url => e"$Underline(${Fg(0x00bfff)}(${url.show}))"

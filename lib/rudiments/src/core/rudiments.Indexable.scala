@@ -63,7 +63,7 @@ object Indexable:
 
       def access(seq: IndexedSeq[element], index: Ordinal): Result = seq(index.n0)
 
-  given [element] => Text is Indexable by Ordinal into Char = new Indexable:
+  given text: [element] => Text is Indexable by Ordinal into Char = new Indexable:
     type Self = Text
     type Operand = Ordinal
     type Result = Char
@@ -73,7 +73,7 @@ object Indexable:
 
     def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
 
-  given [key, value] => Map[key, value] is Indexable by key into value =
+  given map: [key, value] => Map[key, value] is Indexable by key into value =
     new Indexable:
       type Self = Map[key, value]
       type Operand = key

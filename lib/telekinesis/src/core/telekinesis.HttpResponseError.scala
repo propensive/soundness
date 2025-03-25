@@ -41,7 +41,7 @@ object HttpResponseError:
       case Expectation(expected: Char, found: Char)
       case Status(value: Text)
 
-    given Reason is Communicable =
+    given communicable: Reason is Communicable =
       case Reason.Expectation(expected, found) => m"$found was found when $expected was expected"
       case Reason.Status(value)                => m"the HTTP status code $value was invalid"
 

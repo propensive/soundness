@@ -50,11 +50,11 @@ trait SystemProperty[name <: String, property]:
 
 object SystemProperty:
   given generic: [unknown <: String & Singleton] => (erased Void)
-  =>    SystemProperty[unknown, Text] =
+        =>  SystemProperty[unknown, Text] =
     identity(_)
 
   given javaHome: [path: Instantiable across Paths from Text]
-  =>    SystemProperty["java.home", path] =
+        =>  SystemProperty["java.home", path] =
     path(_)
 
   given javaLibraryPath[path: Instantiable across Paths from Text]
@@ -85,11 +85,11 @@ object SystemProperty:
   given userName: SystemProperty["user.name", Text] = identity(_)
 
   given userHome: [path: Instantiable across Paths from Text]
-  =>    SystemProperty["user.home", path] =
+        =>  SystemProperty["user.home", path] =
     path(_)
 
   given userDir: [path: Instantiable across Paths from Text]
-  =>    SystemProperty["user.dir", path] =
+        =>  SystemProperty["user.dir", path] =
     path(_)
 
   given osName: SystemProperty["os.name", Text] = identity(_)
@@ -97,7 +97,7 @@ object SystemProperty:
   given osArch: SystemProperty["os.arch", Text] = identity(_)
 
   given decoder: [unknown <: Label, property]
-  =>   (decoder: property is Decodable in Text)
-  =>    SystemProperty[unknown, property] =
+        => (decoder: property is Decodable in Text)
+        =>  SystemProperty[unknown, property] =
 
     decoder.decoded(_)

@@ -40,19 +40,19 @@ import quantitative.*
 import spectacular.*
 
 object ShowProperty:
-  given ShowProperty[Length] = _.show
-  given ShowProperty[Quantity[Seconds[1]]] = quantity => t"${quantity.value}s"
+  given length: ShowProperty[Length] = _.show
+  given quantity: ShowProperty[Quantity[Seconds[1]]] = quantity => t"${quantity.value}s"
 
-  given ShowProperty[Int | Length] =
+  given lengthInt: ShowProperty[Int | Length] =
     case length: Length => length.show
     case int: Int       => int.show
 
-  given [property: ShowProperty, property2: ShowProperty]
-  :     ShowProperty[(property, property2)] = tuple =>
-    t"${property.show(tuple(0))} ${property2.show(tuple(1))}"
+  given pair: [property: ShowProperty, property2: ShowProperty]
+        =>  ShowProperty[(property, property2)] =
+    tuple => t"${property.show(tuple(0))} ${property2.show(tuple(1))}"
 
-  given [property: ShowProperty, property2: ShowProperty, property3: ShowProperty]
-  :     ShowProperty[(property, property2, property3)] =
+  given triple: [property: ShowProperty, property2: ShowProperty, property3: ShowProperty]
+        =>  ShowProperty[(property, property2, property3)] =
 
     tuple =>
       List
@@ -61,39 +61,41 @@ object ShowProperty:
         property3.show(tuple(2)))
       . join(t" ")
 
-  given [property:  ShowProperty,
-         property2: ShowProperty,
-         property3: ShowProperty,
-         property4: ShowProperty]
-  =>    ShowProperty[(property, property2, property3, property4)] = tuple =>
-    List
-     (property.show(tuple(0)),
-      property2.show(tuple(1)),
-      property3.show(tuple(2)),
-      property4.show(tuple(3))).join(t" ")
+  given quad: [property:  ShowProperty,
+               property2: ShowProperty,
+               property3: ShowProperty,
+               property4: ShowProperty]
+        =>  ShowProperty[(property, property2, property3, property4)] =
+    tuple =>
+      List
+       (property.show(tuple(0)),
+        property2.show(tuple(1)),
+        property3.show(tuple(2)),
+        property4.show(tuple(3)))
+      . join(t" ")
 
-  given ShowProperty[Font] = _.names.map: f =>
+  given font: ShowProperty[Font] = _.names.map: f =>
     if f.contains(t" ") then t"'$f'" else f
 
   . join(t", ")
 
-  //given ShowProperty[SimplePath] = path => t"url('${path}')"
+  //given simplePath: ShowProperty[SimplePath] = path => t"url('${path}')"
 
-  given [path: Abstractable across Paths into Text] => ShowProperty[path] =
+  given paths: [path: Abstractable across Paths into Text] => ShowProperty[path] =
     path => t"url('${path.generic}')"
 
-  given ShowProperty[Text] = identity(_)
-  given ShowProperty[Int] = _.show
+  given text: ShowProperty[Text] = identity(_)
+  given int: ShowProperty[Int] = _.show
 
-  given [chromatic: Chromatic]: ShowProperty[chromatic] = color =>
+  given chromatic: [chromatic: Chromatic] => ShowProperty[chromatic] = color =>
     t"rgb(${chromatic.red(color)},${chromatic.green(color)},${chromatic.blue(color)})"
 
-  //given ShowProperty[Relative] = rel => t"url('$rel')"
-  //given ShowProperty[GenericPath] = rel => t"url('$rel')"
-  given ShowProperty[PropertyValue] = _.show
-  given ShowProperty[Inherit.type] = c => t"inherit"
-  given ShowProperty[Transparent.type] = c => t"transparent"
-  given ShowProperty[Initial.type] = c => t"initial"
+  //given relative: ShowProperty[Relative] = rel => t"url('$rel')"
+  //given genericPath: ShowProperty[GenericPath] = rel => t"url('$rel')"
+  given propertyValue: ShowProperty[PropertyValue] = _.show
+  given inherity: ShowProperty[Inherit.type] = c => t"inherit"
+  given transparent: ShowProperty[Transparent.type] = c => t"transparent"
+  given initial: ShowProperty[Initial.type] = c => t"initial"
 
 trait ShowProperty[-property]:
   def show(value: property): Text

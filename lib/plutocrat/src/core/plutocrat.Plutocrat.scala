@@ -53,12 +53,12 @@ object Plutocrat:
     def apply(currency: Currency & Singleton)(wholePart: Long, subunit: Int): Money[currency.type] =
       wholePart*currency.modulus + subunit
 
-    given [currency <: Currency & Singleton]: Ordering[Money[currency]] =
+    given ordering: [currency <: Currency & Singleton] => Ordering[Money[currency]] =
       Ordering.Long match
         case ordering: Ordering[Money[currency]] => ordering
 
-    given [currency <: Currency & Singleton: ValueOf] => (currencyStyle: CurrencyStyle)
-    =>    Money[currency] is Showable =
+    given showable: [currency <: Currency & Singleton: ValueOf] => (currencyStyle: CurrencyStyle)
+          =>  Money[currency] is Showable =
 
       money =>
         val currency = valueOf[currency]
@@ -68,15 +68,15 @@ object Plutocrat:
         currencyStyle.format(currency, units, subunit)
 
     given addable: [currency <: Currency & Singleton]
-    =>    Money[currency] is Addable by Money[currency] into Money[currency] =
+          =>  Money[currency] is Addable by Money[currency] into Money[currency] =
       _ + _
 
     given subtractable: [currency <: Currency & Singleton]
-    =>    Money[currency] is Subtractable by Money[currency] into Money[currency] =
+          =>  Money[currency] is Subtractable by Money[currency] into Money[currency] =
       _ - _
 
     given multiplicable: [currency <: Currency & Singleton]
-    =>    Money[currency] is Multiplicable by Double into Money[currency] =
+          =>  Money[currency] is Multiplicable by Double into Money[currency] =
       (left, right) =>
         val value = left*right
         (value + value.signum/2).toLong

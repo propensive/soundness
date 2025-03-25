@@ -93,6 +93,6 @@ object Optional:
   inline def check[value]: Unit = ${Vacuous.check[value]}
 
 object Optionality:
-  inline given [value] => Optionality[value] = ${Vacuous.check[value]}
+  inline given default: [value] => Optionality[value] = ${Vacuous.check[value]}
 
 erased trait Optionality[-value]

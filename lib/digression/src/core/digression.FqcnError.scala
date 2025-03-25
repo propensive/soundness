@@ -44,7 +44,7 @@ object FqcnError:
     case EmptyName
     case JavaKeyword(keyword: Text)
 
-  given Reason is Communicable =
+  given communicable: Reason is Communicable =
     case Reason.InvalidChar(char)    => m"a package name may not contain the character $char"
     case Reason.InvalidStart(char)   => m"a package name may not start with the character $char"
     case Reason.EmptyName            => m"a package name cannot be empty"

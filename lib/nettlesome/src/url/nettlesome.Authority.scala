@@ -45,7 +45,7 @@ import spectacular.*
 import vacuous.*
 
 object Authority:
-  given Authority is Showable = auth =>
+  given showable: Authority is Showable = auth =>
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
   def parse(value: Text): Authority raises HostnameError raises UrlError =

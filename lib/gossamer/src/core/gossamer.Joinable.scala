@@ -39,12 +39,12 @@ import language.experimental.pureFunctions
 import language.experimental.into
 
 object Joinable:
-  given [textual: Textual] => textual is Joinable = elements =>
+  given textual: [textual: Textual] => textual is Joinable = elements =>
     val builder = textual.builder(elements.sumBy(_.length))
     elements.each(builder.append(_))
     builder()
 
-  given Message is Joinable = _.fuse(m"")(state+next)
+  given message: Message is Joinable = _.fuse(m"")(state+next)
 
 trait Joinable:
   type Self

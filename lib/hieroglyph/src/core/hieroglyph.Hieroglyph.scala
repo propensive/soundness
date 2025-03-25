@@ -40,7 +40,7 @@ import anticipation.*
 import fulminate.*
 
 object Hieroglyph:
-  given Realm = realm"hieroglyph"
+  given realm: Realm = realm"hieroglyph"
   opaque type CharRange = Long
 
   object CharRange:
@@ -48,9 +48,9 @@ object Hieroglyph:
     def apply(char: Char): CharRange = (char.toLong << 32) + char.toInt
     def apply(char: Int): CharRange = (char.toLong << 32) + char
 
-    given CharRange is Textualizer = range => "${range.from}..${range.to}".tt
+    given textualizer: CharRange is Textualizer = range => "${range.from}..${range.to}".tt
 
-  given Ordering[CharRange] = Ordering.Long
+  given ordering: Ordering[CharRange] = Ordering.Long
 
   extension (range: CharRange)
     def from: Int = (range >> 32).toInt

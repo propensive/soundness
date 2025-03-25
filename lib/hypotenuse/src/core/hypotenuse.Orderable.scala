@@ -37,7 +37,7 @@ import language.experimental.captureChecking
 import scala.annotation.*
 
 object Orderable:
-  given [value: Ordering] => value is Orderable:
+  given orderable: [value: Ordering] => value is Orderable:
     inline def compare
        (inline left:    value,
         inline right:   value,

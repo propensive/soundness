@@ -36,6 +36,6 @@ import guillotine.*
 import serpentine.*
 
 object GitCommand:
-  given GitCommand is Parameterizable = _.path.text
+  given parameterizable: GitCommand is Parameterizable = _.path.text
 
 case class GitCommand(path: Path)

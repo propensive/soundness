@@ -48,7 +48,7 @@ import language.experimental.pureFunctions
 import language.experimental.into
 
 object Cuttable:
-  given [textual: {Textual, Countable}] => textual is Cuttable by Text =
+  given textualText: [textual: {Textual, Countable}] => textual is Cuttable by Text =
     (text, delimiter, limit) =>
       val string = textual.text(text).s
       val dLength = delimiter.s.length
@@ -61,27 +61,28 @@ object Cuttable:
 
       recur(Prim, Nil).reverse
 
-  given [textual: {Textual, Countable}] => textual is Cuttable by Regex = (text, regex, limit) =>
-    val string = textual.text(text).s
-    val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
+  given textualRegex: [textual: {Textual, Countable}] => textual is Cuttable by Regex =
+    (text, regex, limit) =>
+      val string = textual.text(text).s
+      val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
 
-    @tailrec
-    def recur(start: Ordinal, results: List[textual]): List[textual] =
-      if matcher.find(start.n0)
-      then
-        val interval = Ordinal.zerary(matcher.start) ~ Ordinal.zerary(matcher.end)
-        recur(Ordinal.zerary(matcher.end), text.segment(interval) :: results)
-      else results
+      @tailrec
+      def recur(start: Ordinal, results: List[textual]): List[textual] =
+        if matcher.find(start.n0)
+        then
+          val interval = Ordinal.zerary(matcher.start) ~ Ordinal.zerary(matcher.end)
+          recur(Ordinal.zerary(matcher.end), text.segment(interval) :: results)
+        else results
 
-    recur(Prim, Nil).reverse
+      recur(Prim, Nil).reverse
 
-  given Text is Cuttable by Text = (text, delimiter, limit) =>
+  given textText: Text is Cuttable by Text = (text, delimiter, limit) =>
     text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn.tt).to(List)
 
-  given Text is Cuttable by Regex = (text, regex, limit) =>
+  given textRegex: Text is Cuttable by Regex = (text, regex, limit) =>
     text.s.split(regex.pattern.s, limit).nn.map(_.nn.tt).to(List)
 
-  given [textual] => (cuttable: textual is Cuttable by Text) => textual is Cuttable by Char =
+  given textualText: [textual] => (cuttable: textual is Cuttable by Text) => textual is Cuttable by Char =
     (text, delimiter, limit) =>
       cuttable.cut(text, delimiter.toString.tt, limit)
 

@@ -48,12 +48,12 @@ object Readable:
   given text: [textual <: Text] => textual is Readable by Text = Stream(_)
 
   given encodingAdapter: [readable: Readable by Text] => (encoder: CharEncoder)
-  =>    readable is Readable by Bytes =
+        =>  readable is Readable by Bytes =
 
     source => encoder.encoded(readable.stream(source))
 
   given decodingAdapter: [readable: Readable by Bytes] => (decoder: CharDecoder)
-  =>    readable is Readable by Text =
+        =>  readable is Readable by Text =
 
     source => decoder.decoded(readable.stream(source))
 
@@ -87,7 +87,7 @@ object Readable:
     Stream.defer(recur(0L.b))
 
   given bufferedReader: [input <: ji.BufferedReader] => Tactic[StreamError]
-  =>    input is Readable by Line =
+        =>  input is Readable by Line =
     reader =>
       def recur(count: Memory): Stream[Line] =
         try reader.readLine() match
@@ -100,7 +100,7 @@ object Readable:
       Stream.defer(recur(0L.b))
 
   given inputStream: [input <: ji.InputStream] => Tactic[StreamError]
-  =>    input is Readable by Bytes =
+        =>  input is Readable by Bytes =
     channel.contramap(jn.channels.Channels.newChannel(_).nn)
 
   given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Readable by Bytes =

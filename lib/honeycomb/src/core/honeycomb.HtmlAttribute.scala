@@ -51,8 +51,8 @@ trait HtmlAttribute[-value]:
 object HtmlAttribute:
   object NotShown
 
-  given [label <: Label: GenericHtmlAttribute[value], value]
-  =>    label is HtmlAttribute[value]:
+  given generic: [label <: Label: GenericHtmlAttribute[value], value]
+        =>  label is HtmlAttribute[value]:
 
     def convert(value: value): Optional[Text] = label.serialize(value).show
     override def rename: Optional[Text] = label.name.show
@@ -67,7 +67,7 @@ object HtmlAttribute:
   given action: ("action" is HtmlAttribute[Text]) = identity(_)
 
   given action2: [url: Abstractable across Urls into Text]
-  =>    ("action" is HtmlAttribute[url]) =
+        => ("action" is HtmlAttribute[url]) =
     _.generic
 
   given allowfullscreen: ("allowfullscreen" is HtmlAttribute[Boolean]) = _ => Unset
@@ -98,7 +98,7 @@ object HtmlAttribute:
   given codebase: ("codebase" is HtmlAttribute[Text]) = identity(_)
 
   given codebase2: [url: Abstractable across Urls into Text]
-  =>    ("codebase" is HtmlAttribute[url]) =
+        => ("codebase" is HtmlAttribute[url]) =
     _.generic
 
   given cols: ("cols" is HtmlAttribute[Int]) = _.show
@@ -150,7 +150,7 @@ object HtmlAttribute:
   given formaction: ("formaction" is HtmlAttribute[Text]) = identity(_) // Provided by Scintillate
 
   given formaction2: [url: Abstractable across Urls into Text]
-  =>    ("formaction" is HtmlAttribute[url]) =
+        => ("formaction" is HtmlAttribute[url]) =
     _.generic
 
   given formenctype: ("formenctype" is HtmlAttribute[Text]) = identity(_)
@@ -165,7 +165,7 @@ object HtmlAttribute:
   given href: ("href" is HtmlAttribute[Text]) = identity(_)
 
   given href2: [url: Abstractable across Urls into Text]
-  =>    ("href" is HtmlAttribute[url]) =
+        => ("href" is HtmlAttribute[url]) =
     _.generic
 
   // Needs to be provided by Cosmopolite
@@ -187,7 +187,7 @@ object HtmlAttribute:
   given manifest: ("manifest" is HtmlAttribute[Text]) = identity(_) // Provided by Scintillate
 
   given manifest2: [url: Abstractable across Urls into Text]
-  =>    ("manifest" is HtmlAttribute[url]) =
+        => ("manifest" is HtmlAttribute[url]) =
     _.generic
 
   given max: ("max" is HtmlAttribute[Double | Int]) = _.toString.show
@@ -214,7 +214,7 @@ object HtmlAttribute:
   given poster: ("poster" is HtmlAttribute[Text]) = identity(_)
 
   given poster2: [url: Abstractable across Urls into Text]
-  =>    ("poster" is HtmlAttribute[url]) =
+        => ("poster" is HtmlAttribute[url]) =
     _.generic
 
   given preload: ("preload" is HtmlAttribute[Preload]) = _.show
@@ -238,7 +238,7 @@ object HtmlAttribute:
   given src: ("src" is HtmlAttribute[Text]) = identity(_)
 
   given src2: [path: Abstractable across Paths into Text]
-  =>    ("src" is HtmlAttribute[path]) =
+        => ("src" is HtmlAttribute[path]) =
     _.generic
 
   given src3: [url: Abstractable across Urls into Text] => ("src" is HtmlAttribute[url]) =
@@ -255,6 +255,7 @@ object HtmlAttribute:
   given style: ("style" is HtmlAttribute[Text]) = identity(_) // Should be provided by Cataclysm
   given tabindex: ("tabindex" is HtmlAttribute[Int]) = _.show
   given target: ("target" is HtmlAttribute[Target]) = _.show
+  given target2: ("target" is HtmlAttribute[DomId]) = _.name
   given title: ("title" is HtmlAttribute[Text]) = identity(_)
   given translate: ("translate" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given linkType: ("type" is HtmlAttribute[Medium] onto "link") = _.show

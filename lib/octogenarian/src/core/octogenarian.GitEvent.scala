@@ -39,9 +39,9 @@ import fulminate.*
 import guillotine.*
 
 object GitEvent:
-  given GitEvent transcribes ExecEvent = GitEvent.Exec(_)
+  given execEvent: GitEvent transcribes ExecEvent = GitEvent.Exec(_)
 
-  given GitEvent is Communicable =
+  given communicable: GitEvent is Communicable =
     case Exec(reason) => m"The Git operation did not execute successfully: $reason"
 
 enum GitEvent:

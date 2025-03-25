@@ -54,7 +54,7 @@ import vacuous.*
 import scala.collection.mutable as scm
 
 object Report:
-  given Inclusion[Report, Verdict]:
+  given verdict: Inclusion[Report, Verdict]:
     def include(report: Report, testId: TestId, verdict: Verdict): Report =
       val report2 = report.addVerdict(testId, verdict)
       verdict match
@@ -69,7 +69,7 @@ object Report:
         case Verdict.CheckThrows(error, _) =>
           report2.addDetail(testId, Verdict.Detail.CheckThrows(StackTrace(error)))
 
-  given Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
+  given detail: Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
 
 class Report(using Environment):
   var failure: Optional[(Throwable, Set[TestId])] = Unset
@@ -211,7 +211,7 @@ class Report(using Environment):
 
   def complete(coverage: Option[Coverage])(using Stdio): Unit =
     val metrics = textMetrics.eastAsianScripts
-    given Char is Measurable:
+    given measurable: Char is Measurable:
       def width(char: Char): Int = char match
         case '✓' | '✗' | '⎇' => 1
         case _                => metrics.width(char)
@@ -332,7 +332,7 @@ class Report(using Environment):
       Out.println(e"$Bold($Underline(Test results))")
 
       table.tabulate(summaryLines).grid(columns).render.each(Out.println(_))
-      given Decimalizer = Decimalizer(decimalPlaces = 1)
+      given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
       val pass = e"$Bold($White($passed)) passed (${100.0*passed/total}%)"
       val fail = e"$Bold($White($failed)) failed (${100.0*failed/total}%)"
       val all = e"$Bold($White(${passed + failed})) total"

@@ -46,10 +46,10 @@ import spectacular.*
 import GitError.Reason.*
 
 object Octogenarian:
-  opaque type Refspec = Text
-  opaque type GitTag <: Refspec = Text
-  opaque type GitBranch <: Refspec = Text
-  opaque type GitHash <: Refspec = Text
+  opaque type Refspec = anticipation.Text
+  opaque type GitTag <: Refspec = anticipation.Text
+  opaque type GitBranch <: Refspec = anticipation.Text
+  opaque type GitHash <: Refspec = anticipation.Text
 
   object Refspec:
     def head(n: Int = 0): Refspec = t"HEAD~$n"
@@ -69,19 +69,19 @@ object Octogenarian:
 
     given encodable: Refspec is Encodable in Text = identity(_)
     given parameterizable: Refspec is Parameterizable = identity(_)
-    given Refspec is Showable = identity(_)
+    given showable: Refspec is Showable = identity(_)
 
   object GitTag:
     def unsafe(text: Text): GitTag = text
     def apply(text: Text)(using Tactic[GitRefError]): GitTag = Refspec.parse(text)
     given decoder: Tactic[GitRefError] => GitTag is Decodable in Text = apply(_)
-    given GitTag is Showable = identity(_)
+    given showable: GitTag is Showable = identity(_)
 
   object GitBranch:
     def unsafe(text: Text): GitBranch = text
     def apply(text: Text)(using Tactic[GitRefError]): GitBranch = Refspec.parse(text)
     given decoder: Tactic[GitRefError] => GitBranch is Decodable in Text = apply(_)
-    given GitBranch is Showable = identity(_)
+    given showable: GitBranch is Showable = identity(_)
 
   object GitHash:
     def apply(text: Text)(using Tactic[GitRefError]): GitHash = text match
@@ -91,4 +91,4 @@ object Octogenarian:
     def unsafe(text: Text): GitHash = text
 
     given decoder: Tactic[GitRefError] => GitHash is Decodable in Text = apply(_)
-    given GitHash is Showable = identity(_)
+    given showable: GitHash is Showable = identity(_)

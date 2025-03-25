@@ -37,7 +37,7 @@ import fulminate.*
 import gossamer.*
 
 object TzdbError:
-  given Reason is Communicable =
+  given communicable: Reason is Communicable =
     case Reason.CouldNotParseTime(time) => m"could not parse time $time"
     case Reason.UnexpectedRule          => m"unexpected rule"
     case Reason.UnexpectedLink          => m"unexpected link"

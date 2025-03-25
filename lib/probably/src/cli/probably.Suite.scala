@@ -48,12 +48,12 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
   val suiteIo = safely(stdioSources.virtualMachine.ansi).vouch
 
   given runner: Runner[Report] =
-    given Stdio = suiteIo
+    given stdio: Stdio = suiteIo
     try Runner() catch case err: EnvironmentError =>
       println(StackTrace(err).teletype.render)
       ???
 
-  given Testable = this
+  given testable: Testable = this
 
   def run(): Unit
 

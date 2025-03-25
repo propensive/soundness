@@ -45,27 +45,27 @@ object Complex:
   given show: [component: Showable] => Complex[component] is Showable = complex =>
    t"${complex.real.show} + ${complex.imaginary.show}𝒾"
 
-  inline given [units <: Measure] => Decimalizer => Complex[Quantity[units]] is Showable:
+  inline given quantity: [units <: Measure] => Decimalizer => Complex[Quantity[units]] is Showable:
     def text(value: Complex[Quantity[units]]): Text =
       t"${value.real.value} + ${value.imaginary.value}𝒾 ${Quantity.expressUnits(value.real.units)}"
 
   inline given addable: [component: Addable by component as addable]
-  =>    Complex[component] is Addable by Complex[component] =
+               =>  Complex[component] is Addable by Complex[component] =
     Addable[Complex[component], Complex[component], Complex[addable.Result]]:
       (left, right) =>
         Complex[addable.Result](left.real + right.real, left.imaginary + right.imaginary)
 
   inline given subtractable: [component: Subtractable by component as subtractable]
-  =>   Complex[component] is Subtractable by Complex[component] =
+               =>  Complex[component] is Subtractable by Complex[component] =
     Subtractable[Complex[component], Complex[component], Complex[subtractable.Result]]:
       (left, right) =>
         Complex[subtractable.Result](left.real - right.real, left.imaginary - right.imaginary)
 
   inline given multiplicable: [component]
-  =>   (multiplication: component is Multiplicable by component,
-        addition:       multiplication.Result is Addable by multiplication.Result,
-        subtraction:    multiplication.Result is Subtractable by multiplication.Result)
-  =>    Complex[component] is Multiplicable by Complex[component] =
+        => (multiplication: component is Multiplicable by component,
+            addition:       multiplication.Result is Addable by multiplication.Result,
+            subtraction:    multiplication.Result is Subtractable by multiplication.Result)
+        =>  Complex[component] is Multiplicable by Complex[component] =
     Multiplicable[Complex[component],
                   Complex[component],
                   Complex[addition.Result | subtraction.Result]]:

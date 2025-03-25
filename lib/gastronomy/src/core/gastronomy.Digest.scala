@@ -47,10 +47,10 @@ object Digest:
   def apply[hash <: Algorithm](bytes: Bytes): Digest in hash = new Digest(bytes):
     type Format = hash
 
-  given [digest <: Algorithm] => Alphabet[Base64] => Digest in digest is Showable =
+  given showable: [digest <: Algorithm] => Alphabet[Base64] => Digest in digest is Showable =
     _.bytes.serialize[Base64]
 
-  given [digest <: Algorithm] => Digest in digest is Encodable in Bytes = _.bytes
+  given encodable: [digest <: Algorithm] => Digest in digest is Encodable in Bytes = _.bytes
 
 class Digest(val bytes: Bytes):
   type Format <: Algorithm

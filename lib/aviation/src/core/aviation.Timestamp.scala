@@ -51,7 +51,7 @@ object Timestamp:
   given (Clockface is Showable, Date is Showable) => Timestamp is Showable =
     timestamp => s"${timestamp.time.show}, ${timestamp.date.show}".tt
 
-  given Tactic[TimestampError] => Timestamp is Decodable in Text = text =>
+  given decodable: Tactic[TimestampError] => Timestamp is Decodable in Text = text =>
     text match
       case r"$year(\d{4})-$month(\d{2})-$day(\d{2})T$hour(\d{2}):$minute(\d{2}):$second(\d{2})" =>
         tend:

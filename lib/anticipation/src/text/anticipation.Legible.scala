@@ -39,5 +39,5 @@ trait Legible:
   def text(value: Self): Text
 
 object Legible:
-  given Text is Legible = identity(_)
-  given String is Legible = _.tt
+  given text: Text is Legible = identity(_)
+  given string: String is Legible = _.tt

@@ -41,5 +41,5 @@ import rudiments.*
 trait Feet[Power <: Nat] extends Units[Power, Distance]
 
 object Feet:
-  given UnitName[Feet[1]] = () => "ft".tt
-  erased given feetPerMetre: Ratio[Feet[-1] & Metres[1], 0.3048] = !!
+  given designation: UnitName[Feet[1]] = () => "ft".tt
+  erased given ratio: Ratio[Feet[-1] & Metres[1], 0.3048] = !!

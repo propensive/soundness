@@ -57,7 +57,7 @@ object Austronesian:
     given byte: Byte is Encodable in Stdlib = identity(_)
 
     given list: [collection <: Iterable, element: Encodable in Stdlib]
-    =>     collection[element] is Encodable in Stdlib =
+          =>  collection[element] is Encodable in Stdlib =
       iterable => IArray.from(iterable.map(_.encode))
 
     given text2: Tactic[StdlibError] => Text is Decodable in Stdlib =
@@ -93,9 +93,9 @@ object Austronesian:
       case _                => raise(StdlibError()) yet false
 
     given collection: [collection <: Iterable, element: Decodable in Stdlib]
-    =>    Tactic[StdlibError]
-    =>    (factory: Factory[element, collection[element]])
-    =>    collection[element] is Decodable in Stdlib =
+          =>  Tactic[StdlibError]
+          => (factory: Factory[element, collection[element]])
+          =>  collection[element] is Decodable in Stdlib =
 
       case array: Array[Stdlib] =>
         factory.newBuilder.pipe: builder =>

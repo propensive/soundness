@@ -41,7 +41,7 @@ import scala.quoted.*
 import language.dynamics
 
 object Tag:
-  given Tag[?, ?, ?] is GenericCssSelection = _.labelString.tt
+  given generic: Tag[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
 open case class Tag[+name <: Label, child <: Label, attribute <: Label]
    (labelString: name)
