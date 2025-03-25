@@ -55,7 +55,7 @@ object Task:
       def daemon: Boolean = false
       def evaluate(worker: Worker): Result = evaluate0(worker)
 
-  given (Monitor, Codicil, Tactic[AsyncError]) => Monad[Task]:
+  given monad: (Monitor, Codicil, Tactic[AsyncError]) => Monad[Task]:
     def bind[value, value2](value: Task[value])(lambda: value => Task[value2])
     :     Task[value2] =
       value.bind(lambda)

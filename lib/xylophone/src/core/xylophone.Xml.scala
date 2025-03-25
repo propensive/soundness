@@ -58,7 +58,7 @@ object Xml:
   given showable: Xml is Showable = xml =>
     safely(xmlPrinters.compact.print(XmlDoc(XmlAst.Root(Xml.normalize(xml)*)))).or(t"undefined")
 
-  given (encoding: Encoding { type CanEncode = true }, printer: XmlPrinter[Text])
+  given abstractable: (encoding: Encoding { type CanEncode = true }, printer: XmlPrinter[Text])
         =>  Xml is Abstractable across HttpStreams into HttpStreams.Content =
     new Abstractable:
       type Self = Xml

@@ -43,7 +43,7 @@ package eucalyptus
 // import language.experimental.captureChecking
 
 // object Eucalyptus:
-//   given Realm = realm"eucalyptus"
+//   given realm: Realm = realm"eucalyptus"
 
 //   def record[message: Type, text: Type]
 //       (level:          Expr[Level],

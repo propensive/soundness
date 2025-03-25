@@ -48,7 +48,7 @@ import java.time as jt
 object Timestamp:
   import calendars.gregorian
 
-  given (Clockface is Showable, Date is Showable) => Timestamp is Showable =
+  given showable: (Clockface is Showable, Date is Showable) => Timestamp is Showable =
     timestamp => s"${timestamp.time.show}, ${timestamp.date.show}".tt
 
   given decodable: Tactic[TimestampError] => Timestamp is Decodable in Text = text =>

@@ -49,7 +49,7 @@ import JsonError.Reason
 
 export Jacinta.JsonPointer
 
-given (js: JsonPrinter) => JsonAst is Showable = js.print(_)
+given showable: (js: JsonPrinter) => JsonAst is Showable = js.print(_)
 
 extension (json: JsonAst)
   inline def isNumber: Boolean = isDouble || isLong || isBigDecimal

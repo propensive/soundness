@@ -48,7 +48,7 @@ import vacuous.*
 object Classpath:
   type Rules = MustNotContain["/"]
 
-  given (classloader: Classloader) => (Path on Classpath) is Substantiable =
+  given substantiable: (classloader: Classloader) => (Path on Classpath) is Substantiable =
     path => classloader.java.getResourceAsStream(path.text.s) != null
 
   @targetName("child")
