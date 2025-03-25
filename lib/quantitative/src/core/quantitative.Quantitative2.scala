@@ -79,10 +79,10 @@ trait Quantitative2:
 
       recur(map.to(List), TypeRepr.of[Units[?, ?]]).asType.absolve match
         case '[type units <: Units[?, ?]; units] =>
-          Expr.summon[PhysicalQuantity[units, ?]].map: value =>
+          Expr.summon[Measurement[units, ?]].map: value =>
             value.absolve match
               case '{$name: dimension} => Type.of[dimension].absolve match
-                case '[PhysicalQuantity[?, name]] =>
+                case '[Measurement[?, name]] =>
                   TypeRepr.of[name].asMatchable.absolve match
                     case ConstantType(StringConstant(name)) => name
 
@@ -145,8 +145,8 @@ trait Quantitative2:
     def unitPower(dimension: DimensionRef): Int = map.get(dimension).map(_.power).getOrElse(0)
 
   class UnitRef(val unitType: Type[?], val name: String):
-    def unitName(using Quotes): Expr[Text] = power(1).asType.absolve match
-      case '[unit]      => Expr.summon[UnitName[unit]] match
+    def designation(using Quotes): Expr[Text] = power(1).asType.absolve match
+      case '[unit]      => Expr.summon[Designation[unit]] match
         case None       => '{${Expr(name)}.tt}
         case Some(name) => '{$name.text}
 
@@ -190,7 +190,7 @@ trait Quantitative2:
 
       dimensionType.absolve match
         case '[type dimension <: Dimension; dimension] =>
-          Expr.summon[PrincipalUnit[dimension, ?]].absolve match
+          Expr.summon[Principal[dimension, ?]].absolve match
             case None =>
               val dimensionName =
                 dimensionality.quantityName.map: name =>
@@ -202,8 +202,8 @@ trait Quantitative2:
                 m"""the operands both represent $dimensionName, but there is no principal unit
                       specified for this dimension"""
 
-            case Some('{$expr: principalUnit}) => Type.of[principalUnit].absolve match
-              case '[PrincipalUnit[dimension, units]] =>
+            case Some('{$expr: principal}) => Type.of[principal].absolve match
+              case '[Principal[dimension, units]] =>
                 TypeRepr.of[units].asMatchable.absolve match
                   case TypeLambda(_, _, appliedType) => appliedType.asMatchable.absolve match
                     case AppliedType(typeRef, _) => typeRef.asMatchable.absolve match
@@ -226,16 +226,16 @@ trait Quantitative2:
 
     import quotes.reflect.*
 
-    val principalUnit = from.dimensionRef.principal
+    val principal = from.dimensionRef.principal
     if from == to then Expr(1.0)
     else (from.power(-1).asType, to.power(1).asType).absolve match
       case ('[type from <: Measure; from], '[type to <: Measure; to]) =>
         Expr.summon[Ratio[from & to, ?]].absolve match
           case None =>
             if retry then ratio(to, from, -power, false)
-            else if viaPrincipal && from != principalUnit && to != principalUnit then
-              val numerator = ratio(from, principalUnit, power, true, false)
-              val denominator = ratio(to, principalUnit, power, true, false)
+            else if viaPrincipal && from != principal && to != principal then
+              val numerator = ratio(from, principal, power, true, false)
+              val denominator = ratio(to, principal, power, true, false)
               '{$numerator/$denominator}
             else
               val quantityName = from.dimensionRef.dimensionality.quantityName
@@ -292,11 +292,12 @@ trait Quantitative2:
         case UnitPower(unit, power) :: todo2 =>
           unit.power(1).asType.absolve match
             case '[ref] =>
-              val unitName = Expr.summon[UnitName[ref]].get
-              recur('{$expr.updated($unitName.text, ${Expr(power)})}, todo2)
+              val designation = Expr.summon[Designation[ref]].get
+              recur('{$expr.updated($designation.text, ${Expr(power)})}, todo2)
 
-    Expr.summon[SubstituteUnits[units]].absolve match
-      case Some('{$substitute: SubstituteUnits[?]}) => '{Map[Text, Int](($substitute.name -> 1))}
+    Expr.summon[Redesignation[units]].absolve match
+      case Some('{$redesignation: Redesignation[?]}) =>
+        '{Map[Text, Int](($redesignation.name -> 1))}
 
       case None =>
         recur('{Map[Text, Int]()}, UnitsMap[units].map.values.to(List))

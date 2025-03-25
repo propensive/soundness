@@ -38,6 +38,6 @@ import proscenium.*
 import quantitative.*
 
 object Ems:
-  given designation: UnitName[Ems[1]] = () => t"ems"
+  given designation: Designation[Ems[1]] = () => t"ems"
 
 erased trait Ems[Power <: Nat] extends Units[Power, FontSize]

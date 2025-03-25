@@ -41,5 +41,5 @@ import rudiments.*
 trait Quarters[Power <: Nat] extends Units[Power, Mass]
 
 object Quarters:
-  given designation: UnitName[Quarters[1]] = () => "qr".tt
+  given designation: Designation[Quarters[1]] = () => "qr".tt
   erased given ratio: Ratio[Kilograms[1] & Quarters[-1], 12.700586360000001] = !!

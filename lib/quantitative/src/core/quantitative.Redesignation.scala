@@ -32,17 +32,14 @@
                                                                                                   */
 package quantitative
 
+import anticipation.*
+import gossamer.*
+
+import language.implicitConversions
 import language.experimental.captureChecking
 
-import proscenium.*
+trait Redesignation[units <: Measure](val name: Text)
 
-trait PrincipalUnit[dimension <: Dimension, unit[_ <: Nat] <: Measure]()
-
-object PrincipalUnit:
-  given distance: PrincipalUnit[Distance, Metres]()
-  given mass: PrincipalUnit[Mass, Kilograms]()
-  given time: PrincipalUnit[Time, Seconds]()
-  given current: PrincipalUnit[Current, Amperes]()
-  given luminosity: PrincipalUnit[Luminosity, Candelas]()
-  given temperature: PrincipalUnit[Temperature, Kelvins]()
-  given amountOfSubstance: PrincipalUnit[AmountOfSubstance, Moles]()
+object Redesignation:
+  given joules: Redesignation[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
+  given newtons: Redesignation[Kilograms[1] & Metres[1] & Seconds[-2]](t"N")

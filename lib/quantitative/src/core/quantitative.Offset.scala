@@ -34,5 +34,5 @@ package quantitative
 
 import language.experimental.captureChecking
 
-trait UnitsOffset[units <: Measure]:
+trait Offset[units <: Measure]:
   def value(): Double

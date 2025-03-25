@@ -41,5 +41,5 @@ import rudiments.*
 trait Stones[Power <: Nat] extends Units[Power, Mass]
 
 object Stones:
-  given designation: UnitName[Stones[1]] = () => "st".tt
+  given designation: Designation[Stones[1]] = () => "st".tt
   erased given ratio: Ratio[Kilograms[1] & Stones[-1], 6.35029318] = !!

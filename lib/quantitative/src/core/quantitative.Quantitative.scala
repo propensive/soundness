@@ -55,8 +55,8 @@ object Quantitative extends Quantitative2:
 
     inline def value: Double =
       val double: Double = compiletime.summonFrom:
-        case unitsOffset: UnitsOffset[`units`] => (quantity - unitsOffset.value()): Double
-        case _                                   => quantity: Double
+        case offset: Offset[`units`] => (quantity - offset.value()): Double
+        case _                       => quantity: Double
 
       double
 

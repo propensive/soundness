@@ -41,5 +41,5 @@ import rudiments.*
 trait Days[Power <: Nat] extends Units[Power, Time]
 
 object Days:
-  given designation: UnitName[Hours[1]] = () => "d".tt
+  given designation: Designation[Hours[1]] = () => "d".tt
   erased given ratio: Ratio[Seconds[1] & Days[-1], 86400.0] = !!
