@@ -43,11 +43,11 @@ import wisteria.*
 
 import html5.*
 
-object Formulable extends ProductDerivable[Formulable]:
+object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
   given elicitable: [value]
         => (elicitable: value is Elicitable)
-              => (renderable: elicitable.Operand is Renderable into Phrasing)
-              =>  value is Formulable:
+        => (renderable: elicitable.Operand is Renderable into Phrasing)
+        =>  value is Formulable:
 
     def fields(prefix: Text, legend: Text, query: Query, errors: Errors)
        (using formulation: Formulation)

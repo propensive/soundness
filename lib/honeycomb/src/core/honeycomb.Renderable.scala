@@ -41,14 +41,14 @@ import spectacular.*
 object Renderable:
   given showable: [value: Showable] => value is Renderable into Phrasing = value => List(value.show)
 
-  given message: Message is Renderable into Phrasing = message => List:
-    html5.Span:
-      message.segments.map:
-        case text: Text       => text
-        case message: Message => html5.Em(message.html)
+  given message: Message is Renderable into Phrasing = message =>
+    message.segments.flatMap:
+      case text: Text       => List(text)
+      case message: Message => message.html
+
 
   given abstractable: [value: Abstractable across HtmlContent into List[Sgml]]
-        =>  value is Renderable:
+        => value is Renderable:
     type Self = value
     type Result = Label
 
