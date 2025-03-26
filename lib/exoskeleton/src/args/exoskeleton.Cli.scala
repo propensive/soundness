@@ -43,7 +43,9 @@ import language.experimental.captureChecking
 
 object Cli:
   def arguments
-       (textArguments: Iterable[Text], focus: Optional[Int] = Unset, position: Optional[Int] = Unset)
+       (textArguments: Iterable[Text],
+        focus:         Optional[Int] = Unset,
+        position:      Optional[Int] = Unset)
   :     List[Argument] =
 
     textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
