@@ -40,8 +40,8 @@ import vacuous.*
 
 import language.experimental.pureFunctions
 
-extension (encoding: Encoding { type CanEncode = true }) def encoder: CharEncoder =
-  CharEncoder(encoding)
+extension (encoding: Encoding { type CanEncode = true })
+  def encoder: CharEncoder = CharEncoder(encoding)
 
 extension (char: Char)
   def whitespace: Boolean = Character.isWhitespace(char)

@@ -39,8 +39,7 @@ import scala.collection.BuildFrom
 
 given realm: Realm = realm"mercator"
 
-extension [value, functor[_]](using functor: Functor[functor])
-   (value: functor[value])
+extension [value, functor[_]](using functor: Functor[functor])(value: functor[value])
   def map[value2](lambda: value => value2): functor[value2] =
     functor.map(value)(lambda)
 
@@ -56,8 +55,8 @@ extension (text: into Text)
     builder.toString.tt
 
 extension [monad[_], collection[element] <: Iterable[element], element]
-   (elems: collection[monad[element]])
-   (using monad: Monad[monad])
+          (elems: collection[monad[element]])
+          (using monad: Monad[monad])
 
   def sequence(using buildFrom: BuildFrom[List[element], element, collection[element]])
   :     monad[collection[element]] =
@@ -69,8 +68,7 @@ extension [monad[_], collection[element] <: Iterable[element], element]
 
     recur(elems, monad.point(List())).map(_.reverse.to(buildFrom.toFactory(Nil)))
 
-extension [collection[element] <: Iterable[element], element]
-   (elems: collection[element])
+extension [collection[element] <: Iterable[element], element](elems: collection[element])
 
   def traverse[element2, monad[_]](lambda: element => monad[element2])
      (using monad:     Monad[monad],
