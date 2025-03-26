@@ -156,9 +156,7 @@ object Data:
 
           Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
-  def plan(start: StationRow, end: StationRow, time: Text)(using Online)
-  :     Plan raises UserError =
-
+  def plan(start: StationRow, end: StationRow, time: Text)(using Online): Plan raises UserError =
     val modes = t"tube,elizabeth-line,dlr,overground"
 
     val sourceUrl =
