@@ -369,9 +369,7 @@ trait Quantitative2:
        '{ Divisible[Quantity[left], Quantity[right], Double]: (left, right) =>
             ${Quantitative.multiply('left, 'right, true).asExprOf[Double]} }
 
-  def sqrtTypeclass[value <: Measure: Type](using Quotes)
-  :     Expr[Quantity[value] is Rootable[2]] =
-
+  def sqrtTypeclass[value <: Measure: Type](using Quotes): Expr[Quantity[value] is Rootable[2]] =
     val units = UnitsMap[value]
 
     if !units.map.values.all(_.power%2 == 0)
@@ -390,8 +388,7 @@ trait Quantitative2:
 
           '{Rootable[2, Quantity[value], Quantity[result]]($cast(_))}
 
-  def cbrtTypeclass[value <: Measure: Type](using Quotes)
-  :     Expr[Quantity[value] is Rootable[3]] =
+  def cbrtTypeclass[value <: Measure: Type](using Quotes): Expr[Quantity[value] is Rootable[3]] =
 
     val units = UnitsMap[value]
 

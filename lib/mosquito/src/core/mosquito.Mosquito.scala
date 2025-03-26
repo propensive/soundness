@@ -47,8 +47,7 @@ object Mosquito:
   object Vector:
     def apply(elems: Tuple): Vector[Tuple.Union[elems.type], Tuple.Size[elems.type]] = elems
 
-    def take[element](list: List[element], size: Int)
-    :     Optional[Vector[element, size.type]] =
+    def take[element](list: List[element], size: Int): Optional[Vector[element, size.type]] =
       if size == 0 then Zero else list match
         case Nil          => Unset
         case head :: tail => take(tail, size - 1).let(head *: _)
@@ -123,8 +122,7 @@ object Mosquito:
       recur(left)
 
     @targetName("add")
-    def + [right](right: Vector[right, size])
-       (using addition: left is Addable by right)
+    def + [right](right: Vector[right, size])(using addition: left is Addable by right)
     :     Vector[addition.Result, size] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
@@ -142,8 +140,7 @@ object Mosquito:
       recur(left, right)
 
     @targetName("sub")
-    def - [right](right: Vector[right, size])
-       (using sub: left is Subtractable by right)
+    def - [right](right: Vector[right, size])(using sub: left is Subtractable by right)
     :     Vector[sub.Result, size] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
@@ -160,15 +157,13 @@ object Mosquito:
       recur(left, right)
 
     @targetName("scalarMul")
-    def * [right](right: right)
-       (using multiplication: left is Multiplicable by right)
+    def * [right](right: right)(using multiplication: left is Multiplicable by right)
     :     Vector[multiplication.Result, size] =
 
       map(_*right)
 
     @targetName("scalarDiv")
-    def / [right](right: right)(using div: left is Divisible by right)
-    :     Vector[div.Result, size] =
+    def / [right](right: right)(using div: left is Divisible by right): Vector[div.Result, size] =
 
       map(_/right)
 

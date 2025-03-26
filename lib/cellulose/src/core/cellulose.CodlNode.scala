@@ -87,13 +87,11 @@ case class CodlNode(data: Optional[Data] = Unset, extra: Optional[Extra] = Unset
     case data: Data => data
 
   def selectDynamic(key: String)(using erased DynamicCodlEnabler)
-     (using Tactic[MissingValueError])
-  :     List[Data] =
+  :     List[Data] raises MissingValueError =
     data.lest(MissingValueError(key.show)).selectDynamic(key)
 
   def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)
-     (using Tactic[MissingValueError])
-  :     Data =
+  :     Data raises MissingValueError =
     selectDynamic(key)(idx)
 
   def untyped: CodlNode =

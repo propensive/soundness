@@ -114,8 +114,7 @@ object Url:
   given communicable: [scheme <: Label] => Url[scheme] is Communicable =
     url => Message(url.show)
 
-  def parse[scheme <: Label](value: Text)
-  :     Url[scheme] raises UrlError =
+  def parse[scheme <: Label](value: Text): Url[scheme] raises UrlError =
     import UrlError.Expectation.*
 
     safely(value.where(_ == ':')).asMatchable match

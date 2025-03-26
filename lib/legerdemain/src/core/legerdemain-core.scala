@@ -48,11 +48,12 @@ def elicit[value: Formulable]
    (query: Optional[Query] = Unset, errors: Errors, submit: Optional[Text])
    (using formulation: Formulation)
 :     Html[Flow] =
-  formulation.form(value.fields(t"", t"", query.or(Query.empty), errors), submit)
+  formulation.form(value.fields(t"", t"", query.or(Query.empty), errors, formulation), submit)
 
 extension [formulable: {Formulable, Encodable in Query}](value: formulable)
   def edit(errors: Errors, submit: Optional[Text])(using formulation: Formulation): Html[Flow] =
-    formulation.form(formulable.fields(t"", t"", formulable.encoded(value), errors), submit)
+    formulation.form
+     (formulable.fields(t"", t"", formulable.encoded(value), errors, formulation), submit)
 
 package formulations:
   given default: Formulation:

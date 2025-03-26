@@ -49,8 +49,7 @@ object Element:
 
     new Element(labelString, attributes, flatten(children))
 
-  private def flatten[child <: Label]
-     (nodes: Seq[Optional[Html[child]] | Seq[Html[child]]])
+  private def flatten[child <: Label](nodes: Seq[Optional[Html[child]] | Seq[Html[child]]])
   :     Seq[Html[child]] =
 
     nodes.flatMap:

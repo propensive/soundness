@@ -182,8 +182,7 @@ object Regex:
       case other =>
         abort(RegexError(index, UnexpectedChar))
 
-    def group
-       (start: Int, children: List[Group], top: Boolean, escape: Boolean, charClass: Boolean)
+    def group(start: Int, children: List[Group], top: Boolean, escape: Boolean, charClass: Boolean)
     :     Group =
 
       current() match

@@ -37,15 +37,13 @@ import prepositional.*
 
 object SymmetricKey:
   given encodable: [cipher <: Cipher] => SymmetricKey[cipher] is Encodable in Bytes = _.bytes
-  def generate[cipher <: Cipher & Symmetric]()(using cipher: cipher)
-  :     SymmetricKey[cipher] =
 
+  def generate[cipher <: Cipher & Symmetric]()(using cipher: cipher): SymmetricKey[cipher] =
     SymmetricKey(cipher.genKey())
 
 class SymmetricKey[cipher <: Cipher](private[enigmatic] val bytes: Bytes)
 extends PrivateKey[cipher](bytes):
-  def encrypt[value: Encodable in Bytes](value: value)(using cipher & Encryption)
-  :     Bytes =
+  def encrypt[value: Encodable in Bytes](value: value)(using cipher & Encryption): Bytes =
     public.encrypt(value)
 
   def verify[value: Encodable in Bytes](value: value, signature: Signature[cipher])

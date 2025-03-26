@@ -133,8 +133,7 @@ case class WebDriver(server: Browser#Server):
       url(get(t"url").url.as[Text])
 
     @targetName("at")
-    infix def / [element: Focusable](value: element)
-    :     List[Element] logs HttpEvent =
+    infix def / [element: Focusable](value: element): List[Element] logs HttpEvent =
 
       case class Data(`using`: Text, value: Text)
 
@@ -144,8 +143,7 @@ case class WebDriver(server: Browser#Server):
       . map(_(Wei).as[Text])
       . map(Element(_))
 
-    def element[element: Focusable](value: element)
-    :     Element logs HttpEvent =
+    def element[element: Focusable](value: element): Element logs HttpEvent =
 
       case class Data(`using`: Text, value: Text)
       val e = post(t"element", Data(element.strategy, element.focus(value)).json)

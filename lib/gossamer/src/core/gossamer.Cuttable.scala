@@ -82,7 +82,8 @@ object Cuttable:
   given textRegex: Text is Cuttable by Regex = (text, regex, limit) =>
     text.s.split(regex.pattern.s, limit).nn.map(_.nn.tt).to(List)
 
-  given textualText: [textual] => (cuttable: textual is Cuttable by Text) => textual is Cuttable by Char =
+  given textualText: [textual] => (cuttable: textual is Cuttable by Text)
+        => textual is Cuttable by Char =
     (text, delimiter, limit) =>
       cuttable.cut(text, delimiter.toString.tt, limit)
 

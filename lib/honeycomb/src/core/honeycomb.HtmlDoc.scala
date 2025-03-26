@@ -53,8 +53,7 @@ object HtmlDoc:
       def genericize(doc: HtmlDoc): HttpStreams.Content =
         (t"text/html; charset=${encoder.encoding.name}", Stream(HtmlDoc.serialize(doc).bytes))
 
-  def serialize[output](doc: HtmlDoc, maxWidth: Int = -1)
-     (using serializer: HtmlSerializer[output])
+  def serialize[output](doc: HtmlDoc, maxWidth: Int = -1)(using serializer: HtmlSerializer[output])
   :     output =
     serializer.serialize(doc, maxWidth)
 

@@ -88,10 +88,7 @@ object Path:
 
       recur(left.textDescent, right.ascent)
 
-  def apply
-     [root <: Root on platform,
-      element,
-      platform: {Navigable by element, Radical from root}]
+  def apply[root <: Root on platform, element, platform: {Navigable by element, Radical from root}]
      (root0: root, elements: List[element])
   :     Path on platform =
     if elements.isEmpty then root0 else
@@ -197,8 +194,7 @@ extends Pathlike:
     val left0 = textDescent.drop(difference)
     val right0 = right.textDescent.drop(-difference)
 
-    def recur(left: List[Text], right: List[Text], size: Int, count: Int)
-    :     Path on Platform =
+    def recur(left: List[Text], right: List[Text], size: Int, count: Int): Path on Platform =
       if left.isEmpty
       then Path.from(textRoot, left0.drop(size - count), separator, caseSensitivity)
       else if left.head == right.head then recur(left.tail, right.tail, size + 1, count + 1)

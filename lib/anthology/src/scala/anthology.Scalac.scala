@@ -79,8 +79,7 @@ case class Scalac[version <: Scalac.All](options: List[ScalacOption[version]]):
 
     object ProgressApi extends dtdsi.ProgressCallback:
       private var last: Int = -1
-      override def informUnitStarting
-         (stage: String | Null, unit: dtd.CompilationUnit | Null)
+      override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
       :     Unit =
         ()
 

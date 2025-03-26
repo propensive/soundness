@@ -60,8 +60,7 @@ package strategies:
     def record(error: Diagnostics ?=> exception): Unit = exception.status(error).terminate()
     def abort(error: Diagnostics ?=> exception): Nothing = exception.status(error).terminate()
 
-  given uncheckedErrors: [error <: Exception]
-        => (erased error is Unchecked) => Tactic[error]:
+  given uncheckedErrors: [error <: Exception] => (erased error is Unchecked) => Tactic[error]:
     given diagnostics: Diagnostics = errorDiagnostics.stackTraces
     given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
     def record(error: Diagnostics ?=> error): Unit = throw error
@@ -80,8 +79,7 @@ def abort[success, exception <: Exception: Tactic](error: Diagnostics ?=> except
   exception.abort(error)
 
 def safely[error <: Exception](using erased Void)[success]
-   (block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=>
-                success)
+   (block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=> success)
 :     Optional[success] =
 
   try boundary: label ?=>
@@ -150,8 +148,7 @@ inline def focus[focus, result](using foci: Foci[focus])
   val length = foci.length
   try block finally foci.supplement(foci.length - length, transform(using _))
 
-transparent inline def tend(inline block: Exception ~> Exception): Any =
-  ${Contingency.tend('block)}
+transparent inline def tend(inline block: Exception ~> Exception): Any = ${Contingency.tend('block)}
 
 extension [lambda[_]](inline tend: Tend[lambda])
   inline def within[result](inline lambda: lambda[result]): result =
@@ -161,12 +158,10 @@ transparent inline def mend[result](inline block: Exception ~> result): Any =
   ${Contingency.mend[result]('block)}
 
 extension [result, lambda[_]](inline mend: Mend[result, lambda])
-  inline def within[result2 >: result](inline lambda: lambda[result2])
-  :     result2 =
+  inline def within[result2 >: result](inline lambda: lambda[result2]): result2 =
     ${Contingency.mendWithin[lambda, result2]('mend, 'lambda)}
 
-transparent inline def track[focus](using erased Void)[accrual <: Exception]
-   (accrual: accrual)
+transparent inline def track[focus](using erased Void)[accrual <: Exception](accrual: accrual)
    (inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual)
 :     Any =
   ${Contingency.track[accrual, focus]('accrual, 'block)}
@@ -175,6 +170,9 @@ transparent inline def validate[focus](using erased Void)[accrual](accrual: accr
    (inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual)
 :     Any =
   ${Contingency.validate[accrual, focus]('accrual, 'block)}
+
+transparent inline def aggregate(using Diagnostics): Any = validate[Text](Errors()):
+  case error: Error => accrual + (focus.or("unknown".tt), error)
 
 transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
    (inline block: (accrual: accrual) ?=> Exception ~> accrual)
@@ -185,28 +183,24 @@ extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lamb
   inline def within[result](inline lambda: lambda[result])
      (using tactic: Tactic[accrual], diagnostics: Diagnostics)
   :     result =
-    ${Contingency.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic,
-        'diagnostics)}
+    ${Contingency.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic, 'diagnostics)}
 
 extension [accrual <: Exception,  lambda[_], focus]
    (inline track: Tracking[accrual, lambda, focus])
   inline def within[result](inline lambda: Foci[focus] ?=> lambda[result])
      (using tactic: Tactic[accrual], diagnostics: Diagnostics)
   :     result =
-    ${Contingency.trackWithin[accrual, lambda, result, focus]('track, 'lambda,
-        'tactic, 'diagnostics)}
+    ${Contingency.trackWithin[accrual, lambda, result, focus]('track, 'lambda, 'tactic,
+          'diagnostics)}
 
 extension [accrual <: Exception,  lambda[_], focus]
     (inline validate: Validate[accrual, lambda, focus])
-  inline def within(inline lambda: Foci[focus] ?=> lambda[Any])
-     (using diagnostics: Diagnostics)
+  inline def within(inline lambda: Foci[focus] ?=> lambda[Any])(using diagnostics: Diagnostics)
   :     accrual =
-    ${Contingency.validateWithin[accrual, lambda, focus]('validate, 'lambda,
-          'diagnostics)}
+    ${Contingency.validateWithin[accrual, lambda, focus]('validate, 'lambda, 'diagnostics)}
 
 extension [value](optional: Optional[value])
-  def lest[success, error <: Exception: Tactic](error: Diagnostics ?=> error)
-  :     value =
+  def lest[success, error <: Exception: Tactic](error: Diagnostics ?=> error): value =
     optional.or(abort(error))
 
   def dare[error <: Exception](using erased Void)[success]

@@ -55,8 +55,7 @@ sealed trait Executable:
   def fork[result]()(using working: WorkingDirectory)
   :     Process[Exec, result] logs ExecEvent raises ExecError
 
-  def exec[result: Computable]()
-     (using working: WorkingDirectory)
+  def exec[result: Computable]()(using working: WorkingDirectory)
   :     result logs ExecEvent raises ExecError =
 
     fork[result]().await()

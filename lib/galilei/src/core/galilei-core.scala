@@ -215,7 +215,7 @@ extension [platform <: Filesystem](path: Path on platform)
     moveTo(unsafely(destination.child(path.textDescent.head)))
 
   def symlinkTo(destination: Path on platform)
-     (using overwritePreexisting:    OverwritePreexisting on platform,
+     (using overwritePreexisting:     OverwritePreexisting on platform,
             createNonexistentParents: CreateNonexistentParents on platform)
   :     Path on platform raises IoError =
 

@@ -157,8 +157,7 @@ def cli[bus <: Matchable](using executive: Executive)
     Log.warn(DaemonLogEvent.Shutdown)
     pid.let(terminatePid.fulfill(_)).or(termination)
 
-  def makeClient(socket: jn.Socket)
-     (using Monitor, Stdio, Codicil)
+  def makeClient(socket: jn.Socket)(using Monitor, Stdio, Codicil)
   :     Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
 
     async:

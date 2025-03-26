@@ -50,8 +50,7 @@ object OutlineConverter extends HtmlConverter():
     List(Ul(recur(structure(Unset, nodes.to(List), Nil))*))
 
   @tailrec
-  def structure
-     (minimum: Optional[Int], nodes: List[Markdown.Ast.Node], stack: List[List[Entry]])
+  def structure(minimum: Optional[Int], nodes: List[Markdown.Ast.Node], stack: List[List[Entry]])
   :     List[Entry] =
     nodes match
       case Nil => stack match

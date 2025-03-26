@@ -48,8 +48,7 @@ import rudiments.*
 import vacuous.*
 
 extension [value](value: value)
-  def stream[element](using readable: value is Readable by element)
-  :     Stream[element] =
+  def stream[element](using readable: value is Readable by element): Stream[element] =
     readable.stream(value)
 
   inline def read[result]: result =
@@ -163,9 +162,7 @@ extension [element](stream: Stream[element])
 
     val Limit = maxSize.or(Int.MaxValue)
 
-    def recur(stream: Stream[element], list: List[element], count: Int)
-    :     Stream[List[element]] =
-
+    def recur(stream: Stream[element], list: List[element], count: Int): Stream[List[element]] =
       count match
         case 0 => safely(async(stream.isEmpty).await()) match
           case Unset => recur(stream, Nil, 0)
@@ -182,8 +179,7 @@ extension [element](stream: Stream[element])
 
     Stream.defer(recur(stream, Nil, 0))
 
-  def parallelMap[element2](lambda: element => element2)(using Monitor)
-  :     Stream[element2] =
+  def parallelMap[element2](lambda: element => element2)(using Monitor): Stream[element2] =
 
     val out: Spool[element2] = Spool()
 
@@ -211,13 +207,11 @@ package lineSeparation:
     case _: String => adaptiveLinefeed
 
 extension (obj: Stream.type)
-  def multiplex[element](streams: Stream[element]*)(using Monitor)
-  :     Stream[element] =
+  def multiplex[element](streams: Stream[element]*)(using Monitor): Stream[element] =
 
     multiplexer(streams*).stream
 
-  def multiplexer[element](streams: Stream[element]*)(using Monitor)
-  :     Multiplexer[Any, element] =
+  def multiplexer[element](streams: Stream[element]*)(using Monitor): Multiplexer[Any, element] =
 
     val multiplexer = Multiplexer[Any, element]()
     streams.zipWithIndex.map(_.swap).each(multiplexer.add)

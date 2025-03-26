@@ -42,8 +42,7 @@ import spectacular.*
 import turbulence.*
 
 object Servable:
-  def apply[response](medium: response => Medium)
-     (lambda: response => Stream[Bytes])
+  def apply[response](medium: response => Medium)(lambda: response => Stream[Bytes])
   :     response is Servable = response =>
 
     val headers = List(Http.Header(t"content-type", medium(response).show))

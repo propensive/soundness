@@ -74,8 +74,7 @@ object Nomenclature2:
       case _ =>
         panic(m"StringContext did not contains Strings")
 
-  def parse2[platform: Type, name <: String: Type](scrutinee: Expr[Name[platform]])
-     (using Quotes)
+  def parse2[platform: Type, name <: String: Type](scrutinee: Expr[Name[platform]])(using Quotes)
   :     Expr[Boolean] =
     parse[platform, name]
     '{${Expr(constant[name])}.tt == $scrutinee.text}
@@ -85,8 +84,7 @@ object Nomenclature2:
     TypeRepr.of[text].asMatchable.absolve match
       case ConstantType(StringConstant(value)) => value.tt.asInstanceOf[text]
 
-  def companion[companion: Typeable](using Quotes)(symbol: quotes.reflect.Symbol)
-  :     companion =
+  def companion[companion: Typeable](using Quotes)(symbol: quotes.reflect.Symbol): companion =
     Class.forName(s"${symbol.companionModule.fullName}$$").nn.getField("MODULE$").nn.get(null) match
       case module: `companion` => module
       case _                   => halt(m"The companion object did not have the expected type.")

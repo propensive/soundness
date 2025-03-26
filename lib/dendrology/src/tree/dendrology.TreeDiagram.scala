@@ -49,8 +49,7 @@ object TreeDiagram:
     (diagram, termcap) =>
       (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
-  def by[node](getChildren: node => Seq[node])(roots: node*)
-  :     TreeDiagram[node] =
+  def by[node](getChildren: node => Seq[node])(roots: node*): TreeDiagram[node] =
     def recur(level: List[TreeTile], input: Seq[node]): Stream[(List[TreeTile], node)] =
       val last = input.size - 1
       input.zipWithIndex.to(Stream).flatMap: (item, idx) =>

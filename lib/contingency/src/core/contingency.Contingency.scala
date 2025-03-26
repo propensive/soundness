@@ -65,8 +65,7 @@ object Contingency:
       case other =>
         halt(m"unexpected AST: ${other.toString}")
 
-  private def mapping[error <: Exception: Type](using Quotes)
-     (handler: quotes.reflect.Term)
+  private def mapping[error <: Exception: Type](using Quotes)(handler: quotes.reflect.Term)
   :     Map[quotes.reflect.Symbol, quotes.reflect.Symbol] =
 
     import quotes.reflect.*
@@ -166,8 +165,7 @@ object Contingency:
       case '[type typeLambda[_]; typeLambda] => '{Tend[typeLambda]($handler)}
 
   def track[accrual <: Exception: Type, focus: Type]
-     (accrual: Expr[accrual],
-      handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
+     (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
      (using Quotes)
   :     Expr[Any] =
 
@@ -189,8 +187,7 @@ object Contingency:
             focus, accrual))}
 
   def validate[accrual: Type, focus: Type]
-     (accrual: Expr[accrual],
-      handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
+     (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
      (using Quotes)
   :     Expr[Any] =
 
@@ -212,8 +209,7 @@ object Contingency:
             focus, accrual))}
 
   def accrue[accrual <: Exception: Type]
-     (accrual: Expr[accrual],
-      handler: Expr[accrual ?=> Exception ~> accrual])
+     (accrual: Expr[accrual], handler: Expr[accrual ?=> Exception ~> accrual])
      (using Quotes)
   :     Expr[Any] =
 
@@ -233,9 +229,7 @@ object Contingency:
       case '[type typeLambda[_]; typeLambda] =>
         '{Accrue[accrual, typeLambda]($accrual, accrual ?=> $handler(using accrual))}
 
-  def mend[result: Type](handler: Expr[Exception ~> result])(using Quotes)
-  :     Expr[Any] =
-
+  def mend[result: Type](handler: Expr[Exception ~> result])(using Quotes): Expr[Any] =
     import quotes.reflect.*
 
     val errors = mapping(handler.asTerm)

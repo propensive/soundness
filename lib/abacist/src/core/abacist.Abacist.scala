@@ -100,8 +100,7 @@ object Abacist:
     recur(multipliers[CountUnits], '{ListMap()})
 
   def multiplyCount[countUnits <: Tuple: Type]
-     (count: Expr[Count[countUnits]], multiplier: Expr[Double], division: Boolean)
-     (using Quotes)
+     (count: Expr[Count[countUnits]], multiplier: Expr[Double], division: Boolean)(using Quotes)
   :     Expr[Any] =
 
     if division then '{Count.fromLong[countUnits](($count.longValue/$multiplier + 0.5).toLong)}
@@ -130,8 +129,7 @@ object Abacist:
 
     '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[Count[countUnits]]}
 
-  def get[units <: Tuple: Type, unit <: Units[1, ? <: Dimension]: Type]
-     (value: Expr[Count[units]])
+  def get[units <: Tuple: Type, unit <: Units[1, ? <: Dimension]: Type](value: Expr[Count[units]])
      (using Quotes)
   :     Expr[Int] =
 

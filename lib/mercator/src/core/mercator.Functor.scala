@@ -42,5 +42,4 @@ trait Functor[functor[_]]:
     def map[value2](lambda: value => value2): functor[value2] =
       apply(value)(lambda)
 
-  def apply[value, value2](value: functor[value])(lambda: value => value2)
-  :     functor[value2]
+  def apply[value, value2](value: functor[value])(lambda: value => value2): functor[value2]

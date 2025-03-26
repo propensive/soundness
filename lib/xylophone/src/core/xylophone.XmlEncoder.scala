@@ -38,7 +38,8 @@ import spectacular.*
 import wisteria.*
 
 object XmlEncoder extends Derivation[XmlEncoder]:
-  given text: XmlEncoder[Text] = text => XmlAst.Element(XmlName(t"Text"), List(XmlAst.Textual(text)))
+  given text: XmlEncoder[Text] =
+    text => XmlAst.Element(XmlName(t"Text"), List(XmlAst.Textual(text)))
 
   given string: XmlEncoder[String] =
     string => XmlAst.Element(XmlName(t"String"), List(XmlAst.Textual(string.tt)))

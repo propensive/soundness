@@ -43,8 +43,7 @@ import vacuous.*
 import Control.*
 
 extension [bindable: Bindable](socket: bindable)
-  def listen[input](using Monitor, Codicil)[result]
-     (lambda: bindable.Input => bindable.Output)
+  def listen[input](using Monitor, Codicil)[result](lambda: bindable.Input => bindable.Output)
   :     SocketService raises BindError =
 
     val binding = bindable.bind(socket)
@@ -62,15 +61,13 @@ extension [bindable: Bindable](socket: bindable)
         safely(task.await())
 
 extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
-  def transmit[message: Transmissible](input: message)
-  :     Stream[Bytes] =
+  def transmit[message: Transmissible](input: message): Stream[Bytes] =
     val connection = serviceable.connect(endpoint)
 
     serviceable.transmit(connection, message.serialize(input))
     serviceable.receive(connection)
 
-  def exchange[state](initialState: state)[message: Ingressive]
-     (initialMessage: message = Bytes())
+  def exchange[state](initialState: state)[message: Ingressive](initialMessage: message = Bytes())
      (handle: (state: state) ?=> message => Control[state])
   :     state =
 

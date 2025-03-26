@@ -41,8 +41,7 @@ import language.dynamics
 case class Catalog[key, value: ClassTag](values: IArray[value]):
   def size: Int = values.length
 
-  inline def apply(accessor: (`*`: Proxy[key, value, 0]) ?=> Proxy[key, value, ?])
-  :     value =
+  inline def apply(accessor: (`*`: Proxy[key, value, 0]) ?=> Proxy[key, value, ?]): value =
     values(accessor(using Proxy()).id.vouch)
 
   def map[value2: ClassTag](lambda: value => value2): Catalog[key, value2] =

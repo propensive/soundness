@@ -54,8 +54,7 @@ extension [remote: Connectable](value: remote)
     Endpoint(remote.remote(value), port)
 
 extension [port](port: port)
-  def serve[protocol: Protocolic over port]
-     (handler: protocol.Request ?=> protocol.Response)
+  def serve[protocol: Protocolic over port](handler: protocol.Request ?=> protocol.Response)
   :     protocol.Server =
     protocol.server(port)(handler)
 

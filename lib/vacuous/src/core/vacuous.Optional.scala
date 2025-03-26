@@ -67,15 +67,12 @@ extension [value](optional: Optional[value])(using Optionality[optional.type])
   def option: Option[value] = if absent then None else Some(vouch)
   def assume(using absentValue: CanThrow[UnsetError]): value = optional.or(throw UnsetError())
 
-  inline def lay[value2](inline alternative: => value2)
-     (inline lambda: value => value2)
-  :     value2 =
+  inline def lay[value2](inline alternative: => value2)(inline lambda: value => value2): value2 =
 
     if absent then alternative else lambda(vouch)
 
 
-  inline def layGiven[value2](inline alternative: => value2)
-     (inline block: value ?=> value2)
+  inline def layGiven[value2](inline alternative: => value2)(inline block: value ?=> value2)
   :     value2 =
 
     if absent then alternative else block(using vouch)

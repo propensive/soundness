@@ -43,37 +43,33 @@ import wisteria.*
 
 import html5.*
 
-object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
+object Formulable extends ProductDerivable[Formulable]:
   given elicitable: [value]
         => (elicitable: value is Elicitable)
         => (renderable: elicitable.Operand is Renderable into Phrasing)
         =>  value is Formulable:
 
-    def fields(prefix: Text, legend: Text, query: Query, errors: Errors)
-       (using formulation: Formulation)
+    def fields(prefix: Text, legend: Text, query: Query, errors: Errors, formulation: Formulation)
     :     List[Html[Flow]] =
       val validation: Optional[Message] = errors(prefix).let(_.message)
       val widget = renderable.html(elicitable.widget(prefix, legend, query().or(t"")))
       List(formulation.element(widget, legend, validation, false))
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Formulable =
-    new Formulable:
-      type Self = derivation
-      def fields(prefix: Text, legend: Text, query: Query, errors: Errors)(using Formulation)
-      :     List[Html[Flow]] =
-        val content: IArray[Html[Flow]] =
-          contexts:
-            [field] => context =>
-              val label2 = if prefix == t"" then label else t"$prefix.$label"
-              val legend = label.uncamel.map(_.lower.capitalize).spaced
-              context.fields(label2, legend, query(label), errors)
+    (prefix, legend, query, errors, formulation) =>
+      val content: IArray[Html[Flow]] =
+        contexts:
+          [field] => context =>
+            val label2 = if prefix == t"" then label else t"$prefix.$label"
+            val legend = label.uncamel.map(_.lower.capitalize).spaced
+            context.fields(label2, legend, query(label), errors, formulation)
 
-          . flatten
+        . flatten
 
-        List(Fieldset(Legend(legend), content))
+      List(Fieldset(Legend(legend), content))
 
 trait Formulable:
   type Self
 
-  def fields(prefix: Text, legend: Text, query: Query, errors: Errors)(using Formulation)
+  def fields(prefix: Text, legend: Text, query: Query, errors: Errors, formulation: Formulation)
   : List[Html[Flow]]

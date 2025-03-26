@@ -88,13 +88,13 @@ object Query extends Dynamic:
   given booleanDecodable: Boolean is Decodable in Query = _().present
 
   inline given encodable: [value] => value is Encodable in Query = summonFrom:
-    case given (`value` is Encodable in Text) =>
-      value => Query.of(value.encode)
+    case given (`value` is Encodable in Text) => value => Query.of(value.encode)
 
     case given ProductReflection[`value` & Product] =>
       EncodableDerivation.join[value & Product].asInstanceOf[value is Encodable in Query]
 
-  given showable: Query is Showable = _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
+  given showable: Query is Showable =
+    _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
 
   inline given decodable: [value] => value is Decodable in Query =
     summonFrom:

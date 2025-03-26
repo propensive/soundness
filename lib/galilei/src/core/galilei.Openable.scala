@@ -101,8 +101,7 @@ trait Openable:
   def init(value: Self, options: List[Operand]): Carrier
   def handle(carrier: Carrier): Result
 
-  def open[result](value: Self, lambda: Result => result, options: List[Operand])
-  :     result =
+  def open[result](value: Self, lambda: Result => result, options: List[Operand]): result =
     val carrier = init(value, options)
     try lambda(handle(carrier)) finally close(carrier)
 

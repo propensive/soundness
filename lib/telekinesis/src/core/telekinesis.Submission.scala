@@ -32,10 +32,27 @@
                                                                                                   */
 package telekinesis
 
+import anticipation.*
+import contingency.*
+import distillate.*
+import fulminate.*
 import honeycomb.*
 import legerdemain.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
 
-enum Submission[value]:
-  case Complete(value: value)
-  case Invalid(query: Query)
-  case Incomplete(form: Html[Flow])
+case class Submission[value](query: Optional[Query]):
+  def fresh: Boolean = query.absent
+  def value(using value is Decodable in Query): Optional[value] = query.let(_.decode[value])
+
+  def form
+     (submit: Optional[Text]   = Unset,
+      value:  Optional[value]  = Unset,
+      errors: Optional[Errors] = Unset)
+     (using value is Formulable, value is Encodable in Query, Formulation)
+  :     Html[Flow] =
+
+    val data: Optional[Query] = query.or(value.let(_.encode))
+    import errorDiagnostics.stackTraces
+    elicit[value](query, errors.or(Errors()), submit)

@@ -40,8 +40,7 @@ import rudiments.*
 import vacuous.*
 
 extension [row](data: Seq[row])
-  def table[text: Textual](using tabulable: row is Tabulable[text])
-  :     Tabulation[text] =
+  def table[text: Textual](using tabulable: row is Tabulable[text]): Tabulation[text] =
 
     tabulable.tabulate(data)
 
@@ -104,8 +103,7 @@ package columnar:
       lines.to(IndexedSeq).flatMap(format(_, 0, 0, 0, Nil).reverse)
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
-    def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
-    :     Optional[Int] =
+    def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double): Optional[Int] =
       fixedWidth
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
@@ -115,8 +113,7 @@ package columnar:
         if line.length > width then line.keep(width - ellipsis.length)+text(ellipsis) else line
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
-    def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
-    :     Optional[Int] =
+    def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double): Optional[Int] =
       val naturalWidth = lines.map(_.length).max
       (maxWidth*slack).toInt.min(naturalWidth)
 
@@ -127,8 +124,7 @@ package columnar:
         if line.length > width then line.keep(width - ellipsis.length)+text(ellipsis) else line
 
   case class Collapsible(threshold: Double) extends Columnar:
-    def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
-    :     Optional[Int] =
+    def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double): Optional[Int] =
       if slack > threshold then lines.map(_.length).max else Unset
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)

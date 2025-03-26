@@ -46,8 +46,7 @@ object PublicKey:
   given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Bytes = _.bytes
 
 case class PublicKey[cipher <: Cipher](bytes: Bytes):
-  def encrypt[value: Encodable in Bytes](value: value)
-     (using algorithm: cipher & Encryption)
+  def encrypt[value: Encodable in Bytes](value: value)(using algorithm: cipher & Encryption)
   :     Bytes =
 
     algorithm.encrypt(value.bytestream, bytes)

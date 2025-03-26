@@ -146,8 +146,7 @@ package alphabets:
       Alphabet(Text(IArray.tabulate(256) { byte => (byte + '\u2800').toChar }), false)
 
 extension (value: Text)
-  def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme)
-  :     Bytes =
+  def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme): Bytes =
     deserializable.deserialize(value)
 
 extension (stream: Stream[Text])

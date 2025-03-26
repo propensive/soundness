@@ -92,9 +92,7 @@ object Mercator:
       new Functor[functor]:
         def point[value](value: value): functor[value] = ${pointExpr}.point(value)
 
-        def apply[value, value2](value: functor[value])
-           (lambda: value => value2)
-        :     functor[value2] =
+        def apply[value, value2](value: functor[value])(lambda: value => value2): functor[value2] =
           ${'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[value2])
             . appliedTo('lambda.asTerm).asExprOf[functor[value2]]}
     }
@@ -124,9 +122,7 @@ object Mercator:
            (value: monad[value])(lambda: value => value2): monad[value2] =
           ${functorExpr}.map(value)(lambda)
 
-        def bind
-           [value, value2]
-           (value: monad[value])(lambda: value => monad[value2])
+        def bind[value, value2](value: monad[value])(lambda: value => monad[value2])
         :     monad[value2] =
           ${'value.asTerm
             . select(flatMapMethods(0))

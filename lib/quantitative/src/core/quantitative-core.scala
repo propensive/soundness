@@ -56,9 +56,7 @@ extension [units <: Measure](quantity: into Quantity[units])
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
 
   @targetName("times2")
-  transparent inline infix def * [units2 <: Measure](inline quantity2: Quantity[units2])
-  :     Any =
-
+  transparent inline infix def * [units2 <: Measure](inline quantity2: Quantity[units2]): Any =
     ${Quantitative.multiply[units, units2]('quantity, 'quantity2, false)}
 
   @targetName("times3")
@@ -66,8 +64,7 @@ extension [units <: Measure](quantity: into Quantity[units])
     quantity*Quantity(double)
 
   @targetName("divide2")
-  transparent inline infix def / [units2 <: Measure](inline quantity2: Quantity[units2])
-  :     Any =
+  transparent inline infix def / [units2 <: Measure](inline quantity2: Quantity[units2]): Any =
 
     ${Quantitative.multiply[units, units2]('quantity, 'quantity2, true)}
 

@@ -51,9 +51,7 @@ object Panopticon:
     def make[from, path <: Tuple, to](): Lens[from, path, to] = 0
 
   extension [from](initLens: InitLens[from])
-    def apply[path <: Tuple, to]
-       (lambda: Aim[from, Zero] => Aim[to, path])
-    :     Lens[from, path, to] =
+    def apply[path <: Tuple, to](lambda: Aim[from, Zero] => Aim[to, path]): Lens[from, path, to] =
       0
 
   extension [from, path <: Tuple, to](lens: Lens[from, path, to])
@@ -68,8 +66,7 @@ object Panopticon:
     inline def update(aim: from, newValue: to): from =
       ${Panopticon.set[from, path, to]('aim, 'newValue)}
 
-  private def getPath[tuple <: Tuple: Type](path: List[String] = Nil)(using Quotes)
-  :     List[String] =
+  private def getPath[tuple <: Tuple: Type](path: List[String] = Nil)(using Quotes): List[String] =
     import quotes.reflect.*
 
     Type.of[tuple] match
@@ -91,9 +88,7 @@ object Panopticon:
       case _ =>
         halt(m"unexpectedly did not match")
 
-  def get[from: Type, path <: Tuple: Type, to: Type](value: Expr[from])
-     (using Quotes)
-  :     Expr[to] =
+  def get[from: Type, path <: Tuple: Type, to: Type](value: Expr[from])(using Quotes): Expr[to] =
 
     import quotes.reflect.*
 
@@ -115,8 +110,7 @@ object Panopticon:
 
     select[from](getPath[path](), value).asExprOf[to]
 
-  def set[from: Type, path <: Tuple: Type, to: Type]
-     (value: Expr[from], newValue: Expr[to])
+  def set[from: Type, path <: Tuple: Type, to: Type](value: Expr[from], newValue: Expr[to])
      (using Quotes)
   :     Expr[from] =
 
@@ -146,8 +140,7 @@ object Panopticon:
 
     rewrite(getPath[path](), value.asTerm).asExprOf[from]
 
-  def dereference[aim: Type, tuple <: Tuple: Type](member: Expr[String])(using Quotes)
-  :     Expr[Any] =
+  def dereference[aim: Type, tuple <: Tuple: Type](member: Expr[String])(using Quotes): Expr[Any] =
     import quotes.reflect.*
 
     val fieldName = member.valueOrAbort
