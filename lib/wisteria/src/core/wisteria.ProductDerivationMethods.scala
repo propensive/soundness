@@ -42,13 +42,16 @@ import scala.compiletime.*
 
 trait ProductDerivationMethods[typeclass[_]]:
   protected transparent inline def construct[derivation <: Product]
-     (using reflection: ProductReflection[derivation], requirement: ContextRequirement)
-     (inline lambda: [field] =>
-                          requirement.Optionality[typeclass[field]] =>
-                           (typeclass: requirement.Optionality[typeclass[field]],
-                            default:   Default[Optional[field]],
-                            label:     Text,
-                            index:     Int & FieldIndex[field]) ?=> field)
+                                    (using reflection: ProductReflection[derivation],
+                                           requirement: ContextRequirement)
+                                    (inline lambda: [field]
+                                                    =>  requirement.Optionality[typeclass[field]]
+                                                    => (typeclass: requirement.Optionality
+                                                                    [typeclass[field]],
+                                                        default:   Default[Optional[field]],
+                                                        label:     Text,
+                                                        index:     Int & FieldIndex[field])
+                                                    ?=> field)
   :     derivation =
 
     type Fields = reflection.MirroredElemTypes
@@ -60,20 +63,23 @@ trait ProductDerivationMethods[typeclass[_]]:
 
       . reverse
 
-  protected transparent inline def constructWith[constructor[_]]
-     (using requirement: ContextRequirement)
-     [derivation <: Product]
-     (using reflection: ProductReflection[derivation])
-     (inline bind:   [input, output] => constructor[input] =>
-                       (input => constructor[output]) => constructor[output],
-      inline pure:   [monadic] => monadic => constructor[monadic],
-      inline lambda: [field] =>
-                       requirement.Optionality[typeclass[field]] =>
-                        (typeclass: requirement.Optionality[typeclass[field]],
-                         default:   Default[Optional[field]],
-                         label:     Text,
-                         index:     Int & FieldIndex[field]) ?=>
-                           constructor[field])
+  protected transparent inline
+  def constructWith[constructor[_]]
+       (using requirement: ContextRequirement)
+       [derivation <: Product]
+       (using reflection: ProductReflection[derivation])
+       (inline bind:   [input, output]
+                       =>  constructor[input]
+                       => (input => constructor[output])
+                       =>  constructor[output],
+                           inline pure:   [monadic] => monadic => constructor[monadic],
+                           inline lambda: [field]
+                                          =>  requirement.Optionality[typeclass[field]]
+                                          => (typeclass: requirement.Optionality[typeclass[field]],
+                                              default:   Default[Optional[field]],
+                                              label:     Text,
+                                              index:     Int & FieldIndex[field])
+                                         ?=>  constructor[field])
   :     constructor[derivation] =
 
     type Fields = reflection.MirroredElemTypes
@@ -91,15 +97,18 @@ trait ProductDerivationMethods[typeclass[_]]:
       pure(reflection.fromProduct(tuple.reverse))
 
   protected transparent inline def contexts[derivation <: Product]
-     (using reflection: ProductReflection[derivation], requirement: ContextRequirement)
-     [result]
-     (inline lambda: [field] =>
-                       requirement.Optionality[typeclass[field]] =>
-                        (typeclass:   requirement.Optionality[typeclass[field]],
-                         default:     Default[Optional[field]],
-                         label:       Text,
-                         dereference: derivation => field,
-                         index:       Int & FieldIndex[field]) ?=> result)
+                                    (using reflection:  ProductReflection[derivation],
+                                           requirement: ContextRequirement)
+                                    [result]
+                                    (inline lambda: [field]
+                                                    =>  requirement.Optionality[typeclass[field]]
+                                                    => (typeclass:   requirement.Optionality
+                                                                      [typeclass[field]],
+                                                        default:     Default[Optional[field]],
+                                                        label:       Text,
+                                                        dereference: derivation => field,
+                                                        index:       Int & FieldIndex[field])
+                                                    ?=> result)
   :     IArray[result] =
 
     type Fields = reflection.MirroredElemTypes
@@ -124,10 +133,10 @@ trait ProductDerivationMethods[typeclass[_]]:
       case _                                                 => false
 
   protected transparent inline def complement[derivation <: Product, field]
-     (product: derivation)
-     (using fieldIndex:  Int & FieldIndex[field],
-            reflection:  ProductReflection[derivation],
-            requirement: ContextRequirement)
+                                    (product: derivation)
+                                    (using fieldIndex:  Int & FieldIndex[field],
+                                           reflection:  ProductReflection[derivation],
+                                           requirement: ContextRequirement)
   :     field =
 
     type Labels = reflection.MirroredElemLabels
@@ -141,15 +150,17 @@ trait ProductDerivationMethods[typeclass[_]]:
     . vouch
 
   protected transparent inline def fields[derivation <: Product](inline product: derivation)
-     (using requirement: ContextRequirement)
-     (using reflection: ProductReflection[derivation])
-     [result]
-     (inline lambda: [field] =>
-                       field =>
-                        (context: requirement.Optionality[typeclass[field]],
-                         default: Default[Optional[field]],
-                         label:   Text,
-                         index:   Int & FieldIndex[field]) ?=> result)
+                                    (using requirement: ContextRequirement)
+                                    (using reflection: ProductReflection[derivation])
+                                    [result]
+                                    (inline lambda: [field]
+                                                    =>  field
+                                                    => (context: requirement.Optionality
+                                                                  [typeclass[field]],
+                                                        default: Default[Optional[field]],
+                                                        label:   Text,
+                                                        index:   Int & FieldIndex[field])
+                                                    ?=> result)
   :     IArray[result] =
 
     summonInline[ClassTag[result]].give:
@@ -172,16 +183,17 @@ trait ProductDerivationMethods[typeclass[_]]:
   // erasedness of the tuple.
 
   private transparent inline def fold
-     [derivation <: Product, fields <: Tuple, labels <: Tuple, result]
-     (using requirement: ContextRequirement)
-     (inline tuple: fields, accumulator: result, index: Int)
-     (inline lambda: result =>
-                         [field] =>
-                           field =>
-                            (context: Optional[typeclass[field]],
-                             default: Default[Optional[field]],
-                             label:   Text,
-                             index:   Int & FieldIndex[field]) ?=> result)
+                                  [derivation <: Product, fields <: Tuple, labels <: Tuple, result]
+                                  (using requirement: ContextRequirement)
+                                  (inline tuple: fields, accumulator: result, index: Int)
+                                  (inline lambda: result
+                                                  => [field]
+                                                  =>  field
+                                                  => (context: Optional[typeclass[field]],
+                                                      default: Default[Optional[field]],
+                                                      label:   Text,
+                                                      index:   Int & FieldIndex[field])
+                                                  ?=> result)
   :     result =
 
     inline tuple match
@@ -206,16 +218,17 @@ trait ProductDerivationMethods[typeclass[_]]:
                 (lambda)
 
   private transparent inline def fold
-     [derivation <: Product, fields <: Tuple, labels <: Tuple, result]
-     (using requirement: ContextRequirement)
-     (inline accumulator: result, index: Int)
-     (inline lambda: result =>
-                      [field] =>
-                        requirement.Optionality[typeclass[field]] =>
-                         (default:     Default[Optional[field]],
-                          label:       Text,
-                          dereference: derivation => field,
-                          index:       Int & FieldIndex[field]) ?=> result)
+                                  [derivation <: Product, fields <: Tuple, labels <: Tuple, result]
+                                  (using requirement: ContextRequirement)
+                                  (inline accumulator: result, index: Int)
+                                  (inline lambda: result
+                                                  => [field]
+                                                  =>  requirement.Optionality[typeclass[field]]
+                                                  => (default:     Default[Optional[field]],
+                                                      label:       Text,
+                                                      dereference: derivation => field,
+                                                      index:       Int & FieldIndex[field])
+                                                  ?=> result)
   :     result =
 
     inline erasedValue[fields] match

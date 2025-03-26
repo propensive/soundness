@@ -39,10 +39,10 @@ import scala.annotation.*
 object Orderable:
   given orderable: [value: Ordering] => value is Orderable:
     inline def compare
-       (inline left:    value,
-        inline right:   value,
-        inline strict:  Boolean,
-        inline greater: Boolean)
+                (inline left:    value,
+                 inline right:   value,
+                 inline strict:  Boolean,
+                 inline greater: Boolean)
     :     Boolean =
       val n = value.compare(left, right)
       inline if greater

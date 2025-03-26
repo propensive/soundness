@@ -52,13 +52,13 @@ object Cookie:
 
   // For some reason it seems necessary to use `DummyImplicit` instead of `Void` here
   def apply[value: {Encodable in Text, Decodable in Text}](using DummyImplicit)
-     [duration: GenericDuration]
-     (name:     Text,
-      domain:   Optional[Hostname]     = Unset,
-      expiry:   Optional[duration] = Unset,
-      secure:   Boolean                = false,
-      httpOnly: Boolean                = false,
-      path:    Optional[Text]         = Unset) =
+       [duration: GenericDuration]
+       (name:     Text,
+        domain:   Optional[Hostname]     = Unset,
+        expiry:   Optional[duration] = Unset,
+        secure:   Boolean                = false,
+        httpOnly: Boolean                = false,
+        path:    Optional[Text]         = Unset) =
 
     new Cookie[value]
          (name, domain, expiry.let(duration.milliseconds(_)), secure, httpOnly, path)
@@ -91,13 +91,13 @@ object Cookie:
 
 
   case class Value
-     (name:     Text,
-      value:    Text,
-      domain:   Optional[Text] = Unset,
-      path:     Optional[Text] = Unset,
-      expiry:   Optional[Long] = Unset,
-      secure:   Boolean        = false,
-      httpOnly: Boolean        = false)
+              (name:     Text,
+               value:    Text,
+               domain:   Optional[Text] = Unset,
+               path:     Optional[Text] = Unset,
+               expiry:   Optional[Long] = Unset,
+               secure:   Boolean        = false,
+               httpOnly: Boolean        = false)
 
 case class Cookie[value: {Encodable in Text, Decodable in Text}]
    (name:     Text,

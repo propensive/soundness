@@ -71,9 +71,9 @@ object Mosquito:
 
   extension [left](left: Vector[left, 3])
     def cross[right](right: Vector[right, 3])
-       (using multiplication: left is Multiplicable by right,
-              addition:      multiplication.Result is Addable by multiplication.Result,
-              subtraction:    multiplication.Result is Subtractable by multiplication.Result)
+         (using multiplication: left is Multiplicable by right,
+                addition:       multiplication.Result is Addable by multiplication.Result,
+                subtraction:    multiplication.Result is Subtractable by multiplication.Result)
     :     Vector[addition.Result, 3] =
 
       (left.element(1)*right.element(2) - left.element(2)*right.element(1)) *:
@@ -89,9 +89,9 @@ object Mosquito:
     def size(using ValueOf[size]): Int = valueOf[size]
 
     def norm[square]
-       (using multiplicable: left is Multiplicable by left into square,
-              addable:      square is Addable by square into square,
-              rootable:     square is Rootable[2] into left)
+         (using multiplicable: left is Multiplicable by left into square,
+                addable:       square is Addable by square into square,
+                rootable:      square is Rootable[2] into left)
     :     left =
 
       def recur(sum: multiplicable.Result, i: Int): left =
@@ -107,10 +107,10 @@ object Mosquito:
       recur(left)
 
     def unitary[square]
-       (using multiplicable: left is Multiplicable by left into square,
-              addable:      square is Addable by square into square,
-              rootable:     square is Rootable[2] into left,
-              divisible:    left is Divisible by left into Double)
+         (using multiplicable: left is Multiplicable by left into square,
+                addable:       square is Addable by square into square,
+                rootable:      square is Rootable[2] into left,
+                divisible:     left is Divisible by left into Double)
     :     Vector[Double, size] =
 
       val magnitude: left = left.norm
@@ -168,10 +168,10 @@ object Mosquito:
       map(_/right)
 
     def dot[right](right: Vector[right, size])
-       (using multiply: left is Multiplicable by right,
-              size:     ValueOf[size],
-              addition: multiply.Result is Addable by multiply.Result,
-              equality: addition.Result =:= multiply.Result)
+         (using multiply: left is Multiplicable by right,
+                size:     ValueOf[size],
+                addition: multiply.Result is Addable by multiply.Result,
+                equality: addition.Result =:= multiply.Result)
     :     multiply.Result =
 
       def recur(index: Int, sum: multiply.Result): multiply.Result =

@@ -118,8 +118,8 @@ object Mercator:
         def point[value](value: value): monad[value] = ${functorExpr}.point(value)
 
         def apply
-           [value, value2]
-           (value: monad[value])(lambda: value => value2): monad[value2] =
+             [value, value2]
+             (value: monad[value])(lambda: value => value2): monad[value2] =
           ${functorExpr}.map(value)(lambda)
 
         def bind[value, value2](value: monad[value])(lambda: value => monad[value2])

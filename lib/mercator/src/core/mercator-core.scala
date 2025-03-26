@@ -73,8 +73,8 @@ extension [collection[element] <: Iterable[element], element]
    (elems: collection[element])
 
   def traverse[element2, monad[_]](lambda: element => monad[element2])
-     (using monad:     Monad[monad],
-            buildFrom: BuildFrom[List[element2], element2, collection[element2]])
+       (using monad:     Monad[monad],
+              buildFrom: BuildFrom[List[element2], element2, collection[element2]])
   :     monad[collection[element2]] =
 
     def recur(todo: Iterable[element], accumulator: monad[List[element2]]): monad[List[element2]] =

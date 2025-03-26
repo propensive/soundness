@@ -40,7 +40,7 @@ import telekinesis.*
 
 class servlet extends MacroAnnotation:
   override def transform(using Quotes)
-     (tree: quotes.reflect.Definition, companion: Option[quotes.reflect.Definition])
+                (tree: quotes.reflect.Definition, companion: Option[quotes.reflect.Definition])
   :     List[quotes.reflect.Definition] =
     import quotes.reflect.*
 

@@ -62,7 +62,7 @@ extension [value](value: value)
           aggregable.aggregate(value.stream[Text])
 
   def writeTo[target](target: target)[element]
-     (using readable: value is Readable by element, writable: target is Writable by element)
+       (using readable: value is Readable by element, writable: target is Writable by element)
   :     Unit =
 
     writable.write(target, readable.stream(value))
@@ -101,7 +101,7 @@ extension [element](stream: Stream[element])
     stream.flow(Stream())(head #:: recur(head, tail))
 
   inline def flow[result](inline termination: => result)
-     (inline proceed: (head: element, tail: Stream[element]) ?=> result)
+              (inline proceed: (head: element, tail: Stream[element]) ?=> result)
   :     result =
     stream match
       case head #:: tail => proceed(using head, tail)
@@ -127,18 +127,18 @@ extension [element](stream: Stream[element])
 
   def regulate(tap: Tap)(using Monitor): Stream[element] =
     def defer
-       (active: Boolean,
-        stream: Stream[Some[element] | Tap.Regulation],
-        buffer: List[element])
+         (active: Boolean,
+          stream: Stream[Some[element] | Tap.Regulation],
+          buffer: List[element])
     :     Stream[element] =
 
       recur(active, stream, buffer)
 
     @tailrec
     def recur
-       (active: Boolean,
-        stream: Stream[Some[element] | Tap.Regulation],
-        buffer: List[element])
+         (active: Boolean,
+          stream: Stream[Some[element] | Tap.Regulation],
+          buffer: List[element])
     :     Stream[element] =
 
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
@@ -157,7 +157,7 @@ extension [element](stream: Stream[element])
     Stream.defer(recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil))
 
   def cluster[duration: GenericDuration](duration: duration, maxSize: Optional[Int] = Unset)
-     (using Monitor)
+       (using Monitor)
   :     Stream[List[element]] =
 
     val Limit = maxSize.or(Int.MaxValue)

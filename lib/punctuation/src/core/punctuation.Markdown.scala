@@ -166,10 +166,10 @@ object Markdown:
 
   @tailrec
   private def coalesce[markdown >: Prose <: Markdown.Ast.Inline]
-     (xs: List[markdown], done: List[markdown] = Nil)
+               (elements: List[markdown], done: List[markdown] = Nil)
   :     List[markdown] =
 
-    xs match
+    elements match
       case Nil                               => done.reverse
       case Prose(str) :: Prose(str2) :: tail => coalesce(Prose(t"$str$str2") :: tail, done)
       case Prose(str) :: tail                => coalesce(tail, Prose(format(str)) :: done)

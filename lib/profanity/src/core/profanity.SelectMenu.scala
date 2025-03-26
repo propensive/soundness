@@ -52,10 +52,10 @@ extends Question[item]:
   catch case e: RangeError => this
 
   def ask
-     (using interactivity: Interactivity[TerminalEvent],
-            interaction: Interaction[item, SelectMenu[item]])
-     [result]
-     (lambda: Interactivity[TerminalEvent] ?=> item => result)
+       (using interactivity: Interactivity[TerminalEvent],
+              interaction: Interaction[item, SelectMenu[item]])
+       [result]
+       (lambda: Interactivity[TerminalEvent] ?=> item => result)
   :     result raises DismissError =
 
     interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())):

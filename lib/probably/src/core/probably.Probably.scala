@@ -45,13 +45,13 @@ import scala.quoted.*
 
 object Probably:
   protected def general[test: Type, report: Type, result: Type]
-     (test:      Expr[Test[test]],
-      predicate: Expr[test => Boolean],
-      runner:    Expr[Runner[report]],
-      inc:       Expr[Inclusion[report, Verdict]],
-      inc2:      Expr[Inclusion[report, Verdict.Detail]],
-      action:    Expr[Trial[test] => result])
-     (using Quotes)
+                 (test:      Expr[Test[test]],
+                  predicate: Expr[test => Boolean],
+                  runner:    Expr[Runner[report]],
+                  inc:       Expr[Inclusion[report, Verdict]],
+                  inc2:      Expr[Inclusion[report, Verdict.Detail]],
+                  action:    Expr[Trial[test] => result])
+                 (using Quotes)
   :     Expr[result] =
 
     import quotes.reflect.*
@@ -97,33 +97,33 @@ object Probably:
         }
 
   def check[test: Type, report: Type]
-     (test:      Expr[Test[test]],
-      predicate: Expr[test => Boolean],
-      runner:    Expr[Runner[report]],
-      inc:       Expr[Inclusion[report, Verdict]],
-      inc2:      Expr[Inclusion[report, Verdict.Detail]])
-     (using Quotes)
+       (test:      Expr[Test[test]],
+        predicate: Expr[test => Boolean],
+        runner:    Expr[Runner[report]],
+        inc:       Expr[Inclusion[report, Verdict]],
+        inc2:      Expr[Inclusion[report, Verdict.Detail]])
+       (using Quotes)
   :     Expr[test] =
 
     general[test, report, test]
      (test, predicate, runner, inc, inc2, '{ (t: Trial[test]) => t.get })
 
   def assert[test: Type, report: Type]
-     (test:      Expr[Test[test]],
-      predicate: Expr[test => Boolean],
-      runner:    Expr[Runner[report]],
-      inc:       Expr[Inclusion[report, Verdict]],
-      inc2:      Expr[Inclusion[report, Verdict.Detail]])
-     (using Quotes)
+       (test:      Expr[Test[test]],
+        predicate: Expr[test => Boolean],
+        runner:    Expr[Runner[report]],
+        inc:       Expr[Inclusion[report, Verdict]],
+        inc2:      Expr[Inclusion[report, Verdict.Detail]])
+       (using Quotes)
   :     Expr[Unit] =
     general[test, report, Unit](test, predicate, runner, inc, inc2, '{ _ => () })
 
   def aspire[test: Type, report: Type]
-     (test:   Expr[Test[test]],
-      runner: Expr[Runner[report]],
-      inc:    Expr[Inclusion[report, Verdict]],
-      inc2:   Expr[Inclusion[report, Verdict.Detail]])
-     (using Quotes)
+       (test:   Expr[Test[test]],
+        runner: Expr[Runner[report]],
+        inc:    Expr[Inclusion[report, Verdict]],
+        inc2:   Expr[Inclusion[report, Verdict.Detail]])
+       (using Quotes)
   :     Expr[Unit] =
 
     general[test, report, Unit](test, '{ _ => true }, runner, inc, inc2, '{ _ => () })
@@ -131,9 +131,9 @@ object Probably:
   def succeed: Any => Boolean = (value: Any) => true
 
   def assertion[test, test2 <: test, report, result]
-     (runner:       Runner[report],
-      test:         Test[test2],
-      predicate:    test2 => Boolean,
+       (runner:       Runner[report],
+        test:         Test[test2],
+        predicate:    test2 => Boolean,
       result:       Trial[test2] => result,
       contrast:     test is Contrastable,
       exp:          Option[test],

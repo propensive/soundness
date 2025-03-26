@@ -40,10 +40,10 @@ import scala.quoted.*
 
 object Vicarious:
   def catalog[key: Type, value: Type]
-     (lambda: Expr[[field] => (field: field) => value],
-      value: Expr[key],
-      classTag: Expr[ClassTag[value]])
-     (using Quotes)
+       (lambda: Expr[[field] => (field: field) => value],
+        value: Expr[key],
+        classTag: Expr[ClassTag[value]])
+       (using Quotes)
   :     Expr[Catalog[key, value]] =
     import quotes.reflect.*
 

@@ -74,13 +74,13 @@ object Git:
     . deduplicate
 
   def init
-     [path: Abstractable across Paths into Text]
-     (targetPath: path, bare: Boolean = false)
-     (using WorkingDirectory,
-            Tactic[GitError],
-            (Path on Posix) is Decodable in Text,
-            Tactic[ExecError])
-     (using command: GitCommand)
+      [path: Abstractable across Paths into Text]
+       (targetPath: path, bare: Boolean = false)
+       (using WorkingDirectory,
+              Tactic[GitError],
+              (Path on Posix) is Decodable in Text,
+              Tactic[ExecError])
+       (using command: GitCommand)
   :     GitRepo logs GitEvent raises NameError =
     try
       throwErrors[PathError | IoError]:
@@ -95,13 +95,13 @@ object Git:
       case error: IoError   => abort(GitError(InvalidRepoPath))
 
   inline def cloneCommit[source <: Matchable, path: Abstractable across Paths into Text]
-     (source: source, targetPath: path, commit: GitHash)
-     (using Internet,
-            (Path on Posix) is Decodable in Text,
-            GitCommand,
-            Tactic[GitError],
-            Tactic[ExecError],
-            WorkingDirectory)
+              (source: source, targetPath: path, commit: GitHash)
+              (using Internet,
+                     (Path on Posix) is Decodable in Text,
+                     GitCommand,
+                     Tactic[GitError],
+                     Tactic[ExecError],
+                     WorkingDirectory)
   :     GitProcess[GitRepo] logs GitEvent raises NameError =
 
     val sourceText = inline source match
@@ -113,16 +113,16 @@ object Git:
     uncheckedCloneCommit(sourceText, targetPath, commit)
 
   inline def clone[source <: Matchable, path: Abstractable across Paths into Text]
-     (source:     source,
-      targetPath: path,
-      bare:       Boolean             = false,
-      branch:     Optional[GitBranch] = Unset,
-      recursive:  Boolean             = false)
-     (using Internet,
-            WorkingDirectory,
-            (Path on Posix) is Decodable in Text,
-            Tactic[ExecError],
-            GitCommand)
+              (source:     source,
+               targetPath: path,
+               bare:       Boolean             = false,
+               branch:     Optional[GitBranch] = Unset,
+               recursive:  Boolean             = false)
+              (using Internet,
+                     WorkingDirectory,
+                     (Path on Posix) is Decodable in Text,
+                     Tactic[ExecError],
+                     GitCommand)
      (using gitError: Tactic[GitError])
   :     GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
@@ -135,11 +135,11 @@ object Git:
     uncheckedClone(sourceText, targetPath, bare, branch, recursive)
 
   private def uncheckedCloneCommit[path: Abstractable across Paths into Text]
-     (source: Text, targetPath: path, commit: GitHash)
-     (using Internet, (Path on Posix) is Decodable in Text, GitCommand)
-     (using gitError:         Tactic[GitError],
-            exec:             Tactic[ExecError],
-            workingDirectory: WorkingDirectory)
+               (source: Text, targetPath: path, commit: GitHash)
+               (using Internet, (Path on Posix) is Decodable in Text, GitCommand)
+               (using gitError:         Tactic[GitError],
+                      exec:             Tactic[ExecError],
+                      workingDirectory: WorkingDirectory)
   :     GitProcess[GitRepo] logs GitEvent raises NameError =
 
     val gitRepo = init(targetPath)
@@ -151,17 +151,17 @@ object Git:
       gitRepo
 
   private def uncheckedClone[path: Abstractable across Paths into Text]
-     (source:     Text,
-      targetPath: path,
-      bare:       Boolean             = false,
-      branch:     Optional[GitBranch] = Unset,
-      recursive:  Boolean             = false)
-     (using Internet,
-            WorkingDirectory,
-            (Path on Posix) is Decodable in Text,
-            Tactic[ExecError],
-            GitCommand)
-     (using gitError: Tactic[GitError])
+                (source:     Text,
+                 targetPath: path,
+                 bare:       Boolean             = false,
+                 branch:     Optional[GitBranch] = Unset,
+                 recursive:  Boolean             = false)
+                (using Internet,
+                 WorkingDirectory,
+                 (Path on Posix) is Decodable in Text,
+                 Tactic[ExecError],
+                 GitCommand)
+                (using gitError: Tactic[GitError])
   :     GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
     val target: Path on Posix =

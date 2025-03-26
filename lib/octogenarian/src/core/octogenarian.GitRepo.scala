@@ -59,7 +59,7 @@ import GitError.Reason.*
 
 object GitRepo:
   def apply[path: Abstractable across Paths into Text](path: path)
-     (using gitError: Tactic[GitError], io: Tactic[IoError])
+       (using gitError: Tactic[GitError], io: Tactic[IoError])
   :     GitRepo raises PathError raises NameError =
 
     unsafely(path.generic.decode[Path on Posix]).pipe: path =>
@@ -100,7 +100,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
     sh"$git $repoOptions push".exec[Exit]()
 
   def switch(branch: GitBranch)
-     (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
+       (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
   :     Unit logs GitEvent =
 
     sh"$git $repoOptions switch $branch".exec[Exit]() match
@@ -108,7 +108,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       case failure       => abort(GitError(CannotSwitchBranch))
 
   def pull()(using GitCommand, Internet, WorkingDirectory)
-     (using gitError: Tactic[GitError], exec: Tactic[ExecError])
+       (using gitError: Tactic[GitError], exec: Tactic[ExecError])
   :     GitProcess[Unit] logs GitEvent =
 
     val process = sh"$git $repoOptions pull --progress".fork[Exit]()
@@ -119,8 +119,8 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
         case failure       => abort(GitError(PullFailed))
 
   def fetch(depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)
-     (using GitCommand, Internet, WorkingDirectory)
-     (using gitError: Tactic[GitError], exec: Tactic[ExecError])
+       (using GitCommand, Internet, WorkingDirectory)
+       (using gitError: Tactic[GitError], exec: Tactic[ExecError])
   :     GitProcess[Unit] logs GitEvent /*^{gitError, exec}*/ =
 
     val depthOption = depth.lay(sh"") { depth => sh"--depth=$depth" }
@@ -180,7 +180,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
   object config:
     def get[value: Decodable in Text](variable: Text)
-       (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
+         (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
     :     value logs GitEvent =
       sh"$git $repoOptions config --get $variable".exec[Text]().decode[value]
 
@@ -197,14 +197,14 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
   def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): Stream[Commit] logs GitEvent =
     def recur
-       (stream:    Stream[Text],
-        hash:      Optional[GitHash] = Unset,
-        tree:      Optional[GitHash] = Unset,
-        parents:   List[GitHash]     = Nil,
-        author:    Optional[Text]       = Unset,
-        committer: Optional[Text]       = Unset,
-        signature: List[Text]           = Nil,
-        lines:    List[Text]           = Nil)
+         (stream:    Stream[Text],
+          hash:      Optional[GitHash] = Unset,
+          tree:      Optional[GitHash] = Unset,
+          parents:   List[GitHash]     = Nil,
+          author:    Optional[Text]    = Unset,
+          committer: Optional[Text]    = Unset,
+          signature: List[Text]        = Nil,
+          lines:     List[Text]        = Nil)
     :     Stream[Commit] =
 
       def commit(): Stream[Commit] =

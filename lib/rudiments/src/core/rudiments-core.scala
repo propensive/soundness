@@ -138,40 +138,40 @@ extension [value](iterable: Iterable[value])
     iterable.total/iterable.size
 
   def variance
-     (using zeroic:        value is Zeroic,
-            addable:       value is Addable by value,
-            equality:      addable.Result =:= value,
-            divisible:     value is Divisible by Double,
-            subtractable:  value is Subtractable by divisible.Result,
-            multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
-            addable2:      multiplicable.Result is Addable by multiplicable.Result,
-            zeroic2:       multiplicable.Result is Zeroic,
-            equality2:     addable2.Result =:= multiplicable.Result,
-            divisible2:    multiplicable.Result is Divisible by Double)
+       (using zeroic:        value is Zeroic,
+              addable:       value is Addable by value,
+              equality:      addable.Result =:= value,
+              divisible:     value is Divisible by Double,
+              subtractable:  value is Subtractable by divisible.Result,
+              multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
+              addable2:      multiplicable.Result is Addable by multiplicable.Result,
+              zeroic2:       multiplicable.Result is Zeroic,
+              equality2:     addable2.Result =:= multiplicable.Result,
+              divisible2:    multiplicable.Result is Divisible by Double)
   :     divisible2.Result =
     val mean: divisible.Result = iterable.mean
     iterable.map(_ - mean).map { value => value*value }.total/iterable.size
 
   def standardDeviation
-     (using zeroic:        value is Zeroic,
-            addable:       value is Addable by value,
-            equality:      addable.Result =:= value,
-            divisible:     value is Divisible by Double,
-            subtractable:  value is Subtractable by divisible.Result,
-            multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
-            addable2:      multiplicable.Result is Addable by multiplicable.Result,
-            zeroic2:       multiplicable.Result is Zeroic,
-            equality2:     addable2.Result =:= multiplicable.Result,
-            divisible2:    multiplicable.Result is Divisible by Double,
-            rootable:      divisible2.Result is Rootable[2])
+       (using zeroic:        value is Zeroic,
+              addable:       value is Addable by value,
+              equality:      addable.Result =:= value,
+              divisible:     value is Divisible by Double,
+              subtractable:  value is Subtractable by divisible.Result,
+              multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
+              addable2:      multiplicable.Result is Addable by multiplicable.Result,
+              zeroic2:       multiplicable.Result is Zeroic,
+              equality2:     addable2.Result =:= multiplicable.Result,
+              divisible2:    multiplicable.Result is Divisible by Double,
+              rootable:      divisible2.Result is Rootable[2])
   :     rootable.Result =
     val mean: divisible.Result = iterable.mean
     (iterable.map(_ - mean).map { value => value*value }.total/iterable.size).sqrt
 
   def product
-     (using unital:        value is Unital,
-            multiplicable: value is Multiplicable by value,
-            equality:      multiplicable.Result =:= value)
+       (using unital:        value is Unital,
+              multiplicable: value is Multiplicable by value,
+              equality:      multiplicable.Result =:= value)
   :     value =
     iterable.foldLeft(unital.one)(multiplicable.multiply)
 
