@@ -103,9 +103,7 @@ object Zipfile:
 
   private val cache: scc.TrieMap[Text, Semaphore] = scc.TrieMap()
 
-  def write[path: Abstractable across Paths into Text](path: path)(stream: Stream[ZipEntry])
-  :     Unit =
-
+  def write[path: Abstractable across Paths into Text](path: path)(stream: Stream[ZipEntry]): Unit =
     val filename = path.generic
     val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(filename.s)))
     val directories: scm.HashSet[Path on Zip] = scm.HashSet()

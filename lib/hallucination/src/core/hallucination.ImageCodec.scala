@@ -48,8 +48,7 @@ abstract class ImageCodec[format <: ImageFormat](name: Text):
   protected lazy val reader: ji.ImageReader = ji.ImageIO.getImageReaders(name.s).nn.next().nn
   protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
 
-  given response
-  :     (Image in format) is Abstractable across HttpStreams into HttpStreams.Content =
+  given response: (Image in format) is Abstractable across HttpStreams into HttpStreams.Content =
     new Abstractable:
       type Self = Image in format
       type Domain = HttpStreams

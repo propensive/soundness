@@ -52,8 +52,7 @@ import vacuous.*
 import alphabets.base256.alphanumericOrBraille
 
 object Postable:
-  def apply[response](medium0: Medium, stream0: response => Stream[Bytes])
-  :     response is Postable =
+  def apply[response](medium0: Medium, stream0: response => Stream[Bytes]): response is Postable =
     new Postable:
       type Self = response
       def medium(response: response): Medium = medium0

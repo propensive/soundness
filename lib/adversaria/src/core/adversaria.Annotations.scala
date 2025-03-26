@@ -41,13 +41,11 @@ import language.experimental.captureChecking
 case class Annotations[annotation <: StaticAnnotation, target](annotations: annotation*)
 
 object Annotations:
-  inline given[annotation <: StaticAnnotation, target]
-  :     Annotations[annotation, target] =
+  inline given[annotation <: StaticAnnotation, target]: Annotations[annotation, target] =
 
     ${Adversaria.typeAnnotations[annotation, target]}
 
-  transparent inline def field[target](inline lambda: target => Any)
-  :     List[StaticAnnotation] =
+  transparent inline def field[target](inline lambda: target => Any): List[StaticAnnotation] =
     ${Adversaria.fieldAnnotations[target]('lambda)}
 
   transparent inline def fields[target <: Product, annotation <: StaticAnnotation]

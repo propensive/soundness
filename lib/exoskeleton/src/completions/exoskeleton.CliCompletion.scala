@@ -66,8 +66,7 @@ extends Cli:
   var explanation: Optional[Text] = Unset
   var cursorSuggestions: List[Suggestion] = Nil
 
-  def readParameter[operand](flag: Flag)
-     (using FlagInterpreter[operand], Suggestions[operand])
+  def readParameter[operand](flag: Flag)(using FlagInterpreter[operand], Suggestions[operand])
   :     Optional[operand] =
 
     given cli: Cli = this

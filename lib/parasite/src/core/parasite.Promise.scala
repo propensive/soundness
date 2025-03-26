@@ -73,8 +73,7 @@ final case class Promise[value]():
     case Complete(_) => true
     case _           => false
 
-  private def completeIncomplete(supplied: value)(current: State[value] | Null)
-  :     State[value] =
+  private def completeIncomplete(supplied: value)(current: State[value] | Null): State[value] =
     current.nn match
       case Incomplete(waiting) => Complete(supplied.nn).also(waiting.each(jucl.LockSupport.unpark))
       case current             => current
@@ -113,8 +112,7 @@ final case class Promise[value]():
     case Incomplete(waiting) => waiting.each(jucl.LockSupport.unpark)
     case _                   => ()
 
-  def await[generic: GenericDuration](duration: generic)
-  :     value raises AsyncError =
+  def await[generic: GenericDuration](duration: generic): value raises AsyncError =
     val deadline = System.nanoTime() + generic.milliseconds(duration)*1000000L
 
     @tailrec

@@ -43,8 +43,7 @@ object Vacuous:
     then '{null.asInstanceOf[Optionality[value]]}
     else halt(m"the type ${TypeRepr.of[value].widen.show} is not an `Optional`")
 
-  def optimizeOr[value: Type]
-     (optional: Expr[Optional[value]], default: Expr[value])(using Quotes)
+  def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value])(using Quotes)
   :     Expr[value] =
 
     import quotes.reflect.*

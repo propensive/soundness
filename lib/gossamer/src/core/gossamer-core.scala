@@ -203,8 +203,7 @@ extension [textual: Textual](text: textual)
   def search(regex: Regex, overlap: Boolean = false): Stream[textual] =
     regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
 
-  def extract[value](start: Ordinal)(lambda: Scanner ?=> textual ~> value)
-  :     Stream[value] =
+  def extract[value](start: Ordinal)(lambda: Scanner ?=> textual ~> value): Stream[value] =
 
     val input = textual.text(text)
     if start.n0 < input.s.length then

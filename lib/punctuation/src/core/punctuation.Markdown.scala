@@ -212,8 +212,7 @@ object Markdown:
     node.getChildren.nn.iterator.nn.asScala.to(List).collect:
       case node: (cvfa.BulletListItem | cvfa.OrderedListItem) => ListItem(flowChildren(root, node)*)
 
-  def phrasing
-     (root: cvfua.Document, node: PhrasingInput)
+  def phrasing(root: cvfua.Document, node: PhrasingInput)
   :     Markdown.Ast.Inline raises MarkdownError = node match
     case node: cvfa.Emphasis       => Emphasis(phraseChildren(root, node)*)
     case node: cvfa.SoftLineBreak  => Prose(t"\n")

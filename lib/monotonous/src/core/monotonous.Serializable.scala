@@ -37,32 +37,30 @@ import prepositional.*
 import rudiments.*
 
 object Serializable:
-  def base[base <: Serialization](bits: Int)(using alphabet: Alphabet[base])
-  :     Serializable in base = new:
+  def base[base <: Serialization](bits: Int)(using alphabet: Alphabet[base]): Serializable in base =
+    new:
+      def encode(bytes: Bytes): Text =
+        val mask = (1 << bits) - 1
 
-    def encode(bytes: Bytes): Text =
-      val mask = (1 << bits) - 1
+        val length = if alphabet.padding then (bytes.length + bits - 1)/bits*8 else
+          (8*bytes.length + bits - 1)/bits
 
-      val length = if alphabet.padding then (bytes.length + bits - 1)/bits*8 else
-        (8*bytes.length + bits - 1)/bits
-
-      val chars = IArray.create[Char](length): array =>
-        def recur(current: Int = 0, next: Int = 0, index: Int = 0, loaded: Int = 0): Unit =
-          if index < length then
-            if loaded < bits then
-              if next < bytes.length then
-                recur((current << 8) | (bytes(next) & 0xff), next + 1, index, loaded + 8)
+        val chars = IArray.create[Char](length): array =>
+          def recur(current: Int = 0, next: Int = 0, index: Int = 0, loaded: Int = 0): Unit =
+            if index < length then
+              if loaded < bits then
+                if next < bytes.length then
+                  recur((current << 8) | (bytes(next) & 0xff), next + 1, index, loaded + 8)
+                else
+                  array(index) = alphabet((current << (bits - loaded)) & mask)
+                  ((index + 1) until length).each { i => array(i) = alphabet(1 << bits) }
               else
-                array(index) = alphabet((current << (bits - loaded)) & mask)
-                ((index + 1) until length).each { i => array(i) = alphabet(1 << bits) }
-            else
-              array(index) = alphabet((current >>> (loaded - bits)) & mask)
-              recur(current, next, index + 1, loaded - bits)
+                array(index) = alphabet((current >>> (loaded - bits)) & mask)
+                recur(current, next, index + 1, loaded - bits)
 
-        recur()
+          recur()
 
-      Text(chars)
-
+        Text(chars)
 
   given binary: Alphabet[Binary] => Serializable in Binary = base(1)
   given quaternary: Alphabet[Quaternary] => Serializable in Quaternary = base(2)

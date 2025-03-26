@@ -53,9 +53,7 @@ object Honeycomb:
 
     import quotes.reflect.*
 
-    def recur(exprs: Seq[Expr[(Label, Any)]])
-    :     List[Expr[Optional[(String, Optional[Text])]]] =
-
+    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[Optional[(String, Optional[Text])]]] =
       exprs match
         case '{("", $value: valueType)} +: tail =>
           val expr: Expr[HtmlAttribute[valueType]] =

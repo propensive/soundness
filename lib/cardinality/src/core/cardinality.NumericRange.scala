@@ -44,15 +44,14 @@ object NumericRange:
   @annotation.targetName("Range")
   opaque infix type ~ [min <: Double, max <: Double] = Double
 
-  def apply[min <: Double, max <: Double](value: Double)
-  :     min ~ max =
+  def apply[min <: Double, max <: Double](value: Double): min ~ max =
     value
 
   @annotation.targetName("Range")
   object `~`:
-    given comparable[min <: Double & Singleton, max <: Double & Singleton]
-       (using min: ValueOf[min], max: ValueOf[max])
-    :     TypeTest[Double, min ~ max] =
+    given comparable: [min <: Double & Singleton, max <: Double & Singleton]
+          => (min: ValueOf[min], max: ValueOf[max])
+          =>  TypeTest[Double, min ~ max] =
 
       value =>
         if value >= min.value && value <= max.value
@@ -63,8 +62,7 @@ object NumericRange:
     extends FromDigits.Decimal[min ~ max]:
       def fromDigits(digits: String): Double = apply(digits.toDouble)
 
-    given cardinality[min <: Double, max <: Double]
-    :     RangeParser[min, max] with
+    given cardinality: [min <: Double, max <: Double] => RangeParser[min, max]:
       override inline def fromDigits(digits: String): min ~ max =
         ${Cardinality('digits)}
 
@@ -72,8 +70,7 @@ object NumericRange:
       def double: Double = left
 
       @annotation.targetName("add")
-      infix def + [rightMin <: Double, rightMax <: Double]
-         (right: rightMin ~ rightMax)
+      infix def + [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
       :     (leftMin + rightMin) ~ (leftMax + rightMax) =
         left + right
 
@@ -86,8 +83,7 @@ object NumericRange:
       infix def + (right: Double): Double = left + right
 
       @annotation.targetName("times")
-      infix def * [rightMin <: Double, rightMax <: Double]
-         (right: rightMin ~ rightMax)
+      infix def * [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
       :     (Min4
               [leftMin*rightMin,
                leftMin*rightMax,
@@ -102,11 +98,7 @@ object NumericRange:
 
       @annotation.targetName("times2")
       infix def * [right <: Double & Singleton](right: right)
-      :     Min
-             [leftMin*right,
-              leftMax*right] ~ Max
-                                        [leftMin*right,
-                                         leftMax*right] =
+      :     Min[leftMin*right, leftMax*right] ~ Max[leftMin*right, leftMax*right] =
 
         left*right
 
@@ -114,22 +106,14 @@ object NumericRange:
       infix def * (right: Double): Double = left*right
 
       @annotation.targetName("minus")
-      infix def - [rightMin <: Double, rightMax <: Double]
-         (right: rightMin ~ rightMax)
-      :     Min
-             [leftMin - rightMin,
-              leftMin - rightMax] ~ Max
-                                             [leftMax - rightMin,
-                                              leftMax - rightMax] =
+      infix def - [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
+      :     Min[leftMin - rightMin, leftMin - rightMax] ~ Max[leftMax - rightMin, leftMax -
+             rightMax] =
         left - right
 
       @annotation.targetName("minus2")
       infix def - [right <: Double & Singleton](right: right)
-      :     Min
-             [leftMin - right,
-              leftMax - right] ~ Max
-                                          [leftMin - right,
-                                           leftMax - right] =
+      :     Min[leftMin - right, leftMax - right] ~ Max[leftMin - right, leftMax - right] =
 
         left - right
 
@@ -138,11 +122,7 @@ object NumericRange:
 
       @annotation.targetName("divide")
       infix def / [right <: Double & Singleton](right: right)
-      :     Min
-             [leftMin/right,
-              leftMax/right] ~ Max
-                                        [leftMin/right,
-                                         leftMax/right] =
+      :     Min[leftMin/right, leftMax/right] ~ Max[leftMin/right, leftMax/right] =
 
         left/right
 

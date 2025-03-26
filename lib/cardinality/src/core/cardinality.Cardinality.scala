@@ -55,8 +55,7 @@ object Cardinality:
 
   given realm: Realm = realm"cardinality"
 
-  def apply[left <: Double: Type, right <: Double: Type](digits: Expr[String])
-     (using Quotes)
+  def apply[left <: Double: Type, right <: Double: Type](digits: Expr[String])(using Quotes)
   :     Expr[left ~ right] =
 
     import quotes.reflect.*

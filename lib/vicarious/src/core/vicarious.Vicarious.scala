@@ -63,8 +63,7 @@ object Vicarious:
       field.info.asType.absolve match
         case '[fieldType] => label :: fieldNames[fieldType](label)
 
-  def dereference[key: Type, value: Type, id <: Nat: Type]
-     (key: Expr[String])(using Quotes)
+  def dereference[key: Type, value: Type, id <: Nat: Type](key: Expr[String])(using Quotes)
   :     Expr[value | Proxy[key, value, Nat]] =
 
     import quotes.reflect.*

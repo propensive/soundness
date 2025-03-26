@@ -59,8 +59,7 @@ case class Flag
     description: Optional[Text] = Unset,
     secret: Boolean             = false):
 
-  def suggest[operand: FlagInterpreter](suggestions: Suggestions[operand])(using cli: Cli)
-  :     Unit =
+  def suggest[operand: FlagInterpreter](suggestions: Suggestions[operand])(using cli: Cli): Unit =
     cli.register(this, suggestions)
 
   def matches(key: Argument): Boolean =

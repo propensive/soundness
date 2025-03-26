@@ -182,10 +182,7 @@ extends Xml, Dynamic:
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
-  def as
-     [value]
-     (using decoder: XmlDecoder[value])
-  :     value raises XmlAccessError raises XmlReadError =
+  def as[value](using decoder: XmlDecoder[value]): value raises XmlAccessError raises XmlReadError =
     apply().as[value]
 
 case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dynamic:

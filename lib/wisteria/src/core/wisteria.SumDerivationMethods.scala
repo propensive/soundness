@@ -59,10 +59,8 @@ trait SumDerivationMethods[typeclass[_]]:
     case _                                 => false
 
   protected transparent inline def complement[derivation, variant](sum: derivation)
-     (using variantIndex: Int & VariantIndex[variant],
-            reflection:   SumReflection[derivation])
+     (using variantIndex: Int & VariantIndex[variant], reflection:   SumReflection[derivation])
   :     Optional[variant] =
-
     type Labels = reflection.MirroredElemLabels
     type Variants = reflection.MirroredElemTypes
     val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
@@ -71,8 +69,7 @@ trait SumDerivationMethods[typeclass[_]]:
       [variant2 <: derivation] => field =>
         if index == variantIndex then field.asInstanceOf[variant] else Unset
 
-  protected inline def variantLabels[derivation]
-     (using reflection: SumReflection[derivation])
+  protected inline def variantLabels[derivation](using reflection: SumReflection[derivation])
   :     List[Text] =
 
     constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
@@ -88,8 +85,7 @@ trait SumDerivationMethods[typeclass[_]]:
       summonInline[Tactic[VariantError]].give:
         abort(VariantError[derivation](input))
 
-  private transparent inline def singletonFold
-     [derivation, variants <: Tuple, labels <: Tuple]
+  private transparent inline def singletonFold[derivation, variants <: Tuple, labels <: Tuple]
      (using reflection: SumReflection[derivation])
      (predicate: Text => Boolean)
   :     Optional[derivation] =

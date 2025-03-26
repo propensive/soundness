@@ -39,18 +39,15 @@ import rudiments.*
 
 object TextAlignment:
   object Right extends TextAlignment:
-    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable)
-    :     text =
+    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable): text =
       Textual(t" "*(width - text.plain.metrics))+text
 
   object Left extends TextAlignment:
-    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable)
-    :     text =
+    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable): text =
       text+Textual(t" "*(width - text.plain.metrics))
 
   object Center extends TextAlignment:
-    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable)
-    :     text =
+    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable): text =
       val space = width - text.plain.metrics
       val before = Textual(t" "*(space/2))
       val after = Textual(t" "*(space - space/2))
@@ -58,8 +55,7 @@ object TextAlignment:
       before+text+after
 
   object Justify extends TextAlignment:
-    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable)
-    :     text =
+    def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable): text =
       if last then text+Textual(t" "*(width - text.plain.metrics))
       else
         val words = text.cut(t" ")
@@ -74,5 +70,4 @@ object TextAlignment:
         recur(spare, wordCount - 1, words.head)
 
 trait TextAlignment:
-  def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable)
-  :     text
+  def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable): text

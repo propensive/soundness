@@ -67,8 +67,7 @@ enum Attempt[+success, +error <: Exception]:
     case Success(value) => value
     case Failure(error) => abort(error)
 
-  def recover[success2 >: success](block: error ~> success2)
-  :     success2 =
+  def recover[success2 >: success](block: error ~> success2): success2 =
 
     this match
       case Success(value) => value

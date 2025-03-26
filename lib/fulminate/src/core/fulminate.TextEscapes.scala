@@ -40,8 +40,7 @@ import anticipation.*
 
 object TextEscapes:
   import errorDiagnostics.stackTraces
-  def standardEscape
-     (text: into Text, cur: Int, esc: Boolean)
+  def standardEscape(text: into Text, cur: Int, esc: Boolean)
   :     (Int, Int, Boolean) throws EscapeError =
     text.s.charAt(cur) match
       case '\\' if !esc => (-1, cur + 1, true)

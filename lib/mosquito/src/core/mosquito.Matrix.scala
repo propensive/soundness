@@ -71,8 +71,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     new Matrix(rows, columns, elements2)
 
   @targetName("scalarDiv")
-  def / [right](right: right)(using div: element is Divisible by right)
-     (using ClassTag[div.Result])
+  def / [right](right: right)(using div: element is Divisible by right)(using ClassTag[div.Result])
   :     Matrix[div.Result, rows, columns] =
 
     val elements2 = IArray.create[div.Result](elements.length): array =>

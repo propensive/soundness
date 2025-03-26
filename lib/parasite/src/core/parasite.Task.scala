@@ -42,8 +42,7 @@ import mercator.*
 import vacuous.*
 
 object Task:
-  def apply[result]
-     (evaluate: Worker => result, daemon: Boolean, name: Optional[Text])
+  def apply[result](evaluate: Worker => result, daemon: Boolean, name: Optional[Text])
      (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
   :     Task[result] =
     inline def evaluate0: Worker => result = evaluate
@@ -56,14 +55,12 @@ object Task:
       def evaluate(worker: Worker): Result = evaluate0(worker)
 
   given monad: (Monitor, Codicil, Tactic[AsyncError]) => Monad[Task]:
-    def bind[value, value2](value: Task[value])(lambda: value => Task[value2])
-    :     Task[value2] =
+    def bind[value, value2](value: Task[value])(lambda: value => Task[value2]): Task[value2] =
       value.bind(lambda)
 
     def point[value](value: value): Task[value] = async(value)
 
-    def apply[value, value2](value: Task[value])(lambda: value -> value2)
-    :     Task[value2] =
+    def apply[value, value2](value: Task[value])(lambda: value -> value2): Task[value2] =
       value.map(lambda)
 
 trait Task[+result]:

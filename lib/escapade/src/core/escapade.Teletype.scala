@@ -177,10 +177,10 @@ case class Teletype
 
     @tailrec
     def recur
-       (spans:     TreeMap[CharSpan, Ansi.Transform],
-        pos:     Int                               = 0,
-        style:     TextStyle                         = TextStyle(),
-        stack:     List[(CharSpan, TextStyle)]       = Nil,
+       (spans:      TreeMap[CharSpan, Ansi.Transform],
+        pos:        Int                               = 0,
+        style:      TextStyle                         = TextStyle(),
+        stack:      List[(CharSpan, TextStyle)]       = Nil,
         insertions: TreeMap[Int, Text]                = TreeMap())
     :     Text =
 

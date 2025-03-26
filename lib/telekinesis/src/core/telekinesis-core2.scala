@@ -43,24 +43,9 @@ import vacuous.*
 import language.dynamics
 import errorDiagnostics.stackTraces
 
-def orchestrate[formulable: Formulable](submit: Optional[Text])(using request: Http.Request)[result]
-   (using Tactic[Exception] ?=> (formulable is Decodable in Query), Formulation)
-   (process: Tactic[Errors] ?=> Http.Request ?=> Submission[formulable] => result)
-: result =
-    mend:
-      case errors: Errors =>
-        mend:
-          case Errors(errors*) => panic(m"Reentrant more than once")
-        . within:
-            process(Submission.Incomplete(elicit[formulable](Query.empty, errors, submit)))
-
-    . within:
-        process:
-          request.method match
-            case Http.Post =>
-              safely(request.query.decode[formulable])
-              . let(Submission.Complete(_))
-              . or(Submission.Invalid(request.query))
-
-            case _ =>
-              Submission.Incomplete(elicit[formulable](Query.empty, Errors(), submit))
+def orchestrate[value](using request: Http.Request)[result]
+   (process: (submission: Submission[value]) ?=> result)
+:     result =
+  request.method match
+    case Http.Post => process(using Submission(request.query))
+    case _         => process(using Submission(Unset))

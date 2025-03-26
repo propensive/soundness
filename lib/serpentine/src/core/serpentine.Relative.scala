@@ -62,8 +62,7 @@ object Relative:
         => (Relative by element) is Decodable in Text =
     parse(_)
 
-  def parse[element](using navigable: Navigable by element)(text: Text)
-  :     Relative by element =
+  def parse[element](using navigable: Navigable by element)(text: Text): Relative by element =
     def recur(start: Int, ascent: Int, elements: List[element]): Relative by element =
       if start >= text.length then Relative(ascent, elements)
       else
@@ -78,8 +77,7 @@ object Relative:
 
     if text == navigable.selfText then Relative(0, Nil) else recur(0, 0, Nil)
 
-  def apply[element](using navigable: Navigable by element)
-     (ascent0: Int, descent0: List[element])
+  def apply[element](using navigable: Navigable by element)(ascent0: Int, descent0: List[element])
   :     Relative by element =
     Relative.from[element](ascent0, descent0.map(navigable.makeElement(_)), navigable.separator)
 

@@ -152,17 +152,15 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
   def branch()(using GitCommand, WorkingDirectory, Tactic[ExecError]): GitBranch logs GitEvent =
     GitBranch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt)
 
-  def makeBranch(branch: GitBranch)
-     (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  :     Unit logs GitEvent =
+  def makeBranch(branch: GitBranch)(using GitCommand, WorkingDirectory)
+  :     Unit logs GitEvent raises ExecError raises GitError =
 
     sh"$git $repoOptions checkout -b $branch".exec[Exit]() match
       case Exit.Ok => ()
       case failure       => abort(GitError(BranchFailed))
 
-  def add[path: Abstractable across Paths into Text](path: path)
-     (using GitCommand, WorkingDirectory, Tactic[ExecError], Tactic[GitError])
-  :     Unit logs GitEvent raises PathError raises NameError =
+  def add[path: Abstractable across Paths into Text](path: path)(using GitCommand, WorkingDirectory)
+  :     Unit logs GitEvent raises PathError raises NameError raises ExecError raises GitError =
 
     val relativePath: Relative =
       workTree.let: workTree =>
