@@ -49,7 +49,7 @@ trait CodlDecoder[value]:
 object CodlDecoder:
 
   def apply[value]
-     (schema0: => CodlSchema, decode0: Tactic[CodlReadError] ?=> List[Indexed] => value)
+       (schema0: => CodlSchema, decode0: Tactic[CodlReadError] ?=> List[Indexed] => value)
   :     CodlDecoder[value] = new:
     def decoded(value: List[Indexed]): value raises CodlReadError = decode0(value)
     def schema: CodlSchema  = schema0

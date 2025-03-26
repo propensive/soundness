@@ -44,11 +44,11 @@ object Honeycomb:
   given realm: Realm = realm"honeycomb"
 
   def read[name <: Label: Type, child <: Label: Type, result <: Label: Type]
-     (node:       Expr[Node[name]],
-      className:  Expr[String],
-      name:       Expr[name],
-      attributes: Expr[Seq[(Label, Any)]])
-     (using Quotes)
+       (node:       Expr[Node[name]],
+        className:  Expr[String],
+        name:       Expr[name],
+        attributes: Expr[Seq[(Label, Any)]])
+       (using Quotes)
   :     Expr[StartTag[name, result]] =
 
     import quotes.reflect.*

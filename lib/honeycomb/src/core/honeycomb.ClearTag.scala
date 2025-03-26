@@ -57,7 +57,7 @@ extends Node[name], Dynamic:
     ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
 
   def applyDynamic[Return <: Label](method: "apply")
-     (children: (Optional[Html[Return]] | Seq[Html[Return]])*)
+       (children: (Optional[Html[Return]] | Seq[Html[Return]])*)
   :     Element[Return] =
 
     Element(labelString, Map(), children)

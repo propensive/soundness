@@ -131,12 +131,9 @@ object NumericRange:
          (right: rightMin ~ rightMax)
       :     Asym
              [rightMin*rightMax,
-              Min4
-               [leftMin/rightMin,
-                leftMax/rightMin,
-                leftMin/rightMax,
-                leftMax/rightMax],
-              -1.0/0.0] ~ Asym
+              Min4[leftMin/rightMin, leftMax/rightMin, leftMin/rightMax, leftMax/rightMax],
+              -1.0/0.0]
+            ~ Asym
                            [rightMin*rightMax,
                             Max4
                              [leftMin/rightMin,

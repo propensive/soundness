@@ -165,8 +165,8 @@ object Contingency:
       case '[type typeLambda[_]; typeLambda] => '{Tend[typeLambda]($handler)}
 
   def track[accrual <: Exception: Type, focus: Type]
-     (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
-     (using Quotes)
+       (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
+       (using Quotes)
   :     Expr[Any] =
 
     import quotes.reflect.*
@@ -187,8 +187,8 @@ object Contingency:
             focus, accrual))}
 
   def validate[accrual: Type, focus: Type]
-     (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
-     (using Quotes)
+       (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
+       (using Quotes)
   :     Expr[Any] =
 
     import quotes.reflect.*
@@ -209,8 +209,8 @@ object Contingency:
             focus, accrual))}
 
   def accrue[accrual <: Exception: Type]
-     (accrual: Expr[accrual], handler: Expr[accrual ?=> Exception ~> accrual])
-     (using Quotes)
+       (accrual: Expr[accrual], handler: Expr[accrual ?=> Exception ~> accrual])
+       (using Quotes)
   :     Expr[Any] =
 
     import quotes.reflect.*
@@ -246,8 +246,8 @@ object Contingency:
       case '[type typeLambda[_]; typeLambda] => '{Mend[result, typeLambda]($handler)}
 
   def tendWithin[context[_]: Type, result: Type]
-        (tend: Expr[Tend[context]], lambda: Expr[context[result]])
-        (using Quotes)
+       (tend: Expr[Tend[context]], lambda: Expr[context[result]])
+       (using Quotes)
     :     Expr[result] =
       import quotes.reflect.*
 
@@ -271,8 +271,8 @@ object Contingency:
       lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
 
   def mendWithin[context[_]: Type, result: Type]
-     (mend: Expr[Mend[?, context]], lambda: Expr[context[result]])
-     (using Quotes)
+       (mend: Expr[Mend[?, context]], lambda: Expr[context[result]])
+       (using Quotes)
   :     Expr[result] =
 
     type ContextResult = context[result]
@@ -302,10 +302,10 @@ object Contingency:
     }
 
   def accrueWithin[accrual <: Exception: Type, context[_]: Type, result: Type]
-     (accrue:      Expr[Accrue[accrual, context]],
-      lambda:      Expr[context[result]],
-      tactic:      Expr[Tactic[accrual]],
-      diagnostics: Expr[Diagnostics])
+       (accrue:      Expr[Accrue[accrual, context]],
+        lambda:      Expr[context[result]],
+        tactic:      Expr[Tactic[accrual]],
+        diagnostics: Expr[Diagnostics])
      (using Quotes)
   :     Expr[result] =
 
@@ -341,13 +341,12 @@ object Contingency:
             case error       => $tactic.abort(error)
     }
 
-  def trackWithin
-     [accrual <: Exception: Type, context[_]: Type, result: Type, focus: Type]
-     (track:       Expr[Tracking[accrual, context, focus]],
-      lambda:      Expr[Foci[focus] ?=> context[result]],
-      tactic:      Expr[Tactic[accrual]],
-      diagnostics: Expr[Diagnostics])
-     (using Quotes)
+  def trackWithin[accrual <: Exception: Type, context[_]: Type, result: Type, focus: Type]
+       (track:       Expr[Tracking[accrual, context, focus]],
+        lambda:      Expr[Foci[focus] ?=> context[result]],
+        tactic:      Expr[Tactic[accrual]],
+        diagnostics: Expr[Diagnostics])
+       (using Quotes)
   :     Expr[result] =
 
     '{  val foci: Foci[focus] = TrackFoci()
@@ -385,12 +384,11 @@ object Contingency:
 
     }
 
-  def validateWithin
-     [accrual <: Exception: Type, context[_]: Type, focus: Type]
-     (validate:    Expr[Validate[accrual, context, focus]],
-      lambda:      Expr[Foci[focus] ?=> context[Any]],
-      diagnostics: Expr[Diagnostics])
-     (using Quotes)
+  def validateWithin[accrual <: Exception: Type, context[_]: Type, focus: Type]
+       (validate:    Expr[Validate[accrual, context, focus]],
+        lambda:      Expr[Foci[focus] ?=> context[Any]],
+        diagnostics: Expr[Diagnostics])
+       (using Quotes)
   :     Expr[accrual] =
 
     '{  val foci: Foci[focus] = TrackFoci()

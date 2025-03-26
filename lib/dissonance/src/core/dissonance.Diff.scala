@@ -42,7 +42,7 @@ import vacuous.*
 object Diff:
   def parse(lines: Stream[Text]): Diff[Text] raises DiffError =
     def recur
-       (todo: Stream[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
+         (todo: Stream[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
     :     Diff[Text] =
       if pos < target
       then recur(todo, line + 1, Par(pos, rpos, Unset) :: edits, pos + 1, rpos + 1, target)

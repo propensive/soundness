@@ -46,7 +46,7 @@ case class Argument(position: Int, value: Text, cursor: Optional[Int]):
     cli.suggest(this, update)
 
   def select[operand](options: Seq[operand])
-     (using cli: Cli, interpreter: CliInterpreter, suggestible: operand is Suggestible)
+       (using cli: Cli, interpreter: CliInterpreter, suggestible: operand is Suggestible)
   :     Optional[operand] =
 
     val mapping: Map[Text, operand] =

@@ -86,12 +86,12 @@ package executives:
     type Interface = CliInvocation
 
     def invocation
-       (arguments:        Iterable[Text],
-        environment:      Environment,
-        workingDirectory: WorkingDirectory,
-        stdio:            Stdio,
-        signals:          Spool[Signal])
-       (using interpreter: CliInterpreter)
+         (arguments:        Iterable[Text],
+          environment:      Environment,
+          workingDirectory: WorkingDirectory,
+          stdio:            Stdio,
+          signals:          Spool[Signal])
+         (using interpreter: CliInterpreter)
     :     CliInvocation =
 
       CliInvocation

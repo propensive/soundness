@@ -57,24 +57,24 @@ object SystemProperty:
         =>  SystemProperty["java.home", path] =
     path(_)
 
-  given javaLibraryPath[path: Instantiable across Paths from Text]
-     (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-  :     SystemProperty["java.library.path", List[path]] =
+  given javaLibraryPath: [path: Instantiable across Paths from Text]
+        => (systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
+        =>  SystemProperty["java.library.path", List[path]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 
-  given javaClassPath[path: Instantiable across Paths from Text]
-     (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-  :     SystemProperty["java.class.path", List[path]] =
+  given javaClassPath: [path: Instantiable across Paths from Text]
+        => (systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
+        =>  SystemProperty["java.class.path", List[path]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 
   given javaVersion: SystemProperty["java.version", Text] = identity(_)
   given javaRuntimeVersion: SystemProperty["java.runtime.version", Text] = identity(_)
 
-  given javaExtDirs[path: Instantiable across Paths from Text]
-     (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-  :     SystemProperty["java.ext.dirs", List[path]] =
+  given javaExtDirs: [path: Instantiable across Paths from Text]
+        => (systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
+        =>  SystemProperty["java.ext.dirs", List[path]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 

@@ -53,7 +53,7 @@ case class Row(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
     IArray.tabulate(columns.size)(columns(_))
 
   def selectDynamic[value: Decodable in Text](field: String)
-     (using DynamicDsvEnabler, DsvRedesignation)
+       (using DynamicDsvEnabler, DsvRedesignation)
   :     Optional[value] =
     apply(summon[DsvRedesignation].transform(field.tt))
 

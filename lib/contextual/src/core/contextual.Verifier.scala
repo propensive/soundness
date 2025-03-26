@@ -49,5 +49,5 @@ extends Interpolator[Nothing, Optional[result], result]:
   protected def complete(value: Optional[result]): result = value.option.get
 
   def expand(context: Expr[StringContext])(using Quotes, Type[result])
-     (using thisType: Type[this.type])
+       (using thisType: Type[this.type])
   :     Expr[result] = expand(context, '{Nil})(using thisType)

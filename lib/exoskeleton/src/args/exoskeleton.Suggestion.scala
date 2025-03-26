@@ -40,11 +40,11 @@ import language.experimental.pureFunctions
 
 object Suggestion:
   def apply
-     (text: Text,
-      description: Optional[Text | Teletype],
-      hidden:     Boolean                   = false,
-      incomplete:  Boolean                   = false,
-      aliases:    List[Text]                = Nil)
+       (text: Text,
+        description: Optional[Text | Teletype],
+        hidden:     Boolean                   = false,
+        incomplete:  Boolean                   = false,
+        aliases:    List[Text]                = Nil)
   :     Suggestion =
 
     new Suggestion(text, description, hidden, incomplete, aliases)

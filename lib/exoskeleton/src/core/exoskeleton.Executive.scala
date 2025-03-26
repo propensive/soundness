@@ -43,12 +43,12 @@ trait Executive:
   type Interface <: Cli
 
   def invocation
-     (fullArguments:    Iterable[Text],
-      environment:      Environment,
-      workingDirectory: WorkingDirectory,
-      stdio:            Stdio,
-      signals:          Spool[Signal])
-     (using interpreter: CliInterpreter)
+       (fullArguments:    Iterable[Text],
+        environment:      Environment,
+        workingDirectory: WorkingDirectory,
+        stdio:            Stdio,
+        signals:          Spool[Signal])
+       (using interpreter: CliInterpreter)
   :     Interface
 
   def process(cli: Interface)(result: Interface ?=> Return): Exit

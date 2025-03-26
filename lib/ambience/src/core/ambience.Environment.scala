@@ -46,18 +46,16 @@ trait Environment:
 
 object Environment extends Dynamic:
   def apply[variable](variable: Text)
-     (using environment:      Environment,
-            reader:           EnvironmentVariable[Label, variable],
-            environmentError: Tactic[EnvironmentError])
-  :     variable =
+       (using environment: Environment, reader: EnvironmentVariable[Label, variable])
+  :     variable raises EnvironmentError =
 
     environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable)))
     . yet(reader.read("".tt))
 
   inline def selectDynamic[variable](key: String)
-     (using environment:      Environment,
-            reader:           EnvironmentVariable[key.type, variable],
-            environmentError: Tactic[EnvironmentError])
+              (using environment:      Environment,
+                     reader:           EnvironmentVariable[key.type, variable],
+                     environmentError: Tactic[EnvironmentError])
   :     variable =
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:

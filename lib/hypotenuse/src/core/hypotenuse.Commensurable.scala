@@ -45,30 +45,30 @@ object Commensurable:
     type Operand = operand
 
     inline def compare
-       (inline left:        Boolean,
-        inline right:       operand,
-        inline strict:      Boolean,
-        inline greaterThan: Boolean)
+                (inline left: Boolean,
+                 inline right: operand,
+                 inline strict: Boolean,
+                 inline greaterThan: Boolean)
     :     Boolean =
 
       ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
 
   given orderable: Memory is Orderable:
     inline def compare
-       (inline left:    Memory,
-        inline right:   Memory,
-        inline strict:  Boolean,
-        inline greater: Boolean)
+                (inline left:    Memory,
+                 inline right:   Memory,
+                 inline strict:  Boolean,
+                 inline greater: Boolean)
     :     Boolean =
 
       !strict && left.long == right.long || (left.long < right.long) ^ greater
 
   inline given countback: Countback is Orderable:
     inline def compare
-       (inline left:    Countback,
-        inline right:   Countback,
-        inline strict:  Boolean,
-        inline greater: Boolean)
+                (inline left:    Countback,
+                 inline right:   Countback,
+                 inline strict:  Boolean,
+                 inline greater: Boolean)
     :     Boolean =
 
       inline if greater then inline if strict then left.gt(right) else left.ge(right)
@@ -76,10 +76,10 @@ object Commensurable:
 
   inline given ordinal: Ordinal is Orderable:
     inline def compare
-       (inline left:    Ordinal,
-        inline right:   Ordinal,
-        inline strict:  Boolean,
-        inline greater: Boolean)
+                (inline left:    Ordinal,
+                 inline right:   Ordinal,
+                 inline strict:  Boolean,
+                 inline greater: Boolean)
     :     Boolean =
 
       inline if greater then inline if strict then left.gt(right) else left.ge(right)
@@ -90,5 +90,8 @@ trait Commensurable:
   type Operand
 
   inline def compare
-     (inline left: Self, inline right: Operand, inline strict: Boolean, inline greaterThan: Boolean)
+              (inline left:        Self,
+               inline right:       Operand,
+               inline strict:      Boolean,
+               inline greaterThan: Boolean)
   :     Boolean

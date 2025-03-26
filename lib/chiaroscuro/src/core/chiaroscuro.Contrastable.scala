@@ -121,10 +121,10 @@ object Contrastable extends Contrastable2:
       else Juxtaposition.Different(leftMsg, rightMsg)
 
   def compareSeq[value]
-     (left:       IArray[Decomposition],
-      right:      IArray[Decomposition],
-      leftDebug:  Text,
-      rightDebug: Text)
+       (left:       IArray[Decomposition],
+        right:      IArray[Decomposition],
+        leftDebug:  Text,
+        rightDebug: Text)
   :     Juxtaposition =
     if left == right then Juxtaposition.Same(leftDebug) else
       val comparison = IArray.from:

@@ -126,10 +126,10 @@ object Aviation:
 
     inline given orderable: Date is Orderable:
       inline def compare
-         (inline left:        Date,
-          inline right:       Date,
-          inline strict:      Boolean,
-          inline greaterThan: Boolean)
+                  (inline left:        Date,
+                   inline right:       Date,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
         if left == right then !strict else (left < right)^greaterThan
 

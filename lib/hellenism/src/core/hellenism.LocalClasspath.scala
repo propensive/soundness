@@ -60,8 +60,8 @@ object LocalClasspath:
       new LocalClasspath(entries, entries.to(Set))
 
   def apply
-     (entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar |
-                ClasspathEntry.JavaRuntime.type])
+       (entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar |
+                  ClasspathEntry.JavaRuntime.type])
   :     LocalClasspath =
     new LocalClasspath(entries, entries.to(Set))
 

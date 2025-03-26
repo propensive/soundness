@@ -42,7 +42,7 @@ import language.experimental.captureChecking
 
 object Adversaria:
   def firstField[target <: Product: Type, annotation <: StaticAnnotation: Type]
-     (using Quotes)
+       (using Quotes)
   :     Expr[CaseField[target, annotation]] =
 
     import quotes.reflect.*

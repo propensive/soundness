@@ -67,7 +67,11 @@ object Hyperbole:
         e""
 
     case class TastyTree
-       (name: Text, expr: Text, source: Text, children: List[TastyTree], param: Optional[Text]):
+                (name:     Text,
+                 expr:     Text,
+                 source:   Text,
+                 children: List[TastyTree],
+                 param:    Optional[Text]):
 
       def shortCode: Text =
         val c = expr.upto(_ != '\n')
@@ -76,7 +80,7 @@ object Hyperbole:
 
     object TastyTree:
       def apply
-         (name: Text, tree: Tree, children: List[TastyTree], parameter: Optional[Text] = Unset)
+           (name: Text, tree: Tree, children: List[TastyTree], parameter: Optional[Text] = Unset)
       :     TastyTree =
 
         TastyTree(name, tree.show.show, source(tree).plain, children, parameter)
