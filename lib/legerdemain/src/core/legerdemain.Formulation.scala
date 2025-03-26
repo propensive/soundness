@@ -41,5 +41,8 @@ trait Formulation:
   def form(content: List[Html[Flow]], submit: Optional[Text]): Html[Flow]
 
   def element
-     (widget: List[Html[Phrasing]], legend: Text, validation: Optional[Message], required: Boolean)
+       (widget:     List[Html[Phrasing]],
+        legend:     Text,
+        validation: Optional[Message],
+        required:   Boolean)
   :     Html[Flow]

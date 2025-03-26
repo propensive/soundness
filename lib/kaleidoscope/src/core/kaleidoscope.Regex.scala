@@ -74,14 +74,14 @@ object Regex:
     def unitary: Boolean = this == Exactly(1)
 
   case class Group
-     (start:      Int,
-      end:        Int,
-      outerEnd:   Int,
-      groups:     List[Group] = Nil,
-      quantifier: Quantifier  = Quantifier.Exactly(1),
-      greed:      Greed       = Greed.Greedy,
-      capture:    Boolean     = false,
-      charClass:  Boolean     = false):
+              (start:      Int,
+               end:        Int,
+               outerEnd:   Int,
+               groups:     List[Group] = Nil,
+               quantifier: Quantifier  = Quantifier.Exactly(1),
+               greed:      Greed       = Greed.Greedy,
+               capture:    Boolean     = false,
+               charClass:  Boolean     = false):
 
     def outerStart: Int = (start - 1).max(0)
     def allGroups: List[Regex.Group] = groups.flatMap { group => group :: group.allGroups }
@@ -305,9 +305,9 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
     val matcher: jur.Matcher = javaPattern.matcher(text.s).nn
 
     def recur
-       (todo:    List[Regex.Group],
-        matches: List[Optional[Text | Char] | List[Text | Char]],
-        index:   Int)
+         (todo:    List[Regex.Group],
+          matches: List[Optional[Text | Char] | List[Text | Char]],
+          index:   Int)
     :     List[Optional[Text | Char] | List[Text | Char]] =
 
       todo match

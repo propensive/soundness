@@ -179,9 +179,9 @@ extension [value](iterable: Iterable[value])
     (iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble).sqrt
 
   def product
-     (using unital:        value is Unital,
-            multiplicable: value is Multiplicable by value,
-            equality:      multiplicable.Result =:= value)
+       (using unital:        value is Unital,
+              multiplicable: value is Multiplicable by value,
+              equality:      multiplicable.Result =:= value)
   :     value =
     iterable.foldLeft(unital.one)(multiplicable.multiply)
 

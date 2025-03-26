@@ -99,8 +99,8 @@ object JsonAst:
       | Null | Unset.type
 
   def apply
-     (value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] |
-              Boolean | Null | Unset.type)
+       (value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any]
+               | Boolean | Null | Unset.type)
   :     JsonAst =
 
     value
