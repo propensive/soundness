@@ -105,7 +105,10 @@ object Hypotenuse:
       type Operand = Int
 
       inline def compare
-                  (inline left: F64, inline right: Int, inline strict: Boolean, inline greaterThan: Boolean)
+                  (inline left:        F64,
+                   inline right:       Int,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
 
         inline if greaterThan
@@ -177,7 +180,10 @@ object Hypotenuse:
     inline given orderable: F32 is Orderable:
 
       inline def compare
-                  (inline left: F32, inline right: F32, inline strict: Boolean, inline greaterThan: Boolean)
+                  (inline left:        F32,
+                   inline right:       F32,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
 
         inline if greaterThan
@@ -225,7 +231,10 @@ object Hypotenuse:
     inline given orderable: U64 is Orderable:
 
       inline def compare
-                  (inline left: U64, inline right: U64, inline strict: Boolean, inline greaterThan: Boolean)
+                  (inline left:        U64,
+                   inline right:       U64,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
 
         inline if greaterThan then
@@ -250,7 +259,10 @@ object Hypotenuse:
     inline given orderable: S64 is Orderable:
 
       inline def compare
-                  (inline left: S64, inline right: S64, inline strict: Boolean, inline greaterThan: Boolean)
+                  (inline left:        S64,
+                   inline right:       S64,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
 
         inline if greaterThan
@@ -270,7 +282,10 @@ object Hypotenuse:
 
     inline given orderable: U32 is Orderable:
       inline def compare
-                  (inline left: U32, inline right: U32, inline strict: Boolean, inline greaterThan: Boolean)
+                  (inline left:        U32,
+                   inline right:       U32,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
 
         inline if greaterThan then
@@ -295,7 +310,10 @@ object Hypotenuse:
     inline given orderable: S32 is Orderable:
 
       inline def compare
-                  (inline left: S32, inline right: S32, inline strict: Boolean, inline greaterThan: Boolean)
+                  (inline left:        S32,
+                   inline right:       S32,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
 
         inline if greaterThan
@@ -315,7 +333,10 @@ object Hypotenuse:
     inline given orderable: U16 is Orderable:
 
       inline def compare
-                  (inline left: U16, inline right: U16, inline strict: Boolean, inline greaterThan: Boolean)
+                  (inline left:        U16,
+                   inline right:       U16,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
 
         val left2 = JShort.toUnsignedInt(left)
@@ -341,7 +362,10 @@ object Hypotenuse:
     inline given orderable: S16 is Orderable:
 
       inline def compare
-                  (inline left: S16, inline right: S16, inline strict: Boolean, inline greaterThan: Boolean)
+                  (inline left:        S16,
+                   inline right:       S16,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
 
         inline if greaterThan
@@ -360,7 +384,10 @@ object Hypotenuse:
     inline given orderable: U8 is Orderable:
 
       inline def compare
-                  (inline left: U8, inline right: U8, inline strict: Boolean, inline greaterThan: Boolean)
+                  (inline left:        U8,
+                   inline right:       U8,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
 
         val left2 = JByte.toUnsignedInt(left)
@@ -386,7 +413,10 @@ object Hypotenuse:
     inline given inquality: S8 is Orderable:
 
       inline def compare
-                  (inline left: S8, inline right: S8, inline strict: Boolean, inline greaterThan: Boolean)
+                  (inline left:        S8,
+                   inline right:       S8,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
 
         inline if greaterThan

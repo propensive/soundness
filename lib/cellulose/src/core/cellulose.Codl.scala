@@ -285,7 +285,11 @@ object Codl:
     val margin: Int = first.column
 
     def istream
-         (char: Character, state: State = Indent, indent: Int = margin, count: Int, padding: Boolean)
+         (char:    Character,
+          state:   State     = Indent,
+          indent:  Int       = margin,
+          count:   Int,
+          padding: Boolean)
     :     Stream[CodlToken] =
       stream(char, state, indent, count, padding)
 
