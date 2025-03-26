@@ -182,8 +182,7 @@ extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lamb
   :     result =
     ${Contingency.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic, 'diagnostics)}
 
-extension [accrual <: Exception,  lambda[_], focus]
-   (inline track: Tracking[accrual, lambda, focus])
+extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
   inline def within[result](inline lambda: Foci[focus] ?=> lambda[result])
      (using tactic: Tactic[accrual], diagnostics: Diagnostics)
   :     result =
@@ -191,7 +190,7 @@ extension [accrual <: Exception,  lambda[_], focus]
           'diagnostics)}
 
 extension [accrual <: Exception,  lambda[_], focus]
-    (inline validate: Validate[accrual, lambda, focus])
+          (inline validate: Validate[accrual, lambda, focus])
   inline def within(inline lambda: Foci[focus] ?=> lambda[Any])(using diagnostics: Diagnostics)
   :     accrual =
     ${Contingency.validateWithin[accrual, lambda, focus]('validate, 'lambda, 'diagnostics)}

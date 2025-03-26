@@ -74,7 +74,7 @@ def mute[format](using erased Void)[result](lambda: (format is Loggable) ?=> res
 
 extension (logObject: Log.type)
   def envelop[tag, event: {Taggable by tag, Loggable as loggable}](value: tag)[result]
-     (lambda: (event is Loggable) ?=> result)
+       (lambda: (event is Loggable) ?=> result)
   :     result =
     lambda(using loggable.contramap(_.tag(value)))
 
