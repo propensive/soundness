@@ -30,35 +30,44 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package contingency
+
+import language.experimental.pureFunctions
+
+import scala.annotation.*
 
 import anticipation.*
-import contingency.*
-import distillate.*
 import fulminate.*
-import honeycomb.*
-import legerdemain.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 
-case class Submission[value](query: Optional[Query]):
-  def fresh: Boolean = query.absent
+import errorDiagnostics.stackTraces
 
-  def optional(using Tactic[Exception] ?=> value is Decodable in Query): Optional[value] =
-    safely(query.let(_.decode[value]))
+object Validation:
+  def text(messages: List[(Pointer, Message)] = Nil): Message =
+    val joined: Message =
+      messages.map:
+        case (Pointer.Self, message) => message
+        case (pointer, message)      => m"$message at $pointer"
 
-  def submitted: Boolean = query.present
+      . reverse
+      . fuse(m"")(state+next)
 
-  def valid(using Tactic[Exception] ?=> value is Decodable in Query): Boolean = optional.present
-  def value(using value is Decodable in Query): Optional[value] = query.let(_.decode[value])
+    messages.size match
+      case 0 => m"no messages"
+      case 1 => m"one message: $joined"
+      case 2 => m"two messages: $joined"
+      case 3 => m"three messages: $joined"
+      case 4 => m"four messages: $joined"
+      case n => m"$n messages: $joined"
 
-  def form
-       (submit:     Optional[Text]       = Unset,
-        value:      Optional[value]      = Unset,
-        validation: Optional[Validation] = Unset)
-       (using value is Formulaic, value is Encodable in Query, Formulation)
-  :     Html[Flow] =
+case class Validation(messages: List[(Pointer, Message)] = Nil)
+extends Error(Validation.text(messages)):
+  private lazy val map: Map[Pointer, Message] = messages.to(Map)
 
-    val data: Optional[Query] = query.or(value.let(_.encode))
-    elicit[value](query, validation.or(Validation()), submit)
+  @targetName("add")
+  infix def + (pointer: Pointer, message: Message): Validation =
+    Validation((pointer, message) :: messages)
+
+  def apply(pointer: Pointer): Optional[Message] = map.at(pointer)
+  def text: Message = Validation.text(messages)

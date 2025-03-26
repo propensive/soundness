@@ -44,16 +44,19 @@ import html5.*
 
 given realm: Realm = realm"legerdemain"
 
-def elicit[value: Formulable]
-   (query: Optional[Query] = Unset, errors: Errors, submit: Optional[Text])
+def elicit[value: Formulaic]
+   (query: Optional[Query] = Unset, validation: Validation, submit: Optional[Text])
    (using formulation: Formulation)
 :     Html[Flow] =
-  formulation.form(value.fields(t"", t"", query.or(Query.empty), errors, formulation), submit)
+  formulation.form
+   (value.fields(Pointer.Self, t"", query.or(Query.empty), validation, formulation), submit)
 
-extension [formulable: {Formulable, Encodable in Query}](value: formulable)
-  def edit(errors: Errors, submit: Optional[Text])(using formulation: Formulation): Html[Flow] =
+extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
+  def edit(validation: Validation, submit: Optional[Text])(using formulation: Formulation)
+  :     Html[Flow] =
     formulation.form
-     (formulable.fields(t"", t"", formulable.encoded(value), errors, formulation), submit)
+     (formulaic.fields(Pointer.Self, t"", formulaic.encoded(value), validation, formulation),
+      submit)
 
 package formulations:
   given default: Formulation:

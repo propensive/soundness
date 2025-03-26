@@ -43,18 +43,15 @@ object Elicitable:
   given boolean: Boolean is Elicitable:
     type Operand = Checkbox
     def input(value: Boolean): Text = if value then t"on" else t""
-    def output(value: Text): Boolean = value != t""
     def widget(id: Text, label: Text, value: Text): Checkbox = Checkbox(id, value)
 
-  given decodable: [value: {Decodable in Text, Encodable in Text}] => value is Elicitable:
+  given decodable: [value: Encodable in Text] => value is Elicitable:
     type Operand = Field
     def input(value: value): Text = value.encode
-    def output(value: Text): value = value.decode
     def widget(id: Text, label: Text, value: Text): Field = Field(label, id, value)
 
 trait Elicitable:
   type Self
   type Operand
   def input(value: Self): Text
-  def output(value: Text): Self
   def widget(id: Text, label: Text, value: Text): Operand

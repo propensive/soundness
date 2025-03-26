@@ -75,11 +75,11 @@ object Query extends Dynamic:
     inline def join[derivation <: Product: ProductReflection]
     :     derivation is Decodable in Query =
 
-      summonInline[Foci[Text]].give:
+      summonInline[Foci[Pointer]].give:
         value =>
           construct:
             [field] => context =>
-              focus(prior.lay(label) { suffix => t"$label.$suffix" }):
+              focus(prior.lay(Pointer(label))(_(label))):
                 context.decoded(value(label))
 
   given booleanEncodable: Boolean is Encodable in Query =
@@ -130,7 +130,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
     decodable.decoded(apply(label.tt))
 
   def at[value: Decodable in Text](name: Text): Optional[Text] = apply(name)().let(_.decode)
-  def as[value: Decodable in Query]: value tracks Text = value.decoded(this)
+  def as[value: Decodable in Query]: value tracks Pointer = value.decoded(this)
 
   def apply(): Optional[Text] = values match
     case List((t"", value)) => value

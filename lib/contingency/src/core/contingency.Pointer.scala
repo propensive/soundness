@@ -30,35 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package contingency
 
 import anticipation.*
-import contingency.*
-import distillate.*
 import fulminate.*
-import honeycomb.*
-import legerdemain.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
 
-case class Submission[value](query: Optional[Query]):
-  def fresh: Boolean = query.absent
+import scala.collection.mutable as scm
 
-  def optional(using Tactic[Exception] ?=> value is Decodable in Query): Optional[value] =
-    safely(query.let(_.decode[value]))
+object Pointer:
+  def apply(): Pointer = Pointer.Self
+  def apply(label: Text): Pointer = Pointer.Child(Pointer.Self, label)
 
-  def submitted: Boolean = query.present
+  given encodable: Pointer is Encodable in Text = _.text
+  given communicable: Pointer is Communicable = pointer => Message(pointer.text)
 
-  def valid(using Tactic[Exception] ?=> value is Decodable in Query): Boolean = optional.present
-  def value(using value is Decodable in Query): Optional[value] = query.let(_.decode[value])
+enum Pointer:
+  case Self
+  case Child(parent: Pointer, label: Text)
 
-  def form
-       (submit:     Optional[Text]       = Unset,
-        value:      Optional[value]      = Unset,
-        validation: Optional[Validation] = Unset)
-       (using value is Formulaic, value is Encodable in Query, Formulation)
-  :     Html[Flow] =
+  def text: Text = this match
+    case Self                 => "".tt
+    case Child(Self, label)   => label
+    case Child(parent, label) => s"${parent.text}.$label".tt
 
-    val data: Optional[Query] = query.or(value.let(_.encode))
-    elicit[value](query, validation.or(Validation()), submit)
+  def apply(label: Text): Pointer = Pointer.Child(this, label)

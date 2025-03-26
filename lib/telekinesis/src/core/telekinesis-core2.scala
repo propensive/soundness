@@ -36,16 +36,31 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
+import honeycomb.*
 import legerdemain.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 import language.dynamics
 import errorDiagnostics.stackTraces
 
-def orchestrate[value](using request: Http.Request)[result]
-   (process: (submission: Submission[value]) ?=> result)
-:     result =
-  request.method match
-    case Http.Post => process(using Submission(request.query))
-    case _         => process(using Submission(Unset))
+class Orchestrate[value, result](process: (Text => Html[Flow]) => Optional[value] => result):
+  def otherwise(validate: (query: Query) ?=> Validation)(using Formulation, value is Formulaic)
+       (using decodable: Tactic[Exception] ?=> value is Decodable in Query)
+       (using request: Http.Request)
+  : result raises QueryError =
+    request.method match
+      case Http.Post =>
+        val result: Optional[value] = safely(decodable.decoded(request.query))
+        val validation = if result.absent then validate(using request.query) else Validation()
+
+        process(elicit[value](request.query, validation, _))(result)
+
+      case _         =>
+        process(elicit[value](Query.empty, Validation(), _))(Unset)
+
+def orchestrate[value](using DummyImplicit)[result]
+     (render: (form: Text => Html[Flow]) ?=> (value: Optional[value]) => result)
+:     Orchestrate[value, result] =
+  new Orchestrate[value, result](render(using _))

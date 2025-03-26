@@ -171,9 +171,6 @@ transparent inline def validate[focus](using erased Void)[accrual](accrual: accr
 :     Any =
   ${Contingency.validate[accrual, focus]('accrual, 'block)}
 
-transparent inline def aggregate(using Diagnostics): Any = validate[Text](Errors()):
-  case error: Error => accrual + (focus.or("unknown".tt), error)
-
 transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
    (inline block: (accrual: accrual) ?=> Exception ~> accrual)
 :     Any =

@@ -44,7 +44,6 @@ import rudiments.*
 import vacuous.*
 
 object Contingency:
-
   def unwrap(using Quotes)(term: quotes.reflect.Term): quotes.reflect.Term =
     import quotes.reflect.*
     term match
