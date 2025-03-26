@@ -58,10 +58,10 @@ object Complex:
         Complex[subtractable.Result](left.real - right.real, left.imaginary - right.imaginary)
 
   inline given multiplicable: [component, multiplicand <: Complex[component]]
-        => (multiplication: component is Multiplicable by component,
-            addition:       multiplication.Result is Addable by multiplication.Result,
-            subtraction:    multiplication.Result is Subtractable by multiplication.Result)
-        =>  Complex[component] is Multiplicable by Complex[component] =
+               => (multiplication: component is Multiplicable by component,
+                   addition:       multiplication.Result is Addable by multiplication.Result,
+                   subtraction:    multiplication.Result is Subtractable by multiplication.Result)
+               =>  Complex[component] is Multiplicable by Complex[component] =
     Multiplicable[Complex[component],
                   Complex[component],
                   Complex[addition.Result | subtraction.Result]]:
@@ -115,9 +115,9 @@ case class Complex[component](real: component, imaginary: component):
   inline infix def * [component2](right: Complex[component2])
                      (using multiplication: component is Multiplicable by component2,
                             addition:       multiplication.Result is Addable by
-                                                multiplication.Result,
+                                             multiplication.Result,
                             subtraction:    multiplication.Result is Subtractable by
-                                                multiplication.Result)
+                                             multiplication.Result)
   :     Complex[subtraction.Result | addition.Result] =
 
     Complex
@@ -125,10 +125,10 @@ case class Complex[component](real: component, imaginary: component):
 
   inline def argument
               (using multiplication: component is Multiplicable by component,
-               addition:      multiplication.Result is Addable by multiplication.Result,
-               sqrt:          addition.Result is Rootable[2],
-               division:      component is Divisible by sqrt.Result,
-               equality:      division.Result =:= Double)
+                     addition:       multiplication.Result is Addable by multiplication.Result,
+                     sqrt:           addition.Result is Rootable[2],
+                     division:       component is Divisible by sqrt.Result,
+                     equality:       division.Result =:= Double)
   :     Double =
 
     scala.math.atan2(imaginary/modulus, real/modulus)
@@ -141,13 +141,13 @@ case class Complex[component](real: component, imaginary: component):
     squareRoot.root(real*real + imaginary*imaginary)
 
   inline def sqrt
-     (using multiplication:  component is Multiplicable by component,
-            addition:        multiplication.Result is Addable by multiplication.Result,
-            sqrt:            addition.Result is Rootable[2],
-            division:     component is Divisible by sqrt.Result,
-            equality:     division.Result =:= Double,
-            sqrt2:        sqrt.Result is Rootable[2],
-            multiplication2: sqrt2.Result is Multiplicable by Double)
+              (using multiplication:  component is Multiplicable by component,
+                     addition:        multiplication.Result is Addable by multiplication.Result,
+                     sqrt:            addition.Result is Rootable[2],
+                     division:        component is Divisible by sqrt.Result,
+                     equality:        division.Result =:= Double,
+                     sqrt2:           sqrt.Result is Rootable[2],
+                     multiplication2: sqrt2.Result is Multiplicable by Double)
   :     Complex[multiplication2.Result] =
     Complex.polar(modulus.sqrt, argument/2.0)
 
