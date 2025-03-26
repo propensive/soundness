@@ -91,7 +91,10 @@ object Hypotenuse:
     inline given orderable: F64 is Orderable:
 
       inline def compare
-         (inline left: F64, inline right: F64, inline strict: Boolean, inline greater: Boolean)
+                  (inline left:    F64,
+                   inline right:   F64,
+                   inline strict:  Boolean,
+                   inline greater: Boolean)
       :     Boolean =
 
         inline if greater

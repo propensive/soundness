@@ -178,13 +178,13 @@ transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
 
 extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lambda])
   inline def within[result](inline lambda: lambda[result])
-     (using tactic: Tactic[accrual], diagnostics: Diagnostics)
+              (using tactic: Tactic[accrual], diagnostics: Diagnostics)
   :     result =
     ${Contingency.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic, 'diagnostics)}
 
 extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
   inline def within[result](inline lambda: Foci[focus] ?=> lambda[result])
-     (using tactic: Tactic[accrual], diagnostics: Diagnostics)
+              (using tactic: Tactic[accrual], diagnostics: Diagnostics)
   :     result =
     ${Contingency.trackWithin[accrual, lambda, result, focus]('track, 'lambda, 'tactic,
           'diagnostics)}
@@ -200,7 +200,7 @@ extension [value](optional: Optional[value])
     optional.or(abort(error))
 
   def dare[error <: Exception](using erased Void)[success]
-     (block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=>
+       (block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=>
                   value => success)
   :     Optional[success] =
 

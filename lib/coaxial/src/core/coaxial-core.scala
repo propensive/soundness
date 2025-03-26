@@ -68,7 +68,7 @@ extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
     serviceable.receive(connection)
 
   def exchange[state](initialState: state)[message: Ingressive](initialMessage: message = Bytes())
-     (handle: (state: state) ?=> message => Control[state])
+       (handle: (state: state) ?=> message => Control[state])
   :     state =
 
     val connection = serviceable.connect(endpoint)

@@ -61,9 +61,9 @@ sealed trait Executable:
     fork[result]().await()
 
   def apply()
-     (using erased intelligible: Exec is Intelligible,
-                   working:      WorkingDirectory,
-                   computable:   intelligible.Result is Computable)
+       (using erased intelligible: Exec is Intelligible,
+                     working:      WorkingDirectory,
+                     computable:   intelligible.Result is Computable)
   :     intelligible.Result logs ExecEvent raises ExecError =
 
     fork[intelligible.Result]().await()

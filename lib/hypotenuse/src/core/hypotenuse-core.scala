@@ -409,21 +409,21 @@ inline def log1p(f64: into F64): F64 = F64(math.log1p(f64.double))
 extension [left](inline left: left)
   @targetName("lt")
   inline infix def < [right](inline right: right)
-     (using inline commensurable: left is Commensurable by right)
+                     (using inline commensurable: left is Commensurable by right)
   :     Boolean =
 
     commensurable.compare(left, right, true, false)
 
   @targetName("lte")
   inline infix def <= [right](inline right: right)
-     (using inline commensurable: left is Commensurable by right)
+                      (using inline commensurable: left is Commensurable by right)
   :     Boolean =
 
     commensurable.compare(left, right, false, false)
 
   @targetName("gt")
   inline infix def > [right](inline right: right)
-     (using inline commensurable: left is Commensurable by right)
+                     (using inline commensurable: left is Commensurable by right)
   :     Boolean =
 
     commensurable.compare(left, right, true, true)

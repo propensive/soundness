@@ -41,12 +41,12 @@ case class Replace(context: List[Text], original: List[Text], replacement: List[
 object CasualDiff:
   def parse(stream: Stream[Text])(using Tactic[CasualDiffError]): CasualDiff =
     def recur
-       (stream:      Stream[Text],
-        context:     List[Text],
-        original:    List[Text],
-        replacement: List[Text],
-        done:        List[Replace],
-        lineNo:      Int)
+         (stream:      Stream[Text],
+          context:     List[Text],
+          original:    List[Text],
+          replacement: List[Text],
+          done:        List[Replace],
+          lineNo:      Int)
     :     List[Replace] =
 
       stream match
@@ -66,8 +66,8 @@ object CasualDiff:
               recur(tail, Nil, List(head.s.drop(2).tt), Nil, replace :: done, lineNo + 1)
             else recur(tail, Nil, head.s.drop(2).tt :: original, Nil, done, lineNo + 1)
           else raise
-           (CasualDiffError(CasualDiffError.Reason.BadLineStart(head), lineNo),
-            recur(tail, context, original, replacement, done, lineNo + 1))
+                (CasualDiffError(CasualDiffError.Reason.BadLineStart(head), lineNo),
+                 recur(tail, context, original, replacement, done, lineNo + 1))
 
         case _ =>
           (Replace(context.reverse, original.reverse, replacement.reverse) :: done).reverse

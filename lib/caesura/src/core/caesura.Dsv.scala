@@ -97,14 +97,14 @@ object Dsv:
   given showable: DsvFormat => Dsv is Showable = _.rows.map(_.show).join(t"\n")
 
   private def recur
-     (content:  Stream[Text],
-      index:    Ordinal                  = Prim,
-      column:   Int                      = 0,
-      cells:    Array[Text]              = new Array[Text](0),
-      builder:  TextBuilder              = TextBuilder(),
-      state:    State                    = State.Fresh,
-      headings: Optional[Map[Text, Int]] = Unset)
-     (using format: DsvFormat, tactic: Tactic[DsvError])
+               (content:  Stream[Text],
+                index:    Ordinal                  = Prim,
+                column:   Int                      = 0,
+                cells:    Array[Text]              = new Array[Text](0),
+                builder:  TextBuilder              = TextBuilder(),
+                state:    State                    = State.Fresh,
+                headings: Optional[Map[Text, Int]] = Unset)
+               (using format: DsvFormat, tactic: Tactic[DsvError])
   :     Stream[Row] =
 
     inline def putCell(): Array[Text] =

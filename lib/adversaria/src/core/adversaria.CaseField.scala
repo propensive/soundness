@@ -40,7 +40,7 @@ import language.experimental.captureChecking
 
 object CaseField:
   def apply[target <: Product, annotation <: StaticAnnotation, field]
-     (name: Text, access: target -> field, annotation0: annotation)
+       (name: Text, access: target -> field, annotation0: annotation)
   :     CaseField[target, annotation] of field =
 
     new CaseField[target, annotation](name):

@@ -106,7 +106,7 @@ extension (bytes: Bytes)
 
 extension [textual](text: textual)
   def cut[delimiter](delimiter: delimiter, limit: Int = Int.MaxValue)
-     (using cuttable: textual is Cuttable by delimiter)
+       (using cuttable: textual is Cuttable by delimiter)
   :     List[textual] =
 
     cuttable.cut(text, delimiter, limit)

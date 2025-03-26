@@ -72,9 +72,12 @@ object html5:
 
   val Br = Tag["br", Nothing, Global]("br")
 
-  val Button = Tag["button", Phrasing, Global | "disabled" | "form" | "formaction" |
-      "formenctype" | "formmethod" | "formnovalidate" | "formtarget" | "name" | "type" | "value"]
-      ("button")
+  val Button =
+    Tag
+     ["button",
+      Phrasing, Global | "disabled" | "form" | "formaction" | "formenctype" | "formmethod"
+      | "formnovalidate" | "formtarget" | "name" | "type" | "value"]
+     ("button")
 
   // complicated
   val Canvas = ClearTag["canvas", NonInteractive, Global | "width" | "height"]("canvas")
@@ -225,8 +228,8 @@ object html5:
 
   val Ol = Tag["ol", "li" | ScriptSupporting, Global | "reversed" | "start" | "type"]("ol")
 
-  val Optgroup = Tag["optgroup", "option" | ScriptSupporting, Global | "disabled" | "label"]
-      ("optgroup")
+  val Optgroup =
+    Tag["optgroup", "option" | ScriptSupporting, Global | "disabled" | "label"]("optgroup")
 
   val Option =
     Tag["option", Nothing, Global | "disabled" | "label" | "selected" | "value"]("option")
