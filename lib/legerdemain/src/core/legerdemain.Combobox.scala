@@ -40,12 +40,11 @@ import vacuous.*
 
 import html5.*
 
-object Autocomplete:
-  given renderable: Autocomplete is Renderable into Phrasing = autocomplete => List:
-    Span
-     (Input(list = DomId(autocomplete.name)),
-      Datalist(id = DomId(autocomplete.name)):
-        autocomplete.options.map: option =>
-          html5.Option(value = option))
+object Combobox:
+  given renderable: Combobox is Renderable into Phrasing = combobox => List[Html[Phrasing]]
+   (Input(name = combobox.name, list = DomId(combobox.name), value = combobox.value),
+    Datalist(id = DomId(combobox.name)):
+      combobox.options.map: option =>
+        html5.Option(value = option))
 
-case class Autocomplete(name: Text, options: List[Text], value: Text) extends Widget
+case class Combobox(name: Text, options: List[Text], value: Text) extends Widget

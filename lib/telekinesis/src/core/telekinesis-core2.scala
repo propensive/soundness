@@ -45,7 +45,8 @@ import vacuous.*
 import language.dynamics
 import errorDiagnostics.stackTraces
 
-class Orchestrate[value, result](process: (Text => Html[Flow]) => Optional[value] => result):
+class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = Unset)
+       (process: (Text => Html[Flow]) => Optional[value] => result):
   def otherwise(validate: (query: Query) ?=> Validation)(using Formulation, value is Formulaic)
        (using decodable: Tactic[Exception] ?=> value is Decodable in Query)
        (using request: Http.Request)
@@ -58,9 +59,9 @@ class Orchestrate[value, result](process: (Text => Html[Flow]) => Optional[value
         process(elicit[value](request.query, validation, _))(result)
 
       case _         =>
-        process(elicit[value](Query.empty, Validation(), _))(Unset)
+        process(elicit[value](initial.let(_.encode).or(Query.empty), Validation(), _))(Unset)
 
-def orchestrate[value](using DummyImplicit)[result]
+def orchestrate[value: Encodable in Query](initial: Optional[value] = Unset)[result]
      (render: (form: Text => Html[Flow]) ?=> (value: Optional[value]) => result)
 :     Orchestrate[value, result] =
-  new Orchestrate[value, result](render(using _))
+  new Orchestrate[value, result](initial)(render(using _))

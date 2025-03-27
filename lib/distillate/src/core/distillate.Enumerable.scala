@@ -32,13 +32,16 @@
                                                                                                   */
 package distillate
 
+import scala.deriving.*
+import scala.util.*
+
 import anticipation.*
 import denominative.*
 import rudiments.*
 import vacuous.*
 
 object Enumerable:
-  inline given derived: [enumeration <: reflect.Enum] => enumeration is Enumerable =
+  inline given derived: [enumeration <: reflect.Enum: Mirror.SumOf] => enumeration is Enumerable =
     ${Distillate.enumerable[enumeration]}
 
 trait Enumerable:
