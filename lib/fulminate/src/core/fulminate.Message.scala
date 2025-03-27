@@ -65,7 +65,7 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
 
   def segments: List[Text | Message] =
     def recur(parts: List[Text], messages: List[Message]): List[Text | Message] = parts match
-      case head :: tail => head :: messages.head :: recur(tail, messages.tail)
+      case head :: tail => messages.head :: head :: recur(tail, messages.tail)
       case Nil          => Nil
 
     texts.head :: recur(texts.tail, messages)
