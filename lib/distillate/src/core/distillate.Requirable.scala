@@ -30,35 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package legerdemain
+package distillate
 
 import anticipation.*
-import distillate.*
-import fulminate.*
-import gossamer.*
+import contingency.*
 import prepositional.*
 import vacuous.*
 
-object Elicitable:
-  given boolean: Boolean is Elicitable:
-    type Operand = Checkbox
-    def input(value: Boolean): Text = if value then t"on" else t""
-    def widget(id: Text, label: Text, value: Text): Checkbox = Checkbox(id, value)
+object Requirable:
+  given decodable: [value] => (decodable: Tactic[Exception] ?=> value is Decodable in Text)
+        => value is Requirable =
+    () => safely("".tt.decode[value]).absent
 
-  given decodable: [value: Encodable in Text] => value is Elicitable:
-    type Operand = Field
-    def input(value: value): Text = value.encode
-    def widget(id: Text, label: Text, value: Text): Field = Field(label, id, value)
-
-  given enumerable: [enumerable: Enumerable] => enumerable is Elicitable:
-    type Operand = Combobox
-    def input(value: enumerable): Text = enumerable.name(value)
-
-    def widget(id: Text, label: Text, value: Text): Combobox =
-      Combobox(id, enumerable.values.to(List).map(enumerable.name(_)), value)
-
-trait Elicitable:
+trait Requirable:
   type Self
-  type Operand
-  def input(value: Self): Text
-  def widget(id: Text, label: Text, value: Text): Operand
+  protected def isRequired(): Boolean
+  def required: Boolean = isRequired()

@@ -35,9 +35,11 @@ package distillate
 import scala.quoted.*
 
 import anticipation.*
+import fulminate.*
 import proscenium.*
 
 object Distillate:
+  given realm: Realm = realm"distillate"
   def enumerable[enumeration <: reflect.Enum: Type](using Quotes): Expr[enumeration is Enumerable] =
     import quotes.reflect.*
 
@@ -49,7 +51,11 @@ object Distillate:
           val name: Text = ${Expr(TypeRepr.of[enumeration].show)}.tt
           val values: IArray[enumeration] =
             ${  companion.absolve match
-                  case '{ $companion: companionType } =>
-                    val ref = TypeRepr.of[companionType].typeSymbol.declaredMethod("values").head
+                  case '{ $companion: companion } =>
+                    val ref = TypeRepr.of[companion].typeSymbol.declaredMethod("values")
+                              . headOption
+                              . getOrElse:
+                                  halt(m"enum ${Type.of[enumeration]} is not a simple choice")
+
                     companion.asTerm.select(ref).asExprOf[Array[enumeration]]  }
             . asInstanceOf[IArray[enumeration]]  }

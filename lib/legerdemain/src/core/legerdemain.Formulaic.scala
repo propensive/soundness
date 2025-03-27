@@ -34,6 +34,7 @@ package legerdemain
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import honeycomb.*
@@ -59,7 +60,8 @@ object Formulaic extends ProductDerivable[Formulaic]:
 
       val message: Optional[Message] = validation(pointer)
       val widget = renderable.html(elicitable.widget(pointer.text, legend, query().or(t"")))
-      List(formulation.element(widget, legend, message, false))
+      val required = false//safely(decodable.decoded(t"")).absent
+      List(formulation.element(widget, legend, message, required))
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Formulaic =
     (pointer, legend, query, errors, formulation) =>

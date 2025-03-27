@@ -33,7 +33,7 @@
 package soundness
 
 export legerdemain
-. { Query, QueryError, Parametric, Widget, Checkbox, Field, RadioGroup, Autocomplete, Formulaic,
+. { Query, QueryError, Parametric, Widget, Checkbox, Field, RadioGroup, Combobox, Formulaic,
     Formulation, Elicitable, Selection, elicit, edit }
 
 package formulations:
