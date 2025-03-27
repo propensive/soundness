@@ -36,6 +36,6 @@ import anticipation.*
 import fulminate.*
 import proscenium.*
 
-object MustNotEqual extends Rule({ text => m"must not equal $text"}, _ != _)
+object MustNotEqual extends Rule({ text => if text == "".tt then m"must not be empty" else m"must not equal $text" }, _ != _)
 
 erased trait MustNotEqual[text <: Label] extends Check[text]

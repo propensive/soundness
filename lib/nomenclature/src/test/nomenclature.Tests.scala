@@ -50,12 +50,12 @@ object Tests extends Suite(m"Nomenclature tests"):
 
     test(m"Create a successful new name"):
       Name[Id](t"hello!")
-    .assert(_.text == t"hello!")
+    .assert(_ == t"hello!")
 
     test(m"Create a successful new name with inference"):
       val name: Name[Id] = Name(t"hello!")
       name
-    .assert(_.text == t"hello!")
+    .assert(_ == t"hello!")
 
     test(m"Name must not start with 0"):
       capture[NameError](Name[Id](t"0hello!")).message.show
@@ -79,4 +79,8 @@ object Tests extends Suite(m"Nomenclature tests"):
 
     test(m"Construct a new name at compiletime"):
       n"hello": Name[Id2]
-    .assert(_.text == t"hello")
+    .assert(_ == t"hello")
+
+    test(m"Name is required"):
+      capture[NameError](Name[Required](t"")).message.show
+    .assert(_ == t"""the name “” is not valid because it must not be empty""")

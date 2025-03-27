@@ -39,7 +39,7 @@ import scala.quoted.*
 import anticipation.*
 
 object Communicable:
-  given text: Text is Communicable = Message(_)
+  given text: Text is Communicable = text => Message(if text == "".tt then "“”".tt else text)
   given string: String is Communicable = string => Message(string.tt)
   given char: Char is Communicable = char => Message(char.toString.tt)
   given int: Int is Communicable = int => Message(int.toString.tt)
