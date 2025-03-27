@@ -46,6 +46,7 @@ object Nomenclature:
   opaque type Name[-platform] <: anticipation.Text = anticipation.Text
 
   object Name:
+    given encodable: [platform] => Name[platform] is Encodable in Text = identity(_)
     inline given decodable: [platform] => (platform is Nominative, Tactic[NameError])
                  =>  Name[platform] is Decodable in Text =
 
@@ -75,5 +76,3 @@ object Nomenclature:
         case v => check[v.type](name)
 
       name.asInstanceOf[Name[platform]]
-
-    given showable: [platform] => Name[platform] is Showable = identity(_)
