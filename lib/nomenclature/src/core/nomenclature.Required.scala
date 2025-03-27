@@ -30,9 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package nomenclature
 
-export nomenclature
-. { n, Check, MustContain, MustEnd, MustMatch, MustNotContain, MustNotEnd, MustNotEqual,
-    MustNotMatch, MustNotStart, MustStart, NameError, NameExtractor, Nominative, Rule, Name,
-    Required }
+import prepositional.*
+import rudiments.*
+
+object Required:
+  erased given Required is Nominative under MustNotEqual[""] = !!
+
+erased trait Required
