@@ -81,7 +81,7 @@ object Zip:
     val selfText: Text = t"."
 
     def element(element: Text): Name[Zip] = Name(element)
-    def elementText(element: Name[Zip]): Text = element.text
+    def elementText(element: Name[Zip]): Text = element
     def caseSensitivity: Case = Case.Sensitive
 
 erased trait Zip

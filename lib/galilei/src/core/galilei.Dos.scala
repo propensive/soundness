@@ -76,5 +76,5 @@ object Dos:
       val selfText: Text = t"."
 
       def element(element: Text): Name[Dos] = Name(element)
-      def elementText(element: Name[Dos]): Text = element.text
+      def elementText(element: Name[Dos]): Text = element
       def caseSensitivity: Case = Case.Upper
