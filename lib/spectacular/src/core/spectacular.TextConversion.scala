@@ -41,7 +41,7 @@ import rudiments.*
 object TextConversion:
   given showable: [value: Textualizer] => value is Showable = value.textual(_)
 
-  given text: Text is Showable = identity(_)
+  given text: [text <: Text] => text is Showable = identity(_)
   given string: String is Showable = _.tt
   given char: Char is Showable = char => char.toString.tt
   given long: Long is Showable = long => long.toString.tt
