@@ -85,7 +85,7 @@ object Classpath:
       val parentElement: Text = t".."
       val selfText: Text = t".."
 
-      def elementText(element: Name[Classpath]): Text = element.text
+      def elementText(element: Name[Classpath]): Text = element
       def element(text: Text): Name[Classpath] = Name(text)
       def caseSensitivity: Case = Case.Sensitive
 

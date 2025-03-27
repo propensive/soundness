@@ -66,7 +66,7 @@ object Windows:
       val parentElement: Text = t".."
       val selfText: Text = t"."
       def element(element: Text): Name[Windows] = Name(element)
-      def elementText(element: Name[Windows]): Text = element.text
+      def elementText(element: Name[Windows]): Text = element
       def caseSensitivity: Case = Case.Preserving
 
   given radical: Tactic[PathError] => Windows is Radical from WindowsDrive = new Radical:
