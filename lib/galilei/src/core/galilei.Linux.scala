@@ -74,7 +74,7 @@ object Linux:
       val parentElement: Text = t".."
       val selfText: Text = t"."
       def element(element: Text): Name[Linux] = Name(element)
-      def elementText(element: Name[Linux]): Text = element.text
+      def elementText(element: Name[Linux]): Text = element
       def caseSensitivity: Case = Case.Sensitive
 
 erased trait Linux extends Posix

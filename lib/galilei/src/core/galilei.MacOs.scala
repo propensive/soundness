@@ -73,7 +73,7 @@ object MacOs:
       val selfText: Text = t"."
 
       def element(element: Text): Name[MacOs] = Name(element)
-      def elementText(element: Name[MacOs]): Text = element.text
+      def elementText(element: Name[MacOs]): Text = element
       def caseSensitivity: Case = Case.Preserving
 
 erased trait MacOs extends Posix

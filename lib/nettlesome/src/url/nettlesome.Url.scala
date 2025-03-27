@@ -89,7 +89,7 @@ object Url:
     val selfText: Text = t"."
 
     def element(element: Text): Name[HttpUrl] = Name(element)
-    def elementText(element: Name[HttpUrl]): Text = element.text
+    def elementText(element: Name[HttpUrl]): Text = element
     def caseSensitivity: Case = Case.Sensitive
 
   given abstractable: HttpUrl is Abstractable across Urls into Text = _.show
