@@ -158,7 +158,7 @@ trait Parser[value]:
   def parse(s: String): Option[value]
 
 object Parser extends ProductDerivation[Parser]:
-  given Parser[Int] with
+  given Parser[Int]:
     def parse(s: String): Option[Int] = s.toIntOption
 
   given Parser[Boolean] with

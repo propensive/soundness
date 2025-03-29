@@ -221,7 +221,7 @@ object ambience extends SoundnessModule {
 
 object anamnesis extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core, contingency.core)
+    def moduleDeps = Seq(rudiments.core, contingency.core, distillate.core)
   }
 
   object test extends ProbablyTestModule {
@@ -863,7 +863,7 @@ object larceny extends SoundnessModule {
 
 object legerdemain extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(honeycomb.core)
+    def moduleDeps = Seq(honeycomb.core, anamnesis.core)
   }
 
   object test extends ProbablyTestModule {

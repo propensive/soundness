@@ -34,7 +34,7 @@ package soundness
 
 export legerdemain
 . { Query, QueryError, Parametric, Widget, Checkbox, Field, RadioGroup, Combobox, Formulaic,
-    Formulation, Elicitable, Selection, elicit, edit }
+    Formulation, Elicitable, Dropdown, elicit, edit }
 
 package formulations:
   export legerdemain.formulations.default

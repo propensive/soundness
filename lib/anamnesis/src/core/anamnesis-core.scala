@@ -38,6 +38,8 @@ import prepositional.*
 infix type -< [left, right] = Database.Relation[left, right]
 infix type >- [left, right] = Database.Relation[right, left]
 
+def every[entity <: Entity: Listable]: Iterable[Reference[entity]] = entity.list(_ => true)
+
 extension [left](using db: Database)(left: Ref of left in db.type)
   inline def unassign[right](right: Ref of right in db.type)(using db.Has[left -< right])
   :     Unit raises DataError =

@@ -99,7 +99,7 @@ object XmlInterpolation:
              offset - current.length,
              current.length)
 
-  given xmlInput: Substitution[XmlInput, Text, "t"] with
+  given xmlInput: Substitution[XmlInput, Text, "t"]:
     def embed(value: Text) = XmlInput.Flat(value)
 
   given genInsert: [value] => (writer: XmlEncoder[value])
