@@ -32,23 +32,27 @@
                                                                                                   */
 package legerdemain
 
+import anamnesis.*
 import anticipation.*
 import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
+import spectacular.*
 import vacuous.*
 
-object Elicitable:
-  given boolean: Boolean is Elicitable:
-    type Operand = Checkbox
-    def input(value: Boolean): Text = if value then t"on" else t""
-    def widget(id: Text, label: Text, value: Text): Checkbox = Checkbox(id, value)
-
+trait Elicitable2:
   given decodable: [value: Encodable in Text] => value is Elicitable:
     type Operand = Field
     def input(value: value): Text = value.encode
     def widget(id: Text, label: Text, value: Text): Field = Field(label, id, value)
+
+object Elicitable extends Elicitable2:
+  given boolean: Boolean is Elicitable:
+    type Operand = Checkbox
+    def input(value: Boolean): Text = if value then t"on" else t""
+    def widget(id: Text, label: Text, value: Text): Checkbox = Checkbox(id, value)
 
   given enumerable: [enumerable: Enumerable] => enumerable is Elicitable:
     type Operand = Combobox
@@ -56,6 +60,19 @@ object Elicitable:
 
     def widget(id: Text, label: Text, value: Text): Combobox =
       Combobox(id, enumerable.values.to(List).map(enumerable.name(_)), value)
+
+  given reference: [entity <: Entity: {Listable, Showable, Referenceable}]
+        => entity.Operand is Encodable in Text
+        => Reference[entity] is Elicitable:
+    type Operand = Dropdown
+
+    def input(ref: Reference[entity]): Text = ref.encode
+
+    def widget(id: Text, label: Text, value: Text): Dropdown =
+      val items = every[entity].map { item => item.encode -> item().show }.to(List)
+      Dropdown(id, items, value)
+
+
 
 trait Elicitable:
   type Self

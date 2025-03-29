@@ -181,6 +181,11 @@ extension [value](iterable: Iterable[value])
       lambda(using ordinal)(value)
       ordinal += 1
 
+  transparent inline def annex[right](lambda: value => right) = iterable.map: item =>
+    inline !![value] match
+      case tuple: Tuple => tuple :* lambda(tuple)
+      case other        => (other, lambda(other))
+
   inline def fuse[state](base: state)(lambda: (state: state, next: value) ?=> state): state =
     val iterator: Iterator[value] = iterable.iterator
     var state: state = base

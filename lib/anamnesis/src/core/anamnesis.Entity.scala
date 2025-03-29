@@ -30,22 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package legerdemain
+package anamnesis
 
-import anticipation.*
-import fulminate.*
-import honeycomb.*
 import prepositional.*
-import vacuous.*
 
-import html5.*
+trait Entity:
+  type Operand
+  def ref: Operand
 
-object Selection:
-  given renderable: Selection is Renderable into Flow = selection =>
-    List
-     (Select(name = selection.name):
-        selection.options.map: option =>
-          html5.Option(value = option.key, label = option.value))
-
-case class Selection(name: Text, options: List[(key: Text, value: Text)], value: Text)
-extends Widget
+  def reference: Reference[this.type] = ref.asInstanceOf[Reference[this.type]]

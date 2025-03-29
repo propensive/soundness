@@ -100,7 +100,7 @@ object Tests extends Suite(m"Panopticon tests"):
     .assert(_ == 1000)
 
     object Date:
-      given Dereferencer[Date, "month"] with
+      given Dereferencer[Date, "month"]:
         type Field = Int
         def field(target: Date): Int = target.month
 
