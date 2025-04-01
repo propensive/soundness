@@ -32,7 +32,25 @@
                                                                                                   */
 package parasite
 
+import language.experimental.into
 import language.experimental.pureFunctions
 
-enum Transgression:
-  case Dispose, Escalate, Cancel
+import java.lang.ref as jlr
+
+import prepositional.*
+import rudiments.*
+
+object Destruction:
+  private lazy val instance: Destruction = Destruction()
+  private lazy val cleaner: jlr.Cleaner = jlr.Cleaner.create().nn
+
+  given interceptable: [value] => Destruction is Interceptable:
+    type Target = value
+
+    def register(value: value, action: Destruction => Unit): () => Unit =
+      val cancelled: Promise[Unit] = Promise()
+      val cleanable = cleaner.register(value, () => if !cancelled.ready then action(instance)).nn
+
+      () => cancelled.offer(()) yet cleanable.clean()
+
+class Destruction()

@@ -99,9 +99,9 @@ extension (logObject: Log.type)
       private lazy val spool: Spool[writable.Operand] = Spool().tap: spool =>
         val task = async(spool.stream.writeTo(target))
 
-        Hook.onShutdown:
+        System.intercept[Shutdown]:
           spool.stop()
-          unsafely(task.await())
+          safely(task.await())
 
       def log(level: Level, realm: Realm, timestamp: Long, event: entry): Unit =
         spool.put(event.format(level, realm, timestamp))

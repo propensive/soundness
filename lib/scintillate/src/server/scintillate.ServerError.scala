@@ -35,4 +35,4 @@ package scintillate
 import fulminate.*
 
 case class ServerError(port: Int)(using Diagnostics)
-extends Error(m"Could not start an HTTP server on port $port")
+extends Error(m"could not start an HTTP server on port $port")

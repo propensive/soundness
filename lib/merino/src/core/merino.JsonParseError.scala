@@ -117,4 +117,4 @@ object JsonParseError:
 import JsonParseError.Reason
 
 case class JsonParseError(line: Int, col: Int, reason: Reason)(using Diagnostics)
-extends Error(m"Could not parse JSON because $reason at ${line + 1}:${col + 1}")
+extends Error(m"could not parse JSON because $reason at ${line + 1}:${col + 1}")

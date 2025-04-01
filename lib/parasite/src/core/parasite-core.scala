@@ -35,6 +35,8 @@ package parasite
 import language.experimental.into
 import language.experimental.pureFunctions
 
+import java.lang as jl
+
 import scala.compiletime.*
 
 import anticipation.*
@@ -83,12 +85,11 @@ def async[result](using Codepoint)(evaluate: Worker ?=> result)(using Monitor, C
   Task(evaluate(using _), daemon = false, name = Unset)
 
 def task[result](using Codepoint)(name: into Text)(evaluate: Worker ?=> result)
-   (using Monitor, Codicil)
+     (using Monitor, Codicil)
 :     Task[result] =
 
   Task(evaluate(using _), daemon = false, name = name)
 
-def trap(lambda: Throwable ~> Transgression)(using monitor: Monitor): Trap = Trap(lambda, monitor)
 def relent[result]()(using Worker): Unit = monitor.relent()
 def cancel[result]()(using Monitor): Unit = monitor.cancel()
 
@@ -96,17 +97,16 @@ def snooze[duration: GenericDuration](duration: duration)(using Monitor): Unit =
   monitor.snooze(duration)
 
 def delay[generic: GenericDuration](duration: generic)(using Monitor): Unit =
-  hibernate(System.currentTimeMillis + generic.milliseconds(duration))
+  hibernate(jl.System.currentTimeMillis + generic.milliseconds(duration))
 
 def sleep[instant: Abstractable across Instants into Long](instant: instant)(using Monitor)
 :     Unit =
-  monitor.snooze(instant.generic - System.currentTimeMillis)
+  monitor.snooze(instant.generic - jl.System.currentTimeMillis)
 
 def hibernate[instant: Abstractable across Instants into Long](instant: instant)
    (using Monitor)
 :     Unit =
-  while instant.generic > System.currentTimeMillis
-  do sleep(instant.generic)
+  while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
 
 extension [result](tasks: Seq[Task[result]])
   def sequence(using Monitor, Codicil): Task[Seq[result]] raises AsyncError =
@@ -123,8 +123,7 @@ extension [result](stream: Stream[result])
   def concurrent(using Monitor, Codicil): Stream[result] raises AsyncError =
     if async(stream.isEmpty).await() then Stream() else stream.head #:: stream.tail.concurrent
 
-def supervise[result](block: Monitor ?=> result)
-   (using model: ThreadModel, codepoint: Codepoint)
+def supervise[result](block: Monitor ?=> result)(using model: ThreadModel, codepoint: Codepoint)
 :     result raises AsyncError =
   block(using model.supervisor())
 
@@ -138,6 +137,7 @@ def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) 
       sleep(summon[Tenacity].delay(attempt).or(abort(RetryError(attempt.n1))))
       def surrender = boundary.break(Perseverance.Surrender)
       def persevere = boundary.break(Perseverance.Persevere)
+
       Perseverance.Prevail(evaluate(using () => surrender, () => persevere))
 
     . match
@@ -147,4 +147,8 @@ def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) 
 
   recur(Prim)
 
-export Parasite.Stale
+extension [target](value: target)
+  def intercept[event](using interceptable: event is Interceptable onto target)
+       (action: (event: event) ?=> Unit)
+  :     Hook =
+    Hook(interceptable.register(value, action(using _)))

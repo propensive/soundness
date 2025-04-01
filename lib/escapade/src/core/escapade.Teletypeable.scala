@@ -50,9 +50,9 @@ object Teletypeable:
 
   given message: Message is Teletypeable = _.fold[Teletype](e""): (acc, next, level) =>
     level match
-      case 0 => e"$acc${Fg(0xefe68b)}($next)"
-      case 1 => e"$acc$Italic(${Fg(0xffd600)}($next))"
-      case _ => e"$acc$Italic($Bold(${Fg(0xffff00)}($next)))"
+      case 0 => e"$acc$next"
+      case 1 => e"$acc$Italic(${Fg(0xefe68b)}($next))"
+      case _ => e"$acc$Italic($Bold(${Fg(0xffd600)}($next)))"
 
   given option: [value: Teletypeable] => Option[value] is Teletypeable =
     case None        => Teletype("empty".show)

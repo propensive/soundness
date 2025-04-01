@@ -37,4 +37,4 @@ import language.experimental.captureChecking
 import fulminate.*
 
 case class RetryError(count: Int)(using Diagnostics)
-extends Error(m"Aborted repeated evaluation after $count attempts")
+extends Error(m"aborted repeated evaluation after $count attempts")

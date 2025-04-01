@@ -32,8 +32,15 @@
                                                                                                   */
 package parasite
 
-import proscenium.*
+import language.experimental.into
+import language.experimental.pureFunctions
 
-class Trap(lambda: Throwable ~> Transgression, monitor: Monitor):
-  def within[result](block: Monitor ?=> result): result =
-    block(using monitor.intercept(lambda))
+import java.lang.ref as jlr
+
+import prepositional.*
+
+trait Interceptable:
+  type Self
+  type Target
+
+  def register(target: Target, action: Self => Unit): () => Unit

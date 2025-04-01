@@ -32,6 +32,8 @@
                                                                                                   */
 package camouflage
 
+import java.lang as jl
+
 import anticipation.*
 import parasite.*
 import rudiments.*
@@ -48,8 +50,8 @@ class Cache[value](lifetime: Optional[Long]):
   private var value: Promise[value] = Promise()
 
   def establish(block: => value): value = value.synchronized:
-    if expiry < System.currentTimeMillis then value = Promise()
+    if expiry < jl.System.currentTimeMillis then value = Promise()
 
     if value.ready then value().vouch else block.tap: result =>
       value.offer(result)
-      expiry = lifetime.lay(Long.MaxValue)(_ + System.currentTimeMillis)
+      expiry = lifetime.lay(Long.MaxValue)(_ + jl.System.currentTimeMillis)

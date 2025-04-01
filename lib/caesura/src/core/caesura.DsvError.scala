@@ -42,4 +42,4 @@ object DsvError:
     case MisplacedQuote
 
 case class DsvError(format: DsvFormat, reason: DsvError.Reason)(using Diagnostics)
-extends Error(m"Could not parse row data because $reason")
+extends Error(m"could not parse row data because $reason")

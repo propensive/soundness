@@ -32,7 +32,34 @@
                                                                                                   */
 package parasite
 
+import language.experimental.into
 import language.experimental.pureFunctions
 
-enum Transgression:
-  case Dispose, Escalate, Cancel
+import java.lang.ref as jlr
+import java.util.concurrent.atomic as juca
+
+import prepositional.*
+import rudiments.*
+import vacuous.*
+
+object Fault:
+  private object Handler extends Thread.UncaughtExceptionHandler:
+    val tasks: juca.AtomicReference[Set[Fault => Unit]] = juca.AtomicReference(Set())
+
+    def uncaughtException(thread: Thread | Null, throwable: Throwable | Null): Unit =
+      val fault: Fault = Fault(thread.nn, Error(throwable.nn))
+      tasks.get().nn.each(_(fault))
+
+  private lazy val handler: Handler.type =
+    Thread.setDefaultUncaughtExceptionHandler(Handler) yet Handler
+
+  given interceptable: Fault is Interceptable:
+    type Target = System.type
+
+    def register(value: System.type, action: Fault => Unit): () => Unit =
+      val handle: Fault => Unit = action(_)
+      handler.tasks.updateAndGet(_.nn + handle)
+
+      () => handler.tasks.updateAndGet(_.nn - handle)
+
+case class Fault(thread: Thread, error: Error)

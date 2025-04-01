@@ -39,6 +39,4 @@ import scala.annotation.*
 import digression.*
 import vacuous.*
 
-import Completion.*
-
 case class Chain(codepoint: Codepoint, parent: Optional[Chain])

@@ -32,10 +32,4 @@
                                                                                                   */
 package parasite
 
-object Parasite:
-  opaque type Stale[value] = value
-
-  extension [value](stale: Stale[value]) def apply(): value = stale
-
-  object Stale:
-    def apply[value](value: value): Stale[value] = value
+object System

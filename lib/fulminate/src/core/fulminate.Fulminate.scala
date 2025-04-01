@@ -39,7 +39,6 @@ import scala.quoted.*
 import anticipation.*
 
 object Fulminate:
-
   opaque type Diagnostics = Boolean
 
   object Diagnostics:

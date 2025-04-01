@@ -32,7 +32,6 @@
                                                                                                   */
 package parasite
 
-import language.experimental.pureFunctions
-
-enum Transgression:
-  case Dispose, Escalate, Cancel
+enum Observation[value]:
+  case Fresh(observation: value)
+  case Stale(observation: value)
