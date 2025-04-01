@@ -36,28 +36,31 @@ import language.experimental.into
 import language.experimental.pureFunctions
 
 import java.lang.ref as jlr
+import java.util.concurrent.atomic as juca
 
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 object Fault:
+  private object Handler extends Thread.UncaughtExceptionHandler:
+    val tasks: juca.AtomicReference[Set[Fault => Unit]] = juca.AtomicReference(Set())
+
+    def uncaughtException(thread: Thread | Null, throwable: Throwable | Null): Unit =
+      val fault: Fault = Fault(thread.nn, throwable.nn)
+      tasks.get().nn.each(_(fault))
+
+  private lazy val handler: Handler.type =
+    Thread.setDefaultUncaughtExceptionHandler(Handler)
+    Handler
+
   given interceptable: Fault is Interceptable:
     type Target = System.type
 
     def register(value: System.type, action: Fault => Unit): () => Unit =
-      val cancelled: Promise[Unit] = Promise()
+      val handle: Fault => Unit = action(_)
+      handler.tasks.updateAndGet(_.nn + handle)
 
-      synchronized:
-        val handler0: Optional[Thread.UncaughtExceptionHandler] =
-          Optional(Thread.getDefaultUncaughtExceptionHandler())
-
-        val handler: Thread.UncaughtExceptionHandler = (thread, throwable) =>
-          if throwable != null then
-            handler0.let(_.uncaughtException(thread, throwable))
-            if !cancelled.ready then action(Fault(thread.nn, throwable))
-
-        Thread.setDefaultUncaughtExceptionHandler(handler)
-
-      () => cancelled.offer(())
+      () => handler.tasks.updateAndGet(_.nn - handle)
 
 case class Fault(thread: Thread, throwable: Throwable)
