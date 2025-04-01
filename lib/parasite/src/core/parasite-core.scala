@@ -149,6 +149,6 @@ def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) 
 
 extension [target](value: target)
   def intercept[event](using interceptable: event is Interceptable onto target)
-       (action: event ?=> Unit)
+       (action: (event: event) ?=> Unit)
   :     Hook =
     Hook(interceptable.register(value, action(using _)))

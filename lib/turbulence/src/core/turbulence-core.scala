@@ -244,7 +244,6 @@ extension (bytes: Bytes)
     val in = ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
     val in2 = juz.GZIPInputStream(in)
     val out = ji.ByteArrayOutputStream()
-
     val buffer: Array[Byte] = new Array(1024)
 
     def recur(): Unit = in2.read(buffer).tap: length =>

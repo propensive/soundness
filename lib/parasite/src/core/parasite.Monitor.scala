@@ -36,6 +36,7 @@ import language.experimental.pureFunctions
 
 import java.lang as jl
 import java.util.concurrent.locks as jucl
+import java.util.concurrent.atomic as juca
 
 import scala.annotation.*
 
@@ -69,9 +70,6 @@ sealed trait Monitor:
   def snooze[generic: GenericDuration](duration: generic): Unit =
     jucl.LockSupport.parkNanos(generic.nanoseconds(duration))
 
-  def handle(throwable: Throwable): Transgression
-  def intercept(handler: Throwable ~> Transgression): Monitor
-
 sealed abstract class Supervisor() extends Monitor:
   type Result = Unit
 
@@ -84,17 +82,6 @@ sealed abstract class Supervisor() extends Monitor:
   def stack: Text = name+":".tt
   def cancel(): Unit = ()
   def shutdown(): Unit = workers.each(_.cancel())
-
-  def handle(throwable: Throwable): Transgression =
-    println("Throwable reached the supervisor")
-    println(throwable)
-    throwable.printStackTrace()
-
-    throwable match
-      case break: scala.util.boundary.Break[?] => throw break
-      case _                                   => Transgression.Dispose
-
-  def intercept(handler: Throwable ~> Transgression): Supervisor = this
 
 object VirtualSupervisor extends Supervisor():
   def name: Text = "virtual".tt
@@ -118,15 +105,12 @@ object PlatformSupervisor extends Supervisor():
       name.let(_.s).let(thread.setName(_))
       thread.start()
 
-abstract class Worker
-   (frame:   Codepoint,
-    parent:  Monitor,
-    codicil: Codicil,
-    handler: Optional[Throwable => Transgression])
-extends Monitor:
+abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) extends Monitor:
   self =>
-  private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
-  private var relentCount: Int = 1
+  private val state: juca.AtomicReference[Completion[Result]] =
+    juca.AtomicReference(Completion.Initializing)
+
+  private var relents: Int = 1
   private val startTime: Long = jl.System.currentTimeMillis
   val promise: Promise[Result] = Promise()
 
@@ -134,18 +118,9 @@ extends Monitor:
   def evaluate(worker: Worker): Result
   def supervisor: Supervisor = parent.supervisor
   def apply(): Optional[Result] = promise()
-  def handle(throwable: Throwable): Transgression = handler.or(parent.handle)(throwable)
+  def relentlessness: Double = (jl.System.currentTimeMillis - startTime).toDouble/relents
 
-  def intercept(handler: Throwable ~> Transgression): Worker =
-    new Worker(frame, parent, codicil, handler):
-      type Result = self.Result
-      def name: Optional[Text] = self.name
-      def daemon: Boolean = self.daemon
-      def evaluate(worker: Worker): Result = self.evaluate(worker)
-
-  def relentlessness: Double = (jl.System.currentTimeMillis - startTime).toDouble/relentCount
-
-  def delegate(lambda: Monitor -> Unit): Unit = state.replace: state =>
+  def delegate(lambda: Monitor -> Unit): Unit = state.updateAndGet: state =>
     workers.each { child => if child.daemon then child.cancel() else lambda(child) }
     state
 
@@ -157,8 +132,8 @@ extends Monitor:
       case submonitor: Worker => (submonitor.stack.s+"//"+ref).tt
 
   def relent(): Unit =
-    relentCount += 1
-    state.use:
+    relents += 1
+    state.get().nn match
       case Initializing    => ()
       case Active(_)       => ()
       case Completed(_, _) => panic(m"should not be relenting after completion")
@@ -177,7 +152,7 @@ extends Monitor:
     async(lambda(await()).await())
 
   def cancel(): Unit =
-    val state2 = state.replace:
+    val state2 = state.updateAndGet:
       case Initializing | Active(_) =>
         promise.cancel()
         thread.interrupt()
@@ -186,12 +161,10 @@ extends Monitor:
       case other =>
         other
 
-    println("After cancellation: "+state2)
-    println("  Promise: "+promise.ready)
     if state2 == Cancelled then thread.join()
 
   def result()(using cancel: Tactic[AsyncError]): Result =
-    state.replace:
+    state.updateAndGet:
       case Initializing                => abort(AsyncError(Reason.Incomplete))
       case Active(_)                   => abort(AsyncError(Reason.Incomplete))
       case Completed(duration, result) => Delivered(duration, result)
@@ -217,7 +190,7 @@ extends Monitor:
   private lazy val thread: Thread = parent.supervisor.fork(stack):
     boundary[Unit]:
       try
-        state.replace:
+        state.updateAndGet:
           case Initializing =>
             parent.workers += this
             Active(jl.System.currentTimeMillis)
@@ -226,7 +199,7 @@ extends Monitor:
             boundary.break()
 
         evaluate(this).tap: result =>
-          state.replace:
+          state.updateAndGet:
             case Active(startTime) =>
               Completed(jl.System.currentTimeMillis - startTime, result)
 
@@ -237,27 +210,22 @@ extends Monitor:
         case error: InterruptedException =>
           Thread.interrupted()
 
-          val state2 = state.replace:
+          state.updateAndGet:
             case Initializing | Active(_) | Cancelled => Cancelled
-            case state@Completed(_, _)                => state
-            case state@Delivered(_, _)                => state
-            case state@Failed(_)                      => state
+            case state                                => state
 
-          state2 match
+          . match
             case Cancelled => workers.each { child => if child.daemon then child.cancel() }
             case _         => ()
 
         case error: Throwable =>
-          state() = Failed(error)
-          handle(error) match
-            case Transgression.Dispose  => ()
-            case Transgression.Cancel   => workers.each(_.cancel())
-            case Transgression.Escalate => parent.handle(error)
+          state.set(Failed(error))
+          throw error
 
       finally
         codicil.cleanup(this)
 
-        state.replace: state =>
+        state.updateAndGet: state =>
           parent.remove(this)
           state match
             case Initializing                     => Cancelled.also(promise.cancel())

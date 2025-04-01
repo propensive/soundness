@@ -30,86 +30,103 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escapade
+package parasite
+
+import language.experimental.into
+import language.experimental.pureFunctions
+
+import java.lang.ref as jlr
+import java.lang.management as jlm
+import javax.management as jm
+import javax.management.openmbean as jmo
+import com.sun.management as csm
 
 import anticipation.*
-import digression.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*
-import spectacular.*
-import vacuous.*
+import denominative.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
 
-object Teletypeable:
-  given teletype: Teletype is Teletypeable = identity(_)
-  given text: Text is Teletypeable = text => Teletype(text)
+object GarbageCollection:
+  enum Collector:
+    case G1YoungGeneration
+    case G1OldGeneration
+    case G1Concurrent
+    case PsScavenge
+    case PsMarkSweep
+    case ParNew
+    case ConcurrentMarkSweep
+    case Copy
+    case MarkSweepCompact
+    case Other(name: Text)
 
-  given colorable: [value: {Showable as showable, Colorable as colorable}]
-        =>  value is Teletypeable =
-    value => e"${value.color}(${value.show})"
+  object Collector:
+    def unapply(name: Text): Some[Collector] = name.s match
+      case "G1 Young Generation" => Some(G1YoungGeneration)
+      case "G1 Old Generation"   => Some(G1OldGeneration)
+      case "G1 Concurrent GC"    => Some(G1Concurrent)
+      case "PS Scavenge"         => Some(PsScavenge)
+      case "PS MarkSweep"        => Some(PsMarkSweep)
+      case "ParNew"              => Some(ParNew)
+      case "ConcurrentMarkSweep" => Some(ConcurrentMarkSweep)
+      case "Copy"                => Some(Copy)
+      case "MarkSweepCompact"    => Some(MarkSweepCompact)
+      case other                 => Some(Other(name))
 
-  given message: Message is Teletypeable = _.fold[Teletype](e""): (acc, next, level) =>
-    level match
-      case 0 => e"$acc$next"
-      case 1 => e"$acc$Italic(${Fg(0xefe68b)}($next))"
-      case _ => e"$acc$Italic($Bold(${Fg(0xffd600)}($next)))"
+  enum Cause:
+    case AllocationFailure, SystemGc, GcLocker, Metadata, Ergonomics, CmsInitialMark,
+         CmsFinalRemark, FullGc, HeapInspection, NoGc, G1EvacuationPause, G1HumongousAllocation
+    case Other(cause: Text)
 
-  given option: [value: Teletypeable] => Option[value] is Teletypeable =
-    case None        => Teletype("empty".show)
-    case Some(value) => value.teletype
+  object Cause:
+    def unapply(text: Text): Some[Cause] = text.s match
+      case "Allocation Failure"           => Some(AllocationFailure)
+      case "System.gc()"                  => Some(SystemGc)
+      case "GCLocker Initiated GC"        => Some(GcLocker)
+      case "Metadata GC Threshold"        => Some(Metadata)
+      case "Ergonomics"                   => Some(Ergonomics)
+      case "CMS Initial Mark"             => Some(CmsInitialMark)
+      case "CMS Final Remark"             => Some(CmsFinalRemark)
+      case "Full GC"                      => Some(FullGc)
+      case "Heap Inspection Initiated GC" => Some(HeapInspection)
+      case "No GC"                        => Some(NoGc)
+      case "G1 Evacuation Pause"          => Some(G1EvacuationPause)
+      case "G1 Humongous Allocation"      => Some(G1HumongousAllocation)
+      case other                          => Some(Other(text))
 
-  given showable: [value: Showable] => value is Teletypeable = value => Teletype(value.show)
+  given interceptable: GarbageCollection is Interceptable:
+    type Target = System.type
 
-  given exception: (Text is Measurable) => Exception is Teletypeable = exception =>
-    summon[StackTrace is Teletypeable].teletype(StackTrace(exception))
+    def register(value: System.type, action: GarbageCollection => Unit): () => Unit =
+      val listeners =
+        jlm.ManagementFactory.getGarbageCollectorMXBeans().nn.asScala.to(List).flatMap:
+          case emitter: jm.NotificationEmitter =>
+            val listener: jm.NotificationListener = (notification, handback) =>
+              if notification.nn.getType()
+                 == csm.GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION
+              then
+                notification.nn.getUserData.nn match
+                  case info: jmo.CompositeData =>
+                    val gc = csm.GarbageCollectionNotificationInfo.from(info).nn
+                    val Cause(cause) = gc.getGcCause().nn.tt
+                    val Collector(collector) = gc.getGcName().nn.tt
+                    val gcInfo = gc.getGcInfo().nn
+                    action
+                     (GarbageCollection
+                       (gcInfo.getId.toInt.z, collector, cause))
 
-  given error: Error is Teletypeable = _.message.teletype
+                  case _ =>
+                    ()
 
-  given stackTrace: (Text is Measurable) => StackTrace is Teletypeable = stack =>
-    val methodWidth = stack.frames.map(_.method.method.length).maxOption.getOrElse(0)
-    val classWidth = stack.frames.map(_.method.className.length).maxOption.getOrElse(0)
-    val fileWidth = stack.frames.map(_.file.length).maxOption.getOrElse(0)
+            emitter.addNotificationListener(listener, null, null)
 
-    val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
-    val init = e"${Fg(0xffffff)}($fullClass): ${stack.message}"
+            List(emitter -> listener)
 
-    val root = stack.frames.foldLeft(init):
-      case (msg, frame) =>
-        val obj = frame.method.className.ends(t"#")
-        val drop = if obj then 1 else 0
-        val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(fileWidth, Rtl)})"
-        val dot = if obj then t"." else t"#"
+          case _ =>
+            Nil
 
-        val className =
-          e"${Fg(0xc61485)}(${frame.method.className.skip(drop, Rtl).fit(classWidth, Rtl)})"
+      () => listeners.each: (emitter, listener) =>
+        emitter.removeNotificationListener(listener)
 
-        val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(methodWidth)})"
-        val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"?")})"
-        val gray = Fg(0x808080)
-        e"$msg\n  $gray(at) $className$gray($dot)$method $file$gray(:)$line"
-
-    stack.cause.lay(root): cause =>
-      e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"
-
-  given frame: (Text is Measurable) => StackTrace.Frame is Teletypeable = frame =>
-    val className = e"${Fg(0xc61485)}(${frame.method.className.fit(40, Rtl)})"
-    val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(40)})"
-    val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(18, Rtl)})"
-    val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"?")})"
-    e"$className${Fg(0x808080)}(#)$method $file${Fg(0x808080)}(:)$line"
-
-  given method: StackTrace.Method is Teletypeable = method =>
-    val className = e"${Fg(0xc61485)}(${method.className})"
-    val methodName = e"${Fg(0xdb6f92)}(${method.method})"
-    e"$className${Fg(0x808080)}(#)$methodName"
-
-  given double: (decimalizer: Decimalizer) => Double is Teletypeable = double =>
-    Teletype.make(decimalizer.decimalize(double), _.copy(fg = 0xffd600))
-
-  given throwable: Throwable is Teletypeable = throwable =>
-    Teletype.make[String]
-     (throwable.getClass.getName.nn.show.cut(t".").last.s, _.copy(fg = 0xdc133b))
-
-trait Teletypeable:
-  type Self
-  def teletype(value: Self): Teletype
+case class GarbageCollection
+            (run: Ordinal, collector: GarbageCollection.Collector, cause: GarbageCollection.Cause)

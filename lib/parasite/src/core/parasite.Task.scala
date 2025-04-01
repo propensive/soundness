@@ -48,7 +48,7 @@ object Task:
     inline def evaluate0: Worker => result = evaluate
     inline def name0: Optional[Text] = name
 
-    new Worker(codepoint, monitor, codicil, Unset) with Task[result]:
+    new Worker(codepoint, monitor, codicil) with Task[result]:
       type Result = result
       def name: Optional[Text] = name0
       def daemon: Boolean = false
