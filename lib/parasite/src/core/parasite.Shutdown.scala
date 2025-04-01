@@ -40,14 +40,15 @@ import java.lang.ref as jlr
 import prepositional.*
 
 object Shutdown:
-  given Shutdown is Interceptable:
+  private val instance: Shutdown = Shutdown()
+  given interceptable: Shutdown is Interceptable:
     type Target = System.type
 
-    def register(value: System.type, action: => Unit): () => Unit =
-      val runnable: Runnable = () => action
+    def register(value: System.type, action: Shutdown => Unit): () => Unit =
+      val runnable: Runnable = () => action(instance)
       val thread: Thread = Thread(runnable)
       Runtime.getRuntime.nn.addShutdownHook(thread)
 
       () => Runtime.getRuntime.nn.removeShutdownHook(thread)
 
-erased trait Shutdown
+class Shutdown()

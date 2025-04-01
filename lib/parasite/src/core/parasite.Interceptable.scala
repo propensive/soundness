@@ -42,4 +42,5 @@ import prepositional.*
 trait Interceptable:
   type Self
   type Target
-  def register(target: Target, action: => Unit): () => Unit
+
+  def register(target: Target, action: Self => Unit): () => Unit

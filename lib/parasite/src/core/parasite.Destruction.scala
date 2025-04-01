@@ -40,15 +40,18 @@ import java.lang.ref as jlr
 import prepositional.*
 
 object Destruction:
-  given [value] => Destruction is Interceptable:
+  private lazy val instance: Destruction = Destruction()
+  private lazy val cleaner: jlr.Cleaner = jlr.Cleaner.create().nn
+
+  given interceptable: [value] => Destruction is Interceptable:
     type Target = value
 
-    def register(value: value, action: => Unit): () => Unit =
-      var cancelled = false
-      val cleanable = System.cleaner.register(value, () => if !cancelled then action).nn
+    def register(value: value, action: Destruction => Unit): () => Unit =
+      val cancelled: Promise[Unit] = Promise()
+      val cleanable = cleaner.register(value, () => if !cancelled.ready then action(instance)).nn
 
       () =>
-        cancelled = true
+        cancelled.offer(())
         cleanable.clean()
 
-erased trait Destruction
+class Destruction()

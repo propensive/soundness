@@ -32,12 +32,4 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
-
-import java.lang.ref as jlr
-
-import prepositional.*
-
-object System:
-  private[parasite] val cleaner: jlr.Cleaner = jlr.Cleaner.create().nn
+object System
