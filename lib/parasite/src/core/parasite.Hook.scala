@@ -35,13 +35,7 @@ package parasite
 import language.experimental.into
 import language.experimental.pureFunctions
 
+import prepositional.*
 
-class Hook(private val thread: Thread):
-  def cancel(): Unit = Runtime.getRuntime.nn.removeShutdownHook(thread)
-
-object Hook:
-  def onShutdown(block: => Unit): Hook =
-    val runnable: Runnable = () => block
-    val thread: Thread = Thread(runnable)
-    Runtime.getRuntime.nn.addShutdownHook(thread)
-    Hook(thread)
+class Hook(unregister: () => Unit):
+  def cancel(): Unit = unregister()

@@ -151,7 +151,7 @@ def cli[bus <: Matchable](using executive: Executive)
   lazy val termination: Unit =
     portFile.wipe()
     pidFile.wipe()
-    System.exit(0)
+    java.lang.System.exit(0)
 
   def shutdown(pid: Optional[Pid])(using Stdio): Unit logs DaemonLogEvent =
     Log.warn(DaemonLogEvent.Shutdown)
@@ -297,7 +297,7 @@ def cli[bus <: Matchable](using executive: Executive)
     import stdioSources.virtualMachine.ansi
     import asyncTermination.await
 
-    Hook.onShutdown:
+    System.intercept[Shutdown]:
       portFile.wipe()
       pidFile.wipe()
 

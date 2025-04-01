@@ -35,4 +35,5 @@ package austronesian
 import anticipation.*
 import fulminate.*
 
-case class StdlibError()(using Diagnostics) extends Error(m"JavaError")
+case class StdlibError()(using Diagnostics)
+extends Error(m"could not deserialize from Java stdlib types")

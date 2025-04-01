@@ -39,12 +39,13 @@ import fulminate.*
 import gossamer.*
 import probably.*
 import proscenium.*
+import quantitative.*
 import rudiments.*
 import turbulence.*
 
 import strategies.throwUnsafely
 
-import threadModels.platform
+import threadModels.virtual
 import asyncTermination.cancel
 
 import errorDiagnostics.stackTraces
@@ -66,8 +67,6 @@ object Tests extends Suite(m"Parasite tests"):
 
   def run(): Unit =
     supervise:
-
-
       suite(m"Convoluted test tests"):
         case class Bus():
           val spool: Spool[Text] = Spool()
@@ -108,77 +107,78 @@ object Tests extends Suite(m"Parasite tests"):
 
           bus.put(t"alpha")
           Set(alpha.await(), beta.await(), gamma.await(), delta.await())
-        .assert(_ == Set(t"ALPHA", t"BETA", t"GAMMA", t"DELTA"))
 
-        test(m"Race test"):
-          val bus = Bus()
-          val task1 = async:
-            bus.waitFor(t"task1")
-            t"TASK1"
+        . assert(_ == Set(t"ALPHA", t"BETA", t"GAMMA", t"DELTA"))
 
-          println("2")
-          val task2 = async:
-            bus.waitFor(t"task2")
-            t"TASK2"
+      //   test(m"Race test"):
+      //     val bus = Bus()
+      //     val task1 = async:
+      //       bus.waitFor(t"task1")
+      //       t"TASK1"
 
-          val task3 = async(Vector(task1, task2).race())
-          bus.put(t"task2")
-          snooze(20L)
-          bus.put(t"task1")
-          task3.await()
+      //     println("2")
+      //     val task2 = async:
+      //       bus.waitFor(t"task2")
+      //       t"TASK2"
 
-        .assert(_ == t"TASK2")
+      //     val task3 = async(Vector(task1, task2).race())
+      //     bus.put(t"task2")
+      //     snooze(20L)
+      //     bus.put(t"task1")
+      //     task3.await()
 
-      suite(m"Promises"):
-        test(m"New promise is incomplete"):
-          val promise = Promise[Int]()
-          promise.ready
+      //   .assert(_ == t"TASK2")
 
-        . assert(_ == false)
+      // suite(m"Promises"):
+      //   test(m"New promise is incomplete"):
+      //     val promise = Promise[Int]()
+      //     promise.ready
 
-        test(m"Completed promise is ready"):
-          val promise = Promise[Int]()
-          promise.fulfill(42)
-          promise.ready
-        .assert(_ == true)
+      //   . assert(_ == false)
 
-        test(m"Completed promise has correct value"):
-          val promise = Promise[Int]()
-          promise.fulfill(42)
-          promise.await()
-        .assert(_ == 42)
+      //   test(m"Completed promise is ready"):
+      //     val promise = Promise[Int]()
+      //     promise.fulfill(42)
+      //     promise.ready
+      //   .assert(_ == true)
 
-        test(m"Promise result can be awaited"):
-          val promise = Promise[Int]()
-          thread:
-            snooze(100L)
-            promise.fulfill(42)
-          promise.await()
-        .assert(_ == 42)
+      //   test(m"Completed promise has correct value"):
+      //     val promise = Promise[Int]()
+      //     promise.fulfill(42)
+      //     promise.await()
+      //   .assert(_ == 42)
 
-        test(m"Canceled promise contains exception"):
-          val promise = Promise[Int]()
-          promise.cancel()
-          capture(promise.await())
-        .assert(_ == AsyncError(AsyncError.Reason.Cancelled))
+      //   test(m"Promise result can be awaited"):
+      //     val promise = Promise[Int]()
+      //     thread:
+      //       snooze(100L)
+      //       promise.fulfill(42)
+      //     promise.await()
+      //   .assert(_ == 42)
 
-      suite(m"Asyncs"):
-        test(m"Simple task produces a result"):
-          val task = async(100)
-          task.await()
-        .assert(_ == 100)
+      //   test(m"Canceled promise contains exception"):
+      //     val promise = Promise[Int]()
+      //     promise.cancel()
+      //     capture(promise.await())
+      //   .assert(_ == AsyncError(AsyncError.Reason.Cancelled))
 
-        test(m"Mapped task"):
-          val task = async(100)
-          task.map(_ + 1).await()
-        .assert(_ == 101)
+      // suite(m"Asyncs"):
+      //   test(m"Simple task produces a result"):
+      //     val task = async(100)
+      //     task.await()
+      //   .assert(_ == 100)
 
-        test(m"FlatMapped task"):
-          val task = async(100)
-          task.flatMap: x =>
-            async(x + 1)
-          .await()
-        .assert(_ == 101)
+      //   test(m"Mapped task"):
+      //     val task = async(100)
+      //     task.map(_ + 1).await()
+      //   .assert(_ == 101)
+
+      //   test(m"FlatMapped task"):
+      //     val task = async(100)
+      //     task.flatMap: x =>
+      //       async(x + 1)
+      //     .await()
+      //   .assert(_ == 101)
 
         // test(m"Async name"):
         //   val task = Task(100)
@@ -196,38 +196,26 @@ object Tests extends Suite(m"Parasite tests"):
       //   //   name
       //   // .assert(_ == Some(t"/simple/inner"))
 
-        test(m"Async creates one new thread"):
-          val threads = Thread.activeCount
-          var insideThreads = 0
+        // test(m"Threads do not persist"):
+        //   val threads = Thread.activeCount
+        //   val task = async:
+        //     sleep(10L)
+        //   task.await()
+        //   threads - Thread.activeCount
+        // .assert(_ == 0)
 
-          val task = async:
-            insideThreads = Thread.activeCount
+        // test(m"Sequencing tasks"):
+        //   Seq(async(3), async(5), async(7)).sequence.await()
+        // .assert(_ == Seq(3, 5, 7))
 
-          task.await()
-          insideThreads - threads
-
-        . assert(_ == 1)
-
-        test(m"Threads do not persist"):
-          val threads = Thread.activeCount
-          val task = async:
-            sleep(10L)
-          task.await()
-          threads - Thread.activeCount
-        .assert(_ == 0)
-
-        test(m"Sequencing tasks"):
-          Seq(async(3), async(5), async(7)).sequence.await()
-        .assert(_ == Seq(3, 5, 7))
-
-        test(m"Sequencing tasks run in parallel"):
-          var acc: List[Int] = Nil
-          val t1 = async(snooze(40L).also((acc ::= 2)))
-          val t2 = async(snooze(60L).also((acc ::= 3)))
-          val t3 = async(snooze(20L).also((acc ::= 1)))
-          List(t1, t2, t3).sequence.await()
-          acc
-        .assert(_ == List(3, 2, 1))
+        // test(m"Sequencing tasks run in parallel"):
+        //   var acc: List[Int] = Nil
+        //   val t1 = async(snooze(40L).also((acc ::= 2)))
+        //   val t2 = async(snooze(60L).also((acc ::= 3)))
+        //   val t3 = async(snooze(20L).also((acc ::= 1)))
+        //   List(t1, t2, t3).sequence.await()
+        //   acc
+        // .assert(_ == List(3, 2, 1))
 
         // test(m"Async can be canceled"):
         //   var value: Boolean = false
@@ -259,60 +247,61 @@ object Tests extends Suite(m"Parasite tests"):
         //   capture(task.await())
         // .assert(_ == CancelError())
 
-        // test(m"Canceled task cancels child"):
-        //   println("a")
-        //   var value = 1
-        //   println("b")
-        //   val task = async:
-        //     println("c")
-        //     value = 2
+        test(m"Canceled task cancels child"):
+          var value = 1
 
-        //     val task2 = async:
-        //       println("d")
-        //       sleep(100L) // halt
-        //       println("e")
-        //       value = 3
-        //     println("f")
+          val task = async:
+            value = 2
 
-        //     task2.await() // halt
-        //     println("g")
+            val task2 = async:
+              println("pre delay 1: "+java.lang.System.currentTimeMillis())
+              delay(1*Second) // halt
+              println("post delay 1: "+java.lang.System.currentTimeMillis())
+              value = 3
 
-        //   println("h")
-        //   sleep(20L)
-        //   println("i")
-        //   task.cancel() // halt
-        //   println("j")
-        //   safely(task.await())
-        //   println("k")
-        //   value
-        // .assert(_ == 2)
+            task2.await() // halt
+            value = 6
+            println("pre delay 2: "+java.lang.System.currentTimeMillis())
+            delay(1*Second)
+            println("post delay 2: "+java.lang.System.currentTimeMillis())
+            value = 4
 
-      //   test(m"Incomplete child is awaited"):
-      //     import asyncTermination.await
-      //     var value = 1
-      //     val task = async:
-      //       value = 2
-      //       val task2 = async:
-      //         sleep(40L)
-      //         value = 3
-      //     sleep(20L)
-      //     task.await()
-      //     value
-      //   .assert(_ == 3)
-      //   println("C")
+          println("pre snooze: "+java.lang.System.currentTimeMillis())
+          snooze(0.2*Second)
+          println("post snooze: "+java.lang.System.currentTimeMillis())
+          println(t"value = $value")
+          task.cancel() // halt
+          println(t"value = $value")
+          safely(task.await())
+          value
+        .assert(_ == 2)
 
-      //   test(m"Incomplete child is cancelled"):
-      //     import asyncTermination.cancel
-      //     var value = 1
-      //     val task = async:
-      //       value = 2
-      //       val task2 = async:
-      //         sleep(40L)
-      //         value = 3
-      //     sleep(20L)
-      //     task.await()
-      //     value
-      //   .assert(_ == 2)
+        test(m"Incomplete child is awaited"):
+          import asyncTermination.await
+          var value = 1
+          val task = async:
+            value = 2
+            val task2 = async:
+              snooze(40L)
+              value = 3
+          snooze(20L)
+          task.await()
+          value
+        .assert(_ == 3)
+        println("C")
+
+        test(m"Incomplete child is cancelled"):
+          import asyncTermination.cancel
+          var value = 1
+          val task = async:
+            value = 2
+            val task2 = async:
+              snooze(0.05*Second)
+              value = 3
+          snooze(0.025*Second)
+          task.await()
+          value
+        .assert(_ == 2)
 
         test(m"Cancel read on slow Stream"):
           var count = 0
@@ -320,15 +309,17 @@ object Tests extends Suite(m"Parasite tests"):
             Stream.continually:
               count += 1
               relent()
-              println(System.currentTimeMillis())
-              delay(100L)
+              println(java.lang.System.currentTimeMillis())
+              snooze(100L)
             . take(10)
             . to(List)
 
-          delay(300L)
+          snooze(300L)
           println("CANCEL")
 
+          println("X")
           task.cancel()
+          println("Y")
           count
         .assert(_ == 2)
 

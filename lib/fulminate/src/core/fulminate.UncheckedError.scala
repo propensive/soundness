@@ -30,9 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package parasite
+package fulminate
 
-import language.experimental.pureFunctions
+import anticipation.*
 
-enum Transgression:
-  case Dispose, Escalate, Cancel
+object UncheckedError:
+  def describe(message: Text): Message =
+    if message == "".tt then m"unchecked error with no message"
+    else m"unchecked error with message, $message"
+
+  def apply(throwable: Throwable): UncheckedError =
+    val message: Text = throwable.getMessage() match
+      case null    => "".tt
+      case message => message.tt
+
+    new UncheckedError(message, throwable.getStackTrace)
+
+case class UncheckedError private(text: Text, stackTrace: Array[StackTraceElement | Null] | Null)
+extends Error(UncheckedError.describe(text))(using errorDiagnostics.empty):
+  setStackTrace(stackTrace)

@@ -35,6 +35,7 @@ package turbulence
 import language.adhocExtensions
 
 import java.io as ji
+import java.lang as jl
 import java.util.zip as juz
 
 import anticipation.*
@@ -72,10 +73,10 @@ package stdioSources:
 
   package system:
     given textOnly: Stdio =
-      Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.basic)
+      Stdio(jl.System.out.nn, jl.System.err.nn, jl.System.in.nn, termcapDefinitions.basic)
 
     given ansi: Stdio =
-      Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.xterm256)
+      Stdio(jl.System.out.nn, jl.System.err.nn, jl.System.in.nn, termcapDefinitions.xterm256)
 
   package virtualMachine:
     given textOnly: Stdio =
@@ -115,12 +116,12 @@ extension [element](stream: Stream[element])
     def recur(stream: Stream[element], last: Long): Stream[element] =
       stream.flow(Stream()):
         val duration2 =
-          SpecificDuration(generic.milliseconds(duration) - (System.currentTimeMillis - last))
+          SpecificDuration(generic.milliseconds(duration) - (jl.System.currentTimeMillis - last))
 
         if generic.milliseconds(duration2) > 0 then snooze(duration2)
         stream
 
-    async(recur(stream, System.currentTimeMillis)).await()
+    async(recur(stream, jl.System.currentTimeMillis)).await()
 
   def multiplexWith(that: Stream[element])(using Monitor): Stream[element] =
     unsafely(Stream.multiplex(stream, that))
@@ -200,7 +201,7 @@ package lineSeparation:
   given carriageReturnLinefeed: LineSeparation(NewlineSeq.CrLf, Skip, Lf, Nl, LfNl)
   given adaptiveLinefeed: LineSeparation(NewlineSeq.Lf, Nl, Nl, Nl, Nl)
 
-  given virtualMachine: LineSeparation = System.lineSeparator.nn match
+  given virtualMachine: LineSeparation = jl.System.lineSeparator.nn match
     case "\r\n"    => carriageReturnLinefeed
     case "\r"      => carriageReturn
     case "\n"      => linefeed
@@ -221,7 +222,7 @@ extension (obj: Stream.type)
     (null.asInstanceOf[element] #:: stream).tail
 
   def pulsar[generic: GenericDuration](duration: generic)(using Monitor): Stream[Unit] =
-    val startTime: Long = System.currentTimeMillis
+    val startTime: Long = jl.System.currentTimeMillis
 
     def recur(iteration: Int): Stream[Unit] =
       try
@@ -243,7 +244,6 @@ extension (bytes: Bytes)
     val in = ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
     val in2 = juz.GZIPInputStream(in)
     val out = ji.ByteArrayOutputStream()
-
     val buffer: Array[Byte] = new Array(1024)
 
     def recur(): Unit = in2.read(buffer).tap: length =>
@@ -283,13 +283,13 @@ extension (stream: Stream[Bytes])
           val free = dest.length - destPos
 
           if ready < free then
-            System.arraycopy(source, sourcePos, dest, destPos, ready)
+            jl.System.arraycopy(source, sourcePos, dest, destPos, ready)
             recur(more, 0, dest, destPos + ready)
           else if free < ready then
-            System.arraycopy(source, sourcePos, dest, destPos, free)
+            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
             dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
           else // free == ready
-            System.arraycopy(source, sourcePos, dest, destPos, free)
+            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
             dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
 
         case _ =>
@@ -310,13 +310,13 @@ extension (stream: Stream[Bytes])
           val free = dest.length - destPos
 
           if ready < free then
-            System.arraycopy(source, sourcePos, dest, destPos, ready)
+            jl.System.arraycopy(source, sourcePos, dest, destPos, ready)
             recur(more, 0, dest, destPos + ready)
           else if free < ready then
-            System.arraycopy(source, sourcePos, dest, destPos, free)
+            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
             dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
           else // free == ready
-            System.arraycopy(source, sourcePos, dest, destPos, free)
+            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
             dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
 
         case _ =>
@@ -358,7 +358,7 @@ extension (stream: Stream[Bytes])
         val count = length.min(available())
 
         if count == 0 then -1 else
-          if count > 0 then System.arraycopy(focus, offset, array, arrayOffset, count)
+          if count > 0 then jl.System.arraycopy(focus, offset, array, arrayOffset, count)
           offset += count
           count
 

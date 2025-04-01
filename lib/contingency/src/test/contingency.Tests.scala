@@ -34,8 +34,8 @@ package contingency
 
 import soundness.*
 
-case class VarargsError(args: Text*)(using Diagnostics) extends Error(m"Varargs error")
-case class VarargsError2(arg: Text, args: Text*)(using Diagnostics) extends Error(m"Varargs error 2")
+case class VarargsError(args: Text*)(using Diagnostics) extends Error(m"varargs error")
+case class VarargsError2(arg: Text, args: Text*)(using Diagnostics) extends Error(m"varargs error 2")
 
 object Tests extends Suite(m"Contingency tests"):
 

@@ -45,7 +45,7 @@ object Daemon:
   :     Daemon =
     inline def evaluate0: Worker => Unit = evaluate
 
-    new Worker(codepoint, monitor, codicil, Unset) with Daemon:
+    new Worker(codepoint, monitor, codicil) with Daemon:
       type Result = Unit
       def name: Optional[Text] = Unset
       def daemon: Boolean = true
