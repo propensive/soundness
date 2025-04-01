@@ -32,10 +32,6 @@
                                                                                                   */
 package parasite
 
-object Parasite:
-  opaque type Stale[value] = value
-
-  extension [value](stale: Stale[value]) def apply(): value = stale
-
-  object Stale:
-    def apply[value](value: value): Stale[value] = value
+enum Observation[value]:
+  case Fresh(observation: value)
+  case Stale(observation: value)

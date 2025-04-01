@@ -34,16 +34,17 @@ package parasite
 
 import language.experimental.pureFunctions
 
+import java.util as ju
+import ju.concurrent as juc
+import juc.atomic as juca
+import juc.locks as jucl
+import java.lang as jl
+
 import anticipation.*
 import contingency.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
-
-import java.util as ju
-import ju.concurrent as juc
-import juc.atomic as juca
-import juc.locks as jucl
 
 import Completion.*
 
@@ -113,13 +114,13 @@ final case class Promise[value]():
     case _                   => ()
 
   def await[generic: GenericDuration](duration: generic): value raises AsyncError =
-    val deadline = System.nanoTime() + generic.milliseconds(duration)*1000000L
+    val deadline = jl.System.nanoTime() + generic.milliseconds(duration)*1000000L
 
     @tailrec
     def recur(): value =
-      if deadline < System.nanoTime then abort(AsyncError(AsyncError.Reason.Timeout))
+      if deadline < jl.System.nanoTime then abort(AsyncError(AsyncError.Reason.Timeout))
       else state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
-        case Incomplete(_)   => jucl.LockSupport.parkUntil(this, deadline - System.nanoTime())
+        case Incomplete(_)   => jucl.LockSupport.parkUntil(this, deadline - jl.System.nanoTime())
                                 recur()
         case Complete(value) => value
         case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
@@ -127,13 +128,13 @@ final case class Promise[value]():
     recur()
 
   def attend[generic: GenericDuration](duration: generic): Unit =
-    val deadline = System.nanoTime() + generic.milliseconds(duration)*1000000L
+    val deadline = jl.System.nanoTime() + generic.milliseconds(duration)*1000000L
 
     @tailrec
     def recur(): Unit =
-      if deadline > System.nanoTime
+      if deadline > jl.System.nanoTime
       then state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
-        case Incomplete(_) => jucl.LockSupport.parkUntil(this, deadline - System.nanoTime())
+        case Incomplete(_) => jucl.LockSupport.parkUntil(this, deadline - jl.System.nanoTime())
                               recur()
         case Cancelled     => ()
         case Complete(_)   => ()

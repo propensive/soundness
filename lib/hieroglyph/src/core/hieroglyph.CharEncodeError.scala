@@ -37,4 +37,4 @@ import language.experimental.captureChecking
 import fulminate.*
 
 case class CharEncodeError(char: Char, encoding: Encoding)(using Diagnostics)
-extends Error(m"The character $char cannot be encoded with the encoding $encoding")
+extends Error(m"character $char cannot be encoded with the encoding $encoding")

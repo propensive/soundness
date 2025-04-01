@@ -32,7 +32,12 @@
                                                                                                   */
 package parasite
 
+import language.experimental.into
 import language.experimental.pureFunctions
 
-enum Transgression:
-  case Dispose, Escalate, Cancel
+import java.lang.ref as jlr
+
+import prepositional.*
+
+object System:
+  private[parasite] val cleaner: jlr.Cleaner = jlr.Cleaner.create().nn

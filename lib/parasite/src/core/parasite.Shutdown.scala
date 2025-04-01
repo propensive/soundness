@@ -30,3 +30,24 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
+package parasite
+
+import language.experimental.into
+import language.experimental.pureFunctions
+
+import java.lang.ref as jlr
+
+import prepositional.*
+
+object Shutdown:
+  given Shutdown is Interceptable:
+    type Target = System.type
+
+    def register(value: System.type, action: => Unit): () => Unit =
+      val runnable: Runnable = () => action
+      val thread: Thread = Thread(runnable)
+      Runtime.getRuntime.nn.addShutdownHook(thread)
+
+      () => Runtime.getRuntime.nn.removeShutdownHook(thread)
+
+erased trait Shutdown

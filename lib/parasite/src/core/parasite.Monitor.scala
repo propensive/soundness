@@ -34,6 +34,7 @@ package parasite
 
 import language.experimental.pureFunctions
 
+import java.lang as jl
 import java.util.concurrent.locks as jucl
 
 import scala.annotation.*
@@ -91,7 +92,7 @@ sealed abstract class Supervisor() extends Monitor:
 
     throwable match
       case break: scala.util.boundary.Break[?] => throw break
-      case _                                   => Transgression.Absorb
+      case _                                   => Transgression.Dispose
 
   def intercept(handler: Throwable ~> Transgression): Supervisor = this
 
@@ -126,7 +127,7 @@ extends Monitor:
   self =>
   private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
   private var relentCount: Int = 1
-  private val startTime: Long = System.currentTimeMillis
+  private val startTime: Long = jl.System.currentTimeMillis
   val promise: Promise[Result] = Promise()
 
   def chain: Chain = Chain(frame, parent.chain)
@@ -142,7 +143,7 @@ extends Monitor:
       def daemon: Boolean = self.daemon
       def evaluate(worker: Worker): Result = self.evaluate(worker)
 
-  def relentlessness: Double = (System.currentTimeMillis - startTime).toDouble/relentCount
+  def relentlessness: Double = (jl.System.currentTimeMillis - startTime).toDouble/relentCount
 
   def delegate(lambda: Monitor -> Unit): Unit = state.replace: state =>
     workers.each { child => if child.daemon then child.cancel() else lambda(child) }
@@ -178,13 +179,15 @@ extends Monitor:
   def cancel(): Unit =
     val state2 = state.replace:
       case Initializing | Active(_) =>
-        thread.interrupt()
         promise.cancel()
+        thread.interrupt()
         Cancelled
 
       case other =>
         other
 
+    println("After cancellation: "+state2)
+    println("  Promise: "+promise.ready)
     if state2 == Cancelled then thread.join()
 
   def result()(using cancel: Tactic[AsyncError]): Result =
@@ -217,7 +220,7 @@ extends Monitor:
         state.replace:
           case Initializing =>
             parent.workers += this
-            Active(System.currentTimeMillis)
+            Active(jl.System.currentTimeMillis)
 
           case other =>
             boundary.break()
@@ -225,7 +228,7 @@ extends Monitor:
         evaluate(this).tap: result =>
           state.replace:
             case Active(startTime) =>
-              Completed(System.currentTimeMillis - startTime, result)
+              Completed(jl.System.currentTimeMillis - startTime, result)
 
             case other =>
               other
@@ -247,7 +250,7 @@ extends Monitor:
         case error: Throwable =>
           state() = Failed(error)
           handle(error) match
-            case Transgression.Absorb   => ()
+            case Transgression.Dispose  => ()
             case Transgression.Cancel   => workers.each(_.cancel())
             case Transgression.Escalate => parent.handle(error)
 

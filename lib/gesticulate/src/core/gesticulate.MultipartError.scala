@@ -52,4 +52,4 @@ object MultipartError:
 import MultipartError.Reason
 
 case class MultipartError(reason: MultipartError.Reason)(using Diagnostics)
-extends Error(m"The multipart data could not be read because $reason")
+extends Error(m"multipart data could not be read because $reason")

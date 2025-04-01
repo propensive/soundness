@@ -32,7 +32,14 @@
                                                                                                   */
 package parasite
 
+import language.experimental.into
 import language.experimental.pureFunctions
 
-enum Transgression:
-  case Dispose, Escalate, Cancel
+import java.lang.ref as jlr
+
+import prepositional.*
+
+trait Interceptable:
+  type Self
+  type Target
+  def register(target: Target, action: => Unit): () => Unit

@@ -32,7 +32,23 @@
                                                                                                   */
 package parasite
 
+import language.experimental.into
 import language.experimental.pureFunctions
 
-enum Transgression:
-  case Dispose, Escalate, Cancel
+import java.lang.ref as jlr
+
+import prepositional.*
+
+object Destruction:
+  given [value] => Destruction is Interceptable:
+    type Target = value
+
+    def register(value: value, action: => Unit): () => Unit =
+      var cancelled = false
+      val cleanable = System.cleaner.register(value, () => if !cancelled then action).nn
+
+      () =>
+        cancelled = true
+        cleanable.clean()
+
+erased trait Destruction

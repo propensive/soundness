@@ -44,7 +44,7 @@ import turbulence.*
 
 import strategies.throwUnsafely
 
-import threadModels.platform
+import threadModels.virtual
 import asyncTermination.cancel
 
 import errorDiagnostics.stackTraces
@@ -66,8 +66,6 @@ object Tests extends Suite(m"Parasite tests"):
 
   def run(): Unit =
     supervise:
-
-
       suite(m"Convoluted test tests"):
         case class Bus():
           val spool: Spool[Text] = Spool()
@@ -196,18 +194,6 @@ object Tests extends Suite(m"Parasite tests"):
       //   //   name
       //   // .assert(_ == Some(t"/simple/inner"))
 
-        test(m"Async creates one new thread"):
-          val threads = Thread.activeCount
-          var insideThreads = 0
-
-          val task = async:
-            insideThreads = Thread.activeCount
-
-          task.await()
-          insideThreads - threads
-
-        . assert(_ == 1)
-
         test(m"Threads do not persist"):
           val threads = Thread.activeCount
           val task = async:
@@ -259,60 +245,51 @@ object Tests extends Suite(m"Parasite tests"):
         //   capture(task.await())
         // .assert(_ == CancelError())
 
-        // test(m"Canceled task cancels child"):
-        //   println("a")
-        //   var value = 1
-        //   println("b")
-        //   val task = async:
-        //     println("c")
-        //     value = 2
+        test(m"Canceled task cancels child"):
+          var value = 1
 
-        //     val task2 = async:
-        //       println("d")
-        //       sleep(100L) // halt
-        //       println("e")
-        //       value = 3
-        //     println("f")
+          val task = async:
+            value = 2
 
-        //     task2.await() // halt
-        //     println("g")
+            val task2 = async:
+              snooze(100L) // halt
+              value = 3
 
-        //   println("h")
-        //   sleep(20L)
-        //   println("i")
-        //   task.cancel() // halt
-        //   println("j")
-        //   safely(task.await())
-        //   println("k")
-        //   value
-        // .assert(_ == 2)
+            task2.await() // halt
+            value = 4
 
-      //   test(m"Incomplete child is awaited"):
-      //     import asyncTermination.await
-      //     var value = 1
-      //     val task = async:
-      //       value = 2
-      //       val task2 = async:
-      //         sleep(40L)
-      //         value = 3
-      //     sleep(20L)
-      //     task.await()
-      //     value
-      //   .assert(_ == 3)
-      //   println("C")
+          snooze(20L)
+          task.cancel() // halt
+          safely(task.await())
+          value
+        .assert(_ == 2)
 
-      //   test(m"Incomplete child is cancelled"):
-      //     import asyncTermination.cancel
-      //     var value = 1
-      //     val task = async:
-      //       value = 2
-      //       val task2 = async:
-      //         sleep(40L)
-      //         value = 3
-      //     sleep(20L)
-      //     task.await()
-      //     value
-      //   .assert(_ == 2)
+        test(m"Incomplete child is awaited"):
+          import asyncTermination.await
+          var value = 1
+          val task = async:
+            value = 2
+            val task2 = async:
+              snooze(40L)
+              value = 3
+          snooze(20L)
+          task.await()
+          value
+        .assert(_ == 3)
+        println("C")
+
+        test(m"Incomplete child is cancelled"):
+          import asyncTermination.cancel
+          var value = 1
+          val task = async:
+            value = 2
+            val task2 = async:
+              snooze(40L)
+              value = 3
+          snooze(20L)
+          task.await()
+          value
+        .assert(_ == 2)
 
         test(m"Cancel read on slow Stream"):
           var count = 0
@@ -321,14 +298,16 @@ object Tests extends Suite(m"Parasite tests"):
               count += 1
               relent()
               println(System.currentTimeMillis())
-              delay(100L)
+              snooze(100L)
             . take(10)
             . to(List)
 
-          delay(300L)
+          snooze(300L)
           println("CANCEL")
 
+          println("X")
           task.cancel()
+          println("Y")
           count
         .assert(_ == 2)
 

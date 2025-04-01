@@ -49,4 +49,4 @@ object GeolocationError:
     case Reason.BadUncertainty      => m"the `uncertainty` parameter vas not a valid number"
 
 case class GeolocationError(reason: GeolocationError.Reason)(using Diagnostics)
-extends Error(m"The geo URI is not in the correct format because $reason")
+extends Error(m"the geo URI is not in the correct format because $reason")
