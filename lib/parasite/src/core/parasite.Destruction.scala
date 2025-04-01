@@ -38,6 +38,7 @@ import language.experimental.pureFunctions
 import java.lang.ref as jlr
 
 import prepositional.*
+import rudiments.*
 
 object Destruction:
   private lazy val instance: Destruction = Destruction()
@@ -50,8 +51,6 @@ object Destruction:
       val cancelled: Promise[Unit] = Promise()
       val cleanable = cleaner.register(value, () => if !cancelled.ready then action(instance)).nn
 
-      () =>
-        cancelled.offer(())
-        cleanable.clean()
+      () => cancelled.offer(()) yet cleanable.clean()
 
 class Destruction()

@@ -297,7 +297,7 @@ object Tests extends Suite(m"Parasite tests"):
             Stream.continually:
               count += 1
               relent()
-              println(System.currentTimeMillis())
+              println(java.lang.System.currentTimeMillis())
               snooze(100L)
             . take(10)
             . to(List)

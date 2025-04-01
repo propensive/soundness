@@ -51,8 +51,7 @@ object Fault:
       tasks.get().nn.each(_(fault))
 
   private lazy val handler: Handler.type =
-    Thread.setDefaultUncaughtExceptionHandler(Handler)
-    Handler
+    Thread.setDefaultUncaughtExceptionHandler(Handler) yet Handler
 
   given interceptable: Fault is Interceptable:
     type Target = System.type

@@ -90,7 +90,6 @@ def task[result](using Codepoint)(name: into Text)(evaluate: Worker ?=> result)
 
   Task(evaluate(using _), daemon = false, name = name)
 
-def trap(lambda: Throwable ~> Transgression)(using monitor: Monitor): Trap = Trap(lambda, monitor)
 def relent[result]()(using Worker): Unit = monitor.relent()
 def cancel[result]()(using Monitor): Unit = monitor.cancel()
 
