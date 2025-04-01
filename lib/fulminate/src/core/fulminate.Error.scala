@@ -36,8 +36,12 @@ import language.experimental.captureChecking
 
 import anticipation.*
 
-transparent abstract class Error
-   (val message: Message, private val cause: Error | Null = null)
+object Error:
+  def apply(throwable: Throwable): Error = throwable match
+    case error: Error         => error
+    case throwable: Throwable => UncheckedError(throwable)
+
+transparent abstract class Error(val message: Message, private val cause: Error | Null = null)
    (using val diagnostics: Diagnostics)
 extends Exception(message.text.s, cause, false, diagnostics.captureStack):
   this: Error =>
