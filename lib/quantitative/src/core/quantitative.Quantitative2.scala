@@ -325,7 +325,7 @@ trait Quantitative2:
       case (Some(leftName), Some(rightName)) =>
         halt:
           m"""the left operand represents $leftName, but the right operand represents $rightName;
-                these are incompatible physical quantities"""
+              these are incompatible physical quantities"""
 
       case _ =>
         halt(m"the operands represent different physical quantities")
