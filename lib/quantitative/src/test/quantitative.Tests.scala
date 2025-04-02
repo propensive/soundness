@@ -33,6 +33,8 @@
 package quantitative
 
 import fulminate.*
+import symbolism.*
+import rudiments.*
 import gossamer.*
 import hypotenuse.*
 import larceny.*
@@ -351,3 +353,21 @@ object Tests extends Suite(m"Quantitative Tests"):
       test(m"Convert Fahrenheit directly to Celsius"):
         Fahrenheit(100.0).in[Celsius].show
       .assert(_ == t"37.8 °C")
+
+    suite(m"Aggregation tests"):
+      test(m"Total some values"):
+        List(1*Second, 2*Second, 3*Second).total
+      . assert(_ == 6*Second)
+
+      test(m"Average some values"):
+        List(1*Second, 2*Second, 3*Second).mean
+      . assert(_ == 2*Second)
+
+      test(m"Variance of some values"):
+        List(1*Second, 2*Second, 3*Second).variance
+      . assert(_ == (2.0/3.0)*Second*Second)
+
+      test(m"Standard deviation of some values"):
+        summon[Quantity[Seconds[2]] is Rootable[2]]
+        List(1*Second, 2*Second, 3*Second).standardDeviation
+      . assert(_ == (2.0/3.0).sqrt*Second)

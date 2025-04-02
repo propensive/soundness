@@ -383,7 +383,7 @@ trait Quantitative2:
 
       unitsType.absolve match
         case '[type result <: Measure; result] =>
-          val sqrt = '{ (value: Quantity[value]) => Quantity(math.sqrt(value.value)) }
+          val sqrt = '{ (value: Quantity[value]) => Quantity[result](math.sqrt(value.value)) }
           val cast = sqrt.asExprOf[Quantity[value] => Quantity[result]]
 
           '{Rootable[2, Quantity[value], Quantity[result]]($cast(_))}

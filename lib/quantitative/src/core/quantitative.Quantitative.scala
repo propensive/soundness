@@ -117,7 +117,7 @@ object Quantitative extends Quantitative2:
                              =>  Quantity[left] is Divisible by Quantity[right] =
       ${Quantitative.divTypeclass[left, right]}
 
-    given divisibleDouble: [left <: Measure] => Quantity[left] is Divisible by Double =
+    given divisibleDouble: [left <: Measure] => Quantity[left] is Divisible by Double into Quantity[left] =
       new Divisible:
         type Self = Quantity[left]
         type Result = Quantity[left]
