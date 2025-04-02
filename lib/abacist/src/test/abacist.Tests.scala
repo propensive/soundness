@@ -35,12 +35,12 @@ package abacist
 import fulminate.*
 import gossamer.{t, Decimalizer}
 import larceny.*
+import prepositional.*
 import probably.*
 import quantitative.*
 import rudiments.*
 import spectacular.*
-
-import language.strictEquality
+import symbolism.*
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
@@ -195,3 +195,12 @@ object Tests extends Suite(m"Quantitative Tests"):
           given UnitsNames[Height] = () => List(t"'", t"\"")
           Count[Height](5, 9).show
         .assert(_ == t"5' 9\"")
+
+      suite(m"Aggregate tests"):
+        test(m"Total of several values"):
+          List[Count[Weight]](Count(10), Count(1, 6), Count(2, 4, 1)).total
+        . assert(_ == Count(2, 6, 1))
+
+        test(m"Mean of several values"):
+          List[Count[Weight]](Count(10), Count(1, 6), Count(2, 4, 1)).mean
+        . assert(_ == Count(11, 6))

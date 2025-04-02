@@ -46,6 +46,14 @@ object Abacist2:
 
   object Count:
     erased given underlying: [units <: Tuple] => Underlying[Count[units], Long] = !!
+    given zeroic: [units <: Tuple] => Count[units] is Zeroic = () => 0L
+
+    given typeable: [units <: Tuple] => Typeable[Count[units]]:
+      def unapply(count: Any): Option[count.type & Count[units]] = count.asMatchable match
+        case count: Long => Some(count)
+        case _           => None
+
+
     def fromLong[units <: Tuple](long: Long): Count[units] = long
     given integral: [units <: Tuple] => Integral[Count[units]] = summon[Integral[Long]]
 
@@ -97,11 +105,8 @@ object Abacist2:
     inline def apply[unit[power <: Nat] <: Units[power, ? <: Dimension]]: Int =
       ${Abacist.get[units, unit[1]]('count)}
 
-    transparent inline def quantity: Any =
-      ${Abacist.toQuantity[units]('count)}
-
-    inline def components: ListMap[Text, Long] =
-      ${Abacist.describeCount[units]('count)}
+    transparent inline def quantity: Any = ${Abacist.toQuantity[units]('count)}
+    inline def components: ListMap[Text, Long] = ${Abacist.describeCount[units]('count)}
 
     transparent inline def multiply(inline multiplier: Double): Any =
       ${Abacist.multiplyCount('count, 'multiplier, false)}
