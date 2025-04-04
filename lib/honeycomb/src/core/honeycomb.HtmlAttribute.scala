@@ -252,6 +252,7 @@ object HtmlAttribute:
   given title: ("title" is HtmlAttribute[Text]) = identity(_)
   given translate: ("translate" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given linkType: ("type" is HtmlAttribute[Medium] onto "link") = _.show
+  given buttonType: ("type" is HtmlAttribute[Text] onto "button") = _.show
   given capture: ("capture" is HtmlAttribute[Capture]) = _.show
 
   // This needs a representation of HTML names
