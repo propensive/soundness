@@ -1121,7 +1121,6 @@ object rudiments extends SoundnessModule {
     def moduleDeps = Seq(
       anticipation.css,
       anticipation.http,
-      symbolism.core,
       anticipation.text,
       anticipation.http,
       anticipation.path,
@@ -1206,7 +1205,7 @@ object spectacular extends SoundnessModule {
 
 object superlunary extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(anticipation.css, anticipation.http, symbolism.core, anticipation.text, anticipation.http, jacinta.core, inimitable.core, gastronomy.core, ambience.core, hellenism.core, anthology.scala)
+    def moduleDeps = Seq(anticipation.css, symbolism.core, anticipation.text, anticipation.http, jacinta.core, inimitable.core, gastronomy.core, ambience.core, hellenism.core, anthology.scala)
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-staging_3:${scalaVersion()}")
   }
 
