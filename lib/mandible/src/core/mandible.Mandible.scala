@@ -30,36 +30,62 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package mandible
 
-import java.io as ji
-import java.net as jn
+import java.lang.classfile as jlc
 
-import scala.reflect.*
+import scala.quoted.*
 
 import anticipation.*
 import contingency.*
+import fulminate.*
+import gossamer.*
+import hellenism.*
+import hyperbole.*
+import nomenclature.*
+import prepositional.*
+import proscenium.*
 import rudiments.*
-import serpentine.*
+import spectacular.*
+import turbulence.*
 import vacuous.*
 
-object Classloader:
-  def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
-  inline def apply[template <: AnyKind]: Classloader = ClassRef[template].classloader
+object Mandible:
+  def disassemble[target: Type](block: Expr[target => Any], classloader: Expr[Classloader])
+       (using Quotes)
+  :     Expr[Optional[Bytecode]] =
+    import quotes.reflect.*
+    given Realm = realm"mandible"
 
-class Classloader(val java: ClassLoader) extends Root("/".tt, "/".tt, Case.Sensitive):
-  type Platform = Classpath
-  override def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
+    println(block.introspect)
 
-  protected def urlClassloader: Optional[jn.URLClassLoader] = java match
-    case java: jn.URLClassLoader => java
-    case _                       => parent.let(_.urlClassloader)
+    val name = block.asTerm match
+      case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, name)))), _)) => name
 
-  def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
+      case _ =>
+        halt(m"this type of lambda is not supported")
 
-  def apply(path: Text): Optional[Bytes] =
-    Optional(java.getResourceAsStream(path.s)).let(_.readAllBytes().nn.immutable(using Unsafe))
+    val classname: String =
+      TypeRepr.of[target].classSymbol.get.fullName.replace(".", "/").nn+".class"
 
-  private[hellenism] def inputStream(path: Text)(using notFound: Tactic[ClasspathError])
-  :     ji.InputStream =
-    Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
+    '{
+        val classfile = Classfile(${Expr(classname)})(using $classloader)
+        println(${Expr(classname)})
+        println("classfile: "+classfile)
+        classfile.let(_.methods.find(_.name.s == ${Expr(name)}).getOrElse(Unset))
+        . let(_.bytecode)
+    }
+
+
+
+    // '{  given Classloader = $classloader
+
+    //     class Proxy():
+    //       def bar: Any = $block
+    //     val classname = ${Expr(TypeRepr.of[Proxy].typeSymbol.fullName)}
+    //     println("classname: "+classname)
+    //     val classfile = Classfile(classname)
+    //     println("classfile: "+classfile)
+    //     val method = classfile.let(_.methods.find(_.name == t"bar").getOrElse(Unset))
+    //     method.let(_.bytecode)
+    //  }

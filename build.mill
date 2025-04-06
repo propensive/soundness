@@ -871,6 +871,17 @@ object legerdemain extends SoundnessModule {
   }
 }
 
+object mandible extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(hellenism.core, hyperbole.core, escritoire.core)
+    def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-staging_3:${scalaVersion()}")
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core, revolution.core)
+  }
+}
+
 object mercator extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(fulminate.core)

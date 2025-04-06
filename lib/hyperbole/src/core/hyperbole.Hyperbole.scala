@@ -145,6 +145,9 @@ object Hyperbole:
         case DefDef(name, ps, typs, ch) =>
           TastyTree(t"DefDef", tree, ch.to(List).map(expand))
 
+        case ValDef(name, tpe, rhs) =>
+          TastyTree(t"ValDef", tree, rhs.to(List).map(expand))
+
         case CaseDef(focus, t1, t2) =>
           TastyTree(t"CaseDef", tree, expand(focus) +: t1.to(List).map(expand) :+ expand(t2))
 
@@ -164,7 +167,7 @@ object Hyperbole:
      (Column(e"TASTy")(_.text.teletype),
       Column(e"Param")(_.param.or(t"")),
       Column(e"Source")(_.source),
-      Column(e"Code")(_.expr))
+      /*Column(e"Code")(_.expr)*/)
 
     . tabulate(seq)
     . grid(10000)
