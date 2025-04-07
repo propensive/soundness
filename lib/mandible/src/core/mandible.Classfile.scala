@@ -30,36 +30,89 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package mandible
 
-import java.io as ji
-import java.net as jn
+import java.lang.classfile as jlc
+import java.lang.classfile.instruction as jlci
 
 import scala.reflect.*
 
 import anticipation.*
 import contingency.*
+import escritoire.*
+import escapade.*
+import fulminate.*
+import gossamer.*
+import hellenism.*
+import hieroglyph.*
+import iridescence.*
+import nomenclature.*
+import prepositional.*
+import proscenium.*
 import rudiments.*
-import serpentine.*
+import spectacular.*
+import turbulence.*
 import vacuous.*
 
-object Classloader:
-  def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
-  inline def apply[template <: AnyKind]: Classloader = ClassRef[template].classloader
+import tableStyles.minimal
+import textMetrics.uniform
+import columnAttenuation.ignore
 
-class Classloader(val java: ClassLoader) extends Root("/".tt, "/".tt, Case.Sensitive):
-  type Platform = Classpath
-  override def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
+object Classfile:
+  given Classfile is Aggregable by Bytes = stream => new Classfile(stream.read[Bytes])
 
-  protected def urlClassloader: Optional[jn.URLClassLoader] = java match
-    case java: jn.URLClassLoader => java
-    case _                       => parent.let(_.urlClassloader)
+  def apply(name: Text)(using classloader: Classloader): Optional[Classfile] =
+    classloader(name).let(new Classfile(_))
 
-  def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
+  def apply[classtype: ClassTag](using classloader: Classloader): Optional[Classfile] =
+    val cls = classtype.runtimeClass
+    val name = t"${cls.getName().nn.replace('.', '/').nn}.class"
+    classloader(name).let(new Classfile(_))
 
-  def apply(path: Text): Optional[Bytes] =
-    Optional(java.getResourceAsStream(path.s)).let(_.readAllBytes().nn.immutable(using Unsafe))
+class Classfile(data: Bytes):
+  class Method(model: jlc.MethodModel):
+    def name: Text = model.methodName.nn.toString.tt
 
-  private[hellenism] def inputStream(path: Text)(using notFound: Tactic[ClasspathError])
-  :     ji.InputStream =
-    Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
+    def bytecode: Optional[Bytecode] = Optional(model.code().nn.get()).let: code =>
+      def recur
+           (todo:  List[jlc.CodeElement],
+            line:  Optional[Int],
+            done:  List[Bytecode.Instruction],
+            stack: Optional[List[Bytecode.Frame]],
+            count: Int)
+      :     List[Bytecode.Instruction] =
+        todo match
+          case Nil => done.reverse
+          case next :: todo => next match
+            case instruction: jlc.Instruction =>
+              val opcode = Bytecode.Opcode(instruction)
+              val stack2 = stack.let(opcode.transform(_))
+
+              recur
+               (todo,
+                Unset,
+                Bytecode.Instruction(opcode, line, stack2, count) :: done,
+                stack2,
+                count + instruction.sizeInBytes)
+
+            case lineNo: jlci.LineNumber =>
+              recur(todo, lineNo.line, done, stack, count)
+
+            case other: jlci.LocalVariable =>
+              recur(todo, line, done, stack, count)
+
+            case other: jlci.LabelTarget =>
+              recur(todo, line, done, stack, count)
+
+      val instructions = recur(code.elementList.nn.asScala.to(List), Unset, Nil, Nil, 0)
+
+      Bytecode(instructions*)
+
+
+  private lazy val model: jlc.ClassModel = jlc.ClassFile.of().nn.parse(unsafely(data.mutable)).nn
+  lazy val methods: List[Method] = model.methods.nn.asScala.to(List).map(Method(_))
+
+  val attributes: Unit =
+    model.attributes.nn.iterator.nn.asScala.to(List).foreach(println)
+  // val constants: Unit =
+  //   model.constantPool.nn.iterator.nn.asScala.to(List).foreach(println)

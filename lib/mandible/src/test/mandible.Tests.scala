@@ -30,36 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package mandible
 
-import java.io as ji
-import java.net as jn
+import soundness.*
 
-import scala.reflect.*
+import classloaders.threadContext
+import stdioSources.virtualMachine.ansi
 
-import anticipation.*
-import contingency.*
-import rudiments.*
-import serpentine.*
-import vacuous.*
+object Tests extends Suite(m"Mandible tests"):
+  def run(): Unit =
+    test(m"One plus one"):
 
-object Classloader:
-  def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
-  inline def apply[template <: AnyKind]: Classloader = ClassRef[template].classloader
+      disassemble[Manifest](_.serialize).let: bytecode =>
+        Out.println(bytecode.teletype)
 
-class Classloader(val java: ClassLoader) extends Root("/".tt, "/".tt, Case.Sensitive):
-  type Platform = Classpath
-  override def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
+      val rewrite =
+        Classfile[StackTrace].let(_.methods.find(_.name == t"rewrite").getOrElse(Unset)).vouch
 
-  protected def urlClassloader: Optional[jn.URLClassLoader] = java match
-    case java: jn.URLClassLoader => java
-    case _                       => parent.let(_.urlClassloader)
-
-  def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
-
-  def apply(path: Text): Optional[Bytes] =
-    Optional(java.getResourceAsStream(path.s)).let(_.readAllBytes().nn.immutable(using Unsafe))
-
-  private[hellenism] def inputStream(path: Text)(using notFound: Tactic[ClasspathError])
-  :     ji.InputStream =
-    Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
+      println(rewrite.bytecode)
+    . assert()
