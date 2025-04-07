@@ -74,7 +74,7 @@ package retryTenacities:
   given fixedNoDelayFiveTimes: Tenacity = Tenacity.fixed(0L).limit(5)
   given fixedNoDelayTenTimes: Tenacity = Tenacity.fixed(0L).limit(10)
 
-transparent inline def monitor(using Monitor): Monitor = summonInline[Monitor]
+transparent inline def monitor: Monitor = summonInline[Monitor]
 
 def daemon(using Codepoint)(evaluate: Worker ?=> Unit)(using Monitor, Codicil): Daemon =
   Daemon(evaluate(using _))
@@ -99,12 +99,10 @@ def snooze[duration: GenericDuration](duration: duration)(using Monitor): Unit =
 def delay[generic: GenericDuration](duration: generic)(using Monitor): Unit =
   hibernate(jl.System.currentTimeMillis + generic.milliseconds(duration))
 
-def sleep[instant: Abstractable across Instants into Long](instant: instant)(using Monitor)
-:     Unit =
+def sleep[instant: Abstractable across Instants into Long](instant: instant)(using Monitor): Unit =
   monitor.snooze(instant.generic - jl.System.currentTimeMillis)
 
-def hibernate[instant: Abstractable across Instants into Long](instant: instant)
-   (using Monitor)
+def hibernate[instant: Abstractable across Instants into Long](instant: instant)(using Monitor)
 :     Unit =
   while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
 
@@ -135,10 +133,10 @@ def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) 
   def recur(attempt: Ordinal): value =
     boundary[Perseverance[value]]: label ?=>
       sleep(summon[Tenacity].delay(attempt).or(abort(RetryError(attempt.n1))))
-      def surrender = boundary.break(Perseverance.Surrender)
-      def persevere = boundary.break(Perseverance.Persevere)
+      def surrender(): Nothing = boundary.break(Perseverance.Surrender)
+      def persevere(): Nothing = boundary.break(Perseverance.Persevere)
 
-      Perseverance.Prevail(evaluate(using () => surrender, () => persevere))
+      Perseverance.Prevail(evaluate(using surrender, persevere))
 
     . match
         case Perseverance.Surrender      => abort(RetryError(attempt.n1))
