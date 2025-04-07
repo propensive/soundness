@@ -58,9 +58,61 @@ import tableStyles.minimal
 import textMetrics.uniform
 import columnAttenuation.ignore
 
-inline def disassemble[target](inline lambda: target => Any)(using classloader: Classloader)
-:   Optional[Bytecode] =
-  ${Mandible.disassemble('lambda, 'classloader)}
+object Classfile:
+  given Classfile is Aggregable by Bytes = stream => new Classfile(stream.read[Bytes])
 
-case class ClassfileError()(using Diagnostics)
-extends Error(m"there was an error reading the classfile")
+  def apply(name: Text)(using classloader: Classloader): Optional[Classfile] =
+    classloader(name).let(new Classfile(_))
+
+  def apply[classtype: ClassTag](using classloader: Classloader): Optional[Classfile] =
+    val cls = classtype.runtimeClass
+    val name = t"${cls.getName().nn.replace('.', '/').nn}.class"
+    classloader(name).let(new Classfile(_))
+
+class Classfile(data: Bytes):
+  class Method(model: jlc.MethodModel):
+    def name: Text = model.methodName.nn.toString.tt
+
+    def bytecode: Optional[Bytecode] = Optional(model.code().nn.get()).let: code =>
+      def recur
+           (todo:  List[jlc.CodeElement],
+            line:  Optional[Int],
+            done:  List[Bytecode.Instruction],
+            stack: Optional[List[Bytecode.Frame]],
+            count: Int)
+      :     List[Bytecode.Instruction] =
+        todo match
+          case Nil => done.reverse
+          case next :: todo => next match
+            case instruction: jlc.Instruction =>
+              val opcode = Bytecode.Opcode(instruction)
+              val stack2 = stack.let(opcode.transform(_))
+
+              recur
+               (todo,
+                Unset,
+                Bytecode.Instruction(opcode, line, stack2, count) :: done,
+                stack2,
+                count + instruction.sizeInBytes)
+
+            case lineNo: jlci.LineNumber =>
+              recur(todo, lineNo.line, done, stack, count)
+
+            case other: jlci.LocalVariable =>
+              recur(todo, line, done, stack, count)
+
+            case other: jlci.LabelTarget =>
+              recur(todo, line, done, stack, count)
+
+      val instructions = recur(code.elementList.nn.asScala.to(List), Unset, Nil, Nil, 0)
+
+      Bytecode(instructions*)
+
+
+  private lazy val model: jlc.ClassModel = jlc.ClassFile.of().nn.parse(unsafely(data.mutable)).nn
+  lazy val methods: List[Method] = model.methods.nn.asScala.to(List).map(Method(_))
+
+  val attributes: Unit =
+    model.attributes.nn.iterator.nn.asScala.to(List).foreach(println)
+  // val constants: Unit =
+  //   model.constantPool.nn.iterator.nn.asScala.to(List).foreach(println)

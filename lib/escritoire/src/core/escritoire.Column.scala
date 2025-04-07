@@ -40,7 +40,7 @@ object Column:
      (title:         text,
       textAlign:     Optional[TextAlignment]     = Unset,
       verticalAlign: Optional[VerticalAlignment] = Unset,
-      sizing:     Columnar                    = columnar.Prose)
+      sizing:        Columnar                    = columnar.Prose)
      (get: row => cell)
      (using columnAlignment: ColumnAlignment[cell] = ColumnAlignment.topLeft)
      (using text.Show[cell])

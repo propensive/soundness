@@ -57,35 +57,15 @@ object Mandible:
     import quotes.reflect.*
     given Realm = realm"mandible"
 
-    println(block.introspect)
-
     val name = block.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, name)))), _)) => name
 
       case _ =>
         halt(m"this type of lambda is not supported")
 
-    val classname: String =
-      TypeRepr.of[target].classSymbol.get.fullName.replace(".", "/").nn+".class"
+    val classname: Text =
+      TypeRepr.of[target].classSymbol.get.fullName.sub(t".", t"/").nn+t".class"
 
-    '{
-        val classfile = Classfile(${Expr(classname)})(using $classloader)
-        println(${Expr(classname)})
-        println("classfile: "+classfile)
-        classfile.let(_.methods.find(_.name.s == ${Expr(name)}).getOrElse(Unset))
-        . let(_.bytecode)
-    }
-
-
-
-    // '{  given Classloader = $classloader
-
-    //     class Proxy():
-    //       def bar: Any = $block
-    //     val classname = ${Expr(TypeRepr.of[Proxy].typeSymbol.fullName)}
-    //     println("classname: "+classname)
-    //     val classfile = Classfile(classname)
-    //     println("classfile: "+classfile)
-    //     val method = classfile.let(_.methods.find(_.name == t"bar").getOrElse(Unset))
-    //     method.let(_.bytecode)
-    //  }
+    '{  val classfile = Classfile(${Expr(classname)})(using $classloader)
+        classfile.let(_.methods.find(_.name == ${Expr(name.tt)}).getOrElse(Unset))
+        . let(_.bytecode)  }
