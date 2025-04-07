@@ -116,7 +116,6 @@ object GarbageCollection:
 
                     val memory: Map[Text, (Memory, Memory)] =
                       preMemory.keySet.nn.iterator.nn.asScala.map: key =>
-                        println(key)
                         key.tt
                         -> (preMemory.get(key).nn.getUsed.b, postMemory.get(key).nn.getUsed.b)
                       .to(Map)

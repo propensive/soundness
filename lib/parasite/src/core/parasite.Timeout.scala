@@ -30,24 +30,41 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package parasite
 
-export parasite
-. { Codicil, Completion, AsyncError, Daemon, Hook, Monitor, Promise, Task, ThreadModel, Chain,
-    Transgression, monitor, daemon, async, task, relent, cancel, sleep, snooze, hibernate, delay,
-    race, supervise, Tenacity, retry, Observation, System, Destruction, Shutdown, intercept,
-    Interceptable, GarbageCollection, Timeout }
+import language.experimental.into
+import language.experimental.pureFunctions
 
-package threadModels:
-  export parasite.threadModels.{platform, virtual, adaptive}
+import java.lang as jl
+import java.util.concurrent.atomic as juca
 
-package asyncTermination:
-  export parasite.asyncTermination.{await, cancel, fail, panic}
+import anticipation.*
+import prepositional.*
 
-package supervisors:
-  export parasite.supervisors.global
+object Timeout:
+  def apply[duration: GenericDuration](timeout0: duration)(action: => Unit)(using Monitor, Codicil)
+  :     Timeout =
 
-package retryTenacities:
-  export parasite.retryTenacities
-  . { exponentialForever, exponentialFiveTimes, exponentialTenTimes, fixedNoDelayForever,
-      fixedNoDelayFiveTimes, fixedNoDelayTenTimes }
+    val timeout = duration.milliseconds(timeout0)
+
+    def process(expiry: juca.AtomicLong): Task[Unit] = task("timeout".tt):
+      while jl.System.currentTimeMillis < expiry.get()
+      do sleep(expiry.get() - jl.System.currentTimeMillis)
+      expiry.set(Long.MinValue)
+      action
+
+    new Timeout(timeout, process)
+
+class Timeout private(duration: Long, makeProcess: juca.AtomicLong => Task[Unit]):
+  private val expiry: juca.AtomicLong = juca.AtomicLong(jl.System.currentTimeMillis + duration)
+  private var process: Task[Unit] = makeProcess(expiry)
+
+  def alive: Boolean = expiry.get() != Long.MinValue
+
+  def nudge(): Unit =
+    if expiry.get() != Long.MinValue then expiry.set(jl.System.currentTimeMillis + duration)
+
+  def reset(): Unit = if expiry.get() == Long.MinValue then
+    expiry.set(jl.System.currentTimeMillis + duration)
+    process.cancel()
+    process = makeProcess(expiry)
