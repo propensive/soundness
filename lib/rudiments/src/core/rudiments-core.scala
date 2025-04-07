@@ -237,12 +237,10 @@ extension [value](iterable: Iterable[value])
     recur(0, iterable, 0, 0, 0)
 
 extension [element](value: IArray[element])
-  inline def mutable(using Unsafe): Array[element] = value.asMatchable.runtimeChecked match
-    case array: (Array[`element`] @unchecked) => array
+  inline def mutable(using Unsafe): Array[element] = value.asInstanceOf[Array[element]]
 
 extension [element](array: Array[element])
-  def immutable(using Unsafe): IArray[element] = array.runtimeChecked match
-    case array: (IArray[`element`] @unchecked) => array
+  inline def immutable(using Unsafe): IArray[element] = array.asInstanceOf[IArray[element]]
 
   def snapshot(using ClassTag[element]): IArray[element] =
     val newArray = new Array[element](array.length)
