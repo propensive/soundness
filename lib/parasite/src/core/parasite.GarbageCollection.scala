@@ -111,9 +111,17 @@ object GarbageCollection:
                     val Cause(cause) = gc.getGcCause().nn.tt
                     val Collector(collector) = gc.getGcName().nn.tt
                     val gcInfo = gc.getGcInfo().nn
-                    action
-                     (GarbageCollection
-                       (gcInfo.getId.toInt.z, collector, cause))
+                    val preMemory = gcInfo.getMemoryUsageBeforeGc().nn
+                    val postMemory = gcInfo.getMemoryUsageAfterGc().nn
+
+                    val memory: Map[Text, (Memory, Memory)] =
+                      preMemory.keySet.nn.iterator.nn.asScala.map: key =>
+                        println(key)
+                        key.tt
+                        -> (preMemory.get(key).nn.getUsed.b, postMemory.get(key).nn.getUsed.b)
+                      .to(Map)
+
+                    action(GarbageCollection(gcInfo.getId.toInt.z, collector, cause, memory))
 
                   case _ =>
                     ()
@@ -129,4 +137,10 @@ object GarbageCollection:
         emitter.removeNotificationListener(listener)
 
 case class GarbageCollection
-            (run: Ordinal, collector: GarbageCollection.Collector, cause: GarbageCollection.Cause)
+            (run:       Ordinal,
+             collector: GarbageCollection.Collector,
+             cause:     GarbageCollection.Cause,
+             memory:    Map[Text, (before: Memory, after: Memory)]):
+  def before: Memory = memory.to(List).map(_(1).before).total
+  def after: Memory = memory.to(List).map(_(1).after).total
+  def reduction: Memory = before - after
