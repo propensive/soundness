@@ -45,6 +45,7 @@ import prepositional.*
 import rudiments.*, homeDirectories.systemProperty
 import serpentine.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 

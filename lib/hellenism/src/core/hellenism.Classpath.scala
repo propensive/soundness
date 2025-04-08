@@ -52,7 +52,7 @@ object Classpath:
     path => classloader.java.getResourceAsStream(path.text.s) != null
 
   @targetName("child")
-  infix def / (child: Name[Classpath])(using classloader: Classloader)
+  infix def / (child: Text)(using classloader: Classloader)
   :     Path on Classpath raises NameError =
     Path(classloader, List(child))
 
@@ -75,18 +75,18 @@ object Classpath:
       Readable.inputStream.contramap: resource =>
         resource.root.inputStream(resource.text)
 
-  given navigable: Tactic[NameError] => Classpath is Navigable by Name[Classpath] under Rules =
+  given navigable: Classpath is Navigable by Text under Rules =
     new Navigable:
       type Self = Classpath
-      type Operand = Name[Classpath]
+      type Operand = Text
       type Constraint = Rules
 
       val separator: Text = t"/"
       val parentElement: Text = t".."
       val selfText: Text = t".."
 
-      def elementText(element: Name[Classpath]): Text = element
-      def element(text: Text): Name[Classpath] = Name(text)
+      def elementText(element: Text): Text = element
+      def element(text: Text): Text = text
       def caseSensitivity: Case = Case.Sensitive
 
   given radical: Classloader => Classpath is Radical from Classloader = new Radical:

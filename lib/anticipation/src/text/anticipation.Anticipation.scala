@@ -57,7 +57,7 @@ object Anticipation:
     private def recur(text: Text, n: Int, acc: Text): Text =
       if n == 0 then acc else recur(text, n - 1, acc+text)
 
-    given multiplicable: Text is Multiplicable by Int into Text = new Multiplicable:
+    given multiplicable: [text <: Text] => text is Multiplicable:
       type Self = Text
       type Operand = Int
       type Result = Text

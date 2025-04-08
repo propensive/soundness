@@ -55,23 +55,6 @@ extension [units <: Measure](quantity: into Quantity[units])
 
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
 
-  @targetName("times2")
-  transparent inline infix def * [units2 <: Measure](inline quantity2: Quantity[units2]): Any =
-    ${Quantitative.multiply[units, units2]('quantity, 'quantity2, false)}
-
-  @targetName("times3")
-  transparent inline infix def * [units2 <: Measure](inline double: into Double): Any =
-    quantity*Quantity(double)
-
-  @targetName("divide2")
-  transparent inline infix def / [units2 <: Measure](inline quantity2: Quantity[units2]): Any =
-
-    ${Quantitative.multiply[units, units2]('quantity, 'quantity2, true)}
-
-  @targetName("divide3")
-  transparent inline infix def / [units2 <: Measure](inline double: into Double): Any =
-    quantity/Quantity(double)
-
   inline def sqrt(using root: Quantity[units] is Rootable[2]): root.Result =
     root.root(quantity)
 

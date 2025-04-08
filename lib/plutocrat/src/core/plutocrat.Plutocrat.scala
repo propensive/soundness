@@ -79,6 +79,26 @@ object Plutocrat:
         val value = left*right
         (value + value.signum/2).toLong
 
+    given divisible: [currency <: Currency & Singleton, money <: Money[currency]]
+          => money is Divisible:
+      type Self = money
+      type Operand = Double
+      type Result = Money[currency]
+
+      def divide(left: money, right: Double): Money[currency] =
+        val value = left/right
+        (value + value.signum/2).toLong
+
+    given divisible2: [currency <: Currency & Singleton,
+                       left <: Money[currency],
+                       right <: Money[currency]]
+          => left is Divisible:
+      type Self = left
+      type Operand = right
+      type Result = Double
+
+      def divide(left: left, right: right): Double = left.toDouble/right.toDouble
+
   extension [currency <: Currency & Singleton: ValueOf](left: Money[currency])
     @targetName("greaterThan")
     infix def > (right: Money[currency]): Boolean = (left: Long) > (right: Long)
@@ -91,14 +111,6 @@ object Plutocrat:
 
     @targetName("lessThanOrEqual")
     infix def <= (right: Money[currency]): Boolean = (left: Long) <= (right: Long)
-
-    @targetName("divide")
-    infix def / (right: Double): Money[currency] =
-      val value = left/right
-      (value + value.signum/2).toLong
-
-    @targetName("divide2")
-    infix def / (right: Money[currency]): Double = left.toDouble/right.toDouble
 
     @targetName("negate")
     def `unary_-`: Money[currency] = -left

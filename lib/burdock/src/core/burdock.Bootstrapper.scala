@@ -54,6 +54,7 @@ import revolution.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import symbolism.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*

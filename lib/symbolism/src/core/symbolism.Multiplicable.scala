@@ -72,7 +72,3 @@ trait Multiplicable:
   type Multiplier = Operand
 
   def multiply(multiplicand: Multiplicand, multiplier: Multiplier): Result
-
-  extension (multiplicand: Multiplicand)
-    @targetName("multiply")
-    inline infix def * (multiplier: Multiplier): Result = multiply(multiplicand, multiplier)

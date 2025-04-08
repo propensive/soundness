@@ -117,19 +117,20 @@ object Path:
 
     Path(root, descent)
 
-  given divisible: [platform: Navigable]
-        => (Path on platform) is Divisible by platform.Operand into (Path on platform) =
+  given divisible: [platform, operand, path <: Path on platform]
+               => (navigable: platform is Navigable by operand)
+               => path is Divisible by operand into (Path on platform) =
     new Divisible:
-      type Operand = platform.Operand
-      type Self = Path on platform
+      type Operand = operand
+      type Self = path
       type Result = Path on platform
 
-      def divide(path: Path on platform, child: platform.Operand): Path on platform =
+      def divide(path: path, child: operand): Path on platform =
         Path.from[path.Platform]
          (path.textRoot,
-          platform.makeElement(child) :: path.textDescent,
-          platform.separator,
-          platform.caseSensitivity)
+          navigable.makeElement(child) :: path.textDescent,
+          navigable.separator,
+          navigable.caseSensitivity)
 
 open class Path
    (val textRoot: Text,

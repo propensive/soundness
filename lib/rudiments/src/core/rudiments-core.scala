@@ -142,10 +142,10 @@ extension [value](iterable: Iterable[value])
   :     Optional[divisible.Result] =
    compiletime.summonFrom:
      case zeroic: ((? <: value) is Zeroic) =>
-       iterable.foldLeft[value](zeroic.zero)(addable.add)/iterable.size
+       iterable.foldLeft[value](zeroic.zero)(addable.add)/iterable.size.toDouble
 
      case _ =>
-       iterable.total.let(_/iterable.size)
+       iterable.total.let(_/iterable.size.toDouble)
 
   def variance
        (using zeroic:        value is Zeroic,
@@ -160,7 +160,7 @@ extension [value](iterable: Iterable[value])
               divisible2:    multiplicable.Result is Divisible by Double)
   :     divisible2.Result =
     val mean: divisible.Result = iterable.mean
-    iterable.map(_ - mean).map { value => value*value }.total/iterable.size
+    iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
 
   def standardDeviation
        (using zeroic:        value is Zeroic,
@@ -176,7 +176,7 @@ extension [value](iterable: Iterable[value])
               rootable:      divisible2.Result is Rootable[2])
   :     rootable.Result =
     val mean: divisible.Result = iterable.mean
-    (iterable.map(_ - mean).map { value => value*value }.total/iterable.size).sqrt
+    (iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble).sqrt
 
   def product
      (using unital:        value is Unital,

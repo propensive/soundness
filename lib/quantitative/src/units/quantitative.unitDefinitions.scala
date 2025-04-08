@@ -34,6 +34,7 @@ package quantitative
 
 import anticipation.*
 import hypotenuse.*
+import symbolism.*
 
 val Metre: MetricUnit[Metres[1]] = MetricUnit(1)
 val Gram: MetricUnit[Kilograms[1]] = MetricUnit(0.001)
@@ -44,7 +45,7 @@ val Kelvin: MetricUnit[Kelvins[1]] = MetricUnit(1)
 val Second: MetricUnit[Seconds[1]] = MetricUnit(1)
 
 val Galileo = MetricUnit(0.01*Metre/(Second*Second))
-val Biot = MetricUnit(10*Ampere)
+val Biot = MetricUnit(10.0*Ampere)
 val Stokes = MetricUnit(10e-4*Metre*Metre/Second)
 val Lambert = MetricUnit((10e4/π)*Candela/(Metre*Metre))
 val Emu = MetricUnit(10e-3*Ampere/(Metre*Metre))
@@ -61,7 +62,7 @@ val Barye = MetricUnit(0.1*Pascal)
 val Poise = MetricUnit(0.1*Pascal)
 val Joule = MetricUnit(Newton*Metre)
 val Calorie = MetricUnit(4.184*Joule)
-val Langley = MetricUnit(41840*Joule/(Metre*Metre))
+val Langley = MetricUnit(41840.0*Joule/(Metre*Metre))
 val Erg = MetricUnit(10e-7*Joule)
 val Watt = MetricUnit(Joule/Second)
 val Coulomb = MetricUnit(Second*Ampere)
@@ -112,7 +113,7 @@ val Quart = Milli(Litre)*1136.5225
 val Gallon = Milli(Litre)*4546.09
 
 package constants:
-  val SpeedOfLightInVacuum = 299792458*Metre/Second
+  val SpeedOfLightInVacuum = 299792458.0*Metre/Second
   val MagneticConstant = 4*π*(10e-7)*Newton/(Ampere*Ampere)
   val ElectricConstant = 8.854187817e-12*Farad/Metre
   val CharacteristicImpedanceOfVacuum = 376.730313461*Ohm

@@ -69,7 +69,6 @@ object Divisible:
   given byte: Byte is Divisible by Byte into Byte = Divisible:
     (dividend, divisor) => (dividend/divisor).toByte
 
-
 trait Divisible:
   type Self
   type Result
@@ -79,6 +78,6 @@ trait Divisible:
 
   def divide(dividend: Self, divisor: Divisor): Result
 
-  extension (dividend: Self)
-    @targetName("divide")
-    inline infix def / (divisor: Divisor): Result = divide(dividend, divisor)
+  // extension (dividend: Self)
+  //   @targetName("divide")
+  //   inline infix def / (divisor: Divisor): Result = divide(dividend, divisor)

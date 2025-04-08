@@ -123,7 +123,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
             val buildIdPath: Path on Classpath = Classpath / n"build.id"
             val buildId = safely(buildIdPath.read[Text].trim).or(t"0")
-            val prefix = (Classpath / n"ethereal" / n"prefix").read[Text]
+            val prefix = (Classpath / t"ethereal" / t"prefix").read[Text]
             path.open(prefix.sub(t"%%BUILD_ID%%", buildId).writeTo(_))
 
             jarFile.open: jarFile =>

@@ -71,15 +71,16 @@ object Mosquito:
 
   extension [left](left: Vector[left, 3])
     def cross[right](right: Vector[right, 3])
-       (using multiplication: left is Multiplicable by right,
-              addition:      multiplication.Result is Addable by multiplication.Result,
-              subtraction:    multiplication.Result is Subtractable by multiplication.Result)
+         (using multiplication: left is Multiplicable by right,
+                addition:       multiplication.Result is Addable by multiplication.Result,
+                subtraction:    multiplication.Result is Subtractable by multiplication.Result)
     :     Vector[addition.Result, 3] =
 
-      (left.element(1)*right.element(2) - left.element(2)*right.element(1)) *:
-          (left.element(2)*right.element(0) - left.element(0)*right.element(2)) *:
-          (left.element(0)*right.element(1) - left.element(1)*right.element(0)) *:
-          Zero
+      val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
+      val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
+      val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
+
+      first *: second *: third *: Zero
 
   extension [size <: Int, left](left: Vector[left, size])
     def element(index: Int): left = left.toArray(index).asInstanceOf[left]
@@ -155,17 +156,6 @@ object Mosquito:
           Zero
 
       recur(left, right)
-
-    @targetName("scalarMul")
-    def * [right](right: right)(using multiplication: left is Multiplicable by right)
-    :     Vector[multiplication.Result, size] =
-
-      map(_*right)
-
-    @targetName("scalarDiv")
-    def / [right](right: right)(using div: left is Divisible by right): Vector[div.Result, size] =
-
-      map(_/right)
 
     def dot[right](right: Vector[right, size])
        (using multiply: left is Multiplicable by right,

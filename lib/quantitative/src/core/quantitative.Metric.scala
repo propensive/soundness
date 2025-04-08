@@ -35,6 +35,7 @@ package quantitative
 import language.experimental.captureChecking
 
 import hypotenuse.*
+import symbolism.*
 
 class Metric(val name: String, val symbol: String, val exponent: Int, val base: 2 | 10):
   def apply[units <: Measure](unit: MetricUnit[units]): Quantity[units] =

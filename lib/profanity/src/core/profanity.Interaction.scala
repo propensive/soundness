@@ -37,6 +37,7 @@ import gossamer.{where as _, *}
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
