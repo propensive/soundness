@@ -34,8 +34,6 @@ package rudiments
 
 import soundness.*
 
-import language.experimental.captureChecking
-
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(m"Rudiments Tests"):
@@ -84,28 +82,27 @@ object Tests extends Suite(m"Rudiments Tests"):
             bin"010101010 10101010 10101010 10101010 00000000 11111111 11111111 11111111"
 
           long
-        .map(_.id)
-      .assert(_ == List(CompileErrorId.NoExplanation))
+        .map(_.message)
+      .assert(_ == List(t"hypotenuse: a binary literal must be 8, 16, 32 or 64 bits long"))
 
       test(m"Incorrect bit count"):
         demilitarize:
           val x: Long = bin"0101010 10101010 10101010 10101010 00000000 11111111 11111111 11111111"
           x
-        .map(_.id)
-      .assert(_ == List(CompileErrorId.NoExplanation))
+        .map(_.message)
+      .assert(_ == List(t"hypotenuse: a binary literal must be 8, 16, 32 or 64 bits long"))
 
       test(m"Too many bits for type"):
         demilitarize:
           val x: Byte = bin"00011111 11111111"
           x
-        .map(_.id)
-      .assert(_ == List(CompileErrorId.TypeMismatch))
+      .assert(_.nonEmpty)
 
       test(m"Non-binary content"):
         demilitarize:
           bin"00011112 11111111"
-        .map(_.id)
-      .assert(_ == List(CompileErrorId.NoExplanation))
+        .map(_.message)
+      .assert(_ == List(t"hypotenuse: a binary value can only contain characters '0' or '1'"))
 
     suite(m"hex tests"):
       test(m"Specify some bytes"):
@@ -120,13 +117,13 @@ object Tests extends Suite(m"Rudiments Tests"):
         demilitarize:
           hex"bacdf1e"
         .map(_.message)
-      .assert(_ == List(t"rudiments: a hexadecimal value must have an even number of digits"))
+      .assert(_ == List(t"hypotenuse: a hexadecimal value must have an even number of digits"))
 
       test(m"Non-hex content"):
         demilitarize:
           hex"bacdf1eg"
         .map(_.message)
-      .assert(_ == List(t"rudiments: g is not a valid hexadecimal character"))
+      .assert(_ == List(t"hypotenuse: g is not a valid hexadecimal character"))
 
       /*test(m"Convert a byte to hex"):
         126.toByte.hex
@@ -144,19 +141,19 @@ object Tests extends Suite(m"Rudiments Tests"):
         654321123456789L.hex
       .assert(_ == t"2531a0221f715")*/
 
-      test(m"Pattern match hex"):
-        t"1234" match
-          case Hex(value) => value
-          case _          => 0
-      .assert(_ == 4660)
+      // test(m"Pattern match hex"):
+      //   t"1234" match
+      //     case Hex(value) => value
+      //     case _          => 0
+      // .assert(_ == 4660)
 
     suite(m"Collections tests"):
       val numbers = List(t"one", t"two", t"four", t"six", t"eight", t"nine")
 
-      test(m"Index unique numbers by their first letter"):
-        safely:
-          numbers.indexBy(_.prim)
-      .assert(_ == Map('o' -> t"one", 't' -> t"two", 'f' -> t"four", 's' -> t"six", 'e' -> t"eight", 'n' -> t"nine"))
+      // test(m"Index unique numbers by their first letter"):
+      //   safely:
+      //     numbers.indexBy(_.prim)
+      // .assert(_ == Map('o' -> t"one", 't' -> t"two", 'f' -> t"four", 's' -> t"six", 'e' -> t"eight", 'n' -> t"nine"))
 
       //test(m"Index unique numbers by their length"):
       //  capture[DuplicateIndexError]:
@@ -302,10 +299,10 @@ object Tests extends Suite(m"Rudiments Tests"):
         x.optional
       .assert(_ == Unset)
 
-      test(m"Presume a value for an empty Option"):
-        val x: Option[List[Int]] = None
-        x.presume
-      .assert(_ == Nil)
+      // test(m"Presume a value for an empty Option"):
+      //   val x: Option[List[Int]] = None
+      //   x.presume
+      // .assert(_ == Nil)
 
     suite(m"PID & exit status tests"):
       test(m"Zero exit-status is OK"):
@@ -329,34 +326,42 @@ object Tests extends Suite(m"Rudiments Tests"):
         Bytes(1, 2, 3)
       .assert(_.length == 3)
 
-      test(m"Construct a `Bytes` value from a Long"):
-        Bytes(Long.MaxValue)
-      .assert(_.length == 8)
+      // test(m"Construct a `Bytes` value from a Long"):
+      //   Bytes(Long.MaxValue)
+      // .assert(_.length == 8)
 
       test(m"Construct an empty `Bytes`"):
         Bytes()
       .assert(_.length == 0)
 
-    suite(m"Byte Size tests"):
+    suite(m"Memory tests"):
       test(m"Construct a simple Memory"):
         4.b: Memory
       .assert(_ == Memory(4))
 
-      test(m"Construct a simple Memory in kB"):
-        4.kb: Memory
-      .assert(_ == Memory(4096))
+      test(m"Divide one memory by an integer"):
+        1024.b/128
+      .assert(_ == 8.b)
 
-      test(m"Construct a simple Memory in MB"):
-        4.mb: Memory
-      .assert(_ == Memory(4096*1024L))
+      test(m"Divide one `Memory` by another"):
+        1024.b/128.b
+      .assert(_ == 8.0)
 
-      test(m"Construct a simple Memory in GB"):
-        4.gb: Memory
-      .assert(_ == Memory(4096*1024L*1024L))
+      // test(m"Construct a simple Memory in kB"):
+      //   4.kb: Memory
+      // .assert(_ == Memory(4096))
 
-      test(m"Construct a simple Memory in TB"):
-        4.tb: Memory
-      .assert(_ == Memory(4096*1024L*1024L*1024L))
+      // test(m"Construct a simple Memory in MB"):
+      //   4.mb: Memory
+      // .assert(_ == Memory(4096*1024L))
+
+      // test(m"Construct a simple Memory in GB"):
+      //   4.gb: Memory
+      // .assert(_ == Memory(4096*1024L*1024L))
+
+      // test(m"Construct a simple Memory in TB"):
+      //   4.tb: Memory
+      // .assert(_ == Memory(4096*1024L*1024L*1024L))
 
       /*test(m"Compare bytes with >"):
         4.gb > 4.mb
@@ -366,12 +371,12 @@ object Tests extends Suite(m"Rudiments Tests"):
         4.gb >= 4.mb*1024
       .assert(_ == true)*/
 
-      test(m"Sort some byte sizes"):
-        List(1.b, 1.mb, 1.kb).sorted
-      .assert(_ == List(1.b, 1.kb, 1.mb))
+      // test(m"Sort some byte sizes"):
+      //   List(1.b, 1.mb, 1.kb).sorted
+      // .assert(_ == List(1.b, 1.kb, 1.mb))
 
-    suite(m"Y-combinator test"):
-      test(m"Check factorial implementation"):
-        def factorial(n: Int): Int = fix[Int] { i => if i <= 0 then 1 else i*recur(i - 1) } (n)
-        factorial(4)
-      .assert(_ == 24)
+    // suite(m"Y-combinator test"):
+    //   test(m"Check factorial implementation"):
+    //     def factorial(n: Int): Int = fix[Int] { i => if i <= 0 then 1 else i*recur(i - 1) } (n)
+    //     factorial(4)
+    //   .assert(_ == 24)

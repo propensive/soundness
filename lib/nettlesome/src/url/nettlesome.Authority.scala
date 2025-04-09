@@ -42,6 +42,7 @@ import fulminate.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 object Authority:

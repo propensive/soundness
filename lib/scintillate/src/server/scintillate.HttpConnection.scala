@@ -40,6 +40,7 @@ import nettlesome.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import telekinesis.*
 import vacuous.*
 

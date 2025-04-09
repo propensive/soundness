@@ -36,6 +36,7 @@ import language.experimental.captureChecking
 
 import anticipation.*
 import gossamer.*
+import symbolism.*
 
 case class TextualTreeStyle[line: Textual](space: Text, last: Text, branch: Text, extender: Text)
 extends TreeStyle[line]:

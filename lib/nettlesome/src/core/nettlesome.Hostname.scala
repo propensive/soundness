@@ -41,6 +41,7 @@ import gossamer.*
 import hypotenuse.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 import scala.quoted.*

@@ -41,6 +41,7 @@ import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 import scala.quoted.*

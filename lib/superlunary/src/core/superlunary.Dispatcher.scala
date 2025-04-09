@@ -48,6 +48,7 @@ import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import symbolism.*
 
 import scala.quoted.*
 
@@ -88,7 +89,7 @@ trait Dispatcher:
         Dispatcher.cache(codepoint)
 
       else
-        val out: Path on Linux = temporaryDirectory[Path on Linux] / Name(uuid.show)
+        val out: Path on Linux = temporaryDirectory[Path on Linux] / Name[Linux](uuid.show)
         val settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 

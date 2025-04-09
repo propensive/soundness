@@ -89,40 +89,48 @@ object Quantitative extends Quantitative2:
                              =>  Quantity[left] is Subtractable by Quantity[right] =
       ${Quantitative.subTypeclass[left, right]}
 
-    transparent inline given multiplicable: [left <: Measure, right <: Measure]
-                             =>  Quantity[left] is Multiplicable by Quantity[right] =
-      ${Quantitative.mulTypeclass[left, right]}
+    transparent inline given multiplicable: [left <: Measure,
+                                             multiplicand <: Quantity[left],
+                                             right <: Measure,
+                                             multiplier <: Quantity[right]]
+                             =>  multiplicand is Multiplicable by multiplier =
+      ${Quantitative.mulTypeclass[left, multiplicand, right, multiplier]}
 
-    given multiplicable2: [left <: Measure]
-          =>  Quantity[left] is Multiplicable by Double into Quantity[left] =
-      new Multiplicable:
-        type Self = Quantity[left]
-        type Operand = Double
-        type Result = Quantity[left]
+    given negatable: [left <: Measure, operand <: Quantity[left]] => operand is Negatable:
+      type Self = operand
+      type Result = Quantity[left]
+      def negate(operand: Self): Quantity[left] = -operand
 
-        inline def multiply(left: Quantity[left], right: Double): Quantity[left] =
-          left*right
 
-    given multiplicable3: [right <: Measure]
-          =>  Double is Multiplicable by Quantity[right] into Quantity[right] =
-      new Multiplicable:
-        type Self = Double
-        type Operand = Quantity[right]
-        type Result = Quantity[right]
+    given multiplicable2: [left <: Measure, multiplicand <: Quantity[left]]
+          => multiplicand is Multiplicable:
+      type Self = multiplicand
+      type Operand = Double
+      type Result = Quantity[left]
 
-        inline def multiply(left: Double, right: Quantity[right]): Quantity[right] =
-          left*right
+      inline def multiply(left: multiplicand, right: Double): Quantity[left] = left*right
 
-    transparent inline given divisible: [left <: Measure, right <: Measure]
-                             =>  Quantity[left] is Divisible by Quantity[right] =
-      ${Quantitative.divTypeclass[left, right]}
+    given multiplicable3: [right <: Measure, multiplier <: Quantity[right]]
+          => Double is Multiplicable:
+      type Self = Double
+      type Operand = multiplier
+      type Result = Quantity[right]
 
-    given divisibleDouble: [left <: Measure] => Quantity[left] is Divisible by Double into Quantity[left] =
-      new Divisible:
-        type Self = Quantity[left]
-        type Result = Quantity[left]
-        type Operand = Double
-        inline def divide(left: Quantity[left], right: Double): Quantity[left] = left/right
+      inline def multiply(left: Double, right: multiplier): Quantity[right] = left*right
+
+    transparent inline given divisible: [left <: Measure,
+                                         dividend <: Quantity[left],
+                                         right <: Measure,
+                                         divisor <: Quantity[right]]
+                             =>  dividend is Divisible by divisor =
+      ${Quantitative.divTypeclass[left, dividend, right, divisor]}
+
+    given divisibleDouble: [left <: Measure, dividend <: Quantity[left]]
+          => dividend is Divisible:
+      type Self = dividend
+      type Result = Quantity[left]
+      type Operand = Double
+      inline def divide(left: dividend, right: Double): Quantity[left] = left/right
 
     transparent inline given squareRoot: [value <: Measure]
                              =>  Quantity[value] is Rootable[2] =

@@ -46,6 +46,7 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import serpentine.*
+import symbolism.*
 import vacuous.*
 
 import IoError.{Operation, Reason}

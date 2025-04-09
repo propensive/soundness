@@ -39,6 +39,7 @@ import gossamer.*
 import kaleidoscope.*
 import proscenium.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 import scala.io.*

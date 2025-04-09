@@ -33,6 +33,8 @@
 package denominative
 
 import anticipation.*
+import prepositional.*
+import symbolism.*
 
 import scala.annotation.targetName
 
@@ -45,14 +47,8 @@ object Denominative:
     infix def - (right: Ordinal): Int = ordinal - right
 
   extension (inline ordinal: Ordinal)
-    @targetName("plus")
-    inline infix def + (inline cardinal: Int): Ordinal = ordinal + cardinal
-
     @targetName("invert")
     inline def `unary_~`: Countback = Countback(ordinal.n0)
-
-    @targetName("minus")
-    inline infix def - (inline cardinal: Int): Ordinal = ordinal - cardinal
 
     inline def le(inline right: Ordinal): Boolean = (ordinal: Int) <= (right: Int)
     inline def lt(inline right: Ordinal): Boolean = (ordinal: Int) < (right: Int)
@@ -75,6 +71,10 @@ object Denominative:
   object Ordinal:
     inline def zerary(inline cardinal: Int): Ordinal = cardinal
     inline def natural(inline cardinal: Int): Ordinal = cardinal - 1
+
+    given addable: Ordinal is Addable by Int into Ordinal = _ + _
+    given subtractable: Ordinal is Subtractable by Ordinal into Int = _ - _
+    given subtractable2: Ordinal is Subtractable by Int into Ordinal = _ - _
 
     given textualizer: Ordinal is Textualizer =
       case Prim    => "prim".tt

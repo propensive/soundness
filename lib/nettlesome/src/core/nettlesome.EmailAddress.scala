@@ -44,6 +44,7 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 import scala.quoted.*

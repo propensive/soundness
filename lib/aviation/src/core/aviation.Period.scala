@@ -33,6 +33,7 @@
 package aviation
 
 import hypotenuse.*
+import symbolism.*
 import vacuous.*
 
 case class Period(start: Instant, finish: Instant):

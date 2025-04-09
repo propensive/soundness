@@ -63,6 +63,14 @@ object Addable:
   given byte: Byte is Addable by Byte into Byte = Addable:
     (augend, addend) => (augend + addend).toByte
 
+  given concatenable: [left, right] => (concatenable: left is Concatenable by right)
+        => left is Addable:
+    type Self = left
+    type Operand = right
+    type Result = left | right
+
+    def add(left: left, right: right): left | right = concatenable.concat(left, right)
+
 trait Addable:
   type Self
   type Augend = Self
@@ -70,7 +78,3 @@ trait Addable:
   type Result
   type Operand
   def add(augend: Augend, addend: Addend): Result
-
-  extension (augend: Augend)
-    @targetName("add")
-    inline infix def + (addend: Addend): Result = add(augend, addend)

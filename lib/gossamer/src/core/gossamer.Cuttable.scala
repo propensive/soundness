@@ -38,6 +38,7 @@ import kaleidoscope.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 import scala.reflect.*

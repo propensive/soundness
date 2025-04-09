@@ -45,6 +45,7 @@ import scala.util.FromDigits
 import anticipation.*
 import denominative.*
 import fulminate.*
+import symbolism.*
 
 object Hypotenuse:
   given realm: Realm = realm"hypotenuse"
@@ -107,6 +108,18 @@ object Hypotenuse:
         inline if greaterThan
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
+
+    given divisible: F64 is Divisible:
+      type Self = F64
+      type Operand = Double
+      type Result = F64
+      inline def divide(left: F64, right: Double): F64 = left/right
+
+    given multiplicable: F64 is Multiplicable:
+      type Self = F64
+      type Operand = Double
+      type Result = F64
+      inline def multiply(left: F64, right: Double): F64 = left*right
 
     inline given commensurable: F64 is Commensurable:
       type Operand = Double

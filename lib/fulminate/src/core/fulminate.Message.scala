@@ -36,6 +36,7 @@ import scala.compiletime.*
 
 import anticipation.*
 import proscenium.*
+import symbolism.*
 
 import scala.annotation.targetName
 

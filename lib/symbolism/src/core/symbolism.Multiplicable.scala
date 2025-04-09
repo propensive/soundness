@@ -64,6 +64,16 @@ object Multiplicable:
   given byte: Byte is Multiplicable by Byte into Byte = Multiplicable:
     (multiplicand, multiplier) => (multiplicand*multiplier).toByte
 
+  given concatenable: [textual: Concatenable by textual: Zeroic] => textual is Multiplicable:
+    type Self = textual
+    type Operand = Int
+    type Result = textual
+
+    def multiply(text: textual, count: Int): textual =
+      var result: textual = textual.zero
+      for i <- 0 until count do result = result+text
+      result
+
 trait Multiplicable:
   type Self
   type Multiplicand = Self
@@ -72,7 +82,3 @@ trait Multiplicable:
   type Multiplier = Operand
 
   def multiply(multiplicand: Multiplicand, multiplier: Multiplier): Result
-
-  extension (multiplicand: Multiplicand)
-    @targetName("multiply")
-    inline infix def * (multiplier: Multiplier): Result = multiply(multiplicand, multiplier)

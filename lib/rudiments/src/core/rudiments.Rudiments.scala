@@ -72,6 +72,7 @@ object Rudiments:
     given subtractable: Memory is Subtractable by Memory into Memory = _ - _
     given multiplicable: Memory is Multiplicable by Int into Memory = _*_
     given divisible: Memory is Divisible by Int into Memory = _/_
+    given divisible2: Memory is Divisible by Memory into Double = _.toDouble/_
 
     extension (left: Memory)
       def long: Long = left

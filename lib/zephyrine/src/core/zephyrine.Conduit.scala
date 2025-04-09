@@ -39,6 +39,7 @@ import denominative.*
 import hypotenuse.*
 import proscenium.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Conduit:
@@ -98,7 +99,7 @@ class Conduit(input0: Stream[Bytes]):
 
   final def save(): Bytes =
     val rnd = math.random()
-    val length = (done + index) - (done0 + index0)
+    val length = (index + done) - (index0 + done0)
     IArray.create(length): array =>
       var sourceIndex = index0.n0
       var destinationIndex = 0

@@ -37,6 +37,7 @@ import contingency.*
 import denominative.*
 import gossamer.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 extension [row](data: Seq[row])

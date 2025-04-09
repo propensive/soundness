@@ -52,6 +52,59 @@ object Mosquito:
         case Nil          => Unset
         case head :: tail => take(tail, size - 1).let(head *: _)
 
+
+    given addable: [value,
+                    size <: Int,
+                    left <: Vector[value, size],
+                    value2,
+                    right <: Vector[value2, size]]
+          => (addable: value is Addable by value2)
+          => left is Addable:
+      type Self = left
+      type Operand = right
+      type Result = Vector[addable.Result, size]
+
+      def add(left: left, right: right): Vector[addable.Result, size] =
+        def recur(left: Tuple, right: Tuple): Tuple = left match
+          case leftHead *: leftTail => right match
+            case rightHead *: rightTail =>
+              (leftHead.asInstanceOf[left] + rightHead.asInstanceOf[right])
+              *: recur(leftTail, rightTail)
+
+            case _ =>
+              Zero
+
+          case _ =>
+            Zero
+
+        recur(left, right)
+
+    given subtractable: [value,
+                         size <: Int,
+                         left <: Vector[value, size],
+                         value2,
+                         right <: Vector[value2, size]]
+          => (subtractable: value is Subtractable by value2)
+          => left is Subtractable:
+      type Self = left
+      type Operand = right
+      type Result = Vector[subtractable.Result, size]
+
+      def subtract(left: left, right: right): Vector[subtractable.Result, size] =
+        def recur(left: Tuple, right: Tuple): Tuple = left match
+          case leftHead *: leftTail => right match
+            case rightHead *: rightTail =>
+              (leftHead.asInstanceOf[left] - rightHead.asInstanceOf[right])
+              *: recur(leftTail, rightTail)
+
+            case _ =>
+              Zero
+
+          case _ =>
+            Zero
+
+        recur(left, right)
+
     given showable: [size <: Int: ValueOf, element: Showable] => Text is Measurable
           =>  Vector[element, size] is Showable =
 
@@ -71,15 +124,16 @@ object Mosquito:
 
   extension [left](left: Vector[left, 3])
     def cross[right](right: Vector[right, 3])
-       (using multiplication: left is Multiplicable by right,
-              addition:      multiplication.Result is Addable by multiplication.Result,
-              subtraction:    multiplication.Result is Subtractable by multiplication.Result)
+         (using multiplication: left is Multiplicable by right,
+                addition:       multiplication.Result is Addable by multiplication.Result,
+                subtraction:    multiplication.Result is Subtractable by multiplication.Result)
     :     Vector[addition.Result, 3] =
 
-      (left.element(1)*right.element(2) - left.element(2)*right.element(1)) *:
-          (left.element(2)*right.element(0) - left.element(0)*right.element(2)) *:
-          (left.element(0)*right.element(1) - left.element(1)*right.element(0)) *:
-          Zero
+      val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
+      val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
+      val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
+
+      first *: second *: third *: Zero
 
   extension [size <: Int, left](left: Vector[left, size])
     def element(index: Int): left = left.toArray(index).asInstanceOf[left]
@@ -88,14 +142,17 @@ object Mosquito:
     def iarray: IArray[left] = left.toIArray.asInstanceOf[IArray[left]]
     def size(using ValueOf[size]): Int = valueOf[size]
 
-    def norm[square]
-       (using multiplicable: left is Multiplicable by left into square,
-              addable:      square is Addable by square into square,
-              rootable:     square is Rootable[2] into left)
+    def norm
+       (using multiplicable: left is Multiplicable by left,
+              addable:       multiplicable.Result is Addable by multiplicable.Result into
+                              multiplicable.Result,
+              rootable:      multiplicable.Result is Rootable[2] into left)
     :     left =
 
       def recur(sum: multiplicable.Result, i: Int): left =
-        if i == 0 then sum.sqrt else recur(sum + left.element(i)*left.element(i), i - 1)
+        if i == 0 then sum.sqrt else
+          val x2: multiplicable.Result = left.element(i)*left.element(i)
+          recur(addable.add(sum, x2), i - 1)
 
       recur(left.element(0)*left.element(0), size - 1)
 
@@ -121,61 +178,16 @@ object Mosquito:
 
       recur(left)
 
-    @targetName("add")
-    def + [right](right: Vector[right, size])(using addition: left is Addable by right)
-    :     Vector[addition.Result, size] =
-
-      def recur(left: Tuple, right: Tuple): Tuple = left match
-        case leftHead *: leftTail => right match
-          case rightHead *: rightTail =>
-            (leftHead.asInstanceOf[left] + rightHead.asInstanceOf[right])
-            *: recur(leftTail, rightTail)
-
-          case _ =>
-            Zero
-
-        case _ =>
-          Zero
-
-      recur(left, right)
-
-    @targetName("sub")
-    def - [right](right: Vector[right, size])(using sub: left is Subtractable by right)
-    :     Vector[sub.Result, size] =
-
-      def recur(left: Tuple, right: Tuple): Tuple = left match
-        case leftHead *: leftTail => right match
-          case rightHead *: rightTail =>
-            (leftHead.asInstanceOf[left] - rightHead.asInstanceOf[right])
-            *: recur(leftTail, rightTail)
-          case _ =>
-            Zero
-
-        case _ =>
-          Zero
-
-      recur(left, right)
-
-    @targetName("scalarMul")
-    def * [right](right: right)(using multiplication: left is Multiplicable by right)
-    :     Vector[multiplication.Result, size] =
-
-      map(_*right)
-
-    @targetName("scalarDiv")
-    def / [right](right: right)(using div: left is Divisible by right): Vector[div.Result, size] =
-
-      map(_/right)
-
     def dot[right](right: Vector[right, size])
        (using multiply: left is Multiplicable by right,
               size:     ValueOf[size],
-              addition: multiply.Result is Addable by multiply.Result,
-              equality: addition.Result =:= multiply.Result)
+              addable:  multiply.Result is Addable by multiply.Result,
+              equality: addable.Result =:= multiply.Result)
     :     multiply.Result =
 
       def recur(index: Int, sum: multiply.Result): multiply.Result =
-        if index < 0 then sum else recur(index - 1, sum + left.element(index)*right.element(index))
+        if index < 0 then sum
+        else recur(index - 1, addable.add(sum, left.element(index)*right.element(index)))
 
       val start = size.value - 1
       recur(start - 1, left.element(start)*right.element(start))

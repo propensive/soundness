@@ -47,6 +47,7 @@ import feudalism.*
 import fulminate.*
 import proscenium.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 import Completion.*
