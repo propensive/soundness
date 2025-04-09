@@ -47,10 +47,6 @@ inline def Pen: Countback   = Countback(1)
 inline def Ant: Countback   = Countback(2)
 
 extension (inline cardinal: Int)
-  @targetName("plus")
-  inline infix def + (inline ordinal: Ordinal): Ordinal =
-    (cardinal + ordinal.n0).z
-
   inline def z: Ordinal = Ordinal.zerary(cardinal)
 
 extension [countable: Countable](value: countable)
