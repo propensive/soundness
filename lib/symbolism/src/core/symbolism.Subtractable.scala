@@ -65,7 +65,3 @@ trait Subtractable:
   type Subtrahend = Operand
 
   def subtract(minuend: Minuend, subtrahend: Subtrahend): Result
-
-  extension (minuend: Minuend)
-    @targetName("subtract")
-    inline infix def - (subtrahend: Subtrahend): Result = subtract(minuend, subtrahend)

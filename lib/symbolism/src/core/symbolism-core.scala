@@ -49,6 +49,12 @@ extension [augend](left: augend)
   :     addable.Result =
     addable.add(left, right)
 
+extension [minuend](left: minuend)
+  inline infix def - [subtrahend](right: subtrahend)
+                     (using subtractable: minuend is Subtractable by subtrahend)
+  :     subtractable.Result =
+    subtractable.subtract(left, right)
+
 extension [dividend](left: dividend)
   inline infix def / [divisor](right: divisor)(using divisible: dividend is Divisible by divisor)
   :     divisible.Result =

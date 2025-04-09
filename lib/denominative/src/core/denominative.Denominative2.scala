@@ -34,6 +34,8 @@ package denominative
 
 import scala.annotation.targetName
 
+import symbolism.*
+
 object Denominative2:
   opaque type Countback = Int
   opaque type Bounds = Long
@@ -46,7 +48,7 @@ object Denominative2:
     inline def start: Ordinal = ((bounds >> 32) & 0xffffffff).toInt.z
     inline def end: Countback = (bounds & 0xffffffff).toInt
     inline def next: Countback = end - 1
-    inline def previous: Ordinal = start - 1
+    inline def previous: Ordinal = start.previous
 
     inline def of[value: Countable](value: value): Interval =
       Interval(bounds.start, Ult.of(value))

@@ -79,6 +79,32 @@ object Mosquito:
 
         recur(left, right)
 
+    given subtractable: [value,
+                         size <: Int,
+                         left <: Vector[value, size],
+                         value2,
+                         right <: Vector[value2, size]]
+          => (subtractable: value is Subtractable by value2)
+          => left is Subtractable:
+      type Self = left
+      type Operand = right
+      type Result = Vector[subtractable.Result, size]
+
+      def subtract(left: left, right: right): Vector[subtractable.Result, size] =
+        def recur(left: Tuple, right: Tuple): Tuple = left match
+          case leftHead *: leftTail => right match
+            case rightHead *: rightTail =>
+              (leftHead.asInstanceOf[left] - rightHead.asInstanceOf[right])
+              *: recur(leftTail, rightTail)
+
+            case _ =>
+              Zero
+
+          case _ =>
+            Zero
+
+        recur(left, right)
+
     given showable: [size <: Int: ValueOf, element: Showable] => Text is Measurable
           =>  Vector[element, size] is Showable =
 
@@ -151,41 +177,6 @@ object Mosquito:
         case _            => Zero
 
       recur(left)
-
-    @targetName("add")
-    def + [right](right: Vector[right, size])(using addable: left is Addable by right)
-    :     Vector[addable.Result, size] =
-
-      def recur(left: Tuple, right: Tuple): Tuple = left match
-        case leftHead *: leftTail => right match
-          case rightHead *: rightTail =>
-            (addable.add(leftHead.asInstanceOf[left], rightHead.asInstanceOf[right]))
-            *: recur(leftTail, rightTail)
-
-          case _ =>
-            Zero
-
-        case _ =>
-          Zero
-
-      recur(left, right)
-
-    @targetName("sub")
-    def - [right](right: Vector[right, size])(using sub: left is Subtractable by right)
-    :     Vector[sub.Result, size] =
-
-      def recur(left: Tuple, right: Tuple): Tuple = left match
-        case leftHead *: leftTail => right match
-          case rightHead *: rightTail =>
-            (leftHead.asInstanceOf[left] - rightHead.asInstanceOf[right])
-            *: recur(leftTail, rightTail)
-          case _ =>
-            Zero
-
-        case _ =>
-          Zero
-
-      recur(left, right)
 
     def dot[right](right: Vector[right, size])
        (using multiply: left is Multiplicable by right,
