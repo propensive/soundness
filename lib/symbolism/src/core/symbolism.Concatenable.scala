@@ -30,44 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package gossamer
+package symbolism
 
-import anticipation.*
-import denominative.*
-import proscenium.*
-import vacuous.*
-
-import language.experimental.captureChecking
-
-object Presentational:
-  given text: Text is Textual:
-    type Show[value] = value is spectacular.Showable
-    val classTag: ClassTag[Text] = summon[ClassTag[Text]]
-    def show[value](value: value)(using show: Show[value]): Text = show.text(value)
-    def text(text: Text): Text = text
-    def length(text: Text): Int = text.s.length
-    def apply(text: Text): Text = text
-    def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
-
-    def segment(text: Text, interval: Interval): Text =
-      val limit = length(text)
-      val start = interval.start.n0.max(0).min(limit)
-      val end = interval.end.n0.max(start).min(limit)
-
-      text.s.substring(start, end).nn.tt
-
-    def empty: Text = Text("")
-    def concat(left: Text, right: Text): Text = Text(left.s+right.s)
-    def unsafeChar(text: Text, index: Ordinal): Char = text.s.charAt(index.n0)
-
-    def indexOf(text: Text, sub: Text, start: Ordinal): Optional[Ordinal] =
-      text.s.indexOf(sub.s, start.n0).puncture(-1).let(Ordinal.zerary(_))
-
-    def builder(size: Optional[Int]): Builder[Text] = TextBuilder(size)
-    def size(text: Self): Int = text.length
-
-trait Presentational:
+trait Concatenable:
   type Self
-  type Show[value]
-  def show[value](value: value)(using show: Show[value]): Self
-  def apply(text: Text): Self
+  type Operand
+  def concat(left: Self, right: Operand): Self | Operand

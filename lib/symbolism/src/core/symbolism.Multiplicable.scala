@@ -64,6 +64,13 @@ object Multiplicable:
   given byte: Byte is Multiplicable by Byte into Byte = Multiplicable:
     (multiplicand, multiplier) => (multiplicand*multiplier).toByte
 
+  given concatenable: [textual: Concatenable by textual] => textual is Multiplicable:
+    type Self = textual
+    type Operand = Int
+    type Result = textual
+
+    def multiply(text: textual, count: Int): textual = ???
+
 trait Multiplicable:
   type Self
   type Multiplicand = Self

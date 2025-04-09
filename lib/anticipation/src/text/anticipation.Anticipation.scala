@@ -52,7 +52,12 @@ object Anticipation:
 
     extension (text: Text) inline def s: String = text
 
-    given addable: Text is Addable by Text into Text = _ + _
+    given concatenable: [text <: Text] => text is Concatenable:
+      type Self = text
+      type Operand = Text
+      type Result = Text
+
+      def concat(left: text, right: Text): Text = left+right
 
     private def recur(text: Text, n: Int, acc: Text): Text =
       if n == 0 then acc else recur(text, n - 1, acc+text)

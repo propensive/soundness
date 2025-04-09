@@ -68,9 +68,19 @@ object Path:
   given communicable: Path is Communicable = path =>
     Message(path.textDescent.reverse.join(path.textRoot, path.separator, t""))
 
-  given addable: [platform: Navigable] => Tactic[PathError]
-        => (Path on platform) is Addable by (Relative by platform.Operand) into (Path on platform) =
-    (left, right) =>
+  given addable: [platform,
+                  operand,
+                  relative <: Relative by operand,
+                  path <: Path on platform]
+        => Tactic[PathError]
+        => (navigable: platform is Navigable)
+        => operand <:< navigable.Operand
+        => path is Addable:
+    type Self = path
+    type Operand = relative
+    type Result = Path on platform
+
+    def add(left: path, right: relative): Path on platform =
       def recur(descent: List[Text], ascent: Int): Path on platform =
         if ascent > 0 then
           if descent.isEmpty then
@@ -83,8 +93,8 @@ object Path:
           Path.from[platform]
            (left.textRoot,
             right.textDescent ++ descent,
-            platform.separator,
-            platform.caseSensitivity)
+            navigable.separator,
+            navigable.caseSensitivity)
 
       recur(left.textDescent, right.ascent)
 
@@ -215,7 +225,11 @@ extends Pathlike:
     val common = conjunction(right).depth
     Relative(right.depth - common, textDescent.dropRight(common).map(navigable.element(_)))
 
-  def resolve(text: Text)(using Platform is Navigable, Platform is Radical)
+  def resolve(text: Text)(using navigable: Platform is Navigable, radical: Platform is Radical)
   :     Path on Platform raises PathError =
-    safely(Path.parse(text)).or(safely(this + Relative.parse(text))).or:
+    def relative: Relative by navigable.Operand = Relative.parse(text)
+    val path: Optional[Path on Platform] = safely(Path.parse[Platform](text))
+    val base: Path on Platform = this
+
+    path.or(safely(base + relative)).or:
       abort(PathError(PathError.Reason.InvalidRoot))

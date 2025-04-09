@@ -33,6 +33,7 @@
 package turbulence
 
 import anticipation.*
+import symbolism.*
 
 case class Line(content: Text):
   def apply()(using lineSeparation: LineSeparation): Text = content+lineSeparation.newline.text

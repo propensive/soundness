@@ -268,7 +268,7 @@ extension [textual: Textual](text: textual)
 
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): textual =
     if text.plain.metrics >= length then text else
-      val padding = textual(char.toString.tt*(length - text.plain.metrics + 1))
+      val padding = textual(char.toString.tt)*(length - text.plain.metrics + 1)
 
       bidi match
         case Ltr => textual.concat(text, padding)

@@ -38,6 +38,7 @@ import gossamer.*
 import hypotenuse.*
 import iridescence.*
 import proscenium.*
+import symbolism.*
 
 import language.experimental.pureFunctions
 

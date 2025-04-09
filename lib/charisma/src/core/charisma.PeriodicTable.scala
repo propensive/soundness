@@ -38,6 +38,7 @@ import gossamer.*
 import hypotenuse.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 object PeriodicTable:

@@ -33,6 +33,7 @@
 package plutocrat
 
 import gossamer.*
+import symbolism.*
 
 package currencyStyles:
   given local: CurrencyStyle = (currency, unit, subunit) => t"${currency.symbol}$unit.$subunit"

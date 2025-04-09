@@ -44,6 +44,11 @@ extension [value: Rootable[2] as rootable](value: value)
 extension [value: Rootable[3] as rootable](value: value)
   def cbrt: rootable.Result = rootable.root(value)
 
+extension [augend](left: augend)
+  inline infix def + [addend](right: addend)(using addable: augend is Addable by addend)
+  :     addable.Result =
+    addable.add(left, right)
+
 extension [dividend](left: dividend)
   inline infix def / [divisor](right: divisor)(using divisible: dividend is Divisible by divisor)
   :     divisible.Result =
