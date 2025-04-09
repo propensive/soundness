@@ -42,7 +42,7 @@ import vacuous.*
 
 import language.experimental.captureChecking
 
-trait Textual extends Concatenable, Countable, Segmentable:
+trait Textual extends Concatenable, Countable, Segmentable, Zeroic:
   type Self
   type Operand = Self
   type Show[value]
@@ -58,6 +58,7 @@ trait Textual extends Concatenable, Countable, Segmentable:
   def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
   def builder(size: Optional[Int] = Unset): Builder[Self]
   def segment(text: Self, interval: Interval): Self
+  protected def makeZero(): Self = empty
 
 object Textual:
   def apply[textual: Textual](text: Text): textual = textual(text)

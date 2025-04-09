@@ -44,6 +44,7 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import scintillate.*
+import symbolism.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*
