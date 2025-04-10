@@ -82,7 +82,7 @@ def disassemble(using codepoint: Codepoint)(code: Quotes ?=> Expr[Any])(using Te
 
   unsafely:
     val file: Path on Linux = out / Name(t"Generated$$Code$$From$$Quoted.class")
-    staging.run(code)
+    staging.withQuotes(code)
     val classfile: Classfile = new Classfile(file.open(_.read[Bytes]))
     classfile.methods.find(_.name == t"apply").map(_.bytecode).get.vouch.embed(codepoint)
 

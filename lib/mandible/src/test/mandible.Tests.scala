@@ -51,8 +51,7 @@ object Tests extends Suite(m"Mandible tests"):
     //
     test(m"Compile something"):
       Out.println(disassemble('{
-       val x = 3.6*Metre
-       println(x)
+       println("Hello world")
       }).teletype)
 
       1

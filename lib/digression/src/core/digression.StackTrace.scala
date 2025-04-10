@@ -53,10 +53,11 @@ object StackTrace:
      ("λₙ".tt -> "anonymous function".tt,
       "αₙ".tt -> "anonymous class".tt,
       "ι".tt  -> "initialization".tt,
-      "ς".tt  -> "super reference".tt,
-      "⋮ε".tt -> "extension method".tt,
-      "ϕ".tt  -> "direct".tt,
-      "⋮π".tt -> "package file".tt,
+      "↑".tt  -> "super reference".tt,
+      "⊢".tt  -> "extension method".tt,
+      "∂".tt  -> "direct".tt,
+      "δ".tt  -> "default".tt,
+      "⋮⋮".tt -> "package file".tt,
       "ⲛ".tt  -> "class initializer".tt,
       "ℓ".tt  -> "lazy initializer".tt,
       "Σ".tt  -> "specialized method".tt,
@@ -130,7 +131,7 @@ object StackTrace:
         case 's' =>
           if (0 until 6).all { i => char(idx + i) == "super$"(i) }
           then
-            buffer.append("ς")
+            buffer.append("↑")
             recur(idx + 6)
           else
             buffer.append("s")
@@ -155,13 +156,13 @@ object StackTrace:
           case 'd' => char(idx + 2) match
             case 'e' => token(idx,         "$default",             "δ")
             case 'i' => char(idx + 3) match
-              case 'r' => token(idx,       "$direct",              "⋮ϕ")
+              case 'r' => token(idx,       "$direct",              "∂")
               case 'v' => token(idx,       "$div",                 "/")
               case _   => skip()
             case _   => skip()
           case 'e' => char(idx + 2) match
             case 'q' => token(idx,         "$eq",                  "=")
-            case 'x' => token(idx,         "$extension",           "⋮ε")
+            case 'x' => token(idx,         "$extension",           "⊢")
             case _   => skip()
           case 'g' => token(idx,           "$greater",             ">")
           case 'h' => token(idx,           "$hash",                "#")
