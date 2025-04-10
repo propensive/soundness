@@ -36,20 +36,25 @@ import java.lang.classfile as jlc
 import java.lang.classfile.instruction as jlci
 
 import scala.reflect.*
+import scala.quoted.*
 
+import anthology.*
 import anticipation.*
 import contingency.*
 import escritoire.*
 import escapade.*
 import fulminate.*
+import galilei.*
 import gossamer.*
 import hellenism.*
 import hieroglyph.*
+import inimitable.*
 import iridescence.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import serpentine.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
@@ -57,10 +62,29 @@ import vacuous.*
 import tableStyles.minimal
 import textMetrics.uniform
 import columnAttenuation.ignore
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.createNonexistent.disabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.disabled
 
-inline def disassemble[target](inline lambda: target => Any)(using classloader: Classloader)
-:   Optional[Bytecode] =
-  ${Mandible.disassemble('lambda, 'classloader)}
+def disassemble(code: Quotes ?=> Expr[Any])(using TemporaryDirectory)
+     (using classloader: Classloader)
+:     Bytecode =
+  val uuid = Uuid()
+  val out: Path on Linux = unsafely(temporaryDirectory[Path on Linux] / Name(uuid.show))
+  val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
+
+  val settings: staging.Compiler.Settings =
+    staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+
+  given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
+
+  unsafely:
+    val file: Path on Linux = out / Name(t"Generated$$Code$$From$$Quoted.class")
+    staging.run(code)
+    val classfile: Classfile = new Classfile(file.open(_.read[Bytes]))
+    classfile.methods.find(_.name == t"apply").map(_.bytecode).get.vouch.copy(sourceFile = Unset)
+
 
 case class ClassfileError()(using Diagnostics)
 extends Error(m"there was an error reading the classfile")

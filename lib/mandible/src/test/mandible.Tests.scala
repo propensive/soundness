@@ -36,14 +36,20 @@ import soundness.*
 
 import classloaders.threadContext
 import stdioSources.virtualMachine.ansi
+import temporaryDirectories.environment
 
 object Tests extends Suite(m"Mandible tests"):
   def run(): Unit =
-    test(m"One plus one"):
+    // test(m"One plus one"):
 
-      disassemble[Manifest](_.serialize).let: bytecode =>
-        Out.println(bytecode.teletype)
+    //   disassemble[Manifest](_.serialize).let: bytecode =>
+    //     Out.println(bytecode.teletype)
 
-      val rewrite =
-        Classfile[StackTrace].let(_.methods.find(_.name == t"rewrite").getOrElse(Unset)).vouch
-    . assert()
+    //   val rewrite =
+    //     Classfile[StackTrace].let(_.methods.find(_.name == t"rewrite").getOrElse(Unset)).vouch
+    // . assert()
+    //
+    test(m"Compile something"):
+      Out.println(disassemble('{ List(1, 2, 3).total }).teletype)
+      1
+    .assert(_ == 1)
