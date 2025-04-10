@@ -34,6 +34,7 @@ package mandible
 
 import java.lang.classfile as jlc
 import java.lang.classfile.instruction as jlci
+import java.lang.classfile.attribute as jlca
 
 import scala.reflect.*
 
@@ -57,6 +58,7 @@ import vacuous.*
 import tableStyles.minimal
 import textMetrics.uniform
 import columnAttenuation.ignore
+import jlc.attribute.UnknownAttribute
 
 object Classfile:
   given Classfile is Aggregable by Bytes = stream => new Classfile(stream.read[Bytes])
@@ -70,6 +72,12 @@ object Classfile:
     classloader(name).let(new Classfile(_))
 
 class Classfile(data: Bytes):
+  val sourceFile: Optional[Text] =
+    model.attributes.nn.iterator.nn.asScala.to(List).collect:
+      case attribute: jlca.SourceFileAttribute =>
+        attribute.sourceFile().nn.stringValue.nn.tt
+    . prim
+
   class Method(model: jlc.MethodModel):
     def name: Text = model.methodName.nn.toString.tt
 
@@ -83,6 +91,7 @@ class Classfile(data: Bytes):
       :     List[Bytecode.Instruction] =
         todo match
           case Nil => done.reverse
+
           case next :: todo => next match
             case instruction: jlc.Instruction =>
               val opcode = Bytecode.Opcode(instruction)
@@ -104,15 +113,13 @@ class Classfile(data: Bytes):
             case other: jlci.LabelTarget =>
               recur(todo, line, done, stack, count)
 
+            case other =>
+              panic(m"did not handle ${other.toString.tt}")
+
       val instructions = recur(code.elementList.nn.asScala.to(List), Unset, Nil, Nil, 0)
 
-      Bytecode(instructions*)
+      Bytecode(sourceFile, instructions*)
 
 
   private lazy val model: jlc.ClassModel = jlc.ClassFile.of().nn.parse(unsafely(data.mutable)).nn
   lazy val methods: List[Method] = model.methods.nn.asScala.to(List).map(Method(_))
-
-  val attributes: Unit =
-    model.attributes.nn.iterator.nn.asScala.to(List).foreach(println)
-  // val constants: Unit =
-  //   model.constantPool.nn.iterator.nn.asScala.to(List).foreach(println)

@@ -52,6 +52,7 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -63,7 +64,10 @@ object Bytecode:
   given Bytecode is Teletypeable = bytecode =>
     val table = Table[Instruction]
                  (Column(e"$Bold(Source)", textAlign = TextAlignment.Right): line =>
-                    e"${rgb"#ddddbb"}(${line.line.let(_.show+t":").or(t"")})",
+                    line.line.let: line =>
+                      val source = e"${rgb"#88aabb"}(${bytecode.sourceFile.or(t"")})"
+                      e"$source:${rgb"#ddddbb"}(${line.show})"
+                    . or(e""),
                   Column(e"")(_.offset.show.subscripts),
                   Column(e"$Bold(Opcode)")(_.opcode.teletype),
                   Column(e"$Bold(Stack)")(_.stack.let(_.teletype).or(e"")))
@@ -366,12 +370,15 @@ object Bytecode:
         case 170 | 171 | 187 | 188 | 189 | 197| 194 | 195 | 191 | 185 | 186 =>
           3
 
+        case opcode =>
+          panic(m"unrecognized opcode $opcode")
+
     def highlight: Rgb24 = cost match
       case 0 => rgb"#1a6a6c"
       case 1 => rgb"#659e24"
       case 2 => rgb"#e3a232"
       case 3 => rgb"#b31250"
-      case 5 => rgb"#777777"
+      case _ => rgb"#777777"
 
 
     def transform(stack: List[Frame]): List[Frame] =
@@ -618,6 +625,9 @@ object Bytecode:
         case 199 => Ifnonnull(0)
         case 200 => GotoW(0)
         case 201 => JsrW(0)
+
+        case opcode =>
+          panic(m"unrecognized opcode $opcode")
 
     given Opcode is Teletypeable = opcode =>
       opcode.show.cut(t" ") match
@@ -883,4 +893,4 @@ object Bytecode:
       case Impdep1                  => t"imp·dep₁"
       case Impdep2                  => t"imp·dep₂"
 
-case class Bytecode(instructions: Bytecode.Instruction*)
+case class Bytecode(sourceFile: Optional[Text], instructions: Bytecode.Instruction*)
