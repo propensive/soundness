@@ -40,7 +40,12 @@ import symbolism.*
 import vacuous.*
 
 object StackTrace:
-  case class Method(className: Text, method: Text)
+  case class Method(className: Text, method: Text):
+    private lazy val pivot = className.s.lastIndexOf(".")
+
+    lazy val cls: Text = if pivot >= 0 then className.s.substring(pivot + 1).nn.tt else className.s
+    lazy val prefix: Text = if pivot >= 0 then className.s.substring(0, pivot).nn.tt else "".tt
+
   case class Frame(method: Method, file: Text, line: Optional[Int], native: Boolean)
 
   val legend: Map[Text, Text] =
@@ -53,7 +58,9 @@ object StackTrace:
       "ϕ".tt  -> "direct".tt,
       "⋮π".tt -> "package file".tt,
       "ⲛ".tt  -> "class initializer".tt,
-      "ℓ".tt  -> "lazy initializer".tt)
+      "ℓ".tt  -> "lazy initializer".tt,
+      "Σ".tt  -> "specialized method".tt,
+      "Ξ".tt  -> "object".tt)
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()
@@ -61,16 +68,24 @@ object StackTrace:
     inline def char(idx: Int): Optional[Char] =
       if idx < 0 || idx >= name.length then Unset else name.charAt(idx)
 
+    def primitive(char: Char) = char match
+      case 'Z' => "Boolean"
+      case 'I' => "Int"
+      case 'J' => "Long"
+      case 'V' => "Unit"
+      case 'S' => "Short"
+      case 'F' => "Float"
+      case 'C' => "Char"
+      case 'D' => "Double"
+      case 'L' => "Any"
+      case _   => "?"
+
     @tailrec
     def recur(idx: Int, digits: Boolean = false): Text =
       inline def token(idx: Int, str: String, text: String, digits: Boolean = false): Text =
         if (0 until str.length).all { i => char(idx + i) == str(i) }
-        then
-          buffer.append(text)
-          recur(idx + str.length, digits)
-        else
-          buffer.append('#')
-          recur(idx + 1, digits)
+        then buffer.append(text) yet recur(idx + str.length, digits)
+        else buffer.append('#') yet recur(idx + 1, digits)
 
       inline def skip(): Text = token(idx, "$", if method then "()." else "#")
 
@@ -151,13 +166,35 @@ object StackTrace:
           case 'g' => token(idx,           "$greater",             ">")
           case 'h' => token(idx,           "$hash",                "#")
           case 'l' => token(idx,           "$less",                "<")
-          case 'm' => token(idx,           "$minus",               "-")
+          case 'm' => char(idx + 2) match
+            case 'c' =>
+              var index: Int = idx + 3
+              var args: List[Text] = Nil
+              var current = char(index)
+
+              while current != '$' do
+                args = primitive(current.or('?')) :: args
+                index += 1
+                current = char(index)
+
+              val name2 =
+                if args.length == 2 then "Σ("+args.last+" -> "+args.head+")"
+                else args.tail.mkString("Σ((", ", ", ")")+" -> "+args.head+")"
+
+              val mc = name.substring(idx, index + 3).nn
+              println(mc)
+              token(idx, mc, name2)
+            case 'i' => token(idx,         "$minus",               "-")
+            case _   => skip()
           case 'p' => char(idx + 2) match
             case 'a' => token(idx,         "$package",             "⋮π")
             case 'e' => token(idx,         "$percent",             "%")
             case 'l' => token(idx,         "$plus",                "+")
             case _   => skip()
           case 'q' => token(idx,           "$qmark",               "?")
+          case 's' => char(idx + 2) match
+            case 'p' => token(idx,         "$sp",                  "ζ")
+            case _   => skip()
           case 't' => char(idx + 2) match
             case 'i' => char(idx + 3) match
               case 'l' => token(idx,       "$tilde",               "~")
@@ -172,18 +209,6 @@ object StackTrace:
           recur(idx + 1)
 
     val rewritten = recur(0)
-
-    def primitive(char: Char) = char match
-      case 'Z' => "Boolean"
-      case 'I' => "Int"
-      case 'J' => "Long"
-      case 'V' => "Unit"
-      case 'S' => "Short"
-      case 'F' => "Float"
-      case 'C' => "Char"
-      case 'D' => "Double"
-      case 'L' => "Any"
-      case _   => "?"
 
     if rewritten.s.startsWith("scala.runtime.java8.JFunction") && rewritten.s.endsWith("#sp") then
       val types: String = rewritten.s.drop(29).dropRight(3)
@@ -201,6 +226,9 @@ object StackTrace:
       val n = try rewritten.s.drop(33).toInt catch case error: Exception => 0
       "("+(if n < 2 then s"Any" else List.fill(n)("Any").mkString("(", ", ", ")"))+" => Unit)"
 
+    else if rewritten.s.endsWith("#") then
+      val pivot = rewritten.s.lastIndexOf(".")
+      (rewritten.s.substring(0, pivot).nn+".Ξ"+rewritten.s.substring(pivot + 1).nn.dropRight(1)).tt
     else rewritten
 
   def apply(exception: Throwable): StackTrace =
