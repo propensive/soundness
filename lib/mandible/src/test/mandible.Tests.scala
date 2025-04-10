@@ -46,6 +46,4 @@ object Tests extends Suite(m"Mandible tests"):
 
       val rewrite =
         Classfile[StackTrace].let(_.methods.find(_.name == t"rewrite").getOrElse(Unset)).vouch
-
-      println(rewrite.bytecode)
     . assert()
