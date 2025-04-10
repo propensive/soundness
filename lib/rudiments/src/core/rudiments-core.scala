@@ -142,7 +142,7 @@ extension [value](iterable: Iterable[value])
   :     Optional[divisible.Result] =
    compiletime.summonFrom:
      case zeroic: ((? <: value) is Zeroic) =>
-       iterable.foldLeft[value](zeroic.zero)(addable.add)/iterable.size.toDouble
+       iterable.foldLeft[value](zeroic.zero())(addable.add)/iterable.size.toDouble
 
      case _ =>
        iterable.total.let(_/iterable.size.toDouble)

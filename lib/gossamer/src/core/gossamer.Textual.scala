@@ -58,7 +58,7 @@ trait Textual extends Concatenable, Countable, Segmentable, Zeroic:
   def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
   def builder(size: Optional[Int] = Unset): Builder[Self]
   def segment(text: Self, interval: Interval): Self
-  protected def makeZero(): Self = empty
+  inline def zero(): Self = empty
 
 object Textual:
   def apply[textual: Textual](text: Text): textual = textual(text)

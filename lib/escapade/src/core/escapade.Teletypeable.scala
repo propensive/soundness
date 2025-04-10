@@ -39,6 +39,7 @@ import gossamer.*
 import hieroglyph.*
 import iridescence.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 object Teletypeable:
