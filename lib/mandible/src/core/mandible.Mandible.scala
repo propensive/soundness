@@ -47,6 +47,7 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 

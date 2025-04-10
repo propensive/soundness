@@ -70,7 +70,7 @@ object Multiplicable:
     type Result = textual
 
     def multiply(text: textual, count: Int): textual =
-      var result: textual = textual.zero
+      var result: textual = textual.zero()
       for i <- 0 until count do result = result+text
       result
 

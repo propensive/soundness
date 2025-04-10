@@ -37,7 +37,9 @@ import digression.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import iridescence.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 object Teletypeable:
@@ -65,7 +67,34 @@ object Teletypeable:
 
   given error: Error is Teletypeable = _.message.teletype
 
+  private val pkgColor = Fg(0xffff00)
+  private val clsColor = Fg(0xff0000)
+  private val methColor = Fg(0x00ffff)
+
   given stackTrace: (Text is Measurable) => StackTrace is Teletypeable = stack =>
+    def heat(level: Int): Int = level match
+      case 0 => 0xf84020
+      case 1 => 0xd88600
+      case 2 => 0xfefe00
+      case 3 => 0xfeae00
+      case _ => 0xaefe00
+
+    def dedup[element]
+         (todo: List[element], seen: Set[element] = Set(), done: List[element] = Nil)
+    :     List[element] =
+      todo match
+        case Nil => done
+
+        case head :: tail =>
+          if seen.contains(head) then dedup(tail, seen, done)
+          else dedup(tail, seen + head, head :: done)
+
+    val packages: Map[Text, Int] =
+      dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
+      . zipWithIndex.map: (prefix, idx) =>
+          prefix -> heat(idx)
+      . to(Map)
+
     val methodWidth = stack.frames.map(_.method.method.length).maxOption.getOrElse(0)
     val classWidth = stack.frames.map(_.method.className.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.length).maxOption.getOrElse(0)
@@ -73,20 +102,40 @@ object Teletypeable:
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
     val init = e"${Fg(0xffffff)}($fullClass): ${stack.message}"
 
+    var lastClass: Text = t""
+    var lastFile: Text = t""
+
     val root = stack.frames.foldLeft(init):
       case (msg, frame) =>
-        val obj = frame.method.className.ends(t"#")
-        val drop = if obj then 1 else 0
+        val obj = frame.method.cls.starts(t"Ξ")
         val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(fileWidth, Rtl)})"
-        val dot = if obj then t"." else t"#"
+        val dot = if obj then t" . " else t" ⌗ "
+
+        val sameClass = frame.method.className == lastClass
+        lastClass = frame.method.className
+
+        val gray = Fg(0x808080)
 
         val className =
-          e"${Fg(0xc61485)}(${frame.method.className.skip(drop, Rtl).fit(classWidth, Rtl)})"
+          val color = packages(frame.method.prefix)
+          if sameClass
+          then
+            val prefixLength = frame.method.prefix.length
+            val classLength = frame.method.cls.length
+            val pkg = e"${Fg(color/2)}(${t"⠐"*prefixLength})"
+            val cls = e"$Bold(${Fg(color)}(${t"⠂"*classLength}))"
+            e"${t" "*(classWidth - prefixLength - classLength - 1)}$pkg $cls"
+          else
+            e"${Fg(color/2)}(${frame.method.prefix}.$Bold(${Fg(color)}(${frame.method.cls})))"
+            . fit(classWidth, Rtl)
 
-        val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(methodWidth)})"
-        val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"?")})"
-        val gray = Fg(0x808080)
-        e"$msg\n  $gray(at) $className$gray($dot)$method $file$gray(:)$line"
+        val method = e"${Fg(0xabcfdf)}(${frame.method.method.fit(methodWidth)})"
+        val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"")})"
+        val sameFile = frame.file == lastFile
+        lastFile = frame.file
+        val file2 = (if sameFile then t"⠂"*frame.file.length else frame.file).fit(fileWidth, Rtl)
+
+        e"$msg\n  $gray(at) $className$gray($dot)$method ${Fg(0x5faeaf)}($file2)$gray(:)$line"
 
     stack.cause.lay(root): cause =>
       e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"
@@ -96,12 +145,12 @@ object Teletypeable:
     val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(40)})"
     val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(18, Rtl)})"
     val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"?")})"
-    e"$className${Fg(0x808080)}(#)$method $file${Fg(0x808080)}(:)$line"
+    e"$className${Fg(0x808080)}( ⌗ )$method $file${Fg(0x808080)}(:)$line"
 
   given method: StackTrace.Method is Teletypeable = method =>
     val className = e"${Fg(0xc61485)}(${method.className})"
     val methodName = e"${Fg(0xdb6f92)}(${method.method})"
-    e"$className${Fg(0x808080)}(#)$methodName"
+    e"$className${Fg(0x808080)}( ⌗ )$methodName"
 
   given double: (decimalizer: Decimalizer) => Double is Teletypeable = double =>
     Teletype.make(decimalizer.decimalize(double), _.copy(fg = 0xffd600))
