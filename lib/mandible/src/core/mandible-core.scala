@@ -41,6 +41,7 @@ import scala.quoted.*
 import anthology.*
 import anticipation.*
 import contingency.*
+import digression.*
 import escritoire.*
 import escapade.*
 import fulminate.*
@@ -67,7 +68,7 @@ import filesystemOptions.createNonexistent.disabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.disabled
 
-def disassemble(code: Quotes ?=> Expr[Any])(using TemporaryDirectory)
+def disassemble(using codepoint: Codepoint)(code: Quotes ?=> Expr[Any])(using TemporaryDirectory)
      (using classloader: Classloader)
 :     Bytecode =
   val uuid = Uuid()
@@ -83,7 +84,7 @@ def disassemble(code: Quotes ?=> Expr[Any])(using TemporaryDirectory)
     val file: Path on Linux = out / Name(t"Generated$$Code$$From$$Quoted.class")
     staging.run(code)
     val classfile: Classfile = new Classfile(file.open(_.read[Bytes]))
-    classfile.methods.find(_.name == t"apply").map(_.bytecode).get.vouch.copy(sourceFile = Unset)
+    classfile.methods.find(_.name == t"apply").map(_.bytecode).get.vouch.embed(codepoint)
 
 
 case class ClassfileError()(using Diagnostics)

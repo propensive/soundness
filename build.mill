@@ -881,7 +881,7 @@ object mandible extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core, revolution.core)
+    def moduleDeps = Seq(probably.cli, core, revolution.core, quantitative.units)
   }
 }
 

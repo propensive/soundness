@@ -187,7 +187,7 @@ object StackTrace:
             case 'i' => token(idx,         "$minus",               "-")
             case _   => skip()
           case 'p' => char(idx + 2) match
-            case 'a' => token(idx,         "$package",             "⋮π")
+            case 'a' => token(idx,         "$package",             "⋮")
             case 'e' => token(idx,         "$percent",             "%")
             case 'l' => token(idx,         "$plus",                "+")
             case _   => skip()
@@ -228,7 +228,10 @@ object StackTrace:
 
     else if rewritten.s.endsWith("#") then
       val pivot = rewritten.s.lastIndexOf(".")
-      (rewritten.s.substring(0, pivot).nn+".Ξ"+rewritten.s.substring(pivot + 1).nn.dropRight(1)).tt
+      val sub = if rewritten.s.endsWith("⋮#") then "⋮" else "Ξ"
+
+      (rewritten.s.substring(0, pivot).nn+"."+sub+rewritten.s.substring(pivot + 1).nn.dropRight(1))
+      . tt
     else rewritten
 
   def apply(exception: Throwable): StackTrace =

@@ -825,10 +825,10 @@ object Bytecode:
       case Putstatic(_)             => t"put·static"
       case Getfield(_)              => t"get·field"
       case Putfield(_)              => t"put·field"
-      case Invokevirtual(cls, name) => t"invoke·virtual $cls#$name"
-      case Invokespecial(cls, name) => t"invoke·special $cls.$name"
-      case Invokestatic(cls, name)  => t"invoke·static $cls.$name"
-      case Invokeinterface(cls, name, _) => t"invoke·interface $cls#$name"
+      case Invokevirtual(cls, name) => t"invoke·virtual $cls # $name"
+      case Invokespecial(cls, name) => t"invoke·special $cls . $name"
+      case Invokestatic(cls, name)  => t"invoke·static $cls . $name"
+      case Invokeinterface(cls, name, _) => t"invoke·interface $cls # $name"
       case Invokedynamic(name)      => t"invoke·dynamic $name"
       case New(_)                   => t"new"
       case Newarray(_)              => t"new·array"
@@ -900,4 +900,9 @@ object Bytecode:
       case Impdep1                  => t"imp·dep₁"
       case Impdep2                  => t"imp·dep₂"
 
-case class Bytecode(sourceFile: Optional[Text], instructions: List[Bytecode.Instruction])
+case class Bytecode(sourceFile: Optional[Text], instructions: List[Bytecode.Instruction]):
+  def embed(codepoint: Codepoint): Bytecode =
+    val instructions2 = instructions.map: instruction =>
+      instruction.copy(line = instruction.line.let(_ + codepoint.line - 1))
+
+    Bytecode(codepoint.source.cut(t"/").last, instructions2)

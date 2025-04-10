@@ -50,6 +50,10 @@ object Tests extends Suite(m"Mandible tests"):
     // . assert()
     //
     test(m"Compile something"):
-      Out.println(disassemble('{ List(1, 2, 3).total }).teletype)
+      Out.println(disassemble('{
+       val x = 3.6*Metre
+       println(x)
+      }).teletype)
+
       1
     .assert(_ == 1)
