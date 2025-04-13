@@ -46,9 +46,6 @@ object Tests extends Suite(m"Mandible tests"):
           '{ println(t"Hello".s) }
         . teletype
 
-      disassemble[Manifest](_.serialize).let: bytecode =>
-        Out.println(bytecode.teletype)
-
       val rewrite =
         Classfile[StackTrace].let(_.methods.find(_.name == t"rewrite").getOrElse(Unset)).vouch
     . assert()

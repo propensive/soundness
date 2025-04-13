@@ -585,12 +585,6 @@ object Bytecode:
       case 0xFE => t"implementation-dependent"
       case 0xFF => t"implementation-dependent"
 
-  case class Bytecode(sourceFile: Optional[Text], instructions: List[Bytecode.Instruction]):
-    def embed(codepoint: Codepoint): Bytecode =
-      val instructions2 = instructions.map: instruction =>
-        instruction.copy(line = instruction.line.let(_ + codepoint.line - 1))
-
-      Bytecode(codepoint.source.cut(t"/").last, instructions2)
     def highlight: Rgb24 = cost match
       case 0 => rgb"#1a6a6c"
       case 1 => rgb"#659e24"
@@ -1120,3 +1114,10 @@ object Bytecode:
       case OpFd                     => t"-FD-"
       case Impdep1                  => t"imp·dep₁"
       case Impdep2                  => t"imp·dep₂"
+
+case class Bytecode(sourceFile: Optional[Text], instructions: List[Bytecode.Instruction]):
+  def embed(codepoint: Codepoint): Bytecode =
+    val instructions2 = instructions.map: instruction =>
+      instruction.copy(line = instruction.line.let(_ + codepoint.line - 1))
+
+    Bytecode(codepoint.source.cut(t"/").last, instructions2)
