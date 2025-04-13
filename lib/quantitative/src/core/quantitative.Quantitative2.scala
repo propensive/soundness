@@ -330,8 +330,13 @@ trait Quantitative2:
       case _ =>
         halt(m"the operands represent different physical quantities")
 
-  def mulTypeclass[left <: Measure: Type, right <: Measure: Type](using Quotes)
-  :     Expr[Quantity[left] is Multiplicable by Quantity[right]] =
+  def mulTypeclass
+       [left <: Measure: Type,
+        multiplicand <: Quantity[left]: Type,
+        right <: Measure: Type,
+        multiplier <: Quantity[right]: Type
+       ](using Quotes)
+  :     Expr[multiplicand is Multiplicable by multiplier] =
 
     val left = UnitsMap[left]
     val right = UnitsMap[right]
@@ -341,17 +346,22 @@ trait Quantitative2:
 
     (leftNorm*rightNorm).repr.map(_.asType).absolve match
       case Some('[type result <: Measure; result]) =>
-       '{ Multiplicable[Quantity[left], Quantity[right], Quantity[result]] {
+       '{ Multiplicable[multiplicand, multiplier, Quantity[result]] {
             (left, right) =>
               ${Quantitative.multiply('left, 'right, false).asExprOf[Quantity[result]]} } }
 
       case None =>
-       '{ Multiplicable[Quantity[left], Quantity[right], Double]: (left, right) =>
+       '{ Multiplicable[multiplicand, multiplier, Double]: (left, right) =>
             ${Quantitative.multiply('left, 'right, false).asExprOf[Double]} }
 
 
-  def divTypeclass[left <: Measure: Type, right <: Measure: Type](using Quotes)
-  :     Expr[Quantity[left] is Divisible by Quantity[right]] =
+  def divTypeclass
+       [left <: Measure: Type,
+        dividend <: Quantity[left]: Type,
+        right <: Measure: Type,
+        divisor <: Quantity[right]: Type]
+       (using Quotes)
+  :     Expr[dividend is Divisible by divisor] =
 
     val left = UnitsMap[left]
     val right = UnitsMap[right]
@@ -361,12 +371,12 @@ trait Quantitative2:
 
     (leftNorm/rightNorm).repr.map(_.asType).absolve match
       case Some('[type result <: Measure; result]) =>
-       '{ Divisible[Quantity[left], Quantity[right], Quantity[result]] {
+       '{ Divisible[dividend, divisor, Quantity[result]] {
             (left, right) =>
               ${Quantitative.multiply('left, 'right, true).asExprOf[Quantity[result]]} } }
 
       case None =>
-       '{ Divisible[Quantity[left], Quantity[right], Double]: (left, right) =>
+       '{ Divisible[dividend, divisor, Double]: (left, right) =>
             ${Quantitative.multiply('left, 'right, true).asExprOf[Double]} }
 
   def sqrtTypeclass[value <: Measure: Type](using Quotes): Expr[Quantity[value] is Rootable[2]] =

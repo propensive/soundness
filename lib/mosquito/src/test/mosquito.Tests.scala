@@ -40,6 +40,7 @@ import probably.*
 import quantitative.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 
 object Tests extends Suite(m"Mosquito tests"):
   def run(): Unit =
@@ -89,16 +90,16 @@ object Tests extends Suite(m"Mosquito tests"):
 
     suite(m"Quantity operations"):
       test(m"Add two quantity vectors"):
-        Vector(1*Metre, 2*Metre, 3*Metre) + Vector(3*Metre, 4*Metre, 5*Metre)
-      .assert(_ == Vector(4*Metre, 6*Metre, 8*Metre))
+        Vector(1.0*Metre, 2.0*Metre, 3.0*Metre) + Vector(3.0*Metre, 4.0*Metre, 5.0*Metre)
+      .assert(_ == Vector(4.0*Metre, 6.0*Metre, 8.0*Metre))
 
       test(m"Add two mixed-quantity vectors"):
-        Vector(1*Foot, 1*Foot, 1*Foot) + Vector(3*Metre, 4*Metre, 5*Metre)
+        Vector(1.0*Foot, 1.0*Foot, 1.0*Foot) + Vector(3.0*Metre, 4.0*Metre, 5.0*Metre)
       .assert(_ == Vector(3.3048*Metre, 4.3048*Metre, 5.3048*Metre))
 
       test(m"Map from m to m²"):
-        Vector(1*Metre, 2*Metre, 3*Metre, 4*Metre).map(_*Metre)
-      .assert(_ == Vector(1*Metre*Metre, 2*Metre*Metre, 3*Metre*Metre, 4*Metre*Metre))
+        Vector(1.0*Metre, 2.0*Metre, 3.0*Metre, 4.0*Metre).map(_*Metre)
+      .assert(_ == Vector(1.0*Metre*Metre, 2.0*Metre*Metre, 3.0*Metre*Metre, 4.0*Metre*Metre))
 
     suite(m"Matrix tests"):
       val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))

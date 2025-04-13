@@ -48,6 +48,7 @@ import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 case class Url[+scheme <: Label]

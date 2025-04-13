@@ -34,14 +34,20 @@ package gossamer
 
 import anticipation.*
 import denominative.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 import language.experimental.captureChecking
 
-trait Textual extends Presentational, Countable, Segmentable:
+trait Textual extends Concatenable, Countable, Segmentable, Zeroic:
   type Self
+  type Operand = Self
+  type Show[value]
+  def show[value](value: value)(using show: Show[value]): Self
+  def apply(text: Text): Self
   def classTag: ClassTag[Self]
   def length(text: Self): Int
   def text(text: Self): Text
@@ -52,17 +58,33 @@ trait Textual extends Presentational, Countable, Segmentable:
   def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
   def builder(size: Optional[Int] = Unset): Builder[Self]
   def segment(text: Self, interval: Interval): Self
-
-  extension (left: Self)
-    @targetName("mul")
-    infix def * (right: Int): Self =
-      def recur(text: Self, ordinal: Ordinal, acc: Self): Self =
-        if ordinal == Ult.of(right) then acc else recur(text, ordinal + 1, concat(acc, text))
-
-      recur(left, Prim, empty)
-
-    @targetName("add")
-    infix def + (right: Self): Self = concat(left, right)
+  inline def zero(): Self = empty
 
 object Textual:
   def apply[textual: Textual](text: Text): textual = textual(text)
+
+  given text: Text is Textual:
+    type Show[value] = value is spectacular.Showable
+    val classTag: ClassTag[Text] = summon[ClassTag[Text]]
+    def show[value](value: value)(using show: Show[value]): Text = show.text(value)
+    def text(text: Text): Text = text
+    def length(text: Text): Int = text.s.length
+    def apply(text: Text): Text = text
+    def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
+
+    def segment(text: Text, interval: Interval): Text =
+      val limit = length(text)
+      val start = interval.start.n0.max(0).min(limit)
+      val end = interval.end.n0.max(start).min(limit)
+
+      text.s.substring(start, end).nn.tt
+
+    def empty: Text = Text("")
+    def concat(left: Text, right: Text): Text = Text(left.s+right.s)
+    def unsafeChar(text: Text, index: Ordinal): Char = text.s.charAt(index.n0)
+
+    def indexOf(text: Text, sub: Text, start: Ordinal): Optional[Ordinal] =
+      text.s.indexOf(sub.s, start.n0).puncture(-1).let(Ordinal.zerary(_))
+
+    def builder(size: Optional[Int]): Builder[Text] = TextBuilder(size)
+    def size(text: Self): Int = text.length

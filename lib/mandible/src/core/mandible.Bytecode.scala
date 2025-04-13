@@ -79,10 +79,15 @@ object Bytecode:
     e"${rgb"#aaaaaa"}(${stack.reverse.map(_.teletype).join(e"┃ ", e" ┊ ", e"")})"
 
   object Frame:
-    given showable: Frame is Showable = _.toString.tt.lower
+    given showable: Frame is Showable =
+      case Array(frame) => t"[$frame]"
+      case L(name)      => t"*$name"
+      case other        => other.toString.tt
 
   enum Frame:
-    case Obj, Val, Nul, Idx, Arr, Res, Adr, Key, Arg
+    case Z, B, C, S, I, J, F, D
+    case L(name: Text)
+    case Array(frame: Frame)
 
   case class Instruction
               (opcode: Opcode, line: Optional[Int], stack: Optional[List[Frame]], offset: Int)
@@ -384,31 +389,32 @@ object Bytecode:
     def transform(stack: List[Frame]): List[Frame] =
       import Frame.*
       this match
+        case anyithng => stack
         case Nop                      => stack
-        case New(_)                   => Obj :: stack
-        case Dup                      => Val :: Val :: stack.tail
-        case Invokespecial(_, _)      => Res :: stack.tail // FIXME
+        case New(_)                   => L(t"class") :: stack
+        case Dup                      => stack.head :: stack.head :: stack.tail
+        case Invokespecial(_, _)      => L(t"unknown") :: stack.tail // FIXME
         case Astore(_)                => stack.tail
         case Astore1                  => stack.tail
         case Astore2                  => stack.tail
         case Astore3                  => stack.tail
-        case Aload(_)                 => Obj :: stack
-        case Aload0                   => Obj :: stack
-        case Aload1                   => Obj :: stack
-        case Aload2                   => Obj :: stack
-        case Aload3                   => Obj :: stack
-        case Athrow                   => Obj :: Nil
-        case Areturn                  => Obj :: Nil
-        case Iload1                   => Val :: stack
-        case Checkcast(_)             => Obj :: stack.tail
-        case Invokedynamic(_)         => Res :: stack.tail // FIXME
-        case Getstatic(_)             => Val :: stack
-        case Invokevirtual(_, _)      => Res :: stack.tail
-        case Invokestatic(_, _)       => Res :: stack.tail
-        case Invokeinterface(_, _, _) => Res :: stack.tail
+        case Aload(_)                 => L(t"?") :: stack
+        case Aload0                   => L(t"?") :: stack
+        case Aload1                   => L(t"?") :: stack
+        case Aload2                   => L(t"?") :: stack
+        case Aload3                   => L(t"?") :: stack
+        case Athrow                   => L(t"?") :: Nil
+        case Areturn                  => L(t"?") :: Nil
+        case Iload1                   => I :: stack
+        case Checkcast(_)             => L(t"?") :: stack.tail
+        case Invokedynamic(_)         => L(t"?") :: stack.tail // FIXME
+        case Getstatic(_)             => L(t"?") :: stack
+        case Invokevirtual(_, _)      => L(t"?") :: stack.tail
+        case Invokestatic(_, _)       => L(t"?") :: stack.tail
+        case Invokeinterface(_, _, _) => L(t"?") :: stack.tail
         case Ifnonnull(_)             => stack.tail
         case Ifeq(_)                  => stack.tail
-        case Instanceof(_)            => Res :: stack.tail
+        case Instanceof(_)            => L(t"?") :: stack.tail
         case opcode                   => unsafely(throw Exception("Unhandled "+opcode))
 
   object Opcode:
@@ -425,7 +431,8 @@ object Bytecode:
           case 185 => Invokeinterface(classname, method, 0)
 
       case invocation: jlci.InvokeDynamicInstruction =>
-        Invokedynamic(invocation.name.nn.stringValue.nn.tt)
+        val method = StackTrace.rewrite(invocation.name.nn.stringValue.nn, true)
+        Invokedynamic(method)
 
       case other => source.opcode.nn.bytecode match
         case 0   => Nop
@@ -818,10 +825,10 @@ object Bytecode:
       case Putstatic(_)             => t"put·static"
       case Getfield(_)              => t"get·field"
       case Putfield(_)              => t"put·field"
-      case Invokevirtual(cls, name) => t"invoke·virtual $cls#$name"
-      case Invokespecial(cls, name) => t"invoke·special $cls.$name"
-      case Invokestatic(cls, name)  => t"invoke·static $cls.$name"
-      case Invokeinterface(cls, name, _) => t"invoke·interface $cls#$name"
+      case Invokevirtual(cls, name) => t"invoke·virtual $cls # $name"
+      case Invokespecial(cls, name) => t"invoke·special $cls . $name"
+      case Invokestatic(cls, name)  => t"invoke·static $cls . $name"
+      case Invokeinterface(cls, name, _) => t"invoke·interface $cls # $name"
       case Invokedynamic(name)      => t"invoke·dynamic $name"
       case New(_)                   => t"new"
       case Newarray(_)              => t"new·array"
@@ -893,4 +900,9 @@ object Bytecode:
       case Impdep1                  => t"imp·dep₁"
       case Impdep2                  => t"imp·dep₂"
 
-case class Bytecode(sourceFile: Optional[Text], instructions: Bytecode.Instruction*)
+case class Bytecode(sourceFile: Optional[Text], instructions: List[Bytecode.Instruction]):
+  def embed(codepoint: Codepoint): Bytecode =
+    val instructions2 = instructions.map: instruction =>
+      instruction.copy(line = instruction.line.let(_ + codepoint.line - 1))
+
+    Bytecode(codepoint.source.cut(t"/").last, instructions2)

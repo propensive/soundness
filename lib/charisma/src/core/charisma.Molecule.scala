@@ -38,6 +38,7 @@ import hieroglyph.*
 import hypotenuse.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 case class Molecule

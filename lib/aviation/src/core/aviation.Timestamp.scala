@@ -40,6 +40,7 @@ import kaleidoscope.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 
 import errorDiagnostics.stackTraces
 

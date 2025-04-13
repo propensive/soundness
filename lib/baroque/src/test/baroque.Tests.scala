@@ -38,6 +38,7 @@ import probably.*
 import quantitative.*
 import spectacular.*
 import symbolism.*
+import java.awt.SecondaryLoop
 
 given Decimalizer = Decimalizer(3)
 
@@ -48,7 +49,9 @@ object Tests extends Suite(m"Baroque tests"):
     .assert(_ == t"1 + 3𝒾")
 
     test(m"Show a quantity complex number"):
-      Complex(1*Metre/Second, 9*Metre/Second).show
+      val re = 1.0*Metre/Second
+      val im = Metre*9.0/Second
+      Complex(1.0*Metre/Second, Metre*9.0/Second).show
     .assert(_ == t"1.00 + 9.00𝒾 m·s¯¹")
 
     test(m"Add two int-complex numbers"):
@@ -60,11 +63,11 @@ object Tests extends Suite(m"Baroque tests"):
     .assert(_ == Complex(0.9, 0.4))
 
     test(m"Add two quantity-complex numbers"):
-      Complex(1*Metre, 3*Metre) + Complex(2*Metre, 8*Metre)
-    .assert(_ == Complex(3*Metre, 11*Metre))
+      Complex(1.0*Metre, 3.0*Metre) + Complex(2.0*Metre, 8.0*Metre)
+    .assert(_ == Complex(3.0*Metre, 11.0*Metre))
 
     test(m"Add heterogeneous quantity complex numbers"):
-      Complex(1*Inch, 3*Inch) + Complex(2*Foot, 8*Foot)
+      Complex(1.0*Inch, 3.0*Inch) + Complex(2.0*Foot, 8.0*Foot)
     .assert(_ == Complex(0.635*Metre, 2.5146*Metre))
 
     test(m"Multiply complex numbers"):
@@ -80,5 +83,5 @@ object Tests extends Suite(m"Baroque tests"):
     .assert(_ == Complex(-0.9649529102979775,2.7018681488343375))
 
     test(m"Multiply complex quantity numbers"):
-      Complex(18*Foot, 1.4*Foot)*Complex(4*Kilo(Gram), 2*Kilo(Gram))
+      Complex(18.0*Foot, 1.4*Foot)*Complex(4.0*Kilo(Gram), 2.0*Kilo(Gram))
     .assert(_ == Complex(69.2*Foot*Kilo(Gram), 41.6*Foot*Kilo(Gram)))

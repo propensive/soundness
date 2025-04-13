@@ -39,6 +39,7 @@ import hieroglyph.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 import scala.collection.immutable as sci

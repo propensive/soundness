@@ -34,6 +34,7 @@ package cataclysm
 
 import anticipation.*
 import gossamer.*
+import symbolism.*
 
 case class MediaRule(query: Text)(rules: CssStylesheet.Item*) extends CssStylesheet.Item:
   def text: Text = rules.map(t"  "+_.text).join(t"@media $query {\n", t"\n", t"\n}")

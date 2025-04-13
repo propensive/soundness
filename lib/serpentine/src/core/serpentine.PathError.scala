@@ -35,6 +35,7 @@ package serpentine
 import anticipation.*
 import fulminate.*
 import gossamer.*
+import symbolism.*
 import vacuous.*
 
 import scala.compiletime.*

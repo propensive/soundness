@@ -46,6 +46,7 @@ import denominative.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import symbolism.*
 
 object GarbageCollection:
   enum Collector:

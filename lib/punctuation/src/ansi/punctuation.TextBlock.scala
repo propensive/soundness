@@ -37,6 +37,7 @@ import escapade.*, escapes.*
 import fulminate.*
 import gossamer.*
 import proscenium.*
+import symbolism.*
 import vacuous.*
 
 import errorDiagnostics.stackTraces

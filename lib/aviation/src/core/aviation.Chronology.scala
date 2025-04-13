@@ -32,6 +32,8 @@
                                                                                                   */
 package aviation
 
+import symbolism.*
+
 object Chronology:
   enum AmbiguousTimes:
     case Throw, Dilate, PreferEarlier, PreferLater

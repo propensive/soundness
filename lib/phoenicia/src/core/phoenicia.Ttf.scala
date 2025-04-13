@@ -40,6 +40,7 @@ import polaris.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -71,7 +72,7 @@ case class Ttf(data: Bytes):
   def advanceWidth(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).advanceWidth
 
   def width(text: Text): Quantity[Ems[1]] raises FontError =
-    text.chars.sumBy(advanceWidth)*Em/head.unitsPerEm.int
+    text.chars.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
 
   def leftSideBearing(char: Char): Int raises FontError =
     hmtx.metrics(glyph(char).id).leftSideBearing

@@ -34,8 +34,6 @@ package rudiments
 
 import soundness.*
 
-import language.experimental.captureChecking
-
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(m"Rudiments Tests"):
@@ -336,10 +334,18 @@ object Tests extends Suite(m"Rudiments Tests"):
         Bytes()
       .assert(_.length == 0)
 
-    suite(m"Byte Size tests"):
+    suite(m"Memory tests"):
       test(m"Construct a simple Memory"):
         4.b: Memory
       .assert(_ == Memory(4))
+
+      test(m"Divide one memory by an integer"):
+        1024.b/128
+      .assert(_ == 8.b)
+
+      test(m"Divide one `Memory` by another"):
+        1024.b/128.b
+      .assert(_ == 8.0)
 
       // test(m"Construct a simple Memory in kB"):
       //   4.kb: Memory
