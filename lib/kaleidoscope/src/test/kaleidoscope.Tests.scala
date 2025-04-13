@@ -111,8 +111,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         . assert(_ == Regex(t"aa(bb){14,16}ccddee", List(Group(3, 5, 13, Nil, Between(14, 16)))))
 
         test(m"Capture character class"):
-          Regex.parse(List(t"w[aeiou]rld")).tap: result =>
-            println(result)
+          Regex.parse(List(t"w[aeiou]rld"))
 
         .assert(_ == Regex(t"w[aeiou]rld", List(Group(2, 7, 8, Nil, Exactly(1), Greedy, false, true))))
 
@@ -368,7 +367,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
         test(m"Match characters in subgroup"):
           t"favourite" match
-            case r"fav($vowels[ou]*)rite" => vowels.tap(println(_))
+            case r"fav($vowels[ou]*)rite" => vowels
 
         . assert(_ == List('o', 'u'))
 
@@ -451,7 +450,6 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
         . head
         . message
-        . tap(println)
 
       . assert(_.contains("kaleidoscope: the regular expression could not be parsed because a capturing group was not closed at 11"))
 
@@ -462,6 +460,5 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
         . head
         . message
-        . tap(println)
 
       . assert(_.contains("kaleidoscope: the regular expression could not be parsed because a capturing group was expected immediately following an extractor at 0"))

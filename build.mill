@@ -162,6 +162,16 @@ object soundness extends ScalaModule {
   }
 }
 
+object test extends ScalaModule {
+  def scalaVersion = settings.scalaVersion
+  def scalacOptions = settings.scalaOptions
+  def moduleDeps = Seq(rudiments.test, kaleidoscope.test)
+  def sources = Task.Sources {
+    Seq(PathRef(millSourcePath / ".." / "src" / "test"))
+  }
+  override def finalMainClass: Target[String] = "soundness.Tests"
+}
+
 // ------------------------ SAMPLES ------------------------
 
 object sample extends ScalaModule {
@@ -1397,7 +1407,7 @@ object zeppelin extends SoundnessModule {
     def moduleDeps = Seq(probably.cli, core)
   }
 }
-
+/*
 object tests extends BaseScalaModule {
   def moduleDeps = Seq(abacist.test, acyclicity.test, adversaria.test, ambience.test,
     anamnesis.test, anthology.test, anticipation.test, austronesian.test, aviation.test,
@@ -1420,3 +1430,4 @@ object tests extends BaseScalaModule {
     umbrageous.test, vacuous.test, vexillology.test, vicarious.test, wisteria.test, xylophone.test,
     yossarian.test, zephyrine.test, zeppelin.test)
 }
+*/
