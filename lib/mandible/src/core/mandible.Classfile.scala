@@ -120,6 +120,5 @@ class Classfile(data: Bytes):
 
       Bytecode(sourceFile, instructions)
 
-
   private lazy val model: jlc.ClassModel = jlc.ClassFile.of().nn.parse(unsafely(data.mutable)).nn
   lazy val methods: List[Method] = model.methods.nn.asScala.to(List).map(Method(_))
