@@ -141,7 +141,8 @@ object soundness extends ScalaModule {
 
   object test extends BaseScalaModule with RecursivePublishModule {
     def moduleDeps = Seq(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
-        superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm)
+        superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm,
+        mandible.core)
   }
 
   object tool extends BaseScalaModule with RecursivePublishModule {

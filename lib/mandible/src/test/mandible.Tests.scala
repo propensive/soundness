@@ -46,4 +46,6 @@ object Tests extends Suite(m"Mandible tests"):
           '{ println(t"Hello".s) }
         . teletype
 
-    .assert()
+      val rewrite =
+        Classfile[StackTrace].let(_.methods.find(_.name == t"rewrite").getOrElse(Unset)).vouch
+    . assert()

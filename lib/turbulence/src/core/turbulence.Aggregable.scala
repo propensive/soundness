@@ -45,7 +45,8 @@ object Aggregable:
   given bytesBytes: Bytes is Aggregable by Bytes = source =>
     def recur(buf: ji.ByteArrayOutputStream, source: Stream[Bytes]): Bytes =
       source.flow(buf.toByteArray().nn.immutable(using Unsafe)):
-        buf.write(head.mutable(using Unsafe)); recur(buf, tail)
+        buf.write(head.mutable(using Unsafe))
+        recur(buf, tail)
 
     recur(ji.ByteArrayOutputStream(), source)
 
