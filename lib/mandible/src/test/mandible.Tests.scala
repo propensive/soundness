@@ -40,19 +40,10 @@ import temporaryDirectories.environment
 
 object Tests extends Suite(m"Mandible tests"):
   def run(): Unit =
-    // test(m"One plus one"):
-
-    //   disassemble[Manifest](_.serialize).let: bytecode =>
-    //     Out.println(bytecode.teletype)
-
-    //   val rewrite =
-    //     Classfile[StackTrace].let(_.methods.find(_.name == t"rewrite").getOrElse(Unset)).vouch
-    // . assert()
-    //
     test(m"Compile something"):
-      Out.println(disassemble('{
-       println("Hello world")
-      }).teletype)
+      Out.println:
+        disassemble:
+          '{ println(t"Hello".s) }
+        . teletype
 
-      1
-    .assert(_ == 1)
+    .assert()

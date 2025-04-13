@@ -57,6 +57,7 @@ import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -72,7 +73,7 @@ def disassemble(using codepoint: Codepoint)(code: Quotes ?=> Expr[Any])(using Te
      (using classloader: Classloader)
 :     Bytecode =
   val uuid = Uuid()
-  val out: Path on Linux = unsafely(temporaryDirectory[Path on Linux] / Name(uuid.show))
+  val out: Path on Linux = unsafely(temporaryDirectory[Path on Linux] / Name[Linux](uuid.show))
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
   val settings: staging.Compiler.Settings =
@@ -81,8 +82,8 @@ def disassemble(using codepoint: Codepoint)(code: Quotes ?=> Expr[Any])(using Te
   given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
   unsafely:
-    val file: Path on Linux = out / Name(t"Generated$$Code$$From$$Quoted.class")
-    staging.withQuotes(code)
+    val file: Path on Linux = out / Name[Linux](t"Generated$$Code$$From$$Quoted.class")
+    staging.run(code)
     val classfile: Classfile = new Classfile(file.open(_.read[Bytes]))
     classfile.methods.find(_.name == t"apply").map(_.bytecode).get.vouch.embed(codepoint)
 
