@@ -42,6 +42,7 @@ import hieroglyph.*
 import quantitative.*
 import proscenium.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 given realm: Realm = realm"abacist"

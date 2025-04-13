@@ -43,9 +43,10 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import digression.*
+import fulminate.*
 import prepositional.*
 import proscenium.*
-import fulminate.*
+import symbolism.*
 import vacuous.*
 
 package threadModels:

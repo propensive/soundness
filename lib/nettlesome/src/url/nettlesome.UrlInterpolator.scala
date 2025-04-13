@@ -39,6 +39,7 @@ import fulminate.*
 import gossamer.*
 import proscenium.*
 import spectacular.*
+import symbolism.*
 
 import scala.quoted.*
 

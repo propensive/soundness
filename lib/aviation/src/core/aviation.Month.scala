@@ -34,6 +34,7 @@ package aviation
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 import symbolism.*
 
 object Month:
@@ -46,9 +47,11 @@ object Month:
   def unapply(value: Int): Option[Month] =
     if value < 1 || value > 12 then None else Some(fromOrdinal(value - 1))
 
-  given monthOfYear: Int is Subtractable:
+  given monthOfYear: Int is Subtractable by Month into YearMonth = new Subtractable:
+    type Self = Int
     type Result = YearMonth
     type Operand = Month
+
     def subtract(year: Int, month: Month) = new YearMonth(year, month)
 
 enum Month:

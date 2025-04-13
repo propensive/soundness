@@ -41,6 +41,7 @@ import hieroglyph.*, textMetrics.uniform
 import iridescence.*, webColors.*
 import prepositional.*
 import spectacular.*
+import symbolism.*
 
 package logFormats:
   given teleypeable: Level is Teletypeable = level =>

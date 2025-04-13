@@ -51,6 +51,7 @@ import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 import pathNavigation.posix

@@ -34,8 +34,35 @@ package symbolism
 
 import language.experimental.captureChecking
 
+import scala.annotation.*
+
+import prepositional.*
+
 extension [value: Rootable[2] as rootable](value: value)
   def sqrt: rootable.Result = rootable.root(value)
 
 extension [value: Rootable[3] as rootable](value: value)
   def cbrt: rootable.Result = rootable.root(value)
+
+extension [augend](left: augend)
+  inline infix def + [addend](right: addend)(using addable: augend is Addable by addend)
+  :     addable.Result =
+    addable.add(left, right)
+
+extension [minuend](left: minuend)
+  inline infix def - [subtrahend](right: subtrahend)
+                     (using subtractable: minuend is Subtractable by subtrahend)
+  :     subtractable.Result =
+    subtractable.subtract(left, right)
+
+extension [dividend](left: dividend)
+  inline infix def / [divisor](right: divisor)(using divisible: dividend is Divisible by divisor)
+  :     divisible.Result =
+    divisible.divide(left, right)
+
+extension [multiplicand](left: multiplicand)
+  @targetName("multiply")
+  inline infix def * [multiplier](right: multiplier)
+                     (using multiplicable: multiplicand is Multiplicable by multiplier)
+  :     multiplicable.Result =
+    multiplicable.multiply(left, right)

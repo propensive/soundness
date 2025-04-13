@@ -36,6 +36,7 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
+import symbolism.*
 
 object TextAlignment:
   object Right extends TextAlignment:

@@ -40,6 +40,7 @@ import gossamer.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 
 enum Dot:
   case Graph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)

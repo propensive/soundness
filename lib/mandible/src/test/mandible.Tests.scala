@@ -36,10 +36,15 @@ import soundness.*
 
 import classloaders.threadContext
 import stdioSources.virtualMachine.ansi
+import temporaryDirectories.environment
 
 object Tests extends Suite(m"Mandible tests"):
   def run(): Unit =
-    test(m"One plus one"):
+    test(m"Compile something"):
+      Out.println:
+        disassemble:
+          '{ println(t"Hello".s) }
+        . teletype
 
       disassemble[Manifest](_.serialize).let: bytecode =>
         Out.println(bytecode.teletype)

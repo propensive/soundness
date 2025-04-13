@@ -50,15 +50,15 @@ object Tests extends Suite(m"Quantitative Tests"):
   def run(): Unit =
     suite(m"Arithmetic tests"):
       test(m"Add two distances"):
-        Metre + Metre*2
-      .assert(_ == Metre*3)
+        Metre + Metre*2.0
+      .assert(_ == Metre*3.0)
 
       test(m"Multiply two different units"):
-        2*Second * 3*Metre
-      .assert(_ == 6*Metre*Second)
+        2.0*Second * 3.0*Metre
+      .assert(_ == 6.0*Metre*Second)
 
       test(m"Invert a quantity"):
-        (2*Metre/Second).invert
+        (2.0*Metre/Second).invert
       .assert(_ == 0.5*Second/Metre)
 
       test(m"Divide a double by a quantity"):
@@ -68,7 +68,7 @@ object Tests extends Suite(m"Quantitative Tests"):
     suite(m"Compile errors"):
       test(m"Cannot add quantities of different units"):
         demilitarize:
-          Metre + 2*Second
+          Metre + 2.0*Second
       .assert(_.nonEmpty)
 
       test(m"Cannot specify a quantity with a double value"):
@@ -90,89 +90,89 @@ object Tests extends Suite(m"Quantitative Tests"):
 
       test(m"Cannot subtract quantities of different units"):
         demilitarize:
-          Metre - 2*Second
+          Metre - 2.0*Second
         .map(_.message)
-      .assert(_.contains(t"quantitative: the left operand represents distance, but the right operand represents time; these are incompatible physical quantities"))
+      .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents time; these are incompatible physical quantities"))
 
       test(m"Add two different units"):
         demilitarize:
-          Second*2 + Metre*3
+          Second*2.0 + Metre*3.0
         .map(_.message)
       .assert(_.contains(t"quantitative: the left operand represents time, but the right operand represents distance; these are incompatible physical quantities"))
 
       test(m"Units cancel out"):
         demilitarize:
-          (20*Metre*Second)/(Metre*Second): Double
+          (20.0*Metre*Second)/(Metre*Second): Double
         .map(_.message)
       .assert(_.isEmpty)
 
       test(m"Principal units are preferred"):
         demilitarize:
-          val x = 2*Metre
-          val y = 3*Foot
+          val x = 2.0*Metre
+          val y = 3.0*Foot
           val z: Quantity[Metres[2]] = x*y
       .assert(_.isEmpty)
 
       test(m"Non-principal units are not preferred"):
         demilitarize:
-          val x = 2*Metre
-          val y = 3*Foot
+          val x = 2.0*Metre
+          val y = 3.0*Foot
           val z: Quantity[Feet[2]] = x*y
       .assert(_.nonEmpty)
 
       test(m"Units of different dimension cannot be added"):
         demilitarize:
-          2*Metre + 2*Joule
+          2.0*Metre + 2.0*Joule
         .map(_.message)
       .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents energy; these are incompatible physical quantities"))
 
       test(m"Different dimensions are incomparable"):
         demilitarize:
-          7*Metre >= 2*Kilo(Gram)
+          7.0*Metre >= 2.0*Kilo(Gram)
         .map(_.message)
       .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents mass; these are incompatible physical quantities"))
 
       test(m"Different powers of the same dimension are incomparable"):
         demilitarize:
-          7*Metre >= 2*Metre*Metre
+          7.0*Metre >= 2.0*Metre*Metre
         .map(_.message)
       .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents area; these are incompatible physical quantities"))
 
     suite(m"Automatic conversions"):
       test(m"Conversions are applied automatically to RHS in multiplication"):
-        val x = 2*Metre
-        val y = 3*Foot
+        val x = 2.0*Metre
+        val y = 3.0*Foot
         x*y
       .assert(_ == 1.8288000000000002*Metre*Metre)
 
       test(m"Conversions are applied automatically to LHS in multiplication"):
-        val x = 2*Metre
-        val y = 3*Foot
+        val x = 2.0*Metre
+        val y = 3.0*Foot
         y*x
       .assert(_ == 1.8288000000000002*Metre*Metre)
 
       test(m"Conversions are applied automatically in division"):
-        val x = 2*Metre*Metre
-        val y = 3*Foot
+        val x = 2.0*Metre*Metre
+        val y = 3.0*Foot
         x/y
       .assert(_ == 2.187226596675415*Metre)
 
       test(m"Conversions are applied automatically to LHS in division"):
-        val x = 2*Metre
-        val y = 3*Foot*Foot
+        val x = 2.0*Metre
+        val y = 3.0*Foot*Foot
         y/x
       .assert(_ == 0.13935456000000002*Metre)
 
       test(m"Mixed units of the same dimension can be added"):
-        2*Metre + 2*Foot
+        2.0*Metre + 2.0*Foot
       .assert(_ == 2.6096*Metre)
 
       test(m"Mixed units of the same dimension can be subtracted"):
-        2*Metre - 2*Foot
+        2.0*Metre - 2.0*Foot
       .assert(_ == 1.3904*Metre)
 
       test(m"Mixed units of the same type can be added (reverse order)"):
-        2*Foot + 2*Metre
+        2.0*Foot + 2.0*Metre
       .assert(_ == 2.6096*Metre)
 
 
@@ -190,12 +190,12 @@ object Tests extends Suite(m"Quantitative Tests"):
       .assert(_ == 15000000000.0*Metre)
 
       test(m"Metric kibi prefix multiplies by 2^10"):
-        10*Kibi(Metre)
-      .assert(_ == 10240*Metre)
+        10.0*Kibi(Metre)
+      .assert(_ == 10240.0*Metre)
 
       test(m"Metric mebi prefix multiplies by 2^20"):
-        10*Mebi(Metre)
-      .assert(_ == (1024*1024*10)*Metre)
+        10.0*Mebi(Metre)
+      .assert(_ == (1024*1024*10.0)*Metre)
 
       test(m"Metric milli prefix multiplies by 10^-3"):
         1.5*Milli(Metre)
@@ -228,31 +228,31 @@ object Tests extends Suite(m"Quantitative Tests"):
 
     suite(m"Inequalities"):
       test(m"6ft < 2m"):
-        6*Foot < 2*Metre
+        6.0*Foot < 2.0*Metre
       .assert(_ == true)
 
       test(m"6ft <= 2m"):
-        6*Foot < 2*Metre
+        6.0*Foot < 2.0*Metre
       .assert(_ == true)
 
       test(m"7ft > 2m"):
-        7*Foot > 2*Metre
+        7.0*Foot > 2.0*Metre
       .assert(_ == true)
 
       test(m"7ft >= 2m"):
-        7*Foot >= 2*Metre
+        7.0*Foot >= 2.0*Metre
       .assert(_ == true)
 
       test(m"9ft² < 1m²"):
-        9*Foot*Foot < Metre*Metre
+        9.0*Foot*Foot < Metre*Metre
       .assert(_ == true)
 
       test(m"10ft² < 1m²"):
-        10*Foot*Foot < Metre*Metre
+        10.0*Foot*Foot < Metre*Metre
       .assert(_ == true)
 
       test(m"11ft² > 1m²"):
-        11*Foot*Foot > Metre*Metre
+        11.0*Foot*Foot > Metre*Metre
       .assert(_ == true)
 
     suite(m"Rendering tests"):
@@ -285,11 +285,11 @@ object Tests extends Suite(m"Quantitative Tests"):
       .assert(_ == t"6.63×10¯³⁴ m²·kg·s¯¹")
 
       test(m"Show an energy using custom units"):
-        (45*Joule).show
+        (45.0*Joule).show
       .assert(_ == t"45.0 J")
 
       test(m"Show a force in Newtons"):
-        (100*Newton).show
+        (100.0*Newton).show
       .assert(_ == t"100 N")
 
     suite(m"Quantity descriptions"):
@@ -307,7 +307,7 @@ object Tests extends Suite(m"Quantitative Tests"):
 
     suite(m"Quantifiability tests"):
       case class Pts(value: Double)
-      given Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72
+      given Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
 
       test(m"quantify a distance"):
         Pts(71).quantify < Inch
@@ -319,11 +319,11 @@ object Tests extends Suite(m"Quantitative Tests"):
 
     suite(m"Offset quantities"):
       test(m"Get Celsius value"):
-        (300*Kelvin).in[Celsius].show
+        (300.0*Kelvin).in[Celsius].show
       .assert(_ == t"26.9 °C")
 
       test(m"Get Fahrenheit value"):
-        (300*Kelvin).in[Fahrenheit].show
+        (300.0*Kelvin).in[Fahrenheit].show
       .assert(_ == t"80.3 °F")
 
       test(m"Create Celsius value"):
@@ -356,18 +356,18 @@ object Tests extends Suite(m"Quantitative Tests"):
 
     suite(m"Aggregation tests"):
       test(m"Total some values"):
-        List(1*Second, 2*Second, 3*Second).total
-      . assert(_ == 6*Second)
+        List(1.0*Second, 2.0*Second, 3.0*Second).total
+      . assert(_ == 6.0*Second)
 
       test(m"Average some values"):
-        List(1*Second, 2*Second, 3*Second).mean
-      . assert(_ == 2*Second)
+        List(1.0*Second, 2.0*Second, 3.0*Second).mean
+      . assert(_ == 2.0*Second)
 
       test(m"Variance of some values"):
-        List(1*Second, 2*Second, 3*Second).variance
+        List(1.0*Second, 2.0*Second, 3.0*Second).variance
       . assert(_ == (2.0/3.0)*Second*Second)
 
       test(m"Standard deviation of some values"):
         summon[Quantity[Seconds[2]] is Rootable[2]]
-        List(1*Second, 2*Second, 3*Second).standardDeviation
+        List(1.0*Second, 2.0*Second, 3.0*Second).standardDeviation
       . assert(_ == (2.0/3.0).sqrt*Second)

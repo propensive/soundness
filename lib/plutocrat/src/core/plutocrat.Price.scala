@@ -36,6 +36,15 @@ import prepositional.*
 import proscenium.*
 import symbolism.*
 
+object Price:
+  given [currency <: Currency & Singleton: ValueOf, price <: Price[currency]] => price is Divisible:
+    type Self = price
+    type Operand = Double
+    type Result = Price[currency]
+
+    def divide(left: price, right: Double): Price[currency] =
+      Price(left.principal/right, left.tax/right)
+
 case class Price[currency <: Currency & Singleton: ValueOf]
    (principal: Money[currency], tax: Money[currency]):
 
@@ -51,8 +60,5 @@ case class Price[currency <: Currency & Singleton: ValueOf]
 
   @targetName("negate")
   def `unary_-`: Price[currency] = Price(-principal, -tax)
-
-  @targetName("divide")
-  infix def / (right: Double): Price[currency] = Price(principal/right, tax/right)
 
   def inclusive: Money[currency] = principal + tax

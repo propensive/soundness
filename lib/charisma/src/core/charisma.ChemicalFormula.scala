@@ -37,6 +37,7 @@ import gossamer.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 
 object ChemicalFormula:
   def apply(molecule: Molecule): ChemicalFormula = ChemicalFormula(ListMap(molecule -> 1))

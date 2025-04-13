@@ -42,6 +42,7 @@ import hieroglyph.*
 import iridescence.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 enum Juxtaposition:

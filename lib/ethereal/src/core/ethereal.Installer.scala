@@ -48,6 +48,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -88,6 +89,8 @@ object Installer:
 
     . within:
         val paths: List[Path on Linux] = Environment.path
+
+        summon[Linux is Navigable]
 
         val preferences: List[Path on Linux] = List
          (Xdg.bin[Path on Linux],

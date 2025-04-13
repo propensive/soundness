@@ -61,7 +61,7 @@ import columnAttenuation.ignore
 import jlc.attribute.UnknownAttribute
 
 object Classfile:
-  given Classfile is Aggregable by Bytes = stream => new Classfile(stream.read[Bytes])
+  given aggregable: Classfile is Aggregable by Bytes = stream => new Classfile(stream.read[Bytes])
 
   def apply(name: Text)(using classloader: Classloader): Optional[Classfile] =
     classloader(name).let(new Classfile(_))
@@ -118,8 +118,7 @@ class Classfile(data: Bytes):
 
       val instructions = recur(code.elementList.nn.asScala.to(List), Unset, Nil, Nil, 0)
 
-      Bytecode(sourceFile, instructions*)
-
+      Bytecode(sourceFile, instructions)
 
   private lazy val model: jlc.ClassModel = jlc.ClassFile.of().nn.parse(unsafely(data.mutable)).nn
   lazy val methods: List[Method] = model.methods.nn.asScala.to(List).map(Method(_))

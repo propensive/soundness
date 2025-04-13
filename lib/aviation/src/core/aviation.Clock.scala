@@ -32,6 +32,8 @@
                                                                                                   */
 package aviation
 
+import symbolism.*
+
 abstract class Clock():
   def apply(): Instant
 

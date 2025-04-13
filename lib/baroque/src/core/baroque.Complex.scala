@@ -39,15 +39,11 @@ import quantitative.*
 import spectacular.*
 import symbolism.*
 
-import scala.annotation.*
+import scala.annotation.{into as _, *}
 
 object Complex:
-  given show: [component: Showable] => Complex[component] is Showable = complex =>
-   t"${complex.real.show} + ${complex.imaginary.show}𝒾"
-
-  inline given quantity: [units <: Measure] => Decimalizer => Complex[Quantity[units]] is Showable:
-    def text(value: Complex[Quantity[units]]): Text =
-      t"${value.real.value} + ${value.imaginary.value}𝒾 ${Quantity.expressUnits(value.real.units)}"
+  given showable: [component: Showable] => Complex[component] is Showable = complex =>
+    t"${complex.real.show} + ${complex.imaginary.show}𝒾"
 
   inline given addable: [component: Addable by component as addable]
                =>  Complex[component] is Addable by Complex[component] =
@@ -61,7 +57,7 @@ object Complex:
       (left, right) =>
         Complex[subtractable.Result](left.real - right.real, left.imaginary - right.imaginary)
 
-  inline given multiplicable: [component]
+  inline given multiplicable: [component, multiplicand <: Complex[component]]
         => (multiplication: component is Multiplicable by component,
             addition:       multiplication.Result is Addable by multiplication.Result,
             subtraction:    multiplication.Result is Subtractable by multiplication.Result)
@@ -73,6 +69,29 @@ object Complex:
         Complex
          (left.real*right.real - left.imaginary*right.imaginary,
           left.real*right.imaginary + left.imaginary*right.real)
+
+
+  given divisible: [component,
+                    dividend <: Complex[component],
+                    component2,
+                    divisor <: Complex[component2]]
+        => (multiplication:  component is Multiplicable by component2,
+            multiplication2: component2 is Multiplicable by component2,
+            negatable:       component is Negatable into component,
+            addition:        multiplication.Result is Addable by multiplication.Result,
+            addition2:       multiplication2.Result is Addable by multiplication2.Result,
+            divisible:       addition.Result is Divisible by addition2.Result)
+        => dividend is Divisible:
+      type Self = dividend
+      type Operand = divisor
+      type Result = Complex[divisible.Result]
+
+      def divide(left: dividend, right: divisor): Complex[divisible.Result] =
+        val denominator: addition2.Result = right.real*right.real + right.imaginary*right.imaginary
+        Complex
+         ((left.real*right.real + left.imaginary*right.imaginary)/denominator,
+          (left.imaginary*right.real + (-left.real)*right.imaginary)/denominator)
+
 
   def polar[component: Multiplicable by Double as multiplication]
      (modulus: component, argument: Double)
@@ -101,22 +120,6 @@ case class Complex[component](real: component, imaginary: component):
 
     Complex
      (real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real)
-
-  @targetName("div")
-  inline infix def / [component2](right: Complex[component2])
-     (using multiplication:  component is Multiplicable by component2,
-            multiplication2: component2 is Multiplicable by component2,
-            addition:     multiplication.Result is Addable by multiplication.Result,
-            addition2:      multiplication2.Result is Addable by multiplication2.Result,
-            subtraction:    multiplication.Result is Subtractable by multiplication.Result,
-            divisible:      subtraction.Result | addition.Result is Divisible by addition2.Result)
-  :     Complex[divisible.Result] =
-
-    val divisor = right.real*right.real + right.imaginary*right.imaginary
-
-    Complex
-     ((real*right.real + imaginary*right.imaginary)/divisor,
-      (imaginary*right.real - real*right.imaginary)/divisor)
 
   inline def argument
      (using multiplication: component is Multiplicable by component,

@@ -67,7 +67,7 @@ object Timespan:
       case StandardTime.Minute => new Timespan(0, 0, 0, 0, n, 0)
       case StandardTime.Second => new Timespan(0, 0, 0, 0, 0, n)
 
-  given plus: Chronology[StandardTime] => Timespan is Addable:
+  given addable: Chronology[StandardTime] => Timespan is Addable:
     type Result = Timespan
     type Operand = Timespan
     def add(left: Timespan, right: Timespan): Timespan =
@@ -79,7 +79,7 @@ object Timespan:
         left.minutes + right.minutes,
         left.seconds + right.seconds)
 
-  given minus: Chronology[StandardTime] => Timespan is Subtractable:
+  given subtractable: Chronology[StandardTime] => Timespan is Subtractable:
     type Result = Timespan
     type Operand = Timespan
 
@@ -92,15 +92,18 @@ object Timespan:
         left.minutes - right.minutes,
         left.seconds - right.seconds)
 
+  given multiplicable: Chronology[StandardTime] => Timespan is Multiplicable:
+    type Operand = Int
+    type Result = Timespan
+
+    def multiply(left: Timespan, right: Int): Timespan =
+      Timespan
+       (left.years*right,
+        left.months*right,
+        left.days*right,
+        left.hours*right,
+        left.minutes*right,
+        left.seconds*right)
+
 case class Timespan(years: Int, months: Int, days: Int, hours: Int, minutes: Int, seconds: Int):
   def simplify(using chronology: Chronology[StandardTime]): Timespan = chronology.simplify(this)
-
-  @targetName("times")
-  infix def * (n: Int): Timespan =
-    Timespan(years*n, months*n, days*n, hours*n, minutes*n, seconds*n)
-
-  @targetName("plus")
-  infix def + (right: Timespan): Timespan = Timespan.plus.add(this, right)
-
-  @targetName("minus")
-  infix def - (right: Timespan): Timespan = Timespan.minus.subtract(this, right)
