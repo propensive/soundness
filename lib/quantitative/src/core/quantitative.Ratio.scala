@@ -32,6 +32,4 @@
                                                                                                   */
 package quantitative
 
-import language.experimental.captureChecking
-
 erased trait Ratio[units <: Measure, ratio <: Double & Singleton]

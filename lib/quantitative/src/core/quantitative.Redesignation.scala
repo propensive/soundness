@@ -36,7 +36,6 @@ import anticipation.*
 import gossamer.*
 
 import language.implicitConversions
-import language.experimental.captureChecking
 
 trait Redesignation[units <: Measure](val name: Text)
 

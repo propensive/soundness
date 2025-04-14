@@ -32,7 +32,6 @@
                                                                                                   */
 package quantitative
 
-import language.experimental.captureChecking
 import language.implicitConversions
 
 import proscenium.*

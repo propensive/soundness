@@ -32,6 +32,4 @@
                                                                                                   */
 package quantitative
 
-import language.experimental.captureChecking
-
 trait Measure

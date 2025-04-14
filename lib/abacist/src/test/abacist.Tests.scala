@@ -32,6 +32,7 @@
                                                                                                   */
 package abacist
 
+import anticipation.*
 import fulminate.*
 import gossamer.{t, Decimalizer}
 import larceny.*
@@ -76,7 +77,7 @@ object Tests extends Suite(m"Quantitative Tests"):
       .assert(_.nonEmpty)
 
       test(m"Convert a length to a Count"):
-        val length: Quantity[Metres[1]] = (5*Foot + 10*Inch)
+        val length: Quantity[Metres[1]] = (5.9*Foot + 10.0*Inch)
         val count = length.count[Height]
         (count[Feet], count[Inches])
       .assert(_ == (5, 10))
@@ -84,7 +85,7 @@ object Tests extends Suite(m"Quantitative Tests"):
       type Weight = (Stones[1], Pounds[1], Ounces[1])
 
       test(m"Convert a mass Quantity to a Count"):
-        val weight: Quantity[Kilograms[1]] = 20*Kilo(Gram)
+        val weight: Quantity[Kilograms[1]] = 20.0*Kilo(Gram)
         val count = weight.count[Weight]
         (count[Stones], count[Pounds], count[Ounces])
       .assert(_ == (3, 2, 1))

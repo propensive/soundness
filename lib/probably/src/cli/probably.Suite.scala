@@ -47,15 +47,20 @@ import language.adhocExtensions
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
   val suiteIo = safely(stdioSources.virtualMachine.ansi).vouch
 
-  given runner: Runner[Report] =
+  var runner0: Runner[Report] =
     given stdio: Stdio = suiteIo
     try Runner() catch case err: EnvironmentError =>
       println(StackTrace(err).teletype.render)
       ???
 
+  given runner: Runner[Report] = runner0
   given testable: Testable = this
 
   def run(): Unit
+
+  def apply()(using runner: Runner[Report]): Unit =
+    runner0 = runner
+    runner.suite(this, run())
 
   final def main(args: IArray[Text]): Unit =
     try runner.suite(this, run())
