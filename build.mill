@@ -40,8 +40,10 @@ trait BaseScalaModule extends ScalaModule {
   def consoleScalacOptions = scalacOptions()
 
   def publishVersion = T {
-    val lastTagged = os.proc("git", "rev-list", "--tags", "--max-count", "1").call().out.text().trim
-    os.proc("git", "describe", "--tags", lastTagged).call().out.text().trim
+    try {
+      val lastTagged = os.proc("git", "rev-list", "--tags", "--max-count", "1").call().out.text().trim
+      os.proc("git", "describe", "--tags", lastTagged).call().out.text().trim
+    } catch { case error: Exception => "unknown" }
   }
 
   def artifactSuffix = T("")
