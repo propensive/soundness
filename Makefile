@@ -12,4 +12,7 @@ build:
 dev:
 	mill -w soundness.all
 
-.PHONY: publishLocal build dev
+ci:
+	java -cp out/test/assembly.dest/out.jar soundness.Tests
+
+.PHONY: publishLocal build dev ci test

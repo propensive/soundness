@@ -38,5 +38,5 @@ export cataclysm
     From, Import, Inherit, Initial, Keyframe, Keyframes, Length, MediaRule, MixBlendMode, Overflow,
     PointerEvents, Position, PropertyDef, PropertyValue, Selectable, Selector, ShowProperty,
     TextAlign, TextDecorationLine, TextDecorationStyle, To, Transparent, UserSelect, VerticalAlign,
-    select, >>, ~, ||, &&, ~~, max, min, px, pt, inches, pc, cm, mm, em, ex, ch, rem, vw, vh, vmin,
-    vmax }
+    select, >>, ||, &&, ~~, max, min, px, pt, inches, pc, cm, mm, em, ex, ch, rem, vw, vh, vmin,
+    vmax/*, ~*/}

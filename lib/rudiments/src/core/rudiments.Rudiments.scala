@@ -63,7 +63,8 @@ object Rudiments:
   object Memory:
     def apply(long: Long): Memory = long
     given ordering: Ordering[Memory] = Ordering.Long.on(_.long)
-    given zeroic: Memory is Zeroic = () => 0L
+    given zeroic: Memory is Zeroic:
+      inline def zero: Memory = 0L
 
     given communicable: [memory <: Memory] => memory is Communicable =
       memory => Message(memory.text)

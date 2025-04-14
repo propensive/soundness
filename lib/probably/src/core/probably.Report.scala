@@ -73,6 +73,14 @@ object Report:
   given detail: Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
 
 class Report(using Environment):
+  private val githubCi: Boolean = safely(Environment.githubActions[Text]).present
+
+  val metrics = textMetrics.eastAsianScripts
+  given measurable: Char is Measurable:
+    def width(char: Char): Int = char match
+      case '✓' | '✗' | '⎇' => 1
+      case _                => metrics.width(char)
+
   var failure: Optional[(Throwable, Set[TestId])] = Unset
   var pass: Boolean = false
 
@@ -151,6 +159,8 @@ class Report(using Environment):
 
   enum Status:
     case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench
+    
+    val nbsp = '\u00a0'
 
     def color: Rgb24 = this match
       case Pass        => rgb"#8abd00"
@@ -162,13 +172,13 @@ class Report(using Environment):
       case Bench       => CadetBlue
 
     def symbol: Teletype = this match
-      case Pass        => e"${Bg(color)}( $Bold($Black(✓)) )"
-      case Fail        => e"${Bg(color)}( $Bold($Black(✗)) )"
-      case Throws      => e"${Bg(color)}( $Bold($Black(!)) )"
-      case CheckThrows => e"${Bg(color)}( $Bold($Black(‼)) )"
-      case Mixed       => e"${Bg(color)}( $Bold($Black(?)) )"
+      case Pass        => e"${Bg(color)}($nbsp$Bold($Black(✓))$nbsp)"
+      case Fail        => e"${Bg(color)}($nbsp$Bold($Black(✗))$nbsp)"
+      case Throws      => e"${Bg(color)}($nbsp$Bold($Black(!))$nbsp)"
+      case CheckThrows => e"${Bg(color)}($nbsp$Bold($Black(‼))$nbsp)"
+      case Mixed       => e"${Bg(color)}($nbsp$Bold($Black(?))$nbsp)"
       case Suite       => e"   "
-      case Bench       => e"${Bg(color)}( $Bold($Black(*)) )"
+      case Bench       => e"${Bg(color)}($nbsp$Bold($Black(*))$nbsp)"
 
     def describe: Teletype = this match
       case Pass        => e"Pass"
@@ -192,7 +202,6 @@ class Report(using Environment):
     case unit :: rest =>
       if n > 100000L then showTime(n/1000L, rest) else
         val sig = (n/1000L).show
-        import textMetrics.uniform
         val frac = (n%1000).show.pad(3, Rtl, '0')
         e"$Silver(${sig}.$frac) ${unit}"
 
@@ -212,12 +221,6 @@ class Report(using Environment):
     def iterations: Teletype = if count == 0 then e"" else count.teletype
 
   def complete(coverage: Option[Coverage])(using Stdio): Unit =
-    val metrics = textMetrics.eastAsianScripts
-    given measurable: Char is Measurable:
-      def width(char: Char): Int = char match
-        case '✓' | '✗' | '⎇' => 1
-        case _                => metrics.width(char)
-
     val table =
       val showStats = !lines.summaries.all(_.count < 2)
       val timeTitle = if showStats then t"Avg" else t"Time"

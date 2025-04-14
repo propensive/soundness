@@ -52,7 +52,8 @@ object Anticipation:
 
     extension (text: Text) inline def s: String = text
 
-    given zeroic: Text is Zeroic = () => "".tt
+    given zeroic: Text is Zeroic:
+      inline def zero: Text = "".tt
 
     given concatenable: [text <: Text] => text is Concatenable:
       type Self = text

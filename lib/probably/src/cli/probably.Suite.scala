@@ -40,7 +40,7 @@ import contingency.*
 import digression.*
 import escapade.*
 import fulminate.*
-import hieroglyph.*, textMetrics.uniform
+import hieroglyph.*
 import turbulence.*
 import vacuous.*
 

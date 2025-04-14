@@ -141,6 +141,6 @@ case class GarbageCollection
              collector: GarbageCollection.Collector,
              cause:     GarbageCollection.Cause,
              memory:    Map[Text, (before: Memory, after: Memory)]):
-  def before: Memory = memory.to(List).map(_(1).before).total
-  def after: Memory = memory.to(List).map(_(1).after).total
+  def before: Memory = memory.to(List).map(_(1)(0)).total
+  def after: Memory = memory.to(List).map(_(1)(1)).total
   def reduction: Memory = before - after
