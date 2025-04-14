@@ -169,6 +169,7 @@ object test extends ScalaModule {
   def scalacOptions = settings.scalaOptions
   def moduleDeps = Seq(
     abacist.test,
+    adversaria.test,
     gossamer.test,
     kaleidoscope.test,
     rudiments.test,
