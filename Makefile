@@ -15,4 +15,4 @@ dev:
 ci:
 	java -cp out/test/assembly.dest/out.jar soundness.Tests
 
-.PHONY: publishLocal build dev
+.PHONY: publishLocal build dev ci test
