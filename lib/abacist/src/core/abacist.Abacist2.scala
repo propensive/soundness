@@ -47,7 +47,7 @@ object Abacist2:
   object Count:
     erased given underlying: [units <: Tuple] => Underlying[Count[units], Long] = !!
     given zeroic: [units <: Tuple] => Count[units] is Zeroic:
-      inline def zero(): Count[units] = 0L
+      inline def zero: Count[units] = 0L
 
     given typeable: [units <: Tuple] => Typeable[Count[units]]:
       def unapply(count: Any): Option[count.type & Count[units]] = count.asMatchable match

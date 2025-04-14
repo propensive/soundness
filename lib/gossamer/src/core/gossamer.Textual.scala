@@ -46,6 +46,7 @@ trait Textual extends Concatenable, Countable, Segmentable, Zeroic:
   type Self
   type Operand = Self
   type Show[value]
+
   def show[value](value: value)(using show: Show[value]): Self
   def apply(text: Text): Self
   def classTag: ClassTag[Self]
@@ -58,7 +59,7 @@ trait Textual extends Concatenable, Countable, Segmentable, Zeroic:
   def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
   def builder(size: Optional[Int] = Unset): Builder[Self]
   def segment(text: Self, interval: Interval): Self
-  inline def zero(): Self = empty
+  inline def zero: Self = empty
 
 object Textual:
   def apply[textual: Textual](text: Text): textual = textual(text)
