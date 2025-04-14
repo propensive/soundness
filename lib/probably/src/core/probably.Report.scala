@@ -73,6 +73,14 @@ object Report:
   given detail: Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
 
 class Report(using Environment):
+  private val githubCi: Boolean = safely(Environment.githubActions[Text]).present
+
+  val metrics = textMetrics.eastAsianScripts
+  given measurable: Char is Measurable:
+    def width(char: Char): Int = char match
+      case '✓' | '✗' | '⎇' => 1
+      case _                => metrics.width(char)
+
   var failure: Optional[(Throwable, Set[TestId])] = Unset
   var pass: Boolean = false
 
@@ -192,7 +200,6 @@ class Report(using Environment):
     case unit :: rest =>
       if n > 100000L then showTime(n/1000L, rest) else
         val sig = (n/1000L).show
-        import textMetrics.uniform
         val frac = (n%1000).show.pad(3, Rtl, '0')
         e"$Silver(${sig}.$frac) ${unit}"
 
@@ -212,12 +219,6 @@ class Report(using Environment):
     def iterations: Teletype = if count == 0 then e"" else count.teletype
 
   def complete(coverage: Option[Coverage])(using Stdio): Unit =
-    val metrics = textMetrics.eastAsianScripts
-    given measurable: Char is Measurable:
-      def width(char: Char): Int = char match
-        case '✓' | '✗' | '⎇' => 1
-        case _                => metrics.width(char)
-
     val table =
       val showStats = !lines.summaries.all(_.count < 2)
       val timeTitle = if showStats then t"Avg" else t"Time"
