@@ -74,6 +74,7 @@ object Report:
 
 class Report(using Environment):
   var failure: Optional[(Throwable, Set[TestId])] = Unset
+  var pass: Boolean = false
 
   class TestsMap():
     private var tests: ListMap[TestId, ReportLine] = ListMap()
@@ -329,15 +330,16 @@ class Report(using Environment):
       val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
       val total: Int = totals.values.sum
       val failed: Int = total - passed
+      if total == passed then pass = true
       Out.println(e"${escapes.Reset}")
       Out.println(e"$Bold($Underline(Test results))")
 
       table.tabulate(summaryLines).grid(columns).render.each(Out.println(_))
       given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
-      val pass = e"$Bold($White($passed)) passed (${100.0*passed/total}%)"
-      val fail = e"$Bold($White($failed)) failed (${100.0*failed/total}%)"
-      val all = e"$Bold($White(${passed + failed})) total"
-      Out.println(e" $pass, $fail, $all")
+      val passText = e"$Bold($White($passed)) passed (${100.0*passed/total}%)"
+      val failText = e"$Bold($White($failed)) failed (${100.0*failed/total}%)"
+      val allText = e"$Bold($White(${passed + failed})) total"
+      Out.println(e" $passText, $failText, $allText")
       Out.println(t"─"*72)
 
       import Status.*
@@ -349,6 +351,9 @@ class Report(using Environment):
           . join(e" ")
 
       Out.println(t"─"*72)
+
+    else
+      Out.println(e"$Italic(No tests were run.)")
 
     def benches(line: ReportLine): Iterable[ReportLine.Bench] =
       line match

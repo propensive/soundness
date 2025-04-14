@@ -43,10 +43,10 @@ class Runner[report]()(using reporter: Reporter[report]):
   def skip(id: TestId): Boolean = false
   val report: report = reporter.make()
 
-  def maybeRun[T, S](test: Test[T]): Optional[Trial[T]] =
-    if skip(test.id) then Unset else run[T, S](test)
+  def maybeRun[result](test: Test[result]): Optional[Trial[result]] =
+    if skip(test.id) then Unset else run[result](test)
 
-  def run[T, S](test: Test[T]): Trial[T] =
+  def run[result](test: Test[result]): Trial[result] =
     synchronized { active += test.id }
     val ctx = Harness()
     Runner.harnessThreadLocal.set(Some(ctx))
@@ -54,7 +54,7 @@ class Runner[report]()(using reporter: Reporter[report]):
 
     try
       val ns0: Long = System.nanoTime
-      val result: T = test.action(ctx)
+      val result: result = test.action(ctx)
       val ns: Long = System.nanoTime - ns0
       Trial.Returns(result, ns, ctx.captured.to(Map)).also:
         synchronized { active -= test.id }
