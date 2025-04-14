@@ -45,7 +45,7 @@ import symbolism.*
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
-object Tests extends Suite(m"Quantitative Tests"):
+object Tests extends Suite(m"Abacist Tests"):
   def run(): Unit =
     suite(m"Count tests"):
       type Height = (Feet[1], Inches[1])

@@ -170,10 +170,33 @@ object test extends ScalaModule {
   def moduleDeps = Seq(
     abacist.test,
     adversaria.test,
+    anamnesis.test,
+    austronesian.test,
+    aviation.test,
+    caesura.test,
+    camouflage.test,
+    capricious.test,
+    cardinality.test,
+    contingency.test,
+    digression.test,
+    dissonance.test,
+    distillate.test,
+    geodesy.test,
+    gesticulate.test,
     gossamer.test,
+    inimitable.test,
+    jacinta.test,
     kaleidoscope.test,
+    metamorphose.test,
+    nettlesome.test,
+    nomenclature.test,
+    panopticon.test,
     rudiments.test,
-    turbulence.test
+    spectacular.test,
+    turbulence.test,
+    typonym.test,
+    vexillology.test,
+    zephyrine.test
   )
 
   def sources = Task.Sources {
