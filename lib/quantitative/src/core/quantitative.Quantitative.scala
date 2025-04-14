@@ -44,7 +44,6 @@ import symbolism.*
 import scala.quoted.*
 
 import language.implicitConversions
-import language.experimental.captureChecking
 
 object Quantitative extends Quantitative2:
   opaque type Quantity[units <: Measure] = Double
@@ -81,9 +80,12 @@ object Quantitative extends Quantitative2:
     given specificDuration: Quantity[Seconds[1]] is SpecificDuration =
       long => Quantity(long/1000.0)
 
-    transparent inline given addable: [left <: Measure, right <: Measure]
-                             =>  Quantity[left] is Addable by Quantity[right] =
-      ${Quantitative.addTypeclass[left, right]}
+    transparent inline given addable: [left <: Measure,
+                                       quantity <: Quantity[left],
+                                       right <: Measure,
+                                       quantity2 <: Quantity[right]]
+                             =>  quantity is Addable by quantity2 =
+      ${Quantitative.addTypeclass[left, quantity, right, quantity2]}
 
     transparent inline given subtractable: [left <: Measure, right <: Measure]
                              =>  Quantity[left] is Subtractable by Quantity[right] =

@@ -32,8 +32,6 @@
                                                                                                   */
 package quantitative
 
-import language.experimental.captureChecking
-
 trait Dimension
 
 erased trait Distance extends Dimension

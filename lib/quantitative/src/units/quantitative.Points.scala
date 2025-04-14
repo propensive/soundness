@@ -32,8 +32,6 @@
                                                                                                   */
 package quantitative
 
-import language.experimental.captureChecking
-
 import anticipation.*
 import proscenium.*
 import rudiments.*

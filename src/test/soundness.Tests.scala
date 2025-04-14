@@ -30,17 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package soundness
 
-import proscenium.*
-
-trait Principal[dimension <: Dimension, unit[_ <: Nat] <: Measure]()
-
-object Principal:
-  given distance: Principal[Distance, Metres]()
-  given mass: Principal[Mass, Kilograms]()
-  given time: Principal[Time, Seconds]()
-  given current: Principal[Current, Amperes]()
-  given luminosity: Principal[Luminosity, Candelas]()
-  given temperature: Principal[Temperature, Kelvins]()
-  given amountOfSubstance: Principal[AmountOfSubstance, Moles]()
+object Tests extends Suite(m"Soundness tests"):
+  def run(): Unit =
+    abacist.Tests()
+    kaleidoscope.Tests()
+    rudiments.Tests()
+    turbulence.Tests()

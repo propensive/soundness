@@ -92,11 +92,11 @@ object Abacist:
           expr
 
         case (slice@Multiplier(unitPower, subdivision, max)) :: tail =>
-          val power = if unitPower.power == 1 then "".tt else
+          val power: Text = if unitPower.power == 1 then "".tt else
             unitPower.power.toString.tt.mapChars(_.superscript.or(' '))
 
           val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
-          recur(tail, '{$expr.updated(${unitPower.ref.designation}+${Expr(power)}, $value)})
+          recur(tail, '{$expr.updated(${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value)})
 
     recur(multipliers[CountUnits], '{ListMap()})
 
