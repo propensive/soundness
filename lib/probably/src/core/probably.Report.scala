@@ -73,7 +73,7 @@ object Report:
   given detail: Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
 
 class Report(using Environment):
-  private val githubCi: Boolean = safely(Environment.githubActions[Text]).present
+  private val ci: Boolean = safely(Environment.githubActions[Text]).present
 
   val metrics = textMetrics.eastAsianScripts
   given measurable: Char is Measurable:
@@ -170,10 +170,10 @@ class Report(using Environment):
       case Bench       => CadetBlue
 
     def symbol: Teletype = this match
-      case Pass        => e"${Bg(color)}( $Bold($Black(✓)) )"
-      case Fail        => e"${Bg(color)}( $Bold($Black(✗)) )"
+      case Pass        => e"${Bg(color)}( $Bold($Black(${if ci then t"OK" else t"✓"})) )"
+      case Fail        => e"${Bg(color)}( $Bold($Black(${if ci then t"XX" else t"✗"})) )"
       case Throws      => e"${Bg(color)}( $Bold($Black(!)) )"
-      case CheckThrows => e"${Bg(color)}( $Bold($Black(‼)) )"
+      case CheckThrows => e"${Bg(color)}( $Bold($Black(${if ci then t"!!" else t"‼"})) )"
       case Mixed       => e"${Bg(color)}( $Bold($Black(?)) )"
       case Suite       => e"   "
       case Bench       => e"${Bg(color)}( $Bold($Black(*)) )"
