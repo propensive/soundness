@@ -124,7 +124,7 @@ extension [element](stream: Stream[element])
 
     async(recur(stream, jl.System.currentTimeMillis)).await()
 
-  def multiplexWith(that: Stream[element])(using Monitor): Stream[element] =
+  def multiplex(that: Stream[element])(using Monitor): Stream[element] =
     unsafely(Stream.multiplex(stream, that))
 
   def regulate(tap: Tap)(using Monitor): Stream[element] =
@@ -156,7 +156,7 @@ extension [element](stream: Stream[element])
           if active then other.nn #:: defer(true, stream.tail, Nil)
           else recur(false, stream.tail, other.nn :: buffer)
 
-    Stream.defer(recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil))
+    Stream.defer(recur(true, stream.map(Some(_)).multiplex(tap.stream), Nil))
 
   def cluster[duration: GenericDuration](duration: duration, maxSize: Optional[Int] = Unset)
      (using Monitor)
@@ -210,25 +210,23 @@ package lineSeparation:
 
 extension (obj: Stream.type)
   def multiplex[element](streams: Stream[element]*)(using Monitor): Stream[element] =
-
     multiplexer(streams*).stream
 
   def multiplexer[element](streams: Stream[element]*)(using Monitor): Multiplexer[Any, element] =
-
-    val multiplexer = Multiplexer[Any, element]()
-    streams.zipWithIndex.map(_.swap).each(multiplexer.add)
-    multiplexer
+    Multiplexer[Any, element]().tap: multiplexer =>
+      streams.zipWithIndex.each: (stream, index) =>
+        multiplexer.add(index, stream)
 
   def defer[element](stream: => Stream[element]): Stream[element] =
     (null.asInstanceOf[element] #:: stream).tail
 
-  def pulsar[generic: GenericDuration](duration: generic)(using Monitor): Stream[Unit] =
+  def metronome[generic: GenericDuration](duration: generic)(using Monitor): Stream[Unit] =
     val startTime: Long = jl.System.currentTimeMillis
 
     def recur(iteration: Int): Stream[Unit] =
       try
         snooze(startTime + generic.milliseconds(duration)*iteration)
-        () #:: pulsar(duration)
+        () #:: metronome(duration)
       catch case err: AsyncError => Stream()
 
     recur(0)

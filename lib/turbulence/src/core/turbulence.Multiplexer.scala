@@ -41,16 +41,12 @@ import parasite.*, asyncTermination.await
 import proscenium.*
 import rudiments.*
 
-object Multiplexer:
-  private object Termination
-
 case class Multiplexer[key, element]()(using Monitor):
-  private val tasks: TrieMap[key, Task[Unit]] = TrieMap()
+  private case class Removal(key: key)
+  private val active: TrieMap[key, Task[Unit]] = TrieMap()
+  private val queue: juc.LinkedBlockingQueue[element | Removal] = juc.LinkedBlockingQueue()
 
-  private val queue: juc.LinkedBlockingQueue[element | Multiplexer.Termination.type] =
-    juc.LinkedBlockingQueue()
-
-  def close(): Unit = tasks.keys.each(remove(_))
+  def close(): Unit = active.keys.each(remove(_))
 
   @tailrec
   private def pump(key: key, stream: Stream[element])(using Worker): Unit =
@@ -59,12 +55,13 @@ case class Multiplexer[key, element]()(using Monitor):
       queue.put(stream.head)
       pump(key, stream.tail)
 
-  def add(key: key, stream: Stream[element]): Unit = tasks(key) = async(pump(key, stream))
+  def add(key: key, stream: Stream[element]): Unit = active(key) = async(pump(key, stream))
+  private def remove(key: key): Unit = if !active.isEmpty then queue.put(Removal(key))
 
-  private def remove(key: key): Unit = synchronized:
-    tasks -= key
-    if tasks.isEmpty then queue.put(Multiplexer.Termination)
+  def stream: Stream[element] = queue.take().nn match
+    case Removal(key) =>
+      active -= key
+      if active.isEmpty then Stream() else stream
 
-  def stream: Stream[element] =
-    Stream.continually(queue.take().nn).takeWhile(_ != Multiplexer.Termination)
-    . asInstanceOf[Stream[element]]
+    case value: `element` =>
+      value #:: stream
