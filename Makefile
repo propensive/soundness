@@ -12,4 +12,8 @@ build:
 dev:
 	mill -w soundness.all
 
+ci:
+	./mill test.assembly
+	java -cp out/test/assembly.dest/out.jar soundness.Tests
+
 .PHONY: publishLocal build dev
