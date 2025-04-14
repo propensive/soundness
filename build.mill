@@ -168,6 +168,7 @@ object test extends ScalaModule {
   def scalaVersion = settings.scalaVersion
   def scalacOptions = settings.scalaOptions
   def moduleDeps = Seq(
+    // Passing
     abacist.test,
     adversaria.test,
     anamnesis.test,
@@ -196,7 +197,88 @@ object test extends ScalaModule {
     turbulence.test,
     typonym.test,
     vexillology.test,
-    zephyrine.test
+    zephyrine.test,
+
+    // Compiling, not passing
+    acyclicity.test,
+    ambience.test,
+    anthology.test,
+    anticipation.test,
+    baroque.test,
+    burdock.test,
+    cataclysm.test,
+    charisma.test,
+    chiaroscuro.test,
+    contextual.test,
+    denominative.test,
+    fulminate.test,
+    galilei.test,
+    hellenism.test,
+    hyperbole.test,
+    larceny.test,
+    mandible.test,
+    monotonous.test,
+    mosquito.test,
+    octogenarian.test,
+    phoenicia.test,
+    polaris.test,
+    prepositional.test,
+    proscenium.test,
+    quantitative.test,
+    revolution.test,
+    satirical.test,
+    sedentary.test,
+    serpentine.test,
+    telekinesis.test,
+    umbrageous.test,
+    vacuous.test,
+    vicarious.test,
+    wisteria.test
+
+    // Not compiling
+    // bitumen
+    // cellulose
+    // coaxial
+    // cosmopolite
+    // dendrology
+    // diuretic
+    // embarcadero
+    // enigmatic
+    // escapade
+    // escritoire
+    // ethereal
+    // eucalyptus
+    // exoskeleton
+    // feudalism
+    // gastronomy
+    // guillotine
+    // hallucination
+    // harlequin
+    // hieroglyph
+    // honeycomb
+    // hypotenuse
+    // imperial
+    // iridescence
+    // legerdemain
+    // mercator
+    // merino
+    // parasite
+    // perihelion
+    // plutocrat
+    // polyvinyl
+    // probably
+    // profanity
+    // punctuation
+    // savagery
+    // scintillate
+    // superlunary
+    // surveillance
+    // symbolism
+    // tarantula
+    // ulysses
+    // xylophone
+    // yossarian
+    // zeppelin
   )
 
   def sources = Task.Sources {
