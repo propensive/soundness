@@ -32,8 +32,6 @@
                                                                                                   */
 package quantitative
 
-import language.experimental.captureChecking
-
 import proscenium.*
 
 trait Principal[dimension <: Dimension, unit[_ <: Nat] <: Measure]()

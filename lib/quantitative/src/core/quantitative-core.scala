@@ -32,7 +32,6 @@
                                                                                                   */
 package quantitative
 
-import language.experimental.captureChecking
 import language.experimental.into
 
 import anticipation.*
@@ -45,9 +44,9 @@ extension [units <: Measure](quantity: Quantity[units])
     ${Quantitative.norm[units, units2]('quantity)}
 
 extension [units <: Measure](quantity: into Quantity[units])
-  @targetName("plus")
-  transparent inline infix def + [units2 <: Measure](quantity2: Quantity[units2]): Any =
-    ${Quantitative.add[units, units2]('quantity, 'quantity2, '{false})}
+  // @targetName("plus")
+  // transparent inline infix def + [units2 <: Measure](quantity2: Quantity[units2]): Any =
+  //   ${Quantitative.add[units, units2]('quantity, 'quantity2, '{false})}
 
   @targetName("minus")
   transparent inline infix def - [units2 <: Measure](quantity2: Quantity[units2]): Any =

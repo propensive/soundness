@@ -472,14 +472,18 @@ trait Quantitative2:
             (left, right) =>
               ${Quantitative.add('left, 'right, '{true}).asExprOf[Quantity[measure]]} } }
 
-  def addTypeclass[left <: Measure: Type, right <: Measure: Type](using Quotes)
-  :     Expr[Quantity[left] is Addable by Quantity[right]] =
+  def addTypeclass
+       [left <: Measure: Type,
+        quantity <: Quantity[left]: Type,
+        right <: Measure: Type,
+        quantity2 <: Quantity[right]: Type](using Quotes)
+  :     Expr[quantity is Addable by quantity2] =
 
     val (units, _) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
 
     units.repr.map(_.asType).absolve match
       case Some('[type result <: Measure; result]) =>
-       '{ Addable[Quantity[left], Quantity[right], Quantity[result]] {
+       '{ Addable[quantity, quantity2, Quantity[result]] {
             (left, right) =>
               ${Quantitative.add('left, 'right, '{false}).asExprOf[Quantity[result]]} } }
 

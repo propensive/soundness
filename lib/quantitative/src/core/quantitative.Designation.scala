@@ -36,7 +36,6 @@ import anticipation.*
 import gossamer.*
 import spectacular.*
 
-import language.experimental.captureChecking
 import language.implicitConversions
 
 trait Designation[-value]:

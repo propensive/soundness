@@ -7,8 +7,8 @@ import publish._
 import os.Path
 
 object settings {
-  val scalaVersion = "3.6.1"
-  //val scalaVersion = "3.7.0-RC1-bin-20250309-2f639e2-NIGHTLY"
+  //val scalaVersion = "3.6.4"
+  val scalaVersion = "3.7.0-RC2"
   val scalaOptions = Seq(
     "-experimental",
     "-new-syntax",
@@ -165,7 +165,13 @@ object soundness extends ScalaModule {
 object test extends ScalaModule {
   def scalaVersion = settings.scalaVersion
   def scalacOptions = settings.scalaOptions
-  def moduleDeps = Seq(rudiments.test, kaleidoscope.test)
+  def moduleDeps = Seq(
+    abacist.test,
+    kaleidoscope.test,
+    rudiments.test,
+    turbulence.test
+  )
+
   def sources = Task.Sources {
     Seq(PathRef(millSourcePath / ".." / "src" / "test"))
   }

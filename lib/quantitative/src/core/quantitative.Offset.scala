@@ -32,7 +32,5 @@
                                                                                                   */
 package quantitative
 
-import language.experimental.captureChecking
-
 trait Offset[units <: Measure]:
   def value(): Double
