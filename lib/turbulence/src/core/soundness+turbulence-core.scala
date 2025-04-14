@@ -35,8 +35,8 @@ package soundness
 export turbulence
 . { Aggregable, Compression, CompressionAlgorithm, Eof, Err, Spool, Gzip, In, Io, Line,
     LineSeparation, Multiplexer, Out, Pistol, Pulsar, Readable, Stdio, StreamError, Tap, Writable,
-    Zlib, stream, read, writeTo, deduplicate, rate, multiplexWith, regulate, cluster, parallelMap,
-    multiplex, multiplexer, defer, pulsar, gzip, gunzip, discard, compress, decompress, shred,
+    Zlib, stream, read, writeTo, deduplicate, rate, multiplex, regulate, cluster, parallelMap,
+    multiplexer, defer, metronome, gzip, gunzip, discard, compress, decompress, shred,
     chunked, take, spool, strict, inputStream, StreamOutputStream }
 
 package stdioSources:
