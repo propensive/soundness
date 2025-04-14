@@ -73,7 +73,7 @@ object Report:
   given detail: Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
 
 class Report(using Environment):
-  private val ci: Boolean = safely(Environment.githubActions[Text]).present
+  private val githubCi: Boolean = safely(Environment.githubActions[Text]).present
 
   val metrics = textMetrics.eastAsianScripts
   given measurable: Char is Measurable:
@@ -159,6 +159,8 @@ class Report(using Environment):
 
   enum Status:
     case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench
+    
+    val nbsp = '\u00a0'
 
     def color: Rgb24 = this match
       case Pass        => rgb"#8abd00"
@@ -170,13 +172,13 @@ class Report(using Environment):
       case Bench       => CadetBlue
 
     def symbol: Teletype = this match
-      case Pass        => e"${Bg(color)}( $Bold($Black(${if ci then t"OK" else t"✓"})) )"
-      case Fail        => e"${Bg(color)}( $Bold($Black(${if ci then t"XX" else t"✗"})) )"
-      case Throws      => e"${Bg(color)}( $Bold($Black(!)) )"
-      case CheckThrows => e"${Bg(color)}( $Bold($Black(${if ci then t"!!" else t"‼"})) )"
-      case Mixed       => e"${Bg(color)}( $Bold($Black(?)) )"
+      case Pass        => e"${Bg(color)}($nbsp$Bold($Black(✓))$nbsp)"
+      case Fail        => e"${Bg(color)}($nbsp$Bold($Black(✗))$nbsp)"
+      case Throws      => e"${Bg(color)}($nbsp$Bold($Black(!))$nbsp)"
+      case CheckThrows => e"${Bg(color)}($nbsp$Bold($Black(‼))$nbsp)"
+      case Mixed       => e"${Bg(color)}($nbsp$Bold($Black(?))$nbsp)"
       case Suite       => e"   "
-      case Bench       => e"${Bg(color)}( $Bold($Black(*)) )"
+      case Bench       => e"${Bg(color)}($nbsp$Bold($Black(*))$nbsp)"
 
     def describe: Teletype = this match
       case Pass        => e"Pass"
