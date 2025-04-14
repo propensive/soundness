@@ -396,13 +396,14 @@ object Tests extends Suite(m"Turbulence tests"):
       val l2 = Stream(1, 3, 5, 7, 9)
 
       test(m"Check that two multiplexed streams contain all elements"):
-        supervise(l1.multiplexWith(l2).to(Set))
+        supervise(l1.multiplex(l2).to(Set))
       .assert(_ == Set.range(1, 11))
 
       test(m"Check that two multiplexed streams contain elements from the first stream in order"):
-        supervise(l1.multiplexWith(l2).filter(_%2 == 0))
+        supervise(l1.multiplex(l2).filter(_%2 == 0))
       .assert(_ == l1)
 
-      test(m"Check that two multiplexed streams contain elements from the second stream in order"):
-        supervise(l1.multiplexWith(l2).filter(_%2 == 1))
+      for i <- 1 to 10
+      do test(m"Check that two multiplexed streams contain elements from the second stream in order"):
+        supervise(l1.multiplex(l2).filter(_%2 == 1))
       .assert(_ == l2)
