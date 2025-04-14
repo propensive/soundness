@@ -43,7 +43,9 @@ object Segmentable:
     (iarray, interval) => iarray.slice(interval.start.n0, interval.end.n0)
 
   given text: Text is Segmentable = (text, interval) =>
-    text.s.substring(interval.start.n0, interval.end.n0).nn.tt
+    val min = interval.start.n0.max(0)
+    val max = interval.end.n0.min(text.s.length)
+    text.s.substring(min, max).nn.tt
 
 trait Segmentable:
   type Self
