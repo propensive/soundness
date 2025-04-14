@@ -48,7 +48,6 @@ given decimalizer: Decimalizer = Decimalizer(3)
 object Tests extends Suite(m"Quantitative Tests"):
   def run(): Unit =
     suite(m"Count tests"):
-
       type Height = (Feet[1], Inches[1])
 
       test(m"Access seconds in an HMS time"):
@@ -80,7 +79,7 @@ object Tests extends Suite(m"Quantitative Tests"):
         val length: Quantity[Metres[1]] = (5.9*Foot + 10.0*Inch)
         val count = length.count[Height]
         (count[Feet], count[Inches])
-      .assert(_ == (5, 10))
+      .assert(_ == (6, 9))
 
       type Weight = (Stones[1], Pounds[1], Ounces[1])
 

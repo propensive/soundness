@@ -32,6 +32,8 @@
                                                                                                   */
 package probably
 
+import java.lang as jl
+
 import ambience.*, environments.virtualMachine
 import anticipation.*
 import contingency.*
@@ -41,8 +43,6 @@ import fulminate.*
 import hieroglyph.*, textMetrics.uniform
 import turbulence.*
 import vacuous.*
-
-import language.adhocExtensions
 
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
   val suiteIo = safely(stdioSources.virtualMachine.ansi).vouch
@@ -64,6 +64,12 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
 
   final def main(args: IArray[Text]): Unit =
     try runner.suite(this, run())
-    catch case err: Throwable => runner.terminate(err)
-    finally try runner.complete() catch case err: EnvironmentError =>
+    catch case err: Throwable =>
+      runner.terminate(err)
+      jl.System.exit(2)
+    finally try
+      runner.complete()
+      if runner.report.pass then jl.System.exit(0) else jl.System.exit(1)
+    catch case err: EnvironmentError =>
       println(StackTrace(err).teletype.render)
+      jl.System.exit(3)
