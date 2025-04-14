@@ -35,6 +35,7 @@ package soundness
 object Tests extends Suite(m"Soundness tests"):
   def run(): Unit =
     abacist.Tests()
+    gossamer.Tests()
     kaleidoscope.Tests()
     rudiments.Tests()
     turbulence.Tests()

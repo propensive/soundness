@@ -167,6 +167,7 @@ object test extends ScalaModule {
   def scalacOptions = settings.scalaOptions
   def moduleDeps = Seq(
     abacist.test,
+    gossamer.test,
     kaleidoscope.test,
     rudiments.test,
     turbulence.test
@@ -1413,27 +1414,3 @@ object zeppelin extends SoundnessModule {
     def moduleDeps = Seq(probably.cli, core)
   }
 }
-/*
-object tests extends BaseScalaModule {
-  def moduleDeps = Seq(abacist.test, acyclicity.test, adversaria.test, ambience.test,
-    anamnesis.test, anthology.test, anticipation.test, austronesian.test, aviation.test,
-    baroque.test, bitumen.test, burdock.test, caesura.test, camouflage.test, capricious.test,
-    cardinality.test, cataclysm.test, cellulose.test, charisma.test, chiaroscuro.test, coaxial.test,
-    contextual.test, contingency.test, cosmopolite.test, dendrology.test, denominative.test,
-    digression.test, dissonance.test, distillate.test, diuretic.test, embarcadero.test,
-    enigmatic.test, escapade.test, escritoire.test, ethereal.test, eucalyptus.test,
-    exoskeleton.test, feudalism.test, fulminate.test, galilei.test, gastronomy.test, geodesy.test,
-    gesticulate.test, gossamer.test, guillotine.test, hallucination.test, harlequin.test,
-    hellenism.test, honeycomb.test, hieroglyph.test, hyperbole.test, hypotenuse.test, imperial.test,
-    inimitable.test, iridescence.test, jacinta.test, kaleidoscope.test, larceny.test, mercator.test,
-    merino.test, metamorphose.test, monotonous.test, mosquito.test, nettlesome.test,
-    nomenclature.test, octogenarian.test, panopticon.test, parasite.test, perihelion.test,
-    phoenicia.test, plutocrat.test, polaris.test, polyvinyl.test, prepositional.test,
-    proscenium.test, probably.test, profanity.test, punctuation.test, quantitative.test,
-    revolution.test, rudiments.test, satirical.test, savagery.test, scintillate.test,
-    sedentary.test, serpentine.test, spectacular.test, superlunary.test, surveillance.test,
-    symbolism.test, tarantula.test, telekinesis.test, turbulence.test, typonym.test, ulysses.test,
-    umbrageous.test, vacuous.test, vexillology.test, vicarious.test, wisteria.test, xylophone.test,
-    yossarian.test, zephyrine.test, zeppelin.test)
-}
-*/
