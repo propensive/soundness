@@ -79,6 +79,13 @@ object Tests extends Suite(m"Austronesian tests"):
                  Group(persons = List(Person(t"Jane", 25), Person(t"John", 30)), size = 2),
                  Colors(Trie(Color.Blue, Color.Green, Color.Red)))
 
+    test(m"Roundtrip a complex datatype"):
+      unsafely(data.stdlib.decode[List[Something]])
+    . assert(_ == data)
+
+
+
+
     // suite(t"Proxy testing"):
     //   test(t"Invoke a Proxy method"):
     //     import classloaders.system
