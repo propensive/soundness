@@ -50,7 +50,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
   var runner0: Runner[Report] =
     given stdio: Stdio = suiteIo
     try Runner() catch case err: EnvironmentError =>
-      println(StackTrace(err).teletype.render)
+      jl.System.out.nn.println(StackTrace(err).teletype.render)
       ???
 
   given runner: Runner[Report] = runner0
@@ -71,5 +71,5 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       runner.complete()
       if runner.report.pass then jl.System.exit(0) else jl.System.exit(1)
     catch case err: EnvironmentError =>
-      println(StackTrace(err).teletype.render)
+      jl.System.out.nn.println(StackTrace(err).teletype)
       jl.System.exit(3)
