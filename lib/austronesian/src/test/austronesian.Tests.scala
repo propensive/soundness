@@ -64,7 +64,7 @@ object Tests extends Suite(m"Austronesian tests"):
 
     val group = Group(List(Person("John", 30), Person("Jane", 25)), 2)
 
-    test(t"Roundtrip a nested case class"):
+    test(m"Roundtrip a nested case class"):
       unsafely(group.stdlib.decode[Group])
     . assert(_ == group)
 
@@ -83,7 +83,7 @@ object Tests extends Suite(m"Austronesian tests"):
                  Group(persons = List(Person(t"Jane", 25), Person(t"John", 30)), size = 2),
                  Colors(Trie(Color.Blue, Color.Green, Color.Red)))
 
-    test(t"Roundtrip a complex datatype"):
+    test(m"Roundtrip a complex datatype"):
       unsafely(data.stdlib.decode[List[Something]])
     . assert(_ == data)
 
