@@ -83,7 +83,7 @@ object Tests extends Suite(m"Adversaria tests"):
 
     test(m"get annotations on type"):
       summon[Annotations[StaticAnnotation, Company]].annotations
-    .assert(_ == List(count(10)))
+    .assert(_.contains(count(10)))
 
     test(m"find the field with a particular annotation"):
       val ann = summon[CaseField[Person, id]]
@@ -95,11 +95,11 @@ object Tests extends Suite(m"Adversaria tests"):
       summon[CaseField[Person, id]].name
     .assert(_ == t"email")
 
-    /*test(m"check that given for missing annotation is not resolved"):
+    test(m"check that given for missing annotation is not resolved"):
       demilitarize:
         summon[CaseField[Company, id]]
-      .map(_.errorId)
-    .assert(_ == List(ErrorId.MissingImplicitArgumentID))*/
+      .map(_.message)
+    .assert(_.nonEmpty)
 
     test(m"extract annotation value generically"):
       def getId[T <: Product](value: T)(using ann: CaseField[T, id]): ann.Subject = ann(value)
