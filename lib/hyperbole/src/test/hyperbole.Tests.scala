@@ -30,3 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
+package hyperbole
+
+import soundness.*
+
+object Tests extends Suite(m"Hyperbole Tests"):
+  def run(): Unit = ()
