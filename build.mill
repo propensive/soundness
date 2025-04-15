@@ -7,8 +7,8 @@ import publish._
 import os.Path
 
 object settings {
-  //val scalaVersion = "3.6.4"
-  val scalaVersion = "3.7.0-RC2"
+  val scalaVersion = "3.6.2"
+  //val scalaVersion = "3.7.0-RC2"
   val scalaOptions = Seq(
     "-experimental",
     "-new-syntax",
@@ -40,8 +40,10 @@ trait BaseScalaModule extends ScalaModule {
   def consoleScalacOptions = scalacOptions()
 
   def publishVersion = T {
-    val lastTagged = os.proc("git", "rev-list", "--tags", "--max-count", "1").call().out.text().trim
-    os.proc("git", "describe", "--tags", lastTagged).call().out.text().trim
+    try {
+      val lastTagged = os.proc("git", "rev-list", "--tags", "--max-count", "1").call().out.text().trim
+      os.proc("git", "describe", "--tags", lastTagged).call().out.text().trim
+    } catch { case error: Exception => "unknown" }
   }
 
   def artifactSuffix = T("")
@@ -166,11 +168,117 @@ object test extends ScalaModule {
   def scalaVersion = settings.scalaVersion
   def scalacOptions = settings.scalaOptions
   def moduleDeps = Seq(
+    // Passing
     abacist.test,
+    adversaria.test,
+    anamnesis.test,
+    austronesian.test,
+    aviation.test,
+    caesura.test,
+    camouflage.test,
+    capricious.test,
+    cardinality.test,
+    contingency.test,
+    digression.test,
+    dissonance.test,
+    distillate.test,
+    geodesy.test,
+    gesticulate.test,
     gossamer.test,
+    inimitable.test,
+    jacinta.test,
     kaleidoscope.test,
+    metamorphose.test,
+    nettlesome.test,
+    nomenclature.test,
+    panopticon.test,
     rudiments.test,
-    turbulence.test
+    spectacular.test,
+    turbulence.test,
+    typonym.test,
+    vexillology.test,
+    zephyrine.test,
+
+    // Compiling, not passing
+    acyclicity.test,
+    ambience.test,
+    anthology.test,
+    anticipation.test,
+    baroque.test,
+    burdock.test,
+    cataclysm.test,
+    charisma.test,
+    chiaroscuro.test,
+    contextual.test,
+    denominative.test,
+    fulminate.test,
+    galilei.test,
+    hellenism.test,
+    hyperbole.test,
+    larceny.test,
+    mandible.test,
+    monotonous.test,
+    mosquito.test,
+    octogenarian.test,
+    phoenicia.test,
+    polaris.test,
+    prepositional.test,
+    proscenium.test,
+    quantitative.test,
+    revolution.test,
+    satirical.test,
+    sedentary.test,
+    serpentine.test,
+    telekinesis.test,
+    umbrageous.test,
+    vacuous.test,
+    vicarious.test,
+    wisteria.test
+
+    // Not compiling
+    // bitumen
+    // cellulose
+    // coaxial
+    // cosmopolite
+    // dendrology
+    // diuretic
+    // embarcadero
+    // enigmatic
+    // escapade
+    // escritoire
+    // ethereal
+    // eucalyptus
+    // exoskeleton
+    // feudalism
+    // gastronomy
+    // guillotine
+    // hallucination
+    // harlequin
+    // hieroglyph
+    // honeycomb
+    // hypotenuse
+    // imperial
+    // iridescence
+    // legerdemain
+    // mercator
+    // merino
+    // parasite
+    // perihelion
+    // plutocrat
+    // polyvinyl
+    // probably
+    // profanity
+    // punctuation
+    // savagery
+    // scintillate
+    // superlunary
+    // surveillance
+    // symbolism
+    // tarantula
+    // ulysses
+    // xylophone
+    // yossarian
+    // zeppelin
   )
 
   def sources = Task.Sources {

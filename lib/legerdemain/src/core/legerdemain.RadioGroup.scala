@@ -43,7 +43,7 @@ import html5.*
 object RadioGroup:
   given renderable: RadioGroup is Renderable into Phrasing = group =>
     group.options.map: option =>
-      Label(Input.Radio(name = group.name, value = option.value), option.label)
+      Label(Input.Radio(name = group.name, value = option(1)), option(2))
 
 case class RadioGroup(name: Text, options: List[(key: Text, value: Text, label: Text)], value: Text)
 extends Widget

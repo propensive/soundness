@@ -45,7 +45,7 @@ object Dropdown:
     List
      (Select(name = selection.name):
         selection.options.map: option =>
-          html5.Option(value = option.key, label = option.value))
+          html5.Option(value = option(0), label = option(1)))
 
 case class Dropdown(name: Text, options: List[(key: Text, value: Text)], value: Text)
 extends Widget

@@ -70,7 +70,10 @@ object Quantitative extends Quantitative2:
   object Quantity:
     erased given underlying: [units <: Measure] => Underlying[Quantity[units], Double] = !!
     erased given canEqual: [units <: Measure] => CanEqual[Quantity[units], Quantity[units]] = !!
-    given zeroic: [units <: Measure] => Quantity[units] is Zeroic = () => Quantity(0.0)
+
+    given zeroic: [units <: Measure] => Quantity[units] is Zeroic:
+      inline def zero: Quantity[units] = Quantity(0.0)
+
     given numeric: [units <: Measure] => Numeric[Quantity[units]] = summon[Numeric[Double]]
 
     given genericDuration: Quantity[Seconds[1]] is GenericDuration =

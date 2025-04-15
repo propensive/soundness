@@ -9,13 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
-        submodules: recursive
+        fetch-depth: 0
+        fetch-tags: true
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin' # See 'Supported distributions' for available options
         java-version: '23'
     - name: Mill Build
-      run: make test
+      run: ./mill test.assembly && make ci

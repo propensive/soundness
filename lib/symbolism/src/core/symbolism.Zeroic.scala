@@ -34,26 +34,26 @@ package symbolism
 
 object Zeroic:
   given long: Long is Zeroic:
-    inline def zero(): Long = 0L
+    inline def zero: Long = 0L
 
   given int: Int is Zeroic:
-    inline def zero(): Int = 0
+    inline def zero: Int = 0
 
   given short: Short is Zeroic:
-    inline def zero(): Short = 0.toShort
+    inline def zero: Short = 0.toShort
 
   given byte: Byte is Zeroic:
-    inline def zero(): Byte = 0.toByte
+    inline def zero: Byte = 0.toByte
 
   given double: Double is Zeroic:
-    inline def zero(): Double = 0.0
+    inline def zero: Double = 0.0
 
   given float: Float is Zeroic:
-    inline def zero(): Float = 0.0f
+    inline def zero: Float = 0.0f
 
   given string: String is Zeroic:
-    inline def zero(): String = ""
+    inline def zero: String = ""
 
 trait Zeroic:
   type Self
-  def zero(): Self
+  def zero: Self
