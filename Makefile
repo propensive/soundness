@@ -1,6 +1,5 @@
 publishLocal:
-	mill -k __.publishLocal
-	mill soundness.__.publishLocal
+	mill publishing.local
 
 test:
 	mill test.assembly
