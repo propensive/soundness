@@ -85,10 +85,7 @@ extension [platform <: Filesystem](path: Path on platform)
       case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
       case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
       case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
-      case other                             =>
-        println(other)
-        other.printStackTrace()
-        abort(IoError(path, operation, Unsupported))
+      case other                             => abort(IoError(path, operation, Unsupported))
 
   def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
   def javaFile: ji.File = javaPath.toFile.nn
