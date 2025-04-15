@@ -55,6 +55,7 @@ case class HttpServer(port: Int) extends RequestServable:
     def handle(exchange: csnh.HttpExchange | Null) =
       try
         val responder = new Responder:
+
           def addHeader(key: Text, value: Text): Unit =
             exchange.nn.getResponseHeaders.nn.add(key.s, value.s)
 
@@ -97,13 +98,3 @@ case class HttpServer(port: Int) extends RequestServable:
     val asyncTask = async(cancel.attend() yet server.stop(1))
 
     Service(() => safely(cancel.fulfill(())))
-
-  private def streamBody(exchange: csnh.HttpExchange): Stream[Bytes] =
-    val in = exchange.getRequestBody.nn
-    val buffer = new Array[Byte](65536)
-
-    def recur(): Stream[Bytes] =
-      val len = in.read(buffer)
-      if len > 0 then buffer.slice(0, len).snapshot #:: recur() else Stream.empty
-
-    recur()
