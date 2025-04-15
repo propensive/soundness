@@ -92,18 +92,8 @@ trait ProbablyTestModule extends BaseScalaModule {
   )
 }
 
-trait RecursivePublishModule { self: BaseScalaModule =>
-  def publishLocal(localIvyRepo: String = null): Command[Unit] = Task.Command {
-    T.traverse(
-      this.moduleDeps.flatMap {
-        case m: RecursivePublishModule => m.moduleDeps
-        case m => Seq(m)
-      }.collect {
-        case m: PublishModule => m
-      }
-    )(module => module.publishLocal().t)()
-    Result.Success(())
-  }
+trait SoundnessGroupModule extends BaseScalaModule with PublishModule {
+  def sources = Task.Sources { Nil }
 }
 
 // ------------------------ GROUPS ------------------------
@@ -111,7 +101,7 @@ object soundness extends ScalaModule {
   def scalaVersion = settings.scalaVersion
   def moduleDeps = Seq()
 
-  object base extends BaseScalaModule with RecursivePublishModule {
+  object base extends SoundnessGroupModule {
     def moduleDeps = Seq(ambience.core, aviation.core, contextual.core,
         contingency.core, denominative.core, digression.core, diuretic.core, feudalism.core,
         fulminate.core, hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core,
@@ -121,38 +111,38 @@ object soundness extends ScalaModule {
         typonym.core, zephyrine.core)
   }
 
-  object cli extends BaseScalaModule with RecursivePublishModule {
+  object cli extends SoundnessGroupModule {
     def moduleDeps = Seq(burdock.core, dendrology.tree, dendrology.dag, exoskeleton.completions,
         escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi, eucalyptus.syslog,
         guillotine.core, escapade.core, imperial.core, profanity.core, surveillance.core,
         punctuation.ansi)
   }
 
-  object data extends BaseScalaModule with RecursivePublishModule {
+  object data extends SoundnessGroupModule {
     def moduleDeps = Seq(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
         gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core,
         panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core,
         zeppelin.core, xylophone.core, anamnesis.core)
   }
 
-  object sci extends BaseScalaModule with RecursivePublishModule {
+  object sci extends SoundnessGroupModule {
     def moduleDeps = Seq(abacist.core, acyclicity.core, baroque.core, cardinality.core,
         charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
         quantitative.core)
   }
 
-  object test extends BaseScalaModule with RecursivePublishModule {
+  object test extends SoundnessGroupModule {
     def moduleDeps = Seq(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
         superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm,
         mandible.core)
   }
 
-  object tool extends BaseScalaModule with RecursivePublishModule {
+  object tool extends SoundnessGroupModule {
     def moduleDeps = Seq(anthology.core, harlequin.core, hellenism.core, hyperbole.core,
         octogenarian.core, revolution.core, umbrageous.plugin, anthology.java)
   }
 
-  object web extends BaseScalaModule with RecursivePublishModule {
+  object web extends SoundnessGroupModule {
     def moduleDeps = Seq(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
         honeycomb.core, nettlesome.core, nettlesome.url, hallucination.core, phoenicia.core,
         punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
@@ -160,7 +150,7 @@ object soundness extends ScalaModule {
         legerdemain.core)
   }
 
-  object all extends BaseScalaModule with RecursivePublishModule {
+  object all extends SoundnessGroupModule {
     def moduleDeps = Seq(base, cli, data, sci, test, tool, web)
   }
 }
@@ -286,6 +276,7 @@ object test extends ScalaModule {
     Seq(PathRef(millSourcePath / ".." / "src" / "test"))
   }
   override def finalMainClass: Target[String] = "soundness.Tests"
+
 }
 
 // ------------------------ SAMPLES ------------------------
@@ -1521,5 +1512,134 @@ object zeppelin extends SoundnessModule {
 
   object test extends ProbablyTestModule {
     def moduleDeps = Seq(probably.cli, core)
+  }
+}
+
+object publishing extends Module {
+  def local(localIvyRepo: String = null): Command[Unit] = Task.Command {
+    abacist.core.publishLocal().t()
+    acyclicity.core.publishLocal().t()
+    adversaria.core.publishLocal().t()
+    ambience.core.publishLocal().t()
+    anamnesis.core.publishLocal().t()
+    anthology.core.publishLocal().t()
+    anthology.java.publishLocal().t()
+    aviation.core.publishLocal().t()
+    baroque.core.publishLocal().t()
+    burdock.core.publishLocal().t()
+    caesura.core.publishLocal().t()
+    camouflage.core.publishLocal().t()
+    capricious.core.publishLocal().t()
+    cardinality.core.publishLocal().t()
+    cataclysm.core.publishLocal().t()
+    cellulose.core.publishLocal().t()
+    charisma.core.publishLocal().t()
+    chiaroscuro.core.publishLocal().t()
+    coaxial.core.publishLocal().t()
+    contextual.core.publishLocal().t()
+    contingency.core.publishLocal().t()
+    cosmopolite.core.publishLocal().t()
+    dendrology.dag.publishLocal().t()
+    dendrology.tree.publishLocal().t()
+    denominative.core.publishLocal().t()
+    digression.core.publishLocal().t()
+    dissonance.core.publishLocal().t()
+    distillate.core.publishLocal().t()
+    diuretic.core.publishLocal().t()
+    enigmatic.core.publishLocal().t()
+    escapade.core.publishLocal().t()
+    escritoire.core.publishLocal().t()
+    ethereal.core.publishLocal().t()
+    eucalyptus.ansi.publishLocal().t()
+    eucalyptus.core.publishLocal().t()
+    eucalyptus.gcp.publishLocal().t()
+    eucalyptus.syslog.publishLocal().t()
+    exoskeleton.completions.publishLocal().t()
+    feudalism.core.publishLocal().t()
+    fulminate.core.publishLocal().t()
+    galilei.core.publishLocal().t()
+    gastronomy.core.publishLocal().t()
+    geodesy.core.publishLocal().t()
+    gesticulate.core.publishLocal().t()
+    gossamer.core.publishLocal().t()
+    guillotine.core.publishLocal().t()
+    hallucination.core.publishLocal().t()
+    harlequin.core.publishLocal().t()
+    hellenism.core.publishLocal().t()
+    hieroglyph.core.publishLocal().t()
+    honeycomb.core.publishLocal().t()
+    hyperbole.core.publishLocal().t()
+    hypotenuse.core.publishLocal().t()
+    imperial.core.publishLocal().t()
+    inimitable.core.publishLocal().t()
+    iridescence.core.publishLocal().t()
+    jacinta.core.publishLocal().t()
+    kaleidoscope.core.publishLocal().t()
+    larceny.plugin.publishLocal().t()
+    legerdemain.core.publishLocal().t()
+    mandible.core.publishLocal().t()
+    mercator.core.publishLocal().t()
+    merino.core.publishLocal().t()
+    metamorphose.core.publishLocal().t()
+    monotonous.core.publishLocal().t()
+    mosquito.core.publishLocal().t()
+    nettlesome.core.publishLocal().t()
+    nettlesome.url.publishLocal().t()
+    nomenclature.core.publishLocal().t()
+    octogenarian.core.publishLocal().t()
+    panopticon.core.publishLocal().t()
+    parasite.core.publishLocal().t()
+    perihelion.core.publishLocal().t()
+    phoenicia.core.publishLocal().t()
+    plutocrat.core.publishLocal().t()
+    polaris.core.publishLocal().t()
+    polyvinyl.core.publishLocal().t()
+    prepositional.core.publishLocal().t()
+    probably.coverage.publishLocal().t()
+    probably.cli.publishLocal().t()
+    probably.core.publishLocal().t()
+    profanity.core.publishLocal().t()
+    proscenium.core.publishLocal().t()
+    punctuation.ansi.publishLocal().t()
+    punctuation.core.publishLocal().t()
+    punctuation.html.publishLocal().t()
+    quantitative.core.publishLocal().t()
+    revolution.core.publishLocal().t()
+    rudiments.core.publishLocal().t()
+    savagery.core.publishLocal().t()
+    scintillate.server.publishLocal().t()
+    scintillate.servlet.publishLocal().t()
+    sedentary.core.publishLocal().t()
+    serpentine.core.publishLocal().t()
+    spectacular.core.publishLocal().t()
+    superlunary.core.publishLocal().t()
+    superlunary.jvm.publishLocal().t()
+    surveillance.core.publishLocal().t()
+    symbolism.core.publishLocal().t()
+    tarantula.core.publishLocal().t()
+    telekinesis.core.publishLocal().t()
+    turbulence.core.publishLocal().t()
+    typonym.core.publishLocal().t()
+    ulysses.core.publishLocal().t()
+    umbrageous.plugin.publishLocal().t()
+    vacuous.core.publishLocal().t()
+    vicarious.core.publishLocal().t()
+    wisteria.core.publishLocal().t()
+    xylophone.core.publishLocal().t()
+    yossarian.core.publishLocal().t()
+    zephyrine.core.publishLocal().t()
+    zeppelin.core.publishLocal().t()
+
+    soundness.base.publishLocal().t()
+    soundness.cli.publishLocal().t()
+    soundness.data.publishLocal().t()
+    soundness.sci.publishLocal().t()
+    soundness.test.publishLocal().t()
+    soundness.tool.publishLocal().t()
+    soundness.web.publishLocal().t()
+
+    soundness.all.publishLocal().t()
+
+    Result.Success(())
   }
 }

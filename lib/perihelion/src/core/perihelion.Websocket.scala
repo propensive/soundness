@@ -42,6 +42,7 @@ import parasite.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import symbolism.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*
@@ -62,7 +63,10 @@ object Websocket:
 
       Http.Response
        (Http.SwitchingProtocols,
-        secWebsocketAccept  = (websocket.key+Websocket.magic).digest[Sha1].serialize[Base64].keep(28),
+        secWebsocketAccept  = (websocket.key+Websocket.magic)
+                              . digest[Sha1]
+                              . serialize[Base64]
+                              . keep(28),
         secWebsocketVersion = 13,
         transferEncoding    = TransferEncoding.Chunked,
         connection          = t"Upgrade",
