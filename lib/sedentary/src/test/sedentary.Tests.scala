@@ -30,9 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package sedentary
 
 import soundness.*
 
-object Tests extends Suite(m"Proscenium Tests"):
+object Tests extends Suite(m"Sedentary Tests"):
   def run(): Unit = ()

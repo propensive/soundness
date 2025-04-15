@@ -30,9 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package denominative
 
 import soundness.*
 
-object Tests extends Suite(m"Proscenium Tests"):
+object Tests extends Suite(m"Denominative Tests"):
   def run(): Unit = ()

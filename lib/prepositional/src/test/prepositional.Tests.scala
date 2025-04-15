@@ -30,9 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package prepositional
 
 import soundness.*
 
-object Tests extends Suite(m"Proscenium Tests"):
+object Tests extends Suite(m"Prepositional Tests"):
   def run(): Unit = ()

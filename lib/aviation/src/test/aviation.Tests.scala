@@ -69,7 +69,7 @@ object Tests extends Suite(m"Aviation Tests"):
       .assert(_ == DateError(t"59-11-31"))
 
 
-    suite(m""):
+    suite(m"Leap Seconds tests"):
       test(m"There are 10 leap seconds for any year before 1972"):
         LeapSeconds.during(1900, false)
       .assert(_ == 10)
