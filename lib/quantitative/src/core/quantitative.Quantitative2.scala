@@ -109,20 +109,20 @@ trait Quantitative2:
     @targetName("multiply")
     infix def * (that: UnitsMap): UnitsMap =
       new UnitsMap
-       ((dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
-          val dimUnit = unit(dim).orElse(that.unit(dim)).get
-          dim -> UnitPower(dimUnit, (unitPower(dim) + that.unitPower(dim)))
+           ((dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
+              val dimUnit = unit(dim).orElse(that.unit(dim)).get
+              dim -> UnitPower(dimUnit, (unitPower(dim) + that.unitPower(dim)))
 
-        . to(Map).filter(_(1).power != 0))
+            . to(Map).filter(_(1).power != 0))
 
     @targetName("divide")
     infix def / (that: UnitsMap): UnitsMap =
       new UnitsMap
-       ((dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
-          val dimUnit = unit(dim).orElse(that.unit(dim)).get
-          dim -> UnitPower(dimUnit, (unitPower(dim) - that.unitPower(dim)))
+           ((dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
+              val dimUnit = unit(dim).orElse(that.unit(dim)).get
+              dim -> UnitPower(dimUnit, (unitPower(dim) - that.unitPower(dim)))
 
-        . to(Map).filter(_(1).power != 0))
+            . to(Map).filter(_(1).power != 0))
 
     def construct(using Quotes)(types: List[UnitPower]): Option[quotes.reflect.TypeRepr] =
       import quotes.reflect.*
@@ -221,7 +221,7 @@ trait Quantitative2:
     override def toString(): String = name
 
   def ratio(using Quotes)
-     (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true)
+       (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true)
   :     Expr[Double] =
 
     import quotes.reflect.*
@@ -257,7 +257,7 @@ trait Quantitative2:
                 case DoubleConstant(double) => Expr(double**power)
 
   private def normalize(using Quotes)
-     (units: UnitsMap, other: UnitsMap, init: Expr[Double], force: Boolean = false)
+               (units: UnitsMap, other: UnitsMap, init: Expr[Double], force: Boolean = false)
   :     (UnitsMap, Expr[Double]) =
 
     def recur(dimensions: List[DimensionRef], target: UnitsMap, expr: Expr[Double])
@@ -303,8 +303,8 @@ trait Quantitative2:
         recur('{Map[Text, Int]()}, UnitsMap[units].map.values.to(List))
 
   def multiply[left <: Measure: Type, right <: Measure: Type]
-     (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]], division: Boolean)
-     (using Quotes)
+       (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]], division: Boolean)
+       (using Quotes)
   :     Expr[Any] =
 
     val left: UnitsMap = UnitsMap[left]
@@ -420,11 +420,11 @@ trait Quantitative2:
           '{Rootable[3, Quantity[value], Quantity[result]]($cast(_))}
 
   def greaterThan[left <: Measure: Type, right <: Measure: Type]
-     (leftExpr:  Expr[Quantity[left]],
-      rightExpr: Expr[Quantity[right]],
-      strict:    Expr[Boolean],
-      invert:    Expr[Boolean])
-     (using Quotes)
+       (leftExpr:  Expr[Quantity[left]],
+        rightExpr: Expr[Quantity[right]],
+        strict:    Expr[Boolean],
+        invert:    Expr[Boolean])
+       (using Quotes)
   :     Expr[Boolean] =
 
     val left: UnitsMap = UnitsMap[left]
@@ -441,8 +441,8 @@ trait Quantitative2:
     else if closed then '{$leftValue >= $rightValue} else '{$leftValue > $rightValue}
 
   def add[left <: Measure: Type, right <: Measure: Type]
-     (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]], sub: Expr[Boolean])
-     (using Quotes)
+       (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]], sub: Expr[Boolean])
+       (using Quotes)
   :     Expr[Any] =
 
     val left: UnitsMap = UnitsMap[left]
@@ -488,8 +488,8 @@ trait Quantitative2:
               ${Quantitative.add('left, 'right, '{false}).asExprOf[Quantity[result]]} } }
 
   def norm[units <: Measure: Type, norm[power <: Nat] <: Units[power, ?]: Type]
-     (expr: Expr[Quantity[units]])
-     (using Quotes)
+       (expr: Expr[Quantity[units]])
+       (using Quotes)
   :     Expr[Any] =
 
     val units: UnitsMap = UnitsMap[units]

@@ -89,8 +89,8 @@ extension (logObject: Log.type)
     def log(level: Level, realm: Realm, timestamp: Long, event: format): Unit = ()
 
   def route[format](using erased Void)[entry: Inscribable in format, writable: Writable by format]
-     (target: writable)
-     (using Monitor)
+       (target: writable)
+       (using Monitor)
   :     entry is Loggable =
 
     new:

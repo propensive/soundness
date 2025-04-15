@@ -37,13 +37,13 @@ import vacuous.*
 
 object Column:
   def apply[row, cell, text: Textual]
-     (title:         text,
-      textAlign:     Optional[TextAlignment]     = Unset,
-      verticalAlign: Optional[VerticalAlignment] = Unset,
-      sizing:        Columnar                    = columnar.Prose)
-     (get: row => cell)
-     (using columnAlignment: ColumnAlignment[cell] = ColumnAlignment.topLeft)
-     (using text.Show[cell])
+       (title:         text,
+        textAlign:     Optional[TextAlignment]     = Unset,
+        verticalAlign: Optional[VerticalAlignment] = Unset,
+        sizing:        Columnar                    = columnar.Prose)
+       (get: row => cell)
+       (using columnAlignment: ColumnAlignment[cell] = ColumnAlignment.topLeft)
+       (using text.Show[cell])
   :     Column[row, text] =
 
     def contents(row: row): text = text.show(get(row))

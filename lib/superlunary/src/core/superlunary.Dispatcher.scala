@@ -61,12 +61,12 @@ trait Dispatcher:
   protected def invoke[output](dispatch: Dispatch[output]): Result[output]
 
   inline def dispatch[output: Decodable in Json]
-     (body: References ?=> Quotes ?=> Expr[output])
-     [version <: Scalac.All]
-     (using codepoint:   Codepoint,
-            classloader: Classloader,
-            properties:  SystemProperties,
-            directory:   TemporaryDirectory)
+              (body: References ?=> Quotes ?=> Expr[output])
+              [version <: Scalac.All]
+              (using codepoint:   Codepoint,
+                     classloader: Classloader,
+                     properties:  SystemProperties,
+                     directory:   TemporaryDirectory)
   :     Result[output] raises CompilerError =
    try
     import strategies.throwUnsafely

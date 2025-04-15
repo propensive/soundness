@@ -111,7 +111,7 @@ object Panopticon:
     select[from](getPath[path](), value).asExprOf[to]
 
   def set[from: Type, path <: Tuple: Type, to: Type](value: Expr[from], newValue: Expr[to])
-     (using Quotes)
+       (using Quotes)
   :     Expr[from] =
 
     import quotes.reflect.*

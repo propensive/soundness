@@ -156,16 +156,15 @@ object Quantitative extends Quantitative2:
       type Operand = Quantity[units2]
 
       inline def compare
-         (inline left:        Quantity[units],
-inline right:       Quantity[units2],
-          inline strict:      Boolean,
-          inline greaterThan: Boolean)
+                  (inline left:        Quantity[units],
+                   inline right:       Quantity[units2],
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
       :     Boolean =
 
         ${Quantitative.greaterThan[units, units2]('left, 'right, 'strict, 'greaterThan)}
 
-    class ShowableQuantity[units <: Measure](fn: Quantity[units] => Text)
-       (using Decimalizer)
+    class ShowableQuantity[units <: Measure](fn: Quantity[units] => Text)(using Decimalizer)
     extends Showable:
       type Self = Quantity[units]
       def text(value: Quantity[units]): Text = fn(value)

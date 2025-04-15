@@ -49,8 +49,8 @@ trait Interaction[result, question]:
 
   @tailrec
   final def recur
-     (stream: Stream[TerminalEvent], state: question, oldState: Optional[question])
-     (key: (question, TerminalEvent) => question)
+             (stream: Stream[TerminalEvent], state: question, oldState: Optional[question])
+             (key: (question, TerminalEvent) => question)
   :     Optional[(result, Stream[TerminalEvent])] =
 
     render(oldState, state)
@@ -63,7 +63,7 @@ trait Interaction[result, question]:
       case _                                 => Unset
 
   def apply(stream: Stream[TerminalEvent], state: question)
-     (key: (question, TerminalEvent) => question)
+       (key: (question, TerminalEvent) => question)
   :     Optional[(result, Stream[TerminalEvent])] =
 
     before()

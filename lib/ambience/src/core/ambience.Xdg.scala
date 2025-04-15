@@ -43,38 +43,38 @@ import vacuous.*
 
 object Xdg:
   def dataHome[path: Instantiable across Paths from Text]
-     (using environment: Environment, home: HomeDirectory)
+       (using environment: Environment, home: HomeDirectory)
   :     path =
     safely(Environment.xdgDataHome[path]).or(path(t"${home.directory()}/.local/share"))
 
   def configHome[path: Instantiable across Paths from Text]
-     (using environment: Environment, home: HomeDirectory)
+       (using environment: Environment, home: HomeDirectory)
   :     path =
     safely(Environment.xdgConfigHome[path]).or(path(t"${home.directory()}/.config"))
 
   def cacheHome[path: Instantiable across Paths from Text]
-     (using environment: Environment, home: HomeDirectory)
+       (using environment: Environment, home: HomeDirectory)
   :     path =
 
     safely(Environment.xdgCacheHome[path]).or(path(t"${home.directory()}/.cache"))
 
   def stateHome[path: Instantiable across Paths from Text]
-     (using environment: Environment, home: HomeDirectory)
+       (using environment: Environment, home: HomeDirectory)
   :     path =
 
     safely(Environment.xdgStateHome[path]).or(path(t"${home.directory()}/.local/state"))
 
   def runtimeDir[path: Instantiable across Paths from Text]
-     (using environment: Environment): Optional[path] =
+       (using environment: Environment): Optional[path] =
     safely(Environment.xdgRuntimeDir[path])
 
   def bin[path: Instantiable across Paths from Text]
-     (using environment: Environment, home: HomeDirectory)
+       (using environment: Environment, home: HomeDirectory)
   :     path =
     safely(Environment.xdgConfigHome[path]).or(path(t"${home.directory()}/.local/bin"))
 
   def dataDirs[path: Instantiable across Paths from Text]
-     (using environment: Environment, systemProperties: SystemProperties)
+       (using environment: Environment, systemProperties: SystemProperties)
   :     List[path] =
     safely(Environment.xdgDataDirs[List[path]]).or:
       List(t"/usr/local/share", t"/usr/share").map(path(_))

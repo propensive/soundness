@@ -85,8 +85,8 @@ class Database(size: Int):
     references.at(left).or(abort(DataError())).asInstanceOf[Ref of left in this.type]
 
   inline def assign[left, right]
-     (left: Ref of left in this.type, right: Ref of right in this.type)
-     (using (left -< right) <:< Tuple.Union[Subject])
+              (left: Ref of left in this.type, right: Ref of right in this.type)
+              (using (left -< right) <:< Tuple.Union[Subject])
   :     Unit raises DataError =
 
     val relationIndex = !![Subject].indexOf[left -< right]
@@ -103,8 +103,8 @@ class Database(size: Int):
     relate[left, right].at(left).or(Set()).asInstanceOf[Set[Ref of right in this.type]]
 
   inline def unassign[left, right]
-     (left: Ref of left in this.type, right: Ref of right in this.type)
-     (using (left -< right) <:< Tuple.Union[Subject])
+              (left: Ref of left in this.type, right: Ref of right in this.type)
+              (using (left -< right) <:< Tuple.Union[Subject])
   :     Unit raises DataError =
 
     val relationIndex = !![Subject].indexOf[left -< right]

@@ -48,12 +48,12 @@ import vacuous.*
 
 object TarEntry:
   def apply[data: Readable by Bytes, instant: Abstractable across Instants]
-     (name:  TarRef,
-      data:  data,
-      mode:  UnixMode          = UnixMode(),
-      user:  UnixUser          = UnixUser(0),
-      group: UnixGroup         = UnixGroup(0),
-      mtime: Optional[instant] = Unset)
+       (name:  TarRef,
+        data:  data,
+        mode:  UnixMode              = UnixMode(),
+        user:  UnixUser              = UnixUser(0),
+        group: UnixGroup             = UnixGroup(0),
+        mtime: Optional[instant]     = Unset)
           : TarEntry =
 
     val mtimeU32: U32 =
@@ -63,41 +63,41 @@ object TarEntry:
 
 enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
   case File
-     (path:  TarRef,
-      mode:  UnixMode,
-      user:  UnixUser,
-      group: UnixGroup,
-      mtime: U32,
-      data:  LazyList[Bytes])
+        (path:  TarRef,
+         mode:  UnixMode,
+         user:  UnixUser,
+         group: UnixGroup,
+         mtime: U32,
+         data:  LazyList[Bytes])
   extends TarEntry(path, mode, user, group, mtime)
 
   case Directory(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
   extends TarEntry(path, mode, user, group, mtime)
 
   case Link
-     (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
+        (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
   extends TarEntry(path, mode, user, group, mtime)
 
   case Symlink
-     (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
+        (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
   extends TarEntry(path, mode, user, group, mtime)
 
   case CharSpecial
-     (path:   TarRef,
-      mode:   UnixMode,
-      user:   UnixUser,
-      group:  UnixGroup,
-      mtime:  U32,
-      device: (U32, U32))
+        (path:   TarRef,
+         mode:   UnixMode,
+         user:   UnixUser,
+         group:  UnixGroup,
+         mtime:  U32,
+         device: (U32, U32))
   extends TarEntry(path, mode, user, group, mtime)
 
   case BlockSpecial
-     (path:   TarRef,
-      mode:   UnixMode,
-      user:   UnixUser,
-      group:  UnixGroup,
-      mtime:  U32,
-      device: (U32, U32))
+        (path:   TarRef,
+         mode:   UnixMode,
+         user:   UnixUser,
+         group:  UnixGroup,
+         mtime:  U32,
+         device: (U32, U32))
   extends TarEntry(path, mode, user, group, mtime)
 
   case Fifo(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)

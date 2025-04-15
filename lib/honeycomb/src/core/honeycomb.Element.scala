@@ -42,9 +42,9 @@ import language.dynamics
 object Element:
   @targetName("make")
   def apply[node <: Label, child <: Label]
-     (labelString: String,
-      attributes:  Attributes,
-      children:    Seq[Optional[Html[child]] | Seq[Html[child]]] = Nil)
+       (labelString: String,
+        attributes:  Attributes,
+        children:    Seq[Optional[Html[child]] | Seq[Html[child]]] = Nil)
   :     Element[node] =
 
     new Element(labelString, attributes, flatten(children))

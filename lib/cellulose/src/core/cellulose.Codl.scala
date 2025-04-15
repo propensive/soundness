@@ -52,25 +52,25 @@ object Codl:
     summon[CodlDecoder[value]].schema.parse(readable.stream(source)).as[value]
 
   def parse[source]
-     (source:    source,
-      schema:    CodlSchema = CodlSchema.Free,
-      subs:      List[Data] = Nil,
-      fromStart: Boolean    = false)
-     (using readable: source is Readable by Text, aggregate: Tactic[CodlError])
+       (source:    source,
+        schema:    CodlSchema = CodlSchema.Free,
+        subs:      List[Data] = Nil,
+        fromStart: Boolean    = false)
+       (using readable: source is Readable by Text, aggregate: Tactic[CodlError])
   :     CodlDoc =
 
     val (margin, stream) = tokenize(readable.stream(source), fromStart)(using aggregate.diagnostics)
     val baseSchema: CodlSchema = schema
 
     case class Proto
-       (key:      Optional[Text] = Unset,
-        line:     Int            = 0,
-        col:      Int            = 0,
-        children:  List[CodlNode] = Nil,
-        extra:     Optional[Extra] = Unset,
-        schema:    CodlSchema     = CodlSchema.Free,
-        params:    Int            = 0,
-        multiline: Boolean        = false):
+                (key:      Optional[Text]   = Unset,
+                 line:     Int              = 0,
+                 col:      Int              = 0,
+                 children:  List[CodlNode]  = Nil,
+                 extra:     Optional[Extra] = Unset,
+                 schema:    CodlSchema      = CodlSchema.Free,
+                 params:    Int             = 0,
+                 multiline: Boolean         = false):
 
       def commit(child: Proto): (Optional[(Text, (Int, Int))], Proto) =
         val closed = child.close
@@ -107,29 +107,29 @@ object Codl:
 
     @tailrec
     def recur
-       (tokens:  Stream[CodlToken],
-        focus:   Proto,
-        peers:   List[CodlNode],
-        peerIds: Map[Text, (Int, Int)],
-        stack:   List[(Proto, List[CodlNode])],
-        lines:   Int,
-        subs:    List[Data],
-        body:    Stream[Char],
-        tabs:    List[Int])
+         (tokens:  Stream[CodlToken],
+          focus:   Proto,
+          peers:   List[CodlNode],
+          peerIds: Map[Text, (Int, Int)],
+          stack:   List[(Proto, List[CodlNode])],
+          lines:   Int,
+          subs:    List[Data],
+          body:    Stream[Char],
+          tabs:    List[Int])
     :     CodlDoc =
 
       def schema: CodlSchema = stack.prim.lay(baseSchema)(_.head.schema)
 
       inline def go
-         (tokens:  Stream[CodlToken]           = tokens.tail,
-          focus:   Proto                         = focus,
-          peers:   List[CodlNode]                = peers,
-          peerIds: Map[Text, (Int, Int)]         = peerIds,
-          stack:   List[(Proto, List[CodlNode])] = stack,
-          lines:   Int                           = lines,
-          subs:    List[Data]                    = subs,
-          body:    Stream[Char]                = Stream(),
-          tabs:    List[Int]                     = Nil)
+                  (tokens:  Stream[CodlToken]           = tokens.tail,
+                   focus:   Proto                         = focus,
+                   peers:   List[CodlNode]                = peers,
+                   peerIds: Map[Text, (Int, Int)]         = peerIds,
+                   stack:   List[(Proto, List[CodlNode])] = stack,
+                   lines:   Int                           = lines,
+                   subs:    List[Data]                    = subs,
+                   body:    Stream[Char]                  = Stream(),
+                   tabs:    List[Int]                     = Nil)
       :     CodlDoc =
         recur(tokens, focus, peers, peerIds, stack, lines, subs, body, tabs)
 
@@ -265,7 +265,7 @@ object Codl:
     if stream.isEmpty
     then CodlDoc() else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, Stream(), Nil)
 
-  def tokenize(in: Stream[Text]/*^*/, fromStart: Boolean = false)(using Diagnostics)
+  def tokenize(in: Stream[Text], fromStart: Boolean = false)(using Diagnostics)
   :     (Int, Stream[CodlToken]) =
 
     val reader: PositionReader = new PositionReader(in.map(identity))
@@ -285,17 +285,21 @@ object Codl:
     val margin: Int = first.column
 
     def istream
-       (char: Character, state: State = Indent, indent: Int = margin, count: Int, padding: Boolean)
+         (char:    Character,
+          state:   State     = Indent,
+          indent:  Int       = margin,
+          count:   Int,
+          padding: Boolean)
     :     Stream[CodlToken] =
       stream(char, state, indent, count, padding)
 
     @tailrec
     def stream
-       (char:    Character,
-        state:   State     = Indent,
-        indent:  Int       = margin,
-        count:   Int       = start,
-        padding: Boolean)
+         (char:    Character,
+          state:   State     = Indent,
+          indent:  Int       = margin,
+          count:   Int       = start,
+          padding: Boolean)
     :     Stream[CodlToken] =
 
       inline def next(): Character =
@@ -303,7 +307,10 @@ object Codl:
         catch case err: CodlError => Character('\n', err.line, err.col)
 
       inline def recur
-         (state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
+                  (state:   State,
+                   indent:  Int     = indent,
+                   count:   Int     = count + 1,
+                   padding: Boolean = padding)
       :     Stream[CodlToken] =
 
         stream(next(), state, indent, count, padding)
@@ -317,7 +324,10 @@ object Codl:
         else if char == Character.End then Stream() else Stream(CodlToken.Body(reader.charStream()))
 
       inline def irecur
-         (state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
+                  (state: State,
+                   indent: Int      = indent,
+                   count: Int       = count + 1,
+                   padding: Boolean = padding)
       :     Stream[CodlToken] =
 
         istream(next(), state, indent, count, padding)

@@ -69,8 +69,7 @@ object Geodesy:
     def apply(value: Double): Angle = value
     def degrees(value: Double): Angle = value*π/180
 
-    given addable: Angle is Addable by Angle into Angle =
-      (left, right) => (left + right)%c
+    given addable: Angle is Addable by Angle into Angle = (left, right) => (left + right)%c
 
     given subtractable: Angle is Subtractable by Angle into Angle =
       (left, right) => (c + left - right)%c
@@ -78,8 +77,7 @@ object Geodesy:
     given multiplicable: Angle is Multiplicable by Double into Angle =
       (left, right) => (left*right)%c
 
-    given divisible: Angle is Divisible by Double into Angle =
-      (left, right) => (left/right)%c
+    given divisible: Angle is Divisible by Double into Angle = (left, right) => (left/right)%c
 
     given multiplicable2: Double is Multiplicable by Angle into Angle =
       (left, right) => (left*right)%c

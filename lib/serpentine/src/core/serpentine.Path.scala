@@ -99,7 +99,7 @@ object Path:
       recur(left.textDescent, right.ascent)
 
   def apply[root <: Root on platform, element, platform: {Navigable by element, Radical from root}]
-     (root0: root, elements: List[element])
+       (root0: root, elements: List[element])
   :     Path on platform =
     if elements.isEmpty then root0 else
       Path.from[platform]
@@ -109,7 +109,7 @@ object Path:
         platform.caseSensitivity)
 
   private def from[platform]
-     (root0: Text, elements: List[Text], separator: Text, caseSensitivity: Case)
+               (root0: Text, elements: List[Text], separator: Text, caseSensitivity: Case)
   :     Path on platform =
     new Path(root0, elements, separator, caseSensitivity):
       type Platform = platform

@@ -60,8 +60,8 @@ class Matrix[element, rows <: Int, columns <: Int]
 
   @targetName("scalarMul")
   def * [right](right: right)
-     (using multiplication: element is Multiplicable by right)
-     (using ClassTag[multiplication.Result])
+        (using multiplication: element is Multiplicable by right)
+        (using ClassTag[multiplication.Result])
   :     Matrix[multiplication.Result, rows, columns] =
 
     val elements2 = IArray.create[multiplication.Result](elements.length): array =>
@@ -82,13 +82,13 @@ class Matrix[element, rows <: Int, columns <: Int]
 
   @targetName("mul")
   def * [right, rightColumns <: Int: ValueOf]
-     (right: Matrix[right, columns, rightColumns])
-     (using multiplication: element is Multiplicable by right,
-            addition:       multiplication.Result is Addable by multiplication.Result,
-            equality:       addition.Result =:= multiplication.Result,
-            rowValue:       ValueOf[rows],
-            columnValue:    ValueOf[columns],
-            classTag:       ClassTag[multiplication.Result])
+        (right: Matrix[right, columns, rightColumns])
+        (using multiplication: element is Multiplicable by right,
+               addition:       multiplication.Result is Addable by multiplication.Result,
+               equality:       addition.Result =:= multiplication.Result,
+               rowValue:       ValueOf[rows],
+               columnValue:    ValueOf[columns],
+               classTag:       ClassTag[multiplication.Result])
   :     Matrix[multiplication.Result, rows, rightColumns] =
 
     val columns2 = valueOf[rightColumns]
@@ -123,29 +123,32 @@ object Matrix:
         . join(before, t" ", after)
       . join(t"\n")
 
+  private type Constraint[rows <: Tuple, element] =
+    Tuple.Union
+     [Tuple.Fold[rows, Zero, [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple]] & Tuple]
+    <:< element
+
+  private type ColumnConstraint[rows <: Tuple] =
+    Tuple.Union[Tuple.Map[rows, [tuple] =>> Tuple.Size[tuple & Tuple]]]
+
   transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using erased Void)
-     [element]
-     (rows: Tuple)
-     (using Tuple.Union
-             [Tuple.Fold
-               [rows.type,
-                Zero,
-                [left, right] =>>
-                  Tuple.Concat[left & Tuple, right & Tuple]] & Tuple] <:< element,
-            Columns =:= Tuple.Union[Tuple.Map[rows.type, [tuple] =>> Tuple.Size[tuple & Tuple]]],
-            Rows =:= Tuple.Size[rows.type],
-            ClassTag[element])
+                          [element]
+                          (rows: Tuple)
+                          (using Constraint[rows.type, element],
+                                 Columns =:= ColumnConstraint[rows.type],
+                                 Rows =:= Tuple.Size[rows.type],
+                                 ClassTag[element])
       : Any =
 
     val rowCount: Int = valueOf[Rows]
     val columnCount = valueOf[Columns]
 
     new Matrix[element, Rows, Columns]
-     (rowCount,
-      columnCount,
-      IArray.create[element](columnCount*rowCount): array =>
-        for row <- 0 until rowCount; column <- 0 until columnCount
-        do rows.productElement(row).asMatchable.absolve match
-          case tuple: Tuple =>
-            array(columnCount*row + column) =
-              tuple.productElement(column).asInstanceOf[element])
+         (rowCount,
+          columnCount,
+          IArray.create[element](columnCount*rowCount): array =>
+            for row <- 0 until rowCount; column <- 0 until columnCount
+            do rows.productElement(row).asMatchable.absolve match
+              case tuple: Tuple =>
+                array(columnCount*row + column) =
+                  tuple.productElement(column).asInstanceOf[element])

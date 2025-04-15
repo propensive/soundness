@@ -64,10 +64,10 @@ package formulations:
       Form(action = t".", method = Method.Post)(content, Input.Submit(value = submit.or(t"Submit")))
 
     def element
-       (widget:     List[Html[Phrasing]],
-        legend:     Text,
-        validation: Optional[Message],
-        required:   Boolean)
+         (widget:     List[Html[Phrasing]],
+          legend:     Text,
+          validation: Optional[Message],
+          required:   Boolean)
     :     Html[Flow] =
       val validation2 = validation.let(_.html)
       Div(validation2.let(P.alert(_)), Label(legend, widget), Span.required(t"*").unless(!required))

@@ -59,12 +59,12 @@ object XmlInterpolation:
   case class ParseStateNode(name: Text, namespaces: Set[Text])
 
   case class ParseState
-     (offset:  Int,
-      context: XmlContext,
-      stack:   List[ParseStateNode],
-      current: Text,
-      source:  Text,
-      ns:      Boolean):
+              (offset:  Int,
+               context: XmlContext,
+               stack:   List[ParseStateNode],
+               current: Text,
+               source:  Text,
+               ns:      Boolean):
 
     def apply(newContext: XmlContext, char: Char) =
       copy(context = newContext, current = t"$current$char", offset = offset + 1)
@@ -95,9 +95,9 @@ object XmlInterpolation:
       if tag.name == current then copy(stack = stack.tail) else
         throw
           InterpolationError
-            (m"closing tag '$current' does not match expected tag '${tag.name}'",
-             offset - current.length,
-             current.length)
+           (m"closing tag '$current' does not match expected tag '${tag.name}'",
+            offset - current.length,
+            current.length)
 
   given xmlInput: Substitution[XmlInput, Text, "t"]:
     def embed(value: Text) = XmlInput.Flat(value)
@@ -181,16 +181,16 @@ object XmlInterpolation:
           case ':' =>
             if state.ns then throw
               InterpolationError
-                (m"the tag name can contain at most one ':' character to indicate a namespace",
-                 state.offset,
-                 1)
+               (m"the tag name can contain at most one ':' character to indicate a namespace",
+                state.offset,
+                1)
             else state(char).namespace
 
           case '>' =>
             if state.checkNs then state(Body)
             else throw
               InterpolationError
-                (m"the tag uses a namespace that has not been declared with an xmlns attribute")
+               (m"the tag uses a namespace that has not been declared with an xmlns attribute")
 
           case _ => throw InterpolationError(m"expected '>'", state.offset, 1)
 
@@ -202,9 +202,9 @@ object XmlInterpolation:
           case ':' =>
             if state.ns then throw
               InterpolationError
-                (m"the tag name can contain at most one ':' character to indicate a namespace",
-                 state.offset,
-                 1)
+               (m"the tag name can contain at most one ':' character to indicate a namespace",
+                state.offset,
+                1)
             else state(char).namespace
 
           case _ =>
@@ -225,9 +225,9 @@ object XmlInterpolation:
           case ':' =>
             if state.ns then throw
               InterpolationError
-                (m"the attribute name can contain at most one ':' character indicating a namespace",
-                 state.offset,
-                 1)
+               (m"the attribute name can contain at most one ':' character indicating a namespace",
+                state.offset,
+                1)
             else state(char).namespace
 
           case char =>
@@ -255,7 +255,7 @@ object XmlInterpolation:
             if state.checkNs then state(Body)
             else throw
               InterpolationError
-                (m"the tag uses a namespace that has not been declared with an xmlns attribute")
+               (m"the tag uses a namespace that has not been declared with an xmlns attribute")
 
           case char =>
             throw InterpolationError

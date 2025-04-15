@@ -45,11 +45,11 @@ import vacuous.*
 
 object Telekinesis:
   def expand
-     (todo:    Seq[Expr[Any]],
-      method:  Optional[Expr[Http.Method]]  = Unset,
-      status:  Optional[Expr[Http.Status]]  = Unset,
-      done:    List[Expr[Http.Header]]      = Nil)
-     (using Quotes)
+       (todo:    Seq[Expr[Any]],
+        method:  Optional[Expr[Http.Method]]  = Unset,
+        status:  Optional[Expr[Http.Status]]  = Unset,
+        done:    List[Expr[Http.Header]]      = Nil)
+       (using Quotes)
   :     (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
     import quotes.reflect.*
 
@@ -105,14 +105,14 @@ object Telekinesis:
         (method, status, Expr.ofList(done.reverse))
 
   def submit[target: Type, payload: Type]
-     (submit:   Expr[Http.Submit[target]],
-      headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
-      online:   Expr[Online],
-      loggable: Expr[HttpEvent is Loggable],
-      payload:  Expr[payload],
-      postable: Expr[payload is Postable],
-      client:   Expr[HttpClient onto target])
-     (using Quotes)
+       (submit:   Expr[Http.Submit[target]],
+        headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
+        online:   Expr[Online],
+        loggable: Expr[HttpEvent is Loggable],
+        payload:  Expr[payload],
+        postable: Expr[payload is Postable],
+        client:   Expr[HttpClient onto target])
+       (using Quotes)
   :     Expr[Http.Response] =
 
     headers.absolve match
@@ -137,12 +137,12 @@ object Telekinesis:
             $client.request(request, $submit.target)  }
 
   def fetch[target: Type]
-     (fetch:    Expr[Http.Fetch[target]],
-      headers:  Expr[Seq[Any]],
-      online:   Expr[Online],
-      loggable: Expr[HttpEvent is Loggable],
-      client:   Expr[HttpClient onto target])
-     (using Quotes)
+       (fetch:    Expr[Http.Fetch[target]],
+        headers:  Expr[Seq[Any]],
+        online:   Expr[Online],
+        loggable: Expr[HttpEvent is Loggable],
+        client:   Expr[HttpClient onto target])
+       (using Quotes)
   :     Expr[Http.Response] =
 
     headers.absolve match

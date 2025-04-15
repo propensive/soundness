@@ -143,10 +143,10 @@ object Mosquito:
     def size(using ValueOf[size]): Int = valueOf[size]
 
     def norm
-       (using multiplicable: left is Multiplicable by left,
-              addable:       multiplicable.Result is Addable by multiplicable.Result into
-                              multiplicable.Result,
-              rootable:      multiplicable.Result is Rootable[2] into left)
+         (using multiplicable: left is Multiplicable by left,
+                addable:       multiplicable.Result is Addable by multiplicable.Result into
+                                multiplicable.Result,
+                rootable:      multiplicable.Result is Rootable[2] into left)
     :     left =
 
       def recur(sum: multiplicable.Result, i: Int): left =
@@ -164,10 +164,10 @@ object Mosquito:
       recur(left)
 
     def unitary[square]
-       (using multiplicable: left is Multiplicable by left into square,
-              addable:      square is Addable by square into square,
-              rootable:     square is Rootable[2] into left,
-              divisible:    left is Divisible by left into Double)
+         (using multiplicable: left is Multiplicable by left into square,
+                addable:       square is Addable by square into square,
+                rootable:      square is Rootable[2] into left,
+                divisible:     left is Divisible by left into Double)
     :     Vector[Double, size] =
 
       val magnitude: left = left.norm
@@ -179,10 +179,10 @@ object Mosquito:
       recur(left)
 
     def dot[right](right: Vector[right, size])
-       (using multiply: left is Multiplicable by right,
-              size:     ValueOf[size],
-              addable:  multiply.Result is Addable by multiply.Result,
-              equality: addable.Result =:= multiply.Result)
+         (using multiply: left is Multiplicable by right,
+                size:     ValueOf[size],
+                addable:  multiply.Result is Addable by multiply.Result,
+                equality: addable.Result =:= multiply.Result)
     :     multiply.Result =
 
       def recur(index: Int, sum: multiply.Result): multiply.Result =

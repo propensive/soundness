@@ -58,8 +58,8 @@ object HtmlDoc:
     serializer.serialize(doc, maxWidth)
 
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
-     (content: (Optional[Html[Flow]] | Seq[Html[Flow]])*)
-     (using att: "href" is HtmlAttribute[Stylesheet])
+       (content: (Optional[Html[Flow]] | Seq[Html[Flow]])*)
+       (using att: "href" is HtmlAttribute[Stylesheet])
   :     HtmlDoc =
 
     val link = att.convert(stylesheet).absolve match

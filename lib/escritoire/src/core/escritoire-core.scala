@@ -91,11 +91,11 @@ package columnar:
           else
             if position - lineStart >= width
             then format
-             (text,
-              position + 1,
-              lastSpace + 1,
-              lastSpace,
-              text.segment(lineStart.z ~ Ordinal.natural(lastSpace)) :: lines)
+                  (text,
+                   position + 1,
+                   lastSpace + 1,
+                   lastSpace,
+                   text.segment(lineStart.z ~ Ordinal.natural(lastSpace)) :: lines)
 
             else format(text, position + 1, lineStart, lastSpace, lines)
         else if lineStart == position then lines

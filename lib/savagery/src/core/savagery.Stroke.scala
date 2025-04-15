@@ -47,8 +47,7 @@ enum Stroke:
   case Draw(coords: Shift | Point)
   case Close
 
-  case Cubic[point <: (Shift | Point)]
-     (ctrl1: Optional[point], ctrl2: point, point: point)
+  case Cubic[point <: (Shift | Point)](ctrl1: Optional[point], ctrl2: point, point: point)
 
   case Quadratic[point <: (Shift | Point)](ctrl1: Optional[point], point: point)
 

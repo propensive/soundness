@@ -46,13 +46,13 @@ package eucalyptus
 //   given realm: Realm = realm"eucalyptus"
 
 //   def record[message: Type, text: Type]
-//       (level:          Expr[Level],
-//        message:        Expr[message],
-//        log:            Expr[Log[text]],
-//        realm:          Expr[Realm],
-//        presentational: Expr[text is Presentational],
-//        show:           Expr[Any])
-//       (using Quotes)
+//        (level:          Expr[Level],
+//         message:        Expr[message],
+//         log:            Expr[Log[text]],
+//         realm:          Expr[Realm],
+//         presentational: Expr[text is Presentational],
+//         show:           Expr[Any])
+//        (using Quotes)
 //   :     Expr[Unit] =
 
 //     '{  val time = System.currentTimeMillis
