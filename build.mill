@@ -149,7 +149,7 @@ object soundness extends ScalaModule {
 
   object tool extends BaseScalaModule with RecursivePublishModule {
     def moduleDeps = Seq(anthology.core, harlequin.core, hellenism.core, hyperbole.core,
-        octogenarian.core, revolution.core, umbrageous.plugin, anthology.java)
+        octogenarian.core, revolution.core, umbrageous.plugin, anthology.java, austronesian.core)
   }
 
   object web extends BaseScalaModule with RecursivePublishModule {
@@ -173,7 +173,6 @@ object test extends ScalaModule {
     abacist.test,
     adversaria.test,
     anamnesis.test,
-    austronesian.test,
     aviation.test,
     caesura.test,
     camouflage.test,
@@ -237,6 +236,7 @@ object test extends ScalaModule {
     wisteria.test
 
     // Not compiling
+    // austronesian
     // bitumen
     // cellulose
     // coaxial
@@ -433,7 +433,7 @@ object anticipation extends SoundnessModule {
 
 object austronesian extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(wisteria.core, distillate.core)
+    def moduleDeps = Seq(wisteria.core, distillate.core, hellenism.core)
   }
 
   object test extends ProbablyTestModule {

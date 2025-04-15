@@ -99,3 +99,12 @@ object Classpath:
 
 trait Classpath:
   def entries: List[ClasspathEntry]
+  private def array: Array[jn.URL | Null] = Array.from(entries.map(_.javaUrl))
+
+  def classloader(parent: Classloader = classloaders.platform): Classloader =
+    val javaClassloader = new jn.URLClassLoader(array, parent.java):
+      override def loadClass(name: String, resolve: Boolean): Class[_] | Null =
+        try findClass(name) catch case error: ClassNotFoundException =>
+          super.loadClass(name, resolve)
+
+    new Classloader(javaClassloader)
