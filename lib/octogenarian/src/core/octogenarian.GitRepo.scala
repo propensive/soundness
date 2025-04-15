@@ -258,7 +258,6 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
             recur(tail, hash, tree, parents, author, committer, signature, line :: lines)
 
           case other =>
-            println("ignoring "+other)
             recur(tail, hash, tree, parents, author, committer, signature, lines)
 
         case _ =>

@@ -183,7 +183,6 @@ object StackTrace:
                 else args.tail.mkString("Σ((", ", ", ")")+" -> "+args.head+")"
 
               val mc = name.substring(idx, index + 3).nn
-              println(mc)
               token(idx, mc, name2)
             case 'i' => token(idx,         "$minus",               "-")
             case _   => skip()

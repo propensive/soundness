@@ -1,0 +1,18 @@
+#!/bin/bash
+
+base=main
+for branch in $(git for-each-ref --format='%(refname:short)' refs/heads/ | grep -v "^$base\$"); do
+  forkpoint=$(git merge-base $base $branch)
+
+  # Generate the diff that the branch introduced
+  git diff "$forkpoint" "$branch" > /tmp/$branch.diff
+
+  # Check whether main already contains those changes
+  git diff "$forkpoint" "$base" > /tmp/$branch-in-main.diff
+
+  if diff -q /tmp/$branch.diff /tmp/$branch-in-main.diff >/dev/null; then
+    echo "$branch: safe to delete (diff already in $base)"
+  else
+    echo "$branch: has unique changes"
+  fi
+done
