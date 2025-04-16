@@ -225,9 +225,9 @@ extension (obj: Stream.type)
 
     def recur(iteration: Int): Stream[Unit] =
       try
-        snooze(startTime + generic.milliseconds(duration)*iteration)
-        () #:: metronome(duration)
-      catch case err: AsyncError => Stream()
+        sleep(startTime + generic.milliseconds(duration)*iteration)
+        () #:: recur(iteration + 1)
+      catch case error: AsyncError => Stream()
 
     recur(0)
 
