@@ -48,6 +48,7 @@ package scalacOptions:
   val newSyntax = ScalacOption[Scalac.All](t"-new-syntax")
   def sourceFuture = ScalacOption[Scalac.All](t"-source", t"future")
   val experimental = ScalacOption[3.4 | 3.5 | 3.6](t"-experimental")
+  val scalaJs = ScalacOption[Scalac.All](t"-scalajs")
 
   package warnings:
     val feature = ScalacOption[Scalac.All](t"-feature")
