@@ -62,8 +62,7 @@ object Scalac:
   def refresh(): Unit = synchronized { Scala3 = new dtd.Compiler() }
   def compiler(): dtd.Compiler = Scala3
 
-case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[version]]):
-
+case class Scalac[version <: Scalac.All](options: List[Scalac.Option[version]]):
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
@@ -82,9 +81,11 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
 
       object ProgressApi extends dtdsi.ProgressCallback:
         private var last: Int = -1
+
         override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
         : Unit =
-          ()
+
+            ()
 
         override def progress
                       (current:      Int,
@@ -114,9 +115,12 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
             ::: List(t"")
 
           Log.info(CompileEvent.Running(args))
-          setup(args.map(_.s).to(Array), ctx).map(_(1)).get
+
+          setup(args.map(_.s).to(Array), ctx).map(_(1)).getOrElse:
+            abort(CompilerError())
 
         def run(): CompileProcess =
+          println("running")
           given dtdc.Contexts.Context = currentCtx.fresh.pipe: ctx =>
             ctx
             . setReporter(reporter)
@@ -129,12 +133,59 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
           scalacProcess.put:
             task(t"scalac"):
               try
+                println("compiling")
                 Scalac.compiler().newRun.tap: run =>
                   run.compileSources(sourceFiles)
+                  println("and")
                   if !reporter.hasErrors then finish(Scalac.Scala3, run)
 
                 scalacProcess.put
                  (if reporter.hasErrors then CompileResult.Failure else CompileResult.Success)
+
+                println(options)
+                if options.has(scalacOptions.scalaJs) then
+                  println("has Scala.JS")
+                  import org.scalajs.linker.*
+                  import org.scalajs.linker.interface.*
+                  import org.scalajs.logging.*
+                  import scala.concurrent.*, duration.*
+
+                  val logger = new Logger:
+                    def log(level: Level, message: => String): Unit = println(message)
+                    def trace(exception: => Throwable): Unit = exception.printStackTrace()
+
+                  println("logger = "+logger)
+
+                  val config = StandardConfig().withExperimentalUseWebAssembly(true).withOptimizer(true).withMinify(true).withModuleKind(ModuleKind.ESModule)
+                  println("config = "+config)
+
+                  val linker = try StandardImpl.linker(config)
+                    catch case error: Throwable =>
+                      error.printStackTrace()
+                      ???
+
+                  println("linker = "+linker)
+                  val irFileCache: IRFileCache = StandardImpl.irFileCache()
+                  val cache = irFileCache.newCache
+                  import scala.concurrent.ExecutionContext.Implicits.global
+                  val scalalib: Seq[IRContainer] = Await.result(PathIRContainer.fromClasspath(List(java.nio.file.Paths.get("/Users/propensive/work/soundness/scalajs-library_2.13-1.18.2.jar").nn)), 5.minutes)(0)
+                  val scalalib2: Seq[IRContainer] = Await.result(PathIRContainer.fromClasspath(List(java.nio.file.Paths.get("/Users/propensive/work/soundness/scalajs-scalalib_2.13-2.13.16+1.18.2.jar").nn)), 5.minutes)(0)
+                  val javalib: Seq[IRContainer] = Await.result(PathIRContainer.fromClasspath(List(java.nio.file.Paths.get("/Users/propensive/work/soundness/scalajs-javalib-1.18.2.jar").nn)), 5.minutes)(0)
+                  val scalalibFiles: Seq[IRFile] = Await.result(cache.cached(scalalib), 5.minutes)
+                  val scalalibFiles2: Seq[IRFile] = Await.result(cache.cached(scalalib2), 5.minutes)
+                  val javalibFiles: Seq[IRFile] = Await.result(cache.cached(javalib), 5.minutes)
+
+                  println("linking")
+                  val output = PathOutputDirectory(java.nio.file.Paths.get("js").nn)
+                  println(out.generic.s+"/foo/Hello$.sjsir")
+                  val irFile1: IRFile = Await.result(PathIRFile(java.nio.file.Paths.get(out.generic.s+"/foo/Hello$.sjsir").nn), 5.minutes)
+                  val irFile2: IRFile = Await.result(PathIRFile(java.nio.file.Paths.get(out.generic.s+"/foo/Hello.sjsir").nn), 5.minutes)
+                  val mainMethod = ModuleInitializer.mainMethod("foo.Hello", "mainxyz")
+                  println(mainMethod)
+                  try println("Result: "+Await.result(linker.link(List(irFile1, irFile2) ++ scalalibFiles ++ scalalibFiles2 ++ javalibFiles, mainMethod :: Nil, output, logger), 1.minutes))
+                  catch case throwable: Throwable =>
+                    println(throwable)
+                    throwable.printStackTrace()
 
               catch case suc.NonFatal(error) =>
                 scalacProcess.put(CompileResult.Crash(error.stackTrace))

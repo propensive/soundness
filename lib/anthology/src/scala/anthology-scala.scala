@@ -44,10 +44,11 @@ import dotty.tools.dotc.reporting.*
 
 import language.adhocExtensions
 
-object scalacOptions:
-  val newSyntax = Scalac.Option[Scalac.Versions](t"-new-syntax")
-  def sourceFuture = Scalac.Option[Scalac.Versions](t"-source", t"future")
-  val experimental = Scalac.Option[3.4 | 3.5 | 3.6 | 3.7](t"-experimental")
+package scalacOptions:
+  val newSyntax = ScalacOption[Scalac.All](t"-new-syntax")
+  def sourceFuture = ScalacOption[Scalac.All](t"-source", t"future")
+  val experimental = ScalacOption[3.4 | 3.5 | 3.6 | 3.7](t"-experimental")
+  val scalaJs = ScalacOption[Scalac.All](t"-scalajs")
 
   object warnings:
     val feature = Scalac.Option[Scalac.Versions](t"-feature")

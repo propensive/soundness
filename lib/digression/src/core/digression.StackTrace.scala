@@ -60,7 +60,8 @@ object StackTrace:
       "⁅⁆".tt -> "package file".tt,
       "ⲛ".tt  -> "class initializer".tt,
       "ℓ".tt  -> "lazy initializer".tt,
-      "Σ".tt  -> "specialized method".tt)
+      "Σ".tt  -> "specialized method".tt,
+      "✶".tt  -> "object".tt)
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()
@@ -227,7 +228,11 @@ object StackTrace:
 
     else if rewritten.s.endsWith("#") then
       val pivot = rewritten.s.lastIndexOf(".")
+<<<<<<< HEAD
       val sub = if rewritten.s.endsWith("⁆#") then "⁅" else "Ξ"
+=======
+      val sub = if rewritten.s.endsWith("⋮#") then "⋮" else "✶"
+>>>>>>> 88f500248 (Start work on compiling Scala.js)
 
       (rewritten.s.substring(0, pivot).nn+"."+sub+rewritten.s.substring(pivot + 1).nn.dropRight(1))
       . tt
