@@ -34,6 +34,86 @@ package anthology
 
 import soundness.*
 
+import workingDirectories.virtualMachine
+import systemProperties.virtualMachine
+import supervisors.global
+import asyncTermination.cancel
+import logging.silent
+import stdioSources.virtualMachine.ansi
+
+import strategies.throwUnsafely
+
 object Tests extends Suite(m"Anthology Tests"):
   def run(): Unit =
-    ()
+
+    suite(m"Scala compiler tests"):
+
+      val helloWorld = t"""
+        package foo
+
+        @main
+        def run(): Unit = println("Hello world")
+      """
+
+      val sources = Map(t"hello.scala" -> helloWorld)
+
+      test(m"Compile hello world"):
+        val classpath = LocalClasspath.system()
+        val dir: Path on Linux = workingDirectory[Path on Linux] / Name[Linux](t"tmp")
+
+        mend:
+          case CompilerError() =>
+            println(t"Compiler error")
+
+          case AsyncError(_) =>
+            println(t"Async error")
+
+        . within:
+            val process = Scalac[3.6](Nil)(classpath)(sources, dir)
+            val progress = async(process.progress.each(println(_)))
+
+            process.complete()
+            process.notices.each(println(_))
+            progress.await()
+
+      . assert()
+
+    suite(m"Scala.js compiler tests"):
+
+      val helloWorld = t"""
+        package foo
+
+        object Hello:
+          def mainxyz(): Unit =
+            def recur(n: Int, m: Int, c: Int): Int =
+              if c == 0 then n else recur(m, n + m, c - 1)
+
+            val result = recur(1, 2, 8)
+            println(result)
+
+      """
+
+
+      val sources = Map(t"hello.scala" -> helloWorld)
+
+      test(m"Compile hello world"):
+        val classpath = LocalClasspath.system()
+        val dir: Path on Linux = workingDirectory[Path on Linux] / Name[Linux](t"tmp")
+
+        mend:
+          case CompilerError() =>
+            println(t"Compiler error")
+
+          case AsyncError(_) =>
+            println(t"Async error")
+
+        . within:
+            val process = Scalac[3.6](List(scalacOptions.scalaJs))(classpath)(sources, dir)
+            val progress = async(process.progress.each(println(_)))
+
+            process.complete()
+            process.notices.each(println(_))
+            progress.await()
+
+
+      . assert()
