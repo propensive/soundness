@@ -178,6 +178,7 @@ object test extends ScalaModule {
     geodesy.test,
     gesticulate.test,
     gossamer.test,
+    hieroglyph.test,
     hypotenuse.test,
     imperial.test,
     inimitable.test,
@@ -251,7 +252,6 @@ object test extends ScalaModule {
     // guillotine
     // hallucination
     // harlequin
-    // hieroglyph
     // legerdemain
     // mercator
     // merino
