@@ -175,6 +175,7 @@ object test extends ScalaModule {
     distillate.test,
     diuretic.test,
     feudalism.test,
+    gastronomy.test,
     geodesy.test,
     gesticulate.test,
     gossamer.test,
@@ -225,6 +226,7 @@ object test extends ScalaModule {
     octogenarian.test,
     phoenicia.test,
     polaris.test,
+    polyvinyl.test,
     prepositional.test,
     proscenium.test,
     quantitative.test,
@@ -249,7 +251,6 @@ object test extends ScalaModule {
     // ethereal
     // eucalyptus
     // exoskeleton
-    // gastronomy
     // guillotine
     // hallucination
     // harlequin
@@ -259,7 +260,6 @@ object test extends ScalaModule {
     // parasite
     // perihelion
     // plutocrat
-    // polyvinyl
     // profanity
     // punctuation
     // savagery

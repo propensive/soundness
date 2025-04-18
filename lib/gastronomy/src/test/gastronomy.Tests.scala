@@ -32,14 +32,10 @@
                                                                                                   */
 package gastronomy
 
-import anticipation.*
-import contingency.*, strategies.throwUnsafely
-import gossamer.*
-import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
-import monotonous.*
-import probably.*
-import rudiments.*
-import spectacular.*
+import soundness.*
+
+import strategies.throwUnsafely
+import charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
 
 import alphabets.hex.upperCase
 
@@ -90,5 +86,6 @@ object Tests extends Suite(m"Gastronomy tests"):
     .assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
 
     test(m"Encode to Binary"):
+      import alphabets.binary.standard
       IArray[Byte](1, 2, 3, 4).serialize[Binary]
     .assert(_ == t"00000001000000100000001100000100")

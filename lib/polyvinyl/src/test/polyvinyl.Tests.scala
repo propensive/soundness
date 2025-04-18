@@ -32,8 +32,7 @@
                                                                                                   */
 package polyvinyl
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Polyvinyl tests"):
   def run(): Unit = ()

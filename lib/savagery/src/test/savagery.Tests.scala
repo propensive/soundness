@@ -32,9 +32,7 @@
                                                                                                   */
 package savagery
 
-import gossamer.*
-import probably.*
-import spectacular.*
+import soundness.*
 
 object Tests extends Suite(m"Savagery tests"):
   def run(): Unit =
