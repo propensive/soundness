@@ -756,7 +756,7 @@ object Hypotenuse:
     inline def flip(inline interval: Interval): B8 = (bitmap ^ B8.set(interval)).toByte
 
     @targetName("bitB8")
-    inline def apply(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+    inline def bit(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
 
     @targetName("rotateLeftB8")
     inline infix def <<< (inline count: Int): B8 =
@@ -847,7 +847,7 @@ object Hypotenuse:
     inline def flip(inline interval: Interval): B16 = (bitmap ^ B16.set(interval)).toShort
 
     @targetName("bitB16")
-    inline def apply(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+    inline def bit(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
 
     @targetName("rotateLeftB16")
     inline infix def <<< (count: Int): B16 =
@@ -945,7 +945,7 @@ object Hypotenuse:
     inline def flip(inline interval: Interval): B32 = bitmap ^ B32.set(interval)
 
     @targetName("bitB32")
-    inline def apply(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+    inline def bit(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
 
     @targetName("rotateLeftB32")
     inline infix def <<< (count: Int): B32 = JInt.rotateLeft(bitmap, count%%32)
@@ -1042,8 +1042,8 @@ object Hypotenuse:
     @targetName("flipIntervalB64")
     inline def flip(inline interval: Interval): B64 = bitmap ^ B64.set(interval)
 
-    @targetName("bitB32")
-    inline def apply(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+    @targetName("bitB64")
+    inline def bit(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
 
     @targetName("rotateLeftB64")
     inline infix def <<< (count: Int): B64 = JLong.rotateLeft(bitmap, count%%64)
