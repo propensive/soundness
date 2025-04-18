@@ -32,10 +32,7 @@
                                                                                                   */
 package honeycomb
 
-import gossamer.*
-import probably.*
-import rudiments.*
-import spectacular.*
+import soundness.{Table as _, *}
 
 import html5.*
 

@@ -62,6 +62,7 @@ object Tests extends Suite(m"Soundness tests"):
     gesticulate.Tests()
     gossamer.Tests()
     hellenism.Tests()
+    honeycomb.Tests()
     hyperbole.Tests()
     inimitable.Tests()
     jacinta.Tests()

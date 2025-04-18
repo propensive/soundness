@@ -207,6 +207,7 @@ object test extends ScalaModule {
     fulminate.test,
     galilei.test,
     hellenism.test,
+    honeycomb.test,
     hyperbole.test,
     larceny.test,
     mandible.test,
@@ -247,7 +248,6 @@ object test extends ScalaModule {
     // hallucination
     // harlequin
     // hieroglyph
-    // honeycomb
     // hypotenuse
     // imperial
     // iridescence
