@@ -92,6 +92,7 @@ object Tests extends Suite(m"Soundness tests"):
 object FailingTests extends Suite(m"Failing tests"):
   def run(): Unit =
     baroque.Tests()
+    cellulose.Tests()
     chiaroscuro.Tests()
     mandible.Tests()
     monotonous.Tests()

@@ -198,6 +198,7 @@ object test extends ScalaModule {
     baroque.test,
     burdock.test,
     cataclysm.test,
+    cellulose.test,
     charisma.test,
     chiaroscuro.test,
     contextual.test,
@@ -228,7 +229,6 @@ object test extends ScalaModule {
 
     // Not compiling
     // bitumen
-    // cellulose
     // coaxial
     // cosmopolite
     // dendrology
