@@ -102,6 +102,7 @@ object FailingTests extends Suite(m"Failing tests"):
     baroque.Tests()
     cellulose.Tests()
     chiaroscuro.Tests()
+    enigmatic.Tests()
     mandible.Tests()
     monotonous.Tests()
     mosquito.Tests()
