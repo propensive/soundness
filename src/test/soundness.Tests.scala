@@ -82,6 +82,7 @@ object Tests extends Suite(m"Soundness tests"):
     phoenicia.Tests()
     polaris.Tests()
     prepositional.Tests()
+    probably.Tests()
     proscenium.Tests()
     revolution.Tests()
     rudiments.Tests()

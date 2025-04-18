@@ -189,6 +189,7 @@ object test extends ScalaModule {
     nettlesome.test,
     nomenclature.test,
     panopticon.test,
+    probably.test,
     rudiments.test,
     spectacular.test,
     symbolism.test,
@@ -259,7 +260,6 @@ object test extends ScalaModule {
     // perihelion
     // plutocrat
     // polyvinyl
-    // probably
     // profanity
     // punctuation
     // savagery

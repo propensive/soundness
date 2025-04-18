@@ -32,7 +32,7 @@
                                                                                                   */
 package probably
 
-import gossamer.*
+import soundness.*
 
 object Tests extends Suite(m"Probably Tests"):
   def run(): Unit =
