@@ -32,16 +32,9 @@
                                                                                                   */
 package escapade
 
-import contingency.*
-import gossamer.*
-import iridescence.*, colors.{Red, Yellow}
-import probably.*
-import rudiments.*
-import spectacular.*
-import vacuous.*
-import yossarian.*
+import soundness.*
 
-import escapes.*
+import webColors.{Red, Yellow}
 
 object Tests extends Suite(m"Escapade tests"):
   def run(): Unit =
