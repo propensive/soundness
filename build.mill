@@ -173,6 +173,7 @@ object test extends ScalaModule {
     digression.test,
     dissonance.test,
     distillate.test,
+    diuretic.test,
     feudalism.test,
     geodesy.test,
     gesticulate.test,
@@ -239,7 +240,6 @@ object test extends ScalaModule {
     // coaxial
     // cosmopolite
     // dendrology
-    // diuretic
     // embarcadero
     // enigmatic
     // escapade

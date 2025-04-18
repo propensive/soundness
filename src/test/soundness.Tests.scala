@@ -56,6 +56,7 @@ object Tests extends Suite(m"Soundness tests"):
     digression.Tests()
     dissonance.Tests()
     distillate.Tests()
+    diuretic.Tests()
     feudalism.Tests()
     fulminate.Tests()
     galilei.Tests()
