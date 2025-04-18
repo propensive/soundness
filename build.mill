@@ -180,6 +180,7 @@ object test extends ScalaModule {
     hypotenuse.test,
     imperial.test,
     inimitable.test,
+    iridescence.test,
     jacinta.test,
     kaleidoscope.test,
     metamorphose.test,
@@ -188,6 +189,7 @@ object test extends ScalaModule {
     panopticon.test,
     rudiments.test,
     spectacular.test,
+    symbolism.test,
     turbulence.test,
     typonym.test,
     ulysses.test,
@@ -250,7 +252,6 @@ object test extends ScalaModule {
     // hallucination
     // harlequin
     // hieroglyph
-    // iridescence
     // legerdemain
     // mercator
     // merino
@@ -265,7 +266,6 @@ object test extends ScalaModule {
     // scintillate
     // superlunary
     // surveillance
-    // symbolism
     // tarantula
     // xylophone
     // yossarian

@@ -32,8 +32,7 @@
                                                                                                   */
 package iridescence
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 given ColorProfile = colorProfiles.daylight
 

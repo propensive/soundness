@@ -68,6 +68,7 @@ object Tests extends Suite(m"Soundness tests"):
     hypotenuse.Tests()
     imperial.Tests()
     inimitable.Tests()
+    iridescence.Tests()
     jacinta.Tests()
     kaleidoscope.Tests()
     larceny.Tests()
@@ -85,6 +86,7 @@ object Tests extends Suite(m"Soundness tests"):
     sedentary.Tests()
     serpentine.Tests()
     spectacular.Tests
+    symbolism.Tests
     turbulence.Tests()
     typonym.Tests()
     ulysses.Tests()
