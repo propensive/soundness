@@ -66,6 +66,7 @@ object Tests extends Suite(m"Soundness tests"):
     honeycomb.Tests()
     hyperbole.Tests()
     hypotenuse.Tests()
+    imperial.Tests()
     inimitable.Tests()
     jacinta.Tests()
     kaleidoscope.Tests()
