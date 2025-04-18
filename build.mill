@@ -173,6 +173,7 @@ object test extends ScalaModule {
     digression.test,
     dissonance.test,
     distillate.test,
+    feudalism.test,
     geodesy.test,
     gesticulate.test,
     gossamer.test,
@@ -243,7 +244,6 @@ object test extends ScalaModule {
     // ethereal
     // eucalyptus
     // exoskeleton
-    // feudalism
     // gastronomy
     // guillotine
     // hallucination
