@@ -30,15 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package savagery
+package soundness
 
-import gossamer.*
-import probably.*
-import spectacular.*
-
-object Tests extends Suite(m"Savagery tests"):
-  def run(): Unit =
-    test(m"Simple plus sign path"):
-      Path().moveTo(0!0).lineUp(2).lineLeft(2).lineUp(1).lineRight(2).lineUp(2).lineRight(1)
-          .lineDown(2).lineRight(2).lineDown(1).lineLeft(2).lineDown(2).closed.xml.show
-    .assert(_ == t"")
+export anticipation.{Abstractable, Instantiable}

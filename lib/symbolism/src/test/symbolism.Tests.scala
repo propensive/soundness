@@ -32,8 +32,7 @@
                                                                                                   */
 package symbolism
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Symbolism Tests"):
   def run(): Unit =

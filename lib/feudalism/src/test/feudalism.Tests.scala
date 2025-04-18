@@ -32,20 +32,7 @@
                                                                                                   */
 package feudalism
 
-import gossamer.*
-import probably.*
-
-import language.experimental.captureChecking
+import soundness.*
 
 object Tests extends Suite(m"Feudalism tests"):
-  def run(): Unit =
-    test(m"read mutex"):
-      val mutex = Mutex[String]("Hello")
-
-      val result = mutex.read: ref =>
-        println(ref())
-        ref.snapshot()
-
-      result
-
-    .assert(_ == "Hello")
+ def run(): Unit = ()

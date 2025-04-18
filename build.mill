@@ -173,19 +173,27 @@ object test extends ScalaModule {
     digression.test,
     dissonance.test,
     distillate.test,
+    diuretic.test,
+    feudalism.test,
+    gastronomy.test,
     geodesy.test,
     gesticulate.test,
     gossamer.test,
+    hieroglyph.test,
     hypotenuse.test,
+    imperial.test,
     inimitable.test,
+    iridescence.test,
     jacinta.test,
     kaleidoscope.test,
     metamorphose.test,
     nettlesome.test,
     nomenclature.test,
     panopticon.test,
+    probably.test,
     rudiments.test,
     spectacular.test,
+    symbolism.test,
     turbulence.test,
     typonym.test,
     ulysses.test,
@@ -205,6 +213,7 @@ object test extends ScalaModule {
     chiaroscuro.test,
     contextual.test,
     denominative.test,
+    enigmatic.test,
     fulminate.test,
     galilei.test,
     hellenism.test,
@@ -217,6 +226,7 @@ object test extends ScalaModule {
     octogenarian.test,
     phoenicia.test,
     polaris.test,
+    polyvinyl.test,
     prepositional.test,
     proscenium.test,
     quantitative.test,
@@ -235,37 +245,27 @@ object test extends ScalaModule {
     // coaxial
     // cosmopolite
     // dendrology
-    // diuretic
     // embarcadero
-    // enigmatic
     // escapade
     // escritoire
     // ethereal
     // eucalyptus
     // exoskeleton
-    // feudalism
-    // gastronomy
     // guillotine
     // hallucination
     // harlequin
-    // hieroglyph
-    // imperial
-    // iridescence
     // legerdemain
     // mercator
     // merino
     // parasite
     // perihelion
     // plutocrat
-    // polyvinyl
-    // probably
     // profanity
     // punctuation
     // savagery
     // scintillate
     // superlunary
     // surveillance
-    // symbolism
     // tarantula
     // xylophone
     // yossarian

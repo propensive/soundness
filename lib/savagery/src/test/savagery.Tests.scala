@@ -30,89 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package imperial
+package savagery
 
 import soundness.*
 
-import strategies.throwUnsafely
-
-given Environment =
-  case t"HOME" => t"/home/work"
-  case _       => Unset
-
-given SystemProperties =
-  case t"user.home" => t"/home/work"
-  case _            => t""
-
-given Text is Instantiable across Paths from Text = identity(_)
-
-object Tests extends Suite(m"Imperial tests"):
+object Tests extends Suite(m"Savagery tests"):
   def run(): Unit =
-
-    test(m"Home directory"):
-      Home()
-    .assert(_ == t"/home/work")
-
-    test(m"Cache directory"):
-      Home.Cache()
-    .assert(_ == t"/home/work/.cache")
-
-    test(m"~/.local/bin path"):
-      Home.Local.Bin()
-    .assert(_ == t"/home/work/.local/bin")
-
-    test(m"/ path"):
-      Base()
-    .assert(_ == t"/")
-
-    test(m"/boot path"):
-      Base.Boot()
-    .assert(_ == t"/boot")
-
-    test(m"/efi path"):
-      Base.Efi()
-    .assert(_ == t"/efi")
-
-    test(m"/etc path"):
-      Base.Etc()
-    .assert(_ == t"/etc")
-
-    test(m"/home path"):
-      Base.Home()
-    .assert(_ == t"/home")
-
-    test(m"/root path"):
-      Base.Root()
-    .assert(_ == t"/root")
-
-    test(m"/srv path"):
-      Base.Srv()
-    .assert(_ == t"/srv")
-
-    test(m"/tmp path"):
-      Base.Tmp()
-    .assert(_ == t"/tmp")
-
-    test(m"/usr path"):
-      Base.Usr()
-    .assert(_ == t"/usr")
-
-    test(m"/usr/share path"):
-      Base.Usr.Share()
-    .assert(_ == t"/usr/share")
-
-    test(m"/usr/bin path"):
-      Base.Usr.Bin()
-    .assert(_ == t"/usr/bin")
-
-    test(m"/usr/share/doc path"):
-      Base.Usr.Share.Doc()
-    .assert(_ == t"/usr/share/doc")
-
-    test(m"/usr/share/factory/etc path"):
-      Base.Usr.Share.Factory.Etc()
-    .assert(_ == t"/usr/share/factory/etc")
-
-    test(m"/proc PID path"):
-      Base.Proc(Pid(2000))()
-    .assert(_ == t"/proc/2000")
+    test(m"Simple plus sign path"):
+      Path().moveTo(0!0).lineUp(2).lineLeft(2).lineUp(1).lineRight(2).lineUp(2).lineRight(1)
+          .lineDown(2).lineRight(2).lineDown(1).lineLeft(2).lineDown(2).closed.xml.show
+    .assert(_ == t"")

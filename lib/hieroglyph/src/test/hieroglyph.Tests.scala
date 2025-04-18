@@ -32,15 +32,11 @@
                                                                                                   */
 package hieroglyph
 
-import contingency.*, strategies.throwUnsafely
-import gossamer.{displayWidth as _, *}
-import larceny.*
-import probably.*
-import proscenium.*
-import rudiments.*
-import vacuous.*
+import soundness.*
 
+import strategies.throwUnsafely
 import textMetrics.eastAsianScripts
+import errorDiagnostics.stackTraces
 
 object Tests extends Suite(m"Hieroglyph tests"):
   def run(): Unit =
@@ -49,55 +45,54 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
     suite(m"Character widths"):
       test(m"Check narrow character width"):
-        'a'.displayWidth
+        'a'.metrics
       .assert(_ == 1)
 
       test(m"Check Japanese character width"):
-        '身'.displayWidth
+        '身'.metrics
       .assert(_ == 2)
 
-      test(m"Check displayWidth of string of Japanese text: \"平ぱ記...つス携\""):
-        import gossamer.displayWidth
-        japanese.displayWidth
+      test(m"Check metrics of string of Japanese text: \"平ぱ記...つス携\""):
+        japanese.metrics
       .assert(_ == 40)
 
     suite(m"Roundtrip decoding"):
 
       test(m"Decode Japanese from UTF-8"):
         import textSanitizers.skip
-        charDecoders.utf8.decode(japaneseBytes)
+        charDecoders.utf8.decoded(japaneseBytes)
       .assert(_ == japanese)
 
       for chunk <- 1 to 25 do
         test(m"Decode Japanese text in chunks of size $chunk"):
           import textSanitizers.skip
-          charDecoders.utf8.decode(japaneseBytes.grouped(chunk).to(Stream)).join
+          charDecoders.utf8.decoded(japaneseBytes.grouped(chunk).to(Stream)).join
         .assert(_ == japanese)
 
       val badUtf8 = Bytes(45, -62, 49, 48)
 
       test(m"Decode invalid UTF-8 sequence, skipping errors"):
         import textSanitizers.skip
-        charDecoders.utf8.decode(badUtf8)
+        charDecoders.utf8.decoded(badUtf8)
       .assert(_ == t"-10")
 
       test(m"Decode invalid UTF-8 sequence, substituting for a question mark"):
         import textSanitizers.substitute
-        charDecoders.utf8.decode(badUtf8)
+        charDecoders.utf8.decoded(badUtf8)
       .assert(_ == t"-?10")
 
       test(m"Decode invalid UTF-8 sequence, throwing exception"):
         import unsafeExceptions.canThrowAny
         import textSanitizers.strict
-        capture[UndecodableCharError](charDecoders.utf8.decode(badUtf8))
-      .assert(_ == UndecodableCharError(1, enc"UTF-8"))
+        capture[CharDecodeError](charDecoders.utf8.decoded(badUtf8))
+      .assert(_ == CharDecodeError(1, enc"UTF-8"))
 
       test(m"Ensure that decoding is finished"):
         import unsafeExceptions.canThrowAny
         import textSanitizers.strict
         given CharEncoder = enc"UTF-8".encoder
-        capture[UndecodableCharError](charDecoders.utf8.decode(t"café".bytes.dropRight(1)))
-      .assert(_ == UndecodableCharError(4, enc"UTF-8"))
+        capture[CharDecodeError](charDecoders.utf8.decoded(t"café".bytes.dropRight(1)))
+      .assert(_ == CharDecodeError(4, enc"UTF-8"))
 
     suite(m"Compile-time tests"):
       test(m"Check that an invalid encoding produces an error"):

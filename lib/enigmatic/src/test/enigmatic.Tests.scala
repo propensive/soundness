@@ -30,17 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package gastronomy
+package enigmatic
 
-import anticipation.*
-import contingency.*, strategies.throwUnsafely
-import enigmatic.*
-import gossamer.*
-import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
-import monotonous.*
-import probably.*
-import rudiments.*
-import spectacular.*
+import soundness.*
+
+import strategies.throwUnsafely
+import charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
+import errorDiagnostics.stackTraces
 
 import alphabets.hex.upperCase
 
@@ -91,6 +87,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     .assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
 
     test(m"Encode to Binary"):
+      import alphabets.binary.standard
       IArray[Byte](1, 2, 3, 4).serialize[Binary]
     .assert(_ == t"00000001000000100000001100000100")
 
@@ -117,13 +114,13 @@ object Tests extends Suite(m"Gastronomy tests"):
     test(m"RSA roundtrip"):
       val privateKey: PrivateKey[Rsa[1024]] = PrivateKey.generate[Rsa[1024]]()
       val message: Bytes = privateKey.public.encrypt(t"Hello world")
-      privateKey.decrypt[Text](message)
+      privateKey.decrypt(message).text
     .assert(_ == t"Hello world")
 
     test(m"AES roundtrip"):
       val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
-      val message = key.encrypt(t"Hello world")
-      key.decrypt[Text](message)
+      val message: Bytes = key.encrypt(t"Hello world")
+      key.decrypt(message).text
     .assert(_ == t"Hello world")
 
     test(m"Sign some data with DSA"):
