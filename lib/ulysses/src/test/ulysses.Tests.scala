@@ -33,6 +33,7 @@
 package ulysses
 
 import anticipation.*
+import fulminate.*
 import gastronomy.*, hashFunctions.sha1
 import gossamer.*
 import probably.*

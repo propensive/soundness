@@ -84,6 +84,7 @@ object Tests extends Suite(m"Soundness tests"):
     spectacular.Tests
     turbulence.Tests()
     typonym.Tests()
+    ulysses.Tests()
     vexillology.Tests()
     vacuous.Tests()
     vicarious.Tests()
