@@ -46,6 +46,8 @@ import spectacular.*
 import turbulence.*, stdioSources.virtualMachine
 import vacuous.*
 
+import errorDiagnostics.stackTraces
+
 import java.io as ji
 
 import strategies.throwUnsafely
@@ -62,7 +64,7 @@ object Tests extends Suite(m"CoDL tests"):
     import Arity.*
 
     suite(m"Reader tests"):
-      def interpret(text: Text)(using Log[Text]): PositionReader = PositionReader(Stream(text))
+      def interpret(text: Text): PositionReader = PositionReader(Stream(text))
 
       test(m"Character can store line"):
         Character('©', 123, 456).line
@@ -207,7 +209,7 @@ object Tests extends Suite(m"CoDL tests"):
       //   case _: IllegalStateException =>
 
     suite(m"Tokenizer tests"):
-      def parseText(text: Text)(using Log[Text]): (Int, Stream[CodlToken]) =
+      def parseText(text: Text): (Int, Stream[CodlToken]) =
         val result = Codl.tokenize(Stream(text))
         result(1).length
         result
@@ -455,32 +457,32 @@ object Tests extends Suite(m"CoDL tests"):
         parseText(t"""|root
                       |     surplus-indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains CodlToken.Error(CodlError(1, 5, 1, CodlError.Reason.SurplusIndent)))
+      .assert(_ has CodlToken.Error(CodlError(1, 5, 1, CodlError.Reason.SurplusIndent)))
 
       test(m"Uneven indentation"):
         parseText(t"""|root
                       | uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains CodlToken.Error(CodlError(1, 1, 1, CodlError.Reason.UnevenIndent(0, 1))))
+      .assert(_ has CodlToken.Error(CodlError(1, 1, 1, CodlError.Reason.UnevenIndent(0, 1))))
 
       test(m"Uneven indentation 2"):
         parseText(t"""|root
                       |   uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains CodlToken.Error(CodlError(1, 3, 1, CodlError.Reason.UnevenIndent(0, 3))))
+      .assert(_ has CodlToken.Error(CodlError(1, 3, 1, CodlError.Reason.UnevenIndent(0, 3))))
 
       test(m"Insufficient indentation"):
         parseText(t"""|     root
                       |    uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains CodlToken.Error(CodlError(1, 4, 1, CodlError.Reason.InsufficientIndent)))
+      .assert(_ has CodlToken.Error(CodlError(1, 4, 1, CodlError.Reason.InsufficientIndent)))
 
       test(m"Uneven de-indentation"):
         parseText(t"""|root
                       |  child
                       | deindentation
                       |""".s.stripMargin.show)(1)
-      .assert(_ contains CodlToken.Error(CodlError(2, 1, 1, CodlError.Reason.UnevenIndent(0, 1))))
+      .assert(_ has CodlToken.Error(CodlError(2, 1, 1, CodlError.Reason.UnevenIndent(0, 1))))
 
     suite(m"Access tests"):
       import dynamicCodlAccess.enabled
@@ -519,7 +521,7 @@ object Tests extends Suite(m"CoDL tests"):
         doc.term().name()(1)
       .assert(_ == CodlNode(Data(t"beta")))
 
-    def read(text: Text)(using Log[Text]): CodlDoc = Codl.parse(text)
+    def read(text: Text): CodlDoc = Codl.parse(text)
 
     suite(m"Untyped parsing tests"):
       test(m"Empty document"):
@@ -709,13 +711,13 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == grandchildSchema)
 
       test(m"Invalid top-level node"):
-        capture[AggregateError[CodlError]](topSchema.parse(t"riot")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](topSchema.parse(t"riot")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(0, 0, 4, InvalidKey(t"riot", t"riot")))
 
       test(m"Indent after comment forbidden"):
-        capture[AggregateError[CodlError]](Codl.parse(t"root\n  # comment\n    child")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](Codl.parse(t"root\n  # comment\n    child")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(1, 2, 1, CodlError.Reason.IndentAfterComment))
 
       test(m"Validate second top-level node"):
@@ -737,8 +739,8 @@ object Tests extends Suite(m"CoDL tests"):
                           )
 
       test(m"Missing required node throws exception"):
-        capture[AggregateError[CodlError]](requiredChild.parse(t"root")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](requiredChild.parse(t"root")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(0, 0, 4, MissingKey(t"root", t"child")))
 
       test(m"Present required node does not throw exception"):
@@ -752,8 +754,8 @@ object Tests extends Suite(m"CoDL tests"):
                             )
 
       test(m"Duplicated unique child is forbidden"):
-        capture[AggregateError[CodlError]](requiredChild.parse(t"root\n  child\n  child")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](requiredChild.parse(t"root\n  child\n  child")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(2, 2, 5, DuplicateKey(t"child", t"child")))
 
       test(m"Duplicated repeatable child is permitted"):
@@ -775,8 +777,8 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == Data(t"child"))
 
       test(m"'At least one' may not mean zero"):
-        capture[AggregateError[CodlError]](requiredChild.parse(t"root")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](requiredChild.parse(t"root")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(0, 0, 4, MissingKey(t"root", t"child")))
 
       def childWithTwoParams(alpha: Arity, beta: Arity) =
@@ -802,13 +804,13 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == Data(t"second", IArray(), schema = Field(One), layout = Layout(0, false, 14)))
 
       test(m"Surplus parameters"):
-        capture[AggregateError[CodlError]](childWithTwoParams(One, One).parse(t"root\n  child one two three")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](childWithTwoParams(One, One).parse(t"root\n  child one two three")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
 
       test(m"Two surplus parameters"):
-        capture[AggregateError[CodlError]](childWithTwoParams(One, One).parse(t"root\n  child one two three four")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](childWithTwoParams(One, One).parse(t"root\n  child one two three four")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
 
       test(m"Two optional parameters not specified"):
@@ -825,8 +827,8 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == 2)
 
       test(m"Two optional parameters with one surplus"):
-        capture[AggregateError[CodlError]](childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child one two three").root().child()) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child one two three").root().child()) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
 
       test(m"Variadic parameters are counted"):
@@ -842,13 +844,13 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == 1)
 
       test(m"'at least one' parameters are not optional"):
-        capture[AggregateError[CodlError]](childWithTwoParams(One, AtLeastOne).parse(t"root\n  child one")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](childWithTwoParams(One, AtLeastOne).parse(t"root\n  child one")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(1, 2, 5, MissingKey(t"child", t"beta")))
 
       test(m"Variadic first parameters don't count for second"):
-        capture[AggregateError[CodlError]](childWithTwoParams(AtLeastOne, AtLeastOne).parse(t"root\n  child one two three")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](childWithTwoParams(AtLeastOne, AtLeastOne).parse(t"root\n  child one two three")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(1, 2, 5, MissingKey(t"child", t"beta")))
 
       test(m"Two optional parameters not specified on root"):
@@ -864,8 +866,8 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == 2)
 
       test(m"Two optional parameters with one surplus on root"):
-        capture[AggregateError[CodlError]](rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child one two three").child()) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child one two three").child()) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(0, 16, 5, SurplusParams(t"three", t"child")))
 
       test(m"Variadic parameters are counted on root"):
@@ -881,13 +883,13 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == 1)
 
       test(m"'at least one' parameters are not optional on root"):
-        capture[AggregateError[CodlError]](rootWithTwoParams(One, AtLeastOne).parse(t"  child one")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](rootWithTwoParams(One, AtLeastOne).parse(t"  child one")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(0, 2, 5, MissingKey(t"child", t"beta")))
 
       test(m"Variadic first parameters don't count for second on root"):
-        capture[AggregateError[CodlError]](rootWithTwoParams(AtLeastOne, AtLeastOne).parse(t"  child one two three")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](rootWithTwoParams(AtLeastOne, AtLeastOne).parse(t"  child one two three")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(0, 2, 5, MissingKey(t"child", t"beta")))
 
     suite(m"Path tests"):
@@ -937,8 +939,8 @@ object Tests extends Suite(m"CoDL tests"):
       )
 
       test(m"Cannot have duplicate IDs of the same type"):
-        capture[AggregateError[CodlError]](repetitionSchema.parse(t"ABC first One\nABC second Two\nABC first Primary")) match
-          case AggregateError[CodlError](errors) => errors.head
+        capture[Errors](repetitionSchema.parse(t"ABC first One\nABC second Two\nABC first Primary")) match
+          case Errors(errors*) => errors.head
       .assert(_ == CodlError(2, 4, 5, CodlError.Reason.DuplicateId(t"first", 0, 4)))
 
     suite(m"Binary tests"):
@@ -951,7 +953,7 @@ object Tests extends Suite(m"CoDL tests"):
         t"field3" -> Field(AtMostOne)
       )
 
-      def roundtrip(doc: CodlDoc)(using Log[Text]): CodlDoc = Bcodl.read(doc.schema, ji.StringReader(doc.bcodl.s).nn)
+      def roundtrip(doc: CodlDoc): CodlDoc = Bcodl.read(doc.schema, ji.StringReader(doc.bcodl.s).nn)
 
       val doc = schema.parse(t"field")
 
