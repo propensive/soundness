@@ -32,8 +32,7 @@
                                                                                                   */
 package scintillate
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Scintillate tests"):
   def run(): Unit = ()

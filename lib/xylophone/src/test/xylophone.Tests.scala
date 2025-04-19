@@ -120,7 +120,7 @@ object Tests extends Suite(m"Xylophone tests"):
       color.xml.string
 
     . assert: value =>
-      value == t"""<ColorVal type="Rgb"><red>5</red><green>10</green><blue>15</blue></ColorVal>""")
+        value == t"""<ColorVal type="Rgb"><red>5</red><green>10</green><blue>15</blue></ColorVal>"""
 
     test(m"serialize nested coproduct"):
       val pixel: Pixel = Pixel(100, 200, ColorVal.Cmyk(1, 2, 3, 4))

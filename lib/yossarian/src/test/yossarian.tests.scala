@@ -32,8 +32,7 @@
                                                                                                   */
 package yossarian
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Yossarian Tests"):
   def run(): Unit =

@@ -30,10 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hallucination
+package perihelion
 
 import soundness.*
 
-object Tests extends Suite(m"Hallucination Tests"):
-  def run(): Unit =
-    ()
+object Tests extends Suite(m"Perihelion tests"):
+  def run(): Unit = ()

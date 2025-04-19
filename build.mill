@@ -161,109 +161,112 @@ object test extends ScalaModule {
   def moduleDeps = Seq(
     // Passing
     abacist.test,
+    acyclicity.test,
     adversaria.test,
+    ambience.test,
     anamnesis.test,
+    anthology.test,
+    anticipation.test,
     austronesian.test,
     aviation.test,
+    burdock.test,
     caesura.test,
     camouflage.test,
     capricious.test,
     cardinality.test,
+    cataclysm.test,
+    charisma.test,
+    contextual.test,
     contingency.test,
+    dendrology.test,
+    denominative.test,
     digression.test,
     dissonance.test,
     distillate.test,
     diuretic.test,
+    ethereal.test,
+    exoskeleton.test,
     feudalism.test,
+    fulminate.test,
+    galilei.test,
     gastronomy.test,
     geodesy.test,
     gesticulate.test,
     gossamer.test,
+    hallucination.test,
+    harlequin.test,
+    hellenism.test,
     hieroglyph.test,
+    honeycomb.test,
+    hyperbole.test,
     hypotenuse.test,
     imperial.test,
     inimitable.test,
     iridescence.test,
     jacinta.test,
     kaleidoscope.test,
+    larceny.test,
+    mercator.test,
+    merino.test,
     metamorphose.test,
     nettlesome.test,
     nomenclature.test,
-    panopticon.test,
-    probably.test,
-    rudiments.test,
-    spectacular.test,
-    symbolism.test,
-    turbulence.test,
-    typonym.test,
-    ulysses.test,
-    vexillology.test,
-    zephyrine.test,
-
-    // Compiling, not passing
-    acyclicity.test,
-    ambience.test,
-    anthology.test,
-    anticipation.test,
-    baroque.test,
-    burdock.test,
-    cataclysm.test,
-    cellulose.test,
-    charisma.test,
-    chiaroscuro.test,
-    contextual.test,
-    denominative.test,
-    enigmatic.test,
-    fulminate.test,
-    galilei.test,
-    hellenism.test,
-    honeycomb.test,
-    hyperbole.test,
-    larceny.test,
-    mandible.test,
-    monotonous.test,
-    mosquito.test,
     octogenarian.test,
+    panopticon.test,
+    perihelion.test,
     phoenicia.test,
     polaris.test,
     polyvinyl.test,
     prepositional.test,
+    probably.test,
+    profanity.test,
     proscenium.test,
-    quantitative.test,
+    punctuation.test,
     revolution.test,
-    satirical.test,
+    rudiments.test,
+    scintillate.test,
     sedentary.test,
     serpentine.test,
-    telekinesis.test,
-    umbrageous.test,
+    spectacular.test,
+    surveillance.test,
+    symbolism.test,
+    tarantula.test,
+    turbulence.test,
+    typonym.test,
+    ulysses.test,
     vacuous.test,
+    vexillology.test,
     vicarious.test,
-    wisteria.test
+    wisteria.test,
+    yossarian.test,
+    zephyrine.test,
+
+    // Compiling, not passing
+    baroque.test, // failing
+    cellulose.test, // failing
+    chiaroscuro.test, // failing
+    enigmatic.test,  // failing
+    mandible.test,  // failing
+    monotonous.test,   // failing
+    mosquito.test,  // failing
+    parasite.test,  // failing
+    quantitative.test,  // failing
+    satirical.test,  // crashing
+    telekinesis.test,
+    umbrageous.test
 
     // Not compiling
     // bitumen
     // coaxial
     // cosmopolite
-    // dendrology
     // embarcadero
     // escapade
     // escritoire
-    // ethereal
     // eucalyptus
-    // exoskeleton
     // guillotine
-    // hallucination
-    // harlequin
     // legerdemain
-    // mercator
-    // merino
-    // parasite
-    // perihelion
     // plutocrat
-    // profanity
-    // punctuation
     // savagery
-    // scintillate
     // superlunary
     // surveillance
     // tarantula
@@ -564,7 +567,7 @@ object coaxial extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, jacinta.core, superlunary.core)
   }
 }
 
@@ -842,7 +845,7 @@ object guillotine extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, galilei.core)
   }
 }
 
@@ -1019,7 +1022,7 @@ object merino extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, sedentary.core, diuretic.core)
   }
 }
 
@@ -1511,7 +1514,7 @@ object zeppelin extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, imperial.core, diuretic.core)
   }
 }
 

@@ -32,9 +32,7 @@
                                                                                                   */
 package escritoire
 
-import gossamer.*
-import hieroglyph.*
-import probably.*
+import soundness.*
 
 import textMetrics.uniform
 

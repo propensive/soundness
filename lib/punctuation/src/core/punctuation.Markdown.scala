@@ -274,11 +274,11 @@ object Markdown:
       case node: FlowInput          => flow(root, node)
       case node: PhrasingInput      => phrasing(root, node)
 
-      case node: cvfua.Node =>
-        raise(MarkdownError(MarkdownError.Reason.UnexpectedNode)) yet Prose(t"?")
-
       case node: cvfa.Reference =>
         Reference(node.getReference.toString.show, node.getUrl.toString.show)
+
+      case node: cvfua.Node =>
+        raise(MarkdownError(MarkdownError.Reason.UnexpectedNode)) yet Prose(t"?")
 
   def table(root: cvfua.Document, node: tables.TableBlock)
   :     List[Markdown.Ast.TablePart] raises MarkdownError =

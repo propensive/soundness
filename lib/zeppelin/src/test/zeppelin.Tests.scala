@@ -33,10 +33,11 @@
 package zeppelin
 
 import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
-import anticipation.*, filesystemInterfaces.javaIo
+import anticipation.*, filesystemApi.javaIoFile
 import contingency.*, strategies.throwUnsafely
+import fulminate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.skip
+import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, textSanitizers.skip
 import imperial.*
 import probably.*
 import proscenium.*
@@ -55,24 +56,24 @@ object Tests extends Suite(m"Zeppelin tests"):
     test(m"Create an empty ZIP file"):
       val file = File(root, "empty.zip")
       if file.exists() then file.delete()
-      ZipFile.create(file)
+      Zipfile.create(file)
       file
     .assert(_.length > 0)
 
     val simpleFile: File = test(m"Create a simple ZIP file"):
       val path = File.createTempFile("tmp", ".zip").nn
       val entry = ZipEntry(ZipRef / p"hello.txt", t"Hello world")
-      val zip = ZipFile.create(path)
+      val zip = Zipfile.create(path)
       zip.append(Stream(entry))
       path
     .check(_.length > 0)
 
     test(m"Check zip file contains one entry"):
-      ZipFile(simpleFile).entries()
+      Zipfile(simpleFile).entries()
     .assert(_.length == 1)
 
     test(m"Check ZIP file's entry has correct content"):
-      ZipFile(simpleFile).entries().head.read[Text]
+      Zipfile(simpleFile).entries().head.read[Text]
     .assert(_ == t"Hello world")
 
     val twoEntryFile: File = test(m"Append a file to a ZIP archive"):
@@ -80,25 +81,25 @@ object Tests extends Suite(m"Zeppelin tests"):
       val newFile: File  = File.createTempFile("tmp", ".zip").nn
       newFile.delete()
       java.nio.file.Files.copy(simpleFile.toPath, newFile.toPath)
-      val zip = ZipFile(newFile)
+      val zip = Zipfile(newFile)
       zip.append(Stream(entry))
       newFile
     .check(_.length > 0)
 
     test(m"Check zip file based on another has two entries"):
-      ZipFile(twoEntryFile).entries()
+      Zipfile(twoEntryFile).entries()
     .assert(_.length == 2)
 
     test(m"Check ZIP file's first entry has correct content after update"):
-      ZipFile(twoEntryFile).entries().head.read[Text]
+      Zipfile(twoEntryFile).entries().head.read[Text]
     .assert(_ == t"Hello world")
 
     test(m"Check ZIP file's second entry has correct content"):
-      ZipFile(twoEntryFile).entries().tail.head.read[Text]
+      Zipfile(twoEntryFile).entries().tail.head.read[Text]
     .assert(_ == t"The quick brown fox jumps over the lazy dog.")
 
     test(m"Access ZIP file content by path"):
-      (ZipFile(twoEntryFile) / p"fox.txt").read[Text]
+      (Zipfile(twoEntryFile) / p"fox.txt").read[Text]
     .assert(_ == t"The quick brown fox jumps over the lazy dog.")
 
     simpleFile.delete()

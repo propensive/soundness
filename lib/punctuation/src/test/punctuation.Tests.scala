@@ -32,16 +32,9 @@
                                                                                                   */
 package punctuation
 
-import anticipation.*
-import contingency.*
-import gossamer.*
-import probably.*
-import rudiments.*
-import spectacular.*
-import vacuous.*
+import soundness.*
 
 import strategies.throwUnsafely
-
 
 case class Example(str: Text, int: Int)
 

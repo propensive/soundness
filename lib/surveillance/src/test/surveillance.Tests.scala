@@ -32,8 +32,7 @@
                                                                                                   */
 package surveillance
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Surveillance tests"):
   def run(): Unit = ()

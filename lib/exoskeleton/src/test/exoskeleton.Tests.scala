@@ -32,8 +32,7 @@
                                                                                                   */
 package exoskeleton
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 import unsafeExceptions.canThrowAny
 
