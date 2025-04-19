@@ -202,6 +202,7 @@ object test extends ScalaModule {
     jacinta.test,
     kaleidoscope.test,
     larceny.test,
+    mercator.test,
     metamorphose.test,
     nettlesome.test,
     nomenclature.test,
@@ -221,6 +222,7 @@ object test extends ScalaModule {
     serpentine.test,
     spectacular.test,
     symbolism.test,
+    tarantula.test,
     turbulence.test,
     typonym.test,
     ulysses.test,
@@ -258,7 +260,6 @@ object test extends ScalaModule {
     // hallucination
     // harlequin
     // legerdemain
-    // mercator
     // merino
     // perihelion
     // plutocrat
@@ -266,7 +267,6 @@ object test extends ScalaModule {
     // scintillate
     // superlunary
     // surveillance
-    // tarantula
     // xylophone
     // yossarian
     // zeppelin

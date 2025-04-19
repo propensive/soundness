@@ -75,6 +75,7 @@ object Tests extends Suite(m"Soundness tests"):
     jacinta.Tests()
     kaleidoscope.Tests()
     larceny.Tests()
+    mercator.Tests()
     metamorphose.Tests()
     nettlesome.Tests()
     nomenclature.Tests()
@@ -93,6 +94,7 @@ object Tests extends Suite(m"Soundness tests"):
     serpentine.Tests()
     spectacular.Tests
     symbolism.Tests
+    tarantula.Tests()
     turbulence.Tests()
     typonym.Tests()
     ulysses.Tests()
@@ -111,7 +113,7 @@ object FailingTests extends Suite(m"Failing tests"):
     mandible.Tests()
     monotonous.Tests()
     mosquito.Tests()
-    parasite.Tests(),
+    parasite.Tests()
     quantitative.Tests()
     //satirical.Tests() - crashing
     //telekinesis.Tests() - crashing

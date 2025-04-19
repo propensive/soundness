@@ -32,8 +32,7 @@
                                                                                                   */
 package tarantula
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Tarantula Tests"):
   def run(): Unit =
