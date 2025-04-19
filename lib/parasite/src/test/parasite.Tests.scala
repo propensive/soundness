@@ -41,6 +41,7 @@ import probably.*
 import proscenium.*
 import quantitative.*
 import rudiments.*
+import symbolism.*
 import turbulence.*
 
 import strategies.throwUnsafely
@@ -255,14 +256,14 @@ object Tests extends Suite(m"Parasite tests"):
 
             val task2 = async:
               println("pre delay 1: "+java.lang.System.currentTimeMillis())
-              delay(1*Second) // halt
+              delay(1.0*Second) // halt
               println("post delay 1: "+java.lang.System.currentTimeMillis())
               value = 3
 
             task2.await() // halt
             value = 6
             println("pre delay 2: "+java.lang.System.currentTimeMillis())
-            delay(1*Second)
+            delay(1.0*Second)
             println("post delay 2: "+java.lang.System.currentTimeMillis())
             value = 4
 

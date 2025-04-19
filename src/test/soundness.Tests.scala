@@ -111,6 +111,7 @@ object FailingTests extends Suite(m"Failing tests"):
     mandible.Tests()
     monotonous.Tests()
     mosquito.Tests()
+    parasite.Tests(),
     quantitative.Tests()
     //satirical.Tests() - crashing
     //telekinesis.Tests() - crashing

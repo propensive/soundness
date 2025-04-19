@@ -32,19 +32,13 @@
                                                                                                   */
 package coaxial
 
-import anticipation.*
-import contingency.*, strategies.throwUnsafely
-import gossamer.*
-import hieroglyph.*, charEncoders.utf8
+import soundness.*
+
+import strategies.throwUnsafely
+import charEncoders.utf8
 import inimitable.*
-import jacinta.*, jsonPrinters.minimal
-import nettlesome.*
-import parasite.*, threadModels.platform
-import probably.*
-import rudiments.*
-import spectacular.*
-import superlunary.*
-import vacuous.*
+import jsonPrinters.minimal
+import threadModels.platform
 
 object Tests extends Suite(m"Coaxial tests"):
   def run(): Unit = unsafely:
@@ -53,7 +47,7 @@ object Tests extends Suite(m"Coaxial tests"):
     println(Json.parse(u).as[UdpPort])
 
     supervise:
-      val async = Async:
+      val task = async:
         val udpServer: Unit = remote.dispatch('{
           unsafely:
             supervise:
@@ -75,4 +69,4 @@ object Tests extends Suite(m"Coaxial tests"):
         udp"3962".transmit(jvmInstanceId.show)
       .assert()
 
-      async.await()
+      task.await()

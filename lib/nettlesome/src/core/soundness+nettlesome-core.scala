@@ -35,7 +35,7 @@ package soundness
 export nettlesome
 . { ip, mac, tcp, udp, via, internet, online, EmailAddress, EmailAddressError, Endpoint, Hostname,
     HostnameError, Internet, IpAddressError, LocalPart, MacAddressError, OfflineError, Online, Port,
-    PortError, Connectable, serve, Service }
+    PortError, Connectable, serve, Service, UdpPort, TcpPort }
 
 package internetAccess:
   export nettlesome.internetAccess.{enabled, disabled}

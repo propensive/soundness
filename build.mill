@@ -161,87 +161,88 @@ object test extends ScalaModule {
   def moduleDeps = Seq(
     // Passing
     abacist.test,
+    acyclicity.test,
     adversaria.test,
+    ambience.test,
     anamnesis.test,
+    anthology.test,
+    anticipation.test,
     austronesian.test,
     aviation.test,
+    burdock.test,
     caesura.test,
     camouflage.test,
     capricious.test,
     cardinality.test,
+    cataclysm.test,
+    charisma.test,
+    contextual.test,
     contingency.test,
+    denominative.test,
     digression.test,
     dissonance.test,
     distillate.test,
     diuretic.test,
     ethereal.test,
     feudalism.test,
+    fulminate.test,
+    galilei.test,
     gastronomy.test,
     geodesy.test,
     gesticulate.test,
     gossamer.test,
+    hellenism.test,
     hieroglyph.test,
+    honeycomb.test,
+    hyperbole.test,
     hypotenuse.test,
     imperial.test,
     inimitable.test,
     iridescence.test,
     jacinta.test,
     kaleidoscope.test,
+    larceny.test,
     metamorphose.test,
     nettlesome.test,
     nomenclature.test,
+    octogenarian.test,
     panopticon.test,
+    phoenicia.test,
+    polaris.test,
+    polyvinyl.test,
+    prepositional.test,
     probably.test,
     profanity.test,
+    proscenium.test,
     punctuation.test,
+    revolution.test,
     rudiments.test,
+    sedentary.test,
+    serpentine.test,
     spectacular.test,
     symbolism.test,
     turbulence.test,
     typonym.test,
     ulysses.test,
+    vacuous.test,
     vexillology.test,
+    vicarious.test,
+    wisteria.test,
     zephyrine.test,
 
     // Compiling, not passing
-    acyclicity.test,
-    ambience.test,
-    anthology.test,
-    anticipation.test,
-    baroque.test,
-    burdock.test,
-    cataclysm.test,
-    cellulose.test,
-    charisma.test,
-    chiaroscuro.test,
-    contextual.test,
-    denominative.test,
-    enigmatic.test,
-    fulminate.test,
-    galilei.test,
-    hellenism.test,
-    honeycomb.test,
-    hyperbole.test,
-    larceny.test,
-    mandible.test,
-    monotonous.test,
-    mosquito.test,
-    octogenarian.test,
-    phoenicia.test,
-    polaris.test,
-    polyvinyl.test,
-    prepositional.test,
-    proscenium.test,
-    quantitative.test,
-    revolution.test,
-    satirical.test,
-    sedentary.test,
-    serpentine.test,
+    baroque.test, // failing
+    cellulose.test, // failing
+    chiaroscuro.test, // failing
+    enigmatic.test,  // failing
+    mandible.test,  // failing
+    monotonous.test,   // failing
+    mosquito.test,  // failing
+    parasite.test,  // failing
+    quantitative.test,  // failing
+    satirical.test,  // crashing
     telekinesis.test,
-    umbrageous.test,
-    vacuous.test,
-    vicarious.test,
-    wisteria.test
+    umbrageous.test
 
     // Not compiling
     // bitumen
@@ -259,7 +260,6 @@ object test extends ScalaModule {
     // legerdemain
     // mercator
     // merino
-    // parasite
     // perihelion
     // plutocrat
     // savagery
@@ -564,7 +564,7 @@ object coaxial extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, jacinta.core, superlunary.core)
   }
 }
 
