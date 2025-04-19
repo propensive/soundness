@@ -32,8 +32,7 @@
                                                                                                   */
 package ethereal
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Ethereal Tests"):
   def run(): Unit =
