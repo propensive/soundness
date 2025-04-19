@@ -208,6 +208,7 @@ object test extends ScalaModule {
     nomenclature.test,
     octogenarian.test,
     panopticon.test,
+    perihelion.test,
     phoenicia.test,
     polaris.test,
     polyvinyl.test,
@@ -218,6 +219,7 @@ object test extends ScalaModule {
     punctuation.test,
     revolution.test,
     rudiments.test,
+    scintillate.test,
     sedentary.test,
     serpentine.test,
     spectacular.test,
@@ -261,10 +263,8 @@ object test extends ScalaModule {
     // harlequin
     // legerdemain
     // merino
-    // perihelion
     // plutocrat
     // savagery
-    // scintillate
     // superlunary
     // surveillance
     // xylophone
@@ -842,7 +842,7 @@ object guillotine extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, galilei.core)
   }
 }
 

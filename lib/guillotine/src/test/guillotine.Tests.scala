@@ -37,7 +37,10 @@ import anticipation.*
 import contextual.*
 import contingency.*, strategies.throwUnsafely
 import eucalyptus.*
-import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
+import fulminate.*
+import galilei.*
+import filesystemOptions.createNonexistent.disabled
+import filesystemOptions.dereferenceSymlinks.enabled
 import gossamer.*
 import probably.*
 import proscenium.*

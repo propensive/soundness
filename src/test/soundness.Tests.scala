@@ -81,6 +81,7 @@ object Tests extends Suite(m"Soundness tests"):
     nomenclature.Tests()
     octogenarian.Tests()
     panopticon.Tests()
+    perihelion.Tests()
     phoenicia.Tests()
     polaris.Tests()
     prepositional.Tests()
@@ -90,6 +91,7 @@ object Tests extends Suite(m"Soundness tests"):
     punctuation.Tests()
     revolution.Tests()
     rudiments.Tests()
+    scintillate.Tests()
     sedentary.Tests()
     serpentine.Tests()
     spectacular.Tests
