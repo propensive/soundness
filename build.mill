@@ -178,12 +178,14 @@ object test extends ScalaModule {
     charisma.test,
     contextual.test,
     contingency.test,
+    dendrology.test,
     denominative.test,
     digression.test,
     dissonance.test,
     distillate.test,
     diuretic.test,
     ethereal.test,
+    exoskeleton.test,
     feudalism.test,
     fulminate.test,
     galilei.test,
@@ -191,6 +193,8 @@ object test extends ScalaModule {
     geodesy.test,
     gesticulate.test,
     gossamer.test,
+    hallucination.test,
+    harlequin.test,
     hellenism.test,
     hieroglyph.test,
     honeycomb.test,
@@ -203,6 +207,7 @@ object test extends ScalaModule {
     kaleidoscope.test,
     larceny.test,
     mercator.test,
+    merino.test,
     metamorphose.test,
     nettlesome.test,
     nomenclature.test,
@@ -223,6 +228,7 @@ object test extends ScalaModule {
     sedentary.test,
     serpentine.test,
     spectacular.test,
+    surveillance.test,
     symbolism.test,
     tarantula.test,
     turbulence.test,
@@ -232,6 +238,7 @@ object test extends ScalaModule {
     vexillology.test,
     vicarious.test,
     wisteria.test,
+    yossarian.test,
     zephyrine.test,
 
     // Compiling, not passing
@@ -252,17 +259,12 @@ object test extends ScalaModule {
     // bitumen
     // coaxial
     // cosmopolite
-    // dendrology
     // embarcadero
     // escapade
     // escritoire
     // eucalyptus
-    // exoskeleton
     // guillotine
-    // hallucination
-    // harlequin
     // legerdemain
-    // merino
     // plutocrat
     // savagery
     // superlunary
@@ -1019,7 +1021,7 @@ object merino extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, sedentary.core, diuretic.core)
   }
 }
 
@@ -1511,7 +1513,7 @@ object zeppelin extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, imperial.core, diuretic.core)
   }
 }
 

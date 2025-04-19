@@ -32,9 +32,7 @@
                                                                                                   */
 package plutocrat
 
-import gossamer.*
-import larceny.*
-import probably.*
+import soundness.*
 
 import currencies.*
 

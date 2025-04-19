@@ -52,18 +52,22 @@ object Tests extends Suite(m"Soundness tests"):
     charisma.Tests()
     contextual.Tests()
     contingency.Tests()
+    dendrology.Tests()
     denominative.Tests()
     digression.Tests()
     dissonance.Tests()
     distillate.Tests()
     diuretic.Tests()
     ethereal.Tests()
+    exoskeleton.Tests()
     feudalism.Tests()
     fulminate.Tests()
     galilei.Tests()
     geodesy.Tests()
     gesticulate.Tests()
     gossamer.Tests()
+    hallucination.Tests()
+    harlequin.Tests()
     hellenism.Tests()
     hieroglyph.Tests()
     honeycomb.Tests()
@@ -76,6 +80,7 @@ object Tests extends Suite(m"Soundness tests"):
     kaleidoscope.Tests()
     larceny.Tests()
     mercator.Tests()
+    merino.Tests()
     metamorphose.Tests()
     nettlesome.Tests()
     nomenclature.Tests()
@@ -95,6 +100,7 @@ object Tests extends Suite(m"Soundness tests"):
     sedentary.Tests()
     serpentine.Tests()
     spectacular.Tests
+    surveillance.Tests
     symbolism.Tests
     tarantula.Tests()
     turbulence.Tests()
@@ -104,6 +110,7 @@ object Tests extends Suite(m"Soundness tests"):
     vacuous.Tests()
     vicarious.Tests()
     wisteria.Tests()
+    yossarian.Tests()
     zephyrine.Tests()
 
 object FailingTests extends Suite(m"Failing tests"):

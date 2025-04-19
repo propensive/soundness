@@ -32,8 +32,7 @@
                                                                                                   */
 package harlequin
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Harlequin Tests"):
   def run(): Unit =

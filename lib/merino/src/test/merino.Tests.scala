@@ -33,14 +33,17 @@
 package merino
 
 import ambience.*, systemProperties.virtualMachine
-import anticipation.*, filesystemInterfaces.javaIo
+import anticipation.*, filesystemApi.javaIoFile
 import contingency.*, strategies.throwUnsafely
 import eucalyptus.*
+import fulminate.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
 import probably.*
 import rudiments.*, workingDirectories.virtualMachine
 import turbulence.*
+import sedentary.*
+import errorDiagnostics.stackTraces
 
 import java.io as ji
 
@@ -53,13 +56,13 @@ object Tests extends Suite(m"Merino tests"):
 
     suite(m"Positive tests"):
       (tests.listFiles.nn.map(_.nn).to(List).filter(_.getName.nn.startsWith("y_")) ++ tests2.listFiles.nn.map(_.nn).to(List)).each: file =>
-        test(Text(file.getName.nn.dropRight(5))):
+        test(Message(file.getName.nn.dropRight(5).tt)):
           JsonAst.parse(ji.BufferedInputStream(ji.FileInputStream(file)))
         .check()
 
     suite(m"Negative tests"):
       tests.listFiles.nn.map(_.nn).filter(_.getName.nn.startsWith("n_")).each: file =>
-        test(Text(file.getName.nn.dropRight(5))):
+        test(Message(file.getName.nn.dropRight(5).tt)):
           capture(JsonAst.parse(ji.BufferedInputStream(ji.FileInputStream(file))))
         .matches:
           case JsonParseError(_, _, _) => true

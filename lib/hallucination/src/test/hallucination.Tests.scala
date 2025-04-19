@@ -32,8 +32,7 @@
                                                                                                   */
 package hallucination
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Hallucination Tests"):
   def run(): Unit =

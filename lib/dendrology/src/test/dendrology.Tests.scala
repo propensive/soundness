@@ -32,13 +32,9 @@
                                                                                                   */
 package dendrology
 
-import probably.*
-import rudiments.*
-import gossamer.*
-import acyclicity.*
-import anticipation.*
-import turbulence.*, stdioSources.virtualMachine
+import soundness.*
 
+import stdioSources.virtualMachine
 import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(m"Dendrology tests"):

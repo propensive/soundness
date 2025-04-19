@@ -57,8 +57,7 @@ def run(): Unit =
     '{  t"${System.currentTimeMillis - ${System.currentTimeMillis.put}}"  }
 
   def fn(message: Example): Example = remote.dispatch:
-    '{  import Decoder.long
-        Example(t"Time: ${System.currentTimeMillis - ${message.count.put}}", 9)  }
+    '{  Example(t"Time: ${System.currentTimeMillis - ${message.count.put}}", 9)  }
 
   println(fn(Example(t"hello", System.currentTimeMillis)))
   println(fn(Example(t"hello", System.currentTimeMillis)))
