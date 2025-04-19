@@ -32,8 +32,7 @@
                                                                                                   */
 package profanity
 
-import gossamer.*
-import probably.*
+import soundness.*
 
 object Tests extends Suite(m"Profanity Tests"):
   def run(): Unit =

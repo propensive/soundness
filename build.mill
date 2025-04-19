@@ -192,6 +192,8 @@ object test extends ScalaModule {
     nomenclature.test,
     panopticon.test,
     probably.test,
+    profanity.test,
+    punctuation.test,
     rudiments.test,
     spectacular.test,
     symbolism.test,
@@ -260,8 +262,6 @@ object test extends ScalaModule {
     // parasite
     // perihelion
     // plutocrat
-    // profanity
-    // punctuation
     // savagery
     // scintillate
     // superlunary
