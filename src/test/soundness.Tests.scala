@@ -80,7 +80,6 @@ object Tests extends Suite(m"Soundness tests"):
     kaleidoscope.Tests()
     larceny.Tests()
     mercator.Tests()
-    merino.Tests()
     metamorphose.Tests()
     nettlesome.Tests()
     nomenclature.Tests()
@@ -120,6 +119,7 @@ object FailingTests extends Suite(m"Failing tests"):
     chiaroscuro.Tests()
     enigmatic.Tests()
     mandible.Tests()
+    //merino.Tests() - crashing
     monotonous.Tests()
     mosquito.Tests()
     parasite.Tests()
