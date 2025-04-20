@@ -147,7 +147,6 @@ object SourceCode:
 
     SourceCode(language, 1, IArray(lines(stream().to(List)).reverse*))
 
-
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*
 
