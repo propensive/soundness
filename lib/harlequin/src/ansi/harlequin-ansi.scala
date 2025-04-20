@@ -37,6 +37,7 @@ import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import iridescence.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 package syntaxHighlighting:
