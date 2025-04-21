@@ -40,11 +40,11 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-open class HtmlConverter(renderers: Renderer*):
+open class HtmlTranslator(embeddings: Embedding*) extends Translator:
   def slug(str: Text): Text =
     str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn.tt
 
-  lazy val renderersMap: Map[Optional[Text], Renderer] = renderers.indexBy(_.language)
+  lazy val embeddingsMap: Map[Optional[Text], Embedding] = embeddings.indexBy(_.language)
 
   private val headings = IArray(H1, H2, H3, H4, H5, H6)
 
@@ -66,19 +66,19 @@ open class HtmlConverter(renderers: Renderer*):
 
     acc(1).reverse
 
-  def convert(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
-    blockify(nodes).fuse(List[Html[Flow]]())(state ++ convertNode(next))
+  def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
+    blockify(nodes).fuse(Seq[Html[Flow]]())(state ++ node(next))
 
-  def convertNode(node: Markdown.Ast.Block): Seq[Html[Flow]] = node match
+  def node(node: Markdown.Ast.Block): Seq[Html[Flow]] = node match
     case Markdown.Ast.Block.Paragraph(children*)      => Seq(P(children.flatMap(phrasing)*))
     case Markdown.Ast.Block.Heading(level, children*) => Seq(heading(level, children))
-    case Markdown.Ast.Block.Blockquote(children*)     => Seq(Blockquote(convert(children)*))
+    case Markdown.Ast.Block.Blockquote(children*)     => Seq(Blockquote(translate(children)*))
     case Markdown.Ast.Block.ThematicBreak()           => Seq(Hr)
     case Markdown.Ast.Block.Reference(_, _)           => Seq()
     case Markdown.Ast.Block.Table(parts*)             => Seq(Table(parts.flatMap(tableParts)))
 
     case Markdown.Ast.Block.FencedCode(syntax, meta, value) =>
-      renderersMap.get(syntax).optional.lay(Seq(Div.amok(Pre(html5.Code(escape(value)))))):
+      embeddingsMap.get(syntax).optional.lay(Seq(Div.amok(Pre(html5.Code(escape(value)))))):
         renderer => renderer.render(meta, value)
 
     case Markdown.Ast.Block.BulletList(num, _, items*) =>
@@ -100,7 +100,7 @@ open class HtmlConverter(renderers: Renderer*):
         (if heading then Th else Td)(content.flatMap(phrasing))
 
   def listItem(node: Markdown.Ast.ListItem): Seq[Node["li"]] = node match
-    case Markdown.Ast.ListItem(children*) => List(Li(convert(children)*))
+    case Markdown.Ast.ListItem(children*) => List(Li(translate(children)*))
 
   def text(node: Seq[Markdown.Ast.Node]): Text = node.map(textNode(_)).join
 
@@ -134,7 +134,7 @@ open class HtmlConverter(renderers: Renderer*):
     case Markdown.Ast.Inline.Prose(str)               => List(escape(str))
 
     case Markdown.Ast.Inline.SourceCode(code) =>
-      List(html5.Code(code.broken(_.isLetterOrDigit != _.isLetterOrDigit)))
+      Seq(html5.Code(code.broken(_.isLetterOrDigit != _.isLetterOrDigit)))
 
     case _ =>
       Nil
@@ -142,12 +142,12 @@ open class HtmlConverter(renderers: Renderer*):
   def phrasing(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
     case Markdown.Ast.Inline.Weblink(location, content) =>
 
-      def interactive(node: Html[Phrasing]): Option[Html[NonInteractive]] = node.absolve match
-        case node: Node[NonInteractive] => Some(node)
-        case text: Text                 => Some(text)
-        case int: Int                   => Some(int)
+      def interactive(node: Html[Phrasing]): Html[NonInteractive] = node.absolve match
+        case node: Node[NonInteractive @unchecked] => node
+        case text: Text                            => text
+        case int: Int                              => int
 
-      val children: Seq[Html[NonInteractive]] = nonInteractive(content).flatMap(interactive(_))
+      val children: Seq[Html[NonInteractive]] = nonInteractive(content).map(interactive(_))
 
       List(A(href = location)(children))
 

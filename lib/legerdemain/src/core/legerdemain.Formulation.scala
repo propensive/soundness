@@ -38,10 +38,10 @@ import honeycomb.*
 import vacuous.*
 
 trait Formulation:
-  def form(content: List[Html[Flow]], submit: Optional[Text]): Html[Flow]
+  def form(content: Seq[Html[Flow]], submit: Optional[Text]): Html[Flow]
 
   def element
-       (widget:     List[Html[Phrasing]],
+       (widget:     Seq[Html[Phrasing]],
         legend:     Text,
         validation: Optional[Message],
         required:   Boolean)

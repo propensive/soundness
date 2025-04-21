@@ -38,6 +38,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import gossamer.*
+import honeycomb.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -68,6 +69,14 @@ object Markdown:
   given decoder: Tactic[MarkdownError] => InlineMd is Decodable in Text = parseInline(_)
   given encodable: InlineMd is Encodable in Text = _.serialize
   given showable: InlineMd is Showable = _.serialize
+
+  given renderable: [markdown <: Markdown[Markdown.Ast.Node]] => (translator: Translator)
+        => markdown is Renderable into Flow =
+    content => translator.translate(content.nodes)
+
+  given renderable2: [markdown <: Markdown.Ast.Inline] => (translator: Translator)
+        => markdown is Renderable into Phrasing =
+    translator.phrasing(_)
 
   object Ast:
     type Node = Block | Inline

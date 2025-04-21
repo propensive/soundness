@@ -30,11 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package punctuation
+package harlequin
 
 import anticipation.*
+import gossamer.*
 import honeycomb.*
+import punctuation.*
 import vacuous.*
 
-abstract class Renderer(val language: Optional[Text]):
-  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]]
+object ScalaEmbedding extends Embedding(t"scala"), CommonEmbedding:
+  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]] =
+    postprocess(Scala.highlight(content))

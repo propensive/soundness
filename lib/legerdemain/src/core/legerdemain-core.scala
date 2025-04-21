@@ -60,11 +60,11 @@ extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
 
 package formulations:
   given default: Formulation:
-    def form(content: List[Html[Flow]], submit: Optional[Text]): Html[Flow] =
+    def form(content: Seq[Html[Flow]], submit: Optional[Text]): Html[Flow] =
       Form(action = t".", method = Method.Post)(content, Input.Submit(value = submit.or(t"Submit")))
 
     def element
-         (widget:     List[Html[Phrasing]],
+         (widget:     Seq[Html[Phrasing]],
           legend:     Text,
           validation: Optional[Message],
           required:   Boolean)

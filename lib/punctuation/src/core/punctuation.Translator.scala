@@ -30,14 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package harlequin
+package punctuation
 
-import anticipation.*
-import gossamer.*
 import honeycomb.*
-import punctuation.*
-import vacuous.*
 
-object JavaRenderer extends Renderer(t"java"), CommonRenderer:
-  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]] =
-    postprocess(Java.highlight(content))
+trait Translator:
+  def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]]
+  def phrasing(node: Markdown.Ast.Inline): Seq[Html[Phrasing]]

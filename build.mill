@@ -1215,7 +1215,7 @@ object profanity extends SoundnessModule {
 
 object punctuation extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, turbulence.core)
+    def moduleDeps = Seq(gossamer.core, turbulence.core, honeycomb.core)
     def ivyDeps = Agg(
       ivy"com.vladsch.flexmark:flexmark:0.42.12",
       ivy"com.vladsch.flexmark:flexmark-ext-tables:0.42.12",
@@ -1229,7 +1229,7 @@ object punctuation extends SoundnessModule {
   }
 
   object ansi extends SoundnessSubModule {
-    def moduleDeps = Seq(core, honeycomb.core, escapade.core, harlequin.core)
+    def moduleDeps = Seq(core, escapade.core, harlequin.core)
   }
 
   object test extends ProbablyTestModule {

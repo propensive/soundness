@@ -39,11 +39,11 @@ import honeycomb.*, html5.*
 import proscenium.*
 import vacuous.*
 
-object OutlineConverter extends HtmlConverter():
+object Outliner extends HtmlTranslator():
   case class Entry(label: Text, children: List[Entry])
 
-  override def convert(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
-    def recur(entries: List[Entry]): List[Html[Ul.Content]] = entries.map: entry =>
+  override def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
+    def recur(entries: List[Entry]): Seq[Html[Ul.Content]] = entries.map: entry =>
       val link = A(href = t"#${slug(entry.label)}")(entry.label)
       if entry.children.isEmpty then Li(link) else Li(link, Ul(recur(entry.children)))
 
