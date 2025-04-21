@@ -266,7 +266,7 @@ object Codl:
     then CodlDoc() else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, Stream(), Nil)
 
   def tokenize(in: Stream[Text], fromStart: Boolean = false)(using Diagnostics)
-  :     (Int, Stream[CodlToken]) =
+  :     (Int, Stream[CodlToken]) raises CodlError =
 
     val reader: PositionReader = new PositionReader(in.map(identity))
 
@@ -281,7 +281,7 @@ object Codl:
       val ch = reader.next()
       if ch.char == '\n' || ch.char == ' ' then cue(count + 1) else (ch, count)
 
-    val (first: Character, start: Int) = try throwErrors(cue(0)) catch case err: CodlError => ???
+    val (first: Character, start: Int) = cue(0)
     val margin: Int = first.column
 
     def istream
@@ -303,7 +303,7 @@ object Codl:
     :     Stream[CodlToken] =
 
       inline def next(): Character =
-        try throwErrors(reader.next())
+        try reader.next()
         catch case err: CodlError => Character('\n', err.line, err.col)
 
       inline def recur
