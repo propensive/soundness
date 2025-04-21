@@ -236,7 +236,7 @@ object Nettlesome:
       if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
       else halt(m"the UDP port number ${portNumber} is not in the range 1-65535")
     . or:
-        serviceNames.at((true, id)).lay(halt(m"$id is not a valid UDP port")):
+        serviceNames.at((false, id)).lay(halt(m"$id is not a valid UDP port")):
           case port: Int => '{UdpPort.unsafe(${Expr(port)})}
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
