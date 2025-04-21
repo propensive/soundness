@@ -34,20 +34,10 @@ package harlequin
 
 import anticipation.*
 import gossamer.*
-import harlequin.*
-import honeycomb.*, html5.*
-import spectacular.*
+import honeycomb.*
+import punctuation.*
 import vacuous.*
 
-trait CommonRenderer:
-  def className(accent: Accent): List[CssClass] = List(CssClass(accent.show.lower))
-
-  def element(accent: Accent, text: Text): Element["code"] =
-    html5.Code(`class` = className(accent))(text)
-
-  protected def postprocess(source: SourceCode): Seq[Html[Flow]] =
-    val code = source.lines.map: line =>
-      Span.line:
-        line.map { case SourceToken(text, accent) => element(accent, text) }
-
-    List(Div.amok(Pre(code)))
+object JavaEmbedding extends Embedding(t"java"), CommonEmbedding:
+  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]] =
+    postprocess(Java.highlight(content))

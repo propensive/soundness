@@ -34,5 +34,5 @@ package punctuation
 
 import harlequin.*
 
-package htmlRenderers:
-  given scalaSyntax: HtmlConverter = HtmlConverter(ScalaRenderer, JavaRenderer)
+package htmlEmbeddings:
+  given scalaSyntax: HtmlTranslator = HtmlTranslator(ScalaEmbedding, JavaEmbedding)

@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export punctuation.{HtmlConverter, OutlineConverter, Renderer}
+export punctuation.{HtmlTranslator, Outliner, Embedding}
 
-package htmlRenderers:
-  export punctuation.htmlRenderers.{standard, outline}
+package htmlEmbeddings:
+  export punctuation.htmlEmbeddings.{standard, outline}

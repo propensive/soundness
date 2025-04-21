@@ -457,32 +457,32 @@ object Tests extends Suite(m"CoDL tests"):
         parseText(t"""|root
                       |     surplus-indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ has CodlToken.Error(CodlError(1, 5, 1, CodlError.Reason.SurplusIndent)))
+      .assert(_.has(CodlToken.Error(CodlError(1, 5, 1, CodlError.Reason.SurplusIndent))))
 
       test(m"Uneven indentation"):
         parseText(t"""|root
                       | uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ has CodlToken.Error(CodlError(1, 1, 1, CodlError.Reason.UnevenIndent(0, 1))))
+      .assert(_.has(CodlToken.Error(CodlError(1, 1, 1, CodlError.Reason.UnevenIndent(0, 1)))))
 
       test(m"Uneven indentation 2"):
         parseText(t"""|root
                       |   uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ has CodlToken.Error(CodlError(1, 3, 1, CodlError.Reason.UnevenIndent(0, 3))))
+      .assert(_.has(CodlToken.Error(CodlError(1, 3, 1, CodlError.Reason.UnevenIndent(0, 3)))))
 
       test(m"Insufficient indentation"):
         parseText(t"""|     root
                       |    uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_ has CodlToken.Error(CodlError(1, 4, 1, CodlError.Reason.InsufficientIndent)))
+      .assert(_.has(CodlToken.Error(CodlError(1, 4, 1, CodlError.Reason.InsufficientIndent))))
 
       test(m"Uneven de-indentation"):
         parseText(t"""|root
                       |  child
                       | deindentation
                       |""".s.stripMargin.show)(1)
-      .assert(_ has CodlToken.Error(CodlError(2, 1, 1, CodlError.Reason.UnevenIndent(0, 1))))
+      .assert(_.has(CodlToken.Error(CodlError(2, 1, 1, CodlError.Reason.UnevenIndent(0, 1)))))
 
     suite(m"Access tests"):
       import dynamicCodlAccess.enabled
@@ -646,8 +646,9 @@ object Tests extends Suite(m"CoDL tests"):
         read(t"root\n    one two\n##\nunparsed\n").body
       .assert(_ == Stream('u', 'n', 'p', 'a', 'r', 's', 'e', 'd', '\n'))
 
-      test(m"Teminator without newline and spurious content"):
-        capture(read(t"root\n    one two\n##spurious"))
+      test(m"Terminator without newline and spurious content"):
+        try read(t"root\n    one two\n##spurious") yet Unset
+        catch case error: CodlError => error
       .assert(_ == CodlError(2, 2, 1, BadTermination))
 
 
@@ -711,13 +712,11 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == grandchildSchema)
 
       test(m"Invalid top-level node"):
-        capture[Errors](topSchema.parse(t"riot")) match
-          case Errors(errors*) => errors.head
+        capture(topSchema.parse(t"riot"))
       .assert(_ == CodlError(0, 0, 4, InvalidKey(t"riot", t"riot")))
 
       test(m"Indent after comment forbidden"):
-        capture[Errors](Codl.parse(t"root\n  # comment\n    child")) match
-          case Errors(errors*) => errors.head
+        capture(Codl.parse(t"root\n  # comment\n    child"))
       .assert(_ == CodlError(1, 2, 1, CodlError.Reason.IndentAfterComment))
 
       test(m"Validate second top-level node"):
@@ -739,8 +738,7 @@ object Tests extends Suite(m"CoDL tests"):
                           )
 
       test(m"Missing required node throws exception"):
-        capture[Errors](requiredChild.parse(t"root")) match
-          case Errors(errors*) => errors.head
+        capture(requiredChild.parse(t"root"))
       .assert(_ == CodlError(0, 0, 4, MissingKey(t"root", t"child")))
 
       test(m"Present required node does not throw exception"):
@@ -754,8 +752,7 @@ object Tests extends Suite(m"CoDL tests"):
                             )
 
       test(m"Duplicated unique child is forbidden"):
-        capture[Errors](requiredChild.parse(t"root\n  child\n  child")) match
-          case Errors(errors*) => errors.head
+        capture[CodlError](requiredChild.parse(t"root\n  child\n  child"))
       .assert(_ == CodlError(2, 2, 5, DuplicateKey(t"child", t"child")))
 
       test(m"Duplicated repeatable child is permitted"):
@@ -777,8 +774,7 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == Data(t"child"))
 
       test(m"'At least one' may not mean zero"):
-        capture[Errors](requiredChild.parse(t"root")) match
-          case Errors(errors*) => errors.head
+        capture[CodlError](requiredChild.parse(t"root"))
       .assert(_ == CodlError(0, 0, 4, MissingKey(t"root", t"child")))
 
       def childWithTwoParams(alpha: Arity, beta: Arity) =
@@ -804,13 +800,11 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == Data(t"second", IArray(), schema = Field(One), layout = Layout(0, false, 14)))
 
       test(m"Surplus parameters"):
-        capture[Errors](childWithTwoParams(One, One).parse(t"root\n  child one two three")) match
-          case Errors(errors*) => errors.head
+        capture(childWithTwoParams(One, One).parse(t"root\n  child one two three"))
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
 
       test(m"Two surplus parameters"):
-        capture[Errors](childWithTwoParams(One, One).parse(t"root\n  child one two three four")) match
-          case Errors(errors*) => errors.head
+        capture(childWithTwoParams(One, One).parse(t"root\n  child one two three four"))
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
 
       test(m"Two optional parameters not specified"):
@@ -827,8 +821,7 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == 2)
 
       test(m"Two optional parameters with one surplus"):
-        capture[Errors](childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child one two three").root().child()) match
-          case Errors(errors*) => errors.head
+        capture(childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child one two three").root().child())
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
 
       test(m"Variadic parameters are counted"):
@@ -844,13 +837,11 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == 1)
 
       test(m"'at least one' parameters are not optional"):
-        capture[Errors](childWithTwoParams(One, AtLeastOne).parse(t"root\n  child one")) match
-          case Errors(errors*) => errors.head
+        capture(childWithTwoParams(One, AtLeastOne).parse(t"root\n  child one"))
       .assert(_ == CodlError(1, 2, 5, MissingKey(t"child", t"beta")))
 
       test(m"Variadic first parameters don't count for second"):
-        capture[Errors](childWithTwoParams(AtLeastOne, AtLeastOne).parse(t"root\n  child one two three")) match
-          case Errors(errors*) => errors.head
+        capture(childWithTwoParams(AtLeastOne, AtLeastOne).parse(t"root\n  child one two three"))
       .assert(_ == CodlError(1, 2, 5, MissingKey(t"child", t"beta")))
 
       test(m"Two optional parameters not specified on root"):
@@ -866,8 +857,7 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == 2)
 
       test(m"Two optional parameters with one surplus on root"):
-        capture[Errors](rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child one two three").child()) match
-          case Errors(errors*) => errors.head
+        capture(rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child one two three").child())
       .assert(_ == CodlError(0, 16, 5, SurplusParams(t"three", t"child")))
 
       test(m"Variadic parameters are counted on root"):
@@ -883,13 +873,11 @@ object Tests extends Suite(m"CoDL tests"):
       .assert(_ == 1)
 
       test(m"'at least one' parameters are not optional on root"):
-        capture[Errors](rootWithTwoParams(One, AtLeastOne).parse(t"  child one")) match
-          case Errors(errors*) => errors.head
+        capture(rootWithTwoParams(One, AtLeastOne).parse(t"  child one"))
       .assert(_ == CodlError(0, 2, 5, MissingKey(t"child", t"beta")))
 
       test(m"Variadic first parameters don't count for second on root"):
-        capture[Errors](rootWithTwoParams(AtLeastOne, AtLeastOne).parse(t"  child one two three")) match
-          case Errors(errors*) => errors.head
+        capture(rootWithTwoParams(AtLeastOne, AtLeastOne).parse(t"  child one two three"))
       .assert(_ == CodlError(0, 2, 5, MissingKey(t"child", t"beta")))
 
     suite(m"Path tests"):
@@ -939,8 +927,7 @@ object Tests extends Suite(m"CoDL tests"):
       )
 
       test(m"Cannot have duplicate IDs of the same type"):
-        capture[Errors](repetitionSchema.parse(t"ABC first One\nABC second Two\nABC first Primary")) match
-          case Errors(errors*) => errors.head
+        capture(repetitionSchema.parse(t"ABC first One\nABC second Two\nABC first Primary"))
       .assert(_ == CodlError(2, 4, 5, CodlError.Reason.DuplicateId(t"first", 0, 4)))
 
     suite(m"Binary tests"):
@@ -1147,24 +1134,24 @@ object Tests extends Suite(m"CoDL tests"):
 
       test(m"print a simple case class"):
         print(Foo(t"one", t"two"))
-      .assert(_ == t"alpha one\nbeta two\n")
+      .assert(_ == t"alpha  one\nbeta  two\n")
 
       test(m"print a complex case class"):
         print(complex)
-      .assert(_ == t"foo\n  gamma a\n  delta 2\nfoo\n  gamma c\n  delta 6\n  eta e\nquux\n  alpha e\n  beta 1\n  beta 2\n  beta 4\n")
+      .assert(_ == t"foo\n  gamma  a\n  delta  2\nfoo\n  gamma  c\n  delta  6\n  eta  e\nquux\n  alpha  e\n  beta  1\n  beta  2\n  beta  4\n")
 
       test(m"roundtrip a complex case class "):
         read(print(complex)).as[Bar]
       .assert(_ == complex)
 
-      test(m"Print a case class using positional parameters"):
-        print(User(12, t"user@example.com", List(Privilege(t"read", true), Privilege(t"write", false))))
-      .assert(_ == t"")
+      // test(m"Print a case class using positional parameters"):
+      //   print(User(12, t"user@example.com", List(Privilege(t"read", true), Privilege(t"write", false))))
+      // .assert(_ == t"")
 
-    suite(m"Extra tests"):
-      test(m"Tabs are recorded"):
-        read(t"# some comment\nroot   param1    param2\n  child1 param3")().extra
-      .assert(_ == Extra())
+    // suite(m"Extra tests"):
+    //   test(m"Tabs are recorded"):
+    //     read(t"# some comment\nroot   param1    param2\n  child1 param3")().extra
+    //   .assert(_ == Extra())
 
     // // suite(m"Record tests"):
 

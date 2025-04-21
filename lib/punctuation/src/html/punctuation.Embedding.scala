@@ -30,59 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package legerdemain
+package punctuation
 
 import anticipation.*
-import contingency.*
-import distillate.*
-import fulminate.*
-import gossamer.*
 import honeycomb.*
-import prepositional.*
 import vacuous.*
-import wisteria.*
 
-import html5.*
-
-object Formulaic extends ProductDerivable[Formulaic]:
-  given elicitable: [value]
-        => (elicitable: value is Elicitable)
-        => (renderable: elicitable.Operand is Renderable into Phrasing)
-        =>  value is Formulaic:
-
-    def fields
-         (pointer:     Pointer,
-          legend:      Text,
-          query:       Query,
-          validation:  Validation,
-          formulation: Formulation)
-    :     Seq[Html[Flow]] =
-
-      val message: Optional[Message] = validation(pointer)
-      val widget = renderable.html(elicitable.widget(pointer.text, legend, query().or(t"")))
-      val required = false//safely(decodable.decoded(t"")).absent
-      List(formulation.element(widget, legend, message, required))
-
-  inline def join[derivation <: Product: ProductReflection]: derivation is Formulaic =
-    (pointer, legend, query, errors, formulation) =>
-      val content: IArray[Html[Flow]] =
-        contexts:
-          [field] => context =>
-            val label2 = if pointer == Pointer.Self then Pointer(label) else pointer(label)
-            val legend = label.uncamel.map(_.lower.capitalize).spaced
-            context.fields(label2, legend, query(label), errors, formulation)
-
-        . flatten
-
-      List(Fieldset(Legend(legend), content))
-
-trait Formulaic:
-  type Self
-
-  def fields
-       (pointer:     Pointer,
-        legend:      Text,
-        query:       Query,
-        validation:  Validation,
-        formulation: Formulation)
-  : Seq[Html[Flow]]
+abstract class Embedding(val language: Optional[Text]):
+  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]]

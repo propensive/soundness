@@ -35,13 +35,6 @@ package punctuation
 import honeycomb.*
 import proscenium.*
 
-extension (value: Markdown[Markdown.Ast.Node])(using conv: HtmlConverter)
-  def html: Seq[Html[Flow]] = conv.convert(value.nodes)
-
-extension (value: Markdown.Ast.Inline)(using conv: HtmlConverter)
-  @targetName("html2")
-  def html: Seq[Html[Phrasing]] = conv.phrasing(value)
-
-package htmlRenderers:
-  given standard: HtmlConverter = HtmlConverter()
-  given outline: HtmlConverter = OutlineConverter
+package htmlEmbeddings:
+  given standard: HtmlTranslator = HtmlTranslator()
+  given outline: Outliner.type = Outliner

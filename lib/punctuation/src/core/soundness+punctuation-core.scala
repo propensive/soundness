@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export punctuation.{Markdown, MarkdownError, Md, md, InlineMd}
+export punctuation.{Markdown, MarkdownError, Md, md, InlineMd, Translator}

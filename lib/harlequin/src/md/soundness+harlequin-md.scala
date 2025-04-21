@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export harlequin.{CommonRenderer, JavaRenderer, ScalaRenderer}
+export harlequin.{CommonEmbedding, JavaEmbedding, ScalaEmbedding}
 
-package htmlRenderers:
-  export punctuation.htmlRenderers.scalaSyntax
+package htmlEmbeddings:
+  export punctuation.htmlEmbeddings.scalaSyntax

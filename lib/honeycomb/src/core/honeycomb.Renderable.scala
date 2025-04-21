@@ -43,8 +43,9 @@ object Renderable:
 
   given message: Message is Renderable into Phrasing = message =>
     message.segments.flatMap:
-      case text: Text       => List(text)
       case message: Message => message.html
+      case text: Text       => List(text)
+      case _                => Nil
 
 
   given abstractable: [value: Abstractable across HtmlContent into List[Sgml]]
@@ -52,7 +53,7 @@ object Renderable:
     type Self = value
     type Result = Label
 
-    def html(value: value): List[Html[Result]] = value.generic.map(convert)
+    def html(value: value): Seq[Html[Result]] = value.generic.map(convert)
 
     private def convert(html: Sgml): Html[?] = html match
       case Sgml.Textual(text)               => text
@@ -65,4 +66,4 @@ object Renderable:
 trait Renderable:
   type Self
   type Result <: Label
-  def html(value: Self): List[Html[Result]]
+  def html(value: Self): Seq[Html[Result]]

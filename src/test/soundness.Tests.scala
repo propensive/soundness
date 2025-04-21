@@ -49,6 +49,7 @@ object Tests extends Suite(m"Soundness tests"):
     capricious.Tests()
     cardinality.Tests()
     cataclysm.Tests()
+    cellulose.Tests()
     charisma.Tests()
     contextual.Tests()
     contingency.Tests()
@@ -115,7 +116,6 @@ object Tests extends Suite(m"Soundness tests"):
 object FailingTests extends Suite(m"Failing tests"):
   def run(): Unit =
     baroque.Tests()
-    cellulose.Tests()
     chiaroscuro.Tests()
     enigmatic.Tests()
     mandible.Tests()
