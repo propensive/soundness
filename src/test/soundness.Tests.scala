@@ -59,6 +59,7 @@ object Tests extends Suite(m"Soundness tests"):
     dissonance.Tests()
     distillate.Tests()
     diuretic.Tests()
+    enigmatic.Tests()
     ethereal.Tests()
     exoskeleton.Tests()
     feudalism.Tests()
@@ -82,6 +83,7 @@ object Tests extends Suite(m"Soundness tests"):
     larceny.Tests()
     mercator.Tests()
     metamorphose.Tests()
+    monotonous.Tests()
     nettlesome.Tests()
     nomenclature.Tests()
     octogenarian.Tests()
@@ -117,10 +119,8 @@ object FailingTests extends Suite(m"Failing tests"):
   def run(): Unit =
     baroque.Tests()
     chiaroscuro.Tests()
-    enigmatic.Tests()
     mandible.Tests()
     //merino.Tests() - crashing
-    monotonous.Tests()
     mosquito.Tests()
     parasite.Tests()
     quantitative.Tests()
