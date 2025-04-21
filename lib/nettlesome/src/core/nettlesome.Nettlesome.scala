@@ -77,6 +77,11 @@ object Nettlesome:
 
     . to(Map)
 
+  private lazy val serviceNumbers: Map[(Boolean, Int), Text] =
+    serviceNames.map:
+      case ((tcp, name), number) => (tcp, number) -> name
+    . to(Map)
+
   object Opaques:
     opaque type Ipv4 <: Matchable = Int
     opaque type MacAddress <: Matchable = Long
@@ -229,20 +234,27 @@ object Nettlesome:
 
   def portService(context: Expr[StringContext], tcp: Boolean)(using Quotes)
   :     Expr[TcpPort | UdpPort] =
+    import quotes.reflect.*
+
     val id = context.valueOrAbort.parts.head.tt
     val portType = if tcp then t"TCP" else t"UDP"
 
     safely(id.decode[Int]).let: portNumber =>
       if 1 <= portNumber <= 65535 then
-        if tcp then '{TcpPort.unsafe(${Expr(portNumber)})}
-        else '{UdpPort.unsafe(${Expr(portNumber)})}
+        ConstantType(IntConstant(portNumber)).asType.absolve match
+          case '[number] =>
+            if tcp then '{TcpPort.unsafe(${Expr(portNumber)}).asInstanceOf[TcpPort of number]}
+            else '{UdpPort.unsafe(${Expr(portNumber)}).asInstanceOf[UdpPort of number]}
 
       else halt(m"the $portType port number ${portNumber} is not in the range 1-65535")
+
     . or:
         serviceNames.at((tcp, id)).lay(halt(m"$id is not a valid $portType port")):
           case port: Int =>
-            if tcp then '{TcpPort.unsafe(${Expr(port)})}
-            else '{UdpPort.unsafe(${Expr(port)})}
+            ConstantType(IntConstant(port)).asType.absolve match
+              case '[type number <: Int; number] =>
+                if tcp then '{TcpPort.unsafe(${Expr(port)}).asInstanceOf[TcpPort of number]}
+                else '{UdpPort.unsafe(${Expr(port)}).asInstanceOf[UdpPort of number]}
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)
