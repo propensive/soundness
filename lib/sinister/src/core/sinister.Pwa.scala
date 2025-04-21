@@ -49,7 +49,11 @@ case class Pwa
 
   def manifest: Json =
     Pwa.Manifest
-     (name        = name,
-      description = description,
-      short_name  = shortName.or(name),
-      display     = display).json
+     (name             = name,
+      short_name       = shortName.or(name),
+      display          = display,
+      background_color = rgb"#ffffff",
+      theme_color      = rgb"#000000",
+      icons            = Nil,
+      orientation      = orientation,
+      scope            = Unset).json
