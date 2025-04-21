@@ -43,6 +43,7 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import scala.quoted.*
 
@@ -50,6 +51,23 @@ import IpAddressError.Reason, Reason.*
 
 object Nettlesome:
   given realm: Realm = realm"nettlesome"
+
+  private lazy val serviceNames: Map[(Boolean, Text), Int] =
+    val stream =
+      Optional(getClass.getResourceAsStream("/nettlesome/service-names-port-numbers.csv")).or:
+        panic(m"could not read /nettlesome/service-names-port-numbers.csv from classpath")
+
+    val lines: Iterator[List[Text]] =
+      scala.io.Source.fromInputStream(stream).getLines.map(_.tt).map(_.cut(t","))
+
+    lines.flatMap: list =>
+      safely:
+        if list(2) == t"tcp" then List((true, list(0)) -> list(1).decode[Int])
+        else if list(2) == t"udp" then List((false, list(0)) -> list(1).decode[Int])
+        else Nil
+      . or(Nil)
+
+    . to(Map)
 
   object Opaques:
     opaque type Ipv4 <: Matchable = Int
@@ -202,18 +220,24 @@ object Nettlesome:
   case class Ipv6(highBits: Long, lowBits: Long)
 
   def tcpPort(context: Expr[StringContext])(using Quotes): Expr[TcpPort] =
-    val portNumber: Int =
-      abortive(context.valueOrAbort.parts.head.tt.decode[Int])
+    val id = context.valueOrAbort.parts.head.tt
 
-    if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
-    else halt(m"the TCP port number ${portNumber} is not in the range 1-65535")
+    safely(id.decode[Int]).let: portNumber =>
+      if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
+      else halt(m"the TCP port number ${portNumber} is not in the range 1-65535")
+    . or:
+        serviceNames.at((true, id)).lay(halt(m"$id is not a valid TCP port")):
+          case port: Int => '{TcpPort.unsafe(${Expr(port)})}
 
   def udpPort(context: Expr[StringContext])(using Quotes): Expr[UdpPort] =
-    val portNumber: Int =
-      abortive(context.valueOrAbort.parts.head.tt.decode[Int])
+    val id = context.valueOrAbort.parts.head.tt
 
-    if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
-    else halt(m"the UDP port number ${portNumber} is not in the range 1-65535")
+    safely(id.decode[Int]).let: portNumber =>
+      if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
+      else halt(m"the UDP port number ${portNumber} is not in the range 1-65535")
+    . or:
+        serviceNames.at((true, id)).lay(halt(m"$id is not a valid UDP port")):
+          case port: Int => '{UdpPort.unsafe(${Expr(port)})}
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)
