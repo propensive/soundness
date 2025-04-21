@@ -33,6 +33,7 @@
 package monotonous
 
 import anticipation.*
+import hypotenuse.*
 import prepositional.*
 import rudiments.*
 
@@ -41,9 +42,12 @@ object Serializable:
     new:
       def encode(bytes: Bytes): Text =
         val mask = (1 << bits) - 1
+        val multiple = 8/bits.gcd(8)
+        val divisor = bits/bits.gcd(8)
 
-        val length = if alphabet.padding then (bytes.length + bits - 1)/bits*8 else
-          (8*bytes.length + bits - 1)/bits
+        val length =
+          if alphabet.padding then multiple*((bytes.length + divisor - 1)/divisor)
+          else (bytes.length*8 + bits - 1)/bits
 
         val chars = IArray.create[Char](length): array =>
           def recur(current: Int = 0, next: Int = 0, index: Int = 0, loaded: Int = 0): Unit =
