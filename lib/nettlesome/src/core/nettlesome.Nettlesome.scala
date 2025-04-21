@@ -32,6 +32,8 @@
                                                                                                   */
 package nettlesome
 
+import java.io as ji
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -43,6 +45,7 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import scala.quoted.*
 
@@ -50,6 +53,34 @@ import IpAddressError.Reason, Reason.*
 
 object Nettlesome:
   given realm: Realm = realm"nettlesome"
+
+  private lazy val serviceNames: Map[(Boolean, Text), Int] =
+    val stream =
+      Optional(getClass.getResourceAsStream("/nettlesome/service-names-port-numbers.csv")).or:
+        safely:
+          val uri = new java.net.URI("https://www.iana.org/assignments/service-names-port-numbers/"
+                                     + "service-names-port-numbers.csv")
+
+          uri.toURL().nn.openStream().nn: ji.InputStream
+      .or:
+          panic(m"could not read /nettlesome/service-names-port-numbers.csv from classpath")
+
+    val lines: Iterator[List[Text]] =
+      scala.io.Source.fromInputStream(stream).getLines.map(_.tt).map(_.cut(t","))
+
+    lines.flatMap: list =>
+      safely:
+        if list(2) == t"tcp" then List((true, list(0)) -> list(1).decode[Int])
+        else if list(2) == t"udp" then List((false, list(0)) -> list(1).decode[Int])
+        else Nil
+      . or(Nil)
+
+    . to(Map)
+
+  private lazy val serviceNumbers: Map[(Boolean, Int), Text] =
+    serviceNames.map:
+      case ((tcp, name), number) => (tcp, number) -> name
+    . to(Map)
 
   object Opaques:
     opaque type Ipv4 <: Matchable = Int
@@ -201,19 +232,29 @@ object Nettlesome:
 
   case class Ipv6(highBits: Long, lowBits: Long)
 
-  def tcpPort(context: Expr[StringContext])(using Quotes): Expr[TcpPort] =
-    val portNumber: Int =
-      abortive(context.valueOrAbort.parts.head.tt.decode[Int])
+  def portService(context: Expr[StringContext], tcp: Boolean)(using Quotes)
+  :     Expr[TcpPort | UdpPort] =
+    import quotes.reflect.*
 
-    if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
-    else halt(m"the TCP port number ${portNumber} is not in the range 1-65535")
+    val id = context.valueOrAbort.parts.head.tt
+    val portType = if tcp then t"TCP" else t"UDP"
 
-  def udpPort(context: Expr[StringContext])(using Quotes): Expr[UdpPort] =
-    val portNumber: Int =
-      abortive(context.valueOrAbort.parts.head.tt.decode[Int])
+    safely(id.decode[Int]).let: portNumber =>
+      if 1 <= portNumber <= 65535 then
+        ConstantType(IntConstant(portNumber)).asType.absolve match
+          case '[number] =>
+            if tcp then '{TcpPort.unsafe(${Expr(portNumber)}).asInstanceOf[TcpPort of number]}
+            else '{UdpPort.unsafe(${Expr(portNumber)}).asInstanceOf[UdpPort of number]}
 
-    if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
-    else halt(m"the UDP port number ${portNumber} is not in the range 1-65535")
+      else halt(m"the $portType port number ${portNumber} is not in the range 1-65535")
+
+    . or:
+        serviceNames.at((tcp, id)).lay(halt(m"$id is not a valid $portType port")):
+          case port: Int =>
+            ConstantType(IntConstant(port)).asType.absolve match
+              case '[type number <: Int; number] =>
+                if tcp then '{TcpPort.unsafe(${Expr(port)}).asInstanceOf[TcpPort of number]}
+                else '{UdpPort.unsafe(${Expr(port)}).asInstanceOf[UdpPort of number]}
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)

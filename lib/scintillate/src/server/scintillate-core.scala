@@ -47,16 +47,17 @@ import telekinesis.*
 import vacuous.*
 
 package httpServers:
-  given stdlib: (Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable)
+  given stdlib: [port <: (80 | 443 | 8080 | 8000)]
+        => (Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable)
         =>  Http is Protocolic:
 
-    type Carrier = TcpPort
+    type Carrier = TcpPort of port
     type Self = Http
     type Server = Service
     type Request = HttpConnection
     type Response = Http.Response
 
-    def server(port: TcpPort)(lambda: Request ?=> Response): Service =
+    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
       HttpServer(port.number).handle(lambda)
 
 

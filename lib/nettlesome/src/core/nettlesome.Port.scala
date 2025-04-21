@@ -32,4 +32,5 @@
                                                                                                   */
 package nettlesome
 
-erased trait Port
+erased trait Port:
+  type Subject <: Int
