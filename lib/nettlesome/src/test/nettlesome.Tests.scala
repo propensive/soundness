@@ -507,5 +507,22 @@ object Tests extends Suite(m"Nettlesome tests"):
         MacAddress(1, 2, 3, 4, 5, 6).show
       .assert(_ == t"01-02-03-04-05-06")
 
+    suite(m"Named port services"):
+      test(m"Check SMTP over TCP port"):
+        tcp"smtp"
+      . assert(_ == TcpPort(25))
+
+      test(m"Check Docker over TCP port"):
+        tcp"docker"
+      . assert(_ == UdpPort(2375))
+
+      test(m"Check Docker over UDP port is not valid"):
+        demilitarize(udp"docker").map(_.message)
+      . assert(_ == List(t"nettlesome: docker is not a valid UDP port"))
+
+      test(m"Check Nonexistent TCP port does not compile"):
+        demilitarize(tcp"abcdef").map(_.message)
+      . assert(_ == List(t"nettlesome: abcdef is not a valid TCP port"))
+
 object example:
   val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))

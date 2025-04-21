@@ -46,8 +46,8 @@ export Nettlesome.Opaques.UdpPort
 extension (inline context: StringContext)
   transparent inline def ip(): Ipv4 | Ipv6 = ${Nettlesome.ip('context)}
   inline def mac(): MacAddress = ${Nettlesome.mac('context)}
-  inline def tcp(): TcpPort = ${Nettlesome.tcpPort('context)}
-  inline def udp(): UdpPort = ${Nettlesome.udpPort('context)}
+  transparent inline def tcp(): TcpPort | UdpPort = ${Nettlesome.portService('context, true)}
+  transparent inline def udp(): TcpPort | UdpPort = ${Nettlesome.portService('context, false)}
 
 extension [remote: Connectable](value: remote)
   infix def via [port](port: port): Endpoint[port] =

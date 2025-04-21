@@ -32,6 +32,8 @@
                                                                                                   */
 package nettlesome
 
+import java.io as ji
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -55,7 +57,13 @@ object Nettlesome:
   private lazy val serviceNames: Map[(Boolean, Text), Int] =
     val stream =
       Optional(getClass.getResourceAsStream("/nettlesome/service-names-port-numbers.csv")).or:
-        panic(m"could not read /nettlesome/service-names-port-numbers.csv from classpath")
+        safely:
+          val uri = new java.net.URI("https://www.iana.org/assignments/service-names-port-numbers/"
+                                     + "service-names-port-numbers.csv")
+
+          uri.toURL().nn.openStream().nn: ji.InputStream
+      .or:
+          panic(m"could not read /nettlesome/service-names-port-numbers.csv from classpath")
 
     val lines: Iterator[List[Text]] =
       scala.io.Source.fromInputStream(stream).getLines.map(_.tt).map(_.cut(t","))
@@ -219,25 +227,22 @@ object Nettlesome:
 
   case class Ipv6(highBits: Long, lowBits: Long)
 
-  def tcpPort(context: Expr[StringContext])(using Quotes): Expr[TcpPort] =
+  def portService(context: Expr[StringContext], tcp: Boolean)(using Quotes)
+  :     Expr[TcpPort | UdpPort] =
     val id = context.valueOrAbort.parts.head.tt
+    val portType = if tcp then t"TCP" else t"UDP"
 
     safely(id.decode[Int]).let: portNumber =>
-      if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
-      else halt(m"the TCP port number ${portNumber} is not in the range 1-65535")
-    . or:
-        serviceNames.at((true, id)).lay(halt(m"$id is not a valid TCP port")):
-          case port: Int => '{TcpPort.unsafe(${Expr(port)})}
+      if 1 <= portNumber <= 65535 then
+        if tcp then '{TcpPort.unsafe(${Expr(portNumber)})}
+        else '{UdpPort.unsafe(${Expr(portNumber)})}
 
-  def udpPort(context: Expr[StringContext])(using Quotes): Expr[UdpPort] =
-    val id = context.valueOrAbort.parts.head.tt
-
-    safely(id.decode[Int]).let: portNumber =>
-      if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
-      else halt(m"the UDP port number ${portNumber} is not in the range 1-65535")
+      else halt(m"the $portType port number ${portNumber} is not in the range 1-65535")
     . or:
-        serviceNames.at((false, id)).lay(halt(m"$id is not a valid UDP port")):
-          case port: Int => '{UdpPort.unsafe(${Expr(port)})}
+        serviceNames.at((tcp, id)).lay(halt(m"$id is not a valid $portType port")):
+          case port: Int =>
+            if tcp then '{TcpPort.unsafe(${Expr(port)})}
+            else '{UdpPort.unsafe(${Expr(port)})}
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)
