@@ -85,6 +85,7 @@ object Tests extends Suite(m"Soundness tests"):
     mercator.Tests()
     metamorphose.Tests()
     monotonous.Tests()
+    mosquito.Tests()
     nettlesome.Tests()
     nomenclature.Tests()
     octogenarian.Tests()
@@ -121,7 +122,6 @@ object FailingTests extends Suite(m"Failing tests"):
     chiaroscuro.Tests()
     mandible.Tests()
     //merino.Tests() - crashing
-    mosquito.Tests()
     parasite.Tests()
     quantitative.Tests()
     //satirical.Tests() - crashing
