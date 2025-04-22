@@ -220,6 +220,22 @@ trait Quantitative2:
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
 
+  def expressible[source <: Measure: Type, result <: Measure: Type]
+       (using Quotes)
+  :     Expr[source is Expressible in result] =
+    import quotes.reflect.*
+
+    val sourceUnits = UnitsMap[source]
+    val resultUnits = UnitsMap[result]
+
+    if sourceUnits.dimensionality != resultUnits.dimensionality
+    then incompatibleTypes(sourceUnits, resultUnits)
+
+    val ratio = normalize(resultUnits, sourceUnits, Expr(1.0))(1)
+    val ratio2 = normalize(sourceUnits, resultUnits, Expr(1.0))(1)
+
+    '{() => $ratio/$ratio2}
+
   def ratio(using Quotes)
        (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true)
   :     Expr[Double] =
@@ -331,10 +347,10 @@ trait Quantitative2:
         halt(m"the operands represent different physical quantities")
 
   def mulTypeclass
-       [left <: Measure: Type,
-        multiplicand <: Quantity[left]: Type,
-        right <: Measure: Type,
-        multiplier <: Quantity[right]: Type
+       [left         <: Measure:         Type,
+        multiplicand <: Quantity[left]:  Type,
+        right        <: Measure:         Type,
+        multiplier   <: Quantity[right]: Type
        ](using Quotes)
   :     Expr[multiplicand is Multiplicable by multiplier] =
 
@@ -356,10 +372,10 @@ trait Quantitative2:
 
 
   def divTypeclass
-       [left <: Measure: Type,
-        dividend <: Quantity[left]: Type,
-        right <: Measure: Type,
-        divisor <: Quantity[right]: Type]
+       [left     <: Measure:         Type,
+        dividend <: Quantity[left]:  Type,
+        right    <: Measure:         Type,
+        divisor  <: Quantity[right]: Type]
        (using Quotes)
   :     Expr[dividend is Divisible by divisor] =
 
@@ -473,10 +489,11 @@ trait Quantitative2:
               ${Quantitative.add('left, 'right, '{true}).asExprOf[Quantity[measure]]} } }
 
   def addTypeclass
-       [left <: Measure: Type,
-        quantity <: Quantity[left]: Type,
-        right <: Measure: Type,
-        quantity2 <: Quantity[right]: Type](using Quotes)
+       [left      <: Measure:         Type,
+        quantity  <: Quantity[left]:  Type,
+        right     <: Measure:         Type,
+        quantity2 <: Quantity[right]: Type]
+       (using Quotes)
   :     Expr[quantity is Addable by quantity2] =
 
     val (units, _) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
