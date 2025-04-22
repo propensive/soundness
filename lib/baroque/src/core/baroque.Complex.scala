@@ -42,8 +42,17 @@ import symbolism.*
 import scala.annotation.{into as _, *}
 
 object Complex:
-  given showable: [component: Showable] => Complex[component] is Showable = complex =>
-    t"${complex.real.show} + ${complex.imaginary.show}𝒾"
+  inline given showableQuantity: [units <: Measure, quantity <: Quantity[units]: Showable]
+        => Double is Showable
+        => Complex[quantity] is Showable =
+    complex =>
+      val re = complex.real.underlying
+      val im = complex.imaginary.underlying
+      val units = Quantity.expressUnits(complex.real.units)
+      t"(${re.show} + ${im.show}𝕚) $units"
+
+  given showable: [component: Showable] => Complex[component] is Showable =
+    complex => t"${complex.real.show} + ${complex.imaginary.show}𝕚"
 
   inline given addable: [component: Addable by component as addable]
                =>  Complex[component] is Addable by Complex[component] =

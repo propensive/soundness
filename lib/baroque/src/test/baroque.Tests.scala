@@ -46,13 +46,13 @@ object Tests extends Suite(m"Baroque tests"):
   def run(): Unit =
     test(m"Show a complex number"):
       Complex(1, 3).show
-    .assert(_ == t"1 + 3𝒾")
+    .assert(_ == t"1 + 3𝕚")
 
     test(m"Show a quantity complex number"):
       val re = 1.0*Metre/Second
       val im = Metre*9.0/Second
-      Complex(1.0*Metre/Second, Metre*9.0/Second).show
-    .assert(_ == t"1.00 + 9.00𝒾 m·s¯¹")
+      Complex[Quantity[Metres[1] & Seconds[-1]]](1.0*Metre/Second, Metre*9.0/Second).show
+    .assert(_ == t"(1.00 + 9.00𝕚) m·s¯¹")
 
     test(m"Add two int-complex numbers"):
       Complex(1, 2) + Complex(8, 2)
