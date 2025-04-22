@@ -395,6 +395,44 @@ trait Quantitative2:
        '{ Divisible[dividend, divisor, Double]: (left, right) =>
             ${Quantitative.multiply('left, 'right, true).asExprOf[Double]} }
 
+  def divTypeclass2[right <: Measure: Type, divisor <: Quantity[right]: Type](using Quotes)
+  :     Expr[Double is Divisible by divisor] =
+
+    val left = UnitsMap(Map())
+    val right = UnitsMap[right]
+
+    val (leftNorm, _) = normalize(left, right, '{1.0})
+    val (rightNorm, _) = normalize(right, left, '{1.0})
+
+    (leftNorm/rightNorm).repr.map(_.asType).absolve match
+      case Some('[type result <: Measure; result]) =>
+       '{ Divisible[Double, divisor, Quantity[result]] {
+            (left, right) =>
+              ${Quantitative.multiply('{Quantity(left)}, 'right, true).asExprOf[Quantity[result]]} } }
+
+      case None =>
+       '{ Divisible[Double, divisor, Double]: (left, right) =>
+            ${Quantitative.multiply('{Quantity(left)}, 'right, true).asExprOf[Double]} }
+
+  def divTypeclass3[right <: Measure: Type, divisor <: Quantity[right]: Type](using Quotes)
+  :     Expr[Int is Divisible by divisor] =
+
+    val left = UnitsMap(Map())
+    val right = UnitsMap[right]
+
+    val (leftNorm, _) = normalize(left, right, '{1.0})
+    val (rightNorm, _) = normalize(right, left, '{1.0})
+
+    (leftNorm/rightNorm).repr.map(_.asType).absolve match
+      case Some('[type result <: Measure; result]) =>
+       '{ Divisible[Int, divisor, Quantity[result]] {
+            (left, right) =>
+              ${Quantitative.multiply('{Quantity(left.toDouble)}, 'right, true).asExprOf[Quantity[result]]} } }
+
+      case None =>
+       '{ Divisible[Int, divisor, Double]: (left, right) =>
+            ${Quantitative.multiply('{Quantity(left.toDouble)}, 'right, true).asExprOf[Double]} }
+
   def sqrtTypeclass[value <: Measure: Type](using Quotes): Expr[Quantity[value] is Rootable[2]] =
     val units = UnitsMap[value]
 

@@ -146,6 +146,14 @@ object Quantitative extends Quantitative2:
                              =>  dividend is Divisible by divisor =
       ${Quantitative.divTypeclass[left, dividend, right, divisor]}
 
+    transparent inline given divisible2: [right <: Measure, divisor <: Quantity[right]]
+                             =>  Double is Divisible by divisor =
+      ${Quantitative.divTypeclass2[right, divisor]}
+
+    transparent inline given divisible3: [right <: Measure, divisor <: Quantity[right]]
+                             =>  Int is Divisible by divisor =
+      ${Quantitative.divTypeclass3[right, divisor]}
+
     given divisibleDouble: [left <: Measure, dividend <: Quantity[left]] => dividend is Divisible:
       type Self = dividend
       type Result = Quantity[left]
@@ -167,9 +175,6 @@ object Quantitative extends Quantitative2:
       ${Quantitative.cbrtTypeclass[value]}
 
     inline def apply[units <: Measure](value: Double): Quantity[units] = value
-
-    given convertDouble: Conversion[Double, Quantity[Measure]] = Quantity[Measure](_)
-    given convertInt: Conversion[Int, Quantity[Measure]] = int => Quantity[Measure](int.toDouble)
 
     given commensurable: [units <: Measure, units2 <: Measure] => Quantity[units] is Commensurable:
       type Operand = Quantity[units2]
