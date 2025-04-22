@@ -98,8 +98,12 @@ object Hypotenuse:
       :     Boolean =
 
         inline if greater
-        then inline if strict then left > right else left >= right
-        else inline if strict then left < right else left <= right
+        then
+          inline if strict then (left: Double) > (right: Double)
+          else (left: Double) >= (right: Double)
+        else
+          inline if strict then (left: Double) < (right: Double)
+          else (left: Double) <= (right: Double)
 
     inline given commensurableInt: F64 is Commensurable:
       type Operand = Int
@@ -130,8 +134,12 @@ object Hypotenuse:
     inline given commensurable: F64 is Commensurable:
       type Operand = Double
 
-      inline def compare(inline left: F64, inline right: Double, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+      inline def compare
+                  (inline left:        F64,
+                   inline right:       Double,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
+      :     Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
@@ -187,8 +195,10 @@ object Hypotenuse:
       :     Boolean =
 
         inline if greaterThan
-        then inline if strict then left > right else left >= right
-        else inline if strict then left < right else left <= right
+        then
+          inline if strict then (left: Float) > (right: Float) else (left: Float) >= (right: Float)
+        else
+          inline if strict then (left: Float) < (right: Float) else (left: Float) <= (right: Float)
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B32): F32 =
       val signBit = if sign then 0 else 1 << 31
@@ -266,8 +276,8 @@ object Hypotenuse:
       :     Boolean =
 
         inline if greaterThan
-        then inline if strict then left > right else left >= right
-        else inline if strict then left < right else left <= right
+        then inline if strict then (left: Long) > (right: Long) else (left: Long) >= (right: Long)
+        else inline if strict then (left: Long) < (right: Long) else (left: Long) <= (right: Long)
 
 
   object U32:
@@ -369,8 +379,10 @@ object Hypotenuse:
       :     Boolean =
 
         inline if greaterThan
-        then inline if strict then left > right else left >= right
-        else inline if strict then left < right else left <= right
+        then
+          inline if strict then (left: Short) > (right: Short) else (left: Short) >= (right: Short)
+        else
+          inline if strict then (left: Short) < (right: Short) else (left: Short) <= (right: Short)
 
   object U8:
     erased given underlying: Underlying[U8, Byte] = erasedValue
@@ -420,8 +432,8 @@ object Hypotenuse:
       :     Boolean =
 
         inline if greaterThan
-        then inline if strict then left > right else left >= right
-        else inline if strict then left < right else left <= right
+        then inline if strict then (left: Byte) > (right: Byte) else (left: Byte) >= (right: Byte)
+        else inline if strict then (left: Byte) < (right: Byte) else (left: Byte) <= (right: Byte)
 
   object B64:
     erased given underlying: Underlying[B64, Long] = erasedValue
