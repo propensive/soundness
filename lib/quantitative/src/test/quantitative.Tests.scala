@@ -175,6 +175,18 @@ object Tests extends Suite(m"Quantitative Tests"):
         2.0*Foot + 2.0*Metre
       .assert(_ == 2.6096*Metre)
 
+    suite(m"Normalization tests"):
+      test(m"Normalize minutes as seconds"):
+        (60.0*Second).normalize[Minutes[1]]
+      . assert(_ == Minute)
+
+      test(m"Normalize hours as seconds"):
+        (2.0*Hour).normalize[Seconds[1]]
+      . assert(_ == 7200.0*Second)
+
+      test(m"Normalize inches as metres"):
+        (1.0*Inch).normalize[Metres[1]]
+      . assert(_ == 2.54*Centi(Metre))
 
     suite(m"Metric prefixes"):
       test(m"Metric kilo prefix multiplies by 10^3"):

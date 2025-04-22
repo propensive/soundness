@@ -76,12 +76,14 @@ object Quantitative extends Quantitative2:
 
     given numeric: [units <: Measure] => Numeric[Quantity[units]] = summon[Numeric[Double]]
 
-    given genericDuration: Quantity[Seconds[1]] is GenericDuration =
-      quantity => (quantity*1000.0).toLong
+    given genericDuration: [units <: Measure: Normalizable into Seconds[1]]
+          => Quantity[units] is GenericDuration =
+      quantity => (quantity.normalize*1000.0).toLong
 
 
-    given specificDuration: Quantity[Seconds[1]] is SpecificDuration =
-      long => Quantity(long/1000.0)
+    given specificDuration: [units <: Measure: Normalizable into Seconds[1]]
+          => Quantity[units] is SpecificDuration =
+      long => Quantity[units](long*units.ratio()/1000.0)
 
     transparent inline given addable: [left <: Measure,
                                        quantity <: Quantity[left],

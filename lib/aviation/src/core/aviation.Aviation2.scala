@@ -49,6 +49,7 @@ object Aviation2:
 
   object TaiInstant:
     erased given underlying: Underlying[TaiInstant, Long] = !!
+
     given generic: Aviation2.TaiInstant is (Abstractable & Instantiable) across Instants into
                     Long from Long =
       new Abstractable with Instantiable:
@@ -65,10 +66,13 @@ object Aviation2:
       type Result = Duration
       def subtract(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
 
-    given duration: Duration is InstantSubtractable into Instant = new InstantSubtractable:
-      type Self = Duration
+    given duration: [units <: Measure: Normalizable into Seconds[1]]
+          => Quantity[units] is InstantSubtractable into Instant = new InstantSubtractable:
+      type Self = Quantity[units]
       type Result = Instant
-      def subtract(left: Instant, right: Duration): Instant = left - (right.value*1000.0).toLong
+
+      def subtract(left: Instant, right: Quantity[units]): Instant =
+        left - (right.normalize.value*1000.0).toLong
 
   trait InstantSubtractable:
     type Self
@@ -103,12 +107,14 @@ object Aviation2:
 
     given ordering: Ordering[Instant] = Ordering.Long
 
-    given plus: Instant is Addable by Duration into Instant = new Addable:
+    given plus: [units <: Measure: Normalizable into Seconds[1]]
+          => Instant is Addable by Quantity[units] into Instant = new Addable:
       type Self = Instant
-      type Operand = Duration
+      type Operand = Quantity[units]
       type Result = Instant
-      def add(instant: Instant, duration: Duration): Instant =
-        instant + (duration.value/1000.0).toLong
+
+      def add(instant: Instant, duration: Quantity[units]): Instant =
+        instant + (duration.normalize.value/1000.0).toLong
 
     given minus: [operand: InstantSubtractable]
           =>  Instant is Subtractable by operand into operand.Result =
@@ -119,11 +125,15 @@ object Aviation2:
   object Duration:
     def of(millis: Long): Duration = Quantity(millis/1000.0)
 
-    given generic: Aviation2.Duration is (GenericDuration & SpecificDuration) =
+    given generic: [units <: Measure: Normalizable into Seconds[1]]
+          =>  Quantity[units] is (GenericDuration & SpecificDuration) =
       new GenericDuration with SpecificDuration:
-        type Self = Aviation2.Duration
-        def duration(milliseconds: Long): Aviation2.Duration = Quantity(milliseconds.toDouble)
-        def milliseconds(duration: Aviation2.Duration): Long = (duration.value*1000).toLong
+        type Self = Quantity[units]
+
+        def duration(milliseconds: Long): Quantity[units] =
+          Quantity(milliseconds.toDouble/units.ratio())
+
+        def milliseconds(duration: Quantity[units]): Long = (duration.normalize.value*1000).toLong
 
   extension (instant: Instant)
     @targetName("to")

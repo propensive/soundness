@@ -34,13 +34,14 @@ package quantitative
 
 import prepositional.*
 
-object Expressible:
-  inline given derived: [source <: Measure, result <: Measure] => source is Expressible in result =
-    ${Quantitative.expressible[source, result]}
+object Normalizable:
+  inline given derived: [source <: Measure, result <: Measure]
+               => source is Normalizable into result =
+    ${Quantitative.normalizable[source, result]}
 
-trait Expressible:
+trait Normalizable:
   type Self <: Measure
-  type Format <: Measure
+  type Result <: Measure
 
   def ratio(): Double
-  def express(from: Quantity[Self]): Quantity[Format] = Quantity(from.value/ratio())
+  def normalize(from: Quantity[Self]): Quantity[Result] = Quantity(from.value/ratio())

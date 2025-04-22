@@ -220,9 +220,9 @@ trait Quantitative2:
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
 
-  def expressible[source <: Measure: Type, result <: Measure: Type]
+  def normalizable[source <: Measure: Type, result <: Measure: Type]
        (using Quotes)
-  :     Expr[source is Expressible in result] =
+  :     Expr[source is Normalizable into result] =
     import quotes.reflect.*
 
     val sourceUnits = UnitsMap[source]
