@@ -38,31 +38,42 @@ given ColorProfile = colorProfiles.daylight
 
 object Tests extends Suite(m"Iridescence tests"):
   def run(): Unit =
-    // suite(m"Roundtrip tests"):
-    //   for color <- colors.all.reverse do
-    //     test(m"sRGB to L*a*b*"):
-    //       color.srgb.cielab.srgb
-    //     .assert(_ ~~ color.srgb)
+    suite(m"Roundtrip tests"):
 
-    //     test(m"HSV to sRGB and back"):
-    //       color.srgb.hsv.srgb.hsv
-    //     .assert(_ ~~ color.srgb.hsv)
+      given Srgb is Checkable against Srgb = (left, right) =>
+        left.red === (right.red +/- 0.01)
+        && left.green === (right.green +/- 0.01)
+        && left.blue === (right.blue +/- 0.01)
 
-    //     test(m"sRGB to CMY and back"):
-    //       color.srgb.cmy.srgb
-    //     .assert(_ ~~ color.srgb)
+      given Hsv is Checkable against Hsv = (left, right) =>
+        left.hue === (right.hue +/- 0.05)
+        && left.saturation === (right.saturation +/- 0.05)
+        && left.value === (right.value +/- 0.05)
 
-    //     test(m"sRGB to CMYK and back"):
-    //       color.srgb.cmyk.srgb
-    //     .assert(_ ~~ color.srgb)
+      for color <- webColors.all.reverse do
+        test(m"sRGB to L*a*b*"):
+          color.srgb.cielab.srgb
+        .assert(_ === color.srgb)
 
-    //     test(m"sRGB to XYZ and back"):
-    //       color.srgb.xyz.srgb
-    //     .assert(_ ~~ color.srgb)
+        test(m"HSV to sRGB and back"):
+          color.srgb.hsv.srgb.hsv
+        .assert(_ === color.srgb.hsv)
 
-    //     test(m"sRGB to HSL and back"):
-    //       color.srgb.hsl.srgb
-    //     .assert(_ ~~ color.srgb)
+        test(m"sRGB to CMY and back"):
+          color.srgb.cmy.srgb
+        .assert(_ === color.srgb)
+
+        test(m"sRGB to CMYK and back"):
+          color.srgb.cmyk.srgb
+        .assert(_ === color.srgb)
+
+        test(m"sRGB to XYZ and back"):
+          color.srgb.xyz.srgb
+        .assert(_ === color.srgb)
+
+        test(m"sRGB to HSL and back"):
+          color.srgb.hsl.srgb
+        .assert(_ === color.srgb)
 
     suite(m"Interpolator tests"):
       test(m"Read a hex value with a leading hash"):
