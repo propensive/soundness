@@ -68,7 +68,7 @@ object Mosquito:
         def recur(left: Tuple, right: Tuple): Tuple = left match
           case leftHead *: leftTail => right match
             case rightHead *: rightTail =>
-              (leftHead.asInstanceOf[left] + rightHead.asInstanceOf[right])
+              (leftHead.asInstanceOf[value] + rightHead.asInstanceOf[value2])
               *: recur(leftTail, rightTail)
 
             case _ =>
@@ -94,7 +94,7 @@ object Mosquito:
         def recur(left: Tuple, right: Tuple): Tuple = left match
           case leftHead *: leftTail => right match
             case rightHead *: rightTail =>
-              (leftHead.asInstanceOf[left] - rightHead.asInstanceOf[right])
+              (leftHead.asInstanceOf[value] - rightHead.asInstanceOf[value2])
               *: recur(leftTail, rightTail)
 
             case _ =>
