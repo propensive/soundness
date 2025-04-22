@@ -125,6 +125,22 @@ object Quantitative extends Quantitative2:
 
       inline def multiply(left: Double, right: multiplier): Quantity[right] = left*right
 
+    given multiplicable4: [right <: Measure, multiplier <: Quantity[right]]
+          => Int is Multiplicable:
+      type Self = Int
+      type Operand = multiplier
+      type Result = Quantity[right]
+
+      inline def multiply(left: Int, right: multiplier): Quantity[right] = left*right
+
+    given multiplicable5: [left <: Measure, multiplicand <: Quantity[left]]
+          => multiplicand is Multiplicable:
+      type Self = multiplicand
+      type Operand = Int
+      type Result = Quantity[left]
+
+      inline def multiply(left: multiplicand, right: Int): Quantity[left] = left*right
+
     transparent inline given divisible: [left <: Measure,
                                          dividend <: Quantity[left],
                                          right <: Measure,
