@@ -43,6 +43,7 @@ object Tests extends Suite(m"Soundness tests"):
     anticipation.Tests()
     austronesian.Tests()
     aviation.Tests()
+    baroque.Tests()
     burdock.Tests()
     caesura.Tests()
     camouflage.Tests()
@@ -117,7 +118,6 @@ object Tests extends Suite(m"Soundness tests"):
 
 object FailingTests extends Suite(m"Failing tests"):
   def run(): Unit =
-    baroque.Tests()
     chiaroscuro.Tests()
     mandible.Tests()
     //merino.Tests() - crashing

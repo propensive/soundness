@@ -43,15 +43,6 @@ extension [units <: Measure](quantity: Quantity[units])
   transparent inline def in[units2[power <: Nat] <: Units[power, ?]]: Any =
     ${Quantitative.norm[units, units2]('quantity)}
 
-extension [units <: Measure](quantity: into Quantity[units])
-  // @targetName("plus")
-  // transparent inline infix def + [units2 <: Measure](quantity2: Quantity[units2]): Any =
-  //   ${Quantitative.add[units, units2]('quantity, 'quantity2, '{false})}
-
-  @targetName("minus")
-  transparent inline infix def - [units2 <: Measure](quantity2: Quantity[units2]): Any =
-    ${Quantitative.add[units, units2]('quantity, 'quantity2, '{true})}
-
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
 
   inline def sqrt(using root: Quantity[units] is Rootable[2]): root.Result =
