@@ -30,12 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package quantitative
 
-export quantitative
-. { Distance, Mass, Time, Current, Luminosity, Temperature, AmountOfSubstance, Measurement,
-    Measure, Units, Metres, Kilograms, Candelas, Moles, Amperes, Kelvins, Seconds, Designation,
-    Principal, Redesignation, Offset, Quantity, MetricUnit, Quantifiable, invert, in, sqrt, cbrt,
-    units, express, dimension, Metric, NoPrefix, Deka, Hecto, Kilo, Mega, Giga, Tera, Peta,
-    Exa, Zetta, Yotta, Ronna, Quetta, Deci, Centi, Milli, Micro, Nano, Pico, Femto, Atto, Zepto,
-    Yocto, Ronto, Quecto, Kibi, Mebi, Gibi, Tebi, Pebi, Exbi, Zebi, Yobi, Expressible }
+import prepositional.*
+
+object Expressible:
+  inline given derived: [source <: Measure, result <: Measure] => source is Expressible in result =
+    ${Quantitative.expressible[source, result]}
+
+trait Expressible:
+  type Self <: Measure
+  type Format <: Measure
+
+  def ratio(): Double
+  def express(from: Quantity[Self]): Quantity[Format] = Quantity(from.value/ratio())
