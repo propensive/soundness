@@ -41,7 +41,7 @@ object Vacuous:
     import quotes.reflect.*
     if TypeRepr.of[Unset.type] <:< TypeRepr.of[value].widen
     then '{null.asInstanceOf[Optionality[value]]}
-    else halt(m"the type ${TypeRepr.of[value].widen.show} is not an `Optional`")
+    else halt(m"the type ${TypeRepr.of[value].widen} is not an `Optional`")
 
   def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value])(using Quotes)
   :     Expr[value] =

@@ -112,5 +112,5 @@ object Adversaria:
     if annotations.isEmpty
     then
       val typeName = TypeRepr.of[annotation].show
-      panic(m"the type ${targetType.show} did not have the annotation $typeName")
+      panic(m"the type $targetType did not have the annotation $typeName")
     else '{Annotations[annotation, target](${Expr.ofList(annotations)}*)}

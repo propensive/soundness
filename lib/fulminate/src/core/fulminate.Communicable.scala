@@ -49,6 +49,8 @@ object Communicable:
   given meta: [meta] => Quotes => Type[meta] is Communicable =
     tpe => Message(quotes.reflect.TypeRepr.of(using tpe).show.tt)
 
+  given [text: Textualizer] => text is Communicable = value => Message(value.textual)
+
   given typeRepr: (quotes: Quotes) => quotes.reflect.TypeRepr is Communicable =
     tpe => Message(tpe.show)
 

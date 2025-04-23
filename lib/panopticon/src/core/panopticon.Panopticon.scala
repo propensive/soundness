@@ -136,7 +136,7 @@ object Panopticon:
                 newParams)
 
             case None =>
-              halt(m"the type ${fromTypeRepr.show} does not have a primary constructor")
+              halt(m"the type $fromTypeRepr does not have a primary constructor")
 
     rewrite(getPath[path](), value.asTerm).asExprOf[from]
 
@@ -157,7 +157,7 @@ object Panopticon:
           case _ =>
             aimType.typeSymbol.caseFields.find(_.name == fieldName) match
               case None =>
-                halt(m"the field $fieldName is not a member of ${aimType.show}")
+                halt(m"the field $fieldName is not a member of $aimType")
 
               case Some(symbol) => symbol.info.asType.absolve match
                 case '[result] => '{Aim[result, fieldName *: tuple]()}
