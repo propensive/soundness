@@ -76,12 +76,14 @@ object Quantitative extends Quantitative2:
 
     given numeric: [units <: Measure] => Numeric[Quantity[units]] = summon[Numeric[Double]]
 
-    given genericDuration: Quantity[Seconds[1]] is GenericDuration =
-      quantity => (quantity*1000.0).toLong
+    given genericDuration: [units <: Measure: Normalizable into Seconds[1]]
+          =>  Quantity[units] is GenericDuration =
+      quantity => (quantity.normalize*1000.0).toLong
 
 
-    given specificDuration: Quantity[Seconds[1]] is SpecificDuration =
-      long => Quantity(long/1000.0)
+    given specificDuration: [units <: Measure: Normalizable into Seconds[1]]
+          =>  Quantity[units] is SpecificDuration =
+      long => Quantity[units](long*units.ratio()/1000.0)
 
     transparent inline given addable: [left <: Measure,
                                        quantity <: Quantity[left],
@@ -106,9 +108,8 @@ object Quantitative extends Quantitative2:
       type Result = Quantity[left]
       def negate(operand: Self): Quantity[left] = -operand
 
-
     given multiplicable2: [left <: Measure, multiplicand <: Quantity[left]]
-          => multiplicand is Multiplicable:
+          =>  multiplicand is Multiplicable:
       type Self = multiplicand
       type Operand = Double
       type Result = Quantity[left]
@@ -116,12 +117,27 @@ object Quantitative extends Quantitative2:
       inline def multiply(left: multiplicand, right: Double): Quantity[left] = left*right
 
     given multiplicable3: [right <: Measure, multiplier <: Quantity[right]]
-          => Double is Multiplicable:
+          =>  Double is Multiplicable:
       type Self = Double
       type Operand = multiplier
       type Result = Quantity[right]
 
       inline def multiply(left: Double, right: multiplier): Quantity[right] = left*right
+
+    given multiplicable4: [right <: Measure, multiplier <: Quantity[right]] => Int is Multiplicable:
+      type Self = Int
+      type Operand = multiplier
+      type Result = Quantity[right]
+
+      inline def multiply(left: Int, right: multiplier): Quantity[right] = left*right
+
+    given multiplicable5: [left <: Measure, multiplicand <: Quantity[left]]
+          => multiplicand is Multiplicable:
+      type Self = multiplicand
+      type Operand = Int
+      type Result = Quantity[left]
+
+      inline def multiply(left: multiplicand, right: Int): Quantity[left] = left*right
 
     transparent inline given divisible: [left <: Measure,
                                          dividend <: Quantity[left],
@@ -130,29 +146,37 @@ object Quantitative extends Quantitative2:
                              =>  dividend is Divisible by divisor =
       ${Quantitative.divTypeclass[left, dividend, right, divisor]}
 
-    given divisibleDouble: [left <: Measure, dividend <: Quantity[left]]
-          => dividend is Divisible:
+    transparent inline given divisible2: [right <: Measure, divisor <: Quantity[right]]
+                             =>  Double is Divisible by divisor =
+      ${Quantitative.divTypeclass2[right, divisor]}
+
+    transparent inline given divisible3: [right <: Measure, divisor <: Quantity[right]]
+                             =>  Int is Divisible by divisor =
+      ${Quantitative.divTypeclass3[right, divisor]}
+
+    given divisibleDouble: [left <: Measure, dividend <: Quantity[left]] => dividend is Divisible:
       type Self = dividend
       type Result = Quantity[left]
       type Operand = Double
+
       inline def divide(left: dividend, right: Double): Quantity[left] = left/right
 
-    transparent inline given squareRoot: [value <: Measure]
-                             =>  Quantity[value] is Rootable[2] =
+    given divisibleInt: [left <: Measure, dividend <: Quantity[left]] => dividend is Divisible:
+      type Self = dividend
+      type Result = Quantity[left]
+      type Operand = Int
+
+      inline def divide(left: dividend, right: Int): Quantity[left] = left/right.toDouble
+
+    transparent inline given squareRoot: [value <: Measure] =>  Quantity[value] is Rootable[2] =
       ${Quantitative.sqrtTypeclass[value]}
 
-    transparent inline given cubeRoot: [value <: Measure]
-                             =>  Quantity[value] is Rootable[3] =
+    transparent inline given cubeRoot: [value <: Measure] =>  Quantity[value] is Rootable[3] =
       ${Quantitative.cbrtTypeclass[value]}
 
     inline def apply[units <: Measure](value: Double): Quantity[units] = value
 
-    given convertDouble: Conversion[Double, Quantity[Measure]] = Quantity[Measure](_)
-    given convertInt: Conversion[Int, Quantity[Measure]] = int => Quantity[Measure](int.toDouble)
-
-    given commensurable: [units <: Measure, units2 <: Measure]
-          =>  Quantity[units] is Commensurable:
-
+    given commensurable: [units <: Measure, units2 <: Measure] => Quantity[units] is Commensurable:
       type Operand = Quantity[units2]
 
       inline def compare
@@ -182,8 +206,7 @@ object Quantitative extends Quantitative2:
 
     def expressUnits(units: Map[Text, Int]): Text =
       units.to(List).map: (unit, power) =>
-        if power == 1 then unit
-        else
+        if power == 1 then unit else
           val exponent: Text =
             power.show.mapChars:
               case '0' => '⁰'

@@ -34,6 +34,7 @@ package anticipation
 
 import aviation.*
 import prepositional.*
+import quantitative.*
 
 package instantApi:
   given aviationInstant: Aviation2.Instant is (Abstractable & Instantiable) across Instants into
@@ -46,7 +47,11 @@ package instantApi:
       export Aviation2.Instant.generic.{genericize, apply}
 
 package durationApi:
-  given aviationDuration: Aviation2.Duration is GenericDuration & SpecificDuration =
+  given aviationDuration: [units <: Measure: Normalizable into Seconds[1]]
+        => Quantity[units] is GenericDuration & SpecificDuration =
     new GenericDuration with SpecificDuration:
-      type Self = Aviation2.Duration
-      export Aviation2.Duration.generic.{duration, milliseconds}
+      type Self = Quantity[units]
+      def duration(milliseconds: Long): Quantity[units] =
+        Quantity(milliseconds.toDouble*units.ratio())
+
+      def milliseconds(duration: Quantity[units]): Long = (duration.normalize.value*1000).toLong

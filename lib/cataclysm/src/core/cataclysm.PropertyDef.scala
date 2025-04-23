@@ -46,9 +46,17 @@ object PropertyDef:
   erased given alignSelf: ("alignSelf" is PropertyDef[Text]) = !!
   erased given all: ("all" is PropertyDef[Text]) = !!
   erased given animation: ("animation" is PropertyDef[Text]) = !!
-  erased given animationDelay: ("animationDelay" is PropertyDef[Quantity[Seconds[1]]]) = !!
+
+  erased given animationDelay: [duration <: Measure]
+               => (erased duration is Normalizable into Seconds[1])
+               => ("animationDelay" is PropertyDef[Quantity[duration]]) = !!
+
   erased given animationDirection: ("animationDirection" is PropertyDef[Text]) = !!
-  erased given animationDuration: ("animationDuration" is PropertyDef[Quantity[Seconds[1]]]) = !!
+
+  given animationDuration: [duration <: Measure]
+        => (erased duration is Normalizable into Seconds[1])
+        => ("animationDuration" is PropertyDef[Quantity[duration]]) = !!
+
   erased given animationFillMode: ("animationFillMode" is PropertyDef[AnimationFillMode]) = !!
   erased given animationIterationCount: ("animationIterationCount" is PropertyDef[Text]) = !!
   erased given animationName: ("animationName" is PropertyDef[Text]) = !!
