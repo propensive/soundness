@@ -36,6 +36,6 @@ import quantitative.*
 import rudiments.*
 
 object FontSize:
-  erased given quantity: Measurement[Units[1, FontSize], "font size"] = !!
+  erased given quantity: Amount[Units[1, FontSize], "font size"] = !!
 
 erased trait FontSize extends Dimension

@@ -37,16 +37,16 @@ import language.implicitConversions
 import proscenium.*
 import rudiments.*
 
-erased trait Measurement[dimension <: Units[?, ?], label <: Label]()
+erased trait Amount[dimension <: Units[?, ?], label <: Label]()
 
-object Measurement:
+object Amount:
   // base units
-  erased given distance: Measurement[Units[1, Distance], "distance"] = !!
-  erased given mass: Measurement[Units[1, Mass], "mass"] = !!
-  erased given time: Measurement[Units[1, Time], "time"] = !!
-  erased given current: Measurement[Units[1, Current], "current"] = !!
-  erased given temperature: Measurement[Units[1, Temperature], "temperature"] = !!
-  erased given luminosity: Measurement[Units[1, Luminosity], "luminosity"] = !!
+  erased given distance: Amount[Units[1, Distance], "distance"] = !!
+  erased given mass: Amount[Units[1, Mass], "mass"] = !!
+  erased given time: Amount[Units[1, Time], "time"] = !!
+  erased given current: Amount[Units[1, Current], "current"] = !!
+  erased given temperature: Amount[Units[1, Temperature], "temperature"] = !!
+  erased given luminosity: Amount[Units[1, Luminosity], "luminosity"] = !!
 
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
 
@@ -139,87 +139,87 @@ object Measurement:
   type ElectricalResistivity =
     Units[3, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
 
-  erased given absement: Measurement[Absement, "absement"] = !!
-  erased given absorbedDoseRate: Measurement[AbsorbedDoseRate, "absorbed dose rate"] = !!
-  erased given acceleration: Measurement[Acceleration, "acceleration"] = !!
-  erased given area: Measurement[Area, "area"] = !!
-  erased given areaDensity: Measurement[AreaDensity, "area density"] = !!
-  erased given capacitance: Measurement[Capacitance, "capacitance"] = !!
-  erased given crackle: Measurement[Crackle, "crackle"] = !!
-  erased given currentDensity: Measurement[CurrentDensity, "current density"] = !!
-  erased given dynamicViscosity: Measurement[DynamicViscosity, "dynamic viscosity"] = !!
-  erased given electricCharge: Measurement[ElectricCharge, "electric charge"] = !!
-  erased given energy: Measurement[Energy, "energy"] = !!
-  erased given entropy: Measurement[Entropy, "entropy"] = !!
-  erased given force: Measurement[Force, "force"] = !!
-  erased given frequency: Measurement[Frequency, "frequency"] = !!
-  erased given substance: Measurement[Units[1, AmountOfSubstance], "amount of substance"] = !!
-  erased given illuminance: Measurement[Illuminance, "illuminance"] = !!
-  erased given impedance: Measurement[Impedance, "impedance"] = !!
-  erased given inductance: Measurement[Inductance, "inductance"] = !!
-  erased given jerk: Measurement[Jerk, "jerk"] = !!
-  erased given jounce: Measurement[Jounce, "jounce"] = !!
-  erased given linearDensity: Measurement[LinearDensity, "linear density"] = !!
-  erased given magneticFlux: Measurement[MagneticFlux, "magnetic flux"] = !!
-  erased given magneticMoment: Measurement[MagneticMoment, "magnetic moment"] = !!
-  erased given magnetization: Measurement[Magnetization, "magnetization"] = !!
-  erased given massDensity: Measurement[MassDensity, "mass density"] = !!
-  erased given molarConcentration: Measurement[MolarConcentration, "molar concentration"] = !!
-  erased given chemicalPotential: Measurement[ChemicalPotential, "chemical potential"] = !!
-  erased given molarEntropy: Measurement[MolarEntropy, "molar entropy"] = !!
-  erased given momentOfInertia: Measurement[MomentOfInertia, "moment of inertia"] = !!
-  erased given momentum: Measurement[Momentum, "momentum"] = !!
-  erased given opticalPower: Measurement[OpticalPower, "optical power"] = !!
-  erased given permeability: Measurement[Permeability, "permeability"] = !!
-  erased given permittivity: Measurement[Permittivity, "permittivity"] = !!
-  erased given power: Measurement[Power, "power"] = !!
-  erased given pressure: Measurement[Pressure, "pressure"] = !!
-  erased given pop: Measurement[Pop, "pop"] = !!
-  erased given radiance: Measurement[Radiance, "radiance"] = !!
-  erased given reactionRate: Measurement[ReactionRate, "reaction rate"] = !!
-  erased given reluctance: Measurement[Reluctance, "reluctance"] = !!
-  erased given specificEnergy: Measurement[SpecificEnergy, "specific energy"] = !!
-  erased given specificVolume: Measurement[SpecificVolume, "specific volume"] = !!
-  erased given spin: Measurement[Spin, "spin"] = !!
-  erased given surfaceTension: Measurement[SurfaceTension, "surface tension"] = !!
-  erased given thermalConductance: Measurement[ThermalConductance, "thermal conductance"] = !!
-  erased given thermalResistance: Measurement[ThermalResistance, "thermal resistance"] = !!
-  erased given thermalResistivity: Measurement[ThermalResistivity, "thermal resistivity"] = !!
-  erased given velocity: Measurement[Velocity, "velocity"] = !!
-  erased given volume: Measurement[Volume, "volume"] = !!
+  erased given absement: Amount[Absement, "absement"] = !!
+  erased given absorbedDoseRate: Amount[AbsorbedDoseRate, "absorbed dose rate"] = !!
+  erased given acceleration: Amount[Acceleration, "acceleration"] = !!
+  erased given area: Amount[Area, "area"] = !!
+  erased given areaDensity: Amount[AreaDensity, "area density"] = !!
+  erased given capacitance: Amount[Capacitance, "capacitance"] = !!
+  erased given crackle: Amount[Crackle, "crackle"] = !!
+  erased given currentDensity: Amount[CurrentDensity, "current density"] = !!
+  erased given dynamicViscosity: Amount[DynamicViscosity, "dynamic viscosity"] = !!
+  erased given electricCharge: Amount[ElectricCharge, "electric charge"] = !!
+  erased given energy: Amount[Energy, "energy"] = !!
+  erased given entropy: Amount[Entropy, "entropy"] = !!
+  erased given force: Amount[Force, "force"] = !!
+  erased given frequency: Amount[Frequency, "frequency"] = !!
+  erased given substance: Amount[Units[1, AmountOfSubstance], "amount of substance"] = !!
+  erased given illuminance: Amount[Illuminance, "illuminance"] = !!
+  erased given impedance: Amount[Impedance, "impedance"] = !!
+  erased given inductance: Amount[Inductance, "inductance"] = !!
+  erased given jerk: Amount[Jerk, "jerk"] = !!
+  erased given jounce: Amount[Jounce, "jounce"] = !!
+  erased given linearDensity: Amount[LinearDensity, "linear density"] = !!
+  erased given magneticFlux: Amount[MagneticFlux, "magnetic flux"] = !!
+  erased given magneticMoment: Amount[MagneticMoment, "magnetic moment"] = !!
+  erased given magnetization: Amount[Magnetization, "magnetization"] = !!
+  erased given massDensity: Amount[MassDensity, "mass density"] = !!
+  erased given molarConcentration: Amount[MolarConcentration, "molar concentration"] = !!
+  erased given chemicalPotential: Amount[ChemicalPotential, "chemical potential"] = !!
+  erased given molarEntropy: Amount[MolarEntropy, "molar entropy"] = !!
+  erased given momentOfInertia: Amount[MomentOfInertia, "moment of inertia"] = !!
+  erased given momentum: Amount[Momentum, "momentum"] = !!
+  erased given opticalPower: Amount[OpticalPower, "optical power"] = !!
+  erased given permeability: Amount[Permeability, "permeability"] = !!
+  erased given permittivity: Amount[Permittivity, "permittivity"] = !!
+  erased given power: Amount[Power, "power"] = !!
+  erased given pressure: Amount[Pressure, "pressure"] = !!
+  erased given pop: Amount[Pop, "pop"] = !!
+  erased given radiance: Amount[Radiance, "radiance"] = !!
+  erased given reactionRate: Amount[ReactionRate, "reaction rate"] = !!
+  erased given reluctance: Amount[Reluctance, "reluctance"] = !!
+  erased given specificEnergy: Amount[SpecificEnergy, "specific energy"] = !!
+  erased given specificVolume: Amount[SpecificVolume, "specific volume"] = !!
+  erased given spin: Amount[Spin, "spin"] = !!
+  erased given surfaceTension: Amount[SurfaceTension, "surface tension"] = !!
+  erased given thermalConductance: Amount[ThermalConductance, "thermal conductance"] = !!
+  erased given thermalResistance: Amount[ThermalResistance, "thermal resistance"] = !!
+  erased given thermalResistivity: Amount[ThermalResistivity, "thermal resistivity"] = !!
+  erased given velocity: Amount[Velocity, "velocity"] = !!
+  erased given volume: Amount[Volume, "volume"] = !!
 
-  erased given electricChargeDensity: Measurement[ElectricChargeDensity,
+  erased given electricChargeDensity: Amount[ElectricChargeDensity,
       "electric charge density"] = !!
 
-  erased given electricDipoleMoment: Measurement[ElectricDipoleMoment,
+  erased given electricDipoleMoment: Amount[ElectricDipoleMoment,
       "electric dipole moment"] = !!
 
-  erased given electricFieldStrength: Measurement[ElectricFieldStrength,
+  erased given electricFieldStrength: Amount[ElectricFieldStrength,
       "electric field strength"] = !!
 
-  erased given electricalConductance: Measurement[ElectricalConductance,
+  erased given electricalConductance: Amount[ElectricalConductance,
       "electric conductance"] = !!
 
-  erased given electricalConductivity: Measurement[ElectricalConductivity,
+  erased given electricalConductivity: Amount[ElectricalConductivity,
       "electric conductivity"] = !!
 
-  erased given electricalPotential: Measurement[ElectricalPotential, "electric potential"] =
+  erased given electricalPotential: Amount[ElectricalPotential, "electric potential"] =
     !!
 
-  erased given electricalResistivity: Measurement[ElectricalResistivity,
+  erased given electricalResistivity: Amount[ElectricalResistivity,
       "electric resistivity"] = !!
 
-  erased given magneticFluxDensity: Measurement[MagneticFluxDensity, "magnetic flux density"] =
+  erased given magneticFluxDensity: Amount[MagneticFluxDensity, "magnetic flux density"] =
     !!
 
-  erased given specificHeatCapacity: Measurement[SpecificHeatCapacity,
+  erased given specificHeatCapacity: Amount[SpecificHeatCapacity,
       "specific heat capacity"] = !!
 
-  erased given thermalConductivity: Measurement[ThermalConductivity, "thermal conductivity"] =
+  erased given thermalConductivity: Amount[ThermalConductivity, "thermal conductivity"] =
     !!
 
-  erased given volumetricFlowRate: Measurement[VolumetricFlowRate, "volumetric flow rate"] =
+  erased given volumetricFlowRate: Amount[VolumetricFlowRate, "volumetric flow rate"] =
     !!
 
-  erased given electricDisplacementField: Measurement[ElectricDisplacementField,
+  erased given electricDisplacementField: Amount[ElectricDisplacementField,
       "electric displacement field"] = !!

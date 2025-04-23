@@ -50,7 +50,7 @@ given realm: Realm = realm"abacist"
 object Abacist:
   import Quantitative.*
 
-  def make[units <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Count[units]] =
+  def make[units <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Quanta[units]] =
     val inputs: List[Expr[Int]] = values.absolve match
       case Varargs(values) => values.to(List).reverse
 
@@ -77,12 +77,12 @@ object Abacist:
                 recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
 
           case Nil => halt:
-            m"""${inputs.length} unit values were provided, but this Count only has
+            m"""${inputs.length} unit values were provided, but this Quanta only has
                 ${multipliers.length} units"""
 
-    '{Count.fromLong[units](${recur(multipliers[units].reverse, inputs, '{0L})})}
+    '{Quanta.fromLong[units](${recur(multipliers[units].reverse, inputs, '{0L})})}
 
-  def describeCount[CountUnits <: Tuple: Type](count: Expr[Count[CountUnits]])(using Quotes)
+  def describeQuanta[units <: Tuple: Type](count: Expr[Quanta[units]])(using Quotes)
   :     Expr[ListMap[Text, Long]] =
 
     def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]])
@@ -98,18 +98,18 @@ object Abacist:
           val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
           recur(tail, '{$expr.updated(${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value)})
 
-    recur(multipliers[CountUnits], '{ListMap()})
+    recur(multipliers[units], '{ListMap()})
 
-  def multiplyCount[countUnits <: Tuple: Type]
-       (count: Expr[Count[countUnits]], multiplier: Expr[Double], division: Boolean)(using Quotes)
+  def multiplyQuanta[units <: Tuple: Type]
+       (count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean)(using Quotes)
   :     Expr[Any] =
 
-    if division then '{Count.fromLong[countUnits](($count.longValue/$multiplier + 0.5).toLong)}
-    else '{Count.fromLong[countUnits](($count.longValue*$multiplier + 0.5).toLong)}
+    if division then '{Quanta.fromLong[units](($count.longValue/$multiplier + 0.5).toLong)}
+    else '{Quanta.fromLong[units](($count.longValue*$multiplier + 0.5).toLong)}
 
-  def toQuantity[countUnits <: Tuple: Type](count: Expr[Count[countUnits]])(using Quotes)
+  def toQuantity[units <: Tuple: Type](count: Expr[Quanta[units]])(using Quotes)
   :     Expr[Any] =
-    val lastUnit = multipliers[countUnits].last
+    val lastUnit = multipliers[units].last
     val quantityUnit = lastUnit.unitPower.ref.dimensionRef.principal
     val ratioExpr = ratio(lastUnit.unitPower.ref, quantityUnit, lastUnit.unitPower.power)
 
@@ -117,20 +117,20 @@ object Abacist:
       case '[type quantity <: Measure; quantity] =>
         '{Quantity[quantity]($count.longValue*$ratioExpr)}
 
-  def fromQuantity[quantity <: Measure: Type, countUnits <: Tuple: Type]
+  def fromQuantity[quantity <: Measure: Type, units <: Tuple: Type]
        (quantity: Expr[Quantity[quantity]])
        (using Quotes)
-  :     Expr[Count[countUnits]] =
+  :     Expr[Quanta[units]] =
 
     import quotes.reflect.*
 
-    val lastUnit = multipliers[countUnits].last.unitPower
+    val lastUnit = multipliers[units].last.unitPower
     val quantityUnit = readUnitPower(TypeRepr.of[quantity].dealias)
     val ratioExpr = ratio(quantityUnit.ref, lastUnit.ref, lastUnit.power)
 
-    '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[Count[countUnits]]}
+    '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[Quanta[units]]}
 
-  def get[units <: Tuple: Type, unit <: Units[1, ? <: Dimension]: Type](value: Expr[Count[units]])
+  def get[units <: Tuple: Type, unit <: Units[1, ? <: Dimension]: Type](value: Expr[Quanta[units]])
        (using Quotes)
   :     Expr[Int] =
 
@@ -139,7 +139,7 @@ object Abacist:
     val lookupUnit = readUnitPower(TypeRepr.of[unit])
 
     val multiplier: Multiplier = multipliers[units].where(_.unitPower == lookupUnit).or:
-      halt(m"the Count does not include this unit")
+      halt(m"the Quanta does not include this unit")
 
     '{(($value.longValue/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
 
@@ -157,7 +157,7 @@ object Abacist:
           dimension.let: current =>
             if unitPower.ref.dimensionRef != current
             then halt:
-              m"""the Count type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
+              m"""the Quanta type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
                   ${current.name}"""
 
           untuple[tail](unitPower.ref.dimensionRef, unitPower :: result)

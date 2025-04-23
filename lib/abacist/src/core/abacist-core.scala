@@ -36,11 +36,11 @@ import quantitative.*
 
 import scala.quoted.*
 
-export Abacist2.Count
+export Abacist2.Quanta
 
 type TimeMinutes = (Hours[1], Minutes[1])
 type TimeSeconds = (Hours[1], Minutes[1], Seconds[1])
 
 extension [units <: Measure](inline quantity: Quantity[units])
-  inline def count[count <: Tuple]: Count[count] =
+  inline def quanta[count <: Tuple]: Quanta[count] =
     ${Abacist.fromQuantity[units, count]('quantity)}
