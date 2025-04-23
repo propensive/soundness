@@ -42,50 +42,50 @@ import symbolism.*
 import scala.compiletime.*, ops.int.*
 
 object Abacist2:
-  opaque type Count[units <: Tuple] = Long
+  opaque type Quanta[units <: Tuple] = Long
 
-  object Count:
-    erased given underlying: [units <: Tuple] => Underlying[Count[units], Long] = !!
-    given zeroic: [units <: Tuple] => Count[units] is Zeroic:
-      inline def zero: Count[units] = 0L
+  object Quanta:
+    erased given underlying: [units <: Tuple] => Underlying[Quanta[units], Long] = !!
+    given zeroic: [units <: Tuple] => Quanta[units] is Zeroic:
+      inline def zero: Quanta[units] = 0L
 
-    given typeable: [units <: Tuple] => Typeable[Count[units]]:
-      def unapply(count: Any): Option[count.type & Count[units]] = count.asMatchable match
+    given typeable: [units <: Tuple] => Typeable[Quanta[units]]:
+      def unapply(count: Any): Option[count.type & Quanta[units]] = count.asMatchable match
         case count: Long => Some(count)
         case _           => None
 
 
-    def fromLong[units <: Tuple](long: Long): Count[units] = long
-    given integral: [units <: Tuple] => Integral[Count[units]] = summon[Integral[Long]]
+    def fromLong[units <: Tuple](long: Long): Quanta[units] = long
+    given integral: [units <: Tuple] => Integral[Quanta[units]] = summon[Integral[Long]]
 
-    inline def apply[units <: Tuple](inline values: Int*): Count[units] =
+    inline def apply[units <: Tuple](inline values: Int*): Quanta[units] =
       ${Abacist.make[units]('values)}
 
-    given addable: [units <: Tuple] => Count[units] is Addable:
-      type Operand = Count[units]
-      type Result = Count[units]
+    given addable: [units <: Tuple] => Quanta[units] is Addable:
+      type Operand = Quanta[units]
+      type Result = Quanta[units]
 
-      def add(left: Count[units], right: Count[units]): Count[units] = left + right
+      def add(left: Quanta[units], right: Quanta[units]): Quanta[units] = left + right
 
-    given subtractable: [units <: Tuple] => Count[units] is Subtractable:
-      type Operand = Count[units]
-      type Result = Count[units]
+    given subtractable: [units <: Tuple] => Quanta[units] is Subtractable:
+      type Operand = Quanta[units]
+      type Result = Quanta[units]
 
-      def subtract(left: Count[units], right: Count[units]): Count[units] = left - right
+      def subtract(left: Quanta[units], right: Quanta[units]): Quanta[units] = left - right
 
-    given multiplicable: [units <: Tuple] => Count[units] is Multiplicable:
+    given multiplicable: [units <: Tuple] => Quanta[units] is Multiplicable:
       type Operand = Double
-      type Result = Count[units]
+      type Result = Quanta[units]
 
-      def multiply(left: Count[units], right: Double): Count[units] = left.multiply(right)
+      def multiply(left: Quanta[units], right: Double): Quanta[units] = left.multiply(right)
 
-    given divisible: [units <: Tuple] => Count[units] is Divisible:
+    given divisible: [units <: Tuple] => Quanta[units] is Divisible:
       type Operand = Double
-      type Result = Count[units]
+      type Result = Quanta[units]
 
-      def divide(left: Count[units], right: Double): Count[units] = left.divide(right)
+      def divide(left: Quanta[units], right: Double): Quanta[units] = left.divide(right)
 
-    inline given showable: [units <: Tuple] => Count[units] is Showable = summonFrom:
+    inline given showable: [units <: Tuple] => Quanta[units] is Showable = summonFrom:
       case names: UnitsNames[units] => count =>
         val nonzeroComponents = count.components.filter(_(1) != 0)
         val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
@@ -96,26 +96,26 @@ object Abacist2:
         val nonzeroComponents = count.components.filter(_(1) != 0)
         nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
 
-  extension [units <: Tuple](count: Count[units])
+  extension [units <: Tuple](count: Quanta[units])
     def longValue: Long = count
 
-  extension [units <: Tuple](inline count: Count[units])
+  extension [units <: Tuple](inline count: Quanta[units])
     @targetName("negate")
-    inline def `unary_-`: Count[units] = -count
+    inline def `unary_-`: Quanta[units] = -count
 
     inline def apply[unit[power <: Nat] <: Units[power, ? <: Dimension]]: Int =
       ${Abacist.get[units, unit[1]]('count)}
 
     transparent inline def quantity: Any = ${Abacist.toQuantity[units]('count)}
-    inline def components: ListMap[Text, Long] = ${Abacist.describeCount[units]('count)}
+    inline def components: ListMap[Text, Long] = ${Abacist.describeQuanta[units]('count)}
 
     transparent inline def multiply(inline multiplier: Double): Any =
-      ${Abacist.multiplyCount('count, 'multiplier, false)}
+      ${Abacist.multiplyQuanta('count, 'multiplier, false)}
 
     transparent inline def divide(inline multiplier: Double): Any =
-      ${Abacist.multiplyCount('count, 'multiplier, true)}
+      ${Abacist.multiplyQuanta('count, 'multiplier, true)}
 
     transparent inline def collapse(length: Int)(using length.type < Tuple.Size[units] =:= true)
-    :     Count[Tuple.Drop[units, length.type]] =
+    :     Quanta[Tuple.Drop[units, length.type]] =
 
       count

@@ -79,10 +79,10 @@ trait Quantitative2:
 
       recur(map.to(List), TypeRepr.of[Units[?, ?]]).asType.absolve match
         case '[type units <: Units[?, ?]; units] =>
-          Expr.summon[Measurement[units, ?]].map: value =>
+          Expr.summon[Amount[units, ?]].map: value =>
             value.absolve match
               case '{$name: dimension} => Type.of[dimension].absolve match
-                case '[Measurement[?, name]] =>
+                case '[Amount[?, name]] =>
                   TypeRepr.of[name].asMatchable.absolve match
                     case ConstantType(StringConstant(name)) => name
 
