@@ -200,8 +200,22 @@ object Hyperbole:
           case FlexibleType(tpe) =>
             TastyTree.repr("FlexibleType", repr).typeChildren(tpe)
 
-          case constant: Constant =>
-            TastyTree.repr(t"Constant", repr)
+          case constant: ConstantType =>
+            def value = constant.constant.value.toString.tt
+
+            constant.constant match
+              case BooleanConstant(_) => TastyTree.repr(t"BooleanConstant", repr, value)
+              case ByteConstant(_)    => TastyTree.repr(t"ByteConstant", repr, value)
+              case ShortConstant(_)   => TastyTree.repr(t"ShortConstant", repr, value)
+              case IntConstant(_)     => TastyTree.repr(t"IntConstant", repr, value)
+              case LongConstant(_)    => TastyTree.repr(t"LongConstant", repr, value)
+              case FloatConstant(_)   => TastyTree.repr(t"FloatConstant", repr, value)
+              case DoubleConstant(_)  => TastyTree.repr(t"DoubleConstant", repr, value)
+              case CharConstant(_)    => TastyTree.repr(t"CharConstant", repr, value)
+              case StringConstant(_)  => TastyTree.repr(t"StringConstant", repr, value)
+              case UnitConstant()     => TastyTree.repr(t"UnitConstant", repr, t"()")
+              case NullConstant()     => TastyTree.repr(t"NullConstant", repr, t"null")
+              case ClassOfConstant(_) => TastyTree.repr(t"ClassOfConstant", repr, value)
 
           case TermRef(qual, name) =>
             TastyTree.repr("TermRef", repr, name.tt).typeChildren(qual)

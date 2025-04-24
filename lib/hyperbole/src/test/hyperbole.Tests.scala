@@ -42,8 +42,4 @@ object Tests extends Suite(m"Hyperbole Tests"):
   def run(): Unit =
     Out.println:
       introspect(false):
-        class Hello[Param <: String & Double: Showable]
-               (string: Text)(value: Int):
-          def apply(): true =
-            println(string)
-            true
+        1 + 1
