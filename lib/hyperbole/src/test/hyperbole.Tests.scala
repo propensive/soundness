@@ -42,10 +42,5 @@ object Tests extends Suite(m"Hyperbole Tests"):
   def run(): Unit =
     Out.println:
       introspect:
-        val x = 1*Second + 32*Minute
-        type Example = x.type
-        1.0.asInstanceOf[Example]
+        def fn[T <: String: Showable](name: T) = name.show
         println("hello world")
-
-    Out.println:
-      disassemble('{ 1*Second + 32*Minute }).teletype
