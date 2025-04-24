@@ -30,16 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hyperbole
+package soundness
 
-import soundness.*
-
-import temporaryDirectories.environment
-import classloaders.threadContext
-import stdioSources.virtualMachine.ansi
-
-object Tests extends Suite(m"Hyperbole Tests"):
-  def run(): Unit =
-    Out.println:
-      introspect(false):
-        1 + 1
+export hyperbole.introspect

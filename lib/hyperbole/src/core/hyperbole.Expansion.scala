@@ -33,6 +33,8 @@
 package hyperbole
 
 import anticipation.*
+import escapade.*
 import vacuous.*
 
-case class Expansion(text: Text, param: Optional[Text], expr: Text, source: Text)
+case class Expansion
+            (text: Teletype, typeName: Text, param: Optional[Text], expr: Text, source: Teletype)
