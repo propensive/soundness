@@ -32,14 +32,26 @@
                                                                                                   */
 package hyperbole
 
+import scala.collection.mutable as scm
+
+import anthology.*
 import anticipation.*
+import contingency.*
 import dendrology.*
 import denominative.*
 import escapade.*
 import escritoire.*, tableStyles.minimal, columnAttenuation.ignore
+import galilei.*
 import gossamer.*
+import harlequin.*
+import hellenism.*
 import hieroglyph.*, textMetrics.uniform
+import inimitable.*
+import iridescence.*
+import nomenclature.*
+import prepositional.*
 import rudiments.*
+import serpentine.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -47,71 +59,99 @@ import vacuous.*
 import scala.quoted.*
 import dotty.tools.*, dotc.util as dtdu
 
+import syntaxHighlighting.teletypeable
+
 object Hyperbole:
   def introspection[value](value: Expr[value])(using Quotes): Expr[Text] =
-    Expr(introspect(value).plain)
+    Expr(introspect(value).render(termcapDefinitions.xterm256))
 
   def introspect[value](expr: Expr[value])(using Quotes): Teletype =
     import quotes.reflect.*
 
     def init = expr.asTerm.pos.startColumn
 
+    val sources: scm.HashMap[Text, SourceCode] = scm.HashMap()
+
     def source(tree: Tree): Teletype = tree.pos match
       case pos: dtdu.SourcePosition =>
-        val content =
-          try pos.lineContent.show.segment(pos.startColumn.z ~ Ordinal.natural(pos.endColumn))
-          catch case e: Exception => t""
+        val content: Teletype =
+          val sourceCode = sources.establish(pos.source.toString.tt):
+            val text = Scala.highlight(new String(pos.source.content()).tt)
+            text
 
-        ((t" "*(pos.startColumn - init))+content).teletype
+          val lineContent: Teletype = sourceCode.lines(pos.line).map(_.teletype).join
+
+          try
+            lineContent.segment(pos.startColumn.z ~ Ordinal.natural(pos.endColumn))
+          catch case e: Exception => e""
+
+        ((e" "*(pos.startColumn - init))+content)
 
       case _ =>
         e""
 
     case class TastyTree
-                (name:   Text,
-                 expr:   Text,
-                 source: Text,
-                 nodes:  List[TastyTree],
-                 param:  Optional[Text]):
+                (name:         Text,
+                 expr:         Text,
+                 source:       Teletype,
+                 nodes:        List[TastyTree],
+                 param:        Optional[Text],
+                 term:         Boolean,
+                 definitional: Boolean):
 
       def shortCode: Text =
         val c = expr.upto(_ != '\n')
         if c.length != expr.length then t"$c..." else expr
 
-      def apply(children: List[Tree]): TastyTree = copy(nodes = children.map(TastyTree.expand))
+      def children(nodes2: Tree*): TastyTree =
+        copy(nodes = nodes ::: nodes2.to(List).map(TastyTree.expand))
+
+      def typeNode: TastyTree = copy(term = false)
+      def definition: TastyTree = copy(definitional = true)
 
 
     object TastyTree:
       def apply
-           (name: Text, tree: Tree, children: List[TastyTree] = Nil, parameter: Optional[Text] = Unset)
+           (name: Text,
+            tree: Tree,
+            children: List[TastyTree] = Nil,
+            parameter: Optional[Text] = Unset)
       :     TastyTree =
 
-        TastyTree(name, tree.show.tt, source(tree).plain, children, parameter)
+        TastyTree(name, tree.show.tt, source(tree), children, parameter, true, false)
 
       def expand(tree: Tree): TastyTree = tree match
         case PackageClause(ref, chs) =>
-          TastyTree(t"PackageClause", tree, expand(ref) :: chs.map(expand))(chs)
+          TastyTree(t"PackageClause", tree, List(expand(ref)))
+          . children(chs*)
+          . definition
 
         case Import(expr, selectors) =>
-          TastyTree(t"Import", tree, Nil)
+          TastyTree(t"Import", tree)
 
         case Export(tree, selectors) =>
-          TastyTree(t"Export", tree, Nil)
+          TastyTree(t"Export", tree)
 
         case ClassDef(name, constructor, parents, selfOpt, body) =>
-          TastyTree(t"ClassDef", tree, body.map(expand), name.tt)
+          TastyTree(t"ClassDef", tree, Nil, name.tt)
+          . children(body*)
+          . definition
 
         case TypeDef(name, rhs) =>
-          TastyTree(t"TypeDef", tree, List(expand(rhs)), name.tt)
+          TastyTree(t"TypeDef", tree, Nil, name.tt)
+          . children(rhs)
+          . typeNode
+          . definition
 
         case Wildcard() =>
-          TastyTree(t"Wildcard", tree, Nil)
+          TastyTree(t"Wildcard", tree)
 
         case This(qual) =>
           TastyTree(t"This", tree, Nil, qual.map(_.tt).getOrElse(t""))
 
         case New(tpt) =>
-          TastyTree(t"New", tree, List(expand(tpt)))
+          TastyTree(t"New", tree, Nil)
+          . children(tpt)
 
         case NamedArg(name, arg) =>
           TastyTree(t"NamedArg", tree, List(expand(arg)), name.tt)
@@ -122,17 +162,15 @@ object Hyperbole:
         case Typed(expr, tpt) =>
           TastyTree(t"Typed", tree, List(expand(expr), expand(tpt)))
 
-        case TypedOrTest(focus, tt) =>
-          TastyTree(t"TypedOrTest", tree, List(expand(focus), expand(tt)))
-
-        case Inlined(Some(tree), _, child) =>
-          TastyTree(t"Inlined", tree, List(expand(tree), expand(child)))
+        case TypedOrTest(focus, tpt) =>
+          TastyTree(t"TypedOrTest", tree, List(expand(focus), expand(tpt)))
 
         case Inlined(call, bindings, child) =>
           TastyTree
            (t"Inlined",
             tree,
-            call.map(expand).to(List) ::: bindings.map(expand) ::: List(expand(child)))
+            call.map(expand).to(List) ::: bindings.map(expand))
+          . children(child)
 
         case Apply(fun, args) =>
           TastyTree(t"Apply", tree, expand(fun) :: args.map(expand))
@@ -151,6 +189,7 @@ object Hyperbole:
 
         case Singleton(ref) =>
           TastyTree(t"Singleton", tree, List(expand(ref)))
+          . typeNode
 
         case Super(qual, mix) =>
           TastyTree(t"Super", tree, List(expand(qual)), mix.map(_.tt).getOrElse(t""))
@@ -166,15 +205,19 @@ object Hyperbole:
 
         case TypeIdent(name) =>
           TastyTree(t"TypeIdent", tree, Nil, name.tt)
+          . typeNode
 
         case TypeProjection(qualifier, name) =>
           TastyTree(t"TypeProjection", tree, List(expand(qualifier)), name.tt)
+          . typeNode
 
         case Inferred() =>
           TastyTree(t"Inferred", tree, Nil)
+          . typeNode
 
         case TypeSelect(term, name) =>
           TastyTree(t"TypeIdent", tree, List(expand(term)), name.tt)
+          . typeNode
 
         case Try(expr, cases, finalizer) =>
           TastyTree
@@ -199,18 +242,22 @@ object Hyperbole:
 
         case LambdaTypeTree(tparams, body) =>
           TastyTree(t"LambdaTypeTree", tree, tparams.map(expand) ::: List(expand(body)))
+          . typeNode
 
         case TypeBoundsTree(low, high) =>
           TastyTree(t"TypeBoundsTree", tree, List(low, high).map(expand))
+          . typeNode
 
         case WildcardTypeTree() =>
           TastyTree(t"WildcardTypeTree", tree, Nil)
+          . typeNode
 
         case TypeBind(name, tpt) =>
           TastyTree(t"TypeBind", tree, List(expand(tpt)), name.tt)
 
         case TypeBlock(aliases, tpt) =>
           TastyTree(t"TypeBlock", tree, aliases.map(expand) ::: List(expand(tpt)))
+          . typeNode
 
         case Match(selector, cases) =>
           TastyTree(t"Match", tree, expand(selector) :: cases.map(expand))
@@ -220,9 +267,11 @@ object Hyperbole:
            (t"MatchTypeTree",
             tree,
             bound.map(expand).to(List) ++ List(expand(selector)) ++ cases.map(expand))
+          . typeNode
 
         case Applied(tpt, args) =>
           TastyTree(t"Applied", tree, expand(tpt) :: args.map(expand))
+          . typeNode
 
         case Annotated(arg, annotation) =>
           TastyTree(t"Annotated", tree, List(expand(arg), expand(annotation)))
@@ -232,6 +281,7 @@ object Hyperbole:
 
         case Refined(tpt, refinements) =>
           TastyTree(t"Refined", tree, expand(tpt) :: refinements.map(expand))
+          . typeNode
 
         case Return(expr, from) =>
           TastyTree(t"Return", tree, List(expand(expr)))
@@ -241,18 +291,22 @@ object Hyperbole:
 
         case Alternatives(patterns) =>
           TastyTree(t"Alternatives", tree, patterns.map(expand))
+          . typeNode
 
         case TypeCaseDef(pattern, rhs) =>
           TastyTree(t"TypeCaseDef", tree, List(expand(pattern), expand(rhs)))
+          . typeNode
 
         case DefDef(name, paramss, tpt, rhs) =>
           TastyTree(t"DefDef", tree, rhs.to(List).map(expand))
+          . definition
 
         case SummonFrom(cases) =>
           TastyTree(t"SummonFrom", tree, cases.map(expand))
 
         case ValDef(name, tpe, rhs) =>
           TastyTree(t"ValDef", tree, rhs.to(List).map(expand))
+          . definition
 
         case CaseDef(pattern, guard, rhs) =>
           TastyTree(t"CaseDef", tree, expand(pattern) +: guard.to(List).map(expand) :+ expand(rhs))
@@ -269,15 +323,23 @@ object Hyperbole:
     val tree: TastyTree = TastyTree.expand(expr.asTerm)
 
     val seq: Seq[Expansion] = TreeDiagram.by[TastyTree](_.nodes)(tree).map: node =>
+      val color = (node.term, node.definitional) match
+        case (true, true)   => webColors.Tomato
+        case (false, true)  => webColors.YellowGreen
+        case (true, false)  => webColors.FireBrick
+        case (false, false) => webColors.MediumSeaGreen
+
+      val text = e"$color(${node.name})"
       Expansion
-       (tiles.drop(1).map(treeStyles.default.text(_)).join+t"▪ "+node.name,
+       (e"${tiles.drop(1).map(treeStyles.default.text(_)).join+t"⦾  "}$text",
         node.param,
         node.shortCode,
         node.source)
 
     Table[Expansion]
-     (Column(e"TASTy")(_.text.teletype),
-      Column(e"Param")(_.param.or(t"")),
+     (Column(e"TASTy"): node =>
+        val param = node.param.let { param => e"$Italic(${webColors.Orange}($param))" }.or(e"")
+        e"${node.text} $param",
       Column(e"Source")(_.source),
       /*Column(e"Code")(_.expr)*/)
 

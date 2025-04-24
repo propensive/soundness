@@ -30,22 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hyperbole
+package soundness
 
-import soundness.*
-
-import temporaryDirectories.environment
-import classloaders.threadContext
-import stdioSources.virtualMachine.ansi
-
-object Tests extends Suite(m"Hyperbole Tests"):
-  def run(): Unit =
-    Out.println:
-      introspect:
-        val x = 1*Second + 32*Minute
-        type Example = x.type
-        1.0.asInstanceOf[Example]
-        println("hello world")
-
-    Out.println:
-      disassemble('{ 1*Second + 32*Minute }).teletype
+export hyperbole.introspect

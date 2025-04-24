@@ -38,6 +38,7 @@ import classloaders.threadContext
 import stdioSources.virtualMachine.ansi
 import temporaryDirectories.environment
 
+
 object Tests extends Suite(m"Mandible tests"):
   def run(): Unit =
     test(m"Compile something"):
