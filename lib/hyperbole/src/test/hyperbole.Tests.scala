@@ -41,6 +41,9 @@ import stdioSources.virtualMachine.ansi
 object Tests extends Suite(m"Hyperbole Tests"):
   def run(): Unit =
     Out.println:
-      introspect:
-        def fn[T <: String: Showable](name: T) = name.show
-        println("hello world")
+      introspect(false):
+        class Hello[Param <: String & Double: Showable]
+               (string: Text)(value: Int):
+          def apply(): true =
+            println(string)
+            true

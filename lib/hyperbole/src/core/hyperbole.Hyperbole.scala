@@ -63,18 +63,19 @@ import dotty.tools.*, dotc.util as dtdu
 import syntaxHighlighting.teletypeable
 
 object Hyperbole:
-  def introspection[value](value: Expr[value])(using Quotes): Expr[Text] =
-    Expr(introspect(value).render(termcapDefinitions.xterm256))
+  def introspection[value](value: Expr[value], inlining: Expr[Boolean])(using Quotes): Expr[Text] =
+    Expr(introspect(value, inlining).render(termcapDefinitions.xterm256))
 
-  def introspect[value](expr: Expr[value])(using Quotes): Teletype =
+  def introspect[value](expr: Expr[value], inlining0: Expr[Boolean])(using Quotes): Teletype =
     import quotes.reflect.*
 
-    def init = expr.asTerm.pos.startColumn
+    val inlining = inlining0.valueOrAbort
 
     val sources: scm.HashMap[Text, SourceCode] = scm.HashMap()
 
     def source(tree: Tree): Teletype = tree.pos match
       case pos: dtdu.SourcePosition =>
+        val init: Ordinal = pos.lineContent.tt.where(_ != ' ').or(Prim)
         val content: Teletype =
           val sourceCode = sources.establish(pos.source.toString.tt):
             val text = Scala.highlight(new String(pos.source.content()).tt)
@@ -82,11 +83,10 @@ object Hyperbole:
 
           val lineContent: Teletype = sourceCode.lines(pos.line).map(_.teletype).join
 
-          try
-            lineContent.segment(pos.startColumn.z ~ Ordinal.natural(pos.endColumn))
+          try lineContent.segment(pos.startColumn.z ~ Ordinal.natural(pos.endColumn))
           catch case e: Exception => e""
 
-        ((e" "*(pos.startColumn - init))+content)
+        ((e" "*(pos.startColumn - init.n0))+content)
 
       case _ =>
         e""
@@ -109,6 +109,9 @@ object Hyperbole:
       def children(nodes2: Tree*): TastyTree =
         copy(nodes = nodes ::: nodes2.to(List).map(TastyTree.expand(' ', _)))
 
+      def typeChildren(nodes2: TypeRepr*): TastyTree =
+        copy(nodes = nodes ::: nodes2.to(List).map(TastyTree.expandType(_)))
+
       def typed(nodes2: Tree*): TastyTree =
         copy(nodes = nodes ::: nodes2.to(List).map(TastyTree.expand('t', _)))
 
@@ -121,9 +124,91 @@ object Hyperbole:
 
     object TastyTree:
       def apply
-           (tag: Char, typeName: Text, name: Text, tree: Tree, parameter: Optional[Text] = Unset)
+           (tag:       Char,
+            typeName:  Text,
+            name:      Text,
+            tree:      Optional[Tree],
+            repr:      Optional[TypeRepr] = Unset,
+            parameter: Optional[Text]     = Unset)
       :     TastyTree =
-        TastyTree(tag, typeName, name, tree.show.tt, source(tree), Nil, parameter, true, false)
+        val shown = tree.let(_.show.tt).or(repr.let(_.show.tt)).or(t"")
+        val code = tree.let(source(_)).or(e"")
+
+        TastyTree(tag, typeName, name, shown, code, Nil, parameter, true, false)
+
+      def repr(name: Text, repr: Optional[TypeRepr], parameter: Optional[Text] = Unset): TastyTree =
+        apply(' ', t"", name, Unset, repr, parameter).typeNode
+
+      def expandType(repr: TypeRepr): TastyTree =
+        repr match
+          case TypeRef(ref, name)   => TastyTree.repr(t"TypeRef", repr, name)
+          case AndType(left, right) => TastyTree.repr(t"AndType", repr).typeChildren(left, right)
+          case OrType(left, right)  => TastyTree.repr(t"OrType", repr).typeChildren(left, right)
+
+          case AppliedType(tycon, args) =>
+            TastyTree.repr(t"AppliedType", repr).typeChildren(tycon :: args*)
+
+          case AnnotatedType(underlying, term) =>
+            TastyTree.repr(t"AnnotatedType", repr).typeChildren(underlying).children(term)
+
+          case Refinement(parent, name, info) =>
+            TastyTree.repr(t"Refinement", repr, name)
+            . typeChildren(parent, info)
+
+          case MatchType(bound, scrutinee, cases) =>
+            TastyTree.repr(t"MatchType", repr).typeChildren(bound :: scrutinee :: cases*)
+
+          case SuperType(thisType, superType) =>
+            TastyTree.repr(t"SuperType", repr).typeChildren(thisType, superType)
+
+          case ByNameType(byName) =>
+            TastyTree.repr(t"ByNameType", repr).typeChildren(byName)
+
+          case ParamRef(lambdaType, n) =>
+            TastyTree.repr(t"ParamRef", repr, n.show).typeChildren(lambdaType)
+
+          case ThisType(thisType) =>
+            TastyTree.repr(t"ThisType", repr).typeChildren(thisType)
+
+          case RecursiveThis(thisType) =>
+            TastyTree.repr(t"RecursiveThis", repr).typeChildren(thisType)
+
+          case RecursiveType(recursive) =>
+            TastyTree.repr(t"RecursiveType", repr).typeChildren(recursive)
+
+          case MethodType(names, params, result) =>
+            TastyTree.repr(t"MethodType", repr, names.map(_.tt).join(t", "))
+            . typeChildren(params :+ result*)
+
+          case PolyType(names, bounds, result) =>
+            TastyTree.repr(t"PolyType", repr, names.map(_.tt).join(t", "))
+            . typeChildren(bounds :+ result*)
+
+          case TypeLambda(names, bounds, result) =>
+            TastyTree.repr(t"TypeLambda", repr, names.map(_.tt).join(t", "))
+            . typeChildren(bounds :+ result*)
+
+          case MatchCase(pattern, rhs) =>
+            TastyTree.repr(t"MatchCase", repr).typeChildren(pattern, rhs)
+
+          case TypeBounds(low, high) =>
+            TastyTree.repr(t"TypeBounds", repr).typeChildren(low, high)
+
+          case NoPrefix() =>
+            TastyTree.repr(t"NoPrefix", repr)
+
+          case FlexibleType(tpe) =>
+            TastyTree.repr("FlexibleType", repr).typeChildren(tpe)
+
+          case constant: Constant =>
+            TastyTree.repr(t"Constant", repr)
+
+          case TermRef(qual, name) =>
+            TastyTree.repr("TermRef", repr, name.tt).typeChildren(qual)
+
+          case _ =>
+            TastyTree.repr(t"unknown", repr)
+
 
       def expand(tag: Char, tree: Tree): TastyTree =
         val typeName =
@@ -134,6 +219,9 @@ object Hyperbole:
           . or(t"")
 
         tree match
+          case typeTree: TypeTree =>
+            expandType(typeTree.tpe)
+
           case PackageClause(ref, chs) =>
             TastyTree(tag, typeName, t"PackageClause", tree)
             . add('r', ref)
@@ -147,12 +235,12 @@ object Hyperbole:
             TastyTree(tag, typeName, t"Export", tree)
 
           case ClassDef(name, constructor, parents, selfOpt, body) =>
-            TastyTree(tag, typeName, t"ClassDef", tree, name.tt)
+            TastyTree(tag, typeName, t"ClassDef", tree, parameter = name.tt)
             . children(body*)
             . definition
 
           case TypeDef(name, rhs) =>
-            TastyTree(tag, typeName, t"TypeDef", tree, name.tt)
+            TastyTree(tag, typeName, t"TypeDef", tree, parameter = name.tt)
             . children(rhs)
             . typeNode
             . definition
@@ -161,35 +249,39 @@ object Hyperbole:
             TastyTree(tag, typeName, t"Wildcard", tree)
 
           case This(qual) =>
-            TastyTree(tag, typeName, t"This", tree, qual.map(_.tt).getOrElse(t""))
+            TastyTree(tag, typeName, t"This", tree, parameter = qual.map(_.tt).getOrElse(t""))
 
           case New(tpt) =>
+            val typeName = tpt.show.tt
             TastyTree(tag, typeName, t"New", tree)
             . children(tpt)
 
           case NamedArg(name, arg) =>
-            TastyTree(tag, typeName, t"NamedArg", tree, name.tt)
+            TastyTree(tag, typeName, t"NamedArg", tree, parameter = name.tt)
             . add('a', arg)
 
           case Bind(name, term) =>
-            TastyTree(tag, typeName, t"Bind", tree, name.tt)
+            TastyTree(tag, typeName, t"Bind", tree, parameter = name.tt)
             . children(term)
 
           case Typed(expr, tpt) =>
+            val typeName = tpt.show.tt
             TastyTree(tag, typeName, t"Typed", tree)
             . children(expr)
             . typed(tpt)
 
           case TypedOrTest(focus, tpt) =>
+            val typeName = tpt.show.tt
             TastyTree(tag, typeName, t"TypedOrTest", tree)
             . children(focus)
             . typed(tpt)
 
           case Inlined(call, bindings, child) =>
-            TastyTree(tag, typeName, t"Inlined", tree)
-            . add('c', call.to(List)*)
-            . add('b', bindings*)
-            . children(child)
+            if inlining then expand(tag, child) else
+              TastyTree(tag, typeName, t"Inlined", tree)
+              . add('c', call.to(List)*)
+              . add('b', bindings*)
+              . children(child)
 
           case Apply(fun, args) =>
             TastyTree(tag, typeName, t"Apply", tree)
@@ -207,11 +299,11 @@ object Hyperbole:
             . add('a', args*)
 
           case Select(qualifier, name) =>
-            TastyTree(tag, typeName, t"Select", tree, name.tt)
+            TastyTree(tag, typeName, t"Select", tree, parameter = name.tt)
             . children(qualifier)
 
           case SelectOuter(qualifier, name, levels) =>
-            TastyTree(tag, typeName, t"SelectOuter", tree, t"$name^$levels")
+            TastyTree(tag, typeName, t"SelectOuter", tree, parameter = t"$name^$levels")
             . children(qualifier)
 
           case Singleton(ref) =>
@@ -220,11 +312,11 @@ object Hyperbole:
             . children(ref)
 
           case Super(qual, mix) =>
-            TastyTree(tag, typeName, t"Super", tree, mix.map(_.tt).getOrElse(t""))
+            TastyTree(tag, typeName, t"Super", tree, parameter = mix.map(_.tt).getOrElse(t""))
             . children(qual)
 
           case Ident(name) =>
-            TastyTree(tag, typeName, t"Ident", tree, name.tt)
+            TastyTree(tag, typeName, t"Ident", tree, parameter = name.tt)
 
           case If(cond, thenp, elsep) =>
             TastyTree(tag, typeName, t"If", tree)
@@ -238,20 +330,16 @@ object Hyperbole:
             . children(body)
 
           case TypeIdent(name) =>
-            TastyTree(tag, typeName, t"TypeIdent", tree, name.tt)
+            TastyTree(tag, typeName, t"TypeIdent", tree, parameter = name.tt)
             . typeNode
 
           case TypeProjection(qualifier, name) =>
-            TastyTree(tag, typeName, t"TypeProjection", tree, name.tt)
+            TastyTree(tag, typeName, t"TypeProjection", tree, parameter = name.tt)
             . typeNode
             . children(qualifier)
 
-          case Inferred() =>
-            TastyTree(tag, typeName, t"Inferred", tree)
-            . typeNode
-
           case TypeSelect(term, name) =>
-            TastyTree(tag, typeName, t"TypeIdent", tree, name.tt)
+            TastyTree(tag, typeName, t"TypeIdent", tree, parameter = name.tt)
             . typeNode
             . children(term)
 
@@ -275,7 +363,7 @@ object Hyperbole:
             . children(focus)
 
           case Literal(value) =>
-            TastyTree(tag, typeName, t"Literal", tree, value.show.tt)
+            TastyTree(tag, typeName, t"Literal", tree, parameter = value.show.tt)
 
           case Lambda(defs, term) =>
             TastyTree(tag, typeName, t"Lambda", tree)
@@ -299,10 +387,12 @@ object Hyperbole:
             . typeNode
 
           case TypeBind(name, tpt) =>
-            TastyTree(tag, typeName, t"TypeBind", tree, name.tt)
+            val typeName = tpt.show.tt
+            TastyTree(tag, typeName, t"TypeBind", tree, parameter = name.tt)
             . typed(tpt)
 
           case TypeBlock(aliases, tpt) =>
+            val typeName = tpt.show.tt
             TastyTree(tag, typeName, t"TypeBlock", tree)
             . add('a', aliases*)
             . typed(tpt)
@@ -321,6 +411,7 @@ object Hyperbole:
             . typeNode
 
           case Applied(tpt, args) =>
+            val typeName = tpt.show.tt
             TastyTree(tag, typeName, t"Applied", tree)
             . typed(tpt)
             . add('a', args*)
@@ -332,11 +423,13 @@ object Hyperbole:
             . children(annotation)
 
           case Repeated(elems, tpt) =>
+            val typeName = tpt.show.tt
             TastyTree(tag, typeName, t"Repeated", tree)
             . children(elems*)
             . typed(tpt)
 
           case Refined(tpt, refinements) =>
+            val typeName = tpt.show.tt
             TastyTree(tag, typeName, t"Refined", tree)
             . typed(tpt)
             . add('m', refinements*)
@@ -364,14 +457,15 @@ object Hyperbole:
             . typeNode
 
           case DefDef(name, paramss, tpt, rhs) =>
+            val typeName = tpt.show.tt
             val clauses = paramss.map:
              case TermParamClause(params) =>
-               TastyTree(tag, typeName, t"TermParamClause", tree).add('a', params*)
+               TastyTree('a', typeName, t"TermParamClause", tree).add('a', params*)
 
              case TypeParamClause(params) =>
-               TastyTree(tag, typeName, t"TypeParamClause", tree).add('a', params*)
+               TastyTree('t', typeName, t"TypeParamClause", tree).add('a', params*)
 
-            TastyTree(tag, typeName, t"DefDef", tree, name.tt)
+            TastyTree(tag, typeName, t"DefDef", tree, parameter = name.tt)
             . copy(nodes = clauses)
             . typed(tpt)
             . children(rhs.to(List)*)
@@ -382,7 +476,8 @@ object Hyperbole:
             . add('c', cases*)
 
           case ValDef(name, tpt, rhs) =>
-            TastyTree(tag, typeName, t"ValDef", tree, name.tt)
+            val typeName = tpt.show.tt
+            TastyTree(tag, typeName, t"ValDef", tree, parameter = name.tt)
             . typed(tpt)
             . children(rhs.to(List)*)
             . definition
