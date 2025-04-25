@@ -32,8 +32,7 @@
                                                                                                   */
 package soundness
 
-export spectacular
-. { BooleanStyle, EnumCaseError, Inspectable, Showable, TextConversion, show, inspect }
+export spectacular.{BooleanStyle, EnumCaseError, Inspectable, Showable, show, inspect}
 
 package booleanStyles:
   export spectacular.booleanStyles.{yesNo, onOff, trueFalse, oneZero}
