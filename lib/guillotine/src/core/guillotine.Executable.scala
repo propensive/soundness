@@ -81,9 +81,6 @@ sealed trait Executable:
   infix def | (command: Executable): Pipeline = command(this)
 
 object Command:
-  given communicable: Command is Communicable =
-    command => Message(formattedArguments(command.arguments))
-
   private def formattedArguments(arguments: Seq[Text]): Text =
     arguments.map: argument =>
       if argument.contains(t"\"") && !argument.contains(t"'") then t"""'$argument'"""

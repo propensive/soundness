@@ -112,9 +112,6 @@ object Url:
   given teletype: [scheme <: Label] => Url[scheme] is Teletypeable =
     url => e"$Underline(${Fg(0x00bfff)}(${url.show}))"
 
-  given communicable: [scheme <: Label] => Url[scheme] is Communicable =
-    url => Message(url.show)
-
   def parse[scheme <: Label](value: Text): Url[scheme] raises UrlError =
     import UrlError.Expectation.*
 

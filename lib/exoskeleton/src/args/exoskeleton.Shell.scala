@@ -37,13 +37,14 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
+import spectacular.*
 
 import language.experimental.captureChecking
 
 object Shell:
   given decoder: Shell is Decodable in Text = text => valueOf(text.lower.capitalize.s)
   given encodable: Shell is Encodable in Text = _.toString.tt.lower
-  given communicable: Shell is Communicable = shell => Message(shell.toString.tt.lower)
+  given showable: Shell is Showable = _.toString.tt.lower
 
 enum Shell:
   case Zsh, Bash, Fish

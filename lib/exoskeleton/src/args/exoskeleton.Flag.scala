@@ -48,9 +48,9 @@ object Flag:
     case char: Char => t"-$char"
     case text: Text => t"--$text"
 
-  given communicable: Flag is Communicable = flag => flag.name.absolve match
-    case name: Text => Message(t"--$name")
-    case name: Char => Message(t"-$name")
+  given communicable: Flag is Showable = _.name.absolve match
+    case name: Text => t"--$name"
+    case name: Char => t"-$name"
 
 case class Flag
    (name: Text | Char,
