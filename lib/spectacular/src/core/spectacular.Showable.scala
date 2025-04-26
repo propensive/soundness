@@ -43,9 +43,10 @@ import vacuous.*
 
 import language.experimental.captureChecking
 
-trait Showable:
+trait Showable extends Communicable:
   type Self
   def text(value: Self): Text
+  def message(value: Self): Message = Message(text(value))
 
 object Showable:
   given showable: [value: Textualizer] => value is Showable = value.textual(_)

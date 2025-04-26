@@ -42,5 +42,5 @@ enum HttpServerEvent:
 
 object HttpServerEvent:
   given communicable: HttpServerEvent is Communicable =
-    case Received(request)            => m"Received request ${request.show}"
-    case Processed(request, duration) => m"Processed request ${request.show} in ${duration}ms"
+    case Received(request)            => m"Received request $request"
+    case Processed(request, duration) => m"Processed request $request in ${duration}ms"

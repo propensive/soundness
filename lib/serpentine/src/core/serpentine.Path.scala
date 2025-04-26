@@ -48,15 +48,11 @@ import scala.compiletime.*
 object Path:
   given encodable: [path <: Path] => path is Encodable in Text = _.text
 
-  given decoder: [platform: {Navigable, Radical}]
-        => (Path on platform) is Decodable in Text =
-
+  given decoder: [platform: {Navigable, Radical}] => (Path on platform) is Decodable in Text =
     Path.parse(_)
 
-  given showable: [platform] => (Path on platform) is Showable = _.text
-
-  given generic: [platform] => (Path on platform) is Abstractable across Paths into Text =
-    _.text
+  given showable: [path <: Path] => path is Showable = _.text
+  given generic: [platform] => (Path on platform) is Abstractable across Paths into Text = _.text
 
   given nominable: [platform] => (Path on platform) is Nominable = path =>
     path.textDescent.prim.or(path.textRoot)
@@ -64,9 +60,6 @@ object Path:
   given specific: [platform: {Navigable, Radical}]
         =>  Path on platform is Instantiable across Paths from Text =
     _.decode[Path on platform]
-
-  given communicable: Path is Communicable = path =>
-    Message(path.textDescent.reverse.join(path.textRoot, path.separator, t""))
 
   given addable: [platform,
                   operand,
