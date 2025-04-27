@@ -39,9 +39,10 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import prepositional.*
+import spectacular.*
 
 object Pid:
-  given communicable: Pid is Communicable = pid => Message(pid.toString.tt)
+  given showable: Pid is Showable = _.toString.tt
   given encodable: Pid is Encodable in Text = _.toString.tt
 
   given decodable: Tactic[NumberError] => Pid is Decodable in Text = text =>

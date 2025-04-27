@@ -83,10 +83,7 @@ object Http:
       def name: Text = t"method"
       def serialize(method: Method): Text = method.show
 
-    given communicable: Method is Communicable = method => Message(method.show.upper)
-
-    given showable: Method is Showable =
-      case method    => method.toString.tt.upper
+    given showable: Method is Showable = _.toString.tt.upper
 
     given decodable: Method is Decodable in Text = _.upper match
       case t"HEAD"    => Http.Head
