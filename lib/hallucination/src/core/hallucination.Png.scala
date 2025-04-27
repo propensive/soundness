@@ -38,4 +38,4 @@ import gesticulate.*
 erased trait Png extends ImageFormat
 
 object Png extends ImageCodec[Png]("PNG".tt):
-  def medium = media"image/png"
+  def mediaType = media"image/png"

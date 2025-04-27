@@ -38,4 +38,4 @@ import gesticulate.*
 erased trait Gif extends ImageFormat
 
 object Gif extends ImageCodec[Gif]("GIF".tt):
-  def medium = media"image/gif"
+  def mediaType = media"image/gif"

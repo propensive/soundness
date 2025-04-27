@@ -38,4 +38,4 @@ import gesticulate.*
 erased trait Bmp extends ImageFormat
 
 object Bmp extends ImageCodec[Bmp]("BMP".tt):
-  def medium = media"image/bmp"
+  def mediaType = media"image/bmp"

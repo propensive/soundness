@@ -157,7 +157,7 @@ object Http:
     case PreconditionFailed            extends Status(412, t"Precondition Failed")
     case PayloadTooLarge               extends Status(413, t"Payload Too Large")
     case UriTooLong                    extends Status(414, t"URI Too Long")
-    case UnsupportedMedium             extends Status(415, t"Unsupported Media Type")
+    case UnsupportedMediaType          extends Status(415, t"Unsupported Media Type")
     case RangeNotSatisfiable           extends Status(416, t"Range Not Satisfiable")
     case ExpectationFailed             extends Status(417, t"Expectation Failed")
     case UnprocessableEntity           extends Status(422, t"Unprocessable Entity")
@@ -287,7 +287,7 @@ object Http:
         val name2 = name.tt.uncamel.kebab.lower
         textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
-    lazy val contentType: Optional[Medium] = safely(headers.contentType.prim)
+    lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
     lazy val textCookies: Map[Text, Text] =
       headers.cookie.flatMap: cookie =>

@@ -44,7 +44,7 @@ import javax.imageio as ji
 
 abstract class ImageCodec[format <: ImageFormat](name: Text):
   inline def codec: ImageCodec[format] = this
-  protected def medium: Medium
+  protected def mediaType: MediaType
   protected lazy val reader: ji.ImageReader = ji.ImageIO.getImageReaders(name.s).nn.next().nn
   protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
 
@@ -55,7 +55,7 @@ abstract class ImageCodec[format <: ImageFormat](name: Text):
       type Result = HttpStreams.Content
 
       def genericize(image: Image in format): HttpStreams.Content =
-        (medium.show, image.serialize(using codec))
+        (mediaType.show, image.serialize(using codec))
 
   def read[input: Readable by Bytes](inputType: input): Image in format =
     reader.synchronized:

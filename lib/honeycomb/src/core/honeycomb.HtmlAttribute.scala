@@ -128,7 +128,7 @@ object HtmlAttribute:
   given download: ("download" is HtmlAttribute[Text]) = identity(_)
 
   given draggable: ("draggable" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
-  given enctype: ("enctype" is HtmlAttribute[Medium]) = _.show
+  given enctype: ("enctype" is HtmlAttribute[MediaType]) = _.show
 
   given hfor: ("hfor" is HtmlAttribute[DomId]):
     override def rename: Optional[Text] = t"for"
@@ -251,7 +251,7 @@ object HtmlAttribute:
   given target2: ("target" is HtmlAttribute[DomId]) = _.name
   given title: ("title" is HtmlAttribute[Text]) = identity(_)
   given translate: ("translate" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
-  given linkType: ("type" is HtmlAttribute[Medium] onto "link") = _.show
+  given linkType: ("type" is HtmlAttribute[MediaType] onto "link") = _.show
   given buttonType: ("type" is HtmlAttribute[Text] onto "button") = _.show
   given capture: ("capture" is HtmlAttribute[Capture]) = _.show
 
