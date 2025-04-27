@@ -48,14 +48,14 @@ object Prefixable:
   given contentEncoding: [encoding <: Encoding]
         => ("contentEncoding" is Prefixable of encoding) = _.name
 
-  given accept: ("accept" is Prefixable of Medium) = _.show
-  given accept2: ("accept" is Prefixable of List[Medium]) = _.map(_.show).join(t",")
+  given accept: ("accept" is Prefixable of MediaType) = _.show
+  given accept2: ("accept" is Prefixable of List[MediaType]) = _.map(_.show).join(t",")
 
   given authorization: ("authorization" is Prefixable of Auth) = _.show
   given cacheControl: ("cacheControl" is Prefixable of Text) = identity(_)
   given connection: ("connection" is Prefixable of Text) = identity(_)
   given contentMd5: ("contentMd5" is Prefixable of Text) = identity(_)
-  given contentType: ("contentType" is Prefixable of Medium) = _.basic
+  given contentType: ("contentType" is Prefixable of MediaType) = _.basic
   given contentLength: ("contentLength" is Prefixable of Memory) = _.long.toString.tt
   given cookie: ("cookie" is Prefixable of List[Cookie.Value]) = _.map(_.show).join(t"; ")
   given date: ("date" is Prefixable of Text) = identity(_)

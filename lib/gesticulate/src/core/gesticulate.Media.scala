@@ -51,11 +51,12 @@ import proximityMeasures.levenshteinDistance
 
 object Media:
   given text: Text is Media:
-    extension (value: Text) def medium: Medium = Medium(Group.Text, Subtype.Standard(t"plain"))
+    extension (value: Text)
+      def mediaType: MediaType = MediaType(Group.Text, Subtype.Standard(t"plain"))
 
   given nominable: [nominable: Nominable] => nominable is Media:
     extension (value: nominable)
-      def medium: Medium = Extensions.guess(nominable.name(value).cut(t".").last)
+      def mediaType: MediaType = Extensions.guess(nominable.name(value).cut(t".").last)
 
   object Group:
     given inspectable: Group is Inspectable = _.name
@@ -93,7 +94,7 @@ object Media:
       case CborSeq => t"cbor-seq"
       case other   => other.toString.tt.uncamel.kebab
 
-  lazy val systemMediums: Set[Text] =
+  lazy val systemMediaTypes: Set[Text] =
     try
       val stream = Optional(getClass.getResourceAsStream("/gesticulate/media.types")).or:
         throw InterpolationError(m"could not find 'gesticulate/media.types' on the classpath")
@@ -105,7 +106,7 @@ object Media:
 
     catch case err: InterpolationError => Set()
 
-  object Prefix extends Interpolator[Unit, Text, Medium]:
+  object Prefix extends Interpolator[Unit, Text, MediaType]:
     def parse(state: Text, next: Text): Text = next
 
     def insert(state: Text, value: Unit): Text =
@@ -114,16 +115,16 @@ object Media:
     def skip(value: Text): Text = value
     def initial: Text = t""
 
-    def complete(value: Text): Medium =
+    def complete(value: Text): MediaType =
       val parsed = try throwErrors(Media.parse(value)) catch
-        case err: MediumError =>
+        case err: MediaTypeError =>
           throw InterpolationError(m"${err.value} is not a valid media type; ${err.reason.message}")
 
       parsed.subtype match
         case Subtype.Standard(_) =>
-          if !systemMediums.isEmpty then
-            if !systemMediums.contains(parsed.basic) then
-              val suggestion = systemMediums.minBy(_.proximity(parsed.basic))
+          if !systemMediaTypes.isEmpty then
+            if !systemMediaTypes.contains(parsed.basic) then
+              val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
               throw InterpolationError(m"""
                 ${parsed.basic} is not a registered media type; did you mean $suggestion or
                 ${parsed.basic.sub(t"/", t"/x-")}?
@@ -134,16 +135,16 @@ object Media:
 
       parsed
 
-  def parse(string: Text)(using Tactic[MediumError]): Medium =
+  def parse(string: Text)(using Tactic[MediaTypeError]): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
       if ps == List("")
-      then raise(MediumError(string, MediumError.Reason.MissingParam))
+      then raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
       ps.map(_.cut(t"=", 2).to(List)).map { p => p(0).show -> p(1).show }
 
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
       suffixes.map(_.lower.capitalize).flatMap: suffix =>
         try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
-          raise(MediumError(string, MediumError.Reason.InvalidSuffix(suffix))) yet Nil
+          raise(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix))) yet Nil
 
     def parseInit(str: Text): (Subtype, List[Suffix]) =
       val xs: List[Text] = str.cut(t"+").to(List)
@@ -155,19 +156,19 @@ object Media:
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
 
       case _ =>
-        raise(MediumError(string, MediumError.Reason.NotOneSlash))
+        raise(MediaTypeError(string, MediaTypeError.Reason.NotOneSlash))
         Group.Text *: parseInit(string)
 
     def parseGroup(str: Text): Group =
       try Group.valueOf(str.lower.capitalize.s) catch IllegalArgumentException =>
-        raise(MediumError(string, MediumError.Reason.InvalidGroup)) yet Group.Text
+        raise(MediaTypeError(string, MediaTypeError.Reason.InvalidGroup)) yet Group.Text
 
     def parseSubtype(str: Text): Subtype =
       def notAllowed(char: Char): Boolean =
         char.isWhitespace || char.isControl || specials.contains(char)
 
       str.chars.find(notAllowed(_)).map: char =>
-        raise(MediumError(string, MediumError.Reason.InvalidChar(char)))
+        raise(MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)))
         Subtype.X(str.chars.filter(!notAllowed(_)).text)
 
       . getOrElse:
@@ -181,11 +182,11 @@ object Media:
     xs.absolve match
       case (h: Text) :: _ =>
         val basic = parseBasic(h)
-        Medium(basic(0), basic(1), basic(2), parseParams(xs.tail))
+        MediaType(basic(0), basic(1), basic(2), parseParams(xs.tail))
 
   final private val specials: Set[Char] =
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')
 
 trait Media:
   type Self
-  extension (value: Self) def medium: Medium
+  extension (value: Self) def mediaType: MediaType
