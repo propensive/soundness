@@ -195,6 +195,13 @@ extension [accrual <: Exception,  lambda[_], focus]
   :     accrual =
     ${Contingency.validateWithin[accrual, lambda, focus]('validate, 'lambda, 'diagnostics)}
 
+extension [element](sequence: Iterable[element])
+  transparent inline def survive[result](using Void)[error <: Exception]
+                          (lambda: (OptionalTactic[error, result], Diagnostics, CanThrow[Exception])
+                                    ?=> element => result)
+  :     Iterable[result] =
+    sequence.map { element => safely(lambda(element)) }.compact
+
 extension [value](optional: Optional[value])
   def lest[success, error <: Exception: Tactic](error: Diagnostics ?=> error): value =
     optional.or(abort(error))

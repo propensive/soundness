@@ -35,7 +35,7 @@ package soundness
 export contingency
 . { Tactic, Fatal, Recoverable, raise, abort, safely, unsafely, throwErrors, capture, attempt,
     abortive, ExpectationError, raises, Attempt, tend, mend, Unchecked, accrue, within, Foci, track,
-    focus, lest, dare, Errors, validate, Validation, Pointer }
+    focus, lest, dare, Errors, validate, Validation, Pointer, survive }
 
 package strategies:
   export contingency.strategies
