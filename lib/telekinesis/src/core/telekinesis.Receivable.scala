@@ -42,20 +42,20 @@ import turbulence.*
 import vacuous.*
 
 object Receivable:
-  given text: Text is Receivable = _.body.read[Bytes].utf8
-  given bytes: Bytes is Receivable = _.body.read[Bytes]
-  given byteStream: Stream[Bytes] is Receivable = _.body
 
-  given readable: [stream: Aggregable by Bytes] => Tactic[HttpError]
-        =>  stream is Receivable =
+  def apply[result](lambda: Stream[Bytes] => result): result is Receivable raises HttpError =
     response =>
-      response.successBody.let(stream.aggregate(_)).lest:
-        HttpError(response.status, response.textHeaders)
+      response.successBody.let(lambda).lest(HttpError(response.status, response.textHeaders))
+
+  given text: Tactic[HttpError] => Text is Receivable = Receivable(_.read[Bytes].utf8)
+
+  given readable: [stream: Aggregable by Bytes] => Tactic[HttpError] =>  stream is Receivable =
+    Receivable(stream.aggregate(_))
 
   given instantiable: [content: Instantiable across HttpRequests from Text] => Tactic[HttpError]
-        =>  content is Receivable = response =>
-    response.successBody.let(_.read[Bytes].utf8).let(content(_)).lest:
-      HttpError(response.status, response.textHeaders)
+        =>  content is Receivable =
+    Receivable:
+      body => content(body.read[Bytes].utf8)
 
   given httpStatus: Http.Status is Receivable = _.status
 
