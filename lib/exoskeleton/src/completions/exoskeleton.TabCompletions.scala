@@ -60,7 +60,7 @@ object TabCompletions:
   def install(force: Boolean = false)(using service: ShellContext)
        (using WorkingDirectory, Effectful, Diagnostics)
   :     TabCompletionsInstallation raises InstallError logs CliEvent =
-    tend:
+    mitigate:
       case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
       case NameError(_, _, _) => InstallError(InstallError.Reason.Environment)
       case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
@@ -113,7 +113,7 @@ object TabCompletions:
        (using Effectful, Diagnostics)
   :     TabCompletionsInstallation.InstallResult raises InstallError logs CliEvent =
 
-    tend:
+    mitigate:
       case IoError(_, _, _)   => InstallError(InstallError.Reason.Io)
       case NameError(_, _, _) => InstallError(InstallError.Reason.Io)
       case PathError(_, _)    => InstallError(InstallError.Reason.Io)

@@ -146,7 +146,8 @@ object Contingency:
       case other                              => List(other)
 
 
-  def tend[errors <: Exception: Type](handler: Expr[Exception ~> errors])(using Quotes): Expr[Any] =
+  def mitigate[errors <: Exception: Type](handler: Expr[Exception ~> errors])(using Quotes)
+  :     Expr[Any] =
 
     import quotes.reflect.*
 
@@ -161,7 +162,7 @@ object Contingency:
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
     typeLambda.asType.absolve match
-      case '[type typeLambda[_]; typeLambda] => '{Tend[typeLambda]($handler)}
+      case '[type typeLambda[_]; typeLambda] => '{Mitigation[typeLambda]($handler)}
 
   def track[accrual <: Exception: Type, focus: Type]
        (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
@@ -244,13 +245,13 @@ object Contingency:
     typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] => '{Mend[result, typeLambda]($handler)}
 
-  def tendWithin[context[_]: Type, result: Type]
-       (tend: Expr[Tend[context]], lambda: Expr[context[result]])
+  def mitigateWithin[context[_]: Type, result: Type]
+       (mitigate: Expr[Mitigation[context]], lambda: Expr[context[result]])
        (using Quotes)
     :     Expr[result] =
       import quotes.reflect.*
 
-      val tactics = unwrap(tend.asTerm) match
+      val tactics = unwrap(mitigate.asTerm) match
         case Apply(_, List(Inlined(_, _, matches))) =>
           val partialFunction = matches.asExprOf[Exception ~> Exception]
 
@@ -264,7 +265,7 @@ object Contingency:
                   case None =>
                     halt(m"There is no available handler for ${TypeRepr.of[errorType]}")
         case _ =>
-          halt(m"argument to `tend` should be a partial function implemented as match cases")
+          halt(m"argument to `mitigate` should be a partial function implemented as match cases")
 
       val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
       lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]

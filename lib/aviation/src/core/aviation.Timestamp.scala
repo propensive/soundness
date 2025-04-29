@@ -55,7 +55,7 @@ object Timestamp:
   given decodable: Tactic[TimestampError] => Timestamp is Decodable in Text = text =>
     text match
       case r"$year(\d{4})-$month(\d{2})-$day(\d{2})T$hour(\d{2}):$minute(\d{2}):$second(\d{2})" =>
-        tend:
+        mitigate:
           case NumberError(_, _) => TimestampError(text)
           case DateError(_)      => TimestampError(text)
 

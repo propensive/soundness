@@ -71,7 +71,7 @@ class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
       case entry =>
         import errorDiagnostics.empty
         val ref: Path on Zip =
-          tend:
+          mitigate:
             case PathError(reason, path) => ZipError()
             case NameError(_, _, _)      => ZipError()
 

@@ -47,7 +47,7 @@ import errorDiagnostics.stackTraces
 
 object Acceptable:
   given multipart: Tactic[MultipartError] => Multipart is Acceptable = request =>
-    tend:
+    mitigate:
       case _: MediaTypeError => MultipartError(MultipartError.Reason.MediaType)
 
     . within:
