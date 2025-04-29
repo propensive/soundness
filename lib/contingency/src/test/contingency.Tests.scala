@@ -44,14 +44,14 @@ object Tests extends Suite(m"Contingency tests"):
   def run(): Unit =
     test(m"Ensure varargs parameter is handled exhaustively"):
       demilitarize:
-        mend:
+        recover:
           case VarargsError(args) => ()
         . within(action())
 
     . assert(_.nonEmpty)
 
     test(m"Varargs are handled safely"):
-      mend:
+      recover:
         case VarargsError(args*) => ()
       . within(action())
     . assert()

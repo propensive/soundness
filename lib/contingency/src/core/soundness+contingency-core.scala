@@ -34,7 +34,7 @@ package soundness
 
 export contingency
 . { Tactic, Fatal, Recoverable, raise, abort, safely, unsafely, throwErrors, capture, attempt,
-    abortive, ExpectationError, raises, Attempt, mitigate, mend, Unchecked, accrue, within, Foci,
+    abortive, ExpectationError, raises, Attempt, mitigate, recover, Unchecked, accrue, within, Foci,
     track, focus, lest, dare, Errors, validate, Validation, Pointer, survive }
 
 package strategies:

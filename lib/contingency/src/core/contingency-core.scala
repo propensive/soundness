@@ -155,12 +155,12 @@ extension [lambda[_]](inline mitigation: Mitigation[lambda])
   inline def within[result](inline lambda: lambda[result]): result =
     ${Contingency.mitigateWithin[lambda, result]('mitigation, 'lambda)}
 
-transparent inline def mend[result](inline block: Exception ~> result): Any =
-  ${Contingency.mend[result]('block)}
+transparent inline def recover[result](inline block: Exception ~> result): Any =
+  ${Contingency.recover[result]('block)}
 
-extension [result, lambda[_]](inline mend: Mend[result, lambda])
+extension [result, lambda[_]](inline recovery: Recovery[result, lambda])
   inline def within[result2 >: result](inline lambda: lambda[result2]): result2 =
-    ${Contingency.mendWithin[lambda, result2]('mend, 'lambda)}
+    ${Contingency.recoverWithin[lambda, result2]('recovery, 'lambda)}
 
 transparent inline def track[focus](using erased Void)[accrual <: Exception](accrual: accrual)
    (inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual)
