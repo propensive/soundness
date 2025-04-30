@@ -30,8 +30,62 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package dissonance
 
-export dissonance
-       . { Change, Edit, Ins, Del, Par, Sub, Region, RDiff, DiffError, Diff, Chunk, diff,
-           Evolution }
+import language.experimental.captureChecking
+
+import denominative.*
+import fulminate.*
+import proscenium.*
+import rudiments.*
+import symbolism.*
+
+case class Evolution[element](sequence: List[Evolution.Atom[element]]):
+  def apply(version: Ordinal): List[element] =
+    sequence.filter(_.has(version)).map(_.value)
+
+object Evolution:
+  case class Atom[element](value: element, presence: Set[Ordinal]):
+    def add(n: Ordinal): Atom[element] = copy(presence = presence + n)
+    def has(n: Ordinal): Boolean = presence.contains(n)
+
+  def of[element](versions: List[List[element]]): Evolution[element] =
+    def recur(iteration: Ordinal, todo: List[Seq[element]], evolution: Evolution[element])
+    :     Evolution[element] =
+      todo match
+        case Nil | _ :: Nil => evolution
+
+        case left :: right :: more =>
+          val changes: List[Edit[element]] = diff(left.to(Vector), right.to(Vector)).edits.to(List)
+
+          def merge
+               (atoms: List[Atom[element]], edits: List[Edit[element]], done: List[Atom[element]])
+          :     List[Atom[element]] =
+
+            edits match
+              case Nil           => done.unwind(atoms)
+              case edit :: edits => atoms match
+                case Nil => edit match
+                  case Ins(_, value) =>
+                    merge(Nil, edits, Atom(value, Set(iteration)) :: done)
+                  case edit          => panic(m"Unexpected edit: ${edit.toString}")
+
+                case atom :: atoms =>
+                  if !atom.has(iteration - 1) then merge(atoms, edit :: edits, atom :: done)
+                  else edit match
+                    case Ins(_, value) =>
+                      merge(atom :: atoms, edits, Atom(value, Set(iteration)) :: done)
+
+                    case Del(_, value) =>
+                      if atom.value != value then panic(m"Expected value for deletion")
+                      merge(atoms, edits, atom :: done)
+
+                    case Par(_, _, value) =>
+                      if atom.value != value then panic(m"Expected parity value")
+                      merge(atoms, edits, atom.add(iteration) :: done)
+
+          recur(iteration + 1, right :: more, Evolution(merge(evolution.sequence, changes, Nil)))
+
+    if versions.isEmpty then Evolution(Nil) else
+      val initial = Evolution(versions.head.map(Atom(_, Set(Prim))))
+      recur(Sec, versions, initial)
