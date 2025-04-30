@@ -34,11 +34,13 @@ package dissonance
 
 import language.experimental.captureChecking
 
+import contingency.*
 import denominative.*
 import fulminate.*
 import proscenium.*
 import rudiments.*
 import symbolism.*
+import vacuous.*
 
 case class Evolution[element](sequence: List[Evolution.Atom[element]]):
   def apply(version: Ordinal): List[element] =
@@ -49,43 +51,65 @@ object Evolution:
     def add(n: Ordinal): Atom[element] = copy(presence = presence + n)
     def has(n: Ordinal): Boolean = presence.contains(n)
 
-  def of[element](versions: List[List[element]]): Evolution[element] =
-    def recur(iteration: Ordinal, todo: List[Seq[element]], evolution: Evolution[element])
-    :     Evolution[element] =
-      todo match
-        case Nil | _ :: Nil => evolution
+def evolve[element](versions: List[List[element]]): Evolution[element] =
+  import Evolution.Atom
 
-        case left :: right :: more =>
-          val changes: List[Edit[element]] = diff(left.to(Vector), right.to(Vector)).edits.to(List)
+  def recur(iteration: Ordinal, todo: List[Seq[element]], evolution: Evolution[element])
+  :     Evolution[element] =
+    todo match
+      case Nil | _ :: Nil => evolution
 
-          def merge
-               (atoms: List[Atom[element]], edits: List[Edit[element]], done: List[Atom[element]])
-          :     List[Atom[element]] =
+      case left :: right :: more =>
+        val changes: List[Edit[element]] = diff(left.to(Vector), right.to(Vector)).edits.to(List)
 
-            edits match
-              case Nil           => done.unwind(atoms)
-              case edit :: edits => atoms match
-                case Nil => edit match
+        def merge
+             (atoms:   List[Atom[element]],
+              edits:   List[Edit[element]],
+              done:    List[Atom[element]] = Nil,
+              skips:   List[Atom[element]] = Nil,
+              inserts: List[Atom[element]] = Nil)
+        :     List[Atom[element]] =
+
+          def finish(): List[Atom[element]] =
+            val left = IArray.from(skips)
+            val right = IArray.from(inserts)
+
+            val updates: List[Atom[element]] =
+              diff(left, right, _.value == _.value).edits.to(List).map:
+                case Ins(_, value)    => value
+                case Del(index, _)    => left(index)
+                case Par(index, _, _) => left(index).add(iteration)
+
+            updates ::: done
+
+          edits match
+            case Nil           =>
+              finish().reverse
+
+            case edit :: edits => atoms match
+              case Nil => edit match
+                case Ins(_, value) => merge(Nil, edits, Atom(value, Set(iteration)) :: finish())
+                case edit          => panic(m"Unexpected edit: ${edit.toString}")
+
+              case atom :: atoms =>
+                if !atom.has(iteration - 1)
+                then merge(atoms, edit :: edits, done, atom :: skips, inserts)
+                else edit match
                   case Ins(_, value) =>
-                    merge(Nil, edits, Atom(value, Set(iteration)) :: done)
-                  case edit          => panic(m"Unexpected edit: ${edit.toString}")
+                    val atom2 = Atom(value, Set(iteration))
+                    merge(atom :: atoms, edits, done, skips, atom2 :: inserts)
 
-                case atom :: atoms =>
-                  if !atom.has(iteration - 1) then merge(atoms, edit :: edits, atom :: done)
-                  else edit match
-                    case Ins(_, value) =>
-                      merge(atom :: atoms, edits, Atom(value, Set(iteration)) :: done)
+                  case Del(_, value) =>
+                    if atom.value != value then panic(m"Expected value for deletion")
+                    merge(atoms, edits, done, atom :: skips, inserts)
 
-                    case Del(_, value) =>
-                      if atom.value != value then panic(m"Expected value for deletion")
-                      merge(atoms, edits, atom :: done)
+                  case Par(_, _, value) =>
+                    if atom.value != value then panic(m"Expected parity value")
 
-                    case Par(_, _, value) =>
-                      if atom.value != value then panic(m"Expected parity value")
-                      merge(atoms, edits, atom.add(iteration) :: done)
+                    merge(atoms, edits, atom.add(iteration) :: finish())
 
-          recur(iteration + 1, right :: more, Evolution(merge(evolution.sequence, changes, Nil)))
+        recur(iteration + 1, right :: more, Evolution(merge(evolution.sequence, changes)))
 
-    if versions.isEmpty then Evolution(Nil) else
-      val initial = Evolution(versions.head.map(Atom(_, Set(Prim))))
-      recur(Sec, versions, initial)
+  if versions.isEmpty then Evolution(Nil) else
+    val initial = Evolution(versions.head.map(Atom(_, Set(Prim))))
+    recur(Sec, versions, initial)
