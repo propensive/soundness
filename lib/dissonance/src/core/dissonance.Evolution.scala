@@ -83,8 +83,7 @@ def evolve[element](versions: List[List[element]]): Evolution[element] =
             updates ::: done
 
           edits match
-            case Nil           =>
-              finish().reverse
+            case Nil => finish().reverse
 
             case edit :: edits => atoms match
               case Nil => edit match
@@ -105,7 +104,6 @@ def evolve[element](versions: List[List[element]]): Evolution[element] =
 
                   case Par(_, _, value) =>
                     if atom.value != value then panic(m"Expected parity value")
-
                     merge(atoms, edits, atom.add(iteration) :: finish())
 
         recur(iteration + 1, right :: more, Evolution(merge(evolution.sequence, changes)))
