@@ -83,7 +83,7 @@ def evolve[element](versions: List[List[element]]): Evolution[element] =
             updates ::: done
 
           edits match
-            case Nil           => finish().reverse
+            case Nil => finish().reverse
 
             case edit :: edits => atoms match
               case Nil => edit match
