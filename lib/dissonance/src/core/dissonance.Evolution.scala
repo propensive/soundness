@@ -30,30 +30,84 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package punctuation
+package dissonance
 
-extension (inline stringContext: StringContext)
-  transparent inline def md(inline parts: Any*): Markdown[Markdown.Ast.Node] =
-    ${Punctuation.md('stringContext, 'parts)}
+import language.experimental.captureChecking
 
-extension (markdown: Md)
-  def broken: List[Md] =
-    import Markdown.Ast.Block
+import contingency.*
+import denominative.*
+import fulminate.*
+import proscenium.*
+import rudiments.*
+import symbolism.*
+import vacuous.*
 
-    def recur(todo: List[Block], current: List[Block], done: List[Md]): List[Md] =
-      todo match
-        case Nil =>
-          if current.isEmpty then done.reverse
-          else recur(Nil, Nil, Markdown(current.reverse*) :: done)
+case class Evolution[element](sequence: List[Evolution.Atom[element]]):
+  def apply(version: Ordinal): List[element] =
+    sequence.filter(_.has(version)).map(_.value)
 
-        case Markdown.Ast.Block.ThematicBreak() :: more =>
-          recur(more, Nil, Markdown(current.reverse*) :: done)
+object Evolution:
+  case class Atom[element](value: element, presence: Set[Ordinal]):
+    def add(n: Ordinal): Atom[element] = copy(presence = presence + n)
+    def has(n: Ordinal): Boolean = presence.contains(n)
 
-        case head :: more =>
-          recur(more, head :: current, done)
+def evolve[element](versions: List[List[element]]): Evolution[element] =
+  import Evolution.Atom
 
+  def recur(iteration: Ordinal, todo: List[Seq[element]], evolution: Evolution[element])
+  :     Evolution[element] =
+    todo match
+      case Nil | _ :: Nil => evolution
 
-    recur(markdown.nodes.to(List), Nil, Nil)
+      case left :: right :: more =>
+        val changes: List[Edit[element]] = diff(left.to(Vector), right.to(Vector)).edits.to(List)
 
-type InlineMd = Markdown[Markdown.Ast.Inline]
-type Md = Markdown[Markdown.Ast.Block]
+        def merge
+             (atoms:   List[Atom[element]],
+              edits:   List[Edit[element]],
+              done:    List[Atom[element]] = Nil,
+              skips:   List[Atom[element]] = Nil,
+              inserts: List[Atom[element]] = Nil)
+        :     List[Atom[element]] =
+
+          def finish(): List[Atom[element]] =
+            val left = IArray.from(skips)
+            val right = IArray.from(inserts)
+
+            val updates: List[Atom[element]] =
+              diff(left, right, _.value == _.value).edits.to(List).map:
+                case Ins(_, value)    => value
+                case Del(index, _)    => left(index)
+                case Par(index, _, _) => left(index).add(iteration)
+
+            updates ::: done
+
+          edits match
+            case Nil           => finish().reverse
+
+            case edit :: edits => atoms match
+              case Nil => edit match
+                case Ins(_, value) => merge(Nil, edits, Atom(value, Set(iteration)) :: finish())
+                case edit          => panic(m"Unexpected edit: ${edit.toString}")
+
+              case atom :: atoms =>
+                if !atom.has(iteration - 1)
+                then merge(atoms, edit :: edits, done, atom :: skips, inserts)
+                else edit match
+                  case Ins(_, value) =>
+                    val atom2 = Atom(value, Set(iteration))
+                    merge(atom :: atoms, edits, done, skips, atom2 :: inserts)
+
+                  case Del(_, value) =>
+                    if atom.value != value then panic(m"Expected value for deletion")
+                    merge(atoms, edits, done, atom :: skips, inserts)
+
+                  case Par(_, _, value) =>
+                    if atom.value != value then panic(m"Expected parity value")
+                    merge(atoms, edits, atom.add(iteration) :: finish())
+
+        recur(iteration + 1, right :: more, Evolution(merge(evolution.sequence, changes)))
+
+  if versions.isEmpty then Evolution(Nil) else
+    val initial = Evolution(versions.head.map(Atom(_, Set(Prim))))
+    recur(Sec, versions, initial)
