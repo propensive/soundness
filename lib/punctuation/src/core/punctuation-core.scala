@@ -36,5 +36,24 @@ extension (inline stringContext: StringContext)
   transparent inline def md(inline parts: Any*): Markdown[Markdown.Ast.Node] =
     ${Punctuation.md('stringContext, 'parts)}
 
+extension (markdown: Md)
+  def broken: List[Md] =
+    import Markdown.Ast.Block
+
+    def recur(todo: List[Block], current: List[Block], done: List[Md]): List[Md] =
+      todo match
+        case Nil =>
+          if current.isEmpty then done.reverse
+          else recur(Nil, Nil, Markdown(current.reverse*) :: done)
+
+        case Markdown.Ast.Block.ThematicBreak() :: more =>
+          recur(more, Nil, Markdown(current.reverse*) :: done)
+
+        case head :: more =>
+          recur(more, head :: current, done)
+
+
+    recur(markdown.nodes.to(List), Nil, Nil)
+
 type InlineMd = Markdown[Markdown.Ast.Inline]
 type Md = Markdown[Markdown.Ast.Block]

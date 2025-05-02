@@ -34,6 +34,7 @@ package dissonance
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import eucalyptus.*
 import fulminate.*
 import gossamer.*
@@ -229,6 +230,38 @@ object Tests extends Suite(m"Dissonance tests"):
           Ins(2, t"dos"), Sub(3, 3, t"tre", t"tres"), Del(4, t"quattro"), Del(5, t"cinque"),
           Ins(4, t"cuatro"), Ins(5, t"cinco"), Sub(6, 6, t"sei", t"seis"),
           Del(7, t"sette"), Ins(7, t"siete")))
+
+    suite(m"Evolution tests"):
+      test(m"Sample words"):
+        val evolution =
+          evolve(List(t"slain", t"stain", t"strange", t"star", t"rain", t"train").map(_.chars.to(List)))
+        List(Prim, Sec, Ter, Quat, Quin, Sen).map(evolution(_).mkString)
+      . assert(_ == List("slain", "stain", "strange", "star", "rain", "train"))
+
+      test(m"dog/cat"):
+        val evolution = evolve(List(t"dog", t"cat", t"dog").map(_.chars.to(List)))
+        List(Prim, Sec, Ter).map(evolution(_).mkString)
+      . assert(_ == List("dog", "cat", "dog"))
+
+      test(m"dog/cat 2"):
+        val evolution = evolve(List(t"dog", t"cat", t"dog", t"dog2").map(_.chars.to(List)))
+        List(Prim, Sec, Ter, Quat).map(evolution(_).mkString)
+      . assert(_ == List("dog", "cat", "dog", "dog2"))
+
+      test(m"dog/cat 3"):
+        val evolution = evolve(List(t"dog", t"cat", t"dog", t"do").map(_.chars.to(List)))
+        List(Prim, Sec, Ter, Quat).map(evolution(_).mkString)
+      . assert(_ == List("dog", "cat", "dog", "do"))
+
+      test(m"Dogs and cats"):
+        val evolution = evolve(List(t"dog", t"dog and cat", t"cat", t"cat and dog").map(_.chars.to(List)))
+        List(Prim, Sec, Ter, Quat).map(evolution(_).mkString)
+      . assert(_ == List("dog", "dog and cat", "cat", "cat and dog"))
+
+      test(m"Jack and Jill"):
+        val evolution = evolve(List(t"Jack and Jill", t"Jack with Jill", t"Jack und Jill").map(_.chars.to(List)))
+        List(Prim, Sec, Ter).map(evolution(_).mkString)
+      . assert(_ == List("Jack and Jill", "Jack with Jill", "Jack und Jill"))
 
     // suite(m"Casual diff tests"):
     //   test(m"Parse a simple casual diff"):
