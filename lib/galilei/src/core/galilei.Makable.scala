@@ -115,7 +115,7 @@ object Makable:
       def make(path: Path on Platform): Path on Platform = path.also:
         createNonexistentParents(path):
           overwritePreexisting(path):
-            tend:
+            mitigate:
               case ExecError(_, _, _) =>
                 import errorDiagnostics.stackTraces
                 IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)

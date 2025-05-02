@@ -47,7 +47,7 @@ object Syslog:
   given appendable: Monitor => Syslog is Writable by Text = (syslog, stream) =>
     import workingDirectories.systemProperty
 
-    mend:
+    recover:
       case StreamError(_)     => ()
       case ExecError(_, _, _) => ()
 
