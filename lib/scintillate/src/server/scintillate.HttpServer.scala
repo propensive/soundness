@@ -85,8 +85,7 @@ case class HttpServer(port: Int) extends RequestServable:
       try
         val httpServer = csnh.HttpServer.create(jn.InetSocketAddress("localhost", port), 0).nn
         httpServer.createContext("/").nn.setHandler(handle(_))
-        //httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
-        httpServer.setExecutor(null)
+        httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
         httpServer.start()
         httpServer
       catch
