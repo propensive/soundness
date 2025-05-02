@@ -81,7 +81,7 @@ object Installer:
   def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
        (using Environment, HomeDirectory, SystemProperties)
   :     List[Path on Linux] logs DaemonLogEvent raises InstallError =
-    tend:
+    mitigate:
       case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
       case EnvironmentError(_) => InstallError(InstallError.Reason.Environment)
       case IoError(_, _, _)    => InstallError(InstallError.Reason.Io)
@@ -113,7 +113,7 @@ object Installer:
     import workingDirectories.systemProperty
     import systemProperties.virtualMachine
 
-    tend:
+    mitigate:
       case PathError(_, _)        => InstallError(InstallError.Reason.Environment)
       case SystemPropertyError(_) => InstallError(InstallError.Reason.Environment)
       case NumberError(_, _)      => InstallError(InstallError.Reason.Environment)

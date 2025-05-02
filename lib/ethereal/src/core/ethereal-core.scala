@@ -100,7 +100,7 @@ def cli[bus <: Matchable](using executive: Executive)
   import stdioSources.virtualMachine.ansi
 
   val name: Text =
-    mend:
+    recover:
       case SystemPropertyError(_) =>
         val jarFile = Properties.java.`class`.path[Text]().pipe: jarFile =>
           safely(jarFile.decode[Path on Linux]).or:

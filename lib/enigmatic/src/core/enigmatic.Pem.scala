@@ -70,7 +70,7 @@ object Pem:
         case -1  => abort(PemError(PemError.Reason.EndMissing))
         case index =>
           val joined: Text = lines.tail.take(index).join
-          tend:
+          mitigate:
             case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
 
           . within(Pem(label, joined.deserialize[Base64]))

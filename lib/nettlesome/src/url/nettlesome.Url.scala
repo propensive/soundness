@@ -122,7 +122,7 @@ object Url:
 
         val (pathStart, auth) =
           if value.after(colon).keep(2) == t"//" then
-            tend:
+            mitigate:
               case error@HostnameError(hostname, reason) =>
                 import error.diagnostics
                 UrlError(value, colon + 3, UrlError.Reason.BadHostname(hostname, reason))
