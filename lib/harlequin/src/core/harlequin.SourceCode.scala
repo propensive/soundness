@@ -75,23 +75,14 @@ object SourceCode:
     else if token >= 63 && token <= 84 then Accent.Symbol
     else Accent.Parens
 
-  private val soft: Set[Text] = Set(t"inline", t"opaque", t"open", t"transparent", t"infix")
+  // This list was found in scala/scala3:compiler/src/dotty/tools/dotc/core/parsing/Parserse.scala
+  private val soft: Set[Text] =
+    Set(t"inline", t"opaque", t"open", t"transparent", t"infix", t"mut", t"erased", t"tracked")
 
   def apply(language: ProgrammingLanguage, text: Text): SourceCode =
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
     val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
 
-    /*val languageSettings =
-      List
-       ("experimental.clauseInterleaving",
-        "experimental.genericNumberLiterals",
-        "experimental.fewerBraces",
-        "experimental.modularity",
-        "experimental.erasedDefinitions",
-        "experimental.saferExceptions",
-        "experimental.namedTypeArguments")*/
-
-    //ctx0.setSetting(ctx0.settings.language, languageSettings)
     ctx0.setSetting(ctx0.settings.source, "future")
 
     given ctx: Contexts.Context =
