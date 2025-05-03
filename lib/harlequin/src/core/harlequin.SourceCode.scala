@@ -112,7 +112,7 @@ object SourceCode:
       case SourceToken(_, Accent.Unparsed) #:: more                   => hard(more)
       case SourceToken(text, Accent.Ident) #:: more if soft.has(text) => hard(more)
       case SourceToken(text, Accent.Keyword | Accent.Modifier) #:: _  => true
-      case other #:: _                                                => false
+      case other                                                      => false
 
     def soften(stream: Stream[SourceToken]): Stream[SourceToken] = stream match
       case (token@SourceToken(text, Accent.Ident)) #:: more if soft.has(text) =>
@@ -122,7 +122,7 @@ object SourceCode:
       case token #:: more =>
         token #:: soften(more)
 
-      case _ =>
+      case Stream() =>
         Stream()
 
     def stream(lastEnd: Int = 0): Stream[SourceToken] = scanner.token match
@@ -153,7 +153,7 @@ object SourceCode:
                (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
             . init
 
-        soften(unparsed #::: content #::: stream(end))
+        unparsed #::: soften(content) #::: stream(end)
 
     def lines(seq: List[SourceToken], acc: List[List[SourceToken]] = Nil): List[List[SourceToken]] =
       seq match
