@@ -75,6 +75,8 @@ object SourceCode:
     else if token >= 63 && token <= 84 then Accent.Symbol
     else Accent.Parens
 
+  private val soft: Set[Text] = Set(t"inline", t"opaque", t"open", t"transparent", t"infix")
+
   def apply(language: ProgrammingLanguage, text: Text): SourceCode =
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
     val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
@@ -95,7 +97,6 @@ object SourceCode:
     given ctx: Contexts.Context =
       ctx0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using ctx0))
 
-
     val trees = Trees()
     val parser = Parsers.Parser(source)
 
@@ -106,6 +107,23 @@ object SourceCode:
 
     def untab(text: Text): Stream[SourceToken] =
       Stream(SourceToken(text.sub(t"\t", t"  "), Accent.Unparsed), SourceToken.Newline)
+
+    def hard(stream: Stream[SourceToken]): Boolean = stream match
+      case SourceToken(_, Accent.Unparsed) #:: more                   => hard(more)
+      case SourceToken(text, Accent.Ident) #:: more if soft.has(text) => hard(more)
+      case SourceToken(text, Accent.Keyword | Accent.Modifier) #:: _  => true
+      case other #:: _                                                => false
+
+    def soften(stream: Stream[SourceToken]): Stream[SourceToken] = stream match
+      case (token@SourceToken(text, Accent.Ident)) #:: more if soft.has(text) =>
+        if hard(more) then SourceToken(text, Accent.Modifier) #:: soften(more)
+        else token #:: soften(more)
+
+      case token #:: more =>
+        token #:: soften(more)
+
+      case _ =>
+        Stream()
 
     def stream(lastEnd: Int = 0): Stream[SourceToken] = scanner.token match
       case Tokens.EOF =>
@@ -129,14 +147,13 @@ object SourceCode:
         val end = scanner.lastOffset max start
 
         val content: Stream[SourceToken] =
-          if start == end then Stream()
-          else
+          if start == end then Stream() else
             text.segment(start.z ~ Ordinal.natural(end)).cut(t"\n").to(Stream).flatMap: line =>
               Stream
                (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
             . init
 
-        unparsed #::: content #::: stream(end)
+        soften(unparsed #::: content #::: stream(end))
 
     def lines(seq: List[SourceToken], acc: List[List[SourceToken]] = Nil): List[List[SourceToken]] =
       seq match
