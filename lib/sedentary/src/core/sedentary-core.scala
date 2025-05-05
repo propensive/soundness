@@ -42,8 +42,8 @@ extension [test](test: Test[test])
   inline def benchmark[duration, report]
               (confidence: Optional[Benchmark.Percentiles] = Unset,
                iterations: Optional[Int]                   = Unset,
-               duration:   Optional[duration]          = Unset,
-               warmup:     Optional[duration]          = Unset,
+               duration:   Optional[duration]              = Unset,
+               warmup:     Optional[duration]              = Unset,
                baseline:   Optional[Baseline]              = Unset)
               (using runner:           Runner[report],
                      inc:              Inclusion[report, Benchmark],

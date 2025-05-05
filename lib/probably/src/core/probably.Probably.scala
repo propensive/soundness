@@ -134,12 +134,12 @@ object Probably:
        (runner:       Runner[report],
         test:         Test[test2],
         predicate:    test2 => Boolean,
-      result:       Trial[test2] => result,
-      contrast:     test is Contrastable,
-      exp:          Option[test],
-      inc:          Inclusion[report, Verdict],
-      inc2:         Inclusion[report, Verdict.Detail],
-      decomposable: test is Decomposable)
+        result:       Trial[test2] => result,
+        contrast:     test is Contrastable,
+        exp:          Option[test],
+        inc:          Inclusion[report, Verdict],
+        inc2:         Inclusion[report, Verdict.Detail],
+        decomposable: test is Decomposable)
   :     result =
 
     runner.run(test).pipe: run =>
