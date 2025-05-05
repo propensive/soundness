@@ -144,7 +144,7 @@ object SourceCode:
                (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
             . init
 
-        unparsed #::: soften(content) #::: stream(end)
+        unparsed #::: content #::: stream(end)
 
     def lines(seq: List[SourceToken], acc: List[List[SourceToken]] = Nil): List[List[SourceToken]] =
       seq match
@@ -153,7 +153,7 @@ object SourceCode:
           case -1  => xs :: acc
           case idx => lines(xs.drop(idx + 1), xs.take(idx) :: acc)
 
-    SourceCode(language, 1, IArray(lines(stream().to(List)).reverse*))
+    SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).reverse*))
 
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*

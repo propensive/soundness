@@ -395,14 +395,14 @@ extension (erased tuple: Tuple)
   inline def contains[element]: Boolean = indexOf[element] >= 0
   inline def indexOf[element]: Int = recurIndex[tuple.type, element](0)
 
-  transparent inline def subtypes[Supertype]: Tuple = recurSubtypes[tuple.type, Supertype, Zero]
+  transparent inline def subtypes[supertype]: Tuple = recurSubtypes[tuple.type, supertype, Zero]
 
-  private transparent inline def recurSubtypes[tuple <: Tuple, Supertype, done <: Tuple]: Tuple =
+  private transparent inline def recurSubtypes[tuple <: Tuple, supertype, done <: Tuple]: Tuple =
     inline !![tuple] match
       case _: Zero           => !![Tuple.Reverse[done]]
       case _: (head *: tail) => inline !![head] match
-        case _: Supertype       => recurSubtypes[tail, Supertype, head *: done]
-        case _                  => recurSubtypes[tail, Supertype, done]
+        case _: `supertype`     => recurSubtypes[tail, supertype, head *: done]
+        case _                  => recurSubtypes[tail, supertype, done]
 
   private inline def recurIndex[tuple <: Tuple, element](index: Int): Int =
     inline !![tuple] match

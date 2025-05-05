@@ -50,8 +50,6 @@ export scala.jdk.CollectionConverters
 . { IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava, MapHasAsJava,
     EnumerationHasAsScala }
 
-export caps.Cap as Capability
-
 export scala.annotation
 . { tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation }
 
