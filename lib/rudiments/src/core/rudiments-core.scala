@@ -123,6 +123,10 @@ extension [value](iterator: Iterator[value])
 
   inline def all(predicate: value => Boolean): Boolean = iterator.forall(predicate)
 
+extension [value](iterables: Iterable[Iterable[value]])
+  def intercalate(between: Iterable[value] = Iterable()): Iterable[value] =
+    if iterables.isEmpty then Iterable() else iterables.reduceLeft(_ ++ between ++ _)
+
 extension [value](iterable: Iterable[value])
   transparent inline def total
                           (using addable:  value is Addable by value,
