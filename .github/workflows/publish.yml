@@ -1,21 +1,24 @@
 name: Publish on Tag
-
 on:
   push:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
-
 jobs:
   publish:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Run publish script
-        run: ./etc/publish
-
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '23'
+      - name: Publish to Maven Central
+        run: ./mill mill.contrib.sonatypecentral.SonatypeCentralPublishModule/publishAll --publishArtifacts __.publishArtifacts --shouldRelease true
         env:
           MILL_SONATYPE_USERNAME: ${{ secrets.MILL_SONATYPE_USERNAME }}
           MILL_SONATYPE_PASSWORD: ${{ secrets.MILL_SONATYPE_PASSWORD }}
