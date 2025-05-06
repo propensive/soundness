@@ -666,15 +666,15 @@ object diuretic extends SoundnessModule {
   }
 }
 
-object embarcadero extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(jacinta.core, telekinesis.core, eucalyptus.core)
-  }
-
-  object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
-  }
-}
+// object embarcadero extends SoundnessModule {
+//   object core extends SoundnessSubModule {
+//     def moduleDeps = Seq(jacinta.core, telekinesis.core, eucalyptus.core)
+//   }
+//
+//   object test extends ProbablyTestModule {
+//     def moduleDeps = Seq(probably.cli, core)
+//   }
+// }
 
 object enigmatic extends SoundnessModule {
   object core extends SoundnessSubModule {
