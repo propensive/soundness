@@ -1,5 +1,0 @@
-#!/bin/bash
-
-mill -i mill.contrib.sonatypecentral.SonatypeCentralPublishModule/publishAll \
-  --publishArtifacts __.publishArtifacts \
-  --shouldRelease true
