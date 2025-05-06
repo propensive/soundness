@@ -1,6 +1,8 @@
 package build
 
 import mill._
+import $ivy.`com.lihaoyi::mill-contrib-sonatypecentral:`
+import mill.contrib.sonatypecentral.SonatypeCentralPublishModule
 import mill.api.Result
 import scalalib._
 import publish._
@@ -61,7 +63,7 @@ trait SoundnessModule extends Module {
   def millSourcePath = super.millSourcePath / ".." / "lib" / super.millSourcePath.last / "src"
 }
 
-trait SoundnessSubModule extends BaseScalaModule with PublishModule {
+trait SoundnessSubModule extends BaseScalaModule with SonatypeCentralPublishModule {
   def resources = Task {
     Seq(PathRef(millSourcePath / ".." / ".." / "res"))
   }
