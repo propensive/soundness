@@ -1,0 +1,6 @@
+#!/bin/bash
+
+echo Username is $MILL_SONATYPE_USERNAME
+echo mill -i mill.contrib.sonatypecentral.SonatypeCentralPublishModule/publishAll \
+  --publishArtifacts __.publishArtifacts \
+  --shouldRelease true
