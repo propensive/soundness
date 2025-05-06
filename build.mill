@@ -456,15 +456,15 @@ object baroque extends SoundnessModule {
   }
 }
 
-object bitumen extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(polaris.core, serpentine.core, gossamer.core, turbulence.core)
-  }
-
-  object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
-  }
-}
+// object bitumen extends SoundnessModule {
+//   object core extends SoundnessSubModule {
+//     def moduleDeps = Seq(polaris.core, serpentine.core, gossamer.core, turbulence.core)
+//   }
+//
+//   object test extends ProbablyTestModule {
+//     def moduleDeps = Seq(probably.cli, core)
+//   }
+// }
 
 object burdock extends SoundnessModule {
   object boot extends JavaModule {
