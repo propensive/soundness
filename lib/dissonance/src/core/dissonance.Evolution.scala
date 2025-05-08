@@ -51,7 +51,7 @@ object Evolution:
     def add(n: Ordinal): Atom[element] = copy(presence = presence + n)
     def has(n: Ordinal): Boolean = presence.contains(n)
 
-def evolve[element](versions: List[List[element]]): Evolution[element] =
+def evolve[element: ClassTag](versions: List[List[element]]): Evolution[element] =
   import Evolution.Atom
 
   def recur(iteration: Ordinal, todo: List[Seq[element]], evolution: Evolution[element])
@@ -60,7 +60,8 @@ def evolve[element](versions: List[List[element]]): Evolution[element] =
       case Nil | _ :: Nil => evolution
 
       case left :: right :: more =>
-        val changes: List[Edit[element]] = diff(left.to(Vector), right.to(Vector)).edits.to(List)
+        val changes: List[Edit[element]] =
+          diff(IArray.from(left), IArray.from(right)).edits.to(List)
 
         def merge
              (atoms:   List[Atom[element]],

@@ -70,7 +70,6 @@ object Hyperbole:
     import quotes.reflect.*
 
     val inlining = inlining0.valueOrAbort
-
     val sources: scm.HashMap[Text, SourceCode] = scm.HashMap()
 
     def source(tree: Tree): Teletype = tree.pos match

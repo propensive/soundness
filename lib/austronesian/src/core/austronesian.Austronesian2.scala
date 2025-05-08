@@ -62,7 +62,6 @@ object Austronesian2:
 
   object DecodableDerivation extends Derivable[Decodable in Stdlib]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Stdlib =
-
       case array: Array[Stdlib] =>
         construct: [field] =>
           _.decoded(array(index))
