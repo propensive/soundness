@@ -61,7 +61,7 @@ import textMetrics.uniform
 import columnAttenuation.ignore
 
 object Bytecode:
-  given Bytecode is Teletypeable = bytecode =>
+  given teletypeable: Bytecode is Teletypeable = bytecode =>
     val table = Table[Instruction]
                  (Column(e"$Bold(Source)", textAlign = TextAlignment.Right): line =>
                     line.line.let: line =>
@@ -74,6 +74,7 @@ object Bytecode:
 
     table.tabulate(bytecode.instructions).grid(160).render.join(e"\n")
 
+  given printable: Bytecode is Printable = _.teletype.render(_)
 
   given stack: List[Frame] is Teletypeable = stack =>
     e"${rgb"#aaaaaa"}(${stack.reverse.map(_.teletype).join(e"┃ ", e" ┊ ", e"")})"
