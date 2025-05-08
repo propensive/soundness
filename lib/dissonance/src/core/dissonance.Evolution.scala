@@ -51,7 +51,9 @@ object Evolution:
     def add(n: Ordinal): Atom[element] = copy(presence = presence + n)
     def has(n: Ordinal): Boolean = presence.contains(n)
 
-def evolve[element: ClassTag](versions: List[List[element]]): Evolution[element] =
+def evolve[element: ClassTag]
+     (versions: List[List[element]], similar: Optional[(element, element) -> Boolean] = Unset)
+:     Evolution[element] =
   import Evolution.Atom
 
   def recur(iteration: Ordinal, todo: List[Seq[element]], evolution: Evolution[element])
@@ -60,12 +62,13 @@ def evolve[element: ClassTag](versions: List[List[element]]): Evolution[element]
       case Nil | _ :: Nil => evolution
 
       case left :: right :: more =>
-        val changes: List[Edit[element]] =
-          diff(IArray.from(left), IArray.from(right)).edits.to(List)
+        val changes: List[Change[element]] =
+          val diff0 = diff(IArray.from(left), IArray.from(right))
+          similar.lay(diff0.edits)(diff0.rdiff(_).changes).to(List)
 
         def merge
              (atoms:   List[Atom[element]],
-              edits:   List[Edit[element]],
+              edits:   List[Change[element]],
               done:    List[Atom[element]] = Nil,
               skips:   List[Atom[element]] = Nil,
               inserts: List[Atom[element]] = Nil)
@@ -102,11 +105,12 @@ def evolve[element: ClassTag](versions: List[List[element]]): Evolution[element]
                     merge(atom :: atoms, edits, done, skips, atom2 :: inserts)
 
                   case Del(_, value) =>
-                    if atom.value != value then panic(m"Expected value for deletion")
                     merge(atoms, edits, done, atom :: skips, inserts)
 
                   case Par(_, _, value) =>
-                    if atom.value != value then panic(m"Expected parity value")
+                    merge(atoms, edits, atom.add(iteration) :: finish())
+
+                  case Sub(_, _, _, _) =>
                     merge(atoms, edits, atom.add(iteration) :: finish())
 
         recur(iteration + 1, right :: more, Evolution(merge(evolution.sequence, changes)))
