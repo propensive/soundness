@@ -62,6 +62,13 @@ object Rudiments:
     def int: Int = digit
     def char: Char = ('0' + int).toChar
 
+  def concrete[typeRef: Type](using Quotes): Expr[typeRef is Concrete] =
+    import quotes.reflect.*
+
+    if TypeRepr.of[typeRef].typeSymbol.isAbstractType
+    then halt(m"type ${Type.of[typeRef]} is abstract")
+    else '{!![typeRef is Concrete]}
+
   object Memory:
     def apply(long: Long): Memory = long
     given ordering: Ordering[Memory] = Ordering.Long.on(_.long)
