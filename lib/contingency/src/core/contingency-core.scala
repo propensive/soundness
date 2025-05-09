@@ -59,14 +59,18 @@ package strategies:
     given diagnostics: Diagnostics = errorDiagnostics.stackTraces
     def record(error: Diagnostics ?=> exception): Unit = exception.status(error).terminate()
     def abort(error: Diagnostics ?=> exception): Nothing = exception.status(error).terminate()
+    def certify(): Unit = ()
 
   given uncheckedErrors: [error <: Exception] => (erased error is Unchecked) => Tactic[error]:
     given diagnostics: Diagnostics = errorDiagnostics.stackTraces
     given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
     def record(error: Diagnostics ?=> error): Unit = throw error
     def abort(error: Diagnostics ?=> error): Nothing = throw error
+    def certify(): Unit = ()
 
 given realm: Realm = realm"contingency"
+
+def certify[error <: Exception: Tactic](): Unit = error.certify()
 
 def raise[success, exception <: Exception: Recoverable into success]
    (error: Diagnostics ?=> exception)

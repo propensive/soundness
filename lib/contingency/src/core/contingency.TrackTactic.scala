@@ -41,10 +41,14 @@ class TrackTactic[error <: Exception, accrual, result, supplement]
    (label: boundary.Label[Option[result]], initial: accrual, foci: Foci[supplement])
    (using Diagnostics)
 extends Tactic[error]:
+
+  private given boundary.Label[Option[result]] = label
+
   def diagnostics: Diagnostics = summon[Diagnostics]
   def record(error: Diagnostics ?=> error): Unit = foci.register(error)
   def finish(): Unit = ()
+  def certify(): Unit = if foci.tainted then boundary.break(None)
 
   def abort(error: Diagnostics ?=> error): Nothing =
     foci.register(error)
-    boundary.break(None)(using label)
+    boundary.break(None)

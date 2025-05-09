@@ -39,8 +39,8 @@ class EscapeTactic[result](label: boundary.Label[result])
 extends Tactic[Break[result]]:
 
   given diagnostics: Diagnostics = Diagnostics.omit
+  private given boundary.Label[result] = label
 
-  def abort(escape: Diagnostics ?=> Break[result]): Nothing =
-    boundary.break(escape.value)(using label)
-
+  def abort(escape: Diagnostics ?=> Break[result]): Nothing = boundary.break(escape.value)
   def record(escape: Diagnostics ?=> Break[result]): Unit = abort(escape)
+  def certify(): Unit = ()

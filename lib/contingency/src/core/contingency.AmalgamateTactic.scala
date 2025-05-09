@@ -46,3 +46,4 @@ extends Tactic[error]:
   def diagnostics: Diagnostics = summon[Diagnostics]
   def record(error: Diagnostics ?=> error): Unit = boundary.break(error)(using label)
   def abort(error: Diagnostics ?=> error): Nothing = boundary.break(error)(using label)
+  def certify(): Unit = ()
