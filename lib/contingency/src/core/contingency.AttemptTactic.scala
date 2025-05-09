@@ -37,17 +37,15 @@ import language.experimental.pureFunctions
 import fulminate.*
 import proscenium.*
 
-class AttemptTactic[error <: Exception, success]
-   (label: boundary.Label[Attempt[success, error]])
-   (using Diagnostics)
+class AttemptTactic[error <: Exception, success](label: boundary.Label[Attempt[success, error]])
+       (using Diagnostics)
 extends Tactic[error]:
+  private given boundary.Label[Attempt[success, error]] = label
+
   type Result = Attempt[success, error]
   type Return = Attempt[success, error]
 
   def diagnostics: Diagnostics = summon[Diagnostics]
-
-  def record(error: Diagnostics ?=> error): Unit =
-    boundary.break(Attempt.Failure(error))(using label)
-
-  def abort(error: Diagnostics ?=> error): Nothing =
-    boundary.break(Attempt.Failure(error))(using label)
+  def record(error: Diagnostics ?=> error): Unit = boundary.break(Attempt.Failure(error))
+  def abort(error: Diagnostics ?=> error): Nothing = boundary.break(Attempt.Failure(error))
+  def certify(): Unit = ()

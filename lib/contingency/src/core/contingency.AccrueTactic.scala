@@ -56,3 +56,5 @@ extends Tactic[error]:
     boundary.break(None)(using label)
 
   def finish(): Unit = ()
+
+  def certify(): Unit = if initial != ref.get() then boundary.break(None)(using label)

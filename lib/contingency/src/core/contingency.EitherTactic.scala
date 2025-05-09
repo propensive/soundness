@@ -37,10 +37,10 @@ import language.experimental.pureFunctions
 import fulminate.*
 import proscenium.*
 
-class EitherTactic[error <: Exception, success]
-   (label: boundary.Label[Either[error, success]])
+class EitherTactic[error <: Exception, success](label: boundary.Label[Either[error, success]])
    (using Diagnostics)
 extends Tactic[error]:
   def diagnostics: Diagnostics = summon[Diagnostics]
   def record(error: Diagnostics ?=> error): Unit = boundary.break(Left(error))(using label)
   def abort(error: Diagnostics ?=> error): Nothing = boundary.break(Left(error))(using label)
+  def certify(): Unit = ()

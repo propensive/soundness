@@ -42,9 +42,11 @@ trait Tactic[-error <: Exception]:
   def diagnostics: Diagnostics
   def record(error: Diagnostics ?=> error): Unit
   def abort(error: Diagnostics ?=> error): Nothing
+  def certify(): Unit
 
   def contramap[error2 <: Exception](lambda: error2 => error): Tactic[error2] =
     new Tactic[error2]:
       def diagnostics: Diagnostics = tactic.diagnostics
       def record(error: Diagnostics ?=> error2): Unit = tactic.record(lambda(error))
       def abort(error: Diagnostics ?=> error2): Nothing = tactic.abort(lambda(error))
+      def certify(): Unit = tactic.certify()

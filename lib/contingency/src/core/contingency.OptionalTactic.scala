@@ -38,12 +38,14 @@ import fulminate.*
 import proscenium.*
 import vacuous.*
 
-class OptionalTactic[error <: Exception, success]
-   (label: boundary.Label[Optional[success]])
+class OptionalTactic[error <: Exception, success](label: boundary.Label[Optional[success]])
 extends Tactic[error]:
+  private given boundary.Label[Optional[success]] = label
+
   type Result = Optional[success]
   type Return = Optional[success]
 
   def diagnostics: Diagnostics = Diagnostics.omit
   def record(error: Diagnostics ?=> error): Unit = boundary.break(Unset)(using label)
   def abort(error: Diagnostics ?=> error): Nothing = boundary.break(Unset)(using label)
+  def certify(): Unit = ()
