@@ -33,8 +33,10 @@
 package vacuous
 
 import scala.quoted.*
+import scala.compiletime.*
 
 import fulminate.*
+import prepositional.*
 
 object Vacuous:
   def check[value: Type](using Quotes): Expr[Optionality[value]] =
@@ -42,6 +44,23 @@ object Vacuous:
     if TypeRepr.of[Unset.type] <:< TypeRepr.of[value].widen
     then '{null.asInstanceOf[Optionality[value]]}
     else halt(m"the type ${TypeRepr.of[value].widen} is not an `Optional`")
+
+  def concrete[typeRef: Type](using Quotes): Expr[typeRef is Concrete] =
+    import quotes.reflect.*
+
+    if TypeRepr.of[typeRef].typeSymbol.isAbstractType
+    then halt(m"type ${Type.of[typeRef]} is abstract")
+    else '{erasedValue[typeRef is Concrete]}
+
+  def distinct[typeRef: Type, union: Type](using Quotes): Expr[typeRef is Distinct from union] =
+    import quotes.reflect.*
+
+    concrete[typeRef]
+
+    if TypeRepr.of[typeRef] <:< TypeRepr.of[union]
+    then halt(m"type ${Type.of[typeRef]} cannot be proven distinct from ${Type.of[union]}")
+    else '{erasedValue[typeRef is Distinct from union]}
+
 
   def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value])(using Quotes)
   :     Expr[value] =

@@ -30,10 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package vacuous
 
-object Concrete:
- inline given concrete: [typeRef] => typeRef is Concrete = ${Rudiments.concrete[typeRef]}
+import prepositional.*
 
-erased trait Concrete:
+object Distinct:
+  inline given distinct: [typeRef, otherType] => typeRef is Distinct from otherType =
+    ${Vacuous.distinct[typeRef, otherType]}
+
+erased trait Distinct:
   type Self
+  type Source
