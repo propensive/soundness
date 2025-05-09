@@ -34,6 +34,8 @@ package rudiments
 
 import language.experimental.captureChecking
 
+import scala.quoted.*
+
 import anticipation.*
 import fulminate.*
 import prepositional.*
@@ -59,6 +61,13 @@ object Rudiments:
   extension (digit: Digit)
     def int: Int = digit
     def char: Char = ('0' + int).toChar
+
+  def concrete[typeRef: Type](using Quotes): Expr[typeRef is Concrete] =
+    import quotes.reflect.*
+
+    if TypeRepr.of[typeRef].typeSymbol.isAbstractType
+    then halt(m"type ${Type.of[typeRef]} is abstract")
+    else '{!![typeRef is Concrete]}
 
   object Memory:
     def apply(long: Long): Memory = long

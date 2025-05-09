@@ -30,23 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package rudiments
 
-export rudiments
-. { Memory, b, kib, mib, gib, tib, memory, sift, has, weave, each, all, sumBy, bi, tri, indexBy,
-    longestTrain, mutable, immutable, snapshot, place, upsert, collate, establish, plus, runs,
-    runsBy, create, javaInputStream, DecimalConverter, !!, Exit, unit, waive, twin, triple, is,
-    matchable, give, pipe, fuse, tap, also, Counter, loop, Loop, &, tuple, to,
-    WorkingDirectoryError, HomeDirectoryError, WorkingDirectory, HomeDirectory, workingDirectory,
-    homeDirectory, prim, sec, ter, unwind, at, Indexable, yet, Bijection, bijection, segment,
-    Segmentable, Digit, temporaryDirectory, total, product, mean, variance, standardDeviation,
-    annex, intercalate, Concrete }
+object Concrete:
+ inline given concrete: [typeRef] => typeRef is Concrete = ${Rudiments.concrete[typeRef]}
 
-package workingDirectories:
-  export rudiments.workingDirectories.{systemProperty, default}
-
-package homeDirectories:
-  export rudiments.homeDirectories.{systemProperty, environment}
-
-package temporaryDirectories:
-  export rudiments.temporaryDirectories.{systemProperty, environment}
+erased trait Concrete:
+  type Self
