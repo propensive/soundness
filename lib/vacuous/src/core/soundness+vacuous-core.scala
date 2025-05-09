@@ -35,4 +35,4 @@ package soundness
 export vacuous
 . { Default, default, Unset, Optional, UnsetError, or, absent, present, vouch, mask, javaOptional,
     presume, option, assume, lay, layGiven, let, letGiven, compact, optional, puncture, only,
-    unless, Unsafe, Extractor }
+    unless, Unsafe, Extractor, Concrete, Distinct }
