@@ -48,7 +48,7 @@ import scala.compiletime.*
 import java.net as jn
 import com.sun.net.httpserver as csnh
 
-case class HttpServer(port: Int) extends RequestServable:
+case class HttpServer(port: Int, localhostOnly: Boolean = true) extends RequestServable:
   def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
   :     Service logs HttpServerEvent raises ServerError =
 
@@ -83,7 +83,8 @@ case class HttpServer(port: Int) extends RequestServable:
 
     def startServer(): com.sun.net.httpserver.HttpServer raises ServerError =
       try
-        val httpServer = csnh.HttpServer.create(jn.InetSocketAddress("localhost", port), 0).nn
+        val host = if localhostOnly then "localhost" else "0.0.0.0"
+        val httpServer = csnh.HttpServer.create(jn.InetSocketAddress(host, port), 0).nn
         httpServer.createContext("/").nn.setHandler(handle(_))
         httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
         httpServer.start()
