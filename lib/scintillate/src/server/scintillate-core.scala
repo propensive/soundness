@@ -58,8 +58,20 @@ package httpServers:
     type Response = Http.Response
 
     def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number).handle(lambda)
+      HttpServer(port.number).handle(lambda, true)
 
+  given stdlibPublic: [port <: (80 | 443 | 8080 | 8000)]
+        => (Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable)
+        =>  Http is Protocolic:
+
+    type Carrier = TcpPort of port
+    type Self = Http
+    type Server = Service
+    type Request = HttpConnection
+    type Response = Http.Response
+
+    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
+      HttpServer(port.number).handle(lambda, false)
 
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
 
