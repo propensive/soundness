@@ -79,7 +79,8 @@ object SourceCode:
   private val soft: Set[Text] =
     Set(t"inline", t"opaque", t"open", t"transparent", t"infix", t"mut", t"erased", t"tracked")
 
-  def apply(language: ProgrammingLanguage, text: Text): SourceCode =
+  def apply(language: ProgrammingLanguage, text0: Text): SourceCode =
+    val text = ("val x = {\n"+text0+"\n}").tt
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
     val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
 
@@ -153,7 +154,7 @@ object SourceCode:
           case -1  => xs :: acc
           case idx => lines(xs.drop(idx + 1), xs.take(idx) :: acc)
 
-    SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).reverse*))
+    SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).tail.reverse.tail*))
 
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*
