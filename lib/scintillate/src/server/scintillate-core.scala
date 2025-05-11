@@ -58,7 +58,7 @@ package httpServers:
     type Response = Http.Response
 
     def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number).handle(lambda, true)
+      HttpServer(port.number, true).handle(lambda)
 
   given stdlibPublic: [port <: (80 | 443 | 8080 | 8000)]
         => (Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable)
@@ -71,7 +71,7 @@ package httpServers:
     type Response = Http.Response
 
     def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number).handle(lambda, false)
+      HttpServer(port.number, false).handle(lambda)
 
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
 
