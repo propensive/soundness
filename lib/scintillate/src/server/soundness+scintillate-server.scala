@@ -37,4 +37,4 @@ export scintillate
     NotFound, Redirect, RequestServable, Responder, Retrievable, ServerError, Unfulfilled }
 
 package httpServers:
-  export scintillate.httpServers.stdlib
+  export scintillate.httpServers.{stdlib, stdlibPublic}
