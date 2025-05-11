@@ -33,9 +33,37 @@
 package harlequin
 
 import anticipation.*
+import gossamer.*
+import symbolism.*
+import vacuous.*
 
 sealed trait ProgrammingLanguage:
-  def highlight(text: Text): SourceCode = SourceCode(this, text)
+  type Context
 
-object Scala extends ProgrammingLanguage
-object Java extends ProgrammingLanguage
+  def preprocess(text: Text, context: Optional[Context]): Text = text
+  def postprocess(code: SourceCode, context: Optional[Context] ): SourceCode = code
+
+  def highlight(text: Text, context: Optional[Context] = Unset): SourceCode =
+    postprocess(SourceCode(this, preprocess(text, context)), context)
+
+object Scala extends ProgrammingLanguage:
+  enum Context:
+   case Top
+   case Term
+   case Type
+
+  override def preprocess(text: Text, context: Optional[Context]): Text =
+    context match
+      case Context.Term => t"val x = {\n"+text+t"\n}"
+      case Context.Type => t"type X =\n"+text
+      case _            => text
+
+  override def postprocess(code: SourceCode, context: Optional[Context]): SourceCode =
+    context match
+      case Context.Term => code.copy(lines = code.lines.init.tail)
+      case Context.Type => code.copy(lines = code.lines.tail)
+      case _            => code
+
+object Java extends ProgrammingLanguage:
+  enum Context:
+    case Top
