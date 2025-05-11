@@ -44,3 +44,4 @@ extends Tactic[error]:
   given diagnostics: Diagnostics = Diagnostics.omit
   def record(error: Diagnostics ?=> error): Unit = halt(error.message)
   def abort(error: Diagnostics ?=> error): Nothing = halt(error.message)
+  def certify(): Unit = ()

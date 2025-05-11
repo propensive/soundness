@@ -59,6 +59,7 @@ trait Foci[focus]:
   :     accrual
 
   def supplement(count: Int, transform: Optional[focus] => focus): Unit
+  def tainted: Boolean = length > 0
 
 class TrackFoci[focus]() extends Foci[focus]:
   private val errors: scm.ArrayBuffer[Exception] = scm.ArrayBuffer()
