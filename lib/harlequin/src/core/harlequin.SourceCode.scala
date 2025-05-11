@@ -106,6 +106,8 @@ object SourceCode:
       case other                                                      => false
 
     def soften(stream: Stream[SourceToken]): Stream[SourceToken] = stream match
+      case (SourceToken(text@(t"using" | t"erased"), Accent.Ident)) #:: more =>
+        SourceToken(text, Accent.Modifier) #:: soften(more)
       case (token@SourceToken(text, Accent.Ident)) #:: more if soft.has(text) =>
         if hard(more) then SourceToken(text, Accent.Modifier) #:: soften(more)
         else token #:: soften(more)
@@ -181,7 +183,7 @@ object SourceCode:
         case tree: Ident if tree.isType =>
           if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Typed
 
-        case _: TypTree =>
+        case tree: TypTree =>
           if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Typed
 
         case other =>
