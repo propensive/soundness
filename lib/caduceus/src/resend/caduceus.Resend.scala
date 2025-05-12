@@ -36,87 +36,80 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gesticulate.*
+import hieroglyph.*
+import jacinta.*
+import merino.*
 import nettlesome.*
 import prepositional.*
 import proscenium.*
+import telekinesis.*
+import turbulence.*
 import vacuous.*
 
-object Email:
-  def apply[sendable: Sendable](value: sendable): Email = sendable.email(value)
+import charEncoders.utf8
+import jsonPrinters.minimal
+import errorDiagnostics.stackTraces
+import stdioSources.virtualMachine.ansi
 
-case class Email
-            (headers:     Map[Text, Text],
-             text:        Optional[Text],
-             html:        Optional[Text],
-             content:     Stream[Bytes],
-             attachments: List[Attachment])
+object Resend:
+  case class ApiKey(key: Text)
+  case class Receipt(id: Text)
 
-object Envelope:
-  def many[entity: Distinct from List[?]](value: entity | List[entity]): List[entity] = value match
-    case many: List[`entity` @unchecked] => many
-    case one: (`entity` @unchecked)      => List(one)
+package couriers:
+  given resend: (Tactic[CourierError], Online, HttpEvent is Loggable, HttpClient)
+        => (apiKey: Resend.ApiKey)
+        => Courier:
+    type Result = Resend.Receipt
 
-  def apply[sendable: Sendable]
-       (email:   sendable,
-        to:      EmailAddress | List[EmailAddress],
-        cc:      EmailAddress | List[EmailAddress],
-        bcc:     EmailAddress | List[EmailAddress],
-        replyTo: EmailAddress | List[EmailAddress],
-        subject: Text)
-       (using courier: Courier, sender: Sender): Envelope =
-    Envelope
-     (sender.email,
-      many(to),
-      many(cc),
-      many(bcc),
-      many(replyTo),
-      subject,
-      sendable.email(email),
-      Nil)
+    private case class Request
+                        (from:         EmailAddress,
+                         to:           List[EmailAddress],
+                         subject:      Text,
+                         bcc:          List[EmailAddress],
+                         cc:           List[EmailAddress],
+                         scheduled_at: Optional[Text],
+                         replyTo:      List[EmailAddress],
+                         headers:      Map[Text, Text],
+                         html:         Optional[Text],
+                         text:         Optional[Text])
 
-case class Envelope
-            (from:        EmailAddress,
-             to:          List[EmailAddress],
-             cc:          List[EmailAddress],
-             bcc:         List[EmailAddress],
-             replyTo:     List[EmailAddress],
-             subject:     Text,
-             email:       Email,
-             attachments: List[Attachment])
+    def send(envelope: Envelope): Resend.Receipt =
+      val request =
+        Request
+         (envelope.from,
+          envelope.to,
+          envelope.subject,
+          envelope.bcc,
+          envelope.cc,
+          Unset,
+          envelope.replyTo,
+          envelope.email.headers,
+          envelope.email.html,
+          envelope.email.text)
 
-case class CourierError(from: EmailAddress, to: EmailAddress, subject: Text)(using Diagnostics)
-extends Error(m"unable to send email from $from to $to with subject $subject")
+      mitigate:
+        case ConnectError(reason) =>
+          Out.println(reason.communicate)
+          CourierError(envelope.from, envelope.to.head, envelope.subject)
 
-case class Attachment
-            (filename:    Text,
-             contentType: MediaType,
-             attachment:  Boolean,
-             contentId:   Optional[Text],
-             data:        Stream[Bytes],
-             headers:     Map[Text, Text])
+        case JsonParseError(_, _, reason) =>
+          Out.println(reason.communicate)
+          CourierError(envelope.from, envelope.to.head, envelope.subject)
 
-object Sendable:
-  given text: Text is Sendable = text => Email(Map(), text, Unset, Stream(), Nil)
+        case HttpError(status, _) =>
+          Out.println(status.communicate)
+          CourierError(envelope.from, envelope.to.head, envelope.subject)
 
-trait Sendable:
-  type Self
-  def email(content: Self): Email
+        case JsonError(reason) =>
+          Out.println(reason.communicate)
+          CourierError(envelope.from, envelope.to.head, envelope.subject)
 
-case class Sender(email: EmailAddress)
+        case MediaTypeError(_, _) =>
+          CourierError(envelope.from, envelope.to.head, envelope.subject)
 
-extension [sendable: Sendable](email: sendable)
-  def send
-       (to:      EmailAddress | List[EmailAddress],
-        cc:      EmailAddress | List[EmailAddress] = Nil,
-        bcc:     EmailAddress | List[EmailAddress] = Nil,
-        replyTo: EmailAddress | List[EmailAddress] = Nil,
-        subject: Text)
-       (using courier: Courier, sender: Sender)
-  :     courier.Result =
-
-   courier.send(Envelope(email, to, cc, bcc, replyTo, subject))
-
-
-trait Courier:
-  type Result
-  def send(envelope: Envelope): Result
+      . within:
+          url"https://api.resend.com/emails".submit
+           (Http.Post, authorization = Auth.Bearer(apiKey.key))
+           (request.json)
+          . receive[Json]
+          . as[Resend.Receipt]

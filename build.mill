@@ -150,7 +150,7 @@ object soundness extends ScalaModule {
         honeycomb.core, nettlesome.core, nettlesome.url, hallucination.core, phoenicia.core,
         punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
         telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
-        legerdemain.core, caduceus.core)
+        legerdemain.core, caduceus.core, caduceus.resend)
   }
 
   object all extends SoundnessGroupModule {
@@ -488,6 +488,10 @@ object burdock extends SoundnessModule {
 object caduceus extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(nettlesome.core, gesticulate.core)
+  }
+
+  object resend extends SoundnessSubModule {
+    def moduleDeps = Seq(core, honeycomb.core, telekinesis.core, jacinta.core)
   }
 
   object test extends ProbablyTestModule {
@@ -1565,6 +1569,7 @@ object publishing extends Module {
     baroque.core.publishLocal().t()
     burdock.core.publishLocal().t()
     caduceus.core.publishLocal().t()
+    caduceus.resend.publishLocal().t()
     caesura.core.publishLocal().t()
     camouflage.core.publishLocal().t()
     capricious.core.publishLocal().t()
