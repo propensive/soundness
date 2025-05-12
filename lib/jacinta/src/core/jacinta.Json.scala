@@ -219,6 +219,12 @@ object Json extends Json2, Dynamic:
         focus(prior.or(JsonPointer()) / keys(next).tt):
           state.updated(keys(next).tt, element.decoded(Json.ast(values(next))))
 
+  given mapEncodable: [element: Encodable in Json] => Map[Text, element] is Encodable in Json =
+    map =>
+      val keys: IArray[String] = IArray.from(map.keys.ss)
+      val values = keys.map(map(_).encode.root)
+      Json.ast(JsonAst((keys, values)))
+
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
   inline def parse[source](value: source): Json raises JsonParseError = summonFrom:
