@@ -34,6 +34,7 @@ package hellenism
 
 import java.net as jn
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -52,8 +53,7 @@ object Classpath:
     path => classloader.java.getResourceAsStream(path.text.s) != null
 
   @targetName("child")
-  infix def / (child: Text)(using classloader: Classloader)
-  :     Path on Classpath raises NameError =
+  infix def / (child: Text)(using classloader: Classloader): Path on Classpath raises NameError =
     Path(classloader, List(child))
 
   def apply(classloader: jn.URLClassLoader): Classpath =
