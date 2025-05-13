@@ -71,8 +71,8 @@ object SourceCode:
     then Accent.Number
     else if token == 14 then Accent.Ident
     else if token >= 20 && token <= 62 && Tokens.modifierTokens.contains(token) then Accent.Modifier
-    else if token >= 20 && token <= 62 then Accent.Keyword
-    else if token >= 63 && token <= 84 then Accent.Symbol
+    else if token >= 20 && token <= 66 then Accent.Keyword
+    else if token >= 78 && token <= 99 then Accent.Symbol
     else Accent.Parens
 
   // This list was found in scala/scala3:compiler/src/dotty/tools/dotc/core/parsing/Parserse.scala
