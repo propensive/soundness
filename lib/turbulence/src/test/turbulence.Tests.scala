@@ -46,16 +46,16 @@ object Tests extends Suite(m"Turbulence tests"):
     suite(m"Shredding"):
       given Seed = Seed(1L)
       import randomization.seeded
-      val bytes: Bytes = Bytes.fill(1000)(_.toByte)
+      val bytes: Bytes = Bytes.fill(500)(_.toByte)
       val stream: Stream[Bytes] = Stream(bytes)
       val shredded: Iterable[Stream[Bytes]] = stochastic:
         (0 until 100).map: index =>
-          stream.shred(20.0, 10.0)
+          stream.shred(15.0, 10.0)
 
       shredded.each: stream =>
         test(m"correct length after shredding"):
           stream.map(_.length).total
-        . assert(_ == 1000)
+        . assert(_ == 500)
 
         test(m"correct content after shredding"):
           stream.reduce(_ ++ _)
