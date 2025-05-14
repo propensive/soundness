@@ -125,5 +125,5 @@ object FailingTests extends Suite(m"Failing tests"):
     quantitative.Tests()
     //satirical.Tests() - crashing
     //telekinesis.Tests() - crashing
-    turbulence.Tests() - deadlock
+    // turbulence.Tests() - deadlock
     //umbrageous.Tests()
