@@ -60,6 +60,7 @@ extension (value: Double)
   infix def +/- (tolerance: Double): Tolerance = Tolerance(value, tolerance)
 
 def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
+  println(m"Starting test $name".text)
   TestId(name, suite, codepoint)
 
 def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
