@@ -410,6 +410,8 @@ object Tests extends Suite(m"Turbulence tests"):
       do test(m"Check that two multiplexed streams contain elements from the second stream in order"):
         supervise(l1.multiplex(l2).filter(_%2 == 1))
       .assert(_ == l2)
+
+      Thread.sleep(2000)
   catch case exception: Throwable =>
     Thread.sleep(2000)
     println(exception)
