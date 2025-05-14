@@ -42,7 +42,7 @@ object Part:
   given readable: Part is Readable by Bytes = _.body
 
 case class Part
-   (disposition: Multipart.Disposition,
+   (disposition: Optional[Multipart.Disposition],
     headers:     Map[Text, Text],
     name:        Optional[Text],
     filename:    Optional[Text],
