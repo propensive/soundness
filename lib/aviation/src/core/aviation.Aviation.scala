@@ -99,8 +99,8 @@ object Aviation:
           case FullYear     => date.year.show
 
         val month: Text = summon[DateNumerics] match
-          case FixedWidth    => pad(date.month.ordinal)
-          case VariableWidth => date.month.ordinal.show
+          case FixedWidth    => pad(date.month.numerical)
+          case VariableWidth => date.month.numerical.show
 
         val day: Text = summon[DateNumerics] match
           case FixedWidth    => pad(date.day)
