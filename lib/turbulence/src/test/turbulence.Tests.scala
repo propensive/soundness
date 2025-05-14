@@ -78,14 +78,18 @@ object Tests extends Suite(m"Turbulence tests"):
         string <- strings
         bs     <- 1 to 8
       do
+        println("String: ")
+        println(string)
         test(m"length tests"):
           val stream = string.bytes.grouped(bs).to(Stream)
+          println(stream.toList)
           val result = stream.read[Text]
           result.bytes.length
         .assert(_ == string.bytes.length)
 
         test(m"roundtrip tests"):
           val stream = string.bytes.grouped(bs).to(Stream)
+          println(stream.toList.map(_.toList))
           val result = stream.read[Text]
 
           result
