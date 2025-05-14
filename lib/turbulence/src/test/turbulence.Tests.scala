@@ -35,7 +35,7 @@ package turbulence
 import soundness.*
 
 import charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
-import threadModels.platform
+import threadModels.virtual
 import strategies.throwUnsafely
 
 import scala.collection.mutable as scm
