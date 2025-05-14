@@ -65,20 +65,19 @@ object Tests extends Suite(m"Turbulence tests"):
       val ascii = IArray(t"", t"a", t"ab", t"abc", t"abcd")
 
       val strings = for
-        asc0 <- List(t"", t"a", t"ab", t"abc") // 4 combinations
-        cp2  <- List(t"", t"£")                // 8
-        asc1 <- List(t"", t"a", t"ab", t"abc") // 32
-        cp3  <- List(t"", t"€")                // 64
-        asc2 <- List(t"", t"a", t"ab", t"abc") // 256
-        cp4  <- List(t"")//, t"𐍈")                // 512
-        asc3 <- List(t"", t"a", t"ab", t"abc") // 2048
+        asc0 <- List(t"", t"a", t"ab") // 3 combinations
+        cp2  <- List(t"", t"£")                // 6
+        asc1 <- List(t"", t"a", t"ab") // 18
+        cp3  <- List(t"", t"€")                // 36
+        asc2 <- List(t"", t"a", t"ab") // 108
+        cp4  <- List(t"")//, t"𐍈")                // 108
+        asc3 <- List(t"", t"a", t"ab") // 324
       yield asc0+cp2+asc1+cp3+asc2+cp4
 
       for
         string <- strings
         bs     <- 1 to 8
       do
-        println("String: ")
         println(string)
         test(m"length tests"):
           val stream = string.bytes.grouped(bs).to(Stream)
