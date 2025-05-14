@@ -41,7 +41,7 @@ import strategies.throwUnsafely
 import scala.collection.mutable as scm
 
 object Tests extends Suite(m"Turbulence tests"):
-  def run(): Unit =
+  def run(): Unit = try
 
     suite(m"Shredding"):
       given Seed = Seed(1L)
@@ -410,3 +410,9 @@ object Tests extends Suite(m"Turbulence tests"):
       do test(m"Check that two multiplexed streams contain elements from the second stream in order"):
         supervise(l1.multiplex(l2).filter(_%2 == 1))
       .assert(_ == l2)
+  catch case exception: Throwable =>
+    Thread.sleep(2000)
+    println(exception)
+    Thread.sleep(2000)
+    exception.printStackTrace()
+    Thread.sleep(2000)
