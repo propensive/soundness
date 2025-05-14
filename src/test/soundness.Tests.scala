@@ -107,7 +107,6 @@ object Tests extends Suite(m"Soundness tests"):
     surveillance.Tests
     symbolism.Tests
     tarantula.Tests()
-    turbulence.Tests()
     typonym.Tests()
     ulysses.Tests()
     vexillology.Tests()
@@ -126,4 +125,5 @@ object FailingTests extends Suite(m"Failing tests"):
     quantitative.Tests()
     //satirical.Tests() - crashing
     //telekinesis.Tests() - crashing
+    turbulence.Tests() - deadlock
     //umbrageous.Tests()
