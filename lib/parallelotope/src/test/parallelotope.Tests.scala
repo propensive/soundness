@@ -30,101 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package parallelotope
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    burdock.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    cellulose.Tests()
-    charisma.Tests()
-    contextual.Tests()
-    contingency.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    enigmatic.Tests()
-    ethereal.Tests()
-    exoskeleton.Tests()
-    feudalism.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gossamer.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nettlesome.Tests()
-    nomenclature.Tests()
-    octogenarian.Tests()
-    panopticon.Tests()
-    parallelotope.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests
-    surveillance.Tests
-    symbolism.Tests
-    tarantula.Tests()
-    typonym.Tests()
-    ulysses.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    wisteria.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
+import sedentary.*
 
-object FailingTests extends Suite(m"Failing tests"):
+import soundness.*
+
+object Tests extends Suite(m"Panopticon tests"):
   def run(): Unit =
-    chiaroscuro.Tests()
-    mandible.Tests()
-    //merino.Tests() - crashing
-    parasite.Tests()
-    quantitative.Tests()
-    //satirical.Tests() - crashing
-    //telekinesis.Tests() - crashing
-    // turbulence.Tests() - deadlock
-    //umbrageous.Tests()
+    val array = new Array[Byte](1024*1024*1000) // 1GB
+    val index = 1024*1024*99 + 2
+    array(index) = 12.toByte
+
+    test(m"Find an element in a big array using SIMD"):
+      val data = Simd(array)
+      data.lookFor(_ == 12)
+
+    . assert(_ == index)
+
+    test(m"Find an element in a big array using SIMD"):
+      array.indexWhere(_ == 12)
+
+    . assert(_ == index)
+
+    for i <- 1 to 100 do test(m"benchmark array using SIMD"):
+      val data = Simd(array)
+      data.lookFor(_ == 12)
+    . assert(_ == index)
+
+
+    for i <- 1 to 100
+    do test(m"Find an element in a big array using SIMD"):
+      array.indexWhere(_ == 12)
+    . assert(_ == index)
