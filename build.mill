@@ -163,7 +163,7 @@ object soundness extends ScalaModule {
     def moduleDeps = Seq(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
         gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core,
         panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core,
-        zeppelin.core, xylophone.core, anamnesis.core)
+        zeppelin.core, xylophone.core, anamnesis.core, parallelotope.core)
   }
 
   object sci extends SoundnessGroupModule {
@@ -256,6 +256,7 @@ object test extends ScalaModule {
     nomenclature.test,
     octogenarian.test,
     panopticon.test,
+    parallelotope.test,
     perihelion.test,
     phoenicia.test,
     polaris.test,
@@ -1178,6 +1179,17 @@ object panopticon extends SoundnessModule {
   }
 }
 
+object parallelotope extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(hypotenuse.core, hyperbole.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core, sedentary.core)
+    def runJvmArgs = Seq("--add-modules", "jdk.incubator.vector")
+  }
+}
+
 object parasite extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(digression.core, mercator.core, anticipation.time, feudalism.core)
@@ -1694,6 +1706,7 @@ object publishing extends Module {
     nomenclature.core.publishLocal().t()
     octogenarian.core.publishLocal().t()
     panopticon.core.publishLocal().t()
+    parallelotope.core.publishLocal().t()
     parasite.core.publishLocal().t()
     perihelion.core.publishLocal().t()
     phoenicia.core.publishLocal().t()
