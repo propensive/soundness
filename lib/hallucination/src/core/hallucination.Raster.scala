@@ -40,12 +40,13 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
+import vacuous.*
 
 import java.awt.image as jai
 import java.awt as ja
 import javax.imageio as ji
 
-open case class Raster(private[hallucination] val image: jai.BufferedImage):
+case class Raster(private[hallucination] val image: jai.BufferedImage):
   type Format
   def width: Int = image.getWidth
   def height: Int = image.getHeight
@@ -54,22 +55,27 @@ open case class Raster(private[hallucination] val image: jai.BufferedImage):
     val color: ja.Color = ja.Color(image.getRGB(x, y), true)
     Rgb24(color.getRed, color.getGreen, color.getBlue)
 
-  def serialize(using codec: Rasterizable in Format): Stream[Bytes] =
-    val out = StreamOutputStream()
-    ji.ImageIO.createImageOutputStream(out)
-    out.stream
+  def to[format: Rasterizable as rasterizable]: Raster in format = Raster[format](image)
 
 object Raster:
   def apply[readable: Readable by Bytes](input: readable): Raster =
-    Raster(ji.ImageIO.read(input.read[Bytes].javaInputStream).nn)
+    new Raster(ji.ImageIO.read(input.read[Bytes].javaInputStream).nn)
 
-  given abstractable: [format] => (rasterizable: Rasterizable in format)
-        => (Raster in format) is Abstractable:
+  def apply[format: Rasterizable as rasterizable](image: jai.BufferedImage): Raster in format =
+    new Raster(image):
+      type Format = format
+
+  given readable: [format: Rasterizable] => (Raster in format) is Readable by Bytes = raster =>
+    val out = StreamOutputStream()
+    ji.ImageIO.write(raster.image, format.name.s, out)
+    out.stream
+
+  given abstractable: [format: Rasterizable] => (Raster in format) is Abstractable:
     type Domain = HttpStreams
     type Result = HttpStreams.Content
 
     def genericize(image: Raster in format): HttpStreams.Content =
-      (rasterizable.mediaType.basic, image.serialize)
+      (format.mediaType.basic, image.read[Stream[Bytes]])
 
   given graphical: Raster is Graphical:
     def pixel(raster: Raster, x: Int, y: Int): Int = raster(x, y).asInt
