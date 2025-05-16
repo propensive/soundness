@@ -34,8 +34,13 @@ package hallucination
 
 import anticipation.*
 import gesticulate.*
+import prepositional.*
 
-erased trait Gif extends ImageFormat
+erased trait Gif
 
-object Gif extends ImageCodec[Gif]("GIF".tt):
-  def mediaType = media"image/gif"
+object Gif:
+  def apply(): Rasterizable = rasterization
+
+  given rasterization: Gif is Rasterizable:
+    def name: Text = "GIF".tt
+    def mediaType = media"image/gif"

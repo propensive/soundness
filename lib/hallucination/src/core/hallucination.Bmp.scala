@@ -34,8 +34,13 @@ package hallucination
 
 import anticipation.*
 import gesticulate.*
+import prepositional.*
 
-erased trait Bmp extends ImageFormat
+erased trait Bmp
 
-object Bmp extends ImageCodec[Bmp]("BMP".tt):
-  def mediaType = media"image/bmp"
+object Bmp:
+  def apply(): Rasterizable = rasterization
+
+  given rasterization: Bmp is Rasterizable:
+    def name: Text = "BMP".tt
+    def mediaType = media"image/bmp"

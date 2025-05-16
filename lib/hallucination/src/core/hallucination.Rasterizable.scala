@@ -33,6 +33,7 @@
 package hallucination
 
 import anticipation.*
+import contingency.*
 import gesticulate.*
 import prepositional.*
 import rudiments.*
@@ -42,24 +43,20 @@ import turbulence.*
 
 import javax.imageio as ji
 
-abstract class ImageCodec[format <: ImageFormat](name: Text):
-  inline def codec: ImageCodec[format] = this
-  protected def mediaType: MediaType
-  protected lazy val reader: ji.ImageReader = ji.ImageIO.getImageReaders(name.s).nn.next().nn
-  protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
+trait Rasterizable:
+  rasterizable =>
+    type Self
 
-  given response: (Image in format) is Abstractable across HttpStreams into HttpStreams.Content =
-    new Abstractable:
-      type Self = Image in format
-      type Domain = HttpStreams
-      type Result = HttpStreams.Content
+    def name: Text
+    def mediaType: MediaType
 
-      def genericize(image: Image in format): HttpStreams.Content =
-        (mediaType.show, image.serialize(using codec))
+    //protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
 
-  def read[input: Readable by Bytes](inputType: input): Image in format =
-    reader.synchronized:
+    def read[input: Readable by Bytes](inputType: input): Raster in Self raises RasterError =
+      val reader: ji.ImageReader = ji.ImageIO.getImageReadersByFormatName(name.s).nn.next().nn
       reader.setInput(ji.ImageIO.createImageInputStream(inputType.read[Bytes].javaInputStream).nn)
 
-      (new Image(reader.read(0).nn) { type Format = format }).also:
-        reader.dispose()
+      val data = try reader.read(0).nn catch case _: ji.IIOException => abort(RasterError(this))
+
+      new Raster(data) { type Format = rasterizable.Self }
+      . also(reader.dispose())
