@@ -86,8 +86,8 @@ case class WebDriver(server: Browser#Server):
       def click(): Unit logs HttpEvent = post(t"click", Json.parse(t"{}"))
       def clear(): Unit logs HttpEvent = post(t"clear", Json.parse(t"{}"))
 
-      def screenshot(): Image in Png logs HttpEvent =
-        Png.read(get(t"screenshot").value.as[Text].deserialize[Base64])
+      def screenshot(): Raster in Png logs HttpEvent =
+        get(t"screenshot").value.as[Text].deserialize[Base64].read[Raster in Png]
 
       def value(text: Text): Unit logs HttpEvent =
         case class Data(text: Text)

@@ -34,8 +34,13 @@ package hallucination
 
 import anticipation.*
 import gesticulate.*
+import prepositional.*
 
-erased trait Jpeg extends ImageFormat
+erased trait Jpeg
 
-object Jpeg extends ImageCodec[Jpeg]("JPEG".tt):
-  def mediaType = media"image/jpeg"
+object Jpeg:
+  def apply(): Rasterizable = rasterization
+
+  given rasterization: Jpeg is Rasterizable:
+    def name: Text = "JPEG".tt
+    def mediaType: MediaType = media"image/jpeg"

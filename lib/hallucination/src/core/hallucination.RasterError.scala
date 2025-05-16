@@ -33,37 +33,9 @@
 package hallucination
 
 import anticipation.*
-import escapade.*
-import gossamer.*
-import iridescence.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import turbulence.*
+import fulminate.*
+import vacuous.*
 
-import java.awt.image as jai
-import java.awt as ja
-import javax.imageio as ji
-
-open case class Image(private[hallucination] val image: jai.BufferedImage):
-  type Format <: ImageFormat
-  def width: Int = image.getWidth
-  def height: Int = image.getHeight
-
-  def apply(x: Int, y: Int): Rgb24 =
-    val color: ja.Color = ja.Color(image.getRGB(x, y), true)
-    Rgb24(color.getRed, color.getGreen, color.getBlue)
-
-  def rasterize(using termcap: Termcap): Text = Text.construct:
-    for y <- 0 until (height - 1) by 2 do
-      for x <- 0 until width do append(e"${apply(x, y)}(${Bg(apply(x, y + 1))}(▀))".render(termcap))
-      append('\n')
-
-  def serialize(using codec: ImageCodec[Format]): Stream[Bytes] =
-    val out = StreamOutputStream()
-    ji.ImageIO.createImageOutputStream(out)
-    out.stream
-
-object Image:
-  def apply[input: Readable by Bytes](inputType: input): Image =
-    Image(ji.ImageIO.read(inputType.read[Bytes].javaInputStream).nn)
+case class RasterError(rasterizable: Optional[Rasterizable])(using Diagnostics)
+extends
+  Error(m"unable to read the raster image in ${rasterizable.lay("unspecified".tt)(_.name)} format")

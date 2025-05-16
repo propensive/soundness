@@ -34,8 +34,13 @@ package hallucination
 
 import anticipation.*
 import gesticulate.*
+import prepositional.*
 
-erased trait Png extends ImageFormat
+erased trait Png
 
-object Png extends ImageCodec[Png]("PNG".tt):
-  def mediaType = media"image/png"
+object Png:
+  def apply(): Rasterizable = rasterization
+
+  given rasterization: Png is Rasterizable:
+    def name: Text = "PNG".tt
+    def mediaType = media"image/png"
