@@ -117,7 +117,7 @@ object soundness extends ScalaModule {
     def moduleDeps = Seq(burdock.core, dendrology.tree, dendrology.dag, exoskeleton.completions,
         escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi, eucalyptus.syslog,
         guillotine.core, escapade.core, imperial.core, profanity.core, surveillance.core,
-        punctuation.ansi)
+        punctuation.ansi, hallucination.ansi)
   }
 
   object data extends SoundnessGroupModule {
@@ -384,6 +384,10 @@ object anticipation extends SoundnessModule {
 
   object opaque extends SoundnessSubModule {
     def moduleDeps = Seq(text)
+  }
+
+  object gfx extends SoundnessSubModule {
+    def moduleDeps = Seq()
   }
 
   object css extends SoundnessSubModule {
@@ -705,7 +709,7 @@ object enigmatic extends SoundnessModule {
 
 object escapade extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, turbulence.core, anticipation.url, iridescence.core, hypotenuse.core)
+    def moduleDeps = Seq(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, hypotenuse.core)
   }
 
   object test extends ProbablyTestModule {
@@ -869,11 +873,15 @@ object guillotine extends SoundnessModule {
 
 object hallucination extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(escapade.core, gesticulate.core)
+    def moduleDeps = Seq(anticipation.gfx, iridescence.core, gesticulate.core)
+  }
+
+  object ansi extends SoundnessSubModule {
+    def moduleDeps = Seq(escapade.core, core)
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, ansi)
   }
 }
 
@@ -1555,6 +1563,7 @@ object publishing extends Module {
     anticipation.color.publishLocal().t()
     anticipation.css.publishLocal().t()
     anticipation.generic.publishLocal().t()
+    anticipation.gfx.publishLocal().t()
     anticipation.html.publishLocal().t()
     anticipation.http.publishLocal().t()
     anticipation.log.publishLocal().t()
@@ -1608,6 +1617,7 @@ object publishing extends Module {
     gesticulate.core.publishLocal().t()
     gossamer.core.publishLocal().t()
     guillotine.core.publishLocal().t()
+    hallucination.ansi.publishLocal().t()
     hallucination.core.publishLocal().t()
     harlequin.ansi.publishLocal().t()
     harlequin.core.publishLocal().t()

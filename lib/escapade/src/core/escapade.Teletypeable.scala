@@ -38,6 +38,7 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import iridescence.*
+import proscenium.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -67,6 +68,17 @@ object Teletypeable:
 
   given error: Error is Teletypeable = _.message.teletype
 
+  given graphical: [graphical: Graphical] => graphical is Teletypeable = graphic =>
+    TeletypeBuilder().build:
+      for y <- 0 until (graphical.height(graphic) - 1) by 2 do
+        for x <- 0 until graphical.width(graphic)
+        do
+          val fg = graphical.pixel(graphic, x, y)
+          val bg = graphical.pixel(graphic, x, y + 1)
+          append(Teletype(t"▀", TreeMap((CharSpan(0, 1), { _ => TextStyle(fg, bg) }))))
+
+        append(e"\n")
+
   private val pkgColor = Fg(0xffff00)
   private val clsColor = Fg(0xff0000)
   private val methColor = Fg(0x00ffff)
@@ -79,8 +91,7 @@ object Teletypeable:
       case 3 => 0xfeae00
       case _ => 0xaefe00
 
-    def dedup[element]
-         (todo: List[element], seen: Set[element] = Set(), done: List[element] = Nil)
+    def dedup[element](todo: List[element], seen: Set[element] = Set(), done: List[element] = Nil)
     :     List[element] =
       todo match
         case Nil => done

@@ -34,7 +34,6 @@ package hallucination
 
 import anticipation.*
 import contingency.*
-import escapade.*
 import gossamer.*
 import iridescence.*
 import prepositional.*
@@ -55,11 +54,6 @@ open case class Raster(private[hallucination] val image: jai.BufferedImage):
     val color: ja.Color = ja.Color(image.getRGB(x, y), true)
     Rgb24(color.getRed, color.getGreen, color.getBlue)
 
-  def rasterize(using termcap: Termcap): Text = Text.construct:
-    for y <- 0 until (height - 1) by 2 do
-      for x <- 0 until width do append(e"${apply(x, y)}(${Bg(apply(x, y + 1))}(▀))".render(termcap))
-      append('\n')
-
   def serialize(using codec: Rasterizable in Format): Stream[Bytes] =
     val out = StreamOutputStream()
     ji.ImageIO.createImageOutputStream(out)
@@ -76,6 +70,11 @@ object Raster:
 
     def genericize(image: Raster in format): HttpStreams.Content =
       (rasterizable.mediaType.basic, image.serialize)
+
+  given graphical: Raster is Graphical:
+    def pixel(raster: Raster, x: Int, y: Int): Int = raster(x, y).asInt
+    def width(raster: Raster): Int = raster.width
+    def height(raster: Raster): Int = raster.height
 
   given aggregable: [format: Rasterizable as rasterizable] => Tactic[RasterError]
         => (Raster in format) is Aggregable by Bytes =
