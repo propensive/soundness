@@ -68,6 +68,7 @@ object Raster:
   given readable: [format: Rasterizable] => (Raster in format) is Readable by Bytes = raster =>
     val out = StreamOutputStream()
     ji.ImageIO.write(raster.image, format.name.s, out)
+    out.close()
     out.stream
 
   given abstractable: [format: Rasterizable] => (Raster in format) is Abstractable:

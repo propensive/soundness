@@ -83,3 +83,28 @@ object Tests extends Suite(m"Hallucination Tests"):
     test(m"Read a PNG as a JPEG fails"):
       capture[RasterError](jpeg.read[Raster in Png])
     . assert(_ == RasterError(Png()))
+
+    test(m"Convert a PNG to a JPEG"):
+      val jpeg2 = png.read[Raster in Png].to[Jpeg].read[Bytes]
+      jpeg2.read[Raster in Jpeg].width
+    . assert(_ == 1)
+
+    test(m"Convert a JPEG to a BMP"):
+      val bmp = jpeg.read[Raster in Jpeg].to[Bmp].read[Bytes]
+      bmp.read[Raster in Bmp].width
+    . assert(_ == 1)
+
+    test(m"Convert a JPEG to a GIF"):
+      val gif = jpeg.read[Raster in Jpeg].to[Gif].read[Bytes]
+      gif.read[Raster in Gif].width
+    . assert(_ == 1)
+
+    test(m"Convert a PNG to a BMP"):
+      val bmp = png.read[Raster in Png].to[Bmp].read[Bytes]
+      bmp.read[Raster in Bmp].width
+    . assert(_ == 1)
+
+    test(m"Convert a PNG to a GIF"):
+      val gif = png.read[Raster in Png].to[Gif].read[Bytes]
+      gif.read[Raster in Gif].width
+    . assert(_ == 1)
