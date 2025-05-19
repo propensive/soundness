@@ -18,7 +18,7 @@ jobs:
           distribution: 'temurin' # See 'Supported distributions' for available options
           java-version: '23'
       - name: Publish to Maven Central
-        run: ./mill mill.contrib.sonatypecentral.SonatypeCentralPublishModule/publishAll --publishArtifacts __.publishArtifacts --shouldRelease true
+        run: ./mill mill.contrib.sonatypecentral.SonatypeCentralPublishModule/publishAll --publishArtifacts __.publishArtifacts --shouldRelease true --bundleName "dev.soundness-soundness:${{ github.ref_name }}"
         env:
           MILL_SONATYPE_USERNAME: ${{ secrets.MILL_SONATYPE_USERNAME }}
           MILL_SONATYPE_PASSWORD: ${{ secrets.MILL_SONATYPE_PASSWORD }}
