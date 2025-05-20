@@ -45,14 +45,10 @@ import vacuous.*
 
 import charEncoders.utf8
 
-extension [sendable: Sendable](email: sendable)
-  def send
-       (to:      EmailAddress | List[EmailAddress],
-        cc:      EmailAddress | List[EmailAddress] = Nil,
-        bcc:     EmailAddress | List[EmailAddress] = Nil,
-        replyTo: EmailAddress | List[EmailAddress] = Nil,
-        subject: Text)
-       (using courier: Courier, sender: Sender)
-  :     courier.Result =
+object Sendable:
+  given text: Text is Sendable =
+    text => Email(Map(), Email.Message(Email.Content(Email.Body(text))))
 
-   courier.send(Envelope(email, to, cc, bcc, replyTo, subject))
+trait Sendable:
+  type Self
+  def email(content: Self): Email

@@ -45,14 +45,5 @@ import vacuous.*
 
 import charEncoders.utf8
 
-extension [sendable: Sendable](email: sendable)
-  def send
-       (to:      EmailAddress | List[EmailAddress],
-        cc:      EmailAddress | List[EmailAddress] = Nil,
-        bcc:     EmailAddress | List[EmailAddress] = Nil,
-        replyTo: EmailAddress | List[EmailAddress] = Nil,
-        subject: Text)
-       (using courier: Courier, sender: Sender)
-  :     courier.Result =
-
-   courier.send(Envelope(email, to, cc, bcc, replyTo, subject))
+case class CourierError(from: EmailAddress, to: EmailAddress, subject: Text)(using Diagnostics)
+extends Error(m"unable to send email from $from to $to with subject $subject")

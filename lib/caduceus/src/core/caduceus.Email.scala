@@ -45,14 +45,47 @@ import vacuous.*
 
 import charEncoders.utf8
 
-extension [sendable: Sendable](email: sendable)
-  def send
-       (to:      EmailAddress | List[EmailAddress],
-        cc:      EmailAddress | List[EmailAddress] = Nil,
-        bcc:     EmailAddress | List[EmailAddress] = Nil,
-        replyTo: EmailAddress | List[EmailAddress] = Nil,
-        subject: Text)
-       (using courier: Courier, sender: Sender)
-  :     courier.Result =
+object Email:
+  def apply[sendable: Sendable](value: sendable): Email = sendable.email(value)
 
-   courier.send(Envelope(email, to, cc, bcc, replyTo, subject))
+  object Body:
+    def apply(text: Text, html: Text): Body = Body.Alternatives(text, html)
+    def apply(text: Text): Body = Body.TextOnly(text)
+
+  enum Body:
+    case TextOnly(content: Text)
+    case HtmlOnly(content: Text)
+    case Alternatives(textContent: Text, htmlContent: Text)
+
+    def html: Optional[Text] = this match
+      case Body.TextOnly(_)           => Unset
+      case Body.HtmlOnly(html)        => html
+      case Body.Alternatives(_, html) => html
+
+    def text: Optional[Text] = this match
+      case Body.TextOnly(text)        => text
+      case Body.HtmlOnly(_)           => Unset
+      case Body.Alternatives(text, _) => text
+
+    def contentType: MediaType = this match
+      case Body.TextOnly(_)        => media"text/plain"
+      case Body.HtmlOnly(_)        => media"text/html"
+      case Body.Alternatives(_, _) => media"multipart/alternative"
+
+  case class Inline(cid: Text, contentType: MediaType, body: Stream[Text])
+
+  case class Content(body: Body, inlines: Inline*):
+    def contentType: MediaType =
+      if !inlines.isEmpty then media"multipart/related" else body.contentType
+
+  case class Attachment(filename: Text, contentType: MediaType, body: Stream[Text])
+
+  case class Message(content: Content, attachments: Attachment*):
+    def contentType: MediaType =
+      if !attachments.isEmpty then media"multipart/mixed" else content.contentType
+
+case class Email(headers: Map[Text, Text], message: Email.Message):
+  def html: Optional[Text] = message.content.body.html
+  def text: Optional[Text] = message.content.body.text
+  def inlines: List[Email.Inline] = message.content.inlines.to(List)
+  def attachments: List[Email.Attachment] = message.attachments.to(List)
