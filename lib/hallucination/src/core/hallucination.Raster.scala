@@ -57,6 +57,32 @@ case class Raster(private[hallucination] val image: jai.BufferedImage):
 
   def to[format: Rasterizable as rasterizable]: Raster in format = Raster[format](image)
 
+  def portrait: Boolean = height > width
+  def square: Boolean = width == height
+  def landscape: Boolean = width > height
+
+  def rotate(angle: 90 | 180 | 270): Raster =
+    val image2 = angle match
+      case 180 => jai.BufferedImage(width, height, image.getType())
+      case _   => jai.BufferedImage(height, width, image.getType())
+
+    angle match
+      case 90 =>
+        for y <- 0 until height; x <- 0 until width
+        do image2.setRGB(y, width - 1 - x, image.getRGB(x, y))
+
+      case 180 =>
+        for y <- 0 until height; x <- 0 until width
+        do image2.setRGB(width - 1 - x, height - 1 - y, image.getRGB(x, y))
+
+        image2
+
+      case 270 =>
+        for y <- 0 until height; x <- 0 until width
+        do image2.setRGB(height - 1 - y, x, image.getRGB(x, y))
+
+      new Raster(image2)
+
 object Raster:
   def apply[readable: Readable by Bytes](input: readable): Raster =
     new Raster(ji.ImageIO.read(input.read[Bytes].javaInputStream).nn)
