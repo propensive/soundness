@@ -35,5 +35,5 @@ package punctuation
 import honeycomb.*
 
 trait Translator:
-  def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]]
-  def phrasing(node: Markdown.Ast.Inline): Seq[Html[Phrasing]]
+  def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[html5.Flow]]
+  def phrasing(node: Markdown.Ast.Inline): Seq[Html[html5.Phrasing]]
