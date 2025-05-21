@@ -43,31 +43,32 @@ trait CodlEncoder[value]:
   def encode(value: value): List[IArray[CodlNode]]
   def schema: CodlSchema
 
-object CodlEncoder:
-  def apply[value](schema0: CodlSchema, encode0: value => List[IArray[CodlNode]])
-  :     CodlEncoder[value] =
-    new:
-      def schema: CodlSchema = schema0
-      def encode(value: value): List[IArray[CodlNode]] = encode0(value)
-
-  inline given derived: [value] => CodlEncoder[value] = compiletime.summonFrom:
-    case given (`value` is Encodable in Text) => field[value]
-    case given ProductReflection[`value`]     => CodlEncoderDerivation.derived[value]
-
+trait CodlEncoder2:
   def field[encodable: Encodable in Text]: CodlEncoder[encodable] = new CodlEncoder[encodable]:
     def schema: CodlSchema = Field(Arity.One)
 
     def encode(value: encodable): List[IArray[CodlNode]] =
       List(IArray(CodlNode(Data(encodable.encode(value)))))
 
+  inline given derived: [value] => CodlEncoder[value] = compiletime.summonFrom:
+    case given (`value` is Encodable in Text) => field[value]
+    case given ProductReflection[`value`]     => CodlEncoderDerivation.derived[value]
+
+object CodlEncoder extends CodlEncoder2:
+  def apply[value](schema0: CodlSchema, encode0: value => List[IArray[CodlNode]])
+  :     CodlEncoder[value] =
+    new:
+      def schema: CodlSchema = schema0
+      def encode(value: value): List[IArray[CodlNode]] = encode0(value)
+
+  given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
+  given text: CodlFieldWriter[Text] = _.show
+
   given optional: [encodable: CodlEncoder] => CodlEncoder[Optional[encodable]]:
     def schema: CodlSchema = encodable.schema.optional
 
     def encode(value: Optional[encodable]): List[IArray[CodlNode]] =
       value.let(encodable.encode(_)).or(List())
-
-  given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
-  given text: CodlFieldWriter[Text] = _.show
 
   given option: [encodable: CodlEncoder] => CodlEncoder[Option[encodable]]:
     def schema: CodlSchema = encodable.schema.optional
