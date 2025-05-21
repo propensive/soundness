@@ -78,9 +78,7 @@ object Email:
     def contentType: MediaType =
       if !inlines.isEmpty then media"multipart/related" else body.contentType
 
-  case class Attachment(filename: Text, contentType: MediaType, body: Stream[Bytes])
-
-  case class Message(content: Content, attachments: List[Attachment] = Nil):
+  case class Message(content: Content, attachments: List[Asset] = Nil):
     def contentType: MediaType =
       if !attachments.isEmpty then media"multipart/mixed" else content.contentType
 
@@ -88,7 +86,7 @@ case class Email(headers: Map[Text, Text], message: Email.Message):
   def html: Optional[Text] = message.content.body.html
   def text: Optional[Text] = message.content.body.text
   def inlines: List[Email.Inline] = message.content.inlines.to(List)
-  def attachments: List[Email.Attachment] = message.attachments.to(List)
+  def attachments: List[Asset] = message.attachments.to(List)
 
   def attach[attachable: Attachable](attachment: attachable): Email =
     copy(message = message.copy(attachments = attachments :+ attachable.attachment(attachment)))

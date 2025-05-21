@@ -37,6 +37,7 @@ import contingency.*
 import fulminate.*
 import gesticulate.*
 import hieroglyph.*
+import honeycomb.*
 import nettlesome.*
 import prepositional.*
 import proscenium.*
@@ -48,6 +49,11 @@ import charEncoders.utf8
 object Sendable:
   given text: Text is Sendable =
     text => Email(Map(), Email.Message(Email.Content(Email.Body(text))))
+
+  given htmlDoc: HtmlDoc is Sendable =
+    html => Email(Map(), Email.Message(Email.Content(Email.Body.HtmlOnly(html.encode))))
+
+  given email: Email is Sendable = identity(_)
 
 trait Sendable:
   type Self

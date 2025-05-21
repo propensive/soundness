@@ -35,31 +35,40 @@ package turbulence
 import java.io as ji
 
 import anticipation.*
+import denominative.*
 import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Aggregable:
-  given bytesBytes: Bytes is Aggregable by Bytes = source =>
-    def recur(buf: ji.ByteArrayOutputStream, source: Stream[Bytes]): Bytes =
-      source.flow(buf.toByteArray().nn.immutable(using Unsafe)):
-        buf.write(head.mutable(using Unsafe))
-        recur(buf, tail)
-
-    recur(ji.ByteArrayOutputStream(), source)
+  given bytesBytes: Bytes is Aggregable by Bytes = source0 =>
+    val size = source0.foldLeft(0)(_ + _.length)
+    var source = source0
+    Bytes.construct(size): array =>
+      var index = Prim
+      while !source.isEmpty do
+        val bytes = source.head
+        array.place(bytes, index)
+        index += bytes.length
+        source = source.tail
 
   given bytesText: (decoder: CharDecoder) => Text is Aggregable by Bytes =
     bytesBytes.map(decoder.decoded)
 
-  given textText: Text is Aggregable by Text = source =>
-    val buffer = new StringBuffer()
-    source.each { chunk => buffer.append(chunk.s) }
-    buffer.toString.tt
+  given textText: Text is Aggregable by Text = source0 =>
+    var source = source0
+    val builder = new StringBuilder()
 
-  given stream: [element, element2]
-        => (aggregable: element2 is Aggregable by element)
+    while !source.isEmpty do
+      builder.append(source.head.s)
+      source = source.tail
+
+    builder.toString.tt
+
+  given stream: [element, element2] => (aggregable: element2 is Aggregable by element)
         =>  Stream[element2] is Aggregable by element =
     element => Stream(aggregable.aggregate(element))
 

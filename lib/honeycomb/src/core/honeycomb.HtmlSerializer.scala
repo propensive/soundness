@@ -41,7 +41,7 @@ import vacuous.*
 import xylophone.*
 
 trait HtmlSerializer[result]:
-  def serialize(doc: HtmlDoc, maxWidth: Int = -1): result
+  def serialize(doc: HtmlDoc, maxWidth: Optional[Int] = Unset): result
 
 object HtmlSerializer:
   given text: HtmlSerializer[Text] = (doc, maxWidth) =>
@@ -59,6 +59,7 @@ object HtmlSerializer:
       for str <- strings do
         buf.add(str)
         pos += str.length
+
       emptyLine = false
 
     def whitespace(): Unit =
@@ -101,11 +102,11 @@ object HtmlSerializer:
 
       case text: Text =>
         whitespace()
-        if maxWidth == -1 then append(text) else
-          if verbatim || pos + text.length <= maxWidth then append(text)
+        if maxWidth.absent then append(text) else
+          if verbatim || pos + text.length <= maxWidth.or(0) then append(text)
           else
             text.cut(t"\\s+").nn.each: word =>
-              if !(pos + 1 + word.nn.length < maxWidth || emptyLine) then
+              if !(pos + 1 + word.nn.length < maxWidth.or(0) || emptyLine) then
                 linebreak = true
                 whitespace()
                 append(t" ")
