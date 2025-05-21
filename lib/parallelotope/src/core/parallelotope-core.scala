@@ -30,3 +30,49 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
+package parallelotope
+
+import jdk.incubator.vector.*
+
+import escapade.*
+import hyperbole.*
+
+import scala.quoted.*
+
+export Parallelotope.Simd
+
+object Parallelotope:
+  opaque type Simd = Array[Byte]
+
+  object Simd:
+    val species = ByteVector.SPECIES_PREFERRED
+    inline def apply(array: Array[Byte] | IArray[Byte]): Simd = array.asInstanceOf[Simd]
+
+  extension (simd: Simd)
+    inline def length: Int = simd.length
+    inline def lookFor(inline predicate: Byte => Boolean): Int =
+      ${Parallelotope2.lookFor('simd, 'predicate)}
+
+
+object Parallelotope2:
+  def lookFor(data: Expr[Simd], predicate: Expr[Byte => Boolean])(using Quotes): Expr[Int] =
+    import quotes.reflect.*
+
+    predicate match
+      case '{ (x: Byte) => $body(x): Boolean } =>
+        body match
+          case '{ (x: Any) => x == ($rhs: Any) } =>
+            println(predicate.show)
+            println(body.show)
+            println(rhs.show)
+          case other =>
+            println("other")
+
+      case other =>
+        report.error(introspect(predicate).teletype.plain.s)
+
+    '{
+        val species = ByteVector.SPECIES_PREFERRED
+        val length = $data.length
+        0
+    }

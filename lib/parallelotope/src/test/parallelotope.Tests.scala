@@ -30,3 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
+package parallelotope
+
+import sedentary.*
+
+import soundness.*
+
+object Tests extends Suite(m"Panopticon tests"):
+  def run(): Unit =
+    val array = new Array[Byte](1024*1024*1000) // 1GB
+    val index = 1024*1024*99 + 2
+    array(index) = 12.toByte
+
+    test(m"Find an element in a big array using SIMD"):
+      val data = Simd(array)
+      data.lookFor(_ == 12)
+
+    . assert(_ == index)
+
+    test(m"Find an element in a big array using SIMD"):
+      array.indexWhere(_ == 12)
+
+    . assert(_ == index)
+
+    for i <- 1 to 100 do test(m"benchmark array using SIMD"):
+      val data = Simd(array)
+      data.lookFor(_ == 12)
+    . assert(_ == index)
+
+
+    for i <- 1 to 100
+    do test(m"Find an element in a big array using SIMD"):
+      array.indexWhere(_ == 12)
+    . assert(_ == index)

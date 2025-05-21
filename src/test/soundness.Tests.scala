@@ -90,6 +90,7 @@ object Tests extends Suite(m"Soundness tests"):
     nomenclature.Tests()
     octogenarian.Tests()
     panopticon.Tests()
+    parallelotope.Tests()
     perihelion.Tests()
     phoenicia.Tests()
     polaris.Tests()
