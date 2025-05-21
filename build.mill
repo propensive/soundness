@@ -48,6 +48,13 @@ trait BaseScalaModule extends ScalaModule {
     } catch { case error: Exception => "unknown" }
   }
 
+  override def docJar = T {
+    val jar = T.dest / "empty.jar"
+    val zos = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(jar.toIO))
+    zos.close()
+    PathRef(jar)
+  }
+
   def artifactSuffix = T("")
   def pomSettings = T(PomSettings(
     description = "soundness-all",
