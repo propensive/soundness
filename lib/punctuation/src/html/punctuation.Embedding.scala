@@ -37,4 +37,4 @@ import honeycomb.*
 import vacuous.*
 
 abstract class Embedding(val language: Optional[Text]):
-  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]]
+  def render(meta: Optional[Text], content: Text): Seq[Html[html5.Flow]]

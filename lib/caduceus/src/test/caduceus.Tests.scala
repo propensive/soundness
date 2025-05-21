@@ -30,10 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package punctuation
+package caduceus
 
-import honeycomb.*
+import soundness.*
 
-trait Translator:
-  def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[html5.Flow]]
-  def phrasing(node: Markdown.Ast.Inline): Seq[Html[html5.Phrasing]]
+import strategies.throwUnsafely
+
+object Tests extends Suite(m"Caduceus tests"):
+  def run(): Unit = ()

@@ -39,6 +39,7 @@ import proscenium.*
 import spectacular.*
 
 object Renderable:
+  import html5.Phrasing
   given showable: [value: Showable] => value is Renderable into Phrasing = value => List(value.show)
 
   given message: Message is Renderable into Phrasing = message =>

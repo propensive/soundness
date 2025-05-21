@@ -39,5 +39,5 @@ import punctuation.*
 import vacuous.*
 
 object ScalaEmbedding extends Embedding(t"scala"), CommonEmbedding:
-  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]] =
+  def render(meta: Optional[Text], content: Text): Seq[Html[html5.Flow]] =
     postprocess(Scala.highlight(content))

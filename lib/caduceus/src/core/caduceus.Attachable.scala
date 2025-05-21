@@ -30,10 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package punctuation
+package caduceus
 
-import honeycomb.*
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gesticulate.*
+import hieroglyph.*
+import nettlesome.*
+import prepositional.*
+import proscenium.*
+import turbulence.*
+import vacuous.*
 
-trait Translator:
-  def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[html5.Flow]]
-  def phrasing(node: Markdown.Ast.Inline): Seq[Html[html5.Phrasing]]
+import charEncoders.utf8
+
+object Attachable:
+  given generic: [entity: {Nominable, Media, Readable by Bytes}] => entity is Attachable =
+    value => Email.Attachment(entity.name(value), entity.mediaType(value), entity.stream(value))
+
+trait Attachable:
+  type Self
+  def attachment(entity: Self): Email.Attachment

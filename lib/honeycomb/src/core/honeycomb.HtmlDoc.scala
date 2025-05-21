@@ -58,7 +58,7 @@ object HtmlDoc:
     serializer.serialize(doc, maxWidth)
 
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
-       (content: (Optional[Html[Flow]] | Seq[Html[Flow]])*)
+       (content: (Optional[Html[html5.Flow]] | Seq[Html[html5.Flow]])*)
        (using att: "href" is HtmlAttribute[Stylesheet])
   :     HtmlDoc =
 

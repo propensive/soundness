@@ -30,10 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package punctuation
+package caduceus
 
-import honeycomb.*
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gesticulate.*
+import hieroglyph.*
+import nettlesome.*
+import prepositional.*
+import proscenium.*
+import turbulence.*
+import vacuous.*
 
-trait Translator:
-  def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[html5.Flow]]
-  def phrasing(node: Markdown.Ast.Inline): Seq[Html[html5.Phrasing]]
+import charEncoders.utf8
+
+object Sendable:
+  given text: Text is Sendable =
+    text => Email(Map(), Email.Message(Email.Content(Email.Body(text))))
+
+trait Sendable:
+  type Self
+  def email(content: Self): Email

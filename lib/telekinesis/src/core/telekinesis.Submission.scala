@@ -58,7 +58,7 @@ case class Submission[value](query: Optional[Query]):
         value:      Optional[value]      = Unset,
         validation: Optional[Validation] = Unset)
        (using value is Formulaic, value is Encodable in Query, Formulation)
-  :     Html[Flow] =
+  :     Html[html5.Flow] =
 
     val data: Optional[Query] = query.or(value.let(_.encode))
     elicit[value](query, validation.or(Validation()), submit)
