@@ -69,7 +69,7 @@ import filesystemOptions.createNonexistent.disabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.disabled
 
-def disassemble(using codepoint: Codepoint)(code: Quotes ?=> Expr[Any])(using TemporaryDirectory)
+def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
      (using classloader: Classloader)
 :     Bytecode =
   val uuid = Uuid()
@@ -83,9 +83,10 @@ def disassemble(using codepoint: Codepoint)(code: Quotes ?=> Expr[Any])(using Te
 
   unsafely:
     val file: Path on Linux = out / Name[Linux](t"Generated$$Code$$From$$Quoted.class")
+    val code: Quotes ?=> Expr[Unit] = '{ def _code(): Unit = $code0 }
     staging.run(code)
     val classfile: Classfile = new Classfile(file.open(_.read[Bytes]))
-    classfile.methods.find(_.name == t"apply").map(_.bytecode).get.vouch.embed(codepoint)
+    classfile.methods.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
 
 
 case class ClassfileError()(using Diagnostics)
