@@ -491,7 +491,7 @@ object burdock extends SoundnessModule {
 
 object caduceus extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(nettlesome.core, gesticulate.core)
+    def moduleDeps = Seq(nettlesome.core, gesticulate.core, honeycomb.core)
   }
 
   object resend extends SoundnessSubModule {

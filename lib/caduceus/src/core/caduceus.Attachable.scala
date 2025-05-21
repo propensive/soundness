@@ -47,8 +47,10 @@ import charEncoders.utf8
 
 object Attachable:
   given generic: [entity: {Nominable, Media, Readable by Bytes}] => entity is Attachable =
-    value => Email.Attachment(entity.name(value), entity.mediaType(value), entity.stream(value))
+    value => Asset(entity.name(value), entity.mediaType(value), entity.stream(value))
+
+  given asset: Asset is Attachable = identity(_)
 
 trait Attachable:
   type Self
-  def attachment(entity: Self): Email.Attachment
+  def attachment(entity: Self): Asset

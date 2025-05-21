@@ -33,6 +33,7 @@
 package honeycomb
 
 import anticipation.*
+import distillate.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
@@ -43,19 +44,18 @@ import vacuous.*
 case class HtmlDoc(root: Node["html"])
 
 object HtmlDoc:
-  given generic: (encoder: CharEncoder)
-        =>  HtmlDoc is Abstractable across HttpStreams into HttpStreams.Content =
-    new Abstractable:
-      type Self = HtmlDoc
-      type Domain = HttpStreams
-      type Result = HttpStreams.Content
+  given generic: (encoder: CharEncoder) => HtmlDoc is Abstractable:
+    type Self = HtmlDoc
+    type Domain = HttpStreams
+    type Result = HttpStreams.Content
 
-      def genericize(doc: HtmlDoc): HttpStreams.Content =
-        (t"text/html; charset=${encoder.encoding.name}", Stream(HtmlDoc.serialize(doc).bytes))
+    def genericize(doc: HtmlDoc): HttpStreams.Content =
+      (t"text/html; charset=${encoder.encoding.name}", Stream(HtmlDoc.serialize(doc).bytes))
 
-  def serialize[output](doc: HtmlDoc, maxWidth: Int = -1)(using serializer: HtmlSerializer[output])
-  :     output =
-    serializer.serialize(doc, maxWidth)
+  given HtmlDoc is Encodable in Text = HtmlDoc.serialize(_)
+
+  def serialize[output: HtmlSerializer](doc: HtmlDoc, maxWidth: Optional[Int] = Unset): output =
+    output.serialize(doc, maxWidth)
 
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
        (content: (Optional[Html[html5.Flow]] | Seq[Html[html5.Flow]])*)

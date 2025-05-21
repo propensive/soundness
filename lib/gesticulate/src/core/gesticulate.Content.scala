@@ -36,4 +36,4 @@ import anticipation.*
 import proscenium.*
 
 case class Content(media: MediaType, stream: Stream[Bytes]):
-  def named(name: Text): Document = Document(name, media, stream)
+  def named(name: Text): Asset = Asset(name, media, stream)

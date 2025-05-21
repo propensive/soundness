@@ -33,6 +33,12 @@
 package gesticulate
 
 import anticipation.*
+import prepositional.*
 import proscenium.*
+import turbulence.*
 
-case class Document(name: Text, media: MediaType, stream: Stream[Bytes])
+object Asset:
+  def apply[entity: {Media, Readable by Bytes}](name: Text, content: entity): Asset =
+    Asset(name, content.mediaType, content.stream[Bytes])
+
+case class Asset(name: Text, media: MediaType, stream: Stream[Bytes])

@@ -47,11 +47,11 @@ import charEncoders.utf8
 
 extension [sendable: Sendable](email: sendable)
   def send
-       (to:      EmailAddress | List[EmailAddress],
+       (subject: Text,
+        to:      EmailAddress | List[EmailAddress],
         cc:      EmailAddress | List[EmailAddress] = Nil,
         bcc:     EmailAddress | List[EmailAddress] = Nil,
-        replyTo: EmailAddress | List[EmailAddress] = Nil,
-        subject: Text)
+        replyTo: EmailAddress | List[EmailAddress] = Nil)
        (using courier: Courier, sender: Sender)
   :     courier.Result =
 
