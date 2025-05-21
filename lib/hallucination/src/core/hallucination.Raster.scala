@@ -64,9 +64,9 @@ case class Raster(private[hallucination] val image: jai.BufferedImage):
   def flipY: Raster = Raster(width, height) { (x, y) => apply(x, height - 1 - y) }
 
   def rotate(angle: 90 | 180 | 270): Raster = angle match
-    case 90  => Raster(height, width) { (x, y) => apply(y, height - 1 - x) }
+    case 90  => Raster(height, width) { (x, y) => apply(width - 1 - y, x) }
     case 180 => Raster(width, height) { (x, y) => apply(width - 1 - x, height - 1 - y) }
-    case 270 => Raster(height, width) { (x, y) => apply(width - 1 - y, x) }
+    case 270 => Raster(height, width) { (x, y) => apply(y, height - 1 - x) }
 
   def portrait: Boolean = height > width
   def square: Boolean = width == height

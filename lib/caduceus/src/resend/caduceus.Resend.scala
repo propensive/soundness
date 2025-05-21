@@ -39,9 +39,11 @@ import gesticulate.*
 import hieroglyph.*
 import jacinta.*
 import merino.*
+import monotonous.*
 import nettlesome.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*
@@ -50,6 +52,7 @@ import charEncoders.utf8
 import jsonPrinters.minimal
 import errorDiagnostics.stackTraces
 import stdioSources.virtualMachine.ansi
+import alphabets.base64.standard
 
 object Resend:
   case class ApiKey(key: Text)
@@ -61,6 +64,7 @@ package couriers:
         => Courier:
     type Result = Resend.Receipt
 
+    private case class Attachment(filename: Text, content: Text)
     private case class Request
                         (from:         EmailAddress,
                          to:           List[EmailAddress],
@@ -71,9 +75,13 @@ package couriers:
                          replyTo:      List[EmailAddress],
                          headers:      Map[Text, Text],
                          html:         Optional[Text],
-                         text:         Optional[Text])
+                         text:         Optional[Text],
+                         attachments:  List[Attachment])
 
     def send(envelope: Envelope): Resend.Receipt =
+      val attachments = envelope.email.attachments.map: attachment =>
+        Attachment(attachment.name, attachment.stream.read[Bytes].serialize[Base64])
+
       val request =
         Request
          (envelope.from,
@@ -85,27 +93,17 @@ package couriers:
           envelope.replyTo,
           envelope.email.headers,
           envelope.email.html,
-          envelope.email.text)
+          envelope.email.text,
+          attachments)
+
+      def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
 
       mitigate:
-        case ConnectError(reason) =>
-          Out.println(reason.communicate)
-          CourierError(envelope.from, envelope.to.head, envelope.subject)
-
-        case JsonParseError(_, _, reason) =>
-          Out.println(reason.communicate)
-          CourierError(envelope.from, envelope.to.head, envelope.subject)
-
-        case HttpError(status, _) =>
-          Out.println(status.communicate)
-          CourierError(envelope.from, envelope.to.head, envelope.subject)
-
-        case JsonError(reason) =>
-          Out.println(reason.communicate)
-          CourierError(envelope.from, envelope.to.head, envelope.subject)
-
-        case MediaTypeError(_, _) =>
-          CourierError(envelope.from, envelope.to.head, envelope.subject)
+        case ConnectError(reason)         => Out.println(reason.communicate) yet error
+        case JsonParseError(_, _, reason) => Out.println(reason.communicate) yet error
+        case HttpError(status, _)         => Out.println(status.communicate) yet error
+        case JsonError(reason)            => Out.println(reason.communicate) yet error
+        case MediaTypeError(_, _)         => error
 
       . within:
           url"https://api.resend.com/emails".submit

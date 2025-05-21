@@ -53,6 +53,8 @@ object Sendable:
   given htmlDoc: HtmlDoc is Sendable =
     html => Email(Map(), Email.Message(Email.Content(Email.Body.HtmlOnly(html.encode))))
 
+  given email: Email is Sendable = identity(_)
+
 trait Sendable:
   type Self
   def email(content: Self): Email
