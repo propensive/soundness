@@ -49,6 +49,19 @@ object Orderable:
       then inline if strict then n > 0 else n >= 0
       else inline if strict then n < 0 else n <= 0
 
+
 trait Orderable extends Commensurable:
+  private inline def orderable: this.type = this
   type Self
   type Operand = Self
+
+  def contramap[self](lambda: self => Self): self is Orderable = new Orderable:
+    type Self = self
+
+    inline def compare
+                (inline left:    self,
+                 inline right:   self,
+                 inline strict:  Boolean,
+                 inline greater: Boolean)
+    :     Boolean =
+      orderable.compare(lambda(left), lambda(right), strict, greater)
