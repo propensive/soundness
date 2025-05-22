@@ -75,6 +75,8 @@ object Hypotenuse:
   opaque type F32 = Float
 
   object F64:
+    final val Min: F64 = Double.MinValue
+    final val Max: F64 = Double.MaxValue
     erased given underlying: Underlying[F64, Double] = erasedValue
 
     inline given canEqual: CanEqual
@@ -179,6 +181,8 @@ object Hypotenuse:
       def apply(value: S8): F64 = value.toDouble
 
   object F32:
+    final val Min: F32 = Float.MinValue
+    final val Max: F32 = Float.MaxValue
     erased given underlying: Underlying[F32, Float] = erasedValue
 
     inline given canEqual: CanEqual
@@ -229,6 +233,8 @@ object Hypotenuse:
       def apply(value: S8): F32 = value.toFloat
 
   object U64:
+    final val Min: U64 = 0L
+    final val Max: U64 = -1L
     erased given underlying: Underlying[U64, Long] = erasedValue
     inline given canEqual: CanEqual[U64, U64] = erasedValue
 
@@ -255,7 +261,10 @@ object Hypotenuse:
           else JLong.compareUnsigned(left, right) != 1
 
   object S64:
+    final val Min: U64 = Long.MinValue
+    final val Max: U64 = Long.MaxValue
     erased given underlying: Underlying[S64, Long] = erasedValue
+
     inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
                                     | Int | Short | Byte] =
       erasedValue
@@ -281,6 +290,8 @@ object Hypotenuse:
 
 
   object U32:
+    final val Min: U32 = Int.MinValue
+    final val Max: U32 = Int.MaxValue
     erased given underlying: Underlying[U32, Int] = erasedValue
     inline given canEqual: CanEqual[U32, U32] = erasedValue
 
@@ -306,7 +317,10 @@ object Hypotenuse:
           else JInt.compareUnsigned(left, right) != 1
 
   object S32:
+    final val Min: S32 = Int.MinValue
+    final val Max: S32 = Int.MaxValue
     erased given underlying: Underlying[S32, Int] = erasedValue
+
     inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
                                     | Int | Short | Byte] =
       erasedValue
@@ -331,6 +345,8 @@ object Hypotenuse:
         else inline if strict then (left: Int) < (right: Int) else (left: Int) <= (right: Int)
 
   object U16:
+    final val Min: S16 = 0
+    final val Max: S16 = -1
     erased given underlying: Underlying[U16, Short] = erasedValue
     inline given canEqual: CanEqual[U16, U16] = erasedValue
 
@@ -357,6 +373,8 @@ object Hypotenuse:
         else inline if strict then left2 < right2 else left.toInt <= right2
 
   object S16:
+    final val Min: S16 = Short.MinValue
+    final val Max: S16 = Short.MaxValue
     erased given underlying: Underlying[S16, Short] = erasedValue
 
     inline given canEqual: CanEqual[S16, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
@@ -385,8 +403,11 @@ object Hypotenuse:
           inline if strict then (left: Short) < (right: Short) else (left: Short) <= (right: Short)
 
   object U8:
+    final val Min: U8 = 0
+    final val Max: U8 = -1
     erased given underlying: Underlying[U8, Byte] = erasedValue
     inline given canEqual: CanEqual[U8, U8] = erasedValue
+
     given fromDigits: FromDigits[U8]:
       inline def fromDigits(digits: String): U8 = ${Hypotenuse2.parseU8('digits)}
 
@@ -410,6 +431,8 @@ object Hypotenuse:
         else inline if strict then left2 < right2 else left2 <= right2
 
   object S8:
+    final val Min: S8 = Byte.MinValue
+    final val Max: S8 = Byte.MaxValue
     erased given underlying: Underlying[S8, Byte] = erasedValue
 
     inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long

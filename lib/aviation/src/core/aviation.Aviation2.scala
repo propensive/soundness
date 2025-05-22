@@ -80,6 +80,9 @@ object Aviation2:
     def subtract(left: Instant, right: Self): Result
 
   object Instant:
+    final val Min: Instant = Long.MinValue
+    final val Max: Instant = Long.MaxValue
+
     def apply[instant: Abstractable across Instants into Long](instant: instant): Instant =
       of(instant.generic)
 
