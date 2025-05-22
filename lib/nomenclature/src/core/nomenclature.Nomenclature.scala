@@ -76,5 +76,3 @@ object Nomenclature:
         case v => check[v.type](name)
 
       name.asInstanceOf[Name[platform]]
-
-    given showable: [platform] => Name[platform] is Showable = identity(_)
