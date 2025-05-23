@@ -62,7 +62,7 @@ object Showable:
   given double: (decimalizer: DecimalConverter) => Double is Showable = decimalizer.decimalize(_)
   given boolean: (booleanStyle: BooleanStyle) => Boolean is Showable = booleanStyle(_)
   given option: [value: Showable] => Option[value] is Showable = _.fold("none".tt)(value.text(_))
-  given uid: Uuid is Showable = _.text
+  given uuid: Uuid is Showable = _.text
   given memory: Memory is Showable = _.text
   given enumeration: [enumeration <: reflect.Enum] => enumeration is Showable = _.toString.tt
 
