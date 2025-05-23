@@ -39,4 +39,5 @@ package currencyStyles:
 
 package currencies:
   export plutocrat.currencies
-  . { Eur, Usd, Jpy, Gbp, Cny, Aud, Cad, Chf, Hkd, Sgd, Sek, Krw, Nok, Nzd, Inr, Mxn }
+  . { Eur, Usd, Jpy, Gbp, Cny, Aud, Cad, Chf, Hkd, Sgd, Sek, Krw, Nok, Nzd, Inr, Mxn, Twd, Zar, Brl,
+      Dkk, Pln, Thb, Ils, Idr, Czk, Aed, Try, Huf, Clp, Sar, Php, Myr, Cop, Rub, Ron, Pen }
