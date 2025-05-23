@@ -72,6 +72,14 @@ object Timestamp:
         raise(TimestampError(value)) yet Timestamp(2000-Jan-1, Clockface(0, 0, 0))
 
 case class Timestamp(date: Date, time: Clockface):
+  def year(using calendar: Calendar): calendar.YearUnit = date.year
+  def month(using calendar: Calendar): calendar.MonthUnit = date.month
+  def monthstamp(using RomanCalendar): Monthstamp = date.monthstamp
+  def day(using calendar: Calendar): calendar.DayUnit = date.day
+  def hour: Int = time.hour
+  def minute: Int = time.minute
+  def second: Int = time.second
+
   def in(timezone: Timezone): Moment = Moment(date, time, timezone)
 
   def stdlib(using RomanCalendar): jt.LocalDateTime =

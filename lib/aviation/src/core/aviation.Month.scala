@@ -47,12 +47,12 @@ object Month:
   def unapply(value: Int): Option[Month] =
     if value < 1 || value > 12 then None else Some(fromOrdinal(value - 1))
 
-  given monthOfYear: Int is Subtractable by Month into YearMonth = new Subtractable:
+  given monthOfYear: Int is Subtractable by Month into Monthstamp = new Subtractable:
     type Self = Int
-    type Result = YearMonth
+    type Result = Monthstamp
     type Operand = Month
 
-    def subtract(year: Int, month: Month) = new YearMonth(year, month)
+    def subtract(year: Int, month: Month) = new Monthstamp(year, month)
 
 enum Month:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec

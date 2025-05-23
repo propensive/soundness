@@ -80,6 +80,7 @@ object Aviation:
 
   object Date:
     erased given underlying: Underlying[Date, Int] = !!
+
     def of(day: Int): Date = day
 
     def apply(using cal: Calendar)(year: cal.YearUnit, month: cal.MonthUnit, day: cal.DayUnit)
@@ -160,6 +161,10 @@ object Aviation:
   extension (date: Date)
     def day(using calendar: Calendar): calendar.DayUnit = calendar.getDay(date)
     def month(using calendar: Calendar): calendar.MonthUnit = calendar.getMonth(date)
+
+    def monthstamp(using calendar: RomanCalendar): Monthstamp =
+      Monthstamp(calendar.getYear(date), calendar.getMonth(date))
+
     def year(using calendar: Calendar): calendar.YearUnit = calendar.getYear(date)
 
     def yearDay(using calendar: Calendar): Int =
