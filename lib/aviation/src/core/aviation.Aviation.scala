@@ -53,7 +53,7 @@ object Aviation:
   opaque type Date = Int
   opaque type Year = Int
 
-  extension (year: Year) def int: Int = year
+  extension (year: Year) inline def int: Int = year
 
   object Year:
     inline def apply(year: Int): Year = year
@@ -61,6 +61,15 @@ object Aviation:
     given addable: Year is Addable by Int into Year = _ + _
     given subtractable: Year is Subtractable by Int into Year = _ - _
     given decodable: (int: Int is Decodable in Text) => Year is Decodable in Text = int.map(Year(_))
+
+    given orderable: Year is Orderable:
+      inline def compare
+                  (inline left:        Year,
+                   inline right:       Year,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
+      :     Boolean =
+        if left.int == right.int then !strict else (left.int < right.int)^greaterThan
 
   def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Clockface] =
     import quotes.reflect.*
