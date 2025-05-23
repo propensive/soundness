@@ -99,26 +99,29 @@ object Plutocrat:
 
       def divide(left: left, right: right): Double = left.toDouble/right.toDouble
 
+    inline given orderable: [currency <: Currency & Singleton] => Money[currency] is Orderable:
+      inline def compare
+                  (inline left:        Money[currency],
+                   inline right:       Money[currency],
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
+      :     Boolean =
+        if left.value == right.value then !strict else (left.value < right.value)^greaterThan
+
+    given zeroic: [currency <: Currency & Singleton] => Money[currency] is Zeroic:
+      def zero: Money[currency] = 0L
+
+  extension [currency <: Currency & Singleton](money: Money[currency])
+    def value: Long = money
+
   extension [currency <: Currency & Singleton: ValueOf](left: Money[currency])
-    @targetName("greaterThan")
-    infix def > (right: Money[currency]): Boolean = (left: Long) > (right: Long)
-
-    @targetName("greaterThanOrEqual")
-    infix def >= (right: Money[currency]): Boolean = (left: Long) >= (right: Long)
-
-    @targetName("lessThan")
-    infix def < (right: Money[currency]): Boolean = (left: Long) < (right: Long)
-
-    @targetName("lessThanOrEqual")
-    infix def <= (right: Money[currency]): Boolean = (left: Long) <= (right: Long)
-
     @targetName("negate")
     def `unary_-`: Money[currency] = -left
     def tax(rate: Double): Price[currency] = Price(left, (left*rate + 0.5).toLong)
 
     @tailrec
-    def split(right: Int, result: List[Money[currency]] = Nil): List[Money[currency]] =
+    def share(right: Int, result: List[Money[currency]] = Nil): List[Money[currency]] =
       if right == 1 then left :: result else
         val share: Money[currency] = left/right
         val remainder: Money[currency] = (left - share)
-        remainder.split(right - 1, share :: result)
+        remainder.share(right - 1, share :: result)
