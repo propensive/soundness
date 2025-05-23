@@ -108,6 +108,9 @@ object Plutocrat:
       :     Boolean =
         if left.value == right.value then !strict else (left.value < right.value)^greaterThan
 
+    given zeroic: [currency <: Currency & Singleton] => Money[currency] is Zeroic:
+      def zero: Money[currency] = 0L
+
   extension [currency <: Currency & Singleton](money: Money[currency])
     def value: Long = money
 
@@ -121,4 +124,4 @@ object Plutocrat:
       if right == 1 then left :: result else
         val share: Money[currency] = left/right
         val remainder: Money[currency] = (left - share)
-        remainder.split(right - 1, share :: result)
+        remainder.share(right - 1, share :: result)
