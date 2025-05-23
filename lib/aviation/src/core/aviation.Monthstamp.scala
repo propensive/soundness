@@ -35,7 +35,7 @@ package aviation
 import contingency.*
 import symbolism.*
 
-case class Monthstamp(year: Int, month: Month):
+case class Monthstamp(year: Year, month: Month):
   import scala.compiletime.ops.int.*
 
 object Monthstamp:

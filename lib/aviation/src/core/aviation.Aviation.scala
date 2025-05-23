@@ -51,6 +51,16 @@ import java.util as ju
 
 object Aviation:
   opaque type Date = Int
+  opaque type Year = Int
+
+  extension (year: Year) def int: Int = year
+
+  object Year:
+    inline def apply(year: Int): Year = year
+    given showable: Year is Showable = _.toString.tt
+    given addable: Year is Addable by Int into Year = _ + _
+    given subtractable: Year is Subtractable by Int into Year = _ - _
+    given decodable: (int: Int is Decodable in Text) => Year is Decodable in Text = int.map(Year(_))
 
   def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Clockface] =
     import quotes.reflect.*

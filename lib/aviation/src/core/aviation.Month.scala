@@ -52,7 +52,7 @@ object Month:
     type Result = Monthstamp
     type Operand = Month
 
-    def subtract(year: Int, month: Month) = new Monthstamp(year, month)
+    def subtract(year: Int, month: Month) = new Monthstamp(Year(year), month)
 
 enum Month:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec

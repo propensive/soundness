@@ -61,7 +61,7 @@ object Timestamp:
 
         . within:
             Timestamp
-             (Date(year.decode[Int],
+             (Date(year.decode[Year],
               Month(month.decode[Int]),
               day.decode[Int]),
               Clockface(Base24(hour.decode[Int]),
@@ -84,7 +84,7 @@ case class Timestamp(date: Date, time: Clockface):
 
   def stdlib(using RomanCalendar): jt.LocalDateTime =
     jt.LocalDateTime.of
-     (date.year, date.month.ordinal, date.day, time.hour, time.minute, time.second)
+     (date.year.int, date.month.ordinal, date.day, time.hour, time.minute, time.second)
     . nn
 
   def instant(using timezone: Timezone, calendar: RomanCalendar): Instant =
