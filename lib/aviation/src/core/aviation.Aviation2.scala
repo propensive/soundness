@@ -36,7 +36,9 @@ import java.time as jt
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import hypotenuse.*
+import kaleidoscope.*
 import prepositional.*
 import proscenium.*
 import quantitative.*
@@ -82,6 +84,21 @@ object Aviation2:
   object Instant:
     final val Min: Instant = Long.MinValue
     final val Max: Instant = Long.MaxValue
+
+    given iso8601: Tactic[DateError] => Instant is Decodable:
+      type Self = Instant
+      type Format = Text
+
+      def decoded(text: Text): Instant =
+        import calendars.gregorian
+        given Timezone = tz"UTC"
+        text match
+          case r"$year([0-9]{4})-$month([0-9]{2})-$day([0-9]{2}).*" =>
+            unsafely:
+              Date(Year(year.decode[Int]), Month(month.decode[Int]), Day(day.decode[Int]))
+              . at(0.00.am)
+              . instant
+          case _ => now()
 
     def apply[instant: Abstractable across Instants into Long](instant: instant): Instant =
       of(instant.generic)
@@ -148,7 +165,8 @@ object Aviation2:
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
 
       val date = zonedTime.getMonthValue.absolve match
-        case Month(month) => unsafely(Date(Year(zonedTime.getYear), month, zonedTime.getDayOfMonth))
+        case Month(month) =>
+          unsafely(Date(Year(zonedTime.getYear), month, Day(zonedTime.getDayOfMonth)))
 
       val time = (zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond).absolve match
         case (Base24(hour), Base60(minute), Base60(second)) => Clockface(hour, minute, second)

@@ -32,5 +32,5 @@
                                                                                                   */
 package aviation
 
-enum YearFormat:
+enum Years:
   case TwoDigitYear, FullYear

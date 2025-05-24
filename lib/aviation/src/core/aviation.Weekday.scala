@@ -33,9 +33,12 @@
 package aviation
 
 import denominative.*
+import spectacular.*
 
 object Weekday:
   def apply(ordinal: Ordinal)(using numbering: WeekNumbering): Weekday = numbering.weekday(ordinal)
+
+  given showable: (weekdays: Weekdays) => Weekday is Showable = weekdays.name(_)
 
 enum Weekday:
   case Mon, Tue, Wed, Thu, Fri, Sat, Sun
