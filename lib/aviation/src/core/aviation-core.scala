@@ -51,23 +51,23 @@ package dateFormats:
   private given calendar: RomanCalendar = calendars.gregorian
 
   given european: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidth, separation.dot, yearFormats.full
+    import endianness.littleEndian, numerics.fixedWidth, separators.dot, years.full
     Date.showable.text(_)
 
   given american: Date is Showable =
-    import endianness.middleEndian, numerics.fixedWidth, separation.slash, yearFormats.full
+    import endianness.middleEndian, numerics.fixedWidth, separators.slash, years.full
     Date.showable.text(_)
 
   given unitedKingdom: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidth, separation.slash, yearFormats.full
+    import endianness.littleEndian, numerics.fixedWidth, separators.slash, years.full
     Date.showable.text(_)
 
   given southEastAsia: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidth, separation.hyphen, yearFormats.full
+    import endianness.littleEndian, numerics.fixedWidth, separators.hyphen, years.full
     Date.showable.text(_)
 
   given iso8601: Date is Showable =
-    import endianness.bigEndian, numerics.fixedWidth, separation.hyphen, yearFormats.full
+    import endianness.bigEndian, numerics.fixedWidth, separators.hyphen, years.full
     Date.showable.text(_)
 
   package endianness:
@@ -79,17 +79,17 @@ package dateFormats:
     given fixedWidth: DateNumerics = DateNumerics.FixedWidth
     given variableWidth: DateNumerics = DateNumerics.VariableWidth
 
-  package separation:
+  package separators:
     given slash: DateSeparation = () => t"/"
     given hyphen: DateSeparation = () => t"-"
     given dot: DateSeparation = () => t"."
     given space: DateSeparation = () => t" "
 
-  package yearFormats:
+  package years:
     given twoDigits: Years = Years.TwoDigitYear
     given full: Years = Years.FullYear
 
-  package weekdayNames:
+  package weekdays:
     given english: Weekdays =
       case Weekday.Mon => t"Monday"
       case Weekday.Tue => t"Tuesday"
@@ -135,7 +135,7 @@ package dateFormats:
       case Weekday.Sat => t"Sa"
       case Weekday.Sun => t"Su"
 
-  package monthNames:
+  package months:
     given english: Months =
       case Jan => t"January"
       case Feb => t"February"
@@ -164,6 +164,20 @@ package dateFormats:
       case Nov => t"Nov"
       case Dec => t"Dec"
 
+    given oneLetterAmbiguous: Months =
+      case Jan => t"J"
+      case Feb => t"F"
+      case Mar => t"M"
+      case Apr => t"A"
+      case May => t"M"
+      case Jun => t"J"
+      case Jul => t"J"
+      case Aug => t"A"
+      case Sep => t"S"
+      case Oct => t"O"
+      case Nov => t"N"
+      case Dec => t"D"
+
     given numeric: Months = _.numerical.show
 
     given twoDigit: Months = month =>
@@ -172,34 +186,34 @@ package dateFormats:
 
 package timeFormats:
   given military: Clockface is Showable =
-    import hourCount.twentyFourHour, numerics.fixedWidth, separation.none, specificity.minutes
+    import hours.twentyFourHour, numerics.fixedWidth, separators.none, specificity.minutes
     Clockface.showable.text(_)
 
   given civilian: Clockface is Showable =
-    import hourCount.twelveHour, meridiems.upper, numerics.fixedWidth, separation.colon
+    import hours.twelveHour, meridiems.upper, numerics.fixedWidth, separators.colon
     import specificity.minutes
 
     Clockface.showable.text(_)
 
   given associatedPress: Clockface is Showable =
-    import hourCount.twelveHour, meridiems.lowerPunctuated, numerics.variableWidth, separation.colon
+    import hours.twelveHour, meridiems.lowerPunctuated, numerics.variableWidth, separators.colon
     import specificity.minutes
     Clockface.showable.text(_)
 
   given french: Clockface is Showable =
-    import hourCount.twentyFourHour, numerics.fixedWidth, separation.french, specificity.minutes
+    import hours.twentyFourHour, numerics.fixedWidth, separators.french, specificity.minutes
     Clockface.showable.text(_)
 
   given iso8601: Clockface is Showable =
-    import hourCount.twentyFourHour, numerics.fixedWidth, separation.colon, specificity.seconds
+    import hours.twentyFourHour, numerics.fixedWidth, separators.colon, specificity.seconds
     Clockface.showable.text(_)
 
   given ledger: Clockface is Showable =
-    import hourCount.twentyFourHour, numerics.fixedWidth, separation.dot, specificity.minutes
+    import hours.twentyFourHour, numerics.fixedWidth, separators.dot, specificity.minutes
     Clockface.showable.text(_)
 
   given railway: Clockface is Showable =
-    import hourCount.twentyFourHour, numerics.fixedWidth, separation.colon, specificity.minutes
+    import hours.twentyFourHour, numerics.fixedWidth, separators.colon, specificity.minutes
     Clockface.showable.text(_)
 
   package meridiems:
@@ -219,7 +233,7 @@ package timeFormats:
       case Meridiem.Am => t"a.m."
       case Meridiem.Pm => t"p.m."
 
-  package hourCount:
+  package hours:
     given twelveHour: (Meridiem is Showable) => TimeFormat:
       def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
       def halfDay: Boolean = true
@@ -248,7 +262,7 @@ package timeFormats:
     given fixedWidth: TimeNumerics = TimeNumerics.FixedWidth
     given variableWidth: TimeNumerics = TimeNumerics.VariableWidth
 
-  package separation:
+  package separators:
     given dot: TimeSeparation = () => t"."
     given colon: TimeSeparation = () => t":"
     given none: TimeSeparation = () => t""
@@ -284,15 +298,6 @@ enum TimeEvent:
 extension (inline double: Double)
   inline def am: Clockface = ${Aviation.validTime('double, false)}
   inline def pm: Clockface = ${Aviation.validTime('double, true)}
-
-extension (one: 1)
-  def year: Timespan = Timespan(StandardTime.Year, 1)
-  def month: Timespan = Timespan(StandardTime.Month, 1)
-  def week: Timespan = Timespan(StandardTime.Week, 1)
-  def day: Timespan = Timespan(StandardTime.Day, 1)
-  def hour: Timespan = Timespan.fixed(StandardTime.Hour, 1)
-  def minute: Timespan = Timespan.fixed(StandardTime.Minute, 1)
-  def second: Timespan = Timespan.fixed(StandardTime.Second, 1)
 
 extension (int: Int)
   def years: Timespan = Timespan(StandardTime.Year, int)

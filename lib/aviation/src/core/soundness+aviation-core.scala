@@ -35,8 +35,8 @@ package soundness
 export aviation
 . { Base24, Base60, Calendar, Clock, Clockface, DateError, Horology, Period, LeapSeconds, Moment,
     Month, RomanCalendar, StandardTime, Timespan, Timestamp, Chronology, Timezone, TimezoneError,
-    Tzdb, TzdbError, Weekday, Monthstamp, now, today, TimeEvent, am, pm, year, month, week, day,
-    hour, minute, second, years, months, weeks, days, hours, minutes, seconds, tz, TimestampError,
+    Tzdb, TzdbError, Weekday, Monthstamp, now, today, TimeEvent, am, pm,
+    years, months, weeks, days, hours, minutes, seconds, tz, TimestampError,
     Instant, Duration, Date, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec, Day,
     DateNumerics, DateSeparation, Endianness, Years, Meridiem, TimeFormat, TimeSeparation,
     TimeNumerics, TimeSpecificity, Year, Months, Weekdays }
@@ -54,24 +54,25 @@ package dateFormats:
     export aviation.dateFormats.numerics.{fixedWidth, variableWidth}
 
   package separation:
-    export aviation.dateFormats.separation.{dot, slash, hyphen, space}
+    export aviation.dateFormats.separators.{dot, slash, hyphen, space}
 
-  package yearFormats:
-    export aviation.dateFormats.yearFormats.{full, twoDigits}
+  package years:
+    export aviation.dateFormats.years.{full, twoDigits}
 
-  package weekdayNames:
-    export aviation.dateFormats.weekdayNames
+  package weekdays:
+    export aviation.dateFormats.weekdays
     . { english, englishShort, oneLetterAmbiguous, shortestUnambiguous, twoLetter }
 
-  package monthNames:
-    export aviation.dateFormats.monthNames.{english, englishShort, numeric, twoDigit}
+  package months:
+    export aviation.dateFormats.months
+    . { english, englishShort, numeric, twoDigit, oneLetterAmbiguous }
 
 package timeFormats:
   export aviation.timeFormats
   . { iso8601, military, civilian, associatedPress, french, railway, ledger }
 
-  package hourCount:
-    export aviation.timeFormats.hourCount.{twentyFourHour, twelveHour}
+  package hours:
+    export aviation.timeFormats.hours.{twentyFourHour, twelveHour}
 
   package meridiems:
     export aviation.timeFormats.meridiems.{upper, lower, lowerPunctuated, upperPunctuated}
@@ -80,4 +81,4 @@ package timeFormats:
     export aviation.timeFormats.numerics.{fixedWidth, variableWidth}
 
   package separation:
-    export aviation.timeFormats.separation.{dot, colon, french, none}
+    export aviation.timeFormats.separators.{dot, colon, french, none}
