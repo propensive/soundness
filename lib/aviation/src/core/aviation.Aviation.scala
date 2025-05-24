@@ -197,21 +197,19 @@ object Aviation:
   extension (date: Date)
     def day(using calendar: Calendar): calendar.Diurnal = calendar.diurnal(date)
     def month(using calendar: Calendar): calendar.Mensual = calendar.mensual(date)
-
+    def year(using calendar: Calendar): calendar.Annual = calendar.annual(date)
     def weekday: Weekday = Weekday.fromOrdinal(julianDay%7)
+    def julianDay: Int = date
+
+    infix def at (time: Clockface)(using Calendar): Timestamp = Timestamp(date, time)
 
     def monthstamp(using calendar: RomanCalendar): Monthstamp =
       Monthstamp(calendar.annual(date), calendar.mensual(date))
 
-    def year(using calendar: Calendar): calendar.Annual = calendar.annual(date)
-
     def yearDay(using calendar: Calendar): Int =
       date - calendar.zerothDayOfYear(calendar.annual(date))
 
-    def julianDay: Int = date
     def addDays(count: Int): Date = date + count
-
-    infix def at (time: Clockface)(using Calendar): Timestamp = Timestamp(date, time)
 
     @targetName("gt")
     infix def > (right: Date): Boolean = date > right
