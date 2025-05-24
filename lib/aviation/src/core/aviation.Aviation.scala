@@ -44,6 +44,7 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
+import vacuous.*
 
 import scala.quoted.*
 
@@ -59,12 +60,25 @@ object Aviation:
     inline def day: Day = anniversary%64
     inline def month: Month = Month.fromOrdinal(anniversary >> 6)
 
-    def apply(year: Year): Date =
-      import calendars.gregorian
-      unsafely(Date(year, month, day))
+    def apply(year: Year)
+         (using calendar: RomanCalendar, rounding: Anniversary.NonexistentLeapDay): Date =
+      safely(Date(year, month, day)).or(rounding.round(year))
+
 
   object Anniversary:
+    trait NonexistentLeapDay:
+      def round(year: Year): Date
+
     def apply(month: Month, day: Day): Anniversary = ((month.ordinal << 6) + day).toShort
+
+    given showable: (endianness: Endianness, months: Months, separation: DateSeparation)
+          => Anniversary is Showable =
+      anniversary =>
+        val month: Text = months.name(anniversary.month)
+
+        endianness.match
+          case Endianness.LittleEndian => t"${anniversary.day}${separation.separator}$month"
+          case _                       => t"$month${separation.separator}${anniversary.day}"
 
   extension (year: Year)
     @targetName("yearValue")

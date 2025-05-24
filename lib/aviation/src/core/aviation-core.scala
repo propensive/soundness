@@ -33,6 +33,7 @@
 package aviation
 
 import anticipation.*
+import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -276,6 +277,19 @@ package calendars:
   given gregorian: RomanCalendar:
     def leapYear(year: Annual): Boolean = year()%4 == 0 && year()%100 != 0 || year()%400 == 0
     def leapYearsSinceEpoch(year: Year): Int = year()/4 - year()/100 + year()/400 + 1
+
+  package nonexistentLeapDays:
+    given roundToMarch1: Anniversary.NonexistentLeapDay = year =>
+      import calendars.gregorian
+      unsafely(Date(year, Mar, Day(1)))
+
+    given roundToFebruary28: Anniversary.NonexistentLeapDay = year =>
+      import calendars.gregorian
+      unsafely(Date(year, Feb, Day(28)))
+
+    given raiseErrors: Tactic[DateError] => Anniversary.NonexistentLeapDay = year =>
+      import calendars.gregorian
+      unsafely(Date(year, Feb, Day(29)))
 
 def now()(using clock: Clock): Instant = clock()
 
