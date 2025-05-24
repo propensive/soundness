@@ -52,15 +52,24 @@ import java.util as ju
 object Aviation:
   opaque type Date = Int
   opaque type Year = Int
+  opaque type Day = Int
 
-  extension (year: Year) inline def int: Int = year
+  extension (year: Year)
+    @targetName("yearValue")
+    inline def apply(): Int = year
+
+  extension (day: Day)
+    @targetName("dayValue")
+    inline def apply(): Int = day
 
   object Year:
     inline def apply(year: Int): Year = year
     given showable: Year is Showable = _.toString.tt
     given addable: Year is Addable by Int into Year = _ + _
     given subtractable: Year is Subtractable by Int into Year = _ - _
-    given decodable: (int: Int is Decodable in Text) => Year is Decodable in Text = int.map(Year(_))
+
+    given decodable: (Int is Decodable in Text) => Year is Decodable in Text = year =>
+      Year(year.decode[Int])
 
     given orderable: Year is Orderable:
       inline def compare
@@ -69,7 +78,15 @@ object Aviation:
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
       :     Boolean =
-        if left.int == right.int then !strict else (left.int < right.int)^greaterThan
+        if left == right then !strict else (left < right)^greaterThan
+
+  object Day:
+    inline def apply(day: Int): Day = day
+
+    given decodable: (Int is Decodable in Text) => Day is Decodable in Text = day =>
+      Day(day.decode[Int])
+
+    given showable: Day is Showable = _.toString.tt
 
   def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Clockface] =
     import quotes.reflect.*

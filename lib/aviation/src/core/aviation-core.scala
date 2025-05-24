@@ -41,7 +41,7 @@ import spectacular.*
 import vacuous.*
 
 export Aviation2.{Instant, Duration}
-export Aviation.{Date, Year}
+export Aviation.{Date, Year, Day}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 given realm: Realm = realm"aviation"
@@ -175,14 +175,12 @@ package timeFormats:
 
 package calendars:
   given julian: RomanCalendar:
-    def leapYear(year: Annual): Boolean = year.int%4 == 0
-    def leapYearsSinceEpoch(year: Year): Int = year.int/4
+    def leapYear(year: Annual): Boolean = year()%4 == 0
+    def leapYearsSinceEpoch(year: Year): Int = year()/4
 
   given gregorian: RomanCalendar:
-    def leapYear(year: Annual): Boolean =
-      year.int%4 == 0 && year.int%100 != 0 || year.int%400 == 0
-
-    def leapYearsSinceEpoch(year: Year): Int = year.int/4 - year.int/100 + year.int/400 + 1
+    def leapYear(year: Annual): Boolean = year()%4 == 0 && year()%100 != 0 || year()%400 == 0
+    def leapYearsSinceEpoch(year: Year): Int = year()/4 - year()/100 + year()/400 + 1
 
 def now()(using clock: Clock): Instant = clock()
 

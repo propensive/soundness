@@ -44,7 +44,7 @@ import vacuous.*
 abstract class RomanCalendar() extends Calendar:
   type Annual = Year
   type Mensual = Month
-  type Diurnal = Int
+  type Diurnal = Day
 
   def leapYear(year: Annual): Boolean
 
@@ -56,7 +56,7 @@ abstract class RomanCalendar() extends Calendar:
   def add(date: Date, period: Timespan): Date =
     val monthTotal = mensual(date).ordinal + period.months
     val month2 = Month.fromOrdinal(monthTotal%12)
-    val year2: Year = Year(annual(date).int + period.years + monthTotal/12)
+    val year2: Year = Year(annual(date)() + period.years + monthTotal/12)
 
     safely(julianDay(year2, month2, diurnal(date)).addDays(period.days)).vouch
 
@@ -64,7 +64,7 @@ abstract class RomanCalendar() extends Calendar:
   def daysInYear(year: Annual): Int = if leapYear(year) then 366 else 365
 
   def zerothDayOfYear(year: Annual): Date =
-    Date.of(year.int*365 + leapYearsSinceEpoch(year) + 1721059)
+    Date.of(year()*365 + leapYearsSinceEpoch(year) + 1721059)
 
   def annual(date: Date): Year =
     def recur(year: Year): Year =
@@ -80,14 +80,14 @@ abstract class RomanCalendar() extends Calendar:
     val ly = leapYear(year)
     Month.values.takeWhile(_.offset(ly) < date.yearDay(using this)).last
 
-  def diurnal(date: Date): Int =
+  def diurnal(date: Date): Day =
     val year = annual(date)
     val month = mensual(date)
-    date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year))
+    Day(date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year)))
 
-  def julianDay(year: Year, month: Month, day: Int): Date raises DateError =
-    if day < 1 || day > daysInMonth(month, year) then
-      raise(DateError(t"$year-${month.numerical}-$day"))
-      Date(using calendars.julian)(Year(2000), Month(1), 1)
+  def julianDay(year: Year, month: Month, day: Day): Date raises DateError =
+    if day() < 1 || day() > daysInMonth(month, year) then
+      raise(DateError(t"$year-${month.numerical}-${day()}"))
+      Date(using calendars.julian)(Year(2000), Month(1), Day(1))
 
-    zerothDayOfYear(year).addDays(month.offset(leapYear(year)) + day)
+    zerothDayOfYear(year).addDays(month.offset(leapYear(year)) + day())
