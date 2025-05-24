@@ -37,9 +37,9 @@ export aviation
     Month, RomanCalendar, StandardTime, Timespan, Timestamp, Chronology, Timezone, TimezoneError,
     Tzdb, TzdbError, Weekday, Monthstamp, now, today, TimeEvent, am, pm, year, month, week, day,
     hour, minute, second, years, months, weeks, days, hours, minutes, seconds, tz, TimestampError,
-    Instant, Duration, Date, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec,
+    Instant, Duration, Date, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec, Day,
     DateNumerics, DateSeparation, Endianness, Years, Meridiem, TimeFormat, TimeSeparation,
-    TimeNumerics, TimeSpecificity, Year }
+    TimeNumerics, TimeSpecificity, Year, Months, Weekdays }
 
 package calendars:
   export aviation.calendars.{gregorian, julian}
