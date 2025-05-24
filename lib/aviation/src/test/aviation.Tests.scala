@@ -205,18 +205,18 @@ object Tests extends Suite(m"Aviation Tests"):
       .assert(_ == (2016, Jul, 11))
 
       test(m"Add two periods"):
-        val period = 1.day + 2.months
-        val period2 = 3.days + 1.year
+        val period = 1.days + 2.months
+        val period2 = 3.days + 1.years
         period + period2
-      .assert(_ == 4.days + 2.months + 1.year)
+      .assert(_ == 4.days + 2.months + 1.years)
 
       test(m"Simplify a period"):
         (8.months + 6.months).simplify
-      .assert(_ == 1.year + 2.months)
+      .assert(_ == 1.years + 2.months)
 
       test(m"Hours do not simplify"):
-        (1.day + 25.hours).simplify
-      .assert(_ == 25.hours + 1.day)
+        (1.days + 25.hours).simplify
+      .assert(_ == 25.hours + 1.days)
 
       test(m"Minutes simplify"):
         123.minutes.simplify
@@ -227,15 +227,15 @@ object Tests extends Suite(m"Aviation Tests"):
       .assert(_ == 2.minutes + 3.seconds)
 
       test(m"Cascading simplification"):
-        (1.hour + 59.minutes + 59.seconds + 2.seconds).simplify
-      .assert(_ == 2.hours + 1.second)
+        (1.hours + 59.minutes + 59.seconds + 2.seconds).simplify
+      .assert(_ == 2.hours + 1.seconds)
 
       test(m"Simple multiplication"):
-        (1.hour + 5.minutes)*100
+        (1.hours + 5.minutes)*100
       .assert(_ == 100.hours + 500.minutes)
 
       test(m"Simplified multiplication"):
-        ((1.hour + 5.seconds)*100).simplify
+        ((1.hours + 5.seconds)*100).simplify
       .assert(_ == 100.hours + 8.minutes + 20.seconds)
 
       test(m"Specify times"):
@@ -257,7 +257,7 @@ object Tests extends Suite(m"Aviation Tests"):
       import calendars.gregorian
       test(m"Specify datetime"):
         2018-Aug-11 at 5.25.pm
-      .assert(_ == Timestamp(Date(Year(2018), Aug, 11), Clockface(17, 25, 0)))
+      .assert(_ == Timestamp(Date(Year(2018), Aug, Day(11)), Clockface(17, 25, 0)))
 
       test(m"Add two months to a date"):
         2014-Nov-20 + 2.months
@@ -268,7 +268,7 @@ object Tests extends Suite(m"Aviation Tests"):
       .assert(_ == 2014-Nov-22)
 
       test(m"Add one year to a date"):
-        2014-Nov-20 + 1.year
+        2014-Nov-20 + 1.years
       .assert(_ == 2015-Nov-20)
 
       test(m"Add two years to a date"):

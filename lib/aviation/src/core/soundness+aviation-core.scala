@@ -56,7 +56,7 @@ package dateFormats:
   package numerics:
     export aviation.dateFormats.numerics.{fixedWidth, variableWidth}
 
-  package separation:
+  package separators:
     export aviation.dateFormats.separators.{dot, slash, hyphen, space}
 
   package years:
