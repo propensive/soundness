@@ -198,6 +198,8 @@ object Aviation:
     def day(using calendar: Calendar): calendar.Diurnal = calendar.diurnal(date)
     def month(using calendar: Calendar): calendar.Mensual = calendar.mensual(date)
 
+    def weekday: Weekday = Weekday.fromOrdinal(julianDay%7)
+
     def monthstamp(using calendar: RomanCalendar): Monthstamp =
       Monthstamp(calendar.annual(date), calendar.mensual(date))
 
