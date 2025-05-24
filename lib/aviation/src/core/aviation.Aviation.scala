@@ -53,6 +53,18 @@ object Aviation:
   opaque type Date = Int
   opaque type Year = Int
   opaque type Day = Int
+  opaque type Anniversary = Short
+
+  extension (anniversary: Anniversary)
+    inline def day: Day = anniversary%64
+    inline def month: Month = Month.fromOrdinal(anniversary >> 6)
+
+    def apply(year: Year): Date =
+      import calendars.gregorian
+      unsafely(Date(year, month, day))
+
+  object Anniversary:
+    def apply(month: Month, day: Day): Anniversary = ((month.ordinal << 6) + day).toShort
 
   extension (year: Year)
     @targetName("yearValue")
@@ -199,6 +211,10 @@ object Aviation:
     def month(using calendar: Calendar): calendar.Mensual = calendar.mensual(date)
     def year(using calendar: Calendar): calendar.Annual = calendar.annual(date)
     def weekday: Weekday = Weekday.fromOrdinal(julianDay%7)
+
+    def anniversary: Anniversary =
+      Anniversary(calendars.gregorian.mensual(date), calendars.gregorian.diurnal(date))
+
     def julianDay: Int = date
 
     infix def at (time: Clockface)(using Calendar): Timestamp = Timestamp(date, time)

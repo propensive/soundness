@@ -42,7 +42,7 @@ import spectacular.*
 import vacuous.*
 
 export Aviation2.{Instant, Duration}
-export Aviation.{Date, Year, Day}
+export Aviation.{Date, Year, Day, Anniversary}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 given realm: Realm = realm"aviation"

@@ -57,6 +57,12 @@ object Month:
 
   given showable: (months: Months) => Month is Showable = months.name(_)
 
+  given subtractable: Month is Subtractable:
+    type Operand = Int
+    type Result = Anniversary
+
+    def subtract(month: Month, day: Int): Anniversary = Anniversary(month, Day(day))
+
 enum Month:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
 
