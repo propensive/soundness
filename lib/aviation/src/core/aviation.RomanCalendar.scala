@@ -58,22 +58,29 @@ abstract class RomanCalendar() extends Calendar:
     val month2 = Month.fromOrdinal(monthTotal%12)
     val year2: Year = Year(annual(date)() + period.years + monthTotal/12)
 
-    safely(julianDay(year2, month2, diurnal(date)).addDays(period.days)).vouch
+    safely(jdn(year2, month2, diurnal(date)).addDays(period.days)).vouch
 
   def leapYearsSinceEpoch(year: Year): Int
   def daysInYear(year: Annual): Int = if leapYear(year) then 366 else 365
 
   def zerothDayOfYear(year: Annual): Date =
-    Date.of(year()*365 + leapYearsSinceEpoch(year) + 1721059)
+    Date.of(year()*365 + leapYearsSinceEpoch(year - 1) + 1721059)
 
   def annual(date: Date): Year =
-    def recur(year: Year): Year =
-      val z = zerothDayOfYear(year).julianDay
+    val j = date.jdn + 32044
+    val g = j / 146097
+    val dg = j % 146097
+    val c = ((dg / 36524 + 1) * 3) / 4
+    val dc = dg - c * 36524
+    val b = dc / 1461
+    val db = dc % 1461
+    val a = ((db / 365 + 1) * 3) / 4
+    val da = db - a * 365
 
-      if z < date.julianDay && z + daysInYear(year) > date.julianDay then year
-      else recur(year + 1)
+    val y = g * 400 + c * 100 + b * 4 + a
+    val year = y - 4800 // Adjust back from algorithm's origin
 
-    recur(Year(((date.julianDay - 1721059)/366).toInt))
+    Year(year)
 
   def mensual(date: Date): Month =
     val year = annual(date)
@@ -83,9 +90,9 @@ abstract class RomanCalendar() extends Calendar:
   def diurnal(date: Date): Day =
     val year = annual(date)
     val month = mensual(date)
-    Day(date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year)))
+    Day(date.jdn - zerothDayOfYear(year).jdn - month.offset(leapYear(year)))
 
-  def julianDay(year: Year, month: Month, day: Day): Date raises DateError =
+  def jdn(year: Year, month: Month, day: Day): Date raises DateError =
     if day() < 1 || day() > daysInMonth(month, year) then
       raise(DateError(t"$year-${month.numerical}-${day()}"))
       Date(using calendars.julian)(Year(2000), Month(1), Day(1))

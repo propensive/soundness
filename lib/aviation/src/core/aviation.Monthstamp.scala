@@ -55,4 +55,4 @@ object Monthstamp:
     type Operand = Int
 
     def subtract(monthstamp: Monthstamp, day: Int): Date =
-      unsafely(calendars.gregorian.julianDay(monthstamp.year, monthstamp.month, Day(day)))
+      unsafely(calendars.gregorian.jdn(monthstamp.year, monthstamp.month, Day(day)))

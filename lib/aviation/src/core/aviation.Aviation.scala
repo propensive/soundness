@@ -145,9 +145,10 @@ object Aviation:
 
     def of(day: Int): Date = day
 
-    def apply(using cal: Calendar)(year: cal.Annual, month: cal.Mensual, day: cal.Diurnal)
+    def apply(using calendar: Calendar)
+         (year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal)
     :     Date raises DateError =
-      cal.julianDay(year, month, day)
+      calendar.jdn(year, month, day)
 
     given showable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable =
       date =>
@@ -224,12 +225,12 @@ object Aviation:
     def day(using calendar: Calendar): calendar.Diurnal = calendar.diurnal(date)
     def month(using calendar: Calendar): calendar.Mensual = calendar.mensual(date)
     def year(using calendar: Calendar): calendar.Annual = calendar.annual(date)
-    def weekday: Weekday = Weekday.fromOrdinal(julianDay%7)
+    def weekday: Weekday = Weekday.fromOrdinal(jdn%7)
 
     def anniversary: Anniversary =
       Anniversary(calendars.gregorian.mensual(date), calendars.gregorian.diurnal(date))
 
-    def julianDay: Int = date
+    def jdn: Int = date
 
     infix def at (time: Clockface)(using Calendar): Timestamp = Timestamp(date, time)
 

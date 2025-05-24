@@ -99,7 +99,7 @@ object Tests extends Suite(m"Aviation Tests"):
       .assert(_ == 13)
 
       test(m"There are 19 leap seconds in the first half of 1980"):
-        LeapSeconds.during(Year(1980), false).tap(println)
+        LeapSeconds.during(Year(1980), false)
       .assert(_ == 19)
 
       test(m"There are 19 leap seconds in the first half of 1981"):
@@ -156,27 +156,31 @@ object Tests extends Suite(m"Aviation Tests"):
       .assert(_.all(!_))
 
       test(m"Check recent Julian Day"):
-        (2022-Dec-16).julianDay
+        (2022-Dec-16).jdn
       .assert(_ == 2459930)
 
       test(m"Check Julian Day in 1950"):
-        (1950-Mar-10).julianDay
+        (1950-Mar-10).jdn
       .assert(_ == 2433351)
 
       test(m"Check Julian Day in 1650"):
-        (1650-Mar-10).julianDay
+        (1650-Mar-10).jdn
       .assert(_ == 2323779)
 
+      test(m"Check Julian Day in Year 1582"):
+        (1582-Oct-15).jdn
+      .assert(_ == 2299161)
+
       test(m"Check Julian Day in Year 1600"):
-        (1600-Jan-1).julianDay
-      .assert(_ == 2305449)
+        (1600-Jan-1).jdn
+      .assert(_ == 2305448)
 
       test(m"Check Julian Day in Year 1"):
-        (1-Jan-1).julianDay
+        (1-Jan-1).jdn
       .assert(_ == 1721426)
 
       test(m"Get zeroth day of year"):
-        (2010-Jan-1).julianDay -> (calendars.gregorian.zerothDayOfYear(Year(2010)).julianDay + 1)
+        (2010-Jan-1).jdn -> (calendars.gregorian.zerothDayOfYear(Year(2010)).jdn + 1)
       .assert(_ == _)
 
       test(m"Get days in non-leap-year"):
@@ -282,3 +286,52 @@ object Tests extends Suite(m"Aviation Tests"):
       // test(m"Read TZDB file"):
       //   Tzdb.parseFile(t"europe")
       // .assert(_ == List())
+
+    suite(m"Decoding instants"):
+      test(m"RFC1123 basic with GMT timezone"):
+        t"Sun, 06 Nov 1994 08:49:37 GMT".decode[Instant]
+      . assert(_ == Instant(784111777000L))
+
+      test(m"ISO 8601 with Z suffix (UTC)"):
+        t"1994-11-06T08:49:37Z".decode[Instant]
+      . assert(_ == Instant(784111777000L))
+
+      test(m"ISO 8601 with positive timezone offset"):
+        t"1994-11-06T09:49:37+01:00".decode[Instant]
+      . assert(_ == Instant(784111777000L))
+      // Tests handling of a +01:00 offset shifting back to UTC.
+
+      test(m"ISO 8601 with negative timezone offset"):
+        t"1994-11-06T03:49:37-05:00".decode[Instant]
+      . assert(_ == Instant(784111777000L))
+      // Tests handling of a -05:00 offset shifting forward to UTC.
+
+      test(m"ISO 8601 with fractional seconds (.123)"):
+        t"2020-02-29T12:34:56.123Z".decode[Instant]
+      . assert(_ == Instant(1582979696123L))
+      // Tests millisecond precision with leap day.
+
+      test(m"ISO 8601 with nanosecond precision (.123456789)"):
+        t"2020-02-29T12:34:56.123456789Z".decode[Instant]
+      . assert(_ == Instant(1582979696123L))
+      // Nanoseconds are truncated to milliseconds for Instant comparison.
+
+      test(m"ISO 8601 date-only format (midnight UTC)"):
+        t"2020-12-31".decode[Instant]
+      . assert(_ == Instant(1609372800000L))
+      // Interprets as midnight start of day in UTC.
+
+      test(m"RFC1123 with unusual day of week (consistency check)"):
+        t"Tue, 01 Jan 2019 00:00:00 GMT".decode[Instant]
+      . assert(_ == Instant(1546300800000L))
+      // Ensures day-of-week is ignored or matched for consistency.
+
+      test(m"ISO 8601 leap second accepted as next second"):
+        t"2016-12-31T23:59:60Z".decode[Instant]
+      . assert(_ == Instant(1483228800000L))
+      // Interprets 23:59:60 as 2017-01-01T00:00:00Z.
+
+      test(m"ISO 8601 with timezone offset and fractional seconds"):
+        t"2023-03-25T10:15:30.456+02:00".decode[Instant]
+      . assert(_ == Instant(1679732130456L))
+      // Combines offset parsing and fractional milliseconds.
