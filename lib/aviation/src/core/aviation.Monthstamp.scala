@@ -35,8 +35,7 @@ package aviation
 import contingency.*
 import symbolism.*
 
-case class Monthstamp(year: Year, month: Month):
-  import scala.compiletime.ops.int.*
+case class Monthstamp(year: Year, month: Month)
 
 object Monthstamp:
   given dayOfMonth: Monthstamp is Subtractable:
