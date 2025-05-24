@@ -51,6 +51,25 @@ import java.util as ju
 
 object Aviation:
   opaque type Date = Int
+  opaque type Year = Int
+
+  extension (year: Year) inline def int: Int = year
+
+  object Year:
+    inline def apply(year: Int): Year = year
+    given showable: Year is Showable = _.toString.tt
+    given addable: Year is Addable by Int into Year = _ + _
+    given subtractable: Year is Subtractable by Int into Year = _ - _
+    given decodable: (int: Int is Decodable in Text) => Year is Decodable in Text = int.map(Year(_))
+
+    given orderable: Year is Orderable:
+      inline def compare
+                  (inline left:        Year,
+                   inline right:       Year,
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
+      :     Boolean =
+        if left.int == right.int then !strict else (left.int < right.int)^greaterThan
 
   def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Clockface] =
     import quotes.reflect.*
@@ -80,6 +99,7 @@ object Aviation:
 
   object Date:
     erased given underlying: Underlying[Date, Int] = !!
+
     def of(day: Int): Date = day
 
     def apply(using cal: Calendar)(year: cal.YearUnit, month: cal.MonthUnit, day: cal.DayUnit)
@@ -160,6 +180,10 @@ object Aviation:
   extension (date: Date)
     def day(using calendar: Calendar): calendar.DayUnit = calendar.getDay(date)
     def month(using calendar: Calendar): calendar.MonthUnit = calendar.getMonth(date)
+
+    def monthstamp(using calendar: RomanCalendar): Monthstamp =
+      Monthstamp(calendar.getYear(date), calendar.getMonth(date))
+
     def year(using calendar: Calendar): calendar.YearUnit = calendar.getYear(date)
 
     def yearDay(using calendar: Calendar): Int =

@@ -44,7 +44,7 @@ object Moment:
 case class Moment(date: Date, time: Clockface, timezone: Timezone):
   def instant(using RomanCalendar): Instant =
     val ldt = jt.LocalDateTime.of
-               (date.year, date.month.numerical, date.day, time.hour, time.minute, time.second)
+               (date.year.int, date.month.numerical, date.day, time.hour, time.minute, time.second)
 
     Instant.of(ldt.nn.atZone(jt.ZoneId.of(timezone.name.s)).nn.toInstant.nn.toEpochMilli)
 

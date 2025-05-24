@@ -40,4 +40,9 @@ open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
     val tweak = (if integral < 0 then -0.5 else 0.5)/modulus
     Money(this)(integral, ((value - integral + tweak)*modulus).toInt)
 
+  def minor(long: Long): Money[this.type] =
+    val major = long/modulus
+    val minor = long%modulus
+    Money(this)(major, minor.toInt)
+
   def zero: Money[this.type] = apply(0.00)

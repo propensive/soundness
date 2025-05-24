@@ -71,88 +71,88 @@ object Tests extends Suite(m"Aviation Tests"):
 
     suite(m"Leap Seconds tests"):
       test(m"There are 10 leap seconds for any year before 1972"):
-        LeapSeconds.during(1900, false)
+        LeapSeconds.during(Year(1900), false)
       .assert(_ == 10)
 
       test(m"There are 10 leap seconds in the first half of 1972"):
-        LeapSeconds.during(1972, false)
+        LeapSeconds.during(Year(1972), false)
       .assert(_ == 10)
 
       test(m"There are 11 leap seconds in the second half of 1972"):
-        LeapSeconds.during(1972, true)
+        LeapSeconds.during(Year(1972), true)
       .assert(_ == 11)
 
       test(m"There are 12 leap seconds in the first half of 1973"):
-        LeapSeconds.during(1973, false)
+        LeapSeconds.during(Year(1973), false)
       .assert(_ == 12)
 
       test(m"There are 12 leap seconds in the second half of 1973"):
-        LeapSeconds.during(1973, true)
+        LeapSeconds.during(Year(1973), true)
       .assert(_ == 12)
 
       test(m"There are 13 leap seconds in the first half of 1974"):
-        LeapSeconds.during(1974, false)
+        LeapSeconds.during(Year(1974), false)
       .assert(_ == 13)
 
       test(m"There are 13 leap seconds in the second half of 1974"):
-        LeapSeconds.during(1974, true)
+        LeapSeconds.during(Year(1974), true)
       .assert(_ == 13)
 
       test(m"There are 19 leap seconds in the first half of 1980"):
-        LeapSeconds.during(1980, false).tap(println)
+        LeapSeconds.during(Year(1980), false).tap(println)
       .assert(_ == 19)
 
       test(m"There are 19 leap seconds in the first half of 1981"):
-        LeapSeconds.during(1981, false)
+        LeapSeconds.during(Year(1981), false)
       .assert(_ == 19)
 
       test(m"There are 20 leap seconds in the second half of 1981"):
-        LeapSeconds.during(1981, true)
+        LeapSeconds.during(Year(1981), true)
       .assert(_ == 20)
 
       test(m"There are 19 leap seconds in the first half of 1981"):
-        LeapSeconds.during(1981, false)
+        LeapSeconds.during(Year(1981), false)
       .assert(_ == 19)
 
       test(m"There are 20 leap seconds in the second half of 1981"):
-        LeapSeconds.during(1981, true)
+        LeapSeconds.during(Year(1981), true)
       .assert(_ == 20)
 
       test(m"There are 20 leap seconds in the first half of 1982"):
-        LeapSeconds.during(1982, false)
+        LeapSeconds.during(Year(1982), false)
       .assert(_ == 20)
 
       test(m"There are 21 leap seconds in the second half of 1982"):
-        LeapSeconds.during(1982, true)
+        LeapSeconds.during(Year(1982), true)
       .assert(_ == 21)
 
       test(m"There are 24 leap seconds in the second half of 1988"):
-        LeapSeconds.during(1988, true)
+        LeapSeconds.during(Year(1988), true)
       .assert(_ == 24)
 
       test(m"There are 32 leap seconds in the first half of 2000"):
-        LeapSeconds.during(2000, false)
+        LeapSeconds.during(Year(2000), false)
       .assert(_ == 32)
 
       test(m"There are 37 leap seconds in the first half of 2017"):
-        LeapSeconds.during(2017, false)
+        LeapSeconds.during(Year(2017), false)
       .assert(_ == 37)
 
       test(m"There are 37 leap seconds in the first half of 2100"):
-        LeapSeconds.during(2100, false)
+        LeapSeconds.during(Year(2100), false)
       .assert(_ == 37)
 
     suite(m"Gregorian Calendar Tests"):
       test(m"2000 is a leap year"):
-        calendars.gregorian.leapYear(2000)
+        calendars.gregorian.leapYear(Year(2000))
       .assert(_ == true)
 
       test(m"1800, 1900, 2100, 2200 are not leap years"):
-        List(1800, 1900, 2100, 2200).map(calendars.gregorian.leapYear)
+        List(Year(1800), Year(1900), Year(2100), Year(2200)).map(calendars.gregorian.leapYear)
       .assert(_.all(!_))
 
       test(m"Years not divisble by 4 are never leap years"):
-        List(1985, 2001, 2023, 1843).map(calendars.gregorian.leapYear)
+        List(Year(1985), Year(200), Year(202), Year(1843)).map(calendars.gregorian.leapYear)
       .assert(_.all(!_))
 
       test(m"Check recent Julian Day"):
@@ -176,15 +176,15 @@ object Tests extends Suite(m"Aviation Tests"):
       .assert(_ == 1721426)
 
       test(m"Get zeroth day of year"):
-        (2010-Jan-1).julianDay -> (calendars.gregorian.zerothDayOfYear(2010).julianDay + 1)
+        (2010-Jan-1).julianDay -> (calendars.gregorian.zerothDayOfYear(Year(2010)).julianDay + 1)
       .assert(_ == _)
 
       test(m"Get days in non-leap-year"):
-        calendars.gregorian.daysInYear(1995)
+        calendars.gregorian.daysInYear(Year(1995))
       .assert(_ == 365)
 
       test(m"Get days in leap-year"):
-        calendars.gregorian.daysInYear(1996)
+        calendars.gregorian.daysInYear(Year(1996))
       .assert(_ == 366)
 
       test(m"Get Year from Date"):
@@ -257,7 +257,7 @@ object Tests extends Suite(m"Aviation Tests"):
       import calendars.gregorian
       test(m"Specify datetime"):
         2018-Aug-11 at 5.25.pm
-      .assert(_ == Timestamp(Date(2018, Aug, 11), Clockface(17, 25, 0)))
+      .assert(_ == Timestamp(Date(Year(2018), Aug, 11), Clockface(17, 25, 0)))
 
       test(m"Add two months to a date"):
         2014-Nov-20 + 2.months

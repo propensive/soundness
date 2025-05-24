@@ -35,13 +35,13 @@ package aviation
 import contingency.*
 import symbolism.*
 
-case class YearMonth(year: Int, month: Month):
+case class Monthstamp(year: Year, month: Month):
   import scala.compiletime.ops.int.*
 
-object YearMonth:
-  given dayOfMonth: YearMonth is Subtractable:
+object Monthstamp:
+  given dayOfMonth: Monthstamp is Subtractable:
     type Result = Date
     type Operand = Int
 
-    def subtract(yearMonth: YearMonth, day: Int): Date =
-      unsafely(calendars.gregorian.julianDay(yearMonth.year, yearMonth.month, day))
+    def subtract(monthstamp: Monthstamp, day: Int): Date =
+      unsafely(calendars.gregorian.julianDay(monthstamp.year, monthstamp.month, day))
