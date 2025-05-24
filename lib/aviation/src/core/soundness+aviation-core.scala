@@ -44,6 +44,9 @@ export aviation
 package calendars:
   export aviation.calendars.{gregorian, julian}
 
+  package nonexistentLeapDays:
+    export aviation.calendars.nonexistentLeapDays.{roundUp, roundDown, raiseErrors}
+
 package dateFormats:
   export aviation.dateFormats.{european, american, unitedKingdom, southEastAsia, iso8601}
 

@@ -279,11 +279,11 @@ package calendars:
     def leapYearsSinceEpoch(year: Year): Int = year()/4 - year()/100 + year()/400 + 1
 
   package nonexistentLeapDays:
-    given roundToMarch1: Anniversary.NonexistentLeapDay = year =>
+    given roundUp: Anniversary.NonexistentLeapDay = year =>
       import calendars.gregorian
       unsafely(Date(year, Mar, Day(1)))
 
-    given roundToFebruary28: Anniversary.NonexistentLeapDay = year =>
+    given roundDown: Anniversary.NonexistentLeapDay = year =>
       import calendars.gregorian
       unsafely(Date(year, Feb, Day(28)))
 
