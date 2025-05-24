@@ -68,29 +68,46 @@ abstract class RomanCalendar() extends Calendar:
 
   def annual(date: Date): Year =
     val j = date.jdn + 32044
-    val g = j / 146097
-    val dg = j % 146097
-    val c = ((dg / 36524 + 1) * 3) / 4
-    val dc = dg - c * 36524
-    val b = dc / 1461
-    val db = dc % 1461
-    val a = ((db / 365 + 1) * 3) / 4
+    val g = j/146097
+    val dg = j%146097
+    val c = ((dg/36524 + 1)*3)/4
+    val dc = dg - c*36524
+    val b = dc/1461
+    val db = dc%1461
+    val a = ((db/365 + 1)*3)/4
     val da = db - a * 365
 
-    val y = g * 400 + c * 100 + b * 4 + a
-    val year = y - 4800 // Adjust back from algorithm's origin
+    val y = g*400 + c*100 + b*4 + a
+    val m = (da*5 + 308)/153 - 2
+    val d = da - (m + 4) * 153/5 + 122
 
-    Year(year)
+    Year(y - 4800 + (m + 2)/12)
 
   def mensual(date: Date): Month =
-    val year = annual(date)
-    val ly = leapYear(year)
-    Month.values.takeWhile(_.offset(ly) < date.yearDay(using this)).last
+    val j = date.jdn + 32044
+    val g = j/146097
+    val dg = j%146097
+    val c = ((dg/36524 + 1)*3)/4
+    val dc = dg - c*36524
+    val db = dc%1461
+    val a = ((db/365 + 1)*3)/4
+    val da = db - a * 365
+    val m = (da*5 + 308)/153 - 2
+
+    Month.fromOrdinal((m + 2)%12)
 
   def diurnal(date: Date): Day =
-    val year = annual(date)
-    val month = mensual(date)
-    Day(date.jdn - zerothDayOfYear(year).jdn - month.offset(leapYear(year)))
+    val j = date.jdn + 32044
+    val g = j/146097
+    val dg = j%146097
+    val c = ((dg/36524 + 1)*3)/4
+    val dc = dg - c*36524
+    val db = dc%1461
+    val a = ((db/365 + 1)*3)/4
+    val da = db - a * 365
+    val m = (da*5 + 308)/153 - 2
+
+    Day(da - (m + 4) * 153/5 + 122 + 1)
 
   def jdn(year: Year, month: Month, day: Day): Date raises DateError =
     if day() < 1 || day() > daysInMonth(month, year) then
