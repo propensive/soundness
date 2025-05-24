@@ -190,7 +190,7 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Get Year from Date"):
         given calendar: Calendar = calendars.gregorian
         val date = 2016-Jul-11
-        calendar.getYear(date)
+        calendar.annual(date)
       .assert(_ == 2016)
 
       test(m"Check Gregorian date"):

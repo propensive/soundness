@@ -102,7 +102,7 @@ object Aviation:
 
     def of(day: Int): Date = day
 
-    def apply(using cal: Calendar)(year: cal.YearUnit, month: cal.MonthUnit, day: cal.DayUnit)
+    def apply(using cal: Calendar)(year: cal.Annual, month: cal.Mensual, day: cal.Diurnal)
     :     Date raises DateError =
       cal.julianDay(year, month, day)
 
@@ -178,16 +178,16 @@ object Aviation:
         raise(DateError(value)) yet Date(using calendars.gregorian)(2000, Month(1), 1)
 
   extension (date: Date)
-    def day(using calendar: Calendar): calendar.DayUnit = calendar.getDay(date)
-    def month(using calendar: Calendar): calendar.MonthUnit = calendar.getMonth(date)
+    def day(using calendar: Calendar): calendar.Diurnal = calendar.diurnal(date)
+    def month(using calendar: Calendar): calendar.Mensual = calendar.mensual(date)
 
     def monthstamp(using calendar: RomanCalendar): Monthstamp =
-      Monthstamp(calendar.getYear(date), calendar.getMonth(date))
+      Monthstamp(calendar.annual(date), calendar.mensual(date))
 
-    def year(using calendar: Calendar): calendar.YearUnit = calendar.getYear(date)
+    def year(using calendar: Calendar): calendar.Annual = calendar.annual(date)
 
     def yearDay(using calendar: Calendar): Int =
-      date - calendar.zerothDayOfYear(calendar.getYear(date))
+      date - calendar.zerothDayOfYear(calendar.annual(date))
 
     def julianDay: Int = date
     def addDays(count: Int): Date = date + count

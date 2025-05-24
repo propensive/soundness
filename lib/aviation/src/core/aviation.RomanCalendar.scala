@@ -42,31 +42,31 @@ import symbolism.*
 import vacuous.*
 
 abstract class RomanCalendar() extends Calendar:
-  type YearUnit = Year
-  type MonthUnit = Month
-  type DayUnit = Int
+  type Annual = Year
+  type Mensual = Month
+  type Diurnal = Int
 
-  def leapYear(year: YearUnit): Boolean
+  def leapYear(year: Annual): Boolean
 
-  def daysInMonth(month: MonthUnit, year: YearUnit): Int = month match
+  def daysInMonth(month: Mensual, year: Annual): Int = month match
     case Jan | Mar | May | Jul | Aug | Oct | Dec => 31
     case Apr | Jun | Sep | Nov                   => 30
     case Feb                                     => if leapYear(year) then 29 else 28
 
   def add(date: Date, period: Timespan): Date =
-    val monthTotal = getMonth(date).ordinal + period.months
+    val monthTotal = mensual(date).ordinal + period.months
     val month2 = Month.fromOrdinal(monthTotal%12)
-    val year2: Year = Year(getYear(date).int + period.years + monthTotal/12)
+    val year2: Year = Year(annual(date).int + period.years + monthTotal/12)
 
-    safely(julianDay(year2, month2, getDay(date)).addDays(period.days)).vouch
+    safely(julianDay(year2, month2, diurnal(date)).addDays(period.days)).vouch
 
   def leapYearsSinceEpoch(year: Year): Int
-  def daysInYear(year: YearUnit): Int = if leapYear(year) then 366 else 365
+  def daysInYear(year: Annual): Int = if leapYear(year) then 366 else 365
 
-  def zerothDayOfYear(year: YearUnit): Date =
+  def zerothDayOfYear(year: Annual): Date =
     Date.of(year.int*365 + leapYearsSinceEpoch(year) + 1721059)
 
-  def getYear(date: Date): Year =
+  def annual(date: Date): Year =
     def recur(year: Year): Year =
       val z = zerothDayOfYear(year).julianDay
 
@@ -75,14 +75,14 @@ abstract class RomanCalendar() extends Calendar:
 
     recur(Year(((date.julianDay - 1721059)/366).toInt))
 
-  def getMonth(date: Date): Month =
-    val year = getYear(date)
+  def mensual(date: Date): Month =
+    val year = annual(date)
     val ly = leapYear(year)
     Month.values.takeWhile(_.offset(ly) < date.yearDay(using this)).last
 
-  def getDay(date: Date): Int =
-    val year = getYear(date)
-    val month = getMonth(date)
+  def diurnal(date: Date): Int =
+    val year = annual(date)
+    val month = mensual(date)
     date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year))
 
   def julianDay(year: Year, month: Month, day: Int): Date raises DateError =

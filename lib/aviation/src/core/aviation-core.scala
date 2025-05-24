@@ -175,11 +175,11 @@ package timeFormats:
 
 package calendars:
   given julian: RomanCalendar:
-    def leapYear(year: YearUnit): Boolean = year.int%4 == 0
+    def leapYear(year: Annual): Boolean = year.int%4 == 0
     def leapYearsSinceEpoch(year: Year): Int = year.int/4
 
   given gregorian: RomanCalendar:
-    def leapYear(year: YearUnit): Boolean =
+    def leapYear(year: Annual): Boolean =
       year.int%4 == 0 && year.int%100 != 0 || year.int%400 == 0
 
     def leapYearsSinceEpoch(year: Year): Int = year.int/4 - year.int/100 + year.int/400 + 1
