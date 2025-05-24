@@ -35,6 +35,7 @@ package aviation
 import anticipation.*
 import gossamer.*
 import prepositional.*
+import spectacular.*
 import symbolism.*
 
 object Month:
@@ -53,6 +54,8 @@ object Month:
     type Operand = Month
 
     def subtract(year: Int, month: Month) = new Monthstamp(Year(year), month)
+
+  given showable: (months: Months) => Month is Showable = months.name(_)
 
 enum Month:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec

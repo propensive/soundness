@@ -36,6 +36,7 @@ import anticipation.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import hieroglyph.*
 import prepositional.*
 import spectacular.*
 import vacuous.*
@@ -88,8 +89,88 @@ package dateFormats:
     given twoDigits: YearFormat = YearFormat.TwoDigitYear
     given full: YearFormat = YearFormat.FullYear
 
-package timeFormats:
+  package weekdayNames:
+    given english: Weekdays =
+      case Weekday.Mon => t"Monday"
+      case Weekday.Tue => t"Tuesday"
+      case Weekday.Wed => t"Wednesday"
+      case Weekday.Thu => t"Thursday"
+      case Weekday.Fri => t"Friday"
+      case Weekday.Sat => t"Saturday"
+      case Weekday.Sun => t"Sunday"
 
+    given englishShort: Weekdays =
+      case Weekday.Mon => t"Mon"
+      case Weekday.Tue => t"Tue"
+      case Weekday.Wed => t"Wed"
+      case Weekday.Thu => t"Thu"
+      case Weekday.Fri => t"Fri"
+      case Weekday.Sat => t"Sat"
+      case Weekday.Sun => t"Sun"
+
+    given oneLetterAmbiguous: Weekdays =
+      case Weekday.Mon => t"M"
+      case Weekday.Tue => t"T"
+      case Weekday.Wed => t"W"
+      case Weekday.Thu => t"T"
+      case Weekday.Fri => t"F"
+      case Weekday.Sat => t"S"
+      case Weekday.Sun => t"S"
+
+    given shortestUnambiguous: Weekdays =
+      case Weekday.Mon => t"M"
+      case Weekday.Tue => t"Tu"
+      case Weekday.Wed => t"W"
+      case Weekday.Thu => t"Th"
+      case Weekday.Fri => t"F"
+      case Weekday.Sat => t"Sa"
+      case Weekday.Sun => t"Su"
+
+    given twoLetter: Weekdays =
+      case Weekday.Mon => t"Mo"
+      case Weekday.Tue => t"Tu"
+      case Weekday.Wed => t"We"
+      case Weekday.Thu => t"Th"
+      case Weekday.Fri => t"Fr"
+      case Weekday.Sat => t"Sa"
+      case Weekday.Sun => t"Su"
+
+  package monthNames:
+    given english: Months =
+      case Jan => t"January"
+      case Feb => t"February"
+      case Mar => t"March"
+      case Apr => t"April"
+      case May => t"May"
+      case Jun => t"June"
+      case Jul => t"July"
+      case Aug => t"August"
+      case Sep => t"September"
+      case Oct => t"October"
+      case Nov => t"November"
+      case Dec => t"December"
+
+    given englishShort: Months =
+      case Jan => t"Jan"
+      case Feb => t"Feb"
+      case Mar => t"Mar"
+      case Apr => t"Apr"
+      case May => t"May"
+      case Jun => t"Jun"
+      case Jul => t"Jul"
+      case Aug => t"Aug"
+      case Sep => t"Sep"
+      case Oct => t"Oct"
+      case Nov => t"Nov"
+      case Dec => t"Dec"
+
+    given numeric: Months = _.numerical.show
+
+    given twoDigit: Months = month =>
+      import textMetrics.uniform
+      month.numerical.show.pad(2, Rtl, '0')
+
+package timeFormats:
   given military: Clockface is Showable =
     import hourCount.twentyFourHour, numerics.fixedWidth, separation.none, specificity.minutes
     Clockface.showable.text(_)
