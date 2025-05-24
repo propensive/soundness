@@ -86,8 +86,8 @@ package dateFormats:
     given space: DateSeparation = () => t" "
 
   package yearFormats:
-    given twoDigits: YearFormat = YearFormat.TwoDigitYear
-    given full: YearFormat = YearFormat.FullYear
+    given twoDigits: Years = Years.TwoDigitYear
+    given full: Years = Years.FullYear
 
   package weekdayNames:
     given english: Weekdays =

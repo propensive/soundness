@@ -33,11 +33,24 @@
 package aviation
 
 import contingency.*
+import gossamer.*
+import spectacular.*
 import symbolism.*
 
 case class Monthstamp(year: Year, month: Month)
 
 object Monthstamp:
+  given showable: (months: Months, separation: DateSeparation, endianness: Endianness, years: Years)
+        => Monthstamp is Showable =
+
+    monthstamp =>
+      endianness match
+        case Endianness.BigEndian | Endianness.MiddleEndian =>
+          t"${monthstamp.month}${separation.separator}${monthstamp.year}"
+
+        case Endianness.LittleEndian =>
+          t"${monthstamp.year}${separation.separator}${monthstamp.month}"
+
   given dayOfMonth: Monthstamp is Subtractable:
     type Result = Date
     type Operand = Int

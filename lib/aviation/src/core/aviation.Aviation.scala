@@ -123,15 +123,15 @@ object Aviation:
     :     Date raises DateError =
       cal.julianDay(year, month, day)
 
-    given showable: (Endianness, DateNumerics, DateSeparation, YearFormat) => Date is Showable =
+    given showable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable =
       date =>
-        import DateNumerics.*, YearFormat.*
+        import DateNumerics.*, Years.*
         import textMetrics.uniform
         given calendar: RomanCalendar = calendars.gregorian
 
         def pad(n: Int): Text = (n%100).show.pad(2, Rtl, '0')
 
-        val year: Text = summon[YearFormat] match
+        val year: Text = summon[Years] match
           case TwoDigitYear => pad(date.year)
           case FullYear     => date.year.show
 
