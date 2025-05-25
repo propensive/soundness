@@ -50,8 +50,9 @@ object Timezone:
   def apply(name: Text)(using Tactic[TimezoneError]): Timezone = parse(name)
 
   def parse(name: Text)(using Tactic[TimezoneError]): Timezone =
-    if ids.contains(name) then new Timezone(name)
-    else raise(TimezoneError(name)) yet new Timezone(ids.head)
+    try jt.ZoneId.of(name.s) yet new Timezone(name)
+    catch case _: jt.zone.ZoneRulesException =>
+      raise(TimezoneError(name)) yet new Timezone(ids.head)
 
   object Tz extends Verifier[Timezone]:
     def verify(name: Text): Timezone =

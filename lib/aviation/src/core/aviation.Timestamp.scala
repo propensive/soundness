@@ -61,21 +61,18 @@ object Timestamp:
 
         . within:
             Timestamp
-             (Date(year.decode[Year],
-              Month(month.decode[Int]),
-              day.decode[Int]),
-              Clockface(Base24(hour.decode[Int]),
-              Base60(minute.decode[Int]),
-              Base60(second.decode[Int])))
+             (Date(year.decode[Year], Month(month.decode[Int]), Day(day.decode[Int])),
+              Clockface
+               (Base24(hour.decode[Int]), Base60(minute.decode[Int]), Base60(second.decode[Int])))
 
       case value =>
         raise(TimestampError(value)) yet Timestamp(2000-Jan-1, Clockface(0, 0, 0))
 
 case class Timestamp(date: Date, time: Clockface):
-  def year(using calendar: Calendar): calendar.YearUnit = date.year
-  def month(using calendar: Calendar): calendar.MonthUnit = date.month
+  def year(using calendar: Calendar): calendar.Annual = date.year
+  def month(using calendar: Calendar): calendar.Mensual = date.month
   def monthstamp(using RomanCalendar): Monthstamp = date.monthstamp
-  def day(using calendar: Calendar): calendar.DayUnit = date.day
+  def day(using calendar: Calendar): calendar.Diurnal = date.day
   def hour: Int = time.hour
   def minute: Int = time.minute
   def second: Int = time.second
@@ -84,8 +81,15 @@ case class Timestamp(date: Date, time: Clockface):
 
   def stdlib(using RomanCalendar): jt.LocalDateTime =
     jt.LocalDateTime.of
-     (date.year.int, date.month.ordinal, date.day, time.hour, time.minute, time.second)
+     (date.year(),
+      date.month.numerical,
+      date.day(),
+      time.hour,
+      time.minute,
+      time.second,
+      time.nanos)
     . nn
 
   def instant(using timezone: Timezone, calendar: RomanCalendar): Instant =
+    import dateFormats.european
     Instant(stdlib.atZone(timezone.stdlib).nn.toInstant.nn.toEpochMilli())

@@ -44,6 +44,7 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
+import vacuous.*
 
 import scala.quoted.*
 
@@ -52,15 +53,49 @@ import java.util as ju
 object Aviation:
   opaque type Date = Int
   opaque type Year = Int
+  opaque type Day = Int
+  opaque type Anniversary = Short
 
-  extension (year: Year) inline def int: Int = year
+  extension (anniversary: Anniversary)
+    inline def day: Day = anniversary%64
+    inline def month: Month = Month.fromOrdinal(anniversary >> 6)
+
+    def apply(year: Year)
+         (using calendar: RomanCalendar, rounding: Anniversary.NonexistentLeapDay): Date =
+      safely(Date(year, month, day)).or(rounding.round(year))
+
+
+  object Anniversary:
+    trait NonexistentLeapDay:
+      def round(year: Year): Date
+
+    def apply(month: Month, day: Day): Anniversary = ((month.ordinal << 6) + day).toShort
+
+    given showable: (endianness: Endianness, months: Months, separation: DateSeparation)
+          => Anniversary is Showable =
+      anniversary =>
+        val month: Text = months.name(anniversary.month)
+
+        endianness.match
+          case Endianness.LittleEndian => t"${anniversary.day}${separation.separator}$month"
+          case _                       => t"$month${separation.separator}${anniversary.day}"
+
+  extension (year: Year)
+    @targetName("yearValue")
+    inline def apply(): Int = year
+
+  extension (day: Day)
+    @targetName("dayValue")
+    inline def apply(): Int = day
 
   object Year:
     inline def apply(year: Int): Year = year
     given showable: Year is Showable = _.toString.tt
     given addable: Year is Addable by Int into Year = _ + _
     given subtractable: Year is Subtractable by Int into Year = _ - _
-    given decodable: (int: Int is Decodable in Text) => Year is Decodable in Text = int.map(Year(_))
+
+    given decodable: (Int is Decodable in Text) => Year is Decodable in Text = year =>
+      Year(year.decode[Int])
 
     given orderable: Year is Orderable:
       inline def compare
@@ -69,7 +104,15 @@ object Aviation:
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
       :     Boolean =
-        if left.int == right.int then !strict else (left.int < right.int)^greaterThan
+        if left == right then !strict else (left < right)^greaterThan
+
+  object Day:
+    inline def apply(day: Int): Day = day
+
+    given decodable: (Int is Decodable in Text) => Day is Decodable in Text = day =>
+      Day(day.decode[Int])
+
+    given showable: Day is Showable = _.toString.tt
 
   def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Clockface] =
     import quotes.reflect.*
@@ -102,19 +145,20 @@ object Aviation:
 
     def of(day: Int): Date = day
 
-    def apply(using cal: Calendar)(year: cal.YearUnit, month: cal.MonthUnit, day: cal.DayUnit)
+    def apply(using calendar: Calendar)
+         (year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal)
     :     Date raises DateError =
-      cal.julianDay(year, month, day)
+      calendar.jdn(year, month, day)
 
-    given showable: (Endianness, DateNumerics, DateSeparation, YearFormat) => Date is Showable =
+    given showable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable =
       date =>
-        import DateNumerics.*, YearFormat.*
+        import DateNumerics.*, Years.*
         import textMetrics.uniform
         given calendar: RomanCalendar = calendars.gregorian
 
         def pad(n: Int): Text = (n%100).show.pad(2, Rtl, '0')
 
-        val year: Text = summon[YearFormat] match
+        val year: Text = summon[Years] match
           case TwoDigitYear => pad(date.year)
           case FullYear     => date.year.show
 
@@ -178,21 +222,25 @@ object Aviation:
         raise(DateError(value)) yet Date(using calendars.gregorian)(2000, Month(1), 1)
 
   extension (date: Date)
-    def day(using calendar: Calendar): calendar.DayUnit = calendar.getDay(date)
-    def month(using calendar: Calendar): calendar.MonthUnit = calendar.getMonth(date)
+    def day(using calendar: Calendar): calendar.Diurnal = calendar.diurnal(date)
+    def month(using calendar: Calendar): calendar.Mensual = calendar.mensual(date)
+    def year(using calendar: Calendar): calendar.Annual = calendar.annual(date)
+    def weekday: Weekday = Weekday.fromOrdinal(jdn%7)
 
-    def monthstamp(using calendar: RomanCalendar): Monthstamp =
-      Monthstamp(calendar.getYear(date), calendar.getMonth(date))
+    def anniversary: Anniversary =
+      Anniversary(calendars.gregorian.mensual(date), calendars.gregorian.diurnal(date))
 
-    def year(using calendar: Calendar): calendar.YearUnit = calendar.getYear(date)
-
-    def yearDay(using calendar: Calendar): Int =
-      date - calendar.zerothDayOfYear(calendar.getYear(date))
-
-    def julianDay: Int = date
-    def addDays(count: Int): Date = date + count
+    def jdn: Int = date
 
     infix def at (time: Clockface)(using Calendar): Timestamp = Timestamp(date, time)
+
+    def monthstamp(using calendar: RomanCalendar): Monthstamp =
+      Monthstamp(calendar.annual(date), calendar.mensual(date))
+
+    def yearDay(using calendar: Calendar): Int =
+      date - calendar.zerothDayOfYear(calendar.annual(date))
+
+    def addDays(count: Int): Date = date + count
 
     @targetName("gt")
     infix def > (right: Date): Boolean = date > right

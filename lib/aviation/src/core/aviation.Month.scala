@@ -35,10 +35,12 @@ package aviation
 import anticipation.*
 import gossamer.*
 import prepositional.*
+import spectacular.*
 import symbolism.*
 
 object Month:
   def apply(i: Int): Month = Month.fromOrdinal(i - 1)
+  def apply(name: Text): Month = Month.valueOf(name.s)
 
   def unapply(value: Text): Option[Month] =
     try Some(Month.valueOf(value.lower.capitalize.s))
@@ -53,6 +55,14 @@ object Month:
     type Operand = Month
 
     def subtract(year: Int, month: Month) = new Monthstamp(Year(year), month)
+
+  given showable: (months: Months) => Month is Showable = months.name(_)
+
+  given subtractable: Month is Subtractable:
+    type Operand = Int
+    type Result = Anniversary
+
+    def subtract(month: Month, day: Int): Anniversary = Anniversary(month, Day(day))
 
 enum Month:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec

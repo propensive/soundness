@@ -99,7 +99,7 @@ val Stone = Quantity[Stones[1]](1.0)
 val Hundredweight = Quantity[Hundredweights[1]](1.0)
 val Ton = Quantity[Tons[1]](1.0)
 
-val Day = Quantity[Days[1]](1.0)
+val SolarDay = Quantity[Days[1]](1.0)
 val Hour = Quantity[Hours[1]](1.0)
 val Minute = Quantity[Minutes[1]](1.0)
 
