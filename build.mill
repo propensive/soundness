@@ -452,7 +452,7 @@ object austronesian extends SoundnessModule {
 
 object aviation extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(quantitative.core)
+    def moduleDeps = Seq(quantitative.units)
   }
 
   object test extends ProbablyTestModule {
