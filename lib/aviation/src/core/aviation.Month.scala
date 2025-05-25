@@ -40,6 +40,7 @@ import symbolism.*
 
 object Month:
   def apply(i: Int): Month = Month.fromOrdinal(i - 1)
+  def apply(name: Text): Month = Month.valueOf(name.s)
 
   def unapply(value: Text): Option[Month] =
     try Some(Month.valueOf(value.lower.capitalize.s))

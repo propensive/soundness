@@ -62,4 +62,4 @@ object Clockface:
 
       t"$hour${summon[TimeSeparation].separator}$minute$seconds$postfix"
 
-case class Clockface(hour: Base24, minute: Base60, second: Base60 = 0)
+case class Clockface(hour: Base24, minute: Base60, second: Base60 = 0, nanos: Int = 0)

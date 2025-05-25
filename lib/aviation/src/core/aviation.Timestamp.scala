@@ -79,16 +79,17 @@ case class Timestamp(date: Date, time: Clockface):
 
   def in(timezone: Timezone): Moment = Moment(date, time, timezone)
 
-  import gossamer.*
   def stdlib(using RomanCalendar): jt.LocalDateTime =
-    println(t"LocalDateTime.of(${date.year()}, ${date.month.numerical}, ${date.day()}, ${time.hour}, ${time.minute}, ${time.second})")
     jt.LocalDateTime.of
-     (date.year(), date.month.numerical, date.day(), time.hour, time.minute, time.second)
+     (date.year(),
+      date.month.numerical,
+      date.day(),
+      time.hour,
+      time.minute,
+      time.second,
+      time.nanos)
     . nn
 
   def instant(using timezone: Timezone, calendar: RomanCalendar): Instant =
     import dateFormats.european
-    println(t"date = $date")
-    println(t"timezone = "+timezone.toString.tt)
-    println(t"calendar = "+calendar.toString.tt)
     Instant(stdlib.atZone(timezone.stdlib).nn.toInstant.nn.toEpochMilli())

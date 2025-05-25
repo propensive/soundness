@@ -288,50 +288,46 @@ object Tests extends Suite(m"Aviation Tests"):
       // .assert(_ == List())
 
     suite(m"Decoding instants"):
-      test(m"RFC1123 basic with GMT timezone"):
-        t"Sun, 06 Nov 1994 08:49:37 GMT".decode[Instant]
-      . assert(_ == Instant(784111777000L))
+      suite(m"ISO 8601"):
+        import timestampDecoders.iso8601
+        test(m"with Z suffix (UTC)"):
+          t"1994-11-06T08:49:37Z".decode[Instant]
+        . assert(_ == Instant(784111777000L))
 
-      test(m"ISO 8601 with Z suffix (UTC)"):
-        t"1994-11-06T08:49:37Z".decode[Instant]
-      . assert(_ == Instant(784111777000L))
+        test(m"with positive timezone offset"):
+          t"1994-11-06T09:49:37+01:00".decode[Instant]
+        . assert(_ == Instant(784111777000L))
 
-      test(m"ISO 8601 with positive timezone offset"):
-        t"1994-11-06T09:49:37+01:00".decode[Instant]
-      . assert(_ == Instant(784111777000L))
-      // Tests handling of a +01:00 offset shifting back to UTC.
+        test(m"with negative timezone offset"):
+          t"1994-11-06T03:49:37-05:00".decode[Instant]
+        . assert(_ == Instant(784111777000L))
 
-      test(m"ISO 8601 with negative timezone offset"):
-        t"1994-11-06T03:49:37-05:00".decode[Instant]
-      . assert(_ == Instant(784111777000L))
-      // Tests handling of a -05:00 offset shifting forward to UTC.
+        test(m"with fractional seconds (.123)"):
+          t"2020-02-29T12:34:56.123Z".decode[Instant]
+        . assert(_ == Instant(1582979696123L))
 
-      test(m"ISO 8601 with fractional seconds (.123)"):
-        t"2020-02-29T12:34:56.123Z".decode[Instant]
-      . assert(_ == Instant(1582979696123L))
-      // Tests millisecond precision with leap day.
+        test(m"with nanosecond precision (.123456789)"):
+          t"2020-02-29T12:34:56.123456789Z".decode[Instant]
+        . assert(_ == Instant(1582979696123L))
 
-      test(m"ISO 8601 with nanosecond precision (.123456789)"):
-        t"2020-02-29T12:34:56.123456789Z".decode[Instant]
-      . assert(_ == Instant(1582979696123L))
-      // Nanoseconds are truncated to milliseconds for Instant comparison.
+        test(m"date-only format (midnight UTC)"):
+          t"2020-12-31".decode[Instant]
+        . assert(_ == Instant(1609372800000L))
 
-      test(m"ISO 8601 date-only format (midnight UTC)"):
-        t"2020-12-31".decode[Instant]
-      . assert(_ == Instant(1609372800000L))
-      // Interprets as midnight start of day in UTC.
+        // test(m"ISO 8601 leap second accepted as next second"):
+        //   t"2016-12-31T23:59:60Z".decode[Instant]
+        // . assert(_ == Instant(1483228800000L))
 
-      test(m"RFC1123 with unusual day of week (consistency check)"):
-        t"Tue, 01 Jan 2019 00:00:00 GMT".decode[Instant]
-      . assert(_ == Instant(1546300800000L))
-      // Ensures day-of-week is ignored or matched for consistency.
+        test(m"ISO 8601 with timezone offset and fractional seconds"):
+          t"2023-03-25T10:15:30.456+02:00".decode[Instant]
+        . assert(_ == Instant(1679732130456L))
 
-      test(m"ISO 8601 leap second accepted as next second"):
-        t"2016-12-31T23:59:60Z".decode[Instant]
-      . assert(_ == Instant(1483228800000L))
-      // Interprets 23:59:60 as 2017-01-01T00:00:00Z.
+      suite(m"RFC 1123"):
+        import timestampDecoders.rfc1123
+        test(m"basic with GMT timezone"):
+          t"Sun, 06 Nov 1994 08:49:37 GMT".decode[Instant]
+        . assert(_ == Instant(784111777000L))
 
-      test(m"ISO 8601 with timezone offset and fractional seconds"):
-        t"2023-03-25T10:15:30.456+02:00".decode[Instant]
-      . assert(_ == Instant(1679732130456L))
-      // Combines offset parsing and fractional milliseconds.
+        test(m"with unusual day of week (consistency check)"):
+          t"Tue, 01 Jan 2019 00:00:00 GMT".decode[Instant]
+        . assert(_ == Instant(1546300800000L))

@@ -38,8 +38,12 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import kaleidoscope.*
 import prepositional.*
+import quantitative.*
+import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 export Aviation2.{Instant, Duration}
@@ -47,6 +51,69 @@ export Aviation.{Date, Year, Day, Anniversary}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 given realm: Realm = realm"aviation"
+
+package timestampDecoders:
+  given rfc1123: Tactic[DateError] => Instant is Decodable:
+    type Self = Instant
+    type Format = Text
+
+    def decoded(text: Text): Instant = text match
+      case r"[MTWFS][ouehra][neduit], $day([0-3][0-9]) $month([JFMASOND][aepuco][nbrylgptvc]) $year([0-9]{4}) $hour([012][0-9]):$minute([0-5][0-9]):$second([0-5][0-9]) GMT" =>
+        import calendars.gregorian
+
+        val date = unsafely(Date(year.decode[Year], Month(month), Day(day.decode[Int])))
+
+        val clockface = unsafely:
+          Clockface
+           (Base24(hour.decode[Int]),
+            Base60(minute.decode[Int]),
+            Base60(second.decode[Int]))
+
+        Timestamp(date, clockface).in(tz"GMT").instant
+
+      case _ =>
+        abort(DateError(text))
+
+  given iso8601: Tactic[DateError] => Instant is Decodable:
+    type Self = Instant
+    type Format = Text
+
+    def decoded(text: Text): Instant =
+      import calendars.gregorian
+      given Timezone = tz"UTC"
+
+      text match
+        case r"$year([0-9]{4})-$month([0-9]{2})-$day([0-9]{2})$rest(.*)" =>
+          val date =
+            unsafely(Date(year.decode[Year], Month(month.decode[Int]), Day(day.decode[Int])))
+
+          rest match
+            case t"" =>
+              date.at(0.00.am).instant
+
+            case r"T$hour([012][0-9]):$minute([0-5][0-9]):$second([0-6][0-9])$rest(.*)" =>
+              rest match
+                case r"$fraction(\.[0-9]{3,})?$zone(.*)" =>
+                  val split =
+                    fraction.let: digits =>
+                      (t"0$digits".s.toDouble*1000000000).toInt
+                    . or(0)
+
+                  val clockface = unsafely:
+                    Clockface
+                     (Base24(hour.decode[Int]),
+                      Base60(minute.decode[Int]),
+                      Base60(second.decode[Int]),
+                      split)
+
+                  val timezone = safely(Timezone(zone)).or(raise(DateError(rest)) yet tz"UTC")
+                  Timestamp(date, clockface).in(timezone).instant
+
+                case _ =>
+                  abort(DateError(text))
+
+        case _ => abort(DateError(text))
+
 
 package dateFormats:
   private given calendar: RomanCalendar = calendars.gregorian
