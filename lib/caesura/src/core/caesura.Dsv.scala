@@ -37,6 +37,7 @@ import contingency.*
 import denominative.*
 import escritoire.*
 import gossamer.*
+import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -72,6 +73,22 @@ object Dsv:
   private enum State:
     case Fresh, Quoted, DoubleQuoted
 
+  given abstractable: (CharEncoder, DsvFormat)
+        => Dsv is Abstractable across HttpStreams into HttpStreams.Content =
+    new Abstractable:
+      type Self = Dsv
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
+
+      def genericize(dsv: Dsv): HttpStreams.Content =
+        val mediaType: Text =
+          dsv.format.let(_.delimiter) match
+            case '\t' => t"text/tab-separated-values"
+            case _    => t"text/csv"
+
+        (mediaType, dsv.stream[Text].map(_.bytes))
+
+
   given tabular: Dsv is Tabular[Text]:
     type Element = Row
     def rows(value: Dsv) = value.rows
@@ -95,6 +112,7 @@ object Dsv:
     if format.header then Dsv(rows, format, rows.prim.let(_.header)) else Dsv(rows, format)
 
   given showable: DsvFormat => Dsv is Showable = _.rows.map(_.show).join(t"\n")
+  given readable: DsvFormat => Dsv is Readable by Text = _.rows.to(Stream).map(_.show+t"\n")
 
   private def recur
                (content:  Stream[Text],
