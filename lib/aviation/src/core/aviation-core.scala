@@ -104,7 +104,7 @@ package timestampDecoders:
         case 'M' => if next() != 'a' then fail() yet Jan else next() match
           case 'r' => Mar
           case 'y' => May
-          case _   => fail()
+          case _   => fail() yet Jan
         case 'N' => if next() != 'o' || next() != 'v' then fail() yet Jan else Nov
         case 'O' => if next() != 'c' || next() != 't' then fail() yet Jan else Oct
         case 'S' => if next() != 'e' || next() != 'p' then fail() yet Jan else Sep
