@@ -331,3 +331,71 @@ object Tests extends Suite(m"Aviation Tests"):
         test(m"with unusual day of week (consistency check)"):
           t"Tue, 01 Jan 2019 00:00:00 GMT".decode[Instant]
         . assert(_ == Instant(1546300800000L))
+
+        test(m"Standard RFC1123 date with full weekday and month names"):
+          t"Sun, 06 Nov 1994 08:49:37 GMT".decode[Instant]
+        . assert(_ == Instant(784111777000L))
+
+        test(m"Leap day in a leap year"):
+          t"Mon, 29 Feb 2016 12:00:00 GMT".decode[Instant]
+        . assert(_ == Instant(1456747200000L))
+
+        test(m"Epoch start date"):
+          t"Thu, 01 Jan 1970 00:00:00 GMT".decode[Instant]
+        . assert(_ == Instant(0L))
+
+        test(m"Last second before Y2K"):
+          t"Fri, 31 Dec 1999 23:59:59 GMT".decode[Instant]
+        . assert(_ == Instant(946684799000L))
+
+        test(m"First second of Y2K"):
+          t"Sat, 01 Jan 2000 00:00:00 GMT".decode[Instant]
+        . assert(_ == Instant(946684800000L))
+
+        test(m"Date with single-digit day"):
+          capture(t"Wed, 3 Jul 2002 17:45:00 GMT".decode[Instant])
+        . assert(_ == DateError(t"Wed, 3 Jul 2002 17:45:00 GMT"))
+
+        test(m"Date with single-digit hour, minute, and second"):
+          t"Tue, 02 Mar 2021 07:08:09 GMT".decode[Instant]
+        . assert(_ == Instant(1614668889000L))
+
+        test(m"Date with correct day of week (Monday)"):
+          t"Mon, 15 Aug 2022 18:30:00 GMT".decode[Instant]
+        . assert(_ == Instant(1660588200000L))
+
+        test(m"Incorrect weekday (should be Sunday, not Monday)"):
+          t"Mon, 31 Dec 2006 23:59:59 GMT".decode[Instant]
+        . assert(_ == Instant(1167609599000L))
+
+        test(m"Date around DST end (should be in UTC, so no DST effect)"):
+          t"Sun, 01 Nov 2020 01:30:00 GMT".decode[Instant]
+        . assert(_ == Instant(1604194200000L))
+
+        test(m"Far future date (2100)"):
+          t"Fri, 01 Jan 2100 00:00:00 GMT".decode[Instant]
+        . assert(_ == Instant(4102444800000L))
+
+        test(m"Far past date (1900)"):
+          t"Mon, 01 Jan 1900 00:00:00 GMT".decode[Instant]
+        . assert(_ == Instant(-2208988800000L))
+
+        test(m"Time with 2-digit hour 23"):
+          t"Wed, 08 Sep 2021 23:00:00 GMT".decode[Instant]
+        . assert(_ == Instant(1631142000000L))
+
+        test(m"Midday exactly (12:00:00)"):
+          t"Sat, 25 Dec 2021 12:00:00 GMT".decode[Instant]
+        . assert(_ == Instant(1640433600000L))
+
+        test(m"New Year's Eve (2022)"):
+          t"Sat, 31 Dec 2022 23:59:59 GMT".decode[Instant]
+        . assert(_ == Instant(1672531199000L))
+
+        test(m"Short month name test (Jan)"):
+          t"Sun, 01 Jan 2023 00:00:00 GMT".decode[Instant]
+        . assert(_ == Instant(1672531200000L))
+
+        test(m"Minimum valid time (00:00:00)"):
+          t"Sun, 10 Oct 2021 00:00:00 GMT".decode[Instant]
+        . assert(_ == Instant(1633824000000L))

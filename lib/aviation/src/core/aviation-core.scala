@@ -34,6 +34,7 @@ package aviation
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -57,22 +58,99 @@ package timestampDecoders:
     type Self = Instant
     type Format = Text
 
-    def decoded(text: Text): Instant = text match
-      case r"[MTWFS][ouehra][neduit], $day([0-3][0-9]) $month([JFMASOND][aepuco][nbrylgptvc]) $year([0-9]{4}) $hour([012][0-9]):$minute([0-5][0-9]):$second([0-5][0-9]) GMT" =>
-        import calendars.gregorian
+    def decoded(text: Text): Instant =
+      var i: Ordinal = Prim
+      def fail(): Unit = raise(DateError(t"$text"))
+      def focus: Char = text.at(i).or('\u0000')
+      def next(): Char = (i += 1) yet focus
 
-        val date = unsafely(Date(year.decode[Year], Month(month), Day(day.decode[Int])))
+      focus match
+        case 'M' => if next() != 'o' || next() != 'n' then fail()
+        case 'T' => next() match
+          case 'u' => if next() != 'e' then fail()
+          case 'h' => if next() != 'u' then fail()
+          case _   => fail()
+        case 'W' => if next() != 'e' || next() != 'd' then fail()
+        case 'F' => if next() != 'r' || next() != 'i' then fail()
+        case 'S' => next() match
+          case 'a' => if next() != 't' then fail()
+          case 'u' => if next() != 'n' then fail()
+          case _   => fail()
+        case _   => fail()
 
-        val clockface = unsafely:
-          Clockface
-           (Base24(hour.decode[Int]),
-            Base60(minute.decode[Int]),
-            Base60(second.decode[Int]))
+      if next() != ',' || next() != ' ' then fail()
 
-        Timestamp(date, clockface).in(tz"GMT").instant
 
-      case _ =>
-        abort(DateError(text))
+      val day: Int =
+        (if next() < '0' || focus > '9' then fail() yet 0 else (focus - '0')*10)
+        + (if next() < '0' || focus > '9' then fail() yet 1 else focus - '0')
+
+      if next() != ' ' then fail()
+
+      val month: Month = next() match
+        case 'A' => next() match
+          case 'p' => if next() != 'r' then fail() yet Jan else Apr
+          case 'u' => if next() != 'g' then fail() yet Jan else Aug
+          case _   => fail() yet Jan
+        case 'D' => if next() != 'e' || next() != 'c' then fail() yet Jan else Dec
+        case 'F' => if next() != 'e' || next() != 'b' then fail() yet Jan else Feb
+        case 'J' => next() match
+          case 'a' => if next() != 'n' then fail() yet Jan else Jan
+          case 'u' => next() match
+            case 'l' => Jul
+            case 'n' => Jun
+            case _   => fail() yet Jan
+          case _   => fail() yet Jan
+        case 'M' => if next() != 'a' then fail() yet Jan else next() match
+          case 'r' => Mar
+          case 'y' => May
+          case _   => fail()
+        case 'N' => if next() != 'o' || next() != 'v' then fail() yet Jan else Nov
+        case 'O' => if next() != 'c' || next() != 't' then fail() yet Jan else Oct
+        case 'S' => if next() != 'e' || next() != 'p' then fail() yet Jan else Sep
+        case _   => fail() yet Jan
+
+      if next() != ' ' then fail()
+
+      val year: Int =
+        (if next() < '0' || focus > '9' then fail() yet 2 else (focus - '0')*1000)
+        + (if next() < '0' || focus > '9' then fail() yet 0 else (focus - '0')*100)
+        + (if next() < '0' || focus > '9' then fail() yet 0 else (focus - '0')*10)
+        + (if next() < '0' || focus > '9' then fail() yet 0 else focus - '0')
+
+      if next() != ' ' then fail()
+
+      val hour: Int =
+        (if next() < '0' || focus > '9' then fail() yet 0 else (focus - '0')*10)
+        + (if next() < '0' || focus > '9' then fail() yet 0 else focus - '0')
+
+      if next() != ':' then fail()
+
+      val minute: Int =
+        (if next() < '0' || focus > '9' then fail() yet 0 else (focus - '0')*10)
+        + (if next() < '0' || focus > '9' then fail() yet 1 else focus - '0')
+
+      if next() != ':' then fail()
+
+      val second: Int =
+        (if next() < '0' || focus > '9' then fail() yet 0 else (focus - '0')*10)
+        + (if next() < '0' || focus > '9' then fail() yet 1 else focus - '0')
+
+      if next() != ' ' then fail()
+      if next() != 'G' then fail()
+      if next() != 'M' then fail()
+      if next() != 'T' then fail()
+
+      import calendars.gregorian
+
+      val date = safely(Date(Year(year), month, Day(day))).or:
+        fail() yet 2000-Jan-1
+
+      val time =
+        safely(Clockface(Base24(hour), Base60(minute), Base60(second))).or:
+          fail() yet 10.00.pm
+
+      Timestamp(date, time).in(tz"GMT").instant
 
   given iso8601: Tactic[DateError] => Instant is Decodable:
     type Self = Instant
