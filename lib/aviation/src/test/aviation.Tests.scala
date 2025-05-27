@@ -322,6 +322,47 @@ object Tests extends Suite(m"Aviation Tests"):
           t"2023-03-25T10:15:30.456+02:00".decode[Instant]
         . assert(_ == Instant(1679732130456L))
 
+        test(m"Start of UNIX epoch"):
+          t"1970-01-01T00:00:00Z".decode[Instant]
+        . assert(_ == Instant(0L))
+
+        test(m"Leap day 2020"):
+          t"2020-02-29T12:00:00Z".decode[Instant]
+        . assert(_ == Instant(1582977600000L))
+
+        test(m"End of 1999"):
+          t"1999-12-31T23:59:59Z".decode[Instant]
+        . assert(_ == Instant(946684799000L))
+
+        test(m"Start of 2000"):
+          t"2000-01-01T00:00:00Z".decode[Instant]
+        . assert(_ == Instant(946684800000L))
+
+        test(m"Far future 2199"):
+          t"2199-12-31T23:59:59Z".decode[Instant]
+        . assert(_ == Instant(7258118399000L))
+
+        test(m"Far past 1800"):
+          t"1800-01-01T00:00:00Z".decode[Instant]
+        . assert(_ == Instant(-5364662400000L))
+
+        test(m"Middle of the day"):
+          t"2023-06-15T12:00:00Z".decode[Instant]
+        . assert(_ == Instant(1686830400000L))
+
+        test(m"New Year 2023"):
+          t"2023-01-01T00:00:00Z".decode[Instant]
+        . assert(_ == Instant(1672531200000L))
+
+        test(m"DST change irrelevant (UTC)"):
+          t"2021-03-28T01:30:00Z".decode[Instant]
+        . assert(_ == Instant(1616895000000L))
+
+        test(m"Millisecond rounding test"):
+          t"2022-11-15T23:59:59Z".decode[Instant]
+        . assert(_ == Instant(1668556799000L))
+
+
       suite(m"RFC 1123"):
         import timestampDecoders.rfc1123
         test(m"basic with GMT timezone"):
