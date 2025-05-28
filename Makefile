@@ -18,10 +18,14 @@ dev:
 ci:
 	java -cp out/test/assembly.dest/out.jar soundness.Tests
 
-scala3:
-	docker build -t scala3 -f img/scala3 .
+scala/%:
+	TAG=$(word 1, $(subst :, ,$*)); \
+	JDK=$(word 2, $(subst :, ,$*)); \
+	docker build --build-arg JDK=$${JDK} --build-arg TAG=$${TAG} -t "scala:$${TAG}-$${JDK}" -f img/scala .
 
-image: scala3
-	docker build -t soundness -f img/soundness .
+image/%: scala/%
+	TAG=$(word 1, $(subst :, ,$*)); \
+	JDK=$(word 2, $(subst :, ,$*)); \
+	docker build --build-arg JDK=$${JDK} --build-arg TAG=$${TAG} -t "soundness:$${TAG}-$${JDK}" -f img/soundness .
 
-.PHONY: publishLocal build dev ci test scala3 image
+.PHONY: publishLocal build dev ci test scala image

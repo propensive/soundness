@@ -1,0 +1,60 @@
+#!/bin/bash
+
+mkdir -p /opt/soundness/bin
+CLASSPATH="$(ls /opt/soundness/jar/* | tr '\n' :)"
+
+scalac=(
+  /opt/scala/bin/scalac
+    -cp "/opt/soundness/bin:$CLASSPATH"
+    -d /opt/soundness/bin
+    -experimental
+    -new-syntax
+    -feature
+    -deprecation
+    -Wimplausible-patterns
+    -Wsafe-init
+    -Xmax-inlines 100
+    -Ycc-new
+    -Yno-flexible-types
+    -Yexplicit-nulls
+    -Ycheck-all-patmat
+    -explain-cyclic
+    -language:experimental.modularity
+    -language:experimental.genericNumberLiterals
+    -language:experimental.into
+    -language:experimental.erasedDefinitions
+    -language:experimental.saferExceptions
+    -language:experimental.namedTypeArguments
+    -language:implicitConversions
+)
+
+echo —————————— STAGE 1 ——————————
+"${scalac[@]}" \
+  lib/prepositional/src/core/*.scala \
+  lib/symbolism/src/core/*.scala \
+  lib/anticipation/src/text/*.scala \
+  lib/denominative/src/core/*.scala \
+  lib/proscenium/src/core/*.scala \
+  lib/anticipation/src/log/*.scala \
+  lib/anticipation/src/print/*.scala \
+  lib/anticipation/src/codec/*.scala \
+  lib/anticipation/src/generic/*.scala \
+  lib/anticipation/src/http/*.scala \
+  lib/anticipation/src/css/*.scala \
+  lib/fulminate/src/core/*.scala \
+  lib/vacuous/src/core/*.scala \
+  lib/anticipation/src/path/*.scala \
+  lib/rudiments/src/core/*.scala \
+  lib/contingency/src/core/*.scala \
+  lib/kaleidoscope/src/core/*.scala \
+  lib/hieroglyph/src/core/*.scala \
+  lib/anticipation/src/opaque/*.scala \
+  lib/cardinality/src/core/*.scala \
+  lib/hypotenuse/src/core/*.scala \
+  lib/zephyrine/src/core/*.scala \
+  lib/typonym/src/core/*.scala \
+  lib/digression/src/core/*.scala \
+  lib/inimitable/src/core/*.scala \
+  lib/wisteria/src/core/*.scala \
+  lib/distillate/src/core/*.scala \
+  lib/spectacular/src/core/*.scala

@@ -1,11 +1,10 @@
 #!/bin/bash
 
 mkdir -p /opt/soundness/bin
-
 CLASSPATH="$(ls /opt/soundness/jar/* | tr '\n' :)"
 
 scalac=(
-  /opt/scala3/bin/scalac
+  /opt/scala/bin/scalac
     -cp "/opt/soundness/bin:$CLASSPATH"
     -d /opt/soundness/bin
     -experimental
@@ -28,61 +27,6 @@ scalac=(
     -language:experimental.namedTypeArguments
     -language:implicitConversions
 )
-
-echo —————————— STAGE 1 ——————————
-"${scalac[@]}" \
-  lib/prepositional/src/core/*.scala \
-  lib/symbolism/src/core/*.scala \
-  lib/anticipation/src/text/*.scala \
-  lib/denominative/src/core/*.scala \
-  lib/proscenium/src/core/*.scala \
-  lib/anticipation/src/log/*.scala \
-  lib/anticipation/src/print/*.scala \
-  lib/anticipation/src/codec/*.scala \
-  lib/anticipation/src/generic/*.scala \
-  lib/anticipation/src/http/*.scala \
-  lib/anticipation/src/css/*.scala \
-  lib/fulminate/src/core/*.scala \
-  lib/vacuous/src/core/*.scala \
-  lib/anticipation/src/path/*.scala \
-  lib/rudiments/src/core/*.scala \
-  lib/contingency/src/core/*.scala \
-  lib/kaleidoscope/src/core/*.scala \
-  lib/hieroglyph/src/core/*.scala \
-  lib/anticipation/src/opaque/*.scala \
-  lib/cardinality/src/core/*.scala \
-  lib/hypotenuse/src/core/*.scala \
-  lib/zephyrine/src/core/*.scala \
-  lib/typonym/src/core/*.scala \
-  lib/digression/src/core/*.scala \
-  lib/inimitable/src/core/*.scala \
-  lib/wisteria/src/core/*.scala \
-  lib/distillate/src/core/*.scala \
-  lib/spectacular/src/core/*.scala
-
-echo —————————— STAGE 2 ——————————
-"${scalac[@]}" \
-  lib/contextual/src/core/*.scala \
-  lib/mercator/src/core/*.scala \
-  lib/gossamer/src/core/*.scala \
-  lib/nomenclature/src/core/*.scala \
-  lib/serpentine/src/core/*.scala \
-  lib/vicarious/src/core/*.scala \
-  lib/anticipation/src/color/*.scala \
-  lib/iridescence/src/core/*.scala \
-  lib/capricious/src/core/*.scala \
-  lib/feudalism/src/core/*.scala \
-  lib/anticipation/src/time/*.scala \
-  lib/parasite/src/core/*.scala \
-  lib/turbulence/src/core/*.scala
-
-echo —————————— STAGE 3 ——————————
-"${scalac[@]}" \
-  lib/eucalyptus/src/core/*.scala \
-  lib/adversaria/src/core/*.scala \
-  lib/anticipation/src/url/*.scala \
-  lib/diuretic/src/core/*.scala \
-  lib/quantitative/src/core/*.scala
 
 echo —————————— STAGE 4 ——————————
 "${scalac[@]}" \

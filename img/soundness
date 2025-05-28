@@ -1,4 +1,6 @@
-FROM scala3:latest
+ARG JDK=24
+ARG TAG=main
+FROM scala:${TAG}-${JDK}
 
 RUN mkdir -p /opt/soundness/jar
 WORKDIR /opt/soundness
@@ -8,6 +10,9 @@ RUN curl -L -o jar/flexmark-ext-tables.jar https://repo1.maven.org/maven2/com/vl
 RUN curl -L -o jar/flexmark-formatter.jar https://repo1.maven.org/maven2/com/vladsch/flexmark/flexmark-formatter/0.42.12/flexmark-formatter-0.42.12.jar
 RUN curl -L -o jar/servlet-api.jar https://repo1.maven.org/maven2/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar
 RUN curl -L -o jar/flexmark-util.jar https://repo1.maven.org/maven2/com/vladsch/flexmark/flexmark-util/0.42.12/flexmark-util-0.42.12.jar
-RUN /opt/scala3/bin/scalac -help
-COPY etc/build /opt/soundness/build
-RUN ./build
+COPY etc/build* /opt/soundness/
+RUN ./build1
+RUN ./build2
+RUN ./build3
+RUN ./build4
+RUN jar cf /opt/soundness/soundness.jar -C /opt/soundness/bin .
