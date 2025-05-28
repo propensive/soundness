@@ -28,4 +28,13 @@ image/%: scala/%
 	JDK=$(word 2, $(subst :, ,$*)); \
 	docker build --build-arg JDK=$${JDK} --build-arg TAG=$${TAG} -t "soundness:$${TAG}-$${JDK}" -f img/soundness .
 
-.PHONY: publishLocal build dev ci test scala image
+boot:
+	mkdir boot
+
+bootstrap/%: boot image/%
+	TAG=$(word 1, $(subst :, ,$*)); \
+	JDK=$(word 2, $(subst :, ,$*)); \
+	CID=$$(docker create soundness:$${TAG}-$${JDK}); \
+	docker cp "$${CID}:/opt/soundness/soundness.jar" boot/soundness-$${TAG}.jar
+
+.PHONY: publishLocal build dev ci test
