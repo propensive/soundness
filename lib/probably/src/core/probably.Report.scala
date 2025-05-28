@@ -350,11 +350,11 @@ class Report(using Environment):
         val text3 = if !pass then t"  ┗┛    ┗┛ ┗┛  ┗┛  ┗┻━━╸  " else t"┗┛     ┗┛ ┗┛  ╺━━┻┛  ╺━━┻┛"
 
         if !pass || !tabulation then
-          Out.println(e"$color(╭${t"─"*44}╮)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*8}$text1${t" "*8}))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*8}$text2${t" "*8}))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*8}$text3${t" "*8}))) $color(│)")
-          Out.println(e"$color(╰${t"─"*44}╯)")
+          Out.println(e"$color(╭${t"─"*36}╮)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(    $text1    ))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(    $text2    ))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(    $text3    ))) $color(│)")
+          Out.println(e"$color(╰${t"─"*36}╯)")
 
           given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
           val passText = e"$Bold($White($passed)) passed (${100.0*passed/total}%)"

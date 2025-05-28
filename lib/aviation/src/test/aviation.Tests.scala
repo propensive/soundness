@@ -318,9 +318,57 @@ object Tests extends Suite(m"Aviation Tests"):
         //   t"2016-12-31T23:59:60Z".decode[Instant]
         // . assert(_ == Instant(1483228800000L))
 
+        test(m"Month-only format"):
+          t"2012-11".decode[Instant]
+        . assert(_ == Instant(1351728000000L))
+
         test(m"ISO 8601 with timezone offset and fractional seconds"):
           t"2023-03-25T10:15:30.456+02:00".decode[Instant]
         . assert(_ == Instant(1679732130456L))
+
+        test(m"Calendar date, full time, Z"):
+          t"2023-05-28T14:30:59Z".decode[Instant]
+        . assert(_ == Instant(1685284259000L))
+
+        test(m"Calendar date, basic format, full time, Z"):
+          t"20230528T143059Z".decode[Instant]
+        . assert(_ == Instant(1685284259000L))
+
+        test(m"Calendar date, full time, offset +00:00"):
+          t"2023-05-28T14:30:59+00:00".decode[Instant]
+        . assert(_ == Instant(1685284259000L))
+
+        test(m"Calendar date, full time, offset +02:00"):
+          t"2023-05-28T14:30:59+02:00".decode[Instant]
+        . assert(_ == Instant(1685277059000L))
+
+        test(m"Calendar date, full time, offset -05:00"):
+          t"2023-05-28T14:30:59-05:00".decode[Instant]
+        . assert(_ == Instant(1685302259000L))
+
+        test(m"Calendar date, fractional seconds, Z"):
+          t"2023-05-28T14:30:59.123Z".decode[Instant]
+        . assert(_ == Instant(1685284259123L))
+
+        test(m"Calendar date, comma as decimal separator, Z"):
+          t"2023-05-28T14:30:59,123Z".decode[Instant]
+        . assert(_ == Instant(1685284259123L))
+
+        test(m"Calendar date, hours and minutes, Z"):
+          t"2023-05-28T14:30Z".decode[Instant]
+        . assert(_ == Instant(1685284200000L))
+
+        test(m"Calendar date, hour only, Z"):
+          t"2023-05-28T14Z".decode[Instant]
+        . assert(_ == Instant(1685282400000L))
+
+        // test(m"Week date, Sunday of week 21, full time, Z"):
+        //   t"2023-W21-7T14:30:59Z".decode[Instant]
+        // . assert(_ == Instant(1685284259000L))
+
+        // test(m"Week date, basic format, Sunday of week 21, full time, Z"):
+        //   t"2023W217T143059Z".decode[Instant]
+        // . assert(_ == Instant(1685284259000L))
 
       suite(m"RFC 1123"):
         import timestampDecoders.rfc1123
