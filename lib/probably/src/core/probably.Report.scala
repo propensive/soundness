@@ -159,7 +159,7 @@ class Report(using Environment):
 
   enum Status:
     case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench
-    
+
     val nbsp = '\u00a0'
 
     def color: Rgb24 = this match
@@ -328,35 +328,56 @@ class Report(using Environment):
 
       Out.println(e"")
 
-    if summaryLines.exists(_.count > 0) then
-      val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
-      val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
-      val total: Int = totals.values.sum
-      val failed: Int = total - passed
-      if total == passed then pass = true
-      Out.println(e"${escapes.Reset}")
-      Out.println(e"$Bold($Underline(Test results))")
+    def totals(tabulation: Boolean): Unit =
+      if summaryLines.exists(_.count > 0) then
+        val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
+        val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
+        val total: Int = totals.values.sum
+        val failed: Int = total - passed
+        if total == passed then pass = true
 
-      table.tabulate(summaryLines).grid(columns).render.each(Out.println(_))
-      given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
-      val passText = e"$Bold($White($passed)) passed (${100.0*passed/total}%)"
-      val failText = e"$Bold($White($failed)) failed (${100.0*failed/total}%)"
-      val allText = e"$Bold($White(${passed + failed})) total"
-      Out.println(e" $passText, $failText, $allText")
-      Out.println(t"─"*72)
+        if !tabulation then
+          Out.print(e"${escapes.Reset}")
+          Out.println(e"$Bold($Underline(Test results))")
 
-      import Status.*
-      List(Pass, Bench, Throws, Fail, Mixed, CheckThrows).grouped(3).each: statuses =>
-        Out.println:
-          statuses.map[Teletype]: status =>
-            gossamer.pad[Teletype](e"  ${status.symbol} ${status.describe}")(20)
+          table.tabulate(summaryLines).grid(columns).render.each(Out.println(_))
 
-          . join(e" ")
+        else Out.println(t"─"*72)
 
-      Out.println(t"─"*72)
+        val color = if pass then Status.Pass.color else Status.Fail.color
+        val text1 = if !pass then t"  ┏┳━━  ┏┳━┳┓  ┏┓  ┏┓     " else t"┏┳━┳┓  ┏┳━┳┓  ┏┳━━╸  ┏┳━━╸"
+        val text2 = if !pass then t"  ┃┣━   ┃┣━┫┃  ┃┃  ┃┃     " else t"┃┣━┻┛  ┃┣━┫┃  ┗┻━┳┓  ┗┻━┳┓"
+        val text3 = if !pass then t"  ┗┛    ┗┛ ┗┛  ┗┛  ┗┻━━╸  " else t"┗┛     ┗┛ ┗┛  ╺━━┻┛  ╺━━┻┛"
 
-    else
-      Out.println(e"$Italic(No tests were run.)")
+        if !pass || !tabulation then
+          Out.println(e"$color(╭${t"─"*44}╮)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*8}$text1${t" "*8}))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*8}$text2${t" "*8}))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*8}$text3${t" "*8}))) $color(│)")
+          Out.println(e"$color(╰${t"─"*44}╯)")
+
+          given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
+          val passText = e"$Bold($White($passed)) passed (${100.0*passed/total}%)"
+          val failText = e"$Bold($White($failed)) failed (${100.0*failed/total}%)"
+          val allText = e"$Bold($White(${passed + failed})) total"
+
+          Out.println(e" $passText, $failText, $allText")
+          Out.println(t"─"*72)
+
+        import Status.*
+        List(Pass, Bench, Throws, Fail, Mixed, CheckThrows).grouped(3).each: statuses =>
+          Out.println:
+            statuses.map[Teletype]: status =>
+              gossamer.pad[Teletype](e"  ${status.symbol} ${status.describe}")(20)
+
+            . join(e" ")
+
+        Out.println(t"─"*72)
+
+      else
+        Out.println(e"$Italic(No tests were run.)")
+
+    totals(true)
 
     def benches(line: ReportLine): Iterable[ReportLine.Bench] =
       line match
@@ -505,3 +526,5 @@ class Report(using Environment):
 
       Out.println(Ribbon(Crimson.srgb, LightSalmon.srgb).fill(e"$Bold(FATAL)", explanation))
       Out.println(StackTrace(error).teletype)
+
+    totals(false)
