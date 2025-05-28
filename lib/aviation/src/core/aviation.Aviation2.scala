@@ -121,7 +121,7 @@ object Aviation2:
       type Result = Instant
 
       def add(instant: Instant, duration: Quantity[units]): Instant =
-        instant + (duration.normalize.value/1000.0).toLong
+        instant + (duration.normalize.value*1000.0).toLong
 
     given minus: [operand: InstantSubtractable]
           =>  Instant is Subtractable by operand into operand.Result =
