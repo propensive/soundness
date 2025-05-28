@@ -345,16 +345,21 @@ class Report(using Environment):
         else Out.println(t"─"*72)
 
         val color = if pass then Status.Pass.color else Status.Fail.color
-        val text1 = if !pass then t"  ┏┳━━  ┏┳━┳┓  ┏┓  ┏┓     " else t"┏┳━┳┓  ┏┳━┳┓  ┏┳━━╸  ┏┳━━╸"
-        val text2 = if !pass then t"  ┃┣━   ┃┣━┫┃  ┃┃  ┃┃     " else t"┃┣━┻┛  ┃┣━┫┃  ┗┻━┳┓  ┗┻━┳┓"
-        val text3 = if !pass then t"  ┗┛    ┗┛ ┗┛  ┗┛  ┗┻━━╸  " else t"┗┛     ┗┛ ┗┛  ╺━━┻┛  ╺━━┻┛"
+        val text1 = if !pass then t"┳┳━━━  ┏┳━━━┳┓  ┳┳  ┳┳    " else t"┳┳━━┳┓  ┏┳━━━┳┓  ┏┳━━━┓  ┏┳━━━┓"
+        val text2 = if !pass then t"┃┃     ┃┃   ┃┃  ┃┃  ┃┃    " else t"┃┃  ┃┃  ┃┃   ┃┃  ┃┃      ┃┃    "
+        val text3 = if !pass then t"┃┣━━   ┃┣━━━┫┃  ┃┃  ┃┃    " else t"┃┣━━┻┛  ┃┣━━━┫┃  ┗┻━━┳┓  ┗┻━━┳┓"
+        val text4 = if !pass then t"┃┃     ┃┃   ┃┃  ┃┃  ┃┃    " else t"┃┃      ┃┃   ┃┃      ┃┃      ┃┃"
+        val text5 = if !pass then t"┻┻     ┻┻   ┻┻  ┻┻  ┻┻━━━┛" else t"┻┻      ┻┻   ┻┻  ┗━━━┻┛  ┗━━━┻┛"
 
+        val width = if pass then 37 else 32
         if !pass || !tabulation then
-          Out.println(e"$color(╭${t"─"*36}╮)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(    $text1    ))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(    $text2    ))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(    $text3    ))) $color(│)")
-          Out.println(e"$color(╰${t"─"*36}╯)")
+          Out.println(e"$color(╭${t"─"*width}╮)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(  $text1  ))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(  $text2  ))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(  $text3  ))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(  $text4  ))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(  $text5  ))) $color(│)")
+          Out.println(e"$color(╰${t"─"*width}╯)")
 
           given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
           val passText = e"$Bold($White($passed)) passed (${100.0*passed/total}%)"
