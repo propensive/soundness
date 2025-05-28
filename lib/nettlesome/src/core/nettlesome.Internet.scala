@@ -35,8 +35,6 @@ package nettlesome
 import contingency.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 class Internet(val online: Boolean):
   def require[result](block: Online ?=> result)(using Tactic[OfflineError]): result =
     if online then block(using Online) else abort(OfflineError())

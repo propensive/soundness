@@ -43,7 +43,6 @@ import spectacular.*
 import vacuous.*
 
 import language.dynamics
-//import language.experimental.captureChecking
 
 case class MediaType
    (group:     Media.Group,

@@ -36,8 +36,6 @@ import anticipation.*
 
 import java.net as jn
 
-import language.experimental.captureChecking
-
 object JavaNetUrl extends Abstractable, Instantiable:
   type Self = jn.URL
   type Result = Text

@@ -69,12 +69,11 @@ extends Root
 object Url:
   type Rules = MustMatch["[A-Za-z0-9_.~-]*"]
 
-  given radical: (Tactic[UrlError], Tactic[NameError])
-        =>  HttpUrl is Radical from HttpUrl = new Radical:
+  given radical: (Tactic[UrlError], Tactic[NameError]) => HttpUrl is Radical:
     type Self = HttpUrl
     type Source = HttpUrl
 
-    def root(path: Text): HttpUrl = Url.parse(path.keep(rootLength(path)))
+    def root(path: Text): HttpUrl = path.keep(rootLength(path)).decode[HttpUrl]
     def rootLength(path: Text): Int = path.where(_ == '/', 7.z).let(_.n0).or(path.length)
     def rootText(url: HttpUrl): Text = url.show
 
@@ -95,72 +94,69 @@ object Url:
 
   given abstractable: HttpUrl is Abstractable across Urls into Text = _.show
 
-  given instantiable: (Tactic[UrlError]) => HttpUrl is Instantiable across Urls from Text =
-    Url.parse(_)
-
   given showable: [scheme <: Label] => Url[scheme] is Showable = url =>
     val auth = url.authority.lay(t"")(t"//"+_.show)
     val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
-
-  given decodable: [scheme <: Label] => Tactic[UrlError] => Url[scheme] is Decodable in Text =
-
-    parse(_)
 
   given encodable: [scheme <: Label] => Url[scheme] is Encodable in Text = _.show
 
   given teletype: [scheme <: Label] => Url[scheme] is Teletypeable =
     url => e"$Underline(${Fg(0x00bfff)}(${url.show}))"
 
-  def parse[scheme <: Label](value: Text): Url[scheme] raises UrlError =
-    import UrlError.Expectation.*
+  given decodable: [scheme <: Label] => Tactic[UrlError] => Url[scheme] is Decodable in Text =
+    value =>
+      import UrlError.Expectation.*
 
-    safely(value.where(_ == ':')).asMatchable match
-      case Zerary(colon) =>
-        val text = value.before(colon)
-        val scheme = Scheme(text)
+      safely(value.where(_ == ':')).asMatchable match
+        case Zerary(colon) =>
+          val text = value.before(colon)
+          val scheme = Scheme(text)
 
-        val (pathStart, auth) =
-          if value.after(colon).keep(2) == t"//" then
-            mitigate:
-              case error@HostnameError(hostname, reason) =>
-                import error.diagnostics
-                UrlError(value, colon + 3, UrlError.Reason.BadHostname(hostname, reason))
+          val (pathStart, auth) =
+            if value.after(colon).keep(2) == t"//" then
+              mitigate:
+                case error@HostnameError(hostname, reason) =>
+                  import error.diagnostics
+                  UrlError(value, colon + 3, UrlError.Reason.BadHostname(hostname, reason))
 
-            . within:
-                val authEnd = safely(value.where(_ == '/', colon + 3)).or(Ult.of(value))
-                val hostname = value.segment((colon + 3) ~ authEnd.previous)
-                (authEnd, Authority.parse(hostname))
+              . within:
+                  val authEnd = safely(value.where(_ == '/', colon + 3)).or(Ult.of(value))
+                  val hostname = value.segment((colon + 3) ~ authEnd.previous)
+                  (authEnd, Authority.parse(hostname))
 
-          else (colon + 1, Unset)
+            else (colon + 1, Unset)
 
-        safely(value.where(_ == '?', pathStart)).asMatchable match
-          case Zerary(qmark) =>
-            safely(value.where(_ == '#', qmark + 1)).asMatchable match
+          safely(value.where(_ == '?', pathStart)).asMatchable match
+            case Zerary(qmark) =>
+              safely(value.where(_ == '#', qmark + 1)).asMatchable match
+                case Zerary(hash) =>
+                  Url
+                   (Origin(scheme, auth),
+                    value.segment(pathStart ~ qmark.previous),
+                    value.segment((qmark + 1) ~ hash.previous),
+                    value.after(hash))
+
+                case _ =>
+                  Url
+                   (Origin(scheme, auth),
+                    value.segment(pathStart ~ qmark.previous),
+                    value.after(qmark),
+                    Unset)
+
+            case _ => safely(value.where(_ == '#', pathStart)).asMatchable match
               case Zerary(hash) =>
                 Url
                  (Origin(scheme, auth),
-                  value.segment(pathStart ~ qmark.previous),
-                  value.segment((qmark + 1) ~ hash.previous),
+                  value.segment(pathStart ~ hash.previous),
+                  Unset,
                   value.after(hash))
 
               case _ =>
-                Url
-                 (Origin(scheme, auth),
-                  value.segment(pathStart ~ qmark.previous),
-                  value.after(qmark),
-                  Unset)
+                Url(Origin(scheme, auth), value.from(pathStart), Unset, Unset)
 
-          case _ => safely(value.where(_ == '#', pathStart)).asMatchable match
-            case Zerary(hash) =>
-              Url
-               (Origin(scheme, auth),
-                value.segment(pathStart ~ hash.previous),
-                Unset,
-                value.after(hash))
+        case _ =>
+          abort(UrlError(value, Ult.of(value), UrlError.Reason.Expected(Colon)))
 
-            case _ =>
-              Url(Origin(scheme, auth), value.from(pathStart), Unset, Unset)
-
-      case _ =>
-        abort(UrlError(value, Ult.of(value), UrlError.Reason.Expected(Colon)))
+  given instantiable: (Tactic[UrlError]) => HttpUrl is Instantiable across Urls from Text =
+    _.decode[HttpUrl]

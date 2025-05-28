@@ -1,0 +1,13 @@
+FROM scala3:latest
+
+RUN mkdir -p /opt/soundness/jar
+WORKDIR /opt/soundness
+COPY lib /opt/soundness/lib
+RUN curl -L -o jar/flexmark.jar https://repo1.maven.org/maven2/com/vladsch/flexmark/flexmark/0.42.12/flexmark-0.42.12.jar
+RUN curl -L -o jar/flexmark-ext-tables.jar https://repo1.maven.org/maven2/com/vladsch/flexmark/flexmark-ext-tables/0.42.12/flexmark-ext-tables-0.42.12.jar
+RUN curl -L -o jar/flexmark-formatter.jar https://repo1.maven.org/maven2/com/vladsch/flexmark/flexmark-formatter/0.42.12/flexmark-formatter-0.42.12.jar
+RUN curl -L -o jar/servlet-api.jar https://repo1.maven.org/maven2/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar
+RUN curl -L -o jar/flexmark-util.jar https://repo1.maven.org/maven2/com/vladsch/flexmark/flexmark-util/0.42.12/flexmark-util-0.42.12.jar
+RUN /opt/scala3/bin/scalac -help
+COPY etc/build /opt/soundness/build
+RUN ./build

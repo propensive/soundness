@@ -32,8 +32,6 @@
                                                                                                   */
 package turbulence
 
-import language.experimental.captureChecking
-
 import anticipation.*
 import parasite.*
 import proscenium.*

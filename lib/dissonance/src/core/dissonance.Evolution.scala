@@ -32,8 +32,6 @@
                                                                                                   */
 package dissonance
 
-import language.experimental.captureChecking
-
 import contingency.*
 import denominative.*
 import fulminate.*
@@ -52,7 +50,7 @@ object Evolution:
     def has(n: Ordinal): Boolean = presence.contains(n)
 
 def evolve[element: ClassTag]
-     (versions: List[List[element]], similar: Optional[(element, element) -> Boolean] = Unset)
+     (versions: List[List[element]], similar: Optional[(element, element) => Boolean] = Unset)
 :     Evolution[element] =
   import Evolution.Atom
 

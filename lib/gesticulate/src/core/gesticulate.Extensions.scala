@@ -35,8 +35,6 @@ package gesticulate
 import anticipation.*
 import gossamer.*
 
-import language.experimental.captureChecking
-
 object Extensions:
   def guess(ext: Text): MediaType = mediaTypes.getOrElse(ext, media"application/octet-stream")
 

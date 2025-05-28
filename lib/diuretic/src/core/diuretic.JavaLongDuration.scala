@@ -34,8 +34,6 @@ package diuretic
 
 import anticipation.*
 
-import language.experimental.captureChecking
-
 object JavaLongDuration extends GenericDuration, SpecificDuration:
   type Self = Long
 

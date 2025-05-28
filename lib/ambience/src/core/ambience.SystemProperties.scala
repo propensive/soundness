@@ -32,8 +32,6 @@
                                                                                                   */
 package ambience
 
-import language.experimental.captureChecking
-
 import anticipation.*
 import vacuous.*
 

@@ -32,8 +32,6 @@
                                                                                                   */
 package anticipation
 
-import language.experimental.captureChecking
-
 object HttpStreams:
   type Content = (Text, LazyList[IArray[Byte]])
 

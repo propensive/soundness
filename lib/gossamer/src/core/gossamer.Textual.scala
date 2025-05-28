@@ -40,8 +40,6 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 trait Textual extends Concatenable, Countable, Segmentable, Zeroic:
   type Self
   type Operand = Self

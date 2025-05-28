@@ -32,8 +32,6 @@
                                                                                                   */
 package contextual
 
-import language.experimental.captureChecking
-
 object Insertion:
   given embeddable: [value: Embeddable] => Substitution[value.Operand, value, "x"] =
     value.embed(_)

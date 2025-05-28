@@ -32,8 +32,6 @@
                                                                                                   */
 package hieroglyph
 
-import language.experimental.captureChecking
-
 import anticipation.*
 
 object Measurable:

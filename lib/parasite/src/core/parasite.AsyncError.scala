@@ -32,8 +32,6 @@
                                                                                                   */
 package parasite
 
-import language.experimental.captureChecking
-
 import fulminate.*
 
 object AsyncError:

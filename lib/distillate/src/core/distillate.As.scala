@@ -32,8 +32,6 @@
                                                                                                   */
 package distillate
 
-import language.experimental.captureChecking
-
 import prepositional.*
 
 object As:

@@ -32,8 +32,6 @@
                                                                                                   */
 package acyclicity
 
-import language.experimental.captureChecking
-
 object Subgraph:
   def apply(id: Dot.Id, statements: Dot.Statement*): Dot.Statement.Subgraph =
     Dot.Statement.Subgraph(Some(id), statements*)

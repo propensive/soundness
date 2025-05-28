@@ -32,8 +32,6 @@
                                                                                                   */
 package iridescence
 
-import language.experimental.captureChecking
-
 import scala.util.chaining.*
 
 import anticipation.*

@@ -34,8 +34,6 @@ package diuretic
 
 import anticipation.*
 
-import language.experimental.captureChecking
-
 object JavaLongInstant extends Abstractable, Instantiable:
   type Self = Long
   type Result = Long

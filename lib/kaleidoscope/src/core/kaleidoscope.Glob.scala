@@ -32,8 +32,6 @@
                                                                                                   */
 package kaleidoscope
 
-import language.experimental.captureChecking
-
 import anticipation.*
 
 case class Glob(tokens: GlobToken*):

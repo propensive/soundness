@@ -49,7 +49,7 @@ object PrivateKey:
     import alphabets.base64.standard
     t"PrivateKey(${key.privateBytes.digest[Sha2[256]].serialize[Base64]})"
 
-open case class PrivateKey[cipher <: Cipher](private[enigmatic] val privateBytes: Bytes):
+class PrivateKey[cipher <: Cipher](private[enigmatic] val privateBytes: Bytes):
   def public(using cipher: cipher): PublicKey[cipher] =
     PublicKey(cipher.privateToPublic(privateBytes))
 

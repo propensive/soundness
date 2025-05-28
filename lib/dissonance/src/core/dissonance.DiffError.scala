@@ -32,8 +32,6 @@
                                                                                                   */
 package dissonance
 
-import language.experimental.captureChecking
-
 import anticipation.*
 import fulminate.*
 

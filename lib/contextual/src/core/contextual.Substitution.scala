@@ -32,8 +32,6 @@
                                                                                                   */
 package contextual
 
-import language.experimental.captureChecking
-
 import proscenium.*
 
 trait Substitution[input, -value, substitution <: Label]

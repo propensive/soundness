@@ -35,6 +35,7 @@ package nettlesome
 import anticipation.*
 import contextual.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import proscenium.*
@@ -56,7 +57,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
       case '[type label <: Label; label] => '{${expand(context, parts)}.asInstanceOf[Url[label]]}
 
   def complete(value: Text): Url[Label] =
-    try throwErrors(Url.parse(value)) catch
+    try throwErrors(value.decode[Url[Label]]) catch
       case error: UrlError      => throw InterpolationError(error.message)
 
   def initial: Text = t""
@@ -66,7 +67,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
       if !state.ends(t":")
       then throw InterpolationError(m"a port number must be specified after a colon")
 
-      try throwErrors(Url.parse(state+port.show)) catch
+      try throwErrors((state+port.show).decode[HttpUrl]) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
 
       state+port.show
@@ -75,7 +76,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
       // if !state.ends(t"/")
       // then throw InterpolationError(m"a substitution may only be made after a slash")
 
-      try throwErrors(Url.parse(state+text.urlEncode)) catch
+      try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
 
       state+text.urlEncode
@@ -84,7 +85,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
       // if !state.ends(t"/")
       // then throw InterpolationError(m"a substitution may only be made after a slash")
 
-      try throwErrors(Url.parse(state+text.urlEncode)) catch
+      try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
 
       state+text

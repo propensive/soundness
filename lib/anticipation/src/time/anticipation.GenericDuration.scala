@@ -32,8 +32,6 @@
                                                                                                   */
 package anticipation
 
-import language.experimental.captureChecking
-
 trait GenericDuration:
   type Self
   def milliseconds(duration: Self): Long

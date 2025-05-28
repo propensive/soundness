@@ -34,8 +34,6 @@ package soundness
 
 import diuretic.*
 
-import language.experimental.captureChecking
-
 package instantApi:
   export anticipation.instantApi.{javaTimeInstant, javaLong, javaUtilDate}
 

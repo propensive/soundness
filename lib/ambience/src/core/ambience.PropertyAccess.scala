@@ -32,7 +32,6 @@
                                                                                                   */
 package ambience
 
-import language.experimental.captureChecking
 import language.dynamics
 
 import scala.compiletime.ops.string.*

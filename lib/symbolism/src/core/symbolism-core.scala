@@ -32,8 +32,6 @@
                                                                                                   */
 package symbolism
 
-import language.experimental.captureChecking
-
 import scala.annotation.*
 
 import prepositional.*

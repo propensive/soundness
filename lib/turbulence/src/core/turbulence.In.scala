@@ -32,8 +32,6 @@
                                                                                                   */
 package turbulence
 
-import language.experimental.captureChecking
-
 object In:
   def read(bytes: Array[Byte])(using stdio: Stdio): Int = stdio.read(bytes)
   def close()(using stdio: Stdio): Unit = stdio.in.close()

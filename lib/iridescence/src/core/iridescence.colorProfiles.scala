@@ -32,8 +32,6 @@
                                                                                                   */
 package iridescence
 
-import language.experimental.captureChecking
-
 object colorProfiles:
   given incandescentTungsten: ColorProfile = ColorProfile(109.850, 100, 35.585, 111.144, 100, 35.2)
 

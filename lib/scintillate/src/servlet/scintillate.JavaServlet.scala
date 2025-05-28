@@ -49,10 +49,7 @@ import jakarta.servlet as js, js.http as jsh
 
 open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.HttpServlet:
   protected def streamBody(request: jsh.HttpServletRequest): Stream[Bytes] raises StreamError =
-    val in = request.getInputStream()
-    val buffer = new Array[Byte](4096)
-
-    Readable.inputStream.stream(request.getInputStream.nn)
+    Readable.inputStream.stream(request.getInputStream().nn)
 
   protected def makeConnection
                  (request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse)

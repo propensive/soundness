@@ -37,8 +37,6 @@ import fulminate.*
 
 export CodlError.Reason.*
 
-import language.experimental.captureChecking
-
 object CodlError:
   given communicable: Reason is Communicable =
     case UnexpectedCarriageReturn =>

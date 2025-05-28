@@ -32,8 +32,6 @@
                                                                                                   */
 package kaleidoscope
 
-import language.experimental.captureChecking
-
 enum GlobToken:
   case Star, Globstar, OneChar
   case Exact(char: Char)

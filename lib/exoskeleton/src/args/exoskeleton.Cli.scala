@@ -39,8 +39,6 @@ import profanity.*
 import rudiments.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 object Cli:
   def arguments
        (textArguments: Iterable[Text],

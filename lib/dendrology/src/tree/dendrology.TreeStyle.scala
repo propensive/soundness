@@ -32,7 +32,5 @@
                                                                                                   */
 package dendrology
 
-import language.experimental.captureChecking
-
 trait TreeStyle[line]:
   def serialize(tiles: List[TreeTile], node: line): line

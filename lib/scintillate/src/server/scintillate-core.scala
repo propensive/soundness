@@ -34,6 +34,7 @@ package scintillate
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import nettlesome.*
@@ -97,4 +98,4 @@ extension (request: Http.Request)
   def path(using connection: HttpConnection)
   :     HttpUrl raises PathError raises UrlError raises HostnameError =
     val scheme = if connection.tls then t"https" else t"http"
-    Url.parse(t"$scheme://${request.host}${request.pathText}")
+    t"$scheme://${request.host}${request.pathText}".decode[HttpUrl]

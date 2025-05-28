@@ -35,8 +35,6 @@ package exoskeleton
 import anticipation.*
 import rudiments.*
 
-import language.experimental.captureChecking
-
 abstract class Application:
   import executives.direct
   import unhandledErrors.genericErrorMessage

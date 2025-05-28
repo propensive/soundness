@@ -32,8 +32,6 @@
                                                                                                   */
 package rudiments
 
-import language.experimental.captureChecking
-
 import fulminate.*
 
 case class HomeDirectoryError()(using Diagnostics) extends Error(m"there is no home directory")

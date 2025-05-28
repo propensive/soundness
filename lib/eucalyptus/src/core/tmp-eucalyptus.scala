@@ -40,8 +40,6 @@ package eucalyptus
 
 // import scala.quoted.*
 
-// import language.experimental.captureChecking
-
 // object Eucalyptus:
 //   given realm: Realm = realm"eucalyptus"
 

@@ -32,7 +32,5 @@
                                                                                                   */
 package dendrology
 
-import language.experimental.captureChecking
-
 enum DagTile:
   case Space, Corner, Vertical, FirstMid, Horizontal, MidLast, Cross, Overlap

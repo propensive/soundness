@@ -41,8 +41,6 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 object Terminal:
   def reportBackground: Text = t"\e]11;?\e\\"
   def reportSize: Text = t"\e7\e[4095C\e[4095B\e[6n\e8"

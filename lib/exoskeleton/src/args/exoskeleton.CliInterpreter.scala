@@ -32,8 +32,6 @@
                                                                                                   */
 package exoskeleton
 
-import language.experimental.captureChecking
-
 trait CliInterpreter:
   type Parameters <: FlagParameters
   def interpret(arguments: List[Argument]): Parameters

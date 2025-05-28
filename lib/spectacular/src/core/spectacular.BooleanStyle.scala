@@ -34,7 +34,5 @@ package spectacular
 
 import anticipation.*
 
-import language.experimental.captureChecking
-
 case class BooleanStyle(yes: Text, no: Text):
   def apply(boolean: Boolean): Text = if boolean then yes else no

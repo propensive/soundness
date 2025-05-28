@@ -40,8 +40,6 @@ import scala.jdk.CollectionConverters.SetHasAsScala
 
 import java.nio as jn, jn.charset as jnc
 
-import language.experimental.captureChecking
-
 object Encoding:
   given textualizer: Encoding is Textualizer = _.name
   given communicable: Encoding is Communicable = encoding => Message(encoding.name)

@@ -36,8 +36,6 @@ import anticipation.*
 
 import java.io as ji
 
-import language.experimental.captureChecking
-
 object JavaIoFile extends Abstractable, Instantiable:
   type Self = ji.File
   type Domain = Paths

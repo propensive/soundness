@@ -18,4 +18,10 @@ dev:
 ci:
 	java -cp out/test/assembly.dest/out.jar soundness.Tests
 
-.PHONY: publishLocal build dev ci test
+scala3:
+	docker build -t scala3 -f img/scala3 .
+
+image: scala3
+	docker build -t soundness -f img/soundness .
+
+.PHONY: publishLocal build dev ci test scala3 image

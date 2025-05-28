@@ -37,8 +37,6 @@ import contingency.*
 import prepositional.*
 import rudiments.*
 
-import language.experimental.captureChecking
-
 object Fqcn:
   def valid(char: Char): Boolean =
     char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || char >= '0' && char <= '9'

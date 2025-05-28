@@ -32,8 +32,6 @@
                                                                                                   */
 package iridescence
 
-import language.experimental.captureChecking
-
 object webColors:
   val AliceBlue = Srgb(0.941, 0.973, 1).rgb24
   val AntiqueWhite = Srgb(0.98, 0.922, 0.843).rgb24

@@ -32,8 +32,7 @@
                                                                                                   */
 package anticipation
 
-import language.experimental.captureChecking
-
 trait Textualizer:
   type Self
-  extension (value: Self) def textual: Text
+  extension (value: Self) def textual: Text = convert(value)
+  def convert(value: Self): Text

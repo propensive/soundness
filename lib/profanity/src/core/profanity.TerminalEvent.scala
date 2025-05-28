@@ -39,8 +39,6 @@ import gossamer.*
 import prepositional.*
 import spectacular.*
 
-import language.experimental.captureChecking
-
 sealed trait TerminalEvent
 
 enum TerminalInfo extends TerminalEvent:

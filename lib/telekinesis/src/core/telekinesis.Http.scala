@@ -250,13 +250,13 @@ object Http:
 
       text.bytes #:: request.body()
 
-  case class Request
-              (method:      Http.Method,
-               version:     Http.Version,
-               host:        Hostname,
-               target:      Text,
-               textHeaders: List[Http.Header],
-               body:        () => Stream[Bytes]):
+  class Request
+         (val method:      Http.Method,
+          val version:     Http.Version,
+          val host:        Hostname,
+          val target:      Text,
+          val textHeaders: List[Http.Header],
+          val body:        () => Stream[Bytes]):
 
     inline def request: this.type = this
 

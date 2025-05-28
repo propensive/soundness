@@ -32,7 +32,5 @@
                                                                                                   */
 package dendrology
 
-import language.experimental.captureChecking
-
 trait DagStyle[line]:
   def serialize(tiles: List[DagTile], node: line): line

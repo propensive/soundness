@@ -32,8 +32,6 @@
                                                                                                   */
 package acyclicity
 
-import language.experimental.captureChecking
-
 object Graph:
   def apply(id: Dot.Id, statements: Dot.Statement*): Dot = Dot.Graph(Some(id), false, statements*)
   def strict(id: Dot.Id, statements: Dot.Statement*): Dot = Dot.Graph(Some(id), true, statements*)

@@ -32,8 +32,6 @@
                                                                                                   */
 package anticipation
 
-import language.experimental.captureChecking
-
 trait GenericHtmlAttribute[-value]:
   type Self <: String & Singleton
   def name: Text
