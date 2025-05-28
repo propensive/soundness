@@ -37,8 +37,6 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 case class Decimalizer
    (significantFigures: Optional[Int] = Unset,
     decimalPlaces:      Optional[Int] = Unset,

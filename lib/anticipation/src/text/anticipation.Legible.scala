@@ -32,8 +32,6 @@
                                                                                                   */
 package anticipation
 
-import language.experimental.captureChecking
-
 trait Legible:
   type Self
   def text(value: Self): Text

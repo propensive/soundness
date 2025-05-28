@@ -35,8 +35,6 @@ package digression
 import anticipation.*
 import fulminate.*
 
-import language.experimental.captureChecking
-
 extension (error: Throwable) def stackTrace: StackTrace = StackTrace(error)
 
 extension (inline context: StringContext)

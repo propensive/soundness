@@ -35,8 +35,6 @@ package exoskeleton
 import anticipation.*
 import fulminate.*
 
-import language.experimental.captureChecking
-
 given realm: Realm = realm"exoskeleton"
 
 package parameterInterpretation:

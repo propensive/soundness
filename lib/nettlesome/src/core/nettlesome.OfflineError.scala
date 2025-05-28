@@ -34,7 +34,5 @@ package nettlesome
 
 import fulminate.*
 
-import language.experimental.captureChecking
-
 case class OfflineError()(using Diagnostics)
 extends Error(m"an Internet connection is not available")

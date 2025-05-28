@@ -38,8 +38,6 @@ import proscenium.*
 
 import scala.quoted.*
 
-import language.experimental.captureChecking
-
 object Adversaria:
   def firstField[target <: Product: Type, annotation <: StaticAnnotation: Type]
        (using Quotes)

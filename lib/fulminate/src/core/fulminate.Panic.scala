@@ -32,8 +32,6 @@
                                                                                                   */
 package fulminate
 
-import language.experimental.captureChecking
-
 import anticipation.*
 
 object Panic:

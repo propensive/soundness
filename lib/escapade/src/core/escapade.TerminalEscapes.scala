@@ -38,8 +38,6 @@ import iridescence.*
 import prepositional.*
 import spectacular.*
 
-import language.experimental.captureChecking
-
 object escapes:
   object foreground:
     val Black = Escape(t"[30m", t"[39m")

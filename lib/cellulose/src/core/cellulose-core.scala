@@ -32,8 +32,6 @@
                                                                                                   */
 package cellulose
 
-import language.experimental.captureChecking
-
 import rudiments.*
 
 extension (inline ctx: StringContext)

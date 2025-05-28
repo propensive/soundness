@@ -32,15 +32,13 @@
                                                                                                   */
 package dissonance
 
-import language.experimental.captureChecking
-
 import anticipation.*
 import proscenium.*
 
 def diff[element]
    (left:    IndexedSeq[element],
     right:   IndexedSeq[element],
-    compare: (element, element) -> Boolean = { (a: element, b: element) => a == b })
+    compare: (element, element) => Boolean = { (a: element, b: element) => a == b })
 :     Diff[element] =
 
   type Edits = List[Edit[element]]

@@ -39,8 +39,6 @@ import parasite.*
 import proscenium.*
 import turbulence.*
 
-import language.experimental.captureChecking
-
 given realm: Realm = realm"profanity"
 
 given stdio: (terminal: Terminal) => Stdio = terminal.stdio

@@ -32,8 +32,6 @@
                                                                                                   */
 package guillotine
 
-import language.experimental.captureChecking
-
 import anticipation.*
 import contingency.*
 import distillate.*

@@ -34,8 +34,6 @@ package exoskeleton
 
 import vacuous.*
 
-import language.experimental.captureChecking
-
 trait FlagParameters:
   def read[operand](flag: Flag)(using Cli, FlagInterpreter[operand], Suggestions[operand])
   :     Optional[operand]

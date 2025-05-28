@@ -35,7 +35,5 @@ package inimitable
 import anticipation.*
 import fulminate.*
 
-import language.experimental.captureChecking
-
 case class UuidError(badUuid: Text)(using Diagnostics)
 extends Error(m"$badUuid is not a valid UUID")

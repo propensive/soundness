@@ -32,8 +32,6 @@
                                                                                                   */
 package dissonance
 
-import language.experimental.captureChecking
-
 import vacuous.*
 
 case class RDiff[element](changes: Change[element]*):
@@ -46,5 +44,5 @@ case class RDiff[element](changes: Change[element]*):
 
     RDiff(changes2*)
 
-  def map[element2](lambda: element => element2): RDiff[element2^{lambda}] =
+  def map[element2](lambda: element => element2): RDiff[element2] =
     RDiff(changes.map(_.map(lambda))*)

@@ -32,8 +32,6 @@
                                                                                                   */
 package kaleidoscope
 
-import language.experimental.captureChecking
-
 import fulminate.*
 
 import RegexError.Reason.*

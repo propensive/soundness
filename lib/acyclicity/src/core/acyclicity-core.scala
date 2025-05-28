@@ -32,8 +32,6 @@
                                                                                                   */
 package acyclicity
 
-import language.experimental.captureChecking
-
 import anticipation.*
 import spectacular.*
 

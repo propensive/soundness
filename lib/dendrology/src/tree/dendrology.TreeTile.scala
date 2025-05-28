@@ -32,7 +32,5 @@
                                                                                                   */
 package dendrology
 
-import language.experimental.captureChecking
-
 enum TreeTile:
   case Space, Last, Branch, Extender

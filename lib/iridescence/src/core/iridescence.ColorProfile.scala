@@ -32,6 +32,4 @@
                                                                                                   */
 package iridescence
 
-import language.experimental.captureChecking
-
 case class ColorProfile(x2: Double, y2: Double, z2: Double, x10: Double, y10: Double, z10: Double)

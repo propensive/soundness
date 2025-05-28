@@ -39,8 +39,6 @@ import gossamer.*
 import prepositional.*
 import spectacular.*
 
-import language.experimental.captureChecking
-
 object Shell:
   given decoder: Shell is Decodable in Text = text => valueOf(text.lower.capitalize.s)
   given encodable: Shell is Encodable in Text = _.toString.tt.lower

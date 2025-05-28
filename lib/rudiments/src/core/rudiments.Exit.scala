@@ -32,8 +32,6 @@
                                                                                                   */
 package rudiments
 
-import language.experimental.captureChecking
-
 object Exit:
   def apply(value: Int): Exit = if value == 0 then Ok else Fail(value)
 

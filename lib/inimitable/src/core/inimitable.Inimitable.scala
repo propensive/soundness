@@ -32,8 +32,6 @@
                                                                                                   */
 package inimitable
 
-import language.experimental.captureChecking
-
 import scala.quoted.*
 
 import anticipation.*

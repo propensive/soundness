@@ -32,8 +32,6 @@
                                                                                                   */
 package inimitable
 
-import language.experimental.captureChecking
-
 import java.util as ju
 
 import anticipation.*

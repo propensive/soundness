@@ -36,8 +36,6 @@ import anticipation.*
 
 import java.time as jt
 
-import language.experimental.captureChecking
-
 object JavaTimeInstant extends Abstractable, Instantiable:
   type Self = jt.Instant
   type Source = Long

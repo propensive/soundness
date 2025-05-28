@@ -34,8 +34,6 @@ package anticipation
 
 import diuretic.*
 
-import language.experimental.captureChecking
-
 package instantApi:
   given javaTimeInstant: JavaTimeInstant.type = JavaTimeInstant
   given javaLong: JavaLongInstant.type = JavaLongInstant
@@ -50,4 +48,3 @@ package filesystemApi:
 
 package urlApi:
   given javaNetUrl: JavaNetUrl.type = JavaNetUrl
-

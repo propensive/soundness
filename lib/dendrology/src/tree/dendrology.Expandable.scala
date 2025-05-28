@@ -32,8 +32,6 @@
                                                                                                   */
 package dendrology
 
-import language.experimental.captureChecking
-
 trait Expandable:
   type Self
   def children(node: Self): List[Self]

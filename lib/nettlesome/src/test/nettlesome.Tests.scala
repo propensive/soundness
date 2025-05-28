@@ -345,24 +345,24 @@ object Tests extends Suite(m"Nettlesome tests"):
         case UrlError(_, position, UrlError.Reason.Expected(UrlError.Expectation.Number)) if position == 21.z =>
 
       test(m"Parse full URL"):
-        Url.parse(t"http://user:pw@example.com:8080/path/to/location?query=1#ref")
+        t"http://user:pw@example.com:8080/path/to/location?query=1#ref".decode[HttpUrl]
       .assert(_ == Url(Origin(Scheme.Http, Authority(example.com, t"user:pw", 8080)),
           t"/path/to/location", t"query=1", t"ref"))
 
       test(m"Parse simple URL"):
-        Url.parse(t"https://example.com/foo")
+        t"https://example.com/foo".decode[HttpUrl]
       .assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), t"/foo"))
 
       test(m"Parse url with fragment"):
-        Url.parse(t"https://example.com/#id")
+        t"https://example.com/#id".decode[HttpUrl]
       .assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), t"/", Unset, t"id"))
 
       test(m"Show simple URL"):
-        Url.parse(t"http://example.com/foo").show
+        t"http://example.com/foo".decode[HttpUrl].show
       .assert(_ == t"http://example.com/foo")
 
       test(m"show url with fragment"):
-        Url.parse(t"https://example.com/#id").show
+        t"https://example.com/#id".decode[HttpUrl].show
       .assert(_ == t"https://example.com/#id")
 
       test(m"Parse full URL at compiletime"):

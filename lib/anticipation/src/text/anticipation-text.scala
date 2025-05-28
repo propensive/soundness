@@ -32,8 +32,6 @@
                                                                                                   */
 package anticipation
 
-import language.experimental.captureChecking
-
 extension (texts: Iterable[Text])
   transparent inline def ss: Iterable[String] = texts.map(_.s)
 

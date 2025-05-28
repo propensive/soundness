@@ -32,8 +32,6 @@
                                                                                                   */
 package exoskeleton
 
-import language.experimental.captureChecking
-
 object SimpleParameterInterpreter extends CliInterpreter:
   type Parameters = Arguments
   def interpret(arguments: List[Argument]): Arguments = Arguments(arguments*)

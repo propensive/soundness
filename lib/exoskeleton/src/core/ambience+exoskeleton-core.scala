@@ -34,7 +34,5 @@ package ambience
 
 import exoskeleton.*
 
-import language.experimental.captureChecking
-
 package environments:
   given daemonClient(using cli: Cli): Environment = cli.environment

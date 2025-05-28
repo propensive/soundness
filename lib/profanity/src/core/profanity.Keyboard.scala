@@ -32,8 +32,6 @@
                                                                                                   */
 package profanity
 
-import language.experimental.captureChecking
-
 import proscenium.*
 
 trait Keyboard:

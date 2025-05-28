@@ -41,8 +41,6 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 trait Showable extends Communicable:
   type Self
   def text(value: Self): Text

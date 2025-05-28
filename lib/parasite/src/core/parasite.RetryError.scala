@@ -32,8 +32,6 @@
                                                                                                   */
 package parasite
 
-import language.experimental.captureChecking
-
 import fulminate.*
 
 case class RetryError(count: Int)(using Diagnostics)

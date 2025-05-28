@@ -34,8 +34,6 @@ package spectacular
 
 import anticipation.*
 
-import language.experimental.captureChecking
-
 extension [showable: Showable](value: showable) def show: Text = showable.text(value)
 extension [inspectable: Inspectable](value: inspectable) def inspect: Text = inspectable.text(value)
 

@@ -32,8 +32,6 @@
                                                                                                   */
 package feudalism
 
-import language.experimental.captureChecking
-
 class Semaphore():
   private var count: Int = 0
 

@@ -36,8 +36,6 @@ import proscenium.*
 
 import scala.quoted.*
 
-import language.experimental.captureChecking
-
 case class Annotations[annotation <: StaticAnnotation, target](annotations: annotation*)
 
 object Annotations:

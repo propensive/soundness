@@ -32,8 +32,6 @@
                                                                                                   */
 package acyclicity
 
-import language.experimental.captureChecking
-
 object Digraph:
   def apply(id: Dot.Id, statements: Dot.Statement*): Dot = Dot.Digraph(Some(id), false, statements*)
   def apply(statements: Dot.Statement*): Dot = Dot.Digraph(None, false, statements*)

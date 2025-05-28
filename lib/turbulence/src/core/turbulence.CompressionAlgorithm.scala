@@ -32,6 +32,4 @@
                                                                                                   */
 package turbulence
 
-import language.experimental.captureChecking
-
 erased trait CompressionAlgorithm

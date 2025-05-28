@@ -32,8 +32,6 @@
                                                                                                   */
 package kaleidoscope
 
-import language.experimental.captureChecking
-
 extension (inline ctx: StringContext)
   transparent inline def r: Any = ${Kaleidoscope.regex('ctx)}
   transparent inline def g: Any = ${Kaleidoscope.glob('ctx)}

@@ -40,8 +40,6 @@ import scala.quoted.*
 import scala.reflect.*
 import scala.util.*
 
-import language.experimental.captureChecking
-
 object Anticipation:
   opaque type Text <: Matchable = String
 

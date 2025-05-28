@@ -32,8 +32,6 @@
                                                                                                   */
 package hypotenuse
 
-import language.experimental.captureChecking
-
 import scala.annotation.*
 
 import denominative.*

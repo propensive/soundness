@@ -32,8 +32,6 @@
                                                                                                   */
 package inimitable
 
-import language.experimental.captureChecking
-
 extension (inline context: StringContext)
   inline def uuid(): Uuid = ${Inimitable.uuid('context)}
 

@@ -32,11 +32,10 @@
                                                                                                   */
 package anticipation
 
-import language.experimental.captureChecking
-
 trait Chromatic:
   type Self
-  extension (color: Self) def asRgb24Int: Int
+  extension (color: Self) def asRgb24Int: Int = convert(color)
+  def convert(color: Self): Int
 
   def red(color: Self): Int = asRgb24Int(color)&255
   def green(color: Self): Int = (asRgb24Int(color) >> 8)&255

@@ -1,0 +1,121 @@
+#!/bin/bash
+
+mkdir -p /opt/soundness/bin
+CLASSPATH="$(ls /opt/soundness/jar/* | tr '\n' :)"
+
+scalac=(
+  /opt/scala/bin/scalac
+    -cp "/opt/soundness/bin:$CLASSPATH"
+    -d /opt/soundness/bin
+    -experimental
+    -new-syntax
+    -feature
+    -deprecation
+    -Wimplausible-patterns
+    -Wsafe-init
+    -Xmax-inlines 100
+    -Ycc-new
+    -Yno-flexible-types
+    -Yexplicit-nulls
+    -Ycheck-all-patmat
+    -explain-cyclic
+    -language:experimental.modularity
+    -language:experimental.genericNumberLiterals
+    -language:experimental.into
+    -language:experimental.erasedDefinitions
+    -language:experimental.saferExceptions
+    -language:experimental.namedTypeArguments
+    -language:implicitConversions
+)
+
+echo —————————— STAGE 4 ——————————
+"${scalac[@]}" \
+  lib/quantitative/src/units/*.scala \
+  lib/aviation/src/core/*.scala \
+  lib/guillotine/src/core/*.scala \
+  lib/ambience/src/core/*.scala \
+  lib/anticipation/src/gfx/*.scala \
+  lib/anticipation/src/html/*.scala \
+  lib/gesticulate/src/core/*.scala \
+  lib/hallucination/src/core/*.scala \
+  lib/escapade/src/core/*.scala \
+  lib/galilei/src/core/*.scala \
+  lib/hellenism/src/core/*.scala \
+  lib/anthology/src/core/*.scala \
+  lib/anthology/src/scala/*.scala \
+  lib/harlequin/src/core/*.scala \
+  lib/anticipation/src/transport/*.scala \
+  lib/xylophone/src/core/*.scala \
+  lib/honeycomb/src/core/*.scala \
+  lib/punctuation/src/core/*.scala \
+  lib/punctuation/src/ansi/*.scala \
+  lib/imperial/src/core/*.scala \
+  lib/eucalyptus/src/ansi/*.scala \
+  lib/eucalyptus/src/syslog/*.scala \
+  lib/surveillance/src/core/*.scala \
+  lib/profanity/src/core/*.scala \
+  lib/exoskeleton/src/args/*.scala \
+  lib/exoskeleton/src/core/*.scala \
+  lib/ethereal/src/core/*.scala \
+  lib/escritoire/src/core/*.scala \
+  lib/exoskeleton/src/completions/*.scala \
+  lib/acyclicity/src/core/*.scala \
+  lib/dendrology/src/dag/*.scala \
+  lib/dendrology/src/tree/*.scala \
+  lib/monotonous/src/core/*.scala \
+  lib/gastronomy/src/core/*.scala \
+  lib/anamnesis/src/core/*.scala \
+  lib/legerdemain/src/core/*.scala \
+  lib/nettlesome/src/core/*.scala \
+  lib/coaxial/src/core/*.scala \
+  lib/nettlesome/src/url/*.scala \
+  lib/telekinesis/src/core/*.scala \
+  lib/revolution/src/core/*.scala \
+  lib/zeppelin/src/core/*.scala \
+  lib/burdock/src/core/*.scala \
+  lib/polaris/src/core/*.scala \
+  lib/ulysses/src/core/*.scala \
+  lib/camouflage/src/core/*.scala \
+  lib/panopticon/src/core/*.scala \
+  lib/merino/src/core/*.scala \
+  lib/jacinta/src/core/*.scala \
+  lib/enigmatic/src/core/*.scala \
+  lib/polyvinyl/src/core/*.scala \
+  lib/dissonance/src/core/*.scala \
+  lib/chiaroscuro/src/core/*.scala \
+  lib/cellulose/src/core/*.scala \
+  lib/caesura/src/core/*.scala \
+  lib/mosquito/src/core/*.scala \
+  lib/metamorphose/src/core/*.scala \
+  lib/geodesy/src/core/*.scala \
+  lib/charisma/src/core/*.scala \
+  lib/baroque/src/core/*.scala \
+  lib/abacist/src/core/*.scala \
+  lib/harlequin/src/ansi/*.scala \
+  lib/hyperbole/src/core/*.scala \
+  lib/mandible/src/core/*.scala \
+  lib/superlunary/src/core/*.scala \
+  lib/superlunary/src/jvm/*.scala \
+  lib/probably/src/coverage/*.scala \
+  lib/probably/src/core/*.scala \
+  lib/larceny/src/plugin/*.scala \
+  lib/probably/src/cli/*.scala \
+  lib/yossarian/src/core/*.scala \
+  lib/cataclysm/src/core/*.scala \
+  lib/tarantula/src/core/*.scala \
+  lib/sedentary/src/core/*.scala \
+  lib/punctuation/src/html/*.scala \
+  lib/harlequin/src/md/*.scala \
+  lib/anthology/src/java/*.scala \
+  lib/umbrageous/src/plugin/*.scala \
+  lib/octogenarian/src/core/*.scala \
+  lib/caduceus/src/core/*.scala \
+  lib/caduceus/src/resend/*.scala \
+  lib/scintillate/src/server/*.scala \
+  lib/perihelion/src/core/*.scala \
+  lib/eucalyptus/src/gcp/*.scala \
+  lib/plutocrat/src/core/*.scala \
+  lib/scintillate/src/servlet/*.scala \
+  lib/savagery/src/core/*.scala \
+  lib/phoenicia/src/core/*.scala \
+  lib/cosmopolite/src/core/*.scala

@@ -32,8 +32,6 @@
                                                                                                   */
 package dendrology
 
-import language.experimental.captureChecking
-
 import scala.reflect.*
 
 import acyclicity.*

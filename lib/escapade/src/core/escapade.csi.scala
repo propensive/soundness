@@ -37,8 +37,6 @@ import gossamer.*
 import spectacular.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 object csi:
   val esc: Text = t"\e"
   val csi: Text = t"\e["

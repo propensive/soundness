@@ -36,8 +36,6 @@ import fulminate.*
 import proscenium.*
 import rudiments.*
 
-import language.experimental.captureChecking
-
 import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks as jucl
 

@@ -39,8 +39,6 @@ import vacuous.*
 
 import java.nio as jn, jn.charset as jnc
 
-import language.experimental.captureChecking
-
 object CharEncoder:
   def system: CharEncoder = unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
 

@@ -43,8 +43,6 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 import Character.*
 
 class PositionReader(private var in: Stream[Text]):

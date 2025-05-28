@@ -41,7 +41,6 @@ import spectacular.*
 import vacuous.*
 
 import language.dynamics
-//import language.experimental.captureChecking
 
 object MediaTypeError:
   enum Reason:

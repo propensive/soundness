@@ -32,8 +32,6 @@
                                                                                                   */
 package hieroglyph
 
-import language.experimental.captureChecking
-
 import fulminate.*
 
 case class CharEncodeError(char: Char, encoding: Encoding)(using Diagnostics)

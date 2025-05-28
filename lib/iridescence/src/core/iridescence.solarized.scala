@@ -32,8 +32,6 @@
                                                                                                   */
 package iridescence
 
-import language.experimental.captureChecking
-
 object solarized:
   val Base03  = Srgb(0.000, 0.169, 0.212)
   val Base02  = Srgb(0.027, 0.212, 0.259)

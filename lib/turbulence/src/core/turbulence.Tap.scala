@@ -32,8 +32,6 @@
                                                                                                   */
 package turbulence
 
-import language.experimental.captureChecking
-
 import java.util.concurrent.atomic as juca
 
 import proscenium.*
