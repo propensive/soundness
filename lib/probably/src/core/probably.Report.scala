@@ -345,14 +345,16 @@ class Report(using Environment):
         else Out.println(t"─"*72)
 
         val color = if pass then Status.Pass.color else Status.Fail.color
-        val text = if pass then t"P A S S" else t"F A I L"
+        val text1 = if !pass then t"  ┏┳━━  ┏┳━┳┓  ┏┓  ┏┓     " else t"┏┳━┳┓  ┏┳━┳┓  ┏┳━━╸  ┏┳━━╸"
+        val text2 = if !pass then t"  ┃┣━   ┃┣━┫┃  ┃┃  ┃┃     " else t"┃┣━┻┛  ┃┣━┫┃  ┗┻━┳┓  ┗┻━┳┓"
+        val text3 = if !pass then t"  ┗┛    ┗┛ ┗┛  ┗┛  ┗┻━━╸  " else t"┗┛     ┗┛ ┗┛  ╺━━┻┛  ╺━━┻┛"
 
         if !pass || !tabulation then
-          Out.println(e"$color(╭${t"─"*70}╮)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*68}))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*31}$text${t" "*30}))) $color(│)")
-          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*68}))) $color(│)")
-          Out.println(e"$color(╰${t"─"*70}╯)")
+          Out.println(e"$color(╭${t"─"*44}╮)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*8}$text1${t" "*8}))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*8}$text2${t" "*8}))) $color(│)")
+          Out.println(e"$color(│) $Bold(${Bg(color)}($Black(${t" "*8}$text3${t" "*8}))) $color(│)")
+          Out.println(e"$color(╰${t"─"*44}╯)")
 
           given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
           val passText = e"$Bold($White($passed)) passed (${100.0*passed/total}%)"
