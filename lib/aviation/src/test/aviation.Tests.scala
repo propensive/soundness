@@ -258,7 +258,20 @@ object Tests extends Suite(m"Aviation Tests"):
         7.25.pm
       .assert(_ == Clockface(19, 25, 0))
 
+      test(m"Time with too many minutes is invalid"):
+        demilitarize(7.88.am)
+      .assert(_.nonEmpty)
+
+      test(m"Time with too few minute digits is invalid"):
+        demilitarize(7.8.am)
+      .assert(_.nonEmpty)
+
+      test(m"Time with too many minute digits is invalid"):
+        demilitarize(7.585.am)
+      .assert(_.nonEmpty)
+
       import calendars.gregorian
+
       test(m"Specify datetime"):
         2018-Aug-11 at 5.25.pm
       .assert(_ == Timestamp(Date(Year(2018), Aug, Day(11)), Clockface(17, 25, 0)))
