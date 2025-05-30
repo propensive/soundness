@@ -32,6 +32,7 @@
                                                                                                   */
 package aviation
 
+import anticipation.*
 import contingency.*
 
 trait Calendar:
@@ -39,10 +40,11 @@ trait Calendar:
   type Mensual
   type Annual
 
+  def name: Text
   def daysInYear(year: Annual): Int
   def annual(date: Date): Annual
   def mensual(date: Date): Mensual
   def diurnal(date: Date): Diurnal
   def zerothDayOfYear(year: Annual): Date
-  def jdn(year: Annual, month: Mensual, day: Diurnal): Date raises DateError
+  def jdn(year: Annual, month: Mensual, day: Diurnal): Date raises TimeError
   def add(date: Date, period: Timespan): Date
