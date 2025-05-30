@@ -34,62 +34,122 @@ package aviation
 
 import anticipation.*
 import contingency.*
-import distillate.*
+import denominative.*
 import fulminate.*
-import kaleidoscope.*
-import prepositional.*
+import gossamer.*
+import quantitative.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
+import vacuous.*
 
-import errorDiagnostics.stackTraces
+object Rfc1123 extends Date.Format(t"RFC 1123"):
+  given Issue is Communicable =
+    case Issue.DayName(days*)     => m"expected a day name (${days.map(_.show).join(t", ")})"
+    case Issue.MonthName(months*) => m"expected a month name (${months.map(_.show).join(t", ")})"
+    case Issue.Expect(char: Char) => m"expected $char"
+    case Issue.Digit              => m"expected a digit"
 
-import java.time as jt
+  enum Issue:
+    case DayName(days: Weekday*)
+    case MonthName(months: Month*)
+    case Expect(char: Char)
+    case Digit
 
-object Timestamp:
-  import calendars.gregorian
+  def parse(text: Text): Instant raises TimeError =
+    import Rfc1123.Issue.*
+    import Weekday.*
 
-  given showable: (Clockface is Showable, Date is Showable) => Timestamp is Showable =
-    timestamp => s"${timestamp.time.show}, ${timestamp.date.show}".tt
+    type Self = Instant
+    type Format = Text
 
-  given decodable: Tactic[TimestampError] => Timestamp is Decodable in Text = text =>
-    text match
-      case r"$year(\d{4})-$month(\d{2})-$day(\d{2})T$hour(\d{2}):$minute(\d{2}):$second(\d{2})" =>
-        mitigate:
-          case NumberError(_, _) => TimestampError(text)
-          case TimeError(_)      => TimestampError(text)
+    var index: Ordinal = Prim
 
-        . within:
-            Timestamp
-             (Date(year.decode[Year], Month(month.decode[Int]), Day(day.decode[Int])),
-              Clockface
-               (Base24(hour.decode[Int]), Base60(minute.decode[Int]), Base60(second.decode[Int])))
+    def fail(issue: Rfc1123.Issue): Unit = raise(TimeError(_.Format(text, Rfc1123, index)(issue)))
+    def focus: Char = text.at(index).or('\u0000')
+    def next(): Char = (index += 1) yet focus
+    def expect(char: Char): Unit = if next() != char then fail(Expect(char))
 
-      case value =>
-        raise(TimestampError(value)) yet Timestamp(2000-Jan-1, Clockface(0, 0, 0))
+    focus match
+      case 'M' => if next() != 'o' || next() != 'n' then fail(DayName(Mon))
+      case 'T' => next() match
+        case 'u' => if next() != 'e' then fail(DayName(Tue))
+        case 'h' => if next() != 'u' then fail(DayName(Thu))
+        case _   => fail(DayName(Tue, Thu))
+      case 'W' => if next() != 'e' || next() != 'd' then fail(DayName(Wed))
+      case 'F' => if next() != 'r' || next() != 'i' then fail(DayName(Fri))
+      case 'S' => next() match
+        case 'a' => if next() != 't' then fail(DayName(Sat))
+        case 'u' => if next() != 'n' then fail(DayName(Sun))
+        case _   => fail(DayName(Sat, Sun))
+      case _   => fail(DayName(Mon, Tue, Wed, Thu, Fri, Sat, Sun))
 
-case class Timestamp(date: Date, time: Clockface):
-  def year(using calendar: Calendar): calendar.Annual = date.year
-  def month(using calendar: Calendar): calendar.Mensual = date.month
-  def monthstamp(using RomanCalendar): Monthstamp = date.monthstamp
-  def day(using calendar: Calendar): calendar.Diurnal = date.day
-  def hour: Int = time.hour
-  def minute: Int = time.minute
-  def second: Int = time.second
+    expect(',')
+    expect(' ')
 
-  def in(timezone: Timezone): Moment = Moment(date, time, timezone)
+    val day: Int =
+      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10)
+      + (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
 
-  def stdlib(using RomanCalendar): jt.LocalDateTime =
-    jt.LocalDateTime.of
-     (date.year(),
-      date.month.numerical,
-      date.day(),
-      time.hour,
-      time.minute,
-      time.second,
-      time.nanos)
-    . nn
+    expect(' ')
 
-  def instant(using timezone: Timezone, calendar: RomanCalendar): Instant =
-    import dateFormats.european
-    Instant(stdlib.atZone(timezone.stdlib).nn.toInstant.nn.toEpochMilli())
+    val month: Month = next() match
+      case 'A' => next() match
+        case 'p' => if next() != 'r' then fail(MonthName(Apr)) yet Apr else Apr
+        case 'u' => if next() != 'g' then fail(MonthName(Aug)) yet Aug else Aug
+        case _   => fail(MonthName(Apr, Aug)) yet Apr
+      case 'D' => if next() != 'e' || next() != 'c' then fail(MonthName(Dec)) yet Dec else Dec
+      case 'F' => if next() != 'e' || next() != 'b' then fail(MonthName(Feb)) yet Feb else Feb
+      case 'J' => next() match
+        case 'a' => if next() != 'n' then fail(MonthName(Jan)) yet Jan else Jan
+        case 'u' => next() match
+          case 'l' => Jul
+          case 'n' => Jun
+          case _   => fail(MonthName(Jun, Jul)) yet Jul
+        case _   => fail(MonthName(Jan, Jun, Jul)) yet Jan
+      case 'M' => if next() != 'a' then fail(MonthName(Mar, May)) yet Mar else next() match
+        case 'r' => Mar
+        case 'y' => May
+        case _   => fail(MonthName(Mar, May)) yet Mar
+      case 'N' => if next() != 'o' || next() != 'v' then fail(MonthName(Nov)) yet Nov else Nov
+      case 'O' => if next() != 'c' || next() != 't' then fail(MonthName(Oct)) yet Oct else Oct
+      case 'S' => if next() != 'e' || next() != 'p' then fail(MonthName(Sep)) yet Sep else Sep
+      case _   => fail(MonthName(Month.all*)) yet Jan
+
+    expect(' ')
+
+    val year: Int =
+      (if next() < '0' || focus > '9' then fail(Digit) yet 2 else (focus - '0')*1000)
+      + (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*100)
+      + (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10)
+      + (if next() < '0' || focus > '9' then fail(Digit) yet 0 else focus - '0')
+
+    expect(' ')
+
+    val hour: Int =
+      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10)
+      + (if next() < '0' || focus > '9' then fail(Digit) yet 0 else focus - '0')
+
+    expect(':')
+
+    val minute: Int =
+      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10)
+      + (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
+
+    expect(':')
+
+    val second: Int =
+      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10)
+      + (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
+
+    expect(' ')
+    expect('G')
+    expect('M')
+    expect('T')
+
+    import calendars.gregorian
+
+    val date = Date(Year(year), month, Day(day))
+    val time = Clockface(Base24(hour), Base60(minute), Base60(second))
+
+    Timestamp(date, time).in(tz"GMT").instant

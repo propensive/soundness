@@ -33,7 +33,29 @@
 package aviation
 
 import anticipation.*
+import denominative.*
 import fulminate.*
+import gossamer.*
 
-case class DateError(text: Text)(using Diagnostics)
-extends Error(m"the value $text is not a valid date")
+object TimeError:
+  inline def apply(inline lambda: Reason.type => Reason)(using Diagnostics): TimeError =
+    TimeError(lambda(Reason))
+
+  enum Reason:
+    case Format(text: Text, format: Date.Format, offset: Ordinal)(val issue: format.Issue)
+    case Invalid(year: Int, month: Int, day: Int, calendar: Calendar)
+    case Unknown(text: Text, kind: Text)
+
+  object Reason:
+    given Reason is Communicable =
+      case reason@Format(text, format, offset) =>
+        m"$text does not conform to format ${format.name} (${reason.issue} at ${offset.n0})"
+
+      case Invalid(year, month, day, calendar) =>
+        m"$year-$month-$day does not exist in the calendar ${calendar.name}"
+
+      case Unknown(text, kind) =>
+        m"$text is not a recognized $kind"
+
+case class TimeError(reason: TimeError.Reason)(using Diagnostics)
+extends Error(m"the date was not valid because $reason")

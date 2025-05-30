@@ -345,7 +345,7 @@ class Report(using Environment):
         else Out.println(t"─"*72)
 
         val color = if pass then Status.Pass.color else Status.Fail.color
-        val text1 = if !pass then t"┳┳━━━  ┏┳━━━┳┓  ┳┳  ┳┳    " else t"┳┳━━┳┓  ┏┳━━━┳┓  ┏┳━━━┓  ┏┳━━━┓"
+        val text1 = if !pass then t"┳┳━━━┓ ┏┳━━━┳┓  ┳┳  ┳┳    " else t"┳┳━━┳┓  ┏┳━━━┳┓  ┏┳━━━┓  ┏┳━━━┓"
         val text2 = if !pass then t"┃┃     ┃┃   ┃┃  ┃┃  ┃┃    " else t"┃┃  ┃┃  ┃┃   ┃┃  ┃┃      ┃┃    "
         val text3 = if !pass then t"┃┣━━   ┃┣━━━┫┃  ┃┃  ┃┃    " else t"┃┣━━┻┛  ┃┣━━━┫┃  ┗┻━━┳┓  ┗┻━━┳┓"
         val text4 = if !pass then t"┃┃     ┃┃   ┃┃  ┃┃  ┃┃    " else t"┃┃      ┃┃   ┃┃      ┃┃      ┃┃"

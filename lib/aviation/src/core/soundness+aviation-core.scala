@@ -33,7 +33,7 @@
 package soundness
 
 export aviation
-. { Base24, Base60, Calendar, Clock, Clockface, DateError, Horology, Period, LeapSeconds, Moment,
+. { Base24, Base60, Calendar, Clock, Clockface, TimeError, Horology, Period, LeapSeconds, Moment,
     Month, RomanCalendar, StandardTime, Timespan, Timestamp, Chronology, Timezone, TimezoneError,
     Tzdb, TzdbError, Weekday, Monthstamp, now, today, TimeEvent, am, pm, Anniversary,
     years, months, weeks, days, hours, minutes, seconds, tz, TimestampError,
