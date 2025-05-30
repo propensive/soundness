@@ -48,7 +48,7 @@ import symbolism.*
 import vacuous.*
 
 export Aviation2.{Instant, Duration}
-export Aviation.{Date, Year, Day, Anniversary}
+export Aviation.{Date, Year, Day, Anniversary, WorkingDays}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 given realm: Realm = realm"aviation"
@@ -333,3 +333,18 @@ extension (int: Int)
 
 extension (inline context: StringContext)
   inline def tz(): Timezone = ${Timezone.Tz.expand('context)}
+
+export Weekday.{Mon, Tue, Wed, Thu, Fri, Sat, Sun}
+
+package hebdomads:
+  given european: Hebdomad:
+    def start: Weekday = Weekday.Mon
+    def weekend(day: Weekday): Boolean = day.ordinal >= 5
+
+  given northAmerican: Hebdomad:
+    def start: Weekday = Weekday.Sun
+    def weekend(day: Weekday): Boolean = day.ordinal >= 5
+
+  given jewish: Hebdomad:
+    def start: Weekday = Weekday.Sun
+    def weekend(day: Weekday): Boolean = day == Weekday.Fri || day == Weekday.Sat

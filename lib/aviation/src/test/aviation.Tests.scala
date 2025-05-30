@@ -500,3 +500,149 @@ object Tests extends Suite(m"Aviation Tests"):
         test(m"Minimum valid time (00:00:00)"):
           t"Sun, 10 Oct 2021 00:00:00 GMT".decode[Instant]
         . assert(_ == Instant(1633824000000L))
+
+      suite(m"Working days tests"):
+        suite(m"Counting days")
+          test(m"Count the Saturdays in March"):
+            Weekday.count(2025-Mar-1, 2025-Apr-1, Sat)
+          . assert(_ == 5)
+
+          test(m"Count the Sundays in March"):
+            Weekday.count(2025-Mar-1, 2025-Apr-1, Sun)
+          . assert(_ == 5)
+
+          test(m"Count the Mondays in March"):
+            Weekday.count(2025-Mar-1, 2025-Apr-1, Mon)
+          . assert(_ == 5)
+
+          test(m"Count the Tuesdays in March"):
+            Weekday.count(2025-Mar-1, 2025-Apr-1, Tue)
+          . assert(_ == 4)
+
+          test(m"Count the Wednesdays in March"):
+            Weekday.count(2025-Mar-1, 2025-Apr-1, Wed)
+          . assert(_ == 4)
+
+          test(m"Count the Thursdays in March"):
+            Weekday.count(2025-Mar-1, 2025-Apr-1, Thu)
+          . assert(_ == 4)
+
+          test(m"Count the Fridays in March"):
+            Weekday.count(2025-Mar-1, 2025-Apr-1, Fri)
+          . assert(_ == 4)
+
+          test(m"Count the Saturdays in April"):
+            Weekday.count(2025-Apr-1, 2025-May-1, Sat)
+          . assert(_ == 4)
+
+          test(m"Count the Sundays in April"):
+            Weekday.count(2025-Apr-1, 2025-May-1, Sun)
+          . assert(_ == 4 )
+
+          test(m"Count the Mondays in April"):
+            Weekday.count(2025-Apr-1, 2025-May-1, Mon)
+          . assert(_ == 4)
+
+          test(m"Count the Tuesdays in April"):
+            Weekday.count(2025-Apr-1, 2025-May-1, Tue)
+          . assert(_ == 5)
+
+          test(m"Count the Wednesdays in April"):
+            Weekday.count(2025-Apr-1, 2025-May-1, Wed)
+          . assert(_ == 5)
+
+          test(m"Count the Thursdays in April"):
+            Weekday.count(2025-Apr-1, 2025-May-1, Thu)
+          . assert(_ == 4)
+
+          test(m"Count the Fridays in April"):
+            Weekday.count(2025-Apr-1, 2025-May-1, Fri)
+          . assert(_ == 4)
+
+          test(m"Count the Saturdays in May"):
+            Weekday.count(2025-May-1, 2025-Jun-1, Sat)
+          . assert(_ == 5)
+
+          test(m"Count the Sundays in May"):
+            Weekday.count(2025-May-1, 2025-Jun-1, Sun)
+          . assert(_ == 4)
+
+          test(m"Count the Mondays in May"):
+            Weekday.count(2025-May-1, 2025-Jun-1, Mon)
+          . assert(_ == 4)
+
+          test(m"Count the Tuesdays in May"):
+            Weekday.count(2025-May-1, 2025-Jun-1, Tue)
+          . assert(_ == 4)
+
+          test(m"Count the Wednesdays in May"):
+            Weekday.count(2025-May-1, 2025-Jun-1, Wed)
+          . assert(_ == 4)
+
+          test(m"Count the Thursdays in May"):
+            Weekday.count(2025-May-1, 2025-Jun-1, Thu)
+          . assert(_ == 5)
+
+          test(m"Count the Fridays in May"):
+            Weekday.count(2025-May-1, 2025-Jun-1, Fri)
+          . assert(_ == 5)
+
+        suite(m"UK holidays example"):
+          given Holidays = Holidays(List
+                                     (Holiday(2025-Jan-1, t"New Year's Day"),
+                                      Holiday(2025-Apr-21, t"Good Friday"),
+                                      Holiday(2025-May-5, t"Early May Bank Holiday"),
+                                      Holiday(2025-May-26, t"Spring Bank Holiday"),
+                                      Holiday(2025-Aug-25, t"Summer Bank Holiday"),
+                                      Holiday(2025-Dec-25, t"Christmas Day"),
+                                      Holiday(2025-Dec-26, t"Boxing Day")))
+
+          test(m"Check the next working day after Monday is Tuesday"):
+            import hebdomads.european
+            2025-Aug-18 + WorkingDays(1)
+          . assert(_ == 2025-Aug-19)
+
+          test(m"Check two working days after a Monday is Wednesday"):
+            import hebdomads.european
+            2025-Aug-18 + WorkingDays(2)
+          . assert(_ == 2025-Aug-20)
+
+          test(m"Check four working days after a Monday is Friday"):
+            import hebdomads.european
+            2025-Aug-18 + WorkingDays(4)
+          . assert(_ == 2025-Aug-22)
+
+          test(m"Check five working days after a Monday is Monday"):
+            import hebdomads.european
+            2025-Aug-11 + WorkingDays(5)
+          . assert(_ == 2025-Aug-18)
+
+          test(m"Check one working days after a Friday is Monday"):
+            import hebdomads.european
+            2025-Apr-11 + WorkingDays(1)
+          . assert(_ == 2025-Apr-14)
+
+          test(m"Check the working day after Christmas Eve"):
+            import hebdomads.european
+            2025-Dec-24 + WorkingDays(1)
+          . assert(_ == 2025-Dec-29)
+
+          test(m"Check the working day after Maundy Thursday is Easter Monday"):
+            import hebdomads.european
+            2025-Apr-18 + WorkingDays(1)
+          . assert(_ == 2025-Apr-22)
+
+          test(m"Check that one working day after Good Friday is Tuesday after Easter"):
+            import hebdomads.european
+            2025-Apr-19 + WorkingDays(1)
+          . assert(_ == 2025-Apr-23)
+
+          test(m"Check there are 253 working days in a year"):
+            import hebdomads.european
+            import dateFormats.iso8601
+            for i <- 4 to 5 do
+              println("-----")
+              val d = (2025-Jan-1 + WorkingDays(i))
+              println(t"${d.weekday}, $d")
+            2025-Jan-3 + WorkingDays(253)
+          . assert(_ == 2026-Jan-1)
