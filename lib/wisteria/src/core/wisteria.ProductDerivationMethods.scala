@@ -52,7 +52,7 @@ trait ProductDerivationMethods[typeclass[_]]:
                                                         label:     Text,
                                                         index:     Int & FieldIndex[field])
                                                     ?=> field)
-  :     derivation =
+  : derivation =
 
     type Fields = reflection.MirroredElemTypes
     type Labels = reflection.MirroredElemLabels
@@ -80,7 +80,7 @@ trait ProductDerivationMethods[typeclass[_]]:
                                               label:     Text,
                                               index:     Int & FieldIndex[field])
                                          ?=>  constructor[field])
-  :     constructor[derivation] =
+  : constructor[derivation] =
 
     type Fields = reflection.MirroredElemTypes
     type Labels = reflection.MirroredElemLabels
@@ -109,7 +109,7 @@ trait ProductDerivationMethods[typeclass[_]]:
                                                         dereference: derivation => field,
                                                         index:       Int & FieldIndex[field])
                                                     ?=> result)
-  :     IArray[result] =
+  : IArray[result] =
 
     type Fields = reflection.MirroredElemTypes
     type Labels = reflection.MirroredElemLabels
@@ -137,7 +137,7 @@ trait ProductDerivationMethods[typeclass[_]]:
                                     (using fieldIndex:  Int & FieldIndex[field],
                                            reflection:  ProductReflection[derivation],
                                            requirement: ContextRequirement)
-  :     field =
+  : field =
 
     type Labels = reflection.MirroredElemLabels
     type Fields = reflection.MirroredElemTypes
@@ -161,7 +161,7 @@ trait ProductDerivationMethods[typeclass[_]]:
                                                         label:   Text,
                                                         index:   Int & FieldIndex[field])
                                                     ?=> result)
-  :     IArray[result] =
+  : IArray[result] =
 
     summonInline[ClassTag[result]].give:
       type Labels = reflection.MirroredElemLabels
@@ -194,7 +194,7 @@ trait ProductDerivationMethods[typeclass[_]]:
                                                       label:   Text,
                                                       index:   Int & FieldIndex[field])
                                                   ?=> result)
-  :     result =
+  : result =
 
     inline tuple match
       case Zero => accumulator
@@ -229,7 +229,7 @@ trait ProductDerivationMethods[typeclass[_]]:
                                                       dereference: derivation => field,
                                                       index:       Int & FieldIndex[field])
                                                   ?=> result)
-  :     result =
+  : result =
 
     inline erasedValue[fields] match
       case _: Zero => accumulator

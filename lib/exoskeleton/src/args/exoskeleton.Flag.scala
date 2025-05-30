@@ -74,14 +74,14 @@ case class Flag
               interpreter:     CliInterpreter,
               flagInterpreter: FlagInterpreter[operand],
               suggestions:     Suggestions[operand] = Suggestions.noSuggestions)
-  :     Optional[operand] =
+  : Optional[operand] =
 
     cli.register(this, suggestions)
     cli.readParameter(this)
 
   def select[operand](options: Iterable[operand])
        (using cli: Cli, interpreter: CliInterpreter, suggestible: operand is Suggestible)
-  :     Optional[operand] =
+  : Optional[operand] =
 
     val mapping: Map[Text, operand] =
       options.map { option => (suggestible.suggest(option).text, option) }.to(Map)

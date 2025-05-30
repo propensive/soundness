@@ -61,7 +61,7 @@ trait SumDerivationMethods[typeclass[_]]:
   protected transparent inline def complement[derivation, variant](sum: derivation)
                                     (using variantIndex: Int & VariantIndex[variant],
                                            reflection:   SumReflection[derivation])
-  :     Optional[variant] =
+  : Optional[variant] =
     type Labels = reflection.MirroredElemLabels
     type Variants = reflection.MirroredElemTypes
     val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
@@ -71,13 +71,13 @@ trait SumDerivationMethods[typeclass[_]]:
         if index == variantIndex then field.asInstanceOf[variant] else Unset
 
   protected inline def variantLabels[derivation](using reflection: SumReflection[derivation])
-  :     List[Text] =
+  : List[Text] =
 
     constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
 
   protected transparent inline def singleton[derivation](input: Text)
                                     (using reflection: SumReflection[derivation])
-  :     derivation =
+  : derivation =
 
     type Variants = reflection.MirroredElemTypes
     type Labels = reflection.MirroredElemLabels
@@ -89,7 +89,7 @@ trait SumDerivationMethods[typeclass[_]]:
   private transparent inline def singletonFold[derivation, variants <: Tuple, labels <: Tuple]
                                   (using reflection: SumReflection[derivation])
                                   (predicate: Text => Boolean)
-  :     Optional[derivation] =
+  : Optional[derivation] =
 
     inline erasedValue[variants] match
       case _: (variant *: variants) => inline erasedValue[labels] match
@@ -114,7 +114,7 @@ trait SumDerivationMethods[typeclass[_]]:
                                                 label:   Text,
                                                 index:   Int & VariantIndex[variant])
                                             ?=> result)
-  :     result =
+  : result =
 
     type Labels = reflection.MirroredElemLabels
     type Variants = reflection.MirroredElemTypes
@@ -139,7 +139,7 @@ trait SumDerivationMethods[typeclass[_]]:
                                                         label:   Text,
                                                         index:   Int & VariantIndex[variant])
                                                     ?=> result)
-  :     result =
+  : result =
 
     type Labels = reflection.MirroredElemLabels
     type Variants = reflection.MirroredElemTypes
@@ -169,7 +169,7 @@ trait SumDerivationMethods[typeclass[_]]:
                                                       label:   Text,
                                                       index:   Int & VariantIndex[variant])
                                                   ?=> result)
-  :     Optional[result] =
+  : Optional[result] =
 
     inline erasedValue[variants] match
       case _: (variant *: variants) => inline erasedValue[labels] match
@@ -216,7 +216,7 @@ trait SumDerivationMethods[typeclass[_]]:
                                                       label: Text,
                                                       index: Int & VariantIndex[variant])
                                                   ?=> result)
-  :     Optional[result] =
+  : Optional[result] =
 
     inline erasedValue[variants] match
       case _: (variant *: variants) => inline erasedValue[labels] match

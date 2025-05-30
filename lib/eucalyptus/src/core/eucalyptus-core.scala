@@ -75,7 +75,7 @@ def mute[format](using erased Void)[result](lambda: (format is Loggable) ?=> res
 extension (logObject: Log.type)
   def envelop[tag, event: {Taggable by tag, Loggable as loggable}](value: tag)[result]
        (lambda: (event is Loggable) ?=> result)
-  :     result =
+  : result =
     lambda(using loggable.contramap(_.tag(value)))
 
   def ignore[event, message]: message transcribes event = new Transcribable:
@@ -91,7 +91,7 @@ extension (logObject: Log.type)
   def route[format](using erased Void)[entry: Inscribable in format, writable: Writable by format]
        (target: writable)
        (using Monitor)
-  :     entry is Loggable =
+  : entry is Loggable =
 
     new:
       type Self = entry

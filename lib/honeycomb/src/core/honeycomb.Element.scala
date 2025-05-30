@@ -45,12 +45,12 @@ object Element:
        (labelString: String,
         attributes:  Attributes,
         children:    Seq[Optional[Html[child]] | Seq[Html[child]]] = Nil)
-  :     Element[node] =
+  : Element[node] =
 
     new Element(labelString, attributes, flatten(children))
 
   private def flatten[child <: Label](nodes: Seq[Optional[Html[child]] | Seq[Html[child]]])
-  :     Seq[Html[child]] =
+  : Seq[Html[child]] =
 
     nodes.flatMap:
       case Unset                              => Seq()

@@ -104,21 +104,27 @@ object Complex:
 
   def polar[component: Multiplicable by Double as multiplication]
        (modulus: component, argument: Double)
-  :     Complex[multiplication.Result] =
-    Complex(modulus*math.cos(argument), modulus*math.sin(argument))
+  : Complex[multiplication.Result] =
+
+      Complex(modulus*math.cos(argument), modulus*math.sin(argument))
+
 
 case class Complex[component](real: component, imaginary: component):
   @targetName("add")
   inline infix def + [component2](right: Complex[component2])
                      (using addition: component is Addable by component2)
-  :     Complex[addition.Result] =
-    Complex(this.real + right.real, this.imaginary + right.imaginary)
+  : Complex[addition.Result] =
+
+      Complex(this.real + right.real, this.imaginary + right.imaginary)
+
 
   @targetName("sub")
   inline infix def - [component2](right: Complex[component2])
                      (using subtraction: component is Subtractable by component2)
-  :     Complex[subtraction.Result] =
-    Complex(this.real - right.real, this.imaginary - right.imaginary)
+  : Complex[subtraction.Result] =
+
+      Complex(this.real - right.real, this.imaginary - right.imaginary)
+
 
   @targetName("mul")
   inline infix def * [component2](right: Complex[component2])
@@ -127,10 +133,11 @@ case class Complex[component](real: component, imaginary: component):
                                              multiplication.Result,
                             subtraction:    multiplication.Result is Subtractable by
                                              multiplication.Result)
-  :     Complex[subtraction.Result | addition.Result] =
+  : Complex[subtraction.Result | addition.Result] =
 
-    Complex
-     (real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real)
+      Complex
+       (real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real)
+
 
   inline def argument
               (using multiplication: component is Multiplicable by component,
@@ -138,16 +145,19 @@ case class Complex[component](real: component, imaginary: component):
                      sqrt:           addition.Result is Rootable[2],
                      division:       component is Divisible by sqrt.Result,
                      equality:       division.Result =:= Double)
-  :     Double =
+  : Double =
 
-    scala.math.atan2(imaginary/modulus, real/modulus)
+      scala.math.atan2(imaginary/modulus, real/modulus)
+
 
   inline def modulus
               (using multiplication: component is Multiplicable by component,
                      addition:       multiplication.Result is Addable by multiplication.Result,
                      squareRoot:     addition.Result is Rootable[2])
-  :     squareRoot.Result =
-    squareRoot.root(real*real + imaginary*imaginary)
+  : squareRoot.Result =
+
+      squareRoot.root(real*real + imaginary*imaginary)
+
 
   inline def sqrt
               (using multiplication:  component is Multiplicable by component,
@@ -157,8 +167,10 @@ case class Complex[component](real: component, imaginary: component):
                      equality:        division.Result =:= Double,
                      sqrt2:           sqrt.Result is Rootable[2],
                      multiplication2: sqrt2.Result is Multiplicable by Double)
-  :     Complex[multiplication2.Result] =
-    Complex.polar(modulus.sqrt, argument/2.0)
+  : Complex[multiplication2.Result] =
+
+      Complex.polar(modulus.sqrt, argument/2.0)
+
 
   @targetName("conjugate")
   inline def unary_~(using neg: component is Negatable): Complex[component | neg.Result] =

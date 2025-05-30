@@ -84,36 +84,40 @@ class Database(size: Int):
   inline def ref[left](left: left): Ref of left in this.type raises DataError =
     references.at(left).or(abort(DataError())).asInstanceOf[Ref of left in this.type]
 
+
   inline def assign[left, right]
               (left: Ref of left in this.type, right: Ref of right in this.type)
               (using (left -< right) <:< Tuple.Union[Subject])
-  :     Unit raises DataError =
+  : Unit raises DataError =
 
-    val relationIndex = !![Subject].indexOf[left -< right]
-    val relation = relate[left, right]
-    val corelation = corelate[left, right]
+      val relationIndex = !![Subject].indexOf[left -< right]
+      val relation = relate[left, right]
+      val corelation = corelate[left, right]
 
-    val relation2 = relation.updated(left, relation.at(left).or(Set()) + right)
-    val corelation2 = corelation.updated(right, left)
-    relations(relationIndex) = relation2
-    corelations(relationIndex) = corelation2
+      val relation2 = relation.updated(left, relation.at(left).or(Set()) + right)
+      val corelation2 = corelation.updated(right, left)
+      relations(relationIndex) = relation2
+      corelations(relationIndex) = corelation2
+
 
   inline def lookup[left, right](left: Ref of left in this.type)
-  :     Set[Ref of right in this.type] raises DataError =
-    relate[left, right].at(left).or(Set()).asInstanceOf[Set[Ref of right in this.type]]
+  : Set[Ref of right in this.type] raises DataError =
+
+      relate[left, right].at(left).or(Set()).asInstanceOf[Set[Ref of right in this.type]]
+
 
   inline def unassign[left, right]
               (left: Ref of left in this.type, right: Ref of right in this.type)
               (using (left -< right) <:< Tuple.Union[Subject])
-  :     Unit raises DataError =
+  : Unit raises DataError =
 
-    val relationIndex = !![Subject].indexOf[left -< right]
-    val relation = relate[left, right]
-    val corelation = corelate[left, right]
+      val relationIndex = !![Subject].indexOf[left -< right]
+      val relation = relate[left, right]
+      val corelation = corelate[left, right]
 
-    val relation2: Map[Ref, Set[Ref]] =
-      relation.updated(left, relation.at(left).let(_ - right).or(Set()))
+      val relation2: Map[Ref, Set[Ref]] =
+        relation.updated(left, relation.at(left).let(_ - right).or(Set()))
 
-    val corelation2 = corelation - right
-    relations(relationIndex) = relation2
-    corelations(relationIndex) = corelation2
+      val corelation2 = corelation - right
+      relations(relationIndex) = relation2
+      corelations(relationIndex) = corelation2

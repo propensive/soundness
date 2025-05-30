@@ -63,5 +63,5 @@ class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = 
 
 def orchestrate[value: Encodable in Query](initial: Optional[value] = Unset)[result]
      (render: (form: Text => Html[html5.Flow]) ?=> (value: Optional[value]) => result)
-:     Orchestrate[value, result] =
+: Orchestrate[value, result] =
   new Orchestrate[value, result](initial)(render(using _))

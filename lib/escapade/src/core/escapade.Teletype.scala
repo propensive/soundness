@@ -182,7 +182,7 @@ case class Teletype
           style:      TextStyle                         = TextStyle(),
           stack:      List[(CharSpan, TextStyle)]       = Nil,
           insertions: TreeMap[Int, Text]                = TreeMap())
-    :     Text =
+    : Text =
 
       inline def addSpan(): Text =
         val newInsertions = addText(pos, spans.head(0).start, insertions)

@@ -41,7 +41,7 @@ object Orderable:
                  inline right:   value,
                  inline strict:  Boolean,
                  inline greater: Boolean)
-    :     Boolean =
+    : Boolean =
       val n = value.compare(left, right)
       inline if greater
       then inline if strict then n > 0 else n >= 0
@@ -61,5 +61,5 @@ trait Orderable extends Commensurable:
                  inline right:   self,
                  inline strict:  Boolean,
                  inline greater: Boolean)
-    :     Boolean =
+    : Boolean =
       orderable.compare(lambda(left), lambda(right), strict, greater)

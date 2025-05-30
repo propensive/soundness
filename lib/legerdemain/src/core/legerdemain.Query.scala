@@ -64,7 +64,7 @@ object Query extends Dynamic:
 
   object EncodableDerivation extends ProductDerivation[[Type] =>> Type is Encodable in Query]:
     inline def join[derivation <: Product: ProductReflection]
-    :     derivation is Encodable in Query =
+    : derivation is Encodable in Query =
 
       value =>
         Query.of:
@@ -74,7 +74,7 @@ object Query extends Dynamic:
 
   object DecodableDerivation extends ProductDerivation[[Type] =>> Type is Decodable in Query]:
     inline def join[derivation <: Product: ProductReflection]
-    :     derivation is Decodable in Query =
+    : derivation is Decodable in Query =
 
       summonInline[Foci[Pointer]].give:
         value =>
@@ -127,7 +127,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
 
   def selectDynamic[result](label: String)(using erased (label.type is Parametric into result))
        (using decodable: result is Decodable in Query)
-  :     result =
+  : result =
     decodable.decoded(apply(label.tt))
 
   def at[value: Decodable in Text](name: Text): Optional[Text] = apply(name)().let(_.decode)

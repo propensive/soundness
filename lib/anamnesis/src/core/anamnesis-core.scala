@@ -42,16 +42,22 @@ def every[entity <: Entity: Listable]: Iterable[Reference[entity]] = entity.list
 
 extension [left](using db: Database)(left: Ref of left in db.type)
   inline def unassign[right](right: Ref of right in db.type)(using db.Has[left -< right])
-  :     Unit raises DataError =
-    db.unassign(left, right)
+  : Unit raises DataError =
+
+      db.unassign(left, right)
+
 
   inline def lookup[right](using db.Has[left -< right])
-  :     Set[Ref of right in db.type] raises DataError =
-    db.lookup[left, right](left)
+  : Set[Ref of right in db.type] raises DataError =
+
+      db.lookup[left, right](left)
+
 
   inline def assign[right](right: Ref of right in db.type)(using db.Has[left -< right])
-  :     Unit raises DataError =
+  : Unit raises DataError =
+
       db.assign(left, right)
+
 
 extension [left](using db: Database)(left: left)
   inline def store(): Ref of left in db.type = db.store(left)

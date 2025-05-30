@@ -44,7 +44,7 @@ object Cli:
        (textArguments: Iterable[Text],
         focus:         Optional[Int] = Unset,
         position:      Optional[Int] = Unset)
-  :     List[Argument] =
+  : List[Argument] =
 
     textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
       Argument(index, text, if focus == index then position else Unset)
@@ -55,7 +55,7 @@ trait Cli extends ProcessContext:
   def workingDirectory: WorkingDirectory
 
   def readParameter[operand](flag: Flag)(using FlagInterpreter[operand], Suggestions[operand])
-  :     Optional[operand]
+  : Optional[operand]
 
   def register(flag: Flag, suggestions: Suggestions[?]): Unit = ()
   def present(flag: Flag): Unit = ()

@@ -41,7 +41,7 @@ object LineSeparation:
                inline mkNewline: => Unit,
                inline put: Byte  => Unit)
               (lineSeparators: LineSeparation)
-  :     Unit =
+  : Unit =
 
     val action: Action = read match
       case 10 =>

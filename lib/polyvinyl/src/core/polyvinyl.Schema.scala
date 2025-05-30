@@ -46,7 +46,7 @@ trait Schema[data, record <: Record in data]:
 
   def build(value: Expr[data])(using Quotes, Type[record], Type[data])
        (using thisType: Type[this.type])
-  :     Expr[record] =
+  : Expr[record] =
 
     import quotes.reflect.*
 
@@ -61,7 +61,7 @@ trait Schema[data, record <: Record in data]:
           fields:      List[(String, RecordField)],
           refinedType: TypeRepr,
           caseDefs:    List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)))
-    :     (TypeRepr, List[CaseDef]) =
+    : (TypeRepr, List[CaseDef]) =
       fields match
         case Nil =>
           (refinedType, caseDefs)

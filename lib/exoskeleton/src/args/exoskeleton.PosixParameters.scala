@@ -49,7 +49,7 @@ extends FlagParameters:
        (using cli:         Cli,
               interpreter: FlagInterpreter[operand],
               suggestions: Suggestions[operand])
-  :     Optional[operand] =
+  : Optional[operand] =
 
     cli.register(flag, suggestions)
 

@@ -52,7 +52,7 @@ object Probably:
                   inc2:      Expr[Inclusion[report, Verdict.Detail]],
                   action:    Expr[Trial[test] => result])
                  (using Quotes)
-  :     Expr[result] =
+  : Expr[result] =
 
     import quotes.reflect.*
 
@@ -103,7 +103,7 @@ object Probably:
         inc:       Expr[Inclusion[report, Verdict]],
         inc2:      Expr[Inclusion[report, Verdict.Detail]])
        (using Quotes)
-  :     Expr[test] =
+  : Expr[test] =
 
     general[test, report, test]
      (test, predicate, runner, inc, inc2, '{ (t: Trial[test]) => t.get })
@@ -115,7 +115,7 @@ object Probably:
         inc:       Expr[Inclusion[report, Verdict]],
         inc2:      Expr[Inclusion[report, Verdict.Detail]])
        (using Quotes)
-  :     Expr[Unit] =
+  : Expr[Unit] =
     general[test, report, Unit](test, predicate, runner, inc, inc2, '{ _ => () })
 
   def aspire[test: Type, report: Type]
@@ -124,7 +124,7 @@ object Probably:
         inc:    Expr[Inclusion[report, Verdict]],
         inc2:   Expr[Inclusion[report, Verdict.Detail]])
        (using Quotes)
-  :     Expr[Unit] =
+  : Expr[Unit] =
 
     general[test, report, Unit](test, '{ _ => true }, runner, inc, inc2, '{ _ => () })
 
@@ -140,7 +140,7 @@ object Probably:
         inc:          Inclusion[report, Verdict],
         inc2:         Inclusion[report, Verdict.Detail],
         decomposable: test is Decomposable)
-  :     result =
+  : result =
 
     runner.run(test).pipe: run =>
       val verdict = run match

@@ -56,7 +56,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
           query:       Query,
           validation:  Validation,
           formulation: Formulation)
-    :     Seq[Html[Flow]] =
+    : Seq[Html[Flow]] =
 
       val message: Optional[Message] = validation(pointer)
       val widget = renderable.html(elicitable.widget(pointer.text, legend, query().or(t"")))

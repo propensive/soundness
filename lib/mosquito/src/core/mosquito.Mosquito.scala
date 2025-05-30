@@ -127,7 +127,7 @@ object Mosquito:
          (using multiplication: left is Multiplicable by right,
                 addition:       multiplication.Result is Addable by multiplication.Result,
                 subtraction:    multiplication.Result is Subtractable by multiplication.Result)
-    :     Vector[addition.Result, 3] =
+    : Vector[addition.Result, 3] =
 
       val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
       val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
@@ -147,7 +147,7 @@ object Mosquito:
                 addable:       multiplicable.Result is Addable by multiplicable.Result into
                                 multiplicable.Result,
                 rootable:      multiplicable.Result is Rootable[2] into left)
-    :     left =
+    : left =
 
       def recur(sum: multiplicable.Result, i: Int): left =
         if i == 0 then sum.sqrt else
@@ -168,7 +168,7 @@ object Mosquito:
                 addable:       square is Addable by square into square,
                 rootable:      square is Rootable[2] into left,
                 divisible:     left is Divisible by left into Double)
-    :     Vector[Double, size] =
+    : Vector[Double, size] =
 
       val magnitude: left = left.norm
 
@@ -183,7 +183,7 @@ object Mosquito:
                 size:     ValueOf[size],
                 addable:  multiply.Result is Addable by multiply.Result,
                 equality: addable.Result =:= multiply.Result)
-    :     multiply.Result =
+    : multiply.Result =
 
       def recur(index: Int, sum: multiply.Result): multiply.Result =
         if index < 0 then sum

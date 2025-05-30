@@ -59,7 +59,7 @@ object Subcompiler:
 
   def compile
     (language: List[Settings.Setting.ChoiceWithHelp[String]], classpath: String, source: String)
-  :     List[CompileError] =
+  : List[CompileError] =
     compile(language, classpath, source, Set((0, source.length)))
 
   def compile
@@ -67,7 +67,7 @@ object Subcompiler:
         classpath: String,
         source:    String,
       regions:   Set[(Int, Int)])
-  :     List[CompileError] =
+  : List[CompileError] =
 
     object driver extends Driver:
       val currentCtx: Context =
@@ -76,7 +76,7 @@ object Subcompiler:
         setup(Array[String](""), ctx2).map(_(1)).get
 
       def run(source: String, regions: Set[(Int, Int)], errors: List[CompileError])
-      :     List[CompileError] =
+      : List[CompileError] =
 
         if regions.isEmpty then errors else
           val reporter: CustomReporter = CustomReporter()
@@ -98,7 +98,7 @@ object Subcompiler:
           val newErrors = reporter.errors.to(List)
 
           def recompile(todo: List[CompileError], done: Set[(Int, Int)], source: String)
-          :     List[CompileError] =
+          : List[CompileError] =
 
             todo match
               case Nil =>

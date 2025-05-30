@@ -69,12 +69,12 @@ final val `$`: MacOs.Root = MacOs.RootSingleton
 
 extension [openable: Openable](value: openable)
   def open[result](lambda: openable.Result => result, options: List[openable.Operand] = Nil)
-  :     result =
+  : result =
     openable.open(value, lambda, options)
 
 extension [platform <: Filesystem](path: Path on platform)
   private[galilei] def protect[result](operation: Operation)(block: => result)
-  :     result raises IoError =
+  : result raises IoError =
     import Reason.*
     try block catch
       case break: boundary.Break[?]          => throw break
@@ -109,14 +109,14 @@ extension [platform <: Filesystem](path: Path on platform)
     descendants.fuse(jnf.Files.size(path.javaPath).b)(state + next.size())
 
   def delete()(using deleteRecursively: DeleteRecursively on platform)
-  :     Path on platform raises IoError =
+  : Path on platform raises IoError =
     protect(Operation.Delete):
       deleteRecursively.conditionally(path)(jnf.Files.delete(path.javaPath))
 
     path
 
   def wipe()(using deleteRecursively: DeleteRecursively on platform)(using io: Tactic[IoError])
-  :     Path on platform raises IoError =
+  : Path on platform raises IoError =
     deleteRecursively.conditionally(path)(jnf.Files.deleteIfExists(javaPath))
     path
 
@@ -127,7 +127,7 @@ extension [platform <: Filesystem](path: Path on platform)
   def hardLinkTo(destination: Path on platform)
        (using overwritePreexisting: OverwritePreexisting on platform,
               createNonexistentParents: CreateNonexistentParents on platform)
-  :     Path on platform raises IoError =
+  : Path on platform raises IoError =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -153,7 +153,7 @@ extension [platform <: Filesystem](path: Path on platform)
        (using overwritePreexisting:     OverwritePreexisting on platform,
               dereferenceSymlinks:      DereferenceSymlinks,
               createNonexistentParents: CreateNonexistentParents on platform)
-  :     Path on platform raises IoError =
+  : Path on platform raises IoError =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -166,7 +166,7 @@ extension [platform <: Filesystem](path: Path on platform)
        (using overwritePreexisting: OverwritePreexisting on platform,
               dereferenceSymlinks:  DereferenceSymlinks,
               substantiable:        (Path on platform) is Substantiable)
-  :     Path on platform raises IoError =
+  : Path on platform raises IoError =
 
     given createNonexistentParents: CreateNonexistentParents on platform =
       filesystemOptions.createNonexistentParents.enabled[platform]
@@ -180,7 +180,7 @@ extension [platform <: Filesystem](path: Path on platform)
               dereferenceSymlinks:      DereferenceSymlinks,
               createNonexistentParents: CreateNonexistentParents on platform)
        (name: (prior: navigable.Operand) ?=> navigable.Operand)
-  :     Path on platform raises IoError raises PathError =
+  : Path on platform raises IoError raises PathError =
     val name0 = path.name.or:
       abort(IoError(path, IoError.Operation.Metadata, Reason.Unsupported))
 
@@ -191,7 +191,7 @@ extension [platform <: Filesystem](path: Path on platform)
               moveAtomically:           MoveAtomically,
               dereferenceSymlinks:      DereferenceSymlinks,
               createNonexistentParents: CreateNonexistentParents on platform)
-  :     Path on platform raises IoError =
+  : Path on platform raises IoError =
 
     val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
 
@@ -207,7 +207,7 @@ extension [platform <: Filesystem](path: Path on platform)
               moveAtomically:       MoveAtomically,
               substantiable:        (Path on platform) is Substantiable,
               dereferenceSymlinks:  DereferenceSymlinks)
-  :     Path on platform raises IoError =
+  : Path on platform raises IoError =
 
     import filesystemOptions.createNonexistentParents.enabled
     moveTo(unsafely(destination.child(path.textDescent.head)))
@@ -215,7 +215,7 @@ extension [platform <: Filesystem](path: Path on platform)
   def symlinkTo(destination: Path on platform)
        (using overwritePreexisting:     OverwritePreexisting on platform,
               createNonexistentParents: CreateNonexistentParents on platform)
-  :     Path on platform raises IoError =
+  : Path on platform raises IoError =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -229,7 +229,7 @@ extension [platform <: Filesystem](path: Path on platform)
               moveAtomically:       MoveAtomically,
               substantiable:        (Path on platform) is Substantiable,
               dereferenceSymlinks:  DereferenceSymlinks)
-  :     Path on platform raises IoError =
+  : Path on platform raises IoError =
 
     import filesystemOptions.createNonexistentParents.enabled
     symlinkTo(unsafely(destination.child(path.textDescent.head)))

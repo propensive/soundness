@@ -41,5 +41,5 @@ given realm: Realm = realm"vicarious"
 inline def catalog[key](key: key)[value]
    (inline lambda: [field] => (field: field) => value)
    (using classTag: ClassTag[value])
-:     Catalog[key, value] =
+: Catalog[key, value] =
   ${Vicarious.catalog[key, value]('lambda, 'key, 'classTag)}

@@ -50,7 +50,7 @@ object Telekinesis:
         status:  Optional[Expr[Http.Status]]  = Unset,
         done:    List[Expr[Http.Header]]      = Nil)
        (using Quotes)
-  :     (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
+  : (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
     import quotes.reflect.*
 
     def unnamed[value: Type](value: Expr[value], tail: Seq[Expr[Any]]) =
@@ -113,7 +113,7 @@ object Telekinesis:
         postable: Expr[payload is Postable],
         client:   Expr[HttpClient onto target])
        (using Quotes)
-  :     Expr[Http.Response] =
+  : Expr[Http.Response] =
 
     headers.absolve match
       case Varargs(exprs) =>
@@ -143,7 +143,7 @@ object Telekinesis:
         loggable: Expr[HttpEvent is Loggable],
         client:   Expr[HttpClient onto target])
        (using Quotes)
-  :     Expr[Http.Response] =
+  : Expr[Http.Response] =
 
     headers.absolve match
       case Varargs(exprs) =>
@@ -164,7 +164,7 @@ object Telekinesis:
             $client.request(request, $fetch.target)  }
 
   def response(headers: Expr[Seq[Any]])(using Quotes)
-  :     Expr[Http.Response.Prototype | Http.Response] =
+  : Expr[Http.Response.Prototype | Http.Response] =
 
     headers.absolve.match
       case Varargs(exprs) => exprs.to(List).only:

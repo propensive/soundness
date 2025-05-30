@@ -61,7 +61,7 @@ import GitError.Reason.*
 object GitRepo:
   def apply[path: Abstractable across Paths into Text](path: path)
        (using gitError: Tactic[GitError], io: Tactic[IoError])
-  :     GitRepo raises PathError raises NameError =
+  : GitRepo raises PathError raises NameError =
 
     unsafely(path.generic.decode[Path on Posix]).pipe: path =>
       if !path.exists() then abort(GitError(RepoDoesNotExist))
@@ -77,32 +77,32 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
   @targetName("checkoutTag")
   def checkout(tag: GitTag)(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :     Unit logs GitEvent =
+  : Unit logs GitEvent =
     sh"$git $repoOptions checkout $tag".exec[Exit]()
 
   @targetName("checkoutBranch")
   def checkout(branch: GitBranch)(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :     Unit logs GitEvent =
+  : Unit logs GitEvent =
     sh"$git $repoOptions checkout $branch".exec[Exit]()
 
   @targetName("checkoutGitHash")
   def checkout(commit: GitHash)(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :     Unit logs GitEvent =
+  : Unit logs GitEvent =
     sh"$git $repoOptions checkout $commit".exec[Exit]()
 
   def pushTags()(using Internet, Tactic[GitError], GitCommand, WorkingDirectory, Tactic[ExecError])
-  :     Unit logs GitEvent =
+  : Unit logs GitEvent =
 
     sh"$git $repoOptions push --tags".exec[Exit]()
 
   def push()(using Internet, Tactic[GitError], GitCommand, WorkingDirectory, Tactic[ExecError])
-  :     Unit logs GitEvent =
+  : Unit logs GitEvent =
 
     sh"$git $repoOptions push".exec[Exit]()
 
   def switch(branch: GitBranch)
        (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  :     Unit logs GitEvent =
+  : Unit logs GitEvent =
 
     sh"$git $repoOptions switch $branch".exec[Exit]() match
       case Exit.Ok => ()
@@ -110,7 +110,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
   def pull()(using GitCommand, Internet, WorkingDirectory)
        (using gitError: Tactic[GitError], exec: Tactic[ExecError])
-  :     GitProcess[Unit] logs GitEvent =
+  : GitProcess[Unit] logs GitEvent =
 
     val process = sh"$git $repoOptions pull --progress".fork[Exit]()
 
@@ -122,7 +122,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
   def fetch(depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)
        (using GitCommand, Internet, WorkingDirectory)
        (using gitError: Tactic[GitError], exec: Tactic[ExecError])
-  :     GitProcess[Unit] logs GitEvent /*^{gitError, exec}*/ =
+  : GitProcess[Unit] logs GitEvent /*^{gitError, exec}*/ =
 
     val depthOption = depth.lay(sh"") { depth => sh"--depth=$depth" }
     val command = sh"$git $repoOptions fetch $depthOption --progress $repo $refspec"
@@ -134,14 +134,14 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
         case failure       => abort(GitError(PullFailed))
 
   def commit(message: Text)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  :     Unit logs GitEvent =
+  : Unit logs GitEvent =
 
     sh"$git $repoOptions commit -m $message".exec[Exit]() match
       case Exit.Ok => ()
       case failure       => abort(GitError(CommitFailed))
 
   def branches()(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :     List[GitBranch] logs GitEvent =
+  : List[GitBranch] logs GitEvent =
     sh"$git $repoOptions branch"
     . exec[Stream[Text]]()
     . map(_.skip(2))
@@ -154,14 +154,14 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
     GitBranch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt)
 
   def makeBranch(branch: GitBranch)(using GitCommand, WorkingDirectory)
-  :     Unit logs GitEvent raises ExecError raises GitError =
+  : Unit logs GitEvent raises ExecError raises GitError =
 
     sh"$git $repoOptions checkout -b $branch".exec[Exit]() match
       case Exit.Ok => ()
       case failure       => abort(GitError(BranchFailed))
 
   def add[path: Abstractable across Paths into Text](path: path)(using GitCommand, WorkingDirectory)
-  :     Unit logs GitEvent raises PathError raises NameError raises ExecError raises GitError =
+  : Unit logs GitEvent raises PathError raises NameError raises ExecError raises GitError =
 
     val relativePath: Relative =
       workTree.let: workTree =>
@@ -182,14 +182,14 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
   object config:
     def get[value: Decodable in Text](variable: Text)
          (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-    :     value logs GitEvent =
+    : value logs GitEvent =
       sh"$git $repoOptions config --get $variable".exec[Text]().decode[value]
 
   def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[GitTag] logs GitEvent =
     sh"$git $repoOptions tag".exec[Stream[Text]]().to(List).map(GitTag.unsafe(_))
 
   def tag(name: GitTag)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  :     GitTag logs GitEvent =
+  : GitTag logs GitEvent =
     sh"$git $repoOptions tag $name".exec[Exit]() match
       case Exit.Ok => name
       case failure       => abort(GitError(TagFailed))
@@ -206,7 +206,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
           committer: Optional[Text]    = Unset,
           signature: List[Text]        = Nil,
           lines:     List[Text]        = Nil)
-    :     Stream[Commit] =
+    : Stream[Commit] =
 
       def commit(): Stream[Commit] =
         if hash.absent || tree.absent || author.absent || committer.absent then Stream()
@@ -268,11 +268,11 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
   def reflog(): Unit = ()
 
   def revParse(refspec: Refspec)(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :     GitHash logs GitEvent =
+  : GitHash logs GitEvent =
     GitHash.unsafe(sh"$git $repoOptions rev-parse $refspec".exec[Text]())
 
   def status(ignored: Boolean = false)(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :     List[GitPathStatus] logs GitEvent =
+  : List[GitPathStatus] logs GitEvent =
     val ignoredParam = if ignored then sh"--ignored" else sh""
 
     def unescape(text: Text): Text = if text.at(Prim) != '"' then text else Text.construct:

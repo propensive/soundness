@@ -44,7 +44,7 @@ object Vicarious:
         value: Expr[key],
         classTag: Expr[ClassTag[value]])
        (using Quotes)
-  :     Expr[Catalog[key, value]] =
+  : Expr[Catalog[key, value]] =
     import quotes.reflect.*
 
     def fields[product: Type](term: Term): List[Term] =
@@ -64,7 +64,7 @@ object Vicarious:
         case '[fieldType] => label :: fieldNames[fieldType](label)
 
   def dereference[key: Type, value: Type, id <: Nat: Type](key: Expr[String])(using Quotes)
-  :     Expr[value | Proxy[key, value, Nat]] =
+  : Expr[value | Proxy[key, value, Nat]] =
 
     import quotes.reflect.*
 

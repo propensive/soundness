@@ -410,28 +410,28 @@ extension [left](inline left: left)
   @targetName("lt")
   inline infix def < [right](inline right: right)
                      (using inline commensurable: left is Commensurable by right)
-  :     Boolean =
+  : Boolean =
 
     commensurable.compare(left, right, true, false)
 
   @targetName("lte")
   inline infix def <= [right](inline right: right)
                       (using inline commensurable: left is Commensurable by right)
-  :     Boolean =
+  : Boolean =
 
     commensurable.compare(left, right, false, false)
 
   @targetName("gt")
   inline infix def > [right](inline right: right)
                      (using inline commensurable: left is Commensurable by right)
-  :     Boolean =
+  : Boolean =
 
     commensurable.compare(left, right, true, true)
 
   @targetName("gte")
   inline infix def >= [right](inline right: right)
     (using inline commensurable: left is Commensurable by right)
-  :     Boolean =
+  : Boolean =
 
     commensurable.compare(left, right, false, true)
 

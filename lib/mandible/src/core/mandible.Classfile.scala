@@ -88,7 +88,7 @@ class Classfile(data: Bytes):
             done:  List[Bytecode.Instruction],
             stack: Optional[List[Bytecode.Frame]],
             count: Int)
-      :     List[Bytecode.Instruction] =
+      : List[Bytecode.Instruction] =
         todo match
           case Nil => done.reverse
 

@@ -62,7 +62,7 @@ package executives:
           stdio:            Stdio,
           signals:          Spool[Signal])
          (using interpreter: CliInterpreter)
-    :     Cli =
+    : Cli =
       arguments match
         case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--"
              :: command

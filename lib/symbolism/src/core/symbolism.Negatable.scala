@@ -38,7 +38,7 @@ import scala.annotation.targetName
 
 object Negatable:
   def apply[operand, result](lambda: operand => result)
-  :     operand is Negatable into result = new Negatable:
+  : operand is Negatable into result = new Negatable:
     type Self = operand
     type Result = result
 

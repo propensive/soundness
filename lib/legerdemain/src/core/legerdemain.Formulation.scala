@@ -45,4 +45,4 @@ trait Formulation:
         legend:     Text,
         validation: Optional[Message],
         required:   Boolean)
-  :     Html[html5.Flow]
+  : Html[html5.Flow]

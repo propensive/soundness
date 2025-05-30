@@ -61,5 +61,5 @@ class Classloader(val java: ClassLoader) extends Root("/".tt, "/".tt, Case.Sensi
     Optional(java.getResourceAsStream(path.s)).let(_.readAllBytes().nn.immutable(using Unsafe))
 
   private[hellenism] def inputStream(path: Text)(using notFound: Tactic[ClasspathError])
-  :     ji.InputStream =
+  : ji.InputStream =
     Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))

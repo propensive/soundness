@@ -123,7 +123,7 @@ object Mercator:
           ${functorExpr}.map(value)(lambda)
 
         def bind[value, value2](value: monad[value])(lambda: value => monad[value2])
-        :     monad[value2] =
+        : monad[value2] =
           ${'value.asTerm
             . select(flatMapMethods(0))
             . appliedToType(TypeRepr.of[value2])

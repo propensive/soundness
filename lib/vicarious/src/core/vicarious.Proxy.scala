@@ -40,7 +40,7 @@ object Proxy:
 
 class Proxy[key, value, +id <: Nat]() extends Selectable:
   transparent inline def selectDynamic(key: String)(using catalog: Catalog[key, value])
-  :     value | Proxy[key, value, Nat] =
+  : value | Proxy[key, value, Nat] =
     ${Vicarious.dereference[key, value, id]('key)}
 
   inline def id: Int = compiletime.summonInline[ValueOf[id]].value

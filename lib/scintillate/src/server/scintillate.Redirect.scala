@@ -40,7 +40,7 @@ import telekinesis.*
 
 object Redirect:
   def apply[link: Abstractable across Urls into Text](location: link, permanent: Boolean)
-  :     Redirect =
+  : Redirect =
     new Redirect(location.generic, permanent)
 
   given redirect: Redirect is Servable = redirect =>

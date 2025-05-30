@@ -92,7 +92,7 @@ package executives:
           stdio:            Stdio,
           signals:          Spool[Signal])
          (using interpreter: CliInterpreter)
-    :     CliInvocation =
+    : CliInvocation =
 
       CliInvocation
        (Cli.arguments(arguments),
@@ -109,7 +109,7 @@ package executives:
 def application(using executive: Executive, interpreter: CliInterpreter)
    (arguments: Iterable[Text], signals: List[Signal] = Nil)
    (block: Cli ?=> executive.Return)
-:     Unit =
+: Unit =
 
   val spool: Spool[Signal] = Spool()
   signals.each: signal =>

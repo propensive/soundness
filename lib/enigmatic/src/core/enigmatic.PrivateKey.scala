@@ -54,12 +54,12 @@ class PrivateKey[cipher <: Cipher](private[enigmatic] val privateBytes: Bytes):
     PublicKey(cipher.privateToPublic(privateBytes))
 
   def decrypt[decodable: Decodable in Bytes](bytes: Bytes)(using cipher: cipher & Encryption)
-  :     decodable raises CryptoError =
+  : decodable raises CryptoError =
 
     decodable.decoded(cipher.decrypt(bytes, privateBytes))
 
   def sign[encodable: Encodable in Bytes](value: encodable)(using cipher: cipher & Signing)
-  :     Signature[cipher] =
+  : Signature[cipher] =
 
     Signature(cipher.sign(encodable.encode(value), privateBytes))
 

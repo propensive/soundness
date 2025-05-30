@@ -42,7 +42,7 @@ import fulminate.*
 inline def default[value]: value = summonInline[Default[value]]()
 
 inline def optimizable[value](lambda: Optional[value] => Optional[value])
-:     Optional[value] =
+: Optional[value] =
   lambda(Unset)
 
 extension [value](iterable: Iterable[Optional[value]])

@@ -57,15 +57,18 @@ object Envelope:
         bcc:     EmailAddress | List[EmailAddress],
         replyTo: EmailAddress | List[EmailAddress],
         subject: Text)
-       (using courier: Courier, sender: Sender): Envelope =
-    Envelope
-     (sender.email,
-      many(to),
-      many(cc),
-      many(bcc),
-      many(replyTo),
-      subject,
-      sendable.email(email))
+       (using courier: Courier, sender: Sender)
+  : Envelope =
+
+      Envelope
+       (sender.email,
+        many(to),
+        many(cc),
+        many(bcc),
+        many(replyTo),
+        subject,
+        sendable.email(email))
+
 
 case class Envelope
             (from:        EmailAddress,

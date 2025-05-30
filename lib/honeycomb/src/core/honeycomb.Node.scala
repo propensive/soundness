@@ -60,7 +60,7 @@ object Node:
     else t"<${item.label}$filling>${item.children.map(_.show).join}</${item.label}>"
 
   def apply(label0: Text, attributes0: Attributes, children0: Seq[Node[?] | Text | Int | HtmlXml])
-  :     Html[?] = new Node:
+  : Html[?] = new Node:
     def label = label0
     def attributes = attributes0
     def children: Seq[Node[?] | Text | Int | HtmlXml] = children0

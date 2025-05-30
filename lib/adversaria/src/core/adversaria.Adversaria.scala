@@ -39,76 +39,78 @@ import proscenium.*
 import scala.quoted.*
 
 object Adversaria:
-  def firstField[target <: Product: Type, annotation <: StaticAnnotation: Type]
-       (using Quotes)
-  :     Expr[CaseField[target, annotation]] =
+  def firstField[target <: Product: Type, annotation <: StaticAnnotation: Type](using Quotes)
+  : Expr[CaseField[target, annotation]] =
 
-    import quotes.reflect.*
+      import quotes.reflect.*
 
-    val targetType = TypeRepr.of[target]
-    val fields = targetType.typeSymbol.caseFields
+      val targetType = TypeRepr.of[target]
+      val fields = targetType.typeSymbol.caseFields
 
-    fields.flatMap: field =>
-      field.annotations.map(_.asExpr).collect:
-        case '{$annotation: `annotation`} => annotation
+      fields.flatMap: field =>
+        field.annotations.map(_.asExpr).collect:
+          case '{$annotation: `annotation`} => annotation
 
-      . map: annotation =>
-          '{CaseField(Text(${Expr(field.name)}), (target: target) =>
-              ${'target.asTerm.select(field).asExpr}, $annotation)}
-      . reverse
-    . head
+        . map: annotation =>
+            '{CaseField(Text(${Expr(field.name)}), (target: target) =>
+                ${'target.asTerm.select(field).asExpr}, $annotation)}
+        . reverse
+      . head
+
 
   def fields[target <: Product: Type, annotation <: StaticAnnotation: Type](using Quotes)
-  :     Expr[List[CaseField[target, annotation]]] =
+  : Expr[List[CaseField[target, annotation]]] =
 
-    import quotes.reflect.*
+      import quotes.reflect.*
 
-    val targetType = TypeRepr.of[target]
-    val fields = targetType.typeSymbol.caseFields
+      val targetType = TypeRepr.of[target]
+      val fields = targetType.typeSymbol.caseFields
 
-    val elements: List[Expr[CaseField[target, annotation]]] = fields.flatMap: field =>
-      val name = Expr(field.name)
-      field.annotations.map(_.asExpr).collect:
-        case '{$annotation: `annotation`} => annotation
+      val elements: List[Expr[CaseField[target, annotation]]] = fields.flatMap: field =>
+        val name = Expr(field.name)
+        field.annotations.map(_.asExpr).collect:
+          case '{$annotation: `annotation`} => annotation
 
-      . map: annotation =>
-          '{CaseField(Text($name), (target: target) => ${'target.asTerm.select(field).asExpr},
-              $annotation)}
+        . map: annotation =>
+            '{CaseField(Text($name), (target: target) => ${'target.asTerm.select(field).asExpr},
+                $annotation)}
 
-      . reverse
+        . reverse
 
-    Expr.ofList(elements)
+      Expr.ofList(elements)
+
 
   def fieldAnnotations[target: Type](lambda: Expr[target => Any])(using Quotes)
-  :     Expr[List[StaticAnnotation]] =
+  : Expr[List[StaticAnnotation]] =
 
-    import quotes.reflect.*
+      import quotes.reflect.*
 
-    val targetType = TypeRepr.of[target]
+      val targetType = TypeRepr.of[target]
 
-    val field = lambda.asTerm match
-      case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
-        targetType.typeSymbol.caseFields.find(_.name == term).getOrElse:
-          panic(m"the member $term is not a case class field")
+      val field = lambda.asTerm match
+        case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
+          targetType.typeSymbol.caseFields.find(_.name == term).getOrElse:
+            panic(m"the member $term is not a case class field")
 
-      case _ =>
-        panic(m"the lambda must be a simple reference to a case class field")
+        case _ =>
+          panic(m"the lambda must be a simple reference to a case class field")
 
-    Expr.ofList:
-      field.annotations.map(_.asExpr).collect:
-        case '{ $annotation: StaticAnnotation } => annotation
+      Expr.ofList:
+        field.annotations.map(_.asExpr).collect:
+          case '{ $annotation: StaticAnnotation } => annotation
+
 
   def typeAnnotations[annotation <: StaticAnnotation: Type, target: Type](using Quotes)
-  :     Expr[Annotations[annotation, target]] =
+  : Expr[Annotations[annotation, target]] =
 
-    import quotes.reflect.*
+      import quotes.reflect.*
 
-    val targetType = TypeRepr.of[target]
-    val annotations = targetType.typeSymbol.annotations.map(_.asExpr).collect:
-      case '{$annotation: `annotation`} => annotation
+      val targetType = TypeRepr.of[target]
+      val annotations = targetType.typeSymbol.annotations.map(_.asExpr).collect:
+        case '{$annotation: `annotation`} => annotation
 
-    if annotations.isEmpty
-    then
-      val typeName = TypeRepr.of[annotation].show
-      panic(m"the type $targetType did not have the annotation $typeName")
-    else '{Annotations[annotation, target](${Expr.ofList(annotations)}*)}
+      if annotations.isEmpty
+      then
+        val typeName = TypeRepr.of[annotation].show
+        panic(m"the type $targetType did not have the annotation $typeName")
+      else '{Annotations[annotation, target](${Expr.ofList(annotations)}*)}

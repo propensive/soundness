@@ -46,7 +46,7 @@ object PosixCliInterpreter extends CliInterpreter:
           arguments:  List[Argument],
           current:    Optional[Argument],
           parameters: PosixParameters)
-    :     PosixParameters =
+    : PosixParameters =
 
       def push(): PosixParameters = current match
         case Unset =>

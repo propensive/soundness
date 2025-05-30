@@ -92,7 +92,7 @@ object Teletypeable:
       case _ => 0xaefe00
 
     def dedup[element](todo: List[element], seen: Set[element] = Set(), done: List[element] = Nil)
-    :     List[element] =
+    : List[element] =
       todo match
         case Nil => done
 

@@ -110,8 +110,10 @@ object Aviation:
                    inline right:       Year,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
-        if left == right then !strict else (left < right)^greaterThan
+      : Boolean =
+
+          if left == right then !strict else (left < right)^greaterThan
+
 
   object Day:
     inline def apply(day: Int): Day = day
@@ -154,8 +156,9 @@ object Aviation:
 
     def apply(using calendar: Calendar)
          (year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal)
-    :     Date raises TimeError =
-      calendar.jdn(year, month, day)
+    : Date raises TimeError =
+
+        calendar.jdn(year, month, day)
 
     trait Format(val name: Text):
       type Issue: Communicable
@@ -203,8 +206,10 @@ object Aviation:
                    inline right:       Date,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
-        if left == right then !strict else (left < right)^greaterThan
+      : Boolean =
+
+          if left == right then !strict else (left < right)^greaterThan
+
 
     given ordering: Ordering[Date] = Ordering.Int
 

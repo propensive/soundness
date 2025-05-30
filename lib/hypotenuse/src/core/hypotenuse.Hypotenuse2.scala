@@ -156,7 +156,7 @@ object Hypotenuse2:
         strict: Expr[Boolean],
         greaterThan: Expr[Boolean])
        (using Quotes)
-  :     Expr[Boolean] =
+  : Expr[Boolean] =
 
     val errorMessage = m"this cannot be written as a range expression"
 

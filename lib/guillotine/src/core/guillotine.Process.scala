@@ -70,7 +70,7 @@ class Process[+exec <: Label, result](process: java.lang.Process) extends Proces
     Readable.inputStream.stream(process.getErrorStream.nn)
 
   def stdin[chunk](stream: Stream[chunk])(using writable: ji.OutputStream is Writable by chunk)
-  :     Unit =
+  : Unit =
 
     writable.write(process.getOutputStream.nn, stream)
 

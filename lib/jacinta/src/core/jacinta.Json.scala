@@ -84,7 +84,7 @@ trait Json2:
 
   object DecodableDerivation extends Derivable[Decodable in Json]:
     inline def join[derivation <: Product: ProductReflection]
-    :     derivation is Decodable in Json =
+    : derivation is Decodable in Json =
       json =>
         summonInline[Foci[JsonPointer]].give:
           summonInline[Tactic[JsonError]].give:
@@ -263,7 +263,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     apply(field.tt)
 
   def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler)
-  :     Json raises JsonError =
+  : Json raises JsonError =
     apply(field.tt)(index)
 
   def apply(field: Text): Json raises JsonError =

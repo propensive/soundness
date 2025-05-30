@@ -67,7 +67,7 @@ package tableStyles:
 package columnar:
   object Prose extends Columnar:
     def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
-    :     Optional[Int] =
+    : Optional[Int] =
 
       def longestWord(text: textual, position: Int, lastStart: Int, max: Int): Int =
         if position < text.length then
@@ -80,10 +80,10 @@ package columnar:
       lines.map(longestWord(_, 0, 0, 0)).max.max((slack*maxWidth).toInt).min(longestLine)
 
     def fit[textual: Textual](lines: IArray[textual], width: Int, textAlign: TextAlignment)
-    :     IndexedSeq[textual] =
+    : IndexedSeq[textual] =
 
       def format(text: textual, position: Int, lineStart: Int, lastSpace: Int, lines: List[textual])
-      :     List[textual] =
+      : List[textual] =
 
         if position < text.length then
           if textual.unsafeChar(text, position.z) == ' '
@@ -108,7 +108,7 @@ package columnar:
       fixedWidth
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
-    :     IndexedSeq[text] =
+    : IndexedSeq[text] =
 
       lines.to(IndexedSeq).map: line =>
         if line.length > width then line.keep(width - ellipsis.length)+text(ellipsis) else line
@@ -119,7 +119,7 @@ package columnar:
       (maxWidth*slack).toInt.min(naturalWidth)
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
-    :     IndexedSeq[text] =
+    : IndexedSeq[text] =
 
       lines.to(IndexedSeq).map: line =>
         if line.length > width then line.keep(width - ellipsis.length)+text(ellipsis) else line
@@ -129,6 +129,6 @@ package columnar:
       if slack > threshold then lines.map(_.length).max else Unset
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
-    :     IndexedSeq[text] =
+    : IndexedSeq[text] =
 
       lines.to(IndexedSeq)

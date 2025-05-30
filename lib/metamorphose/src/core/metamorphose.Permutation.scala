@@ -83,7 +83,7 @@ case class Permutation(factoradic: Factoradic):
           list:    List[element],
           current: Int,
           result:  List[element])
-    :     List[element] =
+    : List[element] =
 
       lehmer match
         case head :: tail =>

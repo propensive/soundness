@@ -49,7 +49,7 @@ def terminal[result](block: (terminal: Terminal) ?=> result)
           BackgroundColorDetection,
           TerminalFocusDetection,
           TerminalSizeDetection)
-:     result raises TerminalError =
+: result raises TerminalError =
 
   given terminal: Terminal = Terminal(context.signals)
 

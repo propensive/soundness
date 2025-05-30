@@ -53,10 +53,10 @@ sealed trait Executable:
   type Exec <: Label
 
   def fork[result]()(using working: WorkingDirectory)
-  :     Process[Exec, result] logs ExecEvent raises ExecError
+  : Process[Exec, result] logs ExecEvent raises ExecError
 
   def exec[result: Computable]()(using working: WorkingDirectory)
-  :     result logs ExecEvent raises ExecError =
+  : result logs ExecEvent raises ExecError =
 
     fork[result]().await()
 
@@ -64,7 +64,7 @@ sealed trait Executable:
        (using erased intelligible: Exec is Intelligible,
                      working:      WorkingDirectory,
                      computable:   intelligible.Result is Computable)
-  :     intelligible.Result logs ExecEvent raises ExecError =
+  : intelligible.Result logs ExecEvent raises ExecError =
 
     fork[intelligible.Result]().await()
 

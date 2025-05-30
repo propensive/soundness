@@ -105,7 +105,7 @@ object Plutocrat:
                    inline right:       Money[currency],
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
         if left.value == right.value then !strict else (left.value < right.value)^greaterThan
 
     given zeroic: [currency <: Currency & Singleton] => Money[currency] is Zeroic:

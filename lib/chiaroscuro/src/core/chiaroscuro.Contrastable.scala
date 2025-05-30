@@ -125,28 +125,29 @@ object Contrastable extends Contrastable2:
         right:      IArray[Decomposition],
         leftDebug:  Text,
         rightDebug: Text)
-  :     Juxtaposition =
-    if left == right then Juxtaposition.Same(leftDebug) else
-      val comparison = IArray.from:
-        diff(left, right).rdiff(_ == _, 10).changes.map:
-          case Par(leftIndex, rightIndex, value) =>
-            val label =
-              if leftIndex == rightIndex then leftIndex.show
-              else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
+  : Juxtaposition =
 
-            label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
+      if left == right then Juxtaposition.Same(leftDebug) else
+        val comparison = IArray.from:
+          diff(left, right).rdiff(_ == _, 10).changes.map:
+            case Par(leftIndex, rightIndex, value) =>
+              val label =
+                if leftIndex == rightIndex then leftIndex.show
+                else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
-          case Ins(rightIndex, value) =>
-            t" ⧸${rightIndex.show.subscripts}"
-            -> Juxtaposition.Different(t"", value.short)
+              label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
-          case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscripts}╱ "
-            -> Juxtaposition.Different(value.let(_.short).or(t"?"), t"")
+            case Ins(rightIndex, value) =>
+              t" ⧸${rightIndex.show.subscripts}"
+              -> Juxtaposition.Different(t"", value.short)
 
-          case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
-            val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
+            case Del(leftIndex, value) =>
+              t"${leftIndex.show.superscripts}╱ "
+              -> Juxtaposition.Different(value.let(_.short).or(t"?"), t"")
 
-            label -> juxtaposition(Decomposition(leftValue), Decomposition(rightValue))
+            case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
+              val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
-      Juxtaposition.Collation(comparison, leftDebug, rightDebug)
+              label -> juxtaposition(Decomposition(leftValue), Decomposition(rightValue))
+
+        Juxtaposition.Collation(comparison, leftDebug, rightDebug)

@@ -45,7 +45,7 @@ object Suggestion:
         hidden:     Boolean                   = false,
         incomplete:  Boolean                   = false,
         aliases:    List[Text]                = Nil)
-  :     Suggestion =
+  : Suggestion =
 
     new Suggestion(text, description, hidden, incomplete, aliases)
 

@@ -67,7 +67,7 @@ trait Dispatcher:
                      classloader: Classloader,
                      properties:  SystemProperties,
                      directory:   TemporaryDirectory)
-  :     Result[output] raises CompilerError =
+  : Result[output] raises CompilerError =
    try
     import strategies.throwUnsafely
     val uuid = Uuid()

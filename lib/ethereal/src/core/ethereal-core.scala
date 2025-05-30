@@ -158,7 +158,7 @@ def cli[bus <: Matchable](using executive: Executive)
     pid.let(terminatePid.fulfill(_)).or(termination)
 
   def makeClient(socket: jn.Socket)(using Monitor, Stdio, Codicil)
-  :     Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
+  : Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
 
     async:
       val in = socket.getInputStream.nn
