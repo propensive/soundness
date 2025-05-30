@@ -33,14 +33,22 @@
 package aviation
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 
 object Month:
-  def apply(i: Int): Month = Month.fromOrdinal(i - 1)
-  def apply(name: Text): Month = Month.valueOf(name.s)
+  val all: IArray[Month] = IArray(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
+
+  def apply(index: Int): Month raises TimeError =
+    if index < 1 || index > 12 then abort(TimeError(_.Unknown(index.show, t"month")))
+    else all(index - 1)
+
+  def apply(name: Text): Month raises TimeError =
+    try Month.valueOf(name.s) catch case _: Exception => abort(TimeError(_.Unknown(name, t"month")))
 
   def unapply(value: Text): Option[Month] =
     try Some(Month.valueOf(value.lower.capitalize.s))

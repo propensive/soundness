@@ -41,7 +41,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-abstract class RomanCalendar() extends Calendar:
+abstract class RomanCalendar(val name: Text) extends Calendar:
   type Annual = Year
   type Mensual = Month
   type Diurnal = Day
@@ -109,9 +109,9 @@ abstract class RomanCalendar() extends Calendar:
 
     Day(da - (m + 4) * 153/5 + 122 + 1)
 
-  def jdn(year: Year, month: Month, day: Day): Date raises DateError =
+  def jdn(year: Year, month: Month, day: Day): Date raises TimeError =
     if day() < 1 || day() > daysInMonth(month, year) then
-      raise(DateError(t"$year-${month.numerical}-${day()}"))
+      raise(TimeError(_.Invalid(year(), month.numerical, day(), this)))
       Date(using calendars.julian)(Year(2000), Month(1), Day(1))
 
     zerothDayOfYear(year).addDays(month.offset(leapYear(year)) + day())

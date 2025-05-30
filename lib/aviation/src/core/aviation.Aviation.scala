@@ -34,6 +34,7 @@ package aviation
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -148,37 +149,39 @@ object Aviation:
 
     def apply(using calendar: Calendar)
          (year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal)
-    :     Date raises DateError =
+    :     Date raises TimeError =
       calendar.jdn(year, month, day)
 
-    given showable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable =
-      date =>
-        import DateNumerics.*, Years.*
-        import textMetrics.uniform
-        given calendar: RomanCalendar = calendars.gregorian
+    trait Format(val name: Text):
+      type Issue: Communicable
 
-        def pad(n: Int): Text = (n%100).show.pad(2, Rtl, '0')
+    given showable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable = date =>
+      import DateNumerics.*, Years.*
+      import textMetrics.uniform
+      given calendar: RomanCalendar = calendars.gregorian
 
-        val year: Text = summon[Years] match
-          case TwoDigitYear => pad(date.year)
-          case FullYear     => date.year.show
+      def pad(n: Int): Text = (n%100).show.pad(2, Rtl, '0')
 
-        val month: Text = summon[DateNumerics] match
-          case FixedWidth    => pad(date.month.numerical)
-          case VariableWidth => date.month.numerical.show
+      val year: Text = summon[Years] match
+        case TwoDigitYear => pad(date.year)
+        case FullYear     => date.year.show
 
-        val day: Text = summon[DateNumerics] match
-          case FixedWidth    => pad(date.day)
-          case VariableWidth => date.day.show
+      val month: Text = summon[DateNumerics] match
+        case FixedWidth    => pad(date.month.numerical)
+        case VariableWidth => date.month.numerical.show
 
-        summon[Endianness].match
-          case Endianness.LittleEndian => List(day, month, year)
-          case Endianness.MiddleEndian => List(month, day, year)
-          case Endianness.BigEndian    => List(year, month, day)
+      val day: Text = summon[DateNumerics] match
+        case FixedWidth    => pad(date.day)
+        case VariableWidth => date.day.show
 
-        . join(summon[DateSeparation].separator)
+      summon[Endianness].match
+        case Endianness.LittleEndian => List(day, month, year)
+        case Endianness.MiddleEndian => List(month, day, year)
+        case Endianness.BigEndian    => List(year, month, day)
 
-    given decoder: Tactic[DateError] => Date is Decodable in Text = parse(_)
+      . join(summon[DateSeparation].separator)
+
+    given decoder: Tactic[TimeError] => Date is Decodable in Text = parse(_)
 
     given encodable: RomanCalendar => Date is Encodable in Text = date =>
       import hieroglyph.textMetrics.uniform
@@ -205,22 +208,15 @@ object Aviation:
       type Operand = Timespan
       def add(date: Date, timespan: Timespan): Date = calendar.add(date, timespan)
 
-    def parse(value: Text)(using Tactic[DateError]): Date = value.cut(t"-").to(List) match
-      // FIXME: This compiles successfully, but never seems to match
-      //case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
-      case y :: m :: d :: Nil =>
-        try
-          import calendars.gregorian
-          Date(y.s.toInt, Month(m.s.toInt), d.s.toInt)
-        catch
-          case error: NumberFormatException =>
-            raise(DateError(value)) yet Date(using calendars.gregorian)(2000, Month(1), 1)
+    def parse(value: Text): Date raises TimeError =
+      import calendars.gregorian
 
-          case error: ju.NoSuchElementException =>
-            raise(DateError(value)) yet Date(using calendars.gregorian)(2000, Month(1), 1)
+      value.cut(t"-").to(List) match
+        case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
+          Date(year, Month(month), day)
 
-      case cnt =>
-        raise(DateError(value)) yet Date(using calendars.gregorian)(2000, Month(1), 1)
+        case cnt =>
+          raise(TimeError(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit))) yet 2000-Jan-1
 
   extension (date: Date)
     def day(using calendar: Calendar): calendar.Diurnal = calendar.diurnal(date)

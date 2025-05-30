@@ -54,19 +54,19 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"Month cannot be higher than 12"):
         capture(Date.parse(t"59-13-13"))
-      .assert(_ == DateError(t"59-13-13"))
+      .assert(_ == TimeError(_.Unknown(t"13", t"month")))
 
       test(m"Month cannot be less than 1"):
         capture(Date.parse(t"59-0-13"))
-      .assert(_ == DateError(t"59-0-13"))
+      .assert(_ == TimeError(_.Unknown(t"0", t"month")))
 
       test(m"Day cannot be over 31"):
         capture(Date.parse(t"59-11-32"))
-      .assert(_ == DateError(t"59-11-32"))
+      .assert(_ == TimeError(_.Invalid(59, 11, 32, calendars.gregorian)))
 
       test(m"Day must exist in month"):
         capture(Date.parse(t"59-11-31"))
-      .assert(_ == DateError(t"59-11-31"))
+      .assert(_ == TimeError(_.Invalid(59, 11, 31, calendars.gregorian)))
 
 
     suite(m"Leap Seconds tests"):
@@ -455,7 +455,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
         test(m"Date with single-digit day"):
           capture(t"Wed, 3 Jul 2002 17:45:00 GMT".decode[Instant])
-        . assert(_ == DateError(t"Wed, 3 Jul 2002 17:45:00 GMT"))
+        . assert(_ == TimeError(_.Format(t"Wed, 3 Jul 2002 17:45:00 GMT", Rfc1123, Prim + 6)(Rfc1123.Issue.Digit)))
 
         test(m"Date with single-digit hour, minute, and second"):
           t"Tue, 02 Mar 2021 07:08:09 GMT".decode[Instant]
