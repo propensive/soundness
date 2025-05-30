@@ -221,11 +221,11 @@ object Aviation:
           else
             val next = current.jdn + count
             val holidays = summon[Holidays].between(current, next)
-            val weekends = Weekday.all.to(Set).filter(_.weekend)
+            val weekends = Weekday.all.to(List).filter(_.weekend)
             val weekendDays = weekends.map(Weekday.count(current, next, _)).sum
             val weekdayHolidays = holidays.filter(!_.date.weekend).length
             val skipped = weekdayHolidays + weekendDays
-            if count > 0 then recur(next, skipped) else next
+            recur(next, skipped)
 
         recur(date, days)
 
