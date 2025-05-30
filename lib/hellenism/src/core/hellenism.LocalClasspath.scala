@@ -32,6 +32,8 @@
                                                                                                   */
 package hellenism
 
+import java.lang as jl
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -58,6 +60,9 @@ object LocalClasspath:
           else ClasspathEntry.Directory(path)
 
       new LocalClasspath(entries, entries.to(Set))
+
+  def system()(using SystemProperties): LocalClasspath raises SystemPropertyError =
+    jl.System.getProperty("java.class.path").nn.tt.decode[LocalClasspath]
 
   def apply
        (entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar |
