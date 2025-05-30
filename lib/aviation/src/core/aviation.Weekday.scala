@@ -36,11 +36,23 @@ import denominative.*
 import spectacular.*
 
 object Weekday:
-  def apply(ordinal: Ordinal)(using numbering: WeekNumbering): Weekday = numbering.weekday(ordinal)
+  def apply(ordinal: Ordinal)(using hebdomad: Hebdomad): Weekday = hebdomad.weekday(ordinal)
+  val all: IArray[Weekday] = IArray(Mon, Tue, Wed, Thu, Fri, Sat, Sun)
 
   given showable: (weekdays: Weekdays) => Weekday is Showable = weekdays.name(_)
+
+  def count(start: Date, end: Date, day: Weekday): Int =
+    val total = end.jdn - start.jdn
+    val extras = total%7
+
+    val d = day.ordinal
+    val s = start.weekday.ordinal
+    val extra = if d + (if d < s then 7 else 0) < s + extras then 1 else 0
+
+    (total/7) + extra
 
 enum Weekday:
   case Mon, Tue, Wed, Thu, Fri, Sat, Sun
 
-  def number(using numbering: WeekNumbering): Ordinal = numbering.ordinal(this)
+  def weekend(using hebdomad: Hebdomad): Boolean = hebdomad.weekend(this)
+  def number(using hebdomad: Hebdomad): Ordinal = hebdomad.ordinal(this)
