@@ -56,6 +56,7 @@ object Aviation:
   opaque type Date = Int
   opaque type Year = Int
   opaque type Day = Int
+  opaque type WorkingDays = Int
   opaque type Anniversary = Short
 
   extension (anniversary: Anniversary)
@@ -66,6 +67,10 @@ object Aviation:
          (using calendar: RomanCalendar, rounding: Anniversary.NonexistentLeapDay): Date =
       safely(Date(year, month, day)).or(rounding.round(year))
 
+  object WorkingDays:
+    def apply(n: Int): WorkingDays = n
+
+  extension (days: WorkingDays) def apply(): Int = days
 
   object Anniversary:
     trait NonexistentLeapDay:
@@ -203,6 +208,27 @@ object Aviation:
 
     given ordering: Ordering[Date] = Ordering.Int
 
+    given plus2: Holidays => (hebdomad: Hebdomad) => Date is Addable:
+      type Operand = WorkingDays
+      type Result = Date
+
+      def add(date: Date, days: WorkingDays): Date =
+        def recur(current: Date, count: Int): Date =
+          if count == 0 then
+            if current.weekend || summon[Holidays].holiday(current).present
+            then recur(current + 1, 0)
+            else current
+          else
+            val next = current.jdn + count
+            val holidays = summon[Holidays].between(current, next)
+            val weekends = Weekday.all.to(Set).filter(_.weekend)
+            val weekendDays = weekends.map(Weekday.count(current, next, _)).sum
+            val weekdayHolidays = holidays.filter(!_.date.weekend).length
+            val skipped = weekdayHolidays + weekendDays
+            if count > 0 then recur(next, skipped) else next
+
+        recur(date, days)
+
     given plus: (calendar: Calendar) => Date is Addable:
       type Result = Date
       type Operand = Timespan
@@ -223,6 +249,7 @@ object Aviation:
     def month(using calendar: Calendar): calendar.Mensual = calendar.mensual(date)
     def year(using calendar: Calendar): calendar.Annual = calendar.annual(date)
     def weekday: Weekday = Weekday.fromOrdinal(jdn%7)
+    def weekend(using hebdomad: Hebdomad): Boolean = weekday.weekend
 
     def anniversary: Anniversary =
       Anniversary(calendars.gregorian.mensual(date), calendars.gregorian.diurnal(date))

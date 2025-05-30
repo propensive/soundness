@@ -34,11 +34,8 @@ package aviation
 
 import denominative.*
 
-object WeekNumbering:
-  given european: WeekNumbering = () => 0
-  given western: WeekNumbering = () => 1
-
-trait WeekNumbering:
-  protected def offset(): Int
-  def ordinal(weekday: Weekday): Ordinal = Ordinal.zerary((weekday.ordinal + offset())%7)
-  def weekday(ordinal: Ordinal): Weekday = Weekday.fromOrdinal((ordinal.n0 + 7 - offset())%7)
+trait Hebdomad:
+  def start: Weekday
+  def weekend(day: Weekday): Boolean
+  def weekday(ordinal: Ordinal): Weekday = Weekday.fromOrdinal((start.ordinal + ordinal.n0)%7)
+  def ordinal(day: Weekday): Ordinal = Ordinal.zerary((7 + day.ordinal - start.ordinal)%7)
