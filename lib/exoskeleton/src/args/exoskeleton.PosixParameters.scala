@@ -39,10 +39,10 @@ import vacuous.*
 import language.experimental.pureFunctions
 
 case class PosixParameters
-   (positional:    List[Argument]                = Nil,
-    parameters:    Map[Argument, List[Argument]] = Map(),
+   (positional:     List[Argument]                = Nil,
+    parameters:     Map[Argument, List[Argument]] = Map(),
     postpositional: List[Argument]                = Nil,
-    focusFlag:     Optional[Argument]            = Unset)
+    focusFlag:      Optional[Argument]            = Unset)
 extends FlagParameters:
 
   def read[operand](flag: Flag)
@@ -51,8 +51,8 @@ extends FlagParameters:
               suggestions: Suggestions[operand])
   : Optional[operand] =
 
-    cli.register(flag, suggestions)
+      cli.register(flag, suggestions)
 
-    parameters.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
-      cli.present(flag)
-      safely(interpreter.interpret(operands))
+      parameters.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
+        cli.present(flag)
+        safely(interpreter.interpret(operands))

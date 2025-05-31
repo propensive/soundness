@@ -72,11 +72,14 @@ val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 def mute[format](using erased Void)[result](lambda: (format is Loggable) ?=> result): result =
   lambda(using Log.silent[format])
 
+
 extension (logObject: Log.type)
   def envelop[tag, event: {Taggable by tag, Loggable as loggable}](value: tag)[result]
        (lambda: (event is Loggable) ?=> result)
   : result =
-    lambda(using loggable.contramap(_.tag(value)))
+
+      lambda(using loggable.contramap(_.tag(value)))
+
 
   def ignore[event, message]: message transcribes event = new Transcribable:
     type Self = event
@@ -88,23 +91,25 @@ extension (logObject: Log.type)
     type Self = format
     def log(level: Level, realm: Realm, timestamp: Long, event: format): Unit = ()
 
+
   def route[format](using erased Void)[entry: Inscribable in format, writable: Writable by format]
        (target: writable)
        (using Monitor)
   : entry is Loggable =
 
-    new:
-      type Self = entry
+      new:
+        type Self = entry
 
-      private lazy val spool: Spool[writable.Operand] = Spool().tap: spool =>
-        val task = async(spool.stream.writeTo(target))
+        private lazy val spool: Spool[writable.Operand] = Spool().tap: spool =>
+          val task = async(spool.stream.writeTo(target))
 
-        System.intercept[Shutdown]:
-          spool.stop()
-          safely(task.await())
+          System.intercept[Shutdown]:
+            spool.stop()
+            safely(task.await())
 
-      def log(level: Level, realm: Realm, timestamp: Long, event: entry): Unit =
-        spool.put(event.format(level, realm, timestamp))
+        def log(level: Level, realm: Realm, timestamp: Long, event: entry): Unit =
+          spool.put(event.format(level, realm, timestamp))
+
 
 package logging:
   given silent: [format] => format is Loggable = Log.silent[format]

@@ -57,13 +57,16 @@ extends Node[name], Dynamic:
 
   type Content = child
 
+
   inline def applyDynamicNamed(method: String)(inline attributes: ("" | attribute, Any)*)
   : StartTag[name, child] =
 
-    ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
+      ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
+
 
   def applyDynamic(method: String)(children: (Optional[Html[child]] | Seq[Html[child]])*)
   : Element[name] =
-    method match
-      case "apply"   => Element(labelString, attributes, children)
-      case className => Element(labelString, attributes.updated("class", className.tt), children)
+
+      method match
+        case "apply"   => Element(labelString, attributes, children)
+        case className => Element(labelString, attributes.updated("class", className.tt), children)

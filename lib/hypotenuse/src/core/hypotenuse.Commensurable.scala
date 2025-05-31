@@ -42,6 +42,7 @@ object Commensurable:
         =>  Boolean is Commensurable:
     type Operand = operand
 
+
     inline def compare
                 (inline left: Boolean,
                  inline right: operand,
@@ -49,7 +50,8 @@ object Commensurable:
                  inline greaterThan: Boolean)
     : Boolean =
 
-      ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
+        ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
+
 
   given orderable: Memory is Orderable:
     inline def compare
@@ -59,7 +61,8 @@ object Commensurable:
                  inline greater: Boolean)
     : Boolean =
 
-      !strict && left.long == right.long || (left.long < right.long) ^ greater
+        !strict && left.long == right.long || (left.long < right.long) ^ greater
+
 
   inline given countback: Countback is Orderable:
     inline def compare
@@ -69,8 +72,9 @@ object Commensurable:
                  inline greater: Boolean)
     : Boolean =
 
-      inline if greater then inline if strict then left.gt(right) else left.ge(right)
-      else inline if strict then left.lt(right) else left.le(right)
+        inline if greater then inline if strict then left.gt(right) else left.ge(right)
+        else inline if strict then left.lt(right) else left.le(right)
+
 
   inline given ordinal: Ordinal is Orderable:
     inline def compare
@@ -80,8 +84,9 @@ object Commensurable:
                  inline greater: Boolean)
     : Boolean =
 
-      inline if greater then inline if strict then left.gt(right) else left.ge(right)
-      else inline if strict then left.lt(right) else left.le(right)
+        inline if greater then inline if strict then left.gt(right) else left.ge(right)
+        else inline if strict then left.lt(right) else left.le(right)
+
 
 trait Commensurable:
   type Self

@@ -55,10 +55,12 @@ sealed trait Executable:
   def fork[result]()(using working: WorkingDirectory)
   : Process[Exec, result] logs ExecEvent raises ExecError
 
+
   def exec[result: Computable]()(using working: WorkingDirectory)
   : result logs ExecEvent raises ExecError =
 
-    fork[result]().await()
+      fork[result]().await()
+
 
   def apply()
        (using erased intelligible: Exec is Intelligible,
@@ -66,7 +68,8 @@ sealed trait Executable:
                      computable:   intelligible.Result is Computable)
   : intelligible.Result logs ExecEvent raises ExecError =
 
-    fork[intelligible.Result]().await()
+      fork[intelligible.Result]().await()
+
 
   def apply(command: Executable): Pipeline = command match
     case Pipeline(commands*) => this match

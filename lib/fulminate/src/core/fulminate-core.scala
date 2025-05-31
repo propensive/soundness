@@ -48,44 +48,48 @@ def panic(message: Message): Nothing = throw Panic(message)
 
 def halt(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
 : Nothing =
-  import quotes.reflect.*
-  import dotty.tools.dotc.config.Settings.Setting.value
 
-  val useColor: Boolean = quotes match
-    case quotes: runtime.impl.QuotesImpl =>
-      value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
+    import quotes.reflect.*
+    import dotty.tools.dotc.config.Settings.Setting.value
 
-    case _ =>
-      false
+    val useColor: Boolean = quotes match
+      case quotes: runtime.impl.QuotesImpl =>
+        value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
 
-  val esc = 27.toChar
+      case _ =>
+        false
 
-  val text =
-    if useColor then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
-    else s"${summon[Realm].name}: ${message.text}"
+    val esc = 27.toChar
 
-  if pos == null then report.errorAndAbort(text) else report.errorAndAbort(text, pos)
+    val text =
+      if useColor then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
+      else s"${summon[Realm].name}: ${message.text}"
+
+    if pos == null then report.errorAndAbort(text) else report.errorAndAbort(text, pos)
+
 
 def warn(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
 : Unit =
-  import quotes.reflect.*
-  import dotty.tools.dotc.config.Settings.Setting.value
 
-  val esc = 27.toChar
+    import quotes.reflect.*
+    import dotty.tools.dotc.config.Settings.Setting.value
 
-  val useColor: Boolean = quotes match
-    case quotes: runtime.impl.QuotesImpl =>
-      value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
+    val esc = 27.toChar
 
-    case _ =>
-      false
+    val useColor: Boolean = quotes match
+      case quotes: runtime.impl.QuotesImpl =>
+        value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
 
-  val text =
-    if useColor
-    then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
-    else s"${summon[Realm].name}: ${message.text}"
+      case _ =>
+        false
 
-  if pos == null then report.warning(text) else report.warning(text, pos)
+    val text =
+      if useColor
+      then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
+      else s"${summon[Realm].name}: ${message.text}"
+
+    if pos == null then report.warning(text) else report.warning(text, pos)
+
 
 extension (inline context: StringContext)
   transparent inline def m[param](inline subs: param = Zero): Message =

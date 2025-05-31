@@ -55,18 +55,19 @@ object Mandible:
   def disassemble[target: Type](block: Expr[target => Any], classloader: Expr[Classloader])
        (using Quotes)
   : Expr[Optional[Bytecode]] =
-    import quotes.reflect.*
-    given Realm = realm"mandible"
 
-    val name = block.asTerm match
-      case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, name)))), _)) => name
+      import quotes.reflect.*
+      given Realm = realm"mandible"
 
-      case _ =>
-        halt(m"this type of lambda is not supported")
+      val name = block.asTerm match
+        case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, name)))), _)) => name
 
-    val classname: Text =
-      TypeRepr.of[target].classSymbol.get.fullName.sub(t".", t"/").nn+t".class"
+        case _ =>
+          halt(m"this type of lambda is not supported")
 
-    '{  val classfile = Classfile(${Expr(classname)})(using $classloader)
-        classfile.let(_.methods.find(_.name == ${Expr(name.tt)}).getOrElse(Unset))
-        . let(_.bytecode)  }
+      val classname: Text =
+        TypeRepr.of[target].classSymbol.get.fullName.sub(t".", t"/").nn+t".class"
+
+      '{  val classfile = Classfile(${Expr(classname)})(using $classloader)
+          classfile.let(_.methods.find(_.name == ${Expr(name.tt)}).getOrElse(Unset))
+          . let(_.bytecode)  }

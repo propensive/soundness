@@ -129,11 +129,12 @@ object Mosquito:
                 subtraction:    multiplication.Result is Subtractable by multiplication.Result)
     : Vector[addition.Result, 3] =
 
-      val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
-      val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
-      val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
+        val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
+        val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
+        val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
 
-      first *: second *: third *: Zero
+        first *: second *: third *: Zero
+
 
   extension [size <: Int, left](left: Vector[left, size])
     def element(index: Int): left = left.toArray(index).asInstanceOf[left]
@@ -142,19 +143,21 @@ object Mosquito:
     def iarray: IArray[left] = left.toIArray.asInstanceOf[IArray[left]]
     def size(using ValueOf[size]): Int = valueOf[size]
 
+
     def norm
          (using multiplicable: left is Multiplicable by left,
-                addable:       multiplicable.Result is Addable by multiplicable.Result into
-                                multiplicable.Result,
+                addable:       multiplicable.Result is Addable by multiplicable.Result
+                                into multiplicable.Result,
                 rootable:      multiplicable.Result is Rootable[2] into left)
     : left =
 
-      def recur(sum: multiplicable.Result, i: Int): left =
-        if i == 0 then sum.sqrt else
-          val x2: multiplicable.Result = left.element(i)*left.element(i)
-          recur(addable.add(sum, x2), i - 1)
+        def recur(sum: multiplicable.Result, i: Int): left =
+          if i == 0 then sum.sqrt else
+            val x2: multiplicable.Result = left.element(i)*left.element(i)
+            recur(addable.add(sum, x2), i - 1)
 
-      recur(left.element(0)*left.element(0), size - 1)
+        recur(left.element(0)*left.element(0), size - 1)
+
 
     def map[left2](fn: left => left2): Vector[left2, size] =
       def recur(tuple: Tuple): Tuple = tuple match
@@ -163,6 +166,7 @@ object Mosquito:
 
       recur(left)
 
+
     def unitary[square]
          (using multiplicable: left is Multiplicable by left into square,
                 addable:       square is Addable by square into square,
@@ -170,13 +174,14 @@ object Mosquito:
                 divisible:     left is Divisible by left into Double)
     : Vector[Double, size] =
 
-      val magnitude: left = left.norm
+        val magnitude: left = left.norm
 
-      def recur(tuple: Tuple): Tuple = tuple match
-        case head *: tail => (head.asInstanceOf[left]/magnitude) *: recur(tail)
-        case _            => Zero
+        def recur(tuple: Tuple): Tuple = tuple match
+          case head *: tail => (head.asInstanceOf[left]/magnitude) *: recur(tail)
+          case _            => Zero
 
-      recur(left)
+        recur(left)
+
 
     def dot[right](right: Vector[right, size])
          (using multiply: left is Multiplicable by right,
@@ -185,12 +190,13 @@ object Mosquito:
                 equality: addable.Result =:= multiply.Result)
     : multiply.Result =
 
-      def recur(index: Int, sum: multiply.Result): multiply.Result =
-        if index < 0 then sum
-        else recur(index - 1, addable.add(sum, left.element(index)*right.element(index)))
+        def recur(index: Int, sum: multiply.Result): multiply.Result =
+          if index < 0 then sum
+          else recur(index - 1, addable.add(sum, left.element(index)*right.element(index)))
 
-      val start = size.value - 1
-      recur(start - 1, left.element(start)*right.element(start))
+        val start = size.value - 1
+        recur(start - 1, left.element(start)*right.element(start))
+
 
 extension [element](list: List[element])
   def slide(size: Int): Stream[Vector[element, size.type]] = list match

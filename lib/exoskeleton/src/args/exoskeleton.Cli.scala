@@ -46,8 +46,9 @@ object Cli:
         position:      Optional[Int] = Unset)
   : List[Argument] =
 
-    textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
-      Argument(index, text, if focus == index then position else Unset)
+      textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
+        Argument(index, text, if focus == index then position else Unset)
+
 
 trait Cli extends ProcessContext:
   def arguments: List[Argument]

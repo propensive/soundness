@@ -60,13 +60,17 @@ export Gossamer.opaques.Ascii
 def append[textual: Textual, value](using builder: Builder[textual])(value: value)
    (using textual.Show[value])
 : Unit =
-  builder.append(textual.show(value))
+
+    builder.append(textual.show(value))
+
 
 def appendln[textual: Textual, value](using builder: Builder[textual])(value: value)
    (using textual.Show[value])
 : Unit =
-  builder.append(textual.show(value))
-  builder.append(textual("\n".tt))
+
+    builder.append(textual.show(value))
+    builder.append(textual("\n".tt))
+
 
 extension (textObject: Text.type)
   def construct(block: (builder: TextBuilder) ?=> Unit): Text =

@@ -149,10 +149,13 @@ extension (value: Text)
   def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme): Bytes =
     deserializable.deserialize(value)
 
+
 extension (stream: Stream[Text])
   def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme)
   : Stream[Bytes] =
-    deserializable.deserialize(stream)
+
+      deserializable.deserialize(stream)
+
 
 extension [value: Encodable in Bytes](value: value)
   def serialize[scheme <: Serialization](using encodable: Serializable in scheme): Text =

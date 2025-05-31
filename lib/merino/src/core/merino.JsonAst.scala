@@ -103,7 +103,8 @@ object JsonAst:
                | Boolean | Null | Unset.type)
   : JsonAst =
 
-    value
+      value
+
 
   def parse[readable: Readable by Bytes](source: readable): JsonAst raises JsonParseError =
 

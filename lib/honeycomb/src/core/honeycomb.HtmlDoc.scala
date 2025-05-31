@@ -57,13 +57,14 @@ object HtmlDoc:
   def serialize[output: HtmlSerializer](doc: HtmlDoc, maxWidth: Optional[Int] = Unset): output =
     output.serialize(doc, maxWidth)
 
+
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
        (content: (Optional[Html[html5.Flow]] | Seq[Html[html5.Flow]])*)
        (using att: "href" is HtmlAttribute[Stylesheet])
   : HtmlDoc =
 
-    val link = att.convert(stylesheet).absolve match
-      case Unset      => Nil
-      case text: Text => Seq(html5.Link.Stylesheet(href = text))
+      val link = att.convert(stylesheet).absolve match
+        case Unset      => Nil
+        case text: Text => Seq(html5.Link.Stylesheet(href = text))
 
-    HtmlDoc(Html(html5.Head(html5.Title(title), link), html5.Body(content*)))
+      HtmlDoc(Html(html5.Head(html5.Title(title), link), html5.Body(content*)))

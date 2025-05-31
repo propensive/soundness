@@ -45,7 +45,8 @@ object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
                 (using SystemProperties, Environment)
   : path raises SystemPropertyError raises EnvironmentError =
 
-    path(t"/")
+      path(t"/")
+
 
   object Boot extends BaseLayout(t"boot", readOnly = true)
   object Efi extends BaseLayout(t"efi", readOnly = true)

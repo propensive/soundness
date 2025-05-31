@@ -175,6 +175,7 @@ case class Teletype
   def render(termcap: Termcap): Text =
     val buf = StringBuilder()
 
+
     @tailrec
     def recur
          (spans:      TreeMap[CharSpan, Ansi.Transform],
@@ -184,38 +185,39 @@ case class Teletype
           insertions: TreeMap[Int, Text]                = TreeMap())
     : Text =
 
-      inline def addSpan(): Text =
-        val newInsertions = addText(pos, spans.head(0).start, insertions)
-        val newStyle = spans.head(1)(style)
-        style.addChanges(buf, newStyle, termcap.color)
-        val newStack = if spans.head(0).isEmpty then stack else (spans.head(0) -> style) :: stack
-        recur(spans.tail, spans.head(0).start, newStyle, newStack, newInsertions)
-
-      @tailrec
-      def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
-        if insertions.isEmpty then
-          buf.add(plain.segment(from.max(0).z ~ Ordinal.natural(to.max(0))))
-          insertions
-        else if insertions.head(0) < to then
-          buf.add(plain.segment(pos.z ~ Ordinal.natural(insertions.head(0))))
-          buf.add(insertions.head(1))
-          addText(insertions.head(0), to, insertions.tail)
-        else
-          buf.add(plain.segment(from.z ~ Ordinal.natural(to)))
-          insertions
-
-      if stack.isEmpty then
-        if spans.isEmpty then
-          val remaining = addText(pos, plain.length, insertions)
-          remaining.values.each(buf.add(_))
-          buf.text
-        else addSpan()
-      else
-        if spans.isEmpty || stack.head(0).end <= spans.head(0).start then
-          val newInsertions = addText(pos, stack.head(0).end, insertions)
-          val newStyle = stack.head(1)
+        inline def addSpan(): Text =
+          val newInsertions = addText(pos, spans.head(0).start, insertions)
+          val newStyle = spans.head(1)(style)
           style.addChanges(buf, newStyle, termcap.color)
-          recur(spans, stack.head(0).end, newStyle, stack.tail, newInsertions)
-        else addSpan()
+          val newStack = if spans.head(0).isEmpty then stack else (spans.head(0) -> style) :: stack
+          recur(spans.tail, spans.head(0).start, newStyle, newStack, newInsertions)
+
+        @tailrec
+        def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
+          if insertions.isEmpty then
+            buf.add(plain.segment(from.max(0).z ~ Ordinal.natural(to.max(0))))
+            insertions
+          else if insertions.head(0) < to then
+            buf.add(plain.segment(pos.z ~ Ordinal.natural(insertions.head(0))))
+            buf.add(insertions.head(1))
+            addText(insertions.head(0), to, insertions.tail)
+          else
+            buf.add(plain.segment(from.z ~ Ordinal.natural(to)))
+            insertions
+
+        if stack.isEmpty then
+          if spans.isEmpty then
+            val remaining = addText(pos, plain.length, insertions)
+            remaining.values.each(buf.add(_))
+            buf.text
+          else addSpan()
+        else
+          if spans.isEmpty || stack.head(0).end <= spans.head(0).start then
+            val newInsertions = addText(pos, stack.head(0).end, insertions)
+            val newStyle = stack.head(1)
+            style.addChanges(buf, newStyle, termcap.color)
+            recur(spans, stack.head(0).end, newStyle, stack.tail, newInsertions)
+          else addSpan()
+
 
     if termcap.ansi then recur(spans, insertions = insertions) else plain

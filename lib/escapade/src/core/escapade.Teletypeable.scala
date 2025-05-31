@@ -91,14 +91,17 @@ object Teletypeable:
       case 3 => 0xfeae00
       case _ => 0xaefe00
 
+
     def dedup[element](todo: List[element], seen: Set[element] = Set(), done: List[element] = Nil)
     : List[element] =
-      todo match
-        case Nil => done
 
-        case head :: tail =>
-          if seen.contains(head) then dedup(tail, seen, done)
-          else dedup(tail, seen + head, head :: done)
+        todo match
+          case Nil => done
+
+          case head :: tail =>
+            if seen.contains(head) then dedup(tail, seen, done)
+            else dedup(tail, seen + head, head :: done)
+
 
     val packages: Map[Text, Int] =
       dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)

@@ -51,13 +51,15 @@ extends Node[name], Dynamic:
   def children: Seq[Node[?] | Text | Int | HtmlXml] = Nil
   def label: Text = labelString.tt
 
+
   inline def applyDynamicNamed(method: String)(inline attributes: (attribute, Any)*)
   : StartTag[name, child] =
 
-    ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
+      ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
+
 
   def applyDynamic[Return <: Label](method: "apply")
        (children: (Optional[Html[Return]] | Seq[Html[Return]])*)
   : Element[Return] =
 
-    Element(labelString, Map(), children)
+      Element(labelString, Map(), children)

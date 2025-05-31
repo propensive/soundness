@@ -83,8 +83,7 @@ trait Json2:
     case given Reflection[`value`]            => EncodableDerivation.derived
 
   object DecodableDerivation extends Derivable[Decodable in Json]:
-    inline def join[derivation <: Product: ProductReflection]
-    : derivation is Decodable in Json =
+    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Json =
       json =>
         summonInline[Foci[JsonPointer]].give:
           summonInline[Tactic[JsonError]].give:
@@ -140,10 +139,6 @@ trait Json2:
                 case labels: IArray[String] => values.asMatchable.absolve match
                   case values: IArray[JsonAst] =>
                     JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
-
-  // given integral: [integral: Numeric](using Tactic[JsonError])
-  //       =>  integral is Decodable in Json =
-  //   (value, omit) => integral.fromInt(value.root.long.toInt)
 
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
@@ -262,9 +257,12 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def selectDynamic(field: String)(using erased DynamicJsonEnabler): Json raises JsonError =
     apply(field.tt)
 
+
   def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler)
   : Json raises JsonError =
-    apply(field.tt)(index)
+
+      apply(field.tt)(index)
+
 
   def apply(field: Text): Json raises JsonError =
     root.obj(0).indexWhere(_ == field.s) match

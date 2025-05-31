@@ -46,4 +46,4 @@ object Switch:
         secret: Boolean             = false)
   : Flag =
 
-    Flag(name, repeatable, aliases, description, secret)
+      Flag(name, repeatable, aliases, description, secret)

@@ -85,6 +85,7 @@ package executives:
     type Return = Exit
     type Interface = CliInvocation
 
+
     def invocation
          (arguments:        Iterable[Text],
           environment:      Environment,
@@ -94,12 +95,13 @@ package executives:
          (using interpreter: CliInterpreter)
     : CliInvocation =
 
-      CliInvocation
-       (Cli.arguments(arguments),
-        environments.virtualMachine,
-        workingDirectories.systemProperty,
-        stdio,
-        signals)
+        CliInvocation
+         (Cli.arguments(arguments),
+          environments.virtualMachine,
+          workingDirectories.systemProperty,
+          stdio,
+          signals)
+
 
     def process(cli: CliInvocation)(exitStatus: Interface ?=> Exit): Exit =
       try exitStatus(using cli)
