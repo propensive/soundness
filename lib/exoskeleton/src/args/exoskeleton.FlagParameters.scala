@@ -36,6 +36,6 @@ import vacuous.*
 
 trait FlagParameters:
   def read[operand](flag: Flag)(using Cli, FlagInterpreter[operand], Suggestions[operand])
-  :     Optional[operand]
+  : Optional[operand]
 
   def focusFlag: Optional[Argument]

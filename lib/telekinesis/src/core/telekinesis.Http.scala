@@ -283,7 +283,7 @@ object Http:
       def selectDynamic(name: Label)
            (using prefixable: name.type is Prefixable,
                   decoder:    prefixable.Subject is Decodable in Text)
-      :     List[prefixable.Subject] =
+      : List[prefixable.Subject] =
         val name2 = name.tt.uncamel.kebab.lower
         textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
@@ -296,7 +296,7 @@ object Http:
 
   object Response extends Dynamic:
     transparent inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
-    :     Prototype | Response =
+    : Prototype | Response =
       ${Telekinesis.response('headers)}
 
     transparent inline def applyDynamic(id: "apply")(inline headers: Any*): Prototype | Response =
@@ -417,7 +417,7 @@ object Http:
       def selectDynamic(name: Label)
            (using prefixable: name.type is Prefixable,
                   decoder:    prefixable.Subject is Decodable in Text)
-      :     List[prefixable.Subject] =
+      : List[prefixable.Subject] =
         val name2 = name.tt.uncamel.kebab.lower
         textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
@@ -436,7 +436,7 @@ object Http:
                        loggable: HttpEvent is Loggable,
                        postable: payload is Postable,
                        client:   HttpClient onto target)
-    :     Http.Response =
+    : Http.Response =
 
       ${
           Telekinesis.submit[target, payload]
@@ -447,7 +447,7 @@ object Http:
                 (using online:   Online,
                   loggable: HttpEvent is Loggable,
                   client:   HttpClient onto target)
-    :     Http.Response =
+    : Http.Response =
 
       ${
           Telekinesis.submit[target, payload]
@@ -461,7 +461,7 @@ object Http:
                        loggable: HttpEvent is Loggable,
                        postable: Unit is Postable,
                        client:   HttpClient onto target)
-    :     Http.Response =
+    : Http.Response =
 
       ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
 
@@ -469,6 +469,6 @@ object Http:
                 (using online:   Online,
                        loggable: HttpEvent is Loggable,
                        client:   HttpClient onto target)
-    :     Http.Response =
+    : Http.Response =
 
       ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}

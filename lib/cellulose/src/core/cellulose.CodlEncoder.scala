@@ -56,10 +56,12 @@ trait CodlEncoder2:
 
 object CodlEncoder extends CodlEncoder2:
   def apply[value](schema0: CodlSchema, encode0: value => List[IArray[CodlNode]])
-  :     CodlEncoder[value] =
-    new:
-      def schema: CodlSchema = schema0
-      def encode(value: value): List[IArray[CodlNode]] = encode0(value)
+  : CodlEncoder[value] =
+
+      new:
+        def schema: CodlSchema = schema0
+        def encode(value: value): List[IArray[CodlNode]] = encode0(value)
+
 
   given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
   given text: CodlFieldWriter[Text] = _.show

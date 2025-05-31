@@ -57,7 +57,7 @@ object Panopticon:
   extension [from, path <: Tuple, to](lens: Lens[from, path, to])
     @targetName("append")
     infix def ++ [to2, path2 <: Tuple](right: Lens[to, path2, to2])
-    :     Lens[from, Tuple.Concat[path, path2], to2] =
+    : Lens[from, Tuple.Concat[path, path2], to2] =
 
       Lens.make()
 
@@ -78,7 +78,7 @@ object Panopticon:
         path
 
   def getPaths[tuple <: Tuple: Type](paths: List[List[String]] = Nil)(using Quotes)
-  :     List[List[String]] =
+  : List[List[String]] =
     Type.of[tuple] match
       case '[type tail <: Tuple; head *: tail] =>
         Type.of[head].absolve match
@@ -112,7 +112,7 @@ object Panopticon:
 
   def set[from: Type, path <: Tuple: Type, to: Type](value: Expr[from], newValue: Expr[to])
        (using Quotes)
-  :     Expr[from] =
+  : Expr[from] =
 
     import quotes.reflect.*
 

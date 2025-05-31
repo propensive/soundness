@@ -38,7 +38,7 @@ import scala.annotation.targetName
 
 object Subtractable:
   def apply[minuend, subtrahend, result](lambda: (minuend, subtrahend) => result)
-  :     minuend is Subtractable by subtrahend into result = new Subtractable:
+  : minuend is Subtractable by subtrahend into result = new Subtractable:
     type Self = minuend
     type Result = result
     type Operand = subtrahend

@@ -53,7 +53,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
 
   protected def makeConnection
                  (request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse)
-  :     HttpConnection raises StreamError =
+  : HttpConnection raises StreamError =
     val uri = request.getRequestURI.nn.tt
     val query = Optional(request.getQueryString).let(_.tt)
     val target = uri+query.let(t"?"+_).or(t"")
@@ -101,7 +101,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
 
   override def service
                 (request: jsh.HttpServletRequest | Null, response: jsh.HttpServletResponse | Null)
-  :     Unit =
+  : Unit =
     if request != null && response != null then try handle(request, response) catch
       case error: Throwable =>
         error.printStackTrace(System.out)

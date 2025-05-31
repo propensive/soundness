@@ -75,7 +75,7 @@ object Nomenclature2:
         panic(m"StringContext did not contains Strings")
 
   def parse2[platform: Type, name <: String: Type](scrutinee: Expr[Name[platform]])(using Quotes)
-  :     Expr[Boolean] =
+  : Expr[Boolean] =
     parse[platform, name]
     '{${Expr(constant[name])}.tt == $scrutinee}
 

@@ -64,7 +64,7 @@ def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): Te
 
 def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
    (block: Testable ?=> Unit)
-:     Unit =
+: Unit =
 
   runner.suite(Testable(name, suite), block)
 
@@ -73,7 +73,7 @@ extension [test](test: Test[test])
               (using runner: Runner[report],
                      inc:    Inclusion[report, Verdict],
                      inc2:   Inclusion[report, Verdict.Detail])
-  :     Unit =
+  : Unit =
     ${Probably.aspire[test, report]('test, 'runner, 'inc, 'inc2)}
 
   inline def assert[report]
@@ -81,7 +81,7 @@ extension [test](test: Test[test])
               (using runner:     Runner[report],
                      inclusion:  Inclusion[report, Verdict],
                      inclusion2: Inclusion[report, Verdict.Detail])
-  :     Unit =
+  : Unit =
     ${Probably.assert[test, report]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
 
   inline def check[report]
@@ -89,14 +89,14 @@ extension [test](test: Test[test])
               (using runner:     Runner[report],
                      inclusion:  Inclusion[report, Verdict],
                      inclusion2: Inclusion[report, Verdict.Detail])
-  :     test =
+  : test =
     ${Probably.check[test, report]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
 
   inline def assert[report]()
               (using runner:     Runner[report],
                      inclusion:  Inclusion[report, Verdict],
                      inclusion2: Inclusion[report, Verdict.Detail])
-  :     Unit =
+  : Unit =
     ${
         Probably.assert[test, report]
          ('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2) }
@@ -105,7 +105,7 @@ extension [test](test: Test[test])
               (using runner:     Runner[report],
                      inclusion:  Inclusion[report, Verdict],
                      inclusion2: Inclusion[report, Verdict.Detail])
-  :     test =
+  : test =
 
     ${
         Probably.check[test, report]
@@ -115,7 +115,7 @@ extension [test](test: Test[test])
               (using runner: Runner[report],
                      inc:    Inclusion[report, Verdict],
                      inc2:   Inclusion[report, Verdict.Detail])
-  :     Unit =
+  : Unit =
 
     assert[report](pf.isDefinedAt(_))
 

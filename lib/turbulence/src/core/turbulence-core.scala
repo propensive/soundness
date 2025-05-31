@@ -65,7 +65,7 @@ extension [value](value: value)
 
   def writeTo[target](target: target)[element]
        (using readable: value is Readable by element, writable: target is Writable by element)
-  :     Unit =
+  : Unit =
 
     writable.write(target, readable.stream(value))
 
@@ -104,7 +104,7 @@ extension [element](stream: Stream[element])
 
   inline def flow[result](inline termination: => result)
               (inline proceed: (head: element, tail: Stream[element]) ?=> result)
-  :     result =
+  : result =
     stream match
       case head #:: tail => proceed(using head, tail)
       case _             => termination
@@ -112,7 +112,7 @@ extension [element](stream: Stream[element])
   def strict: Stream[element] = stream.length yet stream
 
   def rate[generic: {GenericDuration, SpecificDuration}](duration: generic)(using Monitor)
-  :     Stream[element] raises AsyncError =
+  : Stream[element] raises AsyncError =
 
     def recur(stream: Stream[element], last: Long): Stream[element] =
       stream.flow(Stream()):
@@ -132,7 +132,7 @@ extension [element](stream: Stream[element])
          (active: Boolean,
           stream: Stream[Some[element] | Tap.Regulation],
           buffer: List[element])
-    :     Stream[element] =
+    : Stream[element] =
 
       recur(active, stream, buffer)
 
@@ -141,7 +141,7 @@ extension [element](stream: Stream[element])
          (active: Boolean,
           stream: Stream[Some[element] | Tap.Regulation],
           buffer: List[element])
-    :     Stream[element] =
+    : Stream[element] =
 
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.isEmpty then Stream()
@@ -160,7 +160,7 @@ extension [element](stream: Stream[element])
 
   def cluster[duration: GenericDuration](duration: duration, maxSize: Optional[Int] = Unset)
        (using Monitor)
-  :     Stream[List[element]] =
+  : Stream[List[element]] =
 
     val Limit = maxSize.or(Int.MaxValue)
 
@@ -274,7 +274,7 @@ extension (stream: Stream[Bytes])
     def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
 
     def recur(stream: Stream[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
-    :     Stream[Bytes] =
+    : Stream[Bytes] =
 
       stream match
         case source #:: more =>
@@ -301,7 +301,7 @@ extension (stream: Stream[Bytes])
     def newArray(): Array[Byte] = new Array[Byte](size)
 
     def recur(stream: Stream[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
-    :     Stream[Bytes] =
+    : Stream[Bytes] =
 
       stream match
         case source #:: more =>

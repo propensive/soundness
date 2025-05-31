@@ -184,7 +184,7 @@ object Quantitative extends Quantitative2:
                    inline right:       Quantity[units2],
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
         ${Quantitative.greaterThan[units, units2]('left, 'right, 'strict, 'greaterThan)}
 

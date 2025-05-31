@@ -59,11 +59,15 @@ object Node:
     then t"<${item.label}$filling${if item.unclosed then t"" else t"/"}>"
     else t"<${item.label}$filling>${item.children.map(_.show).join}</${item.label}>"
 
+
   def apply(label0: Text, attributes0: Attributes, children0: Seq[Node[?] | Text | Int | HtmlXml])
-  :     Html[?] = new Node:
-    def label = label0
-    def attributes = attributes0
-    def children: Seq[Node[?] | Text | Int | HtmlXml] = children0
+  : Html[?] =
+
+      new Node:
+        def label = label0
+        def attributes = attributes0
+        def children: Seq[Node[?] | Text | Int | HtmlXml] = children0
+
 
 trait Node[+name <: Label]:
   def label: Text

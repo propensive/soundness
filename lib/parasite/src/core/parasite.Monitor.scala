@@ -143,12 +143,12 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
       case Cancelled       => panic(m"should not be relenting after cancellation")
 
   def map[result2](lambda: Result => result2)(using Monitor, Codicil)
-  :     Task[result2] raises AsyncError =
+  : Task[result2] raises AsyncError =
 
     async(lambda(await()))
 
   def bind[result2](lambda: Result => Task[result2])(using Monitor, Codicil)
-  :     Task[result2] raises AsyncError =
+  : Task[result2] raises AsyncError =
 
     async(lambda(await()).await())
 

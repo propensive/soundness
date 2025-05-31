@@ -104,8 +104,8 @@ object Makable:
         => (createNonexistentParents: CreateNonexistentParents on platform,
             overwritePreexisting:     OverwritePreexisting on platform,
             working:                  WorkingDirectory,
-        tactic:                   Tactic[IoError],
-        loggable:                 ExecEvent is Loggable)
+            tactic:                   Tactic[IoError],
+            loggable:                 ExecEvent is Loggable)
         =>  Fifo is Makable into (Path on platform) =
     new Makable:
       type Self = Fifo

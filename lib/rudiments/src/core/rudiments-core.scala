@@ -131,7 +131,7 @@ extension [value](iterable: Iterable[value])
   transparent inline def total
                           (using addable:  value is Addable by value,
                                  equality: addable.Result =:= value)
-  :     Optional[value] =
+  : Optional[value] =
     compiletime.summonFrom:
       case zeroic: ((? <: value) is Zeroic) =>
         iterable.foldLeft(zeroic.zero)(addable.add)
@@ -143,7 +143,7 @@ extension [value](iterable: Iterable[value])
                           (using addable:   value is Addable by value,
                                  equality:  addable.Result =:= value,
                                  divisible: value is Divisible by Double)
-  :     Optional[divisible.Result] =
+  : Optional[divisible.Result] =
    compiletime.summonFrom:
      case zeroic: ((? <: value) is Zeroic) =>
        iterable.foldLeft[value](zeroic.zero)(addable.add)/iterable.size.toDouble
@@ -162,7 +162,7 @@ extension [value](iterable: Iterable[value])
               zeroic2:       multiplicable.Result is Zeroic,
               equality2:     addable2.Result =:= multiplicable.Result,
               divisible2:    multiplicable.Result is Divisible by Double)
-  :     divisible2.Result =
+  : divisible2.Result =
     val mean: divisible.Result = iterable.mean
     iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
 
@@ -178,7 +178,7 @@ extension [value](iterable: Iterable[value])
               equality2:     addable2.Result =:= multiplicable.Result,
               divisible2:    multiplicable.Result is Divisible by Double,
               rootable:      divisible2.Result is Rootable[2])
-  :     rootable.Result =
+  : rootable.Result =
     val mean: divisible.Result = iterable.mean
     (iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble).sqrt
 
@@ -186,7 +186,7 @@ extension [value](iterable: Iterable[value])
        (using unital:        value is Unital,
               multiplicable: value is Multiplicable by value,
               equality:      multiplicable.Result =:= value)
-  :     value =
+  : value =
     iterable.foldLeft(unital.one)(multiplicable.multiply)
 
   transparent inline def each(lambda: (ordinal: Ordinal) ?=> value => Unit): Unit =
@@ -335,18 +335,18 @@ extension (bytes: Bytes)
   def memory: Memory = Memory(bytes.size)
 
 def workingDirectory[path: Instantiable across Paths from Text](using directory: WorkingDirectory)
-:     path =
+: path =
 
   directory.path[path]
 
 def homeDirectory[path: Instantiable across Paths from Text](using directory: HomeDirectory)
-:     path =
+: path =
 
   directory.path[path]
 
 def temporaryDirectory[path: Instantiable across Paths from Text]
    (using directory: TemporaryDirectory)
-:     path =
+: path =
 
   directory.path[path]
 

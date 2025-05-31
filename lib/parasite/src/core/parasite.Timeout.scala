@@ -43,7 +43,7 @@ import prepositional.*
 
 object Timeout:
   def apply[duration: GenericDuration](timeout0: duration)(action: => Unit)(using Monitor, Codicil)
-  :     Timeout =
+  : Timeout =
 
     val timeout = duration.milliseconds(timeout0)
 

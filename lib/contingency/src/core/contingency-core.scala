@@ -72,71 +72,84 @@ given realm: Realm = realm"contingency"
 
 def certify[error <: Exception: Tactic](): Unit = error.certify()
 
+
 def raise[success, exception <: Exception: Recoverable into success]
    (error: Diagnostics ?=> exception)
    (using tactic: Tactic[exception])
-:     success =
-  tactic.record(error)
-  exception.recover(error(using tactic.diagnostics))
+: success =
+
+    tactic.record(error)
+    exception.recover(error(using tactic.diagnostics))
+
 
 def abort[success, exception <: Exception: Tactic](error: Diagnostics ?=> exception): Nothing =
   exception.abort(error)
 
+
 def safely[error <: Exception](using erased Void)[success]
    (block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=> success)
-:     Optional[success] =
+: Optional[success] =
 
-  try boundary: label ?=>
-    block(using Diagnostics.omit, OptionalTactic(label))
-  catch case error: Exception => Unset
+    try boundary: label ?=>
+      block(using Diagnostics.omit, OptionalTactic(label))
+    catch case error: Exception => Unset
+
 
 def unsafely[error <: Exception](using erased Void)[success]
    (block: Unsafe ?=> ThrowTactic[error, success] ?=> CanThrow[Exception] ?=> success)
-:     success =
+: success =
 
-  boundary: label ?=>
-    import unsafeExceptions.canThrowAny
-    block(using Unsafe)(using ThrowTactic())
+    boundary: label ?=>
+      import unsafeExceptions.canThrowAny
+      block(using Unsafe)(using ThrowTactic())
+
 
 def throwErrors[error <: Exception](using CanThrow[error])[success]
    (block: ThrowTactic[error, success] ?=> success)
-:     success =
+: success =
 
-  block(using ThrowTactic())
+    block(using ThrowTactic())
+
 
 def capture[error <: Exception](using erased Void)[success]
-   (block: EitherTactic[error, success] ?=> success)
-   (using Tactic[ExpectationError[success]], Diagnostics)
-:     error =
-  val value: Either[error, success] = boundary: label ?=>
-    Right(block(using EitherTactic(label)))
+     (block: EitherTactic[error, success] ?=> success)
+     (using Tactic[ExpectationError[success]], Diagnostics)
+: error =
 
-  value match
-    case Left(error)  => error
-    case Right(value) => abort(ExpectationError(value))
+    val value: Either[error, success] = boundary: label ?=>
+      Right(block(using EitherTactic(label)))
+
+    value match
+      case Left(error)  => error
+      case Right(value) => abort(ExpectationError(value))
+
 
 def attempt[error <: Exception](using erased Void)[success]
-   (block: AttemptTactic[error, success] ?=> success)
-   (using Diagnostics)
-:     Attempt[success, error] =
+     (block: AttemptTactic[error, success] ?=> success)
+     (using Diagnostics)
+: Attempt[success, error] =
 
-  boundary: label ?=>
-    Attempt.Success(block(using AttemptTactic(label)))
+    boundary: label ?=>
+      Attempt.Success(block(using AttemptTactic(label)))
+
 
 def amalgamate[error <: Exception](using erased Void)[success]
-   (block: AmalgamateTactic[error, success] ?=> success)
-   (using Diagnostics)
-:     success | error =
-  boundary: label ?=>
-    block(using AmalgamateTactic(label))
+     (block: AmalgamateTactic[error, success] ?=> success)
+     (using Diagnostics)
+: success | error =
+
+    boundary: label ?=>
+      block(using AmalgamateTactic(label))
+
 
 def abortive[error <: Error](using Quotes, Realm)[success]
    (block: Diagnostics ?=> HaltTactic[error, success] ?=> success)
-:     success =
+: success =
 
-  given haltTactic: HaltTactic[error, success]()
-  given diagnostics: Diagnostics = Diagnostics.omit
-  block
+    given haltTactic: HaltTactic[error, success]()
+    given diagnostics: Diagnostics = Diagnostics.omit
+    block
+
 
 infix type raises [success, error <: Exception] = Tactic[error] ?=> success
 
@@ -145,12 +158,15 @@ infix type mitigates [error <: Exception, error2 <: Exception] =
 
 infix type tracks [result, focus] = Foci[focus] ?=> result
 
+
 inline def focus[focus, result](using foci: Foci[focus])
-   (transform: (prior: Optional[focus]) ?=> focus)
-   (block: => result)
-:     result =
-  val length = foci.length
-  try block finally foci.supplement(foci.length - length, transform(using _))
+            (transform: (prior: Optional[focus]) ?=> focus)
+            (block: => result)
+: result =
+
+    val length = foci.length
+    try block finally foci.supplement(foci.length - length, transform(using _))
+
 
 transparent inline def mitigate(inline block: Exception ~> Exception): Any =
   ${Contingency.mitigate('block)}
@@ -166,56 +182,71 @@ extension [result, lambda[_]](inline recovery: Recovery[result, lambda])
   inline def within[result2 >: result](inline lambda: lambda[result2]): result2 =
     ${Contingency.recoverWithin[lambda, result2]('recovery, 'lambda)}
 
+
 transparent inline def track[focus](using erased Void)[accrual <: Exception](accrual: accrual)
    (inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual)
-:     Any =
-  ${Contingency.track[accrual, focus]('accrual, 'block)}
+: Any =
+
+    ${Contingency.track[accrual, focus]('accrual, 'block)}
+
 
 transparent inline def validate[focus](using erased Void)[accrual](accrual: accrual)
    (inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual)
-:     Any =
-  ${Contingency.validate[accrual, focus]('accrual, 'block)}
+: Any =
+
+    ${Contingency.validate[accrual, focus]('accrual, 'block)}
+
 
 transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
    (inline block: (accrual: accrual) ?=> Exception ~> accrual)
-:     Any =
-  ${Contingency.accrue[accrual]('accrual, 'block)}
+: Any =
+
+    ${Contingency.accrue[accrual]('accrual, 'block)}
+
 
 extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lambda])
   inline def within[result](inline lambda: lambda[result])
               (using tactic: Tactic[accrual], diagnostics: Diagnostics)
-  :     result =
-    ${Contingency.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic, 'diagnostics)}
+  : result =
+
+      ${Contingency.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic, 'diagnostics)}
+
 
 extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
   inline def within[result](inline lambda: Foci[focus] ?=> lambda[result])
               (using tactic: Tactic[accrual], diagnostics: Diagnostics)
-  :     result =
-    ${Contingency.trackWithin[accrual, lambda, result, focus]('track, 'lambda, 'tactic,
-          'diagnostics)}
+  : result =
+
+      ${Contingency.trackWithin[accrual, lambda, result, focus]('track, 'lambda, 'tactic, 'diagnostics)}
+
 
 extension [accrual <: Exception,  lambda[_], focus]
           (inline validate: Validate[accrual, lambda, focus])
   inline def within(inline lambda: Foci[focus] ?=> lambda[Any])(using diagnostics: Diagnostics)
-  :     accrual =
-    ${Contingency.validateWithin[accrual, lambda, focus]('validate, 'lambda, 'diagnostics)}
+  : accrual =
+
+      ${Contingency.validateWithin[accrual, lambda, focus]('validate, 'lambda, 'diagnostics)}
+
 
 extension [element](sequence: Iterable[element])
   transparent inline def survive[result](using Void)[error <: Exception]
                           (lambda: (OptionalTactic[error, result], Diagnostics, CanThrow[Exception])
                                     ?=> element => result)
-  :     Iterable[result] =
-    sequence.map { element => safely(lambda(element)) }.compact
+  : Iterable[result] =
+
+      sequence.map { element => safely(lambda(element)) }.compact
+
 
 extension [value](optional: Optional[value])
   def lest[success, error <: Exception: Tactic](error: Diagnostics ?=> error): value =
     optional.or(abort(error))
 
+
   def dare[error <: Exception](using erased Void)[success]
        (block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=>
                   value => success)
-  :     Optional[success] =
+  : Optional[success] =
 
-    try boundary: label ?=>
-      optional.let(block(using Diagnostics.omit, OptionalTactic(label)))
-    catch case error: Exception => Unset
+      try boundary: label ?=>
+        optional.let(block(using Diagnostics.omit, OptionalTactic(label)))
+      catch case error: Exception => Unset

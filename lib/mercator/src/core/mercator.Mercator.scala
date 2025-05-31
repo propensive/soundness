@@ -122,13 +122,16 @@ object Mercator:
              (value: monad[value])(lambda: value => value2): monad[value2] =
           ${functorExpr}.map(value)(lambda)
 
+
         def bind[value, value2](value: monad[value])(lambda: value => monad[value2])
-        :     monad[value2] =
-          ${'value.asTerm
-            . select(flatMapMethods(0))
-            . appliedToType(TypeRepr.of[value2])
-            . appliedTo('lambda.asTerm)
-            . asExprOf[monad[value2]]}
+        : monad[value2] =
+
+            ${'value.asTerm
+              . select(flatMapMethods(0))
+              . appliedToType(TypeRepr.of[value2])
+              . appliedTo('lambda.asTerm)
+              . asExprOf[monad[value2]]}
+
     }
 
     if flatMapMethods.length == 1 then makeMonad

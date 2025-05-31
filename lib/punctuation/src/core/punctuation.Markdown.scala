@@ -158,7 +158,7 @@ object Markdown:
   private val parser = Parser.builder(options).nn.build().nn
 
   def parse[readable: Readable by Text](value: readable)(using Tactic[MarkdownError])
-  :     Markdown[Markdown.Ast.Block] =
+  : Markdown[Markdown.Ast.Block] =
     val text = value.stream[Text].read[Text]
     val root = parser.parse(text.s).nn
     val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _))
@@ -176,7 +176,7 @@ object Markdown:
   @tailrec
   private def coalesce[markdown >: Prose <: Markdown.Ast.Inline]
                (elements: List[markdown], done: List[markdown] = Nil)
-  :     List[markdown] =
+  : List[markdown] =
 
     elements match
       case Nil                               => done.reverse
@@ -195,7 +195,7 @@ object Markdown:
     . tt
 
   private def resolveReference(root: cvfua.Document, node: cvfa.ImageRef | cvfa.LinkRef)
-  :     Text raises MarkdownError =
+  : Text raises MarkdownError =
 
     Optional(node.getReferenceNode(root)).let(_.nn.getUrl.toString.show).or:
       raise(MarkdownError(MarkdownError.Reason.BrokenImageRef)) yet t"https://example.com/"
@@ -205,24 +205,24 @@ object Markdown:
     | cvfa.ImageRef | cvfa.Link | cvfa.LinkRef | cvfa.MailLink | cvfa.Text | cvfa.SoftLineBreak
 
   def phraseChildren(root: cvfua.Document, node: cvfua.Node)
-  :     Seq[Markdown.Ast.Inline] raises MarkdownError =
+  : Seq[Markdown.Ast.Inline] raises MarkdownError =
     coalesce:
       node.getChildren.nn.iterator.nn.asScala.to(List).collect:
         case node: PhrasingInput => phrasing(root, node)
 
   def flowChildren(root: cvfua.Document, node: cvfua.Node)
-  :     Seq[Markdown.Ast.Block] raises MarkdownError =
+  : Seq[Markdown.Ast.Block] raises MarkdownError =
     node.getChildren.nn.iterator.nn.asScala.to(List).collect:
       case node: FlowInput => flow(root, node)
 
   def listItems(root: cvfua.Document, node: cvfa.BulletList | cvfa.OrderedList)
-  :     Seq[ListItem] raises MarkdownError =
+  : Seq[ListItem] raises MarkdownError =
 
     node.getChildren.nn.iterator.nn.asScala.to(List).collect:
       case node: (cvfa.BulletListItem | cvfa.OrderedListItem) => ListItem(flowChildren(root, node)*)
 
   def phrasing(root: cvfua.Document, node: PhrasingInput)
-  :     Markdown.Ast.Inline raises MarkdownError = node match
+  : Markdown.Ast.Inline raises MarkdownError = node match
     case node: cvfa.Emphasis       => Emphasis(phraseChildren(root, node)*)
     case node: cvfa.SoftLineBreak  => Prose(t"\n")
     case node: cvfa.StrongEmphasis => Strong(phraseChildren(root, node)*)
@@ -274,7 +274,7 @@ object Markdown:
           Heading(6, phraseChildren(root, node)*)
 
   def convert(root: cvfua.Document, node: cvfua.Node, noFormat: Boolean = false)
-  :     Markdown.Ast.Node raises MarkdownError =
+  : Markdown.Ast.Node raises MarkdownError =
     node match
       case node: cvfa.HardLineBreak => LineBreak
       case node: cvfa.SoftLineBreak => Prose(t"\n")
@@ -290,7 +290,7 @@ object Markdown:
         raise(MarkdownError(MarkdownError.Reason.UnexpectedNode)) yet Prose(t"?")
 
   def table(root: cvfua.Document, node: tables.TableBlock)
-  :     List[Markdown.Ast.TablePart] raises MarkdownError =
+  : List[Markdown.Ast.TablePart] raises MarkdownError =
 
     node.getChildren.nn.iterator.nn.asScala.to(List).collect:
       case node: (tables.TableHead | tables.TableBody) =>

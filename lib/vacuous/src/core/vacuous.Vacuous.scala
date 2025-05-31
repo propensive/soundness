@@ -63,7 +63,7 @@ object Vacuous:
 
 
   def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value])(using Quotes)
-  :     Expr[value] =
+  : Expr[value] =
 
     import quotes.reflect.*
 

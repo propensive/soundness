@@ -64,37 +64,39 @@ trait Deserializable:
 
 object Deserializable:
   def base[base <: Serialization](base: Int)(using alphabet: Alphabet[base])
-  :     Deserializable in base raises SerializationError =
-    new:
-      override protected val atomicity = 8.lcm(base)/base
+  : Deserializable in base raises SerializationError =
 
-      def deserialize(previous: Text, text: Text, index0: Int, last: Boolean): Bytes =
-        val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'
+      new:
+        override protected val atomicity = 8.lcm(base)/base
 
-        val length =
-          if last then text.where(_ != padding, bidi = Rtl).let(_.n0 + 1).or(text.length)*base/8
-          else ((text.length - index0)/atomicity)*atomicity*base/8
+        def deserialize(previous: Text, text: Text, index0: Int, last: Boolean): Bytes =
+          val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'
 
-        IArray.create[Byte](length): array =>
-          var source = if index0 < 0 then previous else text
+          val length =
+            if last then text.where(_ != padding, bidi = Rtl).let(_.n0 + 1).or(text.length)*base/8
+            else ((text.length - index0)/atomicity)*atomicity*base/8
 
-          def recur(buffer: Int = 0, bits: Int = 0, count: Int = 0, index0: Int = 0): Unit =
-            val index = if index0 >= 0 then index0 else index0 + source.length
-            if index == 0 then source = text
+          IArray.create[Byte](length): array =>
+            var source = if index0 < 0 then previous else text
 
-            if count < length then
-              val value: Int = alphabet.invert(index, source.s.charAt(index))
-              val next: Int = (buffer << base) | value
+            def recur(buffer: Int = 0, bits: Int = 0, count: Int = 0, index0: Int = 0): Unit =
+              val index = if index0 >= 0 then index0 else index0 + source.length
+              if index == 0 then source = text
 
-              if bits + base >= 8 then
-                array(count) = ((next >>> (bits + base - 8)) & 0xff).toByte
-                recur(next, bits + base - 8, count + 1, index0 + 1)
-              else recur(next, bits + base, count, index0 + 1)
+              if count < length then
+                val value: Int = alphabet.invert(index, source.s.charAt(index))
+                val next: Int = (buffer << base) | value
 
-          recur(index0 = index0)
+                if bits + base >= 8 then
+                  array(count) = ((next >>> (bits + base - 8)) & 0xff).toByte
+                  recur(next, bits + base - 8, count + 1, index0 + 1)
+                else recur(next, bits + base, count, index0 + 1)
 
-  given base256: (Alphabet[Base256], Tactic[SerializationError])
-        => Deserializable in Base256 = base(8)
+            recur(index0 = index0)
+
+
+  given base256: (Alphabet[Base256], Tactic[SerializationError]) => Deserializable in Base256 =
+    base(8)
 
   given base64: (Alphabet[Base64], Tactic[SerializationError]) => Deserializable in Base64 = base(6)
   given base32: (Alphabet[Base32], Tactic[SerializationError]) => Deserializable in Base32 = base(5)

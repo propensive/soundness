@@ -38,7 +38,7 @@ import scala.annotation.targetName
 
 object Multiplicable:
   def apply[multiplicand, multiplier, result](lambda: (multiplicand, multiplier) => result)
-  :     multiplicand is Multiplicable by multiplier into result = new Multiplicable:
+  : multiplicand is Multiplicable by multiplier into result = new Multiplicable:
     type Self = multiplicand
     type Result = result
     type Operand = multiplier

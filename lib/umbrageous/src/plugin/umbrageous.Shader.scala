@@ -54,7 +54,7 @@ class Shader(options: List[String]) extends PluginPhase:
     object transformer extends UntypedTreeMap:
       private def rewritePackage
                    (tree: Ident | Select, fqn: String, defs: List[Tree], select: Select => Select)
-      :     PackageDef =
+      : PackageDef =
         tree match
           case Ident(name) =>
             val pkg = name.decode.toString+"."+fqn

@@ -162,7 +162,7 @@ object Nettlesome:
         recur(groups)
 
       def apply(byte0: Byte, byte1: Byte, byte2: Byte, byte3: Byte, byte4: Byte, byte5: Byte)
-      :     MacAddress =
+      : MacAddress =
 
         def recur(todo: List[Byte], done: Long): Long = todo match
           case head :: tail => recur(tail, (done << 8) + head)
@@ -233,7 +233,7 @@ object Nettlesome:
   case class Ipv6(highBits: Long, lowBits: Long)
 
   def portService(context: Expr[StringContext], tcp: Boolean)(using Quotes)
-  :     Expr[TcpPort | UdpPort] =
+  : Expr[TcpPort | UdpPort] =
     import quotes.reflect.*
 
     val id = context.valueOrAbort.parts.head.tt

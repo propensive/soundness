@@ -81,11 +81,13 @@ trait Indexed extends Dynamic:
           Data(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
 
   def selectDynamic(key: String)(using erased DynamicCodlEnabler)
-  :     List[Data] raises MissingValueError =
-    index(key.show).map(children(_).data).collect:
-      case data: Data => data
+  : List[Data] raises MissingValueError =
+
+      index(key.show).map(children(_).data).collect:
+        case data: Data => data
+
 
   def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)
-  :     Data raises MissingValueError =
+  : Data raises MissingValueError =
 
-    selectDynamic(key)(idx)
+      selectDynamic(key)(idx)

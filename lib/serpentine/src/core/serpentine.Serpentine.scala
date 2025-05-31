@@ -48,7 +48,7 @@ object Serpentine:
   object `/`:
     def unapply[platform <: AnyRef & Matchable: {Navigable, Radical}, element]
        (path: Path on platform)
-    :     Option[(Path on platform, platform.Operand)] =
+    : Option[(Path on platform, platform.Operand)] =
       path.textDescent match
         case Nil          => None
         case head :: Nil  => Some((platform.root(path.textRoot), platform.element(head)))

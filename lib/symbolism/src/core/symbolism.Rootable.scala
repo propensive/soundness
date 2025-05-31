@@ -36,7 +36,7 @@ import prepositional.*
 
 object Rootable:
   def apply[root <: Int & Singleton, operand, result](lambda: operand => result)
-  :     operand is Rootable[root] into result = new Rootable[root]:
+  : operand is Rootable[root] into result = new Rootable[root]:
     type Self = operand
     type Result = result
 

@@ -49,6 +49,6 @@ trait Executive:
         stdio:            Stdio,
         signals:          Spool[Signal])
        (using interpreter: CliInterpreter)
-  :     Interface
+  : Interface
 
   def process(cli: Interface)(result: Interface ?=> Return): Exit

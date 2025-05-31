@@ -54,8 +54,10 @@ case class Row(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
 
   def selectDynamic[value: Decodable in Text](field: String)
        (using DynamicDsvEnabler, DsvRedesignation)
-  :     Optional[value] =
-    apply(summon[DsvRedesignation].transform(field.tt))
+  : Optional[value] =
+
+      apply(summon[DsvRedesignation].transform(field.tt))
+
 
   def apply[value: Decodable in Text](field: Text): Optional[value] =
     columns.let(_.at(field)).let { index => data.at(index.z) }.let(value.decoded(_))

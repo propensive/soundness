@@ -55,7 +55,7 @@ extension [remote: Connectable](value: remote)
 
 extension [port](port: port)
   def serve[protocol: Protocolic over port](handler: protocol.Request ?=> protocol.Response)
-  :     protocol.Server =
+  : protocol.Server =
     protocol.server(port)(handler)
 
 def internet[result](online: Boolean)(block: Internet ?=> result): result =

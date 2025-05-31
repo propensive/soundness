@@ -44,9 +44,11 @@ object Foci:
     def success: Boolean = false
     def register(error: Exception): Unit = ()
 
+
     def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
-    :     accrual =
-      initial
+    : accrual =
+
+        initial
 
     def supplement(count: Int, transform: Optional[focus] => focus): Unit = ()
 
@@ -56,7 +58,7 @@ trait Foci[focus]:
   def register(error: Exception): Unit
 
   def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
-  :     accrual
+  : accrual
 
   def supplement(count: Int, transform: Optional[focus] => focus): Unit
   def tainted: Boolean = length > 0
@@ -72,9 +74,12 @@ class TrackFoci[focus]() extends Foci[focus]:
     errors.append(error)
     focuses.append(Unset)
 
+
   def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
-  :     accrual =
-    (0 until errors.length).fuse(initial)(lambda(focuses(next), state)(errors(next)))
+  : accrual =
+
+      (0 until errors.length).fuse(initial)(lambda(focuses(next), state)(errors(next)))
+
 
   def supplement(count: Int, transform: Optional[focus] => focus): Unit =
     for i <- (errors.length - count) until errors.length

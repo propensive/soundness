@@ -39,17 +39,19 @@ import proscenium.*
 object CaseField:
   def apply[target <: Product, annotation <: StaticAnnotation, field]
        (name: Text, access: target => field, annotation0: annotation)
-  :     CaseField[target, annotation] of field =
+  : CaseField[target, annotation] of field =
 
-    new CaseField[target, annotation](name):
-      type Subject = field
-      def apply(value: target) = access(value)
-      def annotation: annotation = annotation0
+      new CaseField[target, annotation](name):
+        type Subject = field
+        def apply(value: target) = access(value)
+        def annotation: annotation = annotation0
+
 
   transparent inline given[target <: Product, annotation <: StaticAnnotation]
-  :     CaseField[target, annotation] =
+  : CaseField[target, annotation] =
 
-    Annotations.firstField[target, annotation]
+      Annotations.firstField[target, annotation]
+
 
 trait CaseField[target <: Product, annotation <: StaticAnnotation](val name: Text):
   type Subject

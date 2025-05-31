@@ -69,79 +69,82 @@ object NumericRange:
     extension [leftMin <: Double, leftMax <: Double](left: leftMin ~ leftMax)
       def double: Double = left
 
+
       @annotation.targetName("add")
       infix def + [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
-      :     (leftMin + rightMin) ~ (leftMax + rightMax) =
-        left + right
+      : (leftMin + rightMin) ~ (leftMax + rightMax) =
+
+          left + right
+
 
       @annotation.targetName("add2")
       infix def + [E <: Double & Singleton](right: E)
-      :     (leftMin + right.type) ~ (leftMax + right.type) =
-        left + right
+      : (leftMin + right.type) ~ (leftMax + right.type) =
+
+          left + right
+
 
       @annotation.targetName("add3")
       infix def + (right: Double): Double = left + right
 
       @annotation.targetName("times")
       infix def * [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
-      :     (Min4
-              [leftMin*rightMin,
-               leftMin*rightMax,
-               leftMax*rightMax,
-               leftMax*rightMin]) ~ (Max4
-                                              [leftMin*rightMin,
-                                               leftMin*rightMax,
-                                               leftMax*rightMax,
-                                               leftMax*rightMin]) =
+      : (Min4[leftMin*rightMin, leftMin*rightMax, leftMax*rightMax, leftMax*rightMin])
+        ~ (Max4[leftMin*rightMin, leftMin*rightMax, leftMax*rightMax, leftMax*rightMin]) =
 
         left*right
+
 
       @annotation.targetName("times2")
       infix def * [right <: Double & Singleton](right: right)
-      :     Min[leftMin*right, leftMax*right] ~ Max[leftMin*right, leftMax*right] =
+      : Min[leftMin*right, leftMax*right] ~ Max[leftMin*right, leftMax*right] =
 
-        left*right
+          left*right
+
 
       @annotation.targetName("times3")
       infix def * (right: Double): Double = left*right
 
+
       @annotation.targetName("minus")
       infix def - [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
-      :     Min[leftMin - rightMin, leftMin - rightMax] ~ Max[leftMax - rightMin, leftMax -
-             rightMax] =
-        left - right
+      : Min[leftMin - rightMin, leftMin - rightMax] ~ Max[leftMax - rightMin, leftMax - rightMax] =
+
+          left - right
+
 
       @annotation.targetName("minus2")
       infix def - [right <: Double & Singleton](right: right)
-      :     Min[leftMin - right, leftMax - right] ~ Max[leftMin - right, leftMax - right] =
+      : Min[leftMin - right, leftMax - right] ~ Max[leftMin - right, leftMax - right] =
 
-        left - right
+          left - right
+
 
       @annotation.targetName("minus3")
       infix def - (right: Double): Double = left - right
 
+
       @annotation.targetName("divide")
       infix def / [right <: Double & Singleton](right: right)
-      :     Min[leftMin/right, leftMax/right] ~ Max[leftMin/right, leftMax/right] =
+      : Min[leftMin/right, leftMax/right] ~ Max[leftMin/right, leftMax/right] =
 
-        left/right
+          left/right
+
 
       @annotation.targetName("divide2")
       infix def / [rightMin <: Double, rightMax <: Double]
          (right: rightMin ~ rightMax)
-      :     Asym
-             [rightMin*rightMax,
-              Min4[leftMin/rightMin, leftMax/rightMin, leftMin/rightMax, leftMax/rightMax],
-              -1.0/0.0]
-            ~ Asym
-                           [rightMin*rightMax,
-                            Max4
-                             [leftMin/rightMin,
-                              leftMax/rightMin,
-                              leftMin/rightMax,
-                              leftMax/rightMax],
-                            1.0/0.0] =
-        left/right
+      : Asym
+         [rightMin*rightMax,
+          Min4[leftMin/rightMin, leftMax/rightMin, leftMin/rightMax, leftMax/rightMax],
+          -1.0/0.0]
+        ~ Asym
+           [rightMin*rightMax,
+            Max4[leftMin/rightMin, leftMax/rightMin, leftMin/rightMax, leftMax/rightMax],
+            1.0/0.0] =
+
+          left/right
+
 
       @annotation.targetName("divide3")
       infix def / (right: Double): Double = left/right

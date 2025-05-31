@@ -49,7 +49,7 @@ extension [test](test: Test[test])
                      inc:              Inclusion[report, Benchmark],
                      specificDuration: duration is SpecificDuration = durationApi.javaLong,
                      genericDuration:  duration is GenericDuration  = durationApi.javaLong)
-  :     Unit =
+  : Unit =
 
     val action = test.action
 

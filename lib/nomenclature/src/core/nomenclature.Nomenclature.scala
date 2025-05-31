@@ -70,7 +70,7 @@ object Nomenclature:
             check[tail](name)
 
     inline def apply[platform](name: Text)(using nominative: platform is Nominative)
-    :     Name[platform] raises NameError =
+    : Name[platform] raises NameError =
 
       inline disintersect[nominative.Constraint] match
         case v => check[v.type](name)
