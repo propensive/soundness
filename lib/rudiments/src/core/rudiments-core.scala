@@ -132,24 +132,28 @@ extension [value](iterable: Iterable[value])
                           (using addable:  value is Addable by value,
                                  equality: addable.Result =:= value)
   : Optional[value] =
-    compiletime.summonFrom:
-      case zeroic: ((? <: value) is Zeroic) =>
-        iterable.foldLeft(zeroic.zero)(addable.add)
 
-      case _ =>
-        if iterable.isEmpty then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
+      compiletime.summonFrom:
+        case zeroic: ((? <: value) is Zeroic) =>
+          iterable.foldLeft(zeroic.zero)(addable.add)
+
+        case _ =>
+          if iterable.isEmpty then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
+
 
   transparent inline def mean
                           (using addable:   value is Addable by value,
                                  equality:  addable.Result =:= value,
                                  divisible: value is Divisible by Double)
   : Optional[divisible.Result] =
-   compiletime.summonFrom:
-     case zeroic: ((? <: value) is Zeroic) =>
-       iterable.foldLeft[value](zeroic.zero)(addable.add)/iterable.size.toDouble
 
-     case _ =>
-       iterable.total.let(_/iterable.size.toDouble)
+    compiletime.summonFrom:
+      case zeroic: ((? <: value) is Zeroic) =>
+        iterable.foldLeft[value](zeroic.zero)(addable.add)/iterable.size.toDouble
+
+      case _ =>
+        iterable.total.let(_/iterable.size.toDouble)
+
 
   def variance
        (using zeroic:        value is Zeroic,
@@ -163,8 +167,10 @@ extension [value](iterable: Iterable[value])
               equality2:     addable2.Result =:= multiplicable.Result,
               divisible2:    multiplicable.Result is Divisible by Double)
   : divisible2.Result =
-    val mean: divisible.Result = iterable.mean
-    iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
+
+      val mean: divisible.Result = iterable.mean
+      iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
+
 
   def standardDeviation
        (using zeroic:        value is Zeroic,
@@ -179,15 +185,19 @@ extension [value](iterable: Iterable[value])
               divisible2:    multiplicable.Result is Divisible by Double,
               rootable:      divisible2.Result is Rootable[2])
   : rootable.Result =
-    val mean: divisible.Result = iterable.mean
-    (iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble).sqrt
+
+      val mean: divisible.Result = iterable.mean
+      (iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble).sqrt
+
 
   def product
        (using unital:        value is Unital,
               multiplicable: value is Multiplicable by value,
               equality:      multiplicable.Result =:= value)
   : value =
-    iterable.foldLeft(unital.one)(multiplicable.multiply)
+
+      iterable.foldLeft(unital.one)(multiplicable.multiply)
+
 
   transparent inline def each(lambda: (ordinal: Ordinal) ?=> value => Unit): Unit =
     var ordinal: Ordinal = Prim
@@ -334,21 +344,25 @@ extension (bs: Long)
 extension (bytes: Bytes)
   def memory: Memory = Memory(bytes.size)
 
+
 def workingDirectory[path: Instantiable across Paths from Text](using directory: WorkingDirectory)
 : path =
 
-  directory.path[path]
+    directory.path[path]
+
 
 def homeDirectory[path: Instantiable across Paths from Text](using directory: HomeDirectory)
 : path =
 
-  directory.path[path]
+    directory.path[path]
+
 
 def temporaryDirectory[path: Instantiable across Paths from Text]
    (using directory: TemporaryDirectory)
 : path =
 
-  directory.path[path]
+    directory.path[path]
+
 
 package workingDirectories:
   given systemProperty: WorkingDirectory = () =>

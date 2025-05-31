@@ -62,7 +62,7 @@ case class Juncture
     val lines = code.flatMap(_.cut(t"\\n"))
     if lines.length > 1 then t"${lines.head}..." else lines.head
 
-  def method: StackTrace.Method = StackTrace.Method(
-    StackTrace.rewrite(className.s),
-    StackTrace.rewrite(methodName.s, method = true),
-  )
+  def method: StackTrace.Method =
+    StackTrace.Method
+     (StackTrace.rewrite(className.s),
+      StackTrace.rewrite(methodName.s, method = true))

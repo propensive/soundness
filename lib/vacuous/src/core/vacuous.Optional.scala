@@ -75,7 +75,8 @@ extension [value](optional: Optional[value])(using Optionality[optional.type])
   inline def layGiven[value2](inline alternative: => value2)(inline block: value ?=> value2)
   : value2 =
 
-    if absent then alternative else block(using vouch)
+      if absent then alternative else block(using vouch)
+
 
   def let[value2](lambda: value => value2): Optional[value2] =
     if absent then Unset else lambda(vouch)

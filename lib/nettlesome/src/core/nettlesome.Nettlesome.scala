@@ -161,14 +161,16 @@ object Nettlesome:
 
         recur(groups)
 
+
       def apply(byte0: Byte, byte1: Byte, byte2: Byte, byte3: Byte, byte4: Byte, byte5: Byte)
       : MacAddress =
 
-        def recur(todo: List[Byte], done: Long): Long = todo match
-          case head :: tail => recur(tail, (done << 8) + head)
-          case Nil          => done
+          def recur(todo: List[Byte], done: Long): Long = todo match
+            case head :: tail => recur(tail, (done << 8) + head)
+            case Nil          => done
 
-        recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
+          recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
+
 
     object TcpPort:
       erased given underlying: Underlying[TcpPort, Int] = !!
@@ -232,29 +234,32 @@ object Nettlesome:
 
   case class Ipv6(highBits: Long, lowBits: Long)
 
+
   def portService(context: Expr[StringContext], tcp: Boolean)(using Quotes)
   : Expr[TcpPort | UdpPort] =
-    import quotes.reflect.*
 
-    val id = context.valueOrAbort.parts.head.tt
-    val portType = if tcp then t"TCP" else t"UDP"
+      import quotes.reflect.*
 
-    safely(id.decode[Int]).let: portNumber =>
-      if 1 <= portNumber <= 65535 then
-        ConstantType(IntConstant(portNumber)).asType.absolve match
-          case '[number] =>
-            if tcp then '{TcpPort.unsafe(${Expr(portNumber)}).asInstanceOf[TcpPort of number]}
-            else '{UdpPort.unsafe(${Expr(portNumber)}).asInstanceOf[UdpPort of number]}
+      val id = context.valueOrAbort.parts.head.tt
+      val portType = if tcp then t"TCP" else t"UDP"
 
-      else halt(m"the $portType port number ${portNumber} is not in the range 1-65535")
+      safely(id.decode[Int]).let: portNumber =>
+        if 1 <= portNumber <= 65535 then
+          ConstantType(IntConstant(portNumber)).asType.absolve match
+            case '[number] =>
+              if tcp then '{TcpPort.unsafe(${Expr(portNumber)}).asInstanceOf[TcpPort of number]}
+              else '{UdpPort.unsafe(${Expr(portNumber)}).asInstanceOf[UdpPort of number]}
 
-    . or:
-        serviceNames.at((tcp, id)).lay(halt(m"$id is not a valid $portType port")):
-          case port: Int =>
-            ConstantType(IntConstant(port)).asType.absolve match
-              case '[type number <: Int; number] =>
-                if tcp then '{TcpPort.unsafe(${Expr(port)}).asInstanceOf[TcpPort of number]}
-                else '{UdpPort.unsafe(${Expr(port)}).asInstanceOf[UdpPort of number]}
+        else halt(m"the $portType port number ${portNumber} is not in the range 1-65535")
+
+      . or:
+          serviceNames.at((tcp, id)).lay(halt(m"$id is not a valid $portType port")):
+            case port: Int =>
+              ConstantType(IntConstant(port)).asType.absolve match
+                case '[type number <: Int; number] =>
+                  if tcp then '{TcpPort.unsafe(${Expr(port)}).asInstanceOf[TcpPort of number]}
+                  else '{UdpPort.unsafe(${Expr(port)}).asInstanceOf[UdpPort of number]}
+
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)

@@ -179,6 +179,7 @@ object Quantitative extends Quantitative2:
     given commensurable: [units <: Measure, units2 <: Measure] => Quantity[units] is Commensurable:
       type Operand = Quantity[units2]
 
+
       inline def compare
                   (inline left:        Quantity[units],
                    inline right:       Quantity[units2],
@@ -186,7 +187,8 @@ object Quantitative extends Quantitative2:
                    inline greaterThan: Boolean)
       : Boolean =
 
-        ${Quantitative.greaterThan[units, units2]('left, 'right, 'strict, 'greaterThan)}
+          ${Quantitative.greaterThan[units, units2]('left, 'right, 'strict, 'greaterThan)}
+
 
     class ShowableQuantity[units <: Measure](fn: Quantity[units] => Text)(using Decimalizer)
     extends Showable:

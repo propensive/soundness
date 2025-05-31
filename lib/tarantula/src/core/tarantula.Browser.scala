@@ -48,9 +48,10 @@ trait Browser(name: Text):
   def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent
   def stop(server: Server): Unit logs HttpEvent logs ExecEvent
 
+
   def session[result](port: Int = 4444)(block: (session: WebDriver#Session) ?=> result)
        (using WorkingDirectory, Monitor)
   : result logs HttpEvent logs ExecEvent =
 
-    val server = launch(port)
-    try block(using WebDriver(server).startSession()) finally server.stop()
+      val server = launch(port)
+      try block(using WebDriver(server).startSession()) finally server.stop()

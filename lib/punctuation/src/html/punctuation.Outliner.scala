@@ -49,41 +49,43 @@ object Outliner extends HtmlTranslator():
 
     List(Ul(recur(structure(Unset, nodes.to(List), Nil))*))
 
+
   @tailrec
   def structure(minimum: Optional[Int], nodes: List[Markdown.Ast.Node], stack: List[List[Entry]])
   : List[Entry] =
-    nodes match
-      case Nil => stack match
-        case Nil         => Nil
-        case last :: Nil => last.reverse
 
-        case head :: (Entry(label, something) :: tail) :: more =>
-          structure(minimum, Nil, (Entry(label, head.reverse) :: tail) :: more)
+      nodes match
+        case Nil => stack match
+          case Nil         => Nil
+          case last :: Nil => last.reverse
 
-        case head :: Nil :: tail =>
-          structure(minimum, Nil, List(Entry(t"", head.reverse)) :: tail)
+          case head :: (Entry(label, something) :: tail) :: more =>
+            structure(minimum, Nil, (Entry(label, head.reverse) :: tail) :: more)
 
-      case Markdown.Ast.Block.Heading(level, children*) :: more if minimum.lay(true)(level >= _) =>
-        val minimum2 = minimum.or(level)
-        val depth = stack.length + minimum2 - 1
+          case head :: Nil :: tail =>
+            structure(minimum, Nil, List(Entry(t"", head.reverse)) :: tail)
 
-        if level > depth then structure(minimum2, nodes, Nil :: stack) else stack match
-          case Nil =>
-            panic(m"Stack should always be non-empty")
+        case Markdown.Ast.Block.Heading(level, children*) :: more if minimum.lay(true)(level >= _) =>
+          val minimum2 = minimum.or(level)
+          val depth = stack.length + minimum2 - 1
 
-          case head :: next :: stack2 =>
-            if level < depth then next match
-              case Entry(label, Nil) :: tail =>
-                structure(minimum2, nodes, (Entry(label, head.reverse) :: tail) :: stack2)
+          if level > depth then structure(minimum2, nodes, Nil :: stack) else stack match
+            case Nil =>
+              panic(m"Stack should always be non-empty")
 
-              case _ =>
-                structure(minimum2, nodes, (Entry(t"", head.reverse) :: Nil) :: stack2)
+            case head :: next :: stack2 =>
+              if level < depth then next match
+                case Entry(label, Nil) :: tail =>
+                  structure(minimum2, nodes, (Entry(label, head.reverse) :: tail) :: stack2)
 
-            else
-              structure(minimum2, more, (Entry(text(children), Nil) :: head) :: stack.tail)
+                case _ =>
+                  structure(minimum2, nodes, (Entry(t"", head.reverse) :: Nil) :: stack2)
 
-          case other :: Nil =>
-            structure(minimum2, more, (Entry(text(children), Nil) :: other) :: Nil)
+              else
+                structure(minimum2, more, (Entry(text(children), Nil) :: head) :: stack.tail)
 
-      case _ :: more =>
-        structure(minimum, more, stack)
+            case other :: Nil =>
+              structure(minimum2, more, (Entry(text(children), Nil) :: other) :: Nil)
+
+        case _ :: more =>
+          structure(minimum, more, stack)

@@ -74,10 +74,13 @@ object Nomenclature2:
       case _ =>
         panic(m"StringContext did not contains Strings")
 
+
   def parse2[platform: Type, name <: String: Type](scrutinee: Expr[Name[platform]])(using Quotes)
   : Expr[Boolean] =
-    parse[platform, name]
-    '{${Expr(constant[name])}.tt == $scrutinee}
+
+      parse[platform, name]
+      '{${Expr(constant[name])}.tt == $scrutinee}
+
 
   def constant[text <: String: Type](using Quotes): text =
     import quotes.reflect.*

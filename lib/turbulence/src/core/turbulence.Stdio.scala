@@ -40,22 +40,23 @@ import vacuous.*
 
 object Stdio:
   def apply
-       (out:    ji.PrintStream | Null,
-        err:    ji.PrintStream | Null,
-        in:     ji.InputStream | Null,
+       (out:     ji.PrintStream | Null,
+        err:     ji.PrintStream | Null,
+        in:      ji.InputStream | Null,
         termcap: Termcap)
   : Stdio =
 
-    val safeOut: ji.PrintStream = Optional(out).or(MutePrintStream)
-    val safeErr: ji.PrintStream = Optional(err).or(MutePrintStream)
-    val safeIn: ji.InputStream = Optional(in).or(MuteInputStream)
-    val termcap2: Termcap = termcap
+      val safeOut: ji.PrintStream = Optional(out).or(MutePrintStream)
+      val safeErr: ji.PrintStream = Optional(err).or(MutePrintStream)
+      val safeIn: ji.InputStream = Optional(in).or(MuteInputStream)
+      val termcap2: Termcap = termcap
 
-    new Stdio:
-      val termcap: Termcap = termcap2
-      val out: ji.PrintStream = safeOut
-      val err: ji.PrintStream = safeErr
-      val in: ji.InputStream = safeIn
+      new Stdio:
+        val termcap: Termcap = termcap2
+        val out: ji.PrintStream = safeOut
+        val err: ji.PrintStream = safeErr
+        val in: ji.InputStream = safeIn
+
 
   object MuteOutputStream extends ji.OutputStream:
     def write(byte: Int): Unit = ()

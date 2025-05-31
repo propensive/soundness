@@ -54,47 +54,47 @@ object Probably:
                  (using Quotes)
   : Expr[result] =
 
-    import quotes.reflect.*
+      import quotes.reflect.*
 
-    def decompose(predicate: Expr[Any]): Option[Expr[Any]] = predicate.asTerm match
-      case Inlined(_, _, predicate) => decompose(predicate.asExpr)
-      case Block(List(DefDef(a1, _, _, Some(expression))), Closure(Ident(a2), _)) if a1 == a2 =>
-        expression match
-          case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
-          case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
-          case other                                     => None
+      def decompose(predicate: Expr[Any]): Option[Expr[Any]] = predicate.asTerm match
+        case Inlined(_, _, predicate) => decompose(predicate.asExpr)
+        case Block(List(DefDef(a1, _, _, Some(expression))), Closure(Ident(a2), _)) if a1 == a2 =>
+          expression match
+            case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
+            case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
+            case other                                     => None
 
-      case other =>
-        None
+        case other =>
+          None
 
-    val exp: Option[Expr[Any]] = decompose(predicate)
+      val exp: Option[Expr[Any]] = decompose(predicate)
 
-    exp match
-      case Some('{type testType >: test; $expr: testType}) =>
-        val decomposable: Expr[testType is Decomposable] =
-          Expr.summon[testType is Decomposable].getOrElse('{Decomposable.primitive[testType]})
+      exp match
+        case Some('{type testType >: test; $expr: testType}) =>
+          val decomposable: Expr[testType is Decomposable] =
+            Expr.summon[testType is Decomposable].getOrElse('{Decomposable.primitive[testType]})
 
-        val contrast = Expr.summon[testType is Contrastable].getOrElse:
-          halt(m"Can't find a `Contrastable` instance for ${Type.of[testType]}")
+          val contrast = Expr.summon[testType is Contrastable].getOrElse:
+            halt(m"Can't find a `Contrastable` instance for ${Type.of[testType]}")
 
-        '{
-          assertion[testType, test, report, result]
-           ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $decomposable)
-        }
+          '{
+            assertion[testType, test, report, result]
+             ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $decomposable) }
 
-      case _ =>
-        '{
-          assertion[test, test, report, result]
-           ($runner,
-            $test,
-            $predicate,
-            $action,
-            Contrastable.nothing[test],
-            None,
-            $inc,
-            $inc2,
-            Decomposable.primitive[test])
-        }
+        case _ =>
+          '{
+            assertion[test, test, report, result]
+             ($runner,
+              $test,
+              $predicate,
+              $action,
+              Contrastable.nothing[test],
+              None,
+              $inc,
+              $inc2,
+              Decomposable.primitive[test])
+          }
+
 
   def check[test: Type, report: Type]
        (test:      Expr[Test[test]],
@@ -105,8 +105,9 @@ object Probably:
        (using Quotes)
   : Expr[test] =
 
-    general[test, report, test]
-     (test, predicate, runner, inc, inc2, '{ (t: Trial[test]) => t.get })
+      general[test, report, test]
+       (test, predicate, runner, inc, inc2, '{ (t: Trial[test]) => t.get })
+
 
   def assert[test: Type, report: Type]
        (test:      Expr[Test[test]],
@@ -116,7 +117,9 @@ object Probably:
         inc2:      Expr[Inclusion[report, Verdict.Detail]])
        (using Quotes)
   : Expr[Unit] =
-    general[test, report, Unit](test, predicate, runner, inc, inc2, '{ _ => () })
+
+      general[test, report, Unit](test, predicate, runner, inc, inc2, '{ _ => () })
+
 
   def aspire[test: Type, report: Type]
        (test:   Expr[Test[test]],
@@ -126,9 +129,11 @@ object Probably:
        (using Quotes)
   : Expr[Unit] =
 
-    general[test, report, Unit](test, '{ _ => true }, runner, inc, inc2, '{ _ => () })
+      general[test, report, Unit](test, '{ _ => true }, runner, inc, inc2, '{ _ => () })
+
 
   def succeed: Any => Boolean = (value: Any) => true
+
 
   def assertion[test, test2 <: test, report, result]
        (runner:       Runner[report],
@@ -142,35 +147,36 @@ object Probably:
         decomposable: test is Decomposable)
   : result =
 
-    runner.run(test).pipe: run =>
-      val verdict = run match
-        case Trial.Throws(err, duration, map) =>
-          val exception: Exception = try err() catch case exc: Exception => exc
-          if !map.isEmpty then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
-          Verdict.Throws(exception, duration)
-
-        case Trial.Returns(value, duration, map) =>
-          try if predicate(value) then Verdict.Pass(duration) else
-            exp match
-              case Some(exp) =>
-                inc2.include
-                 (runner.report,
-                  test.id,
-                  Verdict.Detail.Compare
-                   (decomposable.decompose(exp).text,
-                    decomposable.decompose(value).text,
-                    contrast.contrast(exp, value)))
-              case None =>
-                // inc2.include(runner.report, test.id, Verdict.Detail.Compare
-                //  (summon[Any is Contrastable].compare(value, 1)))
-
+      runner.run(test).pipe: run =>
+        val verdict = run match
+          case Trial.Throws(err, duration, map) =>
+            val exception: Exception = try err() catch case exc: Exception => exc
             if !map.isEmpty then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
+            Verdict.Throws(exception, duration)
 
-            Verdict.Fail(duration)
-          catch case err: Exception => Verdict.CheckThrows(err, duration)
+          case Trial.Returns(value, duration, map) =>
+            try if predicate(value) then Verdict.Pass(duration) else
+              exp match
+                case Some(exp) =>
+                  inc2.include
+                   (runner.report,
+                    test.id,
+                    Verdict.Detail.Compare
+                     (decomposable.decompose(exp).text,
+                      decomposable.decompose(value).text,
+                      contrast.contrast(exp, value)))
+                case None =>
+                  // inc2.include(runner.report, test.id, Verdict.Detail.Compare
+                  //  (summon[Any is Contrastable].compare(value, 1)))
 
-      inc.include(runner.report, test.id, verdict)
-      result(run)
+              if !map.isEmpty then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
+
+              Verdict.Fail(duration)
+            catch case err: Exception => Verdict.CheckThrows(err, duration)
+
+        inc.include(runner.report, test.id, verdict)
+        result(run)
+
 
   def debug[test: Type](expr: Expr[test], test: Expr[Harness])(using Quotes): Expr[test] =
     import quotes.reflect.*

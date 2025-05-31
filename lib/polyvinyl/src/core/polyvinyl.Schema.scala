@@ -44,92 +44,96 @@ trait Schema[data, record <: Record in data]:
   def make(data: data, transform: String => data => Any): record
   def access(name: String, value: data): data
 
+
   def build(value: Expr[data])(using Quotes, Type[record], Type[data])
        (using thisType: Type[this.type])
   : Expr[record] =
 
-    import quotes.reflect.*
+      import quotes.reflect.*
 
-    given realm: Realm = realm"polyvinyl"
+      given realm: Realm = realm"polyvinyl"
 
-    val target = thisType.absolve match
-      case '[thisType] =>
-        Ref(TypeRepr.of[thisType].typeSymbol.companionModule).asExprOf[Schema[data, record]]
+      val target = thisType.absolve match
+        case '[thisType] =>
+          Ref(TypeRepr.of[thisType].typeSymbol.companionModule).asExprOf[Schema[data, record]]
 
-    def refine
-         (value:       Expr[data],
-          fields:      List[(String, RecordField)],
-          refinedType: TypeRepr,
-          caseDefs:    List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)))
-    : (TypeRepr, List[CaseDef]) =
-      fields match
-        case Nil =>
-          (refinedType, caseDefs)
 
-        case (name, RecordField.Value(typeName, params*)) :: tail =>
-          ConstantType(StringConstant(typeName)).asType.absolve match
-            case '[type typeName <: Label; typeName] =>
-              Expr.summon[Schematic[record, data, typeName, ?]].absolve match
-                case None =>
-                  halt:
-                    m"could not find a Schematic instance for the field $name with type $typeName"
+      def refine
+          (value:       Expr[data],
+            fields:      List[(String, RecordField)],
+            refinedType: TypeRepr,
+            caseDefs:    List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)))
+      : (TypeRepr, List[CaseDef]) =
 
-                case Some('{$accessor: Schematic[`record`, `data`, typeName, valueType]}) =>
+          fields match
+            case Nil =>
+              (refinedType, caseDefs)
 
-                  val rhs: Expr[data => Any] =
-                    '{
-                      (data: data) =>
-                        $accessor.transform
-                         ($target.access(${Expr(name)}, data), ${Expr(params.to(List))})
-                    }
+            case (name, RecordField.Value(typeName, params*)) :: tail =>
+              ConstantType(StringConstant(typeName)).asType.absolve match
+                case '[type typeName <: Label; typeName] =>
+                  Expr.summon[Schematic[record, data, typeName, ?]].absolve match
+                    case None =>
+                      halt:
+                        m"could not find a Schematic instance for the field $name with type $typeName"
 
-                  val caseDefs2 =
-                    CaseDef(Literal(StringConstant(name)), None, rhs.asTerm) :: caseDefs
+                    case Some('{$accessor: Schematic[`record`, `data`, typeName, valueType]}) =>
 
-                  val refinement = Refinement(refinedType, name, TypeRepr.of[valueType])
+                      val rhs: Expr[data => Any] =
+                        '{
+                          (data: data) =>
+                            $accessor.transform
+                            ($target.access(${Expr(name)}, data), ${Expr(params.to(List))})
+                        }
 
-                  refine(value, tail, refinement, caseDefs2)
+                      val caseDefs2 =
+                        CaseDef(Literal(StringConstant(name)), None, rhs.asTerm) :: caseDefs
 
-        case (name, RecordField.Record(typeName, map)) :: tail =>
-          ConstantType(StringConstant(typeName)).asType.absolve match
-            case '[type typeName <: Label; typeName] =>
-              Expr.summon[RecordAccessor[record, data, typeName, ?]].absolve match
-                case None =>
-                  halt(m"""could not find a RecordAccessor instance for the field $name with type
-                        $typeName""")
+                      val refinement = Refinement(refinedType, name, TypeRepr.of[valueType])
 
-                case Some('{ type typeConstructor[_]
-                             $accessor: RecordAccessor
-                                         [`record`, `data`, typeName, typeConstructor] }) =>
+                      refine(value, tail, refinement, caseDefs2)
 
-                  val nested = '{$target.access(${Expr(name)}, $value)}
-                  val recordTypeRepr = TypeRepr.of[record]
-                  val (nestedType, nestedCaseDefs) = refine(nested, map.to(List), recordTypeRepr)
+            case (name, RecordField.Record(typeName, map)) :: tail =>
+              ConstantType(StringConstant(typeName)).asType.absolve match
+                case '[type typeName <: Label; typeName] =>
+                  Expr.summon[RecordAccessor[record, data, typeName, ?]].absolve match
+                    case None =>
+                      halt(m"""could not find a RecordAccessor instance for the field $name with type
+                            $typeName""")
 
-                  val matchFn: Expr[String => data => Any] =
-                    '{ (name: String) =>
-                         ${Match('name.asTerm, nestedCaseDefs).asExprOf[data => Any]} }
+                    case Some('{ type typeConstructor[_]
+                                $accessor: RecordAccessor
+                                            [`record`, `data`, typeName, typeConstructor] }) =>
 
-                  val maker: Expr[data => record] =
-                    '{ field => $target.make(field, $matchFn) }
+                      val nested = '{$target.access(${Expr(name)}, $value)}
+                      val recordTypeRepr = TypeRepr.of[record]
+                      val (nestedType, nestedCaseDefs) = refine(nested, map.to(List), recordTypeRepr)
 
-                  val rhs: Expr[data => Any] =
-                    '{ data => $accessor.transform($target.access(${Expr(name)}, data), $maker) }
+                      val matchFn: Expr[String => data => Any] =
+                        '{ (name: String) =>
+                            ${Match('name.asTerm, nestedCaseDefs).asExprOf[data => Any]} }
 
-                  val caseDef = CaseDef(Literal(StringConstant(name)), None, rhs.asTerm)
+                      val maker: Expr[data => record] =
+                        '{ field => $target.make(field, $matchFn) }
 
-                  nestedType.asType.absolve match
-                    case '[nestedRecordType] =>
-                      val typeRepr = TypeRepr.of[typeConstructor[nestedRecordType]]
+                      val rhs: Expr[data => Any] =
+                        '{ data => $accessor.transform($target.access(${Expr(name)}, data), $maker) }
 
-                      refine
-                       (value, tail, Refinement(refinedType, name, typeRepr), caseDef :: caseDefs)
+                      val caseDef = CaseDef(Literal(StringConstant(name)), None, rhs.asTerm)
 
-    val (refinedType, caseDefs) = refine(value, fields.to(List), TypeRepr.of[record])
+                      nestedType.asType.absolve match
+                        case '[nestedRecordType] =>
+                          val typeRepr = TypeRepr.of[typeConstructor[nestedRecordType]]
 
-    val matchFn: Expr[String => data => Any] =
-      '{ (name: String) => ${Match('name.asTerm, caseDefs).asExprOf[data => Any]} }
+                          refine
+                           (value, tail, Refinement(refinedType, name, typeRepr), caseDef :: caseDefs)
 
-    refinedType.asType.absolve match
-      case '[type refinedType <: record; refinedType] =>
-        '{$target.make($value, $matchFn).asInstanceOf[refinedType]}
+
+      val (refinedType, caseDefs) = refine(value, fields.to(List), TypeRepr.of[record])
+
+      val matchFn: Expr[String => data => Any] =
+        '{ (name: String) => ${Match('name.asTerm, caseDefs).asExprOf[data => Any]} }
+
+      refinedType.asType.absolve match
+        case '[type refinedType <: record; refinedType] =>
+          '{$target.make($value, $matchFn).asInstanceOf[refinedType]}

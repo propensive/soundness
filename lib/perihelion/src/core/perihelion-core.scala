@@ -35,9 +35,10 @@ package perihelion
 import parasite.*
 import telekinesis.*
 
+
 def websocket[ResultType](lambda: (frames: LazyList[Frame]) ?=> ResultType)
      (using request: Http.Request)
      (using Monitor, Codicil)
 : Websocket[ResultType] =
-  val websocket = Websocket(request, lambda(using _))
-  websocket
+
+    Websocket(request, lambda(using _))

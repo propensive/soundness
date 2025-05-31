@@ -43,6 +43,7 @@ given realm: Realm = realm"profanity"
 
 given stdio: (terminal: Terminal) => Stdio = terminal.stdio
 
+
 def terminal[result](block: (terminal: Terminal) ?=> result)
    (using context: ProcessContext, monitor: Monitor, codicil: Codicil)
    (using BracketedPasteMode,
@@ -51,29 +52,31 @@ def terminal[result](block: (terminal: Terminal) ?=> result)
           TerminalSizeDetection)
 : result raises TerminalError =
 
-  given terminal: Terminal = Terminal(context.signals)
+    given terminal: Terminal = Terminal(context.signals)
 
-  if summon[BackgroundColorDetection]() then Out.print(Terminal.reportBackground)
-  if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
-  if summon[BracketedPasteMode]() then Out.print(Terminal.enablePaste)
-  if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
+    if summon[BackgroundColorDetection]() then Out.print(Terminal.reportBackground)
+    if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
+    if summon[BracketedPasteMode]() then Out.print(Terminal.enablePaste)
+    if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
 
-  try
-    if context.stdio.platform then
-      val processBuilder =
-        ProcessBuilder("stty", "intr", "undef", "-echo", "icanon", "raw", "opost")
+    try
+      if context.stdio.platform then
+        val processBuilder =
+          ProcessBuilder("stty", "intr", "undef", "-echo", "icanon", "raw", "opost")
 
-      processBuilder.inheritIO()
-      if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
-    block(using terminal)
-  finally
-    terminal.signals.stop()
-    terminal.stdio.in.close()
-    terminal.events.stop()
-    safely(terminal.pumpSignals.attend())
-    safely(terminal.pumpInput.await())
-    if summon[BracketedPasteMode]() then Out.print(Terminal.disablePaste)
-    if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
+        processBuilder.inheritIO()
+        if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
+      block(using terminal)
+
+    finally
+      terminal.signals.stop()
+      terminal.stdio.in.close()
+      terminal.events.stop()
+      safely(terminal.pumpSignals.attend())
+      safely(terminal.pumpInput.await())
+      if summon[BracketedPasteMode]() then Out.print(Terminal.disablePaste)
+      if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
+
 
 package keyboards:
   given raw: Keyboard:

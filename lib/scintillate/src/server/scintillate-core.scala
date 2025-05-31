@@ -76,17 +76,20 @@ package httpServers:
 
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
 
+
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.Response)
    (using connection: HttpConnection)
 : Http.Response raises AuthError =
-  connection.headers.authorization match
-    case List(Auth.Basic(username, password)) =>
-      if validate(username, password) then response else Http.Response(Http.Forbidden)()
 
-    case _ =>
-      val auth = t"""Basic realm="$realm", charset="UTF-8""""
+    connection.headers.authorization match
+      case List(Auth.Basic(username, password)) =>
+        if validate(username, password) then response else Http.Response(Http.Forbidden)()
 
-      Http.Response(Http.Unauthorized, wwwAuthenticate = auth)()
+      case _ =>
+        val auth = t"""Basic realm="$realm", charset="UTF-8""""
+
+        Http.Response(Http.Unauthorized, wwwAuthenticate = auth)()
+
 
 inline def request: Http.Request = compiletime.summonInline[Http.Request]
 
@@ -95,7 +98,9 @@ given realm: Realm = realm"scintillate"
 extension (request: Http.Request)
   def as[body: Acceptable]: body = body.accept(request)
 
+
   def path(using connection: HttpConnection)
   : HttpUrl raises PathError raises UrlError raises HostnameError =
-    val scheme = if connection.tls then t"https" else t"http"
-    t"$scheme://${request.host}${request.pathText}".decode[HttpUrl]
+
+      val scheme = if connection.tls then t"https" else t"http"
+      t"$scheme://${request.host}${request.pathText}".decode[HttpUrl]

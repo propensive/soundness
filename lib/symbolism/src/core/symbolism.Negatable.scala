@@ -37,12 +37,13 @@ import prepositional.*
 import scala.annotation.targetName
 
 object Negatable:
-  def apply[operand, result](lambda: operand => result)
-  : operand is Negatable into result = new Negatable:
-    type Self = operand
-    type Result = result
+  def apply[operand, result](lambda: operand => result): operand is Negatable into result =
+    new Negatable:
+      type Self = operand
+      type Result = result
 
-    def negate(operand: Self): Result = lambda(operand)
+      def negate(operand: Self): Result = lambda(operand)
+
 
   given double: Double is Negatable into Double = Negatable(-_)
   given float: Float is Negatable into Float = Negatable(-_)

@@ -72,7 +72,7 @@ object Nomenclature:
     inline def apply[platform](name: Text)(using nominative: platform is Nominative)
     : Name[platform] raises NameError =
 
-      inline disintersect[nominative.Constraint] match
-        case v => check[v.type](name)
+        inline disintersect[nominative.Constraint] match
+          case v => check[v.type](name)
 
-      name.asInstanceOf[Name[platform]]
+        name.asInstanceOf[Name[platform]]

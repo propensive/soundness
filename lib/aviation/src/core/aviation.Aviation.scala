@@ -104,6 +104,7 @@ object Aviation:
     given decodable: (Int is Decodable in Text) => Year is Decodable in Text = year =>
       Year(year.decode[Int])
 
+
     given orderable: Year is Orderable:
       inline def compare
                   (inline left:        Year,

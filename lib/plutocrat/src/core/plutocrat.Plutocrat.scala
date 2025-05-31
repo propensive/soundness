@@ -99,6 +99,7 @@ object Plutocrat:
 
       def divide(left: left, right: right): Double = left.toDouble/right.toDouble
 
+
     inline given orderable: [currency <: Currency & Singleton] => Money[currency] is Orderable:
       inline def compare
                   (inline left:        Money[currency],
@@ -106,7 +107,9 @@ object Plutocrat:
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
       : Boolean =
-        if left.value == right.value then !strict else (left.value < right.value)^greaterThan
+
+          if left.value == right.value then !strict else (left.value < right.value)^greaterThan
+
 
     given zeroic: [currency <: Currency & Singleton] => Money[currency] is Zeroic:
       def zero: Money[currency] = 0L

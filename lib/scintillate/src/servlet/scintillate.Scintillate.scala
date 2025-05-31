@@ -44,23 +44,23 @@ class servlet extends MacroAnnotation:
   : List[quotes.reflect.Definition] =
     import quotes.reflect.*
 
-    tree match
-      case defDef@DefDef(name, params, returnType, Some(body)) =>
-        if !(returnType.tpe <:< TypeRepr.of[Http.Response])
-        then halt(m"the return type ${returnType.show} is not a subtype of HttpResponse[?]")
+      tree match
+        case defDef@DefDef(name, params, returnType, Some(body)) =>
+          if !(returnType.tpe <:< TypeRepr.of[Http.Response])
+          then halt(m"the return type ${returnType.show} is not a subtype of HttpResponse[?]")
 
-        val ref =
-          Ref(defDef.symbol).etaExpand(tree.symbol.owner).asExprOf[HttpConnection => Http.Response]
+          val ref =
+            Ref(defDef.symbol).etaExpand(tree.symbol.owner).asExprOf[HttpConnection => Http.Response]
 
-        val parents0 = List('{new JavaServletFn($ref)}.asTerm)
-        val parents = List(TypeTree.of[HttpConnection])
-        val newClassName = Symbol.freshName(name)
+          val parents0 = List('{new JavaServletFn($ref)}.asTerm)
+          val parents = List(TypeTree.of[HttpConnection])
+          val newClassName = Symbol.freshName(name)
 
-        val cls =
-          Symbol.newClass(Symbol.spliceOwner, name, parents.map(_.tpe), _ => Nil, selfType = None)
+          val cls =
+            Symbol.newClass(Symbol.spliceOwner, name, parents.map(_.tpe), _ => Nil, selfType = None)
 
-        val clsDef = ClassDef(cls, parents, body = Nil)
-        List(tree, clsDef)
+          val clsDef = ClassDef(cls, parents, body = Nil)
+          List(tree, clsDef)
 
-      case other =>
-        halt(m"the @servlet annotation must be applied to a method")
+        case other =>
+          halt(m"the @servlet annotation must be applied to a method")

@@ -63,11 +63,13 @@ extension [value](value: value)
         compiletime.summonInline[value is Readable by Text].give:
           aggregable.aggregate(value.stream[Text])
 
+
   def writeTo[target](target: target)[element]
        (using readable: value is Readable by element, writable: target is Writable by element)
   : Unit =
 
-    writable.write(target, readable.stream(value))
+      writable.write(target, readable.stream(value))
+
 
 package stdioSources:
   given mute: Stdio = Stdio(null, null, null, termcapDefinitions.basic)
@@ -102,27 +104,30 @@ extension [element](stream: Stream[element])
 
     stream.flow(Stream())(head #:: recur(head, tail))
 
+
   inline def flow[result](inline termination: => result)
               (inline proceed: (head: element, tail: Stream[element]) ?=> result)
   : result =
-    stream match
-      case head #:: tail => proceed(using head, tail)
-      case _             => termination
+      stream match
+        case head #:: tail => proceed(using head, tail)
+        case _             => termination
+
 
   def strict: Stream[element] = stream.length yet stream
 
   def rate[generic: {GenericDuration, SpecificDuration}](duration: generic)(using Monitor)
   : Stream[element] raises AsyncError =
 
-    def recur(stream: Stream[element], last: Long): Stream[element] =
-      stream.flow(Stream()):
-        val duration2 =
-          SpecificDuration(generic.milliseconds(duration) - (jl.System.currentTimeMillis - last))
+      def recur(stream: Stream[element], last: Long): Stream[element] =
+        stream.flow(Stream()):
+          val duration2 =
+            SpecificDuration(generic.milliseconds(duration) - (jl.System.currentTimeMillis - last))
 
-        if generic.milliseconds(duration2) > 0 then snooze(duration2)
-        stream
+          if generic.milliseconds(duration2) > 0 then snooze(duration2)
+          stream
 
-    async(recur(stream, jl.System.currentTimeMillis)).await()
+      async(recur(stream, jl.System.currentTimeMillis)).await()
+
 
   def multiplex(that: Stream[element])(using Monitor): Stream[element] =
     unsafely(Stream.multiplex(stream, that))
@@ -134,27 +139,26 @@ extension [element](stream: Stream[element])
           buffer: List[element])
     : Stream[element] =
 
-      recur(active, stream, buffer)
+        recur(active, stream, buffer)
+
 
     @tailrec
     def recur
-         (active: Boolean,
-          stream: Stream[Some[element] | Tap.Regulation],
-          buffer: List[element])
+         (active: Boolean, stream: Stream[Some[element] | Tap.Regulation], buffer: List[element])
     : Stream[element] =
 
-      if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
-      else if stream.isEmpty then Stream()
-      else stream.head match
-        case Tap.Regulation.Start =>
-          recur(true, stream.tail, buffer)
+        if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
+        else if stream.isEmpty then Stream()
+        else stream.head match
+          case Tap.Regulation.Start =>
+            recur(true, stream.tail, buffer)
 
-        case Tap.Regulation.Stop =>
-          recur(false, stream.tail, Nil)
+          case Tap.Regulation.Stop =>
+            recur(false, stream.tail, Nil)
 
-        case Some(other) =>
-          if active then other.nn #:: defer(true, stream.tail, Nil)
-          else recur(false, stream.tail, other.nn :: buffer)
+          case Some(other) =>
+            if active then other.nn #:: defer(true, stream.tail, Nil)
+            else recur(false, stream.tail, other.nn :: buffer)
 
     Stream.defer(recur(true, stream.map(Some(_)).multiplex(tap.stream), Nil))
 
@@ -162,24 +166,25 @@ extension [element](stream: Stream[element])
        (using Monitor)
   : Stream[List[element]] =
 
-    val Limit = maxSize.or(Int.MaxValue)
+      val Limit = maxSize.or(Int.MaxValue)
 
-    def recur(stream: Stream[element], list: List[element], count: Int): Stream[List[element]] =
-      count match
-        case 0 => safely(async(stream.isEmpty).await()) match
-          case Unset => recur(stream, Nil, 0)
-          case false => recur(stream.tail, stream.head :: list, count + 1)
-          case true  => Stream()
+      def recur(stream: Stream[element], list: List[element], count: Int): Stream[List[element]] =
+        count match
+          case 0 => safely(async(stream.isEmpty).await()) match
+            case Unset => recur(stream, Nil, 0)
+            case false => recur(stream.tail, stream.head :: list, count + 1)
+            case true  => Stream()
 
-        case Limit =>
-          list.reverse #:: recur(stream, Nil, 0)
+          case Limit =>
+            list.reverse #:: recur(stream, Nil, 0)
 
-        case _ => safely(async(stream.isEmpty).await(duration)) match
-          case Unset => list.reverse #:: recur(stream, Nil, 0)
-          case false => recur(stream.tail, stream.head :: list, count + 1)
-          case true  => Stream(list.reverse)
+          case _ => safely(async(stream.isEmpty).await(duration)) match
+            case Unset => list.reverse #:: recur(stream, Nil, 0)
+            case false => recur(stream.tail, stream.head :: list, count + 1)
+            case true  => Stream(list.reverse)
 
-    Stream.defer(recur(stream, Nil, 0))
+      Stream.defer(recur(stream, Nil, 0))
+
 
   def parallelMap[element2](lambda: element => element2)(using Monitor): Stream[element2] =
 
@@ -300,28 +305,30 @@ extension (stream: Stream[Bytes])
   def chunked(size: Int, zeroPadding: Boolean = false): Stream[Bytes] =
     def newArray(): Array[Byte] = new Array[Byte](size)
 
+
     def recur(stream: Stream[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
     : Stream[Bytes] =
 
-      stream match
-        case source #:: more =>
-          val ready = source.length - sourcePos
-          val free = dest.length - destPos
+        stream match
+          case source #:: more =>
+            val ready = source.length - sourcePos
+            val free = dest.length - destPos
 
-          if ready < free then
-            jl.System.arraycopy(source, sourcePos, dest, destPos, ready)
-            recur(more, 0, dest, destPos + ready)
-          else if free < ready then
-            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
-            dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
-          else // free == ready
-            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
-            dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
+            if ready < free then
+              jl.System.arraycopy(source, sourcePos, dest, destPos, ready)
+              recur(more, 0, dest, destPos + ready)
+            else if free < ready then
+              jl.System.arraycopy(source, sourcePos, dest, destPos, free)
+              dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
+            else // free == ready
+              jl.System.arraycopy(source, sourcePos, dest, destPos, free)
+              dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
 
-        case _ =>
-          if destPos == 0 then Stream()
-          else Stream:
-            (if zeroPadding then dest else dest.slice(0, destPos)).immutable(using Unsafe)
+          case _ =>
+            if destPos == 0 then Stream()
+            else Stream:
+              (if zeroPadding then dest else dest.slice(0, destPos)).immutable(using Unsafe)
+
 
     recur(stream, 0, newArray(), 0)
 

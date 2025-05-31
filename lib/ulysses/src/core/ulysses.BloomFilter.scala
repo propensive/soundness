@@ -45,13 +45,14 @@ import scala.collection.mutable as scm
 
 object BloomFilter:
   def apply[element: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)
-    [hash <: Algorithm]
-    (using HashFunction in hash)
+       [hash <: Algorithm]
+       (using HashFunction in hash)
   : BloomFilter[element, hash] =
 
-    val bitSize: Int = (-1.44*approximateSize*ln(targetErrorRate.double).double).toInt
-    val hashCount: Int = ((bitSize.toDouble/approximateSize.toDouble)*ln(2.0).double + 0.5).toInt
-    new BloomFilter(bitSize, hashCount, sci.BitSet())
+      val bitSize: Int = (-1.44*approximateSize*ln(targetErrorRate.double).double).toInt
+      val hashCount: Int = ((bitSize.toDouble/approximateSize.toDouble)*ln(2.0).double + 0.5).toInt
+      new BloomFilter(bitSize, hashCount, sci.BitSet())
+
 
 case class BloomFilter[element: Digestible, hash <: Algorithm]
    (bitSize: Int, hashCount: Int, bits: sci.BitSet)

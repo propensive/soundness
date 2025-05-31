@@ -74,6 +74,7 @@ object Git:
     . or(Stream())
     . deduplicate
 
+
   def init
       [path: Abstractable across Paths into Text]
        (targetPath: path, bare: Boolean = false)
@@ -83,17 +84,19 @@ object Git:
               Tactic[ExecError])
        (using command: GitCommand)
   : GitRepo logs GitEvent raises NameError =
-    try
-      throwErrors[PathError | IoError]:
-        val bareOpt = if bare then sh"--bare" else sh""
-        val target: Path on Posix = targetPath.generic.decode[Path on Posix]
-        sh"$command init $bareOpt $target".exec[Exit]()
 
-        if bare then GitRepo(target, Unset) else GitRepo((target / n".git"), target)
+      try
+        throwErrors[PathError | IoError]:
+          val bareOpt = if bare then sh"--bare" else sh""
+          val target: Path on Posix = targetPath.generic.decode[Path on Posix]
+          sh"$command init $bareOpt $target".exec[Exit]()
 
-    catch
-      case error: PathError => abort(GitError(InvalidRepoPath))
-      case error: IoError   => abort(GitError(InvalidRepoPath))
+          if bare then GitRepo(target, Unset) else GitRepo((target / n".git"), target)
+
+      catch
+        case error: PathError => abort(GitError(InvalidRepoPath))
+        case error: IoError   => abort(GitError(InvalidRepoPath))
+
 
   inline def cloneCommit[source <: Matchable, path: Abstractable across Paths into Text]
               (source: source, targetPath: path, commit: GitHash)
@@ -105,13 +108,14 @@ object Git:
                      WorkingDirectory)
   : GitProcess[GitRepo] logs GitEvent raises NameError =
 
-    val sourceText = inline source match
-      case source: SshUrl => source.text
-      case other          => summonFrom:
-        case given (`source` is Abstractable across Urls into Text)  => source.generic
-        case given (`source` is Abstractable across Paths into Text) => source.generic
+      val sourceText = inline source match
+        case source: SshUrl => source.text
+        case other          => summonFrom:
+          case given (`source` is Abstractable across Urls into Text)  => source.generic
+          case given (`source` is Abstractable across Paths into Text) => source.generic
 
-    uncheckedCloneCommit(sourceText, targetPath, commit)
+      uncheckedCloneCommit(sourceText, targetPath, commit)
+
 
   inline def clone[source <: Matchable, path: Abstractable across Paths into Text]
               (source:     source,
@@ -124,16 +128,16 @@ object Git:
                      (Path on Posix) is Decodable in Text,
                      Tactic[ExecError],
                      GitCommand)
-     (using gitError: Tactic[GitError])
-  : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
+  : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError raises GitError =
 
-    val sourceText = inline source match
-      case source: SshUrl => source.text
-      case other          => summonFrom:
-        case given (`source` is Abstractable across Urls into Text)  => source.generic
-        case given (`source` is Abstractable across Paths into Text) => source.generic
+      val sourceText = inline source match
+        case source: SshUrl => source.text
+        case other          => summonFrom:
+          case given (`source` is Abstractable across Urls into Text)  => source.generic
+          case given (`source` is Abstractable across Paths into Text) => source.generic
 
-    uncheckedClone(sourceText, targetPath, bare, branch, recursive)
+      uncheckedClone(sourceText, targetPath, bare, branch, recursive)
+
 
   private def uncheckedCloneCommit[path: Abstractable across Paths into Text]
                (source: Text, targetPath: path, commit: GitHash)
@@ -143,13 +147,14 @@ object Git:
                       workingDirectory: WorkingDirectory)
   : GitProcess[GitRepo] logs GitEvent raises NameError =
 
-    val gitRepo = init(targetPath)
-    val fetch = gitRepo.fetch(1, source, commit)
+      val gitRepo = init(targetPath)
+      val fetch = gitRepo.fetch(1, source, commit)
 
-    GitProcess(fetch.progress):
-      fetch.complete()
-      gitRepo.checkout(commit)
-      gitRepo
+      GitProcess(fetch.progress):
+        fetch.complete()
+        gitRepo.checkout(commit)
+        gitRepo
+
 
   private def uncheckedClone[path: Abstractable across Paths into Text]
                 (source:     Text,
@@ -165,23 +170,23 @@ object Git:
                 (using gitError: Tactic[GitError])
   : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
-    val target: Path on Posix =
-      try targetPath.generic.decode[Path on Posix]
-      catch case error: PathError => abort(GitError(InvalidRepoPath))
+      val target: Path on Posix =
+        try targetPath.generic.decode[Path on Posix]
+        catch case error: PathError => abort(GitError(InvalidRepoPath))
 
-    val bareOption = if bare then sh"--bare" else sh""
-    val branchOption = branch.lay(sh"") { branch => sh"--branch=$branch" }
-    val recursiveOption = if recursive then sh"--recursive" else sh""
+      val bareOption = if bare then sh"--bare" else sh""
+      val branchOption = branch.lay(sh"") { branch => sh"--branch=$branch" }
+      val recursiveOption = if recursive then sh"--recursive" else sh""
 
-    val process =
-      sh"$git clone --progress $bareOption $branchOption $recursiveOption $source $target"
-      . fork[Exit]()
+      val process =
+        sh"$git clone --progress $bareOption $branchOption $recursiveOption $source $target"
+        . fork[Exit]()
 
-    GitProcess[GitRepo](progress(process)):
-      process.await() match
-        case Exit.Ok =>
-          try throwErrors[IoError](GitRepo((target / n".git"), target))
-          catch case error: IoError => abort(GitError(CloneFailed))
+      GitProcess[GitRepo](progress(process)):
+        process.await() match
+          case Exit.Ok =>
+            try throwErrors[IoError](GitRepo((target / n".git"), target))
+            catch case error: IoError => abort(GitError(CloneFailed))
 
-        case _ =>
-          abort(GitError(CloneFailed))
+          case _ =>
+            abort(GitError(CloneFailed))

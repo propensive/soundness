@@ -45,14 +45,16 @@ object Task:
   def apply[result](evaluate: Worker => result, daemon: Boolean, name: Optional[Text])
        (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
   : Task[result] =
-    inline def evaluate0: Worker => result = evaluate
-    inline def name0: Optional[Text] = name
 
-    new Worker(codepoint, monitor, codicil) with Task[result]:
-      type Result = result
-      def name: Optional[Text] = name0
-      def daemon: Boolean = false
-      def evaluate(worker: Worker): Result = evaluate0(worker)
+      inline def evaluate0: Worker => result = evaluate
+      inline def name0: Optional[Text] = name
+
+      new Worker(codepoint, monitor, codicil) with Task[result]:
+        type Result = result
+        def name: Optional[Text] = name0
+        def daemon: Boolean = false
+        def evaluate(worker: Worker): Result = evaluate0(worker)
+
 
   given monad: (Monitor, Codicil, Tactic[AsyncError]) => Monad[Task]:
     def bind[value, value2](value: Task[value])(lambda: value => Task[value2]): Task[value2] =

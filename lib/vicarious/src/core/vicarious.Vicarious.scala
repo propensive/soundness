@@ -45,16 +45,17 @@ object Vicarious:
         classTag: Expr[ClassTag[value]])
        (using Quotes)
   : Expr[Catalog[key, value]] =
-    import quotes.reflect.*
 
-    def fields[product: Type](term: Term): List[Term] =
-      TypeRepr.of[product].typeSymbol.caseFields.flatMap: field =>
-        term.select(field).asExpr.absolve match
-          case '{ $field: field } =>
-            '{$lambda[field]($field)}.asTerm :: fields[field](field.asTerm)
+      import quotes.reflect.*
 
-    '{ given classTag0: ClassTag[value] = $classTag
-       Catalog(IArray(${Varargs(fields[key](value.asTerm).map(_.asExprOf[value]))}*))  }
+      def fields[product: Type](term: Term): List[Term] =
+        TypeRepr.of[product].typeSymbol.caseFields.flatMap: field =>
+          term.select(field).asExpr.absolve match
+            case '{ $field: field } =>
+              '{$lambda[field]($field)}.asTerm :: fields[field](field.asTerm)
+
+      '{  given classTag0: ClassTag[value] = $classTag
+          Catalog(IArray(${Varargs(fields[key](value.asTerm).map(_.asExprOf[value]))}*))  }
 
   def fieldNames[product: Type](prefix: String)(using Quotes): List[String] =
     import quotes.reflect.*
@@ -63,19 +64,21 @@ object Vicarious:
       field.info.asType.absolve match
         case '[fieldType] => label :: fieldNames[fieldType](label)
 
+
   def dereference[key: Type, value: Type, id <: Nat: Type](key: Expr[String])(using Quotes)
   : Expr[value | Proxy[key, value, Nat]] =
 
-    import quotes.reflect.*
+      import quotes.reflect.*
 
-    val index = TypeRepr.of[id].asMatchable.absolve match
-      case ConstantType(IntConstant(index)) => index
+      val index = TypeRepr.of[id].asMatchable.absolve match
+        case ConstantType(IntConstant(index)) => index
 
-    val fields = fieldNames[key]("")
+      val fields = fieldNames[key]("")
 
-    val label = fields(index)+"."+key.valueOrAbort
-    ConstantType(IntConstant(fields.indexOf(label))).asType.absolve match
-      case '[ type id <: Nat; id ] => '{Proxy[key, value, id]()}
+      val label = fields(index)+"."+key.valueOrAbort
+      ConstantType(IntConstant(fields.indexOf(label))).asType.absolve match
+        case '[ type id <: Nat; id ] => '{Proxy[key, value, id]()}
+
 
   def proxy[key: Type, value: Type](using Quotes): Expr[Proxy[key, value, 0]] =
     import quotes.reflect.*
