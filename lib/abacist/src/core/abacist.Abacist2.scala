@@ -115,7 +115,8 @@ object Abacist2:
     transparent inline def divide(inline multiplier: Double): Any =
       ${Abacist.multiplyQuanta('count, 'multiplier, true)}
 
-    transparent inline def collapse(length: Int)(using length.type < Tuple.Size[units] =:= true)
-    :     Quanta[Tuple.Drop[units, length.type]] =
 
-      count
+    transparent inline def collapse(length: Int)(using length.type < Tuple.Size[units] =:= true)
+    : Quanta[Tuple.Drop[units, length.type]] =
+
+        count

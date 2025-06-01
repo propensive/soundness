@@ -45,11 +45,12 @@ object Austronesian2:
   object EncodableDerivation extends Derivation[[Type] =>> Type is Encodable in Stdlib]:
 
     inline def join[derivation <: Product: ProductReflection]
-    :     derivation is Encodable in _root_.austronesian.Austronesian.Stdlib =
+    : derivation is Encodable in _root_.austronesian.Austronesian.Stdlib =
 
-      fields(_):
-        [field] => _.encode
-      .asInstanceOf[Stdlib]
+        fields(_):
+          [field] => _.encode
+        .asInstanceOf[Stdlib]
+
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Stdlib =
       variant(_):

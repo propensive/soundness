@@ -38,13 +38,16 @@ import scala.annotation.targetName
 
 object Subtractable:
   def apply[minuend, subtrahend, result](lambda: (minuend, subtrahend) => result)
-  :     minuend is Subtractable by subtrahend into result = new Subtractable:
-    type Self = minuend
-    type Result = result
-    type Operand = subtrahend
+  : minuend is Subtractable by subtrahend into result =
 
-    def subtract(minuend: minuend, subtrahend: subtrahend): result =
-      lambda(minuend, subtrahend)
+      new Subtractable:
+        type Self = minuend
+        type Result = result
+        type Operand = subtrahend
+
+        def subtract(minuend: minuend, subtrahend: subtrahend): result =
+          lambda(minuend, subtrahend)
+
 
   given double: Double is Subtractable by Double into Double = Subtractable(_ - _)
   given float: Float is Subtractable by Float into Float = Subtractable(_ - _)

@@ -46,12 +46,14 @@ object Annotations:
   transparent inline def field[target](inline lambda: target => Any): List[StaticAnnotation] =
     ${Adversaria.fieldAnnotations[target]('lambda)}
 
-  transparent inline def fields[target <: Product, annotation <: StaticAnnotation]
-  :     List[CaseField[target, annotation]] =
 
-    ${Adversaria.fields[target, annotation]}
+  transparent inline def fields[target <: Product, annotation <: StaticAnnotation]
+  : List[CaseField[target, annotation]] =
+
+      ${Adversaria.fields[target, annotation]}
+
 
   transparent inline def firstField[target <: Product, annotation <: StaticAnnotation]
-  :     CaseField[target, annotation] =
+  : CaseField[target, annotation] =
 
-    ${Adversaria.firstField[target, annotation]}
+      ${Adversaria.firstField[target, annotation]}

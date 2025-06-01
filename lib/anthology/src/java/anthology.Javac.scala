@@ -63,53 +63,54 @@ case class Javac(options: List[JavacOption]):
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths into Text]
        (sources: Map[Text, Text], out: path)
        (using SystemProperties, Monitor, Codicil)
-  :     CompileProcess logs CompileEvent raises CompilerError =
-    Log.info(CompileEvent.Start)
-    val process: CompileProcess = CompileProcess()
+  : CompileProcess logs CompileEvent raises CompilerError =
 
-    val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
+      Log.info(CompileEvent.Start)
+      val process: CompileProcess = CompileProcess()
 
-      def report(diagnostic: jt.Diagnostic[? <: jt.JavaFileObject] | Null): Unit =
-        if diagnostic != null then
-          val importance = diagnostic.getKind match
-            case jt.Diagnostic.Kind.ERROR             => Importance.Error
-            case jt.Diagnostic.Kind.WARNING           => Importance.Warning
-            case jt.Diagnostic.Kind.MANDATORY_WARNING => Importance.Warning
-            case _                                    => Importance.Info
+      val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
 
-          val codeRange: Optional[CodeRange] =
-            if diagnostic.getPosition == jt.Diagnostic.NOPOS then Unset else
-              CodeRange
-               (diagnostic.getLineNumber.toInt,
-                diagnostic.getColumnNumber.toInt,
-                diagnostic.getLineNumber.toInt,
-                (diagnostic.getColumnNumber + diagnostic.getEndPosition
-                 - diagnostic.getPosition).toInt)
+        def report(diagnostic: jt.Diagnostic[? <: jt.JavaFileObject] | Null): Unit =
+          if diagnostic != null then
+            val importance = diagnostic.getKind match
+              case jt.Diagnostic.Kind.ERROR             => Importance.Error
+              case jt.Diagnostic.Kind.WARNING           => Importance.Warning
+              case jt.Diagnostic.Kind.MANDATORY_WARNING => Importance.Warning
+              case _                                    => Importance.Info
 
-          process.put:
-            Notice
-             (importance, "name".tt, diagnostic.getMessage(ju.Locale.getDefault()).nn.tt, codeRange)
+            val codeRange: Optional[CodeRange] =
+              if diagnostic.getPosition == jt.Diagnostic.NOPOS then Unset else
+                CodeRange
+                 (diagnostic.getLineNumber.toInt,
+                  diagnostic.getColumnNumber.toInt,
+                  diagnostic.getLineNumber.toInt,
+                  (diagnostic.getColumnNumber + diagnostic.getEndPosition
+                  - diagnostic.getPosition).toInt)
 
-    val options = List(t"-classpath", classpath(), t"-d", out.generic)
-    val javaSources = sources.map(JavaSource(_, _)).asJava
-    Log.info(CompileEvent.Running(List(t"javac", options.join(t" "))))
+            process.put:
+              Notice
+               (importance, "name".tt, diagnostic.getMessage(ju.Locale.getDefault()).nn.tt, codeRange)
 
-    async:
-      try
-        val success =
-          process.put(CompileProgress(0.1, t"javac"))
+      val options = List(t"-classpath", classpath(), t"-d", out.generic)
+      val javaSources = sources.map(JavaSource(_, _)).asJava
+      Log.info(CompileEvent.Running(List(t"javac", options.join(t" "))))
 
-          Javac.compiler()
-          . getTask(null, null, diagnostics, options.map(_.s).asJava, null, javaSources)
-          . nn.call().nn
+      async:
+        try
+          val success =
+            process.put(CompileProgress(0.1, t"javac"))
 
-        if success then process.put(CompileProgress(1.0, t"javac"))
+            Javac.compiler()
+            . getTask(null, null, diagnostics, options.map(_.s).asJava, null, javaSources)
+            . nn.call().nn
 
-        process.put(if success then CompileResult.Success else CompileResult.Failure)
+          if success then process.put(CompileProgress(1.0, t"javac"))
 
-      catch case suc.NonFatal(error) =>
-        Javac.refresh()
-        Log.warn(CompileEvent.CompilerCrash)
-        process.put(CompileResult.Crash(error.stackTrace))
+          process.put(if success then CompileResult.Success else CompileResult.Failure)
 
-    process
+        catch case suc.NonFatal(error) =>
+          Javac.refresh()
+          Log.warn(CompileEvent.CompilerCrash)
+          process.put(CompileResult.Crash(error.stackTrace))
+
+      process

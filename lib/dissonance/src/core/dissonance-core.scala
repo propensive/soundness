@@ -39,44 +39,45 @@ def diff[element]
    (left:    IndexedSeq[element],
     right:   IndexedSeq[element],
     compare: (element, element) => Boolean = { (a: element, b: element) => a == b })
-:     Diff[element] =
+: Diff[element] =
 
-  type Edits = List[Edit[element]]
+    type Edits = List[Edit[element]]
 
-  @tailrec
-  def count(pos: Int, off: Int): Int =
-    if pos < left.length && pos + off < right.length && compare(left(pos), right(pos + off))
-    then count(pos + 1, off)
-    else pos
+    @tailrec
+    def count(pos: Int, off: Int): Int =
+      if pos < left.length && pos + off < right.length && compare(left(pos), right(pos + off))
+      then count(pos + 1, off)
+      else pos
 
-  @tailrec
-  def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[Array[Int]]): Diff[element] =
-    val delPos = if deletes == 0 then 0 else count(rows.head(deletes - 1) + 1, inserts - deletes)
-    val insPos = if inserts == 0 then 0 else count(rows.head(deletes), inserts - deletes)
-    val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
+    @tailrec
+    def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[Array[Int]]): Diff[element] =
+      val delPos = if deletes == 0 then 0 else count(rows.head(deletes - 1) + 1, inserts - deletes)
+      val insPos = if inserts == 0 then 0 else count(rows.head(deletes), inserts - deletes)
+      val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
 
-    if best == left.length && (best - deletes + inserts) == right.length
-    then Diff(backtrack(left.length - 1, deletes, rows, Nil)*)
-    else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
-    else trace(0, deletes + 1, Nil, ((best :: focus).reverse).to(Array) :: rows)
+      if best == left.length && (best - deletes + inserts) == right.length
+      then Diff(backtrack(left.length - 1, deletes, rows, Nil)*)
+      else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
+      else trace(0, deletes + 1, Nil, ((best :: focus).reverse).to(Array) :: rows)
 
-  @tailrec
-  def backtrack(pos: Int, deletes: Int, rows: List[Array[Int]], edits: Edits): Edits =
-    val rpos = pos + rows.length - deletes*2
-    lazy val ins = rows.head(deletes) - 1
-    lazy val del = rows.head(deletes - 1)
+    @tailrec
+    def backtrack(pos: Int, deletes: Int, rows: List[Array[Int]], edits: Edits): Edits =
+      val rpos = pos + rows.length - deletes*2
+      lazy val ins = rows.head(deletes) - 1
+      lazy val del = rows.head(deletes - 1)
 
-    if pos == -1 && rpos == -1 then edits else if rows.isEmpty
-    then backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
-    else if deletes < rows.length && (deletes == 0 || ins >= del)
-    then
-      if pos == ins then backtrack(pos, deletes, rows.tail, Ins(rpos, right(rpos)) :: edits)
-      else backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
-    else
-      if pos == del then backtrack(del - 1, deletes - 1, rows.tail, Del(pos, left(pos)) :: edits)
-      else backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
+      if pos == -1 && rpos == -1 then edits else if rows.isEmpty
+      then backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
+      else if deletes < rows.length && (deletes == 0 || ins >= del)
+      then
+        if pos == ins then backtrack(pos, deletes, rows.tail, Ins(rpos, right(rpos)) :: edits)
+        else backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
+      else
+        if pos == del then backtrack(del - 1, deletes - 1, rows.tail, Del(pos, left(pos)) :: edits)
+        else backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
 
-  trace(0, 0, Nil, Nil)
+    trace(0, 0, Nil, Nil)
+
 
 extension (diff: Diff[Text])
   def serialize: Stream[Text] = diff.chunks.flatMap:

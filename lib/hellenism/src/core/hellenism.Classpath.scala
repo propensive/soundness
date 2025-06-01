@@ -51,10 +51,13 @@ object Classpath:
   given substantiable: (classloader: Classloader) => (Path on Classpath) is Substantiable =
     path => classloader.java.getResourceAsStream(path.text.s) != null
 
+
   @targetName("child")
   infix def / (child: Text)(using classloader: Classloader)
-  :     Path on Classpath raises NameError =
-    Path(classloader, List(child))
+  : Path on Classpath raises NameError =
+
+      Path(classloader, List(child))
+
 
   def apply(classloader: jn.URLClassLoader): Classpath =
     val entries = classloader.getURLs.nn.to(List).map(_.nn).flatMap(ClasspathEntry(_).option)

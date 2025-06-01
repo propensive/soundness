@@ -57,9 +57,10 @@ object Panopticon:
   extension [from, path <: Tuple, to](lens: Lens[from, path, to])
     @targetName("append")
     infix def ++ [to2, path2 <: Tuple](right: Lens[to, path2, to2])
-    :     Lens[from, Tuple.Concat[path, path2], to2] =
+    : Lens[from, Tuple.Concat[path, path2], to2] =
 
-      Lens.make()
+        Lens.make()
+
 
     inline def apply(aim: from): to = ${Panopticon.get[from, path, to]('aim)}
 
@@ -77,16 +78,19 @@ object Panopticon:
       case _ =>
         path
 
-  def getPaths[tuple <: Tuple: Type](paths: List[List[String]] = Nil)(using Quotes)
-  :     List[List[String]] =
-    Type.of[tuple] match
-      case '[type tail <: Tuple; head *: tail] =>
-        Type.of[head].absolve match
-          case '[type tupleType <: Tuple; tupleType] =>
-            getPath[tupleType]() :: getPaths[tail]()
 
-      case _ =>
-        halt(m"unexpectedly did not match")
+  def getPaths[tuple <: Tuple: Type](paths: List[List[String]] = Nil)(using Quotes)
+  : List[List[String]] =
+
+      Type.of[tuple] match
+        case '[type tail <: Tuple; head *: tail] =>
+          Type.of[head].absolve match
+            case '[type tupleType <: Tuple; tupleType] =>
+              getPath[tupleType]() :: getPaths[tail]()
+
+        case _ =>
+          halt(m"unexpectedly did not match")
+
 
   def get[from: Type, path <: Tuple: Type, to: Type](value: Expr[from])(using Quotes): Expr[to] =
 
@@ -110,35 +114,37 @@ object Panopticon:
 
     select[from](getPath[path](), value).asExprOf[to]
 
+
   def set[from: Type, path <: Tuple: Type, to: Type](value: Expr[from], newValue: Expr[to])
        (using Quotes)
-  :     Expr[from] =
+  : Expr[from] =
 
-    import quotes.reflect.*
+      import quotes.reflect.*
 
-    val fromTypeRepr: TypeRepr = TypeRepr.of[from]
+      val fromTypeRepr: TypeRepr = TypeRepr.of[from]
 
-    def rewrite(path: List[String], term: Term): Term =
-      path match
-        case Nil =>
-          term
+      def rewrite(path: List[String], term: Term): Term =
+        path match
+          case Nil =>
+            term
 
-        case next :: tail =>
-          val newParams = term.tpe.typeSymbol.caseFields.map: field =>
-            if field.name == next then
-              if tail == Nil then newValue.asTerm else rewrite(tail, Select(term, field))
-            else Select(term, field)
+          case next :: tail =>
+            val newParams = term.tpe.typeSymbol.caseFields.map: field =>
+              if field.name == next then
+                if tail == Nil then newValue.asTerm else rewrite(tail, Select(term, field))
+              else Select(term, field)
 
-          term.tpe.classSymbol match
-            case Some(classSymbol) =>
-              Apply
-               (Select(New(TypeIdent(classSymbol)), term.tpe.typeSymbol.primaryConstructor),
-                newParams)
+            term.tpe.classSymbol match
+              case Some(classSymbol) =>
+                Apply
+                 (Select(New(TypeIdent(classSymbol)), term.tpe.typeSymbol.primaryConstructor),
+                  newParams)
 
-            case None =>
-              halt(m"the type $fromTypeRepr does not have a primary constructor")
+              case None =>
+                halt(m"the type $fromTypeRepr does not have a primary constructor")
 
-    rewrite(getPath[path](), value.asTerm).asExprOf[from]
+      rewrite(getPath[path](), value.asTerm).asExprOf[from]
+
 
   def dereference[aim: Type, tuple <: Tuple: Type](member: Expr[String])(using Quotes): Expr[Any] =
     import quotes.reflect.*

@@ -85,6 +85,7 @@ package executives:
     type Return = Exit
     type Interface = CliInvocation
 
+
     def invocation
          (arguments:        Iterable[Text],
           environment:      Environment,
@@ -92,14 +93,15 @@ package executives:
           stdio:            Stdio,
           signals:          Spool[Signal])
          (using interpreter: CliInterpreter)
-    :     CliInvocation =
+    : CliInvocation =
 
-      CliInvocation
-       (Cli.arguments(arguments),
-        environments.virtualMachine,
-        workingDirectories.systemProperty,
-        stdio,
-        signals)
+        CliInvocation
+         (Cli.arguments(arguments),
+          environments.virtualMachine,
+          workingDirectories.systemProperty,
+          stdio,
+          signals)
+
 
     def process(cli: CliInvocation)(exitStatus: Interface ?=> Exit): Exit =
       try exitStatus(using cli)
@@ -109,7 +111,7 @@ package executives:
 def application(using executive: Executive, interpreter: CliInterpreter)
    (arguments: Iterable[Text], signals: List[Signal] = Nil)
    (block: Cli ?=> executive.Return)
-:     Unit =
+: Unit =
 
   val spool: Spool[Signal] = Spool()
   signals.each: signal =>

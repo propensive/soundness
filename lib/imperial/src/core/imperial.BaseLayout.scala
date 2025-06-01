@@ -52,19 +52,22 @@ object BaseLayout:
 case class BaseLayout(private val part: Optional[Text], readOnly: Boolean = false)
    (using baseDir: BaseLayout.Dir):
 
-  def absolutePath(using Environment, SystemProperties)
-  :     Text raises EnvironmentError raises SystemPropertyError =
 
-    val home: Text = Environment.home[Text]
-    val home2: Text = if home.ends(t"/") then home.skip(1, Rtl) else home
-    part.let(baseDir / _).or(baseDir).render(home2)
+  def absolutePath(using Environment, SystemProperties)
+  : Text raises EnvironmentError raises SystemPropertyError =
+
+      val home: Text = Environment.home[Text]
+      val home2: Text = if home.ends(t"/") then home.skip(1, Rtl) else home
+      part.let(baseDir / _).or(baseDir).render(home2)
+
 
   given dir: BaseLayout.Dir =
     BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
 
+
   def apply[instantiable: Instantiable across Paths from Text]()
        (using SystemProperties, Environment)
-  :     instantiable raises SystemPropertyError raises EnvironmentError =
+  : instantiable raises SystemPropertyError raises EnvironmentError =
 
-    val path: Text = absolutePath
-    instantiable(path)
+      val path: Text = absolutePath
+      instantiable(path)

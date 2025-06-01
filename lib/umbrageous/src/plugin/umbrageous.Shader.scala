@@ -54,30 +54,32 @@ class Shader(options: List[String]) extends PluginPhase:
     object transformer extends UntypedTreeMap:
       private def rewritePackage
                    (tree: Ident | Select, fqn: String, defs: List[Tree], select: Select => Select)
-      :     PackageDef =
-        tree match
-          case Ident(name) =>
-            val pkg = name.decode.toString+"."+fqn
-            val prefixes2 =
-              prefixes.filter { (k, v) => pkg == k || pkg.startsWith(k+".") }
-              . sortBy(_(0).length)
+      : PackageDef =
 
-            val ident = prefixes2.lastOption.fold(tree): (k, v) =>
-              select(Select(Ident(v.toTermName), name))
+          tree match
+            case Ident(name) =>
+              val pkg = name.decode.toString+"."+fqn
 
-            val imports =
-              prefixes2.lastOption.fold(prefixes) { (k, v) => prefixes.filter(_(0) != k) }
-              . map:
-                case (_, prefix) =>
-                  Import
-                   (Ident(prefix.toTermName), List(ImportSelector(Ident(StdNames.nme.WILDCARD))))
+              val prefixes2 =
+                prefixes.filter { (k, v) => pkg == k || pkg.startsWith(k+".") }
+                . sortBy(_(0).length)
 
-            PackageDef(ident, imports ::: defs)
+              val ident = prefixes2.lastOption.fold(tree): (k, v) =>
+                select(Select(Ident(v.toTermName), name))
 
-          case Select(pkg: (Ident | Select), name) =>
-            rewritePackage(pkg, s"${name.decode}.$fqn", defs, Select(_, name))
+              val imports =
+                prefixes2.lastOption.fold(prefixes) { (k, v) => prefixes.filter(_(0) != k) }.map:
+                  case (_, prefix) =>
+                    Import
+                     (Ident(prefix.toTermName), List(ImportSelector(Ident(StdNames.nme.WILDCARD))))
 
-          case _ => ???
+              PackageDef(ident, imports ::: defs)
+
+            case Select(pkg: (Ident | Select), name) =>
+              rewritePackage(pkg, s"${name.decode}.$fqn", defs, Select(_, name))
+
+            case _ => ???
+
 
       override def transform(tree: Tree)(using Context): Tree =
         tree match

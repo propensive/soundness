@@ -49,21 +49,25 @@ case class Catalog[key, value: ClassTag](values: IArray[value]):
 
   def tie[result](using proxy: Proxy[key, value, 0])
        (lambda: (catalog: this.type, `*`: proxy.type) ?=> result)
-  :     result =
-    lambda(using this, proxy)
+  : result =
+
+      lambda(using this, proxy)
+
 
   def braid[value2: ClassTag](right: Catalog[key, value2])[result: ClassTag]
        (lambda: (value, value2) => result)
-  :     Catalog[key, result] =
-    Catalog(IArray.tabulate(values.length) { index => lambda(values(index), right.values(index)) })
+  : Catalog[key, result] =
+
+      Catalog(IArray.tabulate(values.length) { index => lambda(values(index), right.values(index)) })
+
 
 extension [key, value: ClassTag](catalog: Catalog[key, value])
   def brush(using proxy: Proxy[key, value, Nat])
        (lambda: (`*`: proxy.type) ?=> Proxy[key, value, Nat] ~> value)
-  :     Catalog[key, value] =
+  : Catalog[key, value] =
 
-    val partialFunction = lambda(using proxy)
+      val partialFunction = lambda(using proxy)
 
-    Catalog(IArray.tabulate(catalog.size): index =>
-      partialFunction.applyOrElse
-       (Proxy[key, value, index.type](), _ => catalog.values(index)))
+      Catalog(IArray.tabulate(catalog.size): index =>
+        partialFunction.applyOrElse
+         (Proxy[key, value, index.type](), _ => catalog.values(index)))

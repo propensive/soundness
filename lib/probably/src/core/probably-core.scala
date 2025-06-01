@@ -62,62 +62,74 @@ extension (value: Double)
 def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
   TestId(name, suite, codepoint)
 
+
 def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
    (block: Testable ?=> Unit)
-:     Unit =
+: Unit =
 
-  runner.suite(Testable(name, suite), block)
+    runner.suite(Testable(name, suite), block)
+
 
 extension [test](test: Test[test])
   inline def aspire[report](inline predicate: test => Boolean)
               (using runner: Runner[report],
                      inc:    Inclusion[report, Verdict],
                      inc2:   Inclusion[report, Verdict.Detail])
-  :     Unit =
-    ${Probably.aspire[test, report]('test, 'runner, 'inc, 'inc2)}
+  : Unit =
+
+      ${Probably.aspire[test, report]('test, 'runner, 'inc, 'inc2)}
+
 
   inline def assert[report]
               (inline predicate: test => Boolean)
               (using runner:     Runner[report],
                      inclusion:  Inclusion[report, Verdict],
                      inclusion2: Inclusion[report, Verdict.Detail])
-  :     Unit =
-    ${Probably.assert[test, report]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
+  : Unit =
+
+      ${Probably.assert[test, report]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
+
 
   inline def check[report]
               (inline predicate: test => Boolean)
               (using runner:     Runner[report],
                      inclusion:  Inclusion[report, Verdict],
                      inclusion2: Inclusion[report, Verdict.Detail])
-  :     test =
-    ${Probably.check[test, report]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
+  : test =
+
+      ${Probably.check[test, report]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
+
 
   inline def assert[report]()
               (using runner:     Runner[report],
                      inclusion:  Inclusion[report, Verdict],
                      inclusion2: Inclusion[report, Verdict.Detail])
-  :     Unit =
-    ${
-        Probably.assert[test, report]
-         ('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2) }
+  : Unit =
+
+      ${
+          Probably.assert[test, report]
+           ('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2) }
+
 
   inline def check[report]()
               (using runner:     Runner[report],
                      inclusion:  Inclusion[report, Verdict],
                      inclusion2: Inclusion[report, Verdict.Detail])
-  :     test =
+  : test =
 
-    ${
-        Probably.check[test, report]
-         ('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2) }
+      ${
+          Probably.check[test, report]
+           ('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2) }
+
 
   inline def matches[report](inline pf: test ~> Any)
               (using runner: Runner[report],
                      inc:    Inclusion[report, Verdict],
                      inc2:   Inclusion[report, Verdict.Detail])
-  :     Unit =
+  : Unit =
 
-    assert[report](pf.isDefinedAt(_))
+      assert[report](pf.isDefinedAt(_))
+
 
 extension [value](inline value: value)(using inline test: Harness)
   inline def debug: value = ${Probably.debug('value, 'test)}

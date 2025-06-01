@@ -45,17 +45,20 @@ object Message:
   given printable: Message is Printable = (message, termcap) => message.text
   given communicable: [event: Communicable] => Message transcribes event = _.communicate
 
-  transparent inline def make[tuple <: Tuple](inline messages: tuple, done: List[Message])
-  :     List[Message] =
-    inline erasedValue[tuple] match
-      case _: (message *: tail) => messages.absolve match
-        case message *: tail =>
-          val message2 = message.asInstanceOf[message]
-          val communicable = summonInline[(? >: message) is Communicable]
-          make[tail](tail.asInstanceOf[tail], communicable.message(message2) :: done)
 
-      case _ =>
-        done.reverse
+  transparent inline def make[tuple <: Tuple](inline messages: tuple, done: List[Message])
+  : List[Message] =
+
+      inline erasedValue[tuple] match
+        case _: (message *: tail) => messages.absolve match
+          case message *: tail =>
+            val message2 = message.asInstanceOf[message]
+            val communicable = summonInline[(? >: message) is Communicable]
+            make[tail](tail.asInstanceOf[tail], communicable.message(message2) :: done)
+
+        case _ =>
+          done.reverse
+
 
 case class Message(texts: List[Text], messages: List[Message] = Nil):
   @targetName("append")

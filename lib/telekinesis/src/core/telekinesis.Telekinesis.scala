@@ -50,59 +50,61 @@ object Telekinesis:
         status:  Optional[Expr[Http.Status]]  = Unset,
         done:    List[Expr[Http.Header]]      = Nil)
        (using Quotes)
-  :     (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
-    import quotes.reflect.*
+  : (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
 
-    def unnamed[value: Type](value: Expr[value], tail: Seq[Expr[Any]]) =
-      Expr.summon[Prefixable of ? >: value].getOrElse:
-        val typeName = TypeRepr.of[value].show
-        halt(m"the type $typeName does not uniquely identify a particular HTTP header")
+      import quotes.reflect.*
 
-      . absolve
-      . match
-          case '{ type keyType <: Label; $prefixable: (Prefixable { type Self = keyType }) } =>
-            TypeRepr.of[keyType].absolve match
-              case ConstantType(StringConstant(key)) =>
-                val header =
-                  '{Http.Header(${Expr(key)}.tt.uncamel.kebab, $prefixable.encode($value))}
+      def unnamed[value: Type](value: Expr[value], tail: Seq[Expr[Any]]) =
+        Expr.summon[Prefixable of ? >: value].getOrElse:
+          val typeName = TypeRepr.of[value].show
+          halt(m"the type $typeName does not uniquely identify a particular HTTP header")
 
-                expand(tail, method, status, header :: done)
+        . absolve
+        . match
+            case '{ type keyType <: Label; $prefixable: (Prefixable { type Self = keyType }) } =>
+              TypeRepr.of[keyType].absolve match
+                case ConstantType(StringConstant(key)) =>
+                  val header =
+                    '{Http.Header(${Expr(key)}.tt.uncamel.kebab, $prefixable.encode($value))}
 
-    todo.absolve match
-      case '{ $method2: Http.Method } +: tail =>
-        if method.present then halt(m"the request method can only be specified once")
-        expand(tail, method2, status, done)
+                  expand(tail, method, status, header :: done)
 
-      case '{ ("", $method2: Http.Method) } +: tail =>
-        if method.present then halt(m"the request method can only be specified once")
-        expand(tail, method2, status, done)
+      todo.absolve match
+        case '{ $method2: Http.Method } +: tail =>
+          if method.present then halt(m"the request method can only be specified once")
+          expand(tail, method2, status, done)
 
-      case '{ $status2: Http.Status } +: tail =>
-        if status.present then halt(m"the HTTP status can only be specified once")
-        expand(tail, method, status2, done)
+        case '{ ("", $method2: Http.Method) } +: tail =>
+          if method.present then halt(m"the request method can only be specified once")
+          expand(tail, method2, status, done)
 
-      case '{ ("", $status2: Http.Status) } +: tail =>
-        if status.present then halt(m"the HTTP status can only be specified once")
-        expand(tail, method, status2, done)
+        case '{ $status2: Http.Status } +: tail =>
+          if status.present then halt(m"the HTTP status can only be specified once")
+          expand(tail, method, status2, done)
 
-      case '{ ("", $value: valueType) } +: tail =>
-        unnamed[valueType](value, tail)
+        case '{ ("", $status2: Http.Status) } +: tail =>
+          if status.present then halt(m"the HTTP status can only be specified once")
+          expand(tail, method, status2, done)
 
-      case '{ type keyType <: Label; ($key: keyType, $value: valueType) } +: tail =>
-        val name: Text = key.value.get.tt.uncamel.map(_.capitalize).kebab
+        case '{ ("", $value: valueType) } +: tail =>
+          unnamed[valueType](value, tail)
 
-        val Prefixable = Expr.summon[keyType is Prefixable of valueType].getOrElse:
-          val typeName = TypeRepr.of[valueType].show
-          halt(m"the header $name cannot take a value of type $typeName")
+        case '{ type keyType <: Label; ($key: keyType, $value: valueType) } +: tail =>
+          val name: Text = key.value.get.tt.uncamel.map(_.capitalize).kebab
 
-        val header = '{Http.Header($key.tt.uncamel.kebab, $Prefixable.encode($value))}
-        expand(tail, method, status, header :: done)
+          val Prefixable = Expr.summon[keyType is Prefixable of valueType].getOrElse:
+            val typeName = TypeRepr.of[valueType].show
+            halt(m"the header $name cannot take a value of type $typeName")
 
-      case '{ $value: valueType } +: tail =>
-        unnamed[valueType](value, tail)
+          val header = '{Http.Header($key.tt.uncamel.kebab, $Prefixable.encode($value))}
+          expand(tail, method, status, header :: done)
 
-      case Seq() =>
-        (method, status, Expr.ofList(done.reverse))
+        case '{ $value: valueType } +: tail =>
+          unnamed[valueType](value, tail)
+
+        case Seq() =>
+          (method, status, Expr.ofList(done.reverse))
+
 
   def submit[target: Type, payload: Type]
        (submit:   Expr[Http.Submit[target]],
@@ -113,28 +115,29 @@ object Telekinesis:
         postable: Expr[payload is Postable],
         client:   Expr[HttpClient onto target])
        (using Quotes)
-  :     Expr[Http.Response] =
+  : Expr[Http.Response] =
 
-    headers.absolve match
-      case Varargs(exprs) =>
-        val (method0, _, headers) = expand(exprs)
+      headers.absolve match
+        case Varargs(exprs) =>
+          val (method0, _, headers) = expand(exprs)
 
-        val method = method0 match
-          case Unset                     => '{Http.Post}
-          case method: Expr[Http.Method] => method
+          val method = method0 match
+            case Unset                     => '{Http.Post}
+            case method: Expr[Http.Method] => method
 
-        '{  given online0: Online = $online
-            given payload is Postable = $postable
-            given loggable0: HttpEvent is Loggable = $loggable
-            val host: Hostname = $submit.host
-            val body = $postable.stream($payload)
-            val path = $submit.originForm
-            val contentType = Http.Header("content-type".tt, $postable.mediaType($payload).show)
+          '{  given online0: Online = $online
+              given payload is Postable = $postable
+              given loggable0: HttpEvent is Loggable = $loggable
+              val host: Hostname = $submit.host
+              val body = $postable.stream($payload)
+              val path = $submit.originForm
+              val contentType = Http.Header("content-type".tt, $postable.mediaType($payload).show)
 
-            val request =
-              Http.Request($method, 1.1, host, path, contentType :: $headers.to(List), () => body)
+              val request =
+                Http.Request($method, 1.1, host, path, contentType :: $headers.to(List), () => body)
 
-            $client.request(request, $submit.target)  }
+              $client.request(request, $submit.target)  }
+
 
   def fetch[target: Type]
        (fetch:    Expr[Http.Fetch[target]],
@@ -143,42 +146,43 @@ object Telekinesis:
         loggable: Expr[HttpEvent is Loggable],
         client:   Expr[HttpClient onto target])
        (using Quotes)
-  :     Expr[Http.Response] =
+  : Expr[Http.Response] =
 
-    headers.absolve match
-      case Varargs(exprs) =>
-        val (method0, _, headers) = expand(exprs)
+      headers.absolve match
+        case Varargs(exprs) =>
+          val (method0, _, headers) = expand(exprs)
 
-        val method = method0 match
-          case Unset                    => '{Http.Get}
-          case method: Expr[Http.Method] => method
+          val method = method0 match
+            case Unset                    => '{Http.Get}
+            case method: Expr[Http.Method] => method
 
-        '{  given online0: Online = $online
-            given loggable0: HttpEvent is Loggable = $loggable
+          '{  given online0: Online = $online
+              given loggable0: HttpEvent is Loggable = $loggable
 
-            val path = $fetch.originForm
+              val path = $fetch.originForm
 
-            val request =
-              Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), () => Stream())
+              val request =
+                Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), () => Stream())
 
-            $client.request(request, $fetch.target)  }
+              $client.request(request, $fetch.target)  }
+
 
   def response(headers: Expr[Seq[Any]])(using Quotes)
-  :     Expr[Http.Response.Prototype | Http.Response] =
+  : Expr[Http.Response.Prototype | Http.Response] =
 
-    headers.absolve.match
-      case Varargs(exprs) => exprs.to(List).only:
-        case '{ $value: valueType } :: Nil =>
-          Expr.summon[(? >: valueType) is Servable].map { servable => '{$servable.serve($value)} }
-          . optional
+      headers.absolve.match
+        case Varargs(exprs) => exprs.to(List).only:
+          case '{ $value: valueType } :: Nil =>
+            Expr.summon[(? >: valueType) is Servable].map { servable => '{$servable.serve($value)} }
+            . optional
 
-    . or:
-        headers.absolve match
-          case Varargs(exprs) =>
-            val (_, status, headers2) = expand(exprs.to(List))
+      . or:
+          headers.absolve match
+            case Varargs(exprs) =>
+              val (_, status, headers2) = expand(exprs.to(List))
 
-            val status2: Expr[Optional[Http.Status]] = status match
-              case Unset                   => '{Unset}
-              case expr: Expr[Http.Status] => expr
+              val status2: Expr[Optional[Http.Status]] = status match
+                case Unset                   => '{Unset}
+                case expr: Expr[Http.Status] => expr
 
-            '{Http.Response.Prototype($status2, $headers2)}
+              '{Http.Response.Prototype($status2, $headers2)}

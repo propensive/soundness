@@ -53,6 +53,6 @@ extension [sendable: Sendable](email: sendable)
         bcc:     EmailAddress | List[EmailAddress] = Nil,
         replyTo: EmailAddress | List[EmailAddress] = Nil)
        (using courier: Courier, sender: Sender)
-  :     courier.Result =
+  : courier.Result =
 
-   courier.send(Envelope(email, to, cc, bcc, replyTo, subject))
+     courier.send(Envelope(email, to, cc, bcc, replyTo, subject))

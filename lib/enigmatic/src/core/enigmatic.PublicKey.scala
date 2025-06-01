@@ -45,16 +45,19 @@ object PublicKey:
 
   given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Bytes = _.bytes
 
+
 case class PublicKey[cipher <: Cipher](bytes: Bytes):
   def encrypt[value: Encodable in Bytes](value: value)(using algorithm: cipher & Encryption)
-  :     Bytes =
+  : Bytes =
 
-    algorithm.encrypt(value.bytestream, bytes)
+      algorithm.encrypt(value.bytestream, bytes)
+
 
   def verify[encodable: Encodable in Bytes](value: encodable, signature: Signature[cipher])
        (using algorithm: cipher & Signing)
-  :     Boolean =
+  : Boolean =
 
-    algorithm.verify(encodable.encode(value), signature.bytes, bytes)
+      algorithm.verify(encodable.encode(value), signature.bytes, bytes)
+
 
   def pem: Pem = Pem(PemLabel.PublicKey, bytes)

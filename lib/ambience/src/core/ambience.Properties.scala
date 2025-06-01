@@ -43,8 +43,9 @@ object Properties extends Dynamic:
        (using properties:     SystemProperties,
               reader:         SystemProperty[String, property],
               systemProperty: Tactic[SystemPropertyError])
-  :     property =
+  : property =
 
-    properties(property).let(reader.read).lest(SystemPropertyError(property))
+      properties(property).let(reader.read).lest(SystemPropertyError(property))
+
 
   def selectDynamic(key: String): PropertyAccess[key.type] = PropertyAccess[key.type](key)

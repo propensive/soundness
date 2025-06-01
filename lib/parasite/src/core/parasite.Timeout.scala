@@ -43,17 +43,18 @@ import prepositional.*
 
 object Timeout:
   def apply[duration: GenericDuration](timeout0: duration)(action: => Unit)(using Monitor, Codicil)
-  :     Timeout =
+  : Timeout =
 
-    val timeout = duration.milliseconds(timeout0)
+      val timeout = duration.milliseconds(timeout0)
 
-    def process(expiry: juca.AtomicLong): Task[Unit] = task("timeout".tt):
-      while jl.System.currentTimeMillis < expiry.get()
-      do sleep(expiry.get() - jl.System.currentTimeMillis)
-      expiry.set(Long.MinValue)
-      action
+      def process(expiry: juca.AtomicLong): Task[Unit] = task("timeout".tt):
+        while jl.System.currentTimeMillis < expiry.get()
+        do sleep(expiry.get() - jl.System.currentTimeMillis)
+        expiry.set(Long.MinValue)
+        action
 
-    new Timeout(timeout, process)
+      new Timeout(timeout, process)
+
 
 class Timeout private(duration: Long, makeProcess: juca.AtomicLong => Task[Unit]):
   private val expiry: juca.AtomicLong = juca.AtomicLong(jl.System.currentTimeMillis + duration)

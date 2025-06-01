@@ -40,28 +40,32 @@ import anticipation.*
 
 object TextEscapes:
   import errorDiagnostics.stackTraces
-  def standardEscape(text: into Text, cur: Int, esc: Boolean)
-  :     (Int, Int, Boolean) throws EscapeError =
-    text.s.charAt(cur) match
-      case '\\' if !esc => (-1, cur + 1, true)
-      case '\\'         => ('\\', cur + 1, false)
-      case 'n' if esc   => ('\n', cur + 1, false)
-      case 'r' if esc   => ('\r', cur + 1, false)
-      case 'f' if esc   => ('\f', cur + 1, false)
-      case 'b' if esc   => ('\b', cur + 1, false)
-      case 't' if esc   => ('\t', cur + 1, false)
-      case 'u' if esc   => (parseUnicode(text.s.slice(cur + 1, cur + 5)), cur + 5, false)
-      case 'e' if esc   => ('\u001b', cur + 1, false)
-      case '"' if esc   => ('"', cur + 1, false)
-      case '\'' if esc  => ('\'', cur + 1, false)
-      case ch if esc    =>
-        throw EscapeError
-               (Message
-                 (List("the character ".tt, " should not be escaped".tt),
-                  List(Message(ch.toString.tt))))
 
-      case ch =>
-        (ch, cur + 1, false)
+
+  def standardEscape(text: into Text, cur: Int, esc: Boolean)
+  : (Int, Int, Boolean) throws EscapeError =
+
+      text.s.charAt(cur) match
+        case '\\' if !esc => (-1, cur + 1, true)
+        case '\\'         => ('\\', cur + 1, false)
+        case 'n' if esc   => ('\n', cur + 1, false)
+        case 'r' if esc   => ('\r', cur + 1, false)
+        case 'f' if esc   => ('\f', cur + 1, false)
+        case 'b' if esc   => ('\b', cur + 1, false)
+        case 't' if esc   => ('\t', cur + 1, false)
+        case 'u' if esc   => (parseUnicode(text.s.slice(cur + 1, cur + 5)), cur + 5, false)
+        case 'e' if esc   => ('\u001b', cur + 1, false)
+        case '"' if esc   => ('"', cur + 1, false)
+        case '\'' if esc  => ('\'', cur + 1, false)
+        case ch if esc    =>
+          throw EscapeError
+                (Message
+                  (List("the character ".tt, " should not be escaped".tt),
+                    List(Message(ch.toString.tt))))
+
+        case ch =>
+          (ch, cur + 1, false)
+
 
   private def parseUnicode(chars: String): Char throws EscapeError =
     if chars.length < 4

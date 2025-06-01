@@ -50,18 +50,21 @@ object Formulaic extends ProductDerivable[Formulaic]:
         => (renderable: elicitable.Operand is Renderable into Phrasing)
         =>  value is Formulaic:
 
+
     def fields
          (pointer:     Pointer,
           legend:      Text,
           query:       Query,
           validation:  Validation,
           formulation: Formulation)
-    :     Seq[Html[Flow]] =
+    : Seq[Html[Flow]] =
 
-      val message: Optional[Message] = validation(pointer)
-      val widget = renderable.html(elicitable.widget(pointer.text, legend, query().or(t"")))
-      val required = false//safely(decodable.decoded(t"")).absent
-      List(formulation.element(widget, legend, message, required))
+        val message: Optional[Message] = validation(pointer)
+        val widget = renderable.html(elicitable.widget(pointer.text, legend, query().or(t"")))
+        val required = false//safely(decodable.decoded(t"")).absent
+
+        List(formulation.element(widget, legend, message, required))
+
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Formulaic =
     (pointer, legend, query, errors, formulation) =>
@@ -75,6 +78,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
         . flatten
 
       List(Fieldset(Legend(legend), content))
+
 
 trait Formulaic:
   type Self

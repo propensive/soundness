@@ -38,13 +38,16 @@ import scala.annotation.targetName
 
 object Multiplicable:
   def apply[multiplicand, multiplier, result](lambda: (multiplicand, multiplier) => result)
-  :     multiplicand is Multiplicable by multiplier into result = new Multiplicable:
-    type Self = multiplicand
-    type Result = result
-    type Operand = multiplier
+  : multiplicand is Multiplicable by multiplier into result =
 
-    def multiply(multiplicand: multiplicand, multiplier: multiplier): result =
-      lambda(multiplicand, multiplier)
+      new Multiplicable:
+        type Self = multiplicand
+        type Result = result
+        type Operand = multiplier
+
+        def multiply(multiplicand: multiplicand, multiplier: multiplier): result =
+          lambda(multiplicand, multiplier)
+
 
   given double: Double is Multiplicable by Double into Double = Multiplicable:
     (multiplicand, multiplier) => multiplicand*multiplier

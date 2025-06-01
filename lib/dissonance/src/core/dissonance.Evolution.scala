@@ -51,68 +51,73 @@ object Evolution:
 
 def evolve[element: ClassTag]
      (versions: List[List[element]], similar: Optional[(element, element) => Boolean] = Unset)
-:     Evolution[element] =
-  import Evolution.Atom
+: Evolution[element] =
 
-  def recur(iteration: Ordinal, todo: List[Seq[element]], evolution: Evolution[element])
-  :     Evolution[element] =
-    todo match
-      case Nil | _ :: Nil => evolution
+    import Evolution.Atom
 
-      case left :: right :: more =>
-        val changes: List[Change[element]] =
-          val diff0 = diff(IArray.from(left), IArray.from(right))
-          similar.lay(diff0.edits)(diff0.rdiff(_).changes).to(List)
 
-        def merge
-             (atoms:   List[Atom[element]],
-              edits:   List[Change[element]],
-              done:    List[Atom[element]] = Nil,
-              skips:   List[Atom[element]] = Nil,
-              inserts: List[Atom[element]] = Nil)
-        :     List[Atom[element]] =
+    def recur(iteration: Ordinal, todo: List[Seq[element]], evolution: Evolution[element])
+    : Evolution[element] =
 
-          def finish(): List[Atom[element]] =
-            val left = IArray.from(skips)
-            val right = IArray.from(inserts)
+        todo match
+          case Nil | _ :: Nil => evolution
 
-            val updates: List[Atom[element]] =
-              diff(left, right, _.value == _.value).edits.to(List).map:
-                case Ins(_, value)    => value
-                case Del(index, _)    => left(index)
-                case Par(index, _, _) => left(index).add(iteration)
+          case left :: right :: more =>
+            val changes: List[Change[element]] =
+                val diff0 = diff(IArray.from(left), IArray.from(right))
+                similar.lay(diff0.edits)(diff0.rdiff(_).changes).to(List)
 
-            updates ::: done
 
-          edits match
-            case Nil => atoms match
-             case Nil           => finish().reverse
-             case atom :: atoms => merge(atoms, Nil, done, atom :: skips, inserts)
+            def merge
+                 (atoms:   List[Atom[element]],
+                  edits:   List[Change[element]],
+                  done:    List[Atom[element]] = Nil,
+                  skips:   List[Atom[element]] = Nil,
+                  inserts: List[Atom[element]] = Nil)
+            : List[Atom[element]] =
 
-            case edit :: edits => atoms match
-              case Nil => edit match
-                case Ins(_, value) => merge(Nil, edits, Atom(value, Set(iteration)) :: finish())
-                case edit          => panic(m"Unexpected edit: ${edit.toString}")
+                def finish(): List[Atom[element]] =
+                  val left = IArray.from(skips)
+                  val right = IArray.from(inserts)
 
-              case atom :: atoms =>
-                if !atom.has(iteration - 1)
-                then merge(atoms, edit :: edits, done, atom :: skips, inserts)
-                else edit match
-                  case Ins(_, value) =>
-                    val atom2 = Atom(value, Set(iteration))
-                    merge(atom :: atoms, edits, done, skips, atom2 :: inserts)
+                  val updates: List[Atom[element]] =
+                    diff(left, right, _.value == _.value).edits.to(List).map:
+                      case Ins(_, value)    => value
+                      case Del(index, _)    => left(index)
+                      case Par(index, _, _) => left(index).add(iteration)
 
-                  case Del(_, value) =>
-                    merge(atoms, edits, done, atom :: skips, inserts)
+                  updates ::: done
 
-                  case Par(_, _, value) =>
-                    merge(atoms, edits, atom.add(iteration) :: finish())
+                edits match
+                  case Nil => atoms match
+                    case Nil           => finish().reverse
+                    case atom :: atoms => merge(atoms, Nil, done, atom :: skips, inserts)
 
-                  case Sub(_, _, _, _) =>
-                    merge(atoms, edits, atom.add(iteration) :: finish())
+                  case edit :: edits => atoms match
+                    case Nil => edit match
+                      case Ins(_, value) => merge(Nil, edits, Atom(value, Set(iteration)) :: finish())
+                      case edit          => panic(m"Unexpected edit: ${edit.toString}")
 
-        recur(iteration + 1, right :: more, Evolution(merge(evolution.sequence, changes)))
+                    case atom :: atoms =>
+                      if !atom.has(iteration - 1)
+                      then merge(atoms, edit :: edits, done, atom :: skips, inserts)
+                      else edit match
+                        case Ins(_, value) =>
+                          val atom2 = Atom(value, Set(iteration))
+                          merge(atom :: atoms, edits, done, skips, atom2 :: inserts)
 
-  if versions.isEmpty then Evolution(Nil) else
-    val initial = Evolution(versions.head.map(Atom(_, Set(Prim))))
-    recur(Sec, versions, initial)
+                        case Del(_, value) =>
+                          merge(atoms, edits, done, atom :: skips, inserts)
+
+                        case Par(_, _, value) =>
+                          merge(atoms, edits, atom.add(iteration) :: finish())
+
+                        case Sub(_, _, _, _) =>
+                          merge(atoms, edits, atom.add(iteration) :: finish())
+
+
+            recur(iteration + 1, right :: more, Evolution(merge(evolution.sequence, changes)))
+
+
+    if versions.isEmpty then Evolution(Nil)
+    else recur(Sec, versions, Evolution(versions.head.map(Atom(_, Set(Prim)))))

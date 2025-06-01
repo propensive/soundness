@@ -109,8 +109,9 @@ object Aviation2:
                    inline right:       Instant,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
-        if left.long == right.long then !strict else (left.long < right.long)^greaterThan
+      : Boolean =
+
+          if left.long == right.long then !strict else (left.long < right.long)^greaterThan
 
     given ordering: Ordering[Instant] = Ordering.Long
 

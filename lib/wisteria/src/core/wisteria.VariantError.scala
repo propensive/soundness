@@ -41,12 +41,13 @@ import scala.compiletime.*
 object VariantError:
   inline def apply[derivation](inputLabel: Text)
               (using reflection: SumReflection[derivation], diagnostics: Diagnostics)
-  :     VariantError =
+  : VariantError =
 
-    val variants = constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
-    val sum = constValue[reflection.MirroredLabel].tt
+      val variants = constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
+      val sum = constValue[reflection.MirroredLabel].tt
 
-    VariantError(inputLabel, sum, variants)
+      VariantError(inputLabel, sum, variants)
+
 
 case class VariantError(inputLabel: Text, sum: Text, validVariants: List[Text])(using Diagnostics)
 extends Error

@@ -81,15 +81,17 @@ def daemon(using Codepoint)(evaluate: Worker ?=> Unit)(using Monitor, Codicil): 
   Daemon(evaluate(using _))
 
 def async[result](using Codepoint)(evaluate: Worker ?=> result)(using Monitor, Codicil)
-:     Task[result] =
+: Task[result] =
 
-  Task(evaluate(using _), daemon = false, name = Unset)
+    Task(evaluate(using _), daemon = false, name = Unset)
+
 
 def task[result](using Codepoint)(name: into Text)(evaluate: Worker ?=> result)
      (using Monitor, Codicil)
-:     Task[result] =
+: Task[result] =
 
-  Task(evaluate(using _), daemon = false, name = name)
+    Task(evaluate(using _), daemon = false, name = name)
+
 
 def relent[result]()(using Worker): Unit = monitor.relent()
 def cancel[result]()(using Monitor): Unit = monitor.cancel()
@@ -103,9 +105,12 @@ def delay[generic: GenericDuration](duration: generic)(using Monitor): Unit =
 def sleep[instant: Abstractable across Instants into Long](instant: instant)(using Monitor): Unit =
   monitor.snooze(instant.generic - jl.System.currentTimeMillis)
 
+
 def hibernate[instant: Abstractable across Instants into Long](instant: instant)(using Monitor)
-:     Unit =
+: Unit =
+
   while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
+
 
 extension [result](tasks: Seq[Task[result]])
   def sequence(using Monitor, Codicil): Task[Seq[result]] raises AsyncError =
@@ -122,32 +127,37 @@ extension [result](stream: Stream[result])
   def concurrent(using Monitor, Codicil): Stream[result] raises AsyncError =
     if async(stream.isEmpty).await() then Stream() else stream.head #:: stream.tail.concurrent
 
+
 def supervise[result](block: Monitor ?=> result)(using model: ThreadModel, codepoint: Codepoint)
-:     result raises AsyncError =
-  block(using model.supervisor())
+: result raises AsyncError =
+
+    block(using model.supervisor())
+
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)
    (using Tenacity, Monitor)
-:     value raises RetryError =
+: value raises RetryError =
 
-  @tailrec
-  def recur(attempt: Ordinal): value =
-    boundary[Perseverance[value]]: label ?=>
-      sleep(summon[Tenacity].delay(attempt).or(abort(RetryError(attempt.n1))))
-      def surrender(): Nothing = boundary.break(Perseverance.Surrender)
-      def persevere(): Nothing = boundary.break(Perseverance.Persevere)
+    @tailrec
+    def recur(attempt: Ordinal): value =
+      boundary[Perseverance[value]]: label ?=>
+        sleep(summon[Tenacity].delay(attempt).or(abort(RetryError(attempt.n1))))
+        def surrender(): Nothing = boundary.break(Perseverance.Surrender)
+        def persevere(): Nothing = boundary.break(Perseverance.Persevere)
 
-      Perseverance.Prevail(evaluate(using surrender, persevere))
+        Perseverance.Prevail(evaluate(using surrender, persevere))
 
-    . match
-        case Perseverance.Surrender      => abort(RetryError(attempt.n1))
-        case Perseverance.Prevail(value) => value
-        case Perseverance.Persevere      => recur(attempt + 1)
+      . match
+          case Perseverance.Surrender      => abort(RetryError(attempt.n1))
+          case Perseverance.Prevail(value) => value
+          case Perseverance.Persevere      => recur(attempt + 1)
 
-  recur(Prim)
+    recur(Prim)
+
 
 extension [target](value: target)
   def intercept[event](using interceptable: event is Interceptable onto target)
        (action: (event: event) ?=> Unit)
-  :     Hook =
-    Hook(interceptable.register(value, action(using _)))
+  : Hook =
+
+      Hook(interceptable.register(value, action(using _)))

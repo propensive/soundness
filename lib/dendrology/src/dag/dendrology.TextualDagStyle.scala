@@ -39,15 +39,16 @@ import symbolism.*
 import DagTile.*
 
 case class TextualDagStyle[line: Textual]
-   (space:      Text,
-    corner:     Text,
-    vertical:   Text,
-    firstMid:   Text,
-    horizontal: Text,
-    midLast:    Text,
-    cross:      Text,
-    overlap:    Text)
+            (space:      Text,
+             corner:     Text,
+             vertical:   Text,
+             firstMid:   Text,
+             horizontal: Text,
+             midLast:    Text,
+             cross:      Text,
+             overlap:    Text)
 extends DagStyle[line]:
+
   def serialize(tiles: List[DagTile], node: line): line =
     line(tiles.map(text(_)).join)+node
 

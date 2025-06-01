@@ -58,10 +58,9 @@ object Cookie:
         expiry:   Optional[duration] = Unset,
         secure:   Boolean                = false,
         httpOnly: Boolean                = false,
-        path:    Optional[Text]         = Unset) =
+        path:     Optional[Text]         = Unset) =
 
-    new Cookie[value]
-         (name, domain, expiry.let(duration.milliseconds(_)), secure, httpOnly, path)
+    new Cookie[value](name, domain, expiry.let(duration.milliseconds(_)), secure, httpOnly, path)
 
   object Value:
     given showable: Value is Showable = cookie =>
