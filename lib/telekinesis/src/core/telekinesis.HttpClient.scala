@@ -67,65 +67,66 @@ object HttpClient:
   given http: Tactic[ConnectError] => Online => HttpClient:
     type Target = Origin["http" | "https"]
 
+
     def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
-    :     Http.Response logs HttpEvent =
+    : Http.Response logs HttpEvent =
 
-      val url = httpRequest.on(origin)
+        val url = httpRequest.on(origin)
 
-      Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
+        Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
 
-      val request: jnh.HttpRequest.Builder =
-        jnh.HttpRequest.newBuilder().nn.uri(jn.URI.create(url.show.s)).nn
+        val request: jnh.HttpRequest.Builder =
+          jnh.HttpRequest.newBuilder().nn.uri(jn.URI.create(url.show.s)).nn
 
-      lazy val body = httpRequest.body() match
-        case Stream()      =>
-          jnh.HttpRequest.BodyPublishers.noBody.nn
+        lazy val body = httpRequest.body() match
+          case Stream()      =>
+            jnh.HttpRequest.BodyPublishers.noBody.nn
 
-        case Stream(bytes) =>
-          jnh.HttpRequest.BodyPublishers.ofByteArray(bytes.mutable(using Unsafe))
+          case Stream(bytes) =>
+            jnh.HttpRequest.BodyPublishers.ofByteArray(bytes.mutable(using Unsafe))
 
-        case stream =>
-          jnh.HttpRequest.BodyPublishers.ofInputStream { () => stream.inputStream }
+          case stream =>
+            jnh.HttpRequest.BodyPublishers.ofInputStream { () => stream.inputStream }
 
-      httpRequest.method match
-        case Http.Delete  => request.DELETE().nn
-        case Http.Get     => request.GET().nn
-        case Http.Post    => request.POST(body).nn
-        case Http.Put     => request.PUT(body).nn
-        case Http.Connect => request.method("CONNECT", body).nn
-        case Http.Head    => request.method("HEAD", body).nn
-        case Http.Options => request.method("OPTIONS", body).nn
-        case Http.Patch   => request.method("PATCH", body).nn
-        case Http.Trace   => request.method("TRACE", body).nn
+        httpRequest.method match
+          case Http.Delete  => request.DELETE().nn
+          case Http.Get     => request.GET().nn
+          case Http.Post    => request.POST(body).nn
+          case Http.Put     => request.PUT(body).nn
+          case Http.Connect => request.method("CONNECT", body).nn
+          case Http.Head    => request.method("HEAD", body).nn
+          case Http.Options => request.method("OPTIONS", body).nn
+          case Http.Patch   => request.method("PATCH", body).nn
+          case Http.Trace   => request.method("TRACE", body).nn
 
-      request.header("User-Agent", "Telekinesis/1.0.0")
+        request.header("User-Agent", "Telekinesis/1.0.0")
 
-      httpRequest.textHeaders.each:
-        case Http.Header(key, value) => request.header(key.s, value.s)
+        httpRequest.textHeaders.each:
+          case Http.Header(key, value) => request.header(key.s, value.s)
 
-      val response: jnh.HttpResponse[ji.InputStream] =
-        import ConnectError.Reason.*, Ssl.Reason.*
+        val response: jnh.HttpResponse[ji.InputStream] =
+          import ConnectError.Reason.*, Ssl.Reason.*
 
-        val client = HttpClient.client
+          val client = HttpClient.client
 
-        try client.send(request.build(), jnh.HttpResponse.BodyHandlers.ofInputStream()).nn catch
-          case error: jns.SSLHandshakeException       => abort(ConnectError(Ssl(Handshake)))
-          case error: jns.SSLProtocolException        => abort(ConnectError(Ssl(Protocol)))
-          case error: jns.SSLPeerUnverifiedException  => abort(ConnectError(Ssl(Peer)))
-          case error: jns.SSLKeyException             => abort(ConnectError(Ssl(Key)))
-          case error: jn.UnknownHostException         => abort(ConnectError(Dns))
-          case error: jnh.HttpConnectTimeoutException => abort(ConnectError(Timeout))
-          case error: jn.ConnectException             => error.getMessage() match
-            case "Connection refused"                    => abort(ConnectError(Refused))
-            case "Connection timed out"                  => abort(ConnectError(Timeout))
-            case "HTTP connect timed out"                => abort(ConnectError(Timeout))
-            case error                                   => abort(ConnectError(Unknown))
-          case error: ji.IOException                  => abort(ConnectError(Unknown))
+          try client.send(request.build(), jnh.HttpResponse.BodyHandlers.ofInputStream()).nn catch
+            case error: jns.SSLHandshakeException       => abort(ConnectError(Ssl(Handshake)))
+            case error: jns.SSLProtocolException        => abort(ConnectError(Ssl(Protocol)))
+            case error: jns.SSLPeerUnverifiedException  => abort(ConnectError(Ssl(Peer)))
+            case error: jns.SSLKeyException             => abort(ConnectError(Ssl(Key)))
+            case error: jn.UnknownHostException         => abort(ConnectError(Dns))
+            case error: jnh.HttpConnectTimeoutException => abort(ConnectError(Timeout))
+            case error: jn.ConnectException             => error.getMessage() match
+              case "Connection refused"                    => abort(ConnectError(Refused))
+              case "Connection timed out"                  => abort(ConnectError(Timeout))
+              case "HTTP connect timed out"                => abort(ConnectError(Timeout))
+              case error                                   => abort(ConnectError(Unknown))
+            case error: ji.IOException                  => abort(ConnectError(Unknown))
 
-      val status2: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
-        abort(ConnectError(ConnectError.Reason.Unknown))
+        val status2: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
+          abort(ConnectError(ConnectError.Reason.Unknown))
 
-      val headers2: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
-        (key, values) => values.asScala.map { value => Http.Header(key.tt, value.tt) }
+        val headers2: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
+          (key, values) => values.asScala.map { value => Http.Header(key.tt, value.tt) }
 
-      Http.Response.make(status2, headers2, unsafely(response.body().nn.stream[Bytes]))
+        Http.Response.make(status2, headers2, unsafely(response.body().nn.stream[Bytes]))

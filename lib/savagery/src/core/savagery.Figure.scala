@@ -51,9 +51,9 @@ case class Rectangle(position: Point, width: Float, height: Float) extends Figur
       t"""<rect x="${position.x} y="${position.y}" width="$width" height="$height"/>"""
 
 case class Outline
-   (ops:      List[Stroke]       = Nil,
-    style:    Optional[CssStyle] = Unset,
-    id:     Optional[SvgId]    = Unset,
+   (ops:       List[Stroke]       = Nil,
+    style:     Optional[CssStyle] = Unset,
+    id:        Optional[SvgId]    = Unset,
     transform: List[Transform]    = Nil)
 extends Figure:
   import Stroke.*

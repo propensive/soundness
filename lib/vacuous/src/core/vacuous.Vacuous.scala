@@ -63,31 +63,31 @@ object Vacuous:
 
 
   def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value])(using Quotes)
-  :     Expr[value] =
+  : Expr[value] =
 
-    import quotes.reflect.*
+      import quotes.reflect.*
 
-    optional.runtimeChecked match
-      case '{ $optional: optionalType } => check[optionalType]
+      optional.runtimeChecked match
+        case '{ $optional: optionalType } => check[optionalType]
 
-    def optimize(term: Term): Term = term match
-      case inlined@Inlined
-            (call@Some(Apply(TypeApply(Ident("optimizable"), _), _)), bindings, term) =>
-        term match
-          case Typed(Apply(select, List(_)), typeTree) =>
-            Inlined(call, bindings, Typed(Apply(select, List(default.asTerm)), typeTree))
+      def optimize(term: Term): Term = term match
+        case inlined@Inlined
+              (call@Some(Apply(TypeApply(Ident("optimizable"), _), _)), bindings, term) =>
+          term match
+            case Typed(Apply(select, List(_)), typeTree) =>
+              Inlined(call, bindings, Typed(Apply(select, List(default.asTerm)), typeTree))
 
-          case term =>
-            ' { $optional match
-                  case Unset => $default
-                  case term  => term.asInstanceOf[value] } . asTerm
+            case term =>
+              ' { $optional match
+                    case Unset => $default
+                    case term  => term.asInstanceOf[value] } . asTerm
 
-      case Inlined(call, bindings, term) =>
-        Inlined(call, bindings, optimize(term))
+        case Inlined(call, bindings, term) =>
+          Inlined(call, bindings, optimize(term))
 
-      case term =>
-        ' { $optional match
-              case Unset => $default
-              case term  => term.asInstanceOf[value] } . asTerm
+        case term =>
+          ' { $optional match
+                case Unset => $default
+                case term  => term.asInstanceOf[value] } . asTerm
 
-    '{${optimize(optional.asTerm).asExpr}.asInstanceOf[value]}.asExprOf[value]
+      '{${optimize(optional.asTerm).asExpr}.asInstanceOf[value]}.asExprOf[value]

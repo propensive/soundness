@@ -106,21 +106,23 @@ object Geodesy:
         val long0 = left&0xffffffffL
         if long0 < 0 then (long0 + Int.MaxValue).toInt else (long0 - Int.MaxValue).toInt
 
+
       def recur(value: Long, latMin: Long, latMax: Long, longMin: Long, longMax: Long, count: Int)
-      :     Long =
+      : Long =
 
-        if count >= bits then value else (count%2).absolve match
-          case 0 =>
-            val midpoint = (longMin + longMax)/2
-            if long < midpoint
-            then recur(value << 1, latMin, latMax, longMin, midpoint, count + 1)
-            else recur((value << 1) | 1L, latMin, latMax, midpoint, longMax, count + 1)
+          if count >= bits then value else (count%2).absolve match
+            case 0 =>
+              val midpoint = (longMin + longMax)/2
+              if long < midpoint
+              then recur(value << 1, latMin, latMax, longMin, midpoint, count + 1)
+              else recur((value << 1) | 1L, latMin, latMax, midpoint, longMax, count + 1)
 
-          case 1 =>
-            val midpoint = (latMin + latMax)/2
-            if lat < midpoint
-            then recur(value << 1, latMin, midpoint, longMin, longMax, count + 1)
-            else recur((value << 1) | 1L, midpoint, latMax, longMin, longMax, count + 1)
+            case 1 =>
+              val midpoint = (latMin + latMax)/2
+              if lat < midpoint
+              then recur(value << 1, latMin, midpoint, longMin, longMax, count + 1)
+              else recur((value << 1) | 1L, midpoint, latMax, longMin, longMax, count + 1)
+
 
       val binary = recur(0L, Int.MinValue + 1, Int.MaxValue, Int.MinValue + 1, Int.MaxValue, 0)
 

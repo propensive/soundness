@@ -69,24 +69,26 @@ import filesystemOptions.createNonexistent.disabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.disabled
 
+
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
      (using classloader: Classloader)
-:     Bytecode =
-  val uuid = Uuid()
-  val out: Path on Linux = unsafely(temporaryDirectory[Path on Linux] / Name[Linux](uuid.show))
-  val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
+: Bytecode =
 
-  val settings: staging.Compiler.Settings =
-    staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+    val uuid = Uuid()
+    val out: Path on Linux = unsafely(temporaryDirectory[Path on Linux] / Name[Linux](uuid.show))
+    val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
-  given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
+    val settings: staging.Compiler.Settings =
+      staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
-  unsafely:
-    val file: Path on Linux = out / Name[Linux](t"Generated$$Code$$From$$Quoted.class")
-    val code: Quotes ?=> Expr[Unit] = '{ def _code(): Unit = $code0 }
-    staging.run(code)
-    val classfile: Classfile = new Classfile(file.open(_.read[Bytes]))
-    classfile.methods.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
+    given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
+
+    unsafely:
+      val file: Path on Linux = out / Name[Linux](t"Generated$$Code$$From$$Quoted.class")
+      val code: Quotes ?=> Expr[Unit] = '{ def _code(): Unit = $code0 }
+      staging.run(code)
+      val classfile: Classfile = new Classfile(file.open(_.read[Bytes]))
+      classfile.methods.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
 
 
 case class ClassfileError()(using Diagnostics)

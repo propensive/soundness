@@ -36,7 +36,9 @@ import vacuous.*
 
 case class Arguments(sequence: Argument*) extends FlagParameters:
   def read[operand](flag: Flag)(using Cli, FlagInterpreter[operand], Suggestions[operand])
-  :     Optional[operand] =
-    Unset // FIXME
+  : Optional[operand] =
+
+      Unset // FIXME
+
 
   def focusFlag: Optional[Argument] = Unset

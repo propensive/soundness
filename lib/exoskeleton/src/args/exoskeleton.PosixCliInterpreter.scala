@@ -46,25 +46,26 @@ object PosixCliInterpreter extends CliInterpreter:
           arguments:  List[Argument],
           current:    Optional[Argument],
           parameters: PosixParameters)
-    :     PosixParameters =
+    : PosixParameters =
 
-      def push(): PosixParameters = current match
-        case Unset =>
-          PosixParameters(arguments.reverse)
+        def push(): PosixParameters = current match
+          case Unset =>
+            PosixParameters(arguments.reverse)
 
-        case current: Argument =>
-          parameters.copy(parameters = parameters.parameters.updated(current, arguments.reverse))
+          case current: Argument =>
+            parameters.copy(parameters = parameters.parameters.updated(current, arguments.reverse))
 
-      todo match
-        case head :: tail =>
-          if head() == t"--" then push().copy(postpositional = tail)
-          else if head().starts(t"-") then recur(tail, Nil, head, push())
-          else
-            val parameters2 =
-              if head.cursor.present then parameters.copy(focusFlag = current) else parameters
-            recur(tail, head :: arguments, current, parameters2)
+        todo match
+          case head :: tail =>
+            if head() == t"--" then push().copy(postpositional = tail)
+            else if head().starts(t"-") then recur(tail, Nil, head, push())
+            else
+              val parameters2 =
+                if head.cursor.present then parameters.copy(focusFlag = current) else parameters
+              recur(tail, head :: arguments, current, parameters2)
 
-        case Nil =>
-          push()
+          case Nil =>
+            push()
+
 
     recur(arguments, Nil, Unset, PosixParameters())

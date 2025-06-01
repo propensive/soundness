@@ -101,9 +101,10 @@ object JsonAst:
   def apply
        (value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any]
                | Boolean | Null | Unset.type)
-  :     JsonAst =
+  : JsonAst =
 
-    value
+      value
+
 
   def parse[readable: Readable by Bytes](source: readable): JsonAst raises JsonParseError =
 

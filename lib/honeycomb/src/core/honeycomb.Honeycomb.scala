@@ -43,63 +43,64 @@ import scala.quoted.*
 object Honeycomb:
   given realm: Realm = realm"honeycomb"
 
+
   def read[name <: Label: Type, child <: Label: Type, result <: Label: Type]
        (node:       Expr[Node[name]],
         className:  Expr[String],
         name:       Expr[name],
         attributes: Expr[Seq[(Label, Any)]])
        (using Quotes)
-  :     Expr[StartTag[name, result]] =
+  : Expr[StartTag[name, result]] =
 
-    import quotes.reflect.*
+      import quotes.reflect.*
 
-    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[Optional[(String, Optional[Text])]]] =
-      exprs match
-        case '{("", $value: valueType)} +: tail =>
-          val expr: Expr[HtmlAttribute[valueType]] =
-            Expr.summon[HtmlAttribute[valueType] onto name]
-            . orElse(Expr.summon[HtmlAttribute[valueType]])
-            . getOrElse:
-                val typeName = TypeRepr.of[valueType]
-                halt(m"the attribute name cannot be uniquely determined from its type, $typeName")
+      def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[Optional[(String, Optional[Text])]]] =
+        exprs match
+          case '{("", $value: valueType)} +: tail =>
+            val expr: Expr[HtmlAttribute[valueType]] =
+              Expr.summon[HtmlAttribute[valueType] onto name]
+              . orElse(Expr.summon[HtmlAttribute[valueType]])
+              . getOrElse:
+                  val typeName = TypeRepr.of[valueType]
+                  halt(m"the attribute name cannot be uniquely determined from its type, $typeName")
 
-          val key: Text = expr.absolve match
-            case '{ type keyType <: Label
-                    $attribute: (HtmlAttribute[valueType] { type Self = keyType}) } =>
-              TypeRepr.of[keyType].absolve match
-                case ConstantType(StringConstant(key)) => key.tt
+            val key: Text = expr.absolve match
+              case '{ type keyType <: Label
+                      $attribute: (HtmlAttribute[valueType] { type Self = keyType}) } =>
+                TypeRepr.of[keyType].absolve match
+                  case ConstantType(StringConstant(key)) => key.tt
 
 
-          '{  $expr.convert($value) match
-                case HtmlAttribute.NotShown => Unset
-                case Unset                  => ($expr.rename.or(${Expr(key)}).s, Unset)
-                case attribute: Text        => ($expr.rename.or(${Expr(key)}).s, attribute)
-           } :: recur(tail)
+            '{  $expr.convert($value) match
+                  case HtmlAttribute.NotShown => Unset
+                  case Unset                  => ($expr.rename.or(${Expr(key)}).s, Unset)
+                  case attribute: Text        => ($expr.rename.or(${Expr(key)}).s, attribute)
+            } :: recur(tail)
 
-        case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
-          val attribute: String = key.value.get
+          case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
+            val attribute: String = key.value.get
 
-          val expr: Expr[keyType is HtmlAttribute[valueType]] =
-            Expr.summon[keyType is HtmlAttribute[valueType] onto name]
-            . orElse(Expr.summon[keyType is HtmlAttribute[valueType]])
-            . getOrElse:
-                val typeName = TypeRepr.of[valueType]
-                halt(m"the attribute $attribute cannot take a value of type $typeName")
+            val expr: Expr[keyType is HtmlAttribute[valueType]] =
+              Expr.summon[keyType is HtmlAttribute[valueType] onto name]
+              . orElse(Expr.summon[keyType is HtmlAttribute[valueType]])
+              . getOrElse:
+                  val typeName = TypeRepr.of[valueType]
+                  halt(m"the attribute $attribute cannot take a value of type $typeName")
 
-          '{  $expr.convert($value) match
-                case HtmlAttribute.NotShown => Unset
-                case Unset                  => ($expr.rename.or($key.tt).s, Unset)
-                case attribute: Text        => ($expr.rename.or($key.tt).s, attribute)
-           } :: recur(tail)
+            '{  $expr.convert($value) match
+                  case HtmlAttribute.NotShown => Unset
+                  case Unset                  => ($expr.rename.or($key.tt).s, Unset)
+                  case attribute: Text        => ($expr.rename.or($key.tt).s, attribute)
+            } :: recur(tail)
 
-        case _ =>
-          if className.value == Some("apply") then Nil else List('{("class", $className.tt)})
+          case _ =>
+            if className.value == Some("apply") then Nil else List('{("class", $className.tt)})
 
-    attributes.absolve match
-      case Varargs(exprs) =>
-        '{
-            StartTag
-             ($name,
-              $node.attributes ++ ${Expr.ofSeq(recur(exprs))}.compact.collect:
-                case (key, value: Text) => (key, value)
-                case (key, Unset)       => (key, Unset))  }
+      attributes.absolve match
+        case Varargs(exprs) =>
+          '{
+              StartTag
+               ($name,
+                $node.attributes ++ ${Expr.ofSeq(recur(exprs))}.compact.collect:
+                  case (key, value: Text) => (key, value)
+                  case (key, Unset)       => (key, Unset))  }

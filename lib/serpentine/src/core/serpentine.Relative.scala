@@ -77,17 +77,22 @@ object Relative:
 
     if text == navigable.selfText then Relative(0, Nil) else recur(0, 0, Nil)
 
+
   def apply[element](using navigable: Navigable by element)(ascent0: Int, descent0: List[element])
-  :     Relative by element =
-    Relative.from[element](ascent0, descent0.map(navigable.makeElement(_)), navigable.separator)
+  : Relative by element =
+
+      Relative.from[element](ascent0, descent0.map(navigable.makeElement(_)), navigable.separator)
+
 
   private def from[element](ascent0: Int, descent0: List[Text], separator: Text)
-  :     Relative by element =
-    new Relative(ascent0, descent0, separator):
-      type Operand = element
+  : Relative by element =
 
-  given addable: [element] => (Relative by element) is Addable by (Relative by element) into
-          (Relative by element) =
+      new Relative(ascent0, descent0, separator):
+        type Operand = element
+
+
+  given addable: [element]
+        => (Relative by element) is Addable by (Relative by element) into (Relative by element) =
     (left, right) =>
       def recur(ascent: Int, descent: List[Text], ascent2: Int): Relative by element =
         if ascent2 > 0 then

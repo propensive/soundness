@@ -161,8 +161,6 @@ object Wit:
         case other => fail(m"expected ':'")
 
 
-
-
     def interfaceItems(members: List[Primitive | Func] = Nil): List[Primitive | Func] = Nil
 
     def worldItems(done: List[Import | Export] = Nil): List[Import | Export] = keyword() match
@@ -173,13 +171,16 @@ object Wit:
     def witImport(): Import = Import(???)
     def witExport(): Export = Export(???)
 
+
     def topLevel(pkg: Optional[Package] = Unset, members: List[World | Interface] = Nil)
-    :     List[World | Interface] =
-      keyword() match
-        case t"package"   => topLevel(packageDeclaration(), members)
-        case t"world"     => topLevel(pkg, world() :: members)
-        case t"interface" => topLevel(pkg, interface() :: members)
-        case _            => members.reverse
+    : List[World | Interface] =
+
+        keyword() match
+          case t"package"   => topLevel(packageDeclaration(), members)
+          case t"world"     => topLevel(pkg, world() :: members)
+          case t"interface" => topLevel(pkg, interface() :: members)
+          case _            => members.reverse
+
 
     whitespace()
     Wit(topLevel()*)

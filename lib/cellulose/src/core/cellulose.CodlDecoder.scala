@@ -47,12 +47,14 @@ trait CodlDecoder[value]:
   def schema: CodlSchema
 
 object CodlDecoder:
-
   def apply[value]
        (schema0: => CodlSchema, decode0: Tactic[CodlReadError] ?=> List[Indexed] => value)
-  :     CodlDecoder[value] = new:
-    def decoded(value: List[Indexed]): value raises CodlReadError = decode0(value)
-    def schema: CodlSchema  = schema0
+  : CodlDecoder[value] =
+
+      new:
+        def decoded(value: List[Indexed]): value raises CodlReadError = decode0(value)
+        def schema: CodlSchema  = schema0
+
 
   inline given derived[value]: CodlDecoder[value] = compiletime.summonFrom:
     case given (`value` is Decodable in Text) => field[`value`]

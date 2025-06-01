@@ -91,21 +91,21 @@ object Hypotenuse:
     inline def apply(inline double: Double): F64 = double
 
     inline given orderable: F64 is Orderable:
-
       inline def compare
                   (inline left:    F64,
                    inline right:   F64,
                    inline strict:  Boolean,
                    inline greater: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        inline if greater
-        then
-          inline if strict then (left: Double) > (right: Double)
-          else (left: Double) >= (right: Double)
-        else
-          inline if strict then (left: Double) < (right: Double)
-          else (left: Double) <= (right: Double)
+          inline if greater
+          then
+            inline if strict then (left: Double) > (right: Double)
+            else (left: Double) >= (right: Double)
+          else
+            inline if strict then (left: Double) < (right: Double)
+            else (left: Double) <= (right: Double)
+
 
     inline given commensurableInt: F64 is Commensurable:
       type Operand = Int
@@ -115,11 +115,12 @@ object Hypotenuse:
                    inline right:       Int,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        inline if greaterThan
-        then inline if strict then left > right else left >= right
-        else inline if strict then left < right else left <= right
+          inline if greaterThan
+          then inline if strict then left > right else left >= right
+          else inline if strict then left < right else left <= right
+
 
     given divisible: F64 is Divisible:
       type Self = F64
@@ -136,16 +137,18 @@ object Hypotenuse:
     inline given commensurable: F64 is Commensurable:
       type Operand = Double
 
+
       inline def compare
                   (inline left:        F64,
                    inline right:       Double,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        inline if greaterThan
-        then inline if strict then left > right else left >= right
-        else inline if strict then left < right else left <= right
+          inline if greaterThan
+          then inline if strict then left > right else left >= right
+          else inline if strict then left < right else left <= right
+
 
     inline given doubleConversion: Conversion[Double, F64]:
       inline def apply(value: Double): F64 = value
@@ -190,19 +193,21 @@ object Hypotenuse:
       erasedValue
 
     inline given orderable: F32 is Orderable:
-
       inline def compare
                   (inline left:        F32,
                    inline right:       F32,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        inline if greaterThan
-        then
-          inline if strict then (left: Float) > (right: Float) else (left: Float) >= (right: Float)
-        else
-          inline if strict then (left: Float) < (right: Float) else (left: Float) <= (right: Float)
+          inline if greaterThan
+          then
+            inline if strict then (left: Float) > (right: Float)
+            else (left: Float) >= (right: Float)
+          else
+            inline if strict then (left: Float) < (right: Float)
+            else (left: Float) <= (right: Float)
+
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B32): F32 =
       val signBit = if sign then 0 else 1 << 31
@@ -245,20 +250,20 @@ object Hypotenuse:
     inline def apply(inline bits: B64): U64 = bits
 
     inline given orderable: U64 is Orderable:
-
       inline def compare
                   (inline left:        U64,
                    inline right:       U64,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        inline if greaterThan then
-          inline if strict then JLong.compareUnsigned(left, right) == 1
-          else JLong.compareUnsigned(left, right) != -1
-        else
-          inline if strict then JLong.compareUnsigned(left, right) == -1
-          else JLong.compareUnsigned(left, right) != 1
+          inline if greaterThan then
+            inline if strict then JLong.compareUnsigned(left, right) == 1
+            else JLong.compareUnsigned(left, right) != -1
+          else
+            inline if strict then JLong.compareUnsigned(left, right) == -1
+            else JLong.compareUnsigned(left, right) != 1
+
 
   object S64:
     final val Min: U64 = Long.MinValue
@@ -282,11 +287,11 @@ object Hypotenuse:
                    inline right:       S64,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        inline if greaterThan
-        then inline if strict then (left: Long) > (right: Long) else (left: Long) >= (right: Long)
-        else inline if strict then (left: Long) < (right: Long) else (left: Long) <= (right: Long)
+          inline if greaterThan
+          then inline if strict then (left: Long) > (right: Long) else (left: Long) >= (right: Long)
+          else inline if strict then (left: Long) < (right: Long) else (left: Long) <= (right: Long)
 
 
   object U32:
@@ -301,20 +306,22 @@ object Hypotenuse:
     given textualizer: U32 is Textualizer = JInt.toUnsignedString(_).nn.tt
     inline def apply(inline bits: B32): U32 = bits
 
+
     inline given orderable: U32 is Orderable:
       inline def compare
                   (inline left:        U32,
                    inline right:       U32,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        inline if greaterThan then
-          inline if strict then JLong.compareUnsigned(left, right) == 1
-          else JInt.compareUnsigned(left, right) != -1
-        else
-          inline if strict then JLong.compareUnsigned(left, right) == -1
-          else JInt.compareUnsigned(left, right) != 1
+          inline if greaterThan then
+            inline if strict then JLong.compareUnsigned(left, right) == 1
+            else JInt.compareUnsigned(left, right) != -1
+          else
+            inline if strict then JLong.compareUnsigned(left, right) == -1
+            else JInt.compareUnsigned(left, right) != 1
+
 
   object S32:
     final val Min: S32 = Int.MinValue
@@ -332,17 +339,17 @@ object Hypotenuse:
     inline def apply(inline bits: B32): S32 = bits
 
     inline given orderable: S32 is Orderable:
-
       inline def compare
                   (inline left:        S32,
                    inline right:       S32,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        inline if greaterThan
-        then inline if strict then (left: Int) > (right: Int) else (left: Int) >= (right: Int)
-        else inline if strict then (left: Int) < (right: Int) else (left: Int) <= (right: Int)
+          inline if greaterThan
+          then inline if strict then (left: Int) > (right: Int) else (left: Int) >= (right: Int)
+          else inline if strict then (left: Int) < (right: Int) else (left: Int) <= (right: Int)
+
 
   object U16:
     final val Min: S16 = 0
@@ -356,29 +363,31 @@ object Hypotenuse:
     given textualizer: U16 is Textualizer = u16 => JShort.toUnsignedInt(u16).toString.nn.tt
     inline def apply(inline bits: B16): U16 = bits
 
-    inline given orderable: U16 is Orderable:
 
+    inline given orderable: U16 is Orderable:
       inline def compare
                   (inline left:        U16,
                    inline right:       U16,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        val left2 = JShort.toUnsignedInt(left)
-        val right2 = JShort.toUnsignedInt(right)
+          val left2 = JShort.toUnsignedInt(left)
+          val right2 = JShort.toUnsignedInt(right)
 
-        inline if greaterThan
-        then inline if strict then left2 > right2 else left.toInt >= right2
-        else inline if strict then left2 < right2 else left.toInt <= right2
+          inline if greaterThan
+          then inline if strict then left2 > right2 else left.toInt >= right2
+          else inline if strict then left2 < right2 else left.toInt <= right2
+
 
   object S16:
     final val Min: S16 = Short.MinValue
     final val Max: S16 = Short.MaxValue
     erased given underlying: Underlying[S16, Short] = erasedValue
 
-    inline given canEqual: CanEqual[S16, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
-                                    | Int | Short | Byte] =
+    inline given canEqual: CanEqual[S16,
+                                    F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int
+                                    | Short | Byte] =
       erasedValue
 
     given fromDigits: FromDigits[S16]:
@@ -388,19 +397,21 @@ object Hypotenuse:
     inline def apply(inline bits: B16): S16 = bits
 
     inline given orderable: S16 is Orderable:
-
       inline def compare
                   (inline left:        S16,
                    inline right:       S16,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        inline if greaterThan
-        then
-          inline if strict then (left: Short) > (right: Short) else (left: Short) >= (right: Short)
-        else
-          inline if strict then (left: Short) < (right: Short) else (left: Short) <= (right: Short)
+          inline if greaterThan
+          then
+            inline if strict then (left: Short) > (right: Short)
+            else (left: Short) >= (right: Short)
+          else
+            inline if strict then (left: Short) < (right: Short)
+            else (left: Short) <= (right: Short)
+
 
   object U8:
     final val Min: U8 = 0
@@ -415,20 +426,20 @@ object Hypotenuse:
     inline def apply(inline bits: B8): U8 = bits
 
     inline given orderable: U8 is Orderable:
-
       inline def compare
                   (inline left:        U8,
                    inline right:       U8,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        val left2 = JByte.toUnsignedInt(left)
-        val right2 = JByte.toUnsignedInt(right)
+          val left2 = JByte.toUnsignedInt(left)
+          val right2 = JByte.toUnsignedInt(right)
 
-        inline if greaterThan
-        then inline if strict then left2 > right2 else left2 >= right2
-        else inline if strict then left2 < right2 else left2 <= right2
+          inline if greaterThan
+          then inline if strict then left2 > right2 else left2 >= right2
+          else inline if strict then left2 < right2 else left2 <= right2
+
 
   object S8:
     final val Min: S8 = Byte.MinValue
@@ -446,17 +457,17 @@ object Hypotenuse:
     inline def apply(inline bits: B8): S8 = bits
 
     inline given inquality: S8 is Orderable:
-
       inline def compare
                   (inline left:        S8,
                    inline right:       S8,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
-      :     Boolean =
+      : Boolean =
 
-        inline if greaterThan
-        then inline if strict then (left: Byte) > (right: Byte) else (left: Byte) >= (right: Byte)
-        else inline if strict then (left: Byte) < (right: Byte) else (left: Byte) <= (right: Byte)
+          inline if greaterThan
+          then inline if strict then (left: Byte) > (right: Byte) else (left: Byte) >= (right: Byte)
+          else inline if strict then (left: Byte) < (right: Byte) else (left: Byte) <= (right: Byte)
+
 
   object B64:
     erased given underlying: Underlying[B64, Long] = erasedValue

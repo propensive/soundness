@@ -53,14 +53,17 @@ class PrivateKey[cipher <: Cipher](private[enigmatic] val privateBytes: Bytes):
   def public(using cipher: cipher): PublicKey[cipher] =
     PublicKey(cipher.privateToPublic(privateBytes))
 
-  def decrypt[decodable: Decodable in Bytes](bytes: Bytes)(using cipher: cipher & Encryption)
-  :     decodable raises CryptoError =
 
-    decodable.decoded(cipher.decrypt(bytes, privateBytes))
+  def decrypt[decodable: Decodable in Bytes](bytes: Bytes)(using cipher: cipher & Encryption)
+  : decodable raises CryptoError =
+
+      decodable.decoded(cipher.decrypt(bytes, privateBytes))
+
 
   def sign[encodable: Encodable in Bytes](value: encodable)(using cipher: cipher & Signing)
-  :     Signature[cipher] =
+  : Signature[cipher] =
 
-    Signature(cipher.sign(encodable.encode(value), privateBytes))
+      Signature(cipher.sign(encodable.encode(value), privateBytes))
+
 
   def pem(reveal: ExposeSecretKey.type): Pem = Pem(PemLabel.PrivateKey, privateBytes)

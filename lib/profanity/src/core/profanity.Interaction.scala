@@ -47,27 +47,30 @@ trait Interaction[result, question]:
   def after(): Unit = ()
   def result(state: question): result
 
+
   @tailrec
   final def recur
              (stream: Stream[TerminalEvent], state: question, oldState: Optional[question])
              (key: (question, TerminalEvent) => question)
-  :     Optional[(result, Stream[TerminalEvent])] =
+  : Optional[(result, Stream[TerminalEvent])] =
 
-    render(oldState, state)
+      render(oldState, state)
 
-    stream match
-      case Keypress.Enter #:: tail           => (result(state), tail)
-      case Keypress.Ctrl('C' | 'D') #:: tail => Unset
-      case Keypress.Escape #:: tail          => Unset
-      case other #:: tail                    => recur(tail, key(state, other), state)(key)
-      case _                                 => Unset
+      stream match
+        case Keypress.Enter #:: tail           => (result(state), tail)
+        case Keypress.Ctrl('C' | 'D') #:: tail => Unset
+        case Keypress.Escape #:: tail          => Unset
+        case other #:: tail                    => recur(tail, key(state, other), state)(key)
+        case _                                 => Unset
+
 
   def apply(stream: Stream[TerminalEvent], state: question)
        (key: (question, TerminalEvent) => question)
-  :     Optional[(result, Stream[TerminalEvent])] =
+  : Optional[(result, Stream[TerminalEvent])] =
 
-    before()
-    recur(stream, state, Unset)(key).also(after())
+      before()
+      recur(stream, state, Unset)(key).also(after())
+
 
 object Interaction:
   given selectMenu: [item: Showable] => Stdio => Interaction[item, SelectMenu[item]]:

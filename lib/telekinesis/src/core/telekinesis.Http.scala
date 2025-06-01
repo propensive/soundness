@@ -283,9 +283,11 @@ object Http:
       def selectDynamic(name: Label)
            (using prefixable: name.type is Prefixable,
                   decoder:    prefixable.Subject is Decodable in Text)
-      :     List[prefixable.Subject] =
-        val name2 = name.tt.uncamel.kebab.lower
-        textHeaders.filter(_.key.lower == name2).map(_.value.decode)
+      : List[prefixable.Subject] =
+
+          val name2 = name.tt.uncamel.kebab.lower
+          textHeaders.filter(_.key.lower == name2).map(_.value.decode)
+
 
     lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
@@ -296,8 +298,10 @@ object Http:
 
   object Response extends Dynamic:
     transparent inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
-    :     Prototype | Response =
-      ${Telekinesis.response('headers)}
+    : Prototype | Response =
+
+        ${Telekinesis.response('headers)}
+
 
     transparent inline def applyDynamic(id: "apply")(inline headers: Any*): Prototype | Response =
       ${Telekinesis.response('headers)}
@@ -417,9 +421,11 @@ object Http:
       def selectDynamic(name: Label)
            (using prefixable: name.type is Prefixable,
                   decoder:    prefixable.Subject is Decodable in Text)
-      :     List[prefixable.Subject] =
-        val name2 = name.tt.uncamel.kebab.lower
-        textHeaders.filter(_.key.lower == name2).map(_.value.decode)
+      : List[prefixable.Subject] =
+
+          val name2 = name.tt.uncamel.kebab.lower
+          textHeaders.filter(_.key.lower == name2).map(_.value.decode)
+
 
     @targetName("add")
     infix def + [value: Encodable in Http.Header](value: value): Response =
@@ -436,39 +442,41 @@ object Http:
                        loggable: HttpEvent is Loggable,
                        postable: payload is Postable,
                        client:   HttpClient onto target)
-    :     Http.Response =
+    : Http.Response =
 
-      ${
-          Telekinesis.submit[target, payload]
-           ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client)  }
+        ${ ( Telekinesis.submit[target, payload]
+              ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) ) }
+
 
     inline def applyDynamic[payload: Postable as postable](id: "apply")(inline headers: Any*)
                 (payload: payload)
                 (using online:   Online,
-                  loggable: HttpEvent is Loggable,
-                  client:   HttpClient onto target)
-    :     Http.Response =
+                       loggable: HttpEvent is Loggable,
+                       client:   HttpClient onto target)
+    : Http.Response =
 
-      ${
-          Telekinesis.submit[target, payload]
-           ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client)  }
+        ${ ( Telekinesis.submit[target, payload]
+              ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) ) }
+
 
   case class Fetch[target](originForm: Text, target: target, host: Hostname)
     extends Dynamic:
+
 
     inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
                 (using online:   Online,
                        loggable: HttpEvent is Loggable,
                        postable: Unit is Postable,
                        client:   HttpClient onto target)
-    :     Http.Response =
+    : Http.Response =
 
-      ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
+        ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
+
 
     inline def applyDynamic[payload](id: "apply")(inline headers: Any*)
                 (using online:   Online,
                        loggable: HttpEvent is Loggable,
                        client:   HttpClient onto target)
-    :     Http.Response =
+    : Http.Response =
 
-      ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
+        ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}

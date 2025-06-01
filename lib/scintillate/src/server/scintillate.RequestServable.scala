@@ -40,4 +40,4 @@ import telekinesis.*
 
 trait RequestServable:
   def handle(handle: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
-  :     Service logs HttpServerEvent raises ServerError
+  : Service logs HttpServerEvent raises ServerError

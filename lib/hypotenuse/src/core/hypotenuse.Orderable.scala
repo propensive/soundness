@@ -41,11 +41,12 @@ object Orderable:
                  inline right:   value,
                  inline strict:  Boolean,
                  inline greater: Boolean)
-    :     Boolean =
-      val n = value.compare(left, right)
-      inline if greater
-      then inline if strict then n > 0 else n >= 0
-      else inline if strict then n < 0 else n <= 0
+    : Boolean =
+
+        val n = value.compare(left, right)
+        inline if greater
+        then inline if strict then n > 0 else n >= 0
+        else inline if strict then n < 0 else n <= 0
 
 
 trait Orderable extends Commensurable:
@@ -56,10 +57,12 @@ trait Orderable extends Commensurable:
   def contramap[self](lambda: self => Self): self is Orderable = new Orderable:
     type Self = self
 
+
     inline def compare
                 (inline left:    self,
                  inline right:   self,
                  inline strict:  Boolean,
                  inline greater: Boolean)
-    :     Boolean =
-      orderable.compare(lambda(left), lambda(right), strict, greater)
+    : Boolean =
+
+        orderable.compare(lambda(left), lambda(right), strict, greater)

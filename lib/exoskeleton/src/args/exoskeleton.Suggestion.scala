@@ -42,12 +42,13 @@ object Suggestion:
   def apply
        (text: Text,
         description: Optional[Text | Teletype],
-        hidden:     Boolean                   = false,
+        hidden:      Boolean                   = false,
         incomplete:  Boolean                   = false,
-        aliases:    List[Text]                = Nil)
-  :     Suggestion =
+        aliases:     List[Text]                = Nil)
+  : Suggestion =
 
-    new Suggestion(text, description, hidden, incomplete, aliases)
+      new Suggestion(text, description, hidden, incomplete, aliases)
+
 
 case class Suggestion
    (text:        Text,

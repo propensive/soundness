@@ -53,11 +53,13 @@ import alphabets.base256.alphanumericOrBraille
 
 object Postable:
   def apply[response](mediaType0: MediaType, stream0: response => Stream[Bytes])
-  :     response is Postable =
-    new Postable:
-      type Self = response
-      def mediaType(response: response): MediaType = mediaType0
-      def stream(response: response): Stream[Bytes] = stream0(response)
+  : response is Postable =
+
+      new Postable:
+        type Self = response
+        def mediaType(response: response): MediaType = mediaType0
+        def stream(response: response): Stream[Bytes] = stream0(response)
+
 
   given text: (encoder: CharEncoder) => Text is Postable =
     Postable(media"text/plain", value => Stream(IArray.from(value.bytes)))

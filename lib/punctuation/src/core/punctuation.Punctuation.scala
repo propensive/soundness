@@ -38,7 +38,8 @@ import scala.quoted.*
 
 object Punctuation:
   def md(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes)
-  :     Expr[Markdown[Markdown.Ast.Node]] =
-    Md.Interpolator.expansion(context, parts) match
-      case (Md.Input.Inline(_), result) => '{$result.asInstanceOf[InlineMd]}
-      case (Md.Input.Block(_), result)  => '{$result.asInstanceOf[Markdown[Markdown.Ast.Block]]}
+  : Expr[Markdown[Markdown.Ast.Node]] =
+
+      Md.Interpolator.expansion(context, parts) match
+        case (Md.Input.Inline(_), result) => '{$result.asInstanceOf[InlineMd]}
+        case (Md.Input.Block(_), result)  => '{$result.asInstanceOf[Markdown[Markdown.Ast.Block]]}

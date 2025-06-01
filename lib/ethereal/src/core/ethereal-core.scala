@@ -157,141 +157,142 @@ def cli[bus <: Matchable](using executive: Executive)
     Log.warn(DaemonLogEvent.Shutdown)
     pid.let(terminatePid.fulfill(_)).or(termination)
 
+
   def makeClient(socket: jn.Socket)(using Monitor, Stdio, Codicil)
-  :     Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
+  : Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
 
-    async:
-      val in = socket.getInputStream.nn
-      val reader = ji.BufferedReader(ji.InputStreamReader(in, "UTF-8"))
+      async:
+        val in = socket.getInputStream.nn
+        val reader = ji.BufferedReader(ji.InputStreamReader(in, "UTF-8"))
 
-      def line(): Text = reader.readLine().nn.tt
+        def line(): Text = reader.readLine().nn.tt
 
-      def chunk(): Text =
-        var buffer: Text = line()
-        var current: Text = t""
+        def chunk(): Text =
+          var buffer: Text = line()
+          var current: Text = t""
 
-        while
-          current = line()
-          current != t"##"
-        do buffer += t"\n$current"
+          while
+            current = line()
+            current != t"##"
+          do buffer += t"\n$current"
 
-        buffer
+          buffer
 
-      val message: Optional[DaemonEvent] = line() match
-        case t"e" =>
-          val pid: Pid = line().decode[Pid]
-          DaemonEvent.Stderr(pid)
+        val message: Optional[DaemonEvent] = line() match
+          case t"e" =>
+            val pid: Pid = line().decode[Pid]
+            DaemonEvent.Stderr(pid)
 
-        case t"s" =>
-          val pid: Pid = line().decode[Pid]
-          val signal: Signal = line().decode[Signal]
-          DaemonEvent.Trap(pid, signal)
+          case t"s" =>
+            val pid: Pid = line().decode[Pid]
+            val signal: Signal = line().decode[Signal]
+            DaemonEvent.Trap(pid, signal)
 
-        case t"x" =>
-          DaemonEvent.Exit(line().decode[Pid])
+          case t"x" =>
+            DaemonEvent.Exit(line().decode[Pid])
 
-        case t"i" =>
-          val cliInput: CliInput = if line() == t"p" then CliInput.Pipe else CliInput.Terminal
-          val pid: Pid = Pid(line().decode[Int])
-          val script: Text = line()
-          val pwd: Text = line()
-          val argCount: Int = line().decode[Int]
-          val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount).to(List)
-          val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
+          case t"i" =>
+            val cliInput: CliInput = if line() == t"p" then CliInput.Pipe else CliInput.Terminal
+            val pid: Pid = Pid(line().decode[Int])
+            val script: Text = line()
+            val pwd: Text = line()
+            val argCount: Int = line().decode[Int]
+            val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount).to(List)
+            val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
 
-          DaemonEvent.Init(pid, pwd, script, cliInput, textArguments, environment)
+            DaemonEvent.Init(pid, pwd, script, cliInput, textArguments, environment)
 
-        case _ =>
-          Unset
+          case _ =>
+            Unset
 
-      message match
-        case Unset =>
-          Log.warn(DaemonLogEvent.UnrecognizedMessage)
-          socket.close()
-
-        case DaemonEvent.Trap(pid, signal) =>
-          Log.info(DaemonLogEvent.ReceivedSignal(signal))
-          client(pid).signals.put(signal)
-          socket.close()
-
-        case DaemonEvent.Exit(pid) =>
-          Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
-          val exitStatus: Exit = client(pid).exitPromise.await()
-
-          socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
-          socket.close()
-          clients.remove(pid)
-          if terminatePid() == pid then termination
-
-        case DaemonEvent.Stderr(pid) =>
-          Log.fine(DaemonLogEvent.StderrRequest(pid))
-          client(pid).stderr.offer(socket.getOutputStream.nn)
-
-        case DaemonEvent.Init(pid, directory, scriptName, shellInput, textArguments, env) =>
-          Log.fine(DaemonLogEvent.Init(pid))
-          val connection = client(pid)
-          connection.socket.fulfill(socket)
-
-          val lazyStderr: ji.OutputStream =
-            if !stderrSupport() then socket.getOutputStream.nn
-            else new ji.OutputStream():
-              private lazy val wrapped = connection.stderr.await()
-              def write(i: Int): Unit = wrapped.write(i)
-              override def write(bytes: Array[Byte] | Null): Unit = wrapped.write(bytes)
-
-              override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
-                wrapped.write(bytes, offset, length)
-
-          given environment: Environment = LazyEnvironment(env)
-
-          val termcap: Termcap = new Termcap:
-            def ansi: Boolean = true
-
-            lazy val color: ColorDepth =
-              import workingDirectories.systemProperty
-
-              if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
-              else ColorDepth
-                    (safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1))
-
-          val stdio: Stdio =
-            Stdio
-             (ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
-
-          def deliver(sourcePid: Pid, message: bus): Unit =
-            clients.each: (pid, client) =>
-              if sourcePid != pid then client.receive(message)
-
-          val service: DaemonService[bus] =
-            DaemonService[bus]
-             (pid,
-              () => shutdown(pid),
-              shellInput,
-              scriptName.decode[Path on Linux],
-              deliver(pid, _),
-              connection.bus.stream,
-              name)
-
-          Log.fine(DaemonLogEvent.NewCli)
-
-          try
-            val cli: executive.Interface =
-              executive.invocation
-               (textArguments, environment, () => directory, stdio, connection.signals)
-
-            val result = block(using service)(using cli)
-            val exitStatus: Exit = executive.process(cli)(result)
-
-            connection.exitPromise.fulfill(exitStatus)
-
-          catch
-            case exception: Exception =>
-              Log.warn(DaemonLogEvent.Failure)
-              connection.exitPromise.fulfill(handler.handle(exception)(using stdio))
-
-          finally
+        message match
+          case Unset =>
+            Log.warn(DaemonLogEvent.UnrecognizedMessage)
             socket.close()
-            Log.info(DaemonLogEvent.CloseConnection(pid))
+
+          case DaemonEvent.Trap(pid, signal) =>
+            Log.info(DaemonLogEvent.ReceivedSignal(signal))
+            client(pid).signals.put(signal)
+            socket.close()
+
+          case DaemonEvent.Exit(pid) =>
+            Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
+            val exitStatus: Exit = client(pid).exitPromise.await()
+
+            socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
+            socket.close()
+            clients.remove(pid)
+            if terminatePid() == pid then termination
+
+          case DaemonEvent.Stderr(pid) =>
+            Log.fine(DaemonLogEvent.StderrRequest(pid))
+            client(pid).stderr.offer(socket.getOutputStream.nn)
+
+          case DaemonEvent.Init(pid, directory, scriptName, shellInput, textArguments, env) =>
+            Log.fine(DaemonLogEvent.Init(pid))
+            val connection = client(pid)
+            connection.socket.fulfill(socket)
+
+            val lazyStderr: ji.OutputStream =
+              if !stderrSupport() then socket.getOutputStream.nn
+              else new ji.OutputStream():
+                private lazy val wrapped = connection.stderr.await()
+                def write(i: Int): Unit = wrapped.write(i)
+                override def write(bytes: Array[Byte] | Null): Unit = wrapped.write(bytes)
+
+                override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
+                  wrapped.write(bytes, offset, length)
+
+            given environment: Environment = LazyEnvironment(env)
+
+            val termcap: Termcap = new Termcap:
+              def ansi: Boolean = true
+
+              lazy val color: ColorDepth =
+                import workingDirectories.systemProperty
+
+                if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
+                else ColorDepth
+                      (safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1))
+
+            val stdio: Stdio =
+              Stdio
+               (ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
+
+            def deliver(sourcePid: Pid, message: bus): Unit =
+              clients.each: (pid, client) =>
+                if sourcePid != pid then client.receive(message)
+
+            val service: DaemonService[bus] =
+              DaemonService[bus]
+               (pid,
+                () => shutdown(pid),
+                shellInput,
+                scriptName.decode[Path on Linux],
+                deliver(pid, _),
+                connection.bus.stream,
+                name)
+
+            Log.fine(DaemonLogEvent.NewCli)
+
+            try
+              val cli: executive.Interface =
+                executive.invocation
+                 (textArguments, environment, () => directory, stdio, connection.signals)
+
+              val result = block(using service)(using cli)
+              val exitStatus: Exit = executive.process(cli)(result)
+
+              connection.exitPromise.fulfill(exitStatus)
+
+            catch
+              case exception: Exception =>
+                Log.warn(DaemonLogEvent.Failure)
+                connection.exitPromise.fulfill(handler.handle(exception)(using stdio))
+
+            finally
+              socket.close()
+              Log.info(DaemonLogEvent.CloseConnection(pid))
 
   application(using executives.direct(using unhandledErrors.silent))(Nil):
     import stdioSources.virtualMachine.ansi

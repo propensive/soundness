@@ -106,13 +106,17 @@ object Dsv:
           Column[Row, Text, Text](name, sizing = columnar.Collapsible(0.5))
            (_[Text](name).or(t"")))*)
 
+
   def parse[source: Readable by Text](source: source)(using format: DsvFormat)
-  :     Dsv raises DsvError =
-    val rows = recur(source.stream[Text])
-    if format.header then Dsv(rows, format, rows.prim.let(_.header)) else Dsv(rows, format)
+  : Dsv raises DsvError =
+
+      val rows = recur(source.stream[Text])
+      if format.header then Dsv(rows, format, rows.prim.let(_.header)) else Dsv(rows, format)
+
 
   given showable: DsvFormat => Dsv is Showable = _.rows.map(_.show).join(t"\n")
   given readable: DsvFormat => Dsv is Readable by Text = _.rows.to(Stream).map(_.show+t"\n")
+
 
   private def recur
                (content:  Stream[Text],
@@ -123,64 +127,64 @@ object Dsv:
                 state:    State                    = State.Fresh,
                 headings: Optional[Map[Text, Int]] = Unset)
                (using format: DsvFormat, tactic: Tactic[DsvError])
-  :     Stream[Row] =
+  : Stream[Row] =
 
-    inline def putCell(): Array[Text] =
-      val cells2 = if cells.length <= column then cells :+ builder() else
-        cells(column) = builder()
-        cells
+      inline def putCell(): Array[Text] =
+        val cells2 = if cells.length <= column then cells :+ builder() else
+          cells(column) = builder()
+          cells
 
-      cells2.also(builder.clear())
+        cells2.also(builder.clear())
 
-    inline def advance() =
-      val cells = putCell()
-      recur(content, index + 1, column + 1, cells, builder, State.Fresh, headings)
+      inline def advance() =
+        val cells = putCell()
+        recur(content, index + 1, column + 1, cells, builder, State.Fresh, headings)
 
-    inline def next(char: Char): Stream[Row] =
-      builder.put(char) yet recur(content, index + 1, column, cells, builder, state, headings)
+      inline def next(char: Char): Stream[Row] =
+        builder.put(char) yet recur(content, index + 1, column, cells, builder, state, headings)
 
-    inline def quote(): Stream[Row] = state match
-      case State.Fresh =>
-        if !builder.empty then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
-        recur(content, index + 1, column, cells, builder, State.Quoted, headings)
+      inline def quote(): Stream[Row] = state match
+        case State.Fresh =>
+          if !builder.empty then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
+          recur(content, index + 1, column, cells, builder, State.Quoted, headings)
 
-      case State.Quoted =>
-        recur(content, index + 1, column, cells, builder, State.DoubleQuoted, headings)
+        case State.Quoted =>
+          recur(content, index + 1, column, cells, builder, State.DoubleQuoted, headings)
 
-      case State.DoubleQuoted =>
-        builder.put(format.Quote)
-        recur(content, index + 1, column, cells, builder, State.Quoted, headings)
+        case State.DoubleQuoted =>
+          builder.put(format.Quote)
+          recur(content, index + 1, column, cells, builder, State.Quoted, headings)
 
-    inline def fresh(): Array[Text] = new Array[Text](cells.length)
+      inline def fresh(): Array[Text] = new Array[Text](cells.length)
 
-    inline def putRow(): Stream[Row] =
-      val cells = putCell()
+      inline def putRow(): Stream[Row] =
+        val cells = putCell()
 
-      if format.header && headings.absent then
-        val map: Map[Text, Int] = cells.to(List).zipWithIndex.to(Map)
-        recur(content, index + 1, 0, fresh(), builder, State.Fresh, map)
-      else
-        (column + 1).until(cells.length).each: index =>
-          cells(index) = t""
+        if format.header && headings.absent then
+          val map: Map[Text, Int] = cells.to(List).zipWithIndex.to(Map)
+          recur(content, index + 1, 0, fresh(), builder, State.Fresh, map)
+        else
+          (column + 1).until(cells.length).each: index =>
+            cells(index) = t""
 
-        val row = Row(unsafely(cells.immutable), headings)
-        row #:: recur(content, index + 1, 0, fresh(), builder, State.Fresh, headings)
+          val row = Row(unsafely(cells.immutable), headings)
+          row #:: recur(content, index + 1, 0, fresh(), builder, State.Fresh, headings)
 
-    content.flow(if column == 0 && builder.empty then Stream() else putRow()):
-      if !head.has(index) then recur(tail, Prim, column, cells, builder, state, headings) else
-        head.s.charAt(index.n0) match
-          case format.Delimiter =>
-            if state != State.Quoted then advance() else next(format.Delimiter)
+      content.flow(if column == 0 && builder.empty then Stream() else putRow()):
+        if !head.has(index) then recur(tail, Prim, column, cells, builder, state, headings) else
+          head.s.charAt(index.n0) match
+            case format.Delimiter =>
+              if state != State.Quoted then advance() else next(format.Delimiter)
 
-          case format.Quote =>
-            quote()
+            case format.Quote =>
+              quote()
 
-          case '\n' | '\r' =>
-            if column == 0 && builder.empty
-            then recur(content, index + 1, 0, cells, builder, State.Fresh, headings)
-            else if state != State.Quoted then putRow()
-            else next(head.s.charAt(index.n0))
+            case '\n' | '\r' =>
+              if column == 0 && builder.empty
+              then recur(content, index + 1, 0, cells, builder, State.Fresh, headings)
+              else if state != State.Quoted then putRow()
+              else next(head.s.charAt(index.n0))
 
-          case char =>
-            builder.put(char)
-            recur(content, index + 1, column, cells, builder, state, headings)
+            case char =>
+              builder.put(char)
+              recur(content, index + 1, column, cells, builder, state, headings)

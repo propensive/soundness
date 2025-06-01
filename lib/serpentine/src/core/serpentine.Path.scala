@@ -91,21 +91,26 @@ object Path:
 
       recur(left.textDescent, right.ascent)
 
+
   def apply[root <: Root on platform, element, platform: {Navigable by element, Radical from root}]
        (root0: root, elements: List[element])
-  :     Path on platform =
-    if elements.isEmpty then root0 else
-      Path.from[platform]
-       (platform.rootText(root0),
-        elements.map(platform.makeElement(_)),
-        platform.separator,
-        platform.caseSensitivity)
+  : Path on platform =
+
+      if elements.isEmpty then root0 else
+        Path.from[platform]
+         (platform.rootText(root0),
+          elements.map(platform.makeElement(_)),
+          platform.separator,
+          platform.caseSensitivity)
+
 
   private def from[platform]
                (root0: Text, elements: List[Text], separator: Text, caseSensitivity: Case)
-  :     Path on platform =
-    new Path(root0, elements, separator, caseSensitivity):
-      type Platform = platform
+  : Path on platform =
+
+      new Path(root0, elements, separator, caseSensitivity):
+        type Platform = platform
+
 
   def parse[platform: {Navigable, Radical}](path: Text): Path on platform =
     val root = platform.root(path)
@@ -151,7 +156,7 @@ extends Pathlike:
     textDescent.prim.let(navigable.element(_))
 
   def peer(using navigable: Platform is Navigable)(name: navigable.Operand)
-  :     Path on Platform raises PathError =
+  : Path on Platform raises PathError =
     parent.let(_ / name).lest(PathError(PathError.Reason.RootParent))
 
   def descent(using navigable: Platform is Navigable): List[navigable.Operand] =
@@ -212,17 +217,21 @@ extends Pathlike:
     Path.from
      (textRoot, textDescent.drop(depth - count), separator, caseSensitivity)
 
+
   def relativeTo(right: Path on Platform)(using navigable: Platform is Navigable)
-  :     Relative by navigable.Operand raises PathError =
-    if textRoot != right.textRoot then abort(PathError(PathError.Reason.DifferentRoots))
-    val common = conjunction(right).depth
-    Relative(right.depth - common, textDescent.dropRight(common).map(navigable.element(_)))
+  : Relative by navigable.Operand raises PathError =
+
+      if textRoot != right.textRoot then abort(PathError(PathError.Reason.DifferentRoots))
+      val common = conjunction(right).depth
+      Relative(right.depth - common, textDescent.dropRight(common).map(navigable.element(_)))
+
 
   def resolve(text: Text)(using navigable: Platform is Navigable, radical: Platform is Radical)
-  :     Path on Platform raises PathError =
-    def relative: Relative by navigable.Operand = Relative.parse(text)
-    val path: Optional[Path on Platform] = safely(Path.parse[Platform](text))
-    val base: Path on Platform = this
+  : Path on Platform raises PathError =
 
-    path.or(safely(base + relative)).or:
-      abort(PathError(PathError.Reason.InvalidRoot))
+      def relative: Relative by navigable.Operand = Relative.parse(text)
+      val path: Optional[Path on Platform] = safely(Path.parse[Platform](text))
+      val base: Path on Platform = this
+
+      path.or(safely(base + relative)).or:
+        abort(PathError(PathError.Reason.InvalidRoot))

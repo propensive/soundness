@@ -44,21 +44,22 @@ import Control.*
 
 extension [bindable: Bindable](socket: bindable)
   def listen[input](using Monitor, Codicil)[result](lambda: bindable.Input => bindable.Output)
-  :     SocketService raises BindError =
+  : SocketService raises BindError =
 
-    val binding = bindable.bind(socket)
+      val binding = bindable.bind(socket)
 
-    val bindLoop = loop:
-      val connection = bindable.connect(binding)
-      bindable.transmit(binding, connection, lambda(connection))
+      val bindLoop = loop:
+        val connection = bindable.connect(binding)
+        bindable.transmit(binding, connection, lambda(connection))
 
-    val task = async(bindLoop.run())
+      val task = async(bindLoop.run())
 
-    new SocketService:
-      def stop(): Unit =
-        bindLoop.stop()
-        bindable.stop(binding)
-        safely(task.await())
+      new SocketService:
+        def stop(): Unit =
+          bindLoop.stop()
+          bindable.stop(binding)
+          safely(task.await())
+
 
 extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
   def transmit[message: Transmissible](input: message): Stream[Bytes] =
@@ -67,29 +68,31 @@ extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
     serviceable.transmit(connection, message.serialize(input))
     serviceable.receive(connection)
 
+
   def exchange[state](initialState: state)[message: Ingressive](initialMessage: message = Bytes())
        (handle: (state: state) ?=> message => Control[state])
-  :     state =
+  : state =
 
-    val connection = serviceable.connect(endpoint)
+      val connection = serviceable.connect(endpoint)
 
-    def recur(input: Stream[Bytes], state: state): state = input.flow(state):
-      handle(using state)(message.deserialize(head)) match
-        case Continue(state2) => recur(tail, state2.or(state))
-        case Terminate        => state
+      def recur(input: Stream[Bytes], state: state): state = input.flow(state):
+        handle(using state)(message.deserialize(head)) match
+          case Continue(state2) => recur(tail, state2.or(state))
+          case Terminate        => state
 
-        case Reply(message, state2) =>
-          serviceable.transmit(connection, Stream(message))
-          recur(tail, state2.or(state))
+          case Reply(message, state2) =>
+            serviceable.transmit(connection, Stream(message))
+            recur(tail, state2.or(state))
 
-        case Conclude(message, state2) =>
-          serviceable.transmit(connection, Stream(message))
-          state2.or(state)
+          case Conclude(message, state2) =>
+            serviceable.transmit(connection, Stream(message))
+            state2.or(state)
 
-    recur(serviceable.receive(connection), initialState).also(serviceable.close(connection))
+      recur(serviceable.receive(connection), initialState).also(serviceable.close(connection))
+
 
 extension [endpoint: Addressable as addressable](endpoint: endpoint)
   def transmit[transmissible: Transmissible](message: transmissible)(using Monitor)
-  :     Unit raises StreamError =
+  : Unit raises StreamError =
 
-    addressable.transmit(addressable.connect(endpoint), transmissible.serialize(message))
+      addressable.transmit(addressable.connect(endpoint), transmissible.serialize(message))

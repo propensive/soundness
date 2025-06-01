@@ -44,23 +44,30 @@ extension [value: Rootable[3] as rootable](value: value)
 
 extension [augend](left: augend)
   inline infix def + [addend](right: addend)(using addable: augend is Addable by addend)
-  :     addable.Result =
-    addable.add(left, right)
+  : addable.Result =
+
+      addable.add(left, right)
+
 
 extension [minuend](left: minuend)
   inline infix def - [subtrahend](right: subtrahend)
                      (using subtractable: minuend is Subtractable by subtrahend)
-  :     subtractable.Result =
-    subtractable.subtract(left, right)
+  : subtractable.Result =
+
+      subtractable.subtract(left, right)
+
 
 extension [dividend](left: dividend)
   inline infix def / [divisor](right: divisor)(using divisible: dividend is Divisible by divisor)
-  :     divisible.Result =
-    divisible.divide(left, right)
+  : divisible.Result =
+
+      divisible.divide(left, right)
+
 
 extension [multiplicand](left: multiplicand)
   @targetName("multiply")
   inline infix def * [multiplier](right: multiplier)
                      (using multiplicable: multiplicand is Multiplicable by multiplier)
-  :     multiplicable.Result =
-    multiplicable.multiply(left, right)
+  : multiplicable.Result =
+
+      multiplicable.multiply(left, right)

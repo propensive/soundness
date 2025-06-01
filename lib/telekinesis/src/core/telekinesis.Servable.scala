@@ -43,10 +43,11 @@ import turbulence.*
 
 object Servable:
   def apply[response](mediaType: response => MediaType)(lambda: response => Stream[Bytes])
-  :     response is Servable = response =>
+  : response is Servable = response =>
 
-    val headers = List(Http.Header(t"content-type", mediaType(response).show))
-    Http.Response.make(Http.Ok, headers, lambda(response))
+      val headers = List(Http.Header(t"content-type", mediaType(response).show))
+      Http.Response.make(Http.Ok, headers, lambda(response))
+
 
   given content: Content is Servable:
     def serve(content: Content): Http.Response =

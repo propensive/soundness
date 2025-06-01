@@ -59,14 +59,18 @@ export Gossamer.opaques.Ascii
 
 def append[textual: Textual, value](using builder: Builder[textual])(value: value)
    (using textual.Show[value])
-:     Unit =
-  builder.append(textual.show(value))
+: Unit =
+
+    builder.append(textual.show(value))
+
 
 def appendln[textual: Textual, value](using builder: Builder[textual])(value: value)
    (using textual.Show[value])
-:     Unit =
-  builder.append(textual.show(value))
-  builder.append(textual("\n".tt))
+: Unit =
+
+    builder.append(textual.show(value))
+    builder.append(textual("\n".tt))
+
 
 extension (textObject: Text.type)
   def construct(block: (builder: TextBuilder) ?=> Unit): Text =
@@ -107,7 +111,7 @@ extension (bytes: Bytes)
 extension [textual](text: textual)
   def cut[delimiter](delimiter: delimiter, limit: Int = Int.MaxValue)
        (using cuttable: textual is Cuttable by delimiter)
-  :     List[textual] =
+  : List[textual] =
 
     cuttable.cut(text, delimiter, limit)
 
@@ -222,7 +226,7 @@ extension [textual: Textual](text: textual)
     text.segment(start ~ end)
 
   def where(pred: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
-  :     Optional[Ordinal] =
+  : Optional[Ordinal] =
     val step: Int = bidi match
       case Ltr => 1
       case Rtl => -1

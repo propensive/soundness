@@ -49,45 +49,45 @@ extension [test](test: Test[test])
                      inc:              Inclusion[report, Benchmark],
                      specificDuration: duration is SpecificDuration = durationApi.javaLong,
                      genericDuration:  duration is GenericDuration  = durationApi.javaLong)
-  :     Unit =
+  : Unit =
 
-    val action = test.action
+      val action = test.action
 
-    var end =
-      System.currentTimeMillis + genericDuration.milliseconds(warmup.or(SpecificDuration(10000L)))
+      var end =
+        System.currentTimeMillis + genericDuration.milliseconds(warmup.or(SpecificDuration(10000L)))
 
-    val times: scm.ArrayBuffer[Long] = scm.ArrayBuffer()
-    times.sizeHint(4096)
-    val ctx = new Harness()
+      val times: scm.ArrayBuffer[Long] = scm.ArrayBuffer()
+      times.sizeHint(4096)
+      val ctx = new Harness()
 
-    while System.currentTimeMillis < end do
-      val t0 = System.nanoTime
-      val result = action(ctx)
-      val t1 = System.nanoTime - t0
-      times += t1
+      while System.currentTimeMillis < end do
+        val t0 = System.nanoTime
+        val result = action(ctx)
+        val t1 = System.nanoTime - t0
+        times += t1
 
-    times.clear()
+      times.clear()
 
-    end =
-      System.currentTimeMillis
-      + genericDuration.milliseconds(duration.or(SpecificDuration(10000L)))
+      end =
+        System.currentTimeMillis
+        + genericDuration.milliseconds(duration.or(SpecificDuration(10000L)))
 
-    while System.currentTimeMillis < end do
-      val t0 = System.nanoTime
-      val result = action(ctx)
-      val t1 = System.nanoTime - t0
-      times += t1
+      while System.currentTimeMillis < end do
+        val t0 = System.nanoTime
+        val result = action(ctx)
+        val t1 = System.nanoTime - t0
+        times += t1
 
-    val count = times.size
-    val total = times.sum
-    val min: Long = times.min
-    val mean: Double = total.toDouble/count
-    val max: Long = times.max
-    val variance: Double = (times.map { t => (mean - t)*(mean - t) }.sum)/count
-    val stdDev: Double = math.sqrt(variance)
+      val count = times.size
+      val total = times.sum
+      val min: Long = times.min
+      val mean: Double = total.toDouble/count
+      val max: Long = times.max
+      val variance: Double = (times.map { t => (mean - t)*(mean - t) }.sum)/count
+      val stdDev: Double = math.sqrt(variance)
 
-    val benchmark =
-      Benchmark
-       (total, times.size, min.toDouble, mean, max.toDouble, stdDev, confidence.or(95), baseline)
+      val benchmark =
+        Benchmark
+         (total, times.size, min.toDouble, mean, max.toDouble, stdDev, confidence.or(95), baseline)
 
-    inc.include(runner.report, test.id, benchmark)
+      inc.include(runner.report, test.id, benchmark)

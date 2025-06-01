@@ -47,66 +47,69 @@ object CasualDiff:
           replacement: List[Text],
           done:        List[Replace],
           lineNo:      Int)
-    :     List[Replace] =
+    : List[Replace] =
 
-      stream match
-        case head #:: tail =>
-          if head.s.startsWith("  ") then
-            if !original.isEmpty || !replacement.isEmpty
-            then
-              val replace = Replace(context.reverse, original.reverse, replacement.reverse)
-              recur(tail, List(head.s.drop(2).tt), Nil, Nil, replace :: done, lineNo + 1)
-            else recur(tail, head.s.drop(2).tt :: context, Nil, Nil, done, lineNo + 1)
-          else if head.s.startsWith("+ ") then
-            recur(tail, context, original, head.s.drop(2).tt :: replacement, done, lineNo + 1)
-          else if head.s.startsWith("- ") then
-            if !replacement.isEmpty
-            then
-              val replace = Replace(context.reverse, original.reverse, replacement.reverse)
-              recur(tail, Nil, List(head.s.drop(2).tt), Nil, replace :: done, lineNo + 1)
-            else recur(tail, Nil, head.s.drop(2).tt :: original, Nil, done, lineNo + 1)
-          else raise
-                (CasualDiffError(CasualDiffError.Reason.BadLineStart(head), lineNo),
-                 recur(tail, context, original, replacement, done, lineNo + 1))
+        stream match
+          case head #:: tail =>
+            if head.s.startsWith("  ") then
+              if !original.isEmpty || !replacement.isEmpty
+              then
+                val replace = Replace(context.reverse, original.reverse, replacement.reverse)
+                recur(tail, List(head.s.drop(2).tt), Nil, Nil, replace :: done, lineNo + 1)
+              else recur(tail, head.s.drop(2).tt :: context, Nil, Nil, done, lineNo + 1)
+            else if head.s.startsWith("+ ") then
+              recur(tail, context, original, head.s.drop(2).tt :: replacement, done, lineNo + 1)
+            else if head.s.startsWith("- ") then
+              if !replacement.isEmpty
+              then
+                val replace = Replace(context.reverse, original.reverse, replacement.reverse)
+                recur(tail, Nil, List(head.s.drop(2).tt), Nil, replace :: done, lineNo + 1)
+              else recur(tail, Nil, head.s.drop(2).tt :: original, Nil, done, lineNo + 1)
+            else raise
+                  (CasualDiffError(CasualDiffError.Reason.BadLineStart(head), lineNo),
+                  recur(tail, context, original, replacement, done, lineNo + 1))
 
-        case _ =>
-          (Replace(context.reverse, original.reverse, replacement.reverse) :: done).reverse
+          case _ =>
+            (Replace(context.reverse, original.reverse, replacement.reverse) :: done).reverse
+
 
     CasualDiff(recur(stream, Nil, Nil, Nil, Nil, 1))
 
 case class CasualDiff(replacements: List[Replace]):
   def patch(original: Iterable[Text]): Stream[Text] raises CasualDiffError =
     def recur(stream: Stream[Text], focus: List[Text], todo: List[Replace], lineNo: Int)
-    :     Stream[Text] =
-      todo match
-        case Nil =>
-          Stream()
+    : Stream[Text] =
 
-        case Replace(Nil, original, replacement) :: tail => focus match
-          case Nil => tail match
-            case Replace(context, next, _) :: tail =>
-              val lineNo2 = lineNo + original.length + replacement.length
-              replacement.to(Stream) #::: recur(stream, next, todo.tail, lineNo2)
+        todo match
+          case Nil =>
+            Stream()
 
-            case Nil =>
-              replacement.to(Stream) #::: stream
+          case Replace(Nil, original, replacement) :: tail => focus match
+            case Nil => tail match
+              case Replace(context, next, _) :: tail =>
+                val lineNo2 = lineNo + original.length + replacement.length
+                replacement.to(Stream) #::: recur(stream, next, todo.tail, lineNo2)
 
-          case line :: rest => stream match
+              case Nil =>
+                replacement.to(Stream) #::: stream
+
+            case line :: rest => stream match
+              case head #:: tail =>
+                if head == line then recur(tail, rest, todo, lineNo)
+                else original.dropRight(focus.length).to(Stream) #::: head #::
+                    recur(tail, original, todo, lineNo)
+
+              case _ =>
+                val lineNo2 = lineNo + original.length - focus.length
+                abort(CasualDiffError(CasualDiffError.Reason.DoesNotMatch(line), lineNo2))
+
+          case Replace(line :: rest, original, replacement) :: todoTail => stream.runtimeChecked match
             case head #:: tail =>
-              if head == line then recur(tail, rest, todo, lineNo)
-              else original.dropRight(focus.length).to(Stream) #::: head #::
-                  recur(tail, original, todo, lineNo)
+              head #:: {
+                if head != line then recur(tail, focus, todo, lineNo + 1)
+                else recur(tail, focus, Replace(rest, original, replacement) :: todoTail, lineNo + 1)
+              }
 
-            case _ =>
-              val lineNo2 = lineNo + original.length - focus.length
-              abort(CasualDiffError(CasualDiffError.Reason.DoesNotMatch(line), lineNo2))
-
-        case Replace(line :: rest, original, replacement) :: todoTail => stream.runtimeChecked match
-          case head #:: tail =>
-            head #:: {
-              if head != line then recur(tail, focus, todo, lineNo + 1)
-              else recur(tail, focus, Replace(rest, original, replacement) :: todoTail, lineNo + 1)
-            }
 
     if replacements.isEmpty then original.to(Stream)
     else recur(original.to(Stream), replacements.head.original, replacements, 1)

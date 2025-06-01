@@ -55,6 +55,7 @@ package executives:
     type Interface = Cli
     type Return = Execution
 
+
     def invocation
          (arguments:        Iterable[Text],
           environment:      Environment,
@@ -62,30 +63,32 @@ package executives:
           stdio:            Stdio,
           signals:          Spool[Signal])
          (using interpreter: CliInterpreter)
-    :     Cli =
-      arguments match
-        case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--"
-             :: command
-             :: rest =>
+    : Cli =
 
-          val shell = shellName match
-            case t"zsh"  => Shell.Zsh
-            case t"fish" => Shell.Fish
-            case _       => Shell.Bash
+        arguments match
+          case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--"
+              :: command
+              :: rest =>
 
-          CliCompletion
-           (Cli.arguments(arguments, focus - 1, position),
-            Cli.arguments(rest, focus - 1, position),
-            environment,
-            workingDirectory,
-            shell,
-            focus - 1,
-            position,
-            stdio,
-            signals)
+            val shell = shellName match
+              case t"zsh"  => Shell.Zsh
+              case t"fish" => Shell.Fish
+              case _       => Shell.Bash
 
-        case other =>
-          CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
+            CliCompletion
+             (Cli.arguments(arguments, focus - 1, position),
+              Cli.arguments(rest, focus - 1, position),
+              environment,
+              workingDirectory,
+              shell,
+              focus - 1,
+              position,
+              stdio,
+              signals)
+
+          case other =>
+            CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
+
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
       case completion: CliCompletion =>

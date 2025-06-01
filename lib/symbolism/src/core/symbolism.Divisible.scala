@@ -38,12 +38,15 @@ import scala.annotation.targetName
 
 object Divisible:
   def apply[dividend, divisor, result](lambda: (dividend, divisor) => result)
-  :     dividend is Divisible by divisor into result = new Divisible:
-    type Self = dividend
-    type Result = result
-    type Operand = divisor
+  : dividend is Divisible by divisor into result =
 
-    def divide(dividend: dividend, divisor: divisor): result = lambda(dividend, divisor)
+      new Divisible:
+        type Self = dividend
+        type Result = result
+        type Operand = divisor
+
+        def divide(dividend: dividend, divisor: divisor): result = lambda(dividend, divisor)
+
 
   given double: Double is Divisible by Double into Double = Divisible:
     (dividend, divisor) => dividend/divisor

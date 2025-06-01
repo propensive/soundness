@@ -44,16 +44,17 @@ object Column:
        (get: row => cell)
        (using columnAlignment: ColumnAlignment[cell] = ColumnAlignment.topLeft)
        (using text.Show[cell])
-  :     Column[row, text] =
+  : Column[row, text] =
 
-    def contents(row: row): text = text.show(get(row))
+      def contents(row: row): text = text.show(get(row))
 
-    Column
-     (title,
-      contents,
-      textAlign.or(columnAlignment.text),
-      verticalAlign.or(columnAlignment.vertical),
-      sizing)
+      Column
+       (title,
+        contents,
+        textAlign.or(columnAlignment.text),
+        verticalAlign.or(columnAlignment.vertical),
+        sizing)
+
 
 case class Column[row, text: Textual]
    (title:         text,
