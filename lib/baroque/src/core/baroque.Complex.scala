@@ -76,8 +76,8 @@ object Complex:
                   Complex[addition.Result | subtraction.Result]]:
       (left, right) =>
         Complex
-         (left.real*right.real - left.imaginary*right.imaginary,
-          left.real*right.imaginary + left.imaginary*right.real)
+          ( left.real*right.real - left.imaginary*right.imaginary,
+            left.real*right.imaginary + left.imaginary*right.real )
 
 
   given divisible: [component,
@@ -97,13 +97,14 @@ object Complex:
 
       def divide(left: dividend, right: divisor): Complex[divisible.Result] =
         val denominator: addition2.Result = right.real*right.real + right.imaginary*right.imaginary
+
         Complex
-         ((left.real*right.real + left.imaginary*right.imaginary)/denominator,
-          (left.imaginary*right.real + (-left.real)*right.imaginary)/denominator)
+          ( (left.real*right.real + left.imaginary*right.imaginary)/denominator,
+            (left.imaginary*right.real + (-left.real)*right.imaginary)/denominator )
 
 
   def polar[component: Multiplicable by Double as multiplication]
-       (modulus: component, argument: Double)
+        ( modulus: component, argument: Double )
   : Complex[multiplication.Result] =
 
       Complex(modulus*math.cos(argument), modulus*math.sin(argument))
@@ -112,7 +113,7 @@ object Complex:
 case class Complex[component](real: component, imaginary: component):
   @targetName("add")
   inline infix def + [component2](right: Complex[component2])
-                     (using addition: component is Addable by component2)
+                     ( using addition: component is Addable by component2 )
   : Complex[addition.Result] =
 
       Complex(this.real + right.real, this.imaginary + right.imaginary)
@@ -120,7 +121,7 @@ case class Complex[component](real: component, imaginary: component):
 
   @targetName("sub")
   inline infix def - [component2](right: Complex[component2])
-                     (using subtraction: component is Subtractable by component2)
+                     ( using subtraction: component is Subtractable by component2 )
   : Complex[subtraction.Result] =
 
       Complex(this.real - right.real, this.imaginary - right.imaginary)
@@ -128,45 +129,45 @@ case class Complex[component](real: component, imaginary: component):
 
   @targetName("mul")
   inline infix def * [component2](right: Complex[component2])
-                     (using multiplication: component is Multiplicable by component2,
-                            addition:       multiplication.Result is Addable by
-                                             multiplication.Result,
-                            subtraction:    multiplication.Result is Subtractable by
-                                             multiplication.Result)
+                     ( using multiplication: component is Multiplicable by component2,
+                             addition:       multiplication.Result is Addable
+                                              by multiplication.Result,
+                             subtraction:    multiplication.Result is Subtractable
+                                              by multiplication.Result )
   : Complex[subtraction.Result | addition.Result] =
 
       Complex
-       (real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real)
+        ( real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real )
 
 
   inline def argument
-              (using multiplication: component is Multiplicable by component,
-                     addition:       multiplication.Result is Addable by multiplication.Result,
-                     sqrt:           addition.Result is Rootable[2],
-                     division:       component is Divisible by sqrt.Result,
-                     equality:       division.Result =:= Double)
+               ( using multiplication: component is Multiplicable by component,
+                       addition:       multiplication.Result is Addable by multiplication.Result,
+                       sqrt:           addition.Result is Rootable[2],
+                       division:       component is Divisible by sqrt.Result,
+                       equality:       division.Result =:= Double )
   : Double =
 
       scala.math.atan2(imaginary/modulus, real/modulus)
 
 
   inline def modulus
-              (using multiplication: component is Multiplicable by component,
-                     addition:       multiplication.Result is Addable by multiplication.Result,
-                     squareRoot:     addition.Result is Rootable[2])
+               ( using multiplication: component is Multiplicable by component,
+                       addition:       multiplication.Result is Addable by multiplication.Result,
+                       squareRoot:     addition.Result is Rootable[2] )
   : squareRoot.Result =
 
       squareRoot.root(real*real + imaginary*imaginary)
 
 
   inline def sqrt
-              (using multiplication:  component is Multiplicable by component,
-                     addition:        multiplication.Result is Addable by multiplication.Result,
-                     sqrt:            addition.Result is Rootable[2],
-                     division:        component is Divisible by sqrt.Result,
-                     equality:        division.Result =:= Double,
-                     sqrt2:           sqrt.Result is Rootable[2],
-                     multiplication2: sqrt2.Result is Multiplicable by Double)
+               ( using multiplication:  component is Multiplicable by component,
+                       addition:        multiplication.Result is Addable by multiplication.Result,
+                       sqrt:            addition.Result is Rootable[2],
+                       division:        component is Divisible by sqrt.Result,
+                       equality:        division.Result =:= Double,
+                       sqrt2:           sqrt.Result is Rootable[2],
+                       multiplication2: sqrt2.Result is Multiplicable by Double )
   : Complex[multiplication2.Result] =
 
       Complex.polar(modulus.sqrt, argument/2.0)

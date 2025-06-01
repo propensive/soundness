@@ -66,17 +66,17 @@ package couriers:
 
     private case class Attachment(filename: Text, content: Text)
     private case class Request
-                        (from:         EmailAddress,
-                         to:           List[EmailAddress],
-                         subject:      Text,
-                         bcc:          List[EmailAddress],
-                         cc:           List[EmailAddress],
-                         scheduled_at: Optional[Text],
-                         replyTo:      List[EmailAddress],
-                         headers:      Map[Text, Text],
-                         html:         Optional[Text],
-                         text:         Optional[Text],
-                         attachments:  List[Attachment])
+                         ( from:         EmailAddress,
+                           to:           List[EmailAddress],
+                           subject:      Text,
+                           bcc:          List[EmailAddress],
+                           cc:           List[EmailAddress],
+                           scheduled_at: Optional[Text],
+                           replyTo:      List[EmailAddress],
+                           headers:      Map[Text, Text],
+                           html:         Optional[Text],
+                           text:         Optional[Text],
+                           attachments:  List[Attachment] )
 
     def send(envelope: Envelope): Resend.Receipt =
       val attachments = envelope.email.attachments.map: attachment =>
@@ -84,17 +84,17 @@ package couriers:
 
       val request =
         Request
-         (envelope.from,
-          envelope.to,
-          envelope.subject,
-          envelope.bcc,
-          envelope.cc,
-          Unset,
-          envelope.replyTo,
-          envelope.email.headers,
-          envelope.email.html,
-          envelope.email.text,
-          attachments)
+          ( envelope.from,
+            envelope.to,
+            envelope.subject,
+            envelope.bcc,
+            envelope.cc,
+            Unset,
+            envelope.replyTo,
+            envelope.email.headers,
+            envelope.email.html,
+            envelope.email.text,
+            attachments )
 
       def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
 
@@ -107,7 +107,7 @@ package couriers:
 
       . within:
           url"https://api.resend.com/emails".submit
-           (Http.Post, authorization = Auth.Bearer(apiKey.key))
-           (request.json)
+            ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
+            ( request.json )
           . receive[Json]
           . as[Resend.Receipt]

@@ -47,17 +47,17 @@ import turbulence.*
 import vacuous.*
 
 case class UnixMode
-   (setUid:     Boolean = false,
-    setGid:     Boolean = false,
-    ownerRead:  Boolean = true,
-    ownerWrite: Boolean = true,
-    ownerExec:  Boolean = false,
-    groupRead:  Boolean = true,
-    groupWrite: Boolean = false,
-    groupExec:  Boolean = false,
-    otherRead:  Boolean = true,
-    otherWrite: Boolean = false,
-    otherExec:  Boolean = false):
+             ( setUid:     Boolean = false,
+               setGid:     Boolean = false,
+               ownerRead:  Boolean = true,
+               ownerWrite: Boolean = true,
+               ownerExec:  Boolean = false,
+               groupRead:  Boolean = true,
+               groupWrite: Boolean = false,
+               groupExec:  Boolean = false,
+               otherRead:  Boolean = true,
+               otherWrite: Boolean = false,
+               otherExec:  Boolean = false ):
 
   def int: Int =
     var sum: Int = 0

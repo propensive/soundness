@@ -106,7 +106,8 @@ object Abacist:
 
 
   def multiplyQuanta[units <: Tuple: Type]
-       (count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean)(using Quotes)
+        ( count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean )
+        ( using Quotes )
   : Expr[Any] =
 
       if division then '{Quanta.fromLong[units](($count.longValue/$multiplier + 0.5).toLong)}
@@ -126,8 +127,8 @@ object Abacist:
 
 
   def fromQuantity[quantity <: Measure: Type, units <: Tuple: Type]
-       (quantity: Expr[Quantity[quantity]])
-       (using Quotes)
+        ( quantity: Expr[Quantity[quantity]] )
+        ( using Quotes )
   : Expr[Quanta[units]] =
 
       import quotes.reflect.*
@@ -140,7 +141,7 @@ object Abacist:
 
 
   def get[units <: Tuple: Type, unit <: Units[1, ? <: Dimension]: Type](value: Expr[Quanta[units]])
-       (using Quotes)
+        ( using Quotes )
   : Expr[Int] =
 
       import quotes.reflect.*
@@ -187,7 +188,7 @@ object Abacist:
         val value = ratio(head.ref, cascade.head.ref, head.power).valueOrAbort
         val value2 = tail.prim.let(_.ref).let(ratio(_, head.ref, head.power).valueOrAbort + 0.5)
         recur
-         (tail,
-          Multiplier(head, (value + 0.5).toInt, value2.let(_.toInt).or(Int.MaxValue)) :: units)
+          ( tail,
+            Multiplier(head, (value + 0.5).toInt, value2.let(_.toInt).or(Int.MaxValue)) :: units )
 
     recur(cascade)

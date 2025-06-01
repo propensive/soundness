@@ -137,10 +137,10 @@ extension (companion: Notice.type)
       position.nn.pipe: position =>
         val codeRange =
           CodeRange
-           (position.startLine.nn,
-            position.startColumn.nn,
-            position.endLine.nn,
-            position.endColumn.nn)
+            ( position.startLine.nn,
+              position.startColumn.nn,
+              position.endLine.nn,
+              position.endColumn.nn )
 
         Notice(importance, file, message, codeRange)
 

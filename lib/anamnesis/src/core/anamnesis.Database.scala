@@ -86,8 +86,8 @@ class Database(size: Int):
 
 
   inline def assign[left, right]
-              (left: Ref of left in this.type, right: Ref of right in this.type)
-              (using (left -< right) <:< Tuple.Union[Subject])
+               ( left: Ref of left in this.type, right: Ref of right in this.type )
+               ( using (left -< right) <:< Tuple.Union[Subject] )
   : Unit raises DataError =
 
       val relationIndex = !![Subject].indexOf[left -< right]
@@ -107,8 +107,8 @@ class Database(size: Int):
 
 
   inline def unassign[left, right]
-              (left: Ref of left in this.type, right: Ref of right in this.type)
-              (using (left -< right) <:< Tuple.Union[Subject])
+               ( left: Ref of left in this.type, right: Ref of right in this.type )
+               ( using (left -< right) <:< Tuple.Union[Subject] )
   : Unit raises DataError =
 
       val relationIndex = !![Subject].indexOf[left -< right]

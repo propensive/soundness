@@ -33,5 +33,5 @@
 package cataclysm
 
 enum MixBlendMode extends PropertyValue:
-  case Normal, Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorDurn, Difference,
+  case Normal, Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorBurn, Difference,
       Exclusion, Hue, Saturation, Color, Luminos

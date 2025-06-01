@@ -132,8 +132,7 @@ object NumericRange:
 
 
       @annotation.targetName("divide2")
-      infix def / [rightMin <: Double, rightMax <: Double]
-         (right: rightMin ~ rightMax)
+      infix def / [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
       : Asym
          [rightMin*rightMax,
           Min4[leftMin/rightMin, leftMax/rightMin, leftMin/rightMax, leftMax/rightMax],

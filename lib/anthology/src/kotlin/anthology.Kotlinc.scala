@@ -48,12 +48,13 @@ import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.config.CompilerConfiguration
 
 case class Kotlinc
-   [compiler <: KotlinVersions]
-   (sources: Map[Text, Text], classpath: LocalClasspath, out: Path):
+             [ compiler <: KotlinVersions ]
+             ( sources: Map[Text, Text], classpath: LocalClasspath, out: Path ):
+
   def apply()(using SystemProperties): List[Diagnostic] raises KotlinError =
     val compiler = K2JVMCompiler()
     val configuration = CompilerConfiguration().apply: _ =>
       put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
 
     compiler.exec
-     (MessageCollector.NONE, configuration, kotlin.collections.CollectionsKt.listOf(code))
+      ( MessageCollector.NONE, configuration, kotlin.collections.CollectionsKt.listOf(code) )

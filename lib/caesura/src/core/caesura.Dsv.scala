@@ -51,9 +51,9 @@ import scala.compiletime.*
 import java.util as ju
 
 case class Dsv
-   (rows:    Stream[Row],
-    format:  Optional[DsvFormat]    = Unset,
-    columns: Optional[IArray[Text]] = Unset):
+             ( rows:    Stream[Row],
+               format:  Optional[DsvFormat]    = Unset,
+               columns: Optional[IArray[Text]] = Unset ):
 
   def as[value: DsvDecodable]: Stream[value] tracks CellRef = rows.map(_.as[value])
 
@@ -102,9 +102,9 @@ object Dsv:
         . or(Nil)
 
       Table[Row]
-       ((columns.map: name =>
-          Column[Row, Text, Text](name, sizing = columnar.Collapsible(0.5))
-           (_[Text](name).or(t"")))*)
+        ( (columns.map: name =>
+            Column[Row, Text, Text](name, sizing = columnar.Collapsible(0.5))
+              ( _[Text](name).or(t"")) )* )
 
 
   def parse[source: Readable by Text](source: source)(using format: DsvFormat)
@@ -119,14 +119,14 @@ object Dsv:
 
 
   private def recur
-               (content:  Stream[Text],
-                index:    Ordinal                  = Prim,
-                column:   Int                      = 0,
-                cells:    Array[Text]              = new Array[Text](0),
-                builder:  TextBuilder              = TextBuilder(),
-                state:    State                    = State.Fresh,
-                headings: Optional[Map[Text, Int]] = Unset)
-               (using format: DsvFormat, tactic: Tactic[DsvError])
+                ( content:  Stream[Text],
+                  index:    Ordinal                  = Prim,
+                  column:   Int                      = 0,
+                  cells:    Array[Text]              = new Array[Text](0),
+                  builder:  TextBuilder              = TextBuilder(),
+                  state:    State                    = State.Fresh,
+                  headings: Optional[Map[Text, Int]] = Unset )
+                ( using format: DsvFormat, tactic: Tactic[DsvError] )
   : Stream[Row] =
 
       inline def putCell(): Array[Text] =

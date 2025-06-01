@@ -41,15 +41,12 @@ import proscenium.*
 import language.dynamics
 
 object CssStylesheet:
-  given abstractable: (charEncoder: CharEncoder)
-        =>  CssStylesheet is Abstractable across HttpStreams into HttpStreams.Content =
-    new Abstractable:
-      type Self = CssStylesheet
-      type Domain = HttpStreams
-      type Result = HttpStreams.Content
+  given abstractable: (charEncoder: CharEncoder) => CssStylesheet is Abstractable:
+    type Domain = HttpStreams
+    type Result = HttpStreams.Content
 
-      def genericize(stylesheet: CssStylesheet): HttpStreams.Content =
-           (t"text/css; charset=${charEncoder.encoding.name}", Stream(stylesheet.text.bytes))
+    def genericize(stylesheet: CssStylesheet): HttpStreams.Content =
+      (t"text/css; charset=${charEncoder.encoding.name}", Stream(stylesheet.text.bytes))
 
 
   trait Item:

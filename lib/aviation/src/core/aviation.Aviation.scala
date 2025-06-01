@@ -63,9 +63,12 @@ object Aviation:
     inline def day: Day = anniversary%64
     inline def month: Month = Month.fromOrdinal(anniversary >> 6)
 
-    def apply(year: Year)
-         (using calendar: RomanCalendar, rounding: Anniversary.NonexistentLeapDay): Date =
-      safely(Date(year, month, day)).or(rounding.round(year))
+
+    def apply(year: Year)(using calendar: RomanCalendar, rounding: Anniversary.NonexistentLeapDay)
+    : Date =
+
+        safely(Date(year, month, day)).or(rounding.round(year))
+
 
   object WorkingDays:
     def apply(n: Int): WorkingDays = n
@@ -107,10 +110,10 @@ object Aviation:
 
     given orderable: Year is Orderable:
       inline def compare
-                  (inline left:        Year,
-                   inline right:       Year,
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
+                   ( inline left:        Year,
+                     inline right:       Year,
+                     inline strict:      Boolean,
+                     inline greaterThan: Boolean )
       : Boolean =
 
           if left == right then !strict else (left < right)^greaterThan
@@ -156,7 +159,7 @@ object Aviation:
     def of(day: Int): Date = day
 
     def apply(using calendar: Calendar)
-         (year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal)
+          ( year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal )
     : Date raises TimeError =
 
         calendar.jdn(year, month, day)
@@ -194,19 +197,20 @@ object Aviation:
 
     given encodable: RomanCalendar => Date is Encodable in Text = date =>
       import hieroglyph.textMetrics.uniform
+
       List
-       (date.year.toString.tt,
-        date.month.numerical.toString.tt.pad(2, Rtl, '0'),
-        date.day.toString.tt.pad(2, Rtl, '0'))
+        ( date.year.toString.tt,
+          date.month.numerical.toString.tt.pad(2, Rtl, '0'),
+          date.day.toString.tt.pad(2, Rtl, '0') )
 
       . join(t"-")
 
     inline given orderable: Date is Orderable:
       inline def compare
-                  (inline left:        Date,
-                   inline right:       Date,
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
+                   ( inline left:        Date,
+                     inline right:       Date,
+                     inline strict:      Boolean,
+                     inline greaterThan: Boolean )
       : Boolean =
 
           if left == right then !strict else (left < right)^greaterThan
