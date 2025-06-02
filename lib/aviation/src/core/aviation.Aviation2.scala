@@ -143,9 +143,9 @@ object Aviation2:
 
         def milliseconds(duration: Quantity[units]): Long = (duration.normalize.value*1000).toLong
 
-  extension (instant: Instant)
+  extension (instant: into Instant)
     @targetName("to")
-    infix def ~ (that: Instant): Period = Period(instant, that)
+    infix def ~ (that: into Instant): Period = Period(instant, that)
 
     def tai: TaiInstant = LeapSeconds.tai(instant)
 
@@ -167,4 +167,4 @@ object Aviation2:
     def long: Long = instant
 
   extension (duration: into Duration)
-    def from(instant: Instant): Period = Period(instant, Instant.plus.add(instant, duration))
+    def from(instant: into Instant): Period = Period(instant, Instant.plus.add(instant, duration))
