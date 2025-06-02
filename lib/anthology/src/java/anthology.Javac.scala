@@ -89,7 +89,10 @@ case class Javac(options: List[JavacOption]):
 
             process.put:
               Notice
-               (importance, "name".tt, diagnostic.getMessage(ju.Locale.getDefault()).nn.tt, codeRange)
+               (importance,
+                "name".tt,
+                diagnostic.getMessage(ju.Locale.getDefault()).nn.tt,
+                codeRange)
 
       val options = List(t"-classpath", classpath(), t"-d", out.generic)
       val javaSources = sources.map(JavaSource(_, _)).asJava

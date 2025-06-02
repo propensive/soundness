@@ -73,7 +73,9 @@ object Websocket:
         upgrade             = t"websocket")
        (websocket.spool.stream.map(_.bytes))
 
-class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => ResultType)(using Monitor, Codicil):
+class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => ResultType)
+       (using Monitor, Codicil):
+
   given prefix3: ("secWebsocketKey" is Prefixable of Text) = identity(_)
   val key: Text = request.headers.secWebsocketKey.prim.or(panic(m"Missing header"))
   private val spool: Spool[Frame] = Spool()

@@ -78,8 +78,12 @@ extension [collection[element] <: Iterable[element], element](elems: collection[
               buildFrom: BuildFrom[List[element2], element2, collection[element2]])
   : monad[collection[element2]] =
 
-      def recur(todo: Iterable[element], accumulator: monad[List[element2]]): monad[List[element2]] =
-        if todo.isEmpty then accumulator
-        else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.head).map(_ :: xs) })
+
+      def recur(todo: Iterable[element], accumulator: monad[List[element2]])
+      : monad[List[element2]] =
+
+          if todo.isEmpty then accumulator
+          else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.head).map(_ :: xs) })
+
 
       recur(elems, monad.point(List())).map(_.reverse.to(buildFrom.toFactory(Nil)))

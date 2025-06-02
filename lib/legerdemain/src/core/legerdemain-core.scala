@@ -76,5 +76,7 @@ package formulations:
           required:   Boolean)
     : Html[Flow] =
 
-        val validation2 = validation.let(_.html)
-        Div(validation2.let(P.alert(_)), Label(legend, widget), Span.required(t"*").unless(!required))
+        Div
+         (validation.let(_.html).let(P.alert(_)),
+          Label(legend, widget),
+          Span.required(t"*").unless(!required))

@@ -298,7 +298,8 @@ object Contingency:
 
                   case _ =>
                     halt:
-                      m"argument to `recover` should be a partial function implemented as match cases"
+                      m"""argument to `recover` should be a partial function implemented as match
+                          cases"""
 
                 val pfExpr = partialFunction.asExprOf[Exception ~> result]
 
@@ -415,7 +416,8 @@ object Contingency:
                     mapping(unwrap(block))
 
                   case other => halt:
-                    m"argument to `validate` should be a partial function implemented as match cases"
+                    m"""argument to `validate` should be a partial function implemented as match
+                        cases"""
 
                 val tactics = cases.map: (_, _) =>
                   '{TrackTactic(label, $validate.initial, foci)(using $diagnostics)}.asTerm

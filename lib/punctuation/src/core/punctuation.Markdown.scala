@@ -230,7 +230,8 @@ object Markdown:
   : Seq[ListItem] raises MarkdownError =
 
       node.getChildren.nn.iterator.nn.asScala.to(List).collect:
-        case node: (cvfa.BulletListItem | cvfa.OrderedListItem) => ListItem(flowChildren(root, node)*)
+        case node: (cvfa.BulletListItem | cvfa.OrderedListItem) =>
+          ListItem(flowChildren(root, node)*)
 
 
   def phrasing(root: cvfua.Document, node: PhrasingInput)
@@ -242,15 +243,19 @@ object Markdown:
         case node: cvfa.StrongEmphasis => Strong(phraseChildren(root, node)*)
         case node: cvfa.Code           => SourceCode(node.getText.toString.show)
         case node: cvfa.HardLineBreak  => LineBreak
-        case node: cvfa.Image          => Image(node.getText.toString.show, node.getUrl.toString.show)
+        case node: cvfa.Image          => Image
+                                           (node.getText.toString.show, node.getUrl.toString.show)
         case node: cvfa.ImageRef       => Image
-                                          (node.getText.toString.show, resolveReference(root, node))
+                                           (node.getText.toString.show,
+                                            resolveReference(root, node))
         case node: cvfa.Link           => Weblink
-                                          (node.getUrl.toString.show, phraseChildren(root, node)*)
+                                           (node.getUrl.toString.show,
+                                            phraseChildren(root, node)*)
         case node: cvfa.LinkRef        => Weblink
-                                          (resolveReference(root, node), phraseChildren(root, node)*)
+                                           (resolveReference(root, node),
+                                            phraseChildren(root, node)*)
         case node: cvfa.MailLink       => Weblink
-                                          (node.getText.toString.show,
+                                           (node.getText.toString.show,
                                             Prose(s"mailto:${node.getText.nn}".tt))
         case node: cvfa.Text           => Prose(format(node.getChars.toString.show))
 

@@ -65,7 +65,9 @@ object Outliner extends HtmlTranslator():
           case head :: Nil :: tail =>
             structure(minimum, Nil, List(Entry(t"", head.reverse)) :: tail)
 
-        case Markdown.Ast.Block.Heading(level, children*) :: more if minimum.lay(true)(level >= _) =>
+        case Markdown.Ast.Block.Heading(level, children*) :: more
+             if minimum.lay(true)(level >= _) =>
+
           val minimum2 = minimum.or(level)
           val depth = stack.length + minimum2 - 1
 

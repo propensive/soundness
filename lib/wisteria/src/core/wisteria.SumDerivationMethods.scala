@@ -243,7 +243,8 @@ trait SumDerivationMethods[typeclass[_]]:
                     val context = requirement.wrap(summonInline[typeclass[variant0]])
                     lambda[variant0](variant)(using context, label.tt, index3)
                   else
-                    fold[derivation, variants, moreLabels](sum, size, index + 1, fallible)(predicate)
+                    fold[derivation, variants, moreLabels](sum, size, index + 1, fallible)
+                     (predicate)
                      (lambda)
 
         case _ =>

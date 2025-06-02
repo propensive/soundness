@@ -63,9 +63,12 @@ object Aviation:
     inline def day: Day = anniversary%64
     inline def month: Month = Month.fromOrdinal(anniversary >> 6)
 
-    def apply(year: Year)
-         (using calendar: RomanCalendar, rounding: Anniversary.NonexistentLeapDay): Date =
-      safely(Date(year, month, day)).or(rounding.round(year))
+
+    def apply(year: Year)(using RomanCalendar)(using rounding: Anniversary.NonexistentLeapDay)
+    : Date =
+
+        safely(Date(year, month, day)).or(rounding.round(year))
+
 
   object WorkingDays:
     def apply(n: Int): WorkingDays = n

@@ -95,7 +95,8 @@ def evolve[element: ClassTag]
 
                   case edit :: edits => atoms match
                     case Nil => edit match
-                      case Ins(_, value) => merge(Nil, edits, Atom(value, Set(iteration)) :: finish())
+                      case Ins(_, value) => merge
+                                             (Nil, edits, Atom(value, Set(iteration)) :: finish())
                       case edit          => panic(m"Unexpected edit: ${edit.toString}")
 
                     case atom :: atoms =>

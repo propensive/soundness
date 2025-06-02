@@ -95,7 +95,8 @@ case class Scalac[version <: Scalac.All](options: List[ScalacOption[version]]):
           if int > last then
             last = int
             scalacProcess.put
-             (CompileProgress(last/100.0, if currentStage == null then t"null" else currentStage.tt))
+             (CompileProgress
+               (last/100.0, if currentStage == null then t"null" else currentStage.tt))
 
           scalacProcess.continue
 
