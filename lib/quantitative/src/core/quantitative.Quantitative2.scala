@@ -339,6 +339,11 @@ trait Quantitative2:
         case Some('[type units <: Measure; units]) => '{Quantity[units]($resultValue)}
         case _                                     => resultValue
 
+  def amount[units <: Measure: Type](using Quotes): Expr[Text] =
+    val amount = UnitsMap[units].dimensionality.quantityName.getOrElse:
+      halt(m"the name of this amount is not known")
+
+    '{${Expr(amount)}.tt}
 
   private def incompatibleTypes(left: UnitsMap, right: UnitsMap)(using Quotes): Nothing =
     (left.dimensionality.quantityName, right.dimensionality.quantityName) match
