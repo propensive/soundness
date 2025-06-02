@@ -59,6 +59,8 @@ object Quantitative extends Quantitative2:
 
       double
 
+    inline def amount[name <: Label]: Text = ${Quantitative.amount[units]}
+
   object MetricUnit:
     erased given underlying: [units <: Measure] => Underlying[MetricUnit[units], Double] = !!
 

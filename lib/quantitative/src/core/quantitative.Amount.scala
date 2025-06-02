@@ -34,10 +34,11 @@ package quantitative
 
 import language.implicitConversions
 
+import anticipation.*
 import proscenium.*
 import rudiments.*
 
-erased trait Amount[dimension <: Units[?, ?], label <: Label]()
+erased trait Amount[dimension <: Measure, label <: Label]()
 
 object Amount:
   // base units
@@ -47,6 +48,8 @@ object Amount:
   erased given current: Amount[Units[1, Current], "current"] = !!
   erased given temperature: Amount[Units[1, Temperature], "temperature"] = !!
   erased given luminosity: Amount[Units[1, Luminosity], "luminosity"] = !!
+
+  inline def apply[units <: Measure]: Text = ${Quantitative.amount[units]}
 
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
 
@@ -187,39 +190,17 @@ object Amount:
   erased given thermalResistivity: Amount[ThermalResistivity, "thermal resistivity"] = !!
   erased given velocity: Amount[Velocity, "velocity"] = !!
   erased given volume: Amount[Volume, "volume"] = !!
-
-  erased given electricChargeDensity: Amount[ElectricChargeDensity,
-      "electric charge density"] = !!
-
-  erased given electricDipoleMoment: Amount[ElectricDipoleMoment,
-      "electric dipole moment"] = !!
-
-  erased given electricFieldStrength: Amount[ElectricFieldStrength,
-      "electric field strength"] = !!
-
-  erased given electricalConductance: Amount[ElectricalConductance,
-      "electric conductance"] = !!
-
-  erased given electricalConductivity: Amount[ElectricalConductivity,
-      "electric conductivity"] = !!
-
-  erased given electricalPotential: Amount[ElectricalPotential, "electric potential"] =
-    !!
-
-  erased given electricalResistivity: Amount[ElectricalResistivity,
-      "electric resistivity"] = !!
-
-  erased given magneticFluxDensity: Amount[MagneticFluxDensity, "magnetic flux density"] =
-    !!
-
-  erased given specificHeatCapacity: Amount[SpecificHeatCapacity,
-      "specific heat capacity"] = !!
-
-  erased given thermalConductivity: Amount[ThermalConductivity, "thermal conductivity"] =
-    !!
-
-  erased given volumetricFlowRate: Amount[VolumetricFlowRate, "volumetric flow rate"] =
-    !!
+  erased given electricChargeDensity: Amount[ElectricChargeDensity, "electric charge density"] = !!
+  erased given electricDipoleMoment: Amount[ElectricDipoleMoment, "electric dipole moment"] = !!
+  erased given electricFieldStrength: Amount[ElectricFieldStrength, "electric field strength"] = !!
+  erased given electricalConductance: Amount[ElectricalConductance, "electric conductance"] = !!
+  erased given electricalConductivity: Amount[ElectricalConductivity, "electric conductivity"] = !!
+  erased given electricalPotential: Amount[ElectricalPotential, "electric potential"] = !!
+  erased given electricalResistivity: Amount[ElectricalResistivity, "electric resistivity"] = !!
+  erased given magneticFluxDensity: Amount[MagneticFluxDensity, "magnetic flux density"] = !!
+  erased given specificHeatCapacity: Amount[SpecificHeatCapacity, "specific heat capacity"] = !!
+  erased given thermalConductivity: Amount[ThermalConductivity, "thermal conductivity"] = !!
+  erased given volumetricFlowRate: Amount[VolumetricFlowRate, "volumetric flow rate"] = !!
 
   erased given electricDisplacementField: Amount[ElectricDisplacementField,
       "electric displacement field"] = !!
