@@ -59,7 +59,7 @@ extension [fetchable: Fetchable](endpoint: fetchable)
   def submit: Http.Submit[fetchable.Target] =
     Http.Submit(fetchable.text(endpoint), fetchable.target(endpoint), fetchable.hostname(endpoint))
 
-extension (url: HttpUrl)
+extension (url: into HttpUrl)
   @targetName("withQuery")
   def query(query: Query): HttpUrl =
     val query2 = url.query.let(query ++ _.decode[Query]).or(query)
