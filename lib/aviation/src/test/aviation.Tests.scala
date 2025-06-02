@@ -648,9 +648,5 @@ object Tests extends Suite(m"Aviation Tests"):
           test(m"Check there are 253 working days in a year"):
             import hebdomads.european
             import dateFormats.iso8601
-            for i <- 4 to 5 do
-              println("-----")
-              val d = (2025-Jan-1 + WorkingDays(i))
-              println(t"${d.weekday}, $d")
             2025-Jan-3 + WorkingDays(253)
           . assert(_ == 2026-Jan-1)

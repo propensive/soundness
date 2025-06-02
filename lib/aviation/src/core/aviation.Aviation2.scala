@@ -166,5 +166,5 @@ object Aviation2:
 
     def long: Long = instant
 
-  extension (duration: Duration)
+  extension (duration: into Duration)
     def from(instant: Instant): Period = Period(instant, Instant.plus.add(instant, duration))
