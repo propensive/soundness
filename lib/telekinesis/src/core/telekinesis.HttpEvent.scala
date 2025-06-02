@@ -39,7 +39,7 @@ import nettlesome.*
 enum HttpEvent:
   case Response(status: Http.Status)
   case Request(preview: Text)
-  case Send(method: Http.Method, url: HttpUrl, headers: Seq[Http.Header])
+  case Send(method: Http.Method, url: into HttpUrl, headers: Seq[Http.Header])
 
 object HttpEvent:
   given communicable: HttpEvent is Communicable =
