@@ -270,6 +270,14 @@ object Tests extends Suite(m"Aviation Tests"):
         demilitarize(7.585.am)
       .assert(_.nonEmpty)
 
+      test(m"Specify afternoon time with hour `12`"):
+        12.25.pm
+      .assert(_ == Clockface(12, 25, 0))
+
+      test(m"Specify morning time with hour `12`"):
+        12.25.am
+      .assert(_ == Clockface(0, 25, 0))
+
       import calendars.gregorian
 
       test(m"Specify datetime"):

@@ -130,29 +130,28 @@ object Aviation:
     time.asTerm match
       case Inlined(None, Nil, lit@Literal(DoubleConstant(d))) =>
         val hour = d.toInt
-        val minutes = ((d - hour) * 100 + 0.5).toInt
+        val Base60(minutes: Base60) = ((d - hour) * 100 + 0.5).toInt: @unchecked
 
         if minutes >= 60 then halt(m"a time cannot have a minute value above 59", lit.pos)
         if hour < 0 then halt(m"a time cannot be negative", lit.pos)
         if hour > 12 then halt(m"a time cannot have an hour value above 12", lit.pos)
 
-        val h: Base24 = (hour + (if pm then 12 else 0)).asInstanceOf[Base24]
+        val Base24(hours: Base24) = (hour + (if pm^(hour == 12) then 12 else 0))%24: @unchecked
         val length = lit.pos.endColumn - lit.pos.startColumn
 
         Position.ofMacroExpansion.sourceCode.get.tt match
           case r"[0-9][0-9]?\.[0-9][0-9][^0-9]*" =>
+
           case other =>
             halt(m"the time should have exactly two minutes digits", lit.pos)
 
-        val m: Base60 = minutes.asInstanceOf[Base60]
-        '{Clockface(${Expr[Base24](h)}, ${Expr[Base60](m)}, 0)}
+        '{Clockface(${Expr[Base24](hours)}, ${Expr[Base60](minutes)}, 0)}
 
       case _ =>
         halt(m"expected a literal double value")
 
   object Date:
     erased given underlying: Underlying[Date, Int] = !!
-
     def of(day: Int): Date = day
 
     def apply(using calendar: Calendar)
