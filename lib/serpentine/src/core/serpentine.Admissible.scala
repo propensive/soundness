@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.32.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -32,6 +32,32 @@
                                                                                                   */
 package serpentine
 
-trait Substantiable:
+import anticipation.*
+import contingency.*
+import nomenclature.*
+import prepositional.*
+import proscenium.*
+
+object Admissible:
+  def apply[self, system](fn: Text => Unit): self is Admissible on system =
+    new Admissible:
+      type Self = self
+      type Platform = system
+      def check(name: Text): Unit = fn(name)
+
+
+  inline given text: [text <: Text, system: Nominative] => Tactic[NameError]
+               =>  text is Admissible on system =
+
+      Admissible(Name(_))
+
+  inline given admissible: [string <: Label, system: Nominative] => string is Admissible on system =
+    Admissible({ _ => Name.verify[string, system] })
+
+  given name: [platform] => Name[platform] is Admissible on platform = _ => ()
+
+trait Admissible:
   type Self
-  def exists(value: Self): Boolean
+  type Platform
+
+  def check(name: Text): Unit

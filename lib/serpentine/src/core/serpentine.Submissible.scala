@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.32.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -32,25 +32,15 @@
                                                                                                   */
 package serpentine
 
-import contingency.*
+import anticipation.*
 import prepositional.*
-import proscenium.*
-import vacuous.*
 
-object Serpentine:
-  @targetName("Parent")
-  object ^
+object Submissible:
+  given (%.type is Submissible on Linux) = _ => ()
+  given (%.type is Submissible on MacOs) = _ => ()
 
-  @targetName("RelativeRoot")
-  val `?` = PathAscent(0)
+trait Submissible:
+  type Self
+  type Platform
 
-  @targetName("Slash")
-  object `/`:
-    def unapply[platform <: AnyRef & Matchable: {Navigable, Radical}, element]
-       (path: Path on platform)
-    : Option[(Path on platform, platform.Operand)] =
-
-        path.textDescent match
-          case Nil          => None
-          case head :: Nil  => Some((platform.root(path.textRoot), platform.element(head)))
-          case head :: tail => Some((unsafely(path.parent.vouch), platform.element(head)))
+  def check(name: Text): Unit

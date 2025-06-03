@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.32.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -32,7 +32,14 @@
                                                                                                   */
 package serpentine
 
+import scala.compiletime.*
+
 import anticipation.*
 
-abstract class Root(root: Text, separator0: Text, caseSensitivity0: Case)
-extends Path(root, Nil, separator0, caseSensitivity0)
+abstract class Root(name: Text) extends Path(name):
+  type Subject = EmptyTuple
+  override def hashCode = name.hashCode
+
+  override def equals(any: Any): Boolean = any.asMatchable match
+    case root: Root => root.root == name
+    case _          => false

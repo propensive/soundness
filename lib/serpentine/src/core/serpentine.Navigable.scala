@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.32.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -35,17 +35,14 @@ package serpentine
 import anticipation.*
 import nomenclature.*
 import prepositional.*
-import symbolism.*
+import proscenium.*
 
-trait Navigable extends Nominative:
+object Navigable:
+  given label: [string <: Label] => string is Navigable = _.tt
+  given int: Int is Navigable = _.toString.tt
+  given text: [text <: Text] => text is Navigable = identity(_)
+  given name: [platform, name <: Name[platform]] => name is Navigable = identity(_)
+
+trait Navigable:
   type Self
-  type Operand
-
-  def element(element: Text): Operand
-  protected def elementText(element: Operand): Text
-  def separator: Text
-  def selfText: Text
-  def parentElement: Text
-  def ascent: Text = parentElement+separator
-  def caseSensitivity: Case
-  def makeElement(element: Operand): Text = caseSensitivity(elementText(element))
+  def follow(name: Self): Text

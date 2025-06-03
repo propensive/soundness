@@ -38,6 +38,7 @@ import distillate.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
 
 import scala.compiletime.*
@@ -47,6 +48,7 @@ object Nomenclature:
 
   object Name:
     given encodable: [platform] => Name[platform] is Encodable in Text = identity(_)
+
     inline given decodable: [platform] => (platform is Nominative, Tactic[NameError])
                  =>  Name[platform] is Decodable in Text =
 
@@ -54,10 +56,13 @@ object Nomenclature:
 
       decoder
 
+    inline def verify[NameType <: Label, PlatformType] =
+      ${Nomenclature2.parse[PlatformType, NameType]}
+
     private inline def check[check <: Matchable](name: Text): Unit raises NameError =
-      inline erasedValue[check] match
+      inline !![check] match
         case _: Zero           => ()
-        case _: (head *: tail) => inline erasedValue[head & Matchable] match
+        case _: (head *: tail) => inline !![head & Matchable] match
           case _: Check[param] =>
             inline staticCompanion[head] match
               case rule: Rule =>
@@ -69,10 +74,8 @@ object Nomenclature:
 
             check[tail](name)
 
-    inline def apply[platform](name: Text)(using nominative: platform is Nominative)
-    : Name[platform] raises NameError =
+    inline def apply[platform: Nominative](name: Text): Name[platform] raises NameError =
+      inline disintersect[platform.Constraint] match
+        case v => check[v.type](name)
 
-        inline disintersect[nominative.Constraint] match
-          case v => check[v.type](name)
-
-        name.asInstanceOf[Name[platform]]
+      name.asInstanceOf[Name[platform]]

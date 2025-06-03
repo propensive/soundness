@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.32.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -42,7 +42,7 @@ import scala.compiletime.*
 
 object PathError:
   object Reason:
-    given communicable: Reason is Communicable =
+    given Reason is Communicable =
       case Reason.RootParent     => m"the root has no parent"
       case Reason.InvalidRoot    => m"the root is not valid"
       case Reason.DifferentRoots => m"it does not have the same root as the source"

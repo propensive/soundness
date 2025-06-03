@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.32.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,19 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+// package anticipation
 
-import prepositional.*
-import serpentine.*
+// import prepositional.*
+// import serpentine.*
 
-package filesystemApi:
-  given serpentinePath: [platform: {Navigable, Radical}]
-        => (Path on platform) is (Abstractable & Instantiable) across Paths from Text into Text =
-    new Abstractable with Instantiable:
-      type Self = Path on platform
-      type Domain = Paths
-      type Source = Text
-      type Result = Text
+// package filesystemApi:
+//   given serpentinePath: [PlatformType: {Navigable, Radical}]
+//   =>    (Path on PlatformType) is (Abstractable & Instantiable) across Paths from Text into Text =
+//     new Abstractable with Instantiable:
+//       type Self = Path on PlatformType
+//       type Domain = Paths
+//       type Source = Text
+//       type Result = Text
 
-      def genericize(path: Path on platform): Text = path.text
-      def apply(text: Text): Path on platform = Path.parse[platform](text)
+//       def genericize(path: Path on PlatformType): Text = path.text
+//       def apply(text: Text): Path on PlatformType = Path.parse[PlatformType](text)

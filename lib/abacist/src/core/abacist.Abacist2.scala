@@ -79,8 +79,8 @@ object Abacist2:
 
       def multiply(left: Quanta[units], right: Double): Quanta[units] = left.multiply(right)
 
-    given divisible: [units <: Tuple] => Quanta[units] is Divisible:
-      type Operand = Double
+    given divisible: [units <: Tuple, right <: Double] => Quanta[units] is Divisible by right:
+      type Operand = right
       type Result = Quanta[units]
 
       def divide(left: Quanta[units], right: Double): Quanta[units] = left.divide(right)

@@ -32,55 +32,19 @@
                                                                                                   */
 package serpentine
 
-import digression.*
-import gossamer.*
-import probably.*
+import nomenclature.*
+import prepositional.*
 import rudiments.*
 
-object Benchmarks extends Suite(m"Serpentine Benchmarks"):
-  def run(): Unit =
-    suite(m"Conjunctions"):
-      test(m"Find conjunction of 2-element paths"):
-        val p1 = ^ / p"foo" / p"bar"
-        val p2 = ^ / p"foo" / p"baz"
-        p1.conjunction(p2)
+erased trait Windows
 
-      . benchmark
-         (warmup   = 500L,
-          duration = 500L,
-          baseline = Baseline(ratio = Ratio.Time, compare = Compare.Min))
+object Windows:
+  type Rules =
+    MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"]
+    & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"]
+    & MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "]
+    & MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotMatch["(?i)PRN(\\.[^.]+)?"]
+    & MustNotMatch["(?i)AUX(\\.[^.]+)?"] & MustNotMatch["(?i)NUL(\\.[^.]+)?"]
+    & MustNotMatch["(?i)COM[0-9](\\.[^.]+)?"] & MustNotMatch["(?i)LPT[0-9](\\.[^.]+)?"]
 
-      test(m"Find conjunction of 3-element paths"):
-        val p1 = ^ / p"foo" / p"bar" / p"quux"
-        val p2 = ^ / p"foo" / p"baz" / p"quux"
-        p1.conjunction(p2)
-
-      . benchmark(warmup = 500L, duration = 500L)
-
-      test(m"Find conjunction of 4-element paths"):
-        val p1 = ^ / p"foo" / p"bar" / p"quux" / p"bippy"
-        val p2 = ^ / p"foo" / p"baz" / p"quux" / p"bop"
-        p1.conjunction(p2)
-
-      . benchmark(warmup = 500L, duration = 500L)
-
-      test(m"Find conjunction of 5-element paths"):
-        val p1 = ^ / p"foo" / p"bar" / p"quux" / p"bippy" / p"abc"
-        val p2 = ^ / p"foo" / p"baz" / p"quux" / p"bop" / p"def"
-        p1.conjunction(p2)
-
-      . benchmark(warmup = 500L, duration = 500L)
-
-      test(m"Find conjunction of 6-element paths"):
-        val p1 = ^ / p"foo" / p"bar" / p"quux" / p"bippy" / p"abc" / p"ghi"
-        val p2 = ^ / p"foo" / p"baz" / p"quux" / p"bop" / p"def" / p"jkl"
-        p1.conjunction(p2)
-
-      . benchmark(warmup = 500L, duration = 500L)
-
-      test(m"Find conjunction of 7-element paths"):
-        val p1 = ^ / p"foo" / p"bar" / p"quux" / p"bippy" / p"abc" / p"ghi" / p"mno"
-        val p2 = ^ / p"foo" / p"baz" / p"quux" / p"bop" / p"def" / p"jkl" / p"pqr"
-        p1.conjunction(p2)
-
-      . benchmark(warmup = 500L, duration = 500L)
+  erased given Windows is Nominative under Rules = !!

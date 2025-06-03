@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.32.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -32,17 +32,10 @@
                                                                                                   */
 package serpentine
 
+import scala.compiletime.*, ops.int.*
+
 import anticipation.*
-import rudiments.*
+import fulminate.*
+import proscenium.*
 
-import scala.reflect.*
-
-object Pathlike:
-  erased given typeTest: [pathlike <: Pathlike] => TypeTest[Pathlike, pathlike] = !!
-
-transparent trait Pathlike:
-  type Platform
-  def textDescent: List[Text]
-  def separator: Text
-
-  override def toString(): String = textDescent.reverse.mkString(separator.s)
+case class RootError(root: Text)(using Diagnostics) extends Error(m"$root is not a valid root")
