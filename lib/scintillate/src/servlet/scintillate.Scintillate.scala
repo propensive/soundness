@@ -50,7 +50,9 @@ class servlet extends MacroAnnotation:
           then halt(m"the return type ${returnType.show} is not a subtype of HttpResponse[?]")
 
           val ref =
-            Ref(defDef.symbol).etaExpand(tree.symbol.owner).asExprOf[HttpConnection => Http.Response]
+            Ref(defDef.symbol)
+            . etaExpand(tree.symbol.owner)
+            . asExprOf[HttpConnection => Http.Response]
 
           val parents0 = List('{new JavaServletFn($ref)}.asTerm)
           val parents = List(TypeTree.of[HttpConnection])

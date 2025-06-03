@@ -419,7 +419,8 @@ trait Quantitative2:
         case Some('[type result <: Measure; result]) =>
           '{ Divisible[Double, divisor, Quantity[result]] {
               (left, right) =>
-                ${Quantitative.multiply('{Quantity(left)}, 'right, true).asExprOf[Quantity[result]]} } }
+                ${  (Quantitative.multiply
+                      ('{Quantity(left)}, 'right, true).asExprOf[Quantity[result]])} } }
 
         case None =>
           '{ Divisible[Double, divisor, Double]: (left, right) =>
@@ -439,7 +440,8 @@ trait Quantitative2:
         case Some('[type result <: Measure; result]) =>
           '{ Divisible[Int, divisor, Quantity[result]] {
               (left, right) =>
-                ${Quantitative.multiply('{Quantity(left.toDouble)}, 'right, true).asExprOf[Quantity[result]]} } }
+                ${(Quantitative.multiply
+                     ('{Quantity(left.toDouble)}, 'right, true).asExprOf[Quantity[result]])} } }
 
         case None =>
           '{ Divisible[Int, divisor, Double]: (left, right) =>

@@ -60,7 +60,9 @@ object Codl:
        (using readable: source is Readable by Text, aggregate: Tactic[CodlError])
   : CodlDoc =
 
-      val (margin, stream) = tokenize(readable.stream(source), fromStart)(using aggregate.diagnostics)
+      val (margin, stream) =
+        tokenize(readable.stream(source), fromStart)(using aggregate.diagnostics)
+
       val baseSchema: CodlSchema = schema
 
       case class Proto
@@ -158,7 +160,8 @@ object Codl:
                   go(focus = proto)
 
               case CodlToken.Indent =>
-                if focus.key.absent then raise(CodlError(focus.line, focus.col, 1, IndentAfterComment))
+                if focus.key.absent
+                then raise(CodlError(focus.line, focus.col, 1, IndentAfterComment))
 
                 go(focus = Proto(), peers = Nil, stack = (focus -> peers) :: stack)
 
@@ -192,7 +195,8 @@ object Codl:
                 focus.key match
                   case key: Text => focus.schema match
                     case field@Field(_, _) =>
-                      val (uniqueId, focus2) = focus.commit(Proto(word, line, col, multiline = block))
+                      val (uniqueId, focus2) =
+                        focus.commit(Proto(word, line, col, multiline = block))
 
                       uniqueId.let: uniqueId =>
                         if peerIds.contains(uniqueId(0)) then
@@ -204,7 +208,8 @@ object Codl:
                       go(focus = focus2, peerIds = peerIds2, lines = 0)
 
                     case CodlSchema.Free =>
-                      val (uniqueId, focus2) = focus.commit(Proto(word, line, col, multiline = block))
+                      val (uniqueId, focus2) =
+                        focus.commit(Proto(word, line, col, multiline = block))
 
                       uniqueId.let: uniqueId =>
                         if peerIds.contains(uniqueId(0)) then
@@ -248,13 +253,16 @@ object Codl:
 
               case CodlToken.Comment(txt, line, col) => focus.key match
                 case key: Text =>
-                  go(focus = focus.setExtra(focus.extra.or(Extra()).copy(remark = txt, blank = lines)))
+                  go(focus = focus.setExtra(focus.extra.or(Extra()).copy(remark = txt,
+                                                                         blank  = lines)))
 
                 case _ =>
                   val extra = focus.extra.or(Extra())
 
-                  go(focus = Proto(line = line, col = col, extra = extra.copy(blank = lines, comments =
-                      txt :: extra.comments)))
+                  go(focus = Proto
+                              (line  = line,
+                               col   = col,
+                               extra = extra.copy(blank = lines, comments = txt :: extra.comments)))
 
             case _ => stack match
               case Nil =>
@@ -331,7 +339,9 @@ object Codl:
 
             if char.char != '\n' && char != Character.End
             then fail(Comment, CodlError(char.line, col(char), 1, BadTermination))
-            else if char == Character.End then Stream() else Stream(CodlToken.Body(reader.charStream()))
+            else
+              if char == Character.End then Stream()
+              else Stream(CodlToken.Body(reader.charStream()))
 
 
           inline def irecur
@@ -347,8 +357,12 @@ object Codl:
           inline def diff: Int = char.column - indent
           inline def col(char: Character): Int = if fromStart then count else char.column
 
-          def put(next: State, stop: Boolean = false, padding: Boolean = padding): Stream[CodlToken] =
-            token() #:: irecur(next, padding = padding)
+
+          def put(next: State, stop: Boolean = false, padding: Boolean = padding)
+          : Stream[CodlToken] =
+
+              token() #:: irecur(next, padding = padding)
+
 
           def token(): CodlToken = state.absolve match
             case Comment =>
@@ -373,8 +387,12 @@ object Codl:
             else if char.char == ' ' then recur(Margin, padding = false)
             else token() #:: istream(char, count = count + 1, indent = indent, padding = false)
 
-          def fail(next: State, error: CodlError, adjust: Optional[Int] = Unset): Stream[CodlToken] =
-            CodlToken.Error(error) #:: irecur(next, indent = adjust.or(char.column))
+
+          def fail(next: State, error: CodlError, adjust: Optional[Int] = Unset)
+          : Stream[CodlToken] =
+
+              CodlToken.Error(error) #:: irecur(next, indent = adjust.or(char.column))
+
 
           def newline(next: State): Stream[CodlToken] =
             if diff > 4 then fail(Margin, CodlError(char.line, col(char), 1, SurplusIndent), indent)
@@ -398,7 +416,8 @@ object Codl:
             case '\n' => state match
               case Word | Comment | Pending(_) => put(Indent, padding = false)
               case Margin                      => block()
-              case Indent | Space              => CodlToken.Blank #:: irecur(Indent, padding = false)
+              case Indent | Space              => CodlToken.Blank
+                                                  #:: irecur(Indent, padding = false)
               case _                           => recur(Indent, padding = false)
 
             case ' ' => state match

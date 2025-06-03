@@ -335,7 +335,10 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
                   else
                     if group.charClass then matchedText.toCharArray.nn.to(List) :: matches else
                       val subpattern = pattern.s.substring(group.start, group.end).nn
-                      val compiled = Regex.cache.computeIfAbsent(subpattern, jur.Pattern.compile(_)).nn
+
+                      val compiled =
+                        Regex.cache.computeIfAbsent(subpattern, jur.Pattern.compile(_)).nn
+
                       val submatcher = compiled.matcher(matchedText).nn
                       var submatches: List[Text] = Nil
 

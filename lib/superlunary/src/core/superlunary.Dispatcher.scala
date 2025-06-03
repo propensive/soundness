@@ -81,7 +81,8 @@ trait Dispatcher:
             val settings: staging.Compiler.Settings =
               staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
 
-            given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
+            given compiler: staging.Compiler =
+              staging.Compiler.make(classloader.java)(using settings)
 
             staging.withQuotes:
               '{ (array: List[Json]) =>
@@ -93,9 +94,11 @@ trait Dispatcher:
           else
             val out: Path on Linux = temporaryDirectory[Path on Linux] / Name[Linux](uuid.show)
             val settings: staging.Compiler.Settings =
-              staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+              staging.Compiler.Settings.make
+               (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
-            given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
+            given compiler: staging.Compiler =
+              staging.Compiler.make(classloader.java)(using settings)
 
             val fn: Text => Text = staging.run:
               val fromList: Expr[List[Json] => Text] = '{ (array: List[Json]) =>

@@ -58,7 +58,8 @@ case class Catalog[key, value: ClassTag](values: IArray[value]):
        (lambda: (value, value2) => result)
   : Catalog[key, result] =
 
-      Catalog(IArray.tabulate(values.length) { index => lambda(values(index), right.values(index)) })
+      Catalog(IArray.tabulate(values.length): index =>
+        lambda(values(index), right.values(index)))
 
 
 extension [key, value: ClassTag](catalog: Catalog[key, value])

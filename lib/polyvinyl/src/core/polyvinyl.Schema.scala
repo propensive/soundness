@@ -75,7 +75,8 @@ trait Schema[data, record <: Record in data]:
                   Expr.summon[Schematic[record, data, typeName, ?]].absolve match
                     case None =>
                       halt:
-                        m"could not find a Schematic instance for the field $name with type $typeName"
+                        m"""could not find a Schematic instance for the field $name with type
+                            $typeName"""
 
                     case Some('{$accessor: Schematic[`record`, `data`, typeName, valueType]}) =>
 
@@ -98,8 +99,8 @@ trait Schema[data, record <: Record in data]:
                 case '[type typeName <: Label; typeName] =>
                   Expr.summon[RecordAccessor[record, data, typeName, ?]].absolve match
                     case None =>
-                      halt(m"""could not find a RecordAccessor instance for the field $name with type
-                            $typeName""")
+                      halt(m"""could not find a RecordAccessor instance for the field $name with
+                            type $typeName""")
 
                     case Some('{ type typeConstructor[_]
                                 $accessor: RecordAccessor
@@ -107,7 +108,9 @@ trait Schema[data, record <: Record in data]:
 
                       val nested = '{$target.access(${Expr(name)}, $value)}
                       val recordTypeRepr = TypeRepr.of[record]
-                      val (nestedType, nestedCaseDefs) = refine(nested, map.to(List), recordTypeRepr)
+
+                      val (nestedType, nestedCaseDefs) =
+                        refine(nested, map.to(List), recordTypeRepr)
 
                       val matchFn: Expr[String => data => Any] =
                         '{ (name: String) =>
@@ -117,7 +120,8 @@ trait Schema[data, record <: Record in data]:
                         '{ field => $target.make(field, $matchFn) }
 
                       val rhs: Expr[data => Any] =
-                        '{ data => $accessor.transform($target.access(${Expr(name)}, data), $maker) }
+                        '{ data =>
+                             $accessor.transform($target.access(${Expr(name)}, data), $maker) }
 
                       val caseDef = CaseDef(Literal(StringConstant(name)), None, rhs.asTerm)
 
@@ -126,7 +130,10 @@ trait Schema[data, record <: Record in data]:
                           val typeRepr = TypeRepr.of[typeConstructor[nestedRecordType]]
 
                           refine
-                           (value, tail, Refinement(refinedType, name, typeRepr), caseDef :: caseDefs)
+                           (value,
+                            tail,
+                            Refinement(refinedType, name, typeRepr),
+                            caseDef :: caseDefs)
 
 
       val (refinedType, caseDefs) = refine(value, fields.to(List), TypeRepr.of[record])

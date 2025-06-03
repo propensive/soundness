@@ -71,9 +71,11 @@ object Abacist:
                     m"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative"
                   else if unitValue >= max
                   then halt:
-                    m"the value for the ${unitPower.ref.name} unit $unitValue must be less than $max"
+                    m"""the value for the ${unitPower.ref.name} unit $unitValue must be less than
+                        $max"""
 
-                  recur(tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})})
+                  recur
+                   (tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})})
 
                 case None =>
                   recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
@@ -100,7 +102,10 @@ object Abacist:
                 unitPower.power.toString.tt.mapChars(_.superscript.or(' '))
 
               val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
-              recur(tail, '{$expr.updated(${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value)})
+              recur
+               (tail,
+                '{($expr.updated
+                    (${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value))})
 
       recur(multipliers[units], '{ListMap()})
 

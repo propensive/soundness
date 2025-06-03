@@ -110,14 +110,17 @@ object Subcompiler:
                     else run(source, regions -- done, errors ::: newErrors)
 
                   case error :: tail =>
-                    regions.find { (start, end) => error.point >= start && error.point <= end }.match
-                      case None =>
-                        recompile(tail, done, source)
+                    regions.find: (start, end) =>
+                      error.point >= start && error.point <= end
+                    . match
+                        case None                    => recompile(tail, done, source)
+                        case Some(region@(from, to)) =>
+                          if done.contains(region) then recompile(tail, done, source) else
 
-                      case Some(region@(from, to)) =>
-                        if done.contains(region) then recompile(tail, done, source) else
-                          val newSource = source.take(from)+"{}"+(" "*(to - from - 2))+source.drop(to)
-                          recompile(tail, done + region, newSource)
+                            val newSource =
+                              source.take(from)+"{}"+(" "*(to - from - 2))+source.drop(to)
+
+                            recompile(tail, done + region, newSource)
 
               recompile(newErrors, Set(), source)
 

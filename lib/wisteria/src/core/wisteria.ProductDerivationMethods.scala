@@ -219,8 +219,9 @@ trait ProductDerivationMethods[typeclass[_]]:
                   lambda(accumulator)[fieldType](field)
                    (using typeclass, default, label.tt, fieldIndex)
 
-                fold[derivation, moreFields, moreLabels, result](moreFields, accumulator2, index + 1)
-                  (lambda)
+                fold[derivation, moreFields, moreLabels, result]
+                 (moreFields, accumulator2, index + 1)
+                 (lambda)
 
 
   private transparent inline def fold

@@ -85,7 +85,8 @@ package columnar:
     : IndexedSeq[textual] =
 
 
-        def format(text: textual, position: Int, lineStart: Int, lastSpace: Int, lines: List[textual])
+        def format
+             (text: textual, position: Int, lineStart: Int, lastSpace: Int, lines: List[textual])
         : List[textual] =
 
             if position < text.length then

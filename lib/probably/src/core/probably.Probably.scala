@@ -79,7 +79,15 @@ object Probably:
 
           '{
             assertion[testType, test, report, result]
-             ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $decomposable) }
+             ($runner,
+              $test,
+              $predicate,
+              $action,
+              $contrast,
+              Some($expr),
+              $inc,
+              $inc2,
+              $decomposable) }
 
         case _ =>
           '{
@@ -169,7 +177,8 @@ object Probably:
                   // inc2.include(runner.report, test.id, Verdict.Detail.Compare
                   //  (summon[Any is Contrastable].compare(value, 1)))
 
-              if !map.isEmpty then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
+              if !map.isEmpty
+              then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
 
               Verdict.Fail(duration)
             catch case err: Exception => Verdict.CheckThrows(err, duration)
