@@ -40,6 +40,7 @@ import gossamer.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
 import symbolism.*
 
 object Relative:
@@ -88,7 +89,7 @@ object Relative:
               [Relative of subject under ascent, Relative of subject under ascent on system] =
     conversion(_.on[system])
 
-  given [system: System] => Relative on system is Encodable in Text =
+  given encodable: [system: System] => Relative on system is Encodable in Text =
     relative =>
       if relative.descent.isEmpty then
         if relative.ascent == 0 then system.self
@@ -99,6 +100,8 @@ object Relative:
         . descent
         . reverse
         . join(ascender*relative.ascent, system.separator, t"")
+
+  given showable: [system: System] => Relative on system is Showable = _.encode
 
 case class Relative(ascent: Int, descent: List[Text] = Nil):
   type Platform
@@ -111,7 +114,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil):
     inline !![subject] match
       case _: (head *: tail) =>
         summonInline[head is Admissible on system].check(path.head)
-        check[tail, system](path.tail)
+        check[tail, system](path.tail).unit
 
       case EmptyTuple =>
 

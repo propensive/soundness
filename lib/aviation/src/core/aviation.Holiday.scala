@@ -36,6 +36,6 @@ import anticipation.*
 import vacuous.*
 
 object Holiday:
-  given Ordering[Holiday] = summon[Ordering[Date]].on(_.date)
+  given ordering: Ordering[Holiday] = summon[Ordering[Date]].on(_.date)
 
 case class Holiday(date: Date, name: Optional[Text])

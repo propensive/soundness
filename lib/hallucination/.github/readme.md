@@ -46,7 +46,7 @@ Turbulence, for example:
 ```scala
 import galilei.*
 
-val image = Png.read(% / p"home" / p"work" / p"image.png")
+val image = Png.read(% / "home" / "work" / "image.png")
 ```
 
 The resultant value will be an instance of `Image[Png]`, that is, an `Image`
@@ -58,7 +58,7 @@ source of `Bytes`, for example:
 import turbulence.*
 import hellenism.*
 
-val icon = (Classpath / p"icon.bmp").readAs[Image[Bmp]]
+val icon = (Classpath / "icon.bmp").readAs[Image[Bmp]]
 ```
 
 ### Accessing `Image` data
@@ -98,7 +98,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Hallucination?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Hallucination's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -115,7 +115,7 @@ answer to the question, "how can I try Hallucination?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -176,4 +176,3 @@ Hallucination's logo is a simplistic eye, the organ that is stimulated by images
 
 Hallucination is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

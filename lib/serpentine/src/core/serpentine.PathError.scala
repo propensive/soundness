@@ -41,14 +41,23 @@ import vacuous.*
 import scala.compiletime.*
 
 object PathError:
+
+  def apply(reason: PathError.Reason.type => PathError.Reason, path: Optional[Text] = Unset)
+       (using Diagnostics)
+  : PathError =
+
+      new PathError(reason(PathError.Reason), path)
+
+
   object Reason:
     given Reason is Communicable =
       case Reason.RootParent     => m"the root has no parent"
       case Reason.InvalidRoot    => m"the root is not valid"
       case Reason.DifferentRoots => m"it does not have the same root as the source"
+      case Reason.InvalidName    => m"the name is not valid"
 
   enum Reason:
-    case RootParent, InvalidRoot, DifferentRoots
+    case RootParent, InvalidRoot, DifferentRoots, InvalidName
 
-case class PathError(reason: PathError.Reason, path: Optional[Text] = Unset)(using Diagnostics)
+case class PathError(reason: PathError.Reason, path: Optional[Text])(using Diagnostics)
 extends Error(m"the path ${path.lay(t"")(_+t" ")}was invalid because $reason")

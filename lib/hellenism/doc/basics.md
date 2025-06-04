@@ -29,7 +29,7 @@ reference to particular classpath or the data it refers to.
 A `ClasspathRef` can be accessed using a [Serpentine](https://github.com/propensive/serpentine/) path from the
 `Classpath` object, for example:
 ```scala
-val ref = Classpath / p"com" / p"example" / p"data.file"
+val ref = Classpath/"com"/"example"/"data.file"
 ```
 
 ### Getting a Classpath Resource

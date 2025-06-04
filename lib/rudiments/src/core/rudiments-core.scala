@@ -55,6 +55,8 @@ def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => 
 
   recurrence(fn)(initial)
 
+inline def typeName[target]: Nothing = ${Rudiments.typeName[target]}
+
 extension [value](value: value)
   def unit: Unit = ()
   def waive: Any => value = _ => value

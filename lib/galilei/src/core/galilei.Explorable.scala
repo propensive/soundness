@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.32.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,8 +30,44 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package nettlesome
+package galilei
+
+import java.nio.file as jnf
 
 import anticipation.*
+import contingency.*
+import distillate.*
+import prepositional.*
+import proscenium.*
+import serpentine.*
+import spectacular.*
 
-case class Raw(text: Text)
+object Explorable:
+  given Linux is Explorable:
+    def children(path: Path on Linux): Stream[Path on Linux] =
+      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+      . iterator().nn
+      . asScala
+      . map(_.toString.tt.decode[Path on Linux])
+      . to(Stream)
+
+  given Windows is Explorable:
+    def children(path: Path on Windows): Stream[Path on Windows] =
+      given tactic: Tactic[RootError] = strategies.throwUnsafely
+      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+      . iterator().nn
+      . asScala
+      . map(_.toString.tt.decode[Path on Windows])
+      . to(Stream)
+
+  given MacOs is Explorable:
+    def children(path: Path on MacOs): Stream[Path on MacOs] =
+      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+      . iterator().nn
+      . asScala
+      . map(_.toString.tt.decode[Path on MacOs])
+      . to(Stream)
+
+trait Explorable:
+  type Self
+  def children(path: Path on Self): Stream[Path on Self]

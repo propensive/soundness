@@ -30,49 +30,51 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package zeppelin
+
+import java.io as ji
+import java.net as jn
+import java.nio.file as jnf
+import java.util.zip as juz
+import scala.collection.concurrent as scc
+import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
-import denominative.*
+import feudalism.*
+import fulminate.*
+import galilei.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import serpentine.*
 import vacuous.*
 
-object Posix:
-  abstract class Root() extends serpentine.Root(t"/", t"/", Case.Sensitive):
-    type Platform = Posix
+import juz.ZipFile
 
-  object RootSingleton extends Root()
+object Zip:
+  type Rules =
+    MustNotContain["\\"] & MustNotContain["\""] & MustNotContain["/"] & MustNotContain[":"]
+    & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["<"] & MustNotContain[">"]
+    & MustNotContain["|"]
 
-  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+  class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t""):
+    type Platform = Zip
 
-  given radical: Tactic[PathError] => Posix is Radical from (Root on Posix) = new Radical:
-    type Self = Posix
-    type Source = Root on Posix
+  given system: Zip is System:
+    type UniqueRoot = false
 
-    def rootLength(path: Text): Int = 1
-    def rootText(root: Source): Text = t"/"
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."
 
-    def root(path: Text): Source =
-      if path.at(Prim) == '/' then Posix.RootSingleton
-      else raise(PathError(PathError.Reason.InvalidRoot, path)) yet Posix.RootSingleton
+  given radical: %.type is Radical:
+    type Platform = Zip
 
-  given navigable: Tactic[NameError] => Posix is Navigable by Name[Posix] under Rules =
-    new Navigable:
-      type Self = Posix
-      type Operand = Name[Posix]
-      type Constraint = Rules
+    def length(text: Text): Int = 0
+    def decode(text: Text): %.type = %
+    def encode(root: %.type): Text = t""
 
-      val separator: Text = t"/"
-      val parentElement: Text = t".."
-      val selfText: Text = t"."
-
-      def element(element: Text): Name[Posix] = Name(element)
-      def elementText(element: Name[Posix]): Text = element
-      def caseSensitivity: Case = Case.Sensitive
-
-erased trait Posix extends Filesystem
+erased trait Zip

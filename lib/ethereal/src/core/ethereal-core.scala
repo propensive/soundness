@@ -64,7 +64,6 @@ import vacuous.*
 
 import scala.compiletime.*
 
-import pathNavigation.linux
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
@@ -102,28 +101,29 @@ def cli[bus <: Matchable](using executive: Executive)
   val name: Text =
     recover:
       case SystemPropertyError(_) =>
-        val jarFile = Properties.java.`class`.path[Text]().pipe: jarFile =>
+        val jarFile: Path on Linux = Properties.java.`class`.path[Text]().pipe: jarFile =>
           safely(jarFile.decode[Path on Linux]).or:
             val work: Path on Linux = workingDirectory
-            work + jarFile.decode[Relative by Name[Linux]]
+            work + jarFile.decode[Relative on Linux]
 
         safely(Properties.build.executable[Text]()).absolve match
           case Unset =>
             Out.println(e"$Bold(This application must be invoked with the Ethereal launch script)")
             Out.println(e"To build an Ethereal executable, run:")
             val work: Path on Linux = workingDirectory
-            val relativeJar: Relative by Name[Linux] = jarFile.relativeTo(work)
+            val relativeJar: Relative on Linux = jarFile.relativeTo(work)
             Out.println(e"    java -Dbuild.executable=$Italic(<filename>) -jar $relativeJar")
             Exit.Fail(1).terminate()
 
           case destination: Text =>
             val path = safely(destination.decode[Path on Linux]).or:
               val work: Path on Linux = workingDirectory
-              work + destination.decode[Relative by Name[Linux]]
+              work + destination.decode[Relative on Linux]
 
-            val buildIdPath: Path on Classpath = Classpath / n"build.id"
+            val buildIdPath: Path on Classpath = Classpath/"build.id"
             val buildId = safely(buildIdPath.read[Text].trim).or(t"0")
-            val prefix = (Classpath / t"ethereal" / t"prefix").read[Text]
+            val prefixPath: Path on Classpath = Classpath/"ethereal"/"prefix"
+            val prefix = prefixPath.read[Text]
             path.open(prefix.sub(t"%%BUILD_ID%%", buildId).writeTo(_))
 
             jarFile.open: jarFile =>
@@ -139,9 +139,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
   val runtimeDir: Optional[Path on Linux] = Xdg.runtimeDir
   val stateHome: Path on Linux = Xdg.stateHome
-  val baseDir: Path on Linux = runtimeDir.or(stateHome) / Name(name)
-  val portFile: Path on Linux = baseDir / n"port"
-  val pidFile: Path on Linux = baseDir / n"pid"
+  val baseDir: Path on Linux = runtimeDir.or(stateHome)/name
+  val portFile: Path on Linux = baseDir/"port"
+  val pidFile: Path on Linux = baseDir/"pid"
   val clients: scc.TrieMap[Pid, ClientConnection[bus]] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
 
@@ -308,7 +308,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
-      val buildId = safely((Classpath / n"build.id").read[Text].trim.decode[Int]).or(0)
+      val buildId = safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
       val stderr = if stderrSupport() then 1 else 0
       portFile.open(t"$port $buildId $stderr".writeTo(_))
       val pidValue = OsProcess().pid.value.show

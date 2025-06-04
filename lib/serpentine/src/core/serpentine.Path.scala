@@ -57,21 +57,22 @@ object Path:
 
   given decodable: [system: System, root]
         => (radical: root is Radical on system)
-        =>  (Path on system) is Decodable in Text = text =>
-    val parts = text.skip(radical.length(text)).cut(system.separator)
-    val parts2 = if parts.last == t"" then parts.init else parts
-    val root = radical.encode(radical.decode(text))
+        =>  (Path on system) is Decodable in Text =
 
-    Path.of(root, parts2.reverse*)
+    text =>
+      val parts = text.skip(radical.length(text)).cut(system.separator)
+      val parts2 = if parts.last == t"" then parts.init else parts
+      val root = radical.encode(radical.decode(text))
+
+      Path.of(root, parts2.reverse*)
 
   given nominable: [system] => (Path on system) is Nominable = path =>
     path.descent.prim.or(path.root)
 
-  given specific: [system: System, root]
-        =>  root is Radical on system
+  given specific: [system: System]
+        =>  Radical on system
         =>  (Path on system) is Instantiable across Paths from Text =
     _.decode[Path on system]
-
 
   def unplatformed[root, subject <: Tuple](root: Text, descent: Text*): Path of subject under root =
     new Path(root, descent*):
@@ -87,6 +88,7 @@ object Path:
         type Platform = system
         type Constraint = root
 
+
   given encodable: [system: System] => Path on system is Encodable in Text =
     path => path.descent.reverse.join(path.root, system.separator, t"")
 
@@ -95,7 +97,8 @@ object Path:
   given communicable: [system: System] => Path on system is Communicable =
     path => Message(path.encode)
 
-  given generic: [system: System] => (Path on system) is Abstractable across Paths into Text =
+  given generic: [system: System, path <: Path on system]
+        => path is Abstractable across Paths into Text =
     _.encode
 
   private def conversion[from, to](lambda: from => to): Conversion[from, to] = lambda(_)
@@ -125,6 +128,15 @@ case class Path(root: Text, descent: Text*):
         case None               => false
         case Some(value)        => known[tail]
       case _ => false
+
+  def resolve(text: Text)
+       (using (Path on Platform) is Decodable in Text,
+              (Relative on Platform) is Decodable in Text)
+  : Path on Platform raises PathError =
+
+      safely(text.decode[Path on Platform]).or(safely(this + text.decode[Relative on Platform])).or:
+        abort(PathError(_.InvalidRoot))
+
 
   transparent inline def depth: Int = inline !![Subject] match
     case Zero         => 0
@@ -159,21 +171,35 @@ case class Path(root: Text, descent: Text*):
       case false => Unset
       case _     => determine(right)
 
-  transparent inline def relativeTo(right: Path): Optional[Relative] = inline sameRoot(right) match
-    case true  => val path = certain(right)
-                  inline val baseAscent: Int = count[Subject, right.Subject]
-                  inline val ascent = constValue[Tuple.Size[right.Subject]] - baseAscent
-                  inline val retain = constValue[Tuple.Size[Subject]] - baseAscent
+  transparent inline def relativeTo(right: Path): Optional[Relative] =
+    inline sameRoot(right) match
+      case true  => val path = certain(right)
+                    inline val baseAscent: Int = count[Subject, right.Subject]
 
-                  type Subject2 = Tuple.Take[Subject, retain.type]
-                  Relative[Platform, Subject2, ascent.type](ascent, descent.dropRight(baseAscent)*)
+                    inline !![right.Subject] match
+                      case _: (_ *: _) | Zero =>
+                        inline val ascent = constValue[Tuple.Size[right.Subject]] - baseAscent
 
-    case false => Unset
-    case _     => determine(right) match
-                    case Unset      => Unset
-                    case path: Path =>
-                      val ascent = right.depth - path.depth
-                      Relative(ascent, descent.dropRight(path.depth)*)
+                        inline !![Subject] match
+                          case _: (_ *: _) | Zero =>
+                            inline val retain = constValue[Tuple.Size[Subject]] - baseAscent
+                            type Subject2 = Tuple.Take[Subject, retain.type]
+                            Relative[Platform, Subject2, ascent.type]
+                             (ascent, descent.dropRight(baseAscent)*)
+
+                          case _ =>
+                            Relative[Platform, Tuple, Nat]
+                             (right.depth - path.depth, descent.dropRight(path.depth)*)
+
+                      case _ =>
+                        Relative[Platform, Tuple, Nat]
+                         (right.depth - path.depth, descent.dropRight(path.depth)*)
+
+      case false => Unset
+      case _     => determine(right) match
+                      case Unset      => Unset
+                      case path: Path =>
+                        Relative(right.depth - path.depth, descent.dropRight(path.depth)*)
 
   protected transparent inline def determine(right: Path): Optional[Path] = summonFrom:
     case given ValueOf[Constraint] => summonFrom:
@@ -183,9 +209,9 @@ case class Path(root: Text, descent: Text*):
       case _ => if root != right.root then Unset else certain(right)
     case _ => if root != right.root then Unset else certain(right)
 
-  protected transparent inline def count[LeftType <: Tuple, RightType <: Tuple]: Int = summonFrom:
-    case _: (Tuple.Last[LeftType] =:= Tuple.Last[RightType]) =>
-      1 + count[Tuple.Init[LeftType], Tuple.Init[RightType]]
+  protected transparent inline def count[left <: Tuple, right <: Tuple]: Int = summonFrom:
+    case _: (Tuple.Last[`left`] =:= Tuple.Last[`right`]) =>
+      1 + count[Tuple.Init[`left`], Tuple.Init[`right`]]
 
     case _ =>
       0
@@ -225,33 +251,30 @@ case class Path(root: Text, descent: Text*):
       case head *: tail => Path.of[Platform, Constraint, tail.type](root, descent.tail*)
       case EmptyTuple   => compiletime.error("Path has no parent")
       case _ =>
-        given Tactic[PathError] = summonInline[Tactic[PathError]]
+        given tactic: Tactic[PathError] = summonInline[Tactic[PathError]]
 
         if descent.isEmpty then
-          raise(PathError(PathError.Reason.RootParent))
+          raise(PathError(_.RootParent))
           Path.of[Platform, Constraint, Tuple](root, descent*)
 
         else Path.of[Platform, Constraint, Tuple](root, descent.tail*)
 
-  inline def ancestors: List[Path on Platform under Constraint] =
-    parent.let { parent => parent :: parent.ancestors }.or(Nil)
-
+  def ancestors: List[Path on Platform under Constraint] =
+    safely(parent).let { parent => parent :: parent.ancestors }.or(Nil)
 
   def child(value: Text)(using Unsafe): Path on Platform under Constraint =
     Path.of[Platform, Constraint, Text *: Subject](root, value +: descent*)
 
   @targetName("slash")
-  transparent inline def / (child: Any)
-  : Path of (child.type *: Subject) under Constraint =
+  transparent inline infix def / (child: Any): Path of (child.type *: Subject) =
+    summonFrom:
+      case admissible: (child.type is Admissible on Platform) =>
+        Path.of[Platform, Constraint, child.type *: Subject]
+         (root, summonInline[child.type is Navigable].follow(child) +: descent*)
 
-      summonFrom:
-        case given (child.type is Admissible on Platform) =>
-          Path.of[Platform, Constraint, child.type *: Subject]
-            (root, summonInline[child.type is Navigable].follow(child) +: descent*)
-
-        case _ =>
-          Path.unplatformed[Constraint, child.type *: Subject]
-           (root, summonInline[child.type is Navigable].follow(child) +: descent*)
+      case _ =>
+        Path.unplatformed[Constraint, child.type *: Subject]
+         (root, summonInline[child.type is Navigable].follow(child) +: descent*)
 
 
   transparent inline def peer(child: Any)(using child.type is Admissible on Platform)
@@ -270,6 +293,7 @@ case class Path(root: Text, descent: Text*):
     type Subject2 = Tuple.Concat[relative.Subject, Base]
     Path.of[Platform, Constraint, Subject2]
      (root, relative.descent ++ descent.drop(relative.ascent)*)
+
 
 // object Path:
 //   given addable: [system: Navigable] => Tactic[PathError]

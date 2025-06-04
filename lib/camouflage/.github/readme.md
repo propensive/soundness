@@ -66,20 +66,20 @@ import serpentine.{%, p, Slash}
 import serpentine.hierarchies.unix
 import turbulence.readAs
 
-val dataDir = % / p"home" / p"data"
+val dataDir = % / "home" / "data"
 
 def read(): Unit =
-  cache(dataDir / p"intro.txt"):
-    (dataDir / p"intro.txt").as[File].readAs[Text]
+  cache(dataDir / "intro.txt"):
+    (dataDir / "intro.txt").as[File].readAs[Text]
 
-  cache(dataDir / p"chapter1.txt"):
-    (dataDir / p"chapter1.txt").as[File].readAs[Text]
+  cache(dataDir / "chapter1.txt"):
+    (dataDir / "chapter1.txt").as[File].readAs[Text]
 ```
 
 A subsequent call to,
 ```scala
-def readAgain(): Text = cache(dataDir / p"chapter1.txt"):
-  (dataDir / p"chapter1.txt").as[File].readAs[Text]
+def readAgain(): Text = cache(dataDir / "chapter1.txt"):
+  (dataDir / "chapter1.txt").as[File].readAs[Text]
 ```
 would retrieve the stored `Text` value from the cache, and the code which reads the file from disk would not be
 executed.
@@ -145,7 +145,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Camouflage?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Camouflage's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -162,7 +162,7 @@ answer to the question, "how can I try Camouflage?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -222,4 +222,3 @@ The logo shows a swatch of fabric in typical military camouflage colors.
 
 Camouflage is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

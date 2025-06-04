@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.32.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -41,6 +41,7 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import serpentine.*
+import spectacular.*
 
 import scala.jdk.StreamConverters.*
 
@@ -51,11 +52,11 @@ import java.nio.channels as jnc
 import language.experimental.pureFunctions
 
 object Makable:
-  given directory: [platform <: Filesystem]
-        => (createNonexistentParents: CreateNonexistentParents on platform,
-            overwritePreexisting:     OverwritePreexisting on platform,
-            tactic:                   Tactic[IoError])
-        =>  Directory is Makable on platform into (Path on platform) =
+  given [platform: System]
+  =>   (createNonexistentParents: CreateNonexistentParents on platform,
+        overwritePreexisting:     OverwritePreexisting on platform,
+        tactic:                   Tactic[IoError])
+  =>    Directory is Makable on platform into (Path on platform) =
     new Makable:
       type Self = Directory
       type Result = Path on Platform
@@ -64,14 +65,14 @@ object Makable:
       def make(path: Path on Platform): Path on Platform =
         createNonexistentParents(path):
           overwritePreexisting(path):
-            jnf.Files.createDirectory(path.javaPath)
+            jnf.Files.createDirectory(jnf.Path.of(path.encode.s).nn)
             path
 
-  given socket: [platform <: Posix]
-        => (createNonexistentParents: CreateNonexistentParents on platform,
-            overwritePreexisting:     OverwritePreexisting on platform,
-            tactic:                   Tactic[IoError])
-        =>  Socket is Makable into Socket =
+  given socket: [platform <: Posix: System]
+  =>   (createNonexistentParents: CreateNonexistentParents on platform,
+        overwritePreexisting:     OverwritePreexisting on platform,
+        tactic:                   Tactic[IoError])
+  =>    Socket is Makable into Socket =
     new Makable:
       type Platform = platform
       type Self = Socket
@@ -85,11 +86,11 @@ object Makable:
             channel.bind(address)
             Socket(channel)
 
-  given file: [platform <: Filesystem]
-        => (createNonexistentParents: CreateNonexistentParents on platform,
-            overwritePreexisting:     OverwritePreexisting on platform,
-            tactic:                   Tactic[IoError])
-        =>  File is Makable on platform into (Path on platform) =
+  given file: [platform: System]
+  =>   (createNonexistentParents: CreateNonexistentParents on platform,
+        overwritePreexisting:     OverwritePreexisting on platform,
+        tactic:                   Tactic[IoError])
+  =>    File is Makable on platform into (Path on platform) =
     new Makable:
       type Platform = platform
       type Self = File
@@ -100,13 +101,13 @@ object Makable:
           overwritePreexisting(path):
             jnf.Files.createFile(path.javaPath)
 
-  given fifo: [platform <: Filesystem]
-        => (createNonexistentParents: CreateNonexistentParents on platform,
-            overwritePreexisting:     OverwritePreexisting on platform,
-            working:                  WorkingDirectory,
-            tactic:                   Tactic[IoError],
-            loggable:                 ExecEvent is Loggable)
-        =>  Fifo is Makable into (Path on platform) =
+  given fifo: [platform: System]
+  =>   (createNonexistentParents: CreateNonexistentParents on platform,
+        overwritePreexisting:     OverwritePreexisting on platform,
+        working:                  WorkingDirectory,
+        tactic:                   Tactic[IoError],
+        loggable:                 ExecEvent is Loggable)
+  =>    Fifo is Makable into (Path on platform) =
     new Makable:
       type Self = Fifo
       type Result = Path on Platform
@@ -129,5 +130,5 @@ object Makable:
 trait Makable:
   type Self
   type Result
-  type Platform <: Filesystem
+  type Platform
   def make(path: Path on Platform): Result

@@ -56,26 +56,23 @@ object Nomenclature:
 
       decoder
 
-    inline def verify[NameType <: Label, PlatformType] =
-      ${Nomenclature2.parse[PlatformType, NameType]}
+    inline def verify[NameType <: Label, platform] =
+      ${Nomenclature2.parse[platform, NameType]}
 
-    private inline def check[check <: Matchable](name: Text): Unit raises NameError =
-      inline !![check] match
-        case _: Zero           => ()
-        case _: (head *: tail) => inline !![head & Matchable] match
-          case _: Check[param] =>
-            inline staticCompanion[head] match
-              case rule: Rule =>
-                if !rule.check(name, constValue[param].tt)
-                then raise(NameError(name, rule, constValue[param].tt))
+    // private inline def check[check <: Matchable](name: Text): Unit raises NameError =
+    //   inline !![check] match
+    //     case _: Zero           => ()
+    //     case _: (head *: tail) => inline !![head] match
+    //       case _: Check[param] =>
+    //         inline staticCompanion[head] match
+    //           case rule: Rule =>
+    //             if !rule.check(name, constValue[param].tt)
+    //             then raise(NameError(name, rule, constValue[param].tt))
 
-              case other =>
-                error("The companion object was not a subtype of Rule")
+    //           case other =>
+    //             error("The companion object was not a subtype of Rule")
 
-            check[tail](name)
+    //         check[tail](name)
 
-    inline def apply[platform: Nominative](name: Text): Name[platform] raises NameError =
-      inline disintersect[platform.Constraint] match
-        case v => check[v.type](name)
-
-      name.asInstanceOf[Name[platform]]
+    inline def apply[platform](name: Text): Name[platform] =
+      ${Nomenclature2.makeName[platform]('name)}

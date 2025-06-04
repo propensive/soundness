@@ -32,6 +32,8 @@
                                                                                                   */
 package serpentine
 
+import anticipation.*
+import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
@@ -44,3 +46,10 @@ object MacOs:
     & MustNotEqual["Icon\r"] & MustNotContain[":"]
 
   erased given MacOs is Nominative under Rules = !!
+
+  given system: MacOs is System:
+    type UniqueRoot = true
+
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."

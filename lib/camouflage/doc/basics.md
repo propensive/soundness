@@ -38,20 +38,20 @@ import serpentine.{%, p, Slash}
 import serpentine.hierarchies.unix
 import turbulence.readAs
 
-val dataDir = % / p"home" / p"data"
+val dataDir = % / "home" / "data"
 
 def read(): Unit =
-  cache(dataDir / p"intro.txt"):
-    (dataDir / p"intro.txt").as[File].readAs[Text]
+  cache(dataDir / "intro.txt"):
+    (dataDir / "intro.txt").as[File].readAs[Text]
 
   cache(dataDir / p"chapter1.txt"):
-    (dataDir / p"chapter1.txt").as[File].readAs[Text]
+    (dataDir / "chapter1.txt").as[File].readAs[Text]
 ```
 
 A subsequent call to,
 ```scala
-def readAgain(): Text = cache(dataDir / p"chapter1.txt"):
-  (dataDir / p"chapter1.txt").as[File].readAs[Text]
+def readAgain(): Text = cache(dataDir / "chapter1.txt"):
+  (dataDir / "chapter1.txt").as[File].readAs[Text]
 ```
 would retrieve the stored `Text` value from the cache, and the code which reads the file from disk would not be
 executed.

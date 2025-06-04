@@ -54,27 +54,23 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import pathNavigation.posix
-
 import GitError.Reason.*
 
 object GitRepo:
-  def apply[path: Abstractable across Paths into Text](path: path)
-       (using gitError: Tactic[GitError], io: Tactic[IoError])
-  : GitRepo raises PathError raises NameError =
+  def apply[abstractable: Abstractable across Paths into Text](path: abstractable)
+  : GitRepo raises PathError raises NameError raises GitError raises IoError =
 
-      unsafely(path.generic.decode[Path on Posix]).pipe: path =>
+      unsafely(path.generic.decode[Path on Linux]).pipe: path =>
         if !path.exists() then abort(GitError(RepoDoesNotExist))
 
-        if (path / n".git").exists() then GitRepo((path / n".git"), path)
+        if (path / ".git").exists() then GitRepo((path / ".git"), path)
         else new GitRepo(path)
 
 
-case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Unset):
+case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Unset):
 
-  val repoOptions = workTree match
-    case Unset          => sh"--git-dir=$gitDir"
-    case workTree: Path => sh"--git-dir=$gitDir --work-tree=$workTree"
+  val repoOptions = workTree.lay(sh"--git-dir=$gitDir"): path =>
+    sh"--git-dir=$gitDir --work-tree=$path"
 
 
   @targetName("checkoutTag")
@@ -98,8 +94,8 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       sh"$git $repoOptions checkout $commit".exec[Exit]()
 
 
-  def pushTags()(using Internet, Tactic[GitError], GitCommand, WorkingDirectory, Tactic[ExecError])
-  : Unit logs GitEvent =
+  def pushTags()(using Internet, GitCommand, WorkingDirectory)
+  : Unit logs GitEvent raises GitError raises ExecError =
 
       sh"$git $repoOptions push --tags".exec[Exit]()
 
@@ -180,9 +176,9 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
   def add[path: Abstractable across Paths into Text](path: path)(using GitCommand, WorkingDirectory)
   : Unit logs GitEvent raises PathError raises NameError raises ExecError raises GitError =
 
-      val relativePath: Relative =
+      val relativePath =
         workTree.let: workTree =>
-          safely(path.generic.decode[Path on Posix].relativeTo(workTree)).or:
+          safely(path.generic.decode[Path on Linux].relativeTo(workTree)).or:
             abort(GitError(AddFailed))
 
         . or(abort(GitError(NoWorkTree)))

@@ -41,7 +41,6 @@ object UrlFragment:
   def apply(value: Int): UrlFragment = UrlFragment.Integral(value)
 
   given text: Substitution[UrlFragment, Text, "x"] = UrlFragment.Textual(_)
-  given raw: Substitution[UrlFragment, Raw, "x"] = raw => UrlFragment.RawTextual(raw.text)
   given int: Substitution[UrlFragment, Int, "80"] = UrlFragment.Integral(_)
 
   given encodable: [encodable: Encodable in Text] => Substitution[UrlFragment, encodable, "x"] =

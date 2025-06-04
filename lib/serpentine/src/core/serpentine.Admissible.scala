@@ -43,18 +43,22 @@ object Admissible:
     new Admissible:
       type Self = self
       type Platform = system
+
       def check(name: Text): Unit = fn(name)
 
 
-  inline given text: [text <: Text, system: Nominative] => Tactic[NameError]
+  inline given text: [text <: Text, system] => Tactic[NameError]
                =>  text is Admissible on system =
-
-      Admissible(Name(_))
+    Admissible(Name[system](_))
 
   inline given admissible: [string <: Label, system: Nominative] => string is Admissible on system =
     Admissible({ _ => Name.verify[string, system] })
 
-  given name: [platform] => Name[platform] is Admissible on platform = _ => ()
+  given name: [platform] => Name[platform] is Admissible:
+    type Self = Name[platform]
+    type Platform = platform
+
+    def check(name: Text): Unit = ()
 
 trait Admissible:
   type Self

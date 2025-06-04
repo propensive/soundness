@@ -34,5 +34,28 @@ package galilei
 
 import soundness.*
 
-object Tests extends Suite(m"Galilei Tests"):
-  def run(): Unit = ()
+import environments.virtualMachine
+import temporaryDirectories.environment
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.createNonexistent.enabled
+import filesystemOptions.createNonexistentParents.enabled
+import stdioSources.virtualMachine.ansi
+import charEncoders.utf8
+
+import strategies.throwUnsafely
+
+object Tests extends Suite(m"Galilei tests"):
+  def run(): Unit =
+    suite(m"Opening tests"):
+      val tmp: Path on Linux = temporaryDirectory
+      Out.println(m"Writing to $tmp")
+
+      val dest: Path on Linux = tmp/"path"
+
+      test(m"Check that a fresh path does not exist")(dest).assert(!_.exists())
+
+      dest.open(t"Hello world".writeTo(_))
+
+      test(m"Check that a fresh path does exist after writing")(dest).assert(_.exists())

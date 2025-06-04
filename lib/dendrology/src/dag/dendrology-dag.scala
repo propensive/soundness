@@ -36,8 +36,8 @@ import anticipation.*
 import gossamer.*
 
 package dagStyles:
-  given default[text: Textual]: TextualDagStyle[text] =
+  given default: [text: Textual] => TextualDagStyle[text] =
     TextualDagStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt,  "┴─".tt, "│─".tt, "┼─".tt)
 
-  given ascii[text: Textual]: TextualDagStyle[text] =
+  given ascii: [text: Textual] => TextualDagStyle[text] =
     TextualDagStyle("  ".tt, "+-".tt, "| ".tt, "+-".tt, "--".tt, "+-".tt, "|-".tt, "+-".tt)

@@ -361,7 +361,7 @@ class Report(using Environment):
         val text5 = if !pass then t"┻┻     ┻┻   ┻┻   ┻┻   ┻┻━━━┛"
                     else t"┻┻       ┻┻   ┻┻  ┗━━━┻┛  ┗━━━┻┛"
 
-        val width = if pass then 37 else 32
+        val width = if pass then 37 else 34
         if !pass || !tabulation then
           Out.println(e"$color(╭${t"─"*width}╮)")
           Out.println(e"$color(│) $Bold(${Bg(color)}($Black(  $text1  ))) $color(│)")
@@ -380,6 +380,7 @@ class Report(using Environment):
           Out.println(t"─"*72)
 
         import Status.*
+
         List(Pass, Bench, Throws, Fail, Mixed, CheckThrows).grouped(3).each: statuses =>
           Out.println:
             statuses.map[Teletype]: status =>

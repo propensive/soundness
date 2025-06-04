@@ -34,6 +34,7 @@ package zeppelin
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import nomenclature.*
 import prepositional.*
@@ -54,9 +55,8 @@ class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
   def keep(predicate: (Path on Zip) => Boolean): ZipStream =
     new ZipStream(stream, { (ref: Path on Zip) => filter(ref) && predicate(ref) })
 
-  def extract(ref: Zip.ZipRoot => Path on Zip): ZipEntry raises ZipError logs Text =
-    val root = Zip.ZipRoot()
-    safely(keep(_.descent == ref(root).descent).map(identity(_)).headOption.get).or:
+  def extract(ref: Path on Zip): ZipEntry raises ZipError logs Text =
+    safely(keep(_.descent == ref.descent).map(identity(_)).headOption.get).or:
       abort(ZipError())
 
   def each(lambda: ZipEntry => Unit): Unit raises ZipError = map[Unit](lambda)
@@ -64,10 +64,10 @@ class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
   def map[element](lambda: ZipEntry => element): Stream[element] raises ZipError =
     val zipIn = juz.ZipInputStream(stream().inputStream)
 
-    def recur(): Stream[ZipEntry] =
-     zipIn.getNextEntry() match
+    def recur(): Stream[ZipEntry] = zipIn.getNextEntry() match
       case null                         => Stream()
       case entry if entry.isDirectory() => recur()
+
       case entry =>
         import errorDiagnostics.empty
         val ref: Path on Zip =
@@ -76,7 +76,7 @@ class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
             case NameError(_, _, _)      => ZipError()
 
           . within:
-              Path.parse[Zip](entry.getName().nn.tt)
+              entry.getName().nn.tt.decode[Path on Zip]
 
         if !filter(ref) then recur() else
           def read(): Stream[Bytes] =
@@ -84,8 +84,8 @@ class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
               val size = entry.getSize.toInt.min(4096).puncture(-1).or(4096)
               val array: Array[Byte] = new Array[Byte](size)
               val count = zipIn.read(array, 0, array.length)
-              if count == 0 then Stream()
-              else
+
+              if count == 0 then Stream() else
                 (if count < size then array.take(count) else array).immutable(using Unsafe)
                 #:: read()
 

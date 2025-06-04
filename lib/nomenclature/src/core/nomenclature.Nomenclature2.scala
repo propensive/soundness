@@ -33,7 +33,9 @@
 package nomenclature
 
 import anticipation.*
+import contingency.*
 import fulminate.*
+import gossamer.*
 import proscenium.*
 import rudiments.*
 
@@ -62,7 +64,7 @@ object Nomenclature2:
   def disintersection[intersection: Type](using Quotes): Expr[Tuple] =
     import quotes.reflect.*
 
-    build(decompose(TypeRepr.of[intersection]).to(List)).asType.absolve match
+    build(decompose(TypeRepr.of[intersection].dealias).to(List)).asType.absolve match
       case '[type tupleType <: Tuple; tupleType] => '{null.asInstanceOf[tupleType]}
 
   def extractor(context: Expr[StringContext])(using Quotes): Expr[Any] =
@@ -74,6 +76,27 @@ object Nomenclature2:
       case _ =>
         panic(m"StringContext did not contains Strings")
 
+
+  def makeName[platform: Type](name: Expr[Text])(using Quotes): Expr[Name[platform]] =
+    import quotes.reflect.*
+
+    Expr.summon[platform is Nominative] match
+      case Some('{ type constraint; $nominative: (Nominative { type Constraint = constraint }) }) =>
+        val checks = decompose(TypeRepr.of[constraint]).to(List).map(_.asType).foldLeft('{()}):
+          case (expr, '[type param <: String; type rule <: Check[param]; rule]) =>
+            Nomenclature3.staticCompanion[rule] match
+              case '{$rule: Rule} =>
+                TypeRepr.of[param] match
+                  case ConstantType(StringConstant(string)) =>
+                    '{  $expr
+                        if $rule.check($name, ${Expr(string)}.tt)
+                        then summonInline[Tactic[NameError]].give:
+                          raise(NameError($name, $rule, ${Expr(string)}))  }
+
+        '{$checks; $name.asInstanceOf[Name[platform]]}
+
+      case None =>
+        halt(m"${Type.of[platform]} is not nominative")
 
   def parse2[platform: Type, name <: String: Type](scrutinee: Expr[Name[platform]])(using Quotes)
   : Expr[Boolean] =

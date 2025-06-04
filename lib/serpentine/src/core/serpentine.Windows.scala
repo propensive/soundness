@@ -32,6 +32,8 @@
                                                                                                   */
 package serpentine
 
+import anticipation.*
+import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
@@ -48,3 +50,10 @@ object Windows:
     & MustNotMatch["(?i)COM[0-9](\\.[^.]+)?"] & MustNotMatch["(?i)LPT[0-9](\\.[^.]+)?"]
 
   erased given Windows is Nominative under Rules = !!
+
+  given system: Windows is System:
+    type UniqueRoot = false
+
+    val separator: Text = t"\\"
+    val self: Text = t"."
+    val parent: Text = t".."

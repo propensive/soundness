@@ -36,10 +36,8 @@ import scala.deriving.*
 import scala.compiletime.*
 
 trait ProductDerivation[typeclass[_]] extends ProductDerivationMethods[typeclass]:
-  inline given derived[derivation](using Reflection[derivation])
-  : typeclass[derivation] =
-
-      inline summon[Reflection[derivation]] match
-        case reflection: ProductReflection[derivationType] =>
-          join[derivationType](using reflection).asMatchable match
-            case typeclass: typeclass[`derivation`] => typeclass
+  inline given derived: [derivation] => Reflection[derivation] => typeclass[derivation] =
+    inline summon[Reflection[derivation]] match
+      case reflection: ProductReflection[derivationType] =>
+        join[derivationType](using reflection).asMatchable match
+          case typeclass: typeclass[`derivation`] => typeclass

@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.32.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -39,7 +39,6 @@ import gossamer.*
 import spectacular.*
 
 object Volume:
-  given inspectable: Volume is Inspectable =
-    volume => t"volume[${volume.name}:${volume.volumeType}]"
+  given Volume is Inspectable = volume => t"volume[${volume.name}:${volume.volumeType}]"
 
 case class Volume(name: Text, volumeType: Text)

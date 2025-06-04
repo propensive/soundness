@@ -268,4 +268,4 @@ object Tests extends Suite(m"Guillotine tests"):
       test(m"implied return type for `which`"):
         import filesystemApi.galileiPath
         sh"which cat"()
-      .assert(_ == Unix / p"bin" / p"cat")
+      .assert(_ == Unix / "bin" / "cat")

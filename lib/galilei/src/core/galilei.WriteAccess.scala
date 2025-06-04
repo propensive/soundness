@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.32.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -41,5 +41,5 @@ trait WriteAccess:
   type Transform[_]
   def options(): List[jnf.OpenOption]
 
-  def transform[handle](handle: handle): Transform[handle] =
-    handle.asInstanceOf[Transform[handle]]
+  def transform[HandleType](handle: HandleType): Transform[HandleType] =
+    handle.asInstanceOf[Transform[HandleType]]

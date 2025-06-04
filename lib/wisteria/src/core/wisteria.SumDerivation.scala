@@ -36,7 +36,7 @@ import scala.deriving.*
 import scala.compiletime.*
 
 trait SumDerivation[typeclass[_]] extends SumDerivationMethods[typeclass]:
-  inline given derived[derivation](using Reflection[derivation]): typeclass[derivation] =
+  inline given derived: [derivation] => Reflection[derivation] => typeclass[derivation] =
     inline summon[Reflection[derivation]] match
       case reflection: SumReflection[derivationType] =>
         split[derivationType](using reflection).asMatchable match

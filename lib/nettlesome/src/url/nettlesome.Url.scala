@@ -51,15 +51,15 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-case class Url[+scheme <: Label]
-   (origin:    Origin[scheme],
-    pathText:  Text,
-    query:     Optional[Text]      = Unset,
-    fragment:  Optional[Text]      = Unset)
-extends Root
-         (t"${origin.scheme.name}://${origin.authority.lay(t"")(_.show)}$pathText", t"/",
-          Case.Sensitive):
-  type Platform = HttpUrl
+class Url[+scheme <: Label]
+       (val origin:    Origin[scheme],
+        val pathText:  Text,
+        val query:     Optional[Text] = Unset,
+        val fragment:  Optional[Text] = Unset)
+extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}${pathText}"):
+
+  type Platform = Rfc3986
+  type Subject = Zero
 
   def scheme: Scheme[scheme] = origin.scheme
   def authority: Optional[Authority] = origin.authority
@@ -67,30 +67,6 @@ extends Root
   def host: Optional[Hostname] = authority.let(_.host)
 
 object Url:
-  type Rules = MustMatch["[A-Za-z0-9_.~-]*"]
-
-  given radical: (Tactic[UrlError], Tactic[NameError]) => HttpUrl is Radical:
-    type Self = HttpUrl
-    type Source = HttpUrl
-
-    def root(path: Text): HttpUrl = path.keep(rootLength(path)).decode[HttpUrl]
-    def rootLength(path: Text): Int = path.where(_ == '/', 7.z).let(_.n0).or(path.length)
-    def rootText(url: HttpUrl): Text = url.show
-
-  given navigable: (Tactic[UrlError], Tactic[NameError])
-        =>  HttpUrl is Navigable by Name[HttpUrl] under Rules = new Navigable:
-
-    type Operand = Name[HttpUrl]
-    type Self = HttpUrl
-    type Constraint = Rules
-
-    val separator: Text = t"/"
-    val parentElement: Text = t".."
-    val selfText: Text = t"."
-
-    def element(element: Text): Name[HttpUrl] = Name(element)
-    def elementText(element: Name[HttpUrl]): Text = element
-    def caseSensitivity: Case = Case.Sensitive
 
   given abstractable: HttpUrl is Abstractable across Urls into Text = _.show
 
