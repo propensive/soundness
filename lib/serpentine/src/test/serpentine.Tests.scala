@@ -81,7 +81,6 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       . assert(_.length > 0)
 
       test(m"Construct a path with unknown label is permitted on Linux with Tactic"):
-        demilitarize:
           val dir: Text = "dir"
           recover:
             case NameError(_, _, _) => ()
@@ -89,7 +88,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
           . within:
               val path = (% / dir / "baz").on[Linux]
 
-      . assert(_ == Nil)
+      . assert()
 
       test(m"Construct a path with a label of a bad type is not permitted"):
         demilitarize:

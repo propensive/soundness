@@ -77,10 +77,10 @@ object Nomenclature2:
         panic(m"StringContext did not contains Strings")
 
 
-  def makeName[platform: Type](name: Expr[Text])(using Quotes): Expr[Name[platform]] =
+  def makeName[system: Type](name: Expr[Text])(using Quotes): Expr[Name[system]] =
     import quotes.reflect.*
 
-    Expr.summon[platform is Nominative] match
+    Expr.summon[system is Nominative] match
       case Some('{ type constraint; $nominative: (Nominative { type Constraint = constraint }) }) =>
         val checks = decompose(TypeRepr.of[constraint]).to(List).map(_.asType).foldLeft('{()}):
           case (expr, '[type param <: String; type rule <: Check[param]; rule]) =>
@@ -88,15 +88,14 @@ object Nomenclature2:
               case '{$rule: Rule} =>
                 TypeRepr.of[param] match
                   case ConstantType(StringConstant(string)) =>
-                    '{  $expr
-                        if $rule.check($name, ${Expr(string)}.tt)
-                        then summonInline[Tactic[NameError]].give:
+                    '{  if $rule.check($name, ${Expr(string)}.tt) then $expr
+                        else summonInline[Tactic[NameError]].give:
                           raise(NameError($name, $rule, ${Expr(string)}))  }
 
-        '{$checks; $name.asInstanceOf[Name[platform]]}
+        '{$checks; $name.asInstanceOf[Name[system]]}
 
       case None =>
-        halt(m"${Type.of[platform]} is not nominative")
+        halt(m"${Type.of[system]} is not nominative")
 
   def parse2[platform: Type, name <: String: Type](scrutinee: Expr[Name[platform]])(using Quotes)
   : Expr[Boolean] =

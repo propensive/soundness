@@ -111,17 +111,20 @@ object Bootstrapper:
         Out.println(m"Bootstrapping JAR file $jarfile")
 
         if !jarfile.exists() then abort(UserError(m"The file $jarfile does not exist"))
-        val classpath = arguments.map(_()).map(workingDirectory[Path on Linux].resolve(_))
 
-        val urls: List[HttpUrl] = classpath.map: entry =>
-          entry.ancestors(6).let: base =>
-            if base.name == t"repo1.maven.org" && base.parent.let(_.name) == t"https"
-            then
-              val urlPath = url"https://repo1.maven.org/" + entry.relativeTo(base)
-              urlPath.encode.decode[HttpUrl]
-            else
-              Out.println(m"Cannot resolve online location of $entry")
-              Unset
+        val classpath: List[Path on Linux] =
+          arguments.map(_()).map(workingDirectory[Path on Linux].resolve(_))
+
+        val urls: List[Optional[HttpUrl]] = classpath.map: entry =>
+          val base: Path on Linux = entry.ancestors(6)
+
+          if base.name == t"repo1.maven.org" && base.parent.name == t"https"
+          then
+            val urlPath = url"https://repo1.maven.org/" + entry.relativeTo(base)
+            urlPath.encode.decode[HttpUrl]
+          else
+            Out.println(m"Cannot resolve online location of $entry")
+            Unset
 
         val entries: Map[(Text, Text), Requirement] = urls.compact.flatMap: url =>
           Out.println(m"Downloading $url")
@@ -164,7 +167,7 @@ object Bootstrapper:
           manifest2 - MainClass + require + burdockMain + verbosity
           + MainClass(fqcn"burdock.Bootstrap")
 
-        val tmpFile = jarfile.parent.vouch/t"${jarfile.name.vouch}.tmp"
+        val tmpFile = jarfile.parent/t"${jarfile.name}.tmp"
 
         Zipfile.write(tmpFile):
           ZipEntry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest3.serialize)

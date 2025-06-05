@@ -52,9 +52,12 @@ object Tests extends Suite(m"Galilei tests"):
       val tmp: Path on Linux = temporaryDirectory
       Out.println(m"Writing to $tmp")
 
-      val dest: Path on Linux = tmp/"path"
+      val dest: Path on Linux = tmp/Uuid().show
 
-      test(m"Check that a fresh path does not exist")(dest).assert(!_.exists())
+
+      test(m"Check that a fresh path does not exist"):
+        dest
+      . assert(!_.exists())
 
       dest.open(t"Hello world".writeTo(_))
 

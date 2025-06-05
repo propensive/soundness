@@ -39,20 +39,14 @@ import prepositional.*
 import proscenium.*
 
 object Admissible:
-  def apply[self, system](fn: Text => Unit): self is Admissible on system =
-    new Admissible:
-      type Self = self
-      type Platform = system
-
-      def check(name: Text): Unit = fn(name)
-
+  inline def apply[self, system](fn: Text => Unit): self is Admissible on system = fn(_)
 
   inline given text: [text <: Text, system] => Tactic[NameError]
                =>  text is Admissible on system =
     Admissible(Name[system](_))
 
-  inline given admissible: [string <: Label, system: Nominative] => string is Admissible on system =
-    Admissible({ _ => Name.verify[string, system] })
+  transparent inline given admissible: [string <: Label, system: Nominative] => string is Admissible on system =
+    Admissible[string, system]({ void => Name.verify[string, system] })
 
   given name: [platform] => Name[platform] is Admissible:
     type Self = Name[platform]

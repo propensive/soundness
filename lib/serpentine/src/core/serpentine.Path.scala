@@ -114,14 +114,14 @@ case class Path(root: Text, descent: Text*):
 
   def name: Text = descent.prim.or(root)
 
-  transparent inline def knownElementTypes: Boolean = inline !![Subject] match
+  inline def knownElementTypes: Boolean = inline !![Subject] match
     case _: Zero           => true
     case _: (head *: tail) => true
     case _                 => false
 
   transparent inline def knownElements: Boolean = known[Subject]
 
-  protected transparent inline def known[subject <: Tuple]: Boolean =
+  protected inline def known[subject <: Tuple]: Boolean =
     inline !![subject] match
       case _: Zero           => true
       case _: (head *: tail) => inline constValueOpt[head] match
