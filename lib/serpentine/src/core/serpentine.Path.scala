@@ -84,9 +84,9 @@ object Path:
   : Path on system of subject under root =
 
       new Path(root, descent*):
-        type Subject = subject
         type Platform = system
         type Constraint = root
+        type Subject = subject
 
 
   given encodable: [system: System] => Path on system is Encodable in Text =
@@ -249,14 +249,9 @@ case class Path(root: Text, descent: Text*):
   transparent inline def parent: Optional[Path on Platform under Constraint] =
     inline !![Subject] match
       case head *: tail => Path.of[Platform, Constraint, tail.type](root, descent.tail*)
-      case EmptyTuple   => compiletime.error("Path has no parent")
+      case EmptyTuple   => Unset
       case _ =>
-        given tactic: Tactic[PathError] = summonInline[Tactic[PathError]]
-
-        if descent.isEmpty then
-          raise(PathError(_.RootParent))
-          Path.of[Platform, Constraint, Tuple](root, descent*)
-
+        if descent.isEmpty then Unset
         else Path.of[Platform, Constraint, Tuple](root, descent.tail*)
 
   def ancestors: List[Path on Platform under Constraint] =

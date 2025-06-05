@@ -116,9 +116,9 @@ object Bootstrapper:
           arguments.map(_()).map(workingDirectory[Path on Linux].resolve(_))
 
         val urls: List[Optional[HttpUrl]] = classpath.map: entry =>
-          val base: Path on Linux = entry.ancestors(6)
+          val base = entry.ancestors(6)
 
-          if base.name == t"repo1.maven.org" && base.parent.name == t"https"
+          if base.name == t"repo1.maven.org" && base.parent.let(_.name) == t"https"
           then
             val urlPath = url"https://repo1.maven.org/" + entry.relativeTo(base)
             urlPath.encode.decode[HttpUrl]
@@ -167,7 +167,7 @@ object Bootstrapper:
           manifest2 - MainClass + require + burdockMain + verbosity
           + MainClass(fqcn"burdock.Bootstrap")
 
-        val tmpFile = jarfile.parent/t"${jarfile.name}.tmp"
+        val tmpFile = jarfile.parent.vouch/t"${jarfile.name}.tmp"
 
         Zipfile.write(tmpFile):
           ZipEntry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest3.serialize)
