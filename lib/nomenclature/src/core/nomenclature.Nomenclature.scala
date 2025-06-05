@@ -52,9 +52,7 @@ object Nomenclature:
     inline given decodable: [platform] => (platform is Nominative, Tactic[NameError])
                  =>  Name[platform] is Decodable in Text =
 
-      val decoder: Name[platform] is Decodable in Text = apply[platform](_)
-
-      decoder
+      apply[platform](_)
 
     inline def verify[NameType <: Label, platform] =
       ${Nomenclature2.parse[platform, NameType]}

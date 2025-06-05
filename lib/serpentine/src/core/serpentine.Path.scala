@@ -103,7 +103,7 @@ object Path:
 
   private def conversion[from, to](lambda: from => to): Conversion[from, to] = lambda(_)
 
-  inline given [subject, root, system]
+  inline given convert: [subject, root, system]
          =>  Conversion[Path of subject under root, Path of subject under root on system] =
     conversion(_.on[system])
 
