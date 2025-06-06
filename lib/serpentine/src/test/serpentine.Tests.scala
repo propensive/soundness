@@ -230,11 +230,13 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
     suite(m"Decoding"):
       test(m"Decode a simple Linux path with a terminal slash"):
+        given Tactic[PathError] = strategies.throwUnsafely
         t"/home/work/".decode[Path on Linux]
 
       . assert(_ == % / "home" / "work")
 
       test(m"Decode a simple Linux path without a terminal slash"):
+        given Tactic[PathError] = strategies.throwUnsafely
         t"/home/work".decode[Path on Linux]
 
       . assert(_ == % / "home" / "work")

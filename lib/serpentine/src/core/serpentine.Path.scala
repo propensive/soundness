@@ -60,9 +60,9 @@ object Path:
         =>  (Path on system) is Decodable in Text =
 
     text =>
+      val root = radical.encode(radical.decode(text))
       val parts = text.skip(radical.length(text)).cut(system.separator)
       val parts2 = if parts.last == t"" then parts.init else parts
-      val root = radical.encode(radical.decode(text))
 
       Path.of(root, parts2.reverse*)
 
@@ -288,67 +288,3 @@ case class Path(root: Text, descent: Text*):
     type Subject2 = Tuple.Concat[relative.Subject, Base]
     Path.of[Platform, Constraint, Subject2]
      (root, relative.descent ++ descent.drop(relative.ascent)*)
-
-
-// object Path:
-//   given addable: [system: Navigable] => Tactic[PathError]
-//   =>    (Path on system) is Addable by (Relative by system.Operand) into
-//         (Path on system) =
-//     (left, right) =>
-//       def recur(descent: List[Text], ascent: Int): Path on system =
-//         if ascent > 0 then
-//           if descent.isEmpty then
-//             abort(PathError(PathError.Reason.RootParent))
-
-//             Path.from[system]
-//              (left.textRoot, Nil, left.separator, left.caseSensitivity)
-//           else recur(descent.tail, ascent - 1)
-//         else
-//           Path.from[system]
-//            (left.textRoot,
-//             right.textDescent ++ descent,
-//             system.separator,
-//             system.caseSensitivity)
-
-//       recur(left.textDescent, right.ascent)
-
-// open class Path
-//    (val textRoot: Text,
-//     val textDescent: List[Text],
-//     val separator: Text,
-//     val caseSensitivity: Case)
-// extends Pathlike:
-//   type Platform
-
-//   def text: Text = textDescent.reverse.join(textRoot, separator, t"")
-
-//   def name(using navigable: Platform is Navigable): Optional[navigable.Operand] =
-//     textDescent.prim.let(navigable.element(_))
-
-//   def peer(using navigable: Platform is Navigable)(name: navigable.Operand)
-//   :     Path on Platform raises PathError =
-//     parent.let(_ / name).lest(PathError(PathError.Reason.RootParent))
-
-//   def ancestor(n: Int): Optional[Path on Platform] =
-//     def recur(n: Int, current: Optional[Path on Platform]): Optional[Path on Platform] =
-//       current.let: current =>
-//         if n == 0 then current else recur(n - 1, current.parent)
-
-//     recur(n, this)
-
-//   def precedes(path: Path on Platform): Boolean = textDescent == Nil || conjunction(path) == path
-
-//   def retain(count: Int): Path on Platform =
-//     Path.from
-//      (textRoot, textDescent.drop(depth - count), separator, caseSensitivity)
-
-//   def relativeTo(right: Path on Platform)(using navigable: Platform is Navigable)
-//   :     Relative by navigable.Operand raises PathError =
-//     if textRoot != right.textRoot then abort(PathError(PathError.Reason.DifferentRoots))
-//     val common = conjunction(right).depth
-//     Relative(right.depth - common, textDescent.dropRight(common).map(navigable.element(_)))
-
-//   def resolve(text: Text)(using Platform is Navigable, Platform is Radical)
-//   :     Path on Platform raises PathError =
-//     safely(Path.parse(text)).or(safely(this + Relative.parse(text))).or:
-//       abort(PathError(PathError.Reason.InvalidRoot))

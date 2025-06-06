@@ -32,6 +32,8 @@
                                                                                                   */
 package nomenclature
 
+import scala.compiletime.*
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -40,8 +42,6 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
-
-import scala.compiletime.*
 
 object Nomenclature:
   opaque type Name[-platform] <: anticipation.Text = anticipation.Text
@@ -56,21 +56,6 @@ object Nomenclature:
 
     inline def verify[NameType <: Label, platform] =
       ${Nomenclature2.parse[platform, NameType]}
-
-    // private inline def check[check <: Matchable](name: Text): Unit raises NameError =
-    //   inline !![check] match
-    //     case _: Zero           => ()
-    //     case _: (head *: tail) => inline !![head] match
-    //       case _: Check[param] =>
-    //         inline staticCompanion[head] match
-    //           case rule: Rule =>
-    //             if !rule.check(name, constValue[param].tt)
-    //             then raise(NameError(name, rule, constValue[param].tt))
-
-    //           case other =>
-    //             error("The companion object was not a subtype of Rule")
-
-    //         check[tail](name)
 
     inline def apply[platform](name: Text): Name[platform] =
       ${Nomenclature2.makeName[platform]('name)}

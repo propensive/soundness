@@ -36,8 +36,8 @@ import anticipation.*
 import prepositional.*
 
 object Submissible:
-  given (%.type is Submissible on Linux) = _ => ()
-  given (%.type is Submissible on MacOs) = _ => ()
+  given linux: %.type is Submissible on Linux = _ => ()
+  given macOs: %.type is Submissible on MacOs = _ => ()
 
 trait Submissible:
   type Self

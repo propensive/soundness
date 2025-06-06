@@ -45,6 +45,7 @@ import spectacular.*
 object Explorable:
   given Linux is Explorable:
     def children(path: Path on Linux): Stream[Path on Linux] =
+      given tactic: Tactic[PathError] = strategies.throwUnsafely
       jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
       . iterator().nn
       . asScala
@@ -53,7 +54,7 @@ object Explorable:
 
   given Windows is Explorable:
     def children(path: Path on Windows): Stream[Path on Windows] =
-      given tactic: Tactic[RootError] = strategies.throwUnsafely
+      given tactic: Tactic[PathError] = strategies.throwUnsafely
       jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
       . iterator().nn
       . asScala
@@ -62,6 +63,7 @@ object Explorable:
 
   given MacOs is Explorable:
     def children(path: Path on MacOs): Stream[Path on MacOs] =
+      given tactic: Tactic[PathError] = strategies.throwUnsafely
       jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
       . iterator().nn
       . asScala

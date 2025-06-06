@@ -102,7 +102,7 @@ def loop(block: => Unit): Loop = Loop({ () => block })
 export Rudiments.&
 
 @targetName("erasedValue")
-erased def !![erasure] : erasure = scala.compiletime.erasedValue
+erased def !![erasure]: erasure = scala.compiletime.erasedValue
 
 extension [value <: Matchable](iterable: Iterable[value])
   transparent inline def sift[filter <: value: Typeable]: Iterable[filter] =

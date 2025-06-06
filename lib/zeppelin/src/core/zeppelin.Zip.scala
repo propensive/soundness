@@ -60,6 +60,9 @@ object Zip:
     & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["<"] & MustNotContain[">"]
     & MustNotContain["|"]
 
+  erased given nominative: Zip is Nominative under Rules = !!
+  given submissible: %.type is Submissible on Zip = _ => ()
+
   class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t""):
     type Platform = Zip
 

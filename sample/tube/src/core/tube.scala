@@ -3,6 +3,7 @@ package tube.terminal
 import soundness.*
 
 import charDecoders.utf8
+import charEncoders.utf8
 import classloaders.threadContext
 import dsvFormats.csvWithHeader
 import enumIdentification.kebabCase
@@ -13,7 +14,6 @@ import homeDirectories.systemProperty
 import logging.silent
 import asyncTermination.cancel
 import parameterInterpretation.posix
-import pathNavigation.posix
 import printableTypes.message
 import supervisors.global
 import textMetrics.uniform
@@ -21,20 +21,27 @@ import textSanitizers.skip
 import threadModels.platform
 import unhandledErrors.stackTrace
 import workingDirectories.daemonClient
+import httpServers.stdlibPublic
+import timeFormats.railway
 
 erased given Naptan is Nominative under MustMatch["(|HUB[A-Z0-9]{3}|9[14]0[A-Z]+)"] = !!
 given StationRow is Suggestible = row => Suggestion(row.ref, row.name)
 given StationRow is Showable = _.name
 
 given Online => StationRow is Embeddable in HttpUrl by UrlFragment =
-  row => UrlFragment(row.id.resolve.text)
+  row => UrlFragment(row.id.resolve)
 
 given Decimalizer = Decimalizer(significantFigures = 2)
 val timezone = tz"Europe/London"
-type HoursAndMinutes = Count[(Hours[1], Minutes[1])]
+type HoursAndMinutes = Quanta[(Hours[1], Minutes[1])]
 
-given (Tactic[JsonParseError], Tactic[JsonError]) => Route is Decodable in Json =
-  summon[Text is Decodable in Json].map: points =>
+given quantaDecoder: Tactic[JsonError] => HoursAndMinutes is Decodable in Json =
+  summon[Int is Decodable in Json].map(Quanta(_))
+
+given (Tactic[JsonParseError], Tactic[JsonError])
+      => (decodable: Text is Decodable in Json)
+      =>  Route is Decodable in Json =
+  decodable.map: points =>
     Route:
       Json.parse(points).as[List[List[Double]]].filter(_.length == 2).map: point =>
         Location(point(0).deg, point(1).deg)
@@ -46,9 +53,9 @@ val Start = Flag(t"start", false, List('s'), t"The start of your journey")
 val Destination = Flag(t"destination", false, List('d'), t"The end of your journey")
 val Departure = Flag(t"departure", false, List('D'), t"The departure time in HHMM format")
 
-extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name.text match
+extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name match
   case r"HUB.*" =>
-    mend:
+    recover:
       case error: Error => name
 
     . within:
@@ -65,7 +72,7 @@ extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name.te
 def app(): Unit = cli:
   import internetAccess.enabled
 
-  mend:
+  recover:
     case error: InitError => execute:
       Out.println(t"An error occurred during initialization:")
       Out.println(error.message)
@@ -75,8 +82,8 @@ def app(): Unit = cli:
   . within:
       arguments match
         case About() :: _ => execute:
-          val image = unsafely(Image(Classpath / n"image.png"))
-          Out.println(image.rasterize)
+          val image = unsafely(Raster(Classpath/"image.png"))
+          Out.println(image.teletype)
           Exit.Ok
 
         case Install() :: _ => execute:
@@ -93,7 +100,7 @@ def app(): Unit = cli:
           val departure0: Optional[Text] = Departure[Text]()
 
           execute:
-            mend:
+            recover:
               case error: UserError => Out.println(error.message) yet Exit.Fail(1)
 
             . within:
@@ -125,8 +132,8 @@ object Data:
   def stations(using Online, Environment): Bijection[Name[Naptan], StationRow] raises InitError =
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
 
-    tend:
-      case TcpError(_)       => InitError(m"Couldn't establish a connection to the HTTP server")
+    mitigate:
+      case ConnectError(_)   => InitError(m"Couldn't establish a connection to the HTTP server")
       case _: ZipError       => InitError(m"There was a problem with the ZIP file")
       case error: NameError  => InitError(error.message)
       case _: DsvError       => InitError(m"The CSV file was not in the right format")
@@ -147,25 +154,23 @@ object Data:
           import filesystemOptions.dereferenceSymlinks.enabled
           import filesystemOptions.createNonexistent.enabled
           import filesystemOptions.createNonexistentParents.enabled
-          val file: Path on Posix = Xdg.cacheHome[Path on Posix] / n"tube.csv"
+          val file: Path on Linux = Xdg.cacheHome[Path on Linux]/"tube.csv"
 
           val csv = if file.exists() then file.open(_.stream[Bytes].strict) else
-            ZipStream(sourceUrl.fetch()).extract(_ / n"Stations.csv").stream[Bytes].tap: stream =>
+            ZipStream(sourceUrl.fetch()).extract(% / "Stations.csv").stream[Bytes].tap: stream =>
               import filesystemOptions.writeAccess.enabled
               file.open(stream.writeTo(_))
 
           Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
   def plan(start: StationRow, end: StationRow, time: Text)(using Online): Plan raises UserError =
-    val modes = t"tube,elizabeth-line,dlr,overground"
-
     val sourceUrl =
-      url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$end/?mode=$modes&time=$time"
+      url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$end/?time=$time"
     given Optional[JsonPointer] is Communicable = _.lay(t"<unknown>")(_.show).communicate
 
     track[JsonPointer](UserError()):
       case HttpError(status, _)  => accrual + m"Attempt to access $sourceUrl returned $status."
-      case TcpError(_)           => accrual + m"Couldn't establish a connection to the HTTP server"
+      case ConnectError(_)       => accrual + m"Couldn't establish a connection to the HTTP server"
       case error: VariantError   => accrual + m"${error.message} at $focus from $sourceUrl"
       case error: TimestampError => accrual + m"${error.message} at $focus from $sourceUrl"
 
@@ -176,6 +181,7 @@ object Data:
         accrual + m"Could not parse JSON response: $reason at line $line"
 
     . within:
+        val response = sourceUrl.fetch(accept = media"application/json")
         Json.parse(sourceUrl.fetch(accept = media"application/json")).as[Plan]
 
 object Output:
@@ -250,7 +256,6 @@ object Output:
       Out.println(e"\n${indent(last, 9)}${destinationTitle.center(40)}\n")
 
       val distance = journey.legs.map(_.path.lineString.length).sum.in[Miles]
-      import quantitative./
       val speed = (distance/journey.duration.quantity).in[Miles].in[Hours]
       Out.println(e"\n${journey.duration}, $distance; average speed: $speed")
 
@@ -282,8 +287,10 @@ case class Leg
 case class LegPath(stopPoints: List[Stop], lineString: Route)
 
 case class Route(points: List[Location]):
-  def length: Quantity[Metres[1]] = points.slide(2).sumBy: point =>
-    6371.0*Kilo(Metre)*point(0).surfaceDistance(point(1)).value
+  def length: Quantity[Metres[1]] =
+    points.slide(2).map: point =>
+      6371.0*Kilo(Metre)*point(0).surfaceDistance(point(1)).radians
+    . total
 
 case class Instruction(detailed: Text)
 case class RouteOption(lineIdentifier: Optional[LineIdentifier])
@@ -294,7 +301,7 @@ case class Stop(name: Text):
 
 enum TubeLine:
   case Bakerloo, Central, Circle, District, HammersmithCity, Jubilee, Metropolitan, Northern,
-       Piccadilly, Victoria, WaterlooCity, Elizabeth, Dlr, LondonOverground
+       Piccadilly, Victoria, WaterlooCity, Elizabeth, Dlr, LondonOverground, Thameslink
 
   def open: Boolean = this match
     case Dlr | Elizabeth | LondonOverground => true
@@ -315,5 +322,6 @@ enum TubeLine:
     case Dlr              => rgb"#00AFAD"
     case LondonOverground => rgb"#FA7B05"
     case Elizabeth        => rgb"#60399E"
+    case Thameslink       => rgb"#D7C1D9"
 
 erased trait Naptan
