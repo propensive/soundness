@@ -110,7 +110,9 @@ trait Json2:
 
               case index =>
                 delegate(values(1)(index).string): [variant <: derivation] =>
-                  context => context.decoded(json)
+                  context =>
+                    // The cast became necessary when upgrading to Scala 3.7.1.
+                    context.decoded(json).asInstanceOf[derivation]
 
   object EncodableDerivation extends Derivable[Encodable in Json]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Json =
