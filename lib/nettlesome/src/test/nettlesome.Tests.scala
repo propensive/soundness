@@ -386,10 +386,7 @@ object Tests extends Suite(m"Nettlesome tests"):
         url"http://user:pw@example.com/$message"
       .assert(_ == Url(Origin(Scheme(t"http"), Authority(example.com, t"user:pw")), t"/Hello+world%21"))
 
-      test(m"Parse URL at compiletime with unescaped substitution"):
-        val message = Raw(t"Hello world!")
-        url"http://user:pw@example.com/$message"
-      .assert(_ == Url(Origin(Scheme(t"http"), Authority(example.com, t"user:pw")), t"/Hello world!"))
+
 
       // TODO: fix
       // test(m"Relative path is unescaped"):

@@ -53,8 +53,6 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import pathNavigation.posix
-
 import GitError.Reason.*
 
 object Git:
@@ -80,7 +78,7 @@ object Git:
        (targetPath: path, bare: Boolean = false)
        (using WorkingDirectory,
               Tactic[GitError],
-              (Path on Posix) is Decodable in Text,
+              (Path on Linux) is Decodable in Text,
               Tactic[ExecError])
        (using command: GitCommand)
   : GitRepo logs GitEvent raises NameError =
@@ -88,10 +86,10 @@ object Git:
       try
         throwErrors[PathError | IoError]:
           val bareOpt = if bare then sh"--bare" else sh""
-          val target: Path on Posix = targetPath.generic.decode[Path on Posix]
+          val target: Path on Linux = targetPath.generic.decode[Path on Linux]
           sh"$command init $bareOpt $target".exec[Exit]()
 
-          if bare then GitRepo(target, Unset) else GitRepo((target / n".git"), target)
+          if bare then GitRepo(target, Unset) else GitRepo(target/".git", target)
 
       catch
         case error: PathError => abort(GitError(InvalidRepoPath))
@@ -101,7 +99,7 @@ object Git:
   inline def cloneCommit[source <: Matchable, path: Abstractable across Paths into Text]
               (source: source, targetPath: path, commit: GitHash)
               (using Internet,
-                     (Path on Posix) is Decodable in Text,
+                     (Path on Linux) is Decodable in Text,
                      GitCommand,
                      Tactic[GitError],
                      Tactic[ExecError],
@@ -125,7 +123,7 @@ object Git:
                recursive:  Boolean             = false)
               (using Internet,
                      WorkingDirectory,
-                     (Path on Posix) is Decodable in Text,
+                     (Path on Linux) is Decodable in Text,
                      Tactic[ExecError],
                      GitCommand)
   : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError raises GitError =
@@ -141,7 +139,7 @@ object Git:
 
   private def uncheckedCloneCommit[path: Abstractable across Paths into Text]
                (source: Text, targetPath: path, commit: GitHash)
-               (using Internet, (Path on Posix) is Decodable in Text, GitCommand)
+               (using Internet, (Path on Linux) is Decodable in Text, GitCommand)
                (using gitError:         Tactic[GitError],
                       exec:             Tactic[ExecError],
                       workingDirectory: WorkingDirectory)
@@ -164,14 +162,14 @@ object Git:
                  recursive:  Boolean             = false)
                 (using Internet,
                  WorkingDirectory,
-                 (Path on Posix) is Decodable in Text,
+                 (Path on Linux) is Decodable in Text,
                  Tactic[ExecError],
                  GitCommand)
                 (using gitError: Tactic[GitError])
   : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
-      val target: Path on Posix =
-        try targetPath.generic.decode[Path on Posix]
+      val target: Path on Linux =
+        try targetPath.generic.decode[Path on Linux]
         catch case error: PathError => abort(GitError(InvalidRepoPath))
 
       val bareOption = if bare then sh"--bare" else sh""
@@ -185,7 +183,7 @@ object Git:
       GitProcess[GitRepo](progress(process)):
         process.await() match
           case Exit.Ok =>
-            try throwErrors[IoError](GitRepo((target / n".git"), target))
+            try throwErrors[IoError](GitRepo((target/".git"), target))
             catch case error: IoError => abort(GitError(CloneFailed))
 
           case _ =>

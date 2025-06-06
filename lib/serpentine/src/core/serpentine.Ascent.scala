@@ -32,6 +32,14 @@
                                                                                                   */
 package serpentine
 
-trait Substantiable:
-  type Self
-  def exists(value: Self): Boolean
+import scala.compiletime.*, ops.int.*
+
+import prepositional.*
+import proscenium.*
+
+class Ascent(val ascent0: Int) extends Relative(ascent0):
+  type Subject = EmptyTuple
+
+  @targetName("child")
+  def / (up: ^.type): Ascent under S[Constraint] =
+    new Ascent(ascent0 + 1).asInstanceOf[Ascent under S[Constraint]]

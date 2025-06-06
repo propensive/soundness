@@ -35,7 +35,7 @@ package vicarious
 import proscenium.*
 
 object Proxy:
-  transparent inline given derived[key, value]: Proxy[key, value, 0] =
+  transparent inline given derived: [key, value] => Proxy[key, value, 0] =
     ${Vicarious.proxy[key, value]}
 
 class Proxy[key, value, +id <: Nat]() extends Selectable:

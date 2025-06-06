@@ -30,49 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package serpentine
 
 import anticipation.*
-import contingency.*
-import denominative.*
 import gossamer.*
-import nomenclature.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import vacuous.*
 
-object Posix:
-  abstract class Root() extends serpentine.Root(t"/", t"/", Case.Sensitive):
-    type Platform = Posix
+trait System:
+  type Self
+  type UniqueRoot <: Boolean
 
-  object RootSingleton extends Root()
-
-  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
-
-  given radical: Tactic[PathError] => Posix is Radical from (Root on Posix) = new Radical:
-    type Self = Posix
-    type Source = Root on Posix
-
-    def rootLength(path: Text): Int = 1
-    def rootText(root: Source): Text = t"/"
-
-    def root(path: Text): Source =
-      if path.at(Prim) == '/' then Posix.RootSingleton
-      else raise(PathError(PathError.Reason.InvalidRoot, path)) yet Posix.RootSingleton
-
-  given navigable: Tactic[NameError] => Posix is Navigable by Name[Posix] under Rules =
-    new Navigable:
-      type Self = Posix
-      type Operand = Name[Posix]
-      type Constraint = Rules
-
-      val separator: Text = t"/"
-      val parentElement: Text = t".."
-      val selfText: Text = t"."
-
-      def element(element: Text): Name[Posix] = Name(element)
-      def elementText(element: Name[Posix]): Text = element
-      def caseSensitivity: Case = Case.Sensitive
-
-erased trait Posix extends Filesystem
+  val separator: Text
+  val self: Text
+  val parent: Text

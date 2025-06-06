@@ -32,10 +32,11 @@
                                                                                                   */
 package octogenarian
 
+import anticipation.*
 import guillotine.*
 import serpentine.*
 
 object GitCommand:
-  given parameterizable: GitCommand is Parameterizable = _.path.text
+  given parameterizable: GitCommand is Parameterizable = _.path
 
-case class GitCommand(path: Path)
+case class GitCommand(path: Text)

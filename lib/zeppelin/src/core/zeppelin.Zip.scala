@@ -30,41 +30,51 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package zeppelin
+
+import java.io as ji
+import java.net as jn
+import java.nio.file as jnf
+import java.util.zip as juz
+import scala.collection.concurrent as scc
+import scala.collection.mutable as scm
 
 import anticipation.*
+import contingency.*
+import feudalism.*
+import fulminate.*
+import galilei.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import proscenium.*
-import symbolism.*
+import rudiments.*
+import serpentine.*
+import vacuous.*
 
-object PathAscent:
-  given divisible: [element] => (Navigable by element)
-        =>  PathAscent is Divisible by element into (Relative by element) =
-    new Divisible:
-      type Self = PathAscent
-      type Result = Relative by element
-      type Operand = element
+import juz.ZipFile
 
-      def divide(path: PathAscent, child: element): Relative by element =
-        Relative(path.ascent, List(child))
+object Zip:
+  type Rules =
+    MustNotContain["\\"] & MustNotContain["\""] & MustNotContain["/"] & MustNotContain[":"]
+    & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["<"] & MustNotContain[">"]
+    & MustNotContain["|"]
 
-  given encodable: [element, root: Navigable by element] => PathAscent is Encodable in Text =
-    pathAscent =>
-      if pathAscent.textDescent.isEmpty
-      then
-        if pathAscent.ascent == 0 then root.selfText
-        else List.fill(pathAscent.ascent)(root.parentElement).join(root.separator)
-      else
-        pathAscent
-        . textDescent
-        . reverse
-        . join(root.ascent*pathAscent.ascent, root.separator, t"")
+  class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t""):
+    type Platform = Zip
 
-case class PathAscent(ascent0: Int) extends Relative(ascent0, Nil, t"/"):
-  type Operand = Nothing
+  given system: Zip is System:
+    type UniqueRoot = false
 
-  @targetName("parent")
-  infix def / (parent: Serpentine.^.type): PathAscent = PathAscent(ascent + 1)
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."
 
-  override def parent: PathAscent = PathAscent(ascent + 1)
+  given radical: %.type is Radical:
+    type Platform = Zip
+
+    def length(text: Text): Int = 0
+    def decode(text: Text): %.type = %
+    def encode(root: %.type): Text = t""
+
+erased trait Zip

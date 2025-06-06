@@ -64,7 +64,6 @@ import stdioSources.virtualMachine.ansi
 import unhandledErrors.stackTrace
 import executives.direct
 import parameterInterpretation.posix
-import pathNavigation.posix
 import workingDirectories.virtualMachine
 import systemProperties.virtualMachine
 import internetAccess.enabled
@@ -101,10 +100,10 @@ object Bootstrapper:
         Exit.Fail(1)
 
     . within:
-        val jarfile: Path on Posix =
+        val jarfile: Path on Linux =
           ClassRef(Class.forName("burdock.Bootstrap").nn).classpathEntry match
             case ClasspathEntry.Jar(file) =>
-              Path.parse(file)
+              file.decode[Path on Linux]
 
             case other =>
               abort(UserError(m"Could not determine location of bootstrap class"))
@@ -112,17 +111,20 @@ object Bootstrapper:
         Out.println(m"Bootstrapping JAR file $jarfile")
 
         if !jarfile.exists() then abort(UserError(m"The file $jarfile does not exist"))
-        val classpath = arguments.map(_()).map(workingDirectory[Path on Posix].resolve(_))
 
-        val urls = classpath.map: entry =>
-          entry.ancestor(6).let: base =>
-            if base.name == n"repo1.maven.org" && base.parent.let(_.name) == n"https"
-            then
-              val urlPath = url"https://repo1.maven.org/" + entry.relativeTo(base).on[HttpUrl]
-              urlPath.show.decode[HttpUrl]
-            else
-              Out.println(m"Cannot resolve online location of $entry")
-              Unset
+        val classpath: List[Path on Linux] =
+          arguments.map(_()).map(workingDirectory[Path on Linux].resolve(_))
+
+        val urls: List[Optional[HttpUrl]] = classpath.map: entry =>
+          val base = entry.ancestors(6)
+
+          if base.name == t"repo1.maven.org" && base.parent.let(_.name) == t"https"
+          then
+            val urlPath = url"https://repo1.maven.org/" + entry.relativeTo(base)
+            urlPath.encode.decode[HttpUrl]
+          else
+            Out.println(m"Cannot resolve online location of $entry")
+            Unset
 
         val entries: Map[(Text, Text), Requirement] = urls.compact.flatMap: url =>
           Out.println(m"Downloading $url")
@@ -132,7 +134,7 @@ object Bootstrapper:
           def filter(name: Text): Boolean =
             name == t"burdock/Bootstrap.class" || name != t"META-INF/MANIFEST.MF"
 
-          ZipStream(data).keep(_.text != t"META-INF/MANIFEST.MF").map: entry =>
+          ZipStream(data).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
             (entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex]) -> Requirement(url, digest)
 
         . to(Map)
@@ -165,12 +167,12 @@ object Bootstrapper:
           manifest2 - MainClass + require + burdockMain + verbosity
           + MainClass(fqcn"burdock.Bootstrap")
 
-        val tmpFile = jarfile.parent.vouch / Name(jarfile.name.vouch+t".tmp")
+        val tmpFile = jarfile.parent.vouch/t"${jarfile.name}.tmp"
 
         Zipfile.write(tmpFile):
-          ZipEntry(Path.parse[Zip](t"META-INF/MANIFEST.MF"), manifest3.serialize) #::
-            todo.sift[Entry].to(Stream).map: entry =>
-              ZipEntry(Path.parse[Zip](entry.name), () => Stream(entry.data))
+          ZipEntry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest3.serialize)
+          #:: todo.sift[Entry].to(Stream).map: entry =>
+                ZipEntry(entry.name.decode[Path on Zip], () => Stream(entry.data))
 
         import filesystemOptions.overwritePreexisting.enabled
         import filesystemOptions.deleteRecursively.disabled

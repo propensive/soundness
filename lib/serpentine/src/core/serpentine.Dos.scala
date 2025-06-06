@@ -30,55 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package serpentine
 
-import anticipation.*
-import contingency.*
-import denominative.*
-import gossamer.*
-import hieroglyph.*
-import hypotenuse.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
-import serpentine.*
-import spectacular.*
-import vacuous.*
 
-erased trait Windows extends Filesystem
+erased trait Dos
 
-object Windows:
-  type Rules = MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
-      MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
-      MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] &
-      MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotEqual["(?i)PRN(\\.[^.]+)?"] &
-      MustNotEqual["(?i)AUX(\\.[^.]+)?"] & MustNotEqual["(?i)NUL(\\.[^.]+)?"] &
-      MustNotEqual["(?i)COM[0-9](\\.[^.]+)?"] & MustNotEqual["(?i)LPT[0-9](\\.[^.]+)?"]
+object Dos:
+  type Rules = MustMatch["[^.]{1,8}(\\.[^.]{1,3})?"] & MustNotContain[" "] & MustMatch["[!-~]*"]
 
-  given navigable: Tactic[NameError]
-        =>  Windows is Navigable by Name[Windows] under Rules =
-    new Navigable:
-      type Operand = Name[Windows]
-      type Self = Windows
-      type Constraint = Rules
-
-      val separator: Text = t"\\"
-      val parentElement: Text = t".."
-      val selfText: Text = t"."
-      def element(element: Text): Name[Windows] = Name(element)
-      def elementText(element: Name[Windows]): Text = element
-      def caseSensitivity: Case = Case.Preserving
-
-  given radical: Tactic[PathError] => Windows is Radical from WindowsDrive = new Radical:
-    type Self = Windows
-    type Source = WindowsDrive
-
-    def root(path: Text): WindowsDrive =
-      if path.length < 3
-      then raise(PathError(PathError.Reason.InvalidRoot, path)) yet WindowsDrive('Z')
-      else unsafely(path.at(Prim).vouch).upper.pipe: letter =>
-        if path.segment(Sec ~ Ter) == t":\\" && 'A' <= letter <= 'Z' then WindowsDrive(letter)
-        else raise(PathError(PathError.Reason.InvalidRoot, path)) yet WindowsDrive('Z')
-
-    def rootLength(path: Text): Int = 3
-    def rootText(drive: Source): Text = t"${drive.letter}:\\"
+  erased given Dos is Nominative under Rules = !!

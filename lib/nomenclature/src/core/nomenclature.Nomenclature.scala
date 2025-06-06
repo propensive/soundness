@@ -38,6 +38,7 @@ import distillate.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
 
 import scala.compiletime.*
@@ -47,32 +48,29 @@ object Nomenclature:
 
   object Name:
     given encodable: [platform] => Name[platform] is Encodable in Text = identity(_)
+
     inline given decodable: [platform] => (platform is Nominative, Tactic[NameError])
                  =>  Name[platform] is Decodable in Text =
 
-      val decoder: Name[platform] is Decodable in Text = apply[platform](_)
+      apply[platform](_)
 
-      decoder
+    inline def verify[NameType <: Label, platform] =
+      ${Nomenclature2.parse[platform, NameType]}
 
-    private inline def check[check <: Matchable](name: Text): Unit raises NameError =
-      inline erasedValue[check] match
-        case _: Zero           => ()
-        case _: (head *: tail) => inline erasedValue[head & Matchable] match
-          case _: Check[param] =>
-            inline staticCompanion[head] match
-              case rule: Rule =>
-                if !rule.check(name, constValue[param].tt)
-                then raise(NameError(name, rule, constValue[param].tt))
+    // private inline def check[check <: Matchable](name: Text): Unit raises NameError =
+    //   inline !![check] match
+    //     case _: Zero           => ()
+    //     case _: (head *: tail) => inline !![head] match
+    //       case _: Check[param] =>
+    //         inline staticCompanion[head] match
+    //           case rule: Rule =>
+    //             if !rule.check(name, constValue[param].tt)
+    //             then raise(NameError(name, rule, constValue[param].tt))
 
-              case other =>
-                error("The companion object was not a subtype of Rule")
+    //           case other =>
+    //             error("The companion object was not a subtype of Rule")
 
-            check[tail](name)
+    //         check[tail](name)
 
-    inline def apply[platform](name: Text)(using nominative: platform is Nominative)
-    : Name[platform] raises NameError =
-
-        inline disintersect[nominative.Constraint] match
-          case v => check[v.type](name)
-
-        name.asInstanceOf[Name[platform]]
+    inline def apply[platform](name: Text): Name[platform] =
+      ${Nomenclature2.makeName[platform]('name)}

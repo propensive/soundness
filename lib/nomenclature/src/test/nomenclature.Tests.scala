@@ -53,7 +53,7 @@ object Tests extends Suite(m"Nomenclature tests"):
     .assert(_ == t"hello!")
 
     test(m"Create a successful new name with inference"):
-      val name: Name[Id] = Name(t"hello!")
+      val name: Name[Id] = Name[Id](t"hello!")
       name
     .assert(_ == t"hello!")
 

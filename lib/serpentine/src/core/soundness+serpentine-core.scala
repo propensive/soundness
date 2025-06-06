@@ -33,5 +33,5 @@
 package soundness
 
 export serpentine
-. { Case, Navigable, Path, PathAscent, PathError, Pathlike, Relative, Root, ?, ^, exists,
-    Substantiable }
+. { Admissible, Ascent, Case, Dos, Drive, Linux, MacOs, Navigable, Path, Radical, Relative, Root,
+    RootError, Submissible, System, Windows, ^, %, ?, Posix }

@@ -54,40 +54,8 @@ import vacuous.*
 
 import juz.ZipFile
 
-object Zip:
-  type Rules = MustNotContain["\\"] & MustNotContain["\""] & MustNotContain["/"] &
-      MustNotContain[":"] & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["<"] &
-      MustNotContain[">"] & MustNotContain["|"]
-
-  class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset)
-  extends Root(t"", t"/", Case.Sensitive):
-    type Platform = Zip
-
-  given radical: Tactic[NameError] => Zip is Radical from Zip.ZipRoot = new Radical:
-    type Self = Zip
-    type Source = ZipRoot
-
-    def rootLength(path: Text): Int = 0
-    def rootText(root: Source): Text = t""
-    def root(path: Text): Source = ZipRoot()
-
-  given navigable: Tactic[NameError] => Zip is Navigable by Name[Zip] under Rules = new Navigable:
-    type Self = Zip
-    type Operand = Name[Zip]
-    type Constraint = Rules
-
-    val separator: Text = t"/"
-    val parentElement: Text = t".."
-    val selfText: Text = t"."
-
-    def element(element: Text): Name[Zip] = Name(element)
-    def elementText(element: Name[Zip]): Text = element
-    def caseSensitivity: Case = Case.Sensitive
-
-erased trait Zip
-
 object Zipfile:
-  given openable: Zipfile is Openable over jnf.FileSystem = new Openable:
+  given openable: Zipfile is Openable:
     type Self = Zipfile
     type Operand = Unit
     type Result = Root
@@ -98,7 +66,8 @@ object Zipfile:
       catch case exception: jnf.ProviderNotFoundException =>
         panic(m"There was unexpectedly no filesystem provider for ZIP files")
 
-    def handle(carrier: jnf.FileSystem): Zip.ZipRoot = Zip.ZipRoot(carrier: jnf.FileSystem)
+    def handle(carrier: jnf.FileSystem): Zip.ZipRoot = Zip.ZipRoot(carrier)
+
     def close(carrier: Carrier): Unit = carrier.close()
 
   private val cache: scc.TrieMap[Text, Semaphore] = scc.TrieMap()
@@ -108,18 +77,18 @@ object Zipfile:
     val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(filename.s)))
     val directories: scm.HashSet[Path on Zip] = scm.HashSet()
 
-    def addEntry(path: Path on Zip): Boolean = directories(path) || {
-      directories += path
-      out.putNextEntry(juz.ZipEntry(path.text.s))
-      out.closeEntry()
-      false
-    }
+    def addEntry(path: Path on Zip): Boolean =
+      directories(path)
+      || { directories += path
+           out.putNextEntry(juz.ZipEntry(path.encode.s))
+           out.closeEntry()
+           false }
 
     for entry <- stream do
       entry.ref.ancestors.reverse.exists: path =>
         directories(path) || addEntry(path)
 
-      out.putNextEntry(juz.ZipEntry(entry.ref.text.s))
+      out.putNextEntry(juz.ZipEntry(entry.ref.encode.s))
 
       entry.content().each: bytes =>
         out.write(bytes.mutable(using Unsafe))
@@ -127,8 +96,6 @@ object Zipfile:
       out.closeEntry()
 
     out.close()
-
-
 
 
 case class Zipfile(path: Text):

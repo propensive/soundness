@@ -30,8 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package nettlesome
+package serpentine
 
 import anticipation.*
+import gossamer.*
+import nomenclature.*
+import prepositional.*
+import rudiments.*
 
-case class Raw(text: Text)
+erased trait Windows
+
+object Windows:
+  type Rules =
+    MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"]
+    & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"]
+    & MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "]
+    & MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotMatch["(?i)PRN(\\.[^.]+)?"]
+    & MustNotMatch["(?i)AUX(\\.[^.]+)?"] & MustNotMatch["(?i)NUL(\\.[^.]+)?"]
+    & MustNotMatch["(?i)COM[0-9](\\.[^.]+)?"] & MustNotMatch["(?i)LPT[0-9](\\.[^.]+)?"]
+
+  erased given Windows is Nominative under Rules = !!
+
+  given system: Windows is System:
+    type UniqueRoot = false
+
+    val separator: Text = t"\\"
+    val self: Text = t"."
+    val parent: Text = t".."

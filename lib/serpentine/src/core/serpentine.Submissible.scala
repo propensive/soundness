@@ -30,19 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package serpentine
 
+import anticipation.*
 import prepositional.*
-import serpentine.*
 
-package filesystemApi:
-  given serpentinePath: [platform: {Navigable, Radical}]
-        => (Path on platform) is (Abstractable & Instantiable) across Paths from Text into Text =
-    new Abstractable with Instantiable:
-      type Self = Path on platform
-      type Domain = Paths
-      type Source = Text
-      type Result = Text
+object Submissible:
+  given (%.type is Submissible on Linux) = _ => ()
+  given (%.type is Submissible on MacOs) = _ => ()
 
-      def genericize(path: Path on platform): Text = path.text
-      def apply(text: Text): Path on platform = Path.parse[platform](text)
+trait Submissible:
+  type Self
+  type Platform
+
+  def check(name: Text): Unit

@@ -74,10 +74,10 @@ object LocalClasspath:
         => (Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks)
         =>  LocalClasspath is Addable by path into LocalClasspath =
     (classpath, path) =>
-      Path.parse[Filesystem](path.generic).pipe: path =>
+      path.generic.decode[Path on Linux].pipe: path =>
         val entry: ClasspathEntry.Directory | ClasspathEntry.Jar = path.entry() match
-          case Directory => ClasspathEntry.Directory(path.text)
-          case _         => ClasspathEntry.Jar(path.text)
+          case Directory => ClasspathEntry.Directory(path.encode)
+          case _         => ClasspathEntry.Jar(path.encode)
 
         if classpath.entrySet.contains(entry) then classpath
         else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)

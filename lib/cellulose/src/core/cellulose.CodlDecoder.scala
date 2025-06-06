@@ -56,7 +56,7 @@ object CodlDecoder:
         def schema: CodlSchema  = schema0
 
 
-  inline given derived[value]: CodlDecoder[value] = compiletime.summonFrom:
+  inline given derived: [value] => CodlDecoder[value] = compiletime.summonFrom:
     case given (`value` is Decodable in Text) => field[`value`]
     case given ProductReflection[`value`]     => CodlDecoderDerivation.derived[`value`]
 

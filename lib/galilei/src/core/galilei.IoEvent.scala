@@ -36,7 +36,7 @@ import fulminate.*
 import guillotine.*
 
 object IoEvent:
-  given communicable: IoEvent is Communicable =
+  given IoEvent is Communicable =
     case Exec(event) => event.communicate
 
 enum IoEvent:

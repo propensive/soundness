@@ -32,49 +32,42 @@
                                                                                                   */
 package galilei
 
+import java.nio.file as jnf
+
 import anticipation.*
 import contingency.*
-import denominative.*
-import gossamer.*
-import nomenclature.*
+import distillate.*
 import prepositional.*
-import rudiments.*
+import proscenium.*
 import serpentine.*
-import vacuous.*
+import spectacular.*
 
-object Linux:
-  object Root
+object Explorable:
+  given Linux is Explorable:
+    def children(path: Path on Linux): Stream[Path on Linux] =
+      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+      . iterator().nn
+      . asScala
+      . map(_.toString.tt.decode[Path on Linux])
+      . to(Stream)
 
-  abstract class Root() extends serpentine.Root(t"/", t"/", Case.Sensitive):
-    type Platform = Linux
+  given Windows is Explorable:
+    def children(path: Path on Windows): Stream[Path on Windows] =
+      given tactic: Tactic[RootError] = strategies.throwUnsafely
+      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+      . iterator().nn
+      . asScala
+      . map(_.toString.tt.decode[Path on Windows])
+      . to(Stream)
 
-  object RootSingleton extends Root()
+  given MacOs is Explorable:
+    def children(path: Path on MacOs): Stream[Path on MacOs] =
+      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+      . iterator().nn
+      . asScala
+      . map(_.toString.tt.decode[Path on MacOs])
+      . to(Stream)
 
-  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
-
-  given radical: Tactic[PathError] => Linux is Radical from Root =
-    new Radical:
-      type Self = Linux
-      type Source = Root
-
-      def rootLength(path: Text): Int = 1
-      def rootText(root: Source): Text = t"/"
-
-      def root(path: Text): Source =
-        if path.at(Prim) == '/' then %
-        else raise(PathError(PathError.Reason.InvalidRoot, path)) yet %
-
-  given navigable: Tactic[NameError] => Linux is Navigable by Name[Linux] under Rules =
-    new Navigable:
-      type Self = Linux
-      type Operand = Name[Linux]
-      type Constraint = Rules
-
-      val separator: Text = t"/"
-      val parentElement: Text = t".."
-      val selfText: Text = t"."
-      def element(element: Text): Name[Linux] = Name(element)
-      def elementText(element: Name[Linux]): Text = element
-      def caseSensitivity: Case = Case.Sensitive
-
-erased trait Linux extends Posix
+trait Explorable:
+  type Self
+  def children(path: Path on Self): Stream[Path on Self]

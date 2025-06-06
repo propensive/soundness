@@ -30,18 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package serpentine
 
 import anticipation.*
-import contingency.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
-import serpentine.*
-import spectacular.*
+import rudiments.*
 
-object WindowsDrive:
-  export Windows.navigable
+erased trait Linux
 
-case class WindowsDrive(letter: Char) extends Root(t"$letter:\\", t"\\", Case.Preserving):
-  type Platform = Windows
+object Linux:
+  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+  erased given nominative: Linux is Nominative under Rules = !!
+
+  given system: Linux is System:
+    type UniqueRoot = true
+
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."

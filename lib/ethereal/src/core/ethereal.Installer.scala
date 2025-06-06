@@ -60,8 +60,6 @@ import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
-import pathNavigation.linux
-
 object Installer:
   given realm: Realm = realm"ethereal"
 
@@ -92,17 +90,15 @@ object Installer:
       . within:
           val paths: List[Path on Linux] = Environment.path
 
-          summon[Linux is Navigable]
-
           val preferences: List[Path on Linux] =
             List
              (Xdg.bin[Path on Linux],
-              % / n"usr" / n"local" / n"bin",
-              % / n"usr" / n"bin",
-              % / n"usr" / n"local" / n"sbin",
-              % / n"opt" / n"bin",
-              % / n"bin",
-              % / n"bin")
+              % / "usr" / "local" / "bin",
+              % / "usr" / "bin",
+              % / "usr" / "local" / "sbin",
+              % / "opt" / "bin",
+              % / "bin",
+              % / "bin")
 
           paths.filter(_.exists()).filter(_.writable()).sortBy: directory =>
             preferences.indexOf(directory) match
@@ -132,7 +128,7 @@ object Installer:
           val scriptPath = mute[ExecEvent](sh"sh -c 'command -v $command'".exec[Text]())
 
           if safely(scriptPath.decode[Path on Linux]) == service.script && !force
-          then Result.AlreadyOnPath(command, service.script.text)
+          then Result.AlreadyOnPath(command, service.script.encode)
           else
             val payloadSize: Memory = Memory(Properties.ethereal.payloadSize[Int]())
             val jarSize: Memory = Memory(Properties.ethereal.jarSize[Int]())
@@ -143,7 +139,7 @@ object Installer:
               abort(InstallError(InstallError.Reason.Environment))
 
             val installFile: Optional[Path on Linux] =
-              (installDirectory / Name(command)).make[File]().on[Linux]
+              (installDirectory/command).make[File]()
 
             installFile.let: file =>
               val filename: Text = file.inspect
@@ -157,6 +153,6 @@ object Installer:
                 else stream.writeTo(file)
 
               file.executable() = true
-              Result.Installed(command, file.text)
+              Result.Installed(command, file.encode)
 
             . or(Result.PathNotWritable)

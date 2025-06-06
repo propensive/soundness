@@ -38,7 +38,7 @@ import prepositional.*
 import serpentine.*
 
 trait CreateNonexistent:
-  type Platform <: Filesystem
+  type Platform
   def apply(path: Path on Platform)(operation: => Unit): Unit
   def error(path: Path on Platform, operation: IoError.Operation): Nothing
   def options(): List[jnf.OpenOption]

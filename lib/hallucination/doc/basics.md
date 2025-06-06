@@ -17,7 +17,7 @@ Turbulence, for example:
 ```scala
 import galilei.*
 
-val image = Png.read(% / p"home" / p"work" / p"image.png")
+val image = Png.read(% / "home" / "work" / "image.png")
 ```
 
 The resultant value will be an instance of `Image[Png]`, that is, an `Image`
@@ -29,7 +29,7 @@ source of `Bytes`, for example:
 import turbulence.*
 import hellenism.*
 
-val icon = (Classpath / p"icon.bmp").readAs[Image[Bmp]]
+val icon = (Classpath/"icon.bmp").readAs[Image[Bmp]]
 ```
 
 ### Accessing `Image` data
@@ -39,4 +39,3 @@ The width and height of the image are available through the `width` and
 
 The color of the pixel at given coordinates within the image can be accessed,
 as an `Rgb24` value, using `Image`'s `apply` method, i.e. `image(x, y)`.
-

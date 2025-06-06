@@ -38,9 +38,11 @@ import contingency.*
 import gossamer.*
 import guillotine.*
 import prepositional.*
+import proscenium.*
 import vacuous.*
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
+
   override def apply[path: Instantiable across Paths from Text]()
                 (using SystemProperties, Environment)
   : path raises SystemPropertyError raises EnvironmentError =
@@ -48,25 +50,22 @@ object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
       path(t"/")
 
 
-  object Boot extends BaseLayout(t"boot", readOnly = true)
-  object Efi extends BaseLayout(t"efi", readOnly = true)
-  object Etc extends BaseLayout(t"etc")
-  object Home extends BaseLayout(t"home")
-  object Root extends BaseLayout(t"root")
-  object Srv extends BaseLayout(t"srv")
-  object Tmp extends BaseLayout(t"tmp")
+  object Boot extends BaseLayout[Mono["boot"]](t"boot", readOnly = true)
+  object Efi extends BaseLayout[Mono["efi"]](t"efi", readOnly = true)
+  object Etc extends BaseLayout[Mono["etc"]](t"etc")
+  object Home extends BaseLayout[Mono["home"]](t"home")
+  object Root extends BaseLayout[Mono["roto"]](t"root")
+  object Srv extends BaseLayout[Mono["srv"]](t"srv")
+  object Tmp extends BaseLayout[Mono["tmp"]](t"tmp")
 
-  object Run extends BaseLayout(t"run"):
-    object Log extends BaseLayout(t"log")
+  object Run extends BaseLayout[Mono["run"]](t"run"):
+    object Log extends BaseLayout[("log", "run")](t"log")
+    object User extends BaseLayout[("user", "run")](t"user")
 
-    object User extends BaseLayout(t"user"):
-      def apply(uid: Long): BaseLayout = BaseLayout(uid.toString.tt)
-      def current: BaseLayout = apply(com.sun.security.auth.module.UnixSystem().getUid())
-
-  object Usr extends BaseLayout(t"usr", readOnly = true):
-    object Bin extends BaseLayout(t"bin", readOnly = true)
-    object Include extends BaseLayout(t"include", readOnly = true)
-    object Lib extends BaseLayout(t"lib", readOnly = true)
+  object Usr extends BaseLayout[Mono["usr"]](t"usr", readOnly = true):
+    object Bin extends BaseLayout[("bin", "usr")](t"bin", readOnly = true)
+    object Include extends BaseLayout[("include", "usr")](t"include", readOnly = true)
+    object Lib extends BaseLayout[("lib", "usr")](t"lib", readOnly = true)
     object Share extends BaseLayout(t"share", readOnly = true):
       object Doc extends BaseLayout(t"doc", readOnly = true)
 
@@ -74,18 +73,20 @@ object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
         object Etc extends BaseLayout(t"etc", readOnly = true)
         object Var extends BaseLayout(t"var", readOnly = true)
 
-  object Var extends BaseLayout(t"var"):
-    object Cache extends BaseLayout(t"cache")
-    object Lib extends BaseLayout(t"lib")
-    object Log extends BaseLayout(t"log")
-    object Spool extends BaseLayout(t"spool")
-    object Tmp extends BaseLayout(t"tmp")
+  object Var extends BaseLayout[Mono["var"]](t"var"):
+    object Cache extends BaseLayout[("cache", "var")](t"cache")
+    object Lib extends BaseLayout[("lib", "var")](t"lib")
+    object Log extends BaseLayout[("log", "var")](t"log")
+    object Spool extends BaseLayout[("spool", "var")](t"spool")
+    object Tmp extends BaseLayout[("tmp", "var")](t"tmp")
 
-  object Dev extends BaseLayout(t"dev"):
-    object Shm extends BaseLayout(t"shm")
+  object Dev extends BaseLayout[Mono["dev"]](t"dev"):
+    object Shm extends BaseLayout[("shm", "dev")](t"shm")
 
-  object Proc extends BaseLayout(t"proc"):
-    def apply(pid: Pid): BaseLayout = BaseLayout(pid.value.toString.tt, readOnly = true)
-    object Sys extends BaseLayout(t"sys", readOnly = true)
+  object Proc extends BaseLayout[Mono["proc"]](t"proc"):
+    def apply(pid: Pid): BaseLayout[(Pid, "proc")] =
+      BaseLayout(pid.value.toString.tt, readOnly = true)
 
-  object Sys extends BaseLayout(t"sys", readOnly = true)
+    object Sys extends BaseLayout[("sys", "proc")](t"sys", readOnly = true)
+
+  object Sys extends BaseLayout[Mono["sys"]](t"sys", readOnly = true)

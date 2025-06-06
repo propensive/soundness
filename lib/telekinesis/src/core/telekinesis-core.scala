@@ -63,4 +63,4 @@ extension (url: into HttpUrl)
   @targetName("withQuery")
   def query(query: Query): HttpUrl =
     val query2 = url.query.let(query ++ _.decode[Query]).or(query)
-    url.copy(query = query2.encode)
+    Url(url.origin, url.pathText, query2.encode, url.fragment)

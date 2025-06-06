@@ -37,26 +37,35 @@ import java.net as jn
 import anticipation.*
 import contingency.*
 import fulminate.*
+import galilei.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
 
 object Classpath:
-  type Rules = MustNotContain["/"]
+  type Rules = MustNotContain["/"] & MustNotMatch["[0-9].*"] & MustMatch["[a-zA-Z0-9_$.]+"]
+
+  erased given nominative: Classpath is Nominative under Rules = !!
+
+  given system: Classpath is System:
+    type UniqueRoot = true
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."
 
   given substantiable: (classloader: Classloader) => (Path on Classpath) is Substantiable =
-    path => classloader.java.getResourceAsStream(path.text.s) != null
-
+    path => classloader.java.getResourceAsStream(path.encode.s) != null
 
   @targetName("child")
-  infix def / (child: Text)(using classloader: Classloader)
-  : Path on Classpath raises NameError =
+  infix def / (child: String)
+  : Path on Classpath of Mono[child.type] under Classpath raises NameError =
 
-      Path(classloader, List(child))
+      Path.of[Classpath, Classpath, Mono[child.type]](t"", child)
 
 
   def apply(classloader: jn.URLClassLoader): Classpath =
@@ -72,33 +81,14 @@ object Classpath:
         case jar: ClasspathEntry.Jar                  => jar
         case runtime: ClasspathEntry.JavaRuntime.type => runtime
 
-  given readableBytes: (Tactic[ClasspathError], Classpath is Radical from Classloader)
-        => (Path on Classpath) is Readable by Bytes =
-    unsafely:
-      Readable.inputStream.contramap: resource =>
-        resource.root.inputStream(resource.text)
+  given readableBytes: [path <: Path on Classpath]
+        => Tactic[ClasspathError]
+        => (classloader: Classloader)
+        => path is Readable by Bytes =
+    given Tactic[StreamError] = strategies.throwUnsafely
 
-  given navigable: Classpath is Navigable by Text under Rules =
-    new Navigable:
-      type Self = Classpath
-      type Operand = Text
-      type Constraint = Rules
-
-      val separator: Text = t"/"
-      val parentElement: Text = t".."
-      val selfText: Text = t".."
-
-      def elementText(element: Text): Text = element
-      def element(text: Text): Text = text
-      def caseSensitivity: Case = Case.Sensitive
-
-  given radical: Classloader => Classpath is Radical from Classloader = new Radical:
-    type Self = Classpath
-    type Source = Classloader
-
-    def root(path: Text): Classloader = summon[Classloader]
-    def rootLength(path: Text): Int = 0
-    def rootText(root: Classloader): Text = t""
+    Readable.inputStream.contramap: path =>
+      classloader.inputStream(path.encode)
 
 trait Classpath:
   def entries: List[ClasspathEntry]

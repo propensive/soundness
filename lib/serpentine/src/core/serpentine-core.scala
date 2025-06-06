@@ -32,7 +32,7 @@
                                                                                                   */
 package serpentine
 
-export Serpentine.{?, ^}
+export Path.`%`
+export Relative.{`^`, `?`}
 
-extension [value](value: value)(using substantiable: value is Substantiable)
-  def exists(): Boolean = substantiable.exists(value)
+type Posix = MacOs | Linux

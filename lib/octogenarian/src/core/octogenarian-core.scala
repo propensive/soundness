@@ -34,8 +34,9 @@ package octogenarian
 
 import scala.compiletime.*
 
-import anticipation.*, filesystemApi.serpentinePath
+import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import galilei.*
 import guillotine.*
@@ -44,18 +45,18 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 
-import pathNavigation.posix
-
 import GitError.Reason.*
 
 given realm: Realm = realm"octogenarian"
 
 package gitCommands:
   given environmentDefault: (WorkingDirectory, GitEvent is Loggable)
+        =>  (Path on Linux) is Instantiable across Paths from Text
         =>  GitCommand raises NameError raises PathError raises IoError raises ExecError =
 
-    val path: Path on Posix = sh"which git"()
-    GitCommand(path)
+    summon[(Path on Linux) is Instantiable across Paths]
+    val path: Path on Linux = sh"which git"()
+    GitCommand(path.encode)
 
 export Octogenarian.{GitTag, GitBranch, GitHash, Refspec}
 

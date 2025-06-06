@@ -37,27 +37,28 @@ import contingency.*
 import prepositional.*
 import proscenium.*
 import serpentine.*
+import spectacular.*
 import turbulence.*
 
 import java.nio.channels as jnc
 import java.nio.file as jnf
 
 object Openable:
-  given path: [platform <: Filesystem]
+  given openable: [system: System, path <: Path on system]
         => (read:        ReadAccess,
             write:       WriteAccess,
             dereference: DereferenceSymlinks,
-            create:      CreateNonexistent on platform,
+            create:      CreateNonexistent on system,
             streamError: Tactic[StreamError],
             ioError:     Tactic[IoError])
-        => (Path on platform) is Openable by jnf.OpenOption into Handle = new Openable:
+        =>  path is Openable by jnf.OpenOption into Handle = new Openable:
 
-    type Self = Path on platform
+    type Self = path
     type Operand = jnf.OpenOption
     type Result = Handle
-    protected type Carrier = jnc.FileChannel
+    type Carrier = jnc.FileChannel
 
-    def init(path: Path on platform, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
+    def init(path: path, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
       val options =
         read.options() ++ write.options() ++ dereference.options() ++ create.options()
         ++ extraOptions
@@ -69,7 +70,8 @@ object Openable:
         then options.filter(_ != jnfsoo.READ)
         else options
 
-      path.protect(IoError.Operation.Open)(jnc.FileChannel.open(path.javaPath, options2*).nn)
+      path.protect(IoError.Operation.Open)
+       (jnc.FileChannel.open(jnf.Path.of(path.encode.s), options2*).nn)
 
     def handle(channel: jnc.FileChannel): Handle =
       Handle
@@ -79,18 +81,17 @@ object Openable:
 
     def close(channel: jnc.FileChannel): Unit = channel.close()
 
-  given openable: [file] => (openable: file is Openable by jnf.OpenOption)
-        =>  Eof[file] is Openable by jnf.OpenOption into openable.Result = new Openable:
+  given eof: [file: Openable by jnf.OpenOption] => Eof[file] is Openable:
     type Self = Eof[file]
-    type Operand = jnf.OpenOption
-    type Result = openable.Result
-    protected type Carrier = openable.Carrier
+    type Operand = file.Operand
+    type Result = file.Result
+    type Carrier = file.Carrier
 
     def init(eof: Eof[file], options: List[Operand]): Carrier =
-      openable.init(eof.file, jnf.StandardOpenOption.APPEND :: options)
+      file.init(eof.file, jnf.StandardOpenOption.APPEND :: options)
 
-    def handle(carrier: Carrier): Result = openable.handle(carrier)
-    def close(carrier: Carrier): Unit = openable.close(carrier)
+    def handle(carrier: Carrier): Result = file.handle(carrier)
+    def close(carrier: Carrier): Unit = file.close(carrier)
 
 trait Openable:
   type Self
@@ -101,7 +102,8 @@ trait Openable:
   def init(value: Self, options: List[Operand]): Carrier
   def handle(carrier: Carrier): Result
 
-  def open[result](value: Self, lambda: Result => result, options: List[Operand]): result =
+  def open[result](value: Self, lambda: Result => result, options: List[Operand])
+  :     result =
     val carrier = init(value, options)
     try lambda(handle(carrier)) finally close(carrier)
 

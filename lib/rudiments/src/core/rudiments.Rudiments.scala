@@ -79,4 +79,8 @@ object Rudiments:
       def long: Long = left
       def text: Text = (left.toString+" bytes").tt
 
+  def typeName[target: Type](using Quotes): Expr[Nothing] =
+    import quotes.reflect.*
+    halt(m"the type is ${TypeRepr.of[target].dealias.widen}")
+
 export Rudiments.{Memory, Digit}

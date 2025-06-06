@@ -47,9 +47,10 @@ object Classloader:
   def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
   inline def apply[template <: AnyKind]: Classloader = ClassRef[template].classloader
 
-class Classloader(val java: ClassLoader) extends Root("/".tt, "/".tt, Case.Sensitive):
+class Classloader(val java: ClassLoader):
   type Platform = Classpath
-  override def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
+
+  def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
 
   protected def urlClassloader: Optional[jn.URLClassLoader] = java match
     case java: jn.URLClassLoader => java
@@ -61,7 +62,5 @@ class Classloader(val java: ClassLoader) extends Root("/".tt, "/".tt, Case.Sensi
     Optional(java.getResourceAsStream(path.s)).let(_.readAllBytes().nn.immutable(using Unsafe))
 
 
-  private[hellenism] def inputStream(path: Text)(using notFound: Tactic[ClasspathError])
-  : ji.InputStream =
-
-      Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
+  private[hellenism] def inputStream(path: Text)(using Tactic[ClasspathError]): ji.InputStream =
+    Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))

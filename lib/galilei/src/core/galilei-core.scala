@@ -46,38 +46,32 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import serpentine.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 
 import IoError.{Operation, Reason}
 
-package pathNavigation:
-  export Linux.navigable as linux
-  export Windows.navigable as windows
-  export MacOs.navigable as macOs
-  export Posix.navigable as posix
-  export Filesystem.navigable as operatingSystem
-
-final val C: WindowsDrive = WindowsDrive('C')
-final val D: WindowsDrive = WindowsDrive('D')
-
-@targetName("LinuxRoot")
-final val `%`: Linux.Root = Linux.RootSingleton
-
-@targetName("MacOsRoot")
-final val `$`: MacOs.Root = MacOs.RootSingleton
+final val C: Drive = Drive('C')
+final val D: Drive = Drive('D')
 
 
-extension [openable: Openable](value: openable)
-  def open[result](lambda: openable.Result => result, options: List[openable.Operand] = Nil)
-  : result =
+extension [target: Substantiable](value: target)
+  def exists(): Boolean = target.existence(value)
 
-      openable.open(value, lambda, options)
+extension [target: Openable](value: target)
+  def open[result]
+     (lambda:  target.Result => result, options: List[target.Operand] = Nil)
+  :     result =
+    target.open(value, lambda, options)
 
+extension [platform: System](path: Path on platform)
 
-extension [platform <: Filesystem](path: Path on platform)
+  inline def children(using explorable: platform is Explorable): Stream[Path on platform] =
+    explorable.children(path)
+
   private[galilei] def protect[result](operation: Operation)(block: => result)
-  : result raises IoError =
+  :     result raises IoError =
     import Reason.*
     try block catch
       case break: boundary.Break[?]          => throw break
@@ -88,65 +82,52 @@ extension [platform <: Filesystem](path: Path on platform)
       case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
       case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
       case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
-      case other                             => abort(IoError(path, operation, Unsupported))
+      case other                             =>
+        println(other)
+        other.printStackTrace()
+        abort(IoError(path, operation, Unsupported))
 
   def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
   def javaFile: ji.File = javaPath.toFile.nn
 
-  def children(using symlinks: DereferenceSymlinks): Stream[Path on platform] raises IoError =
-    val list = safely(jnf.Files.list(path.javaPath).nn.toScala(Stream)).or(Stream())
+  def descendants(using DereferenceSymlinks, TraversalOrder, platform is Explorable)
+      : Stream[Path on platform] raises IoError =
+    path.children.flatMap: child =>
+      summon[TraversalOrder] match
+        case TraversalOrder.PreOrder  => child #:: child.descendants
+        case TraversalOrder.PostOrder => child.descendants #::: Stream(child)
 
-    list.map: child =>
-      unsafely(path.child(child.getFileName.nn.toString.nn.tt))
-
-
-  def descendants(using DereferenceSymlinks, TraversalOrder)
-  : Stream[Path on platform] raises IoError =
-
-      children.flatMap: child =>
-        summon[TraversalOrder] match
-          case TraversalOrder.PreOrder  => child #:: child.descendants
-          case TraversalOrder.PostOrder => child.descendants #::: Stream(child)
-
-
-  def size(): Memory raises IoError =
+  def size()(using platform is Explorable): Memory raises IoError =
     import filesystemOptions.dereferenceSymlinks.disabled
-    given traversalOrder: TraversalOrder = TraversalOrder.PreOrder
+    given TraversalOrder = TraversalOrder.PreOrder
     descendants.fuse(jnf.Files.size(path.javaPath).b)(state + next.size())
 
-
   def delete()(using deleteRecursively: DeleteRecursively on platform)
-  : Path on platform raises IoError =
+  :     Path on platform raises IoError =
+    protect(Operation.Delete):
+      deleteRecursively.conditionally(path)(jnf.Files.delete(path.javaPath))
 
-      protect(Operation.Delete):
-        deleteRecursively.conditionally(path)(jnf.Files.delete(path.javaPath))
-
-      path
-
+    path
 
   def wipe()(using deleteRecursively: DeleteRecursively on platform)(using io: Tactic[IoError])
-  : Path on platform raises IoError =
-
-      deleteRecursively.conditionally(path)(jnf.Files.deleteIfExists(javaPath))
-      path
-
+  :     Path on platform raises IoError =
+    deleteRecursively.conditionally(path)(jnf.Files.deleteIfExists(javaPath))
+    path
 
   def volume(): Volume =
     val fileStore = jnf.Files.getFileStore(path.javaPath).nn
     Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
 
-
   def hardLinkTo(destination: Path on platform)
-       (using overwritePreexisting: OverwritePreexisting on platform,
-              createNonexistentParents: CreateNonexistentParents on platform)
-  : Path on platform raises IoError =
+     (using overwritePreexisting: OverwritePreexisting on platform,
+            createNonexistentParents: CreateNonexistentParents on platform)
+  :     Path on platform raises IoError =
 
-      createNonexistentParents(destination):
-        overwritePreexisting(destination):
-          jnf.Files.createLink(destination.javaPath, path.javaPath)
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.createLink(destination.javaPath, path.javaPath)
 
-      destination
-
+    destination
 
   def entry()(using symlinks: DereferenceSymlinks): Entry =
     if !symlinks.dereference && jnf.Files.isSymbolicLink(javaPath) then Symlink
@@ -162,99 +143,91 @@ extension [platform <: Filesystem](path: Path on platform)
           case 49152 => Socket
           case _     => panic(m"an unexpected POSIX mode value was returned")
 
-
   def copyTo(destination: Path on platform)
-       (using overwritePreexisting:     OverwritePreexisting on platform,
-              dereferenceSymlinks:      DereferenceSymlinks,
-              createNonexistentParents: CreateNonexistentParents on platform)
-  : Path on platform raises IoError =
+     (using overwritePreexisting:    OverwritePreexisting on platform,
+            dereferenceSymlinks:     DereferenceSymlinks,
+            createNonexistentParents: CreateNonexistentParents on platform)
+  :     Path on platform raises IoError =
 
-      createNonexistentParents(destination):
-        overwritePreexisting(destination):
-          jnf.Files.copy(path.javaPath, destination.javaPath, dereferenceSymlinks.options()*)
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.copy(path.javaPath, destination.javaPath, dereferenceSymlinks.options()*)
 
-      destination
-
+    destination
 
   def copyInto
-       (destination: Path on platform)
-       (using overwritePreexisting: OverwritePreexisting on platform,
-              dereferenceSymlinks:  DereferenceSymlinks,
-              substantiable:        (Path on platform) is Substantiable)
-  : Path on platform raises IoError =
+     (destination: Path on platform)
+     (using overwritePreexisting: OverwritePreexisting on platform,
+            dereferenceSymlinks:  DereferenceSymlinks,
+            substantiable:        (Path on platform) is Substantiable)
+  :     Path on platform raises IoError =
 
-      given createNonexistentParents: CreateNonexistentParents on platform =
-        filesystemOptions.createNonexistentParents.enabled[platform]
+    given CreateNonexistentParents on platform =
+      filesystemOptions.createNonexistentParents.enabled[platform]
 
-      copyTo(unsafely(destination.child(path.textDescent.head)))
+    val file2: Path on platform = unsafely(destination.child(path.descent.head))
+    copyTo(file2)
 
-
-  def renameTo
-       (using navigable: platform is Navigable,
-              overwritePreexisting:     OverwritePreexisting on platform,
-              moveAtomically:           MoveAtomically,
-              dereferenceSymlinks:      DereferenceSymlinks,
-              createNonexistentParents: CreateNonexistentParents on platform)
-       (name: (prior: navigable.Operand) ?=> navigable.Operand)
-  : Path on platform raises IoError raises PathError =
-
-      val name0 = path.name.or:
-        abort(IoError(path, IoError.Operation.Metadata, Reason.Unsupported))
-
-      path.moveTo(path.peer(name(using name0)))
-
+  // def renameTo
+  //    (using overwritePreexisting:     OverwritePreexisting on platform,
+  //           moveAtomically:           MoveAtomically,
+  //           dereferenceSymlinks:      DereferenceSymlinks,
+  //           createNonexistentParents: CreateNonexistentParents on platform,
+  //           nominative:               platform is Nominative,
+  //           admissible:               Text is Admissible on platform)
+  //    (name: (prior: Text) ?=> Text)
+  // :     Path on platform raises IoError raises NameError raises PathError =
+  //   val name2: Text = name(using path.name)
+  //   val peer = path.peer(name2)
+  //   path.moveTo(peer)
 
   def moveTo(destination: Path on platform)
-       (using overwritePreexisting:     OverwritePreexisting on platform,
-              moveAtomically:           MoveAtomically,
-              dereferenceSymlinks:      DereferenceSymlinks,
-              createNonexistentParents: CreateNonexistentParents on platform)
-  : Path on platform raises IoError =
+     (using overwritePreexisting:     OverwritePreexisting on platform,
+            moveAtomically:           MoveAtomically,
+            dereferenceSymlinks:      DereferenceSymlinks,
+            createNonexistentParents: CreateNonexistentParents on platform)
+  :     Path on platform raises IoError =
 
-      val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
+    val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
 
-      createNonexistentParents(destination):
-        overwritePreexisting(destination):
-          jnf.Files.move(path.javaPath, destination.javaPath, options*)
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.move(path.javaPath, destination.javaPath, options*)
 
-      destination
-
+    destination
 
   def moveInto
-       (destination: Path on platform)
-       (using overwritePreexisting: OverwritePreexisting on platform,
-              moveAtomically:       MoveAtomically,
-              substantiable:        (Path on platform) is Substantiable,
-              dereferenceSymlinks:  DereferenceSymlinks)
-  : Path on platform raises IoError =
+     (destination: Path on platform)
+     (using overwritePreexisting: OverwritePreexisting on platform,
+            moveAtomically:       MoveAtomically,
+            substantiable:        (Path on platform) is Substantiable,
+            dereferenceSymlinks:  DereferenceSymlinks)
+  :     Path on platform raises IoError =
 
-      import filesystemOptions.createNonexistentParents.enabled
-      moveTo(unsafely(destination.child(path.textDescent.head)))
-
+    import filesystemOptions.createNonexistentParents.enabled
+    moveTo(unsafely(destination.child(path.descent.head)))
 
   def symlinkTo(destination: Path on platform)
-       (using overwritePreexisting:     OverwritePreexisting on platform,
-              createNonexistentParents: CreateNonexistentParents on platform)
-  : Path on platform raises IoError =
+     (using overwritePreexisting:     OverwritePreexisting on platform,
+            createNonexistentParents: CreateNonexistentParents on platform)
+  :     Path on platform raises IoError =
 
-      createNonexistentParents(destination):
-        overwritePreexisting(destination):
-          jnf.Files.createSymbolicLink(destination.javaPath, path.javaPath)
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.createSymbolicLink(destination.javaPath, path.javaPath)
 
-      destination
-
+    destination
 
   def symlinkInto
-       (destination: Path on platform)
-       (using overwritePreexisting: OverwritePreexisting on platform,
-              moveAtomically:       MoveAtomically,
-              substantiable:        (Path on platform) is Substantiable,
-              dereferenceSymlinks:  DereferenceSymlinks)
-  : Path on platform raises IoError =
+     (destination: Path on platform)
+     (using overwritePreexisting: OverwritePreexisting on platform,
+            moveAtomically:       MoveAtomically,
+            substantiable:        (Path on platform) is Substantiable,
+            dereferenceSymlinks:  DereferenceSymlinks)
+  :     Path on platform raises IoError =
 
-      import filesystemOptions.createNonexistentParents.enabled
-      symlinkTo(unsafely(destination.child(path.textDescent.head)))
-
+    import filesystemOptions.createNonexistentParents.enabled
+    symlinkTo(unsafely(destination.child(path.descent.head)))
 
   def modified[instant: Instantiable across Instants from Long](): instant =
     instant(jnf.Files.getLastModifiedTime(path.javaPath).nn.toInstant.nn.toEpochMilli)
@@ -271,43 +244,44 @@ extension [platform <: Filesystem](path: Path on platform)
 
   def touch(): Unit raises IoError = protect(Operation.Metadata):
     jnf.Files.setLastModifiedTime
-     (path.javaPath, jnfa.FileTime.fromMillis(System.currentTimeMillis))
+     (path.javaPath, jnfa.FileTime.fromMillis(java.lang.System.currentTimeMillis))
 
-  def make[entry: Makable on platform](): entry.Result = entry.make(path)
+  def make[EntryType: Makable on platform](): EntryType.Result = EntryType.make(path)
 
-extension [platform <: Windows](path: Path on platform)
+extension (path: Path on Windows)
   def created[instant: Instantiable across Instants from Long](): instant raises IoError =
     path.protect(Operation.Metadata):
       val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
       instant(attributes.creationTime().nn.toInstant.nn.toEpochMilli)
 
-extension [platform <: Posix](path: Path on platform)
+extension [platform <: Posix: System](path: Path on platform)
   def executable: FilesystemAttribute.Executable[platform] =
     FilesystemAttribute.Executable(path)
 
   def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks): Int raises IoError =
     path.protect(Operation.Metadata):
-      jnf.Files.getAttribute(path.javaPath, "unix:nlink", dereferenceSymlinks.options()*) match
-        case count: Int => count
-        case _          => raise(IoError(path, Operation.Metadata, Reason.Unsupported)) yet 1
+      jnf.Files.getAttribute(jnf.Path.of(path.show.s), "unix:nlink", dereferenceSymlinks.options()*)
+      . match
+          case count: Int => count
+          case _          => raise(IoError(path, Operation.Metadata, Reason.Unsupported)) yet 1
 
 package filesystemOptions:
   object readAccess:
     given enabled: ReadAccess:
-      type Transform[handle] = handle & ReadAccess.Ability
+      type Transform[HandleType] = HandleType & ReadAccess.Ability
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.READ)
 
     given disabled: ReadAccess:
-      type Transform[handle] = handle
+      type Transform[HandleType] = HandleType
       def options(): List[jnf.OpenOption] = Nil
 
   object writeAccess:
     given enabled: WriteAccess:
-      type Transform[handle] = handle & WriteAccess.Ability
+      type Transform[HandleType] = HandleType & WriteAccess.Ability
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.WRITE)
 
     given disabled: WriteAccess:
-      type Transform[handle] = handle
+      type Transform[HandleType] = HandleType
       def options(): List[jnf.OpenOption] = Nil
 
   object dereferenceSymlinks:
@@ -328,8 +302,9 @@ package filesystemOptions:
     given disabled: CopyAttributes = () => Nil
 
   object deleteRecursively:
-    given enabled: [platform <: Filesystem] => Tactic[IoError]
-          =>  DeleteRecursively on platform:
+    given enabled: [platform: System] => Tactic[IoError]
+    =>    (explorable: platform is Explorable)
+    =>    DeleteRecursively on platform:
 
       import filesystemOptions.dereferenceSymlinks.disabled
 
@@ -337,13 +312,13 @@ package filesystemOptions:
 
       def recur(path: Path on platform): Unit =
         path.children.each(recur(_))
-        jnf.Files.delete(path.javaPath)
+        jnf.Files.delete(jnf.Path.of(path.show.s))
 
       def conditionally[result](path: Path on Platform)(operation: => result): result =
         path.children.each(recur(_)) yet operation
 
-    given disabled: [platform <: Filesystem] => Tactic[IoError]
-          =>  DeleteRecursively on platform:
+    given disabled: [platform: {System, Explorable}] => Tactic[IoError]
+    =>    DeleteRecursively on platform:
 
       type Platform = platform
 
@@ -354,16 +329,16 @@ package filesystemOptions:
         else operation
 
   object overwritePreexisting:
-    given enabled: [platform <: Filesystem]
-          => (deleteRecursively: DeleteRecursively on platform)
-          =>  OverwritePreexisting on platform:
+    given enabled: [platform: System]
+    =>   (deleteRecursively: DeleteRecursively on platform)
+    =>    OverwritePreexisting on platform:
       type Platform = platform
 
       def apply[result](path: Path on Platform)(operation: => result): result =
         deleteRecursively.conditionally(path)(operation)
 
-    given disabled: [platform <: Filesystem] => Tactic[IoError]
-          =>  OverwritePreexisting on platform:
+    given disabled: [platform: System] => Tactic[IoError]
+    =>   OverwritePreexisting on platform:
 
       type Platform = platform
 
@@ -372,31 +347,32 @@ package filesystemOptions:
           abort(IoError(path, IoError.Operation.Write, Reason.AlreadyExists))
 
   object createNonexistentParents:
-    given enabled: [platform <: Filesystem] => Tactic[IoError]
-          => (Path on platform) is Substantiable
-          =>  CreateNonexistentParents on platform:
+    given enabled: [platform: System] => Tactic[IoError]
+    =>    (Path on platform) is Substantiable
+    =>    CreateNonexistentParents on platform:
 
       def apply[result](path: Path on platform)(operation: => result): result =
-        path.parent.let: parent =>
+        val parent: Optional[Path on platform] = safely(path.parent)
+        parent.let: parent =>
           import dereferenceSymlinks.disabled
 
           if !parent.exists() || parent.entry() != Directory
-          then jnf.Files.createDirectories(parent.javaPath)
+          then jnf.Files.createDirectories(jnf.Path.of(parent.show.s))
 
         operation
 
-    given disabled: [platform <: Filesystem] => Tactic[IoError]
-          =>  CreateNonexistentParents on platform:
+    given disabled: [platform: System] => Tactic[IoError]
+    =>    CreateNonexistentParents on platform:
       type Platform = platform
 
       def apply[result](path: Path on platform)(block: => result): result =
         path.protect(Operation.Write)(block)
 
   object createNonexistent:
-    given enabled: [platform <: Filesystem]
-          => (create: CreateNonexistentParents on platform)
-          => (Path on platform) is Substantiable
-          =>  CreateNonexistent on platform:
+    given enabled: [platform: System]
+    =>    (create: CreateNonexistentParents on platform)
+    =>    (Path on platform) is Substantiable
+    =>    CreateNonexistent on platform:
       type Platform = platform
 
       def error(path: Path on Platform, operation: IoError.Operation): Nothing =
@@ -408,8 +384,8 @@ package filesystemOptions:
 
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.CREATE)
 
-    given disabled: [platform <: Filesystem] => Tactic[IoError]
-          =>  CreateNonexistent on platform:
+    given disabled: [platform: System] => Tactic[IoError]
+    =>    CreateNonexistent on platform:
 
       type Platform = platform
 
