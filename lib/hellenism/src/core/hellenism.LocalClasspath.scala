@@ -36,6 +36,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import galilei.*
 import gossamer.*
 import nomenclature.*
@@ -43,6 +44,8 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import symbolism.*
+
+import errorDiagnostics.stackTraces
 
 object LocalClasspath:
 

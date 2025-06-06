@@ -38,27 +38,34 @@ import gossamer.*
 import rudiments.*
 
 object Radical:
-  given drive: Tactic[RootError] => Drive is Radical:
+  given drive: Tactic[PathError] => Drive is Radical:
     type Platform = Windows
 
     def decode(text: Text): Drive =
-      if text.length >= 1 then Drive(text.s.charAt(0)) else raise(RootError(text)) yet Drive('C')
+      if text.length >= 1 then Drive(text.s.charAt(0))
+      else raise(PathError(_.InvalidRoot)) yet Drive('C')
 
     def length(text: Text): Int = 3
     def encode(drive: Drive): Text = t"${drive.letter}:\\"
 
-  given linux: %.type is Radical:
+  given linux: Tactic[PathError] => %.type is Radical:
     type Platform = Linux
 
     def length(text: Text): Int = 1
-    def decode(text: Text): %.type = %
+
+    def decode(text: Text): %.type =
+      if text.starts(t"/") then % else raise(PathError(_.InvalidRoot)) yet %
+
     def encode(root: %.type): Text = t"/"
 
-  given macOs: %.type is Radical:
+  given macOs: Tactic[PathError] => %.type is Radical:
     type Platform = MacOs
 
     def length(text: Text): Int = 1
-    def decode(text: Text): %.type = %
+
+    def decode(text: Text): %.type =
+      if text.starts(t"/") then % else raise(PathError(_.InvalidRoot)) yet %
+
     def encode(root: %.type): Text = t"/"
 
 trait Radical:

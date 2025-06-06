@@ -60,9 +60,9 @@ object Path:
         =>  (Path on system) is Decodable in Text =
 
     text =>
+      val root = radical.encode(radical.decode(text))
       val parts = text.skip(radical.length(text)).cut(system.separator)
       val parts2 = if parts.last == t"" then parts.init else parts
-      val root = radical.encode(radical.decode(text))
 
       Path.of(root, parts2.reverse*)
 
