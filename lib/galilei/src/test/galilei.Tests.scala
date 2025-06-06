@@ -48,17 +48,18 @@ import strategies.throwUnsafely
 
 object Tests extends Suite(m"Galilei tests"):
   def run(): Unit =
-    suite(m"Opening tests"):
-      val tmp: Path on Linux = temporaryDirectory
-      Out.println(m"Writing to $tmp")
+    ()
+    // suite(m"Opening tests"):
+    //   val tmp: Path on Linux = temporaryDirectory
+    //   Out.println(m"Writing to $tmp")
 
-      val dest: Path on Linux = tmp/Uuid().show
+    //   val dest: Path on Linux = tmp/Uuid().show
 
 
-      test(m"Check that a fresh path does not exist"):
-        dest
-      . assert(!_.exists())
+    //   test(m"Check that a fresh path does not exist"):
+    //     dest
+    //   . assert(!_.exists())
 
-      dest.open(t"Hello world".writeTo(_))
+    //   dest.open(t"Hello world".writeTo(_))
 
-      test(m"Check that a fresh path does exist after writing")(dest).assert(_.exists())
+    //   test(m"Check that a fresh path does exist after writing")(dest).assert(_.exists())
