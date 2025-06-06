@@ -33,6 +33,7 @@
 package wisteria
 
 import anticipation.*
+import rudiments.*
 import vacuous.*
 
 import scala.compiletime.*
@@ -53,7 +54,7 @@ trait ContextRequirement:
   type Required <: Boolean
   def wrap[value](optional: Optional[value]): Optionality[value]
 
-  inline def summon[ContextualType]: Optionality[ContextualType] =
-    inline if erasedValue[Required] then wrap(summonInline[ContextualType]) else summonFrom:
-      case contextual: ContextualType => wrap(contextual)
-      case _                          => wrap(Unset)
+  inline def summon[context]: Optionality[context] =
+    inline if !![Required] then wrap(summonInline[context]) else summonFrom:
+      case contextual: `context` => wrap(contextual)
+      case _                     => wrap(Unset)

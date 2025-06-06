@@ -39,7 +39,7 @@ export galilei .
     WriteAccess, WriteSynchronously, C, D, open, javaPath, javaFile, children, descendants, size,
     delete, wipe, volume, hardLinkTo, entry, copyTo, copyInto, /*renameTo, */moveTo, moveInto,
     symlinkTo, symlinkInto, modified, accessed, readable, writable, hidden, touch, make, created,
-    executable, hardLinks }
+    executable, hardLinks, exists }
 
 package filesystemOptions:
   export galilei.filesystemOptions.{readAccess, writeAccess, dereferenceSymlinks, moveAtomically,

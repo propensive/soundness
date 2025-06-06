@@ -205,7 +205,7 @@ trait ProductDerivationMethods[typeclass[_]]:
         case Zero => accumulator
 
         case tuple: (fieldType *: moreFields) => tuple match
-          case field *: moreFields => inline erasedValue[labels] match
+          case field *: moreFields => inline !![labels] match
             case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
               case label: String =>
                 val typeclass = requirement.summon[typeclass[fieldType]]
@@ -238,10 +238,10 @@ trait ProductDerivationMethods[typeclass[_]]:
                                                   ?=> result)
   : result =
 
-      inline erasedValue[fields] match
+      inline !![fields] match
         case _: Zero => accumulator
 
-        case _: (fieldType *: moreFields) => inline erasedValue[labels] match
+        case _: (fieldType *: moreFields) => inline !![labels] match
           case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
             case label: String =>
               val typeclass = requirement.summon[typeclass[fieldType]]

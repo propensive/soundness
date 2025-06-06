@@ -49,11 +49,11 @@ trait SumDerivationMethods[typeclass[_]]:
     choice[derivation]
 
   transparent inline def choice[derivation: SumReflection]: Boolean =
-    inline erasedValue[derivation.MirroredElemTypes] match
+    inline !![derivation.MirroredElemTypes] match
       case _: (variant *: variants) => all[variant, variants]
 
   private transparent inline def all[variant, variants <: Tuple]: Boolean = summonFrom:
-    case given (variant <:< Singleton) => inline erasedValue[variants] match
+    case given (variant <:< Singleton) => inline !![variants] match
       case _: Zero                           => true
       case _: (variant *: variants)  => all[variant, variants]
     case _                                 => false
@@ -96,8 +96,8 @@ trait SumDerivationMethods[typeclass[_]]:
                                   (predicate: Text => Boolean)
   : Optional[derivation] =
 
-      inline erasedValue[variants] match
-        case _: (variant *: variants) => inline erasedValue[labels] match
+      inline !![variants] match
+        case _: (variant *: variants) => inline !![labels] match
           case _: (label *: labelsType) =>
             type variant0 = variant & derivation
 
@@ -179,8 +179,8 @@ trait SumDerivationMethods[typeclass[_]]:
                                                   ?=> result)
   : Optional[result] =
 
-      inline erasedValue[variants] match
-        case _: (variant *: variants) => inline erasedValue[labels] match
+      inline !![variants] match
+        case _: (variant *: variants) => inline !![labels] match
           case _: (label *: moreLabels) =>
             type variant0 = variant & derivation
             if index >= size then Unset else
@@ -227,8 +227,8 @@ trait SumDerivationMethods[typeclass[_]]:
                                                   ?=> result)
   : Optional[result] =
 
-      inline erasedValue[variants] match
-        case _: (variant *: variants) => inline erasedValue[labels] match
+      inline !![variants] match
+        case _: (variant *: variants) => inline !![labels] match
           case _: (label *: moreLabels) =>
             type variant0 = variant & derivation
             if index >= size then Unset else

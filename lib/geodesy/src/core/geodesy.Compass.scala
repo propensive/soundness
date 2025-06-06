@@ -34,6 +34,8 @@ package geodesy
 
 import scala.compiletime.*
 
+import rudiments.*
+
 object Compass:
   val points4: IArray[CardinalWind] =
     IArray(North, East, South, West)
@@ -48,7 +50,7 @@ object Compass:
       Northwest, NorthNorthwest)
 
   inline def apply[points <: 4 | 8 | 16](angle: Angle): Compass[points] =
-    inline erasedValue[points] match
+    inline !![points] match
       case _: 4  => points4((0.5 + 2*angle.radians/math.Pi).toInt%4)
       case _: 8  => points8((0.5 + 4*angle.radians/math.Pi).toInt%8)
       case _: 16 => points16((0.5 + 8*angle.radians/math.Pi).toInt%16)

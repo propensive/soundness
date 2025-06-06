@@ -361,7 +361,7 @@ class Report(using Environment):
         val text5 = if !pass then t"┻┻     ┻┻   ┻┻   ┻┻   ┻┻━━━┛"
                     else t"┻┻       ┻┻   ┻┻  ┗━━━┻┛  ┗━━━┻┛"
 
-        val width = if pass then 37 else 34
+        val width = if pass then 38 else 34
         if !pass || !tabulation then
           Out.println(e"$color(╭${t"─"*width}╮)")
           Out.println(e"$color(│) $Bold(${Bg(color)}($Black(  $text1  ))) $color(│)")
