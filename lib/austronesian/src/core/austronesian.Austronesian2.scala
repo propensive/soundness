@@ -38,42 +38,44 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import wisteria.*
 
 object Austronesian2:
-  object EncodableDerivation extends Derivation[[Type] =>> Type is Encodable in Stdlib]:
+  object EncodableDerivation extends Derivation[[Type] =>> Type is Encodable in Pojo]:
 
     inline def join[derivation <: Product: ProductReflection]
-    : derivation is Encodable in _root_.austronesian.Austronesian.Stdlib =
+    : derivation is Encodable in _root_.austronesian.Austronesian.Pojo =
 
         fields(_):
           [field] => _.encode
-        .asInstanceOf[Stdlib]
+        .asInstanceOf[Pojo]
 
 
-    inline def split[derivation: SumReflection]: derivation is Encodable in Stdlib =
+    inline def split[derivation: SumReflection]: derivation is Encodable in Pojo =
       variant(_):
         [variant <: derivation] => value =>
-          IArray.create[Stdlib](2): array =>
-            array(0) = label.s.asInstanceOf[Stdlib]
+          IArray.create[Pojo](2): array =>
+            array(0) = label.s.asInstanceOf[Pojo]
             array(1) = value.encode
 
-          . asInstanceOf[Stdlib]
+          . asInstanceOf[Pojo]
 
-  object DecodableDerivation extends Derivable[Decodable in Stdlib]:
-    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Stdlib =
-      case array: Array[Stdlib] =>
+  object DecodableDerivation extends Derivable[Decodable in Pojo]:
+    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Pojo =
+      case array: Array[Pojo] =>
         construct: [field] =>
           _.decoded(array(index))
 
       case other =>
-        summonInline[Tactic[StdlibError]].give(abort(StdlibError()))
+        summonInline[Tactic[PojoError]].give(abort(PojoError()))
 
-    inline def split[derivation: SumReflection]: derivation is Decodable in Stdlib =
-      case Array(label: String, stdlib: Stdlib) =>
-        delegate(label): [variant <: derivation] =>
-          _.decoded(stdlib)
+    inline def split[derivation: SumReflection]: derivation is Decodable in Pojo =
+      _.absolve match
+        case Array(label: String, pojo: Pojo) =>
+          delegate(label): [variant <: derivation] =>
+            _.decoded(pojo)
 
-      case other =>
-        summonInline[Tactic[StdlibError]].give(abort(StdlibError()))
+        case other =>
+          summonInline[Tactic[PojoError]].give(abort(PojoError()))

@@ -32,82 +32,106 @@
                                                                                                   */
 package austronesian
 
-import scala.collection.Factory
-
 import anticipation.*
 import contingency.*
 import distillate.*
 import prepositional.*
+import probably.*
 import rudiments.*
 import wisteria.*
 
 object Austronesian:
-  opaque type Stdlib =
+  opaque type Pojo =
     IArray[Any] | String | Boolean | Byte | Char | Short | Int | Long | Float | Double
 
-  object Stdlib extends Stdlib2:
-    given text: Text is Encodable in Stdlib = _.s
-    given string: String is Encodable in Stdlib = identity(_)
-    given int: Int is Encodable in Stdlib = identity(_)
-    given long: Long is Encodable in Stdlib = identity(_)
-    given float: Float is Encodable in Stdlib = identity(_)
-    given double: Double is Encodable in Stdlib = identity(_)
-    given char: Char is Encodable in Stdlib = identity(_)
-    given boolean: Boolean is Encodable in Stdlib = identity(_)
-    given byte: Byte is Encodable in Stdlib = identity(_)
+  object Pojo extends Pojo2:
 
-    given list: [collection <: Iterable, element: Encodable in Stdlib]
-          =>  collection[element] is Encodable in Stdlib =
+    def apply
+         (pojo: IArray[Any] | String | Boolean | Byte | Char | Short | Int | Long | Float | Double)
+    : Pojo =
+
+        pojo
+
+
+    given text: Text is Encodable in Pojo = _.s
+    given string: String is Encodable in Pojo = identity(_)
+    given int: Int is Encodable in Pojo = identity(_)
+    given long: Long is Encodable in Pojo = identity(_)
+    given float: Float is Encodable in Pojo = identity(_)
+    given double: Double is Encodable in Pojo = identity(_)
+    given char: Char is Encodable in Pojo = identity(_)
+    given boolean: Boolean is Encodable in Pojo = identity(_)
+    given byte: Byte is Encodable in Pojo = identity(_)
+
+    given list: [collection <: Iterable, element: Encodable in Pojo]
+          =>  collection[element] is Encodable in Pojo =
       iterable => IArray.from(iterable.map(_.encode))
 
-    given text2: Tactic[StdlibError] => Text is Decodable in Stdlib =
+    given text2: Tactic[PojoError] => Text is Decodable in Pojo =
       case string: String => string.tt
-      case _              => raise(StdlibError()) yet "".tt
+      case _              => raise(PojoError()) yet "".tt
 
-    given string2: Tactic[StdlibError] => String is Decodable in Stdlib =
+    given string2: Tactic[PojoError] => String is Decodable in Pojo =
       case string: String => string
-      case _              => raise(StdlibError()) yet ""
+      case _              => raise(PojoError()) yet ""
 
-    given int2: Tactic[StdlibError] => Int is Decodable in Stdlib =
+    given int2: Tactic[PojoError] => Int is Decodable in Pojo =
       case int: Int => int
-      case _        => raise(StdlibError()) yet 0
+      case _        => raise(PojoError()) yet 0
 
-    given long2: Tactic[StdlibError] => Long is Decodable in Stdlib =
+    given long2: Tactic[PojoError] => Long is Decodable in Pojo =
       case long: Long => long
-      case _          => raise(StdlibError()) yet 0L
+      case _          => raise(PojoError()) yet 0L
 
-    given float2: Tactic[StdlibError] => Float is Decodable in Stdlib =
+    given float2: Tactic[PojoError] => Float is Decodable in Pojo =
       case float: Float => float
-      case _            => raise(StdlibError()) yet 0.0f
+      case _            => raise(PojoError()) yet 0.0f
 
-    given double2: Tactic[StdlibError] => Double is Decodable in Stdlib =
+    given double2: Tactic[PojoError] => Double is Decodable in Pojo =
       case double: Double => double
-      case _              => raise(StdlibError()) yet 0.0
+      case _              => raise(PojoError()) yet 0.0
 
-    given char2: Tactic[StdlibError] => Char is Decodable in Stdlib =
+    given char2: Tactic[PojoError] => Char is Decodable in Pojo =
       case char: Char => char
-      case _          => raise(StdlibError()) yet '\u0000'
+      case _          => raise(PojoError()) yet '\u0000'
 
-    given boolean2: Tactic[StdlibError] => Boolean is Decodable in Stdlib =
+    given boolean2: Tactic[PojoError] => Boolean is Decodable in Pojo =
       case boolean: Boolean => boolean
-      case _                => raise(StdlibError()) yet false
+      case _                => raise(PojoError()) yet false
 
-    given collection: [collection <: Iterable, element: Decodable in Stdlib]
-          =>  Tactic[StdlibError]
-          => (factory: Factory[element, collection[element]])
-          =>  collection[element] is Decodable in Stdlib =
+    given collection: [collection <: Iterable, element: Decodable in Pojo]
+          =>  Tactic[PojoError]
+          => (factory: scala.collection.Factory[element, collection[element]])
+          =>  collection[element] is Decodable in Pojo =
 
-      case array: Array[Stdlib] =>
+      case array: Array[Pojo] =>
         factory.newBuilder.pipe: builder =>
           array.each(builder += _.decode)
           builder.result()
 
       case other =>
-        raise(StdlibError()) yet factory.newBuilder.result()
+        raise(PojoError()) yet factory.newBuilder.result()
 
-  trait Stdlib2:
-    inline given encodable: [value: Reflection] => value is Encodable in Stdlib =
+  trait Pojo2:
+    given checkable: Pojo is Checkable against Pojo = (left, right) =>
+      left match
+        case left: Array[?] => right match
+          case right: Array[?] =>
+            left.length == right.length
+            && left.indices.forall: index =>
+              left(index) match
+                case left: Pojo => right(index) match
+                  case right: Pojo => checkable.check(left, right)
+                  case _           => false
+                case _          => false
+          case _               => false
+
+        case left             =>
+          println(s"comparing $left and $right => ${left == right}")
+          left == right
+
+    inline given encodable: [value: Reflection] => value is Encodable in Pojo =
       Austronesian2.EncodableDerivation.derived
 
-    inline given decodable: [value: Reflection] => value is Decodable in Stdlib =
+    inline given decodable: [value: Reflection] => value is Decodable in Pojo =
       Austronesian2.DecodableDerivation.derived
