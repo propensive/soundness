@@ -97,7 +97,7 @@ object Digestible extends Derivable[Digestible]:
   given char: Char is Digestible =
     (digestion, char) => digestion.append(IArray((char >> 8).toByte, char.toByte))
 
-  given text: Text is Digestible =
+  given text: [text <: Text] => text is Digestible =
     (digestion, text) => digestion.append(text.bytes(using charEncoders.utf8))
 
   given bytes: Bytes is Digestible = _.append(_)
