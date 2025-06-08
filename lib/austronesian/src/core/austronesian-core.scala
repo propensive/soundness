@@ -35,7 +35,7 @@ package austronesian
 import anticipation.*
 import prepositional.*
 
-export Austronesian.Stdlib
+export Austronesian.Pojo
 
-extension [encodable: Encodable in Stdlib](value: encodable)
-  def stdlib: Stdlib = encodable.encoded(value)
+extension [encodable: Encodable in Pojo](value: encodable)
+  def pojo: Pojo = encodable.encoded(value)

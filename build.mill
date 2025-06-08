@@ -10,7 +10,7 @@ import os.Path
 
 object settings {
   //val scalaVersion = "3.6.2"
-  val scalaVersion = "3.7.1"
+  val scalaVersion = "3.7.0"
   val scalaOptions = Seq(
     "-experimental",
     "-new-syntax",
@@ -177,7 +177,7 @@ object test extends ScalaModule {
     anamnesis.test,
     anthology.test,
     anticipation.test,
-    //austronesian.test,
+    austronesian.test,
     aviation.test,
     burdock.test,
     caesura.test,
@@ -440,15 +440,15 @@ object anticipation extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
-/*object austronesian extends SoundnessModule {
+object austronesian extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(wisteria.core, distillate.core)
+    def moduleDeps = Seq(wisteria.core, distillate.core, probably.core)
   }
 
   object test extends ProbablyTestModule {
     def moduleDeps = Seq(probably.cli, core)
   }
-}*/
+}
 
 object aviation extends SoundnessModule {
   object core extends SoundnessSubModule {

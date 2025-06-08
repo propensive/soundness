@@ -32,6 +32,8 @@
                                                                                                   */
 package austronesian
 
-object Example:
-  def run(name: Any): Unit =
-    println(s"Hello, $name!")
+import anticipation.*
+import fulminate.*
+
+case class PojoError()(using Diagnostics)
+extends Error(m"could not deserialize from Java POJO types")

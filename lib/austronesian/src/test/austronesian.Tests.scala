@@ -42,35 +42,31 @@ enum Color:
   case Red, Green, Blue
 
 object Tests extends Suite(m"Austronesian tests"):
-
-  extension (left: Stdlib) infix def like (right: Array[Any]): Boolean =
-    ju.Arrays.deepEquals(left.asInstanceOf[Array[Any]], right)
-
   def run(): Unit =
-    test(m"Serialize a case class")(Person("John", 30).stdlib)
-    . assert(_ like Array("John", 30))
+    test(m"Serialize a case class")(Person("John", 30).pojo)
+    . assert(_ === Pojo(IArray("John", 30)))
 
-    test(m"Serialize a list of longs")(List(1L, 99L, 203L).stdlib)
-    . assert(_ like Array(1L, 99L, 203L))
+    test(m"Serialize a list of longs")(List(1L, 99L, 203L).pojo)
+    . assert(_ === Pojo(IArray(1L, 99L, 203L)))
 
-    test(m"Serialize a list of case classes")(List(Person("John", 12), Person("Jane", 93)).stdlib)
-    . assert(_ like Array(Array("John", 12), Array("Jane", 93)))
+    test(m"Serialize a list of case classes")(List(Person("John", 12), Person("Jane", 93)).pojo)
+    . assert(_ === Pojo(IArray(IArray("John", 12), IArray("Jane", 93))))
 
     test(m"Serialize a nested case class structure"):
-      Group(List(Person("John", 30), Person("Jane", 25)), 2).stdlib
-    . assert(_ like Array(Array(Array("John", 30), Array("Jane", 25)), 2))
+      Group(List(Person("John", 30), Person("Jane", 25)), 2).pojo
+    . assert(_ === Pojo(IArray(IArray(IArray("John", 30), IArray("Jane", 25)), 2)))
 
     val group = Group(List(Person("John", 30), Person("Jane", 25)), 2)
     test(m"Roundtrip a nested case class"):
-      unsafely(group.stdlib.decode[Group])
+      unsafely(group.pojo.decode[Group])
     . assert(_ == group)
 
     test(m"Encode an enum"):
       val color: Color = Color.Green
-      color.stdlib
-    . assert(_ like Array("Green", Array[Any]()))
+      color.pojo
+    . assert(_ === Pojo(IArray("Green", IArray[Any]())))
 
     test(m"Roundtrip an enum"):
       val color: Color = Color.Green
-      unsafely(color.stdlib.decode[Color])
+      unsafely(color.pojo.decode[Color])
     . assert(_ == Color.Green)

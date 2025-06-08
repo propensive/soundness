@@ -37,8 +37,12 @@ import scala.quoted.*
 import anticipation.*
 
 object Communicable:
-  given text: Text is Communicable = text => Message(if text == "".tt then "“”".tt else text)
-  given string: String is Communicable = string => Message(string.tt)
+  given text: Text is Communicable = text =>
+    Message:
+      if text.s.length == 0 || text.s(0) == ' ' || text.s.last == ' ' then ("“"+text+"”").tt
+      else text
+
+  given string: String is Communicable = text.contramap(_.tt)
   given char: Char is Communicable = char => Message(char.toString.tt)
   given int: Int is Communicable = int => Message(int.toString.tt)
   given long: Long is Communicable = long => Message(long.toString.tt)
@@ -64,3 +68,5 @@ object Communicable:
 trait Communicable:
   type Self
   def message(value: Self): Message
+
+  def contramap[self](lambda: self => Self): self is Communicable = value => message(lambda(value))
