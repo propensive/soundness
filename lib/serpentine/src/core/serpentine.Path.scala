@@ -250,6 +250,7 @@ case class Path(root: Text, descent: Text*):
     inline !![Subject] match
       case head *: tail => Path.of[Platform, Constraint, tail.type](root, descent.tail*)
       case EmptyTuple   => Unset
+
       case _ =>
         if descent.isEmpty then Unset
         else Path.of[Platform, Constraint, Tuple](root, descent.tail*)
@@ -261,15 +262,14 @@ case class Path(root: Text, descent: Text*):
     Path.of[Platform, Constraint, Text *: Subject](root, value +: descent*)
 
   @targetName("slash")
-  transparent inline infix def / (child: Any): Path of (child.type *: Subject) =
-    summonFrom:
-      case admissible: (child.type is Admissible on Platform) =>
-        Path.of[Platform, Constraint, child.type *: Subject]
-         (root, summonInline[child.type is Navigable].follow(child) +: descent*)
+  transparent inline infix def / (child: Any): Path of (child.type *: Subject) = summonFrom:
+    case admissible: ((? >: child.type) is Admissible on Platform) =>
+      Path.of[Platform, Constraint, child.type *: Subject]
+       (root, summonInline[child.type is Navigable].follow(child) +: descent*)
 
-      case _ =>
-        Path.unplatformed[Constraint, child.type *: Subject]
-         (root, summonInline[child.type is Navigable].follow(child) +: descent*)
+    case _ =>
+      Path.unplatformed[Constraint, child.type *: Subject]
+       (root, summonInline[child.type is Navigable].follow(child) +: descent*)
 
 
   transparent inline def peer(child: Any)(using child.type is Admissible on Platform)

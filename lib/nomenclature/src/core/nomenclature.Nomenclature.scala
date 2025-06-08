@@ -44,7 +44,7 @@ import rudiments.*
 import spectacular.*
 
 object Nomenclature:
-  opaque type Name[-platform] <: anticipation.Text = anticipation.Text
+  opaque type Name[platform] <: anticipation.Text = anticipation.Text
 
   object Name:
     given encodable: [platform] => Name[platform] is Encodable in Text = identity(_)
@@ -57,5 +57,5 @@ object Nomenclature:
     inline def verify[NameType <: Label, platform] =
       ${Nomenclature2.parse[platform, NameType]}
 
-    inline def apply[platform](name: Text): Name[platform] =
+    transparent inline def apply[platform](name: Text): Name[platform] =
       ${Nomenclature2.makeName[platform]('name)}
