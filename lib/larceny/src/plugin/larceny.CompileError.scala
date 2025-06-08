@@ -34,7 +34,7 @@ package larceny
 
 object CompileError:
   def apply(ordinal: Int, message: String, code: String, start: Int, offset: Int): CompileError =
-    new CompileError(CompileError.Reason.fromOrdinal(ordinal - 1), message, code, start, offset)
+    new CompileError(CompileError.Reason.fromOrdinal(ordinal), message, code, start, offset)
 
   enum Reason:
     case NoExplanation
