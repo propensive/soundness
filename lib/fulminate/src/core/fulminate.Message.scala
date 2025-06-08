@@ -75,13 +75,18 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
     texts.head :: recur(texts.tail, messages)
 
   def fold[render](initial: render)(append: (render, Text, Int) => render): render =
+    def escape(text: Text): Text =
+      if text == "".tt || text.s.head == ' ' || text.s.last == ' ' then "“"+text+"”" else text
+
     def recur(done: render, textTodo: List[Text], messagesTodo: List[Message], level: Int): render =
       messagesTodo match
         case Nil =>
-          append(done, textTodo.head, level)
+          append(done, escape(textTodo.head), level)
 
         case sub :: messages =>
-          val prefix = recur(append(done, textTodo.head, level), sub.texts, sub.messages, level + 1)
+          val prefix =
+            recur(append(done, escape(textTodo.head), level), sub.texts, sub.messages, level + 1)
+
           recur(prefix, textTodo.tail, messages, level)
 
     recur(initial, texts, messages, 0)
@@ -92,6 +97,7 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
 
   def colorText: Text = unwrap:
     val esc = 27.toChar
+
     fold[String](""): (acc, next, level) =>
       if next.s.isEmpty then acc else level match
         case 0 => acc+next

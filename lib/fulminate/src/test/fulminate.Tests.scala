@@ -37,4 +37,6 @@ import probably.*
 
 object Tests extends Suite(m"Fulminate Tests"):
   def run(): Unit =
-    ()
+    test(m"Whitespace in strings embedded into text should be quoted"):
+      m"This (${t" "}) should be quoted".text
+    . assert(_ == t"This (“ ”) should be quoted")
