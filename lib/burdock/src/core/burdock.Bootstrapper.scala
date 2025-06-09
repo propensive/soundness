@@ -167,7 +167,7 @@ object Bootstrapper:
           manifest2 - MainClass + require + burdockMain + verbosity
           + MainClass(fqcn"burdock.Bootstrap")
 
-        val tmpFile = jarfile.parent.vouch/t"${jarfile.name}.tmp"
+        val tmpFile = jarfile.parent.vouch / t"${jarfile.name}.tmp"
 
         Zipfile.write(tmpFile):
           ZipEntry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest3.serialize)

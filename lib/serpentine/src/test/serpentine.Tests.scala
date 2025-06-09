@@ -49,7 +49,8 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       test(m"Ensure path has correct type"):
         val path: Path of ("bar", "foo") = % / "foo" / "bar"
-      . assert()
+        path
+      . assert(_ == Path(t"/", t"bar", t"foo"))
 
       test(m"Badly-typed path produces error"):
         demilitarize:
@@ -59,38 +60,51 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       test(m"Specificity of path is not obligatory"):
         val path: Path = % / "foo" / "baz"
+        path
 
-      . assert()
+      . assert(_ == Path(t"/", t"baz", t"foo"))
 
       test(m"Construct a path on Linux"):
         val path: Path on Linux = (% / "foo" / "baz").on[Linux]
+        path
 
-      . assert()
+      . assert(_ == Path(t"/", t"baz", t"foo"))
 
       test(m"Construct a path with unknown label"):
-        val dir: Text = ""
+        val dir: Text = t""
         val path = (% / dir / "baz")
+        path
+
+      . assert(_ == Path(t"/", t"baz", t""))
+
+      test(m"Construct a path with unknown text label is permitted without Tactic"):
+        val dir: Text = t"dir"
+        val path = (% / dir)
 
       . assert()
 
       test(m"Construct a path with unknown label not permitted on Linux without Tactic"):
         demilitarize:
-          val dir: Text = "dir"
+          val dir: Text = t"dir"
           val path = (% / dir / "baz").on[Linux]
 
-      . assert(_.length > 0)
+        . map(_.reason)
 
-      // test(m"Construct a path with unknown label is permitted on Linux with Tactic"):
-      //   demilitarize:
-      //     val dir: Text = "dir"
-      //     recover:
-      //       case NameError(_, _, _) => ()
+      . assert(_ == List(CompileError.Reason.MissingImplicitArgument))
 
-      //     . within:
-      //         val path = (% / dir / "baz").on[Linux]
-      //   . map(_.message)
+      test(m"Construct a path with unknown label is permitted on Linux with Tactic"):
+        val dir: Text = t"dir"
+        given Tactic[NameError] = strategies.throwUnsafely
+        val path = (% / dir).on[Linux]
 
-      // . assert(_ == Nil)
+      . assert()
+
+      test(m"Construct a path with unknown label is permitted on top of Linux Path"):
+        val dir: Text = t"dir"
+        given Tactic[NameError] = strategies.throwUnsafely
+        val path = (% / dir).on[Linux] / "other"
+
+      . assert()
 
       test(m"Construct a path with a label of a bad type is not permitted"):
         demilitarize:
@@ -142,6 +156,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Windows path can't be converted to Linux"):
         demilitarize:
           val path = (Drive('C') / "foo").on[Linux]
+        . map(_.reason)
       . assert(_.nonEmpty)
 
       test(m"Linux path can't be converted to Windows"):
@@ -152,7 +167,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Linux path can be converted to Mac OS"):
         demilitarize:
           val path = (% / "foo").on[Linux].on[MacOs]
-      . assert(_.isEmpty)
+      . assert(_ == Nil)
 
     suite(m"Relative paths"):
       test(m"Create a relative path"):

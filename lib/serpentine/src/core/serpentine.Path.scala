@@ -104,7 +104,7 @@ object Path:
   private def conversion[from, to](lambda: from => to): Conversion[from, to] = lambda(_)
 
   inline given convert: [subject, root, system]
-         =>  Conversion[Path of subject under root, Path of subject under root on system] =
+         =>  Conversion[Path of subject under root, Path of subject on system under root] =
     conversion(_.on[system])
 
 case class Path(root: Text, descent: Text*):
@@ -152,9 +152,21 @@ case class Path(root: Text, descent: Text*):
       case _ =>
 
   inline def on[system]: Path of Subject under Constraint on system =
-    check[Subject, system](descent.to(List))
-    summonInline[Constraint is Submissible on system].check(root)
-    this.asInstanceOf[Path of Subject under Constraint on system]
+    summonFrom:
+      case given (`system` =:= Platform) =>
+        this.asInstanceOf[Path of Subject under Constraint on system]
+
+      case _ =>
+        check[Subject, system](descent.to(List))
+        summonFrom:
+          case constraint: (Constraint is Submissible on `system`) =>
+            constraint.check(root)
+            this.asInstanceOf[Path of Subject under Constraint on system]
+
+          case radical: (Constraint is Radical on `system`) =>
+            println(s"$radical . decode $root")
+            radical.decode(root)
+            this.asInstanceOf[Path of Subject under Constraint on system]
 
   def graft[radical: Radical on Platform](root: radical): Path of Subject under root.type =
     Path.of[Platform, root.type, Subject](radical.encode(root), descent*)
@@ -250,6 +262,7 @@ case class Path(root: Text, descent: Text*):
     inline !![Subject] match
       case head *: tail => Path.of[Platform, Constraint, tail.type](root, descent.tail*)
       case EmptyTuple   => Unset
+
       case _ =>
         if descent.isEmpty then Unset
         else Path.of[Platform, Constraint, Tuple](root, descent.tail*)
@@ -261,15 +274,15 @@ case class Path(root: Text, descent: Text*):
     Path.of[Platform, Constraint, Text *: Subject](root, value +: descent*)
 
   @targetName("slash")
-  transparent inline infix def / (child: Any): Path of (child.type *: Subject) =
+  transparent inline infix def / (child: Any): Path of (child.type *: Subject) under Constraint =
     summonFrom:
-      case admissible: (child.type is Admissible on Platform) =>
+      case given ((? >: child.type) is Admissible on Platform) =>
         Path.of[Platform, Constraint, child.type *: Subject]
-         (root, summonInline[child.type is Navigable].follow(child) +: descent*)
+          (root, summonInline[child.type is Navigable].follow(child) +: descent*)
 
       case _ =>
         Path.unplatformed[Constraint, child.type *: Subject]
-         (root, summonInline[child.type is Navigable].follow(child) +: descent*)
+          (root, summonInline[child.type is Navigable].follow(child) +: descent*)
 
 
   transparent inline def peer(child: Any)(using child.type is Admissible on Platform)

@@ -94,6 +94,9 @@ object Nomenclature2:
 
         '{$checks; $name.asInstanceOf[Name[system]]}
 
+      case None =>
+        halt(m"Couldn't find a `Nominative` instance on ${Type.of[system]}")
+
   def parse2[platform: Type, name <: String: Type](scrutinee: Expr[Name[platform]])(using Quotes)
   : Expr[Boolean] =
 

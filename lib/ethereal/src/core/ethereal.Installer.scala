@@ -138,8 +138,10 @@ object Installer:
             val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
               abort(InstallError(InstallError.Reason.Environment))
 
-            val installFile: Optional[Path on Linux] =
-              (installDirectory/command).make[File]()
+            summon[Linux is System]
+
+            val file: Path on Linux = installDirectory/command
+            val installFile: Optional[Path on Linux] = file.make[File]()
 
             installFile.let: file =>
               val filename: Text = file.inspect

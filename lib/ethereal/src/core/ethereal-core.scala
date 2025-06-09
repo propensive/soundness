@@ -139,9 +139,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
   val runtimeDir: Optional[Path on Linux] = Xdg.runtimeDir
   val stateHome: Path on Linux = Xdg.stateHome
-  val baseDir: Path on Linux = runtimeDir.or(stateHome)/name
-  val portFile: Path on Linux = baseDir/"port"
-  val pidFile: Path on Linux = baseDir/"pid"
+  val baseDir: Path on Linux = runtimeDir.or(stateHome) //name
+  val portFile: Path on Linux = baseDir/name/"port"
+  val pidFile: Path on Linux = baseDir/name/"pid"
   val clients: scc.TrieMap[Pid, ClientConnection[bus]] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
 
