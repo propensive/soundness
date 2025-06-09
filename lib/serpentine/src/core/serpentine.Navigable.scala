@@ -33,15 +33,18 @@
 package serpentine
 
 import anticipation.*
+import inimitable.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
+import spectacular.*
 
 object Navigable:
   given label: [string <: Label] => string is Navigable = _.tt
-  given int: Int is Navigable = _.toString.tt
+  given int: [int <: Int] => int is Navigable = _.toString.tt
   given text: [text <: Text] => text is Navigable = identity(_)
   given name: [platform, name <: Name[platform]] => name is Navigable = identity(_)
+  given uuid: [uuid <: Uuid] => uuid is Navigable = _.text
 
 trait Navigable:
   type Self

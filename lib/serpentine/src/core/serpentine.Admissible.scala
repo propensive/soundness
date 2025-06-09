@@ -34,13 +34,14 @@ package serpentine
 
 import anticipation.*
 import contingency.*
+import inimitable.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 
 object Admissible:
-  def unchecked[child <: Text, system]: child is Admissible on system = new Admissible:
+  def unchecked[child, system]: child is Admissible on system = new Admissible:
     type Self = child
     type Platform = system
     def check(name: Text): Unit = ()
@@ -51,12 +52,14 @@ object Admissible:
     inline !![text] match
       case _: Name[`system`] => unchecked[text, system]
 
-      case _ =>
-        Name[system](_)
-        unchecked[text, system]
+      case _ => compiletime.summonInline[Tactic[NameError]].give(Name[system](_))
 
-  inline given admissible: [string <: Label, system: Nominative] => string is Admissible on system =
+  inline given admissible: [string <: Label, system] => (nominative: system is Nominative) => string is Admissible on system =
     Admissible[string, system]({ void => Name.verify[string, system] })
+
+
+  given uuid: [uuid <: Uuid, system <: Linux | Windows | MacOs] => uuid is Admissible on system =
+    unchecked[uuid, system]
 
 trait Admissible:
   type Self

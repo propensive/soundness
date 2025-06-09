@@ -53,7 +53,7 @@ import symbolism.*
 import scala.quoted.*
 
 object Dispatcher:
-  private var cache: Map[Codepoint, (Path, Text => Text)] = Map()
+  private var cache: Map[Codepoint, (Path on Linux, Text => Text)] = Map()
 
 trait Dispatcher:
   type Result[output]
@@ -87,33 +87,33 @@ trait Dispatcher:
             staging.withQuotes:
               '{  (array: List[Json]) =>
                     ${  references.setRef('array)
-                          body(using references)  }  }
+                        body(using references)  }  }
 
             Dispatcher.cache(codepoint)
 
-          else ???
-            // val out: Path on Linux = temporaryDirectory[Path on Linux] / uuid.show
-            // val settings: staging.Compiler.Settings =
-            //   staging.Compiler.Settings.make
-            //    (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+          else
+            val out: Path on Linux = temporaryDirectory[Path on Linux] / uuid
+            val settings: staging.Compiler.Settings =
+              staging.Compiler.Settings.make
+               (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
-            // given compiler: staging.Compiler =
-            //   staging.Compiler.make(classloader.java)(using settings)
+            given compiler: staging.Compiler =
+              staging.Compiler.make(classloader.java)(using settings)
 
-            // val fn: Text => Text = staging.run:
-            //   val fromList: Expr[List[Json] => Text] = '{ (array: List[Json]) =>
-            //     import Json.jsonEncodableInText
-            //     ${
-            //       references.setRef('array)
-            //       body(using references)
-            //     }.json.encode
-            //   }
+            val fn: Text => Text = staging.run:
+              val fromList: Expr[List[Json] => Text] = '{ (array: List[Json]) =>
+                import Json.jsonEncodableInText
+                ${
+                  references.setRef('array)
+                  body(using references)
+                }.json.encode
+              }
 
-            //   '{ text => $fromList(text.decode[Json].as[List[Json]]) }
+              '{ text => $fromList(text.decode[Json].as[List[Json]]) }
 
-            // Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
+            Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
 
-            // (out, fn)
+            (out, fn)
 
         val classpath = classloaders.threadContext.classpath match
           case classpath: LocalClasspath =>
