@@ -32,16 +32,20 @@
                                                                                                   */
 package soundness
 
-export galilei .
-  { CopyAttributes, Makable, CreateNonexistent, CreateNonexistentParents, DeleteRecursively,
-    DereferenceSymlinks, Entry, FilesystemAttribute, Handle, IoError, IoEvent, MoveAtomically,
-    Openable, OverwritePreexisting, ReadAccess, Socket, Symlink, TraversalOrder, Volume,
-    WriteAccess, WriteSynchronously, C, D, open, javaPath, javaFile, children, descendants, size,
-    delete, wipe, volume, hardLinkTo, entry, copyTo, copyInto, /*renameTo, */moveTo, moveInto,
-    symlinkTo, symlinkInto, modified, accessed, readable, writable, hidden, touch, make, created,
-    executable, hardLinks, exists }
+export galilei
+       . { CopyAttributes, Makable, CreateNonexistent, CreateNonexistentParents, DeleteRecursively,
+           DereferenceSymlinks, Entry, FilesystemAttribute, Handle, IoError, IoEvent,
+           MoveAtomically, Openable, OverwritePreexisting, ReadAccess, Socket, Symlink,
+           TraversalOrder, Volume, WriteAccess, WriteSynchronously, C, D, open, javaPath, javaFile,
+           children, descendants, size, delete, wipe, volume, hardLinkTo, entry, copyTo, copyInto,
+           moveTo, moveInto, symlinkTo, symlinkInto, modified, accessed, readable, writable, hidden,
+           touch, make, created, executable, hardLinks, exists }
 
 package filesystemOptions:
-  export galilei.filesystemOptions.{readAccess, writeAccess, dereferenceSymlinks, moveAtomically,
-      copyAttributes, deleteRecursively, overwritePreexisting, createNonexistentParents,
-      createNonexistent, writeSynchronously}
+  export galilei.filesystemOptions
+         . { readAccess, writeAccess, dereferenceSymlinks, moveAtomically, copyAttributes,
+             deleteRecursively, overwritePreexisting, createNonexistentParents, createNonexistent,
+             writeSynchronously }
+
+package filesystemTraversal:
+  export galilei.filesystemTraversal.{preOrder, postOrder}
