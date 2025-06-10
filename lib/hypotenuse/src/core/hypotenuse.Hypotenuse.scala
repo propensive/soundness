@@ -586,7 +586,7 @@ object Hypotenuse:
     inline infix def %% (right: into S64): S64 = math.floorMod(s64, right)
 
     @targetName("floorDivS64")
-    inline infix def \ (right: into S64): S64 = math.floorDiv(s64, right)
+    inline infix def /- (right: into S64): S64 = math.floorDiv(s64, right)
 
     @targetName("powerS64")
     inline infix def ** (exponent: Double): Double = math.pow(s64.toDouble, exponent)
@@ -642,7 +642,7 @@ object Hypotenuse:
     inline infix def %% (right: into S32): S32 = math.floorMod(s32, right)
 
     @targetName("floorDivS32")
-    inline infix def \ (right: into S32): S32 = math.floorDiv(s32, right)
+    inline infix def /- (right: into S32): S32 = math.floorDiv(s32, right)
 
     @targetName("divS32")
     inline infix def / (right: into S32)(using division: DivisionByZero): division.Wrap[S32] =
@@ -698,7 +698,7 @@ object Hypotenuse:
     inline infix def %% (right: into S16): S16 = math.floorMod(s16, right).toShort
 
     @targetName("floorDivS16")
-    inline infix def \ (right: into S16): S16 = math.floorDiv(s16, right).toShort
+    inline infix def /- (right: into S16): S16 = math.floorDiv(s16, right).toShort
 
     @targetName("divS16")
     inline infix def / (right: into S16)(using division: DivisionByZero): division.Wrap[S16] =
@@ -757,7 +757,7 @@ object Hypotenuse:
     inline infix def %% (right: into S8): S8 = math.floorMod(s8, right).toByte
 
     @targetName("floorDivS8")
-    inline infix def \ (right: into S8): S8 = math.floorDiv(s8, right).toByte
+    inline infix def /- (right: into S8): S8 = math.floorDiv(s8, right).toByte
 
     @targetName("divS8")
     inline infix def / (right: into S8)(using division: DivisionByZero): division.Wrap[S8] =
