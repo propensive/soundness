@@ -490,3 +490,72 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
         p2
 
       . assert(_ == % / "home" / "work" / "baz" / "quux")
+
+    suite(m"Pattern matching"):
+
+      val shortPath: Path on Linux = % / "home"
+      val path: Path on Linux = % / "home" / "work" / "data"
+
+      test(m"Match root on a simple path"):
+        path match
+          case root /: right => root
+
+      . assert(_ == t"/")
+
+      test(m"Match root on a short path"):
+        shortPath match
+          case root /: right => root
+
+      . assert(_ == t"/")
+
+      test(m"Match descent on a simple path"):
+        path match
+          case root /: right => right
+
+      . assert(_ == ? / "home" / "work" / "data")
+
+      test(m"Match descent on a short path"):
+        shortPath match
+          case root /: t"home" => true
+          case _               => false
+
+      . assert(identity(_))
+
+      test(m"Match top elementon a simple path"):
+        path match
+          case root /: right0 /: right1 => right0
+
+      . assert(_ == t"home")
+
+
+      test(m"Match further descent on a simple path"):
+        path match
+          case root /: right0 /: right1 => right1
+
+      . assert(_ == ? / "work" / "data")
+
+
+      test(m"Match last descent on a simple path"):
+        path match
+          case root /: right0 /: right1 /: right2 => right2
+
+      . assert(_ == t"data")
+
+
+      test(m"Further elements don't match"):
+        path match
+          case root /: right0 /: right1 /: right2 /: right3 => right3
+          case _                                            => Unset
+
+      . assert(_ == Unset)
+
+      test(m"Multi-level matching"):
+        path match
+          case root /: t"home" /: more => more match
+            case t"work"            => false
+            case t"work" /: t"data" => true
+            case t"data"            => false
+            case other              => false
+          case _ => false
+
+      . assert(identity(_))

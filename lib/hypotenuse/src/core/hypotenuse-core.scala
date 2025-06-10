@@ -210,7 +210,7 @@ extension (byte: Byte)
   inline infix def %% (right: Int): Int = math.floorMod(byte, right)
 
   @targetName("floorDivByte")
-  inline infix def \ (right: Int): Int = math.floorDiv(byte, right)
+  inline infix def /- (right: Int): Int = math.floorDiv(byte, right)
 
   @tailrec @targetName("gcdByte")
   def gcd(right: Byte): Byte = if right == 0 then byte else right.gcd((byte%right).toByte)
@@ -247,7 +247,7 @@ extension (short: Short)
   inline infix def %% (right: Short): Short = math.floorMod(short, right).toShort
 
   @targetName("floorDivShort")
-  inline infix def \ (right: Short): Short = math.floorDiv(short, right).toShort
+  inline infix def /- (right: Short): Short = math.floorDiv(short, right).toShort
 
   @tailrec @targetName("gcdShort")
   def gcd(right: Short): Short = if right == 0 then short else right.gcd((short%right).toShort)
@@ -284,7 +284,7 @@ extension (int: Int)
   inline infix def %% (right: Int): Int = math.floorMod(int, right)
 
   @targetName("floorDivInt")
-  inline infix def \ (right: Int): Int = math.floorDiv(int, right)
+  inline infix def /- (right: Int): Int = math.floorDiv(int, right)
 
   @tailrec @targetName("gcdInt")
   def gcd(right: Int): Int = if right == 0 then int else right.gcd(int%right)
@@ -315,7 +315,7 @@ extension (long: Long)
   inline infix def %% (right: Long): Long = math.floorMod(long, right)
 
   @targetName("floorDivLong")
-  inline infix def \ (right: Long): Long = math.floorDiv(long, right)
+  inline infix def /- (right: Long): Long = math.floorDiv(long, right)
 
   @targetName("powerLong")
   inline infix def ** (exponent: Double): Double = math.pow(long.toDouble, exponent)

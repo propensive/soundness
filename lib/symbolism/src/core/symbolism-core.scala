@@ -71,3 +71,7 @@ extension [multiplicand](left: multiplicand)
   : multiplicable.Result =
 
       multiplicable.multiply(left, right)
+
+object `/:`:
+  def unapply[entity: Quotient](value: entity): Option[(entity.Numerator, entity.Denominator)] =
+    entity.decompose(value)
