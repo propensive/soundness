@@ -183,35 +183,65 @@ case class Path(root: Text, descent: Text*):
       case false => Unset
       case _     => determine(right)
 
-  transparent inline def relativeTo(right: Path): Optional[Relative] =
+  def relative: Relative of Subject on Platform under 0 =
+    Relative[Platform, Subject, 0](0, descent*)
+
+  transparent inline def relativeTo[platform](right: Path on platform): Optional[Relative] =
     inline sameRoot(right) match
-      case true  => val path = certain(right)
-                    inline val baseAscent: Int = count[Subject, right.Subject]
+      case true  =>
+        val path = certain(right)
+        inline val baseAscent: Int = count[Subject, right.Subject]
 
-                    inline !![right.Subject] match
-                      case _: (_ *: _) | Zero =>
-                        inline val ascent = constValue[Tuple.Size[right.Subject]] - baseAscent
+        inline !![right.Subject] match
+          case _: (_ *: _) | Zero =>
+            inline val ascent = constValue[Tuple.Size[right.Subject]] - baseAscent
 
-                        inline !![Subject] match
-                          case _: (_ *: _) | Zero =>
-                            inline val retain = constValue[Tuple.Size[Subject]] - baseAscent
-                            type Subject2 = Tuple.Take[Subject, retain.type]
-                            Relative[Platform, Subject2, ascent.type]
-                             (ascent, descent.dropRight(baseAscent)*)
+            inline !![Subject] match
+              case _: (_ *: _) | Zero =>
+                inline val retain = constValue[Tuple.Size[Subject]] - baseAscent
+                type Subject2 = Tuple.Take[Subject, retain.type]
+                summonFrom:
+                  case given (Platform =:= `platform`) =>
+                    Relative[Platform, Subject2, ascent.type]
+                     (ascent, descent.dropRight(baseAscent)*)
 
-                          case _ =>
-                            Relative[Platform, Tuple, Nat]
-                             (right.depth - path.depth, descent.dropRight(path.depth)*)
+                  case _ =>
+                    Relative[Any, Subject2, ascent.type]
+                     (ascent, descent.dropRight(baseAscent)*)
 
-                      case _ =>
-                        Relative[Platform, Tuple, Nat]
-                         (right.depth - path.depth, descent.dropRight(path.depth)*)
+              case _ =>
+                summonFrom:
+                  case given (Platform =:= `platform`) =>
+                    Relative[Platform, Tuple, Nat]
+                     (right.depth - path.depth, descent.dropRight(path.depth)*)
+                  case _ =>
+                    Relative[Any, Tuple, Nat]
+                     (right.depth - path.depth, descent.dropRight(path.depth)*)
 
-      case false => Unset
-      case _     => determine(right) match
-                      case Unset      => Unset
-                      case path: Path =>
-                        Relative(right.depth - path.depth, descent.dropRight(path.depth)*)
+          case _ =>
+            summonFrom:
+              case given (Platform =:= `platform`) =>
+                Relative[Platform, Tuple, Nat]
+                 (right.depth - path.depth, descent.dropRight(path.depth)*)
+              case _ =>
+                Relative[Any, Tuple, Nat]
+                 (right.depth - path.depth, descent.dropRight(path.depth)*)
+
+      case false =>
+        Unset
+
+      case _ =>
+        determine(right) match
+          case Unset      => Unset
+          case path: Path =>
+            summonFrom:
+              case given (Platform =:= `platform`) =>
+                Relative[Platform, Tuple, Nat]
+                 (right.depth - path.depth, descent.dropRight(path.depth)*)
+
+              case _ =>
+                Relative[Any, Tuple, Nat](right.depth - path.depth, descent.dropRight(path.depth)*)
+
 
   protected transparent inline def determine(right: Path): Optional[Path] = summonFrom:
     case given ValueOf[Constraint] => summonFrom:
