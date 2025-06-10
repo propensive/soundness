@@ -103,6 +103,21 @@ object Relative:
 
   given showable: [system: System] => Relative on system is Showable = _.encode
 
+  transparent inline given quotient: [system, relative <: (Relative on system) | Text]
+                           => relative is Quotient =
+    relative0 =>
+      relative0 match
+        case _: Text => None
+        case _: Relative =>
+          val relative = relative0.asInstanceOf[Relative on system]
+
+          relative.descent match
+            case Nil | _ :: Nil => None
+            case _ :: _ :: Nil  => Some((relative.descent(1), relative.descent(0)))
+            case _              => Some((relative.descent.last, Relative(0, relative.descent.init*)))
+  : relative is Quotient of Text over (Relative on system) | Text
+
+
 case class Relative(ascent: Int, descent: List[Text] = Nil):
   type Platform
   type Subject <: Tuple

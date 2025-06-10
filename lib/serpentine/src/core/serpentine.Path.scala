@@ -107,12 +107,22 @@ object Path:
          =>  Conversion[Path of subject under root, Path of subject on system under root] =
     conversion(_.on[system])
 
+
+  transparent inline given quotient: [system, path <: Path on system] => path is Quotient =
+    ( path =>
+        if path.empty then None
+        else if path.descent.length == 1 then Some((path.root, path.descent.head))
+        else Some((path.root, Relative(0, path.descent*))) )
+    : path is Quotient of Text over (Relative on system) | Text
+
+
 case class Path(root: Text, descent: Text*):
   type Platform
   type Subject <: Tuple
   type Constraint
 
   def name: Text = descent.prim.or(root)
+  def empty: Boolean = descent.isEmpty
 
   inline def knownElementTypes: Boolean = inline !![Subject] match
     case _: Zero           => true
