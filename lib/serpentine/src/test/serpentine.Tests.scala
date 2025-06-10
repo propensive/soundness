@@ -376,12 +376,50 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       . assert()
 
     suite(m"Relative tests"):
+      test(m"Relative type retains platform"):
+        demilitarize:
+          val path1: Path on Linux = % / "home" / "work" / "data" / "foo"
+          val path2: Path on Linux = % / "home" / "more"
+          val relative = path2.relativeTo(path1)
+          relative: Optional[Relative on Linux]
+        . map(_.reason)
+
+      . assert(_ == List())
+
+
+      test(m"Relative types on unique-root System have certain `Relation`"):
+        val path1: Path on Linux = % / "home" / "work" / "data" / "foo"
+        val path2: Path on Linux = % / "home" / "more"
+        path2.relativeTo(path1)
+
+      . assert()
+
+
+      test(m"Relative types on non-unique system still retain Platform"):
+          val path1: Path on Windows = Drive('C') / "home" / "work" / "data" / "foo"
+          val path2: Path on Windows = Drive('C') / "home" / "more"
+          val relative = path2.relativeTo(path1)
+          relative: Optional[Relative on Windows]
+
+
+      test(m"Relative types on different Systems are platformless"):
+        demilitarize:
+          val path1: Path on Linux = % / "home" / "work" / "data" / "foo"
+          val path2: Path on MacOs = % / "home" / "more"
+          val relative = path2.relativeTo(path1)
+          relative: Path on MacOs
+        . map(_.reason)
+
+      . assert(_ == List(CompileError.Reason.TypeMismatch))
+
+
       test(m"Calculate simple relative path"):
         val path1 = % / "home" / "work" / "data" / "foo"
         val path2 = % / "home" / "more"
         path2.relativeTo(path1)
 
       . assert(_ == ? / ^ / ^ / ^ / "more")
+
 
       test(m"Calculate simple relative path in reverse"):
         val path1 = % / "home" / "work" / "data" / "foo"
@@ -390,6 +428,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       . assert(_ == ? / ^ / "work" / "data" / "foo")
 
+
       test(m"Calculate simple relative path on platform"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
         val path2 = (% / "home" / "more").on[Linux]
@@ -397,12 +436,14 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       . assert(_ == ? / ^ / ^ / ^ / "more")
 
+
       test(m"Calculate simple relative path on platform in reverse"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
         val path2 = (% / "home" / "more").on[Linux]
         path1.relativeTo(path2)
 
       . assert(_ == ? / ^ / "work" / "data" / "foo")
+
 
       test(m"Calculate simple relative path on platform statically"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
@@ -412,6 +453,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       . assert(_ == ? / ^ / "work" / "data" / "foo")
 
+
       test(m"Calculate simple relative path in reverse, statically"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
         val path2 = (% / "home" / "more").on[Linux]
@@ -420,11 +462,13 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       . assert(_ == ? / ^ / ^ / ^ / "more")
 
+
       test(m"Add relative parent"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
         path1 + (? / ^)
 
       . assert(_ == % / "home" / "work" / "data")
+
 
       test(m"Add relative grandparent"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
@@ -432,11 +476,13 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       . assert(_ == % / "home" / "work")
 
+
       test(m"Add relative cousin"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
         path1 + (? / ^ / ^ / "baz" / "quux")
 
       . assert(_ == % / "home" / "work" / "baz" / "quux")
+
 
       test(m"Add relative cousin, statically"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
