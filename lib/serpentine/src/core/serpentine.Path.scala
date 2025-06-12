@@ -69,7 +69,7 @@ object Path:
   given nominable: [system] => (Path on system) is Nominable = path =>
     path.descent.prim.or(path.root)
 
-  given specific: [system: System]
+  given instantiable: [system: System]
         =>  Radical on system
         =>  (Path on system) is Instantiable across Paths from Text =
     _.decode[Path on system]

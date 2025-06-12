@@ -30,11 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anticipation
 
-export serpentine
-. { Admissible, Ascent, Case, Dos, Drive, Linux, MacOs, Navigable, Path, Radical, Relative, Root,
-    Submissible, System, Windows, ^, %, ?, Posix, PathError }
+import contingency.*
+import prepositional.*
+import serpentine.*
 
 package interfaces.paths:
-  export anticipation.interfaces.paths.{pathOnLinux, pathOnWindows, pathOnMacOs}
+  given pathOnLinux: Tactic[PathError] => (Path on Linux) is Instantiable across Paths from Text =
+    Path.instantiable[Linux]
+
+  given pathOnWindows: Tactic[PathError]
+        => (Path on Windows) is Instantiable across Paths from Text =
+    Path.instantiable[Windows]
+
+  given pathOnMacOs: Tactic[PathError] => (Path on MacOs) is Instantiable across Paths from Text =
+    Path.instantiable[MacOs]
