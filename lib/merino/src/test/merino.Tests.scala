@@ -33,7 +33,7 @@
 package merino
 
 import ambience.*, systemProperties.jre
-import anticipation.*, filesystemApi.javaIoFile
+import anticipation.*, interfaces.paths.javaIoFile
 import contingency.*, strategies.throwUnsafely
 import eucalyptus.*
 import fulminate.*

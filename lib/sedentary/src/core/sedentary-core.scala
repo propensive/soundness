@@ -47,8 +47,8 @@ extension [test](test: Test[test])
                baseline:   Optional[Baseline]              = Unset)
               (using runner:           Runner[report],
                      inc:              Inclusion[report, Benchmark],
-                     specificDuration: duration is SpecificDuration = durationApi.javaLong,
-                     genericDuration:  duration is GenericDuration  = durationApi.javaLong)
+                     specificDuration: duration is SpecificDuration = interfaces.durations.javaLong,
+                     genericDuration:  duration is GenericDuration  = interfaces.durations.javaLong)
   : Unit =
 
       val action = test.action

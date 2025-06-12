@@ -50,6 +50,8 @@ import serpentine.*
 import spectacular.*
 import symbolism.*
 
+import interfaces.paths.pathOnLinux
+
 import scala.quoted.*
 
 object Dispatcher:
@@ -92,7 +94,6 @@ trait Dispatcher:
             Dispatcher.cache(codepoint)
 
           else
-            given default: (Path on Linux) is Instantiable across Paths from Text = Path.specific[Linux]
             val out = (temporaryDirectory / uuid).on[Linux]
             val settings: staging.Compiler.Settings =
               staging.Compiler.Settings.make

@@ -32,20 +32,22 @@
                                                                                                   */
 package anticipation
 
-import diuretic.*
+import contingency.*
+import prepositional.*
+import serpentine.*
+import scala.sys.SystemProperties
 
-package interfaces:
-  package instants:
-    given javaTimeInstant: JavaTimeInstant.type = JavaTimeInstant
-    given javaLong: JavaLongInstant.type = JavaLongInstant
-    given javaUtilDate: JavaUtilDate.type = JavaUtilDate
+package interfaces.paths:
+  given pathOnLinux: Tactic[PathError] => (Path on Linux) is Instantiable across Paths from Text =
+    Path.instantiable[Linux]
 
-  package durations:
-    given javaLong: JavaLongDuration.type = JavaLongDuration
+  given pathOnWindows: Tactic[PathError]
+        => (Path on Windows) is Instantiable across Paths from Text =
+    Path.instantiable[Windows]
 
-  package paths:
-    given javaNioPath: JavaNioPath.type = JavaNioPath
-    given javaIoFile: JavaIoFile.type = JavaIoFile
+  given pathOnMacOs: Tactic[PathError] => (Path on MacOs) is Instantiable across Paths from Text =
+    Path.instantiable[MacOs]
 
-  package urls:
-    given javaNetUrl: JavaNetUrl.type = JavaNetUrl
+  given pathOnLocal: Tactic[PathError] => Local is System
+        =>  (Path on Local) is Instantiable across Paths from Text =
+    Path.instantiable[Local]
