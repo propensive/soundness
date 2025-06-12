@@ -41,7 +41,7 @@ import gossamer.*
 import hellenism.*, classloaders.threadContext
 import inimitable.*
 import jacinta.*
-import rudiments.*, temporaryDirectories.systemProperty
+import rudiments.*, temporaryDirectories.systemProperties
 import spectacular.*
 
 import scala.quoted.*

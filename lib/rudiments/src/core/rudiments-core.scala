@@ -367,14 +367,14 @@ def temporaryDirectory[path: Instantiable across Paths from Text]
 
 
 package workingDirectories:
-  given systemProperty: WorkingDirectory = () =>
+  given systemProperties: WorkingDirectory = () =>
     Optional(System.getProperty("user.dir")).let(_.tt).or:
       panic(m"the `user.dir` system property is not set")
 
   given default: WorkingDirectory = () => java.nio.file.Paths.get("").nn.toAbsolutePath.toString
 
 package homeDirectories:
-  given systemProperty: HomeDirectory = () =>
+  given systemProperties: HomeDirectory = () =>
     Optional(System.getProperty("user.home")).let(_.tt).or:
       panic(m"the `user.home` system property is not set")
 
@@ -385,7 +385,7 @@ package homeDirectories:
         panic(m"none of `HOME`, `USERPROFILE` or `HOMEPATH` environment variables is set")
 
 package temporaryDirectories:
-  given systemProperty: TemporaryDirectory = () =>
+  given systemProperties: TemporaryDirectory = () =>
     Optional(System.getProperty("java.io.tmpdir")).let(_.tt).or:
       panic(m"the `java.io.tmpdir` system property is not set")
 

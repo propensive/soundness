@@ -97,8 +97,8 @@ package executives:
 
         CliInvocation
          (Cli.arguments(arguments),
-          environments.virtualMachine,
-          workingDirectories.systemProperty,
+          environments.jre,
+          workingDirectories.jre,
           stdio,
           signals)
 
@@ -122,8 +122,8 @@ def application(using executive: Executive, interpreter: CliInterpreter)
   val cli =
     executive.invocation
      (arguments,
-      environments.virtualMachine,
-      workingDirectories.systemProperty,
+      environments.jre,
+      workingDirectories.jre,
       stdioSources.virtualMachine.ansi,
       spool)
 

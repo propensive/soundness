@@ -30,106 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package ambience
 
-import ambience.*
-import anthology.*
 import anticipation.*
-import contingency.*
-import digression.*
 import distillate.*
-import galilei.*
-import hellenism.*
-import inimitable.*
-import jacinta.*
-import nomenclature.*
+import gossamer.*
 import prepositional.*
-import proscenium.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import symbolism.*
 
-import scala.quoted.*
+object Architecture:
+  given decodable: Architecture is Decodable in Text =
+    case t"x86" | t"i386"     => X86(32)
+    case t"x86_64" | t"amd64" => X86(64)
+    case t"arm"               => Arm(32)
+    case t"ppc"               => Ppc(32)
+    case t"ppc64"             => Ppc(64)
+    case t"ppc64le"           => Ppc(64, true)
+    case t"sparc"             => Sparc(32)
+    case t"sparcv9"           => Sparc(64)
+    case t"mips"              => Mips(32)
+    case t"mips64"            => Mips(64)
+    case t"riscv64"           => RiscV
+    case t"s390"              => S390(31)
+    case t"s390x"             => S390(64)
+    case name                 => Other(name)
 
-object Dispatcher:
-  private var cache: Map[Codepoint, (Path on Linux, Text => Text)] = Map()
-
-trait Dispatcher:
-  type Result[output]
-  protected def scalac: Scalac[?]
-  protected def invoke[output](dispatch: Dispatch[output]): Result[output]
-
-
-  inline def dispatch[output: Decodable in Json]
-              (body: References ?=> Quotes ?=> Expr[output])
-              [version <: Scalac.All]
-              (using codepoint:   Codepoint,
-                     classloader: Classloader,
-                     properties:  SystemProperties,
-                     directory:   TemporaryDirectory)
-  : Result[output] raises CompilerError =
-
-      try
-        import strategies.throwUnsafely
-        val uuid = Uuid()
-
-        val references = new References()
-
-        val (out, fn): (Path on Linux, Text => Text) =
-          if Dispatcher.cache.contains(codepoint) then
-            val settings: staging.Compiler.Settings =
-              staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
-
-            given compiler: staging.Compiler =
-              staging.Compiler.make(classloader.java)(using settings)
-
-            staging.withQuotes:
-              '{  (array: List[Json]) =>
-                    ${  references.setRef('array)
-                        body(using references)  }  }
-
-            Dispatcher.cache(codepoint)
-
-          else
-            given default: (Path on Linux) is Instantiable across Paths from Text = Path.specific[Linux]
-            val out = (temporaryDirectory / uuid).on[Linux]
-            val settings: staging.Compiler.Settings =
-              staging.Compiler.Settings.make
-               (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
-
-            given compiler: staging.Compiler =
-              staging.Compiler.make(classloader.java)(using settings)
-
-            val fn: Text => Text = staging.run:
-              val fromList: Expr[List[Json] => Text] = '{ (array: List[Json]) =>
-                import Json.jsonEncodableInText
-                ${  references.setRef('array)
-                    body(using references)  }
-                . json.encode
-              }
-
-              '{ text => $fromList(text.decode[Json].as[List[Json]]) }
-
-            Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
-
-            (out, fn)
-
-        val classpath = classloaders.threadContext.classpath match
-          case classpath: LocalClasspath =>
-            LocalClasspath(classpath.entries :+ Classpath.Directory(out))
-
-          case _ =>
-            val systemClasspath = Properties.java.`class`.path()
-            LocalClasspath:
-              Classpath.Directory(out) :: systemClasspath.decode[LocalClasspath].entries
-
-        invoke[output]
-         (Dispatch
-           (out,
-            classpath, () => fn(references()).decode[Json].as[output],
-            (fn: Text => Text) => fn(references()).decode[Json].as[output]))
-      catch case throwable: Throwable =>
-        println("Failed, somehow")
-        println(throwable)
-        ???
+enum Architecture:
+  case X86(bits: 32 | 64)
+  case Arm(bits: 32 | 64)
+  case Ppc(bits: 32 | 64, littleEndian: Boolean = false)
+  case Sparc(bits: 32 | 64)
+  case Mips(bits: 32 | 64)
+  case S390(bits: 31 | 64)
+  case RiscV
+  case Other(name: Text)

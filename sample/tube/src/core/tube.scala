@@ -10,7 +10,7 @@ import enumIdentification.kebabCase
 import environments.daemonClient
 import errorDiagnostics.stackTraces
 import executives.completions
-import homeDirectories.systemProperty
+import homeDirectories.systemProperties
 import logging.silent
 import asyncTermination.cancel
 import parameterInterpretation.posix

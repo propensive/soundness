@@ -32,7 +32,7 @@
                                                                                                   */
 package exoskeleton
 
-import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
+import ambience.*, environments.jre, systemProperties.jre
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -42,7 +42,7 @@ import gossamer.{where as _, *}
 import guillotine.*
 import nomenclature.*
 import prepositional.*
-import rudiments.*, homeDirectories.systemProperty
+import rudiments.*, homeDirectories.systemProperties
 import serpentine.*
 import spectacular.*
 import symbolism.*

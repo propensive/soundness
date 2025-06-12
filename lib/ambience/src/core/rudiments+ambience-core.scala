@@ -37,11 +37,19 @@ import language.experimental.pureFunctions
 import ambience.*
 import anticipation.*
 import contingency.*
+import fulminate.*
+import gossamer.*
+import vacuous.*
 
 package workingDirectories:
-  given virtualMachine: Tactic[SystemPropertyError] => SystemProperties => WorkingDirectory =
-    () => Properties.user.dir[Text]()
+  given system: (properties: SystemProperties) => WorkingDirectory =
+    () => properties(t"user.dir").or(panic(m"the property `user.dir` should be present"))
+
+  given jre: WorkingDirectory = system(using ambience.systemProperties.jre)
+
 
 package homeDirectories:
-  given virtualMachine: Tactic[SystemPropertyError] => SystemProperties => HomeDirectory =
-    () => Properties.user.home[Text]()
+  given system: (properties: SystemProperties) => HomeDirectory =
+    () => properties(t"user.home").or(panic(m"the property `user.home` should be present"))
+
+  given jre: HomeDirectory = system(using ambience.systemProperties.jre)

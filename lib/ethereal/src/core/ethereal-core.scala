@@ -35,7 +35,7 @@ package ethereal
 import language.experimental.pureFunctions
 
 import scala.collection.concurrent as scc
-import ambience.*, systemProperties.virtualMachine
+import ambience.*, systemProperties.jre
 import anticipation.*
 import contingency.*
 import digression.*
@@ -54,7 +54,7 @@ import parasite.*
 import prepositional.*
 import profanity.*
 import proscenium.*
-import rudiments.*, homeDirectories.systemProperty
+import rudiments.*, homeDirectories.systemProperties
 import serpentine.*
 import spectacular.*
 import surveillance.*
@@ -93,9 +93,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
   given realm: Realm = realm"ethereal"
 
-  import environments.virtualMachine
+  import environments.jre
   import strategies.throwUnsafely
-  import workingDirectories.systemProperty
+  import workingDirectories.systemProperties
   import stdioSources.virtualMachine.ansi
 
   val name: Text =
@@ -249,7 +249,7 @@ def cli[bus <: Matchable](using executive: Executive)
               def ansi: Boolean = true
 
               lazy val color: ColorDepth =
-                import workingDirectories.systemProperty
+                import workingDirectories.systemProperties
 
                 if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
                 else ColorDepth

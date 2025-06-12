@@ -165,21 +165,20 @@ case class Path(root: Text, descent: Text*):
         path.each: element =>
           summonInline[Text is Admissible on system].check(element)
 
-  inline def on[system]: Path of Subject under Constraint on system =
-    summonFrom:
-      case given (`system` =:= Platform) =>
-        this.asInstanceOf[Path of Subject under Constraint on system]
+  inline def on[system]: Path of Subject under Constraint on system = summonFrom:
+    case given (`system` =:= Platform) =>
+      this.asInstanceOf[Path of Subject under Constraint on system]
 
-      case _ =>
-        check[Subject, system](descent.to(List))
+    case _ =>
+      check[Subject, system](descent.to(List))
 
-        summonFrom:
-          case constraint: (Constraint is Submissible on `system`)       => constraint.check(root)
-          case radical: (Constraint is Radical on `system`)              => radical.decode(root)
-          case system: (`system` is (System { type UniqueRoot = true })) =>
-            summonInline[Platform is (System { type UniqueRoot = true })]
+      summonFrom:
+        case constraint: (Constraint is Submissible on `system`)       => constraint.check(root)
+        case radical: (Constraint is Radical on `system`)              => radical.decode(root)
+        case system: (`system` is (System { type UniqueRoot = true })) =>
+          summonInline[Platform is (System { type UniqueRoot = true })]
 
-        this.asInstanceOf[Path of Subject under Constraint on system]
+      this.asInstanceOf[Path of Subject under Constraint on system]
 
   def graft[radical: Radical on Platform](root: radical): Path of Subject under root.type =
     Path.of[Platform, root.type, Subject](radical.encode(root), descent*)

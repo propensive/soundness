@@ -45,7 +45,7 @@ case class Syslog(tag: Optional[Text] = Unset)
 
 object Syslog:
   given appendable: Monitor => Syslog is Writable by Text = (syslog, stream) =>
-    import workingDirectories.systemProperty
+    import workingDirectories.systemProperties
 
     recover:
       case StreamError(_)     => ()
