@@ -33,7 +33,7 @@
 package zeppelin
 
 import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
-import anticipation.*, filesystemApi.javaIoFile
+import anticipation.*, interfaces.paths.javaIoFile
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*

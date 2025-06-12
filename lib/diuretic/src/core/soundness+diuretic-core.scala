@@ -34,14 +34,15 @@ package soundness
 
 import diuretic.*
 
-package instantApi:
-  export anticipation.instantApi.{javaTimeInstant, javaLong, javaUtilDate}
+package interfaces:
+  package instants:
+    export anticipation.interfaces.instants.{javaTimeInstant, javaLong, javaUtilDate}
 
-package durationApi:
-  export anticipation.durationApi.javaLong
+  package durations:
+    export anticipation.interfaces.durations.javaLong
 
-package filesystemApi:
-  export anticipation.filesystemApi.{javaNioPath, javaIoFile}
+  package paths:
+    export anticipation.interfaces.paths.{javaNioPath, javaIoFile}
 
-package urlApi:
-  export anticipation.urlApi.javaNetUrl
+  package urls:
+    export anticipation.interfaces.urls.javaNetUrl

@@ -34,17 +34,18 @@ package anticipation
 
 import diuretic.*
 
-package instantApi:
-  given javaTimeInstant: JavaTimeInstant.type = JavaTimeInstant
-  given javaLong: JavaLongInstant.type = JavaLongInstant
-  given javaUtilDate: JavaUtilDate.type = JavaUtilDate
+package interfaces:
+  package instants:
+    given javaTimeInstant: JavaTimeInstant.type = JavaTimeInstant
+    given javaLong: JavaLongInstant.type = JavaLongInstant
+    given javaUtilDate: JavaUtilDate.type = JavaUtilDate
 
-package durationApi:
-  given javaLong: JavaLongDuration.type = JavaLongDuration
+  package durations:
+    given javaLong: JavaLongDuration.type = JavaLongDuration
 
-package filesystemApi:
-  given javaNioPath: JavaNioPath.type = JavaNioPath
-  given javaIoFile: JavaIoFile.type = JavaIoFile
+  package paths:
+    given javaNioPath: JavaNioPath.type = JavaNioPath
+    given javaIoFile: JavaIoFile.type = JavaIoFile
 
-package urlApi:
-  given javaNetUrl: JavaNetUrl.type = JavaNetUrl
+  package urls:
+    given javaNetUrl: JavaNetUrl.type = JavaNetUrl

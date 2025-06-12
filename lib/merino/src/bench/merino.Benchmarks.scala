@@ -33,7 +33,7 @@
 package merino
 
 import ambience.*, environments.system
-import anticipation.* //, filesystemInterfaces.galileiApi
+import anticipation.* //, interfaces.paths.galileiApi
 import eucalyptus.*
 import gossamer.*
 import hieroglyph.*, characterEncodings.utf8, badEncodingHandlers.strict

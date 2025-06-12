@@ -36,7 +36,7 @@ import aviation.*
 import prepositional.*
 import quantitative.*
 
-package instantApi:
+package interfaces.instants:
   given aviationInstant: Aviation2.Instant is (Abstractable & Instantiable) across Instants into
                           Long from Long =
     new Abstractable with Instantiable:
@@ -46,7 +46,7 @@ package instantApi:
       type Domain = Instants
       export Aviation2.Instant.generic.{genericize, apply}
 
-package durationApi:
+package interfaces.durations:
   given aviationDuration: [units <: Measure: Normalizable into Seconds[1]]
         => Quantity[units] is GenericDuration & SpecificDuration =
     new GenericDuration with SpecificDuration:

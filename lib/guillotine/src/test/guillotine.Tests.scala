@@ -266,6 +266,6 @@ object Tests extends Suite(m"Guillotine tests"):
       .assert(_ == t"Hello world")
 
       test(m"implied return type for `which`"):
-        import filesystemApi.galileiPath
+        import interfaces.paths.galileiPath
         sh"which cat"()
       .assert(_ == Unix / "bin" / "cat")
