@@ -38,6 +38,7 @@ import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
+import spectacular.*
 
 erased trait Local
 
@@ -49,9 +50,6 @@ object Local:
   given system: SystemProperties => Local is System:
     type UniqueRoot = false
 
-    summon[SystemProperty["os.name", Text]]
-    private val operatingSystem: Text = Properties.os.name()
-
-    val separator: Text = t""
+    val separator: Text = Properties.path.separator().show
     val self: Text = t"."
     val parent: Text = t".."
