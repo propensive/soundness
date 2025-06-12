@@ -1,8 +1,10 @@
 #!/bin/bash
 
+export SOUNDNESS=$(git describe --tags $(git rev-list --tags --max-count 1))
+echo "Setting version to $SOUNDNESS"
 for FILE in lib/*/src/*/*.scala
 do
   echo "Updating header in $FILE"
-  cat etc/header.txt > .tmpfile
+  cat etc/header.txt | envsubst > .tmpfile
   sed '/package/,$!d' "${FILE}" >> .tmpfile && mv .tmpfile "${FILE}"
 done
