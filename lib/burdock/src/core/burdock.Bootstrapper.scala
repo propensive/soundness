@@ -64,8 +64,8 @@ import stdioSources.virtualMachine.ansi
 import unhandledErrors.stackTrace
 import executives.direct
 import parameterInterpretation.posix
-import workingDirectories.virtualMachine
-import systemProperties.virtualMachine
+import systemProperties.jre
+import workingDirectories.systemProperties
 import internetAccess.enabled
 import logging.silent
 import alphabets.hex.lowerCase

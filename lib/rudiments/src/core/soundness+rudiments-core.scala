@@ -43,10 +43,10 @@ export rudiments
     annex, intercalate }
 
 package workingDirectories:
-  export rudiments.workingDirectories.{systemProperty, default}
+  export rudiments.workingDirectories.{systemProperties, default}
 
 package homeDirectories:
-  export rudiments.homeDirectories.{systemProperty, environment}
+  export rudiments.homeDirectories.{systemProperties, environment}
 
 package temporaryDirectories:
-  export rudiments.temporaryDirectories.{systemProperty, environment}
+  export rudiments.temporaryDirectories.{systemProperties, environment}

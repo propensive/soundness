@@ -37,13 +37,13 @@ export ambience
     SystemProperties, SystemProperty, SystemPropertyError, Xdg }
 
 package systemProperties:
-  export ambience.systemProperties.{empty, virtualMachine}
+  export ambience.systemProperties.{empty, jre}
 
 package environments:
-  export ambience.environments.{empty, virtualMachine}
+  export ambience.environments.{empty, jre}
 
 package workingDirectories:
-  export rudiments.workingDirectories.virtualMachine
+  export rudiments.workingDirectories.jre
 
 package homeDirectories:
-  export rudiments.homeDirectories.virtualMachine
+  export rudiments.homeDirectories.jre

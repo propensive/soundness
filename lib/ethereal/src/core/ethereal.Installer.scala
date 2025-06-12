@@ -111,8 +111,8 @@ object Installer:
        (using Effectful, Diagnostics)
   : Result logs DaemonLogEvent raises InstallError =
 
-      import workingDirectories.systemProperty
-      import systemProperties.virtualMachine
+      import workingDirectories.jre
+      import systemProperties.jre
 
       mitigate:
         case PathError(_, _)        => InstallError(InstallError.Reason.Environment)

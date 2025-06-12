@@ -585,6 +585,7 @@ object Bytecode:
       case 0xCA => t"reserved for breakpoints"
       case 0xFE => t"implementation-dependent"
       case 0xFF => t"implementation-dependent"
+      case _    => t"unrecognized"
 
     def highlight: Rgb24 = cost match
       case 0 => rgb"#1a6a6c"

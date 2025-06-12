@@ -41,12 +41,12 @@ package systemProperties:
   given empty: SystemProperties:
     def apply(name: Text): Unset.type = Unset
 
-  given virtualMachine: SystemProperties:
+  given jre: SystemProperties:
     def apply(name: Text): Optional[Text] = Optional(System.getProperty(name.s)).let(_.tt)
 
 package environments:
   given empty: Environment:
     def variable(name: Text): Unset.type = Unset
 
-  given virtualMachine: Environment:
+  given jre: Environment:
     def variable(name: Text): Optional[Text] = Optional(System.getenv(name.s)).let(_.tt)

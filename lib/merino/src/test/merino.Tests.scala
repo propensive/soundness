@@ -32,7 +32,7 @@
                                                                                                   */
 package merino
 
-import ambience.*, systemProperties.virtualMachine
+import ambience.*, systemProperties.jre
 import anticipation.*, filesystemApi.javaIoFile
 import contingency.*, strategies.throwUnsafely
 import eucalyptus.*
@@ -40,7 +40,7 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
 import probably.*
-import rudiments.*, workingDirectories.virtualMachine
+import rudiments.*, workingDirectories.systemProperties
 import turbulence.*
 import sedentary.*
 import errorDiagnostics.stackTraces

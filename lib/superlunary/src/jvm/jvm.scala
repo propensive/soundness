@@ -32,7 +32,7 @@
                                                                                                   */
 package superlunary
 
-import ambience.*, systemProperties.virtualMachine
+import ambience.*, systemProperties.jre
 import anthology.*
 import anticipation.*
 import contingency.*
@@ -46,7 +46,7 @@ object remote extends Dispatcher:
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[output](dispatch: Dispatch[output]): output =
-    import workingDirectories.virtualMachine
+    import workingDirectories.systemProperties
     import logging.silent
 
     dispatch.remote: input =>

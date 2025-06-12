@@ -40,12 +40,10 @@ import vacuous.*
 
 object Properties extends Dynamic:
   def apply[property](property: Text)
-       (using properties:     SystemProperties,
-              reader:         SystemProperty[String, property],
-              systemProperty: Tactic[SystemPropertyError])
+       (using properties: SystemProperties, reader: SystemProperty[String, property])
   : property =
 
-      properties(property).let(reader.read).lest(SystemPropertyError(property))
+      reader.read(properties(property), property)
 
 
   def selectDynamic(key: String): PropertyAccess[key.type] = PropertyAccess[key.type](key)
