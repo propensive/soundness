@@ -34,11 +34,19 @@ package serpentine
 
 import gossamer.*
 import prepositional.*
+import proscenium.*
 
 object Drive:
   def apply(letter: Char): Drive = new Drive(letter)
+  def unapply(drive: Drive): Some[Char] = Some(drive.letter)
 
   given Drive is Submissible on Windows = _ => ()
 
 class Drive(val letter: Char) extends Root(t"$letter:\\"):
   type Platform = Windows
+
+  override def equals(that: Any): Boolean = that.absolve match
+    case drive: Drive => letter == drive.letter
+    case _            => false
+
+  override def hashCode: Int = letter.hashCode

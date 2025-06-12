@@ -37,4 +37,4 @@ export serpentine
     Submissible, System, Windows, ^, %, ?, Posix, PathError }
 
 package interfaces.paths:
-  export anticipation.interfaces.paths.{pathOnLinux, pathOnWindows, pathOnMacOs}
+  export anticipation.interfaces.paths.{pathOnLinux, pathOnWindows, pathOnMacOs, pathOnLocal}

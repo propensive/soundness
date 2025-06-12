@@ -35,6 +35,7 @@ package anticipation
 import contingency.*
 import prepositional.*
 import serpentine.*
+import scala.sys.SystemProperties
 
 package interfaces.paths:
   given pathOnLinux: Tactic[PathError] => (Path on Linux) is Instantiable across Paths from Text =
@@ -46,3 +47,7 @@ package interfaces.paths:
 
   given pathOnMacOs: Tactic[PathError] => (Path on MacOs) is Instantiable across Paths from Text =
     Path.instantiable[MacOs]
+
+  given pathOnLocal: Tactic[PathError] => Local is System
+        =>  (Path on Local) is Instantiable across Paths from Text =
+    Path.instantiable[Local]

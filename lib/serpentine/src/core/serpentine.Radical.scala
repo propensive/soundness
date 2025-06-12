@@ -68,6 +68,22 @@ object Radical:
 
     def encode(root: %.type): Text = t"/"
 
+  given local: Tactic[PathError] => (%.type | Drive) is Radical:
+    type Platform = Local
+
+    def length(text: Text): 1 | 3 =
+      if text.starts(t"/") then 1 else if text.s(1) == ':' && text.s(2) == '\\' then 3
+      else abort(PathError(_.InvalidRoot))
+
+    def decode(text: Text): %.type | Drive =
+      length(text) match
+        case 1 => %
+        case 3 => Drive(text.s(0).lest(PathError(_.InvalidRoot)))
+
+    def encode(root: %.type | Drive): Text = root match
+      case Drive(letter) => t"$letter:\\"
+      case %             => t"/"
+
 trait Radical:
   type Platform
   type Self
