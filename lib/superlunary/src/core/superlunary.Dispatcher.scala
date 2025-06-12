@@ -92,7 +92,8 @@ trait Dispatcher:
             Dispatcher.cache(codepoint)
 
           else
-            val out: Path on Linux = temporaryDirectory[Path on Linux] / uuid
+            given default: (Path on Linux) is Instantiable across Paths from Text = Path.specific[Linux]
+            val out = (temporaryDirectory / uuid).on[Linux]
             val settings: staging.Compiler.Settings =
               staging.Compiler.Settings.make
                (Some(out.encode.s), scalac.commandLineArguments.map(_.s))

@@ -103,8 +103,8 @@ object Path:
 
   private def conversion[from, to](lambda: from => to): Conversion[from, to] = lambda(_)
 
-  inline given convert: [subject, root, system]
-         =>  Conversion[Path of subject under root, Path of subject on system under root] =
+  inline given convert: [subject, root, system, path <: Path of subject under root]
+         =>  Conversion[path, Path of subject on system under root] =
     conversion(_.on[system])
 
 
@@ -155,11 +155,15 @@ case class Path(root: Text, descent: Text*):
 
   private inline def check[subject, system](path: List[Text]): Unit =
     inline !![subject] match
+      case _: Zero => ()
+
       case _: (head *: tail) =>
         summonInline[head is Admissible on system].check(path.head)
         check[tail, system](path.tail)
 
       case _ =>
+        path.each: element =>
+          summonInline[Text is Admissible on system].check(element)
 
   inline def on[system]: Path of Subject under Constraint on system =
     summonFrom:
@@ -168,15 +172,14 @@ case class Path(root: Text, descent: Text*):
 
       case _ =>
         check[Subject, system](descent.to(List))
-        summonFrom:
-          case constraint: (Constraint is Submissible on `system`) =>
-            constraint.check(root)
-            this.asInstanceOf[Path of Subject under Constraint on system]
 
-          case radical: (Constraint is Radical on `system`) =>
-            println(s"$radical . decode $root")
-            radical.decode(root)
-            this.asInstanceOf[Path of Subject under Constraint on system]
+        summonFrom:
+          case constraint: (Constraint is Submissible on `system`)       => constraint.check(root)
+          case radical: (Constraint is Radical on `system`)              => radical.decode(root)
+          case system: (`system` is (System { type UniqueRoot = true })) =>
+            summonInline[Platform is (System { type UniqueRoot = true })]
+
+        this.asInstanceOf[Path of Subject under Constraint on system]
 
   def graft[radical: Radical on Platform](root: radical): Path of Subject under root.type =
     Path.of[Platform, root.type, Subject](radical.encode(root), descent*)
