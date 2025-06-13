@@ -106,13 +106,10 @@ trait Dispatcher:
               staging.Compiler.make(classloader.java)(using settings)
 
             val function: Format => Format = staging.run:
-              val fromList: Expr[List[carrier] => Format] =
-                '{ (array: List[carrier]) =>
-                      ${dispatchable.encoder[output]}
-                         (${  references() = 'array
-                              body(using references)  })  }
-
-              '{ format => $fromList(${dispatchable.decoder}(format)) }
+              '{  format =>
+                    ${dispatchable.encoder[output]}
+                       (${  references() = '{${dispatchable.decoder}(format)}
+                            body(using references)  })  }
 
             cache = cache.updated(codepoint, (out, function))
 
