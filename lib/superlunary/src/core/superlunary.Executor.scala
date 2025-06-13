@@ -32,6 +32,7 @@
                                                                                                   */
 package superlunary
 
+import java.io as ji
 import scala.reflect.Selectable.reflectiveSelectable
 
 object Executor:
@@ -44,6 +45,5 @@ object Executor:
 
   def main(args: Array[String]): Unit =
     val out = System.out.nn
-    System.setErr(null)
     System.setOut(null)
-    out.println(run(args(0)))
+    Console.withOut(_ => ())(out.println(run(args(0))))

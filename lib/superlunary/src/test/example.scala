@@ -64,7 +64,10 @@ def run(): Unit =
               ${refs.array}(${ToExpr.IntToExpr(refs.allocate(encoded))}).as[value]  }
 
   def fn(message: Example): Example = remote.dispatch:
-    '{  Example(t"Time: ${System.currentTimeMillis - ${message.count}}", 9)  }
+    '{  val x = ${message.name}
+        val y = ${message.count}
+        println(y)
+        Example(t"Time: $x $y ${System.currentTimeMillis - ${message}.count}", 9)  }
 
   println(fn(Example(t"one", System.currentTimeMillis)))
   println(fn(Example(t"two", System.currentTimeMillis)))
