@@ -36,3 +36,4 @@ export Path.`%`
 export Relative.{`^`, `?`}
 
 type Posix = MacOs | Linux
+type Filesystem = Posix | Windows

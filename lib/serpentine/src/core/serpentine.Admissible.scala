@@ -58,7 +58,7 @@ object Admissible:
     Admissible[string, system]({ void => Name.verify[string, system] })
 
 
-  given uuid: [uuid <: Uuid, system <: Linux | Windows | MacOs] => uuid is Admissible on system =
+  given uuid: [uuid <: Uuid, system <: Filesystem] => uuid is Admissible on system =
     unchecked[uuid, system]
 
 trait Admissible:

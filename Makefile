@@ -40,7 +40,7 @@ bootstrap/%: boot image/%
 
 matrix:
 	@$(foreach jdk,23 24, \
-	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1-RC1 3.7.1-RC2 main, \
+	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
 .PHONY: publishLocal build dev ci test matrix

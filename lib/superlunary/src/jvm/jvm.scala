@@ -42,10 +42,11 @@ import rudiments.*
 
 object remote extends Dispatcher:
   type Result[output] = output
+  type Format = Text
 
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
-  protected def invoke[output](dispatch: Dispatch[output]): output =
+  protected def invoke[output](dispatch: Dispatch[output, Format]): output =
     import workingDirectories.systemProperties
     import logging.silent
 

@@ -50,36 +50,39 @@ import serpentine.*
 import spectacular.*
 import symbolism.*
 
-import interfaces.paths.pathOnLinux
+import interfaces.paths.pathOnMacOs
 
 import scala.quoted.*
 
-object Dispatcher:
-  private var cache: Map[Codepoint, (Path on Linux, Text => Text)] = Map()
 
 trait Dispatcher:
+  println("Initializing dispatcher")
   type Result[output]
+  type Format
   protected def scalac: Scalac[?]
-  protected def invoke[output](dispatch: Dispatch[output]): Result[output]
+  protected def invoke[output](dispatch: Dispatch[output, Format]): Result[output]
+
+  private var cache: Map[Codepoint, (Path on MacOs, Format => Format)] = Map()
 
 
-  inline def dispatch[output: Decodable in Json]
-              (body: References ?=> Quotes ?=> Expr[output])
+  inline def dispatch[output: Decodable in Json, carrier]
+              (body: References[carrier] ?=> Quotes ?=> Expr[output])
               [version <: Scalac.All]
-              (using codepoint:   Codepoint,
-                     classloader: Classloader,
-                     properties:  SystemProperties,
-                     directory:   TemporaryDirectory)
+              (using codepoint:    Codepoint,
+                     classloader:  Classloader,
+                     properties:   SystemProperties,
+                     directory:    TemporaryDirectory,
+                     dispatchable: Dispatchable over carrier in Format)
   : Result[output] raises CompilerError =
 
       try
         import strategies.throwUnsafely
         val uuid = Uuid()
 
-        val references = new References()
+        val references: References[carrier] = new References()
 
-        val (out, fn): (Path on Linux, Text => Text) =
-          if Dispatcher.cache.contains(codepoint) then
+        val (out, function): (Path on MacOs, Format => Format) =
+          if cache.contains(codepoint) then
             val settings: staging.Compiler.Settings =
               staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
 
@@ -87,14 +90,14 @@ trait Dispatcher:
               staging.Compiler.make(classloader.java)(using settings)
 
             staging.withQuotes:
-              '{  (array: List[Json]) =>
-                    ${  references.setRef('array)
-                        body(using references)  }  }
+              '{  (array: List[carrier]) =>
+                    ${references.setRef('array) yet body(using references)}  }
 
-            Dispatcher.cache(codepoint)
+            cache(codepoint)
 
           else
-            val out = (temporaryDirectory / uuid).on[Linux]
+            val out: Path on MacOs = (temporaryDirectory / uuid).on[MacOs]
+
             val settings: staging.Compiler.Settings =
               staging.Compiler.Settings.make
                (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
@@ -102,19 +105,16 @@ trait Dispatcher:
             given compiler: staging.Compiler =
               staging.Compiler.make(classloader.java)(using settings)
 
-            val fn: Text => Text = staging.run:
-              val fromList: Expr[List[Json] => Text] = '{ (array: List[Json]) =>
-                import Json.jsonEncodableInText
-                ${  references.setRef('array)
-                    body(using references)  }
-                . json.encode
-              }
+            val function: Format => Format = staging.run:
+              val fromList: Expr[List[carrier] => Format] =
+                '{ (array: List[carrier]) =>
+                      ${dispatchable.encoder[output]}(${references.setRef('array) yet body(using references)})  }
 
-              '{ text => $fromList(text.decode[Json].as[List[Json]]) }
+              '{ format => $fromList(${dispatchable.decoder}(format)) }
 
-            Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
+            cache = cache.updated(codepoint, (out, function))
 
-            (out, fn)
+            (out, function)
 
         val classpath = classloaders.threadContext.classpath match
           case classpath: LocalClasspath =>
@@ -128,8 +128,9 @@ trait Dispatcher:
         invoke[output]
          (Dispatch
            (out,
-            classpath, () => fn(references()).decode[Json].as[output],
-            (fn: Text => Text) => fn(references()).decode[Json].as[output]))
+            classpath,
+            () => dispatchable.decode[output](function(dispatchable.encode(references()))),
+            (function: Format => Format) => dispatchable.decode[output](function(dispatchable.encode(references())))))
       catch case throwable: Throwable =>
         println("Failed, somehow")
         println(throwable)

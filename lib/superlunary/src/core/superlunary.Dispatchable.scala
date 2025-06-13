@@ -32,39 +32,47 @@
                                                                                                   */
 package superlunary
 
-import ambience.*, systemProperties.jre
+import ambience.*
 import anthology.*
 import anticipation.*
 import contingency.*
-import fulminate.*
-import gossamer.*
-import hellenism.*, classloaders.threadContext
+import digression.*
+import distillate.*
+import galilei.*
+import hellenism.*
 import inimitable.*
 import jacinta.*
-import rudiments.*, temporaryDirectories.systemProperties
+import nomenclature.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import serpentine.*
 import spectacular.*
+import symbolism.*
+
+import interfaces.paths.pathOnLinux
 
 import scala.quoted.*
 
-case class Example(name: Text, count: Long)
+object Dispatchable:
+  given json: Dispatchable:
+    type Carrier = Json
+    type Format = Text
 
-@main
-def run(): Unit =
-  given jsonError: Tactic[JsonError] = strategies.throwUnsafely
-  given compilerError: Tactic[CompilerError] = strategies.throwUnsafely
+    def encoder[value: Type](using Quotes): Expr[value => Text] =
+      '{ (value: value) => value.json.encode }
 
-  inline given [value] => Quotes => (refs: References[Json]) => Conversion[value, Expr[value]] =
-    value =>
-      '{  import strategies.throwUnsafely
-          ${refs.array}(${ToExpr.IntToExpr(refs.allocate(value.json))})
-          . as[value]  }
+    def decoder(using Quotes): Expr[Text => List[Json]] =
+      '{ (text: Text) => unsafely(text.decode[Carrier].as[List[Json]]) }
 
-  def fn(message: Example): Example = remote.dispatch:
-    '{  Example(t"Time: ${System.currentTimeMillis - ${message.count}}", 9)  }
+    inline def encode(value: List[Json]): Text = value.json.encode
+    inline def decode[value](value: Text): value = unsafely(value.decode[Json].as[value])
 
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
+trait Dispatchable:
+  type Carrier
+  type Format
+
+  def encoder[value: Type](using Quotes): Expr[value => Format]
+  def decoder(using Quotes): Expr[Format => List[Carrier]]
+  inline def encode(values: List[Carrier]): Format
+  inline def decode[value](value: Format): value

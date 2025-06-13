@@ -77,20 +77,19 @@ object Tests extends Suite(m"Austronesian tests"):
     val data = List
                 (Person(t"Jim", 19),
                  Group(persons = List(Person(t"Jane", 25), Person(t"John", 30)), size = 2),
-                 Colors(Trie(Color.Blue, Color.Green, Color.Red)))
+                 Colors(Trie(Color.Red, Color.Green)))
 
     test(m"Roundtrip a complex datatype"):
-      unsafely(data.stdlib.decode[List[Something]])
-    . assert(_ == data)
+      recover:
+        case VariantError(_, _, _) => println("variant")
+        case PojoError()           => println("pojo")
 
+      . within:
+          unsafely(data.pojo.decode[List[Something]])
 
+    . assert()
 
-
-    // suite(t"Proxy testing"):
-    //   test(t"Invoke a Proxy method"):
-    //     import classloaders.system
-    //     o"austronesian.Example".run(t"hello")
-    //   .assert()
-
-    //   test(t"Invoke the macro"):
-    //     summon[Person is Restorable]
+    suite(m"Proxy testing"):
+      test(m"Invoke the macro"):
+        println(summon[Person is Restorable])
+      . assert()

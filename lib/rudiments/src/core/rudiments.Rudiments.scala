@@ -79,8 +79,12 @@ object Rudiments:
       def long: Long = left
       def text: Text = (left.toString+" bytes").tt
 
-  def typeName[target: Type](using Quotes): Expr[Nothing] =
+  def probe[target: Type](using Quotes): Expr[Nothing] =
     import quotes.reflect.*
     halt(m"the type is ${TypeRepr.of[target].dealias.widen}")
+
+  def reflectClass[target: Type](using Quotes): Expr[Class[target]] =
+    import quotes.reflect.*
+    '{Class.forName(${Expr(TypeRepr.of[target].typeSymbol.fullName)}).asInstanceOf[Class[target]]}
 
 export Rudiments.{Memory, Digit}

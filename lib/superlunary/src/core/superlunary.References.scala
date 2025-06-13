@@ -42,12 +42,12 @@ import vacuous.*
 import scala.compiletime.*
 import scala.quoted.*
 
-class References[CarrierType]():
-  private var ref: Optional[Expr[List[CarrierType]]] = Unset
-  private var allocations: List[CarrierType] = List()
+class References[carrier]():
+  private var ref: Optional[Expr[List[carrier]]] = Unset
+  private var allocations: List[carrier] = List()
 
-  def set(expr: Expr[List[CarrierType]]): Unit = ref = expr
-  def array: Expr[List[CarrierType]] = ref.vouch
+  def setRef(expr: Expr[List[carrier]]): Unit = ref = expr
+  def array: Expr[List[carrier]] = ref.vouch
   def current: Int = allocations.length
-  def allocate(value: => CarrierType): Int = allocations.length.also { allocations ::= value }
-  def apply(): List[CarrierType] = allocations.reverse
+  def allocate(value: => carrier): Int = allocations.length.also { allocations ::= value }
+  def apply(): List[carrier] = allocations.reverse
