@@ -58,10 +58,13 @@ import scala.quoted.*
 trait Dispatcher:
   type Result[output]
   type Format
+  type Target
 
   protected def scalac: Scalac[?]
-  protected def invoke[output](dispatch: Dispatch[output, Format]): Result[output]
+  protected def invoke[output](dispatch: Dispatch[output, Format, Target]): Result[output]
   private var cache: Map[Codepoint, (Path on Linux, Format => Format)] = Map()
+
+  def deploy(path: Path on Linux): Target
 
   inline def dispatch[output, carrier]
               (body: References[carrier] ?=> Quotes ?=> Expr[output])
@@ -115,18 +118,9 @@ trait Dispatcher:
 
             (out, function)
 
-        val classpath = classloaders.threadContext.classpath match
-          case classpath: LocalClasspath =>
-            LocalClasspath(classpath.entries :+ Classpath.Directory(out))
-
-          case _ =>
-            val systemClasspath = Properties.java.`class`.path().decode[LocalClasspath]
-            LocalClasspath(Classpath.Directory(out) :: systemClasspath.entries)
-
         invoke[output]
          (Dispatch
-           (out,
-            classpath,
+           (deploy(out),
             function => dispatchable.decode[output](function(dispatchable.encode(references())))))
 
       catch case throwable: Throwable =>
