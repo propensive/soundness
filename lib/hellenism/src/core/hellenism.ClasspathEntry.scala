@@ -33,13 +33,19 @@
 package hellenism
 
 import java.net as jn
+import java.io as ji
 
 import anticipation.*
 import gossamer.*
 import prepositional.*
 import vacuous.*
 
-sealed trait ClasspathEntry
+sealed trait ClasspathEntry:
+  def javaUrl: jn.URL = this match
+    case ClasspathEntry.Directory(path) => ji.File(path.s).nn.toURI.nn.toURL.nn
+    case ClasspathEntry.Jar(path)       => ji.File(path.s).nn.toURI.nn.toURL.nn
+    case ClasspathEntry.Url(url)        => jn.URL(url.s).nn
+    case ClasspathEntry.JavaRuntime     => jn.URL("jrt:/").nn
 
 object ClasspathEntry:
   case class Directory(path: Text) extends ClasspathEntry:

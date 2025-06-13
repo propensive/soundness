@@ -149,7 +149,7 @@ object soundness extends ScalaModule {
   object tool extends SoundnessGroupModule {
     def moduleDeps = Seq(anthology.core, harlequin.core, hellenism.core, hyperbole.core,
         octogenarian.core, revolution.core, umbrageous.plugin, anthology.java, harlequin.md,
-        harlequin.ansi)
+        harlequin.ansi, austronesian.core)
   }
 
   object web extends SoundnessGroupModule {
@@ -267,6 +267,7 @@ object test extends ScalaModule {
     umbrageous.test
 
     // Not compiling
+    // austronesian
     // bitumen
     // coaxial
     // cosmopolite
@@ -442,7 +443,7 @@ object anticipation extends SoundnessModule {
 
 object austronesian extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(wisteria.core, distillate.core, probably.core)
+    def moduleDeps = Seq(wisteria.core, distillate.core, probably.core, hellenism.core)
   }
 
   object test extends ProbablyTestModule {

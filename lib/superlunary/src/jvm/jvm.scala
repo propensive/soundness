@@ -36,16 +36,40 @@ import ambience.*, systemProperties.jre
 import anthology.*
 import anticipation.*
 import contingency.*
+import distillate.*
 import eucalyptus.*
 import guillotine.*
+import hellenism.*
+import hieroglyph.*
+import prepositional.*
 import rudiments.*
+import serpentine.*
+import turbulence.*
+
+import charDecoders.utf8
+import textSanitizers.skip
+import systemProperties.jre
+import classloaders.system
 
 object remote extends Dispatcher:
   type Result[output] = output
+  type Format = Text
+  type Target = LocalClasspath
+
+  def deploy(out: Path on Linux): LocalClasspath =
+    println("deploying")
+    classloaders.threadContext.classpath match
+      case classpath: LocalClasspath =>
+        LocalClasspath(classpath.entries :+ Classpath.Directory(out))
+
+      case _ =>
+        val systemClasspath = unsafely(Properties.java.`class`.path().decode[LocalClasspath])
+        LocalClasspath(Classpath.Directory(out) :: systemClasspath.entries)
+
 
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
-  protected def invoke[output](dispatch: Dispatch[output]): output =
+  protected def invoke[output](dispatch: Dispatch[output, Format, Target]): output =
     import workingDirectories.systemProperties
     import logging.silent
 

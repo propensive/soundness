@@ -33,17 +33,22 @@
 package austronesian
 
 import scala.compiletime.*
+import scala.quoted.*
 
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
+import hellenism.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import wisteria.*
 
+given Realm = realm"austronesian"
+
 object Austronesian2:
-  object EncodableDerivation extends Derivation[[Type] =>> Type is Encodable in Pojo]:
+  object EncodableDerivation extends Derivation[[entity] =>> entity is Encodable in Pojo]:
 
     inline def join[derivation <: Product: ProductReflection]
     : derivation is Encodable in _root_.austronesian.Austronesian.Pojo =
@@ -64,7 +69,7 @@ object Austronesian2:
 
   object DecodableDerivation extends Derivable[Decodable in Pojo]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Pojo =
-      case array: Array[Pojo] =>
+      case array: Array[Pojo @unchecked] =>
         construct: [field] =>
           _.decoded(array(index))
 
@@ -72,10 +77,54 @@ object Austronesian2:
         summonInline[Tactic[PojoError]].give(abort(PojoError()))
 
     inline def split[derivation: SumReflection]: derivation is Decodable in Pojo =
-      _.absolve match
-        case Array(label: String, pojo: Pojo) =>
-          delegate(label): [variant <: derivation] =>
-            _.decoded(pojo)
+      case Array(label: String @unchecked, pojo: Pojo @unchecked) =>
+        delegate(label): [variant <: derivation] =>
+          _.decoded(pojo)
 
-        case other =>
-          summonInline[Tactic[PojoError]].give(abort(PojoError()))
+      case other =>
+        summonInline[Tactic[PojoError]].give(abort(PojoError()))
+
+  def isolated[result: Type](classloader: Expr[Classloader], invoke: Expr[result])
+     (using Quotes)
+  :     Expr[result] =
+
+    import quotes.reflect.*
+
+    invoke.asTerm match
+      case term => println(term)
+
+    '{???}
+
+
+  def proxy
+     (className:   Expr[Text],
+      methodName:  Expr[String],
+      arguments:   Expr[Seq[Any]],
+      classloader: Expr[Classloader],
+      singleton:   Expr[Boolean])
+     (using Quotes)
+  :     Expr[Any] =
+
+    import quotes.reflect.*
+
+    val args: IArray[Expr[Pojo]] = arguments.absolve match
+      case Varargs(arguments) => IArray.from(arguments).map:
+        case '{ $argument: argument } =>
+
+          val encodable = Expr.summon[argument is Encodable in Pojo].getOrElse:
+            halt(m"${Type.of[argument]} is not encodable as a standard library parameter")
+
+          '{$encodable.encoded($argument)}
+
+        case _ =>
+          panic(m"unmatched argument")
+
+    if singleton.valueOrAbort then
+      '{  val javaClass = Class.forName($className.s+"$", true, $classloader.java).nn
+          val instance = javaClass.getField("MODULE$").nn.get(null).nn
+          val method = javaClass.getMethod($methodName, classOf[Object]).nn
+          method.invoke(instance, null)  }
+    else
+      '{  val javaClass = Class.forName($className.s, true, $classloader.java).nn
+          val method = javaClass.getMethod($methodName).nn
+          method.invoke(null, null)  }

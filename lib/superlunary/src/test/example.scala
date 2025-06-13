@@ -32,15 +32,17 @@
                                                                                                   */
 package superlunary
 
-import ambience.*, systemProperties.virtualMachine
+import ambience.*, systemProperties.jre
 import anthology.*
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
-import hellenism.*, classloaders.threadContext
+import hellenism.*
 import inimitable.*
 import jacinta.*
+import prepositional.*
 import rudiments.*, temporaryDirectories.systemProperties
 import spectacular.*
 
@@ -53,15 +55,25 @@ def run(): Unit =
   given jsonError: Tactic[JsonError] = strategies.throwUnsafely
   given compilerError: Tactic[CompilerError] = strategies.throwUnsafely
 
-  def offset(input: Long): Text = remote.dispatch:
-    '{  t"${System.currentTimeMillis - ${System.currentTimeMillis.put}}"  }
+  inline given [value] => Quotes => (refs: References[Json]) => Conversion[value, Expr[value]] =
+    value =>
+      compiletime.summonInline[value is Encodable in Json].give:
+        val encoded = value.json
+        val allocation = refs.allocate(encoded)
+        '{  import strategies.throwUnsafely
+            compiletime.summonInline[value is Decodable in Json].give:
+              ${refs.array}(${Expr(allocation)}).as[value]  }
 
   def fn(message: Example): Example = remote.dispatch:
-    '{  Example(t"Time: ${System.currentTimeMillis - ${message.count.put}}", 9)  }
+    '{  val x = ${message.name}
+        val y = ${message.count}
+        println(y)
+        Example(t"Time: $x $y ${System.currentTimeMillis - ${message}.count}", 9)  }
 
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
+  println(fn(Example(t"one", System.currentTimeMillis)))
+  println(fn(Example(t"two", System.currentTimeMillis)))
+  println(fn(Example(t"three", System.currentTimeMillis)))
+  println(fn(Example(t"four", System.currentTimeMillis)))
+  println(fn(Example(t"five", System.currentTimeMillis)))
+  println(fn(Example(t"six", System.currentTimeMillis)))
+  println(fn(Example(t"seven", System.currentTimeMillis)))

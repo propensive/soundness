@@ -35,8 +35,10 @@ package austronesian
 import java.util as ju
 import soundness.*
 
-case class Person(name: Text, age: Int)
-case class Group(persons: List[Person], size: Int)
+sealed trait Something
+case class Person(name: Text, age: Int) extends Something
+case class Group(persons: List[Person], size: Int) extends Something
+case class Colors(colors: Trie[Color]) extends Something
 
 enum Color:
   case Red, Green, Blue
@@ -57,6 +59,7 @@ object Tests extends Suite(m"Austronesian tests"):
     . assert(_ === Pojo(IArray(IArray(IArray("John", 30), IArray("Jane", 25)), 2)))
 
     val group = Group(List(Person("John", 30), Person("Jane", 25)), 2)
+
     test(m"Roundtrip a nested case class"):
       unsafely(group.pojo.decode[Group])
     . assert(_ == group)
@@ -70,3 +73,23 @@ object Tests extends Suite(m"Austronesian tests"):
       val color: Color = Color.Green
       unsafely(color.pojo.decode[Color])
     . assert(_ == Color.Green)
+
+    val data = List
+                (Person(t"Jim", 19),
+                 Group(persons = List(Person(t"Jane", 25), Person(t"John", 30)), size = 2),
+                 Colors(Trie(Color.Red, Color.Green)))
+
+    test(m"Roundtrip a complex datatype"):
+      recover:
+        case VariantError(_, _, _) => println("variant")
+        case PojoError()           => println("pojo")
+
+      . within:
+          unsafely(data.pojo.decode[List[Something]])
+
+    . assert()
+
+    suite(m"Proxy testing"):
+      test(m"Invoke the macro"):
+        println(summon[Person is Restorable])
+      . assert()

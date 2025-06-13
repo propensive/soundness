@@ -42,17 +42,12 @@ import vacuous.*
 import scala.compiletime.*
 import scala.quoted.*
 
-class References():
-  private var ref: Optional[Expr[List[Json]]] = Unset
-  private var allocations: List[Json] = List()
+class References[carrier]():
+  private var ref: Optional[Expr[List[carrier]]] = Unset
+  private var allocations: List[carrier] = List()
 
-  def setRef(expr: Expr[List[Json]]): Unit = ref = expr
-  def array: Expr[List[Json]] = ref.vouch
+  def update(expr: Expr[List[carrier]]): Unit = ref = expr
+  def array: Expr[List[carrier]] = ref.vouch
   def current: Int = allocations.length
-
-  def allocate[value](value: => value)(using value is Encodable in Json): Int =
-    allocations.length.also { allocations ::= value.json }
-
-  def apply(): Text =
-    import Json.jsonEncodableInText
-    allocations.reverse.json.encode
+  def allocate(value: => carrier): Int = allocations.length.also { allocations ::= value }
+  def apply(): List[carrier] = allocations.reverse

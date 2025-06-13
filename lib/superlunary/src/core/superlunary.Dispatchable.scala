@@ -32,13 +32,35 @@
                                                                                                   */
 package superlunary
 
+import anticipation.*
 import contingency.*
+import distillate.*
 import jacinta.*
+
+import interfaces.paths.pathOnLinux
 
 import scala.quoted.*
 
-extension [value](value: value)(using Quotes)
-  inline def put(using references: References): Expr[value] =
-    '{  import strategies.throwUnsafely
-        ${references.array}(${ToExpr.IntToExpr(references.allocate[value](value))})
-        . as[value]  }
+object Dispatchable:
+  given json: Dispatchable:
+    type Carrier = Json
+    type Format = Text
+
+    def encoder[value: Type](using Quotes): Expr[value => Text] =
+      '{ value => value.json.encode }
+
+    def decoder(using Quotes): Expr[Text => List[Json]] =
+      '{ text => unsafely(text.decode[Json].as[List[Json]]) }
+
+    inline def encode(value: List[Json]): Text = value.json.encode
+    inline def decode[value](value: Text): value = unsafely(value.decode[Json].as[value])
+
+trait Dispatchable:
+  type Carrier
+  type Format
+
+  def encoder[value: Type](using Quotes): Expr[value => Format]
+  def decoder(using Quotes): Expr[Format => List[Carrier]]
+
+  inline def encode(values: List[Carrier]): Format
+  inline def decode[value](value: Format): value

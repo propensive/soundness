@@ -104,7 +104,7 @@ object Austronesian:
           => (factory: scala.collection.Factory[element, collection[element]])
           =>  collection[element] is Decodable in Pojo =
 
-      case array: Array[Pojo] =>
+      case array: Array[Pojo @unchecked] =>
         factory.newBuilder.pipe: builder =>
           array.each(builder += _.decode)
           builder.result()
@@ -120,14 +120,13 @@ object Austronesian:
             left.length == right.length
             && left.indices.forall: index =>
               left(index) match
-                case left: Pojo => right(index) match
-                  case right: Pojo => checkable.check(left, right)
-                  case _           => false
-                case _          => false
+                case left: Pojo @unchecked => right(index) match
+                  case right: Pojo @unchecked => checkable.check(left, right)
+                  case _                      => false
+                case _                     => false
           case _               => false
 
         case left             =>
-          println(s"comparing $left and $right => ${left == right}")
           left == right
 
     inline given encodable: [value: Reflection] => value is Encodable in Pojo =
