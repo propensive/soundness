@@ -61,7 +61,6 @@ trait Dispatcher:
 
   protected def scalac: Scalac[?]
   protected def invoke[output](dispatch: Dispatch[output, Format]): Result[output]
-
   private var cache: Map[Codepoint, (Path on Linux, Format => Format)] = Map()
 
   inline def dispatch[output, carrier]
@@ -88,6 +87,7 @@ trait Dispatcher:
             given compiler: staging.Compiler =
               staging.Compiler.make(classloader.java)(using settings)
 
+            // This is necessary to allocate references as a side effect
             staging.withQuotes:
               '{  (array: List[carrier]) =>
                     ${  references() = 'array
@@ -127,9 +127,9 @@ trait Dispatcher:
          (Dispatch
            (out,
             classpath,
-            () => dispatchable.decode[output](function(dispatchable.encode(references()))),
-            (function: Format => Format) =>
-              dispatchable.decode[output](function(dispatchable.encode(references())))))
+            function => dispatchable.decode[output](function(dispatchable.encode(references())))))
 
       catch case throwable: Throwable =>
+        println(throwable)
+        throwable.printStackTrace()
         abort(CompilerError())

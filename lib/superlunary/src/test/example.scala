@@ -36,11 +36,13 @@ import ambience.*, systemProperties.jre
 import anthology.*
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContext
 import inimitable.*
 import jacinta.*
+import prepositional.*
 import rudiments.*, temporaryDirectories.systemProperties
 import spectacular.*
 
@@ -55,17 +57,19 @@ def run(): Unit =
 
   inline given [value] => Quotes => (refs: References[Json]) => Conversion[value, Expr[value]] =
     value =>
-      '{  import strategies.throwUnsafely
-          ${refs.array}(${ToExpr.IntToExpr(refs.allocate(value.json))})
-          . as[value]  }
+      compiletime.summonInline[value is Encodable in Json].give:
+        val encoded = value.json
+        '{  import strategies.throwUnsafely
+            compiletime.summonInline[value is Decodable in Json].give:
+              ${refs.array}(${ToExpr.IntToExpr(refs.allocate(encoded))}).as[value]  }
 
   def fn(message: Example): Example = remote.dispatch:
     '{  Example(t"Time: ${System.currentTimeMillis - ${message.count}}", 9)  }
 
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
-  println(fn(Example(t"hello", System.currentTimeMillis)))
+  println(fn(Example(t"one", System.currentTimeMillis)))
+  println(fn(Example(t"two", System.currentTimeMillis)))
+  println(fn(Example(t"three", System.currentTimeMillis)))
+  println(fn(Example(t"four", System.currentTimeMillis)))
+  println(fn(Example(t"five", System.currentTimeMillis)))
+  println(fn(Example(t"six", System.currentTimeMillis)))
+  println(fn(Example(t"seven", System.currentTimeMillis)))

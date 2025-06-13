@@ -38,9 +38,6 @@ import hellenism.*
 import serpentine.*
 
 case class Dispatch[output, format]
-   (path:      Path,
-    classpath: LocalClasspath,
-    local:     () => output,
-    remote:    (format => format) => output):
+   (path: Path, classpath: LocalClasspath, remote: (format => format) => output):
 
   def mainClass: Text = t"superlunary.Executor"

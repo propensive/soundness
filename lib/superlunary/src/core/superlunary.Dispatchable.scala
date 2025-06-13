@@ -47,19 +47,13 @@ object Dispatchable:
     type Format = Text
 
     def encoder[value: Type](using Quotes): Expr[value => Text] =
-      '{ (value: value) => value.json.encode }
+      '{ value => value.json.encode }
 
     def decoder(using Quotes): Expr[Text => List[Json]] =
-      '{ (text: Text) => unsafely(text.decode[Carrier].as[List[Json]]) }
+      '{ text => unsafely(text.decode[Json].as[List[Json]]) }
 
-    inline def encode(value: List[Json]): Text =
-      val result: Text = value.json.encode
-      println("RESULT: "+result)
-      result
-
-    inline def decode[value](value: Text): value =
-      println(value)
-      unsafely(value.decode[Json].as[value])
+    inline def encode(value: List[Json]): Text = value.json.encode
+    inline def decode[value](value: Text): value = unsafely(value.decode[Json].as[value])
 
 trait Dispatchable:
   type Carrier

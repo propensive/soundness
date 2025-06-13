@@ -46,5 +46,4 @@ object Executor:
     val out = System.out.nn
     System.setErr(null)
     System.setOut(null)
-    val params = args(0)
     out.println(run(args(0)))
