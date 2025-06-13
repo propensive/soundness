@@ -59,9 +59,10 @@ def run(): Unit =
     value =>
       compiletime.summonInline[value is Encodable in Json].give:
         val encoded = value.json
+        val allocation = refs.allocate(encoded)
         '{  import strategies.throwUnsafely
             compiletime.summonInline[value is Decodable in Json].give:
-              ${refs.array}(${ToExpr.IntToExpr(refs.allocate(encoded))}).as[value]  }
+              ${refs.array}(${Expr(allocation)}).as[value]  }
 
   def fn(message: Example): Example = remote.dispatch:
     '{  val x = ${message.name}
