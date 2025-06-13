@@ -49,6 +49,7 @@ import turbulence.*
 import charDecoders.utf8
 import textSanitizers.skip
 import systemProperties.jre
+import classloaders.system
 
 object remote extends Dispatcher:
   type Result[output] = output
@@ -56,6 +57,7 @@ object remote extends Dispatcher:
   type Target = LocalClasspath
 
   def deploy(out: Path on Linux): LocalClasspath =
+    println("deploying")
     classloaders.threadContext.classpath match
       case classpath: LocalClasspath =>
         LocalClasspath(classpath.entries :+ Classpath.Directory(out))

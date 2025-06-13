@@ -55,14 +55,19 @@ import interfaces.paths.pathOnLinux
 import scala.quoted.*
 
 
-trait Dispatcher:
+trait Dispatcher(using classloader: Classloader):
   type Result[output]
   type Format
   type Target
 
-  protected def scalac: Scalac[?]
+  protected val scalac: Scalac[?]
   protected def invoke[output](dispatch: Dispatch[output, Format, Target]): Result[output]
-  private var cache: Map[Codepoint, (Path on Linux, Format => Format)] = Map()
+  private var cache: Map[Codepoint, (Target, Format => Format)] = Map()
+
+  lazy val settings2: staging.Compiler.Settings =
+    staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
+
+  lazy val compiler2: staging.Compiler = staging.Compiler.make(classloader.java)(using settings2)
 
   def deploy(path: Path on Linux): Target
 
@@ -70,7 +75,6 @@ trait Dispatcher:
               (body: References[carrier] ?=> Quotes ?=> Expr[output])
               [version <: Scalac.All]
               (using codepoint:    Codepoint,
-                     classloader:  Classloader,
                      properties:   SystemProperties,
                      directory:    TemporaryDirectory,
                      dispatchable: Dispatchable over carrier in Format)
@@ -78,19 +82,13 @@ trait Dispatcher:
 
       try
         import strategies.throwUnsafely
-        val uuid = Uuid()
-
         val references: References[carrier] = new References()
 
-        val (out, function): (Path on Linux, Format => Format) =
+        val (target, function): (Target, Format => Format) =
           if cache.contains(codepoint) then
-            val settings: staging.Compiler.Settings =
-              staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
-
-            given compiler: staging.Compiler =
-              staging.Compiler.make(classloader.java)(using settings)
-
             // This is necessary to allocate references as a side effect
+            given staging.Compiler = compiler2
+
             staging.withQuotes:
               '{  (array: List[carrier]) =>
                     ${  references() = 'array
@@ -99,6 +97,7 @@ trait Dispatcher:
             cache(codepoint)
 
           else
+            val uuid = Uuid()
             val out = (temporaryDirectory / uuid).on[Linux]
 
             val settings: staging.Compiler.Settings =
@@ -114,13 +113,14 @@ trait Dispatcher:
                        (${  references() = '{${dispatchable.decoder}(format)}
                             body(using references)  })  }
 
-            cache = cache.updated(codepoint, (out, function))
+            val target = deploy(out)
+            cache = cache.updated(codepoint, (target, function))
 
-            (out, function)
+            (target, function)
 
         invoke[output]
          (Dispatch
-           (deploy(out),
+           (target,
             function => dispatchable.decode[output](function(dispatchable.encode(references())))))
 
       catch case throwable: Throwable =>
