@@ -56,16 +56,15 @@ import scala.quoted.*
 
 
 trait Dispatcher:
-  println("Initializing dispatcher")
   type Result[output]
   type Format
+
   protected def scalac: Scalac[?]
   protected def invoke[output](dispatch: Dispatch[output, Format]): Result[output]
 
   private var cache: Map[Codepoint, (Path on MacOs, Format => Format)] = Map()
 
-
-  inline def dispatch[output: Decodable in Json, carrier]
+  inline def dispatch[output, carrier]
               (body: References[carrier] ?=> Quotes ?=> Expr[output])
               [version <: Scalac.All]
               (using codepoint:    Codepoint,
@@ -91,7 +90,8 @@ trait Dispatcher:
 
             staging.withQuotes:
               '{  (array: List[carrier]) =>
-                    ${references.setRef('array) yet body(using references)}  }
+                    ${  references() = 'array
+                        body(using references)  }  }
 
             cache(codepoint)
 
@@ -108,7 +108,9 @@ trait Dispatcher:
             val function: Format => Format = staging.run:
               val fromList: Expr[List[carrier] => Format] =
                 '{ (array: List[carrier]) =>
-                      ${dispatchable.encoder[output]}(${references.setRef('array) yet body(using references)})  }
+                      ${dispatchable.encoder[output]}
+                         (${  references() = 'array
+                              body(using references)  })  }
 
               '{ format => $fromList(${dispatchable.decoder}(format)) }
 
@@ -131,7 +133,6 @@ trait Dispatcher:
             classpath,
             () => dispatchable.decode[output](function(dispatchable.encode(references()))),
             (function: Format => Format) => dispatchable.decode[output](function(dispatchable.encode(references())))))
+
       catch case throwable: Throwable =>
-        println("Failed, somehow")
-        println(throwable)
-        ???
+        abort(CompilerError())

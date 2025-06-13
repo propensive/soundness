@@ -32,23 +32,10 @@
                                                                                                   */
 package superlunary
 
-import ambience.*
-import anthology.*
 import anticipation.*
 import contingency.*
-import digression.*
 import distillate.*
-import galilei.*
-import hellenism.*
-import inimitable.*
 import jacinta.*
-import nomenclature.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import symbolism.*
 
 import interfaces.paths.pathOnLinux
 
@@ -74,5 +61,6 @@ trait Dispatchable:
 
   def encoder[value: Type](using Quotes): Expr[value => Format]
   def decoder(using Quotes): Expr[Format => List[Carrier]]
+
   inline def encode(values: List[Carrier]): Format
   inline def decode[value](value: Format): value

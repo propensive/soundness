@@ -46,7 +46,7 @@ class References[carrier]():
   private var ref: Optional[Expr[List[carrier]]] = Unset
   private var allocations: List[carrier] = List()
 
-  def setRef(expr: Expr[List[carrier]]): Unit = ref = expr
+  def update(expr: Expr[List[carrier]]): Unit = ref = expr
   def array: Expr[List[carrier]] = ref.vouch
   def current: Int = allocations.length
   def allocate(value: => carrier): Int = allocations.length.also { allocations ::= value }
