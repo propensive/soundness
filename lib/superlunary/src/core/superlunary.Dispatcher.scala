@@ -50,7 +50,7 @@ import serpentine.*
 import spectacular.*
 import symbolism.*
 
-import interfaces.paths.pathOnMacOs
+import interfaces.paths.pathOnLinux
 
 import scala.quoted.*
 
@@ -62,7 +62,7 @@ trait Dispatcher:
   protected def scalac: Scalac[?]
   protected def invoke[output](dispatch: Dispatch[output, Format]): Result[output]
 
-  private var cache: Map[Codepoint, (Path on MacOs, Format => Format)] = Map()
+  private var cache: Map[Codepoint, (Path on Linux, Format => Format)] = Map()
 
   inline def dispatch[output, carrier]
               (body: References[carrier] ?=> Quotes ?=> Expr[output])
@@ -80,7 +80,7 @@ trait Dispatcher:
 
         val references: References[carrier] = new References()
 
-        val (out, function): (Path on MacOs, Format => Format) =
+        val (out, function): (Path on Linux, Format => Format) =
           if cache.contains(codepoint) then
             val settings: staging.Compiler.Settings =
               staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
@@ -96,7 +96,7 @@ trait Dispatcher:
             cache(codepoint)
 
           else
-            val out: Path on MacOs = (temporaryDirectory / uuid).on[MacOs]
+            val out = (temporaryDirectory / uuid).on[Linux]
 
             val settings: staging.Compiler.Settings =
               staging.Compiler.Settings.make
@@ -120,16 +120,16 @@ trait Dispatcher:
             LocalClasspath(classpath.entries :+ Classpath.Directory(out))
 
           case _ =>
-            val systemClasspath = Properties.java.`class`.path()
-            LocalClasspath:
-              Classpath.Directory(out) :: systemClasspath.decode[LocalClasspath].entries
+            val systemClasspath = Properties.java.`class`.path().decode[LocalClasspath]
+            LocalClasspath(Classpath.Directory(out) :: systemClasspath.entries)
 
         invoke[output]
          (Dispatch
            (out,
             classpath,
             () => dispatchable.decode[output](function(dispatchable.encode(references()))),
-            (function: Format => Format) => dispatchable.decode[output](function(dispatchable.encode(references())))))
+            (function: Format => Format) =>
+              dispatchable.decode[output](function(dispatchable.encode(references())))))
 
       catch case throwable: Throwable =>
         abort(CompilerError())

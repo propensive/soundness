@@ -68,3 +68,4 @@ def run(): Unit =
   println(fn(Example(t"hello", System.currentTimeMillis)))
   println(fn(Example(t"hello", System.currentTimeMillis)))
   println(fn(Example(t"hello", System.currentTimeMillis)))
+  println(fn(Example(t"hello", System.currentTimeMillis)))
