@@ -51,13 +51,12 @@ import textSanitizers.skip
 import systemProperties.jre
 import classloaders.system
 
-object remote extends Dispatcher:
+object Jvm extends Dispatcher:
   type Result[output] = output
   type Format = Text
   type Target = LocalClasspath
 
   def deploy(out: Path on Linux): LocalClasspath =
-    println("deploying")
     classloaders.threadContext.classpath match
       case classpath: LocalClasspath =>
         LocalClasspath(classpath.entries :+ Classpath.Directory(out))
@@ -74,5 +73,5 @@ object remote extends Dispatcher:
     import logging.silent
 
     dispatch.remote: input =>
-      val cmd = sh"java -classpath ${dispatch.classpath()} ${dispatch.mainClass} $input"
+      val cmd = sh"java -classpath ${dispatch.classpath()} superlunary.Executor $input"
       unsafely(cmd.exec[Text]())

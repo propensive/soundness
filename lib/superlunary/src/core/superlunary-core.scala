@@ -32,48 +32,24 @@
                                                                                                   */
 package superlunary
 
-import ambience.*, systemProperties.jre
-import anthology.*
+import scala.quoted.*
+
 import anticipation.*
 import contingency.*
 import distillate.*
-import fulminate.*
-import gossamer.*
-import hellenism.*
-import inimitable.*
 import jacinta.*
 import prepositional.*
-import rudiments.*, temporaryDirectories.systemProperties
-import spectacular.*
+import rudiments.*
 
-import scala.quoted.*
-
-case class Example(name: Text, count: Long)
-
-@main
-def run(): Unit =
-  given jsonError: Tactic[JsonError] = strategies.throwUnsafely
-  given compilerError: Tactic[CompilerError] = strategies.throwUnsafely
-
-  inline given [value] => Quotes => (refs: References[Json]) => Conversion[value, Expr[value]] =
+object embeddings:
+  inline given automatic: [value]
+               => (dispatchable: Dispatchable)
+               => Quotes
+               => (refs: References[dispatchable.Carrier])
+               => Conversion[value, Expr[value]] =
     value =>
-      compiletime.summonInline[value is Encodable in Json].give:
-        val encoded = value.json
-        val allocation = refs.allocate(encoded)
-        '{  import strategies.throwUnsafely
-            compiletime.summonInline[value is Decodable in Json].give:
-              ${refs.array}(${Expr(allocation)}).as[value]  }
+      val encoded: dispatchable.Carrier = dispatchable.embed[value](value)
+      val allocation: Int = refs.allocate(encoded)
 
-  def fn(message: Example): Example = remote.dispatch:
-    '{  val x = ${message.name}
-        val y = ${message.count}
-        println(y)
-        Example(t"Time: $x $y ${System.currentTimeMillis - ${message}.count}", 9)  }
-
-  println(fn(Example(t"one", System.currentTimeMillis)))
-  println(fn(Example(t"two", System.currentTimeMillis)))
-  println(fn(Example(t"three", System.currentTimeMillis)))
-  println(fn(Example(t"four", System.currentTimeMillis)))
-  println(fn(Example(t"five", System.currentTimeMillis)))
-  println(fn(Example(t"six", System.currentTimeMillis)))
-  println(fn(Example(t"seven", System.currentTimeMillis)))
+      '{  import strategies.throwUnsafely
+          dispatchable.extract[value](${refs.array}(${Expr(allocation)}))  }
