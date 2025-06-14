@@ -37,43 +37,42 @@ import anthology.*
 import anticipation.*
 import contingency.*
 import distillate.*
-import fulminate.*
-import gossamer.*
+import eucalyptus.*
+import guillotine.*
 import hellenism.*
-import inimitable.*
-import jacinta.*
+import hieroglyph.*
 import prepositional.*
-import rudiments.*, temporaryDirectories.systemProperties
-import spectacular.*
+import rudiments.*
+import serpentine.*
+import turbulence.*
 
-import scala.quoted.*
+import charDecoders.utf8
+import textSanitizers.skip
+import systemProperties.jre
+import classloaders.system
 
-case class Example(name: Text, count: Long)
+object Jvm extends Dispatcher:
+  type Result[output] = output
+  type Format = Text
+  type Target = LocalClasspath
 
-@main
-def run(): Unit =
-  given jsonError: Tactic[JsonError] = strategies.throwUnsafely
-  given compilerError: Tactic[CompilerError] = strategies.throwUnsafely
+  def deploy(out: Path on Linux): LocalClasspath =
+    println("deploying")
+    classloaders.threadContext.classpath match
+      case classpath: LocalClasspath =>
+        LocalClasspath(classpath.entries :+ Classpath.Directory(out))
 
-  inline given [value] => Quotes => (refs: References[Json]) => Conversion[value, Expr[value]] =
-    value =>
-      compiletime.summonInline[value is Encodable in Json].give:
-        val encoded = value.json
-        val allocation = refs.allocate(encoded)
-        '{  import strategies.throwUnsafely
-            compiletime.summonInline[value is Decodable in Json].give:
-              ${refs.array}(${Expr(allocation)}).as[value]  }
+      case _ =>
+        val systemClasspath = unsafely(Properties.java.`class`.path().decode[LocalClasspath])
+        LocalClasspath(Classpath.Directory(out) :: systemClasspath.entries)
 
-  def fn(message: Example): Example = remote.dispatch:
-    '{  val x = ${message.name}
-        val y = ${message.count}
-        println(y)
-        Example(t"Time: $x $y ${System.currentTimeMillis - ${message}.count}", 9)  }
 
-  println(fn(Example(t"one", System.currentTimeMillis)))
-  println(fn(Example(t"two", System.currentTimeMillis)))
-  println(fn(Example(t"three", System.currentTimeMillis)))
-  println(fn(Example(t"four", System.currentTimeMillis)))
-  println(fn(Example(t"five", System.currentTimeMillis)))
-  println(fn(Example(t"six", System.currentTimeMillis)))
-  println(fn(Example(t"seven", System.currentTimeMillis)))
+  val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
+
+  protected def invoke[output](dispatch: Dispatch[output, Format, Target]): output =
+    import workingDirectories.systemProperties
+    import logging.silent
+
+    dispatch.remote: input =>
+      val cmd = sh"java -classpath ${dispatch.classpath()} superlunary.Executor $input"
+      unsafely(cmd.exec[Text]())
