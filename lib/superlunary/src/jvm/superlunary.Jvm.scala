@@ -57,7 +57,6 @@ object Jvm extends Dispatcher:
   type Target = LocalClasspath
 
   def deploy(out: Path on Linux): LocalClasspath =
-    println("deploying")
     classloaders.threadContext.classpath match
       case classpath: LocalClasspath =>
         LocalClasspath(classpath.entries :+ Classpath.Directory(out))
