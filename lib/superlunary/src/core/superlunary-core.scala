@@ -34,22 +34,22 @@ package superlunary
 
 import scala.quoted.*
 
-import soundness.*
+import anticipation.*
+import contingency.*
+import distillate.*
+import jacinta.*
+import prepositional.*
+import rudiments.*
 
-import systemProperties.jre
-import temporaryDirectories.systemProperties
-import embeddings.automatic
-import strategies.throwUnsafely
+object embeddings:
+  inline given automatic: [value]
+               => (dispatchable: Dispatchable)
+               => Quotes
+               => (refs: References[dispatchable.Carrier])
+               => Conversion[value, Expr[value]] =
+    value =>
+      val encoded: dispatchable.Carrier = dispatchable.embed[value](value)
+      val allocation: Int = refs.allocate(encoded)
 
-case class Example(name: Text, count: Long)
-
-object Tests extends Suite(m"Superlunary Tests"):
-  def run(): Unit =
-    def fn(message: Example): Example = Jvm.dispatch:
-      '{  val x = ${message.name}
-          val y = ${message.count}
-          println(y)
-          Example(t"Time: $x $y ${java.lang.System.currentTimeMillis - ${message}.count}", 9)  }
-
-    println(fn(Example(t"one", java.lang.System.currentTimeMillis)))
-    println(fn(Example(t"two", java.lang.System.currentTimeMillis)))
+      '{  import strategies.throwUnsafely
+          dispatchable.extract[value](${refs.array}(${Expr(allocation)}))  }
