@@ -51,7 +51,7 @@ import textSanitizers.skip
 import systemProperties.jre
 import classloaders.system
 
-object remote extends Dispatcher:
+object Jvm extends Dispatcher:
   type Result[output] = output
   type Format = Text
   type Target = LocalClasspath

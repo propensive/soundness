@@ -64,7 +64,7 @@ def run(): Unit =
             compiletime.summonInline[value is Decodable in Json].give:
               ${refs.array}(${Expr(allocation)}).as[value]  }
 
-  def fn(message: Example): Example = remote.dispatch:
+  def fn(message: Example): Example = Jvm.dispatch:
     '{  val x = ${message.name}
         val y = ${message.count}
         println(y)
