@@ -74,5 +74,5 @@ object Jvm extends Dispatcher:
     import logging.silent
 
     dispatch.remote: input =>
-      val cmd = sh"java -classpath ${dispatch.classpath()} ${dispatch.mainClass} $input"
+      val cmd = sh"java -classpath ${dispatch.classpath()} superlunary.Executor $input"
       unsafely(cmd.exec[Text]())
