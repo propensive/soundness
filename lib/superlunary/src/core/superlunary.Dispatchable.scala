@@ -37,6 +37,7 @@ import contingency.*
 import distillate.*
 import jacinta.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 
 import interfaces.paths.pathOnLinux
