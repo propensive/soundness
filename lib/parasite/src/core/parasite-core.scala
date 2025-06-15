@@ -75,7 +75,7 @@ package retryTenacities:
   given fixedNoDelayFiveTimes: Tenacity = Tenacity.fixed(0L).limit(5)
   given fixedNoDelayTenTimes: Tenacity = Tenacity.fixed(0L).limit(10)
 
-transparent inline def monitor: Monitor = summonInline[Monitor]
+transparent inline def monitor: Monitor = infer[Monitor]
 
 def daemon(using Codepoint)(evaluate: Worker ?=> Unit)(using Monitor, Codicil): Daemon =
   Daemon(evaluate(using _))

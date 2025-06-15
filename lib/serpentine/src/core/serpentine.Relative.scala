@@ -128,14 +128,14 @@ case class Relative(ascent: Int, descent: List[Text] = Nil):
   private inline def check[subject, system](path: List[Text]): Unit =
     inline !![subject] match
       case _: (head *: tail) =>
-        summonInline[head is Admissible on system].check(path.head)
+        infer[head is Admissible on system].check(path.head)
         check[tail, system](path.tail).unit
 
       case EmptyTuple =>
         ()
 
       case _ =>
-        path.each(summonInline[Text is Admissible on system].check(_))
+        path.each(infer[Text is Admissible on system].check(_))
 
   inline def on[system]: Relative of Subject under Constraint on system =
     check[Subject, system](descent.to(List))

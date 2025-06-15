@@ -158,12 +158,12 @@ case class Path(root: Text, descent: Text*):
       case _: Zero => ()
 
       case _: (head *: tail) =>
-        summonInline[head is Admissible on system].check(path.head)
+        infer[head is Admissible on system].check(path.head)
         check[tail, system](path.tail)
 
       case _ =>
         path.each: element =>
-          summonInline[Text is Admissible on system].check(element)
+          infer[Text is Admissible on system].check(element)
 
   inline def on[system]: Path of Subject under Constraint on system = summonFrom:
     case given (`system` =:= Platform) =>
@@ -176,7 +176,7 @@ case class Path(root: Text, descent: Text*):
         case constraint: (Constraint is Submissible on `system`)       => constraint.check(root)
         case radical: (Constraint is Radical on `system`)              => radical.decode(root)
         case system: (`system` is (System { type UniqueRoot = true })) =>
-          summonInline[Platform is (System { type UniqueRoot = true })]
+          infer[Platform is (System { type UniqueRoot = true })]
 
       this.asInstanceOf[Path of Subject under Constraint on system]
 
@@ -320,11 +320,11 @@ case class Path(root: Text, descent: Text*):
     summonFrom:
       case given ((? >: child.type) is Admissible on Platform) =>
         Path.of[Platform, Constraint, child.type *: Subject]
-          (root, summonInline[child.type is Navigable].follow(child) +: descent*)
+          (root, infer[child.type is Navigable].follow(child) +: descent*)
 
       case _ =>
         Path.unplatformed[Constraint, child.type *: Subject]
-          (root, summonInline[child.type is Navigable].follow(child) +: descent*)
+          (root, infer[child.type is Navigable].follow(child) +: descent*)
 
 
   transparent inline def peer(child: Any)(using child.type is Admissible on Platform)
@@ -332,11 +332,11 @@ case class Path(root: Text, descent: Text*):
     inline !![Subject] match
       case _: (head *: tail) =>
         Path.of[Platform, Constraint, child.type *: tail]
-         (root, summonInline[child.type is Navigable].follow(child) +: descent*)
+         (root, infer[child.type is Navigable].follow(child) +: descent*)
 
       case _ =>
         Path.of[Platform, Constraint, Tuple]
-         (root, summonInline[child.type is Navigable].follow(child) +: descent*)
+         (root, infer[child.type is Navigable].follow(child) +: descent*)
 
   transparent inline def + (relative: Relative): Path =
     type Base = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Subject], relative.Constraint]]

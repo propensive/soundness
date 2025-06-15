@@ -42,7 +42,7 @@ object Restorable extends ProductDerivation[[entity] =>> entity is Restorable]:
 
   //     def restore(value: Expr[Pojo])(using quotes: Quotes, classloader: Classloader): Expr[Self] =
   //       import quotes.reflect.*
-  //       given Type[derivation] = compiletime.summonInline[Type[derivation]]
+  //       given Type[derivation] = infer[Type[derivation]]
 
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Restorable =
