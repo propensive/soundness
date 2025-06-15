@@ -33,8 +33,9 @@
 package superlunary
 
 import anticipation.*
+import austronesian.*
 import contingency.*
-import distillate.*
+import distillate.{as as _, *}
 import jacinta.*
 import prepositional.*
 import proscenium.*
@@ -49,8 +50,7 @@ object Dispatchable:
     type Carrier = Json
     type Format = Text
 
-    def encoder[value: Type]: Macro[value => Text] =
-      '{ value => value.json.encode }
+    def encoder[value: Type]: Macro[value => Text] = '{_.json.encode}
 
     def decoder: Macro[Text => List[Json]] =
       '{ text => unsafely(text.decode[Json].as[List[Json]]) }
@@ -62,6 +62,26 @@ object Dispatchable:
 
     inline def extract[entity](json: Json): entity = provide[Tactic[JsonError]]:
       provide[entity is Decodable in Json](json.as[entity])
+
+  given pojo: Dispatchable:
+    type Carrier = Pojo
+    type Format = IArray[Pojo]
+
+    def encoder[value: Type](using Quotes): Expr[value => IArray[Pojo]] = '{ value => value.pojo }
+
+    def decoder(using Quotes): Expr[IArray[Pojo] => List[Pojo]] = '{_.to(List)}
+
+    inline def encode(value: List[Pojo]): IArray[Pojo] = value.pojo
+
+    inline def decode[value](value: Pojo): value =
+      compiletime.summonInline[Tactic[PojoError]].give(value.as[value])
+
+    inline def embed[entity](value: entity): Pojo =
+      compiletime.summonInline[entity is Encodable in Pojo].give(value.pojo)
+
+    inline def extract[entity](pojo: Pojo): entity =
+      compiletime.summonInline[Tactic[PojoError]].give:
+        compiletime.summonInline[entity is Decodable in Pojo].give(pojo.as[entity])
 
 trait Dispatchable:
   type Carrier

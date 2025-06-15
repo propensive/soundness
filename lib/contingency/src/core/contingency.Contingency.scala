@@ -163,7 +163,7 @@ object Contingency:
       val typeLambda =
         TypeLambda
          (List("result"),
-          _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
           typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
       typeLambda.asType.absolve match
@@ -183,7 +183,7 @@ object Contingency:
       val typeLambda =
         TypeLambda
          (List("result"),
-          _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
           typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
       typeLambda.asType.absolve match
@@ -205,7 +205,7 @@ object Contingency:
       val typeLambda =
         TypeLambda
          (List("result"),
-          _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
           typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
       typeLambda.asType.absolve match
@@ -227,7 +227,7 @@ object Contingency:
       val typeLambda =
         TypeLambda
          (List("result"),
-          _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
           typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
       typeLambda.asType.absolve match
@@ -245,7 +245,7 @@ object Contingency:
     val typeLambda =
       TypeLambda
        (List("result"),
-        _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+        void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
     typeLambda.asType.absolve match
@@ -254,7 +254,7 @@ object Contingency:
 
   def mitigateWithin[context[_]: Type, result: Type]
        (mitigate: Expr[Mitigation[context]], lambda: Expr[context[result]])
-    : Macro[result] =
+  : Macro[result] =
 
         import quotes.reflect.*
 
