@@ -37,6 +37,7 @@ import contingency.*
 import denominative.*
 import distillate.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 import wisteria.*
@@ -55,7 +56,7 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
     var rowNumber: Ordinal = Prim
     var count = 0
 
-    summonInline[Foci[CellRef]].give:
+    infer[Foci[CellRef]].give:
       DsvProductDecoder[derivation](sum, (row: Row) => construct:
         [field] => context =>
           val index = row.columns.let(_.at(label)).or(count)

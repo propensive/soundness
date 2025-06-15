@@ -81,7 +81,7 @@ object Contrastable extends Contrastable2:
       compareSeq[Char](decompose(left.chars), decompose(right.chars), left, right)
 
   inline def nothing[value]: value is Contrastable = (left, right) =>
-    compiletime.summonInline[value is Decomposable].give:
+    infer[value is Decomposable].give:
       Juxtaposition.Same(left.decompose.text)
 
   given decomposable: [value: Decomposable] => value is Contrastable = (left, right) =>

@@ -57,7 +57,7 @@ object Cataclysm:
             halt(m"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
 
         '{
-            CssProperty(Text($key).uncamel.kebab, compiletime.summonInline[ShowProperty[value]]
+            CssProperty(Text($key).uncamel.kebab, infer[ShowProperty[value]]
             . show($value))  }
         :: recur(tail)
 

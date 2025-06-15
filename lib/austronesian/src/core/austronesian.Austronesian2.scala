@@ -74,7 +74,7 @@ object Austronesian2:
           _.decoded(array(index))
 
       case other =>
-        summonInline[Tactic[PojoError]].give(abort(PojoError()))
+        infer[Tactic[PojoError]].give(abort(PojoError()))
 
     inline def split[derivation: SumReflection]: derivation is Decodable in Pojo =
       case Array(label: String @unchecked, pojo: Pojo @unchecked) =>
@@ -82,7 +82,7 @@ object Austronesian2:
           _.decoded(pojo)
 
       case other =>
-        summonInline[Tactic[PojoError]].give(abort(PojoError()))
+        infer[Tactic[PojoError]].give(abort(PojoError()))
 
   def isolated[result: Type](classloader: Expr[Classloader], invoke: Expr[result])
      (using Quotes)

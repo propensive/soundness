@@ -53,7 +53,7 @@ object Message:
         case _: (message *: tail) => messages.absolve match
           case message *: tail =>
             val message2 = message.asInstanceOf[message]
-            val communicable = summonInline[(? >: message) is Communicable]
+            val communicable = infer[(? >: message) is Communicable]
             make[tail](tail.asInstanceOf[tail], communicable.message(message2) :: done)
 
         case _ =>

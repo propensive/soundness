@@ -33,6 +33,7 @@
 package wisteria
 
 import anticipation.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
@@ -55,6 +56,6 @@ trait ContextRequirement:
   def wrap[value](optional: Optional[value]): Optionality[value]
 
   inline def summon[context]: Optionality[context] =
-    inline if !![Required] then wrap(summonInline[context]) else summonFrom:
+    inline if !![Required] then wrap(infer[context]) else summonFrom:
       case contextual: `context` => wrap(contextual)
       case _                     => wrap(Unset)

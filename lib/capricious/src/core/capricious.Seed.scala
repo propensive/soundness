@@ -38,6 +38,7 @@ import scala.compiletime.*
 
 import anticipation.*
 import hypotenuse.*
+import proscenium.*
 
 object Seed:
   def apply(long: Long): Seed = Seed(long.bits.bytes)
@@ -48,5 +49,5 @@ case class Seed(value: Bytes):
 
   inline def stochastic[result](block: Random ?=> result): result =
     given seed: Seed = this
-    val randomization = summonInline[Randomization]
+    val randomization = infer[Randomization]
     block(using new Random(randomization.make()))

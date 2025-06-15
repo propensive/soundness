@@ -73,7 +73,7 @@ trait Json2:
 
   inline given decodable: [value] => value is Decodable in Json = summonFrom:
     case given (`value` is Decodable in Text) =>
-      summonInline[Tactic[JsonError]].give(_.root.string.decode[value])
+      infer[Tactic[JsonError]].give(_.root.string.decode[value])
 
     case given Reflection[`value`] =>
       DecodableDerivation.derived
@@ -85,8 +85,8 @@ trait Json2:
   object DecodableDerivation extends Derivable[Decodable in Json]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Json =
       json =>
-        summonInline[Foci[JsonPointer]].give:
-          summonInline[Tactic[JsonError]].give:
+        infer[Foci[JsonPointer]].give:
+          infer[Tactic[JsonError]].give:
             val keyValues = json.root.obj
             val values = keyValues(0).zip(keyValues(1)).to(Map)
 
@@ -99,8 +99,8 @@ trait Json2:
 
     inline def split[derivation: SumReflection]: derivation is Decodable in Json =
       json =>
-        summonInline[Tactic[JsonError]].give:
-          summonInline[Tactic[VariantError]].give:
+        infer[Tactic[JsonError]].give:
+          infer[Tactic[VariantError]].give:
             val values = json.root.obj
 
             values(0).indexOf("_type") match
@@ -117,7 +117,7 @@ trait Json2:
   object EncodableDerivation extends Derivable[Encodable in Json]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Json =
       value =>
-        summonInline[Foci[JsonPointer]].give:
+        infer[Foci[JsonPointer]].give:
           val labels: scm.ArrayBuffer[String] = scm.ArrayBuffer()
           val values: scm.ArrayBuffer[JsonAst] = scm.ArrayBuffer()
 

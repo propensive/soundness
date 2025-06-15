@@ -87,7 +87,7 @@ trait SumDerivationMethods[typeclass[_]]:
       type Labels = reflection.MirroredElemLabels
 
       singletonFold[derivation, Variants, Labels](_ == input).or:
-        summonInline[Tactic[VariantError]].give:
+        infer[Tactic[VariantError]].give:
           abort(VariantError[derivation](input))
 
 
@@ -102,7 +102,7 @@ trait SumDerivationMethods[typeclass[_]]:
             type variant0 = variant & derivation
 
             if predicate(valueOf[label & String].tt)
-            then summonInline[Mirror.ProductOf[variant0]].fromProduct(Zero)
+            then infer[Mirror.ProductOf[variant0]].fromProduct(Zero)
             else singletonFold[derivation, variants, labelsType](predicate)
 
         case _  =>
@@ -191,7 +191,7 @@ trait SumDerivationMethods[typeclass[_]]:
                   if predicate(using label.tt, index2)
                   then
                     val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
-                    val context = requirement.wrap(summonInline[typeclass[variant0]])
+                    val context = requirement.wrap(infer[typeclass[variant0]])
                     lambda[variant0](context)(using context, label.tt, index3)
                   else
                     fold
@@ -202,7 +202,7 @@ trait SumDerivationMethods[typeclass[_]]:
 
         case _ =>
           inline if fallible
-          then summonInline[Tactic[VariantError]].give:
+          then infer[Tactic[VariantError]].give:
             raise(VariantError[derivation](inputLabel)) yet Unset
           else panic(m"Should be unreachable")
 
@@ -240,7 +240,7 @@ trait SumDerivationMethods[typeclass[_]]:
                   then
                     val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
                     val variant: variant0 = sum.asInstanceOf[variant0]
-                    val context = requirement.wrap(summonInline[typeclass[variant0]])
+                    val context = requirement.wrap(infer[typeclass[variant0]])
                     lambda[variant0](variant)(using context, label.tt, index3)
                   else
                     fold[derivation, variants, moreLabels](sum, size, index + 1, fallible)
@@ -249,7 +249,7 @@ trait SumDerivationMethods[typeclass[_]]:
 
         case _ =>
           inline if fallible
-          then summonInline[Tactic[VariantError]].give:
+          then infer[Tactic[VariantError]].give:
             raise(VariantError[derivation]("".tt)) yet Unset
           else panic(m"Should be unreachable")
 
