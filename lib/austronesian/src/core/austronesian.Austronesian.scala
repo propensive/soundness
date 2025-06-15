@@ -45,7 +45,6 @@ object Austronesian:
     IArray[Any] | String | Boolean | Byte | Char | Short | Int | Long | Float | Double
 
   object Pojo extends Pojo2:
-
     def apply
          (pojo: IArray[Any] | String | Boolean | Byte | Char | Short | Int | Long | Float | Double)
     : Pojo =
@@ -112,13 +111,15 @@ object Austronesian:
       case other =>
         raise(PojoError()) yet factory.newBuilder.result()
 
+    extension (pojo: Pojo)
+      def as[entity: Decodable in Pojo]: entity = entity.decoded(pojo)
+
   trait Pojo2:
     given checkable: Pojo is Checkable against Pojo = (left, right) =>
       left match
         case left: Array[?] => right match
           case right: Array[?] =>
-            left.length == right.length
-            && left.indices.forall: index =>
+            left.length == right.length && left.indices.forall: index =>
               left(index) match
                 case left: Pojo @unchecked => right(index) match
                   case right: Pojo @unchecked => checkable.check(left, right)
@@ -126,7 +127,7 @@ object Austronesian:
                 case _                     => false
           case _               => false
 
-        case left             =>
+        case left           =>
           left == right
 
     inline given encodable: [value: Reflection] => value is Encodable in Pojo =

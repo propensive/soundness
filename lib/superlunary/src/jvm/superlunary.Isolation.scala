@@ -32,9 +32,39 @@
                                                                                                   */
 package superlunary
 
+import ambience.*, systemProperties.jre
+import anthology.*
 import anticipation.*
-import gossamer.*
+import austronesian.*
+import contingency.*
+import distillate.*
+import eucalyptus.*
+import guillotine.*
 import hellenism.*
+import hieroglyph.*
+import prepositional.*
+import rudiments.*
 import serpentine.*
+import turbulence.*
 
-case class Dispatch[output, format, target](target: target, remote: (format => format) => output)
+import charDecoders.utf8
+import textSanitizers.skip
+import systemProperties.jre
+import classloaders.system
+
+object Isolation extends Dispatcher:
+  type Result[output] = output
+  type Format = Pojo
+  type Target = Classloader
+
+  def deploy(out: Path on Linux): Classloader = ???
+
+  val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
+
+  protected def invoke[output](dispatch: Dispatch[output, Format, Target]): output =
+    import workingDirectories.systemProperties
+    import logging.silent
+
+    dispatch.remote: input =>
+      val classloader: Classloader = dispatch.target
+      ???
