@@ -73,7 +73,7 @@ trait Dispatcher(using classloader: Classloader):
 
   inline def dispatch[output, carrier]
               (body: References[carrier] ?=> Quotes ?=> Expr[output])
-              [version <: Scalac.All]
+              [version <: Scalac.Versions]
               (using codepoint:    Codepoint,
                      properties:   SystemProperties,
                      directory:    TemporaryDirectory,

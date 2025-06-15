@@ -84,8 +84,7 @@ object Austronesian2:
       case other =>
         summonInline[Tactic[PojoError]].give(abort(PojoError()))
 
-  def isolated[result: Type](classloader: Expr[Classloader], invoke: Expr[result])
-     (using Quotes)
+  def isolated[result: Type](classloader: Expr[Classloader], invoke: Expr[result])(using Quotes)
   :     Expr[result] =
 
     import quotes.reflect.*
