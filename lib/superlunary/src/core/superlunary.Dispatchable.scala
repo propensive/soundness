@@ -58,12 +58,10 @@ object Dispatchable:
     inline def encode(value: List[Json]): Text = value.json.encode
     inline def decode[value](value: Text): value = unsafely(value.decode[Json].as[value])
 
-    inline def embed[entity](value: entity): Json =
-      infer[entity is Encodable in Json].give(value.json)
+    inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.json)
 
-    inline def extract[entity](json: Json): entity =
-      infer[Tactic[JsonError]].give:
-        infer[entity is Decodable in Json].give(json.as[entity])
+    inline def extract[entity](json: Json): entity = provide[Tactic[JsonError]]:
+      provide[entity is Decodable in Json](json.as[entity])
 
 trait Dispatchable:
   type Carrier

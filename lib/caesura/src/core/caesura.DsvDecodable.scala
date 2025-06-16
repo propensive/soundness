@@ -56,7 +56,7 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
     var rowNumber: Ordinal = Prim
     var count = 0
 
-    infer[Foci[CellRef]].give:
+    provide[Foci[CellRef]]:
       DsvProductDecoder[derivation](sum, (row: Row) => construct:
         [field] => context =>
           val index = row.columns.let(_.at(label)).or(count)

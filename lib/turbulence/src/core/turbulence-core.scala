@@ -56,11 +56,11 @@ extension [value](value: value)
   inline def read[result]: result =
     compiletime.summonFrom:
       case aggregable: (`result` is Aggregable by Bytes) =>
-        infer[value is Readable by Bytes].give:
+        provide[value is Readable by Bytes]:
           aggregable.aggregate(value.stream[Bytes])
 
       case aggregable: (`result` is Aggregable by Text) =>
-        infer[value is Readable by Text].give:
+        provide[value is Readable by Text]:
           aggregable.aggregate(value.stream[Text])
 
 

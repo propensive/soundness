@@ -116,7 +116,7 @@ trait ProductDerivationMethods[typeclass[_]]:
       type Fields = reflection.MirroredElemTypes
       type Labels = reflection.MirroredElemLabels
 
-      infer[ClassTag[result]].give:
+      provide[ClassTag[result]]:
         IArray.create[result](valueOf[Tuple.Size[Fields]]): array =>
           fold[derivation, Fields, Labels, Unit]((), 0): accumulator =>
             [field] => context ?=> array(index) = lambda[field](context)
@@ -167,7 +167,7 @@ trait ProductDerivationMethods[typeclass[_]]:
                                                     ?=> result)
   : IArray[result] =
 
-      infer[ClassTag[result]].give:
+      provide[ClassTag[result]]:
         type Labels = reflection.MirroredElemLabels
         type Fields = reflection.MirroredElemTypes
         val tuple: Fields = Tuple.fromProductTyped(product)
