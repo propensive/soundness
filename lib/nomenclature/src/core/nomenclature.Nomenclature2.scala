@@ -89,7 +89,7 @@ object Nomenclature2:
                 TypeRepr.of[param] match
                   case ConstantType(StringConstant(string)) =>
                     '{  if $rule.check($name, ${Expr(string)}.tt) then $expr
-                        else infer[Tactic[NameError]].give:
+                        else provide[Tactic[NameError]]:
                           raise(NameError($name, $rule, ${Expr(string)}))  }
 
         '{$checks; $name.asInstanceOf[Name[system]]}

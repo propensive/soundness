@@ -87,7 +87,7 @@ trait SumDerivationMethods[typeclass[_]]:
       type Labels = reflection.MirroredElemLabels
 
       singletonFold[derivation, Variants, Labels](_ == input).or:
-        infer[Tactic[VariantError]].give:
+        provide[Tactic[VariantError]]:
           abort(VariantError[derivation](input))
 
 
@@ -202,7 +202,7 @@ trait SumDerivationMethods[typeclass[_]]:
 
         case _ =>
           inline if fallible
-          then infer[Tactic[VariantError]].give:
+          then provide[Tactic[VariantError]]:
             raise(VariantError[derivation](inputLabel)) yet Unset
           else panic(m"Should be unreachable")
 
@@ -249,7 +249,7 @@ trait SumDerivationMethods[typeclass[_]]:
 
         case _ =>
           inline if fallible
-          then infer[Tactic[VariantError]].give:
+          then provide[Tactic[VariantError]]:
             raise(VariantError[derivation]("".tt)) yet Unset
           else panic(m"Should be unreachable")
 

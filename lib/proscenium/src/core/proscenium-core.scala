@@ -72,3 +72,9 @@ object Mono:
   inline def apply[value](value: value): Mono[value] = value *: Zero
 
 transparent inline def infer[context]: context = compiletime.summonInline[context]
+
+transparent inline def provide[context](using erased Void)[result]
+                        (inline lambda: context ?=> result)
+: result =
+
+    lambda(using compiletime.summonInline[context])
