@@ -77,7 +77,7 @@ object Query extends Dynamic:
     inline def join[derivation <: Product: ProductReflection]
     : derivation is Decodable in Query =
 
-        summonInline[Foci[Pointer]].give:
+        infer[Foci[Pointer]].give:
           value =>
             construct:
               [field] => context =>
@@ -102,7 +102,7 @@ object Query extends Dynamic:
   inline given decodable: [value] => value is Decodable in Query =
     summonFrom:
       case given (`value` is Decodable in Text) =>
-        summonInline[Tactic[QueryError]].give:
+        infer[Tactic[QueryError]].give:
           summonFrom:
             case given Default[`value`] =>
               _().let(_.decode).or(raise(QueryError()) yet default[value])

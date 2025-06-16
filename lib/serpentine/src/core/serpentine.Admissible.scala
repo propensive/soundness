@@ -52,7 +52,7 @@ object Admissible:
     inline !![text] match
       case _: Name[`system`] => unchecked[text, system]
 
-      case _ => compiletime.summonInline[Tactic[NameError]].give(Name[system](_))
+      case _ => infer[Tactic[NameError]].give(Name[system](_))
 
   inline given admissible: [string <: Label, system] => (nominative: system is Nominative) => string is Admissible on system =
     Admissible[string, system]({ void => Name.verify[string, system] })

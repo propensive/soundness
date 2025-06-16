@@ -107,7 +107,7 @@ extension (inline context: StringContext)
 
         Message
          (context.parts.map(_.tt).map(TextEscapes.escape(_)).to(List),
-          List(summonInline[(? >: other.type) is Communicable].message(other)))
+          List(infer[(? >: other.type) is Communicable].message(other)))
 
 extension (inline context: StringContext)
   inline def realm(): Realm = ${Fulminate.realm('context)}

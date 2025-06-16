@@ -38,8 +38,9 @@ import scala.compiletime.*
 
 import anticipation.*
 import fulminate.*
+import proscenium.*
 
-inline def default[value]: value = summonInline[Default[value]]()
+inline def default[value]: value = infer[Default[value]]()
 
 inline def optimizable[value](lambda: Optional[value] => Optional[value]): Optional[value] =
   lambda(Unset)

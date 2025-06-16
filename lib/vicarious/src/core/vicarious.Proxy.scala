@@ -45,6 +45,6 @@ class Proxy[key, value, +id <: Nat]() extends Selectable:
       ${Vicarious.dereference[key, value, id]('key)}
 
 
-  inline def id: Int = compiletime.summonInline[ValueOf[id]].value
+  inline def id: Int = infer[ValueOf[id]].value
   inline def apply()(using catalog: Catalog[key, value]): value = catalog.values(id)
   inline def unapply(scrutinee: Proxy[key, value, Nat]): Boolean = scrutinee.id == id

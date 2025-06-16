@@ -37,6 +37,7 @@ import contingency.*
 import distillate.*
 import jacinta.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 
 import interfaces.paths.pathOnLinux
@@ -58,11 +59,11 @@ object Dispatchable:
     inline def decode[value](value: Text): value = unsafely(value.decode[Json].as[value])
 
     inline def embed[entity](value: entity): Json =
-      compiletime.summonInline[entity is Encodable in Json].give(value.json)
+      infer[entity is Encodable in Json].give(value.json)
 
     inline def extract[entity](json: Json): entity =
-      compiletime.summonInline[Tactic[JsonError]].give:
-        compiletime.summonInline[entity is Decodable in Json].give(json.as[entity])
+      infer[Tactic[JsonError]].give:
+        infer[entity is Decodable in Json].give(json.as[entity])
 
 trait Dispatchable:
   type Carrier

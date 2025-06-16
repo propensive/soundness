@@ -91,7 +91,7 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.
         Http.Response(Http.Unauthorized, wwwAuthenticate = auth)()
 
 
-inline def request: Http.Request = compiletime.summonInline[Http.Request]
+inline def request: Http.Request = infer[Http.Request]
 
 given realm: Realm = realm"scintillate"
 
