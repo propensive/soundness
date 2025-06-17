@@ -98,10 +98,10 @@ inline def printElements[ItemsType <: TypeList[?]]: Unit =
   reify[ItemsType].foreach(println)
 ```
 
-Similarly, within a macro, 
+Similarly, within a macro,
 ```scala
 
-def printLongest[ItemsType <: TypeList[?]: Type](using Quotes): Expr[Unit] =
+def printLongest[ItemsType <: TypeList[?]: Type]: Macro[Unit] =
   val items: List[String] = reify(Type.of[ItemsType])
   println(items.maxBy(_.length))
   '{()}
@@ -135,7 +135,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Typonym?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Typonym's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -152,7 +152,7 @@ answer to the question, "how can I try Typonym?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -213,4 +213,3 @@ The logo shows the square brackets which usually delimit a type in Scala.
 
 Typonym is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

@@ -41,20 +41,21 @@ import scala.quoted.*
 import anticipation.*
 import contingency.*
 import fulminate.*
+import proscenium.*
 import vacuous.*
 
 object Kaleidoscope:
   given realm: Realm = realm"kaleidoscope"
 
-  def glob(context: Expr[StringContext])(using Quotes): Expr[Any] =
+  def glob(context: Expr[StringContext]): Macro[Any] =
     val parts = context.value.get.parts.map(Text(_)).map(Glob.parse(_).regex.s).to(List)
 
     extractor(parts.head :: parts.tail.map("([^/\\\\]*)"+_))
 
-  def regex(context: Expr[StringContext])(using Quotes): Expr[Any] =
+  def regex(context: Expr[StringContext]): Macro[Any] =
     extractor(context.value.get.parts.to(List))
 
-  private def extractor(parts: List[String])(using Quotes): Expr[Any] =
+  private def extractor(parts: List[String]): Macro[Any] =
     import quotes.reflect.*
 
     val regex = abortive(Regex.parse(parts.map(Text(_))))

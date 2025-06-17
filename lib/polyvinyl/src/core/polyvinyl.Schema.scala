@@ -45,9 +45,8 @@ trait Schema[data, record <: Record in data]:
   def access(name: String, value: data): data
 
 
-  def build(value: Expr[data])(using Quotes, Type[record], Type[data])
-       (using thisType: Type[this.type])
-  : Expr[record] =
+  def build(value: Expr[data])(using Type[record], Type[data])(using thisType: Type[this.type])
+  : Macro[record] =
 
       import quotes.reflect.*
 

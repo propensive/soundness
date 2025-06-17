@@ -34,13 +34,14 @@ package digression
 
 import anticipation.*
 import contingency.*
+import proscenium.*
 
 import scala.quoted.*
 
 import language.experimental.pureFunctions
 
 object Digression:
-  def location(using Quotes): Expr[Codepoint] =
+  def location: Macro[Codepoint] =
     import quotes.*, reflect.*
     val path = Expr(Position.ofMacroExpansion.sourceFile.path)
     val line = Expr(Position.ofMacroExpansion.startLine + 1)
@@ -55,5 +56,5 @@ object Digression:
       "final", "interface", "static", "void", "class", "finally", "long", "strictfp", "volatile",
       "const", "float", "native", "super", "while")
 
-  def fqcn(context: Expr[StringContext])(using Quotes): Expr[Fqcn] =
+  def fqcn(context: Expr[StringContext]): Macro[Fqcn] =
     abortive('{new Fqcn(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts)})})

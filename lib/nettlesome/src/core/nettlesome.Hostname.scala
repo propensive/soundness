@@ -39,6 +39,7 @@ import denominative.*
 import fulminate.*
 import gossamer.*
 import hypotenuse.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -53,7 +54,7 @@ object Hostname:
 
   given showable: Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
 
-  def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = abortive:
+  def expand(context: Expr[StringContext]): Macro[Hostname] = abortive:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
 
   given toExpr: ToExpr[Hostname]:

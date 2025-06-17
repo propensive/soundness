@@ -43,8 +43,7 @@ object Vicarious:
        (lambda: Expr[[field] => (field: field) => value],
         value: Expr[key],
         classTag: Expr[ClassTag[value]])
-       (using Quotes)
-  : Expr[Catalog[key, value]] =
+  : Macro[Catalog[key, value]] =
 
       import quotes.reflect.*
 
@@ -65,8 +64,8 @@ object Vicarious:
         case '[fieldType] => label :: fieldNames[fieldType](label)
 
 
-  def dereference[key: Type, value: Type, id <: Nat: Type](key: Expr[String])(using Quotes)
-  : Expr[value | Proxy[key, value, Nat]] =
+  def dereference[key: Type, value: Type, id <: Nat: Type](key: Expr[String])
+  : Macro[value | Proxy[key, value, Nat]] =
 
       import quotes.reflect.*
 
@@ -80,7 +79,7 @@ object Vicarious:
         case '[ type id <: Nat; id ] => '{Proxy[key, value, id]()}
 
 
-  def proxy[key: Type, value: Type](using Quotes): Expr[Proxy[key, value, 0]] =
+  def proxy[key: Type, value: Type]: Macro[Proxy[key, value, 0]] =
     import quotes.reflect.*
 
     val fields = fieldNames[key]("")

@@ -40,7 +40,7 @@ import prepositional.*
 import proscenium.*
 
 object Legerdemain:
-  def query(values: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Query] =
+  def query(values: Expr[Seq[(Label, Any)]]): Macro[Query] =
 
     def recur(exprs: List[Expr[(Label, Any)]], done: List[Expr[List[(Text, Text)]]] = Nil)
     : Expr[Query] =

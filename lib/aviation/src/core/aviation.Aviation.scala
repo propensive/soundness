@@ -127,7 +127,7 @@ object Aviation:
 
     given showable: Day is Showable = _.toString.tt
 
-  def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Clockface] =
+  def validTime(time: Expr[Double], pm: Boolean): Macro[Clockface] =
     import quotes.reflect.*
 
     time.asTerm match

@@ -39,8 +39,8 @@ import proscenium.*
 import scala.quoted.*
 
 object Adversaria:
-  def firstField[target <: Product: Type, annotation <: StaticAnnotation: Type](using Quotes)
-  : Expr[CaseField[target, annotation]] =
+  def firstField[target <: Product: Type, annotation <: StaticAnnotation: Type]
+  : Macro[CaseField[target, annotation]] =
 
       import quotes.reflect.*
 
@@ -58,8 +58,8 @@ object Adversaria:
       . head
 
 
-  def fields[target <: Product: Type, annotation <: StaticAnnotation: Type](using Quotes)
-  : Expr[List[CaseField[target, annotation]]] =
+  def fields[target <: Product: Type, annotation <: StaticAnnotation: Type]
+  : Macro[List[CaseField[target, annotation]]] =
 
       import quotes.reflect.*
 
@@ -80,8 +80,8 @@ object Adversaria:
       Expr.ofList(elements)
 
 
-  def fieldAnnotations[target: Type](lambda: Expr[target => Any])(using Quotes)
-  : Expr[List[StaticAnnotation]] =
+  def fieldAnnotations[target: Type](lambda: Expr[target => Any])
+  : Macro[List[StaticAnnotation]] =
 
       import quotes.reflect.*
 
@@ -100,8 +100,8 @@ object Adversaria:
           case '{ $annotation: StaticAnnotation } => annotation
 
 
-  def typeAnnotations[annotation <: StaticAnnotation: Type, target: Type](using Quotes)
-  : Expr[Annotations[annotation, target]] =
+  def typeAnnotations[annotation <: StaticAnnotation: Type, target: Type]
+  : Macro[Annotations[annotation, target]] =
 
       import quotes.reflect.*
 

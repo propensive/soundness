@@ -37,6 +37,7 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import prepositional.*
+import proscenium.*
 import symbolism.*
 import vacuous.*
 
@@ -79,11 +80,11 @@ object Rudiments:
       def long: Long = left
       def text: Text = (left.toString+" bytes").tt
 
-  def probe[target: Type](using Quotes): Expr[Nothing] =
+  def probe[target: Type]: Macro[Nothing] =
     import quotes.reflect.*
     halt(m"the type is ${TypeRepr.of[target].dealias.widen}")
 
-  def reflectClass[target: Type](using Quotes): Expr[Class[target]] =
+  def reflectClass[target: Type]: Macro[Class[target]] =
     import quotes.reflect.*
     '{Class.forName(${Expr(TypeRepr.of[target].typeSymbol.fullName)}).asInstanceOf[Class[target]]}
 

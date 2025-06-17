@@ -38,6 +38,7 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
+import proscenium.*
 
 object Cardinality:
   type Asym[value <: Double, truth <: Double, falsehood <: Double] <: Double =
@@ -56,8 +57,8 @@ object Cardinality:
   given realm: Realm = realm"cardinality"
 
 
-  def apply[left <: Double: Type, right <: Double: Type](digits: Expr[String])(using Quotes)
-  : Expr[left ~ right] =
+  def apply[left <: Double: Type, right <: Double: Type](digits: Expr[String])
+  : Macro[left ~ right] =
 
       import quotes.reflect.*
 

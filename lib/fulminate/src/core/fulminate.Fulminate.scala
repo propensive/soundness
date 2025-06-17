@@ -37,6 +37,7 @@ import language.experimental.into
 import scala.quoted.*
 
 import anticipation.*
+import proscenium.*
 
 object Fulminate:
   opaque type Diagnostics = Boolean
@@ -47,7 +48,7 @@ object Fulminate:
 
   extension (diagnostics: Diagnostics) def captureStack: Boolean = diagnostics
 
-  def realm(context: Expr[StringContext])(using Quotes): Expr[Realm] =
+  def realm(context: Expr[StringContext]): Macro[Realm] =
     val name: String = context.valueOrAbort.parts.head
     if !name.matches("[a-z]+")
     then halt(m"the realm name should contain only lowercase letters")(using Realm("fulminate"))

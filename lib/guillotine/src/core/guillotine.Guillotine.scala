@@ -39,7 +39,7 @@ import scala.quoted.*
 import proscenium.*
 
 object Guillotine:
-  def sh(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Command] =
+  def sh(context: Expr[StringContext], parts: Expr[Seq[Any]]): Macro[Command] =
     import quotes.reflect.*
 
     val execType = ConstantType(StringConstant(context.value.get.parts.head.split(" ").nn.head.nn))

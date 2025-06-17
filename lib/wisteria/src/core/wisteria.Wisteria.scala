@@ -32,6 +32,7 @@
                                                                                                   */
 package wisteria
 
+import proscenium.*
 import vacuous.*
 
 import scala.quoted.*
@@ -41,21 +42,19 @@ object Wisteria:
     ${getDefault[product, field]('index)}
 
 
-  def getDefault[product: Type, field: Type](index: Expr[Int])(using Quotes)
-  : Expr[Optional[field]] =
+  def getDefault[product: Type, field: Type](index: Expr[Int]): Macro[Optional[field]] =
+    import quotes.reflect.*
 
-      import quotes.reflect.*
+    val methodName: String = "$lessinit$greater$default$"+(index.valueOrAbort + 1)
+    val productSymbol = TypeRepr.of[product].classSymbol
 
-      val methodName: String = "$lessinit$greater$default$"+(index.valueOrAbort + 1)
-      val productSymbol = TypeRepr.of[product].classSymbol
+    productSymbol.flatMap: symbol =>
+      symbol.companionClass.declaredMethod(methodName).headOption.map: method =>
+        Ref(symbol.companionModule).select(method)
 
-      productSymbol.flatMap: symbol =>
-        symbol.companionClass.declaredMethod(methodName).headOption.map: method =>
-          Ref(symbol.companionModule).select(method)
+    . map: selection =>
+        TypeRepr.of[product].typeArgs match
+          case Nil  => selection
+          case args => selection.appliedToTypes(args)
 
-      . map: selection =>
-          TypeRepr.of[product].typeArgs match
-            case Nil  => selection
-            case args => selection.appliedToTypes(args)
-
-      . map(_.asExprOf[field]).getOrElse('{Unset})
+    . map(_.asExprOf[field]).getOrElse('{Unset})

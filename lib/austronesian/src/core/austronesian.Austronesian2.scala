@@ -84,10 +84,7 @@ object Austronesian2:
       case other =>
         provide[Tactic[PojoError]](abort(PojoError()))
 
-  def isolated[result: Type](classloader: Expr[Classloader], invoke: Expr[result])
-     (using Quotes)
-  :     Expr[result] =
-
+  def isolated[result: Type](classloader: Expr[Classloader], invoke: Expr[result]): Macro[result] =
     import quotes.reflect.*
 
     invoke.asTerm match
@@ -102,8 +99,7 @@ object Austronesian2:
       arguments:   Expr[Seq[Any]],
       classloader: Expr[Classloader],
       singleton:   Expr[Boolean])
-     (using Quotes)
-  :     Expr[Any] =
+  : Macro[Any] =
 
     import quotes.reflect.*
 

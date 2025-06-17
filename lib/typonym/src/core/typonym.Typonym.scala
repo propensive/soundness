@@ -47,7 +47,7 @@ object Typonym:
       case _ =>
         Nil
 
-  def reify[phantom: Type](using Quotes): Expr[Any] =
+  def reify[phantom: Type]: Macro[Any] =
     import quotes.reflect.*
 
     Type.of[phantom] match

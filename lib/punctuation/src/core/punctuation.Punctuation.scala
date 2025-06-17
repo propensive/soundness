@@ -33,12 +33,13 @@
 package punctuation
 
 import anticipation.*
+import proscenium.*
 
 import scala.quoted.*
 
 object Punctuation:
-  def md(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes)
-  : Expr[Markdown[Markdown.Ast.Node]] =
+  def md(context: Expr[StringContext], parts: Expr[Seq[Any]])
+  : Macro[Markdown[Markdown.Ast.Node]] =
 
       Md.Interpolator.expansion(context, parts) match
         case (Md.Input.Inline(_), result) => '{$result.asInstanceOf[InlineMd]}

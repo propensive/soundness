@@ -37,22 +37,23 @@ import scala.compiletime.*
 
 import fulminate.*
 import prepositional.*
+import proscenium.*
 
 object Vacuous:
-  def check[value: Type](using Quotes): Expr[Optionality[value]] =
+  def check[value: Type]: Macro[Optionality[value]] =
     import quotes.reflect.*
     if TypeRepr.of[Unset.type] <:< TypeRepr.of[value].widen
     then '{null.asInstanceOf[Optionality[value]]}
     else halt(m"the type ${TypeRepr.of[value].widen} is not an `Optional`")
 
-  def concrete[typeRef: Type](using Quotes): Expr[typeRef is Concrete] =
+  def concrete[typeRef: Type]: Macro[typeRef is Concrete] =
     import quotes.reflect.*
 
     if TypeRepr.of[typeRef].typeSymbol.isAbstractType
     then halt(m"type ${Type.of[typeRef]} is abstract")
     else '{erasedValue[typeRef is Concrete]}
 
-  def distinct[typeRef: Type, union: Type](using Quotes): Expr[typeRef is Distinct from union] =
+  def distinct[typeRef: Type, union: Type]: Macro[typeRef is Distinct from union] =
     import quotes.reflect.*
 
     concrete[typeRef]
@@ -62,32 +63,30 @@ object Vacuous:
     else '{erasedValue[typeRef is Distinct from union]}
 
 
-  def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value])(using Quotes)
-  : Expr[value] =
+  def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value]): Macro[value] =
+    import quotes.reflect.*
 
-      import quotes.reflect.*
+    optional.runtimeChecked match
+      case '{ $optional: optionalType } => check[optionalType]
 
-      optional.runtimeChecked match
-        case '{ $optional: optionalType } => check[optionalType]
+    def optimize(term: Term): Term = term match
+      case inlined@Inlined
+            (call@Some(Apply(TypeApply(Ident("optimizable"), _), _)), bindings, term) =>
+        term match
+          case Typed(Apply(select, List(_)), typeTree) =>
+            Inlined(call, bindings, Typed(Apply(select, List(default.asTerm)), typeTree))
 
-      def optimize(term: Term): Term = term match
-        case inlined@Inlined
-              (call@Some(Apply(TypeApply(Ident("optimizable"), _), _)), bindings, term) =>
-          term match
-            case Typed(Apply(select, List(_)), typeTree) =>
-              Inlined(call, bindings, Typed(Apply(select, List(default.asTerm)), typeTree))
+          case term =>
+            ' { $optional match
+                  case Unset => $default
+                  case term  => term.asInstanceOf[value] } . asTerm
 
-            case term =>
-              ' { $optional match
-                    case Unset => $default
-                    case term  => term.asInstanceOf[value] } . asTerm
+      case Inlined(call, bindings, term) =>
+        Inlined(call, bindings, optimize(term))
 
-        case Inlined(call, bindings, term) =>
-          Inlined(call, bindings, optimize(term))
+      case term =>
+        ' { $optional match
+              case Unset => $default
+              case term  => term.asInstanceOf[value] } . asTerm
 
-        case term =>
-          ' { $optional match
-                case Unset => $default
-                case term  => term.asInstanceOf[value] } . asTerm
-
-      '{${optimize(optional.asTerm).asExpr}.asInstanceOf[value]}.asExprOf[value]
+    '{${optimize(optional.asTerm).asExpr}.asInstanceOf[value]}.asExprOf[value]

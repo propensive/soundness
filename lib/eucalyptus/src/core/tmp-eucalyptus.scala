@@ -50,8 +50,7 @@ package eucalyptus
 //         realm:          Expr[Realm],
 //         presentational: Expr[text is Presentational],
 //         show:           Expr[Any])
-//        (using Quotes)
-//   :     Expr[Unit] =
+//   : Macro[Unit] =
 
 //     '{  val time = System.currentTimeMillis
 //         val presentationalValue = $presentational
@@ -71,8 +70,7 @@ package eucalyptus
 //       (routes:         Expr[PartialFunction[Entry[text], Any]],
 //        monitor:        Expr[Monitor],
 //        presentational: Expr[text is Presentational])
-//       (using Quotes)
-//   :     Expr[Log[text]] =
+//   : Macro[Log[text]] =
 
 //     import quotes.reflect.*
 

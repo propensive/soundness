@@ -61,13 +61,13 @@ object Nomenclature2:
       case AndType(left, right) => decompose(left) ++ decompose(right)
       case other                => Set(other)
 
-  def disintersection[intersection: Type](using Quotes): Expr[Tuple] =
+  def disintersection[intersection: Type]: Macro[Tuple] =
     import quotes.reflect.*
 
     build(decompose(TypeRepr.of[intersection].dealias).to(List)).asType.absolve match
       case '[type tupleType <: Tuple; tupleType] => '{null.asInstanceOf[tupleType]}
 
-  def extractor(context: Expr[StringContext])(using Quotes): Expr[Any] =
+  def extractor(context: Expr[StringContext]): Macro[Any] =
     import quotes.reflect.*
     val string = context.valueOrAbort.parts.head
 
@@ -77,7 +77,7 @@ object Nomenclature2:
         panic(m"StringContext did not contains Strings")
 
 
-  def makeName[system: Type](name: Expr[Text])(using Quotes): Expr[Name[system]] =
+  def makeName[system: Type](name: Expr[Text]): Macro[Name[system]] =
     import quotes.reflect.*
 
     Expr.summon[system is Nominative] match
@@ -97,8 +97,8 @@ object Nomenclature2:
       case None =>
         halt(m"Couldn't find a `Nominative` instance on ${Type.of[system]}")
 
-  def parse2[platform: Type, name <: String: Type](scrutinee: Expr[Name[platform]])(using Quotes)
-  : Expr[Boolean] =
+  def parse2[platform: Type, name <: String: Type](scrutinee: Expr[Name[platform]])
+  : Macro[Boolean] =
 
       parse[platform, name]
       '{${Expr(constant[name])}.tt == $scrutinee}
@@ -114,7 +114,7 @@ object Nomenclature2:
       case module: `companion` => module
       case _                   => halt(m"The companion object did not have the expected type.")
 
-  def parse[platform: Type, name <: String: Type](using Quotes): Expr[Name[platform]] =
+  def parse[platform: Type, name <: String: Type]: Macro[Name[platform]] =
     import quotes.reflect.*
 
     val name: Text = constant[name].tt

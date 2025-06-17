@@ -56,8 +56,8 @@ trait Interpolator[input, state, result]:
   extends Error(m"error $positionalMessage at position $start")
 
   def expand(context: Expr[StringContext], seq: Expr[Seq[Any]])(using thisType: Type[this.type])
-       (using Quotes, Type[input], Type[state], Type[result])
-  : Expr[result] =
+       (using Type[input], Type[state], Type[result])
+  : Macro[result] =
 
       expansion(context, seq)(1)
 

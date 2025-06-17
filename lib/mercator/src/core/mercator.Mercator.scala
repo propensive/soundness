@@ -34,12 +34,13 @@ package mercator
 
 import anticipation.*
 import fulminate.*
+import proscenium.*
 
 import scala.compiletime.*
 import scala.quoted.*
 
 object Mercator:
-  def point[typeConstructor[_]: Type](using Quotes): Expr[Identity[typeConstructor]] =
+  def point[typeConstructor[_]: Type]: Macro[Identity[typeConstructor]] =
     import quotes.reflect.*
 
     val identityType = TypeRepr.of[typeConstructor].typeSymbol

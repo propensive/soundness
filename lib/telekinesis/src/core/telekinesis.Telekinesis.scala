@@ -114,8 +114,7 @@ object Telekinesis:
         payload:  Expr[payload],
         postable: Expr[payload is Postable],
         client:   Expr[HttpClient onto target])
-       (using Quotes)
-  : Expr[Http.Response] =
+  : Macro[Http.Response] =
 
       headers.absolve match
         case Varargs(exprs) =>
@@ -145,8 +144,7 @@ object Telekinesis:
         online:   Expr[Online],
         loggable: Expr[HttpEvent is Loggable],
         client:   Expr[HttpClient onto target])
-       (using Quotes)
-  : Expr[Http.Response] =
+  : Macro[Http.Response] =
 
       headers.absolve match
         case Varargs(exprs) =>
@@ -167,22 +165,20 @@ object Telekinesis:
               $client.request(request, $fetch.target)  }
 
 
-  def response(headers: Expr[Seq[Any]])(using Quotes)
-  : Expr[Http.Response.Prototype | Http.Response] =
+  def response(headers: Expr[Seq[Any]]): Macro[Http.Response.Prototype | Http.Response] =
+    headers.absolve.match
+      case Varargs(exprs) => exprs.to(List).only:
+        case '{ $value: valueType } :: Nil =>
+          Expr.summon[(? >: valueType) is Servable].map { servable => '{$servable.serve($value)} }
+          . optional
 
-      headers.absolve.match
-        case Varargs(exprs) => exprs.to(List).only:
-          case '{ $value: valueType } :: Nil =>
-            Expr.summon[(? >: valueType) is Servable].map { servable => '{$servable.serve($value)} }
-            . optional
+    . or:
+        headers.absolve match
+          case Varargs(exprs) =>
+            val (_, status, headers2) = expand(exprs.to(List))
 
-      . or:
-          headers.absolve match
-            case Varargs(exprs) =>
-              val (_, status, headers2) = expand(exprs.to(List))
+            val status2: Expr[Optional[Http.Status]] = status match
+              case Unset                   => '{Unset}
+              case expr: Expr[Http.Status] => expr
 
-              val status2: Expr[Optional[Http.Status]] = status match
-                case Unset                   => '{Unset}
-                case expr: Expr[Http.Status] => expr
-
-              '{Http.Response.Prototype($status2, $headers2)}
+            '{Http.Response.Prototype($status2, $headers2)}

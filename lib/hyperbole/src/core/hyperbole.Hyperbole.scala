@@ -51,6 +51,7 @@ import inimitable.*
 import iridescence.*
 import nomenclature.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
@@ -63,7 +64,7 @@ import dotty.tools.*, dotc.util as dtdu
 import syntaxHighlighting.teletypeable
 
 object Hyperbole:
-  def introspection[value](value: Expr[value], inlining: Expr[Boolean])(using Quotes): Expr[Text] =
+  def introspection[value](value: Expr[value], inlining: Expr[Boolean]): Macro[Text] =
     Expr(introspect(value, inlining).render(termcapDefinitions.xterm256))
 
   def introspect[value](expr: Expr[value], inlining0: Expr[Boolean])(using Quotes): Teletype =
