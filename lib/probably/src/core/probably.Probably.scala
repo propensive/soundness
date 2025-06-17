@@ -37,6 +37,7 @@ import chiaroscuro.*
 import denominative.*
 import fulminate.*
 import gossamer.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 
@@ -51,8 +52,7 @@ object Probably:
                   inc:       Expr[Inclusion[report, Verdict]],
                   inc2:      Expr[Inclusion[report, Verdict.Detail]],
                   action:    Expr[Trial[test] => result])
-                 (using Quotes)
-  : Expr[result] =
+  : Macro[result] =
 
       import quotes.reflect.*
 
@@ -110,8 +110,7 @@ object Probably:
         runner:    Expr[Runner[report]],
         inc:       Expr[Inclusion[report, Verdict]],
         inc2:      Expr[Inclusion[report, Verdict.Detail]])
-       (using Quotes)
-  : Expr[test] =
+  : Macro[test] =
 
       general[test, report, test]
        (test, predicate, runner, inc, inc2, '{ (t: Trial[test]) => t.get })
@@ -123,8 +122,7 @@ object Probably:
         runner:    Expr[Runner[report]],
         inc:       Expr[Inclusion[report, Verdict]],
         inc2:      Expr[Inclusion[report, Verdict.Detail]])
-       (using Quotes)
-  : Expr[Unit] =
+  : Macro[Unit] =
 
       general[test, report, Unit](test, predicate, runner, inc, inc2, '{ _ => () })
 
@@ -134,8 +132,7 @@ object Probably:
         runner: Expr[Runner[report]],
         inc:    Expr[Inclusion[report, Verdict]],
         inc2:   Expr[Inclusion[report, Verdict.Detail]])
-       (using Quotes)
-  : Expr[Unit] =
+  : Macro[Unit] =
 
       general[test, report, Unit](test, '{ _ => true }, runner, inc, inc2, '{ _ => () })
 
@@ -187,7 +184,7 @@ object Probably:
         result(run)
 
 
-  def debug[test: Type](expr: Expr[test], test: Expr[Harness])(using Quotes): Expr[test] =
+  def debug[test: Type](expr: Expr[test], test: Expr[Harness]): Macro[test] =
     import quotes.reflect.*
 
     val exprName: Text = expr.asTerm.pos match

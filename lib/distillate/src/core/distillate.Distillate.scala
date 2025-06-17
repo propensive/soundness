@@ -40,7 +40,7 @@ import proscenium.*
 
 object Distillate:
   given realm: Realm = realm"distillate"
-  def enumerable[enumeration <: reflect.Enum: Type](using Quotes): Expr[enumeration is Enumerable] =
+  def enumerable[enumeration <: reflect.Enum: Type]: Macro[enumeration is Enumerable] =
     import quotes.reflect.*
 
     val companion = Ref(TypeRepr.of[enumeration].typeSymbol.companionModule).asExpr

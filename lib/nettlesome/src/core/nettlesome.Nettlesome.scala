@@ -235,8 +235,8 @@ object Nettlesome:
   case class Ipv6(highBits: Long, lowBits: Long)
 
 
-  def portService(context: Expr[StringContext], tcp: Boolean)(using Quotes)
-  : Expr[TcpPort | UdpPort] =
+  def portService(context: Expr[StringContext], tcp: Boolean)
+  : Macro[TcpPort | UdpPort] =
 
       import quotes.reflect.*
 
@@ -261,7 +261,7 @@ object Nettlesome:
                   else '{UdpPort.unsafe(${Expr(port)}).asInstanceOf[UdpPort of number]}
 
 
-  def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
+  def ip(context: Expr[StringContext]): Macro[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)
 
     abortive:
@@ -273,7 +273,7 @@ object Nettlesome:
         val ipv6 = Ipv6.parse(text)
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
-  def mac(context: Expr[StringContext])(using Quotes): Expr[MacAddress] = abortive:
+  def mac(context: Expr[StringContext]): Macro[MacAddress] = abortive:
     val macAddress = MacAddress.parse(context.valueOrAbort.parts.head.tt)
     '{MacAddress(${Expr(macAddress.long)})}
 

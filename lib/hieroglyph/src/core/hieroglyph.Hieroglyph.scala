@@ -36,6 +36,7 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
+import proscenium.*
 
 object Hieroglyph:
   given realm: Realm = realm"hieroglyph"
@@ -55,7 +56,7 @@ object Hieroglyph:
     def to: Int = range.toInt
     def contains(char: Char): Boolean = char.toInt >= from && char.toInt <= to
 
-  def encoding(contextExpr: Expr[StringContext])(using Quotes): Expr[Encoding] =
+  def encoding(contextExpr: Expr[StringContext]): Macro[Encoding] =
     import quotes.reflect.*
 
     val context: StringContext = contextExpr.valueOrAbort
@@ -73,7 +74,7 @@ object Hieroglyph:
         if encoding.charset.canEncode then '{Encoding.codecs(${Expr(name)}.tt)}
         else '{Encoding.decodeOnly(${Expr(name)}.tt)}
 
-  def char(contextExpr: Expr[StringContext])(using Quotes): Expr[Char | Text] =
+  def char(contextExpr: Expr[StringContext]): Macro[Char | Text] =
     val name: Text = contextExpr.valueOrAbort.parts.head.toUpperCase.nn.tt
 
     Unicode(name) match

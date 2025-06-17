@@ -61,7 +61,7 @@ object EmailAddress:
   given encodable: EmailAddress is Encodable in Text = _.text
   given showable: EmailAddress is Showable = _.text
 
-  def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = abortive:
+  def expand(context: Expr[StringContext]): Macro[EmailAddress] = abortive:
     val text: Text = context.valueOrAbort.parts.head.tt
     val address = EmailAddress.parse(text)
 

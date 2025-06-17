@@ -75,11 +75,13 @@ object Contingency:
       object RepeatedParam:
         def unapply(using quotes: Quotes)(param: quotes.reflect.Symbol)
         : Option[quotes.reflect.TypeRepr] =
-          import quotes.reflect.*
-          param.info match
-            case AnnotatedType(repr, Apply(Select(New(annotation), _), _))
-            if annotation.symbol == defn.RepeatedAnnot                  => Some(repr)
-            case _                                                      => None
+
+            import quotes.reflect.*
+
+            param.info match
+              case AnnotatedType(repr, Apply(Select(New(annotation), _), _))
+              if annotation.symbol == defn.RepeatedAnnot                  => Some(repr)
+              case _                                                      => None
 
       def exhaustive(pattern: Tree, patternType: TypeRepr): Boolean = pattern match
         case Wildcard()          => true
@@ -150,8 +152,7 @@ object Contingency:
       case other                              => List(other)
 
 
-  def mitigate[errors <: Exception: Type](handler: Expr[Exception ~> errors])(using Quotes)
-  : Expr[Any] =
+  def mitigate[errors <: Exception: Type](handler: Expr[Exception ~> errors]): Macro[Any] =
 
       import quotes.reflect.*
 
@@ -171,8 +172,7 @@ object Contingency:
 
   def track[accrual <: Exception: Type, focus: Type]
        (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
-       (using Quotes)
-  : Expr[Any] =
+  : Macro[Any] =
 
       import quotes.reflect.*
 
@@ -194,8 +194,7 @@ object Contingency:
 
   def validate[accrual: Type, focus: Type]
        (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
-       (using Quotes)
-  : Expr[Any] =
+  : Macro[Any] =
 
       import quotes.reflect.*
 
@@ -217,8 +216,7 @@ object Contingency:
 
   def accrue[accrual <: Exception: Type]
        (accrual: Expr[accrual], handler: Expr[accrual ?=> Exception ~> accrual])
-       (using Quotes)
-  : Expr[Any] =
+  : Macro[Any] =
 
       import quotes.reflect.*
 
@@ -237,7 +235,7 @@ object Contingency:
           '{Accrue[accrual, typeLambda]($accrual, accrual ?=> $handler(using accrual))}
 
 
-  def recover[result: Type](handler: Expr[Exception ~> result])(using Quotes): Expr[Any] =
+  def recover[result: Type](handler: Expr[Exception ~> result]): Macro[Any] =
     import quotes.reflect.*
 
     val errors = mapping(handler.asTerm)
@@ -256,8 +254,7 @@ object Contingency:
 
   def mitigateWithin[context[_]: Type, result: Type]
        (mitigate: Expr[Mitigation[context]], lambda: Expr[context[result]])
-       (using Quotes)
-    : Expr[result] =
+    : Macro[result] =
 
         import quotes.reflect.*
 
@@ -283,8 +280,7 @@ object Contingency:
 
   def recoverWithin[context[_]: Type, result: Type]
        (recovery: Expr[Recovery[?, context]], lambda: Expr[context[result]])
-       (using Quotes)
-  : Expr[result] =
+  : Macro[result] =
 
       type ContextResult = context[result]
 
@@ -319,8 +315,7 @@ object Contingency:
         lambda:      Expr[context[result]],
         tactic:      Expr[Tactic[accrual]],
         diagnostics: Expr[Diagnostics])
-     (using Quotes)
-  : Expr[result] =
+  : Macro[result] =
 
       '{  val ref: juca.AtomicReference[accrual] = juca.AtomicReference(null)
           val result = boundary[Option[result]]: label ?=>
@@ -360,8 +355,7 @@ object Contingency:
         lambda:      Expr[Foci[focus] ?=> context[result]],
         tactic:      Expr[Tactic[accrual]],
         diagnostics: Expr[Diagnostics])
-       (using Quotes)
-  : Expr[result] =
+  : Macro[result] =
 
       '{  val foci: Foci[focus] = TrackFoci()
 
@@ -403,8 +397,7 @@ object Contingency:
        (validate:    Expr[Validate[accrual, context, focus]],
         lambda:      Expr[Foci[focus] ?=> context[Any]],
         diagnostics: Expr[Diagnostics])
-       (using Quotes)
-  : Expr[accrual] =
+  : Macro[accrual] =
 
       '{  val foci: Foci[focus] = TrackFoci()
 

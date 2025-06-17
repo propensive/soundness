@@ -34,6 +34,7 @@ package hellenism
 
 import scala.quoted.*
 
+import proscenium.*
 import vacuous.*
 
 object Hellenism extends Hellenism2:
@@ -52,7 +53,7 @@ object Hellenism extends Hellenism2:
 export Hellenism.ClassRef
 
 trait Hellenism2:
-  def makeClass[template <: AnyKind: Type](using Quotes): Expr[ClassRef] =
+  def makeClass[template <: AnyKind: Type]: Macro[ClassRef] =
     import quotes.reflect.*
 
     '{ClassRef(Class.forName(${Expr(TypeRepr.of[template].classSymbol.get.fullName)}).nn)}

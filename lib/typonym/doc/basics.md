@@ -59,10 +59,10 @@ inline def printElements[ItemsType <: TypeList[?]]: Unit =
   reify[ItemsType].foreach(println)
 ```
 
-Similarly, within a macro, 
+Similarly, within a macro,
 ```scala
 
-def printLongest[ItemsType <: TypeList[?]: Type](using Quotes): Expr[Unit] =
+def printLongest[ItemsType <: TypeList[?]: Type]: Macro[Unit] =
   val items: List[String] = reify(Type.of[ItemsType])
   println(items.maxBy(_.length))
   '{()}

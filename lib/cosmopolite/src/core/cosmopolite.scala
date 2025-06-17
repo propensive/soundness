@@ -54,8 +54,7 @@ case class Polyglot[+value, +localization <: Localization](value: Map[String, va
 
 object Cosmopolite:
   def access[value: Type, localization <: Localization: Type](value: Expr[Map[String, value]])
-     (using Quotes)
-  : Expr[value] =
+  : Macro[value] =
 
     import quotes.reflect.*
 
@@ -75,7 +74,7 @@ object Cosmopolite:
 
 //   private inline def reifyToSet[L <: String]: Set[String] = ${reifyToSetMacro[L]}
 
-//   private def reifyToSetMacro[L <: String: Type](using Quotes): Expr[Set[String]] =
+//   private def reifyToSetMacro[L <: String: Type]: Macro[Set[String]] =
 //     import quotes.reflect.*
 
 //     def langs(t: TypeRepr): Set[String] = t.dealias.asMatchable match

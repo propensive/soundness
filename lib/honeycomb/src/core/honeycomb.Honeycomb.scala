@@ -49,8 +49,7 @@ object Honeycomb:
         className:  Expr[String],
         name:       Expr[name],
         attributes: Expr[Seq[(Label, Any)]])
-       (using Quotes)
-  : Expr[StartTag[name, result]] =
+  : Macro[StartTag[name, result]] =
 
       import quotes.reflect.*
 

@@ -92,7 +92,7 @@ object Panopticon:
           halt(m"unexpectedly did not match")
 
 
-  def get[from: Type, path <: Tuple: Type, to: Type](value: Expr[from])(using Quotes): Expr[to] =
+  def get[from: Type, path <: Tuple: Type, to: Type](value: Expr[from]): Macro[to] =
 
     import quotes.reflect.*
 
@@ -116,8 +116,7 @@ object Panopticon:
 
 
   def set[from: Type, path <: Tuple: Type, to: Type](value: Expr[from], newValue: Expr[to])
-       (using Quotes)
-  : Expr[from] =
+  : Macro[from] =
 
       import quotes.reflect.*
 
@@ -146,7 +145,7 @@ object Panopticon:
       rewrite(getPath[path](), value.asTerm).asExprOf[from]
 
 
-  def dereference[aim: Type, tuple <: Tuple: Type](member: Expr[String])(using Quotes): Expr[Any] =
+  def dereference[aim: Type, tuple <: Tuple: Type](member: Expr[String]): Macro[Any] =
     import quotes.reflect.*
 
     val fieldName = member.valueOrAbort

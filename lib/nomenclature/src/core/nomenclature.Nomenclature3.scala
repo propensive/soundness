@@ -34,8 +34,10 @@ package nomenclature
 
 import scala.quoted.*
 
+import proscenium.*
+
 object Nomenclature3:
-  def staticCompanion[instance: Type](using Quotes): Expr[Matchable] =
+  def staticCompanion[instance: Type]: Macro[Matchable] =
     import quotes.reflect.*
     Ident(TypeRepr.of[instance].typeSymbol.companionModule.termRef).asExprOf[Matchable]
 

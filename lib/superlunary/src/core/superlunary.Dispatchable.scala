@@ -49,10 +49,10 @@ object Dispatchable:
     type Carrier = Json
     type Format = Text
 
-    def encoder[value: Type](using Quotes): Expr[value => Text] =
+    def encoder[value: Type]: Macro[value => Text] =
       '{ value => value.json.encode }
 
-    def decoder(using Quotes): Expr[Text => List[Json]] =
+    def decoder: Macro[Text => List[Json]] =
       '{ text => unsafely(text.decode[Json].as[List[Json]]) }
 
     inline def encode(value: List[Json]): Text = value.json.encode
@@ -67,8 +67,8 @@ trait Dispatchable:
   type Carrier
   type Format
 
-  def encoder[value: Type](using Quotes): Expr[value => Format]
-  def decoder(using Quotes): Expr[Format => List[Carrier]]
+  def encoder[value: Type]: Macro[value => Format]
+  def decoder: Macro[Format => List[Carrier]]
 
   inline def encode(values: List[Carrier]): Format
   inline def decode[value](value: Format): value

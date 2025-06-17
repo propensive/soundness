@@ -50,7 +50,7 @@ given realm: Realm = realm"abacist"
 object Abacist:
   import Quantitative.*
 
-  def make[units <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Quanta[units]] =
+  def make[units <: Tuple: Type](values: Expr[Seq[Int]]): Macro[Quanta[units]] =
     val inputs: List[Expr[Int]] = values.absolve match
       case Varargs(values) => values.to(List).reverse
 
@@ -87,8 +87,8 @@ object Abacist:
     '{Quanta.fromLong[units](${recur(multipliers[units].reverse, inputs, '{0L})})}
 
 
-  def describeQuanta[units <: Tuple: Type](count: Expr[Quanta[units]])(using Quotes)
-  : Expr[ListMap[Text, Long]] =
+  def describeQuanta[units <: Tuple: Type](count: Expr[Quanta[units]])
+  : Macro[ListMap[Text, Long]] =
 
       def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]])
       : Expr[ListMap[Text, Long]] =
@@ -111,15 +111,14 @@ object Abacist:
 
 
   def multiplyQuanta[units <: Tuple: Type]
-       (count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean)(using Quotes)
-  : Expr[Any] =
+       (count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean)
+  : Macro[Any] =
 
       if division then '{Quanta.fromLong[units](($count.longValue/$multiplier + 0.5).toLong)}
       else '{Quanta.fromLong[units](($count.longValue*$multiplier + 0.5).toLong)}
 
 
-  def toQuantity[units <: Tuple: Type](count: Expr[Quanta[units]])(using Quotes)
-  : Expr[Any] =
+  def toQuantity[units <: Tuple: Type](count: Expr[Quanta[units]]): Macro[Any] =
 
       val lastUnit = multipliers[units].last
       val quantityUnit = lastUnit.unitPower.ref.dimensionRef.principal
@@ -132,8 +131,7 @@ object Abacist:
 
   def fromQuantity[quantity <: Measure: Type, units <: Tuple: Type]
        (quantity: Expr[Quantity[quantity]])
-       (using Quotes)
-  : Expr[Quanta[units]] =
+  : Macro[Quanta[units]] =
 
       import quotes.reflect.*
 
@@ -145,8 +143,7 @@ object Abacist:
 
 
   def get[units <: Tuple: Type, unit <: Units[1, ? <: Dimension]: Type](value: Expr[Quanta[units]])
-       (using Quotes)
-  : Expr[Int] =
+  : Macro[Int] =
 
       import quotes.reflect.*
 

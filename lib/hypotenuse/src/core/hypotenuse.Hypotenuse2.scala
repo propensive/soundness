@@ -40,12 +40,13 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
+import proscenium.*
 import rudiments.*
 
 object Hypotenuse2:
   given realm: Realm = realm"hypotenuse"
 
-  def bin(expr: Expr[StringContext])(using Quotes): Expr[AnyVal] =
+  def bin(expr: Expr[StringContext]): Macro[AnyVal] =
     import quotes.reflect.*
     val bits = expr.valueOrAbort.parts.head
 
@@ -68,7 +69,7 @@ object Hypotenuse2:
       case 64 => Expr[Long](long)
       case _  => halt(m"a binary literal must be 8, 16, 32 or 64 bits long")
 
-  def hex(expr: Expr[StringContext])(using Quotes): Expr[IArray[Byte]] =
+  def hex(expr: Expr[StringContext]): Macro[IArray[Byte]] =
     import quotes.reflect.*
 
     val startPos = expr.asTerm.pos
@@ -94,23 +95,23 @@ object Hypotenuse2:
 
     '{IArray.from(${Expr(bytes)})}
 
-  def parseU64(digits: Expr[String])(using Quotes): Expr[Long] = digits.value match
+  def parseU64(digits: Expr[String]): Macro[Long] = digits.value match
     case None         => '{JLong.parseUnsignedLong($digits)}
     case Some(digits) => Expr(JLong.parseUnsignedLong(digits))
 
-  def parseS64(digits: Expr[String])(using Quotes): Expr[Long] = digits.value match
+  def parseS64(digits: Expr[String]): Macro[Long] = digits.value match
     case None         => '{JLong.parseLong($digits)}
     case Some(digits) => Expr(JLong.parseLong(digits))
 
-  def parseU32(digits: Expr[String])(using Quotes): Expr[Int] = digits.value match
+  def parseU32(digits: Expr[String]): Macro[Int] = digits.value match
     case None         => '{JInt.parseUnsignedInt($digits)}
     case Some(digits) => Expr(JInt.parseUnsignedInt(digits))
 
-  def parseS32(digits: Expr[String])(using Quotes): Expr[Int] = digits.value match
+  def parseS32(digits: Expr[String]): Macro[Int] = digits.value match
     case None         => '{JInt.parseInt($digits)}
     case Some(digits) => Expr(JInt.parseInt(digits))
 
-  def parseU16(digits: Expr[String])(using Quotes): Expr[Short] = digits.value match
+  def parseU16(digits: Expr[String]): Macro[Short] = digits.value match
     case None => '{JInt.parseInt($digits).toShort}
 
     case Some(digits) =>
@@ -120,7 +121,7 @@ object Hypotenuse2:
 
       Expr(int.toShort)
 
-  def parseS16(digits: Expr[String])(using Quotes): Expr[Short] = digits.value match
+  def parseS16(digits: Expr[String]): Macro[Short] = digits.value match
     case None => '{JInt.parseInt($digits).toShort}
 
     case Some(digits) =>
@@ -130,7 +131,7 @@ object Hypotenuse2:
 
       Expr(int.toShort)
 
-  def parseU8(digits: Expr[String])(using Quotes): Expr[Byte] = digits.value match
+  def parseU8(digits: Expr[String]): Macro[Byte] = digits.value match
     case None => '{JInt.parseInt($digits).toByte}
 
     case Some(digits) =>
@@ -140,7 +141,7 @@ object Hypotenuse2:
 
       Expr(int.toByte)
 
-  def parseS8(digits: Expr[String])(using Quotes): Expr[Byte] = digits.value match
+  def parseS8(digits: Expr[String]): Macro[Byte] = digits.value match
     case None => '{JInt.parseInt($digits).toByte}
 
     case Some(digits) =>
@@ -156,8 +157,7 @@ object Hypotenuse2:
         bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
         strict: Expr[Boolean],
         greaterThan: Expr[Boolean])
-       (using Quotes)
-  : Expr[Boolean] =
+  : Macro[Boolean] =
 
       val errorMessage = m"this cannot be written as a range expression"
 

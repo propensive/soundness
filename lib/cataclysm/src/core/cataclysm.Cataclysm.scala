@@ -40,13 +40,13 @@ import proscenium.*
 import scala.quoted.*
 
 object Cataclysm:
-  def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[CssRule] =
+  def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]]): Macro[CssRule] =
     '{CssRule($selector, ${read(props)})}
 
-  def keyframe(name: Expr[String], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Keyframe] =
+  def keyframe(name: Expr[String], props: Expr[Seq[(Label, Any)]]): Macro[Keyframe] =
     '{Keyframe(Text($name), ${read(props)})}
 
-  def read(properties: Expr[Seq[(Label, Any)]])(using Quotes): Expr[CssStyle] =
+  def read(properties: Expr[Seq[(Label, Any)]]): Macro[CssStyle] =
     import quotes.reflect.*
 
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[CssProperty]] = exprs match
