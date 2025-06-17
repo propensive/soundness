@@ -152,7 +152,7 @@ object Contingency:
       case other                              => List(other)
 
 
-  def mitigate[errors <: Exception: Type](handler: Expr[Exception ~> errors]): Macro[Any] =
+  def mitigate[errors <: Exception: Type](handler: Expr[Exception ~> errors]): Macro[Mitigation] =
 
       import quotes.reflect.*
 
@@ -167,7 +167,9 @@ object Contingency:
           typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
       typeLambda.asType.absolve match
-        case '[type typeLambda[_]; typeLambda] => '{Mitigation[typeLambda]($handler)}
+        case '[type typeLambda[_]; typeLambda] =>
+          '{Mitigation[typeLambda]($handler)
+           }
 
 
   def track[accrual <: Exception: Type, focus: Type]

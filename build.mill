@@ -21,7 +21,7 @@ object settings {
     "-Wimplausible-patterns",
     "-Wsafe-init",
     "-Xmax-inlines", "100",
-    "-Ycc-new",
+    //"-Ycc-new",
     "-Yno-flexible-types",
     "-Yexplicit-nulls",
     "-Ycheck-all-patmat",

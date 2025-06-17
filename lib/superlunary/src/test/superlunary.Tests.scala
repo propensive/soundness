@@ -41,6 +41,8 @@ import temporaryDirectories.systemProperties
 import embeddings.automatic
 import strategies.throwUnsafely
 
+import language.experimental.captureChecking
+
 case class Example(name: Text, count: Long)
 
 object Tests extends Suite(m"Superlunary Tests"):

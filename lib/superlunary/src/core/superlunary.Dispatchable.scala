@@ -63,25 +63,25 @@ object Dispatchable:
     inline def extract[entity](json: Json): entity = provide[Tactic[JsonError]]:
       provide[entity is Decodable in Json](json.as[entity])
 
-  given pojo: Dispatchable:
-    type Carrier = Pojo
-    type Format = IArray[Pojo]
+  // given pojo: Dispatchable:
+  //   type Carrier = Pojo
+  //   type Format = IArray[Pojo]
 
-    def encoder[value: Type](using Quotes): Expr[value => IArray[Pojo]] = '{ value => value.pojo }
+  //   def encoder[value: Type](using Quotes): Expr[value => IArray[Pojo]] = '{ value => value.pojo }
 
-    def decoder(using Quotes): Expr[IArray[Pojo] => List[Pojo]] = '{_.to(List)}
+  //   def decoder(using Quotes): Expr[IArray[Pojo] => List[Pojo]] = '{_.to(List)}
 
-    inline def encode(value: List[Pojo]): IArray[Pojo] = value.pojo
+  //   inline def encode(value: List[Pojo]): IArray[Pojo] = value.pojo
 
-    inline def decode[value](value: Pojo): value =
-      compiletime.summonInline[Tactic[PojoError]].give(value.as[value])
+  //   inline def decode[value](value: Pojo): value =
+  //     compiletime.summonInline[Tactic[PojoError]].give(value.as[value])
 
-    inline def embed[entity](value: entity): Pojo =
-      compiletime.summonInline[entity is Encodable in Pojo].give(value.pojo)
+  //   inline def embed[entity](value: entity): Pojo =
+  //     compiletime.summonInline[entity is Encodable in Pojo].give(value.pojo)
 
-    inline def extract[entity](pojo: Pojo): entity =
-      compiletime.summonInline[Tactic[PojoError]].give:
-        compiletime.summonInline[entity is Decodable in Pojo].give(pojo.as[entity])
+  //   inline def extract[entity](pojo: Pojo): entity =
+  //     compiletime.summonInline[Tactic[PojoError]].give:
+  //       compiletime.summonInline[entity is Decodable in Pojo].give(pojo.as[entity])
 
 trait Dispatchable:
   type Carrier
