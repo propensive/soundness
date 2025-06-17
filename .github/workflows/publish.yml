@@ -36,7 +36,7 @@ jobs:
           environment: maven-central
           description: "Publish tag ${{ github.ref_name }} to Maven Central"
           auto_merge: false
-          required_contexts: []
+          required_contexts: '[]'
 
       - name: Publish to Maven Central
         id: publish
