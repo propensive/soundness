@@ -109,9 +109,11 @@ trait Dispatcher(using classloader: Classloader):
 
             val function: Format => Format = staging.run:
               '{  format =>
-                    ${dispatchable.encoder[output]}
-                       (${  references() = '{${dispatchable.decoder}(format)}
-                            body(using references)  })  }
+                    dispatchable.payload:
+                      List:
+                        dispatchable.embed[output]
+                          (${  references() = '{dispatchable.decoder(format)}
+                                body(using references)  })  }
 
             val target = deploy(out)
             cache = cache.updated(codepoint, (target, function))
@@ -121,7 +123,8 @@ trait Dispatcher(using classloader: Classloader):
         invoke[output]
          (Dispatch
            (target,
-            function => dispatchable.decode[output](function(dispatchable.encode(references())))))
+            function =>
+              dispatchable.extract[output](dispatchable.decoder(function(dispatchable.payload(references()))).head)))
 
       catch case throwable: Throwable =>
         println(throwable)
