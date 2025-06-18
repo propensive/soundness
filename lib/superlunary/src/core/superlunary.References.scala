@@ -36,6 +36,7 @@ import anticipation.*
 import fulminate.*
 import jacinta.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
@@ -43,17 +44,18 @@ import scala.compiletime.*
 import scala.quoted.*
 
 object References:
-  def apply[carrier](): References over carrier = new References:
+  def apply[carrier <: Object](): References over carrier = new References:
     type Carrier = carrier
 
 abstract class References():
-  type Carrier
+  type Carrier <: Object
 
-  private var ref: Optional[Expr[IArray[Carrier]]] = Unset
+  private var ref: Optional[Expr[Array[Object]]] = Unset
   private var allocations: List[Carrier] = List()
 
-  def update(expr: Expr[IArray[Carrier]]): Unit = ref = expr
-  def array: Expr[IArray[Carrier]] = ref.vouch
+  def update(expr: Expr[Array[Object]]): Unit = ref = expr
+  def array: Expr[Array[Object]] = ref.vouch
   def current: Int = allocations.length
   def allocate(value: => Carrier): Int = allocations.length.also { allocations ::= value }
-  def apply(): List[Carrier] = allocations.reverse
+
+  inline def apply(): Array[Object] = Array.from[Object](allocations.reverse)

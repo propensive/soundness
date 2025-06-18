@@ -52,4 +52,4 @@ object embeddings:
       val allocation: Int = refs.allocate(encoded)
 
       '{  import strategies.throwUnsafely
-          dispatchable.extract[value](${refs.array}(${Expr(allocation)}))  }
+          dispatchable.extract[value](${refs.array}(${Expr(allocation)}).asInstanceOf[refs.Carrier])  }

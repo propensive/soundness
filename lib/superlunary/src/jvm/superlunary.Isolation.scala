@@ -58,7 +58,7 @@ import classloaders.system
 
 object Isolation extends Dispatcher:
   type Result[output] = output
-  type Format = IArray[Pojo]
+  type Format = Array[Pojo]
   type Target = Classloader
   type Carrier = Pojo
 
@@ -96,4 +96,4 @@ object Isolation extends Dispatcher:
       println("\n\n\n\n")
       method2.setAccessible(true)
       println("\n\n\n\n")
-      method2.invoke(function, input).asInstanceOf[IArray[Pojo]]
+      method2.invoke(function, input).asInstanceOf[Array[Pojo]]

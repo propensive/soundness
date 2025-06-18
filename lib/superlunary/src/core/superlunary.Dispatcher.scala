@@ -60,7 +60,7 @@ trait Dispatcher(using classloader: Classloader):
   type Result[output]
   type Format
   type Target
-  type Carrier
+  type Carrier <: Object
 
   protected val scalac: Scalac[?]
   protected def invoke[output](dispatch: Dispatch[output, Format, Target]): Result[output]
@@ -86,11 +86,11 @@ trait Dispatcher(using classloader: Classloader):
 
       val (target, function): (Target, Format => Format) =
         if cache.contains(codepoint) then
-          // This is necessary to allocate references as a side effect
           given staging.Compiler = compiler2
 
+          // This is necessary to allocate references as a side effect
           staging.withQuotes:
-            '{  (array: IArray[Carrier]) =>
+            '{  (array: Array[Object]) =>
                   ${  references() = 'array
                       body(using references)  }  }
 
@@ -115,11 +115,13 @@ trait Dispatcher(using classloader: Classloader):
                   dispatchable.serialize:
 
                     safely[RemoteError]:
-                      List:
+                      val array = new Array[Object](1)
+                      array(0) =
                         dispatchable.embed[output]
                          (${  references() = '{dispatchable.deserialize(format)}
-                              body(using references)  })
-                    . or(Nil)  }
+                            body(using references)  })
+                      array
+                    . or(null.asInstanceOf[Array[Object]])  }
 
           val target = deploy(out)
           cache = cache.updated(codepoint, (target, function))
@@ -131,7 +133,7 @@ trait Dispatcher(using classloader: Classloader):
           (target,
           function =>
             dispatchable.extract[output]:
-              dispatchable.deserialize(function(dispatchable.serialize(references()))).head))
+              dispatchable.deserialize(function(dispatchable.serialize(references()))).head.asInstanceOf[Carrier]))
 
       // catch case throwable: Throwable =>
       //   println(throwable)
