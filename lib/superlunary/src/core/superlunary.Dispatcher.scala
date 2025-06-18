@@ -49,6 +49,7 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
+import vacuous.*
 
 import interfaces.paths.pathOnLinux
 
@@ -79,56 +80,60 @@ trait Dispatcher(using classloader: Classloader):
                      properties:   SystemProperties,
                      directory:    TemporaryDirectory,
                      dispatchable: Dispatchable over Carrier in Format)
-  : Result[output] raises CompilerError =
+  : Result[output] raises CompilerError raises RemoteError =
 
-      try
-        import strategies.throwUnsafely
-        val references: References[Carrier] = new References()
+      val references: References[Carrier] = new References()
 
-        val (target, function): (Target, Format => Format) =
-          if cache.contains(codepoint) then
-            // This is necessary to allocate references as a side effect
-            given staging.Compiler = compiler2
+      val (target, function): (Target, Format => Format) =
+        if cache.contains(codepoint) then
+          // This is necessary to allocate references as a side effect
+          given staging.Compiler = compiler2
 
-            staging.withQuotes:
-              '{  (array: List[Carrier]) =>
-                    ${  references() = 'array
-                        body(using references)  }  }
+          staging.withQuotes:
+            '{  (array: List[Carrier]) =>
+                  ${  references() = 'array
+                      body(using references)  }  }
 
-            cache(codepoint)
+          cache(codepoint)
 
-          else
-            val uuid = Uuid()
-            val out = (temporaryDirectory / uuid).on[Linux]
+        else
+          val uuid = Uuid()
 
-            val settings: staging.Compiler.Settings =
-              staging.Compiler.Settings.make
-               (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+          val out =
+            import strategies.throwUnsafely
+            (temporaryDirectory / uuid).on[Linux]
 
-            given compiler: staging.Compiler =
-              staging.Compiler.make(classloader.java)(using settings)
+          val settings: staging.Compiler.Settings =
+            staging.Compiler.Settings.make
+              (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
-            val function: Format => Format = staging.run:
-              '{  format =>
-                    dispatchable.serialize:
+          given compiler: staging.Compiler =
+            staging.Compiler.make(classloader.java)(using settings)
+
+          val function: Format => Format = staging.run:
+            '{  format =>
+                  dispatchable.serialize:
+
+                    safely[RemoteError]:
                       List:
                         dispatchable.embed[output]
-                          (${  references() = '{dispatchable.deserialize(format)}
-                                body(using references)  })  }
+                         (${  references() = '{dispatchable.deserialize(format)}
+                              body(using references)  })
+                    . or(Nil)  }
 
-            val target = deploy(out)
-            cache = cache.updated(codepoint, (target, function))
+          val target = deploy(out)
+          cache = cache.updated(codepoint, (target, function))
 
-            (target, function)
+          (target, function)
 
-        invoke[output]
-         (Dispatch
-           (target,
-            function =>
-              dispatchable.extract[output]:
-                dispatchable.deserialize(function(dispatchable.serialize(references()))).head))
+      invoke[output]
+        (Dispatch
+          (target,
+          function =>
+            dispatchable.extract[output]:
+              dispatchable.deserialize(function(dispatchable.serialize(references()))).head))
 
-      catch case throwable: Throwable =>
-        println(throwable)
-        throwable.printStackTrace()
-        abort(CompilerError())
+      // catch case throwable: Throwable =>
+      //   println(throwable)
+      //   throwable.printStackTrace()
+      //   abort(CompilerError())
