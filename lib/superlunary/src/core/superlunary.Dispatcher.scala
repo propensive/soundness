@@ -109,10 +109,10 @@ trait Dispatcher(using classloader: Classloader):
 
             val function: Format => Format = staging.run:
               '{  format =>
-                    dispatchable.payload:
+                    dispatchable.serialize:
                       List:
                         dispatchable.embed[output]
-                          (${  references() = '{dispatchable.decoder(format)}
+                          (${  references() = '{dispatchable.deserialize(format)}
                                 body(using references)  })  }
 
             val target = deploy(out)
@@ -124,7 +124,8 @@ trait Dispatcher(using classloader: Classloader):
          (Dispatch
            (target,
             function =>
-              dispatchable.extract[output](dispatchable.decoder(function(dispatchable.payload(references()))).head)))
+              dispatchable.extract[output]:
+                dispatchable.deserialize(function(dispatchable.serialize(references()))).head))
 
       catch case throwable: Throwable =>
         println(throwable)

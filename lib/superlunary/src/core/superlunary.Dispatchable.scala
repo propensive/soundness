@@ -50,10 +50,8 @@ object Dispatchable:
     type Carrier = Json
     type Format = Text
 
-    inline def decoder(text: Text): List[Json] = unsafely(text.decode[Json].as[List[Json]])
-
-    inline def payload(value: List[Json]): Text = value.json.encode
-
+    inline def deserialize(text: Text): List[Json] = unsafely(text.decode[Json].as[List[Json]])
+    inline def serialize(value: List[Json]): Text = value.json.encode
     inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.json)
 
     inline def extract[entity](json: Json): entity = provide[Tactic[JsonError]]:
@@ -65,9 +63,9 @@ object Dispatchable:
 
   //   def encoder[value: Type]: Macro[value => IArray[Pojo]] = '{ value => value.pojo }
 
-  //   def decoder(using Quotes): Expr[IArray[Pojo] => List[Pojo]] = '{_.to(List)}
+  //   def deserialize(using Quotes): Expr[IArray[Pojo] => List[Pojo]] = '{_.to(List)}
 
-  //   inline def payload(value: List[Pojo]): IArray[Pojo] = value.pojo
+  //   inline def serialize(value: List[Pojo]): IArray[Pojo] = value.pojo
 
   //   inline def decode[value](value: Pojo): value =
   //     compiletime.summonInline[Tactic[PojoError]].give(value.as[value])
@@ -84,6 +82,6 @@ trait Dispatchable:
   type Format
 
   inline def embed[entity](value: entity): Carrier
-  inline def payload(values: List[Carrier]): Format
-  inline def decoder(value: Format): List[Carrier]
+  inline def serialize(values: List[Carrier]): Format
+  inline def deserialize(value: Format): List[Carrier]
   inline def extract[entity](value: Carrier): entity
