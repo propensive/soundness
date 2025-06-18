@@ -55,9 +55,9 @@ object Austronesian:
         pojo
 
 
-    given text: Text is Encodable in Pojo = _.s
-    given string: String is Encodable in Pojo = identity(_)
-    given int: Int is Encodable in Pojo = identity(_)
+    inline given text: Text is Encodable in Pojo = _.s
+    inline given string: String is Encodable in Pojo = value => value
+    inline given int: Int is Encodable in Pojo = value => value
     given long: Long is Encodable in Pojo = identity(_)
     given float: Float is Encodable in Pojo = identity(_)
     given double: Double is Encodable in Pojo = identity(_)
@@ -69,37 +69,24 @@ object Austronesian:
           =>  collection[element] is Encodable in Pojo =
       iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
 
-    given text2: Tactic[PojoError] => Text is Decodable in Pojo =
-      case string: String => string.tt
-      case _              => raise(PojoError()) yet "".tt
+    inline given text2: Text is Decodable in Pojo = _.asInstanceOf[String].tt
+    inline given string2: String is Decodable in Pojo = _.asInstanceOf[String]
+    inline given int2: Int is Decodable in Pojo = _.asInstanceOf[Int]
 
-    given string2: Tactic[PojoError] => String is Decodable in Pojo =
-      case string: String => string
-      case _              => raise(PojoError()) yet ""
-
-    given int2: Tactic[PojoError] => Int is Decodable in Pojo =
-      case int: Int => int
-      case _        => raise(PojoError()) yet 0
-
-    given long2: Tactic[PojoError] => Long is Decodable in Pojo =
+    given long2: Long is Decodable in Pojo =
       case long: Long => long
-      case _          => raise(PojoError()) yet 0L
 
-    given float2: Tactic[PojoError] => Float is Decodable in Pojo =
+    given float2: Float is Decodable in Pojo =
       case float: Float => float
-      case _            => raise(PojoError()) yet 0.0f
 
-    given double2: Tactic[PojoError] => Double is Decodable in Pojo =
+    given double2: Double is Decodable in Pojo =
       case double: Double => double
-      case _              => raise(PojoError()) yet 0.0
 
-    given char2: Tactic[PojoError] => Char is Decodable in Pojo =
+    given char2: Char is Decodable in Pojo =
       case char: Char => char
-      case _          => raise(PojoError()) yet '\u0000'
 
-    given boolean2: Tactic[PojoError] => Boolean is Decodable in Pojo =
+    given boolean2: Boolean is Decodable in Pojo =
       case boolean: Boolean => boolean
-      case _                => raise(PojoError()) yet false
 
     given collection: [collection <: Iterable, element: Decodable in Pojo]
           =>  Tactic[PojoError]

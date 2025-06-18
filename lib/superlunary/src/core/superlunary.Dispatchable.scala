@@ -53,14 +53,17 @@ object Dispatchable:
     type Carrier = Json
     type Format = Text
 
-    inline def deserialize(text: Text): Array[Object] raises RemoteError =
-      given RemoteError mitigates JsonError = error => RemoteError()
-      Array.from(provide[Json is Decodable in Text](text.decode[Json].as[List[Json]]))
+    inline def deserialize(text: Text): Array[Object] =
+      provide[Tactic[RemoteError]]:
+        given RemoteError mitigates JsonError = error => RemoteError()
+        Array.from(provide[Json is Decodable in Text](text.decode[Json].as[List[Json]]))
 
-    inline def serialize(value: Array[Object]): Text = value.to(List).map(_.asInstanceOf[Json]).json.encode
+    inline def serialize(value: Array[Object]): Text =
+      value.to(List).map(_.asInstanceOf[Json]).json.encode
+
     inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.json)
 
-    inline def extract[entity](json: Json): entity raises RemoteError =
+    inline def extract[entity](json: Json): entity = provide[Tactic[RemoteError]]:
       given RemoteError mitigates JsonError = error => RemoteError()
       provide[entity is Decodable in Json](json.as[entity])
 
@@ -68,14 +71,13 @@ object Dispatchable:
     type Carrier = Pojo
     type Format = Array[Pojo]
 
-    inline def deserialize(value: Array[Pojo]): Array[Object] raises RemoteError = value.asInstanceOf[Array[Object]]
+    inline def deserialize(value: Array[Pojo]): Array[Object] = value.asInstanceOf[Array[Object]]
     inline def serialize(value: Array[Object]): Array[Pojo] = value.asInstanceOf[Array[Pojo]]
 
     inline def embed[entity](value: entity): Pojo =
       provide[entity is Encodable in Pojo](value.pojo)
 
-    inline def extract[entity](pojo: Pojo): entity raises RemoteError =
-      given RemoteError mitigates PojoError = error => RemoteError()
+    inline def extract[entity](pojo: Pojo): entity =
       provide[entity is Decodable in Pojo](pojo.as[entity])
 
 trait Dispatchable:
@@ -84,5 +86,5 @@ trait Dispatchable:
 
   inline def embed[entity](value: entity): Carrier
   inline def serialize(values: Array[Object]): Format
-  inline def deserialize(value: Format): Array[Object] raises RemoteError
-  inline def extract[entity](value: Carrier): entity raises RemoteError
+  inline def deserialize(value: Format): Array[Object]
+  inline def extract[entity](value: Carrier): entity

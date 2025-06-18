@@ -41,7 +41,6 @@ import distillate.*
 import galilei.*
 import hellenism.*
 import inimitable.*
-import jacinta.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
@@ -103,6 +102,8 @@ trait Dispatcher(using classloader: Classloader):
             import strategies.throwUnsafely
             (temporaryDirectory / uuid).on[Linux]
 
+          println("OUT: "+out.encode)
+
           val settings: staging.Compiler.Settings =
             staging.Compiler.Settings.make
               (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
@@ -114,14 +115,12 @@ trait Dispatcher(using classloader: Classloader):
             '{  format =>
                   dispatchable.serialize:
 
-                    safely[RemoteError]:
-                      val array = new Array[Object](1)
-                      array(0) =
-                        dispatchable.embed[output]
-                         (${  references() = '{dispatchable.deserialize(format)}
+                    val array = new Array[Object](1)
+                    array(0) =
+                      dispatchable.embed[output]
+                       (${  references() = '{dispatchable.deserialize(format)}
                             body(using references)  })
-                      array
-                    . or(null.asInstanceOf[Array[Object]])  }
+                    array  }
 
           val target = deploy(out)
           cache = cache.updated(codepoint, (target, function))
@@ -133,7 +132,8 @@ trait Dispatcher(using classloader: Classloader):
           (target,
           function =>
             dispatchable.extract[output]:
-              dispatchable.deserialize(function(dispatchable.serialize(references()))).head.asInstanceOf[Carrier]))
+              dispatchable.deserialize(function(dispatchable.serialize(references())))
+              . head.asInstanceOf[Carrier]))
 
       // catch case throwable: Throwable =>
       //   println(throwable)
