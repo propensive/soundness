@@ -28,6 +28,8 @@ jobs:
       - name: Create Deployment
         id: deployment
         uses: octokit/request-action@v2.x
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           route: POST /repos/:owner/:repo/deployments
           owner: ${{ github.repository_owner }}
@@ -50,6 +52,8 @@ jobs:
       - name: Mark Deployment Success
         if: success()
         uses: octokit/request-action@v2.x
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           route: POST /repos/:owner/:repo/deployments/:deployment_id/statuses
           owner: ${{ github.repository_owner }}
@@ -62,6 +66,8 @@ jobs:
       - name: Mark Deployment Failure
         if: failure()
         uses: octokit/request-action@v2.x
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           route: POST /repos/:owner/:repo/deployments/:deployment_id/statuses
           owner: ${{ github.repository_owner }}
