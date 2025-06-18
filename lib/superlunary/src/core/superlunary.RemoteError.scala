@@ -32,57 +32,6 @@
                                                                                                   */
 package superlunary
 
-import anticipation.*
-import austronesian.*
-import contingency.*
-import distillate.{as as _, *}
 import fulminate.*
-import jacinta.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
 
-import interfaces.paths.pathOnLinux
-import errorDiagnostics.stackTraces
-import strategies.mitigation
-
-import scala.quoted.*
-
-object Dispatchable:
-  given json: Dispatchable:
-    type Carrier = Json
-    type Format = Text
-
-    inline def deserialize(text: Text): List[Json] raises RemoteError =
-      given RemoteError mitigates JsonError = error => RemoteError()
-      provide[Json is Decodable in Text](text.decode[Json].as[List[Json]])
-
-    inline def serialize(value: List[Json]): Text = value.json.encode
-    inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.json)
-
-    inline def extract[entity](json: Json): entity raises RemoteError =
-      given RemoteError mitigates JsonError = error => RemoteError()
-      provide[entity is Decodable in Json](json.as[entity])
-
-  given pojo: Dispatchable:
-    type Carrier = Pojo
-    type Format = IArray[Pojo]
-
-    inline def deserialize(value: IArray[Pojo]): List[Pojo] raises RemoteError = value.to(List)
-    inline def serialize(value: List[Pojo]): IArray[Pojo] = IArray.from(value)
-
-    inline def embed[entity](value: entity): Pojo =
-      provide[entity is Encodable in Pojo](value.pojo)
-
-    inline def extract[entity](pojo: Pojo): entity raises RemoteError =
-      given RemoteError mitigates PojoError = error => RemoteError()
-      provide[entity is Decodable in Pojo](pojo.as[entity])
-
-trait Dispatchable:
-  type Carrier
-  type Format
-
-  inline def embed[entity](value: entity): Carrier
-  inline def serialize(values: List[Carrier]): Format
-  inline def deserialize(value: Format): List[Carrier] raises RemoteError
-  inline def extract[entity](value: Carrier): entity raises RemoteError
+case class RemoteError()(using Diagnostics) extends Error(m"failed to perform a remote operation")
