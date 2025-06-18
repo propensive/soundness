@@ -41,6 +41,7 @@ import eucalyptus.*
 import guillotine.*
 import hellenism.*
 import hieroglyph.*
+import jacinta.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -55,6 +56,7 @@ object Jvm extends Dispatcher:
   type Result[output] = output
   type Format = Text
   type Target = LocalClasspath
+  type Carrier = Json
 
   def deploy(out: Path on Linux): LocalClasspath =
     classloaders.threadContext.classpath match

@@ -59,6 +59,7 @@ trait Dispatcher(using classloader: Classloader):
   type Result[output]
   type Format
   type Target
+  type Carrier
 
   protected val scalac: Scalac[?]
   protected def invoke[output](dispatch: Dispatch[output, Format, Target]): Result[output]
@@ -71,18 +72,18 @@ trait Dispatcher(using classloader: Classloader):
 
   def deploy(path: Path on Linux): Target
 
-  inline def dispatch[output, carrier]
-              (body: References[carrier] ?=> Quotes ?=> Expr[output])
+  inline def dispatch[output]
+              (body: References[Carrier] ?=> Quotes ?=> Expr[output])
               [version <: Scalac.Versions]
               (using codepoint:    Codepoint,
                      properties:   SystemProperties,
                      directory:    TemporaryDirectory,
-                     dispatchable: Dispatchable over carrier in Format)
+                     dispatchable: Dispatchable over Carrier in Format)
   : Result[output] raises CompilerError =
 
       try
         import strategies.throwUnsafely
-        val references: References[carrier] = new References()
+        val references: References[Carrier] = new References()
 
         val (target, function): (Target, Format => Format) =
           if cache.contains(codepoint) then
@@ -90,7 +91,7 @@ trait Dispatcher(using classloader: Classloader):
             given staging.Compiler = compiler2
 
             staging.withQuotes:
-              '{  (array: List[carrier]) =>
+              '{  (array: List[Carrier]) =>
                     ${  references() = 'array
                         body(using references)  }  }
 

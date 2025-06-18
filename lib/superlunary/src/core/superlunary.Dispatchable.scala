@@ -64,19 +64,19 @@ object Dispatchable:
       given RemoteError mitigates JsonError = error => RemoteError()
       provide[entity is Decodable in Json](json.as[entity])
 
-  given pojo: Dispatchable:
-    type Carrier = Pojo
-    type Format = IArray[Pojo]
+  // given pojo: Dispatchable:
+  //   type Carrier = Pojo
+  //   type Format = IArray[Pojo]
 
-    inline def deserialize(value: IArray[Pojo]): List[Pojo] raises RemoteError = value.to(List)
-    inline def serialize(value: List[Pojo]): IArray[Pojo] = IArray.from(value)
+  //   inline def deserialize(value: IArray[Pojo]): List[Pojo] raises RemoteError = value.to(List)
+  //   inline def serialize(value: List[Pojo]): IArray[Pojo] = IArray.from(value)
 
-    inline def embed[entity](value: entity): Pojo =
-      provide[entity is Encodable in Pojo](value.pojo)
+  //   inline def embed[entity](value: entity): Pojo =
+  //     provide[entity is Encodable in Pojo](value.pojo)
 
-    inline def extract[entity](pojo: Pojo): entity raises RemoteError =
-      given RemoteError mitigates PojoError = error => RemoteError()
-      provide[entity is Decodable in Pojo](pojo.as[entity])
+  //   inline def extract[entity](pojo: Pojo): entity raises RemoteError =
+  //     given RemoteError mitigates PojoError = error => RemoteError()
+  //     provide[entity is Decodable in Pojo](pojo.as[entity])
 
 trait Dispatchable:
   type Carrier
