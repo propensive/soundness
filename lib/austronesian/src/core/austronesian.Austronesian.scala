@@ -41,12 +41,15 @@ import rudiments.*
 import wisteria.*
 
 object Austronesian:
-  opaque type Pojo =
-    IArray[Any] | String | Boolean | Byte | Char | Short | Int | Long | Float | Double
+  opaque type Pojo <: Object =
+    Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character
+    | java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float | java.lang.Double
 
   object Pojo extends Pojo2:
     def apply
-         (pojo: IArray[Any] | String | Boolean | Byte | Char | Short | Int | Long | Float | Double)
+         (pojo: Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character
+                | java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float
+                | java.lang.Double)
     : Pojo =
 
         pojo
@@ -64,7 +67,7 @@ object Austronesian:
 
     given list: [collection <: Iterable, element: Encodable in Pojo]
           =>  collection[element] is Encodable in Pojo =
-      iterable => IArray.from(iterable.map(_.encode))
+      iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
 
     given text2: Tactic[PojoError] => Text is Decodable in Pojo =
       case string: String => string.tt
