@@ -105,6 +105,7 @@ trait Classpath:
   def classloader(parent: Classloader = classloaders.platform): Classloader =
     val javaClassloader = new jn.URLClassLoader(array, parent.java):
       override def loadClass(name: String | Null, resolve: Boolean): Class[_] | Null =
+        println(s"loading $name")
         try findClass(name) catch case error: ClassNotFoundException =>
           super.loadClass(name, resolve)
 

@@ -74,7 +74,7 @@ trait Dispatcher(using classloader: Classloader):
   def deploy(path: Path on Linux): Target
 
   inline def dispatch[output]
-              (body: References[Carrier] ?=> Quotes ?=> Expr[output])
+              (body: (References over Carrier) ?=> Quotes ?=> Expr[output])
               [version <: Scalac.Versions]
               (using codepoint:    Codepoint,
                      properties:   SystemProperties,
@@ -82,7 +82,7 @@ trait Dispatcher(using classloader: Classloader):
                      dispatchable: Dispatchable over Carrier in Format)
   : Result[output] raises CompilerError raises RemoteError =
 
-      val references: References[Carrier] = new References()
+      val references: References over Carrier = References[Carrier]()
 
       val (target, function): (Target, Format => Format) =
         if cache.contains(codepoint) then
@@ -90,7 +90,7 @@ trait Dispatcher(using classloader: Classloader):
           given staging.Compiler = compiler2
 
           staging.withQuotes:
-            '{  (array: List[Carrier]) =>
+            '{  (array: IArray[Carrier]) =>
                   ${  references() = 'array
                       body(using references)  }  }
 

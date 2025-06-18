@@ -32,6 +32,8 @@
                                                                                                   */
 package superlunary
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 import ambience.*, systemProperties.jre
 import anthology.*
 import anticipation.*
@@ -39,6 +41,7 @@ import austronesian.*
 import contingency.*
 import distillate.*
 import eucalyptus.*
+import gossamer.*
 import guillotine.*
 import hellenism.*
 import hieroglyph.*
@@ -46,6 +49,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
+import vacuous.*
 
 import charDecoders.utf8
 import textSanitizers.skip
@@ -54,10 +58,18 @@ import classloaders.system
 
 object Isolation extends Dispatcher:
   type Result[output] = output
-  type Format = Pojo
+  type Format = IArray[Pojo]
   type Target = Classloader
+  type Carrier = Pojo
 
-  def deploy(out: Path on Linux): Classloader = ???
+  def deploy(out: Path on Linux): Classloader = classloaders.threadContext.classpath match
+    case classpath: LocalClasspath =>
+      LocalClasspath(classpath.entries :+ Classpath.Directory(out)).classloader()
+
+    case _ =>
+      val systemClasspath = unsafely(Properties.java.`class`.path().decode[LocalClasspath])
+      LocalClasspath(Classpath.Directory(out) :: systemClasspath.entries).classloader()
+
 
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
@@ -67,4 +79,21 @@ object Isolation extends Dispatcher:
 
     dispatch.remote: input =>
       val classloader: Classloader = dispatch.target
-      ???
+      println("\n\n\n\n")
+
+      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
+      println("\n\n\n\n")
+      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
+      println("\n\n\n\n")
+      val method = cls.getMethod("apply").nn
+      println("\n\n\n\n")
+      val function = method.invoke(instance).nn
+
+      println("\n\n\n\n")
+      val cls2 = function.getClass.nn
+      println("\n\n\n\n")
+      val method2 = function.getClass.nn.getMethod("apply", classOf[Object]).nn
+      println("\n\n\n\n")
+      method2.setAccessible(true)
+      println("\n\n\n\n")
+      method2.invoke(function, input).asInstanceOf[IArray[Pojo]]

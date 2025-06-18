@@ -41,8 +41,6 @@ import temporaryDirectories.systemProperties
 import embeddings.automatic
 import strategies.throwUnsafely
 
-import language.experimental.captureChecking
-
 case class Example(name: Text, count: Long)
 
 object Tests extends Suite(m"Superlunary Tests"):
@@ -55,3 +53,8 @@ object Tests extends Suite(m"Superlunary Tests"):
 
     println(fn(Example(t"one", java.lang.System.currentTimeMillis)))
     println(fn(Example(t"two", java.lang.System.currentTimeMillis)))
+
+    var count = 100
+    println:
+      Isolation.dispatch:
+        '{  "hello message"+($count + 1) }

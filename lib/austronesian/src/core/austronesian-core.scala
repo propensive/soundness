@@ -39,7 +39,7 @@ import prepositional.*
 
 export Austronesian.Pojo
 
-extension [entity: Encodable in Pojo](value: entity) def pojo: Pojo = entity.encoded(value)
+extension [entity: Encodable in Pojo](value: entity) inline def pojo: Pojo = entity.encoded(value)
 
 extension (classloader: Classloader)
   inline def isolate[ResultType](inline invoke: ResultType): ResultType =

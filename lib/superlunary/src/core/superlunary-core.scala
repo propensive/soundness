@@ -43,9 +43,9 @@ import rudiments.*
 
 object embeddings:
   inline given automatic: [value]
-               => (dispatchable: Dispatchable)
+               => (refs: References)
+               => (dispatchable: Dispatchable over refs.Carrier)
                => Quotes
-               => (refs: References[dispatchable.Carrier])
                => Conversion[value, Expr[value]] =
     value =>
       val encoded: dispatchable.Carrier = dispatchable.embed[value](value)
