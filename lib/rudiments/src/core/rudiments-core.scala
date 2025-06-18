@@ -40,6 +40,7 @@ import scala.collection as sc
 import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.deriving.*
+import scala.quoted.*
 
 import anticipation.*
 import denominative.*
@@ -430,3 +431,55 @@ extension (erased tuple: Tuple)
       case _: Zero              => -1
       case _: (element *: tail) => index
       case _: (other *: tail)   => recurIndex[tail, element](index + 1)
+
+
+extension (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  inline def literal
+              [primitive <: Boolean | Byte | Short | Int | Long | Float | Double | Char | String
+                            | Unit | Null]
+  : Optional[primitive] =
+
+      import quotes.reflect.*
+
+      repr.match
+        case constant: ConstantType => constant
+        case _                      => Unset
+
+      . let: value =>
+
+          inline !![primitive] match
+            case _: Boolean => value.constant.match
+              case BooleanConstant(value) => value
+              case _                      => Unset
+            case _: Byte    => value.constant match
+              case ByteConstant(value)    => value
+              case _                      => Unset
+            case _: Short   => value.constant match
+              case ShortConstant(value)   => value
+              case _                      => Unset
+            case _: Int     => value.constant match
+              case IntConstant(value)     => value
+              case _                      => Unset
+            case _: Long    => value.constant match
+              case LongConstant(value)    => value
+              case _                      => Unset
+            case _: Float   => value.constant match
+              case FloatConstant(value)   => value
+              case _                      => Unset
+            case _: Double  => value.constant match
+              case DoubleConstant(value)  => value
+              case _                      => Unset
+            case _: Char    => value.constant match
+              case CharConstant(value)    => value
+              case _                      => Unset
+            case _: String  => value.constant match
+              case StringConstant(value)  => value
+              case _                      => Unset
+            case _: Unit    => value.constant match
+              case UnitConstant()         => ()
+              case _                      => Unset
+            case _: Null    => value.constant match
+              case NullConstant()         => null
+              case _                      => Unset
+
+      . asInstanceOf[Optional[primitive]]

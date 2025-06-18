@@ -25,20 +25,20 @@ jobs:
           distribution: 'temurin'
           java-version: '23'
 
-      - name: Create Deployment
-        id: deployment
-        uses: octokit/request-action@v2.x
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          route: POST /repos/:owner/:repo/deployments
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-          ref: ${{ github.ref }}
-          environment: maven-central
-          description: "Publish tag ${{ github.ref_name }} to Maven Central"
-          auto_merge: false
-          required_contexts: '[]'
+      # - name: Create Deployment
+      #   id: deployment
+      #   uses: octokit/request-action@v2.x
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     route: POST /repos/:owner/:repo/deployments
+      #     owner: ${{ github.repository_owner }}
+      #     repo: ${{ github.event.repository.name }}
+      #     ref: ${{ github.ref }}
+      #     environment: maven-central
+      #     description: "Publish tag ${{ github.ref_name }} to Maven Central"
+      #     auto_merge: false
+      #     required_contexts: '[]'
 
       - name: Publish to Maven Central
         id: publish
@@ -49,30 +49,30 @@ jobs:
           MILL_PGP_SECRET_BASE64: ${{ secrets.MILL_PGP_SECRET_BASE64 }}
           MILL_PGP_PASSPHRASE: ${{ secrets.MILL_PGP_PASSPHRASE }}
 
-      - name: Mark Deployment Success
-        if: success()
-        uses: octokit/request-action@v2.x
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          route: POST /repos/:owner/:repo/deployments/:deployment_id/statuses
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-          deployment_id: ${{ steps.deployment.outputs.id }}
-          state: success
-          environment: maven-central
-          log_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      # - name: Mark Deployment Success
+      #   if: success()
+      #   uses: octokit/request-action@v2.x
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     route: POST /repos/:owner/:repo/deployments/:deployment_id/statuses
+      #     owner: ${{ github.repository_owner }}
+      #     repo: ${{ github.event.repository.name }}
+      #     deployment_id: ${{ steps.deployment.outputs.id }}
+      #     state: success
+      #     environment: maven-central
+      #     log_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-      - name: Mark Deployment Failure
-        if: failure()
-        uses: octokit/request-action@v2.x
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          route: POST /repos/:owner/:repo/deployments/:deployment_id/statuses
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-          deployment_id: ${{ steps.deployment.outputs.id }}
-          state: failure
-          environment: maven-central
-          log_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      # - name: Mark Deployment Failure
+      #   if: failure()
+      #   uses: octokit/request-action@v2.x
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     route: POST /repos/:owner/:repo/deployments/:deployment_id/statuses
+      #     owner: ${{ github.repository_owner }}
+      #     repo: ${{ github.event.repository.name }}
+      #     deployment_id: ${{ steps.deployment.outputs.id }}
+      #     state: failure
+      #     environment: maven-central
+      #     log_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
