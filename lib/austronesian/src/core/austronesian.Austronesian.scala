@@ -56,39 +56,29 @@ object Austronesian:
 
 
     inline given text: Text is Encodable in Pojo = _.s
-    inline given string: String is Encodable in Pojo = value => value
-    inline given int: Int is Encodable in Pojo = value => value
-    given long: Long is Encodable in Pojo = identity(_)
-    given float: Float is Encodable in Pojo = identity(_)
-    given double: Double is Encodable in Pojo = identity(_)
-    given char: Char is Encodable in Pojo = identity(_)
-    given boolean: Boolean is Encodable in Pojo = identity(_)
-    given byte: Byte is Encodable in Pojo = identity(_)
+    inline given string: String is Encodable in Pojo = identity(_)
+    inline given int: Int is Encodable in Pojo = identity(_)
+    inline given long: Long is Encodable in Pojo = identity(_)
+    inline given float: Float is Encodable in Pojo = identity(_)
+    inline given double: Double is Encodable in Pojo = identity(_)
+    inline given char: Char is Encodable in Pojo = identity(_)
+    inline given boolean: Boolean is Encodable in Pojo = identity(_)
+    inline given byte: Byte is Encodable in Pojo = identity(_)
 
-    given list: [collection <: Iterable, element: Encodable in Pojo]
+    inline given list: [collection <: Iterable, element: Encodable in Pojo]
           =>  collection[element] is Encodable in Pojo =
       iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
 
     inline given text2: Text is Decodable in Pojo = _.asInstanceOf[String].tt
     inline given string2: String is Decodable in Pojo = _.asInstanceOf[String]
     inline given int2: Int is Decodable in Pojo = _.asInstanceOf[Int]
+    inline given long2: Long is Decodable in Pojo = _.asInstanceOf[Long]
+    inline given float2: Float is Decodable in Pojo = _.asInstanceOf[Float]
+    inline given double2: Double is Decodable in Pojo = _.asInstanceOf[Double]
+    inline given char2: Char is Decodable in Pojo = _.asInstanceOf[Char]
+    inline given boolean2: Boolean is Decodable in Pojo = _.asInstanceOf[Boolean]
 
-    given long2: Long is Decodable in Pojo =
-      case long: Long => long
-
-    given float2: Float is Decodable in Pojo =
-      case float: Float => float
-
-    given double2: Double is Decodable in Pojo =
-      case double: Double => double
-
-    given char2: Char is Decodable in Pojo =
-      case char: Char => char
-
-    given boolean2: Boolean is Decodable in Pojo =
-      case boolean: Boolean => boolean
-
-    given collection: [collection <: Iterable, element: Decodable in Pojo]
+    inline given collection: [collection <: Iterable, element: Decodable in Pojo]
           =>  Tactic[PojoError]
           => (factory: scala.collection.Factory[element, collection[element]])
           =>  collection[element] is Decodable in Pojo =
@@ -102,10 +92,10 @@ object Austronesian:
         raise(PojoError()) yet factory.newBuilder.result()
 
     extension (pojo: Pojo)
-      def as[entity: Decodable in Pojo]: entity = entity.decoded(pojo)
+      inline def as[entity: Decodable in Pojo]: entity = entity.decoded(pojo)
 
   trait Pojo2:
-    given checkable: Pojo is Checkable against Pojo = (left, right) =>
+    inline given checkable: Pojo is Checkable against Pojo = (left, right) =>
       left match
         case left: Array[?] => right match
           case right: Array[?] =>

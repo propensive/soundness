@@ -32,6 +32,8 @@
                                                                                                   */
 package superlunary
 
+import java.util.function as juf
+
 import ambience.*
 import anthology.*
 import anticipation.*
@@ -63,7 +65,7 @@ trait Dispatcher(using classloader: Classloader):
 
   protected val scalac: Scalac[?]
   protected def invoke[output](dispatch: Dispatch[output, Format, Target]): Result[output]
-  private var cache: Map[Codepoint, (Target, Format => Format)] = Map()
+  private var cache: Map[Codepoint, (Target, juf.Function[Format, Format])] = Map()
 
   lazy val settings2: staging.Compiler.Settings =
     staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
@@ -83,7 +85,7 @@ trait Dispatcher(using classloader: Classloader):
 
       val references: References over Carrier = References[Carrier]()
 
-      val (target, function): (Target, Format => Format) =
+      val (target, function): (Target, juf.Function[Format, Format]) =
         if cache.contains(codepoint) then
           given staging.Compiler = compiler2
 
@@ -102,8 +104,6 @@ trait Dispatcher(using classloader: Classloader):
             import strategies.throwUnsafely
             (temporaryDirectory / uuid).on[Linux]
 
-          println("OUT: "+out.encode)
-
           val settings: staging.Compiler.Settings =
             staging.Compiler.Settings.make
               (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
@@ -111,7 +111,7 @@ trait Dispatcher(using classloader: Classloader):
           given compiler: staging.Compiler =
             staging.Compiler.make(classloader.java)(using settings)
 
-          val function: Format => Format = staging.run:
+          val function: juf.Function[Format, Format] = staging.run:
             '{  format =>
                   dispatchable.serialize:
 

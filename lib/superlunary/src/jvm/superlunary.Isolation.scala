@@ -79,21 +79,11 @@ object Isolation extends Dispatcher:
 
     dispatch.remote: input =>
       val classloader: Classloader = dispatch.target
-      println("\n\n\n\n")
-
       val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
-      println("\n\n\n\n")
       val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-      println("\n\n\n\n")
       val method = cls.getMethod("apply").nn
-      println("\n\n\n\n")
       val function = method.invoke(instance).nn
-
-      println("\n\n\n\n")
       val cls2 = function.getClass.nn
-      println("\n\n\n\n")
       val method2 = function.getClass.nn.getMethod("apply", classOf[Object]).nn
-      println("\n\n\n\n")
       method2.setAccessible(true)
-      println("\n\n\n\n")
       method2.invoke(function, input).asInstanceOf[Array[Pojo]]
