@@ -32,6 +32,8 @@
                                                                                                   */
 package superlunary
 
+import java.util.function as juf
+
 import ambience.*
 import anthology.*
 import anticipation.*
@@ -41,7 +43,6 @@ import distillate.*
 import galilei.*
 import hellenism.*
 import inimitable.*
-import jacinta.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
@@ -49,6 +50,7 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
+import vacuous.*
 
 import interfaces.paths.pathOnLinux
 
@@ -59,10 +61,11 @@ trait Dispatcher(using classloader: Classloader):
   type Result[output]
   type Format
   type Target
+  type Carrier <: Object
 
   protected val scalac: Scalac[?]
   protected def invoke[output](dispatch: Dispatch[output, Format, Target]): Result[output]
-  private var cache: Map[Codepoint, (Target, Format => Format)] = Map()
+  private var cache: Map[Codepoint, (Target, juf.Function[Format, Format])] = Map()
 
   lazy val settings2: staging.Compiler.Settings =
     staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
@@ -71,59 +74,68 @@ trait Dispatcher(using classloader: Classloader):
 
   def deploy(path: Path on Linux): Target
 
-  inline def dispatch[output, carrier]
-              (body: References[carrier] ?=> Quotes ?=> Expr[output])
-              [version <: Scalac.All]
+  inline def dispatch[output]
+              (body: (References over Carrier) ?=> Quotes ?=> Expr[output])
+              [version <: Scalac.Versions]
               (using codepoint:    Codepoint,
                      properties:   SystemProperties,
                      directory:    TemporaryDirectory,
-                     dispatchable: Dispatchable over carrier in Format)
-  : Result[output] raises CompilerError =
+                     dispatchable: Dispatchable over Carrier in Format)
+  : Result[output] raises CompilerError raises RemoteError =
 
-      try
-        import strategies.throwUnsafely
-        val references: References[carrier] = new References()
+      val references: References over Carrier = References[Carrier]()
 
-        val (target, function): (Target, Format => Format) =
-          if cache.contains(codepoint) then
-            // This is necessary to allocate references as a side effect
-            given staging.Compiler = compiler2
+      val (target, function): (Target, juf.Function[Format, Format]) =
+        if cache.contains(codepoint) then
+          given staging.Compiler = compiler2
 
-            staging.withQuotes:
-              '{  (array: List[carrier]) =>
-                    ${  references() = 'array
-                        body(using references)  }  }
+          // This is necessary to allocate references as a side effect
+          staging.withQuotes:
+            '{  (array: Array[Object]) =>
+                  ${  references() = 'array
+                      body(using references)  }  }
 
-            cache(codepoint)
+          cache(codepoint)
 
-          else
-            val uuid = Uuid()
-            val out = (temporaryDirectory / uuid).on[Linux]
+        else
+          val uuid = Uuid()
 
-            val settings: staging.Compiler.Settings =
-              staging.Compiler.Settings.make
-               (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+          val out =
+            import strategies.throwUnsafely
+            (temporaryDirectory / uuid).on[Linux]
 
-            given compiler: staging.Compiler =
-              staging.Compiler.make(classloader.java)(using settings)
+          val settings: staging.Compiler.Settings =
+            staging.Compiler.Settings.make
+              (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
-            val function: Format => Format = staging.run:
-              '{  format =>
-                    ${dispatchable.encoder[output]}
-                       (${  references() = '{${dispatchable.decoder}(format)}
-                            body(using references)  })  }
+          given compiler: staging.Compiler =
+            staging.Compiler.make(classloader.java)(using settings)
 
-            val target = deploy(out)
-            cache = cache.updated(codepoint, (target, function))
+          val function: juf.Function[Format, Format] = staging.run:
+            '{  format =>
+                  dispatchable.serialize:
 
-            (target, function)
+                    val array = new Array[Object](1)
+                    array(0) =
+                      dispatchable.embed[output]
+                       (${  references() = '{dispatchable.deserialize(format)}
+                            body(using references)  })
+                    array  }
 
-        invoke[output]
-         (Dispatch
-           (target,
-            function => dispatchable.decode[output](function(dispatchable.encode(references())))))
+          val target = deploy(out)
+          cache = cache.updated(codepoint, (target, function))
 
-      catch case throwable: Throwable =>
-        println(throwable)
-        throwable.printStackTrace()
-        abort(CompilerError())
+          (target, function)
+
+      invoke[output]
+        (Dispatch
+          (target,
+          function =>
+            dispatchable.extract[output]:
+              dispatchable.deserialize(function(dispatchable.serialize(references())))
+              . head.asInstanceOf[Carrier]))
+
+      // catch case throwable: Throwable =>
+      //   println(throwable)
+      //   throwable.printStackTrace()
+      //   abort(CompilerError())

@@ -33,14 +33,18 @@
 package superlunary
 
 import anticipation.*
+import austronesian.*
 import contingency.*
-import distillate.*
+import distillate.{as as _, *}
+import fulminate.*
 import jacinta.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 
 import interfaces.paths.pathOnLinux
+import errorDiagnostics.stackTraces
+import strategies.mitigation
 
 import scala.quoted.*
 
@@ -49,29 +53,39 @@ object Dispatchable:
     type Carrier = Json
     type Format = Text
 
-    def encoder[value: Type]: Macro[value => Text] =
-      '{ value => value.json.encode }
+    inline def deserialize(text: Text | Null): Array[Object] =
+      println(text)
+      provide[Tactic[RemoteError]]:
+        given RemoteError mitigates JsonError = error => RemoteError()
+        Array.from(provide[Json is Decodable in Text](text.nn.decode[Json].as[List[Json]]))
 
-    def decoder: Macro[Text => List[Json]] =
-      '{ text => unsafely(text.decode[Json].as[List[Json]]) }
-
-    inline def encode(value: List[Json]): Text = value.json.encode
-    inline def decode[value](value: Text): value = unsafely(value.decode[Json].as[value])
+    inline def serialize(value: Array[Object]): Text =
+      value.to(List).map(_.asInstanceOf[Json]).json.encode
 
     inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.json)
 
-    inline def extract[entity](json: Json): entity = provide[Tactic[JsonError]]:
+    inline def extract[entity](json: Json): entity = provide[Tactic[RemoteError]]:
+      given RemoteError mitigates JsonError = error => RemoteError()
       provide[entity is Decodable in Json](json.as[entity])
 
+  given pojo: Dispatchable:
+    type Carrier = Pojo
+    type Format = Array[Pojo]
+
+    inline def deserialize(value: Array[Pojo] | Null): Array[Object] = value.asInstanceOf[Array[Object]]
+    inline def serialize(value: Array[Object]): Array[Pojo] = value.asInstanceOf[Array[Pojo]]
+
+    inline def embed[entity](value: entity): Pojo =
+      infer[entity is Encodable in Pojo].encoded(value)
+
+    inline def extract[entity](pojo: Pojo): entity =
+      infer[entity is Decodable in Pojo].decoded(pojo)
+
 trait Dispatchable:
-  type Carrier
+  type Carrier <: Object
   type Format
 
-  def encoder[value: Type]: Macro[value => Format]
-  def decoder: Macro[Format => List[Carrier]]
-
-  inline def encode(values: List[Carrier]): Format
-  inline def decode[value](value: Format): value
-
   inline def embed[entity](value: entity): Carrier
+  inline def serialize(values: Array[Object]): Format
+  inline def deserialize(value: Format | Null): Array[Object]
   inline def extract[entity](value: Carrier): entity

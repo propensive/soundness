@@ -152,7 +152,8 @@ object Contingency:
       case other                              => List(other)
 
 
-  def mitigate[errors <: Exception: Type](handler: Expr[Exception ~> errors]): Macro[Any] =
+  def mitigate[errors <: Exception: Type](handler: Expr[Exception ~> errors])
+  : Macro[Mitigation[?]] =
 
       import quotes.reflect.*
 
@@ -163,7 +164,7 @@ object Contingency:
       val typeLambda =
         TypeLambda
          (List("result"),
-          _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
           typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
       typeLambda.asType.absolve match
@@ -172,7 +173,7 @@ object Contingency:
 
   def track[accrual <: Exception: Type, focus: Type]
        (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
-  : Macro[Any] =
+  : Macro[Tracking[accrual, ?, focus]] =
 
       import quotes.reflect.*
 
@@ -183,7 +184,7 @@ object Contingency:
       val typeLambda =
         TypeLambda
          (List("result"),
-          _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
           typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
       typeLambda.asType.absolve match
@@ -205,7 +206,7 @@ object Contingency:
       val typeLambda =
         TypeLambda
          (List("result"),
-          _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
           typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
       typeLambda.asType.absolve match
@@ -227,7 +228,7 @@ object Contingency:
       val typeLambda =
         TypeLambda
          (List("result"),
-          _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
           typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
       typeLambda.asType.absolve match
@@ -235,7 +236,7 @@ object Contingency:
           '{Accrue[accrual, typeLambda]($accrual, accrual ?=> $handler(using accrual))}
 
 
-  def recover[result: Type](handler: Expr[Exception ~> result]): Macro[Any] =
+  def recover[result: Type](handler: Expr[Exception ~> result]): Macro[Recovery[result, ?]] =
     import quotes.reflect.*
 
     val errors = mapping(handler.asTerm)
@@ -245,7 +246,7 @@ object Contingency:
     val typeLambda =
       TypeLambda
        (List("result"),
-        _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+        void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
     typeLambda.asType.absolve match
@@ -254,7 +255,7 @@ object Contingency:
 
   def mitigateWithin[context[_]: Type, result: Type]
        (mitigate: Expr[Mitigation[context]], lambda: Expr[context[result]])
-    : Macro[result] =
+  : Macro[result] =
 
         import quotes.reflect.*
 

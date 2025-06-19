@@ -32,8 +32,4 @@
                                                                                                   */
 package soundness
 
-export anthology
-. { Scalac, CompileFlag, JavaVersion, LanguageFeature, Unused, UnusedFeature, WarningFlag }
-
-package scalacOptions:
-  export anthology.scalacOptions.*
+export superlunary.{embeddings, Dispatch, Dispatchable, Dispatcher, References}

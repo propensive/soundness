@@ -30,8 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package superlunary
 
-import anticipation.*
+import fulminate.*
 
-case class ScalacOption[-version <: Scalac.All](flags: Text*)
+case class RemoteError()(using Diagnostics) extends Error(m"failed to perform a remote operation")
