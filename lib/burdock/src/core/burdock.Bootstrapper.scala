@@ -101,7 +101,7 @@ object Bootstrapper:
 
     . within:
         val jarfile: Path on Linux =
-          ClassRef(Class.forName("burdock.Bootstrap").nn).classpathEntry match
+          ClassRef(Class.forName("burdock.Bootstrapper").nn).classpathEntry match
             case ClasspathEntry.Jar(file) =>
               file.decode[Path on Linux]
 
@@ -132,7 +132,7 @@ object Bootstrapper:
           val digest = data.digest[Sha2[256]].serialize[Hex]
 
           def filter(name: Text): Boolean =
-            name == t"burdock/Bootstrap.class" || name != t"META-INF/MANIFEST.MF"
+            name == t"burdock/Bootstrapper.class" || name != t"META-INF/MANIFEST.MF"
 
           ZipStream(data).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
             (entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex]) -> Requirement(url, digest)
@@ -145,7 +145,7 @@ object Bootstrapper:
           ZipStream(handle.read[Bytes]).map: entry =>
             if entry.ref.show == t"META-INF/MANIFEST.MF"
             then manifest.fulfill(entry.read[Bytes].read[Manifest]) yet Unset
-            else if entry.ref.show == t"burdock/Bootstrap.class"
+            else if entry.ref.show == t"burdock/Bootstrapper.class"
             then Entry(entry.ref.show, entry.read[Bytes])
             else entries.at((entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex])).or:
               Entry(entry.ref.show, entry.read[Bytes])
@@ -165,7 +165,7 @@ object Bootstrapper:
           val verbosity = BurdockVerbosity(t"silent")
 
           manifest2 - MainClass + require + burdockMain + verbosity
-          + MainClass(fqcn"burdock.Bootstrap")
+          + MainClass(fqcn"burdock.Bootstrapper")
 
         val tmpFile = jarfile.parent.vouch / t"${jarfile.name}.tmp"
 
