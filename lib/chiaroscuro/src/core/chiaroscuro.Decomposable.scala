@@ -33,68 +33,85 @@
 package chiaroscuro
 
 import anticipation.*
+import fulminate.*
 import gossamer.*
+import kaleidoscope.*
+import larceny.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 import wisteria.*
 
+import scala.compiletime.*
 import scala.deriving.*
 import scala.reflect.*
 
 trait Decomposable extends Typeclass:
-  def decompose(value: Self): Decomposition
+  def decomposition(value: Self): Decomposition
 
-object Decomposable extends Derivable[Decomposable], Decomposable2:
+object Decomposable:
 
-  def primitive[value]: value is Decomposable =
-    value => Decomposition.Primitive(t"", value.toString.tt, value)
+  inline def primitive[value](name: Text): value is Decomposable =
+    value => Decomposition.Primitive(name, value.toString.tt, value)
 
-  inline def join[derivation <: Product: ProductReflection]: derivation is Decomposable =
-    value =>
-      val map: Map[Text, Decomposition] =
-        import derivationContext.relaxed
-        fields(value):
-          [field] => field =>
-            val value =
-              context.let(_.decompose(field)).or(Decomposition.Primitive(typeName, t"?", field))
+  inline def any[value]: value is Decomposable =
+    value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
-            label -> value
-        . to(Map)
+  trait Foundation extends Decomposable:
+    type Self
+    def decomposition(value: Self): Decomposition
 
-      Decomposition.Product(typeName, map, value)
+  object Foundation:
+    given text: Text is Decomposable.Foundation =
+      value => Decomposition.Primitive(t"Text", value, value)
 
-  inline def split[derivation: SumReflection]: derivation is Decomposable =
-    value =>
-      import derivationContext.relaxed
-      variant(value):
-        [variant <: derivation] => variant =>
-          Decomposition.Sum
-           (typeName,
-            context.let(_.decompose(variant)).or:
-              Decomposition.Primitive(typeName, t"?", variant),
-            variant)
+    given int: Int is Decomposable.Foundation =
+      value => Decomposition.Primitive(t"Int", value.show, value)
 
-  given text: Text is Decomposable = value => Decomposition.Primitive(t"Text", value, value)
+    given string: String is Decomposable.Foundation =
+      value => Decomposition.Primitive("String", value, value)
 
-  given optional: [value: Decomposable] => Optional[value] is Decomposable = value =>
-    value.let: value =>
-      Decomposition.Sum(t"Optional", value.decompose, value)
-    . or(Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Unset", t"∅", value), value))
+    given sequence: [element: Decomposable, collection <: Iterable[element]]
+          => collection is Decomposable.Foundation =
+      collection =>
+        Decomposition.Sequence(collection.map(_.decompose).to(List), collection)
 
-trait Decomposable2:
-  inline given textual: [value] => value is Decomposable = compiletime.summonFrom:
-    case given (`value` is Showable) =>
-      value => Decomposition.Primitive(t"Showable", value.show, value)
+  private val pattern = r"(.*\.)*"
+  private inline def shortName[entity]: Text = typeName[entity].sub(pattern, t"")
 
-    case given (`value` is Encodable in Text) =>
-      value => Decomposition.Primitive(t"Encodable", value.encode, value)
+  inline given derived: [entity] => entity is Decomposable = summonFrom:
+    case decomposable: (`entity` is Decomposable.Foundation) => decomposable
+    case given (Unset.type <:< `entity`)   => value =>
+      Decomposition.Sum
+       (t"Optional", value.lay(Decomposition.Primitive(t"Unset", t"∅", value))(_.decompose), value)
+
+    case given ProductReflection[`entity`] => Derivation.derived[entity]
+    case given SumReflection[`entity`]     => Derivation.split[entity]
+    case _                                 => summonFrom:
+      case given (`entity` is Showable) =>
+        value => Decomposition.Primitive(shortName[entity], value.show, value)
+
+      case given (`entity` is Encodable in Text) =>
+        value => Decomposition.Primitive(shortName[entity], value.encode, value)
+
+      case _ =>
+        value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
     case _ =>
       value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
-  given collection: [collection <: Iterable, value: Decomposable]
-        =>  collection[value] is Decomposable =
-    collection =>
-      Decomposition.Sequence(IArray.from(collection.map(_.decompose)), collection)
+  object Derivation extends Derivable[Decomposable]:
+    inline def join[derivation <: Product: ProductReflection]: derivation is Decomposable =
+      value =>
+        val map =
+          fields(value) { [field] => field => label -> context.decomposition(field) }.to(Map)
+
+        Decomposition.Product(typeName, map, value)
+
+    inline def split[derivation: SumReflection]: derivation is Decomposable =
+      value =>
+        variant(value):
+          [variant <: derivation] => variant =>
+            Decomposition.Sum(typeName, context.decomposition(variant), variant)

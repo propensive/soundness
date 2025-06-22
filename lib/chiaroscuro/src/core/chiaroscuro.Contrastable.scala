@@ -45,7 +45,7 @@ import vacuous.*
 import scala.reflect.*
 
 trait Contrastable extends Typeclass:
-  def contrast(left: Self, right: Self): Juxtaposition
+  def juxtaposition(left: Self, right: Self): Juxtaposition
 
 trait Contrastable2 extends Contrastable3:
   given showable: [value: Showable] => value is Contrastable = (left, right) =>
@@ -58,27 +58,28 @@ trait Contrastable3:
     else Juxtaposition.Different(left.toString.tt, right.toString.tt)
 
 object Contrastable extends Contrastable2:
-  given int: Int is Contrastable = (left, right) =>
-    if left == right then Juxtaposition.Same(left.show)
-    else Juxtaposition.Different(left.show, right.show, t"${math.abs(right - left)}")
+  given set: [element: Showable] => Set[element] is Contrastable = (left, right) =>
+    if left == right then Juxtaposition.Same(left.show) else
+      val leftOnly = (left -- right).map(_.show)
+      val rightOnly = (right -- left).map(_.show)
 
-  given double: Double is Contrastable = (left, right) =>
-    given decimalizer: Decimalizer = Decimalizer(3)
-    if left == right then Juxtaposition.Same(left.show)
-    else
-      val size = 100*(right - left)/left
-      val sizeText = if size.isFinite then t"${if size > 0 then t"+" else t""}$size%" else t""
-      Juxtaposition.Different(left.show, right.show, sizeText)
+      def describe(set: Set[Text]): Text = set.size match
+        case 1          => t"also contains ${set.head}"
+        case n if n < 6 => t"also contains ${set.to(List).join(t"{", t", ", t"}")}"
+        case n          => t"contains $n extra elements"
 
-  given char: Char is Contrastable = (left, right) =>
-    if left == right then Juxtaposition.Same(left.show)
-    else Juxtaposition.Different(left.show, right.show)
+      val message =
+        if leftOnly.isEmpty then t"right ${describe(rightOnly)}"
+        else if rightOnly.isEmpty then t"left ${describe(leftOnly)}"
+        else t"left ${describe(leftOnly)} and right ${describe(rightOnly)}"
+
+      Juxtaposition.Different(left.show, right.show, message)
 
   given text: Text is Contrastable =
     (left, right) =>
       def decompose(chars: IArray[Char]): IArray[Decomposition] = chars.map: char =>
         Decomposition.Primitive(t"Char", char.show, char)
-      compareSeq[Char](decompose(left.chars), decompose(right.chars), left, right)
+      comparison[Char](decompose(left.chars), decompose(right.chars), left, right)
 
   inline def nothing[value]: value is Contrastable = (left, right) =>
     provide[value is Decomposable]:
@@ -93,13 +94,12 @@ object Contrastable extends Contrastable2:
         Juxtaposition.Different(left, right)
 
       case (Decomposition.Sequence(left, _), Decomposition.Sequence(right, _)) =>
-        compareSeq(left, right, t"", t"")
+        comparison(IArray.from(left), IArray.from(right), t"", t"")
 
       case (Decomposition.Product(_, left, _), Decomposition.Product(_, right, _)) =>
         Juxtaposition.Collation
-         (IArray.from:
-            left.keys.map: key =>
-              key -> juxtaposition(left(key), right(key)),
+         (left.keys.to(List).map: key =>
+            key -> juxtaposition(left(key), right(key)),
           t"",
           t"")
 
@@ -113,14 +113,14 @@ object Contrastable extends Contrastable2:
         Juxtaposition.Different(kind(left), kind(right))
 
   given exception: Exception is Contrastable:
-    def contrast(left: Exception, right: Exception): Juxtaposition =
+    def juxtaposition(left: Exception, right: Exception): Juxtaposition =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.tt)
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.tt)
 
       if left.getClass == right.getClass && leftMsg == rightMsg then Juxtaposition.Same(leftMsg)
       else Juxtaposition.Different(leftMsg, rightMsg)
 
-  def compareSeq[value]
+  def comparison[value]
        (left:       IArray[Decomposition],
         right:      IArray[Decomposition],
         leftDebug:  Text,
@@ -150,4 +150,4 @@ object Contrastable extends Contrastable2:
 
               label -> juxtaposition(Decomposition(leftValue), Decomposition(rightValue))
 
-        Juxtaposition.Collation(comparison, leftDebug, rightDebug)
+        Juxtaposition.Collation(comparison.to(List), leftDebug, rightDebug)

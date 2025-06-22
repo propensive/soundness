@@ -72,7 +72,7 @@ object Probably:
       exp match
         case Some('{type testType >: test; $expr: testType}) =>
           val decomposable: Expr[testType is Decomposable] =
-            Expr.summon[testType is Decomposable].getOrElse('{Decomposable.primitive[testType]})
+            Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
 
           val contrast = Expr.summon[testType is Contrastable].getOrElse:
             halt(m"Can't find a `Contrastable` instance for ${Type.of[testType]}")
@@ -100,7 +100,7 @@ object Probably:
               None,
               $inc,
               $inc2,
-              Decomposable.primitive[test])
+              Decomposable.any[test])
           }
 
 
@@ -167,9 +167,9 @@ object Probably:
                    (runner.report,
                     test.id,
                     Verdict.Detail.Compare
-                     (decomposable.decompose(exp).text,
-                      decomposable.decompose(value).text,
-                      contrast.contrast(exp, value)))
+                     (decomposable.decomposition(exp).text,
+                      decomposable.decomposition(value).text,
+                      contrast.juxtaposition(exp, value)))
                 case None =>
                   // inc2.include(runner.report, test.id, Verdict.Detail.Compare
                   //  (summon[Any is Contrastable].compare(value, 1)))

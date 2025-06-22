@@ -51,7 +51,7 @@ object Decomposition:
 enum Decomposition:
   case Primitive(typeName: Text, value: Text, ref: Any)
   case Product(name: Text, values: Map[Text, Decomposition], ref: Any)
-  case Sequence(values: IArray[Decomposition], ref: Any)
+  case Sequence(values: List[Decomposition], ref: Any)
   case Sum(name: Text, value: Decomposition, ref: Any)
 
   def ref: Any

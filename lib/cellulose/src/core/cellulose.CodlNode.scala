@@ -52,7 +52,7 @@ object CodlNode:
 
   given contrastable: (CodlNode is Inspectable) => CodlNode is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.inspect) else
-      val comparison = IArray.from:
+      val comparison =
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
           case Par(_, _, v) =>
             v.let(_.key).or(t"—") -> Juxtaposition.Same(v.let(_.inspect).toString.tt)
@@ -66,6 +66,8 @@ object CodlNode:
           case Sub(_, v, lv, rv) =>
             if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.contrast(rv)
             else t"[key]" -> Juxtaposition.Different(lv.let(_.key).or(t"—"), rv.let(_.key).or(t"—"))
+
+        . to(List)
 
       Juxtaposition.Collation(comparison, left.key.or(t"—"), right.key.or(t"—"))
 

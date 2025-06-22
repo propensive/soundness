@@ -48,7 +48,7 @@ import vacuous.*
 enum Juxtaposition:
   case Same(value: Text)
   case Different(left: Text, right: Text, difference: Optional[Text] = Unset)
-  case Collation(comparison: IArray[(Text, Juxtaposition)], left: Text, right: Text)
+  case Collation(comparison: List[(Text, Juxtaposition)], left: Text, right: Text)
 
   def singleChar: Boolean = this match
     case Same(value)                        => value.length == 1

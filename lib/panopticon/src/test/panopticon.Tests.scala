@@ -67,7 +67,7 @@ object Tests extends Suite(m"Panopticon tests"):
         val orgLeader = Lens[Organization](_.leader)
         val roleName = Lens[Role](_.name)
         orgLeader ++ roleName
-      .map(_.reason)
+      .map(_.message)
     .assert(_.nonEmpty)
 
     val ceo = Role("CEO", 120000)

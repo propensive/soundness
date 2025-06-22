@@ -39,65 +39,49 @@ case class Organization(name: Text, ceo: Person, staff: List[Person])
 
 case class IdName(id: Text, name: Text)
 
-given Similarity[IdName] = _.id == _.id
-import Juxtaposition.*
+import Decomposition.*
 
 object Tests extends Suite(m"Chiaroscuro tests"):
   def run(): Unit =
-    suite(m"RDiff tests"):
-      test(m"Two identical, short Vectors"):
-        Vector(1, 2, 3).contrast(Vector(1, 2, 3))
+    suite(m"Decomposition tests"):
+      // test(m"Decompose an unknown type"):
+      //   24.decompose
 
-      . assert(_ == Same(t"⟨ 1 2 3 ⟩"))
+      // . assert(_ == Decomposition.Primitive(t"Int", t"24", 24))
 
-      test(m"compare two two-parameter case class instances"):
-        Person(t"Jack", 12)
+      // test(m"Decompose a known type"):
+      //   t"hello".decompose
 
-      . assert(_ == Person(t"Jill", 12))
+      // . assert(_ == Decomposition.Primitive(t"Text", t"hello", t"hello"))
 
-      test(m"nested comparison"):
-        Organization(t"Acme Inc", Person(t"Jack", 12), Nil)
 
-      . assert(_ == Organization(t"Acme Inc", Person(t"Jill", 12), Nil))
+      // test(m"Decompose a person"):
+      //   Person(t"Bill", 29).decompose
 
-      test(m"nested comparison 2"):
-        Organization(t"Acme Inc.", Person(t"Jack", 12), Nil)
+      // . assert(_ == Decomposition.Product
+      //                (t"Person",
+      //                 Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"),
+      //                     t"age"  -> Primitive(t"Int", t"29", 29)),
+      //                 Person(t"Bill", 29)))
 
-      . assert(_ == Organization(t"Acme Inc", Person(t"Jack", 12), Nil))
+      // test(m"Decompose a sequence"):
+      //   List('a', 'b').decompose
 
-      test(m"nested comparison 3"):
-        Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jerry", 18)))
+      // . assert:
+      //     _ == Sequence(List(Primitive(t"Char", t"a", 'a'),
+      //                        Primitive(t"Char", t"b", 'b')), List('a', 'b'))
 
-      . assert(_ == Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jill", 32), Person(t"Jerry", 18))))
 
-      test(m"nested comparison 4"):
-        Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jerry", 18)))
+      Decomposable.derived[Optional[Int]]
 
-      . assert(_ == Organization(t"Acme", Person(t"Jack", 12), List(Person(t"Jerry", 18))))
+      // test(m"Decompose an optional value"):
+      //   val x: Optional[Int] = 12
+      //   x.decompose
 
-      test(m"diff list"):
-        val xs = List(t"one", t"two", t"three", t"four")
-        val ys = List(t"one", t"two", t"three", t"vier")
-        diff(xs.to(Vector), ys.to(Vector)).edits
+      // . assert(_ == Sum(t"Optional", Primitive(t"Int", t"12", 12), 12))
 
-      . assert: value =>
-        value == List
-                  (Par(0, 0, t"one"),
-                   Par(1, 1, t"two"),
-                   Par(2, 2, t"three"),
-                   Del(3, t"four"),
-                   Ins(3, t"vier"))
+      // test(m"Decompose an unset optional"):
+      //   val x: Optional[Int] = Unset
+      //   x.decompose
 
-      test(m"recurse on similar list entries"):
-        val xs = List(IdName(t"one", t"One"), IdName(t"two", t"Two"),  IdName(t"three", t"Three"), IdName(t"four", t"Four"))
-        val ys = List(IdName(t"one", t"Ein"), IdName(t"two", t"Zwei"),  IdName(t"three", t"Three"), IdName(t"vier", t"Vier"))
-        val result = xs.contrast(ys)
-        import hieroglyph.textMetrics.uniform
-        import escapade.*
-        import turbulence.*
-        import stdioSources.virtualMachine.textOnly
-        Out.println(result.teletype)
-
-        result
-
-      . assert(_ == Same(t""))
+      // . assert(_ == Sum(t"Optional", Primitive(t"Unset", t"∅", Unset), Unset))

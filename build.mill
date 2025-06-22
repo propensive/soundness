@@ -583,7 +583,7 @@ object charisma extends SoundnessModule {
 
 object chiaroscuro extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(escapade.core, dendrology.tree, escritoire.core, dissonance.core)
+    def moduleDeps = Seq(escapade.core, dendrology.tree, escritoire.core, dissonance.core, larceny.plugin)
   }
 
   object test extends ProbablyTestModule {

@@ -41,6 +41,7 @@ import honeycomb.*
 import nettlesome.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
 

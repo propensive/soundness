@@ -57,6 +57,7 @@ def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => 
   recurrence(fn)(initial)
 
 inline def probe[target]: Nothing = ${Rudiments.probe[target]}
+inline def typeName[target]: Text = ${Rudiments.name[target]}
 inline def reflectClass[target]: Class[target] = ${Rudiments.reflectClass}
 
 extension [value](value: value)
