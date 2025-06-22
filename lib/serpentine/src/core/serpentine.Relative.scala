@@ -42,6 +42,7 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
+import vacuous.*
 
 object Relative:
   @targetName("Up")
@@ -107,7 +108,6 @@ object Relative:
                            => relative is Quotient =
     relative0 =>
       relative0 match
-        case _: Text => None
         case _: Relative =>
           val relative = relative0.asInstanceOf[Relative on system]
 
@@ -115,6 +115,9 @@ object Relative:
             case Nil | _ :: Nil => None
             case _ :: _ :: Nil  => Some((relative.descent(1), relative.descent(0)))
             case _              => Some((relative.descent.last, Relative(0, relative.descent.init*)))
+
+        case _ => None
+
   : relative is Quotient of Text over (Relative on system) | Text
 
 
@@ -124,6 +127,9 @@ case class Relative(ascent: Int, descent: List[Text] = Nil):
   type Constraint <: Int
 
   def delta: Int = descent.length - ascent
+
+  transparent inline def rename(lambda: (prior: Text) ?=> Text): Optional[Relative] =
+    descent.prim.let(parent / lambda(using _))
 
   private inline def check[subject, system](path: List[Text]): Unit =
     inline !![subject] match
@@ -150,17 +156,15 @@ case class Relative(ascent: Int, descent: List[Text] = Nil):
       else Relative[Platform, Subject, Constraint](ascent, descent.tail*)
 
 
-  transparent inline def / [element](child: element)(using navigable: child.type is Navigable)
-  : Relative of (child.type *: Subject) under Constraint =
+  transparent inline def / (child: Any): Relative of (child.type *: Subject) under Constraint =
+    summonFrom:
+      case given (child.type is Admissible on Platform) =>
+        Relative[Platform, child.type *: Subject, Constraint]
+          (ascent, infer[child.type is Navigable].follow(child) +: descent*)
 
-      summonFrom:
-        case given (child.type is Admissible on Platform) =>
-          Relative[Platform, child.type *: Subject, Constraint]
-           (ascent, navigable.follow(child) +: descent*)
-
-        case _ =>
-          Relative.of[child.type *: Subject, Constraint]
-           (ascent, navigable.follow(child) :: descent*)
+      case _ =>
+        Relative.of[child.type *: Subject, Constraint]
+          (ascent, infer[child.type is Navigable].follow(child) :: descent*)
 
 
 // case class Relative(ascent: Int, descent: Text*):

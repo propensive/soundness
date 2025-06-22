@@ -189,6 +189,10 @@ case class Path(root: Text, descent: Text*):
     case _ =>
       root == right.root
 
+  transparent inline def rename(lambda: (prior: Text) ?=> Text): Optional[Path] =
+    parent.let: parent =>
+      descent.prim.let(parent / lambda(using _))
+
   transparent inline def conjunction(right: Path): Optional[Path] =
     inline sameRoot(right) match
       case true  => certain(right)
