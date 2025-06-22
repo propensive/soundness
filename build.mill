@@ -1549,7 +1549,7 @@ object zephyrine extends SoundnessModule {
 
 object zeppelin extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(galilei.core)
+    def moduleDeps = Seq(galilei.core, zephyrine.core)
   }
 
   object test extends ProbablyTestModule {
