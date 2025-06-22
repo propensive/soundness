@@ -497,19 +497,19 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       val path: Path on Linux = % / "home" / "work" / "data"
 
       test(m"Match root on a simple path"):
-        path match
+        path.only:
           case root /: right => root
 
       . assert(_ == t"/")
 
       test(m"Match root on a short path"):
-        shortPath match
+        shortPath.only:
           case root /: right => root
 
       . assert(_ == t"/")
 
       test(m"Match descent on a simple path"):
-        path match
+        path.only:
           case root /: right => right
 
       . assert(_ == ? / "home" / "work" / "data")
@@ -522,30 +522,29 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       . assert(identity(_))
 
       test(m"Match top elementon a simple path"):
-        path match
+        path.only:
           case root /: right0 /: right1 => right0
 
       . assert(_ == t"home")
 
 
       test(m"Match further descent on a simple path"):
-        path match
+        path.only:
           case root /: right0 /: right1 => right1
 
       . assert(_ == ? / "work" / "data")
 
 
       test(m"Match last descent on a simple path"):
-        path match
+        path.only:
           case root /: right0 /: right1 /: right2 => right2
 
       . assert(_ == t"data")
 
 
       test(m"Further elements don't match"):
-        path match
+        path.only:
           case root /: right0 /: right1 /: right2 /: right3 => right3
-          case _                                            => Unset
 
       . assert(_ == Unset)
 
