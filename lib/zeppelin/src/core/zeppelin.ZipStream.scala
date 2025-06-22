@@ -43,6 +43,7 @@ import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 import java.util.zip as juz
 
@@ -62,33 +63,37 @@ class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
   def each(lambda: ZipEntry => Unit): Unit raises ZipError = map[Unit](lambda)
 
   def map[element](lambda: ZipEntry => element): Stream[element] raises ZipError =
-    val zipIn = juz.ZipInputStream(stream().inputStream)
+    val conduit = Conduit(stream())
 
-    def recur(): Stream[ZipEntry] = zipIn.getNextEntry() match
-      case null                         => Stream()
-      case entry if entry.isDirectory() => recur()
+    if !conduit.search(0x50, 0x4b, 0x03, 0x04) then Stream() else
+      conduit.truncate()
+      val zipIn = juz.ZipInputStream(conduit.remainder.inputStream)
 
-      case entry =>
-        import errorDiagnostics.empty
-        val ref: Path on Zip =
-          mitigate:
-            case PathError(reason, path) => ZipError()
-            case NameError(_, _, _)      => ZipError()
+      def recur(): Stream[ZipEntry] = zipIn.getNextEntry() match
+        case null                         => Stream()
+        case entry if entry.isDirectory() => recur()
 
-          . within:
-              entry.getName().nn.tt.decode[Path on Zip]
+        case entry =>
+          import errorDiagnostics.empty
+          val ref: Path on Zip =
+            mitigate:
+              case PathError(reason, path) => ZipError()
+              case NameError(_, _, _)      => ZipError()
 
-        if !filter(ref) then recur() else
-          def read(): Stream[Bytes] =
-            if zipIn.available == 0 then Stream() else
-              val size = entry.getSize.toInt.min(4096).puncture(-1).or(4096)
-              val array: Array[Byte] = new Array[Byte](size)
-              val count = zipIn.read(array, 0, array.length)
+            . within:
+                entry.getName().nn.tt.decode[Path on Zip]
 
-              if count == 0 then Stream() else
-                (if count < size then array.take(count) else array).immutable(using Unsafe)
-                #:: read()
+          if !filter(ref) then recur() else
+            def read(): Stream[Bytes] =
+              if zipIn.available == 0 then Stream() else
+                val size = entry.getSize.toInt.min(4096).puncture(-1).or(4096)
+                val array: Array[Byte] = new Array[Byte](size)
+                val count = zipIn.read(array, 0, array.length)
 
-          ZipEntry(ref, read()) #:: recur()
+                if count == 0 then Stream() else
+                  (if count < size then array.take(count) else array).immutable(using Unsafe)
+                  #:: read()
 
-    recur().map(lambda)
+            ZipEntry(ref, read()) #:: recur()
+
+      recur().map(lambda)

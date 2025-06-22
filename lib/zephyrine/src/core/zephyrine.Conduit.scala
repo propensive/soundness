@@ -70,13 +70,13 @@ class Conduit(input0: Stream[Bytes]):
   def remainder: Stream[Bytes] = stream
 
   def next(): Boolean = step() match
-    case Conduit.State.Clutch => cue() yet next()
+    case Conduit.State.Clutch => if stream.isEmpty then false else (cue() yet next())
     case state                => state != Conduit.State.Clutch
 
-  inline def expect(chars: Char*): Boolean =
+  def expect(chars: Char*): Boolean =
     var result = true
     chars.each: char =>
-      if datum != char then next() else result = false
+      if result && datum == char then next() else result = false
     result
 
   final def break(): Unit = if !clutch then
@@ -96,6 +96,8 @@ class Conduit(input0: Stream[Bytes]):
     current = prefix
     val stream0 = stream
     stream = suffix #:: stream0
+
+
 
   final def save(): Bytes =
     val rnd = math.random()
@@ -119,7 +121,7 @@ class Conduit(input0: Stream[Bytes]):
       recur()
 
   @tailrec
-  final def seek(byte: Byte): Unit = if next() && datum != byte then seek(byte)
+  final def seek(byte: Byte): Boolean = next() && (if datum != byte then seek(byte) else true)
 
   @tailrec
   final def skip(count: Int): Unit = if count > 0 then next() yet skip(count - 1)
@@ -158,6 +160,15 @@ class Conduit(input0: Stream[Bytes]):
     index = index0
     done = done0
     clutch = clutch0
+
+  def search(chars: Char*): Boolean =
+    def recur(chars: Char*): Boolean =
+      !chars.isEmpty && seek(chars.head.toByte)
+      && { mark()
+           if expect(chars*) then revert() yet true else revert() yet recur(chars*) }
+
+    mark()
+    if expect(chars*) then revert() yet true else recur(chars*)
 
   final def take(count: Int): Bytes =
     mark()
