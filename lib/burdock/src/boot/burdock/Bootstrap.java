@@ -56,17 +56,19 @@ public class Bootstrap {
       String requirements = attributes.getValue("Burdock-Require");
       if (requirements != null) {
         for (String item : requirements.split(" ")) {
-          String requiredHash = item.substring(0, 64);
-          URL url = new URI(item.substring(65)).toURL();
+          String requiredHash = item.substring(0, 40);
+          System.out.println(item);
+          System.out.println(item.substring(41));
+          URL url = new URI(item.substring(41)).toURL();
           info("Application requires "+url+".", 3);
           File dir = new File(cache, "burdock");
-          File temp = dir.createTempFile("tempfiles", ".tmp");
           dir.mkdirs();
+          File temp = File.createTempFile("tempfiles", ".tmp", dir);
           File file = new File(dir, requiredHash+".jar");
 
           if (!file.exists()) {
             info("File does not exist locally.", 3);
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
             String calculatedHash = null;
 
             info("Downloading "+url, 2);
@@ -137,8 +139,9 @@ public class Bootstrap {
         Method mainMethod = mainClass.getMethod("main", String[].class);
         mainMethod.invoke(null, (Object) args);
       }
-    } catch (Exception exception) {
+    } catch (Throwable exception) {
       System.err.println(exception);
+      exception.printStackTrace(System.err);
       System.exit(2);
     }
   }
