@@ -1582,6 +1582,7 @@ object publishing extends Module {
     anticipation.time.publishLocal().t()
     anticipation.transport.publishLocal().t()
     anticipation.url.publishLocal().t()
+    austronesian.core.publishLocal().t()
     aviation.core.publishLocal().t()
     baroque.core.publishLocal().t()
     burdock.core.publishLocal().t()
