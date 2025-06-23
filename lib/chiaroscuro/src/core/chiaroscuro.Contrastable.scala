@@ -47,16 +47,6 @@ import scala.reflect.*
 trait Contrastable extends Typeclass:
   def juxtaposition(left: Self, right: Self): Juxtaposition
 
-trait Contrastable2 extends Contrastable3:
-  given showable: [value: Showable] => value is Contrastable = (left, right) =>
-    if left == right then Juxtaposition.Same(left.show)
-    else Juxtaposition.Different(left.show, right.show)
-
-trait Contrastable3:
-  given showable: [value] => value is Contrastable = (left, right) =>
-    if left == right then Juxtaposition.Same(left.toString.tt)
-    else Juxtaposition.Different(left.toString.tt, right.toString.tt)
-
 object Contrastable extends Contrastable2:
   given set: [element: Showable] => Set[element] is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.show) else
@@ -151,3 +141,13 @@ object Contrastable extends Contrastable2:
               label -> juxtaposition(Decomposition(leftValue), Decomposition(rightValue))
 
         Juxtaposition.Collation(comparison.to(List), leftDebug, rightDebug)
+
+trait Contrastable2 extends Contrastable3:
+  given showable: [value: Showable] => value is Contrastable = (left, right) =>
+    if left == right then Juxtaposition.Same(left.show)
+    else Juxtaposition.Different(left.show, right.show)
+
+trait Contrastable3:
+  given showable: [value] => value is Contrastable = (left, right) =>
+    if left == right then Juxtaposition.Same(left.toString.tt)
+    else Juxtaposition.Different(left.toString.tt, right.toString.tt)

@@ -128,3 +128,6 @@ object Tests extends Suite(m"Chiaroscuro tests"):
         x.decompose
 
       . assert(_ == Sequence(List(Sequence(List(Primitive(t"Text", t"hello", t"hello")), List(t"hello"))), List(List(t"hello"))))
+
+
+      summon[Regex is Decomposable]

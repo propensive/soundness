@@ -51,7 +51,7 @@ import scala.reflect.*
 trait Decomposable extends Typeclass:
   def decomposition(value: Self): Decomposition
 
-object Decomposable:
+object Decomposable extends Decomposable2:
   inline given derived: [entity] => entity is Decomposable = summonFrom:
     case decomposable: (`entity` is Decomposable.Foundation) => decomposable
     case given ProductReflection[`entity`] => Derivation.derived[entity]
@@ -130,3 +130,7 @@ object Decomposable:
         variant(value):
           [variant <: derivation] => variant =>
             Decomposition.Sum(typeName, context.decomposition(variant), variant)
+
+trait Decomposable2:
+  given fallback: [value] => value is Decomposable =
+    value => Decomposition.Primitive(t"Any", value.toString.tt, value)
