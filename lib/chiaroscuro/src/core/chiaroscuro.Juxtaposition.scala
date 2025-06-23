@@ -83,7 +83,7 @@ object Juxtaposition:
       if comparison.all(_(1).singleChar) then
         var topSum = 0
         var bottomSum = 0
-        def pad(value: Text): Char = Unicode.visible(value.at(Prim).or(' '))
+        def pad(value: Text): Char = value.at(Prim).let(Unicode.visible).or(' ')
 
         comparison.grouped(columns).zipWithIndex.map: (comparison2, index) =>
           val first = index == 0
@@ -140,7 +140,7 @@ object Juxtaposition:
               Row(line(t"▪"), e"${rgb"#667799"}($v)", e"${rgb"#667799"}($v)")
 
             case Different(left, right, difference) =>
-              Row(line(t"▪"), e"${rgb"#bb0000"}($left)", e"${rgb"#00aa00"}($right)")
+              Row(line(t"▪"), e"${rgb"#00aa00"}($left)", e"${rgb"#bb0000"}($right)")
 
             case Collation(comparison, left, right) =>
               Row(line(t"■"), e"$left", e"$right")

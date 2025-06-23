@@ -128,7 +128,7 @@ object Contrastable extends Contrastable2:
               label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
             case Ins(rightIndex, value) =>
-              t" ⧸${rightIndex.show.subscripts}"
+              t" ╱${rightIndex.show.subscripts}"
               -> Juxtaposition.Different(t"", value.short)
 
             case Del(leftIndex, value) =>

@@ -130,4 +130,12 @@ object Tests extends Suite(m"Chiaroscuro tests"):
       . assert(_ == Sequence(List(Sequence(List(Primitive(t"Text", t"hello", t"hello")), List(t"hello"))), List(List(t"hello"))))
 
 
-      summon[Regex is Decomposable]
+      test(m"Structural comparison"):
+        Organization(t"Acme", Person(t"John", 49), List(Person(t"Janet", 19), Person(t"Paweł", 32)))
+
+      . aspire:
+          _ == Organization(t"Acme", Person(t"John", 43), List(Person(t"Paul", 32), Person(t"Janet", 19)))
+
+      test(m"Text comparison"):
+        t"The quick brown fox jumps over the lazy dog"
+      . aspire(_ == t"The quick brown foxes jumped over the dog")
