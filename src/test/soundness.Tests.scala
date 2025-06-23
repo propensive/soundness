@@ -51,6 +51,7 @@ object Tests extends Suite(m"Soundness tests"):
     cataclysm.Tests()
     cellulose.Tests()
     charisma.Tests()
+    chiaroscuro.Tests()
     contextual.Tests()
     contingency.Tests()
     dendrology.Tests()
@@ -118,7 +119,6 @@ object Tests extends Suite(m"Soundness tests"):
 object FailingTests extends Suite(m"Failing tests"):
   def run(): Unit =
     //austronesian.Tests()
-    chiaroscuro.Tests()
     mandible.Tests()
     //merino.Tests() - crashing
     parasite.Tests()
