@@ -52,14 +52,14 @@ object Character:
 
   given encodable: Character is Encodable in Text = new Encodable:
     type Self = Character
-    type Format = Text
+    type Form = Text
 
     def encoded(char: Character): Text =
       if char == End then t"[END]" else t"[${char.char}:${char.line}:${char.column}]"
 
   given decodable: Character is Decodable in Text = new Decodable:
     type Self = Character
-    type Format = Text
+    type Form = Text
 
     def decoded(text: Text): Character = text match
       case r"\[$char(.):${As[Int](l)}([0-9]+):${As[Int](c)}([0-9]+)\]" =>

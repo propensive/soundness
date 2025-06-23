@@ -57,11 +57,11 @@ import scala.quoted.*
 
 trait Dispatcher(using classloader: Classloader) extends Targetable:
   type Result[output]
-  type Format
+  type Form
 
   protected val scalac: Scalac[?]
-  protected def invoke[output](dispatch: Dispatch[output, Format, Target]): Result[output]
-  private var cache: Map[Codepoint, (Target, Format => Format)] = Map()
+  protected def invoke[output](dispatch: Dispatch[output, Form, Target]): Result[output]
+  private var cache: Map[Codepoint, (Target, Form => Form)] = Map()
 
   lazy val settings2: staging.Compiler.Settings =
     staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
@@ -76,14 +76,14 @@ trait Dispatcher(using classloader: Classloader) extends Targetable:
               (using codepoint:    Codepoint,
                      properties:   SystemProperties,
                      directory:    TemporaryDirectory,
-                     dispatchable: Dispatchable over transport in Format)
+                     dispatchable: Dispatchable over transport in Form)
   : Result[output] raises CompilerError =
 
       try
         import strategies.throwUnsafely
         val references: References[transport] = new References()
 
-        val (target, function): (Target, Format => Format) =
+        val (target, function): (Target, Form => Form) =
           if cache.contains(codepoint) then
             // This is necessary to allocate references as a side effect
             given staging.Compiler = compiler2
@@ -106,7 +106,7 @@ trait Dispatcher(using classloader: Classloader) extends Targetable:
             given compiler: staging.Compiler =
               staging.Compiler.make(classloader.java)(using settings)
 
-            val function: Format => Format = staging.run:
+            val function: Form => Form = staging.run:
               '{  format =>
                     ${dispatchable.encoder[output]}
                        (${  references() = '{${dispatchable.decoder}(format)}

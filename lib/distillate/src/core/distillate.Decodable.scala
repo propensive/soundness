@@ -91,9 +91,9 @@ object Decodable:
 
 trait Decodable extends Typeclass:
   inline def decodable: this.type = this
-  type Format
+  type Form
 
-  def decoded(value: Format): Self
+  def decoded(value: Form): Self
 
-  def map[self2](lambda: Self => self2): self2 is Decodable in Format =
+  def map[self2](lambda: Self => self2): self2 is Decodable in Form =
     value => lambda(decodable.decoded(value))

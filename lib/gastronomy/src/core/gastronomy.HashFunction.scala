@@ -37,7 +37,7 @@ import javax.crypto as jc
 import anticipation.*
 
 trait HashFunction:
-  type Format <: Algorithm
+  type Form <: Algorithm
 
   def name: Text
   def hmacName: Text

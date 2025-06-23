@@ -33,7 +33,7 @@
 package polyvinyl
 
 trait Record extends Selectable:
-  type Format
-  val data: Format
-  def access: String => Format => Any
+  type Form
+  val data: Form
+  def access: String => Form => Any
   def selectDynamic(name: String): Any = access(name)(data)

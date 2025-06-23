@@ -47,7 +47,7 @@ import java.awt as ja
 import javax.imageio as ji
 
 case class Raster(private[hallucination] val image: jai.BufferedImage):
-  type Format
+  type Form
   def width: Int = image.getWidth
   def height: Int = image.getHeight
 
@@ -81,13 +81,13 @@ object Raster:
   def apply[readable: Readable by Bytes](input: readable): Raster =
     new Raster(ji.ImageIO.read(input.read[Bytes].javaInputStream).nn)
 
-  def apply[format: Rasterizable as rasterizable](image: jai.BufferedImage): Raster in format =
+  def apply[form: Rasterizable as rasterizable](image: jai.BufferedImage): Raster in form =
     new Raster(image):
-      type Format = format
+      type Form = form
 
-  given readable: [format: Rasterizable] => (Raster in format) is Readable by Bytes = raster =>
+  given readable: [form: Rasterizable] => (Raster in form) is Readable by Bytes = raster =>
     val out = StreamOutputStream()
-    ji.ImageIO.write(raster.image, format.name.s, out)
+    ji.ImageIO.write(raster.image, form.name.s, out)
     out.close()
     out.stream
 

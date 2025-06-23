@@ -48,6 +48,6 @@ object CharEncoder:
 class CharEncoder(val encoding: Encoding { type CanEncode = true })
 extends Encodable:
   type Self = Text
-  type Format = Bytes
+  type Form = Bytes
   def encoded(text: Text): Bytes = text.s.getBytes(encoding.name.s).nn.immutable(using Unsafe)
   def encoded(stream: Stream[Text]): Stream[Bytes] = stream.map(encode)

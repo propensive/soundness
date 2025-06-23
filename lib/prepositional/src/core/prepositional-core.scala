@@ -37,7 +37,7 @@ object Prepositional
 infix type across [refined <: { type Domain }, domain] = refined { type Domain = domain }
 infix type by [refined <: { type Operand }, operand] = refined { type Operand = operand }
 infix type from [refined <: { type Origin }, origin] = refined { type Origin = origin }
-infix type in [refined, format] = refined { type Format = format }
+infix type in [refined, form] = refined { type Form = form }
 infix type into [refined <: { type Result }, result] = refined { type Result = result }
 infix type of [refined <: { type Topic }, topic] = refined { type Topic = topic }
 infix type on [refined <: { type Platform }, platform] = refined { type Platform = platform }

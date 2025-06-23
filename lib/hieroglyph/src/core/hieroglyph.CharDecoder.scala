@@ -52,7 +52,7 @@ object CharDecoder:
 
 class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer):
   type Self = Text
-  type Format = Bytes
+  type Form = Bytes
 
   def decoded(bytes: Bytes, omit: Boolean): Text =
     val buf: StringBuilder = StringBuilder()

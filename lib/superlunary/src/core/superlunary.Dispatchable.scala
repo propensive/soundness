@@ -47,7 +47,7 @@ import scala.quoted.*
 object Dispatchable:
   given json: Dispatchable:
     type Transport = Json
-    type Format = Text
+    type Form = Text
 
     def encoder[value: Type]: Macro[value => Text] =
       '{ value => value.json.encode }
@@ -64,13 +64,13 @@ object Dispatchable:
       provide[entity is Decodable in Json](json.as[entity])
 
 trait Dispatchable, Transportive:
-  type Format
+  type Form
 
-  def encoder[value: Type]: Macro[value => Format]
-  def decoder: Macro[Format => List[Transport]]
+  def encoder[value: Type]: Macro[value => Form]
+  def decoder: Macro[Form => List[Transport]]
 
-  inline def encode(values: List[Transport]): Format
-  inline def decode[value](value: Format): value
+  inline def encode(values: List[Transport]): Form
+  inline def decode[value](value: Form): value
 
   inline def embed[entity](value: entity): Transport
   inline def extract[entity](value: Transport): entity

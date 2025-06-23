@@ -41,7 +41,7 @@ import spectacular.*
 
 object Hmac:
   def apply[scheme <: Algorithm](bytes: Bytes) = new Hmac(bytes):
-    type Format = scheme
+    type Form = scheme
 
   given showable: [hmac <: Algorithm] => Alphabet[Base64] => Hmac in hmac is Showable = hmac =>
     t"Hmac(${hmac.bytes.serialize[Base64]})"
@@ -49,4 +49,4 @@ object Hmac:
   given encodable: [hmac <: Algorithm] => Hmac in hmac is Encodable in Bytes = _.bytes
 
 class Hmac(val bytes: Bytes):
-  type Format <: Algorithm
+  type Form <: Algorithm

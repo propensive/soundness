@@ -61,7 +61,7 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
     import Weekday.*
 
     type Self = Instant
-    type Format = Text
+    type Form = Text
 
     var index: Ordinal = Prim
 
