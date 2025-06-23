@@ -49,10 +49,10 @@ object BaseLayout:
       val slash = if path.isEmpty then t"" else t"/"
       t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
 
-case class BaseLayout[subject <: Tuple](private val part: Optional[Text], readOnly: Boolean = false)
+case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly: Boolean = false)
             (using baseDir: BaseLayout.Dir):
 
-  type Subject = subject
+  type Topic = topic
 
   def absolutePath(using Environment, SystemProperties)
   : Text raises EnvironmentError raises SystemPropertyError =

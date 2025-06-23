@@ -44,5 +44,5 @@ object EncodableManifest:
 
 trait EncodableManifest:
   type Self <: Label
-  type Subject
-  def encode(value: Subject): Text
+  type Topic
+  def encode(value: Topic): Text

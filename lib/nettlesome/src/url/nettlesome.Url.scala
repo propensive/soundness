@@ -59,7 +59,7 @@ class Url[+scheme <: Label]
 extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}${pathText}"):
 
   type Platform = Rfc3986
-  type Subject = Zero
+  type Topic = Zero
 
   def scheme: Scheme[scheme] = origin.scheme
   def authority: Optional[Authority] = origin.authority

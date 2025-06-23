@@ -42,7 +42,7 @@ object CaseField:
   : CaseField[target, annotation] of field =
 
       new CaseField[target, annotation](name):
-        type Subject = field
+        type Topic = field
         def apply(value: target) = access(value)
         def annotation: annotation = annotation0
 
@@ -54,6 +54,6 @@ object CaseField:
 
 
 trait CaseField[target <: Product, annotation <: StaticAnnotation](val name: Text):
-  type Subject
-  def apply(value: target): Subject
+  type Topic
+  def apply(value: target): Topic
   def annotation: annotation

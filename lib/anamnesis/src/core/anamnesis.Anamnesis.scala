@@ -39,7 +39,7 @@ import prepositional.*
 object Anamnesis:
   trait Dereferenceable:
     type Format <: Database
-    type Subject
+    type Topic
 
   opaque type Ref <: Dereferenceable = Int & Dereferenceable
   opaque type Reference[+entity <: Entity] = Any

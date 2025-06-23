@@ -50,23 +50,23 @@ object Relative:
 
   @targetName("Self")
   object ? extends Ascent(0):
-    type Subject = Zero
+    type Topic = Zero
     type Constraint = 0
 
-  def of[subject <: Tuple, constraint <: Int](ascent: Int, descent: Text*)
-  : Relative of subject under constraint =
+  def of[topic <: Tuple, constraint <: Int](ascent: Int, descent: Text*)
+  : Relative of topic under constraint =
 
       new Relative(ascent, descent.to(List)):
-        type Subject = subject
+        type Topic = topic
         type Constraint = constraint
 
 
-  def apply[system, subject <: Tuple, constraint <: Int](ascent: Int, descent: Text*)
-  : Relative of subject on system under constraint =
+  def apply[system, topic <: Tuple, constraint <: Int](ascent: Int, descent: Text*)
+  : Relative of topic on system under constraint =
 
       new Relative(ascent, descent.to(List)):
         type Platform = system
-        type Subject = subject
+        type Topic = topic
         type Constraint = constraint
 
 
@@ -85,9 +85,8 @@ object Relative:
 
             Relative(ascent, descent*)
 
-  inline given [subject, ascent <: Int, system]
-         =>  Conversion
-              [Relative of subject under ascent, Relative of subject under ascent on system] =
+  inline given [topic, ascent <: Int, system]
+         =>  Conversion[Relative of topic under ascent, Relative of topic under ascent on system] =
     conversion(_.on[system])
 
   given encodable: [system: System] => Relative on system is Encodable in Text =
@@ -123,7 +122,7 @@ object Relative:
 
 case class Relative(ascent: Int, descent: List[Text] = Nil):
   type Platform
-  type Subject <: Tuple
+  type Topic <: Tuple
   type Constraint <: Int
 
   def delta: Int = descent.length - ascent
@@ -131,8 +130,8 @@ case class Relative(ascent: Int, descent: List[Text] = Nil):
   transparent inline def rename(lambda: (prior: Text) ?=> Text): Optional[Relative] =
     descent.prim.let(parent / lambda(using _))
 
-  private inline def check[subject, system](path: List[Text]): Unit =
-    inline !![subject] match
+  private inline def check[topic, system](path: List[Text]): Unit =
+    inline !![topic] match
       case _: (head *: tail) =>
         infer[head is Admissible on system].check(path.head)
         check[tail, system](path.tail).unit
@@ -143,33 +142,33 @@ case class Relative(ascent: Int, descent: List[Text] = Nil):
       case _ =>
         path.each(infer[Text is Admissible on system].check(_))
 
-  inline def on[system]: Relative of Subject under Constraint on system =
-    check[Subject, system](descent.to(List))
-    this.asInstanceOf[Relative of Subject under Constraint on system]
+  inline def on[system]: Relative of Topic under Constraint on system =
+    check[Topic, system](descent.to(List))
+    this.asInstanceOf[Relative of Topic under Constraint on system]
 
-  transparent inline def parent = inline !![Subject] match
+  transparent inline def parent = inline !![Topic] match
     case head *: tail => Relative[Platform, tail.type, Constraint](ascent, descent.tail*)
     case EmptyTuple   => Relative[Platform, Zero, S[Constraint]](ascent)
 
     case _ =>
-      if descent.isEmpty then Relative[Platform, Subject, S[Constraint]](ascent + 1)
-      else Relative[Platform, Subject, Constraint](ascent, descent.tail*)
+      if descent.isEmpty then Relative[Platform, Topic, S[Constraint]](ascent + 1)
+      else Relative[Platform, Topic, Constraint](ascent, descent.tail*)
 
 
-  transparent inline def / (child: Any): Relative of (child.type *: Subject) under Constraint =
+  transparent inline def / (child: Any): Relative of (child.type *: Topic) under Constraint =
     summonFrom:
       case given (child.type is Admissible on Platform) =>
-        Relative[Platform, child.type *: Subject, Constraint]
+        Relative[Platform, child.type *: Topic, Constraint]
           (ascent, infer[child.type is Navigable].follow(child) +: descent*)
 
       case _ =>
-        Relative.of[child.type *: Subject, Constraint]
+        Relative.of[child.type *: Topic, Constraint]
           (ascent, infer[child.type is Navigable].follow(child) :: descent*)
 
 
 // case class Relative(ascent: Int, descent: Text*):
 //   type Platform
-//   type Subject <: Tuple
+//   type Topic <: Tuple
 //   type Constraint <: Int
 
 // object Relative:

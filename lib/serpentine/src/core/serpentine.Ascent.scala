@@ -38,7 +38,7 @@ import prepositional.*
 import proscenium.*
 
 class Ascent(val ascent0: Int) extends Relative(ascent0):
-  type Subject = EmptyTuple
+  type Topic = EmptyTuple
 
   @targetName("child")
   def / (up: ^.type): Ascent under S[Constraint] =

@@ -134,6 +134,6 @@ object Prefixable:
 
 trait Prefixable:
   type Self <: Label
-  type Subject
-  def encode(value: Subject): Text
+  type Topic
+  def encode(value: Topic): Text
   inline def key: Text = valueOf[Self]

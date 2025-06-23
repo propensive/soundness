@@ -282,8 +282,8 @@ object Http:
     object headers extends Dynamic:
       def selectDynamic(name: Label)
            (using prefixable: name.type is Prefixable,
-                  decoder:    prefixable.Subject is Decodable in Text)
-      : List[prefixable.Subject] =
+                  decoder:    prefixable.Topic is Decodable in Text)
+      : List[prefixable.Topic] =
 
           val name2 = name.tt.uncamel.kebab.lower
           textHeaders.filter(_.key.lower == name2).map(_.value.decode)
@@ -420,8 +420,8 @@ object Http:
     object headers extends Dynamic:
       def selectDynamic(name: Label)
            (using prefixable: name.type is Prefixable,
-                  decoder:    prefixable.Subject is Decodable in Text)
-      : List[prefixable.Subject] =
+                  decoder:    prefixable.Topic is Decodable in Text)
+      : List[prefixable.Topic] =
 
           val name2 = name.tt.uncamel.kebab.lower
           textHeaders.filter(_.key.lower == name2).map(_.value.decode)

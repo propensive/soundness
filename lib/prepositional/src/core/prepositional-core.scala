@@ -39,7 +39,7 @@ infix type by [refined <: { type Operand }, operand] = refined { type Operand = 
 infix type from [refined <: { type Origin }, origin] = refined { type Origin = origin }
 infix type in [refined, format] = refined { type Format = format }
 infix type into [refined <: { type Result }, result] = refined { type Result = result }
-infix type of [refined <: { type Subject }, subject] = refined { type Subject = subject }
+infix type of [refined <: { type Topic }, topic] = refined { type Topic = topic }
 infix type on [refined <: { type Platform }, platform] = refined { type Platform = platform }
 infix type onto [refined <: { type Target }, target] = refined { type Target = target }
 infix type over [refined <: { type Carrier }, carrier] = refined { type Carrier = carrier }
