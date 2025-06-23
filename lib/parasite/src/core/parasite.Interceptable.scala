@@ -39,7 +39,5 @@ import java.lang.ref as jlr
 
 import prepositional.*
 
-trait Interceptable extends Typeclass:
-  type Target
-
+trait Interceptable extends Typeclass, Targetable:
   def register(target: Target, action: Self => Unit): () => Unit

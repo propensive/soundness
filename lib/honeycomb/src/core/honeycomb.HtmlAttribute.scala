@@ -42,9 +42,8 @@ import proscenium.*
 import spectacular.*
 import vacuous.*
 
-trait HtmlAttribute[-value]:
+trait HtmlAttribute[-value] extends Targetable:
   type Self <: Label
-  type Target
   def convert(value: value): Optional[Text | HtmlAttribute.NotShown.type]
   def rename: Optional[Text] = Unset
 

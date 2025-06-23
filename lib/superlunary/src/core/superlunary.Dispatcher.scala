@@ -55,10 +55,9 @@ import interfaces.paths.pathOnLinux
 import scala.quoted.*
 
 
-trait Dispatcher(using classloader: Classloader):
+trait Dispatcher(using classloader: Classloader) extends Targetable:
   type Result[output]
   type Format
-  type Target
 
   protected val scalac: Scalac[?]
   protected def invoke[output](dispatch: Dispatch[output, Format, Target]): Result[output]

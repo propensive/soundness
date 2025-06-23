@@ -60,8 +60,7 @@ object Fetchable:
       def text(endpoint: DomainSocketEndpoint): Text = endpoint.path
       def hostname(endpoint: DomainSocketEndpoint): Hostname = Localhost
 
-trait Fetchable extends Typeclass:
-  type Target
+trait Fetchable extends Typeclass, Targetable:
   def target(value: Self): Target
   def text(value: Self): Text
   def hostname(value: Self): Hostname

@@ -116,10 +116,9 @@ object Path:
     : path is Quotient of Text over (Relative on system) | Text
 
 
-case class Path(root: Text, descent: Text*):
+case class Path(root: Text, descent: Text*) extends Constrained:
   type Platform
   type Topic <: Tuple
-  type Constraint
 
   def name: Text = descent.prim.or(root)
   def empty: Boolean = descent.isEmpty
