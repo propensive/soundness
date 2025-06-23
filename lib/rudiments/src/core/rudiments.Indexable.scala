@@ -101,8 +101,7 @@ object Indexable:
       def access(value: Self, index: key): value = value(index)
 
 
-trait Indexable extends Typeclass:
-  type Operand
+trait Indexable extends Typeclass, Operable:
   type Result
 
   def contains(value: Self, index: Operand): Boolean

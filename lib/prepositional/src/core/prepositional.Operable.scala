@@ -30,11 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anamnesis
+package prepositional
 
-import prepositional.*
-
-trait Entity extends Operable:
-  def ref: Operand
-
-  def reference: Reference[this.type] = ref.asInstanceOf[Reference[this.type]]
+trait Operable:
+  type Operand

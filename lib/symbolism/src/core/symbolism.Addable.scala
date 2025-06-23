@@ -75,9 +75,8 @@ object Addable:
 
     def add(left: left, right: right): left | right = concatenable.concat(left, right)
 
-trait Addable extends Typeclass:
+trait Addable extends Typeclass, Operable:
   type Augend = Self
   type Addend = Operand
   type Result
-  type Operand
   def add(augend: Augend, addend: Addend): Result

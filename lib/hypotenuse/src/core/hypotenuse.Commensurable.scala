@@ -89,9 +89,7 @@ object Commensurable:
         else inline if strict then left.lt(right) else left.le(right)
 
 
-trait Commensurable extends Typeclass:
-  type Operand
-
+trait Commensurable extends Typeclass, Operable:
   inline def compare
               (inline left:        Self,
                inline right:       Operand,

@@ -36,7 +36,5 @@ import language.experimental.pureFunctions
 
 import prepositional.*
 
-trait Taggable extends Typeclass:
-  type Operand
-
+trait Taggable extends Typeclass, Operable:
   extension (value: Self) def tag(tag: Operand): Self
