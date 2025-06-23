@@ -97,7 +97,7 @@ package harnesses:
     override def capture[value: Decomposable](name: Text, value: value): value =
       delegate.map(_.capture[value](name, value)).getOrElse(value)
 
-package failureAutopsies:
+package testAutopsies:
   given contrastExpectations: Autopsy:
     type Analyse = true
 

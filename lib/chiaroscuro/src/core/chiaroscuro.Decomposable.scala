@@ -99,13 +99,18 @@ object Decomposable extends Decomposable2:
 
     given decomposition: Decomposition is Decomposable.Foundation = identity(_)
 
-    given sequence: [element: Decomposable, collection <: Iterable[element]]
+    inline given sequence: [element: Decomposable, collection <: Iterable[element]]
           => collection is Decomposable.Foundation =
       collection =>
-        Decomposition.Sequence(collection.map(_.decompose).to(List), collection)
+        Decomposition.Sequence
+         (shortName[collection], collection.map(_.decompose).to(List), collection)
 
-  private val pattern = r"(.*\.)*"
-  private inline def shortName[entity]: Text = typeName[entity].sub(pattern, t"")
+  private inline def shortName[entity]: Text = rewrite(typeName[entity])
+
+  private def rewrite(text: Text): Text = text match
+    case r"(.*\.)*$basic([^\]]*)(\[.*\])?" => basic
+    case other                             => other
+
 
   object Derivation extends Derivable[Decomposable]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decomposable =

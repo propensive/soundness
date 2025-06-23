@@ -83,20 +83,20 @@ object Contrastable extends Contrastable2:
       case (Decomposition.Primitive(_, left, lRef), Decomposition.Primitive(_, right, rRef)) =>
         Juxtaposition.Different(left, right)
 
-      case (Decomposition.Sequence(left, _), Decomposition.Sequence(right, _)) =>
-        comparison(IArray.from(left), IArray.from(right), t"", t"")
+      case (Decomposition.Sequence(name, left, _), Decomposition.Sequence(rightName, right, _)) =>
+        comparison(IArray.from(left), IArray.from(right), name, rightName)
 
-      case (Decomposition.Product(_, left, _), Decomposition.Product(_, right, _)) =>
+      case (Decomposition.Product(leftName, left, _), Decomposition.Product(rightName, right, _)) =>
         Juxtaposition.Collation
          (left.keys.to(List).map: key =>
             key -> juxtaposition(left(key), right(key)),
-          t"",
-          t"")
+          leftName,
+          rightName)
 
       case (left, right) =>
         def kind(value: Decomposition): Text = value match
           case Decomposition.Primitive(_, _, _) => t"<primitive>"
-          case Decomposition.Sequence(_, _)     => t"<sequence>"
+          case Decomposition.Sequence(_, _, _)  => t"<sequence>"
           case Decomposition.Product(_, _, _)   => t"<product>"
           case Decomposition.Sum(_, _, _)       => t"<sum>"
 

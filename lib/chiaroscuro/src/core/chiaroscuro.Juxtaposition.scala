@@ -67,7 +67,7 @@ enum Juxtaposition:
 
 object Juxtaposition:
   given (measurable: Text is Measurable) => Juxtaposition is Teletypeable =
-    case Juxtaposition.Collation(comparison, _, _) =>
+    case Juxtaposition.Collation(comparison, name, _) =>
       import tableStyles.default
       import webColors.{Gray, White}
 
@@ -143,10 +143,10 @@ object Juxtaposition:
               Row(line(t"▪"), e"${rgb"#00aa00"}($left)", e"${rgb"#bb0000"}($right)")
 
             case Collation(comparison, left, right) =>
-              Row(line(t"■"), e"$left", e"$right")
+              Row(line(t"■"), e"${rgb"#667799"}($left)", e"${rgb"#667799"}($right)")
 
         val table = Table[Row]
-                     (Column(e"")(_.treeLine),
+                     (Column(e"$name")(_.treeLine),
                       Column(e"Expected", textAlign = TextAlignment.Left)(_.left),
                       Column(e"Observed")(_.right))
 
