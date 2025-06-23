@@ -254,7 +254,6 @@ object test extends ScalaModule {
 
     // Compiling, not passing
     baroque.test, // failing
-    cellulose.test, // failing
     chiaroscuro.test, // failing
     enigmatic.test,  // failing
     mandible.test,  // failing
@@ -269,6 +268,7 @@ object test extends ScalaModule {
     // Not compiling
     // austronesian
     // bitumen
+    // cellulose
     // coaxial
     // cosmopolite
     // embarcadero
