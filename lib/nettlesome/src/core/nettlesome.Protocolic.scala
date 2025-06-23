@@ -34,8 +34,7 @@ package nettlesome
 
 import prepositional.*
 
-trait Protocolic extends Typeclass:
-  type Transport
+trait Protocolic extends Typeclass, Transportive:
   type Request
   type Response
   type Server
