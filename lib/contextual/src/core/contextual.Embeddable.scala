@@ -34,6 +34,5 @@ package contextual
 
 import prepositional.*
 
-trait Embeddable extends Typeclass, Operable:
-  type Form
+trait Embeddable extends Typeclass, Operable, Formal:
   def embed(value: Self): Operand

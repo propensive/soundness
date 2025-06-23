@@ -55,10 +55,8 @@ import interfaces.paths.pathOnLinux
 import scala.quoted.*
 
 
-trait Dispatcher(using classloader: Classloader) extends Targetable:
+trait Dispatcher(using classloader: Classloader) extends Targetable, Formal:
   type Result[output]
-  type Form
-
   protected val scalac: Scalac[?]
   protected def invoke[output](dispatch: Dispatch[output, Form, Target]): Result[output]
   private var cache: Map[Codepoint, (Target, Form => Form)] = Map()

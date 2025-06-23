@@ -37,9 +37,7 @@ import prepositional.*
 
 import language.experimental.pureFunctions
 
-trait Inscribable extends Typeclass:
-  type Form
-
+trait Inscribable extends Typeclass, Formal:
   def formatter(message: Self, level: Level, realm: Realm, timestamp: Long): Form
 
   extension (message: Self) def format(level: Level, realm: Realm, timestamp: Long): Form =

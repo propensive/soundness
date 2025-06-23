@@ -45,9 +45,8 @@ object Encodable:
   given text: Text is Encodable in Text = identity(_)
   given char: Char is Encodable in Text = _.toString.tt
 
-trait Encodable extends Typeclass:
+trait Encodable extends Typeclass, Formal:
   private inline def encodable: this.type = this
-  type Form
   def encoded(value: Self): Form
 
   extension (value: Self) def encode: Form = encoded(value)

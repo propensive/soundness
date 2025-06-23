@@ -46,8 +46,7 @@ import java.awt.image as jai
 import java.awt as ja
 import javax.imageio as ji
 
-case class Raster(private[hallucination] val image: jai.BufferedImage):
-  type Form
+case class Raster(private[hallucination] val image: jai.BufferedImage) extends Formal:
   def width: Int = image.getWidth
   def height: Int = image.getHeight
 

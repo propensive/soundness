@@ -30,11 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package polyvinyl
+package prepositional
 
-import prepositional.*
-
-trait Record extends Selectable, Formal:
-  val data: Form
-  def access: String => Form => Any
-  def selectDynamic(name: String): Any = access(name)(data)
+trait Formal:
+  type Form
