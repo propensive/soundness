@@ -43,7 +43,7 @@ object Navigable:
   given label: [string <: Label] => string is Navigable = _.tt
   given int: [int <: Int] => int is Navigable = _.toString.tt
   given text: [text <: Text] => text is Navigable = identity(_)
-  given name: [platform, name <: Name[platform]] => name is Navigable = identity(_)
+  given name: [plane, name <: Name[plane]] => name is Navigable = identity(_)
   given uuid: [uuid <: Uuid] => uuid is Navigable = _.text
 
 trait Navigable extends Typeclass:

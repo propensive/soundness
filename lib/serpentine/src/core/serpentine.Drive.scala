@@ -43,7 +43,7 @@ object Drive:
   given Drive is Submissible on Windows = _ => ()
 
 class Drive(val letter: Char) extends Root(t"$letter:\\"):
-  type Platform = Windows
+  type Plane = Windows
 
   override def equals(that: Any): Boolean = that.absolve match
     case drive: Drive => letter == drive.letter

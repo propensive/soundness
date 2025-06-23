@@ -40,6 +40,6 @@ object Submissible:
   given macOs: %.type is Submissible on MacOs = _ => ()
 
 trait Submissible extends Typeclass:
-  type Platform
+  type Plane
 
   def check(name: Text): Unit

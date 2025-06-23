@@ -48,7 +48,7 @@ object Classloader:
   inline def apply[template <: AnyKind]: Classloader = ClassRef[template].classloader
 
 class Classloader(val java: ClassLoader):
-  type Platform = Classpath
+  type Plane = Classpath
 
   def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
 

@@ -65,7 +65,7 @@ object Relative:
   : Relative of topic on system under constraint =
 
       new Relative(ascent, descent.to(List)):
-        type Platform = system
+        type Plane = system
         type Topic = topic
         type Constraint = constraint
 
@@ -121,7 +121,7 @@ object Relative:
 
 
 case class Relative(ascent: Int, descent: List[Text] = Nil):
-  type Platform
+  type Plane
   type Topic <: Tuple
   type Constraint <: Int
 
@@ -147,18 +147,18 @@ case class Relative(ascent: Int, descent: List[Text] = Nil):
     this.asInstanceOf[Relative of Topic under Constraint on system]
 
   transparent inline def parent = inline !![Topic] match
-    case head *: tail => Relative[Platform, tail.type, Constraint](ascent, descent.tail*)
-    case EmptyTuple   => Relative[Platform, Zero, S[Constraint]](ascent)
+    case head *: tail => Relative[Plane, tail.type, Constraint](ascent, descent.tail*)
+    case EmptyTuple   => Relative[Plane, Zero, S[Constraint]](ascent)
 
     case _ =>
-      if descent.isEmpty then Relative[Platform, Topic, S[Constraint]](ascent + 1)
-      else Relative[Platform, Topic, Constraint](ascent, descent.tail*)
+      if descent.isEmpty then Relative[Plane, Topic, S[Constraint]](ascent + 1)
+      else Relative[Plane, Topic, Constraint](ascent, descent.tail*)
 
 
   transparent inline def / (child: Any): Relative of (child.type *: Topic) under Constraint =
     summonFrom:
-      case given (child.type is Admissible on Platform) =>
-        Relative[Platform, child.type *: Topic, Constraint]
+      case given (child.type is Admissible on Plane) =>
+        Relative[Plane, child.type *: Topic, Constraint]
           (ascent, infer[child.type is Navigable].follow(child) +: descent*)
 
       case _ =>
@@ -167,7 +167,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil):
 
 
 // case class Relative(ascent: Int, descent: Text*):
-//   type Platform
+//   type Plane
 //   type Topic <: Tuple
 //   type Constraint <: Int
 

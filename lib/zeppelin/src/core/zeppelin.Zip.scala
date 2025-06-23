@@ -64,7 +64,7 @@ object Zip:
   given submissible: %.type is Submissible on Zip = _ => ()
 
   class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t""):
-    type Platform = Zip
+    type Plane = Zip
 
   given system: Zip is System:
     type UniqueRoot = false
@@ -74,7 +74,7 @@ object Zip:
     val parent: Text = t".."
 
   given radical: %.type is Radical:
-    type Platform = Zip
+    type Plane = Zip
 
     def length(text: Text): Int = 0
     def decode(text: Text): %.type = %

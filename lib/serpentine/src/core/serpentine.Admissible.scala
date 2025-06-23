@@ -43,7 +43,7 @@ import rudiments.*
 object Admissible:
   def unchecked[child, system]: child is Admissible on system = new Admissible:
     type Self = child
-    type Platform = system
+    type Plane = system
     def check(name: Text): Unit = ()
 
   inline def apply[self, system](fn: Text => Unit): self is Admissible on system = fn(_)
@@ -62,6 +62,6 @@ object Admissible:
     unchecked[uuid, system]
 
 trait Admissible extends Typeclass:
-  type Platform
+  type Plane
 
   def check(name: Text): Unit

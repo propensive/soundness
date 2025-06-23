@@ -40,7 +40,7 @@ import rudiments.*
 
 object Radical:
   given drive: Tactic[PathError] => Drive is Radical:
-    type Platform = Windows
+    type Plane = Windows
 
     def decode(text: Text): Drive =
       if text.length >= 1 then Drive(text.s.charAt(0))
@@ -50,7 +50,7 @@ object Radical:
     def encode(drive: Drive): Text = t"${drive.letter}:\\"
 
   given linux: Tactic[PathError] => %.type is Radical:
-    type Platform = Linux
+    type Plane = Linux
 
     def length(text: Text): Int = 1
 
@@ -60,7 +60,7 @@ object Radical:
     def encode(root: %.type): Text = t"/"
 
   given macOs: Tactic[PathError] => %.type is Radical:
-    type Platform = MacOs
+    type Plane = MacOs
 
     def length(text: Text): Int = 1
 
@@ -70,7 +70,7 @@ object Radical:
     def encode(root: %.type): Text = t"/"
 
   given local: Tactic[PathError] => (%.type | Drive) is Radical:
-    type Platform = Local
+    type Plane = Local
 
     def length(text: Text): 1 | 3 =
       if text.starts(t"/") then 1 else if text.s(1) == ':' && text.s(2) == '\\' then 3
@@ -86,7 +86,7 @@ object Radical:
       case %             => t"/"
 
 trait Radical extends Typeclass:
-  type Platform
+  type Plane
   def decode(text: Text): Self
   def length(text: Text): Int
   def encode(self: Self): Text

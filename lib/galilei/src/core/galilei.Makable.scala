@@ -52,33 +52,33 @@ import java.nio.channels as jnc
 import language.experimental.pureFunctions
 
 object Makable:
-  given [platform: System]
-  =>   (createNonexistentParents: CreateNonexistentParents on platform,
-        overwritePreexisting:     OverwritePreexisting on platform,
+  given [plane: System]
+  =>   (createNonexistentParents: CreateNonexistentParents on plane,
+        overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError])
-  =>    Directory is Makable on platform into (Path on platform) =
+  =>    Directory is Makable on plane into (Path on plane) =
     new Makable:
       type Self = Directory
-      type Result = Path on Platform
-      type Platform = platform
+      type Result = Path on Plane
+      type Plane = plane
 
-      def make(path: Path on Platform): Path on Platform =
+      def make(path: Path on Plane): Path on Plane =
         createNonexistentParents(path):
           overwritePreexisting(path):
             jnf.Files.createDirectory(jnf.Path.of(path.encode.s).nn)
             path
 
-  given socket: [platform <: Posix: System]
-  =>   (createNonexistentParents: CreateNonexistentParents on platform,
-        overwritePreexisting:     OverwritePreexisting on platform,
+  given socket: [plane <: Posix: System]
+  =>   (createNonexistentParents: CreateNonexistentParents on plane,
+        overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError])
   =>    Socket is Makable into Socket =
     new Makable:
-      type Platform = platform
+      type Plane = plane
       type Self = Socket
       type Result = Socket
 
-      def make(path: Path on Platform): Result =
+      def make(path: Path on Plane): Result =
         createNonexistentParents(path):
           overwritePreexisting(path):
             val address = java.net.UnixDomainSocketAddress.of(path.javaPath).nn
@@ -86,34 +86,34 @@ object Makable:
             channel.bind(address)
             Socket(channel)
 
-  given file: [platform: System]
-  =>   (createNonexistentParents: CreateNonexistentParents on platform,
-        overwritePreexisting:     OverwritePreexisting on platform,
+  given file: [plane: System]
+  =>   (createNonexistentParents: CreateNonexistentParents on plane,
+        overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError])
-  =>    File is Makable on platform into (Path on platform) =
+  =>    File is Makable on plane into (Path on plane) =
     new Makable:
-      type Platform = platform
+      type Plane = plane
       type Self = File
-      type Result = Path on Platform
+      type Result = Path on Plane
 
-      def make(path: Path on Platform): Path on Platform = path.also:
+      def make(path: Path on Plane): Path on Plane = path.also:
         createNonexistentParents(path):
           overwritePreexisting(path):
             jnf.Files.createFile(path.javaPath)
 
-  given fifo: [platform: System]
-  =>   (createNonexistentParents: CreateNonexistentParents on platform,
-        overwritePreexisting:     OverwritePreexisting on platform,
+  given fifo: [plane: System]
+  =>   (createNonexistentParents: CreateNonexistentParents on plane,
+        overwritePreexisting:     OverwritePreexisting on plane,
         working:                  WorkingDirectory,
         tactic:                   Tactic[IoError],
         loggable:                 ExecEvent is Loggable)
-  =>    Fifo is Makable into (Path on platform) =
+  =>    Fifo is Makable into (Path on plane) =
     new Makable:
       type Self = Fifo
-      type Result = Path on Platform
-      type Platform = platform
+      type Result = Path on Plane
+      type Plane = plane
 
-      def make(path: Path on Platform): Path on Platform = path.also:
+      def make(path: Path on Plane): Path on Plane = path.also:
         createNonexistentParents(path):
           overwritePreexisting(path):
             mitigate:
@@ -128,5 +128,5 @@ object Makable:
                     raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
 
 trait Makable extends Typeclass, Resultant:
-  type Platform
-  def make(path: Path on Platform): Result
+  type Plane
+  def make(path: Path on Plane): Result

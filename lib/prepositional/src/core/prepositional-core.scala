@@ -40,7 +40,7 @@ infix type from [refined <: { type Origin }, origin] = refined { type Origin = o
 infix type in [refined, form] = refined { type Form = form }
 infix type into [refined <: { type Result }, result] = refined { type Result = result }
 infix type of [refined <: { type Topic }, topic] = refined { type Topic = topic }
-infix type on [refined <: { type Platform }, platform] = refined { type Platform = platform }
+infix type on [refined <: { type Plane }, plane] = refined { type Plane = plane }
 infix type onto [refined <: { type Target }, target] = refined { type Target = target }
 infix type over [refined <: { type Transport }, transport] = refined { type Transport = transport }
 infix type against [refined <: { type Contrast }, contrast] = refined { type Contrast = contrast }

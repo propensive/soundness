@@ -36,5 +36,5 @@ import prepositional.*
 import serpentine.*
 
 trait OverwritePreexisting:
-  type Platform
-  def apply[ResultType](path: Path on Platform)(operation: => ResultType): ResultType
+  type Plane
+  def apply[ResultType](path: Path on Plane)(operation: => ResultType): ResultType

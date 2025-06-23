@@ -30,11 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package prepositional
 
-import prepositional.*
-import serpentine.*
-
-trait CreateNonexistentParents:
-  type Plane
-  def apply[ResultType](path: Path on Plane)(operation: => ResultType): ResultType
+trait Original:
+  type Origin
