@@ -51,23 +51,23 @@ object Relative:
   @targetName("Self")
   object ? extends Ascent(0):
     type Topic = Zero
-    type Constraint = 0
+    type Limit = 0
 
-  def of[topic <: Tuple, constraint <: Int](ascent: Int, descent: Text*)
-  : Relative of topic under constraint =
+  def of[topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
+  : Relative of topic under limit =
 
       new Relative(ascent, descent.to(List)):
         type Topic = topic
-        type Constraint = constraint
+        type Limit = limit
 
 
-  def apply[system, topic <: Tuple, constraint <: Int](ascent: Int, descent: Text*)
-  : Relative of topic on system under constraint =
+  def apply[system, topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
+  : Relative of topic on system under limit =
 
       new Relative(ascent, descent.to(List)):
         type Plane = system
         type Topic = topic
-        type Constraint = constraint
+        type Limit = limit
 
 
   private def conversion[from, to](fn: from => to) =
@@ -120,9 +120,9 @@ object Relative:
   : relative is Quotient of Text over (Relative on system) | Text
 
 
-case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topical, Constrained:
+case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topical, Limited:
   type Topic <: Tuple
-  type Constraint <: Int
+  type Limit <: Int
 
   def delta: Int = descent.length - ascent
 
@@ -141,34 +141,34 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
       case _ =>
         path.each(infer[Text is Admissible on system].check(_))
 
-  inline def on[system]: Relative of Topic under Constraint on system =
+  inline def on[system]: Relative of Topic under Limit on system =
     check[Topic, system](descent.to(List))
-    this.asInstanceOf[Relative of Topic under Constraint on system]
+    this.asInstanceOf[Relative of Topic under Limit on system]
 
   transparent inline def parent = inline !![Topic] match
-    case head *: tail => Relative[Plane, tail.type, Constraint](ascent, descent.tail*)
-    case EmptyTuple   => Relative[Plane, Zero, S[Constraint]](ascent)
+    case head *: tail => Relative[Plane, tail.type, Limit](ascent, descent.tail*)
+    case EmptyTuple   => Relative[Plane, Zero, S[Limit]](ascent)
 
     case _ =>
-      if descent.isEmpty then Relative[Plane, Topic, S[Constraint]](ascent + 1)
-      else Relative[Plane, Topic, Constraint](ascent, descent.tail*)
+      if descent.isEmpty then Relative[Plane, Topic, S[Limit]](ascent + 1)
+      else Relative[Plane, Topic, Limit](ascent, descent.tail*)
 
 
-  transparent inline def / (child: Any): Relative of (child.type *: Topic) under Constraint =
+  transparent inline def / (child: Any): Relative of (child.type *: Topic) under Limit =
     summonFrom:
       case given (child.type is Admissible on Plane) =>
-        Relative[Plane, child.type *: Topic, Constraint]
+        Relative[Plane, child.type *: Topic, Limit]
           (ascent, infer[child.type is Navigable].follow(child) +: descent*)
 
       case _ =>
-        Relative.of[child.type *: Topic, Constraint]
+        Relative.of[child.type *: Topic, Limit]
           (ascent, infer[child.type is Navigable].follow(child) :: descent*)
 
 
 // case class Relative(ascent: Int, descent: Text*):
 //   type Plane
 //   type Topic <: Tuple
-//   type Constraint <: Int
+//   type Limit <: Int
 
 // object Relative:
 

@@ -81,8 +81,8 @@ object Nomenclature2:
     import quotes.reflect.*
 
     Expr.summon[system is Nominative] match
-      case Some('{ type constraint; $nominative: (Nominative { type Constraint = constraint }) }) =>
-        val checks = decompose(TypeRepr.of[constraint]).to(List).map(_.asType).foldLeft('{()}):
+      case Some('{ type limit; $nominative: (Nominative { type Limit = limit }) }) =>
+        val checks = decompose(TypeRepr.of[limit]).to(List).map(_.asType).foldLeft('{()}):
           case (expr, '[type param <: String; type rule <: Check[param]; rule]) =>
             Nomenclature3.staticCompanion[rule] match
               case '{$rule: Rule} =>
@@ -120,10 +120,10 @@ object Nomenclature2:
     val name: Text = constant[name].tt
 
     Expr.summon[plane is Nominative] match
-      case Some('{ type constraint
-                   type nominative <: Nominative { type Constraint = constraint }
+      case Some('{ type limit
+                   type nominative <: Nominative { type Limit = limit }
                    $value: nominative }) =>
-        decompose(TypeRepr.of[constraint]).to(List).each: repr =>
+        decompose(TypeRepr.of[limit]).to(List).each: repr =>
           val text = repr.asMatchable match
             case AppliedType(_, List(param)) => param.asMatchable match
               case ConstantType(StringConstant(text)) => text.tt

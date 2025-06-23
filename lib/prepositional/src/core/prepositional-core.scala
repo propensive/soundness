@@ -44,6 +44,4 @@ infix type on [refined <: { type Plane }, plane] = refined { type Plane = plane 
 infix type onto [refined <: { type Target }, target] = refined { type Target = target }
 infix type over [refined <: { type Transport }, transport] = refined { type Transport = transport }
 infix type against [refined <: { type Contrast }, contrast] = refined { type Contrast = contrast }
-
-infix type under [refined <: { type Constraint }, constraint] =
-  refined { type Constraint = constraint }
+infix type under [refined <: { type Limit }, limit] = refined { type Limit = limit }
