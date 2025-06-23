@@ -101,13 +101,13 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
       test(m"Check that a non-encoding encoding does have a `decoder` method"):
         import textSanitizers.skip
-        demilitarize(enc"ISO-2022-CN".decoder)
+        demilitarize(enc"ISO-2022-CN".decoder).map(_.message)
       .assert(_ == List())
 
       test(m"Check that a non-encoding encoding has no encoder method"):
-        demilitarize(enc"ISO-2022-CN".encoder)
+        demilitarize(enc"ISO-2022-CN".encoder).map(_.message)
       .assert(_.length == 1)
 
       test(m"Check that an encoding which can encode has an encoder method"):
-        demilitarize(enc"ISO-8859-1".encoder)
+        demilitarize(enc"ISO-8859-1".encoder).map(_.message)
       .assert(_ == List())

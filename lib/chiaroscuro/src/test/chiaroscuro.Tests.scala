@@ -44,44 +44,67 @@ import Decomposition.*
 object Tests extends Suite(m"Chiaroscuro tests"):
   def run(): Unit =
     suite(m"Decomposition tests"):
-      // test(m"Decompose an unknown type"):
-      //   24.decompose
+      test(m"Decompose an unknown type"):
+        24.decompose
 
-      // . assert(_ == Decomposition.Primitive(t"Int", t"24", 24))
+      . assert(_ == Primitive(t"Int", t"24", 24))
 
-      // test(m"Decompose a known type"):
-      //   t"hello".decompose
+      test(m"Decompose a known type"):
+        t"hello".decompose
 
-      // . assert(_ == Decomposition.Primitive(t"Text", t"hello", t"hello"))
-
-
-      // test(m"Decompose a person"):
-      //   Person(t"Bill", 29).decompose
-
-      // . assert(_ == Decomposition.Product
-      //                (t"Person",
-      //                 Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"),
-      //                     t"age"  -> Primitive(t"Int", t"29", 29)),
-      //                 Person(t"Bill", 29)))
-
-      // test(m"Decompose a sequence"):
-      //   List('a', 'b').decompose
-
-      // . assert:
-      //     _ == Sequence(List(Primitive(t"Char", t"a", 'a'),
-      //                        Primitive(t"Char", t"b", 'b')), List('a', 'b'))
+      . assert(_ == Primitive(t"Text", t"hello", t"hello"))
 
 
-      Decomposable.derived[Optional[Int]]
+      test(m"Decompose a person"):
+        Person(t"Bill", 29).decompose
 
-      // test(m"Decompose an optional value"):
-      //   val x: Optional[Int] = 12
-      //   x.decompose
+      . assert(_ == Product
+                     (t"Person",
+                      Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"),
+                          t"age"  -> Primitive(t"Int", t"29", 29)),
+                      Person(t"Bill", 29)))
 
-      // . assert(_ == Sum(t"Optional", Primitive(t"Int", t"12", 12), 12))
+      test(m"Decompose an organization"):
+        Organization(t"Acme", Person(t"Bill", 29), Nil).decompose
 
-      // test(m"Decompose an unset optional"):
-      //   val x: Optional[Int] = Unset
-      //   x.decompose
+      . assert:
+          _ == Product
+                (t"Organization",
+                 Map(t"name"  -> Primitive(t"Text", t"Acme", t"Acme"),
+                     t"ceo"   -> Product
+                                  (t"Person",
+                                   Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"),
+                                       t"age"  -> Primitive(t"Int", t"29", 29)),
+                                   Person(t"Bill", 29)),
+                     t"staff" -> Sequence(Nil, Nil)),
+                 Organization(t"Acme", Person(t"Bill", 29), Nil))
 
-      // . assert(_ == Sum(t"Optional", Primitive(t"Unset", t"∅", Unset), Unset))
+      test(m"Decompose a sequence"):
+        List('a', 'b').decompose
+
+      . assert:
+          _ == Sequence(List(Primitive(t"Char", t"a", 'a'),
+                             Primitive(t"Char", t"b", 'b')), List('a', 'b'))
+
+      test(m"Decompose an optional value"):
+        val x: Optional[Int] = 12
+        x.decompose
+
+      . assert(_ == Sum(t"Optional", Primitive(t"Int", t"12", 12), 12))
+
+      test(m"Decompose an unset optional"):
+        val x: Optional[Int] = Unset
+        x.decompose
+
+      . assert(_ == Sum(t"Optional", Primitive(t"Unset", t"∅", Unset), Unset))
+
+      test(m"Decompose a non-showable value"):
+        3.1415926.decompose
+
+      . assert(_ == Primitive(t"Double", t"3.1415926", 3.1415926))
+
+      test(m"Decompose a showable value"):
+        given Decimalizer(3)
+        3.1415926.decompose
+
+      . assert(_ == Primitive(t"Double", t"3.14", 3.1415926))

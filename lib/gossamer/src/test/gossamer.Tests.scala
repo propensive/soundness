@@ -542,6 +542,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       test(m"Check that Text and String are incompatible"):
         demilitarize:
           val x: String = Text("text")
+        . map(_.message)
 
       . assert(!_.isEmpty)
 

@@ -45,11 +45,13 @@ object Tests extends Suite(m"Cardinality tests"):
       test(m"Value is less than lower bound"):
         demilitarize:
           val x: -1.0 ~ 1.0 = -1.01
+        . map(_.message)
       .assert(_.nonEmpty)
 
       test(m"Value is greater than upper bound"):
         demilitarize:
           val x: -1.0 ~ 1.0 = 1.01
+        . map(_.message)
       .assert(_.nonEmpty)
 
       test(m"Doubling a number doubles its range"):

@@ -52,6 +52,35 @@ trait Decomposable extends Typeclass:
   def decomposition(value: Self): Decomposition
 
 object Decomposable:
+  inline given derived: [entity] => entity is Decomposable = summonFrom:
+    case decomposable: (`entity` is Decomposable.Foundation) => decomposable
+
+    case given ProductReflection[`entity`] => Derivation.derived[entity]
+
+    case given SumReflection[`entity`]     => Derivation.split[entity]
+
+    case given (Unset.type <:< `entity`) => inline !![entity] match
+      case _: Optional[inner] =>
+        val decomposable = infer[inner is Decomposable]
+        value =>
+          val inside = value match
+            case Unset => Decomposition.Primitive(t"Unset", t"∅", Unset)
+            case other => decomposable.decomposition(other.asInstanceOf[inner])
+
+          Decomposition.Sum(t"Optional", inside, value)
+
+    case _                                 => summonFrom:
+      case given (`entity` is Showable) =>
+        value => Decomposition.Primitive(shortName[entity], value.show, value)
+
+      case given (`entity` is Encodable in Text) =>
+        value => Decomposition.Primitive(shortName[entity], value.encode, value)
+
+      case _ =>
+        value => Decomposition.Primitive(t"Any", value.toString.tt, value)
+
+    case _ =>
+      value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
   inline def primitive[value](name: Text): value is Decomposable =
     value => Decomposition.Primitive(name, value.toString.tt, value)
@@ -80,27 +109,6 @@ object Decomposable:
 
   private val pattern = r"(.*\.)*"
   private inline def shortName[entity]: Text = typeName[entity].sub(pattern, t"")
-
-  inline given derived: [entity] => entity is Decomposable = summonFrom:
-    case decomposable: (`entity` is Decomposable.Foundation) => decomposable
-    case given (Unset.type <:< `entity`)   => value =>
-      Decomposition.Sum
-       (t"Optional", value.lay(Decomposition.Primitive(t"Unset", t"∅", value))(_.decompose), value)
-
-    case given ProductReflection[`entity`] => Derivation.derived[entity]
-    case given SumReflection[`entity`]     => Derivation.split[entity]
-    case _                                 => summonFrom:
-      case given (`entity` is Showable) =>
-        value => Decomposition.Primitive(shortName[entity], value.show, value)
-
-      case given (`entity` is Encodable in Text) =>
-        value => Decomposition.Primitive(shortName[entity], value.encode, value)
-
-      case _ =>
-        value => Decomposition.Primitive(t"Any", value.toString.tt, value)
-
-    case _ =>
-      value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
   object Derivation extends Derivable[Decomposable]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decomposable =
