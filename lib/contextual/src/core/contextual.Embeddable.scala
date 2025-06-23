@@ -32,8 +32,7 @@
                                                                                                   */
 package contextual
 
-trait Embeddable:
-  type Self
-  type Format
-  type Operand
+import prepositional.*
+
+trait Embeddable extends Typeclass, Operable, Formal:
   def embed(value: Self): Operand

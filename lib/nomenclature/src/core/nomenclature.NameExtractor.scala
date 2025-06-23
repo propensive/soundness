@@ -37,8 +37,8 @@ import proscenium.*
 import scala.quoted.*
 
 class NameExtractor[text <: Label]():
-  inline def apply[platform: Nominative](): Name[platform] =
-    ${Nomenclature2.parse[platform, text]}
+  inline def apply[plane: Nominative](): Name[plane] =
+    ${Nomenclature2.parse[plane, text]}
 
-  inline def unapply[platform](inline scrutinee: Name[platform]): Boolean =
-    ${Nomenclature2.parse2[platform, text]('scrutinee)}
+  inline def unapply[plane](inline scrutinee: Name[plane]): Boolean =
+    ${Nomenclature2.parse2[plane, text]('scrutinee)}

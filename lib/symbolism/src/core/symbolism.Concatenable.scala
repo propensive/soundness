@@ -32,7 +32,7 @@
                                                                                                   */
 package symbolism
 
-trait Concatenable:
-  type Self
-  type Operand
+import prepositional.*
+
+trait Concatenable extends Typeclass, Operable:
   def concat(left: Self, right: Operand): Self | Operand

@@ -37,7 +37,7 @@ import scala.compiletime.*
 import anticipation.*
 
 abstract class Root(name: Text) extends Path(name):
-  type Subject = EmptyTuple
+  type Topic = EmptyTuple
   override def hashCode = name.hashCode
 
   override def equals(any: Any): Boolean = any.asMatchable match

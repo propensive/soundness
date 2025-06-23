@@ -32,6 +32,7 @@
                                                                                                   */
 package polaris
 
+import prepositional.*
 import wisteria.*
 
 object Bufferable extends ProductDerivable[Bufferable]:
@@ -67,7 +68,6 @@ object Bufferable extends ProductDerivable[Bufferable]:
      (contexts { [field] => _.width }.sum,
       (buffer, value) => fields(value) { [field] => field => context.buffer(buffer, field) })
 
-trait Bufferable:
-  type Self
+trait Bufferable extends Typeclass:
   def width: Int
   def buffer(buffer: Buffer, value: Self): Unit

@@ -114,21 +114,21 @@ They are:
 - `from` adds the `Source` type member
 - `in` adds the `Format` type member
 - `into` adds the `Result` type member
-- `of` adds the `Subject` type member
-- `on` adds the `Platform` type member
+- `of` adds the `Topic` type member
+- `on` adds the `Plane` type member
 - `onto` adds the `Target` type member
-- `over` adds the `Carrier` type member
+- `over` adds the `Transport` type member
 - `under` adds the `Constraint` type member
 
 So, for example, a type such as `Fillable by Text on Linux into Data` would correspond to the type,
-`Fillable { type Operand = Text; type Platform = Linux; type Result = Data }`.
+`Fillable { type Operand = Text; type Plane = Linux; type Result = Data }`.
 
-It is important to be clear that Prepositional _does not_ specify how `Operand`, `Platform` and
+It is important to be clear that Prepositional _does not_ specify how `Operand`, `Plane` and
 `Result` should be interpreted. In the `Fillable` example, it is for the definition of `Fillable`
 to specify that.
 
 Prepositional does nothing more than to provide the means of specifying type members with the names
-`Operand`, `Source`, `Format`, `Result`, `Subject`, `Platform`, `Target` and `Carrier`. And by
+`Operand`, `Source`, `Format`, `Result`, `Subject`, `Plane`, `Target` and `Carrier`. And by
 offering convenient syntax, it _suggests_ these type member names as general, convenient and
 reusable. But it takes no responsibility for their meaning beyond their English language semantics.
 
@@ -173,7 +173,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Prepositional?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Prepositional's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -190,7 +190,7 @@ answer to the question, "how can I try Prepositional?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -251,4 +251,3 @@ The logo shows a ball being placed into a box. These objects are often used to e
 
 Prepositional is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

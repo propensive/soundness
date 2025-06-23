@@ -32,8 +32,7 @@
                                                                                                   */
 package anticipation
 
-trait Instantiable:
-  type Self
-  type Source
-  type Domain
-  def apply(source: Source): Self
+import prepositional.*
+
+trait Instantiable extends Typeclass, Domainal, Original:
+  def apply(source: Origin): Self

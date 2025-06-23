@@ -71,20 +71,20 @@ They are:
 - `in` adds the `Format` type member
 - `into` adds the `Result` type member
 - `of` adds the `Subject` type member
-- `on` adds the `Platform` type member
+- `on` adds the `Plane` type member
 - `onto` adds the `Target` type member
 - `over` adds the `Carrier` type member
 - `under` adds the `Constraint` type member
 
 So, for example, a type such as `Fillable by Text on Linux into Data` would correspond to the type,
-`Fillable { type Operand = Text; type Platform = Linux; type Result = Data }`.
+`Fillable { type Operand = Text; type Plane = Linux; type Result = Data }`.
 
-It is important to be clear that Prepositional _does not_ specify how `Operand`, `Platform` and
+It is important to be clear that Prepositional _does not_ specify how `Operand`, `Plane` and
 `Result` should be interpreted. In the `Fillable` example, it is for the definition of `Fillable`
 to specify that.
 
 Prepositional does nothing more than to provide the means of specifying type members with the names
-`Operand`, `Source`, `Format`, `Result`, `Subject`, `Platform`, `Target` and `Carrier`. And by
+`Operand`, `Source`, `Format`, `Result`, `Subject`, `Plane`, `Target` and `Carrier`. And by
 offering convenient syntax, it _suggests_ these type member names as general, convenient and
 reusable. But it takes no responsibility for their meaning beyond their English language semantics.
 

@@ -33,4 +33,4 @@
 package nettlesome
 
 erased trait Port:
-  type Subject <: Int
+  type Topic <: Int

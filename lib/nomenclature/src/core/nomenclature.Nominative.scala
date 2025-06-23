@@ -35,11 +35,9 @@ package nomenclature
 import prepositional.*
 
 object Nominative:
-  def apply[self, constraint](): self is Nominative under constraint =
+  def apply[self, limit](): self is Nominative under limit =
     new Nominative:
       type Self = self
-      type Constraint = constraint
+      type Limit = limit
 
-trait Nominative:
-  type Self
-  type Constraint
+trait Nominative extends Typeclass, Limited

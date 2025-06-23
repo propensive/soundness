@@ -58,7 +58,7 @@ object Aviation2:
                     Long from Long =
       new Abstractable with Instantiable:
         type Self = Aviation2.TaiInstant
-        type Source = Long
+        type Origin = Long
         type Result = Long
         type Domain = Instants
         def apply(long: Long): Aviation2.TaiInstant = long
@@ -78,9 +78,7 @@ object Aviation2:
       def subtract(left: Instant, right: Quantity[units]): Instant =
         left - (right.normalize.value*1000.0).toLong
 
-  trait InstantSubtractable:
-    type Self
-    type Result
+  trait InstantSubtractable extends Typeclass, Resultant:
     def subtract(left: Instant, right: Self): Result
 
   object Instant:
@@ -98,7 +96,7 @@ object Aviation2:
       new Abstractable with Instantiable:
         type Self = Aviation2.Instant
         type Result = Long
-        type Source = Long
+        type Origin = Long
         type Domain = Instants
         def apply(long: Long): Aviation2.Instant = long
         def genericize(instant: Aviation2.Instant): Long = instant

@@ -50,8 +50,7 @@ import javax.net.ssl as jns
 
 import language.dynamics
 
-trait HttpClient:
-  type Target
+trait HttpClient extends Targetable:
   def request(request: Http.Request, target: Target): Http.Response logs HttpEvent
 
 object HttpClient:

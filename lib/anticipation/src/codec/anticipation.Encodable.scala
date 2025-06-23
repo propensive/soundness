@@ -45,17 +45,15 @@ object Encodable:
   given text: Text is Encodable in Text = identity(_)
   given char: Char is Encodable in Text = _.toString.tt
 
-trait Encodable:
+trait Encodable extends Typeclass, Formal:
   private inline def encodable: this.type = this
-  type Self
-  type Format
-  def encoded(value: Self): Format
+  def encoded(value: Self): Form
 
-  extension (value: Self) def encode: Format = encoded(value)
+  extension (value: Self) def encode: Form = encoded(value)
 
-  def contramap[self2](lambda: self2 => Self): self2 is Encodable in Format =
+  def contramap[self2](lambda: self2 => Self): self2 is Encodable in Form =
     new Encodable:
       type Self = self2
-      type Format = encodable.Format
+      type Form = encodable.Form
 
-      def encoded(value: Self): Format = encodable.encoded(lambda(value))
+      def encoded(value: Self): Form = encodable.encoded(lambda(value))

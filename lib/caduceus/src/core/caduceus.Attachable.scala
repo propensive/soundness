@@ -51,6 +51,5 @@ object Attachable:
 
   given asset: Asset is Attachable = identity(_)
 
-trait Attachable:
-  type Self
+trait Attachable extends Typeclass:
   def attachment(entity: Self): Asset

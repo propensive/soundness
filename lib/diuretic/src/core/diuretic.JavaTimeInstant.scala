@@ -38,7 +38,7 @@ import java.time as jt
 
 object JavaTimeInstant extends Abstractable, Instantiable:
   type Self = jt.Instant
-  type Source = Long
+  type Origin = Long
   type Result = Long
   type Domain = Instants
 

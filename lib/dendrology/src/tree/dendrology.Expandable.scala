@@ -32,6 +32,7 @@
                                                                                                   */
 package dendrology
 
-trait Expandable:
-  type Self
+import prepositional.*
+
+trait Expandable extends Typeclass:
   def children(node: Self): List[Self]

@@ -46,8 +46,8 @@ import scala.quoted.*
 
 object Dispatchable:
   given json: Dispatchable:
-    type Carrier = Json
-    type Format = Text
+    type Transport = Json
+    type Form = Text
 
     def encoder[value: Type]: Macro[value => Text] =
       '{ value => value.json.encode }
@@ -63,15 +63,12 @@ object Dispatchable:
     inline def extract[entity](json: Json): entity = provide[Tactic[JsonError]]:
       provide[entity is Decodable in Json](json.as[entity])
 
-trait Dispatchable:
-  type Carrier
-  type Format
+trait Dispatchable, Transportive, Formal:
+  def encoder[value: Type]: Macro[value => Form]
+  def decoder: Macro[Form => List[Transport]]
 
-  def encoder[value: Type]: Macro[value => Format]
-  def decoder: Macro[Format => List[Carrier]]
+  inline def encode(values: List[Transport]): Form
+  inline def decode[value](value: Form): value
 
-  inline def encode(values: List[Carrier]): Format
-  inline def decode[value](value: Format): value
-
-  inline def embed[entity](value: entity): Carrier
-  inline def extract[entity](value: Carrier): entity
+  inline def embed[entity](value: entity): Transport
+  inline def extract[entity](value: Transport): entity

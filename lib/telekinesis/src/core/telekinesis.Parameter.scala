@@ -42,19 +42,18 @@ import vacuous.*
 object Parameter:
   def apply[value: {Decodable in Query, Encodable in Query}](name: Text): Parameter of value =
     new Parameter(name):
-      type Subject = value
-      def decode(query: Query): Subject = value.decoded(query)
-      def encode(value: Subject): Query = value.encode
+      type Topic = value
+      def decode(query: Query): Topic = value.decoded(query)
+      def encode(value: Topic): Query = value.encode
 
-trait Parameter(val name: Text):
-  type Subject
-  def decode(query: Query): Subject
-  def encode(value: Subject): Query
+trait Parameter(val name: Text) extends Topical:
+  def decode(query: Query): Topic
+  def encode(value: Topic): Query
 
-  def apply(value: Subject): Query = encode(value)
+  def apply(value: Topic): Query = encode(value)
 
-  inline def apply()(using request: Http.Request): Subject raises QueryError =
+  inline def apply()(using request: Http.Request): Topic raises QueryError =
     decode(request.query(name))
 
-  def unapply(scrutinee: Http.Request): Option[Subject] =
+  def unapply(scrutinee: Http.Request): Option[Topic] =
     safely(decode(scrutinee.query(name))).option

@@ -44,18 +44,18 @@ import rudiments.*
 import spectacular.*
 
 object Nomenclature:
-  opaque type Name[platform] <: anticipation.Text = anticipation.Text
+  opaque type Name[plane] <: anticipation.Text = anticipation.Text
 
   object Name:
-    given encodable: [platform] => Name[platform] is Encodable in Text = identity(_)
+    given encodable: [plane] => Name[plane] is Encodable in Text = identity(_)
 
-    inline given decodable: [platform] => (platform is Nominative, Tactic[NameError])
-                 =>  Name[platform] is Decodable in Text =
+    inline given decodable: [plane] => (plane is Nominative, Tactic[NameError])
+                 =>  Name[plane] is Decodable in Text =
 
-      apply[platform](_)
+      apply[plane](_)
 
-    inline def verify[NameType <: Label, platform] =
-      ${Nomenclature2.parse[platform, NameType]}
+    inline def verify[NameType <: Label, plane] =
+      ${Nomenclature2.parse[plane, NameType]}
 
-    transparent inline def apply[platform](name: Text): Name[platform] =
-      ${Nomenclature2.makeName[platform]('name)}
+    transparent inline def apply[plane](name: Text): Name[plane] =
+      ${Nomenclature2.makeName[plane]('name)}

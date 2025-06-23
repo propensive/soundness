@@ -81,8 +81,8 @@ object Nomenclature2:
     import quotes.reflect.*
 
     Expr.summon[system is Nominative] match
-      case Some('{ type constraint; $nominative: (Nominative { type Constraint = constraint }) }) =>
-        val checks = decompose(TypeRepr.of[constraint]).to(List).map(_.asType).foldLeft('{()}):
+      case Some('{ type limit; $nominative: (Nominative { type Limit = limit }) }) =>
+        val checks = decompose(TypeRepr.of[limit]).to(List).map(_.asType).foldLeft('{()}):
           case (expr, '[type param <: String; type rule <: Check[param]; rule]) =>
             Nomenclature3.staticCompanion[rule] match
               case '{$rule: Rule} =>
@@ -97,10 +97,10 @@ object Nomenclature2:
       case None =>
         halt(m"Couldn't find a `Nominative` instance on ${Type.of[system]}")
 
-  def parse2[platform: Type, name <: String: Type](scrutinee: Expr[Name[platform]])
+  def parse2[plane: Type, name <: String: Type](scrutinee: Expr[Name[plane]])
   : Macro[Boolean] =
 
-      parse[platform, name]
+      parse[plane, name]
       '{${Expr(constant[name])}.tt == $scrutinee}
 
 
@@ -114,16 +114,16 @@ object Nomenclature2:
       case module: `companion` => module
       case _                   => halt(m"The companion object did not have the expected type.")
 
-  def parse[platform: Type, name <: String: Type]: Macro[Name[platform]] =
+  def parse[plane: Type, name <: String: Type]: Macro[Name[plane]] =
     import quotes.reflect.*
 
     val name: Text = constant[name].tt
 
-    Expr.summon[platform is Nominative] match
-      case Some('{ type constraint
-                   type nominative <: Nominative { type Constraint = constraint }
+    Expr.summon[plane is Nominative] match
+      case Some('{ type limit
+                   type nominative <: Nominative { type Limit = limit }
                    $value: nominative }) =>
-        decompose(TypeRepr.of[constraint]).to(List).each: repr =>
+        decompose(TypeRepr.of[limit]).to(List).each: repr =>
           val text = repr.asMatchable match
             case AppliedType(_, List(param)) => param.asMatchable match
               case ConstantType(StringConstant(text)) => text.tt
@@ -136,4 +136,4 @@ object Nomenclature2:
         halt(m"Could not access constraint")
 
 
-    '{${Expr(name)}.asInstanceOf[Name[platform]]}
+    '{${Expr(name)}.asInstanceOf[Name[plane]]}

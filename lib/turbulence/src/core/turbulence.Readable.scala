@@ -126,9 +126,7 @@ object Readable:
 
       Stream.defer(recur(0))
 
-trait Readable:
-  type Self
-  type Operand
+trait Readable extends Typeclass, Operable:
   def stream(value: Self): Stream[Operand]
 
   def contramap[self2](lambda: self2 => Self): self2 is Readable by Operand =

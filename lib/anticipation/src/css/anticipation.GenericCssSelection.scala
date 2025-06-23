@@ -32,6 +32,7 @@
                                                                                                   */
 package anticipation
 
-trait GenericCssSelection:
-  type Self
+import prepositional.*
+
+trait GenericCssSelection extends Typeclass:
   def selection(value: Self): Text

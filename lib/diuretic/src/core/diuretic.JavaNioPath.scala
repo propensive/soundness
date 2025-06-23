@@ -39,7 +39,7 @@ import java.nio.file as jnf
 object JavaNioPath extends Instantiable, Abstractable:
   type Self = jnf.Path
   type Domain = Paths
-  type Source = Text
+  type Origin = Text
   type Result = Text
 
   def apply(path: Text): jnf.Path = jnf.Paths.get(path.s).nn

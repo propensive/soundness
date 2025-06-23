@@ -35,14 +35,13 @@ package scintillate
 import anticipation.*
 import gesticulate.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import telekinesis.*
 
-trait Retrievable(val mediaType: MediaType) extends Servable:
-  type Self
-
+trait Retrievable(val mediaType: MediaType) extends Typeclass, Servable:
   def stream(response: Self): Stream[Bytes]
 
 

@@ -32,6 +32,8 @@
                                                                                                   */
 package symbolism
 
+import prepositional.*
+
 object Zeroic:
   given long: Long is Zeroic:
     inline def zero: Long = 0L
@@ -54,6 +56,5 @@ object Zeroic:
   given string: String is Zeroic:
     inline def zero: String = ""
 
-trait Zeroic:
-  type Self
+trait Zeroic extends Typeclass:
   def zero: Self

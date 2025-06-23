@@ -89,12 +89,9 @@ object Decodable:
       val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))
       raise(VariantError(value, enumeration.name, names)) yet enumeration.value(Prim).vouch
 
-trait Decodable:
+trait Decodable extends Typeclass, Formal:
   inline def decodable: this.type = this
-  type Self
-  type Format
+  def decoded(value: Form): Self
 
-  def decoded(value: Format): Self
-
-  def map[self2](lambda: Self => self2): self2 is Decodable in Format =
+  def map[self2](lambda: Self => self2): self2 is Decodable in Form =
     value => lambda(decodable.decoded(value))

@@ -45,6 +45,7 @@ import contingency.*
 import digression.*
 import feudalism.*
 import fulminate.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import symbolism.*
@@ -53,8 +54,7 @@ import vacuous.*
 import Completion.*
 import AsyncError.Reason
 
-sealed trait Monitor:
-  type Result
+sealed trait Monitor extends Resultant:
   val promise: Promise[Result]
   protected[parasite] var workers: Set[Worker] = Set()
 

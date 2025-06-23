@@ -34,16 +34,35 @@ package prepositional
 
 object Prepositional
 
+// Domainal
 infix type across [refined <: { type Domain }, domain] = refined { type Domain = domain }
+
+// Operable
 infix type by [refined <: { type Operand }, operand] = refined { type Operand = operand }
-infix type from [refined <: { type Source }, source] = refined { type Source = source }
-infix type in [refined, format] = refined { type Format = format }
+
+// Original
+infix type from [refined <: { type Origin }, origin] = refined { type Origin = origin }
+
+// Formal
+infix type in [refined, form] = refined { type Form = form }
+
+// Resultant
 infix type into [refined <: { type Result }, result] = refined { type Result = result }
-infix type of [refined <: { type Subject }, subject] = refined { type Subject = subject }
-infix type on [refined <: { type Platform }, platform] = refined { type Platform = platform }
+
+// Topical
+infix type of [refined <: { type Topic }, topic] = refined { type Topic = topic }
+
+// Planar
+infix type on [refined <: { type Plane }, plane] = refined { type Plane = plane }
+
+// Targetable
 infix type onto [refined <: { type Target }, target] = refined { type Target = target }
-infix type over [refined <: { type Carrier }, carrier] = refined { type Carrier = carrier }
+
+// Transportive
+infix type over [refined <: { type Transport }, transport] = refined { type Transport = transport }
+
+// Contrastive
 infix type against [refined <: { type Contrast }, contrast] = refined { type Contrast = contrast }
 
-infix type under [refined <: { type Constraint }, constraint] =
-  refined { type Constraint = constraint }
+// Limited
+infix type under [refined <: { type Limit }, limit] = refined { type Limit = limit }

@@ -72,10 +72,8 @@ object Aggregable:
         =>  Stream[element2] is Aggregable by element =
     element => Stream(aggregable.aggregate(element))
 
-trait Aggregable:
+trait Aggregable extends Typeclass, Operable:
   aggregable =>
-  type Self
-  type Operand
   def aggregate(source: Stream[Operand]): Self
 
   def map[self2](lambda: Self => self2): self2 is Aggregable by Operand = source =>

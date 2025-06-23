@@ -60,7 +60,7 @@ trait Json2:
         =>  Optional[value] is Encodable in Json =
     new Encodable:
       type Self = Optional[value]
-      type Format = Json
+      type Form = Json
 
       def encoded(value: Optional[value]): Json =
         value.let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
@@ -172,7 +172,7 @@ object Json extends Json2, Dynamic:
         =>  Option[value] is Encodable in Json =
     new Encodable:
       type Self = Option[value]
-      type Format = Json
+      type Form = Json
 
       def encoded(value: Option[value]): Json = value match
         case None        => Json.ast(JsonAst(Unset))

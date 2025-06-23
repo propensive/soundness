@@ -30,12 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package prepositional
 
-trait Transport:
-  type Self
-  type Writer[-data]
-  type Reader[data]
-
-  def write[data: Writer](value: data): LazyList[IArray[Byte]]
-  def read[data: Reader](value: LazyList[IArray[Byte]]): data
+trait Targetable:
+  type Target

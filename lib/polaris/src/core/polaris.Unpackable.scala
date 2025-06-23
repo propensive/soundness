@@ -32,6 +32,7 @@
                                                                                                   */
 package polaris
 
+import prepositional.*
 import proscenium.*
 import rudiments.*
 
@@ -47,8 +48,7 @@ object Unpackable:
     type Wrap[Type] = Type
     def unpack(buffer: Buffer): pack = pack.debuffer(buffer)
 
-trait Unpackable:
-  type Self
+trait Unpackable extends Typeclass:
   type Wrap[_]
   type Result = Wrap[Self]
   def unpack(buffer: Buffer): Wrap[Self]

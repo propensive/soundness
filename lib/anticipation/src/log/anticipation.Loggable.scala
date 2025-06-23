@@ -42,9 +42,8 @@ object Loggable:
       if !output.skip(event)
       then input.log(level, realm, timestamp, output.record(event))
 
-trait Loggable:
+trait Loggable extends Typeclass:
   loggable =>
-    type Self
     def log(level: Level, realm: Realm, timestamp: Long, event: Self): Unit
 
     def contramap[self2](lambda: self2 => Self): self2 is Loggable = new Loggable:

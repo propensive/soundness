@@ -40,8 +40,7 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-trait Textual extends Concatenable, Countable, Segmentable, Zeroic:
-  type Self
+trait Textual extends Typeclass, Concatenable, Countable, Segmentable, Zeroic:
   type Operand = Self
   type Show[value]
 

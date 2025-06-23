@@ -34,6 +34,8 @@ package hypotenuse
 
 import scala.annotation.*
 
+import prepositional.*
+
 object Orderable:
   given orderable: [value: Ordering] => value is Orderable:
     inline def compare
@@ -49,9 +51,8 @@ object Orderable:
         else inline if strict then n < 0 else n <= 0
 
 
-trait Orderable extends Commensurable:
+trait Orderable extends Typeclass, Commensurable:
   private inline def orderable: this.type = this
-  type Self
   type Operand = Self
 
   def contramap[self](lambda: self => Self): self is Orderable = new Orderable:

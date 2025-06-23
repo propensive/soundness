@@ -75,5 +75,5 @@ object Serializable:
   given base256: Alphabet[Base256] => Serializable in Base256 = base(8)
 
 trait Serializable:
-  type Format <: Serialization
+  type Form <: Serialization
   def encode(bytes: Bytes): Text

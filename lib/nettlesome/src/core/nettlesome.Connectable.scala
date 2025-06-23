@@ -33,6 +33,7 @@
 package nettlesome
 
 import anticipation.*
+import prepositional.*
 import spectacular.*
 
 object Connectable:
@@ -40,6 +41,5 @@ object Connectable:
   given ipv6: Ipv6 is Connectable = _.show
   given hostname: Hostname is Connectable = _.show
 
-trait Connectable:
-  type Self
+trait Connectable extends Typeclass:
   def remote(remote: Self): Text

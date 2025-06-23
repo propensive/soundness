@@ -59,16 +59,16 @@ object Zipfile:
     type Self = Zipfile
     type Operand = Unit
     type Result = Root
-    protected type Carrier = jnf.FileSystem
+    protected type Transport = jnf.FileSystem
 
-    def init(value: Zipfile, options: List[Operand]): Carrier =
+    def init(value: Zipfile, options: List[Operand]): Transport =
       try jnf.FileSystems.newFileSystem(value.uri, Map("zipinfo-time" -> "false").asJava).nn
       catch case exception: jnf.ProviderNotFoundException =>
         panic(m"There was unexpectedly no filesystem provider for ZIP files")
 
-    def handle(carrier: jnf.FileSystem): Zip.ZipRoot = Zip.ZipRoot(carrier)
+    def handle(transport: jnf.FileSystem): Zip.ZipRoot = Zip.ZipRoot(transport)
 
-    def close(carrier: Carrier): Unit = carrier.close()
+    def close(transport: Transport): Unit = transport.close()
 
   private val cache: scc.TrieMap[Text, Semaphore] = scc.TrieMap()
 

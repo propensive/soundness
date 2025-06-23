@@ -32,10 +32,10 @@
                                                                                                   */
 package nettlesome
 
-trait Protocolic:
-  type Self
-  type Carrier
+import prepositional.*
+
+trait Protocolic extends Typeclass, Transportive:
   type Request
   type Response
   type Server
-  def server(port: Carrier)(lambda: Request ?=> Response): Server
+  def server(port: Transport)(lambda: Request ?=> Response): Server

@@ -32,8 +32,9 @@
                                                                                                   */
 package anamnesis
 
-trait Referenceable:
+import prepositional.*
+
+trait Referenceable extends Operable:
   referenceable =>
-    type Operand
     type Self <: Entity { type Operand = referenceable.Operand }
     def lookup(key: Operand): Self

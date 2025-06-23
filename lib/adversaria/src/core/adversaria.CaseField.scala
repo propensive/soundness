@@ -42,7 +42,7 @@ object CaseField:
   : CaseField[target, annotation] of field =
 
       new CaseField[target, annotation](name):
-        type Subject = field
+        type Topic = field
         def apply(value: target) = access(value)
         def annotation: annotation = annotation0
 
@@ -53,7 +53,6 @@ object CaseField:
       Annotations.firstField[target, annotation]
 
 
-trait CaseField[target <: Product, annotation <: StaticAnnotation](val name: Text):
-  type Subject
-  def apply(value: target): Subject
+trait CaseField[target <: Product, annotation <: StaticAnnotation](val name: Text) extends Topical:
+  def apply(value: target): Topic
   def annotation: annotation

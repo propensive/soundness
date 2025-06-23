@@ -40,8 +40,5 @@ object Checkable:
   given tolerance: Double is Checkable against Tolerance =
     (double, tolerance) => tolerance.covers(double)
 
-trait Checkable:
-  type Self
-  type Contrast
-
+trait Checkable extends Typeclass, Contrastive:
   def check(left: Self, right: Contrast): Boolean

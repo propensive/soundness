@@ -32,8 +32,9 @@
                                                                                                   */
 package anticipation
 
-trait Chromatic:
-  type Self
+import prepositional.*
+
+trait Chromatic extends Typeclass:
   extension (color: Self) def asRgb24Int: Int = convert(color)
   def convert(color: Self): Int
 

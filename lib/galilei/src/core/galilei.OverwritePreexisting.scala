@@ -35,6 +35,5 @@ package galilei
 import prepositional.*
 import serpentine.*
 
-trait OverwritePreexisting:
-  type Platform
-  def apply[ResultType](path: Path on Platform)(operation: => ResultType): ResultType
+trait OverwritePreexisting extends Planar:
+  def apply[ResultType](path: Path on Plane)(operation: => ResultType): ResultType

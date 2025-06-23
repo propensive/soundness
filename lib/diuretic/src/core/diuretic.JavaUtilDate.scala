@@ -38,7 +38,7 @@ import java.util as ju
 
 object JavaUtilDate extends Abstractable, Instantiable:
   type Self = ju.Date
-  type Source = Long
+  type Origin = Long
   type Result = Long
   type Domain = Instants
 

@@ -68,7 +68,6 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
   given decoder: [decodable: Decodable in Text] => decodable is DsvDecodable =
     value => decodable.decoded(value.data.head)
 
-trait DsvDecodable:
-  type Self
+trait DsvDecodable extends Typeclass:
   def decoded(elems: Row): Self
   def width: Int = 1

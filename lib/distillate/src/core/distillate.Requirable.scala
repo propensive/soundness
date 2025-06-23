@@ -42,7 +42,6 @@ object Requirable:
         => value is Requirable =
     () => safely("".tt.decode[value]).absent
 
-trait Requirable:
-  type Self
+trait Requirable extends Typeclass:
   protected def isRequired(): Boolean
   def required: Boolean = isRequired()

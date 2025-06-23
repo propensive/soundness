@@ -32,6 +32,7 @@
                                                                                                   */
 package anticipation
 
-trait Nominable:
-  type Self
+import prepositional.*
+
+trait Nominable extends Typeclass:
   def name(value: Self): Text

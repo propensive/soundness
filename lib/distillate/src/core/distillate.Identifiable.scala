@@ -33,6 +33,7 @@
 package distillate
 
 import anticipation.*
+import prepositional.*
 
 object Identifiable:
   def apply[ident](encoder: Text => Text, decoder: Text => Text): ident is Identifiable =
@@ -41,7 +42,6 @@ object Identifiable:
       def encode(text: Text): Text = encoder(text)
       def decode(text: Text): Text = decoder(text)
 
-trait Identifiable:
-  type Self
+trait Identifiable extends Typeclass:
   def encode(text: Text): Text
   def decode(text: Text): Text

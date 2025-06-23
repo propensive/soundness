@@ -64,7 +64,6 @@ object Renderable:
       case Sgml.Element(label, attributes, children) =>
         Node(label, attributes.map(_.s -> _), children.map(convert(_)))
 
-trait Renderable:
-  type Self
+trait Renderable extends Typeclass:
   type Result <: Label
   def html(value: Self): Seq[Html[Result]]

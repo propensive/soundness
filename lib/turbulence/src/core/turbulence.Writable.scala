@@ -84,9 +84,7 @@ object Writable:
 
     recur(0.b, stream.map { bytes => jn.ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn })
 
-trait Writable:
-  type Self
-  type Operand
+trait Writable extends Typeclass, Operable:
   def write(target: Self, stream: Stream[Operand]): Unit
 
   def contramap[self2](lambda: self2 => Self): self2 is Writable by Operand =

@@ -37,8 +37,7 @@ import java.nio.file as jnf
 import prepositional.*
 import serpentine.*
 
-trait CreateNonexistent:
-  type Platform
-  def apply(path: Path on Platform)(operation: => Unit): Unit
-  def error(path: Path on Platform, operation: IoError.Operation): Nothing
+trait CreateNonexistent extends Planar:
+  def apply(path: Path on Plane)(operation: => Unit): Unit
+  def error(path: Path on Plane, operation: IoError.Operation): Nothing
   def options(): List[jnf.OpenOption]

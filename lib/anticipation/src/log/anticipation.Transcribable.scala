@@ -32,8 +32,8 @@
                                                                                                   */
 package anticipation
 
-trait Transcribable:
-  type Self
-  type Result
+import prepositional.*
+
+trait Transcribable extends Typeclass, Resultant:
   def skip(value: Self): Boolean = false
   def record(value: Self): Result

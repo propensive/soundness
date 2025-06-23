@@ -35,6 +35,7 @@ package hypotenuse
 import scala.annotation.*
 
 import denominative.*
+import prepositional.*
 import rudiments.*
 
 object Commensurable:
@@ -88,10 +89,7 @@ object Commensurable:
         else inline if strict then left.lt(right) else left.le(right)
 
 
-trait Commensurable:
-  type Self
-  type Operand
-
+trait Commensurable extends Typeclass, Operable:
   inline def compare
               (inline left:        Self,
                inline right:       Operand,

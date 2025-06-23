@@ -70,6 +70,5 @@ object Explorable:
       . map(_.toString.tt.decode[Path on MacOs])
       . to(Stream)
 
-trait Explorable:
-  type Self
+trait Explorable extends Typeclass:
   def children(path: Path on Self): Stream[Path on Self]

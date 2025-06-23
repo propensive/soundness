@@ -55,14 +55,11 @@ import interfaces.paths.pathOnLinux
 import scala.quoted.*
 
 
-trait Dispatcher(using classloader: Classloader):
+trait Dispatcher(using classloader: Classloader) extends Targetable, Formal:
   type Result[output]
-  type Format
-  type Target
-
   protected val scalac: Scalac[?]
-  protected def invoke[output](dispatch: Dispatch[output, Format, Target]): Result[output]
-  private var cache: Map[Codepoint, (Target, Format => Format)] = Map()
+  protected def invoke[output](dispatch: Dispatch[output, Form, Target]): Result[output]
+  private var cache: Map[Codepoint, (Target, Form => Form)] = Map()
 
   lazy val settings2: staging.Compiler.Settings =
     staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
@@ -71,26 +68,26 @@ trait Dispatcher(using classloader: Classloader):
 
   def deploy(path: Path on Linux): Target
 
-  inline def dispatch[output, carrier]
-              (body: References[carrier] ?=> Quotes ?=> Expr[output])
+  inline def dispatch[output, transport]
+              (body: References[transport] ?=> Quotes ?=> Expr[output])
               [version <: Scalac.All]
               (using codepoint:    Codepoint,
                      properties:   SystemProperties,
                      directory:    TemporaryDirectory,
-                     dispatchable: Dispatchable over carrier in Format)
+                     dispatchable: Dispatchable over transport in Form)
   : Result[output] raises CompilerError =
 
       try
         import strategies.throwUnsafely
-        val references: References[carrier] = new References()
+        val references: References[transport] = new References()
 
-        val (target, function): (Target, Format => Format) =
+        val (target, function): (Target, Form => Form) =
           if cache.contains(codepoint) then
             // This is necessary to allocate references as a side effect
             given staging.Compiler = compiler2
 
             staging.withQuotes:
-              '{  (array: List[carrier]) =>
+              '{  (array: List[transport]) =>
                     ${  references() = 'array
                         body(using references)  }  }
 
@@ -107,7 +104,7 @@ trait Dispatcher(using classloader: Classloader):
             given compiler: staging.Compiler =
               staging.Compiler.make(classloader.java)(using settings)
 
-            val function: Format => Format = staging.run:
+            val function: Form => Form = staging.run:
               '{  format =>
                     ${dispatchable.encoder[output]}
                        (${  references() = '{${dispatchable.decoder}(format)}

@@ -53,7 +53,7 @@ import classloaders.system
 
 object Jvm extends Dispatcher:
   type Result[output] = output
-  type Format = Text
+  type Form = Text
   type Target = LocalClasspath
 
   def deploy(out: Path on Linux): LocalClasspath =
@@ -68,7 +68,7 @@ object Jvm extends Dispatcher:
 
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
-  protected def invoke[output](dispatch: Dispatch[output, Format, Target]): output =
+  protected def invoke[output](dispatch: Dispatch[output, Form, Target]): output =
     import workingDirectories.systemProperties
     import logging.silent
 

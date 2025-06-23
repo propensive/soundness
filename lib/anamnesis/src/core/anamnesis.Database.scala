@@ -53,8 +53,8 @@ class Database(size: Int):
     nextId.asInstanceOf[Ref of ref in this.type].also:
       nextId += 1
 
-  type Subject <: Tuple
-  type AllRelations = Tuple.Union[Subject]
+  type Topic <: Tuple
+  type AllRelations = Tuple.Union[Topic]
 
   type Has[relation <: Relation[?, ?]] = relation <:< AllRelations
 
@@ -67,10 +67,10 @@ class Database(size: Int):
   def dereference[ref](ref: Ref of ref): ref = dereferences(ref).asInstanceOf[ref]
 
   protected inline def relate[left, right]: Map[Ref, Set[Ref]] =
-    relations(!![Subject].indexOf[left -< right])
+    relations(!![Topic].indexOf[left -< right])
 
   protected inline def corelate[left, right]: Map[Ref, Ref] =
-    corelations(!![Subject].indexOf[left -< right])
+    corelations(!![Topic].indexOf[left -< right])
 
   inline def store[left](left: left): Ref of left in this.type =
     references.at(left).or:
@@ -87,10 +87,10 @@ class Database(size: Int):
 
   inline def assign[left, right]
               (left: Ref of left in this.type, right: Ref of right in this.type)
-              (using (left -< right) <:< Tuple.Union[Subject])
+              (using (left -< right) <:< Tuple.Union[Topic])
   : Unit raises DataError =
 
-      val relationIndex = !![Subject].indexOf[left -< right]
+      val relationIndex = !![Topic].indexOf[left -< right]
       val relation = relate[left, right]
       val corelation = corelate[left, right]
 
@@ -108,10 +108,10 @@ class Database(size: Int):
 
   inline def unassign[left, right]
               (left: Ref of left in this.type, right: Ref of right in this.type)
-              (using (left -< right) <:< Tuple.Union[Subject])
+              (using (left -< right) <:< Tuple.Union[Topic])
   : Unit raises DataError =
 
-      val relationIndex = !![Subject].indexOf[left -< right]
+      val relationIndex = !![Topic].indexOf[left -< right]
       val relation = relate[left, right]
       val corelation = corelate[left, right]
 

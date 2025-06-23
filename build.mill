@@ -395,7 +395,7 @@ object anticipation extends SoundnessModule {
   }
 
   object gfx extends SoundnessSubModule {
-    def moduleDeps = Seq()
+    def moduleDeps = Seq(prepositional.core)
   }
 
   object css extends SoundnessSubModule {
@@ -422,9 +422,9 @@ object anticipation extends SoundnessModule {
     def moduleDeps = Seq(text)
   }
 
-  object transport extends SoundnessSubModule
-
-  object color extends SoundnessSubModule
+  object color extends SoundnessSubModule {
+    def moduleDeps = Seq(prepositional.core)
+  }
 
   object log extends SoundnessSubModule {
     def moduleDeps = Seq(text)
@@ -563,7 +563,7 @@ object cataclysm extends SoundnessModule {
 
 object cellulose extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(eucalyptus.core, chiaroscuro.core, kaleidoscope.core, polyvinyl.core, anticipation.transport)
+    def moduleDeps = Seq(eucalyptus.core, chiaroscuro.core, kaleidoscope.core, polyvinyl.core)
   }
 
   object test extends ProbablyTestModule {
@@ -1519,7 +1519,7 @@ object wisteria extends SoundnessModule {
 
 object xylophone extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(wisteria.core, gossamer.core, turbulence.core, anticipation.transport)
+    def moduleDeps = Seq(wisteria.core, gossamer.core, turbulence.core)
   }
 
   object test extends ProbablyTestModule {
@@ -1580,7 +1580,6 @@ object publishing extends Module {
     anticipation.print.publishLocal().t()
     anticipation.text.publishLocal().t()
     anticipation.time.publishLocal().t()
-    anticipation.transport.publishLocal().t()
     anticipation.url.publishLocal().t()
     austronesian.core.publishLocal().t()
     aviation.core.publishLocal().t()

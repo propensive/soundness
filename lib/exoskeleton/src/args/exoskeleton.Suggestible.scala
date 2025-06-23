@@ -32,6 +32,7 @@
                                                                                                   */
 package exoskeleton
 
-trait Suggestible:
-  type Self
+import prepositional.*
+
+trait Suggestible extends Typeclass:
   def suggest(values: Self): Suggestion

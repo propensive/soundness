@@ -45,7 +45,7 @@ import rudiments.*
 import vacuous.*
 
 trait Deserializable:
-  type Format <: Serialization
+  type Form <: Serialization
   protected val atomicity: Int = 1
 
   def deserialize(previous: Text, current: Text, index0: Int, last: Boolean): Bytes

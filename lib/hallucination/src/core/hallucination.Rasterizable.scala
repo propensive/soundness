@@ -43,10 +43,8 @@ import turbulence.*
 
 import javax.imageio as ji
 
-trait Rasterizable:
+trait Rasterizable extends Typeclass:
   rasterizable =>
-    type Self
-
     def name: Text
     def mediaType: MediaType
 
@@ -58,5 +56,5 @@ trait Rasterizable:
 
       val data = try reader.read(0).nn catch case _: ji.IIOException => abort(RasterError(this))
 
-      new Raster(data) { type Format = rasterizable.Self }
+      new Raster(data) { type Form = rasterizable.Self }
       . also(reader.dispose())

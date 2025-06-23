@@ -86,8 +86,7 @@ object Postable:
       def mediaType(content: response): MediaType = content.generic(0).decode[MediaType]
       def stream(content: response): Stream[Bytes] = content.generic(1)
 
-trait Postable:
-  type Self
+trait Postable extends Typeclass:
   def mediaType(content: Self): MediaType
   def stream(content: Self): Stream[Bytes]
 

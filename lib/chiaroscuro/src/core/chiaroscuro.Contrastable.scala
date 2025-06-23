@@ -36,6 +36,7 @@ import anticipation.*
 import dissonance.*
 import gossamer.*
 import hieroglyph.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -43,8 +44,7 @@ import vacuous.*
 
 import scala.reflect.*
 
-trait Contrastable:
-  type Self
+trait Contrastable extends Typeclass:
   def contrast(left: Self, right: Self): Juxtaposition
 
 trait Contrastable2 extends Contrastable3:

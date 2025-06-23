@@ -52,7 +52,7 @@ package httpServers:
         => (Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable)
         =>  Http is Protocolic:
 
-    type Carrier = TcpPort of port
+    type Transport = TcpPort of port
     type Self = Http
     type Server = Service
     type Request = HttpConnection
@@ -65,7 +65,7 @@ package httpServers:
         => (Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable)
         =>  Http is Protocolic:
 
-    type Carrier = TcpPort of port
+    type Transport = TcpPort of port
     type Self = Http
     type Server = Service
     type Request = HttpConnection

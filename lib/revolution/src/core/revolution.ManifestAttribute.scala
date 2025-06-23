@@ -38,8 +38,8 @@ import proscenium.*
 abstract class ManifestAttribute[label <: Label: ValueOf]():
   val key: Text = valueOf[label].tt
 
-  def parse(value: Text)(using decoder: label is DecodableManifest): decoder.Subject =
+  def parse(value: Text)(using decoder: label is DecodableManifest): decoder.Topic =
     decoder.decoded(value)
 
-  def apply(using encoder: label is EncodableManifest)(value: encoder.Subject): ManifestEntry =
+  def apply(using encoder: label is EncodableManifest)(value: encoder.Topic): ManifestEntry =
     ManifestEntry(key, encoder.encode(value))

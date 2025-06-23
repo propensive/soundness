@@ -34,6 +34,7 @@ package rudiments
 
 import anticipation.*
 import denominative.*
+import prepositional.*
 
 object Segmentable:
   given indexedSeq: [element] => IndexedSeq[element] is Segmentable =
@@ -47,6 +48,5 @@ object Segmentable:
     val max = interval.end.n0.min(text.s.length)
     text.s.substring(min, max).nn.tt
 
-trait Segmentable:
-  type Self
+trait Segmentable extends Typeclass:
   def segment(entity: Self, interval: Interval): Self

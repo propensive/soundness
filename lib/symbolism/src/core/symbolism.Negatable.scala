@@ -56,9 +56,7 @@ object Negatable:
   given byte: Byte is Negatable into Byte = Negatable:
     operand => (-operand).toByte
 
-trait Negatable:
-  type Self
-  type Result
+trait Negatable extends Typeclass, Resultant:
   def negate(operand: Self): Result
 
   extension (operand: Self)

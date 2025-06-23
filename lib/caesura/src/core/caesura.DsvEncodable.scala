@@ -50,6 +50,5 @@ object DsvEncodable extends ProductDerivable[DsvEncodable]:
   given encoder: [encodable: Encodable in Text] => encodable is DsvEncodable =
     value => Row(encodable.encode(value))
 
-trait DsvEncodable:
-  type Self
+trait DsvEncodable extends Typeclass:
   def encode(value: Self): Row

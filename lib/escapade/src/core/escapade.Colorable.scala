@@ -33,6 +33,7 @@
 package escapade
 
 import anticipation.*
+import prepositional.*
 
 import language.experimental.pureFunctions
 
@@ -51,6 +52,5 @@ object Colorable:
         extension (value: value) def color: Fg = Fg(chooseColor(value).asRgb24Int)
 
 
-trait Colorable:
-  type Self
+trait Colorable extends Typeclass:
   extension (value: Self) def color: Fg

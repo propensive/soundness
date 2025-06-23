@@ -38,8 +38,8 @@ import prepositional.*
 import proscenium.*
 
 class Ascent(val ascent0: Int) extends Relative(ascent0):
-  type Subject = EmptyTuple
+  type Topic = EmptyTuple
 
   @targetName("child")
-  def / (up: ^.type): Ascent under S[Constraint] =
-    new Ascent(ascent0 + 1).asInstanceOf[Ascent under S[Constraint]]
+  def / (up: ^.type): Ascent under S[Limit] =
+    new Ascent(ascent0 + 1).asInstanceOf[Ascent under S[Limit]]

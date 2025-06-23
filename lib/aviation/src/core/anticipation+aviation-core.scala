@@ -41,7 +41,7 @@ package interfaces.instants:
                           Long from Long =
     new Abstractable with Instantiable:
       type Self = Aviation2.Instant
-      type Source = Long
+      type Origin = Long
       type Result = Long
       type Domain = Instants
       export Aviation2.Instant.generic.{genericize, apply}

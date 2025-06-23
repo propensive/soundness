@@ -32,5 +32,6 @@
                                                                                                   */
 package contingency
 
-erased trait Unchecked:
-  type Self
+import prepositional.*
+
+erased trait Unchecked extends Typeclass

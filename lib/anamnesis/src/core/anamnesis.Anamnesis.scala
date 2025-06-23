@@ -37,9 +37,8 @@ import distillate.*
 import prepositional.*
 
 object Anamnesis:
-  trait Dereferenceable:
-    type Format <: Database
-    type Subject
+  trait Dereferenceable extends Topical:
+    type Form <: Database
 
   opaque type Ref <: Dereferenceable = Int & Dereferenceable
   opaque type Reference[+entity <: Entity] = Any

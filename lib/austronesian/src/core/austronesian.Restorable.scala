@@ -6,6 +6,7 @@ import scala.compiletime.*
 import anticipation.*
 import fulminate.*
 import hellenism.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import wisteria.*
@@ -58,7 +59,5 @@ object Restorable extends ProductDerivation[[entity] =>> entity is Restorable]:
           val constructor = cls0.getDeclaredConstructors.nn(0).nn
           constructor.newInstance(${Varargs(params)}*).nn.asInstanceOf[derivation]  }
 
-trait Restorable:
-  type Self
-
+trait Restorable extends Typeclass:
   def restore(value: Expr[Pojo])(using Classloader): Macro[Self]

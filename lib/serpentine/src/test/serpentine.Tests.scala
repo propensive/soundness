@@ -282,7 +282,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       . assert(_ == windowsSystem)
 
-      test(m"Can't decode a path without knowing platform"):
+      test(m"Can't decode a path without knowing plane"):
         demilitarize:
           t"C:\\Windows\\System\\".decode[Path]
 
@@ -312,7 +312,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
         t"..\\..\\foo\\bar".decode[Relative on Windows]
       . assert(_ == ? / ^ / ^ / "foo" / "bar")
 
-      test(m"Cannot decode a relative path without knowing platform"):
+      test(m"Cannot decode a relative path without knowing plane"):
         demilitarize:
           t"..\\..\\foo\\bar".decode[Relative]
       . assert(_.nonEmpty)
@@ -324,13 +324,13 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       . assert(identity)
 
-      test(m"Specific path on platform has known elements"):
+      test(m"Specific path on plane has known elements"):
         val path = % / "foo" / "bar"
         path.on[Linux].knownElements
 
       . assert(identity)
 
-      test(m"Specific path auto-converted to platform does not have known elements"):
+      test(m"Specific path auto-converted to plane does not have known elements"):
         val path: Path on Linux = % / "foo" / "bar"
         path.knownElements
 
@@ -376,7 +376,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       . assert()
 
     suite(m"Relative tests"):
-      test(m"Relative type retains platform"):
+      test(m"Relative type retains plane"):
         demilitarize:
           val path1: Path on Linux = % / "home" / "work" / "data" / "foo"
           val path2: Path on Linux = % / "home" / "more"
@@ -395,7 +395,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       . assert()
 
 
-      test(m"Relative types on non-unique system still retain Platform"):
+      test(m"Relative types on non-unique system still retain Plane"):
           val path1: Path on Windows = Drive('C') / "home" / "work" / "data" / "foo"
           val path2: Path on Windows = Drive('C') / "home" / "more"
           val relative = path2.relativeTo(path1)
@@ -429,7 +429,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       . assert(_ == ? / ^ / "work" / "data" / "foo")
 
 
-      test(m"Calculate simple relative path on platform"):
+      test(m"Calculate simple relative path on plane"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
         val path2 = (% / "home" / "more").on[Linux]
         path2.relativeTo(path1)
@@ -437,7 +437,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       . assert(_ == ? / ^ / ^ / ^ / "more")
 
 
-      test(m"Calculate simple relative path on platform in reverse"):
+      test(m"Calculate simple relative path on plane in reverse"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
         val path2 = (% / "home" / "more").on[Linux]
         path1.relativeTo(path2)
@@ -445,7 +445,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       . assert(_ == ? / ^ / "work" / "data" / "foo")
 
 
-      test(m"Calculate simple relative path on platform statically"):
+      test(m"Calculate simple relative path on plane statically"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
         val path2 = (% / "home" / "more").on[Linux]
         val path3: Relative of ("foo", "data", "work") under 1 = path1.relativeTo(path2)

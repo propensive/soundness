@@ -38,6 +38,7 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import iridescence.*
+import prepositional.*
 import proscenium.*
 import spectacular.*
 import symbolism.*
@@ -173,6 +174,5 @@ object Teletypeable:
     Teletype.make[String]
      (throwable.getClass.getName.nn.show.cut(t".").last.s, _.copy(fg = 0xdc133b))
 
-trait Teletypeable:
-  type Self
+trait Teletypeable extends Typeclass:
   def teletype(value: Self): Teletype

@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import hypotenuse.*
 import nettlesome.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
@@ -48,8 +49,7 @@ import java.nio.channels as jnc
 
 import Control.*
 
-trait Bindable:
-  type Self
+trait Bindable extends Typeclass:
   type Binding
   type Input
   type Output

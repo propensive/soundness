@@ -52,8 +52,8 @@ given Realm = Realm(t"serpentine")
 object Path:
   @targetName("Root")
   object % extends Path(t"/"):
-    type Subject = EmptyTuple
-    type Constraint = %.type
+    type Topic = EmptyTuple
+    type Limit = %.type
 
   given decodable: [system: System, root]
         => (radical: root is Radical on system)
@@ -74,19 +74,19 @@ object Path:
         =>  (Path on system) is Instantiable across Paths from Text =
     _.decode[Path on system]
 
-  def unplatformed[root, subject <: Tuple](root: Text, descent: Text*): Path of subject under root =
+  def unplatformed[root, topic <: Tuple](root: Text, descent: Text*): Path of topic under root =
     new Path(root, descent*):
-      type Subject = subject
-      type Constraint = root
+      type Topic = topic
+      type Limit = root
 
 
-  def of[system, root, subject <: Tuple](root: Text, descent: Text*)
-  : Path on system of subject under root =
+  def of[system, root, topic <: Tuple](root: Text, descent: Text*)
+  : Path on system of topic under root =
 
       new Path(root, descent*):
-        type Platform = system
-        type Constraint = root
-        type Subject = subject
+        type Plane = system
+        type Limit = root
+        type Topic = topic
 
 
   given encodable: [system: System] => Path on system is Encodable in Text =
@@ -103,8 +103,8 @@ object Path:
 
   private def conversion[from, to](lambda: from => to): Conversion[from, to] = lambda(_)
 
-  inline given convert: [subject, root, system, path <: Path of subject under root]
-         =>  Conversion[path, Path of subject on system under root] =
+  inline given convert: [topic, root, system, path <: Path of topic under root]
+         =>  Conversion[path, Path of topic on system under root] =
     conversion(_.on[system])
 
 
@@ -116,23 +116,21 @@ object Path:
     : path is Quotient of Text over (Relative on system) | Text
 
 
-case class Path(root: Text, descent: Text*):
-  type Platform
-  type Subject <: Tuple
-  type Constraint
+case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
+  type Topic <: Tuple
 
   def name: Text = descent.prim.or(root)
   def empty: Boolean = descent.isEmpty
 
-  inline def knownElementTypes: Boolean = inline !![Subject] match
+  inline def knownElementTypes: Boolean = inline !![Topic] match
     case _: Zero           => true
     case _: (head *: tail) => true
     case _                 => false
 
-  transparent inline def knownElements: Boolean = known[Subject]
+  transparent inline def knownElements: Boolean = known[Topic]
 
-  protected inline def known[subject <: Tuple]: Boolean =
-    inline !![subject] match
+  protected inline def known[topic <: Tuple]: Boolean =
+    inline !![topic] match
       case _: Zero           => true
       case _: (head *: tail) => inline constValueOpt[head] match
         case None               => false
@@ -140,21 +138,21 @@ case class Path(root: Text, descent: Text*):
       case _ => false
 
   def resolve(text: Text)
-       (using (Path on Platform) is Decodable in Text,
-              (Relative on Platform) is Decodable in Text)
-  : Path on Platform raises PathError =
+       (using (Path on Plane) is Decodable in Text,
+              (Relative on Plane) is Decodable in Text)
+  : Path on Plane raises PathError =
 
-      safely(text.decode[Path on Platform]).or(safely(this + text.decode[Relative on Platform])).or:
+      safely(text.decode[Path on Plane]).or(safely(this + text.decode[Relative on Plane])).or:
         abort(PathError(_.InvalidRoot))
 
 
-  transparent inline def depth: Int = inline !![Subject] match
+  transparent inline def depth: Int = inline !![Topic] match
     case Zero         => 0
-    case head *: tail => valueOf[Tuple.Size[Subject]]
+    case head *: tail => valueOf[Tuple.Size[Topic]]
     case _            => descent.length
 
-  private inline def check[subject, system](path: List[Text]): Unit =
-    inline !![subject] match
+  private inline def check[topic, system](path: List[Text]): Unit =
+    inline !![topic] match
       case _: Zero => ()
 
       case _: (head *: tail) =>
@@ -165,27 +163,27 @@ case class Path(root: Text, descent: Text*):
         path.each: element =>
           infer[Text is Admissible on system].check(element)
 
-  inline def on[system]: Path of Subject under Constraint on system = summonFrom:
-    case given (`system` =:= Platform) =>
-      this.asInstanceOf[Path of Subject under Constraint on system]
+  inline def on[system]: Path of Topic under Limit on system = summonFrom:
+    case given (`system` =:= Plane) =>
+      this.asInstanceOf[Path of Topic under Limit on system]
 
     case _ =>
-      check[Subject, system](descent.to(List))
+      check[Topic, system](descent.to(List))
 
       summonFrom:
-        case constraint: (Constraint is Submissible on `system`)       => constraint.check(root)
-        case radical: (Constraint is Radical on `system`)              => radical.decode(root)
+        case limit: (Limit is Submissible on `system`)                 => limit.check(root)
+        case radical: (Limit is Radical on `system`)                   => radical.decode(root)
         case system: (`system` is (System { type UniqueRoot = true })) =>
-          infer[Platform is (System { type UniqueRoot = true })]
+          infer[Plane is (System { type UniqueRoot = true })]
 
-      this.asInstanceOf[Path of Subject under Constraint on system]
+      this.asInstanceOf[Path of Topic under Limit on system]
 
-  def graft[radical: Radical on Platform](root: radical): Path of Subject under root.type =
-    Path.of[Platform, root.type, Subject](radical.encode(root), descent*)
+  def graft[radical: Radical on Plane](root: radical): Path of Topic under root.type =
+    Path.of[Plane, root.type, Topic](radical.encode(root), descent*)
 
   transparent inline def sameRoot(right: Path): Boolean = summonFrom:
-    case platform: (Platform is System) =>
-      inline if !![platform.UniqueRoot] then true else root == right.root
+    case plane: (Plane is System) =>
+      inline if !![plane.UniqueRoot] then true else root == right.root
     case _ =>
       root == right.root
 
@@ -199,36 +197,36 @@ case class Path(root: Text, descent: Text*):
       case false => Unset
       case _     => determine(right)
 
-  def relative: Relative of Subject on Platform under 0 =
-    Relative[Platform, Subject, 0](0, descent*)
+  def relative: Relative of Topic on Plane under 0 =
+    Relative[Plane, Topic, 0](0, descent*)
 
-  transparent inline def relativeTo[platform](right: Path on platform): Optional[Relative] =
+  transparent inline def relativeTo[plane](right: Path on plane): Optional[Relative] =
     inline sameRoot(right) match
       case true  =>
         val path = certain(right)
-        inline val baseAscent: Int = count[Subject, right.Subject]
+        inline val baseAscent: Int = count[Topic, right.Topic]
 
-        inline !![right.Subject] match
+        inline !![right.Topic] match
           case _: (_ *: _) | Zero =>
-            inline val ascent = constValue[Tuple.Size[right.Subject]] - baseAscent
+            inline val ascent = constValue[Tuple.Size[right.Topic]] - baseAscent
 
-            inline !![Subject] match
+            inline !![Topic] match
               case _: (_ *: _) | Zero =>
-                inline val retain = constValue[Tuple.Size[Subject]] - baseAscent
-                type Subject2 = Tuple.Take[Subject, retain.type]
+                inline val retain = constValue[Tuple.Size[Topic]] - baseAscent
+                type Topic2 = Tuple.Take[Topic, retain.type]
                 summonFrom:
-                  case given (Platform =:= `platform`) =>
-                    Relative[Platform, Subject2, ascent.type]
+                  case given (Plane =:= `plane`) =>
+                    Relative[Plane, Topic2, ascent.type]
                      (ascent, descent.dropRight(baseAscent)*)
 
                   case _ =>
-                    Relative[Any, Subject2, ascent.type]
+                    Relative[Any, Topic2, ascent.type]
                      (ascent, descent.dropRight(baseAscent)*)
 
               case _ =>
                 summonFrom:
-                  case given (Platform =:= `platform`) =>
-                    Relative[Platform, Tuple, Nat]
+                  case given (Plane =:= `plane`) =>
+                    Relative[Plane, Tuple, Nat]
                      (right.depth - path.depth, descent.dropRight(path.depth)*)
                   case _ =>
                     Relative[Any, Tuple, Nat]
@@ -236,8 +234,8 @@ case class Path(root: Text, descent: Text*):
 
           case _ =>
             summonFrom:
-              case given (Platform =:= `platform`) =>
-                Relative[Platform, Tuple, Nat]
+              case given (Plane =:= `plane`) =>
+                Relative[Plane, Tuple, Nat]
                  (right.depth - path.depth, descent.dropRight(path.depth)*)
               case _ =>
                 Relative[Any, Tuple, Nat]
@@ -251,8 +249,8 @@ case class Path(root: Text, descent: Text*):
           case Unset      => Unset
           case path: Path =>
             summonFrom:
-              case given (Platform =:= `platform`) =>
-                Relative[Platform, Tuple, Nat]
+              case given (Plane =:= `plane`) =>
+                Relative[Plane, Tuple, Nat]
                  (right.depth - path.depth, descent.dropRight(path.depth)*)
 
               case _ =>
@@ -260,9 +258,9 @@ case class Path(root: Text, descent: Text*):
 
 
   protected transparent inline def determine(right: Path): Optional[Path] = summonFrom:
-    case given ValueOf[Constraint] => summonFrom:
-      case given ValueOf[right.Constraint] => summonFrom:
-        case given (Constraint =:= right.Constraint) => certain(right)
+    case given ValueOf[Limit] => summonFrom:
+      case given ValueOf[right.Limit] => summonFrom:
+        case given (Limit =:= right.Limit) => certain(right)
         case _                                       => Unset
       case _ => if root != right.root then Unset else certain(right)
     case _ => if root != right.root then Unset else certain(right)
@@ -275,14 +273,14 @@ case class Path(root: Text, descent: Text*):
       0
 
   protected transparent inline def certain(right: Path): Path =
-    inline !![right.Subject] match
-      case _: Zero => Path.of[Platform, Constraint, Zero](root)
-      case _: (head *: tail) => inline !![Subject] match
-        case _: Zero => Path.of[Platform, Constraint, Zero](root)
+    inline !![right.Topic] match
+      case _: Zero => Path.of[Plane, Limit, Zero](root)
+      case _: (head *: tail) => inline !![Topic] match
+        case _: Zero => Path.of[Plane, Limit, Zero](root)
         case _: (head2 *: tail2) =>
           inline val n = count[head *: tail, head2 *: tail2]
-          type Subject2 = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Subject], n.type]]
-          Path.of[Platform, Constraint, Subject2](root, descent.takeRight(n)*)
+          type Topic2 = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Topic], n.type]]
+          Path.of[Plane, Limit, Topic2](root, descent.takeRight(n)*)
         case _ => calculate(right)
       case _ => calculate(right)
 
@@ -294,7 +292,7 @@ case class Path(root: Text, descent: Text*):
 
 
     def recur(left: List[Text], right: List[Text], size: Int, count: Int)
-    : Path on Platform =
+    : Path on Plane =
 
         if left.isEmpty then Path.of(root, left0.drop(size - count)*)
         else if left.head == right.head then recur(left.tail, right.tail, size + 1, count + 1)
@@ -304,46 +302,46 @@ case class Path(root: Text, descent: Text*):
     recur(left0, right0, 0, 0)
 
 
-  transparent inline def parent: Optional[Path on Platform under Constraint] =
-    inline !![Subject] match
-      case head *: tail => Path.of[Platform, Constraint, tail.type](root, descent.tail*)
+  transparent inline def parent: Optional[Path on Plane under Limit] =
+    inline !![Topic] match
+      case head *: tail => Path.of[Plane, Limit, tail.type](root, descent.tail*)
       case EmptyTuple   => Unset
 
       case _ =>
         if descent.isEmpty then Unset
-        else Path.of[Platform, Constraint, Tuple](root, descent.tail*)
+        else Path.of[Plane, Limit, Tuple](root, descent.tail*)
 
-  def ancestors: List[Path on Platform under Constraint] =
+  def ancestors: List[Path on Plane under Limit] =
     safely(parent).let { parent => parent :: parent.ancestors }.or(Nil)
 
-  def child(value: Text)(using Unsafe): Path on Platform under Constraint =
-    Path.of[Platform, Constraint, Text *: Subject](root, value +: descent*)
+  def child(value: Text)(using Unsafe): Path on Plane under Limit =
+    Path.of[Plane, Limit, Text *: Topic](root, value +: descent*)
 
   @targetName("slash")
-  transparent inline infix def / (child: Any): Path of (child.type *: Subject) under Constraint =
+  transparent inline infix def / (child: Any): Path of (child.type *: Topic) under Limit =
     summonFrom:
-      case given ((? >: child.type) is Admissible on Platform) =>
-        Path.of[Platform, Constraint, child.type *: Subject]
+      case given ((? >: child.type) is Admissible on Plane) =>
+        Path.of[Plane, Limit, child.type *: Topic]
           (root, infer[child.type is Navigable].follow(child) +: descent*)
 
       case _ =>
-        Path.unplatformed[Constraint, child.type *: Subject]
+        Path.unplatformed[Limit, child.type *: Topic]
           (root, infer[child.type is Navigable].follow(child) +: descent*)
 
 
-  transparent inline def peer(child: Any)(using child.type is Admissible on Platform)
-  :     Path on Platform under Constraint =
-    inline !![Subject] match
+  transparent inline def peer(child: Any)(using child.type is Admissible on Plane)
+  :     Path on Plane under Limit =
+    inline !![Topic] match
       case _: (head *: tail) =>
-        Path.of[Platform, Constraint, child.type *: tail]
+        Path.of[Plane, Limit, child.type *: tail]
          (root, infer[child.type is Navigable].follow(child) +: descent*)
 
       case _ =>
-        Path.of[Platform, Constraint, Tuple]
+        Path.of[Plane, Limit, Tuple]
          (root, infer[child.type is Navigable].follow(child) +: descent*)
 
   transparent inline def + (relative: Relative): Path =
-    type Base = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Subject], relative.Constraint]]
-    type Subject2 = Tuple.Concat[relative.Subject, Base]
-    Path.of[Platform, Constraint, Subject2]
+    type Base = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Topic], relative.Limit]]
+    type Topic2 = Tuple.Concat[relative.Topic, Base]
+    Path.of[Plane, Limit, Topic2]
      (root, relative.descent ++ descent.drop(relative.ascent)*)

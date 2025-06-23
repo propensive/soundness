@@ -33,11 +33,11 @@
 package hieroglyph
 
 import anticipation.*
+import prepositional.*
 
 object Measurable:
   given general: (measurable: Char is Measurable) => Text is Measurable =
     _.s.toCharArray.nn.map(measurable.width(_)).sum
 
-trait Measurable:
-  type Self
+trait Measurable extends Typeclass:
   def width(text: Self): Int
