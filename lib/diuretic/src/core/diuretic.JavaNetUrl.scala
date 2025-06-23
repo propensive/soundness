@@ -39,7 +39,7 @@ import java.net as jn
 object JavaNetUrl extends Abstractable, Instantiable:
   type Self = jn.URL
   type Result = Text
-  type Source = Text
+  type Origin = Text
   type Domain = Urls
 
   def genericize(value: jn.URL): Text = value.toString.tt

@@ -39,7 +39,7 @@ import java.io as ji
 object JavaIoFile extends Abstractable, Instantiable:
   type Self = ji.File
   type Domain = Paths
-  type Source = Text
+  type Origin = Text
   type Result = Text
 
   def apply(path: Text): ji.File = ji.File(path.s).nn

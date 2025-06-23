@@ -40,4 +40,4 @@ object Distinct:
 
 erased trait Distinct:
   type Self
-  type Source
+  type Origin

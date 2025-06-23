@@ -37,7 +37,7 @@ import anticipation.*
 object JavaLongInstant extends Abstractable, Instantiable:
   type Self = Long
   type Result = Long
-  type Source = Long
+  type Origin = Long
   type Domain = Instants
 
   def apply(long: Long): Long = long

@@ -30,6 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package prepositional
 
-export prepositional.{by, from, in, into, of, on, onto, over, under, against, across, Typeclass}
+trait Typeclass:
+  type Self

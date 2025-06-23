@@ -34,6 +34,6 @@ package anticipation
 
 trait Instantiable:
   type Self
-  type Source
+  type Origin
   type Domain
-  def apply(source: Source): Self
+  def apply(source: Origin): Self
