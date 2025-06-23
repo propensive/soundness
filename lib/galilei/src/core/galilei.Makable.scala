@@ -127,7 +127,6 @@ object Makable:
                   case _             =>
                     raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
 
-trait Makable extends Typeclass:
-  type Result
+trait Makable extends Typeclass, Resultant:
   type Platform
   def make(path: Path on Platform): Result

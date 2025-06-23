@@ -45,6 +45,5 @@ import vacuous.*
 
 import charEncoders.utf8
 
-trait Courier:
-  type Result
+trait Courier extends Resultant:
   def send(envelope: Envelope): Result

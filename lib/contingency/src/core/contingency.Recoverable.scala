@@ -37,7 +37,6 @@ import prepositional.*
 object Recoverable:
   given exception: [error <: Exception] => error is Recoverable into Unit = error => ()
 
-trait Recoverable:
+trait Recoverable extends Resultant:
   type Self <: Exception
-  type Result
   def recover(error: Self): Result

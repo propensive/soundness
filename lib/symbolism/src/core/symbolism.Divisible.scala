@@ -72,8 +72,7 @@ object Divisible:
   given byte: Byte is Divisible by Byte into Byte = Divisible:
     (dividend, divisor) => (dividend/divisor).toByte
 
-trait Divisible extends Typeclass, Operable:
-  type Result
+trait Divisible extends Typeclass, Operable, Resultant:
   type Dividend = Self
   type Divisor = Operand
 

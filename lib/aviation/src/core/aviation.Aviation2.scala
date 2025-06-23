@@ -78,8 +78,7 @@ object Aviation2:
       def subtract(left: Instant, right: Quantity[units]): Instant =
         left - (right.normalize.value*1000.0).toLong
 
-  trait InstantSubtractable extends Typeclass:
-    type Result
+  trait InstantSubtractable extends Typeclass, Resultant:
     def subtract(left: Instant, right: Self): Result
 
   object Instant:

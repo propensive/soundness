@@ -82,9 +82,8 @@ object Multiplicable:
 
       result
 
-trait Multiplicable extends Typeclass, Operable:
+trait Multiplicable extends Typeclass, Operable, Resultant:
   type Multiplicand = Self
-  type Result
   type Multiplier = Operand
 
   def multiply(multiplicand: Multiplicand, multiplier: Multiplier): Result

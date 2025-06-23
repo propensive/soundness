@@ -30,26 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package symbolism
+package prepositional
 
-import prepositional.*
-
-object Rootable:
-  def apply[root <: Int & Singleton, operand, result](lambda: operand => result)
-  : operand is Rootable[root] into result =
-
-      new Rootable[root]:
-        type Self = operand
-        type Result = result
-
-        def root(operand: operand): result = lambda(operand)
-
-
-  given sqrt: Double is Rootable[2] into Double = math.sqrt(_)
-  given cbrt: Double is Rootable[3] into Double = math.cbrt(_)
-
-  given sqrtFloat: Float is Rootable[2] into Float = math.sqrt(_).toFloat
-  given cbrtFloat: Float is Rootable[3] into Float = math.cbrt(_).toFloat
-
-trait Rootable[root <: Int & Singleton] extends Typeclass, Resultant:
-  def root(value: Self): Result
+trait Resultant:
+  type Result

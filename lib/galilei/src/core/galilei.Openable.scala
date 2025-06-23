@@ -93,8 +93,7 @@ object Openable:
     def handle(carrier: Carrier): Result = file.handle(carrier)
     def close(carrier: Carrier): Unit = file.close(carrier)
 
-trait Openable extends Typeclass, Operable:
-  type Result
+trait Openable extends Typeclass, Operable, Resultant:
   protected type Carrier
 
   def init(value: Self, options: List[Operand]): Carrier

@@ -32,10 +32,10 @@
                                                                                                   */
 package guillotine
 
+import prepositional.*
 import proscenium.*
 
 object Intelligible extends PosixCommands
 
-erased trait Intelligible:
+erased trait Intelligible extends Resultant:
   type Self <: Label
-  type Result

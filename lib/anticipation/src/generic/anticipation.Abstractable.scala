@@ -34,8 +34,7 @@ package anticipation
 
 import prepositional.*
 
-trait Abstractable extends Typeclass:
-  type Result
+trait Abstractable extends Typeclass, Resultant:
   type Domain
   def genericize(value: Self): Result
   extension (value: Self) def generic: Result = genericize(value)
