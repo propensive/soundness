@@ -30,14 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package prepositional
 
-import java.nio.file as jnf
-
-import prepositional.*
-import serpentine.*
-
-trait CreateNonexistent extends Planar:
-  def apply(path: Path on Plane)(operation: => Unit): Unit
-  def error(path: Path on Plane, operation: IoError.Operation): Nothing
-  def options(): List[jnf.OpenOption]
+trait Planar:
+  type Plane

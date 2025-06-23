@@ -39,7 +39,5 @@ object Submissible:
   given linux: %.type is Submissible on Linux = _ => ()
   given macOs: %.type is Submissible on MacOs = _ => ()
 
-trait Submissible extends Typeclass:
-  type Plane
-
+trait Submissible extends Typeclass, Planar:
   def check(name: Text): Unit

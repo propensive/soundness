@@ -35,6 +35,5 @@ package galilei
 import prepositional.*
 import serpentine.*
 
-trait DeleteRecursively:
-  type Plane
+trait DeleteRecursively extends Planar:
   def conditionally[ResultType](path: Path on Plane)(operation: => ResultType): ResultType

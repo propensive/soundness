@@ -34,4 +34,4 @@ package soundness
 
 export prepositional
 . { by, from, in, into, of, on, onto, over, under, against, across, Typeclass, Topical, Operable,
-    Domainal, Targetable, Resultant, Constrained, Transportive, Formal }
+    Domainal, Targetable, Resultant, Constrained, Transportive, Formal, Planar, Original }

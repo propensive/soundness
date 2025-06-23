@@ -120,8 +120,7 @@ object Relative:
   : relative is Quotient of Text over (Relative on system) | Text
 
 
-case class Relative(ascent: Int, descent: List[Text] = Nil):
-  type Plane
+case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topical, Constrained:
   type Topic <: Tuple
   type Constraint <: Int
 

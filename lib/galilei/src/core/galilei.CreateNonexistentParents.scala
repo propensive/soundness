@@ -35,6 +35,5 @@ package galilei
 import prepositional.*
 import serpentine.*
 
-trait CreateNonexistentParents:
-  type Plane
+trait CreateNonexistentParents extends Planar:
   def apply[ResultType](path: Path on Plane)(operation: => ResultType): ResultType

@@ -32,5 +32,5 @@
                                                                                                   */
 package prepositional
 
-trait Constrained:
-  type Constraint
+trait Bounded:
+  type Bound

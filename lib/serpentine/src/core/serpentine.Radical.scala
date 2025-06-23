@@ -85,8 +85,7 @@ object Radical:
       case Drive(letter) => t"$letter:\\"
       case %             => t"/"
 
-trait Radical extends Typeclass:
-  type Plane
+trait Radical extends Typeclass, Planar:
   def decode(text: Text): Self
   def length(text: Text): Int
   def encode(self: Self): Text

@@ -116,8 +116,7 @@ object Path:
     : path is Quotient of Text over (Relative on system) | Text
 
 
-case class Path(root: Text, descent: Text*) extends Constrained:
-  type Plane
+case class Path(root: Text, descent: Text*) extends Constrained, Topical, Planar:
   type Topic <: Tuple
 
   def name: Text = descent.prim.or(root)

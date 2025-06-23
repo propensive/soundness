@@ -61,7 +61,5 @@ object Admissible:
   given uuid: [uuid <: Uuid, system <: Filesystem] => uuid is Admissible on system =
     unchecked[uuid, system]
 
-trait Admissible extends Typeclass:
-  type Plane
-
+trait Admissible extends Typeclass, Planar:
   def check(name: Text): Unit
