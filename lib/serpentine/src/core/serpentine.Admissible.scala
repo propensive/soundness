@@ -61,8 +61,7 @@ object Admissible:
   given uuid: [uuid <: Uuid, system <: Filesystem] => uuid is Admissible on system =
     unchecked[uuid, system]
 
-trait Admissible:
-  type Self
+trait Admissible extends Typeclass:
   type Platform
 
   def check(name: Text): Unit

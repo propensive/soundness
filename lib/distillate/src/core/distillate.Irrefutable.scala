@@ -59,7 +59,6 @@ object Irrefutable:
   given intDoule: Int is Irrefutable into Double = _.toDouble
   given floatDouble: Float is Irrefutable into Double = _.toDouble
 
-trait Irrefutable:
-  type Self
+trait Irrefutable extends Typeclass:
   type Result
   def unapply(value: Self): Result

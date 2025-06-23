@@ -34,13 +34,13 @@ package escritoire
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import spectacular.*
 import vacuous.*
 import wisteria.*, derivationContext.required
 
-trait Tabulable[text]:
-  type Self
+trait Tabulable[text] extends Typeclass:
   def table(): Table[Self, text]
   private lazy val tableValue: Table[Self, text] = table()
   def tabulate(data: Seq[Self]): Tabulation[text] = tableValue.tabulate(data)

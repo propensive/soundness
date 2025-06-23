@@ -32,8 +32,9 @@
                                                                                                   */
 package anticipation
 
-trait Graphical:
-  type Self
+import prepositional.*
+
+trait Graphical extends Typeclass:
   def width(self: Self): Int
   def height(self: Self): Int
   def pixel(self: Self, x: Int, y: Int): Int

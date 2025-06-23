@@ -46,6 +46,5 @@ object Navigable:
   given name: [platform, name <: Name[platform]] => name is Navigable = identity(_)
   given uuid: [uuid <: Uuid] => uuid is Navigable = _.text
 
-trait Navigable:
-  type Self
+trait Navigable extends Typeclass:
   def follow(name: Self): Text

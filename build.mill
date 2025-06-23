@@ -395,7 +395,7 @@ object anticipation extends SoundnessModule {
   }
 
   object gfx extends SoundnessSubModule {
-    def moduleDeps = Seq()
+    def moduleDeps = Seq(prepositional.core)
   }
 
   object css extends SoundnessSubModule {
@@ -422,9 +422,13 @@ object anticipation extends SoundnessModule {
     def moduleDeps = Seq(text)
   }
 
-  object transport extends SoundnessSubModule
+  object transport extends SoundnessSubModule {
+    def moduleDeps = Seq(prepositional.core)
+  }
 
-  object color extends SoundnessSubModule
+  object color extends SoundnessSubModule {
+    def moduleDeps = Seq(prepositional.core)
+  }
 
   object log extends SoundnessSubModule {
     def moduleDeps = Seq(text)

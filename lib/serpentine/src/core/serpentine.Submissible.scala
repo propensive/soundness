@@ -39,8 +39,7 @@ object Submissible:
   given linux: %.type is Submissible on Linux = _ => ()
   given macOs: %.type is Submissible on MacOs = _ => ()
 
-trait Submissible:
-  type Self
+trait Submissible extends Typeclass:
   type Platform
 
   def check(name: Text): Unit

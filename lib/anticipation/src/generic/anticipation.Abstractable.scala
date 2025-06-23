@@ -32,8 +32,9 @@
                                                                                                   */
 package anticipation
 
-trait Abstractable:
-  type Self
+import prepositional.*
+
+trait Abstractable extends Typeclass:
   type Result
   type Domain
   def genericize(value: Self): Result

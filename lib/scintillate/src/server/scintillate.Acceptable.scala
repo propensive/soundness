@@ -37,6 +37,7 @@ import contingency.*
 import fulminate.*
 import gesticulate.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*
@@ -61,6 +62,5 @@ object Acceptable:
           Multipart.parse(request.body(), boundary)
         else abort(MultipartError(MultipartError.Reason.MediaType))
 
-trait Acceptable:
-  type Self
+trait Acceptable extends Typeclass:
   def accept(request: Http.Request): Self

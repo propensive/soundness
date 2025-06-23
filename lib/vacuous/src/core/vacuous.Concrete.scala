@@ -32,8 +32,9 @@
                                                                                                   */
 package vacuous
 
+import prepositional.*
+
 object Concrete:
  inline given concrete: [typeRef] => typeRef is Concrete = ${Vacuous.concrete[typeRef]}
 
-erased trait Concrete:
-  type Self
+erased trait Concrete extends Typeclass

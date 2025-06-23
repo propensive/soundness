@@ -32,8 +32,9 @@
                                                                                                   */
 package anticipation
 
-trait Legible:
-  type Self
+import prepositional.*
+
+trait Legible extends Typeclass:
   def text(value: Self): Text
 
 object Legible:

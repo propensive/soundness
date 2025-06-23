@@ -59,6 +59,5 @@ object Receivable:
 
   given httpStatus: Http.Status is Receivable = _.status
 
-trait Receivable:
-  type Self
+trait Receivable extends Typeclass:
   def read(response: Http.Response): Self

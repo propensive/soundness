@@ -73,6 +73,5 @@ object Servable:
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
         Http.Response.make(Http.Ok, headers, value.stream[Bytes])
 
-trait Servable:
-  type Self
+trait Servable extends Typeclass:
   def serve(content: Self): Http.Response

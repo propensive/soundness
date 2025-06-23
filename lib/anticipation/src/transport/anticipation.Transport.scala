@@ -32,8 +32,9 @@
                                                                                                   */
 package anticipation
 
-trait Transport:
-  type Self
+import prepositional.*
+
+trait Transport extends Typeclass:
   type Writer[-data]
   type Reader[data]
 

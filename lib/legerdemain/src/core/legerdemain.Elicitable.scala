@@ -74,8 +74,7 @@ object Elicitable extends Elicitable2:
 
 
 
-trait Elicitable:
-  type Self
+trait Elicitable extends Typeclass:
   type Operand
   def input(value: Self): Text
   def widget(id: Text, label: Text, value: Text): Operand

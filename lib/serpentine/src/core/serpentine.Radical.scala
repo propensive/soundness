@@ -35,6 +35,7 @@ package serpentine
 import anticipation.*
 import contingency.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 
 object Radical:
@@ -84,9 +85,8 @@ object Radical:
       case Drive(letter) => t"$letter:\\"
       case %             => t"/"
 
-trait Radical:
+trait Radical extends Typeclass:
   type Platform
-  type Self
   def decode(text: Text): Self
   def length(text: Text): Int
   def encode(self: Self): Text

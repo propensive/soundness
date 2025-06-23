@@ -33,6 +33,7 @@
 package cataclysm
 
 import anticipation.*
+import prepositional.*
 import proscenium.*
 
 object Selectable:
@@ -44,6 +45,5 @@ object Selectable:
       case s"#$id"  => Selector.Id(id.tt)
       case elem     => Selector.Element(elem.tt)
 
-trait Selectable:
-  type Self
+trait Selectable extends Typeclass:
   def selector(value: Self): Selector

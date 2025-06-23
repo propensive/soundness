@@ -32,8 +32,9 @@
                                                                                                   */
 package anticipation
 
-trait SpecificDuration:
-  type Self
+import prepositional.*
+
+trait SpecificDuration extends Typeclass:
   def duration(milliseconds: Long): Self
 
 object SpecificDuration:

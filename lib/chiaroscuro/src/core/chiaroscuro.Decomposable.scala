@@ -43,8 +43,7 @@ import wisteria.*
 import scala.deriving.*
 import scala.reflect.*
 
-trait Decomposable:
-  type Self
+trait Decomposable extends Typeclass:
   def decompose(value: Self): Decomposition
 
 object Decomposable extends Derivable[Decomposable], Decomposable2:

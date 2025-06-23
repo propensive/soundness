@@ -36,8 +36,7 @@ import prepositional.*
 
 import scala.annotation.targetName
 
-trait Quotient:
-  type Self
+trait Quotient extends Typeclass:
   type Subject
   type Carrier
   type Numerator = Subject

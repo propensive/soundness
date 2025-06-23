@@ -43,10 +43,8 @@ import turbulence.*
 
 import javax.imageio as ji
 
-trait Rasterizable:
+trait Rasterizable extends Typeclass:
   rasterizable =>
-    type Self
-
     def name: Text
     def mediaType: MediaType
 

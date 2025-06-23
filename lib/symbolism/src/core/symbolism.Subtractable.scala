@@ -60,8 +60,7 @@ object Subtractable:
   given byte: Byte is Subtractable by Byte into Byte = Subtractable:
     (minuend, subtrahend) => (minuend - subtrahend).toByte
 
-trait Subtractable:
-  type Self
+trait Subtractable extends Typeclass:
   type Result
   type Operand
   type Minuend = Self

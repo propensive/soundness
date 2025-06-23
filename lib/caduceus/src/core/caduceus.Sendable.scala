@@ -55,6 +55,5 @@ object Sendable:
 
   given email: Email is Sendable = identity(_)
 
-trait Sendable:
-  type Self
+trait Sendable extends Typeclass:
   def email(content: Self): Email

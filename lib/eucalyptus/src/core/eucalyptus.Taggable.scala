@@ -34,8 +34,9 @@ package eucalyptus
 
 import language.experimental.pureFunctions
 
-trait Taggable:
-  type Self
+import prepositional.*
+
+trait Taggable extends Typeclass:
   type Operand
 
   extension (value: Self) def tag(tag: Operand): Self

@@ -40,6 +40,5 @@ import prepositional.*
 object Parameterizable:
   given encodable: [path: Encodable in Text] => path is Parameterizable = _.encode
 
-trait Parameterizable:
-  type Self
+trait Parameterizable extends Typeclass:
   def show(value: Self): Text

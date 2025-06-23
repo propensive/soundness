@@ -37,6 +37,7 @@ import contextual.*
 import contingency.*
 import fulminate.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -187,6 +188,5 @@ object Media:
   final private val specials: Set[Char] =
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')
 
-trait Media:
-  type Self
+trait Media extends Typeclass:
   extension (value: Self) def mediaType: MediaType

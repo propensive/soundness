@@ -126,8 +126,7 @@ object Readable:
 
       Stream.defer(recur(0))
 
-trait Readable:
-  type Self
+trait Readable extends Typeclass:
   type Operand
   def stream(value: Self): Stream[Operand]
 

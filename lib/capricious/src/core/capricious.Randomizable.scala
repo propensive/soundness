@@ -33,6 +33,7 @@
 package capricious
 
 import hypotenuse.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import wisteria.*
@@ -78,7 +79,6 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
       delegate(variantLabels(random.long().abs.toInt%variantLabels.length)):
         [variant <: derivation] => _.from(summon[Random])
 
-trait Randomizable:
-  type Self
+trait Randomizable extends Typeclass:
   def apply()(using random: Random): Self = from(random)
   def from(random: Random): Self

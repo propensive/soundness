@@ -149,8 +149,7 @@ object Extractable:
         case mirror: { def fromOrdinal(ordinal: Int): enumeration } @unchecked =>
           try mirror.fromOrdinal(ordinal) catch case error: Exception => Unset
 
-trait Extractable:
-  type Self
+trait Extractable extends Typeclass:
   type Result
   def extract(value: Self): Optional[Result]
   def unapply(value: Self): Option[Result] = extract(value).option

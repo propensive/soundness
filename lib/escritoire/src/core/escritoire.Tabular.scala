@@ -32,8 +32,9 @@
                                                                                                   */
 package escritoire
 
-trait Tabular[text]:
-  type Self
+import prepositional.*
+
+trait Tabular[text] extends Typeclass:
   type Element
   def table(value: Self): Table[Element, text]
   def rows(value: Self): Seq[Element]

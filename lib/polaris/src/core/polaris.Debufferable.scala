@@ -34,6 +34,7 @@ package polaris
 
 import anticipation.*
 import hypotenuse.*
+import prepositional.*
 import rudiments.*
 import wisteria.*
 
@@ -76,7 +77,6 @@ object Debufferable extends ProductDerivable[Debufferable]:
      (contexts { [field] => _.width }.sum,
       buffer => construct { [field] => context => context.debuffer(buffer) })
 
-trait Debufferable:
-  type Self
+trait Debufferable extends Typeclass:
   def width: Int
   def debuffer(buffer: Buffer): Self

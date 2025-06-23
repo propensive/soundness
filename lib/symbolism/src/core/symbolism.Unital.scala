@@ -32,6 +32,8 @@
                                                                                                   */
 package symbolism
 
+import prepositional.*
+
 object Unital:
   given long: Long is Unital = () => 1L
   given int: Int is Unital = () => 1
@@ -40,7 +42,6 @@ object Unital:
   given double: Double is Unital = () => 1.0
   given float: Float is Unital = () => 1.0f
 
-trait Unital:
-  type Self
+trait Unital extends Typeclass:
   protected def makeOne(): Self
   def one: Self = makeOne()

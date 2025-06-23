@@ -36,10 +36,10 @@ import anticipation.*
 import cataclysm.*
 import gossamer.*
 import honeycomb.*
+import prepositional.*
 import spectacular.*
 
-trait Focusable:
-  type Self
+trait Focusable extends Typeclass:
   def strategy: Text
   def focus(value: Self): Text
 

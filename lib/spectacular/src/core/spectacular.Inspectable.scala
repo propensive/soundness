@@ -179,6 +179,5 @@ trait Inspectable2:
   given optional: [inspectable: Inspectable] => Optional[inspectable] is Inspectable =
     _.let { value => s"⸂${inspectable.text(value)}⸃".tt }.or("⸄⸅".tt)
 
-trait Inspectable:
-  type Self
+trait Inspectable extends Typeclass:
   def text(value: Self): Text

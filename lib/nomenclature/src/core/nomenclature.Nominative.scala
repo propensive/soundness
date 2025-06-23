@@ -40,6 +40,5 @@ object Nominative:
       type Self = self
       type Constraint = constraint
 
-trait Nominative:
-  type Self
+trait Nominative extends Typeclass:
   type Constraint

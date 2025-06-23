@@ -33,6 +33,7 @@
 package gossamer
 
 import fulminate.*
+import prepositional.*
 import rudiments.*
 
 import language.experimental.pureFunctions
@@ -46,6 +47,5 @@ object Joinable:
 
   given message: Message is Joinable = _.fuse(m"")(state+next)
 
-trait Joinable:
-  type Self
+trait Joinable extends Typeclass:
   def join(elements: Iterable[Self]): Self

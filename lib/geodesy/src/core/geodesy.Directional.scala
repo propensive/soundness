@@ -32,6 +32,7 @@
                                                                                                   */
 package geodesy
 
-trait Directional:
-  type Self
+import prepositional.*
+
+trait Directional extends Typeclass:
   def direction(angle: Angle): Self

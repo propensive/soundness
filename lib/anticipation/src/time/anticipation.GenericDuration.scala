@@ -32,8 +32,9 @@
                                                                                                   */
 package anticipation
 
-trait GenericDuration:
-  type Self
+import prepositional.*
+
+trait GenericDuration extends Typeclass:
   def milliseconds(duration: Self): Long
   def nanoseconds(duration: Self): Long = milliseconds(duration)*1_000_000L
 

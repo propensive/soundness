@@ -51,7 +51,6 @@ object Rootable:
   given sqrtFloat: Float is Rootable[2] into Float = math.sqrt(_).toFloat
   given cbrtFloat: Float is Rootable[3] into Float = math.cbrt(_).toFloat
 
-trait Rootable[root <: Int & Singleton]:
-  type Self
+trait Rootable[root <: Int & Singleton] extends Typeclass:
   type Result
   def root(value: Self): Result

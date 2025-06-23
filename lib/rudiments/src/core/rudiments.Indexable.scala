@@ -101,8 +101,7 @@ object Indexable:
       def access(value: Self, index: key): value = value(index)
 
 
-trait Indexable:
-  type Self
+trait Indexable extends Typeclass:
   type Operand
   type Result
 

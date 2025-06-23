@@ -38,8 +38,7 @@ import hieroglyph.*
 import prepositional.*
 import proscenium.*
 
-trait Transmissible:
-  type Self
+trait Transmissible extends Typeclass:
   def serialize(message: Self): Stream[Bytes]
 
 object Transmissible:

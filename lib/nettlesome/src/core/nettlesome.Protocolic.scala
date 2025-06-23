@@ -32,8 +32,9 @@
                                                                                                   */
 package nettlesome
 
-trait Protocolic:
-  type Self
+import prepositional.*
+
+trait Protocolic extends Typeclass:
   type Carrier
   type Request
   type Response

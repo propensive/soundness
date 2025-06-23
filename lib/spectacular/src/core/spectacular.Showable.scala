@@ -37,12 +37,12 @@ import denominative.*
 import digression.*
 import fulminate.*
 import inimitable.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
 
-trait Showable extends Communicable:
-  type Self
+trait Showable extends Typeclass, Communicable:
   def text(value: Self): Text
   def message(value: Self): Message = Message(text(value))
 

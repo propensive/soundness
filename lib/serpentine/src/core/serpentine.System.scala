@@ -34,9 +34,9 @@ package serpentine
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 
-trait System:
-  type Self
+trait System extends Typeclass:
   type UniqueRoot <: Boolean
 
   val separator: Text

@@ -82,8 +82,7 @@ object Multiplicable:
 
       result
 
-trait Multiplicable:
-  type Self
+trait Multiplicable extends Typeclass:
   type Multiplicand = Self
   type Result
   type Operand

@@ -75,8 +75,7 @@ object Computable:
         =>  instantiable is Computable =
     path => instantiable(text.compute(path))
 
-trait Computable:
-  type Self
+trait Computable extends Typeclass:
   def compute(process: java.lang.Process): Self
 
   def map[self2](lambda: Self => self2): self2 is Computable =

@@ -80,9 +80,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
       List(Fieldset(Legend(legend), content))
 
 
-trait Formulaic:
-  type Self
-
+trait Formulaic extends Typeclass:
   def fields
        (pointer:     Pointer,
         legend:      Text,

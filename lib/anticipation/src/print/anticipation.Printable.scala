@@ -34,13 +34,14 @@ package anticipation
 
 import scala.annotation.*
 
+import prepositional.*
+
 object Printable:
   given text: Text is Printable = (text, termcap) => text
   given string: String is Printable = (string, termcap) => string.tt
   given char: Char is Printable = (char, termcap) => char.toString.tt
 
-trait Printable:
-  type Self
+trait Printable extends Typeclass:
   def print(text: Self, termcap: Termcap): Text
 
   def contramap[self](lambda: Termcap ?=> self => Self): self is Printable =

@@ -32,6 +32,7 @@
                                                                                                   */
 package geodesy
 
-trait Locatable:
-  type Self
+import prepositional.*
+
+trait Locatable extends Typeclass:
   def location(value: Self): Location

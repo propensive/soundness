@@ -34,6 +34,7 @@ package coaxial
 
 import anticipation.*
 import nettlesome.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
@@ -74,8 +75,7 @@ object Addressable:
 
         connection.socket.send(packet)
 
-trait Addressable:
-  type Self
+trait Addressable extends Typeclass:
   type Connection
 
   def connect(endpoint: Self): Connection

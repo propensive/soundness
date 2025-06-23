@@ -33,6 +33,7 @@
 package denominative
 
 import anticipation.*
+import prepositional.*
 
 object Countable:
   given seq: [element] => Seq[element] is Countable = _.length
@@ -41,6 +42,5 @@ object Countable:
   given text: Text is Countable = _.s.length
   given int: Int is Countable = identity(_)
 
-trait Countable:
-  type Self
+trait Countable extends Typeclass:
   def size(self: Self): Int

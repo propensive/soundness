@@ -33,11 +33,11 @@
 package eucalyptus
 
 import anticipation.*
+import prepositional.*
 
 import language.experimental.pureFunctions
 
-trait Inscribable:
-  type Self
+trait Inscribable extends Typeclass:
   type Format
 
   def formatter(message: Self, level: Level, realm: Realm, timestamp: Long): Format

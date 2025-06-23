@@ -38,8 +38,7 @@ import gossamer.*
 import hieroglyph.*
 import prepositional.*
 
-trait Ingressive:
-  type Self
+trait Ingressive extends Typeclass:
   def deserialize(message: Bytes): Self
 
 object Ingressive:

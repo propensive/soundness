@@ -35,6 +35,7 @@ package fulminate
 import scala.quoted.*
 
 import anticipation.*
+import prepositional.*
 
 object Communicable:
   given text: Text is Communicable = text =>
@@ -65,8 +66,7 @@ object Communicable:
   given listMessage: List[Message] is Communicable =
     messages => Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
 
-trait Communicable:
-  type Self
+trait Communicable extends Typeclass:
   def message(value: Self): Message
 
   def contramap[self](lambda: self => Self): self is Communicable = value => message(lambda(value))

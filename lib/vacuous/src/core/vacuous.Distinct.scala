@@ -38,6 +38,5 @@ object Distinct:
   inline given distinct: [typeRef, otherType] => typeRef is Distinct from otherType =
     ${Vacuous.distinct[typeRef, otherType]}
 
-erased trait Distinct:
-  type Self
+erased trait Distinct extends Typeclass:
   type Origin
