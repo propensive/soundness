@@ -40,102 +40,102 @@ import gossamer.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import dotty.tools.dotc.util as dtdu
 import scala.quoted.*
 
 object Probably:
-  protected def general[test: Type, report: Type, result: Type]
-                 (test:      Expr[Test[test]],
-                  predicate: Expr[test => Boolean],
-                  runner:    Expr[Runner[report]],
-                  inc:       Expr[Inclusion[report, Verdict]],
-                  inc2:      Expr[Inclusion[report, Verdict.Detail]],
-                  action:    Expr[Trial[test] => result])
+  private def handle[test: Type, result: Type]
+               (test:      Expr[Test[test]],
+                predicate: Expr[test => Boolean],
+                action:    Expr[Trial[test] => result])
   : Macro[result] =
 
       import quotes.reflect.*
 
-      def decompose(predicate: Expr[Any]): Option[Expr[Any]] = predicate.asTerm match
-        case Inlined(_, _, predicate) => decompose(predicate.asExpr)
-        case Block(List(DefDef(a1, _, _, Some(expression))), Closure(Ident(a2), _)) if a1 == a2 =>
-          expression match
-            case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
-            case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
-            case other                                     => None
+      Expr.summon[Runner[?]].getOrElse(halt(m"No `Runner` instance is available")).absolve match
+        case '{ $runner: Runner[report] } =>
 
-        case other =>
-          None
+          val inclusion = Expr.summon[Inclusion[report, Verdict]].getOrElse:
+            halt(m"Can't embed test verdicts in ${Type.of[report]}")
 
-      val exp: Option[Expr[Any]] = decompose(predicate)
-
-      exp match
-        case Some('{type testType >: test; $expr: testType}) =>
-          val decomposable: Expr[testType is Decomposable] =
-            Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
-
-          val contrast = Expr.summon[testType is Contrastable].getOrElse:
-            halt(m"Can't find a `Contrastable` instance for ${Type.of[testType]}")
-
-          '{
-            assertion[testType, test, report, result]
-             ($runner,
-              $test,
-              $predicate,
-              $action,
-              $contrast,
-              Some($expr),
-              $inc,
-              $inc2,
-              $decomposable) }
-
-        case _ =>
-          '{
-            assertion[test, test, report, result]
-             ($runner,
-              $test,
-              $predicate,
-              $action,
-              Contrastable.nothing[test],
-              None,
-              $inc,
-              $inc2,
-              Decomposable.any[test])
-          }
+          val inclusion2 = Expr.summon[Inclusion[report, Verdict.Detail]].getOrElse:
+            halt(m"Can't embed test details in ${Type.of[report]}")
 
 
-  def check[test: Type, report: Type]
-       (test:      Expr[Test[test]],
-        predicate: Expr[test => Boolean],
-        runner:    Expr[Runner[report]],
-        inc:       Expr[Inclusion[report, Verdict]],
-        inc2:      Expr[Inclusion[report, Verdict.Detail]])
-  : Macro[test] =
+          def lift(predicate: Expr[Any]): Option[Expr[Any]] = predicate.asTerm match
+            case Inlined(_, _, predicate) => lift(predicate.asExpr)
+            case Block(List(DefDef(a1, _, _, Some(expression))), Closure(Ident(a2), _)) if a1 == a2 =>
+              expression match
+                case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
+                case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
+                case other                                     => None
 
-      general[test, report, test]
-       (test, predicate, runner, inc, inc2, '{ (t: Trial[test]) => t.get })
+            case other =>
+              None
 
+          val exp: Option[Expr[Any]] = lift(predicate)
 
-  def assert[test: Type, report: Type]
-       (test:      Expr[Test[test]],
-        predicate: Expr[test => Boolean],
-        runner:    Expr[Runner[report]],
-        inc:       Expr[Inclusion[report, Verdict]],
-        inc2:      Expr[Inclusion[report, Verdict.Detail]])
-  : Macro[Unit] =
+          val analyse = Expr.summon[Autopsy] match
+            case None =>
+              Unset
 
-      general[test, report, Unit](test, predicate, runner, inc, inc2, '{ _ => () })
+            case Some('{ type analyse; $autopsy: (Autopsy { type Analyse = analyse }) }) =>
+              TypeRepr.of[analyse].literal[Boolean]
 
+          if analyse.or(false) then
+            exp match
+              case Some('{type testType >: test; $expr: testType}) =>
+                val decomposable: Expr[testType is Decomposable] =
+                  Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
 
-  def aspire[test: Type, report: Type]
-       (test:   Expr[Test[test]],
-        runner: Expr[Runner[report]],
-        inc:    Expr[Inclusion[report, Verdict]],
-        inc2:   Expr[Inclusion[report, Verdict.Detail]])
-  : Macro[Unit] =
+                val contrast = Expr.summon[testType is Contrastable].getOrElse:
+                  halt(m"Can't find a `Contrastable` instance for ${Type.of[testType]}")
 
-      general[test, report, Unit](test, '{ _ => true }, runner, inc, inc2, '{ _ => () })
+                '{  ( assertion[testType, test, report, result]
+                      ($runner,
+                        $test,
+                        $predicate,
+                        $action,
+                        $contrast,
+                        Some($expr),
+                        $inclusion,
+                        $inclusion2,
+                        $decomposable) )  }
 
+              case _ =>
+                '{  ( assertion[test, test, report, result]
+                      ($runner,
+                        $test,
+                        $predicate,
+                        $action,
+                        Contrastable.nothing[test],
+                        None,
+                        $inclusion,
+                        $inclusion2,
+                        Decomposable.any[test]) )  }
+
+          else
+            '{  ( assertion[test, test, report, result]
+                  ($runner,
+                    $test,
+                    $predicate,
+                    $action,
+                    Contrastable.nothing[test],
+                    None,
+                    $inclusion,
+                    $inclusion2,
+                    Decomposable.any[test]) )  }
+
+  def check[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[test] =
+    handle[test, test](test, predicate, '{ (t: Trial[test]) => t.get })
+
+  def assert[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[Unit] =
+    handle[test, Unit](test, predicate, '{ _ => () })
+
+  def aspire[test: Type](test: Expr[Test[test]]): Macro[Unit] =
+    handle[test, Unit](test, '{ _ => true }, '{ _ => () })
 
   def succeed: Any => Boolean = (value: Any) => true
 

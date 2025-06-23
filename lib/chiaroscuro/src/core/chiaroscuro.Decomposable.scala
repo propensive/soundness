@@ -54,33 +54,35 @@ trait Decomposable extends Typeclass:
 object Decomposable:
   inline given derived: [entity] => entity is Decomposable = summonFrom:
     case decomposable: (`entity` is Decomposable.Foundation) => decomposable
-
     case given ProductReflection[`entity`] => Derivation.derived[entity]
-
     case given SumReflection[`entity`]     => Derivation.split[entity]
+    case given (AnyRef <:< `entity`)       => any[entity]
 
     case given (Unset.type <:< `entity`) => inline !![entity] match
-      case _: Optional[inner] =>
-        val decomposable = infer[inner is Decomposable]
-        value =>
-          val inside = value match
-            case Unset => Decomposition.Primitive(t"Unset", t"∅", Unset)
-            case other => decomposable.decomposition(other.asInstanceOf[inner])
+      case _: Optional[inner] => summonFrom:
+        case decomposable: (`inner` is Decomposable) =>
+          value =>
+            val inside = value match
+              case Unset => Decomposition.Primitive(t"Unset", t"∅", Unset)
+              case other => decomposable.decomposition(other.asInstanceOf[inner])
 
-          Decomposition.Sum(t"Optional", inside, value)
+            Decomposition.Sum(t"Optional", inside, value)
 
-    case _                                 => summonFrom:
-      case given (`entity` is Showable) =>
-        value => Decomposition.Primitive(shortName[entity], value.show, value)
-
-      case given (`entity` is Encodable in Text) =>
-        value => Decomposition.Primitive(shortName[entity], value.encode, value)
+        case _ =>
+          any[entity]
 
       case _ =>
-        value => Decomposition.Primitive(t"Any", value.toString.tt, value)
+        any[entity]
+
+
+    case given (`entity` is Showable) =>
+      value => Decomposition.Primitive(shortName[entity], value.show, value)
+
+    case given (`entity` is Encodable in Text) =>
+      value => Decomposition.Primitive(shortName[entity], value.encode, value)
 
     case _ =>
-      value => Decomposition.Primitive(t"Any", value.toString.tt, value)
+      any[entity]
 
   inline def primitive[value](name: Text): value is Decomposable =
     value => Decomposition.Primitive(name, value.toString.tt, value)
@@ -101,6 +103,11 @@ object Decomposable:
 
     given string: String is Decomposable.Foundation =
       value => Decomposition.Primitive("String", value, value)
+
+    given compileError: CompileError is Decomposable.Foundation =
+      value => Decomposition.Primitive("CompileError", value.toString.tt, value)
+
+    given decomposition: Decomposition is Decomposable.Foundation = identity(_)
 
     given sequence: [element: Decomposable, collection <: Iterable[element]]
           => collection is Decomposable.Foundation =

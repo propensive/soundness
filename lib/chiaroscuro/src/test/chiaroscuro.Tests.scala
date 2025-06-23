@@ -41,6 +41,8 @@ case class IdName(id: Text, name: Text)
 
 import Decomposition.*
 
+import failureAutopsies.contrastExpectations
+
 object Tests extends Suite(m"Chiaroscuro tests"):
   def run(): Unit =
     suite(m"Decomposition tests"):
@@ -108,3 +110,21 @@ object Tests extends Suite(m"Chiaroscuro tests"):
         3.1415926.decompose
 
       . assert(_ == Primitive(t"Double", t"3.14", 3.1415926))
+
+      test(m"Decompose an Any-typed value"):
+        val x: Any = t"hello"
+        x.decompose
+
+      . assert(_ == Primitive(t"Any", t"hello", t"hello"))
+
+      test(m"Decompose list of Any-typed value"):
+        val x: List[Any] = List(t"hello")
+        x.decompose
+
+      . assert(_ == Sequence(List(Primitive(t"Any", t"hello", t"hello")), List(t"hello")))
+
+      test(m"Decompose list of list of text"):
+        val x: List[List[Text]] = List(List(t"hello"))
+        x.decompose
+
+      . assert(_ == Sequence(List(Sequence(List(Primitive(t"Text", t"hello", t"hello")), List(t"hello"))), List(List(t"hello"))))

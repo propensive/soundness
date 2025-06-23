@@ -30,15 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package probably
 
-export probably
-. { Baseline, Benchmark, Inclusion, Verdict, Runner, Test, Harness, TestId, Report,
-    Reporter, Trial, Testable, Tolerance, Min, Mean, Max, BySpeed, ===, !==, ByTime, Geometric,
-    Arithmetic, +/-, test, suite, aspire, assert, check, matches, debug, Checkable }
-
-package testContexts:
-  export probably.harnesses.threadLocal
-
-package failureAutopsies:
-  export probably.failureAutopsies.{none, contrastExpectations}
+trait Autopsy:
+  type Analyse <: Boolean
