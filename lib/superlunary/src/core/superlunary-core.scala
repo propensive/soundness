@@ -45,10 +45,10 @@ object embeddings:
   inline given automatic: [value]
                => (dispatchable: Dispatchable)
                => Quotes
-               => (refs: References[dispatchable.Carrier])
+               => (refs: References[dispatchable.Transport])
                => Conversion[value, Expr[value]] =
     value =>
-      val encoded: dispatchable.Carrier = dispatchable.embed[value](value)
+      val encoded: dispatchable.Transport = dispatchable.embed[value](value)
       val allocation: Int = refs.allocate(encoded)
 
       '{  import strategies.throwUnsafely

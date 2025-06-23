@@ -42,7 +42,7 @@ infix type into [refined <: { type Result }, result] = refined { type Result = r
 infix type of [refined <: { type Topic }, topic] = refined { type Topic = topic }
 infix type on [refined <: { type Platform }, platform] = refined { type Platform = platform }
 infix type onto [refined <: { type Target }, target] = refined { type Target = target }
-infix type over [refined <: { type Carrier }, carrier] = refined { type Carrier = carrier }
+infix type over [refined <: { type Transport }, transport] = refined { type Transport = transport }
 infix type against [refined <: { type Contrast }, contrast] = refined { type Contrast = contrast }
 
 infix type under [refined <: { type Constraint }, constraint] =

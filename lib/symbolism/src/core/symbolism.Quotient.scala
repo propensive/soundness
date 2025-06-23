@@ -37,8 +37,8 @@ import prepositional.*
 import scala.annotation.targetName
 
 trait Quotient extends Typeclass, Topical:
-  type Carrier
+  type Transport
   type Numerator = Topic
-  type Denominator = Carrier
+  type Denominator = Transport
 
-  def decompose(division: Self): Option[(Topic, Carrier)]
+  def decompose(division: Self): Option[(Topic, Transport)]

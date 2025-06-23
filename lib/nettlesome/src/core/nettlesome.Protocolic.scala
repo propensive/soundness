@@ -35,8 +35,8 @@ package nettlesome
 import prepositional.*
 
 trait Protocolic extends Typeclass:
-  type Carrier
+  type Transport
   type Request
   type Response
   type Server
-  def server(port: Carrier)(lambda: Request ?=> Response): Server
+  def server(port: Transport)(lambda: Request ?=> Response): Server

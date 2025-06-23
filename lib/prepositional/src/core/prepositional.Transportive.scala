@@ -30,48 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package prepositional
 
-import anticipation.*
-import contingency.*
-import distillate.*
-import jacinta.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-
-import interfaces.paths.pathOnLinux
-
-import scala.quoted.*
-
-object Dispatchable:
-  given json: Dispatchable:
-    type Transport = Json
-    type Format = Text
-
-    def encoder[value: Type]: Macro[value => Text] =
-      '{ value => value.json.encode }
-
-    def decoder: Macro[Text => List[Json]] =
-      '{ text => unsafely(text.decode[Json].as[List[Json]]) }
-
-    inline def encode(value: List[Json]): Text = value.json.encode
-    inline def decode[value](value: Text): value = unsafely(value.decode[Json].as[value])
-
-    inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.json)
-
-    inline def extract[entity](json: Json): entity = provide[Tactic[JsonError]]:
-      provide[entity is Decodable in Json](json.as[entity])
-
-trait Dispatchable:
+trait Transportive:
   type Transport
-  type Format
-
-  def encoder[value: Type]: Macro[value => Format]
-  def decoder: Macro[Format => List[Transport]]
-
-  inline def encode(values: List[Transport]): Format
-  inline def decode[value](value: Format): value
-
-  inline def embed[entity](value: entity): Transport
-  inline def extract[entity](value: Transport): entity

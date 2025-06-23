@@ -56,7 +56,7 @@ object Openable:
     type Self = path
     type Operand = jnf.OpenOption
     type Result = Handle
-    type Carrier = jnc.FileChannel
+    type Transport = jnc.FileChannel
 
     def init(path: path, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
       val options =
@@ -85,23 +85,22 @@ object Openable:
     type Self = Eof[file]
     type Operand = file.Operand
     type Result = file.Result
-    type Carrier = file.Carrier
+    type Transport = file.Transport
 
-    def init(eof: Eof[file], options: List[Operand]): Carrier =
+    def init(eof: Eof[file], options: List[Operand]): Transport =
       file.init(eof.file, jnf.StandardOpenOption.APPEND :: options)
 
-    def handle(carrier: Carrier): Result = file.handle(carrier)
-    def close(carrier: Carrier): Unit = file.close(carrier)
+    def handle(transport: Transport): Result = file.handle(transport)
+    def close(transport: Transport): Unit = file.close(transport)
 
 trait Openable extends Typeclass, Operable, Resultant:
-  protected type Carrier
+  protected type Transport
 
-  def init(value: Self, options: List[Operand]): Carrier
-  def handle(carrier: Carrier): Result
+  def init(value: Self, options: List[Operand]): Transport
+  def handle(transport: Transport): Result
 
-  def open[result](value: Self, lambda: Result => result, options: List[Operand])
-  :     result =
-    val carrier = init(value, options)
-    try lambda(handle(carrier)) finally close(carrier)
+  def open[result](value: Self, lambda: Result => result, options: List[Operand]): result =
+    val transport = init(value, options)
+    try lambda(handle(transport)) finally close(transport)
 
-  def close(carrier: Carrier): Unit
+  def close(transport: Transport): Unit
