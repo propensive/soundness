@@ -84,6 +84,11 @@ object Rudiments:
     import quotes.reflect.*
     halt(m"the type is ${TypeRepr.of[target].dealias.widen}")
 
+  def name[target: Type]: Macro[Text] =
+    import quotes.reflect.*
+    val name = TypeRepr.of[target].show
+    Expr[Text](name)
+
   def reflectClass[target: Type]: Macro[Class[target]] =
     import quotes.reflect.*
     '{Class.forName(${Expr(TypeRepr.of[target].typeSymbol.fullName)}).asInstanceOf[Class[target]]}

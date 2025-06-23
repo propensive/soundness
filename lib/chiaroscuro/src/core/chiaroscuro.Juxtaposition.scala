@@ -48,7 +48,7 @@ import vacuous.*
 enum Juxtaposition:
   case Same(value: Text)
   case Different(left: Text, right: Text, difference: Optional[Text] = Unset)
-  case Collation(comparison: IArray[(Text, Juxtaposition)], left: Text, right: Text)
+  case Collation(comparison: List[(Text, Juxtaposition)], left: Text, right: Text)
 
   def singleChar: Boolean = this match
     case Same(value)                        => value.length == 1
@@ -67,7 +67,7 @@ enum Juxtaposition:
 
 object Juxtaposition:
   given (measurable: Text is Measurable) => Juxtaposition is Teletypeable =
-    case Juxtaposition.Collation(comparison, _, _) =>
+    case Juxtaposition.Collation(comparison, name, _) =>
       import tableStyles.default
       import webColors.{Gray, White}
 
@@ -83,7 +83,7 @@ object Juxtaposition:
       if comparison.all(_(1).singleChar) then
         var topSum = 0
         var bottomSum = 0
-        def pad(value: Text): Char = Unicode.visible(value.at(Prim).or(' '))
+        def pad(value: Text): Char = value.at(Prim).let(Unicode.visible).or(' ')
 
         comparison.grouped(columns).zipWithIndex.map: (comparison2, index) =>
           val first = index == 0
@@ -140,13 +140,13 @@ object Juxtaposition:
               Row(line(t"▪"), e"${rgb"#667799"}($v)", e"${rgb"#667799"}($v)")
 
             case Different(left, right, difference) =>
-              Row(line(t"▪"), e"${rgb"#bb0000"}($left)", e"${rgb"#00aa00"}($right)")
+              Row(line(t"▪"), e"${rgb"#00aa00"}($left)", e"${rgb"#bb0000"}($right)")
 
             case Collation(comparison, left, right) =>
-              Row(line(t"■"), e"$left", e"$right")
+              Row(line(t"■"), e"${rgb"#667799"}($left)", e"${rgb"#667799"}($right)")
 
         val table = Table[Row]
-                     (Column(e"")(_.treeLine),
+                     (Column(e"$name")(_.treeLine),
                       Column(e"Expected", textAlign = TextAlignment.Left)(_.left),
                       Column(e"Observed")(_.right))
 

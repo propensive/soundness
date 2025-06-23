@@ -32,9 +32,8 @@
                                                                                                   */
 package chiaroscuro
 
-extension [value](left: value)
-  def decompose(using decomposable: value is Decomposable): Decomposition =
-    decomposable.decompose(left)
+extension [value: Decomposable](left: value)
+  inline def decompose: Decomposition = value.decomposition(left)
 
-  def contrast(right: value)(using contrastable: value is Contrastable): Juxtaposition =
-    contrastable.contrast(left, right)
+extension [value: Contrastable](left: value)
+  inline def contrast(right: value): Juxtaposition = value.juxtaposition(left, right)

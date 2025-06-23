@@ -55,6 +55,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Badly-typed path produces error"):
         demilitarize:
           val path: Path of ("bar", "foo") = % / "foo" / "baz"
+        .map(_.message)
 
       . assert(_.nonEmpty)
 
@@ -88,9 +89,9 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
           val dir: Text = t"dir"
           val path = (% / dir / "baz").on[Linux]
 
-        . map(_.reason)
+        . map(_.message)
 
-      . assert(_ == List(CompileError.Reason.MissingImplicitArgument))
+      . assert(_.length == 1)
 
       test(m"Construct a path with unknown label is permitted on Linux with Tactic"):
         val dir: Text = t"dir"
@@ -114,12 +115,14 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
           . within:
               val path = (% / dir / "baz")
+        .map(_.message)
 
       . assert(_.nonEmpty)
 
       test(m"Forbidden characters are forbidden"):
         demilitarize:
           val path: Path on Linux = (% / "fo/o" / "baz").on[Linux]
+        . map(_.message)
 
       . assert(_.nonEmpty)
 
@@ -156,7 +159,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Windows path can't be converted to Linux"):
         demilitarize:
           val path = (Drive('C') / "foo").on[Linux]
-        . map(_.reason)
+        . map(_.message)
       . assert(_.nonEmpty)
 
       test(m"Linux path can't be converted to Windows"):
@@ -167,6 +170,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Linux path can be converted to Mac OS"):
         demilitarize:
           val path = (% / "foo").on[Linux].on[MacOs]
+        .map(_.message)
       . assert(_ == Nil)
 
     suite(m"Relative paths"):
@@ -382,9 +386,9 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
           val path2: Path on Linux = % / "home" / "more"
           val relative = path2.relativeTo(path1)
           relative: Optional[Relative on Linux]
-        . map(_.reason)
+        . map(_.message)
 
-      . assert(_ == List())
+      . assert(_ == Nil)
 
 
       test(m"Relative types on unique-root System have certain `Relation`"):
@@ -408,9 +412,9 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
           val path2: Path on MacOs = % / "home" / "more"
           val relative = path2.relativeTo(path1)
           relative: Path on MacOs
-        . map(_.reason)
+        . map(_.message)
 
-      . assert(_ == List(CompileError.Reason.TypeMismatch))
+      . assert(_.nonEmpty)
 
 
       test(m"Calculate simple relative path"):

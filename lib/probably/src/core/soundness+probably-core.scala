@@ -39,3 +39,6 @@ export probably
 
 package testContexts:
   export probably.harnesses.threadLocal
+
+package testAutopsies:
+  export probably.testAutopsies.{none, contrastExpectations}

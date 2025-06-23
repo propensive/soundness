@@ -254,7 +254,6 @@ object test extends ScalaModule {
 
     // Compiling, not passing
     baroque.test, // failing
-    cellulose.test, // failing
     chiaroscuro.test, // failing
     enigmatic.test,  // failing
     mandible.test,  // failing
@@ -269,6 +268,7 @@ object test extends ScalaModule {
     // Not compiling
     // austronesian
     // bitumen
+    // cellulose
     // coaxial
     // cosmopolite
     // embarcadero
@@ -583,7 +583,7 @@ object charisma extends SoundnessModule {
 
 object chiaroscuro extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(escapade.core, dendrology.tree, escritoire.core, dissonance.core)
+    def moduleDeps = Seq(escapade.core, dendrology.tree, escritoire.core, dissonance.core, larceny.plugin)
   }
 
   object test extends ProbablyTestModule {

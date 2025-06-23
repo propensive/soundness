@@ -71,73 +71,35 @@ def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
 
 
 extension [test](test: Test[test])
-  inline def aspire[report](inline predicate: test => Boolean)
-              (using runner: Runner[report],
-                     inc:    Inclusion[report, Verdict],
-                     inc2:   Inclusion[report, Verdict.Detail])
-  : Unit =
-
-      ${Probably.aspire[test, report]('test, 'runner, 'inc, 'inc2)}
+  inline def aspire(inline predicate: test => Boolean): Unit =
+    ${Probably.aspire[test]('test)}
 
 
-  inline def assert[report]
-              (inline predicate: test => Boolean)
-              (using runner:     Runner[report],
-                     inclusion:  Inclusion[report, Verdict],
-                     inclusion2: Inclusion[report, Verdict.Detail])
-  : Unit =
-
-      ${Probably.assert[test, report]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
+  inline def assert(inline predicate: test => Boolean): Unit =
+    ${Probably.assert[test]('test, 'predicate)}
 
 
-  inline def check[report]
-              (inline predicate: test => Boolean)
-              (using runner:     Runner[report],
-                     inclusion:  Inclusion[report, Verdict],
-                     inclusion2: Inclusion[report, Verdict.Detail])
-  : test =
+  inline def check(inline predicate: test => Boolean): test =
+    ${Probably.check[test]('test, 'predicate)}
 
-      ${Probably.check[test, report]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
-
-
-  inline def assert[report]()
-              (using runner:     Runner[report],
-                     inclusion:  Inclusion[report, Verdict],
-                     inclusion2: Inclusion[report, Verdict.Detail])
-  : Unit =
-
-      ${
-          Probably.assert[test, report]
-           ('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2) }
-
-
-  inline def check[report]()
-              (using runner:     Runner[report],
-                     inclusion:  Inclusion[report, Verdict],
-                     inclusion2: Inclusion[report, Verdict.Detail])
-  : test =
-
-      ${
-          Probably.check[test, report]
-           ('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2) }
-
-
-  inline def matches[report](inline pf: test ~> Any)
-              (using runner: Runner[report],
-                     inc:    Inclusion[report, Verdict],
-                     inc2:   Inclusion[report, Verdict.Detail])
-  : Unit =
-
-      assert[report](pf.isDefinedAt(_))
-
+  inline def assert(): Unit = ${Probably.assert[test]('test, '{Probably.succeed})}
+  inline def check(): test = ${Probably.check[test]('test, '{Probably.succeed})}
+  inline def matches(inline pf: test ~> Any): Unit = assert(pf.isDefinedAt(_))
 
 extension [value](inline value: value)(using inline test: Harness)
   inline def debug: value = ${Probably.debug('value, 'test)}
 
 package harnesses:
-  given threadLocal: Harness = new Harness():
+  given threadLocal: Harness:
     private val delegate: Option[Harness] =
       Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
 
     override def capture[value: Decomposable](name: Text, value: value): value =
       delegate.map(_.capture[value](name, value)).getOrElse(value)
+
+package testAutopsies:
+  given contrastExpectations: Autopsy:
+    type Analyse = true
+
+  given none: Autopsy:
+    type Analyse = false

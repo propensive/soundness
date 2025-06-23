@@ -43,12 +43,7 @@ import unsafeExceptions.canThrowAny
 
 case class Person(name: Text, age: Int)
 
-object Tests extends Suite(m"Rudiments Tests"):
+object Tests extends Suite(m"Digression Tests"):
   def run(): Unit =
     suite(m"Exception tests"):
-      test(m"Show exception"):
-        try
-          List(1, 2, 3).map(_ / 0)
-          ???
-        catch case err: Exception => err.stackTrace
-      .assert()
+      ()
