@@ -36,8 +36,7 @@ import prepositional.*
 
 import scala.annotation.targetName
 
-trait Quotient extends Typeclass:
-  type Topic
+trait Quotient extends Typeclass, Topical:
   type Carrier
   type Numerator = Topic
   type Denominator = Carrier

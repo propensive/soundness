@@ -42,7 +42,6 @@ object DecodableManifest:
   given mainClass: Tactic[FqcnError] => ("Main-Class" is DecodableManifest of Fqcn) = Fqcn(_)
   given createdBy: ("Created-By" is DecodableManifest of Text) = identity(_)
 
-trait DecodableManifest:
+trait DecodableManifest extends Topical:
   type Self <: Label
-  type Topic
   def decoded(text: Text): Topic

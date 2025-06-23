@@ -42,7 +42,6 @@ object EncodableManifest:
   given manifestVersion: ("Manifest-Version" is EncodableManifest of VersionNumber) = _.text
   given createdBy: ("Created-By" is EncodableManifest of Text) = identity(_)
 
-trait EncodableManifest:
+trait EncodableManifest extends Topical:
   type Self <: Label
-  type Topic
   def encode(value: Topic): Text

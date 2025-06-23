@@ -53,7 +53,6 @@ object CaseField:
       Annotations.firstField[target, annotation]
 
 
-trait CaseField[target <: Product, annotation <: StaticAnnotation](val name: Text):
-  type Topic
+trait CaseField[target <: Product, annotation <: StaticAnnotation](val name: Text) extends Topical:
   def apply(value: target): Topic
   def annotation: annotation

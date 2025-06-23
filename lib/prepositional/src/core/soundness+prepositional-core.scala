@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export prepositional.{by, from, in, into, of, on, onto, over, under, against, across, Typeclass}
+export prepositional
+. { by, from, in, into, of, on, onto, over, under, against, across, Typeclass, Topical, Operable }

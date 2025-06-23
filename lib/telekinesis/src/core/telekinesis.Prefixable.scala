@@ -132,8 +132,7 @@ object Prefixable:
   given wwwAuthenticate: ("wwwAuthenticate" is Prefixable of Text) = identity(_)
   given xFrameOptions: ("xFrameOptions" is Prefixable of Text) = identity(_)
 
-trait Prefixable:
+trait Prefixable extends Topical:
   type Self <: Label
-  type Topic
   def encode(value: Topic): Text
   inline def key: Text = valueOf[Self]

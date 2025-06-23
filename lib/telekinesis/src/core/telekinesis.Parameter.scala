@@ -46,8 +46,7 @@ object Parameter:
       def decode(query: Query): Topic = value.decoded(query)
       def encode(value: Topic): Query = value.encode
 
-trait Parameter(val name: Text):
-  type Topic
+trait Parameter(val name: Text) extends Topical:
   def decode(query: Query): Topic
   def encode(value: Topic): Query
 

@@ -30,42 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anamnesis
+package prepositional
 
-import anticipation.*
-import distillate.*
-import prepositional.*
-
-object Anamnesis:
-  trait Dereferenceable extends Topical:
-    type Format <: Database
-
-  opaque type Ref <: Dereferenceable = Int & Dereferenceable
-  opaque type Reference[+entity <: Entity] = Any
-
-  object Reference:
-    given encodable: [entity <: Entity: Referenceable] => (entity.Operand is Encodable in Text)
-          => Reference[entity] is Encodable in Text =
-      reference => reference.expose.asInstanceOf[entity.Operand].encode
-
-    given decodable: [entity <: Entity: Referenceable] => (entity.Operand is Decodable in Text)
-          => Reference[entity] is Decodable in Text =
-      _.decode
-
-    def apply[entity <: Entity](entity: Entity): Reference[entity] = entity.ref
-
-  extension [entity <: Entity](reference: Reference[entity])
-    def expose(using referenceable: entity is Referenceable): referenceable.Operand =
-      reference.asInstanceOf[referenceable.Operand]
-
-    def apply[entity0 >: entity: Referenceable](): entity0 =
-      entity0.lookup(reference.asInstanceOf[entity0.Operand])
-
-  object Ref:
-    def apply[ref](db: Database): Ref of ref in db.type = db.allocate[ref]()
-
-  extension [ref, database <: Database](ref: Ref of ref in database)
-    def apply()(using db: database): ref = db.dereference(ref)
-
-export Anamnesis.Ref
-export Anamnesis.Reference
+trait Topical:
+  type Topic
