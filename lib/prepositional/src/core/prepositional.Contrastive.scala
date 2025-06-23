@@ -30,15 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package probably
+package prepositional
 
-import prepositional.*
-
-object Checkable:
-  given iarray: [left, right] => IArray[left] is Checkable against IArray[right] = _.sameElements(_)
-
-  given tolerance: Double is Checkable against Tolerance =
-    (double, tolerance) => tolerance.covers(double)
-
-trait Checkable extends Typeclass, Contrastive:
-  def check(left: Self, right: Contrast): Boolean
+trait Contrastive:
+  type Contrast
