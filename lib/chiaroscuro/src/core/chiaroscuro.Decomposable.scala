@@ -68,21 +68,11 @@ object Decomposable extends Decomposable2:
 
             Decomposition.Sum(t"Optional", inside, value)
 
-        case _ =>
-          any[entity]
-
-      case _ =>
-        any[entity]
-
-
     case given (`entity` is Showable) =>
       value => Decomposition.Primitive(shortName[entity], value.show, value)
 
     case given (`entity` is Encodable in Text) =>
       value => Decomposition.Primitive(shortName[entity], value.encode, value)
-
-    case _ =>
-      any[entity]
 
   inline def primitive[value](name: Text): value is Decomposable =
     value => Decomposition.Primitive(name, value.toString.tt, value)
