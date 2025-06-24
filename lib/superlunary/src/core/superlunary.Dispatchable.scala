@@ -63,7 +63,7 @@ object Dispatchable:
     inline def extract[entity](json: Json): entity = provide[Tactic[JsonError]]:
       provide[entity is Decodable in Json](json.as[entity])
 
-trait Dispatchable, Transportive, Formal:
+trait Dispatchable extends Transportive, Formal:
   def encoder[value: Type]: Macro[value => Form]
   def decoder: Macro[Form => List[Transport]]
 
