@@ -79,15 +79,16 @@ extension [plane: System](path: Path on plane)
   : result raises IoError =
 
       import Reason.*
+
       try block catch
-        case break: boundary.Break[?]          => throw break
-        case _: jnf.NoSuchFileException        => abort(IoError(path, operation, Nonexistent))
-        case _: jnf.FileAlreadyExistsException => abort(IoError(path, operation, AlreadyExists))
-        case _: jnf.DirectoryNotEmptyException => abort(IoError(path, operation, DirectoryNotEmpty))
-        case _: jnf.AccessDeniedException      => abort(IoError(path, operation, PermissionDenied))
-        case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
-        case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
-        case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
+        // case break: boundary.Break[?]          => throw break
+        // case _: jnf.NoSuchFileException        => abort(IoError(path, operation, Nonexistent))
+        // case _: jnf.FileAlreadyExistsException => abort(IoError(path, operation, AlreadyExists))
+        // case _: jnf.DirectoryNotEmptyException => abort(IoError(path, operation, DirectoryNotEmpty))
+        // case _: jnf.AccessDeniedException      => abort(IoError(path, operation, PermissionDenied))
+        // case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
+        // case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
+        // case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
         case other                             =>
           println(other)
           other.printStackTrace()
@@ -313,8 +314,8 @@ package filesystemOptions:
 
   object deleteRecursively:
     given enabled: [plane: System] => Tactic[IoError]
-    =>    (explorable: plane is Explorable)
-    =>    DeleteRecursively on plane:
+          => (explorable: plane is Explorable)
+          =>  DeleteRecursively on plane:
 
       import filesystemOptions.dereferenceSymlinks.disabled
 
@@ -328,7 +329,7 @@ package filesystemOptions:
         path.children.each(recur(_)) yet operation
 
     given disabled: [plane: {System, Explorable}] => Tactic[IoError]
-    =>    DeleteRecursively on plane:
+          =>  DeleteRecursively on plane:
 
       type Plane = plane
 
@@ -340,15 +341,15 @@ package filesystemOptions:
 
   object overwritePreexisting:
     given enabled: [plane: System]
-    =>   (deleteRecursively: DeleteRecursively on plane)
-    =>    OverwritePreexisting on plane:
+          => (deleteRecursively: DeleteRecursively on plane)
+          =>  OverwritePreexisting on plane:
       type Plane = plane
 
       def apply[result](path: Path on Plane)(operation: => result): result =
         deleteRecursively.conditionally(path)(operation)
 
     given disabled: [plane: System] => Tactic[IoError]
-    =>   OverwritePreexisting on plane:
+    =>  OverwritePreexisting on plane:
 
       type Plane = plane
 
@@ -357,8 +358,8 @@ package filesystemOptions:
           abort(IoError(path, IoError.Operation.Write, Reason.AlreadyExists))
 
   object createNonexistentParents:
-    given enabled: [plane: System] => Tactic[IoError] =>    (Path on plane) is Substantiable
-    =>    CreateNonexistentParents on plane:
+    given enabled: [plane: System] => Tactic[IoError] => (Path on plane) is Substantiable
+          =>  CreateNonexistentParents on plane:
 
       def apply[result](path: Path on plane)(operation: => result): result =
         val parent: Optional[Path on plane] = safely(path.parent)
@@ -371,7 +372,7 @@ package filesystemOptions:
         operation
 
     given disabled: [plane: System] => Tactic[IoError]
-    =>    CreateNonexistentParents on plane:
+          =>  CreateNonexistentParents on plane:
       type Plane = plane
 
       def apply[result](path: Path on plane)(block: => result): result =
@@ -379,9 +380,9 @@ package filesystemOptions:
 
   object createNonexistent:
     given enabled: [plane: System]
-    =>    (create: CreateNonexistentParents on plane)
-    =>    (Path on plane) is Substantiable
-    =>    CreateNonexistent on plane:
+          => (create: CreateNonexistentParents on plane)
+          =>  (Path on plane) is Substantiable
+          =>  CreateNonexistent on plane:
       type Plane = plane
 
       def error(path: Path on Plane, operation: IoError.Operation): Nothing =
@@ -394,7 +395,7 @@ package filesystemOptions:
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.CREATE)
 
     given disabled: [plane: System] => Tactic[IoError]
-    =>    CreateNonexistent on plane:
+          =>  CreateNonexistent on plane:
 
       type Plane = plane
 

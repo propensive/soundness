@@ -44,6 +44,7 @@ import galilei.*
 import gastronomy.*
 import gossamer.*
 import hellenism.*
+import hieroglyph.*
 import monotonous.*
 import nettlesome.*
 import nomenclature.*
@@ -60,6 +61,8 @@ import turbulence.*
 import vacuous.*
 import zeppelin.*
 
+import charDecoders.utf8
+import textSanitizers.skip
 import stdioSources.virtualMachine.ansi
 import unhandledErrors.stackTrace
 import executives.direct
@@ -101,7 +104,7 @@ object Bootstrapper:
 
     . within:
         val jarfile: Path on Linux =
-          ClassRef(Class.forName("burdock.Bootstrapper").nn).classpathEntry match
+          ClassRef(Class.forName("burdock.Bootstrap").nn).classpathEntry match
             case ClasspathEntry.Jar(file) =>
               file.decode[Path on Linux]
 
@@ -115,27 +118,35 @@ object Bootstrapper:
         val classpath: List[Path on Linux] =
           arguments.map(_()).map(workingDirectory[Path on Linux].resolve(_))
 
-        val urls: List[Optional[HttpUrl]] = classpath.map: entry =>
-          val base = entry.ancestors(6)
+        val maven = url"https://repo1.maven.org/"
 
-          if base.name == t"repo1.maven.org" && base.parent.let(_.name) == t"https"
-          then
-            val urlPath = url"https://repo1.maven.org/" + entry.relativeTo(base)
-            urlPath.encode.decode[HttpUrl]
+        val paths: List[Optional[(Path on Linux, Relative on Linux)]] =
+          classpath.map: entry =>
+            entry.ancestors.find(_.name == t"repo1.maven.org").optional.let: base =>
+              if base.parent.let(_.name) == t"https"
+              then (base, entry.relativeTo(base))
+              else Out.println(m"Cannot resolve online location of $entry") yet Unset
+
+        val entries: Map[(Text, Text), Requirement] = paths.compact.flatMap: (base, relative0) =>
+          Out.println(m"Downloading $relative0 from $maven")
+
+          val relative: Relative = relative0.rename(prior+t".sha1").or:
+            panic(m"Path was unexpectedly a root")
+
+          val url = (maven + relative).encode.decode[HttpUrl]
+          val url2 = (maven + relative0).encode.decode[HttpUrl]
+          val digest = url.fetch().read[Text]
+          val data: Bytes = (base + relative0).open(_.read[Bytes])
+          val localDigest: Text = data.digest[Sha1].serialize[Hex]
+
+          if digest != localDigest then
+            Out.println(m"""SHA-1 checksum of local file ${base + relative0} did not match remote
+                            $url""")
+            Nil
+
           else
-            Out.println(m"Cannot resolve online location of $entry")
-            Unset
-
-        val entries: Map[(Text, Text), Requirement] = urls.compact.flatMap: url =>
-          Out.println(m"Downloading $url")
-          val data = url.fetch().read[Bytes]
-          val digest = data.digest[Sha2[256]].serialize[Hex]
-
-          def filter(name: Text): Boolean =
-            name == t"burdock/Bootstrapper.class" || name != t"META-INF/MANIFEST.MF"
-
-          ZipStream(data).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
-            (entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex]) -> Requirement(url, digest)
+            ZipStream(data).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
+              (entry.ref.show, entry.checksum[Sha1].serialize[Hex]) -> Requirement(url2, digest)
 
         . to(Map)
 
@@ -145,27 +156,27 @@ object Bootstrapper:
           ZipStream(handle.read[Bytes]).map: entry =>
             if entry.ref.show == t"META-INF/MANIFEST.MF"
             then manifest.fulfill(entry.read[Bytes].read[Manifest]) yet Unset
-            else if entry.ref.show == t"burdock/Bootstrapper.class"
+            else if entry.ref.show == t"burdock/Bootstrap.class"
             then Entry(entry.ref.show, entry.read[Bytes])
-            else entries.at((entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex])).or:
+            else entries.at((entry.ref.show, entry.checksum[Sha1].serialize[Hex])).or:
               Entry(entry.ref.show, entry.read[Bytes])
 
           . to(List).compact
 
-        val manifest2 = manifest().or:
-          abort(UserError(m"There is no META-INF/MANIFEST.MF entry in the JAR file"))
+        val manifest2 = manifest().lest:
+          UserError(m"There is no META-INF/MANIFEST.MF entry in the JAR file")
 
         val manifest3 =
           import manifestAttributes.*
           val require = BurdockRequire(todo.sift[Requirement].to(Set).to(List))
 
-          val burdockMain = manifest2(MainClass).let(BurdockMain(_)).or:
-            abort(UserError(m"Manifest file did not contain a Main-Class entry"))
+          val burdockMain = manifest2(MainClass).let(BurdockMain(_)).lest:
+            UserError(m"Manifest file did not contain a Main-Class entry")
 
           val verbosity = BurdockVerbosity(t"silent")
 
           manifest2 - MainClass + require + burdockMain + verbosity
-          + MainClass(fqcn"burdock.Bootstrapper")
+          + MainClass(fqcn"burdock.Bootstrap")
 
         val tmpFile = jarfile.parent.vouch / t"${jarfile.name}.tmp"
 
