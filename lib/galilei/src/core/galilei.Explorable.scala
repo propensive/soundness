@@ -46,29 +46,35 @@ object Explorable:
   given Linux is Explorable:
     def children(path: Path on Linux): Stream[Path on Linux] =
       given tactic: Tactic[PathError] = strategies.throwUnsafely
-      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
-      . iterator().nn
-      . asScala
-      . map(_.toString.tt.decode[Path on Linux])
-      . to(Stream)
+
+      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then Stream() else
+        jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+        . iterator().nn
+        . asScala
+        . map(_.toString.tt.decode[Path on Linux])
+        . to(Stream)
 
   given Windows is Explorable:
     def children(path: Path on Windows): Stream[Path on Windows] =
       given tactic: Tactic[PathError] = strategies.throwUnsafely
-      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
-      . iterator().nn
-      . asScala
-      . map(_.toString.tt.decode[Path on Windows])
-      . to(Stream)
+
+      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then Stream() else
+        jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+        . iterator().nn
+        . asScala
+        . map(_.toString.tt.decode[Path on Windows])
+        . to(Stream)
 
   given MacOs is Explorable:
     def children(path: Path on MacOs): Stream[Path on MacOs] =
       given tactic: Tactic[PathError] = strategies.throwUnsafely
-      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
-      . iterator().nn
-      . asScala
-      . map(_.toString.tt.decode[Path on MacOs])
-      . to(Stream)
+
+      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then Stream() else
+        jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+        . iterator().nn
+        . asScala
+        . map(_.toString.tt.decode[Path on MacOs])
+        . to(Stream)
 
 trait Explorable extends Typeclass:
   def children(path: Path on Self): Stream[Path on Self]

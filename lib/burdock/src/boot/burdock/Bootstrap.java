@@ -57,8 +57,6 @@ public class Bootstrap {
       if (requirements != null) {
         for (String item : requirements.split(" ")) {
           String requiredHash = item.substring(0, 40);
-          System.out.println(item);
-          System.out.println(item.substring(41));
           URL url = new URI(item.substring(41)).toURL();
           info("Application requires "+url+".", 3);
           File dir = new File(cache, "burdock");
@@ -140,6 +138,7 @@ public class Bootstrap {
         mainMethod.invoke(null, (Object) args);
       }
     } catch (Throwable exception) {
+      System.err.println("Failed to launch the application");
       System.err.println(exception);
       exception.printStackTrace(System.err);
       System.exit(2);

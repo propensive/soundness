@@ -197,11 +197,7 @@ extension [plane: System](path: Path on plane)
 
       val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
 
-      println("Source:      "+path.javaPath)
-      println("Destination: "+destination.javaPath)
       createNonexistentParents(destination):
-        println("Source:      "+path.javaPath)
-        println("Destination: "+destination.javaPath)
         overwritePreexisting(destination):
           jnf.Files.move(path.javaPath, destination.javaPath, options*)
 

@@ -134,20 +134,26 @@ object Bootstrapper:
             panic(m"Path was unexpectedly a root")
 
           val url = (maven + relative).encode.decode[HttpUrl]
+          val url2 = (maven + relative0).encode.decode[HttpUrl]
           val digest = url.fetch().read[Text]
           val data: Bytes = (base + relative0).open(_.read[Bytes])
+          val localDigest: Text = data.digest[Sha1].serialize[Hex]
 
-          ZipStream(data).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
-            (entry.ref.show, entry.checksum[Sha1].serialize[Hex]) -> Requirement(url, digest)
+          if digest != localDigest then
+            Out.println(m"""SHA-1 checksum of local file ${base + relative0} did not match remote
+                            $url""")
+            Nil
+
+          else
+            ZipStream(data).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
+              (entry.ref.show, entry.checksum[Sha1].serialize[Hex]) -> Requirement(url2, digest)
 
         . to(Map)
 
         val manifest: Promise[Manifest] = Promise()
 
         val todo: List[Requirement | Entry] = jarfile.open: handle =>
-          Out.println(t"Opening $jarfile")
           ZipStream(handle.read[Bytes]).map: entry =>
-            Out.println(t"entry: ${entry.ref}")
             if entry.ref.show == t"META-INF/MANIFEST.MF"
             then manifest.fulfill(entry.read[Bytes].read[Manifest]) yet Unset
             else if entry.ref.show == t"burdock/Bootstrap.class"
