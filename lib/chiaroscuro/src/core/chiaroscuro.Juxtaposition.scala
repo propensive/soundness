@@ -67,7 +67,7 @@ enum Juxtaposition:
 
 object Juxtaposition:
   given (measurable: Text is Measurable) => Juxtaposition is Teletypeable =
-    case Juxtaposition.Collation(comparison, name, _) =>
+    case Juxtaposition.Collation(comparison, old, name) =>
       import tableStyles.default
       import webColors.{Gray, White}
 
@@ -125,9 +125,10 @@ object Juxtaposition:
         def children(comp: (Text, Juxtaposition)): List[(Text, Juxtaposition)] = comp(1) match
           case Same(value)                        => Nil
           case Different(left, right, difference) => Nil
-          case Collation(comparison, left, right) => comparison.to(List)
+          case Collation(comparison, left, right) =>
+            if comparison.all(_(1).singleChar) then Nil else comparison.to(List)
 
-        case class Row(treeLine: Text, left: Teletype, right: Teletype)
+        case class Row(treeLine: Text, left: Teletype, right: Teletype, memo: Teletype)
 
         given treeStyle: (Text is Textual) => TreeStyle[Row] = (tiles, row) =>
           row.copy(treeLine = tiles.map(treeStyles.default.text(_)).join+row.treeLine)
@@ -137,18 +138,32 @@ object Juxtaposition:
 
           data(1) match
             case Same(v) =>
-              Row(line(t"▪"), e"${rgb"#667799"}($v)", e"${rgb"#667799"}($v)")
+              Row(line(t"▪"), e"${rgb"#667799"}($v)", e"${rgb"#667799"}($v)", e"")
 
             case Different(left, right, difference) =>
-              Row(line(t"▪"), e"${rgb"#00aa00"}($left)", e"${rgb"#bb0000"}($right)")
+              Row
+               (line(t"▪"),
+                e"${rgb"#00aa00"}($left)",
+                e"${rgb"#bb0000"}($right)",
+                difference.let(_.teletype).or(e""))
 
             case Collation(comparison, left, right) =>
-              Row(line(t"■"), e"${rgb"#667799"}($left)", e"${rgb"#667799"}($right)")
+              if comparison.all(_(1).singleChar)
+              then
+                import proximityMeasures.levenshteinDistance
+                val d = left.proximity(right).toInt
+                Row(line(t"▪"),
+                    e"${rgb"#00aa00"}($left)",
+                    e"${rgb"#bb0000"}($right)",
+                    e"lev = $d")
+
+              else Row(line(t"■"), e"${rgb"#667799"}($left)", e"${rgb"#667799"}($right)", e"")
 
         val table = Table[Row]
                      (Column(e"$name")(_.treeLine),
                       Column(e"Expected", textAlign = TextAlignment.Left)(_.left),
-                      Column(e"Observed")(_.right))
+                      Column(e"Observed")(_.right),
+                      Column(e"Details")(_.memo.teletype))
 
         table
         . tabulate(TreeDiagram.by(children(_))(comparison*).render(line))

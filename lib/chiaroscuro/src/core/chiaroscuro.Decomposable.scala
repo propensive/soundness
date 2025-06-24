@@ -81,7 +81,6 @@ object Decomposable extends Decomposable2:
     value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
   trait Foundation extends Decomposable:
-    type Self
     def decomposition(value: Self): Decomposition
 
   object Foundation:

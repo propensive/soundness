@@ -36,47 +36,127 @@ import anticipation.*
 import dissonance.*
 import gossamer.*
 import hieroglyph.*
+import hypotenuse.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import wisteria.*
 
 import scala.reflect.*
+import scala.compiletime.*
 
 trait Contrastable extends Typeclass:
   def juxtaposition(left: Self, right: Self): Juxtaposition
 
-object Contrastable extends Contrastable2:
-  given set: [element: Showable] => Set[element] is Contrastable = (left, right) =>
-    if left == right then Juxtaposition.Same(left.show) else
-      val leftOnly = (left -- right).map(_.show)
-      val rightOnly = (right -- left).map(_.show)
+object Contrastable:
 
-      def describe(set: Set[Text]): Text = set.size match
-        case 1          => t"also contains ${set.head}"
-        case n if n < 6 => t"also contains ${set.to(List).join(t"{", t", ", t"}")}"
-        case n          => t"contains $n extra elements"
+  inline given derived: [entity] => entity is Contrastable = summonFrom:
+    case contrastable: (`entity` is Contrastable.Foundation) => contrastable
+    case given ProductReflection[`entity`]                   => Derivation.derived[entity]
+    case given SumReflection[`entity`]                       => Derivation.split[entity]
 
-      val message =
-        if leftOnly.isEmpty then t"right ${describe(rightOnly)}"
-        else if rightOnly.isEmpty then t"left ${describe(leftOnly)}"
-        else t"left ${describe(leftOnly)} and right ${describe(rightOnly)}"
+    case given (`entity` is Decomposable) =>
+      (left, right) => juxtaposition(left.decompose, right.decompose)
 
-      Juxtaposition.Different(left.show, right.show, message)
+  object Derivation extends Derivable[Contrastable]:
+    inline def join[derivation <: Product: ProductReflection]: derivation is Contrastable =
+      (left, right) =>
+        def show(value: derivation) = summonFrom:
+          case given (`derivation` is Showable)          => value.show
+          case given (`derivation` is Encodable in Text) => value.encode
+          case _                                         => value.toString.tt
 
-  given text: Text is Contrastable =
-    (left, right) =>
-      def decompose(chars: IArray[Char]): IArray[Decomposition] = chars.map: char =>
-        Decomposition.Primitive(t"Char", char.show, char)
-      comparison[Char](decompose(left.chars), decompose(right.chars), left, right)
+        if left == right then Juxtaposition.Same(show(left)) else
+          val map = contexts: [field] =>
+            context => label -> context.juxtaposition(dereference(left), dereference(right))
+
+          Juxtaposition.Collation(map.to(List), show(left), show(right))
+
+    inline def split[derivation: SumReflection]: derivation is Contrastable =
+      (left, right) =>
+        def show(value: derivation) = summonFrom:
+          case given (`derivation` is Showable)          => value.show
+          case given (`derivation` is Encodable in Text) => value.encode
+          case _                                         => value.toString.tt
+
+        if left == right then Juxtaposition.Same(show(left)) else
+          variant(left): [variant <: derivation] =>
+            left2 =>
+              complement(right).let: right2 =>
+                context.juxtaposition(left2, right2)
+
+              . or:
+                  val leftName: Text = typeName
+                  variant(right): [rightVariant <: derivation] =>
+                    right2 =>
+                      val rightName: Text = typeName
+                      Juxtaposition.Different(leftName, rightName)
+
+
+  trait Foundation extends Contrastable:
+    def juxtaposition(left: Self, right: Self): Juxtaposition
+
+  object Foundation extends Foundation2:
+    given decomposition: Decomposition is Contrastable.Foundation = juxtaposition(_, _)
+
+    given set: [element: Showable] => Set[element] is Contrastable.Foundation = (left, right) =>
+      if left == right then Juxtaposition.Same(left.show) else
+        val leftOnly = (left -- right).map(_.show)
+        val rightOnly = (right -- left).map(_.show)
+
+        def describe(set: Set[Text]): Text =
+          (if set.size > 5 then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}" else set.to(List))
+          . join(t"{", t", ", t"}")
+
+        val message =
+          if leftOnly.isEmpty then t"+${describe(rightOnly)}"
+          else if rightOnly.isEmpty then t"-${describe(leftOnly)}"
+          else t"-${describe(leftOnly)}╱+${describe(rightOnly)}"
+
+        Juxtaposition.Different(left.show, right.show, message)
+
+    given exception: Exception is Contrastable.Foundation:
+      def juxtaposition(left: Exception, right: Exception): Juxtaposition =
+        val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.tt)
+        val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.tt)
+
+        if left.getClass == right.getClass && leftMsg == rightMsg then Juxtaposition.Same(leftMsg)
+        else Juxtaposition.Different(leftMsg, rightMsg)
+
+    given double: Double is Contrastable.Foundation = (left, right) =>
+      given Decimalizer(3)
+      if left == right then Juxtaposition.Same(left.show)
+      else
+        val difference =
+          given Decimalizer(plusSign = '+', significantFigures = 4)
+          (right - left).show
+
+        val (left2, right2) =
+          given Decimalizer
+                (decimalPlaces = (-log10((left - right).abs)).ceiling.double.toInt,
+                  exponentThreshold = Unset)
+          (left.show, right.show)
+
+        Juxtaposition.Different(left2, right2, difference)
+
+    given int: Int is Contrastable.Foundation = (left, right) =>
+      if left == right then Juxtaposition.Same(left.show)
+      else
+        val plus = if right > left then t"+" else t""
+        Juxtaposition.Different(left.show, right.show, t"$plus${(right - left)}")
+
+    given text: Text is Contrastable.Foundation =
+      (left, right) =>
+        if left == right then Juxtaposition.Same(left) else
+          def decompose(chars: IArray[Char]): IArray[Decomposition] = chars.map: char =>
+             Decomposition.Primitive(t"Char", char.show, char)
+          comparison[Char](decompose(left.chars), decompose(right.chars), left, right)
 
   inline def nothing[value]: value is Contrastable = (left, right) =>
     provide[value is Decomposable]:
       Juxtaposition.Same(left.decompose.text)
-
-  given decomposable: [value: Decomposable] => value is Contrastable = (left, right) =>
-    juxtaposition(left.decompose, right.decompose)
 
   def juxtaposition(left: Decomposition, right: Decomposition): Juxtaposition =
     if left.ref == right.ref then Juxtaposition.Same(left.text) else (left, right) match
@@ -101,14 +181,6 @@ object Contrastable extends Contrastable2:
           case Decomposition.Sum(_, _, _)       => t"<sum>"
 
         Juxtaposition.Different(kind(left), kind(right))
-
-  given exception: Exception is Contrastable:
-    def juxtaposition(left: Exception, right: Exception): Juxtaposition =
-      val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.tt)
-      val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.tt)
-
-      if left.getClass == right.getClass && leftMsg == rightMsg then Juxtaposition.Same(leftMsg)
-      else Juxtaposition.Different(leftMsg, rightMsg)
 
   def comparison[value]
        (left:       IArray[Decomposition],
@@ -142,12 +214,7 @@ object Contrastable extends Contrastable2:
 
         Juxtaposition.Collation(comparison.to(List), leftDebug, rightDebug)
 
-trait Contrastable2 extends Contrastable3:
-  given showable: [value: Showable] => value is Contrastable = (left, right) =>
-    if left == right then Juxtaposition.Same(left.show)
-    else Juxtaposition.Different(left.show, right.show)
-
-trait Contrastable3:
-  given showable: [value] => value is Contrastable = (left, right) =>
-    if left == right then Juxtaposition.Same(left.toString.tt)
-    else Juxtaposition.Different(left.toString.tt, right.toString.tt)
+  trait Foundation2:
+    given showable: [value: Showable] => value is Contrastable = (left, right) =>
+      if left == right then Juxtaposition.Same(left.show)
+      else Juxtaposition.Different(left.show, right.show)
