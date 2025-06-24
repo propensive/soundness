@@ -67,7 +67,7 @@ enum Juxtaposition:
 
 object Juxtaposition:
   given (measurable: Text is Measurable) => Juxtaposition is Teletypeable =
-    case Juxtaposition.Collation(comparison, old, name) =>
+    case Juxtaposition.Collation(comparison, _, name) =>
       import tableStyles.default
       import webColors.{Gray, White}
 

@@ -137,11 +137,17 @@ object Contrastable:
 
         Juxtaposition.Different(left2, right2, difference)
 
-    given int: Int is Contrastable.Foundation = (left, right) =>
+    given float: Float is Contrastable.Foundation = double.juxtaposition(_, _)
+
+    given long: Long is Contrastable.Foundation = (left, right) =>
       if left == right then Juxtaposition.Same(left.show)
       else
         val plus = if right > left then t"+" else t""
         Juxtaposition.Different(left.show, right.show, t"$plus${(right - left)}")
+
+    given int: Int is Contrastable.Foundation = long.juxtaposition(_, _)
+    given short: Short is Contrastable.Foundation = long.juxtaposition(_, _)
+    given byte: Byte is Contrastable.Foundation = long.juxtaposition(_, _)
 
     given text: Text is Contrastable.Foundation =
       (left, right) =>
@@ -149,6 +155,10 @@ object Contrastable:
           def decompose(chars: IArray[Char]): IArray[Decomposition] = chars.map: char =>
              Decomposition.Primitive(t"Char", char.show, char)
           comparison[Char](decompose(left.chars), decompose(right.chars), left, right)
+
+    given string: String is Contrastable.Foundation =
+      (left, right) => text.juxtaposition(left.tt, right.tt)
+
 
   inline def nothing[value]: value is Contrastable = (left, right) =>
     provide[value is Decomposable]:
