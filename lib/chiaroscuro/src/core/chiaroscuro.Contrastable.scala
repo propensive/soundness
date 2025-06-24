@@ -173,6 +173,21 @@ object Contrastable:
           leftName,
           rightName)
 
+      case (Decomposition.Sum(_, left, _), Decomposition.Sum(_, right, _)) =>
+        (left, right) match
+          case (Decomposition.Product(lname, left, _), Decomposition.Product(rname, right, _)) =>
+            val keys = left.keys ++ right.keys
+            val missing = Decomposition.Primitive(t"", t"", Unset)
+
+            val entries =
+              keys.to(List).map: key =>
+                key -> juxtaposition(left.at(key).or(missing), right.at(key).or(missing))
+
+            Juxtaposition.Collation(entries, lname, rname)
+
+          case (left, right) =>
+            juxtaposition(left, right)
+
       case (left, right) =>
         def kind(value: Decomposition): Text = value match
           case Decomposition.Primitive(_, _, _) => t"<primitive>"
