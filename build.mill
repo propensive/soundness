@@ -239,6 +239,7 @@ object test extends ScalaModule {
     sedentary.test,
     serpentine.test,
     spectacular.test,
+    superlunary.test,
     surveillance.test,
     symbolism.test,
     tarantula.test,
