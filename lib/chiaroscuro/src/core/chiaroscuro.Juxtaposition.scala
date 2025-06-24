@@ -48,26 +48,26 @@ import vacuous.*
 enum Juxtaposition:
   case Same(value: Text)
   case Different(left: Text, right: Text, difference: Optional[Text] = Unset)
-  case Collation(comparison: List[(Text, Juxtaposition)], left: Text, right: Text)
+  case Collation(typeName: Text, comparison: List[(Text, Juxtaposition)], left: Text, right: Text)
 
   def singleChar: Boolean = this match
     case Same(value)                        => value.length == 1
     case Different(left, right, difference) => left.length <= 1 && right.length <= 1
-    case Collation(_, _, _)                 => false
+    case Collation(_, _, _, _)              => false
 
   def leftWidth: Int = this match
-    case Same(value)                 => value.length
-    case Different(left, _, _)       => left.length
-    case Collation(comparison, _, _) => comparison.sumBy(_(1).leftWidth)
+    case Same(value)                    => value.length
+    case Different(left, _, _)          => left.length
+    case Collation(_, comparison, _, _) => comparison.sumBy(_(1).leftWidth)
 
   def rightWidth: Int = this match
-    case Same(value)                 => value.length
-    case Different(_, right, _)      => right.length
-    case Collation(comparison, _, _) => comparison.sumBy(_(1).rightWidth)
+    case Same(value)                    => value.length
+    case Different(_, right, _)         => right.length
+    case Collation(_, comparison, _, _) => comparison.sumBy(_(1).rightWidth)
 
 object Juxtaposition:
   given (measurable: Text is Measurable) => Juxtaposition is Teletypeable =
-    case Juxtaposition.Collation(comparison, old, name) =>
+    case Juxtaposition.Collation(name, comparison, _, _) =>
       import tableStyles.default
       import webColors.{Gray, White}
 
@@ -123,9 +123,9 @@ object Juxtaposition:
 
       else
         def children(comp: (Text, Juxtaposition)): List[(Text, Juxtaposition)] = comp(1) match
-          case Same(value)                        => Nil
-          case Different(left, right, difference) => Nil
-          case Collation(comparison, left, right) =>
+          case Same(value)                           => Nil
+          case Different(left, right, difference)    => Nil
+          case Collation(_, comparison, left, right) =>
             if comparison.all(_(1).singleChar) then Nil else comparison.to(List)
 
         case class Row(treeLine: Text, left: Teletype, right: Teletype, memo: Teletype)
@@ -147,7 +147,7 @@ object Juxtaposition:
                 e"${rgb"#bb0000"}($right)",
                 difference.let(_.teletype).or(e""))
 
-            case Collation(comparison, left, right) =>
+            case Collation(_, comparison, left, right) =>
               if comparison.all(_(1).singleChar)
               then
                 import proximityMeasures.levenshteinDistance

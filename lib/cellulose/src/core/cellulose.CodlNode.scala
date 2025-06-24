@@ -69,7 +69,7 @@ object CodlNode:
 
         . to(List)
 
-      Juxtaposition.Collation(comparison, left.key.or(t"—"), right.key.or(t"—"))
+      Juxtaposition.Collation(t"Node", comparison, left.key.or(t"—"), right.key.or(t"—"))
 
 case class CodlNode(data: Optional[Data] = Unset, extra: Optional[Extra] = Unset) extends Dynamic:
   def key: Optional[Text] = data.let(_.key)
