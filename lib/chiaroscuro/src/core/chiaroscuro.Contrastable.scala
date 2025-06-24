@@ -81,18 +81,14 @@ object Contrastable:
           case given (`derivation` is Encodable in Text) => value.encode
           case _                                         => value.toString.tt
 
-        if left == right then Juxtaposition.Same(show(left)) else
-          variant(left): [variant <: derivation] =>
-            left2 =>
-              complement(right).let: right2 =>
-                context.juxtaposition(left2, right2)
+        def decompose(value: derivation): Decomposition = summonFrom:
+          case given (`derivation` is Decomposable) => value.decompose
+          case given (`derivation` is Showable)     =>
+            Decomposition.Primitive(typeName, value.show, value)
 
-              . or:
-                  val leftName: Text = typeName
-                  variant(right): [rightVariant <: derivation] =>
-                    right2 =>
-                      val rightName: Text = typeName
-                      Juxtaposition.Different(leftName, rightName)
+
+        if left == right then Juxtaposition.Same(show(left))
+        else juxtaposition(decompose(left), decompose(right))
 
 
   trait Foundation extends Contrastable:
