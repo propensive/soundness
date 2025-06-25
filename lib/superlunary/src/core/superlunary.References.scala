@@ -36,18 +36,26 @@ import anticipation.*
 import fulminate.*
 import jacinta.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
 import scala.compiletime.*
 import scala.quoted.*
 
-class References[transport]():
-  private var ref: Optional[Expr[List[transport]]] = Unset
-  private var allocations: List[transport] = List()
+object References:
+  def apply[transport <: Object](): References over transport = new References:
+    type Transport = transport
 
-  def update(expr: Expr[List[transport]]): Unit = ref = expr
-  def array: Expr[List[transport]] = ref.vouch
+abstract class References():
+  type Transport <: Object
+
+  private var ref: Optional[Expr[Array[Object]]] = Unset
+  private var allocations: List[Transport] = List()
+
+  def update(expr: Expr[Array[Object]]): Unit = ref = expr
+  def array: Expr[Array[Object]] = ref.vouch
   def current: Int = allocations.length
-  def allocate(value: => transport): Int = allocations.length.also { allocations ::= value }
-  def apply(): List[transport] = allocations.reverse
+  def allocate(value: => Transport): Int = allocations.length.also { allocations ::= value }
+
+  inline def apply(): Array[Object] = Array.from[Object](allocations.reverse)

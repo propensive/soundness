@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.36.0.                                                                    ┃
+┃    Soundness, version 0.34.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,8 +30,60 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package contingency
+package superlunary
 
-import proscenium.*
+import scala.reflect.Selectable.reflectiveSelectable
 
-final class Recovery[result, lambda[_]](val lambda: Exception ~> result)
+import ambience.*, systemProperties.jre
+import anthology.*
+import anticipation.*
+import austronesian.*
+import contingency.*
+import distillate.*
+import eucalyptus.*
+import gossamer.*
+import guillotine.*
+import hellenism.*
+import hieroglyph.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import turbulence.*
+import vacuous.*
+
+import charDecoders.utf8
+import textSanitizers.skip
+import systemProperties.jre
+import classloaders.system
+
+object Isolation extends Dispatcher:
+  type Result[output] = output
+  type Form = Array[Pojo]
+  type Target = Classloader
+  type Transport = Pojo
+
+  def deploy(out: Path on Linux): Classloader = classloaders.threadContext.classpath match
+    case classpath: LocalClasspath =>
+      LocalClasspath(classpath.entries :+ Classpath.Directory(out)).classloader()
+
+    case _ =>
+      val systemClasspath = unsafely(Properties.java.`class`.path().decode[LocalClasspath])
+      LocalClasspath(Classpath.Directory(out) :: systemClasspath.entries).classloader()
+
+
+  val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
+
+  protected def invoke[output](dispatch: Dispatch[output, Form, Target]): output =
+    import workingDirectories.systemProperties
+    import logging.silent
+
+    dispatch.remote: input =>
+      val classloader: Classloader = dispatch.target
+      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
+      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
+      val method = cls.getMethod("apply").nn
+      val function = method.invoke(instance).nn
+      val cls2 = function.getClass.nn
+      val method2 = function.getClass.nn.getMethod("apply", classOf[Object]).nn
+      method2.setAccessible(true)
+      method2.invoke(function, input).asInstanceOf[Array[Pojo]]

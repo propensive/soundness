@@ -41,6 +41,7 @@ import eucalyptus.*
 import guillotine.*
 import hellenism.*
 import hieroglyph.*
+import jacinta.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -55,6 +56,7 @@ object Jvm extends Dispatcher:
   type Result[output] = output
   type Form = Text
   type Target = LocalClasspath
+  type Transport = Json
 
   def deploy(out: Path on Linux): LocalClasspath =
     classloaders.threadContext.classpath match
@@ -73,5 +75,6 @@ object Jvm extends Dispatcher:
     import logging.silent
 
     dispatch.remote: input =>
-      val cmd = sh"java -classpath ${dispatch.classpath()} superlunary.Executor $input"
+      println("Using "+input)
+      val cmd = sh"java -classpath ${dispatch.target()} superlunary.Executor $input"
       unsafely(cmd.exec[Text]())

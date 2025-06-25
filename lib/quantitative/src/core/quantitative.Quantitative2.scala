@@ -464,7 +464,7 @@ trait Quantitative2:
 
           '{Rootable[2, Quantity[value], Quantity[result]]($cast(_))}
 
-  def cbrtTypeclass[value <: Measure: Type]: Macro[Quantity[value] is Rootable[3]] =
+  def cbrtTypeclass[value <: Measure: Type](using Quotes): Expr[Quantity[value] is Rootable[3]] =
 
     val units = UnitsMap[value]
 
@@ -491,7 +491,8 @@ trait Quantitative2:
         rightExpr: Expr[Quantity[right]],
         strict:    Expr[Boolean],
         invert:    Expr[Boolean])
-  : Macro[Boolean] =
+       (using Quotes)
+  : Expr[Boolean] =
 
       val left: UnitsMap = UnitsMap[left]
       val right: UnitsMap = UnitsMap[right]
@@ -509,7 +510,8 @@ trait Quantitative2:
 
   def add[left <: Measure: Type, right <: Measure: Type]
        (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]], sub: Expr[Boolean])
-  : Macro[Any] =
+       (using Quotes)
+  : Expr[Any] =
 
       val left: UnitsMap = UnitsMap[left]
       val right: UnitsMap = UnitsMap[right]
@@ -528,8 +530,8 @@ trait Quantitative2:
         case _                                             => resultValue
 
 
-  def subTypeclass[left <: Measure: Type, right <: Measure: Type]
-  : Macro[Quantity[left] is Subtractable by Quantity[right]] =
+  def subTypeclass[left <: Measure: Type, right <: Measure: Type](using Quotes)
+  : Expr[Quantity[left] is Subtractable by Quantity[right]] =
 
       val (units, _) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
 
@@ -545,7 +547,8 @@ trait Quantitative2:
         quantity  <: Quantity[left]:  Type,
         right     <: Measure:         Type,
         quantity2 <: Quantity[right]: Type]
-  : Macro[quantity is Addable by quantity2] =
+       (using Quotes)
+  : Expr[quantity is Addable by quantity2] =
 
       val (units, _) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
 
@@ -558,7 +561,8 @@ trait Quantitative2:
 
   def norm[units <: Measure: Type, norm[power <: Nat] <: Units[power, ?]: Type]
        (expr: Expr[Quantity[units]])
-  : Macro[Any] =
+       (using Quotes)
+  : Expr[Any] =
 
       val units: UnitsMap = UnitsMap[units]
       val norm: UnitsMap = UnitsMap[norm[1]]
@@ -569,7 +573,7 @@ trait Quantitative2:
         case None                                          => value
 
 
-  def describe[units <: Measure: Type]: Macro[Text] =
+  def describe[units <: Measure: Type](using Quotes): Expr[Text] =
     UnitsMap[units].dimensionality.quantityName match
       case Some(name) => '{${Expr(name)}.tt}
       case None       => halt(m"there is no descriptive name for this physical quantity")
