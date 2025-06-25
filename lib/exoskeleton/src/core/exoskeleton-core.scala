@@ -108,6 +108,9 @@ package executives:
       catch case error: Throwable => handler.handle(error)(using cli.stdio)
       //handler.handle(exitStatus(using cli))(using cli.stdio)
 
+inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
+  lambda(using !![Effectful])
+
 def application(using executive: Executive, interpreter: CliInterpreter)
    (arguments: Iterable[Text], signals: List[Signal] = Nil)
    (block: Cli ?=> executive.Return)
