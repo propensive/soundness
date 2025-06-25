@@ -33,13 +33,13 @@
 package austronesian
 
 import anticipation.*
+import distillate.*
 import hellenism.*
 import prepositional.*
 
 export Austronesian.Pojo
 
-extension [encodable: Encodable in Pojo](value: encodable)
-  def pojo: Pojo = encodable.encoded(value)
+extension [entity: Encodable in Pojo](value: entity) inline def pojo: Pojo = entity.encoded(value)
 
 extension (classloader: Classloader)
   inline def isolate[ResultType](inline invoke: ResultType): ResultType =

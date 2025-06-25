@@ -30,32 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package soundness
 
-import anticipation.*
-import fulminate.*
-import jacinta.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import vacuous.*
-
-import scala.compiletime.*
-import scala.quoted.*
-
-object References:
-  def apply[transport <: Object](): References over transport = new References:
-    type Transport = transport
-
-abstract class References():
-  type Transport <: Object
-
-  private var ref: Optional[Expr[Array[Object]]] = Unset
-  private var allocations: List[Transport] = List()
-
-  def update(expr: Expr[Array[Object]]): Unit = ref = expr
-  def array: Expr[Array[Object]] = ref.vouch
-  def current: Int = allocations.length
-  def allocate(value: => Transport): Int = allocations.length.also { allocations ::= value }
-
-  inline def apply(): Array[Object] = Array.from[Object](allocations.reverse)
+export superlunary.{embeddings, Dispatch, Dispatchable, Dispatcher, References}

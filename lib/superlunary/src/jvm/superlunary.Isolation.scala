@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.41.0.                                                                    ┃
+┃    Soundness, version 0.34.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -32,30 +32,58 @@
                                                                                                   */
 package superlunary
 
+import scala.reflect.Selectable.reflectiveSelectable
+
+import ambience.*, systemProperties.jre
+import anthology.*
 import anticipation.*
-import fulminate.*
-import jacinta.*
+import austronesian.*
+import contingency.*
+import distillate.*
+import eucalyptus.*
+import gossamer.*
+import guillotine.*
+import hellenism.*
+import hieroglyph.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
+import serpentine.*
+import turbulence.*
 import vacuous.*
 
-import scala.compiletime.*
-import scala.quoted.*
+import charDecoders.utf8
+import textSanitizers.skip
+import systemProperties.jre
+import classloaders.system
 
-object References:
-  def apply[transport <: Object](): References over transport = new References:
-    type Transport = transport
+object Isolation extends Dispatcher:
+  type Result[output] = output
+  type Form = Array[Pojo]
+  type Target = Classloader
+  type Transport = Pojo
 
-abstract class References():
-  type Transport <: Object
+  def deploy(out: Path on Linux): Classloader = classloaders.threadContext.classpath match
+    case classpath: LocalClasspath =>
+      LocalClasspath(classpath.entries :+ Classpath.Directory(out)).classloader()
 
-  private var ref: Optional[Expr[Array[Object]]] = Unset
-  private var allocations: List[Transport] = List()
+    case _ =>
+      val systemClasspath = unsafely(Properties.java.`class`.path().decode[LocalClasspath])
+      LocalClasspath(Classpath.Directory(out) :: systemClasspath.entries).classloader()
 
-  def update(expr: Expr[Array[Object]]): Unit = ref = expr
-  def array: Expr[Array[Object]] = ref.vouch
-  def current: Int = allocations.length
-  def allocate(value: => Transport): Int = allocations.length.also { allocations ::= value }
 
-  inline def apply(): Array[Object] = Array.from[Object](allocations.reverse)
+  val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
+
+  protected def invoke[output](dispatch: Dispatch[output, Form, Target]): output =
+    import workingDirectories.systemProperties
+    import logging.silent
+
+    dispatch.remote: input =>
+      val classloader: Classloader = dispatch.target
+      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
+      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
+      val method = cls.getMethod("apply").nn
+      val function = method.invoke(instance).nn
+      val cls2 = function.getClass.nn
+      val method2 = function.getClass.nn.getMethod("apply", classOf[Object]).nn
+      method2.setAccessible(true)
+      method2.invoke(function, input).asInstanceOf[Array[Pojo]]

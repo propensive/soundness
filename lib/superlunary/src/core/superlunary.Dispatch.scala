@@ -37,4 +37,4 @@ import gossamer.*
 import hellenism.*
 import serpentine.*
 
-case class Dispatch[output, format, target](classpath: target, remote: (format => format) => output)
+case class Dispatch[output, format, target](target: target, remote: (format => format) => output)

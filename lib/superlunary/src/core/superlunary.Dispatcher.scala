@@ -32,6 +32,8 @@
                                                                                                   */
 package superlunary
 
+import java.util.function as juf
+
 import ambience.*
 import anthology.*
 import anticipation.*
@@ -41,7 +43,6 @@ import distillate.*
 import galilei.*
 import hellenism.*
 import inimitable.*
-import jacinta.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
@@ -49,17 +50,20 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
+import vacuous.*
 
 import interfaces.paths.pathOnLinux
 
 import scala.quoted.*
 
 
-trait Dispatcher(using classloader: Classloader) extends Targetable, Formal:
+trait Dispatcher(using classloader: Classloader) extends Targetable, Formal, Transportive:
   type Result[output]
+  type Transport <: Object
+
   protected val scalac: Scalac[?]
   protected def invoke[output](dispatch: Dispatch[output, Form, Target]): Result[output]
-  private var cache: Map[Codepoint, (Target, Form => Form)] = Map()
+  private var cache: Map[Codepoint, (Target, juf.Function[Form, Form])] = Map()
 
   lazy val settings2: staging.Compiler.Settings =
     staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
@@ -68,59 +72,68 @@ trait Dispatcher(using classloader: Classloader) extends Targetable, Formal:
 
   def deploy(path: Path on Linux): Target
 
-  inline def dispatch[output, transport]
-              (body: References[transport] ?=> Quotes ?=> Expr[output])
-              [version <: Scalac.All]
+  inline def dispatch[output]
+              (body: (References over Transport) ?=> Quotes ?=> Expr[output])
+              [version <: Scalac.Versions]
               (using codepoint:    Codepoint,
                      properties:   SystemProperties,
                      directory:    TemporaryDirectory,
-                     dispatchable: Dispatchable over transport in Form)
-  : Result[output] raises CompilerError =
+                     dispatchable: Dispatchable over Transport in Form)
+  : Result[output] raises CompilerError raises RemoteError =
 
-      try
-        import strategies.throwUnsafely
-        val references: References[transport] = new References()
+      val references: References over Transport = References[Transport]()
 
-        val (target, function): (Target, Form => Form) =
-          if cache.contains(codepoint) then
-            // This is necessary to allocate references as a side effect
-            given staging.Compiler = compiler2
+      val (target, function): (Target, juf.Function[Form, Form]) =
+        if cache.contains(codepoint) then
+          given staging.Compiler = compiler2
 
-            staging.withQuotes:
-              '{  (array: List[transport]) =>
-                    ${  references() = 'array
-                        body(using references)  }  }
+          // This is necessary to allocate references as a side effect
+          staging.withQuotes:
+            '{  (array: Array[Object]) =>
+                  ${  references() = 'array
+                      body(using references)  }  }
 
-            cache(codepoint)
+          cache(codepoint)
 
-          else
-            val uuid = Uuid()
-            val out = (temporaryDirectory / uuid).on[Linux]
+        else
+          val uuid = Uuid()
 
-            val settings: staging.Compiler.Settings =
-              staging.Compiler.Settings.make
-               (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+          val out =
+            import strategies.throwUnsafely
+            (temporaryDirectory / uuid).on[Linux]
 
-            given compiler: staging.Compiler =
-              staging.Compiler.make(classloader.java)(using settings)
+          val settings: staging.Compiler.Settings =
+            staging.Compiler.Settings.make
+              (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
-            val function: Form => Form = staging.run:
-              '{  format =>
-                    ${dispatchable.encoder[output]}
-                       (${  references() = '{${dispatchable.decoder}(format)}
-                            body(using references)  })  }
+          given compiler: staging.Compiler =
+            staging.Compiler.make(classloader.java)(using settings)
 
-            val target = deploy(out)
-            cache = cache.updated(codepoint, (target, function))
+          val function: juf.Function[Form, Form] = staging.run:
+            '{  form =>
+                  dispatchable.serialize:
 
-            (target, function)
+                    val array = new Array[Object](1)
+                    array(0) =
+                      dispatchable.embed[output]
+                       (${  references() = '{dispatchable.deserialize(form)}
+                            body(using references)  })
+                    array  }
 
-        invoke[output]
-         (Dispatch
-           (target,
-            function => dispatchable.decode[output](function(dispatchable.encode(references())))))
+          val target = deploy(out)
+          cache = cache.updated(codepoint, (target, function))
 
-      catch case throwable: Throwable =>
-        println(throwable)
-        throwable.printStackTrace()
-        abort(CompilerError())
+          (target, function)
+
+      invoke[output]
+        (Dispatch
+          (target,
+          function =>
+            dispatchable.extract[output]:
+              dispatchable.deserialize(function(dispatchable.serialize(references())))
+              . head.asInstanceOf[Transport]))
+
+      // catch case throwable: Throwable =>
+      //   println(throwable)
+      //   throwable.printStackTrace()
+      //   abort(CompilerError())

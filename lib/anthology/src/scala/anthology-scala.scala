@@ -44,87 +44,87 @@ import dotty.tools.dotc.reporting.*
 
 import language.adhocExtensions
 
-package scalacOptions:
-  val newSyntax = ScalacOption[Scalac.All](t"-new-syntax")
-  def sourceFuture = ScalacOption[Scalac.All](t"-source", t"future")
-  val experimental = ScalacOption[3.4 | 3.5 | 3.6](t"-experimental")
+object scalacOptions:
+  val newSyntax = Scalac.Option[Scalac.Versions](t"-new-syntax")
+  def sourceFuture = Scalac.Option[Scalac.Versions](t"-source", t"future")
+  val experimental = Scalac.Option[3.4 | 3.5 | 3.6](t"-experimental")
 
-  package warnings:
-    val feature = ScalacOption[Scalac.All](t"-feature")
-    val deprecation = ScalacOption[Scalac.All](t"-deprecation")
-    val implausiblePatterns = ScalacOption[3.3 | 3.4 | 3.5 | 3.6](t"-Wimplausible-patterns")
-    val enumCommentDiscard = ScalacOption[3.4 | 3.5 | 3.6](t"-Wenum-comment-discard")
-    val unstableInlineAccessors = ScalacOption[3.4 | 3.5 | 3.6](t"-WunstableInlineAccessors")
-    val nonUnitStatement = ScalacOption[3.4 | 3.5 | 3.6](t"-Wnonunit-statement")
-    val valueDiscard = ScalacOption[3.4 | 3.5 | 3.6](t"-Wvalue-discard")
+  object warnings:
+    val feature = Scalac.Option[Scalac.Versions](t"-feature")
+    val deprecation = Scalac.Option[Scalac.Versions](t"-deprecation")
+    val implausiblePatterns = Scalac.Option[3.3 | 3.4 | 3.5 | 3.6](t"-Wimplausible-patterns")
+    val enumCommentDiscard = Scalac.Option[3.4 | 3.5 | 3.6](t"-Wenum-comment-discard")
+    val unstableInlineAccessors = Scalac.Option[3.4 | 3.5 | 3.6](t"-WunstableInlineAccessors")
+    val nonUnitStatement = Scalac.Option[3.4 | 3.5 | 3.6](t"-Wnonunit-statement")
+    val valueDiscard = Scalac.Option[3.4 | 3.5 | 3.6](t"-Wvalue-discard")
 
-    def unused[version <: Scalac.All](selection: Unused[version]) =
+    def unused[version <: Scalac.Versions](selection: Unused[version]) =
       val option = selection.absolve match
         case Unused.All              => t"-Wunused:all"
         case Unused.None             => t"-Wunused:none"
         case Unused.Subset(features) => features.map(_.name).join(t"-Wunused:", t",", t"")
 
-      ScalacOption[version](option)
+      Scalac.Option[version](option)
 
-    package lint:
-      val privateShadow = ScalacOption[3.4 | 3.5 | 3.6](t"-Wshadow:private-shadow")
-      val typeParameterShadow = ScalacOption[3.4 | 3.5 | 3.6](t"-Wshadow:type-parameter-shadow")
+    object lint:
+      val privateShadow = Scalac.Option[3.4 | 3.5 | 3.6](t"-Wshadow:private-shadow")
+      val typeParameterShadow = Scalac.Option[3.4 | 3.5 | 3.6](t"-Wshadow:type-parameter-shadow")
 
-  package internal:
-    val requireTargetName = ScalacOption[Scalac.All](t"-Yrequire-targetName")
-    val safeInit = ScalacOption[Scalac.All](t"-Ysafe-init")
-    val explicitNulls = ScalacOption[Scalac.All](t"-Yexplicit-nulls")
-    val checkPatterns = ScalacOption[Scalac.All](t"-Ycheck-all-patmat")
-    val ccNew = ScalacOption[3.4 | 3.5 | 3.6](t"-Ycc-new")
-    val ccDebug = ScalacOption[3.5 | 3.6](t"-Ycc-debug")
-    val ccLog = ScalacOption[3.5 | 3.6](t"-Ycc-log")
+  object internal:
+    val requireTargetName = Scalac.Option[Scalac.Versions](t"-Yrequire-targetName")
+    val safeInit = Scalac.Option[Scalac.Versions](t"-Ysafe-init")
+    val explicitNulls = Scalac.Option[Scalac.Versions](t"-Yexplicit-nulls")
+    val checkPatterns = Scalac.Option[Scalac.Versions](t"-Ycheck-all-patmat")
+    val ccNew = Scalac.Option[3.4 | 3.5 | 3.6](t"-Ycc-new")
+    val ccDebug = Scalac.Option[3.5 | 3.6](t"-Ycc-debug")
+    val ccLog = Scalac.Option[3.5 | 3.6](t"-Ycc-log")
 
-  package advanced:
-    def maxInlines(n: Int): ScalacOption[Scalac.All] = ScalacOption(t"-Xmax-inlines", n.show)
+  object advanced:
+    def maxInlines(n: Int): Scalac.Option[Scalac.Versions] = Scalac.Option(t"-Xmax-inlines", n.show)
 
-  package language:
-    package experimental:
+  object language:
+    object experimental:
       val clauseInterleaving =
-        ScalacOption[3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.clauseInterleaving")
+        Scalac.Option[3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.clauseInterleaving")
 
       val givenLoopPrevention =
-        ScalacOption[3.4 | 3.5 | 3.6](t"-language:experimental.givenLoopPrevention")
+        Scalac.Option[3.4 | 3.5 | 3.6](t"-language:experimental.givenLoopPrevention")
 
       val fewerBraces =
-        ScalacOption[3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.fewerBraces")
+        Scalac.Option[3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.fewerBraces")
 
-      val into = ScalacOption[3.4 | 3.5 | 3.6](t"-language:experimental.into")
+      val into = Scalac.Option[3.4 | 3.5 | 3.6](t"-language:experimental.into")
 
       val relaxedExtensionImports =
-        ScalacOption[3.3](t"-language:experimental.relaxedExtensionImports")
+        Scalac.Option[3.3](t"-language:experimental.relaxedExtensionImports")
 
-      val erasedDefinitions = ScalacOption[Scalac.All](t"-language:experimental.erasedDefinitions")
+      val erasedDefinitions = Scalac.Option[Scalac.Versions](t"-language:experimental.erasedDefinitions")
 
       val saferExceptions =
-        ScalacOption[3.2 | 3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.saferExceptions")
+        Scalac.Option[3.2 | 3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.saferExceptions")
 
       val namedTypeArguments =
-        ScalacOption[Scalac.All](t"-language:experimental.namedTypeArguments")
+        Scalac.Option[Scalac.Versions](t"-language:experimental.namedTypeArguments")
 
       val pureFunctions =
-        ScalacOption[3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.pureFunctions")
+        Scalac.Option[3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.pureFunctions")
 
       val captureChecking =
-        ScalacOption[3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.captureChecking")
+        Scalac.Option[3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.captureChecking")
 
-      val modularity = ScalacOption[3.5 | 3.6](t"-language:experimental.modularity")
-      val namedTuples = ScalacOption[3.5 | 3.6](t"-language:experimental.namedTuples")
+      val modularity = Scalac.Option[3.5 | 3.6](t"-language:experimental.modularity")
+      val namedTuples = Scalac.Option[3.5 | 3.6](t"-language:experimental.namedTuples")
 
       val genericNumberLiterals =
-        ScalacOption[Scalac.All](t"-language:experimental.genericNumberLiterals")
+        Scalac.Option[Scalac.Versions](t"-language:experimental.genericNumberLiterals")
 
       val betterMatchTypeExtractors =
-        ScalacOption[3.5 | 3.6](t"-language:experimental.betterMatchTypeExtractors")
+        Scalac.Option[3.5 | 3.6](t"-language:experimental.betterMatchTypeExtractors")
 
       val quotedPatternsWithPolymorphicFunctions =
-        ScalacOption[3.6](t"-language:experimental.quotedPatternsWithPolymorphicFunctions")
+        Scalac.Option[3.6](t"-language:experimental.quotedPatternsWithPolymorphicFunctions")
 
-      val betterFors = ScalacOption[3.6](t"-language:experimental.betterFors")
+      val betterFors = Scalac.Option[3.6](t"-language:experimental.betterFors")
 
 
 extension (companion: Notice.type)
