@@ -34,7 +34,7 @@ package soundness
 
 export exoskeleton
 . { application, Application, CliInvocation, Effectful, Executive, InstallError, ShellContext,
-    UnhandledErrorHandler }
+    UnhandledErrorHandler, effectful }
 
 package unhandledErrors:
   export exoskeleton.unhandledErrors.{silent, genericErrorMessage, exceptionMessage, stackTrace}
