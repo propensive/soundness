@@ -30,11 +30,57 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package exoskeleton
 
-export exoskeleton
-. { execute, explain, CliCompletion, Execution, SuggestionsState, TabCompletions,
-    TabCompletionsInstallation, Pathname }
+import anticipation.*
+import contingency.*
+import galilei.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import symbolism.*
+import vacuous.*
 
-package executives:
-  export exoskeleton.executives.completions
+import filesystemOptions.dereferenceSymlinks.enabled
+import interfaces.paths.pathOnLinux
+
+object Pathname:
+  def unapply(argument: Argument)(using WorkingDirectory, Cli): Option[Path on Linux] =
+    safely:
+      def suggest(path: Text): Suggestion =
+        val point = path.s.lastIndexOf('/', path.length - 2) + 1
+        val prefix = path.keep(point)
+        val core = path.skip(point)
+        Suggestion(core, Unset, incomplete = path != argument(), prefix = prefix)
+
+      if argument().empty then argument.suggest:
+        workingDirectory.children.to(List).map: path =>
+          suggest(path.name)
+      else
+        val absolute = argument().starts(t"/")
+        val directory = argument().ends(t"/")
+        val prototype = workingDirectory.resolve(argument())
+        val root = prototype.empty
+
+        val base: Optional[Path on Linux] = if directory then prototype else prototype.parent
+        val children0 = base.lay(Nil)(_.children.to(List))
+
+        val children =
+          if directory then children0 else children0.filter(_.name.starts(prototype.name))
+
+        argument.suggest:
+          children.map: path =>
+            val directory = safely(path.entry() == galilei.Directory).or(false)
+            val slash = if directory then t"/" else t""
+
+            if absolute then
+              val encoded = path.encode
+              val core = encoded+slash
+              suggest(core)
+            else
+              val encoded = path.relativeTo(workingDirectory).encode
+              val core = encoded+slash
+              suggest(core)
+
+    safely(workingDirectory.resolve(argument())).option

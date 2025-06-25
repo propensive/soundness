@@ -129,21 +129,24 @@ extends Cli:
             val hiddenParam = if hidden then sh"-n" else sh""
             val aliasText = aliases.join(t" ").fit(aliasesWidth)
             val prefix2 = if prefix.empty then sh"" else sh"-p $prefix"
+            val suffix2 = if suffix.empty then sh"" else sh"-s $suffix"
+
             val text = prefix+core+suffix
 
             val mainLine = description.absolve match
               case Unset =>
                 if prefix.empty then sh"'' $hiddenParam -- $core"
-                else sh"'' $hiddenParam -U $prefix2 -- $core"
+                else sh"'' $hiddenParam -U $prefix2 $suffix2 -- $core"
 
               case description: Text =>
-                sh"'${core.fit(width)} $aliasText -U $prefix2 -- $description' -d desc -l $hiddenParam -- $core"
+                sh"'${core.fit(width)} $aliasText -U $prefix2 $suffix2 -- $description' -d desc -l $hiddenParam -- $core"
 
               case description: Teletype =>
                 val desc = description.render(termcap)
-                sh"'${core.fit(width)} $aliasText -U $prefix2 -- $desc' -d desc -l $hiddenParam -- $core"
+                sh"'${core.fit(width)} $aliasText -U $prefix2 $suffix2 -- $desc' -d desc -l $hiddenParam -- $core"
 
-            val duplicateLine = if !incomplete then List() else List(sh"'' -U $prefix2 -S '' -- $core")
+            val duplicateLine =
+              if !incomplete then List() else List(sh"'' -U $prefix2 $suffix2 -S '' -- $core")
 
             val aliasLines = aliases.map: text =>
               description.absolve match
