@@ -36,7 +36,7 @@ export profanity
 . { BackgroundColorDetection, BracketedPasteMode, DismissError, Interaction, Interactivity,
     Keyboard, Keypress, LineEditor, ProcessContext, Question, SelectMenu, StandardKeyboard,
     Terminal, TerminalError, TerminalEvent, TerminalFocusDetection, TerminalMode,
-    TerminalSizeDetection, terminal }
+    TerminalSizeDetection, interactive }
 
 package keyboards:
   export profanity.keyboards.{raw, numeric, standard}

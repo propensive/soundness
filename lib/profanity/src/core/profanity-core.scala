@@ -44,7 +44,7 @@ given realm: Realm = realm"profanity"
 given stdio: (terminal: Terminal) => Stdio = terminal.stdio
 
 
-def terminal[result](block: (terminal: Terminal) ?=> result)
+def interactive[result](block: (terminal: Terminal) ?=> result)
    (using context: ProcessContext, monitor: Monitor, codicil: Codicil)
    (using BracketedPasteMode,
           BackgroundColorDetection,
