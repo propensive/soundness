@@ -30,8 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package soundness
 
-import anticipation.*
-
-case class ScalacOption[-version <: Scalac.All](flags: Text*)
+export superlunary.{embeddings, Dispatch, Dispatchable, Dispatcher, References}

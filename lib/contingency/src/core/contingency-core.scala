@@ -168,14 +168,14 @@ inline def focus[focus, result](using foci: Foci[focus])
     try block finally foci.supplement(foci.length - length, transform(using _))
 
 
-transparent inline def mitigate(inline block: Exception ~> Exception): Any =
+transparent inline def mitigate(inline block: Exception ~> Exception): Mitigation[?] =
   ${Contingency.mitigate('block)}
 
 extension [lambda[_]](inline mitigation: Mitigation[lambda])
   inline def within[result](inline lambda: lambda[result]): result =
     ${Contingency.mitigateWithin[lambda, result]('mitigation, 'lambda)}
 
-transparent inline def recover[result](inline block: Exception ~> result): Any =
+transparent inline def recover[result](inline block: Exception ~> result): Recovery[result, ?] =
   ${Contingency.recover[result]('block)}
 
 extension [result, lambda[_]](inline recovery: Recovery[result, lambda])
@@ -185,7 +185,7 @@ extension [result, lambda[_]](inline recovery: Recovery[result, lambda])
 
 transparent inline def track[focus](using erased Void)[accrual <: Exception](accrual: accrual)
    (inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual)
-: Any =
+: Tracking[accrual, ?, focus] =
 
     ${Contingency.track[accrual, focus]('accrual, 'block)}
 
