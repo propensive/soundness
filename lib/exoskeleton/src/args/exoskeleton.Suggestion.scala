@@ -34,25 +34,33 @@ package exoskeleton
 
 import anticipation.*
 import escapade.*
+import gossamer.*
+import symbolism.*
 import vacuous.*
 
 import language.experimental.pureFunctions
 
 object Suggestion:
   def apply
-       (text: Text,
+       (core:        Text,
         description: Optional[Text | Teletype],
         hidden:      Boolean                   = false,
         incomplete:  Boolean                   = false,
-        aliases:     List[Text]                = Nil)
+        aliases:     List[Text]                = Nil,
+        prefix:      Text                      = t"",
+        suffix:      Text                      = t"")
   : Suggestion =
 
-      new Suggestion(text, description, hidden, incomplete, aliases)
+      new Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix)
 
 
 case class Suggestion
-   (text:        Text,
+   (core:        Text,
     description: Optional[Text | Teletype],
     hidden:      Boolean,
     incomplete:  Boolean,
-    aliases:     List[Text])
+    aliases:     List[Text],
+    prefix:      Text,
+    suffix:      Text):
+
+  def text: Text = prefix+core+suffix

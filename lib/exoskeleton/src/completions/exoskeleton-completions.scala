@@ -66,14 +66,16 @@ package executives:
     : Cli =
 
         arguments match
-          case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--"
-              :: command
-              :: rest =>
+          case t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position) :: t"--"
+               :: command
+               :: rest =>
 
             val shell = shellName match
               case t"zsh"  => Shell.Zsh
               case t"fish" => Shell.Fish
               case _       => Shell.Bash
+
+            val focus = if shell == Shell.Zsh then focus0 - 1 else focus0
 
             CliCompletion
              (Cli.arguments(arguments, focus - 1, position),

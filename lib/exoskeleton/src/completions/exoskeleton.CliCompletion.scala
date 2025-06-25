@@ -42,6 +42,7 @@ import profanity.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -124,22 +125,23 @@ extends Cli:
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
 
         val itemLines: List[Command] = items.flatMap:
-          case Suggestion(text, description, hidden, incomplete, aliases) =>
+          case Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix) =>
             val hiddenParam = if hidden then sh"-n" else sh""
             val aliasText = aliases.join(t" ").fit(aliasesWidth)
+            val prefix2 = if prefix.empty then sh"" else sh"-P $prefix"
 
             val mainLine = description.absolve match
               case Unset =>
-                sh"'' $hiddenParam -- $text"
+                sh"'' $hiddenParam -- $core"
 
               case description: Text =>
-                sh"'${text.fit(width)} $aliasText -- $description' -d desc -l $hiddenParam -- $text"
+                sh"'${core.fit(width)} $aliasText -- $description' -d desc -l $hiddenParam $prefix2 -- $core"
 
               case description: Teletype =>
                 val desc = description.render(termcap)
-                sh"'${text.fit(width)} $aliasText -- $desc' -d desc -l $hiddenParam -- $text"
+                sh"'${core.fit(width)} $aliasText -- $desc' -d desc -l $hiddenParam $prefix2 -- $core"
 
-            val duplicateLine = if !incomplete then List() else List(sh"'' -U -S '' -- ${text}")
+            val duplicateLine = if !incomplete then List() else List(sh"'' -U -S '' $prefix2 -- $core")
 
             val aliasLines = aliases.map: text =>
               description.absolve match
@@ -147,11 +149,11 @@ extends Cli:
                   sh"'' -n -- $text"
 
                 case description: Text =>
-                  sh"'${text.fit(width)} $aliasText -- $description' -d desc -l -n -- $text"
+                  sh"'${text.fit(width)} $aliasText -- $description' -d desc -l -n $prefix2 -- $core"
 
                 case description: Teletype =>
                   val desc = description.render(termcap)
-                  sh"'${text.fit(width)} $aliasText -- $desc' -d desc -l -n -- $text"
+                  sh"'${text.fit(width)} $aliasText -- $desc' -d desc -l -n $prefix2 -- $core"
 
             mainLine :: duplicateLine ::: aliasLines
 
@@ -165,8 +167,8 @@ extends Cli:
 
       case Shell.Fish =>
         items.flatMap:
-          case Suggestion(text, description, hidden, incomplete, aliases) =>
-            (text :: aliases).map: text =>
+          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _) =>
+            (suggestion.text :: aliases).map: text =>
               description.absolve match
                 case Unset                 => t"$text"
                 case description: Text     => t"$text\t$description"

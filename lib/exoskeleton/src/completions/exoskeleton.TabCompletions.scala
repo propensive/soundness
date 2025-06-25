@@ -149,8 +149,7 @@ object TabCompletions:
           |local -a ln
           |_$command() {
           |  oldIfs=$$IFS IFS=$$'\t'
-          |  prev=$$((CURRENT-1))
-          |  $command '{completions}' zsh "$$prev" "$${#PREFIX}" -- $$words | while read -r -A ln
+          |  $command '{completions}' zsh "$$CURRENT" "$${#PREFIX}" -- $$words | while read -r -A ln
           |  do
           |    desc=($${ln[1]})
           |    compadd -Q $${ln:1}
