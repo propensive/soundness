@@ -32,13 +32,13 @@
                                                                                                   */
 package digression
 
-import anticipation.*
-import contingency.*
-import proscenium.*
+import language.experimental.pureFunctions
 
 import scala.quoted.*
 
-import language.experimental.pureFunctions
+import anticipation.*
+import contingency.*
+import proscenium.*
 
 object Digression:
   def location: Macro[Codepoint] =

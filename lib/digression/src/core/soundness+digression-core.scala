@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export digression.{Codepoint, Fqcn, FqcnError, StackTrace, fqcn, stackTrace}
+export digression.{Codepoint, Fqcn, FqcnError, StackTrace, fqcn, stackTrace, idempotent}
