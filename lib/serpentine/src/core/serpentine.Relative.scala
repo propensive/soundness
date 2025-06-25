@@ -79,11 +79,12 @@ object Relative:
     if text == system.self then ? else
       text.cut(system.separator).pipe: parts =>
         (if parts.last == t"" then parts.init else parts).pipe: parts =>
-          (if parts.head == system.self then parts.tail else parts).pipe: parts =>
-            val ascent = parts.takeWhile(_ == system.parent).length
-            val descent = parts.drop(ascent).reverse
+          if parts.isEmpty then Relative(0) else
+            (if parts.head == system.self then parts.tail else parts).pipe: parts =>
+              val ascent = parts.takeWhile(_ == system.parent).length
+              val descent = parts.drop(ascent).reverse
 
-            Relative(ascent, descent*)
+              Relative(ascent, descent*)
 
   inline given [topic, ascent <: Int, system]
          =>  Conversion[Relative of topic under ascent, Relative of topic under ascent on system] =
@@ -125,6 +126,8 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
   type Limit <: Int
 
   def delta: Int = descent.length - ascent
+
+  def self: Boolean = ascent == 0 && descent == Nil
 
   transparent inline def rename(lambda: (prior: Text) ?=> Text): Optional[Relative] =
     descent.prim.let(parent / lambda(using _))

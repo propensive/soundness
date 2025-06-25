@@ -33,34 +33,54 @@
 package exoskeleton
 
 import anticipation.*
-import escapade.*
+import contingency.*
+import galilei.*
 import gossamer.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
 import symbolism.*
 import vacuous.*
 
-import language.experimental.pureFunctions
+import filesystemOptions.dereferenceSymlinks.enabled
+import interfaces.paths.pathOnLinux
 
-object Suggestion:
-  def apply
-       (core:        Text,
-        description: Optional[Text | Teletype],
-        hidden:      Boolean                   = false,
-        incomplete:  Boolean                   = false,
-        aliases:     List[Text]                = Nil,
-        prefix:      Text                      = t"",
-        suffix:      Text                      = t"")
-  : Suggestion =
+object Pathname:
+  def unapply(argument: Argument)(using WorkingDirectory, Cli): Option[Path on Linux] =
+    safely:
+      def suggest(path: Text): Suggestion =
+        val point = path.s.lastIndexOf('/', path.length - 2) + 1
+        val prefix = path.keep(point)
+        val core = path.skip(point)
+        Suggestion(core, Unset, incomplete = path != argument(), prefix = prefix)
 
-      new Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix)
+      if argument().empty then argument.suggest:
+        workingDirectory.children.to(List).map: path =>
+          suggest(path.name)
+      else
+        val absolute = argument().starts(t"/")
+        val directory = argument().ends(t"/")
+        val prototype = workingDirectory.resolve(argument())
+        val root = prototype.empty
 
+        val base: Optional[Path on Linux] = if directory then prototype else prototype.parent
+        val children0 = base.lay(Nil)(_.children.to(List))
 
-case class Suggestion
-   (core:        Text,
-    description: Optional[Text | Teletype],
-    hidden:      Boolean,
-    incomplete:  Boolean,
-    aliases:     List[Text],
-    prefix:      Text,
-    suffix:      Text):
+        val children =
+          if directory then children0 else children0.filter(_.name.starts(prototype.name))
 
-  def text: Text = prefix+core+suffix
+        argument.suggest:
+          children.map: path =>
+            val directory = safely(path.entry() == galilei.Directory).or(false)
+            val slash = if directory then t"/" else t""
+
+            if absolute then
+              val encoded = path.encode
+              val core = encoded+slash
+              suggest(core)
+            else
+              val encoded = path.relativeTo(workingDirectory).encode
+              val core = encoded+slash
+              suggest(core)
+
+    safely(workingDirectory.resolve(argument())).option

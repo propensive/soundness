@@ -81,14 +81,14 @@ extension [plane: System](path: Path on plane)
       import Reason.*
 
       try block catch
-        // case break: boundary.Break[?]          => throw break
-        // case _: jnf.NoSuchFileException        => abort(IoError(path, operation, Nonexistent))
-        // case _: jnf.FileAlreadyExistsException => abort(IoError(path, operation, AlreadyExists))
-        // case _: jnf.DirectoryNotEmptyException => abort(IoError(path, operation, DirectoryNotEmpty))
-        // case _: jnf.AccessDeniedException      => abort(IoError(path, operation, PermissionDenied))
-        // case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
-        // case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
-        // case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
+        case break: boundary.Break[?]          => throw break
+        case _: jnf.NoSuchFileException        => abort(IoError(path, operation, Nonexistent))
+        case _: jnf.FileAlreadyExistsException => abort(IoError(path, operation, AlreadyExists))
+        case _: jnf.DirectoryNotEmptyException => abort(IoError(path, operation, DirectoryNotEmpty))
+        case _: jnf.AccessDeniedException      => abort(IoError(path, operation, PermissionDenied))
+        case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
+        case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
+        case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
         case other                             =>
           println(other)
           other.printStackTrace()
