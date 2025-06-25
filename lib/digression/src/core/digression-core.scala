@@ -34,6 +34,7 @@ package digression
 
 import anticipation.*
 import fulminate.*
+import rudiments.*
 
 extension (error: Throwable) def stackTrace: StackTrace = StackTrace(error)
 
@@ -41,3 +42,6 @@ extension (inline context: StringContext)
   inline def fqcn(): Fqcn = ${Digression.fqcn('context)}
 
 given realm: Realm = realm"digression"
+
+def idempotent(lambda: => Unit)(using codepoint: Codepoint): Unit =
+  Codepoint.idempotentActions.computeIfAbsent(codepoint, void => lambda)

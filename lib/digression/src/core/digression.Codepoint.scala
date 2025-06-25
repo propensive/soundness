@@ -34,10 +34,15 @@ package digression
 
 import language.experimental.pureFunctions
 
+import java.util.concurrent as juc
+
 import anticipation.*
 
 object Codepoint:
   inline given default: Codepoint = ${Digression.location}
+
+  private[digression] val idempotentActions: juc.ConcurrentHashMap[Codepoint, Unit] =
+    juc.ConcurrentHashMap()
 
 case class Codepoint(source: Text, line: Int):
   def text: Text = Text(s"${source.s.split("/").nn.last.nn}:$line")
