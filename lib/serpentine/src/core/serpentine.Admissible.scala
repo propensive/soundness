@@ -54,7 +54,8 @@ object Admissible:
 
       case _ => provide[Tactic[NameError]](Name[system](_))
 
-  inline given admissible: [string <: Label, system] => (nominative: system is Nominative) => string is Admissible on system =
+  inline given admissible: [string <: Label, system] => (nominative: system is Nominative)
+         =>  string is Admissible on system =
     Admissible[string, system]({ void => Name.verify[string, system] })
 
 
