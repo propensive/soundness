@@ -47,7 +47,8 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
-object Classpath:
+object Classpath extends Root(t""):
+  type Plane = Classpath
   type Rules = MustNotContain["/"] & MustNotMatch["[0-9].*"] & MustMatch["[a-zA-Z0-9_$.]+"]
 
   erased given nominative: Classpath is Nominative under Rules = !!
@@ -68,13 +69,6 @@ object Classpath:
 
   given substantiable: (classloader: Classloader) => (Path on Classpath) is Substantiable =
     path => classloader.java.getResourceAsStream(path.encode.s) != null
-
-  @targetName("child")
-  infix def / (child: String)
-  : Path on Classpath of Mono[child.type] under Classpath raises NameError =
-
-      Path.of[Classpath, Classpath, Mono[child.type]](t"", child)
-
 
   def apply(classloader: jn.URLClassLoader): Classpath =
     val entries = classloader.getURLs.nn.to(List).map(_.nn).flatMap(ClasspathEntry(_).option)
