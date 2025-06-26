@@ -76,8 +76,9 @@ object Teletype:
     def text(teletype: Teletype): Text = teletype.plain
     def length(text: Teletype): Int = text.plain.s.length
     def apply(text: Text): Teletype = Teletype(text)
+    def apply(char: Char): Teletype = Teletype(char.show)
 
-    def map(text: Teletype, lambda: Char => Char): Teletype =
+    def map(text: Teletype)(lambda: Char => Char): Teletype =
       val array = text.plain.s.toCharArray.nn
 
       array.indices.each: index =>

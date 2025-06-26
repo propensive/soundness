@@ -98,7 +98,7 @@ extension (char: Char)
   def superscript: Optional[Char] = Chars.superscript.applyOrElse(char, _ => Unset)
   def subscript: Optional[Char] = Chars.subscript.applyOrElse(char, _ => Unset)
   def description: Optional[Text] = Unicode.name(char)
-  def lower: Char = char.toLower
-  def upper: Char = char.toUpper
+  def minuscule: Char = char.toLower
+  def majuscule: Char = char.toUpper
 
 extension [measurable: Measurable](element: measurable) def metrics: Int = measurable.width(element)
