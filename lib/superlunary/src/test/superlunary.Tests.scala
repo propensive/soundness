@@ -45,11 +45,23 @@ case class Example(name: Text, count: Long)
 
 object Tests extends Suite(m"Superlunary Tests"):
   def run(): Unit =
-    def fn(message: Example): Example = Jvm.dispatch:
-      '{  val x = ${message.name}
-          val y = ${message.count}
-          println(y)
-          Example(t"Time: $x $y ${java.lang.System.currentTimeMillis - ${message}.count}", 9)  }
+    try
+      def fn(message: Example): Example = Jvm.dispatch:
+        '{  val x = ${message.name}
+            val y = ${message.count}
+            println(y)
+            Example(t"Time: $x $y ${java.lang.System.currentTimeMillis - ${message}.count}", 9)  }
 
-    println(fn(Example(t"one", java.lang.System.currentTimeMillis)))
-    println(fn(Example(t"two", java.lang.System.currentTimeMillis)))
+      println(fn(Example(t"one", java.lang.System.currentTimeMillis)))
+      println(fn(Example(t"two", java.lang.System.currentTimeMillis)))
+
+      var count = 100
+      println:
+        Isolation.dispatch:
+          '{  "hello message"+($count + 1) }
+
+    catch
+      case error: Throwable =>
+        println("Uncaught throwable")
+        println(error)
+        error.printStackTrace()

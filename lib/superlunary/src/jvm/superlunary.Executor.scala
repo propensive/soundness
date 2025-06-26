@@ -39,9 +39,12 @@ object Executor:
   def run(input: String): String =
     val cls = Class.forName("Generated$Code$From$Quoted").nn
     val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-    val callable = instance.asInstanceOf[{ def apply(): String => String }]
-
-    callable()(input)
+    val method = cls.getMethod("apply").nn
+    val function = method.invoke(instance).nn
+    val cls2 = function.getClass.nn
+    val method2 = function.getClass.nn.getMethod("apply", classOf[Object]).nn
+    method2.setAccessible(true)
+    method2.invoke(function, input).asInstanceOf[String]
 
   def main(args: Array[String]): Unit =
     val out = System.out.nn
