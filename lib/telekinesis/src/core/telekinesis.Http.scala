@@ -45,6 +45,7 @@ import nettlesome.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import serpentine.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
@@ -259,6 +260,8 @@ object Http:
           val body:        () => Stream[Bytes]):
 
     inline def request: this.type = this
+
+    lazy val location: Relative on Rfc3986 = pathText.decode[Relative on Rfc3986]
 
     def on[scheme <: "http" | "https"](origin: Origin[scheme]): HttpUrl =
       Url[scheme](origin, target)
