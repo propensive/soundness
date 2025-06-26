@@ -57,19 +57,15 @@ import language.experimental.into
 
 export Gossamer.opaques.Ascii
 
-def append[textual: Textual, value](using builder: Builder[textual])(value: value)
-   (using textual.Show[value])
-: Unit =
+inline def append[textual: Textual, value](using builder: Builder[textual])(value: value): Unit =
+  inline value match
+    case text: Text => builder.append(textual(text))
+    case char: Char => builder.append(textual(char))
+    case other      => provide[textual.Show[value]](builder.append(textual.show(value)))
 
-    builder.append(textual.show(value))
-
-
-def appendln[textual: Textual, value](using builder: Builder[textual])(value: value)
-   (using textual.Show[value])
-: Unit =
-
-    builder.append(textual.show(value))
-    builder.append(textual("\n".tt))
+inline def appendln[textual: Textual, value](using builder: Builder[textual])(value: value): Unit =
+  append[textual, value](value)
+  builder.append(textual('\n'))
 
 
 extension (textObject: Text.type)
@@ -125,8 +121,8 @@ extension [textual: Textual](words: Iterable[textual])
 extension [textual: Textual](text: textual)
   inline def length: Int = textual.length(text)
   inline def populated: Optional[textual] = if text == textual.empty then Unset else text
-  inline def lower: textual = textual.map(text, _.toLower)
-  inline def upper: textual = textual.map(text, _.toUpper)
+  inline def lower: textual = textual.map(text)(_.toLower)
+  inline def upper: textual = textual.map(text)(_.toUpper)
   def plain: Text = textual.text(text)
 
   def broken(predicate: (Char, Char) => Boolean, break: Char = '\u200b'): textual =
@@ -261,7 +257,14 @@ extension [textual: Textual](text: textual)
   def snip(pred: Char => Boolean, index: Ordinal = Prim): Optional[(textual, textual)] =
     text.where(pred, index).let(_.n0).let(text.snip(_))
 
-  def mapChars(lambda: Char => Char): textual = textual.map(text, lambda)
+  def mapChars(lambda: Char => Char): textual = textual.map(text)(lambda)
+
+  def erase(chars: Char*): textual =
+    val set = chars.to(Set)
+    textual.builder().build:
+      textual.map(text): char =>
+        if !set.contains(char) then append(char)
+        char
 
   inline def count(pred: Char => Boolean): Int =
     def recur(index: Ordinal, sum: Int): Int = if index > Ult.of(text) then sum else
@@ -308,11 +311,11 @@ extension [textual: Textual](text: textual)
   def ends(suffix: into Text): Boolean = text.keep(suffix.length, Rtl) == suffix
 
   inline def tr(from: Char, to: Char): textual =
-    textual.map(text, char => if char == from then to else char)
+    textual.map(text)(char => if char == from then to else char)
 
   // Extension method is applied explicitly because it appears ambiguous otherwise
-  inline def subscripts: textual = textual.map(text, _.subscript.or(' '))
-  inline def superscripts: textual = textual.map(text, _.superscript.or(' '))
+  inline def subscripts: textual = textual.map(text)(_.subscript.or(' '))
+  inline def superscripts: textual = textual.map(text)(_.superscript.or(' '))
 
 package proximityMeasures:
   given jaroDistance: Proximity = (left, right) =>

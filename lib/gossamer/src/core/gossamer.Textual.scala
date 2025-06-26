@@ -46,10 +46,11 @@ trait Textual extends Typeclass, Concatenable, Countable, Segmentable, Zeroic:
 
   def show[value](value: value)(using show: Show[value]): Self
   def apply(text: Text): Self
+  def apply(char: Char): Self
   def classTag: ClassTag[Self]
   def length(text: Self): Int
   def text(text: Self): Text
-  def map(text: Self, lambda: Char => Char): Self
+  def map(text: Self)(lambda: Char => Char): Self
   def empty: Self
   def concat(left: Self, right: Self): Self
   def unsafeChar(text: Self, index: Ordinal): Char
@@ -65,10 +66,11 @@ object Textual:
     type Show[value] = value is spectacular.Showable
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
     def show[value](value: value)(using show: Show[value]): Text = show.text(value)
+    def apply(char: Char): Text = char.toString.tt
     def text(text: Text): Text = text
     def length(text: Text): Int = text.s.length
     def apply(text: Text): Text = text
-    def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
+    def map(text: Text)(lambda: Char => Char): Text = Text(text.s.map(lambda))
 
     def segment(text: Text, interval: Interval): Text =
       val limit = length(text)
