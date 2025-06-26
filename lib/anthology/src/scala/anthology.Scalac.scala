@@ -76,20 +76,12 @@ case class Scalac[version <: Scalac.All](options: List[ScalacOption[version]]):
 
       val callbackApi = new dtdi.CompilerCallback {}
 
-<<<<<<< HEAD
       object ProgressApi extends dtdsi.ProgressCallback:
         private var last: Int = -1
+
         override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
         : Unit =
-          ()
-=======
-    object ProgressApi extends dtdsi.ProgressCallback:
-      private var last: Int = -1
-
-      override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
-      :     Unit =
-        ()
->>>>>>> b8588941f (Start work on compiling Scala.js)
+            ()
 
         override def progress
                       (current:      Int,
