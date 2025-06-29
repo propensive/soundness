@@ -37,8 +37,10 @@ import gesticulate.*
 import gossamer.*
 import hieroglyph.*
 import kaleidoscope.*
+import nettlesome.*
 import prepositional.*
 import proscenium.*
+import serpentine.*
 import spectacular.*
 import vacuous.*
 
@@ -164,6 +166,16 @@ object HtmlAttribute:
   given href2: [url: Abstractable across Urls into Text] => ("href" is HtmlAttribute[url]) =
     _.generic
 
+  inline given href3: [topic, path <: Path of topic under %.type] => Rfc3986 is System
+         => ("href" is HtmlAttribute[path]) =
+    _.on[Rfc3986].encode
+
+  inline given href4: [topic, path <: Path of topic] => Rfc3986 is System
+         => ("href" is HtmlAttribute[path]) =
+    _.on[Rfc3986].encode
+
+  inline given href4: [path <: Path on Rfc3986] => ("href" is HtmlAttribute[path]) = _.encode
+
   // Needs to be provided by Cosmopolite
   given hreflang: ("hreflang" is HtmlAttribute[Text]) = identity(_)
 
@@ -236,6 +248,16 @@ object HtmlAttribute:
     _.generic
 
   given src3: [url: Abstractable across Urls into Text] => ("src" is HtmlAttribute[url]) = _.generic
+
+  inline given src4: [topic, path <: Path of topic under %.type] => Rfc3986 is System
+         => ("src" is HtmlAttribute[path]) =
+    _.on[Rfc3986].encode
+
+  inline given src5: [topic, path <: Path of topic] => Rfc3986 is System
+         => ("src" is HtmlAttribute[path]) =
+    _.on[Rfc3986].encode
+
+
   given srcdoc: ("srcdoc" is HtmlAttribute[Html[?]]) = _.show
   given srclang: ("srclang" is HtmlAttribute[Text]) = identity(_)
 
