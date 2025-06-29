@@ -46,7 +46,8 @@ import vacuous.*
 erased trait Codl
 
 object Codl:
-  def read[value: CodlDecoder](source: Any)(using readable: source.type is Readable by Text)
+  def read[value: CodlDecoder](using Void)[source](source: source)
+       (using readable: source is Readable by Text)
   : value raises CodlError raises CodlReadError =
 
       summon[CodlDecoder[value]].schema.parse(readable.stream(source)).as[value]

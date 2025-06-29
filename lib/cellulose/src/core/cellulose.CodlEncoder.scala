@@ -66,7 +66,7 @@ object CodlEncoder extends CodlEncoder2:
   given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
   given text: CodlFieldWriter[Text] = _.show
 
-  given optional: [encodable: CodlEncoder] => CodlEncoder[Optional[encodable]]:
+  given optional: [encodable] => (encodable: => CodlEncoder[encodable]) => CodlEncoder[Optional[encodable]]:
     def schema: CodlSchema = encodable.schema.optional
 
     def encode(value: Optional[encodable]): List[IArray[CodlNode]] =
@@ -79,7 +79,7 @@ object CodlEncoder extends CodlEncoder2:
       case None        => List()
       case Some(value) => encodable.encode(value)
 
-  given list: [element: CodlEncoder] => CodlEncoder[List[element]]:
+  given list: [element] => (element: => CodlEncoder[element]) => CodlEncoder[List[element]]:
     def schema: CodlSchema = element.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
