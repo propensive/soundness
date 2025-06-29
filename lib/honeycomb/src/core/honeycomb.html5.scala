@@ -59,7 +59,7 @@ object html5:
     "accesskey" | "autocapitalize" | "autofocus" | "contenteditable" | "dir" | "draggable"
     | "enterkeyhint" | "class" | "hidden" | "id" | "inputmode" | "is" | "itemid" | "itemprop"
     | "itemref" | "itemscope" | "itemtype" | "lang" | "nonce" | "spellcheck" | "style" | "tabindex"
-    | "title" | "translate" | EventHandlers
+    | "title" | "translate" | "name" | EventHandlers
 
   type Flow =
     "a" | "abbr" | "address" | "area" | "article" | "aside" | "audio" | "b" | "bdi" | "bdo"

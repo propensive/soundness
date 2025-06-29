@@ -42,8 +42,9 @@ import serpentine.*
 erased trait Rfc3986
 
 object Rfc3986:
-  type Rules = MustMatch["[A-Za-z0-9_.~-]+"]
+  type Rules = MustMatch["[%A-Za-z0-9_.~-]+"]
   erased given nominative: Rfc3986 is Nominative under Rules = !!
+  given submissible: (%.type is Submissible on Rfc3986) = void => ()
 
   given system: Rfc3986 is System:
     type UniqueRoot = false

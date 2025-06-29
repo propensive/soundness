@@ -39,7 +39,8 @@ export gossamer
     uncapitalize, tail, init, empty, chars, snip, reverse, contains, trim, where, upto, dropWhile,
     mapChars, count, pad, center, fit, uncamel, unkebab, unsnake, starts, ends, tr, subscripts,
     superscripts, sub, urlEncode, urlDecode, punycode, bytes, sysBytes, proximity, join, add, words,
-    lines, appendln, spaced, slices, seek, search, Ascii, AsciiBuilder, Ltr, Rtl, erase }
+    lines, appendln, spaced, slices, seek, search, Ascii, AsciiBuilder, Ltr, Rtl, erase, before,
+    after, from }
 
 package decimalFormatters:
   export gossamer.decimalFormatters.java
