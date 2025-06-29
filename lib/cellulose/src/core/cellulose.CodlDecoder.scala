@@ -75,13 +75,13 @@ object CodlDecoder:
     def decoded(nodes: List[Indexed]): Optional[value] raises CodlReadError =
       if nodes.isEmpty then Unset else value.decoded(nodes)
 
-  given option: [value: CodlDecoder] => CodlDecoder[Option[value]]:
+  given option: [value] => (value: => CodlDecoder[value]) => CodlDecoder[Option[value]]:
     def schema: CodlSchema = value.schema.optional
 
     def decoded(nodes: List[Indexed]): Option[value] raises CodlReadError =
       if nodes.isEmpty then None else Some(value.decoded(nodes))
 
-  given list: [element: CodlDecoder] => CodlDecoder[List[element]] =
+  given list: [element] => (element: => CodlDecoder[element]) => CodlDecoder[List[element]] =
     new CodlDecoder[List[element]]:
       def schema: CodlSchema = element.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
@@ -95,7 +95,7 @@ object CodlDecoder:
           case struct: Struct =>
             value.map { v => element.decoded(List(v)) }
 
-  given set: [element: CodlDecoder] => CodlDecoder[Set[element]]:
+  given set: [element] => (element: => CodlDecoder[element]) => CodlDecoder[Set[element]]:
     def schema: CodlSchema = element.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
