@@ -74,10 +74,10 @@ object Decomposable extends Decomposable2:
     case given (`entity` is Encodable in Text) =>
       value => Decomposition.Primitive(shortName[entity], value.encode, value)
 
-  inline def primitive[value](name: Text): value is Decomposable =
+  def primitive[value](name: Text): value is Decomposable =
     value => Decomposition.Primitive(name, value.toString.tt, value)
 
-  inline def any[value]: value is Decomposable =
+  def any[value]: value is Decomposable =
     value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
   trait Foundation extends Decomposable:
@@ -98,11 +98,12 @@ object Decomposable extends Decomposable2:
 
     given decomposition: Decomposition is Decomposable.Foundation = identity(_)
 
-    inline given sequence: [element: Decomposable, collection <: Iterable[element]]
+    inline given sequence: [element, collection <: Iterable[element]]
           => collection is Decomposable.Foundation =
       collection =>
-        Decomposition.Sequence
-         (shortName[collection], collection.map(_.decompose).to(List), collection)
+        provide[element is Decomposable]:
+          Decomposition.Sequence
+           (shortName[collection], collection.map(_.decompose).to(List), collection)
 
   private inline def shortName[entity]: Text = rewrite(typeName[entity])
 
