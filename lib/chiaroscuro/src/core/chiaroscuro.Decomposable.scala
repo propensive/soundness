@@ -52,16 +52,42 @@ trait Decomposable extends Typeclass:
   def decomposition(value: Self): Decomposition
 
 object Decomposable extends Decomposable2:
-  inline given sequence: [element, collection <: Iterable[element]]
+  given list: [element, collection <: List[element]]
         => (decomposable: => element is Decomposable)
-        => collection is Foundation =
+        => collection is Base =
     collection =>
       Decomposition.Sequence
-        (shortName[collection], collection.map(_.decompose).to(List), collection)
+       (t"List", collection.map(decomposable.decomposition(_)).to(List), collection)
+
+  given trie: [element, collection <: Trie[element]]
+        => (decomposable: => element is Decomposable)
+        => collection is Base =
+    collection =>
+      Decomposition.Sequence
+       (t"Trie", collection.map(decomposable.decomposition(_)).to(Trie), collection)
+
+  trait Base extends Decomposable:
+    def decomposition(value: Self): Decomposition
+
+  object Base:
+    given text: Text is Base =
+      value => Decomposition.Primitive(t"Text", value, value)
+
+    given int: Int is Base =
+      value => Decomposition.Primitive(t"Int", value.show, value)
+
+    given string: String is Base =
+      value => Decomposition.Primitive("String", value, value)
+
+    given compileError: CompileError is Base =
+      value => Decomposition.Primitive("CompileError", value.toString.tt, value)
+
+    given decomposition: Decomposition is Base = identity(_)
+
 
 trait Decomposable2 extends Decomposable3:
   inline given derived: [entity] => entity is Decomposable = summonFrom:
-    case decomposable: (`entity` is Foundation) => decomposable
+    case decomposable: (`entity` is Decomposable.Base) => decomposable
     case given ProductReflection[`entity`] => Derivation.derived[entity]
     case given SumReflection[`entity`]     => Derivation.split[entity]
     case given (AnyRef <:< `entity`)       => any[entity]
@@ -81,6 +107,9 @@ trait Decomposable2 extends Decomposable3:
 
     case given (`entity` is Encodable in Text) =>
       value => Decomposition.Primitive(shortName[entity], value.encode, value)
+
+    case _ =>
+      value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
   def primitive[value](name: Text): value is Decomposable =
     value => Decomposition.Primitive(name, value.toString.tt, value)
@@ -103,30 +132,11 @@ trait Decomposable2 extends Decomposable3:
           [variant <: derivation] => variant =>
             Decomposition.Sum(typeName, context.decomposition(variant), variant)
 
-trait Decomposable3:
-  given fallback: [value] => value is Decomposable =
-    value => Decomposition.Primitive(t"Any", value.toString.tt, value)
-
   protected inline def shortName[entity]: Text = rewrite(typeName[entity])
   private def rewrite(text: Text): Text = text match
     case r"(.*\.)*$basic([^\]]*)(\[.*\])?" => basic
     case other                             => other
 
-
-trait Foundation extends Decomposable:
-  def decomposition(value: Self): Decomposition
-
-object Foundation:
-  given text: Text is Foundation =
-    value => Decomposition.Primitive(t"Text", value, value)
-
-  given int: Int is Foundation =
-    value => Decomposition.Primitive(t"Int", value.show, value)
-
-  given string: String is Foundation =
-    value => Decomposition.Primitive("String", value, value)
-
-  given compileError: CompileError is Foundation =
-    value => Decomposition.Primitive("CompileError", value.toString.tt, value)
-
-  given decomposition: Decomposition is Foundation = identity(_)
+trait Decomposable3:
+  given fallback: [value] => value is Decomposable =
+    value => Decomposition.Primitive(t"Any", value.toString.tt, value)
