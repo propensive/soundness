@@ -189,9 +189,17 @@ object Json extends Json2, Dynamic:
   given booleanEncodable: Boolean is Encodable in Json = boolean => Json.ast(JsonAst(boolean))
   given jsonEncodable: Json is Encodable in Json = identity(_)
 
-  given encodable: [collection <: Iterable, element: Encodable in Json as encodable]
-        =>  collection[element] is Encodable in Json =
-    values => Json.ast(JsonAst(IArray.from(values.map(encodable.encode(_).root))))
+  given listEncodable: [list <: List, element: Encodable in Json]
+        =>  list[element] is Encodable in Json =
+    values => Json.ast(JsonAst(IArray.from(values.map(element.encoded(_).root))))
+
+  given setEncodable: [set <: Set, element: Encodable in Json]
+        =>  set[element] is Encodable in Json =
+    values => Json.ast(JsonAst(IArray.from(values.map(element.encoded(_).root))))
+
+  given trieEncodable: [trie <: Trie, element: Encodable in Json]
+        =>  trie[element] is Encodable in Json =
+    values => Json.ast(JsonAst(IArray.from(values.map(element.encoded(_).root))))
 
   given array: [collection <: Iterable, element: Decodable in Json]
         => (factory:    Factory[element, collection[element]],
