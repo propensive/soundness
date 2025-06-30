@@ -51,7 +51,7 @@ object Decomposition:
 enum Decomposition:
   case Primitive(typeName: Text, value: Text, ref: Any)
   case Product(name: Text, values: Map[Text, Decomposition], ref: Any)
-  case Sequence(name: Text, values: List[Decomposition], ref: Any)
+  case Sequence(name: Text, values: Iterable[Decomposition], ref: Any)
   case Sum(name: Text, value: Decomposition, ref: Any)
 
   def ref: Any
@@ -67,7 +67,7 @@ enum Decomposition:
   def short: Text = this match
     case Primitive(_, text, _)  => text
     case Sum(name, value, _)    => t"$name:${value.short}"
-    case Sequence(_, values, _) => t"[..${values.length}..]"
+    case Sequence(_, values, _) => t"[..${values.size}..]"
     case Product(name, _, _)    => name
 
   def text: Text =
@@ -94,7 +94,7 @@ enum Decomposition:
           append(t"\n")
           append(space*indent)
 
-        val last = values.length
+        val last = values.size
 
         values.each: item =>
           append(ordinal.n0.show)

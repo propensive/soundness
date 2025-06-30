@@ -84,37 +84,36 @@ object Probably:
             case Some('{ type analyse; $autopsy: (Autopsy { type Analyse = analyse }) }) =>
               TypeRepr.of[analyse].literal[Boolean]
 
-          if analyse.or(false) then
-            exp match
-              case Some('{type testType >: test; $expr: testType}) =>
-                val decomposable: Expr[testType is Decomposable] =
-                  Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
+          if analyse.or(false) then exp match
+            case Some('{type testType >: test; $expr: testType}) =>
+              val decomposable: Expr[testType is Decomposable] =
+                Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
 
-                val contrast = Expr.summon[testType is Contrastable].getOrElse:
-                  halt(m"Can't find a `Contrastable` instance for ${Type.of[testType]}")
+              '{  given decompose: testType is Decomposable = $decomposable
+                  val contrast = compiletime.summonInline[testType is Contrastable]
 
-                '{  ( assertion[testType, test, report, result]
-                      ($runner,
-                        $test,
-                        $predicate,
-                        $action,
-                        $contrast,
-                        Some($expr),
-                        $inclusion,
-                        $inclusion2,
-                        $decomposable) )  }
+                  assertion[testType, test, report, result]
+                   ($runner,
+                    $test,
+                    $predicate,
+                    $action,
+                    contrast,
+                    Some($expr),
+                    $inclusion,
+                    $inclusion2,
+                    decompose)  }
 
-              case _ =>
-                '{  ( assertion[test, test, report, result]
-                      ($runner,
-                        $test,
-                        $predicate,
-                        $action,
-                        Contrastable.nothing[test],
-                        None,
-                        $inclusion,
-                        $inclusion2,
-                        Decomposable.any[test]) )  }
+            case _ =>
+              '{  ( assertion[test, test, report, result]
+                    ($runner,
+                      $test,
+                      $predicate,
+                      $action,
+                      Contrastable.nothing[test],
+                      None,
+                      $inclusion,
+                      $inclusion2,
+                      Decomposable.any[test]) )  }
 
           else
             '{  ( assertion[test, test, report, result]

@@ -35,6 +35,7 @@ package punctuation
 import soundness.*
 
 import strategies.throwUnsafely
+import testAutopsies.contrastExpectations
 
 case class Example(str: Text, int: Int)
 
