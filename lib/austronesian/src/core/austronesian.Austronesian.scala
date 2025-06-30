@@ -37,6 +37,7 @@ import contingency.*
 import distillate.*
 import prepositional.*
 import probably.*
+import proscenium.*
 import rudiments.*
 import wisteria.*
 
@@ -63,9 +64,11 @@ object Austronesian:
     given boolean: Boolean is Encodable in Pojo = identity(_)
     given byte: Byte is Encodable in Pojo = identity(_)
 
-    given list: [collection <: Iterable, element: Encodable in Pojo]
-          =>  collection[element] is Encodable in Pojo =
-      iterable => IArray.from(iterable.map(_.encode))
+    given list: [list <: List, element: Encodable in Pojo] => list[element] is Encodable in Pojo =
+      list => IArray.from(list.map(_.encode))
+
+    given trie: [trie <: Trie, element: Encodable in Pojo] => trie[element] is Encodable in Pojo =
+      trie => IArray.from(trie.map(_.encode))
 
     given text2: Tactic[PojoError] => Text is Decodable in Pojo =
       case string: String => string.tt

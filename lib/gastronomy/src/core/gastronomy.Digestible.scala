@@ -62,8 +62,17 @@ object Digestible extends Derivable[Digestible]:
         =>  Optional[digestible] is Digestible =
     (acc, value) => value.let(digestible.digest(acc, _))
 
-  given iterable: [collection <: Iterable, value: Digestible] => collection[value] is Digestible =
-    (digestion, iterable) => iterable.each(value.digest(digestion, _))
+  given list: [list <: List, value: Digestible] => list[value] is Digestible =
+    (digestion, list) => list.each(value.digest(digestion, _))
+
+  given set: [set <: Set, value: Digestible] => set[value] is Digestible =
+    (digestion, set) => set.each(value.digest(digestion, _))
+
+  given trie: [trie <: Trie, value: Digestible] => trie[value] is Digestible =
+    (digestion, trie) => trie.each(value.digest(digestion, _))
+
+  given iarray: [value: Digestible] => IArray[value] is Digestible =
+    (digestion, iarray) => iarray.each(value.digest(digestion, _))
 
   given map: [digestible: Digestible, digestible2: Digestible]
         =>  Map[digestible, digestible2] is Digestible =
