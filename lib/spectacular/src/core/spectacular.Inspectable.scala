@@ -114,9 +114,6 @@ object Inspectable extends Inspectable2:
   given indexedSeq: [element: Inspectable] => IndexedSeq[element] is Inspectable =
     _.map(_.inspect).mkString("⟨ ", " ", " ⟩ᵢ").tt
 
-  given iterable: [element: Inspectable] => Iterable[element] is Inspectable =
-    _.map(_.inspect).mkString("⦗", ", ", "⦘").tt
-
   given list: [element: Inspectable] => List[element] is Inspectable =
     _.map(_.inspect).mkString("[", ", ", "]").tt
 
