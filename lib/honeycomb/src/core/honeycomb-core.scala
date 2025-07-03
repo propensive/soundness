@@ -45,6 +45,6 @@ extension (context: StringContext)
   def cls(): CssClass = CssClass(context.parts.head.tt)
   def id(): DomId = DomId(context.parts.head.tt)
 
-type Html[+child <: Label] = Node[child] | Text | Int | HtmlXml
+type Html[+child <: Label] = Node[child] | Text | Unset.type | HtmlXml
 
 type Attributes = Map[String, Unset.type | Text]

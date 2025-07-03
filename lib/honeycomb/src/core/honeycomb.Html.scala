@@ -35,13 +35,14 @@ package honeycomb
 import anticipation.*
 import gossamer.*
 import proscenium.*
+import vacuous.*
 
 import language.dynamics
 
 object Html extends Node["html"]:
   def label: Text = t"html"
   def attributes: Attributes = Map()
-  def children: Seq[Node[?] | Text | Int | HtmlXml] = Nil
+  def children: Seq[Node[?] | Text | Unset.type | HtmlXml] = Nil
 
   def apply(head: Node["head"], body: Node["body"]): Element["html"] =
     Element(label.s, Map(), Seq(head, body))
