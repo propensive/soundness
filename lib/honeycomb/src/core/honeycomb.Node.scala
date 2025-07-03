@@ -41,8 +41,8 @@ import vacuous.*
 object Node:
   given html: [html <: Html[?]] => html is Showable = html => html.absolve match
     case text: Text    => text
-    case int: Int      => int.show
     case node: Node[?] => node.show
+    case Unset         => t""
 
   given seq: Seq[Html[?]] is Showable = _.map(_.show).join
 
@@ -60,13 +60,16 @@ object Node:
     else t"<${item.label}$filling>${item.children.map(_.show).join}</${item.label}>"
 
 
-  def apply(label0: Text, attributes0: Attributes, children0: Seq[Node[?] | Text | Int | HtmlXml])
+  def apply
+       (label0:      Text,
+        attributes0: Attributes,
+        children0:   Seq[Node[?] | Text | Unset.type | HtmlXml])
   : Html[?] =
 
       new Node:
         def label = label0
         def attributes = attributes0
-        def children: Seq[Node[?] | Text | Int | HtmlXml] = children0
+        def children: Seq[Node[?] | Text | Unset.type | HtmlXml] = children0
 
 
 trait Node[+name <: Label]:

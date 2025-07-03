@@ -145,7 +145,7 @@ open class HtmlTranslator(embeddings: Embedding*) extends Translator:
       def interactive(node: Html[Phrasing]): Html[NonInteractive] = node.absolve match
         case node: Node[NonInteractive @unchecked] => node
         case text: Text                            => text
-        case int: Int                              => int
+        case Unset                                 => t""
 
       val children: Seq[Html[NonInteractive]] = nonInteractive(content).map(interactive(_))
 

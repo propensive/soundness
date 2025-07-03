@@ -115,8 +115,8 @@ object HtmlSerializer:
 
             if text.chars.last.isWhitespace then append(t" ")
 
-      case int: Int =>
-        next(int.show, verbatim)
+      case Unset =>
+        ()
 
 
     append(t"<!DOCTYPE html>\n")

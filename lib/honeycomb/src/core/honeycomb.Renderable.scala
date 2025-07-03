@@ -42,11 +42,10 @@ object Renderable:
   import html5.Phrasing
   given showable: [value: Showable] => value is Renderable into Phrasing = value => List(value.show)
 
-  given message: Message is Renderable into Phrasing = message =>
-    message.segments.flatMap:
-      case message: Message => message.html
-      case text: Text       => List(text)
-      case _                => Nil
+  given message: Message is Renderable into Phrasing = _.segments.flatMap:
+    case message: Message => message.html
+    case text: Text       => List(text)
+    case _                => Nil
 
 
   given abstractable: [value: Abstractable across HtmlContent into List[Sgml]]
