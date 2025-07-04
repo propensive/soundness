@@ -90,7 +90,7 @@ object Path:
 
 
   given encodable: [system: System] => Path on system is Encodable in Text =
-    path => path.descent.reverse.join(path.root, system.separator, t"")
+    path => path.descent.map(system.escape(_)).reverse.join(path.root, system.separator, t"")
 
   given showable: [system: System] => Path on system is Showable = _.encode
 
@@ -108,10 +108,10 @@ object Path:
     conversion(_.on[system])
 
 
-  transparent inline given quotient: [system, path <: Path on system] => path is Quotient =
+  transparent inline given quotient: [system: System, path <: Path on system] => path is Quotient =
     ( path =>
         if path.empty then None
-        else if path.descent.length == 1 then Some((path.root, path.descent.head))
+        else if path.descent.length == 1 then Some((path.root, system.unescape(path.descent.head)))
         else Some((path.root, Relative(0, path.descent*))) )
     : path is Quotient of Text over (Relative on system) | Text
 
