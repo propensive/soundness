@@ -36,7 +36,7 @@ import scala.deriving.*
 import scala.compiletime.*
 
 trait Derivation[typeclass[_]]
-extends ProductDerivationMethods[typeclass], SumDerivationMethods[typeclass]:
+extends ProductDerivation.Methods[typeclass], SumDerivation.Methods[typeclass]:
 
   inline given derived: [derivation] => (Reflection[derivation])
                =>  typeclass[derivation] =
