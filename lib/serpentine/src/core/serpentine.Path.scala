@@ -55,16 +55,15 @@ object Path:
     type Topic = EmptyTuple
     type Limit = %.type
 
-  given decodable: [system: System, root]
-        => (radical: root is Radical on system)
+  given decodable: [system: System, root] => (radical: root is Radical on system)
         =>  (Path on system) is Decodable in Text =
 
-    text =>
-      val root = radical.encode(radical.decode(text))
-      val parts = text.skip(radical.length(text)).cut(system.separator)
-      val parts2 = if parts.last == t"" then parts.init else parts
+      text =>
+        val root = radical.encode(radical.decode(text))
+        val parts = text.skip(radical.length(text)).cut(system.separator)
+        val parts2 = if parts.last == t"" then parts.init else parts
 
-      Path.of(root, parts2.reverse*)
+        Path.of(root, parts2.reverse.map(system.unescape(_))*)
 
   given nominable: [system] => (Path on system) is Nominable = path =>
     path.descent.prim.or(path.root)
@@ -90,7 +89,7 @@ object Path:
 
 
   given encodable: [system: System] => Path on system is Encodable in Text =
-    path => path.descent.reverse.join(path.root, system.separator, t"")
+    path => path.descent.map(system.escape(_)).reverse.join(path.root, system.separator, t"")
 
   given showable: [system: System] => Path on system is Showable = _.encode
 
