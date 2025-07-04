@@ -55,16 +55,15 @@ object Path:
     type Topic = EmptyTuple
     type Limit = %.type
 
-  given decodable: [system: System, root]
-        => (radical: root is Radical on system)
+  given decodable: [system: System, root] => (radical: root is Radical on system)
         =>  (Path on system) is Decodable in Text =
 
-    text =>
-      val root = radical.encode(radical.decode(text))
-      val parts = text.skip(radical.length(text)).cut(system.separator)
-      val parts2 = if parts.last == t"" then parts.init else parts
+      text =>
+        val root = radical.encode(radical.decode(text))
+        val parts = text.skip(radical.length(text)).cut(system.separator)
+        val parts2 = if parts.last == t"" then parts.init else parts
 
-      Path.of(root, parts2.reverse*)
+        Path.of(root, parts2.reverse.map(system.unescape(_))*)
 
   given nominable: [system] => (Path on system) is Nominable = path =>
     path.descent.prim.or(path.root)
@@ -108,10 +107,10 @@ object Path:
     conversion(_.on[system])
 
 
-  transparent inline given quotient: [system: System, path <: Path on system] => path is Quotient =
+  transparent inline given quotient: [system, path <: Path on system] => path is Quotient =
     ( path =>
         if path.empty then None
-        else if path.descent.length == 1 then Some((path.root, system.unescape(path.descent.head)))
+        else if path.descent.length == 1 then Some((path.root, path.descent.head))
         else Some((path.root, Relative(0, path.descent*))) )
     : path is Quotient of Text over (Relative on system) | Text
 
