@@ -72,10 +72,10 @@ object Tests extends Suite(m"Revolution Tests"):
           t"1.0.0-0A.is.legal")
 
       for version <- valid do
-        test(m"Parses $version"):
+        test(m"Roundtrip $version"):
           import strategies.throwUnsafely
-          version.decode[Semver]
-        . assert()
+          version.decode[Semver].encode
+        . assert(_ == version)
 
       val invalid =
         List

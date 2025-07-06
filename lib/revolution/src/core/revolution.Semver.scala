@@ -41,11 +41,18 @@ import fulminate.*
 import gossamer.*
 import kaleidoscope.*
 import prepositional.*
+import symbolism.*
 import vacuous.*
 
 import errorDiagnostics.stackTraces
 
 object Semver:
+  given encodable: Semver is Encodable in Text =
+    semver =>
+      val suffix = semver.suffix.lay(t"")(t"-"+_.join(t"."))
+      val build = semver.build.lay(t"")(t"+"+_.join(t"."))
+      t"${semver.major}.${semver.minor}.${semver.patch}$suffix$build"
+
   given decodable: Tactic[SemverError] => Semver is Decodable in Text =
     text =>
       text match
@@ -55,11 +62,10 @@ object Semver:
 
           for extra <- List(suffix2, build2).compact do
             if extra.isEmpty then raise(SemverError(text))
-            for element <- extra do
-              element match
-                case r"0[0-9]+"       => raise(SemverError(element))
-                case r"[0-9A-Za-z-]+" => ()
-                case _                => raise(SemverError(element))
+            for element <- extra do element match
+              case r"0[0-9]+"       => raise(SemverError(element))
+              case r"[0-9A-Za-z-]+" => ()
+              case _                => raise(SemverError(element))
 
           mitigate:
             case NumberError(_, _) => SemverError(text)
