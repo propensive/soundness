@@ -30,24 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package parasite
 
-export parasite
-. { Codicil, Completion, AsyncError, Daemon, Hook, Monitor, Promise, Task, ThreadModel, Chain,
-    Transgression, monitor, daemon, async, task, relent, cancel, sleep, snooze, hibernate, delay,
-    race, supervise, Tenacity, retry, Observation, System, Destruction, Shutdown, intercept,
-    Interceptable, GarbageCollection, Timeout, Heap }
+import java.lang.management as jlm
 
-package threadModels:
-  export parasite.threadModels.{platform, virtual, adaptive}
+import anticipation.*
+import denominative.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import symbolism.*
 
-package asyncTermination:
-  export parasite.asyncTermination.{await, cancel, fail, panic}
-
-package supervisors:
-  export parasite.supervisors.global
-
-package retryTenacities:
-  export parasite.retryTenacities
-  . { exponentialForever, exponentialFiveTimes, exponentialTenTimes, fixedNoDelayForever,
-      fixedNoDelayFiveTimes, fixedNoDelayTenTimes }
+object Heap:
+  def used: Memory = Memory:
+    jlm.ManagementFactory.getMemoryPoolMXBeans().nn.stream().nn
+    . filter(_.nn.getType() == jlm.MemoryType.HEAP).nn
+    . mapToLong(_.nn.getUsage().nn.getUsed()).nn
+    . sum()
