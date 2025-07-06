@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.37.0.                                                                    ┃
+┃    Soundness, version 0.32.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -32,95 +32,52 @@
                                                                                                   */
 package revolution
 
-import soundness.*
+import scala.collection as sc
 
-object Tests extends Suite(m"Revolution Tests"):
-  def run(): Unit =
-    suite(m"Semantic version parsing tests"):
-      val valid =
-        List
-         (t"0.0.4",
-          t"1.2.3",
-          t"10.20.30",
-          t"1.1.2-prerelease+meta",
-          t"1.1.2+meta",
-          t"1.1.2+meta-valid",
-          t"1.0.0-alpha",
-          t"1.0.0-beta",
-          t"1.0.0-alpha.beta",
-          t"1.0.0-alpha.beta.1",
-          t"1.0.0-alpha.1",
-          t"1.0.0-alpha0.valid",
-          t"1.0.0-alpha.0valid",
-          t"1.0.0-alpha-a.b-c-somethinglong+build.1-aef.1-its-okay",
-          t"1.0.0-rc.1+build.1",
-          t"2.0.0-rc.1+build.123",
-          t"1.2.3-beta",
-          t"10.2.3-DEV-SNAPSHOT",
-          t"1.2.3-SNAPSHOT-123",
-          t"1.0.0",
-          t"2.0.0",
-          t"1.1.7",
-          t"2.0.0+build.1848",
-          t"2.0.1-alpha.1227",
-          t"1.0.0-alpha+beta",
-          t"1.2.3----RC-SNAPSHOT.12.9.1--.12+788",
-          t"1.2.3----R-S.12.9.1--.12+meta",
-          t"1.2.3----RC-SNAPSHOT.12.9.1--.12",
-          t"1.0.0+0.build.1-rc.10000aaa-kk-0.1",
-          t"999999999999999999.999999999999999999.999999999999999999",
-          t"1.0.0-0A.is.legal")
+import anticipation.*
+import contingency.*
+import distillate.*
+import fulminate.*
+import gossamer.*
+import kaleidoscope.*
+import prepositional.*
+import vacuous.*
 
-      for version <- valid do
-        test(m"Parses $version"):
-          import strategies.throwUnsafely
-          version.decode[Semver]
-        . assert()
+import errorDiagnostics.stackTraces
 
-      val invalid =
-        List
-         (t"1",
-          t"1.2",
-          t"1.2.3-0123",
-          t"1.2.3-0123.0123",
-          t"1.1.2+.123",
-          t"+invalid",
-          t"-invalid",
-          t"-invalid+invalid",
-          t"-invalid.01",
-          t"alpha",
-          t"alpha.beta",
-          t"alpha.beta.1",
-          t"alpha.1",
-          t"alpha+beta",
-          t"alpha_beta",
-          t"alpha.",
-          t"alpha..",
-          t"beta",
-          t"1.0.0-alpha_beta",
-          t"-alpha.",
-          t"1.0.0-alpha..",
-          t"1.0.0-alpha..1",
-          t"1.0.0-alpha...1",
-          t"1.0.0-alpha....1",
-          t"1.0.0-alpha.....1",
-          t"1.0.0-alpha......1",
-          t"1.0.0-alpha.......1",
-          t"01.1.1",
-          t"1.01.1",
-          t"1.1.01",
-          t"1.2",
-          t"1.2.3.DEV",
-          t"1.2-SNAPSHOT",
-          t"1.2.31.2.3----RC-SNAPSHOT.12.09.1--..12+788",
-          t"1.2-RC-SNAPSHOT",
-          t"-1.0.3-gamma+b7718",
-          t"+justmeta",
-          t"9.8.7+meta+meta",
-          t"9.8.7-whatever+meta+meta",
-          t"99999999999999999999999.999999999999999999.99999999999999999----RC-SNAPSHOT.12.09.1--------------------------------..12")
+object Semver:
+  given decodable: Tactic[SemverError] => Semver is Decodable in Text =
+    text =>
+      text match
+        case r"$major([0-9]+)\.$minor([0-9]+)\.$patch([0-9]+)$suffix(-[^\+]+)?$build(\+.+)?" =>
+          val suffix2 = suffix.let(_.skip(1).cut(t"."))
+          val build2 = build.let(_.skip(1).cut(t"."))
 
-      for version <- invalid do
-        test(m"Parser rejects $version"):
-          safely(version.decode[Semver])
-        . assert(_.absent)
+          for extra <- List(suffix2, build2).compact do
+            if extra.isEmpty then raise(SemverError(text))
+            for element <- extra do
+              element match
+                case r"0[0-9]+"       => raise(SemverError(element))
+                case r"[0-9A-Za-z-]+" => ()
+                case _                => raise(SemverError(element))
+
+          mitigate:
+            case NumberError(_, _) => SemverError(text)
+
+          . within:
+              val major2 = major.decode[Long]
+              if major.starts(t"0") && major2 != 0 then raise(SemverError(text))
+              val minor2 = minor.decode[Long]
+              if minor.starts(t"0") && minor2 != 0 then raise(SemverError(text))
+              val patch2 = patch.decode[Long]
+              if patch.starts(t"0") && patch2 != 0 then raise(SemverError(text))
+              Semver(major2, minor2, patch2, suffix2, build2)
+
+case class Semver
+            (major:  Long,
+             minor:  Long,
+             patch:  Long,
+             suffix: Optional[List[Text]],
+             build:  Optional[List[Text]]):
+
+  def development: Boolean = major == 0
