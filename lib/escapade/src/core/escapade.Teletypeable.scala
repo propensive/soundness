@@ -165,7 +165,7 @@ object Teletypeable:
           innerLines = BoxLine.Blank,
           charset    = LineCharset.Default )
 
-    given attenuation: Attenuation = columnAttenuation.ignoreAttenuation
+    import columnAttenuation.ignoreAttenuation
 
     val grid = scaffold.tabulate(rows).grid(200)
     val dataOnly = grid.copy(sections = grid.sections.tail)
@@ -200,5 +200,5 @@ object Teletypeable:
 trait Teletypeable extends Typeclass:
   def teletype(value: Self): Teletype
 
-  def contramap[self2](lambda: self2 => Self): self2 is Teletypeable =
+  def contramap[self2](lambda: self2 => Self): (self2 is Teletypeable)^{this, lambda} =
     value => teletype(lambda(value))
