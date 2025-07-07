@@ -96,6 +96,23 @@ object internal:
 
     optional.absolve match case '{$optional: optionalType} => check[optionalType]
 
+    // `Expr` is invariant, so when `value` is inferred with a refinement or capture
+    // annotation that the `default` argument's own type lacks (common in macro
+    // contexts, e.g. an abstract `Relative` type with `^`-annotated members), splicing
+    // `default` into a `value`-typed position fails. Drop it to an untyped `Expr[Any]`
+    // so its splice carries no constraint, and cast each branch to `value` instead;
+    // the result is cast to `value` at the boundary anyway.
+    val anyOptional: Expr[Optional[Any]] = optional.asTerm.asExprOf[Optional[Any]]
+    val anyDefault: Expr[Any] = default.asTerm.asExpr
+
+    def fallback: Term =
+      '{
+          $anyOptional match
+            case Unset => $anyDefault
+            case other => other
+        }
+      . asTerm
+
     def optimize(term: Term): Term = term match
       case
         ( inlined@Inlined
@@ -106,24 +123,12 @@ object internal:
             Inlined(call, bindings, Typed(Apply(select, List(default.asTerm)), typeTree))
 
           case term =>
-            ' {
-                $optional match
-                  case Unset => $default
-                  case term  => term.asInstanceOf[value]
-              }
-
-            . asTerm
+            fallback
 
       case Inlined(call, bindings, term) =>
         Inlined(call, bindings, optimize(term))
 
       case term =>
-        ' {
-            $optional match
-              case Unset => $default
-              case term  => term.asInstanceOf[value]
-          }
-
-        . asTerm
+        fallback
 
     '{${optimize(optional.asTerm).asExpr}.asInstanceOf[value]}.asExprOf[value]
