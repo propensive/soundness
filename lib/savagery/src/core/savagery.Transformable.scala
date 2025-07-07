@@ -37,7 +37,9 @@ import prepositional.*
 
 object Transformable:
   def apply[value]
-    ( get: value => List[Transform], put: (value, List[Transform]) => value )
+    // A pure function (`->`): the instance retains it, and a capturing conversion would make
+    // the typeclass instance itself a capability, which its pure self type (rightly) forbids.
+    ( get: value -> List[Transform], put: (value, List[Transform]) -> value )
   :   value is Transformable =
 
     new Transformable:

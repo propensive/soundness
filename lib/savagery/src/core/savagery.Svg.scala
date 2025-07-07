@@ -59,13 +59,13 @@ object Svg:
 
 
   given loadable: (XmlSchema)
-  =>  Tactic[ParseError]
-  =>  Tactic[XmlError]
-  =>  Tactic[SvgError]
-  =>  Svg is Loadable by Text =
+  =>  (parseTactic: Tactic[ParseError])
+  =>  (xmlTactic: Tactic[XmlError])
+  =>  (svgTactic: Tactic[SvgError])
+  =>  ((Svg is Loadable by Text)^{parseTactic, xmlTactic, svgTactic}) =
 
     source =>
-      val xmlDoc: Document[Xml] = summon[Xml is Loadable by Text].load(source)
+      val xmlDoc: Document[Xml] = summon[(Xml is Loadable by Text)^].load(source)
       val svgElement = SvgParser.rootElement(xmlDoc.root)
       val parsedSvg: Svg = SvgParser.decodeSvg(svgElement)
 
