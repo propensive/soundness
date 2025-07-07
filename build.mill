@@ -702,7 +702,7 @@ object burdock extends Library:
   object boot extends Component:
     override def scalaJs = false // bootstrap loader (`java.nio.file`/`security`/`jar`)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object core
       extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.jvm,
                        gastronomy.core, jacinta.core, boot):
@@ -712,7 +712,7 @@ object burdock extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object cacophony extends Library:
   object core extends Component(gesticulate.core, quantitative.units, anticipation.http):
