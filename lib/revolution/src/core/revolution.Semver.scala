@@ -60,12 +60,14 @@ object Semver:
 
       t"${semver.major}.${semver.minor}.${semver.patch}$suffix$build"
 
+  given showable: Semver is Showable = encodable.encoded(_)
+
   given decodable: Tactic[SemverError] => Semver is Decodable in Text =
     text =>
       text match
         case r"$major([0-9]+)\.$minor([0-9]+)\.$patch([0-9]+)$suffix(-[^\+]+)?$build(\+.+)?" =>
-          val suffix2 = suffix.let(_.skip(1).cut(t".")).or(Nil)
-          val build2 = build.let(_.skip(1).cut(t".")).or(Nil)
+          val suffix2: List[Text] = suffix.let(_.skip(1).cut(t".")).or(Nil)
+          val build2: List[Text] = build.let(_.skip(1).cut(t".")).or(Nil)
 
           if suffix == t"-" || build == t"+" then raise(SemverError(text))
 
@@ -75,6 +77,12 @@ object Semver:
             case r"0[0-9]+"       => raise(SemverError(text))
             case r"[0-9A-Za-z-]+" => ()
             case _                => raise(SemverError(text))
+
+          val suffix3: List[Text | Long] = suffix2.map: element =>
+            safely(element.decode[Long]).or(element)
+
+          val build3: List[Text | Long] = build2.map: element =>
+            safely(element.decode[Long]).or(element)
 
           mitigate:
             case NumberError(_, _) => SemverError(text)
@@ -86,17 +94,17 @@ object Semver:
               if minor.starts(t"0") && minor2 != 0 then raise(SemverError(text))
               val patch2 = patch.decode[Long]
               if patch.starts(t"0") && patch2 != 0 then raise(SemverError(text))
-              Semver(major2, minor2, patch2, suffix2, build2)
+              Semver(major2, minor2, patch2, suffix3, build3)
 
 
 
   given ordering: Ordering[Semver] = Ordering.fromLessThan: (left, right) =>
     def compare(left: List[Long | Text], right: List[Long | Text]): Boolean = (left, right) match
       case (Nil, Nil)                             => false
-      case (Nil, _)                               => false
-      case (_, Nil)                               => true
-      case ((left: Text) :: _, (right: Long) :: _) => true
-      case ((left: Long) :: _, (right: Text) :: _) => false
+      case (Nil, _)                               => true
+      case (_, Nil)                               => false
+      case ((left: Text) :: _, (right: Long) :: _) => false
+      case ((left: Long) :: _, (right: Text) :: _) => true
 
       case ((left: Long) :: lefts, (right: Long) :: rights) =>
         if left == right then compare(lefts, rights) else left < right
@@ -106,7 +114,8 @@ object Semver:
 
     if left.major == right.major then
       if left.minor == right.minor then
-        if left.patch == right.patch then compare(left.suffix, right.suffix)
+        if left.patch == right.patch then
+          right.suffix.isEmpty || compare(left.suffix, right.suffix)
         else left.patch < right.patch
       else left.minor < right.minor
     else left.major < right.major

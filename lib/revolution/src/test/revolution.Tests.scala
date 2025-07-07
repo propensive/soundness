@@ -124,3 +124,19 @@ object Tests extends Suite(m"Revolution Tests"):
         test(m"Parser rejects $version"):
           safely(version.decode[Semver])
         . assert(_.absent)
+
+      val ordered =
+        List
+         (sv"1.0.0-alpha",
+          sv"1.0.0-alpha.1",
+          sv"1.0.0-alpha.beta",
+          sv"1.0.0-beta",
+          sv"1.0.0-beta.2",
+          sv"1.0.0-beta.11",
+          sv"1.0.0-rc.1",
+          sv"1.0.0")
+
+      for List(left, right) <- ordered.sliding(2) do
+        test(m"Check that $left < $right"):
+          left < right
+        . assert(identity(_))
