@@ -35,6 +35,7 @@ package superlunary
 import java.nio.file as jnf
 import java.util.function as juf
 
+import galilei.*
 import scala.quoted.*
 
 import ambience.*
