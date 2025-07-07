@@ -1554,10 +1554,10 @@ object proscenium extends Library:
   object core extends Component:
     override def moduleDeps = Seq(beneficence.core)
     override def scalacOptions = Task:
-      super.scalacOptions() :+ "-Yno-predef"
+      settings.cc(super.scalacOptions() :+ "-Yno-predef")
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object probably extends Library:
   object core extends Component(chiaroscuro.core, ambience.core, eucalyptus.core, coverage):
