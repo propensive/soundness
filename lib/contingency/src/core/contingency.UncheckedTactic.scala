@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.63.0.                                                                    ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -34,40 +34,32 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import beneficence.*
 import fulminate.*
 
-object Emit:
-  // Builds an `Emit` whose `record` simply runs `handler` as a side-effect at the emit point — the
-  // basis of `handle`, where each covered error type gets an `Emit` backed by its case body.
-  def apply[error <: Exception](handler: error => Unit)(using diagnostics0: Diagnostics)
-  :   Emit[error]^ =
+// A tactic that throws its error unchecked, evidenced at the summon site by `error is Unchecked`
+// (an erased obligation carried by `strategies.uncheckedErrors`, not retained here: even an erased
+// constructor parameter is a capture under capture checking). `caps.Unscoped`, like `ThrowTactic`:
+// it captures no scoped capability, so it may satisfy a `raises` requirement at any level.
+class UncheckedTactic[error <: Exception]() extends Tactic[error], caps.Unscoped:
+  given diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
 
-    new Emit[error]:
-      def diagnostics: Diagnostics = diagnostics0
-      def record(error: Diagnostics ?=> error): Unit = handler(error(using diagnostics0))
+  def record(error: Diagnostics ?=> error): Unit =
+    import unsafeExceptions.canThrowAny
+    throw error
 
-// The capability to *emit* an error of type `error` as a side-effect: `record` reports it but does
-// not, of itself, abort — control may continue (whether it actually does is the implementation's
-// choice). `Tactic` adds the value-replacing `abort`. `raise` needs only an `Emit`; `abort` needs a
-// full `Tactic`. So `emits error` (`Emit[error] ?=>`) is the weaker obligation than `raises error`
-// (`Tactic[error] ?=>`), and a `Tactic` in scope discharges either.
-// An `Emit` is a *capability* (`caps.ExclusiveCapability`): raising an error is an effect, so an
-// emitter must be capture-tracked wherever it is retained. Exclusive (rather than Shared) is the
-// conservative classification — an emitter belongs to one handler scope and is not shared across
-// separation boundaries. The boundary-based tactics additionally close over a stack
-// `boundary.Label` (`Emit[error]^{label}`); the ambient strategies are `caps.Unscoped` so they can
-// flow into any scope. Combinators that retain the receiver and a user lambda — `contramap`,
-// `Emit.apply` — annotate their result with that capture set, exactly as `LzyList.map` returns
-// `^{xs, f}`.
-trait Emit[-error <: Exception] extends Findable, caps.ExclusiveCapability:
-  private inline def emitter: this.type = this
-  def diagnostics: Diagnostics
-  def record(error: Diagnostics ?=> error): Unit
+  def abort(error: Diagnostics ?=> error): Nothing =
+    import unsafeExceptions.canThrowAny
+    throw error
 
-  def contramap[error2 <: Exception](lambda: error2 => error)
-  :   Emit[error2]^ =
+  def certify(): Unit = ()
 
-    new Emit[error2]:
-      def diagnostics: Diagnostics = emitter.diagnostics
-      def record(error: Diagnostics ?=> error2): Unit = emitter.record(lambda(error))
+// A tactic that terminates the process with the error's exit status, for errors marked `Fatal`.
+// The `Fatal` evidence is an ordinary (untracked) typeclass instance, so retaining it does not
+// conflict with the `caps.Unscoped` classification.
+class FatalTactic[exception <: Exception]()(using fatal: exception is Fatal)
+extends Tactic[exception], caps.Unscoped:
+  given diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
+
+  def record(error: Diagnostics ?=> exception): Unit = fatal.status(error).terminate()
+  def abort(error: Diagnostics ?=> exception): Nothing = fatal.status(error).terminate()
+  def certify(): Unit = ()

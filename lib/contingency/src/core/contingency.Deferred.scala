@@ -36,5 +36,5 @@ import language.experimental.pureFunctions
 
 // Holds an unevaluated `Tactic[error] ?=> result` body; `apply()` re-evaluates it under whichever
 // `Tactic[error]` is in scope at the call, allowing late binding to different error handlers.
-final class Deferred[result, error <: Exception](body: Tactic[error] ?=> result):
-  def apply()(using Tactic[error]): result = body
+final class Deferred[result, error <: Exception](body: Tactic[error]^ ?=> result):
+  def apply()(using Tactic[error]^): result = body
