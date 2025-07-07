@@ -61,8 +61,10 @@ case class Benchmark
   // fall through to the normal quantiles. For an out-of-table df we round down
   // to the nearest tabulated value, giving a slightly wider (more conservative)
   // CI rather than a tighter one.
+  // The `(percentile: Int)` ascriptions widen the `Percentiles` literal union (case-2
+  // pure-value box under capture checking); one note here covers each occurrence.
   def tQuantile(percentile: Benchmark.Percentiles, df: Int): Double =
-    if df <= 4 then percentile match
+    if df <= 4 then (percentile: Int) match
       case 80 => 0.941
       case 85 => 1.190
       case 90 => 1.533
@@ -71,7 +73,7 @@ case class Benchmark
       case 97 => 2.601
       case 98 => 2.999
       case 99 => 3.747
-    else if df <= 9 then percentile match
+    else if df <= 9 then (percentile: Int) match
       case 80 => 0.883
       case 85 => 1.100
       case 90 => 1.383
@@ -80,7 +82,7 @@ case class Benchmark
       case 97 => 2.167
       case 98 => 2.398
       case 99 => 2.821
-    else if df <= 19 then percentile match
+    else if df <= 19 then (percentile: Int) match
       case 80 => 0.861
       case 85 => 1.066
       case 90 => 1.328
@@ -89,7 +91,7 @@ case class Benchmark
       case 97 => 2.012
       case 98 => 2.205
       case 99 => 2.539
-    else if df <= 29 then percentile match
+    else if df <= 29 then (percentile: Int) match
       case 80 => 0.854
       case 85 => 1.055
       case 90 => 1.311
@@ -98,7 +100,7 @@ case class Benchmark
       case 97 => 1.967
       case 98 => 2.150
       case 99 => 2.462
-    else percentile match
+    else (percentile: Int) match
       case 80 => 0.842
       case 85 => 1.036
       case 90 => 1.282

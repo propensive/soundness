@@ -51,7 +51,11 @@ case class TestId(name: Message, suite: Optional[Testable], codepoint: Codepoint
   lazy val id: Text = (suite.lay(0)(_.hashCode) ^ name.hashCode).hex.pad(6, Rtl, '0').keep(6, Rtl)
   lazy val ids: List[Text] = id :: suite.let(_.id.ids).or(Nil)
 
-  def apply[result](context: Harness ?=> result): Test[result] =
+  // The test block may capture a capability (e.g. an error tactic, a decoder); that capture lands on
+  // the returned `Test` (`^{context}`), NOT on `result` — so a test that asserts a *pure* value
+  // (`Text`, `Optional`, …) computed via a capability does not spuriously stamp `^` on that pure
+  // result type at the `assert`/`check` site.
+  def apply[result](context: Harness ?=> result): (Test[result])^{context} =
     Test[result](this, context(using _))
 
   def depth: Int = suite.let(_.id.depth).or(0) + 1
