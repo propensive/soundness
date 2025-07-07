@@ -35,7 +35,7 @@ package symbolism
 import prepositional.*
 
 object Multiplicable:
-  def apply[multiplicand, multiplier, result](lambda: (multiplicand, multiplier) => result)
+  def apply[multiplicand, multiplier, result](lambda: (multiplicand, multiplier) -> result)
   :   multiplicand is Multiplicable by multiplier to result =
 
     new Multiplicable:
