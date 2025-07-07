@@ -33,8 +33,7 @@
 package soundness
 
 export revolution
-. { DecodableManifest, EncodableManifest, Manifest, ManifestAttribute, ManifestEntry,
-    VersionNumber, Semver, sv }
+. { DecodableManifest, EncodableManifest, Manifest, ManifestAttribute, ManifestEntry, Semver, sv }
 
 package manifestAttributes:
   export revolution.manifestAttributes

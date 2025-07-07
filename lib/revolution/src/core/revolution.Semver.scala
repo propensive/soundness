@@ -143,3 +143,10 @@ case class Semver
       false
 
   override def hashCode: Int = (major, minor, patch, prerelease).hashCode
+
+  def compatibility(right: Semver): Compatibility =
+    if !prerelease.isEmpty || !right.prerelease.isEmpty then Compatibility.Indeterminate
+    else if major == 0 || right.major == 0 || major != right.major then Compatibility.Indeterminate
+    else if minor < right.minor then Compatibility.Backwards
+    else if minor > right.minor then Compatibility.Forwards
+    else Compatibility.Full

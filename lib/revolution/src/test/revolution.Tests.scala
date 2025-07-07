@@ -125,6 +125,7 @@ object Tests extends Suite(m"Revolution Tests"):
           safely(version.decode[Semver])
         . assert(_.absent)
 
+    suite(m"Semantic version precedence"):
       val ordered =
         List
          (sv"1.0.0-alpha",
