@@ -122,7 +122,7 @@ object Tests extends Suite(m"Soundness tests"):
     polyvinyl.Tests()
     prepositional.Tests()
     probably.Tests()
-    // profanity.Tests()  // gated: see build.mill
+    profanity.Tests()
     proscenium.Tests()
     punctuation.Tests()
     quantitative.Tests()
