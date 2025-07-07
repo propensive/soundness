@@ -36,6 +36,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import eucalyptus.*
+import galilei.*
 import guillotine.*
 import inimitable.*
 import prepositional.*
