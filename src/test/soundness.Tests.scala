@@ -74,7 +74,7 @@ object Tests extends Suite(m"Soundness tests"):
     enigmatic.Tests()
     escapade.Tests()
     //escritoire.Tests()
-    // ethereal.Tests()  // gated: see build.mill
+    ethereal.Tests()
     //eucalyptus.Tests()
     exegesis.Tests()
     exoskeleton.Tests()
@@ -108,7 +108,7 @@ object Tests extends Suite(m"Soundness tests"):
     metamorphose.Tests()
     monotonous.Tests()
     mosquito.Tests()
-    // nomenclature.Tests()  // gated: see build.mill
+    nomenclature.Tests()
     obligatory.Tests()
     octogenarian.Tests()
     //orthodoxy.Tests()

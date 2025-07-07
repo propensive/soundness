@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.63.0.                                                                    ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,28 +30,46 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
+
+import java.nio.file as jnf
 
 import anticipation.*
-import gossamer.*
-import nomenclature.*
+import contingency.*
+import inimitable.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
+import turbulence.Readable
+import vacuous.*
 
-object Posix:
-  type Rules =
-    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""] &
-      MustNotEqual["Icon\r"] & MustNotContain[":"]
+import IoError.Operation
 
-  inline given Posix is Nominative under Rules = !!
+// `Platform` is the common base of galilei's OS filesystem platform types (`Posix`/`Linux`/`MacOs`/
+// `Windows`/`Local`). It exists so that givens placed in its companion — notably the whole-file
+// `Readable` instance — are in the implicit scope of every `Path on <platform>`, making
+// `path.read` discoverable without an explicit import.
+object Platform:
+  given uuid: [uuid <: Uuid, filesystem <: Platform] => uuid is Admissible on filesystem =
+    Admissible.unchecked[uuid, filesystem]
 
-  given filesystem: Posix is Filesystem:
-    type UniqueRoot = true
+  // Read a path in its entirety as a single, direct operation: the whole file is read into memory
+  // at once, holding no handle and needing no scope — unlike streaming a path, which must be
+  // `open`ed and consumed within a scope. The whole `Data` is handed to a `Data is Readable to
+  // result`, which decodes it directly when a direct instance exists (e.g. `Text`/`Data`) and
+  // otherwise falls back to composing `Streamable` with `Aggregable`. Placing it here (rather than
+  // as a `read` extension, which would be ambiguous with turbulence's generic one) makes
+  // `path.read[…]` resolve through turbulence's `read` with no extra import for any `Path on …`.
+  given pathReadable: [plane <: Platform: Filesystem, result]
+  =>  ( readable: (Data is Readable to result)^ )
+  =>  ( tactic: Tactic[IoError] )
+  =>  (((Path on plane) is Readable to result)^{readable, tactic}) =
+    path =>
+      val bytes: Data = path.protect(Operation.Read):
+        jnf.Files.readAllBytes(path.javaPath).nn.immutable(using Unsafe)
 
-    val name: Text = "POSIX"
-    val separator: Text = t"/"
-    val self: Text = t"."
-    val parent: Text = t".."
+      readable.read(bytes)
 
-trait Posix:
-  type UniqueRoot = true
+// Pure: platforms are phantom plane markers, so capture checking never freshens them
+// (keeping `=:=`-based plane unification exact through the `soundness` export aliases).
+trait Platform extends caps.Pure

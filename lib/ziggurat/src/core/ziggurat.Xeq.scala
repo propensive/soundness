@@ -35,7 +35,7 @@ package ziggurat
 import anticipation.*
 import contingency.*
 import distillate.*
-import galilei.*
+import galilei.*, galilei.Platform.pathReadable
 import gossamer.*
 import hellenism.*
 import hieroglyph.*
@@ -49,13 +49,13 @@ import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
 import classloaders.threadContextClassloader
 import filesystemBackends.virtualMachine
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 import textSanitizers.skipSanitizer
 
 object Xeq:
@@ -165,7 +165,7 @@ object Xeq:
     output.create[File]()
 
     output.open: handle =>
-      LazyList(data).writeTo(handle)
+      handle.write(LazyList(data))
 
     output.executable() = true
 
@@ -188,7 +188,7 @@ object Xeq:
             if withoutPrefix.ends(ExeSuffix) then withoutPrefix.skip(ExeSuffix.length, Rtl)
             else withoutPrefix
 
-          val data: Data = path.open(_.read[Data])
+          val data: Data = path.read[Data]
           val gzip = !label.starts(t"windows")
           Payload(label, data, gzip)
 
@@ -218,7 +218,7 @@ object Xeq:
       val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
 
       val entries: List[(Text, Text, Text)] =
-        manifest.decode[Path on Linux].open(_.read[Text]).cut(t"\n").map(_.trim)
+        manifest.decode[Path on Linux].read[Text].cut(t"\n").map(_.trim)
         . filter(_ != t"")
         . map: line =>
             val fields: List[Text] = line.cut(t"\t").to(List)

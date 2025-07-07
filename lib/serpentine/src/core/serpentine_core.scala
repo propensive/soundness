@@ -36,6 +36,3 @@ package serpentine
 export Path.`%`
 export Relative.{`^`, `?`}
 
-extension (inline context: StringContext)
-  transparent inline def p(): Path = ${serpentine.internal.path('context)}
-

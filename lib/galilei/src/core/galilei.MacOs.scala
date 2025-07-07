@@ -30,130 +30,43 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package galilei
 
-import java.lang as jl
-
-import galilei.*
-import sun.misc as sm
-
-import ambience.*
 import anticipation.*
 import contingency.*
-import digression.*
-import distillate.*
-import escapade.*
-import fulminate.*
 import gossamer.*
-import hieroglyph.*, textMetrics.uniformMetric
+import nomenclature.*
 import prepositional.*
-import profanity.*
 import rudiments.*
 import serpentine.*
-import turbulence.*
-import vacuous.*
 
-import environments.javaEnvironment
-import termcaps.environmentTermcap
+object MacOs:
+  type Rules =
+    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""] &
+      MustNotEqual["Icon\r"] & MustNotContain[":"]
 
-package backstops:
-  given silentBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception => Exit(1)
-      case error: Throwable => Exit(2)
+  inline given MacOs is Nominative under Rules = !!
 
-  given genericErrorMessageBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(t"An unexpected error occurred.")
-        Exit(1)
+  inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
 
-      case error: Throwable =>
-        Out.println(t"An unexpected error occurred.")
-        Exit(2)
+  given filesystem: MacOs is Filesystem:
+    type UniqueRoot = true
 
-  given exceptionMessageBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(error.toString.tt)
-        Exit(1)
+    val name: Text = "Mac OS"
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."
 
-      case error: Throwable =>
-        Out.println(error.toString.tt)
-        Exit(2)
+  given radical: %.type is Radical:
+    type Plane = MacOs
 
-  given stackTraceBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(StackTrace(error).teletype)
-        Exit(1)
+    def length(text: Text): Int raises PathError = 1
 
-      case error: Throwable =>
-        Out.println(StackTrace(error).teletype)
-        Exit(2)
+    def decode(text: Text): %.type raises PathError =
+      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
 
-package executives:
-  given directExecutive: (backstop: Backstop) => Executive:
-    type Return = Exit
-    type Interface = Invocation
+    def encode(root: %.type): Text = t"/"
 
+  given submissible: %.type is Submissible on MacOs = _ => ()
 
-    def invocation
-      ( arguments:        Iterable[Text],
-        environment:      Environment,
-        workingDirectory: WorkingDirectory,
-        stdio:            Stdio,
-        entrypoint:       Entrypoint,
-        login:            Login )
-      ( using interpreter: Interpreter )
-    :   Invocation =
-
-      Invocation
-        ( Cli.arguments(arguments, Unset, Unset, Unset),
-          environments.javaEnvironment,
-          workingDirectories.javaWorkingDirectory,
-          stdio,
-          arguments.size == 0 || arguments.head != t"{admin}",
-          login )
-
-
-    def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
-      try exitStatus(using invocation)
-      catch case error: Throwable => backstop.handle(error)(using invocation.stdio)
-
-inline def effectful[result](lambda: (erased effectful: Effectful) ?=> result): result =
-  lambda(using !![Effectful])
-
-inline def trap(handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse])
-  ( using cli: Cli )
-:   Unit =
-
-  cli.trap(handler)
-
-def application(using executive: Executive, interpreter: Interpreter, system: System)
-  ( arguments: Iterable[Text], signals: List[UnixSignal] = Nil )
-  ( block: Cli ?=> executive.Return )
-:   Unit =
-
-  val entrypoint = new Entrypoint:
-    def executable: Path on Local =
-      safely(ProcessHandle.current.nn.info.nn.command.nn.get.nn.tt.decode[Path on Local])
-      . or(panic(m"cannot determine java invocation"))
-
-    def script: Text = executable.name
-
-  // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment
-  // variables
-  val cli =
-    executive.invocation
-      ( arguments,
-        environments.javaEnvironment,
-        workingDirectories.javaWorkingDirectory,
-        stdios.virtualMachineStdio,
-        entrypoint,
-        Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset) )
-
-  signals.each: signal =>
-    sm.Signal.handle(sm.Signal(signal.shortName.s), _ => cli.dispatchSignal(signal))
-
-  jl.System.exit(executive.process(cli)(block)())
+sealed trait MacOs extends Posix

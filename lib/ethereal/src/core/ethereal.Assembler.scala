@@ -144,14 +144,14 @@ object Assembler:
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
 
     output.open
-      ( file => LazyList(patched).writeTo(file),
+      ( file => file.write(LazyList(patched)),
         List(OpenFlag.Truncate) )
 
     if platformLabel.starts(t"macos") then
       if !isWindows then output.executable() = true
       safely(mute[ExecEvent](sh"codesign --sign - --force $output".exec[Exit]()))
 
-    jarFile.open: jarFile =>
-      Eof(output).open(jarFile.stream[Data].writeTo(_))
+    jarFile.open: jarHandle =>
+      Eof(output).open(_.write(jarHandle.reader()))
 
     if !isWindows then output.executable() = true

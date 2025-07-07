@@ -89,7 +89,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       val script = dir / t"hello"
       script.create[File]()
       script.open: handle =>
-        LazyList(bundleBytes).writeTo(handle)
+        handle.write(LazyList(bundleBytes))
       script.executable() = true
       (dir, script)
 
@@ -121,7 +121,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       val script = dir / t"fetch"
       script.create[File]()
       script.open: handle =>
-        LazyList(Xeq.onlineLauncher(jar, entries)).writeTo(handle)
+        handle.write(LazyList(Xeq.onlineLauncher(jar, entries)))
       script.executable() = true
       script
 
@@ -133,7 +133,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       bin.create[File]()
       val bytes = body.data
       bin.open: handle =>
-        LazyList(bytes).writeTo(handle)
+        handle.write(LazyList(bytes))
       (label, t"file://$bin", hash.or(bytes.digest[Sha2[256]].serialize[Hex]))
 
     suite(m"onlineLauncher()"):

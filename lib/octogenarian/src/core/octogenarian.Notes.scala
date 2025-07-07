@@ -67,11 +67,11 @@ object Notes:
   // `GitHash` is the root of a notes path.  Encoded form is `<hash>/`
   // (40 hex chars + separator), so an empty-descent path encodes as
   // `<hash>/` and `commit / t"foo"` encodes as `<hash>/foo`.
-  given radical: Tactic[PathError] => GitHash is Radical:
+  given radical: GitHash is Radical:
     type Plane = Notes
-    def length(text: Text): Int = 41
+    def length(text: Text): Int raises PathError = 41
 
-    def decode(text: Text): GitHash = text match
+    def decode(text: Text): GitHash raises PathError = text match
       case r"$hash([a-f0-9]{40})/.*" => GitHash.unsafe(hash)
       case _                         => abort(PathError(_.InvalidRoot))
 

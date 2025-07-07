@@ -33,7 +33,8 @@
 package galilei
 
 import prepositional.*
+import contingency.*
 import serpentine.*
 
 trait CreateNonexistentParents extends Planar:
-  def apply[ResultType](path: Path on Plane)(operation: => ResultType): ResultType
+  def apply[ResultType](path: Path on Plane)(operation: => ResultType): ResultType raises IoError

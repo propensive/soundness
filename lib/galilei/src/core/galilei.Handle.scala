@@ -39,16 +39,37 @@ import turbulence.*
 import zephyrine.*
 
 object Handle:
-  given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
-  given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
-  given source: Handle is Source by Data over Credit = _.source()
-  given sink: Handle is Sink by Data over Credit = _.intake()
+  // Polymorphic over the handle's (scoped, capturing) singleton type: `Openable.open`
+  // hands the lambda a capability-refined `Handle^{...}`, and a `Self = Handle` instance
+  // would not be summonable for it under capture checking.
+  given streamable: [handle <: Handle^] => Tactic[StreamError]
+  =>  handle is Streamable by Data = _.reader()
+
+  given writable: [handle <: Handle^] => Emit[StreamError]
+  =>  handle is Writable by Data = _.writer(_)
+
+  given source: [handle <: Handle^] => handle is Source by Data over Credit = _.source()
+  given sink: [handle <: Handle^] => handle is Sink by Data over Credit = _.intake()
 
 // The native `source`/`intake` endpoints default to bridging the legacy
 // `reader`/`writer`; `Openable` supplies channel-native endpoints, so file
 // I/O reads and writes directly through the streaming kernel's buffers.
+// A scoped capability: its `read`/`write` operations are direct methods as well as
+// `Streamable`/`Writable` typeclass givens, because summoning a typeclass on a *scoped*
+// capability's refined type can fail under capture checking (given resolution widens the
+// scoped capture to `{any}`); the direct methods summon typeclasses on the (non-scoped)
+// source/result types instead.
 class Handle
   ( val reader: () => LazyList[Data], val writer: LazyList[Data] => Unit )
   ( val source: () => Stream[Data] over Credit = () => Stream(reader().iterator),
     val intake: () => Intake[Data] over Credit =
       () => Sink.buffered((), (_, stream) => writer(stream)) )
+extends caps.ExclusiveCapability:
+
+  def write[source: Streamable by Data as streamable](source: source): Unit =
+    writer(streamable.stream(source))
+
+  def stream: LazyList[Data] = reader()
+
+  def read[result](using readable: (LazyList[Data] is Readable to result)^): result =
+    readable.read(reader())

@@ -44,7 +44,7 @@ import serpentine.*
 import vacuous.*
 
 object internal extends Hellenism2:
-  opaque type ClassRef = Class[?]
+  opaque type ClassRef <: Class[?] = Class[?]
 
   object ClassRef:
     def apply(javaClass: Class[?]): ClassRef = javaClass
@@ -76,11 +76,18 @@ object internal extends Hellenism2:
     Optional(stream).or:
       halt(m"hellenism: the path $name is not on the classpath")
 
+    // Lift the path components as `String`s and convert to `Text` at runtime (`.tt`), rather than
+    // splicing lifted opaque-`Text` trees into the `Path` descent. Under capture checking a spliced
+    // `into opaque type Text` literal is rechecked into a spurious `Text^…` (which fails); building
+    // the `Text`s at runtime from lifted `String`s keeps the opaque out of the rechecked tree.
+    val rootString: String = path.root.s
+    val descentStrings: List[String] = path.descent.map(_.s).to(List)
+
     val resource =
       ' {
           Resource:
             Path[Classpath, Classpath.type, Tuple]
-              ( ${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))} )
+              ( ${Expr(rootString)}.tt, ${Expr(descentStrings)}.map(_.tt) )
         }
 
     val locus = ConstantType(StringConstant(name))

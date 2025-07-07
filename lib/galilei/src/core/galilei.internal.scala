@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.63.0.                                                                    ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,130 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package galilei
 
-import java.lang as jl
+import scala.quoted.*
 
-import galilei.*
-import sun.misc as sm
-
-import ambience.*
 import anticipation.*
 import contingency.*
-import digression.*
 import distillate.*
-import escapade.*
 import fulminate.*
-import gossamer.*
-import hieroglyph.*, textMetrics.uniformMetric
+import gigantism.*
 import prepositional.*
-import profanity.*
-import rudiments.*
 import serpentine.*
-import turbulence.*
 import vacuous.*
 
-import environments.javaEnvironment
-import termcaps.environmentTermcap
+object internal:
+  // The platform-aware `p"…"` literal macro: it decodes the string as a POSIX path, falling back to
+  // a Windows path. It lives here with the OS platform types (`Posix`/`Windows`/`Drive`), whose
+  // `Radical` givens it needs at expansion time; the generic compile-time path helpers stay in
+  // `serpentine.internal`.
+  def path(context: Expr[StringContext]): Macro[Path] =
+    val name: String = context.valueOrAbort.parts.head
 
-package backstops:
-  given silentBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception => Exit(1)
-      case error: Throwable => Exit(2)
+    safely(name.tt.decode[Path on Posix]).let: path =>
+      '{Path[Posix, %.type, Tuple](${Expr(path.root)}, ${Expr.ofList(path.descent.map(Expr(_)))})}
 
-  given genericErrorMessageBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(t"An unexpected error occurred.")
-        Exit(1)
+    . or:
+        safely(name.tt.decode[Path on Windows]).let: path =>
+          val varargs = Expr.ofList(path.descent.map(Expr(_)))
+          '{Path[Windows, Drive, Tuple](${Expr(path.root)}, $varargs)}
 
-      case error: Throwable =>
-        Out.println(t"An unexpected error occurred.")
-        Exit(2)
-
-  given exceptionMessageBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(error.toString.tt)
-        Exit(1)
-
-      case error: Throwable =>
-        Out.println(error.toString.tt)
-        Exit(2)
-
-  given stackTraceBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(StackTrace(error).teletype)
-        Exit(1)
-
-      case error: Throwable =>
-        Out.println(StackTrace(error).teletype)
-        Exit(2)
-
-package executives:
-  given directExecutive: (backstop: Backstop) => Executive:
-    type Return = Exit
-    type Interface = Invocation
-
-
-    def invocation
-      ( arguments:        Iterable[Text],
-        environment:      Environment,
-        workingDirectory: WorkingDirectory,
-        stdio:            Stdio,
-        entrypoint:       Entrypoint,
-        login:            Login )
-      ( using interpreter: Interpreter )
-    :   Invocation =
-
-      Invocation
-        ( Cli.arguments(arguments, Unset, Unset, Unset),
-          environments.javaEnvironment,
-          workingDirectories.javaWorkingDirectory,
-          stdio,
-          arguments.size == 0 || arguments.head != t"{admin}",
-          login )
-
-
-    def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
-      try exitStatus(using invocation)
-      catch case error: Throwable => backstop.handle(error)(using invocation.stdio)
-
-inline def effectful[result](lambda: (erased effectful: Effectful) ?=> result): result =
-  lambda(using !![Effectful])
-
-inline def trap(handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse])
-  ( using cli: Cli )
-:   Unit =
-
-  cli.trap(handler)
-
-def application(using executive: Executive, interpreter: Interpreter, system: System)
-  ( arguments: Iterable[Text], signals: List[UnixSignal] = Nil )
-  ( block: Cli ?=> executive.Return )
-:   Unit =
-
-  val entrypoint = new Entrypoint:
-    def executable: Path on Local =
-      safely(ProcessHandle.current.nn.info.nn.command.nn.get.nn.tt.decode[Path on Local])
-      . or(panic(m"cannot determine java invocation"))
-
-    def script: Text = executable.name
-
-  // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment
-  // variables
-  val cli =
-    executive.invocation
-      ( arguments,
-        environments.javaEnvironment,
-        workingDirectories.javaWorkingDirectory,
-        stdios.virtualMachineStdio,
-        entrypoint,
-        Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset) )
-
-  signals.each: signal =>
-    sm.Signal.handle(sm.Signal(signal.shortName.s), _ => cli.dispatchSignal(signal))
-
-  jl.System.exit(executive.process(cli)(block)())
+        . or(halt(66, m"The path ${name} is not a valid Windows or POSIX path"))

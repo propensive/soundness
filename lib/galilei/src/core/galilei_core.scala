@@ -32,6 +32,9 @@
                                                                                                   */
 package galilei
 
+import java.io as ji
+import java.nio.file as jnf
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -40,6 +43,7 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
+import turbulence.{Aggregable, Streamable}
 import vacuous.*
 
 import IoError.{Operation, Reason}
@@ -47,16 +51,19 @@ import IoError.{Operation, Reason}
 final val C: Drive = Drive('C')
 final val D: Drive = Drive('D')
 
+extension (inline context: StringContext)
+  transparent inline def p(): Path = ${galilei.internal.path('context)}
+
 
 extension [target: Substantiable](value: target)
   def exists(): Boolean = target.existence(value)
 
-extension [target: Openable](value: target)
+extension [target](value: target)(using openable: (target is Openable)^)
   def open[result]
-    ( lambda:  target.Result => result, options: List[target.Operand] = Nil )
+    ( lambda:  openable.Result^ => result, options: List[openable.Operand] = Nil )
   :   result =
 
-    target.open(value, lambda, options)
+    openable.open(value, lambda, options)
 
 package filesystemTraversal:
   given preOrderTraversal: TraversalOrder = TraversalOrder.PreOrder
@@ -66,6 +73,45 @@ extension [plane: Filesystem](path: Path on plane)
 
   inline def children(using explorable: plane is Explorable): LazyList[Path on plane] =
     explorable.children(path)
+
+  // Write `content` to the file in its entirety as a single, direct operation: the whole file is
+  // written at once, holding no handle and needing no scope — unlike streaming to a path, which
+  // must be `open`ed and consumed within a scope.
+  def write[content: Streamable by Data as streamable](content: content): Unit raises IoError =
+    val bytes: Data = summon[Data is Aggregable by Data].aggregate(streamable.stream(content))
+    protect(Operation.Write)(jnf.Files.write(javaPath, bytes.mutable(using Unsafe)))
+
+  // Append `content` to the file in its entirety as a single, direct operation, creating the file
+  // if it does not exist — the eager counterpart of `Eof(path).open(content.writeTo(_))`.
+  def append[content: Streamable by Data as streamable](content: content): Unit raises IoError =
+    val bytes: Data = summon[Data is Aggregable by Data].aggregate(streamable.stream(content))
+
+    protect(Operation.Write):
+      jnf.Files.write
+        ( javaPath,
+          bytes.mutable(using Unsafe),
+          jnf.StandardOpenOption.CREATE,
+          jnf.StandardOpenOption.APPEND )
+
+  private[galilei] def protect[result](operation: Operation)(block: => result)
+  :   result raises IoError =
+
+    import Reason.*
+
+    try block catch
+      case break: boundary.Break[?]          => throw break
+      case _: jnf.NoSuchFileException        => abort(IoError(path, operation, Nonexistent))
+      case _: jnf.FileAlreadyExistsException => abort(IoError(path, operation, AlreadyExists))
+      case _: jnf.DirectoryNotEmptyException => abort(IoError(path, operation, DirectoryNotEmpty))
+      case _: jnf.AccessDeniedException      => abort(IoError(path, operation, PermissionDenied))
+      case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
+      case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
+      case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
+      case _: jnf.FileSystemException        => abort(IoError(path, operation, IsDirectory))
+      case other                             => abort(IoError(path, operation, Unsupported))
+
+  def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
+  def javaFile: ji.File = javaPath.toFile.nn
 
 
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)
@@ -87,7 +133,8 @@ extension [plane: Filesystem](path: Path on plane)
 
   def delete()(using deleteRecursively: DeleteRecursively on plane)
     ( using backend: FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+  ( using Tactic[IoError], IoEvent is Loggable )
+  :   Path on plane =
 
     deleteRecursively.conditionally(path)(backend.delete(path))
     Log.info(IoEvent.Delete(path.show))
@@ -96,7 +143,8 @@ extension [plane: Filesystem](path: Path on plane)
 
   def wipe()(using deleteRecursively: DeleteRecursively on plane)(using io: Tactic[IoError])
     ( using backend: FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+    ( using IoEvent is Loggable )
+  :   Path on plane =
 
     deleteRecursively.conditionally(path)(backend.deleteIfExists(path))
     Log.info(IoEvent.Delete(path.show))
@@ -108,10 +156,11 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def hardLinkTo(destination: Path on plane)
-    ( using overwritePreexisting:     OverwritePreexisting on plane,
+    ( using overwritePreexisting: OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane,
             backend:                  FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+  ( using Tactic[IoError], IoEvent is Loggable )
+  :   Path on plane =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -129,11 +178,12 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def copyTo(destination: Path on plane)
-    ( using overwritePreexisting:     OverwritePreexisting on plane,
+    ( using overwritePreexisting: OverwritePreexisting on plane,
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
     ( using FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+  ( using Tactic[IoError], IoEvent is Loggable )
+  :   Path on plane =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -158,12 +208,13 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def moveTo(destination: Path on plane)
-    ( using overwritePreexisting:     OverwritePreexisting on plane,
+    ( using overwritePreexisting: OverwritePreexisting on plane,
             moveAtomically:           MoveAtomically,
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
     ( using backend: FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+  ( using Tactic[IoError], IoEvent is Loggable )
+  :   Path on plane =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -187,10 +238,11 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def symlinkTo(destination: Path on plane)
-    ( using overwritePreexisting:     OverwritePreexisting on plane,
+    ( using overwritePreexisting: OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane,
             backend:                  FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+  ( using Tactic[IoError], IoEvent is Loggable )
+  :   Path on plane =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -234,13 +286,18 @@ extension [plane: Filesystem](path: Path on plane)
   def hidden()(using backend: FilesystemBackend on plane): Boolean raises IoError =
     backend.hidden(path)
 
-  def touch()(using backend: FilesystemBackend on plane): Unit logs IoEvent raises IoError =
+  def touch()(using backend: FilesystemBackend on plane)
+    ( using Tactic[IoError], IoEvent is Loggable )
+  :   Unit =
     backend.touch(path)
     Log.fine(IoEvent.Touch(path.show))
 
-  def create[entry: Creatable on plane](): entry.Result logs IoEvent =
+  transparent inline def create[entry]()
+    ( using creatable: (entry is Creatable on plane)^, log: IoEvent is Loggable )
+  :   creatable.Result =
+
     Log.info(IoEvent.Create(path.show))
-    entry.create(path)
+    creatable.create(path)
 
 extension (path: Path on Windows)
   def created[instant: Instantiable across Instants from Long]()
@@ -306,26 +363,25 @@ package filesystemOptions:
       def attributes = false
 
   object deleteRecursively:
-    given enabled: [plane: Filesystem] => Tactic[IoError]
+    given enabled: [plane: Filesystem]
     =>  ( explorable: plane is Explorable, backend: FilesystemBackend on plane )
-    =>  DeleteRecursively on plane:
-
-      type World = plane
-
-      def recur(path: Path on plane): Unit =
-        path.children.each(recur(_))
-        backend.delete(path)
-
-      def conditionally[result](path: Path on Plane)(operation: => result): result =
-        path.children.each(recur(_)) yet operation
-
-
-    given disabled: [plane: {Filesystem, Explorable}] => Tactic[IoError]
     =>  DeleteRecursively on plane:
 
       type Plane = plane
 
-      def conditionally[result](path: Path on Plane)(operation: => result): result =
+      def recur(path: Path on plane): Unit raises IoError =
+        path.children.each(recur(_))
+        backend.delete(path)
+
+      def conditionally[result](path: Path on Plane)(operation: => result): result raises IoError =
+        path.children.each(recur(_)) yet operation
+
+
+    given disabled: [plane: {Filesystem, Explorable}] => DeleteRecursively on plane:
+
+      type Plane = plane
+
+      def conditionally[result](path: Path on Plane)(operation: => result): result raises IoError =
         if !path.children.nil
         then abort(IoError(path, IoError.Operation.Delete, Reason.DirectoryNotEmpty))
         else operation
@@ -337,25 +393,25 @@ package filesystemOptions:
 
       type Plane = plane
 
-      def apply[result](path: Path on Plane)(operation: => result): result =
+      def apply[result](path: Path on Plane)(operation: => result): result raises IoError =
         deleteRecursively.conditionally(path)(operation)
 
 
     // The backend raises `AlreadyExists` itself when the operation collides with an existing
     // entry, so nothing needs intercepting here.
-    given disabled: [plane: Filesystem] => Tactic[IoError]
-    =>  OverwritePreexisting on plane:
+    given disabled: [plane: Filesystem] => OverwritePreexisting on plane:
 
       type Plane = plane
 
-      def apply[result](path: Path on Plane)(operation: => result): result = operation
+      def apply[result](path: Path on Plane)(operation: => result): result raises IoError =
+        operation
 
   object createNonexistentParents:
-    given enabled: [plane: Filesystem] => Tactic[IoError]
+    given enabled: [plane: Filesystem]
     =>  ( backend: FilesystemBackend on plane )
     =>  CreateNonexistentParents on plane:
 
-      def apply[result](path: Path on plane)(operation: => result): result =
+      def apply[result](path: Path on plane)(operation: => result): result raises IoError =
         def ensure(directory: Path on plane): Unit =
           if !backend.exists(directory, true) then
             safely(directory.parent).let(ensure(_))
@@ -365,12 +421,12 @@ package filesystemOptions:
         operation
 
 
-    given disabled: [plane: Filesystem] => Tactic[IoError]
-    =>  CreateNonexistentParents on plane:
+    given disabled: [plane: Filesystem] => CreateNonexistentParents on plane:
 
       type Plane = plane
 
-      def apply[result](path: Path on plane)(block: => result): result = block
+      def apply[result](path: Path on plane)(block: => result): result raises IoError =
+        block
 
   object createNonexistent:
     given enabled: [plane: Filesystem]
@@ -380,25 +436,23 @@ package filesystemOptions:
 
       type Plane = plane
 
-      def error(path: Path on Plane, operation: IoError.Operation): Nothing =
-        import strategies.throwUnsafely
+      def error(path: Path on Plane, operation: IoError.Operation): Nothing raises IoError =
         abort(IoError(path, operation, Reason.Nonexistent))
 
-      def apply(path: Path on Plane)(operation: => Unit): Unit =
+      def apply(path: Path on Plane)(operation: => Unit): Unit raises IoError =
         if !path.exists() then create(path)(operation)
 
       def flags(): List[OpenFlag] = List(OpenFlag.Create)
 
 
-    given disabled: [plane: Filesystem] => Tactic[IoError]
-    =>  CreateNonexistent on plane:
+    given disabled: [plane: Filesystem] => CreateNonexistent on plane:
 
       type Plane = plane
 
-      def error(path: Path on Plane, operation: IoError.Operation): Nothing =
+      def error(path: Path on Plane, operation: IoError.Operation): Nothing raises IoError =
         abort(IoError(path, operation, Reason.Nonexistent))
 
-      def apply(path: Path on Plane)(operation: => Unit): Unit = ()
+      def apply(path: Path on Plane)(operation: => Unit): Unit raises IoError = ()
       def flags(): List[OpenFlag] = List()
 
   object writeSynchronously:

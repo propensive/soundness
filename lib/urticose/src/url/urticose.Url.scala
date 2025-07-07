@@ -61,7 +61,8 @@ object Url:
   given teletype: [scheme <: Label] => (palette: UrlPalette) => Url[scheme] is Teletypeable =
     url => e"$Underline(${Fg(palette.link)}(${url.show}))"
 
-  given decodable: [scheme <: Label] => Tactic[UrlError] => Url[scheme] is Decodable in Text =
+  given decodable: [scheme <: Label] => (tactic: Tactic[UrlError])
+  =>  ((Url[scheme] is Decodable in Text)^{tactic}) =
     value =>
       import UrlError.Expectation.*
 
@@ -123,7 +124,8 @@ object Url:
         case _ =>
           abort(UrlError(value, value.limit - 1, UrlError.Reason.Expected(Colon)))
 
-  given instantiable: (Tactic[UrlError]) => HttpUrl is Instantiable across Urls from Text =
+  given instantiable: (tactic: Tactic[UrlError])
+  =>  ((HttpUrl is Instantiable across Urls from Text)^{tactic}) =
     _.decode[HttpUrl]
 
 class Url[+scheme <: Label]
@@ -140,4 +142,5 @@ extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$locat
   def authority: Optional[Authority] = origin.authority
   def requestTarget: Text = location+query.lay(t"")(t"?"+_)
   def host: Optional[Host] = authority.let(_.host)
-  def path: Path on Www = location.decode[Path on Www]
+  // `Www`'s `Radical` always succeeds, so decoding the path cannot fail.
+  def path: Path on Www = unsafely(location.decode[Path on Www])

@@ -34,71 +34,11 @@ package serpentine
 
 import anticipation.*
 import contingency.*
-import denominative.*
-import gossamer.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
 
-object Radical:
-  given drive: Tactic[PathError] => Drive is Radical:
-    type Plane = Windows
-
-    def decode(text: Text): Drive =
-      if text.length >= 3 && text.at(Sec) == ':' && text.at(Ter) == '\\'
-      then Drive(text.at(Prim).vouch)
-      else abort(PathError(_.InvalidRoot))
-
-    def length(text: Text): Int = 3
-    def encode(drive: Drive): Text = t"${drive.letter}:\\"
-
-  given linux: Tactic[PathError] => %.type is Radical:
-    type Plane = Linux
-
-    def length(text: Text): Int = 1
-
-    def decode(text: Text): %.type =
-      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
-
-    def encode(root: %.type): Text = t"/"
-
-  given posix: Tactic[PathError] => %.type is Radical:
-    type Plane = Posix
-
-    def length(text: Text): Int = 1
-
-    def decode(text: Text): %.type =
-      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
-
-    def encode(root: %.type): Text = t"/"
-
-  given macOs: Tactic[PathError] => %.type is Radical:
-    type Plane = MacOs
-
-    def length(text: Text): Int = 1
-
-    def decode(text: Text): %.type =
-      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
-
-    def encode(root: %.type): Text = t"/"
-
-  given local: Tactic[PathError] => (%.type | Drive) is Radical:
-    type Plane = Local
-
-    def length(text: Text): 1 | 3 =
-      if text.starts(t"/") then 1 else if text.s(1) == ':' && text.s(2) == '\\' then 3
-      else abort(PathError(_.InvalidRoot))
-
-    def decode(text: Text): %.type | Drive =
-      length(text) match
-        case 1 => %
-        case 3 => Drive(text.s(0).lest(PathError(_.InvalidRoot)))
-
-    def encode(root: %.type | Drive): Text = root match
-      case Drive(letter) => t"$letter:\\"
-      case %             => t"/"
-
+// The platform `Radical` instances (POSIX/Linux/macOS/Windows-drive/local roots) live with the
+// OS platform types in galilei; `Radical` itself is generic path-algebra and stays here.
 trait Radical extends Typeclass, Planar:
-  def decode(text: Text): Self
-  def length(text: Text): Int
+  def decode(text: Text): Self raises PathError
+  def length(text: Text): Int raises PathError
   def encode(self: Self): Text

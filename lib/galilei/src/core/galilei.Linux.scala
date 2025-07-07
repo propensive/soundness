@@ -30,27 +30,40 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
 
-object MacOs:
-  type Rules =
-    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""] &
-      MustNotEqual["Icon\r"] & MustNotContain[":"]
+object Linux:
+  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
-  inline given MacOs is Nominative under Rules = !!
+  inline given nominative: Linux is Nominative under Rules = !!
 
-  given filesystem: MacOs is Filesystem:
+  inline given pathOnLinux: (Path on Linux) is Representative of Paths = !!
+
+  given filesystem: Linux is Filesystem:
     type UniqueRoot = true
-
-    val name: Text = "Mac OS"
+    val name: Text = "Linux"
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."
 
-sealed trait MacOs extends Posix
+  given radical: %.type is Radical:
+    type Plane = Linux
+
+    def length(text: Text): Int raises PathError = 1
+
+    def decode(text: Text): %.type raises PathError =
+      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
+
+    def encode(root: %.type): Text = t"/"
+
+  given submissible: %.type is Submissible on Linux = _ => ()
+
+trait Linux extends Posix

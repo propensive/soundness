@@ -38,26 +38,39 @@ import serpentine.*
 import turbulence.*
 
 object Openable:
-  given openable: [filesystem: Filesystem, path <: Path on filesystem]
-  =>  ( read:        ReadAccess,
-        write:       WriteAccess,
-        dereference: DereferenceSymlinks,
-        create:      CreateNonexistent on filesystem,
-        backend:     FilesystemBackend on filesystem,
-        ioError:     Tactic[IoError] )
-  =>  path is Openable by OpenFlag to Handle = new Openable:
+  // A named class rather than an anonymous given instance: instantiating an anonymous
+  // subclass freshens `Handle`'s (capability) field types in the inferred `Result` member,
+  // which then fails to conform to the declared `to Handle` refinement.
+  class FileOpenable[filesystem: Filesystem, path <: Path on filesystem]
+    ( using read:        ReadAccess,
+            write:       WriteAccess,
+            dereference: DereferenceSymlinks,
+            create:      CreateNonexistent on filesystem,
+            backend:     FilesystemBackend on filesystem,
+            ioError:     Tactic[IoError] )
+  extends Openable:
 
     type Self = path
     type Operand = OpenFlag
-    type Result = Handle
+    type Result = Handle^
 
-    def open[result](path: path, lambda: Handle => result, extraOptions: List[OpenFlag]): result =
+    def open[result](path: path, lambda: Result => result, extraOptions: List[OpenFlag]): result =
       val dereferenceFlags = if dereference.dereference then Nil else List(OpenFlag.NoFollow)
 
       val flags =
         read.flags() ++ write.flags() ++ dereferenceFlags ++ create.flags() ++ extraOptions
 
       backend.open(path, flags)(lambda)
+
+  given openable: [filesystem: Filesystem, path <: Path on filesystem]
+  =>  ( ReadAccess,
+        WriteAccess,
+        DereferenceSymlinks,
+        CreateNonexistent on filesystem,
+        FilesystemBackend on filesystem,
+        Tactic[IoError] )
+  =>  ( FileOpenable[filesystem, path]^ ) =
+    FileOpenable[filesystem, path]
 
 
   given eof: [file: Openable by OpenFlag] => Eof[file] is Openable:

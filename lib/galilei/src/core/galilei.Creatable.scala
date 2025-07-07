@@ -41,11 +41,11 @@ import serpentine.*
 
 object Creatable:
   given [plane: Filesystem]
-  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
-        overwritePreexisting:     OverwritePreexisting on plane,
+  =>  ( createNonexistentParents: (CreateNonexistentParents on plane)^,
+        overwritePreexisting:     (OverwritePreexisting on plane)^,
         backend:                  FilesystemBackend on plane,
         tactic:                   Tactic[IoError] )
-  =>  Directory is Creatable on plane to (Path on plane) =
+  =>  ((Directory is Creatable on plane to (Path on plane))^) =
 
     new Creatable:
       type Self = Directory
@@ -60,11 +60,11 @@ object Creatable:
 
 
   given file: [plane: Filesystem]
-  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
-        overwritePreexisting:     OverwritePreexisting on plane,
+  =>  ( createNonexistentParents: (CreateNonexistentParents on plane)^,
+        overwritePreexisting:     (OverwritePreexisting on plane)^,
         backend:                  FilesystemBackend on plane,
         tactic:                   Tactic[IoError] )
-  =>  File is Creatable on plane to (Path on plane) =
+  =>  ((File is Creatable on plane to (Path on plane))^) =
 
     new Creatable:
       type Plane = plane
@@ -78,11 +78,11 @@ object Creatable:
 
 
   given fifo: [plane: Filesystem]
-  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
-        overwritePreexisting:     OverwritePreexisting on plane,
+  =>  ( createNonexistentParents: (CreateNonexistentParents on plane)^,
+        overwritePreexisting:     (OverwritePreexisting on plane)^,
         backend:                  FilesystemBackend on plane,
         tactic:                   Tactic[IoError] )
-  =>  Fifo is Creatable to (Path on plane) =
+  =>  ((Fifo is Creatable to (Path on plane))^) =
 
     new Creatable:
       type Self = Fifo

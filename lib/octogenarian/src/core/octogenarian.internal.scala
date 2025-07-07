@@ -86,7 +86,8 @@ object internal:
     def unsafe(text: Text): GitTag = new GitTag(text)
     def parse(text: Text)(using Tactic[GitRefError]): GitTag = new GitTag(Refspec.parse(text))
 
-    given decoder: Tactic[GitRefError] => GitTag is Decodable in Text = parse(_)
+    given decoder: (tactic: Tactic[GitRefError])
+    =>  ((GitTag is Decodable in Text)^{tactic}) = parse(_)
     given showable: GitTag is Showable = _.text
 
   case class GitTag(text: Text) extends Refspec
@@ -95,7 +96,8 @@ object internal:
     def unsafe(text: Text): GitBranch = new GitBranch(text)
     def parse(text: Text)(using Tactic[GitRefError]): GitBranch = new GitBranch(Refspec.parse(text))
 
-    given decoder: Tactic[GitRefError] => GitBranch is Decodable in Text = parse(_)
+    given decoder: (tactic: Tactic[GitRefError])
+    =>  ((GitBranch is Decodable in Text)^{tactic}) = parse(_)
     given showable: GitBranch is Showable = _.text
 
   case class GitBranch(text: Text) extends Refspec
@@ -111,7 +113,8 @@ object internal:
 
     def unsafe(text: Text): GitHash = new GitHash(text)
 
-    given decoder: Tactic[GitRefError] => GitHash is Decodable in Text = apply(_)
+    given decoder: (tactic: Tactic[GitRefError])
+    =>  ((GitHash is Decodable in Text)^{tactic}) = apply(_)
     given showable: GitHash is Showable = _.text
 
   class GitHash(val text: Text) extends Root(t"$text/"), Refspec:

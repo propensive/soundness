@@ -35,10 +35,7 @@ package serpentine
 import anticipation.*
 import prepositional.*
 
-object Submissible:
-  given linux: %.type is Submissible on Linux = _ => ()
-  given macOs: %.type is Submissible on MacOs = _ => ()
-  given posix: %.type is Submissible on Posix = _ => ()
-
+// The platform `Submissible` instances live with the OS platform types in galilei; `Submissible`
+// itself is generic path-algebra and stays here.
 trait Submissible extends Typeclass, Planar:
   def check(name: Text): Unit
