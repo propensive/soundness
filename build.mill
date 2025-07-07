@@ -749,10 +749,10 @@ object caesura extends Library:
 object camouflage extends Library:
   object core extends Component(parasite.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object capricious extends Library:
   object core extends Component(wisteria.core, hypotenuse.core):
