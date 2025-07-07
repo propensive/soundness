@@ -1587,18 +1587,18 @@ object profanity extends Library:
 object punctuation extends Library:
   object core extends Component(honeycomb.core, frontier.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object html extends Component(core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object ansi extends Component(core, harlequin.core, harlequin.ansi, escapade.core,
       polysyllabic.core):
     override def scalaJs = false // depends on JVM-only `harlequin` (syntax highlighting)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units)
 
 object quantitative extends Library:
