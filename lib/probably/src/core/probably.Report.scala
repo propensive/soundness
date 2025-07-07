@@ -74,7 +74,38 @@ object Report:
 
   given detail: Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
 
-class Report(using Environment)(using palette: TestPalette):
+  enum Status:
+    case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, AspirePass, AspireFail
+
+    private val nbsp = '\u00a0'
+
+    def symbol(using palette: TestPalette): Teletype = this match
+      case Pass        => e"${Bg(palette.pass)}($Bold(${Fg(palette.black)}( ✓ )))"
+      case Fail        => e"${Bg(palette.fail)}($Bold(${Fg(palette.black)}( ✗ )))"
+      case Throws      => e"${Bg(palette.warning)}($Bold(${Fg(palette.black)}( ! )))"
+      case CheckThrows => e"${Bg(palette.critical)}($Bold(${Fg(palette.black)}( ‼ )))"
+      case Mixed       => e"${Bg(palette.mixed)}($Bold(${Fg(palette.black)}( ? )))"
+      case Suite       => e"   "
+      case Bench       => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp*$nbsp)))"
+      case AspirePass  => e"${Bg(palette.aspirePass)}($Bold(${Fg(palette.black)}( ↑ )))"
+      case AspireFail  => e"${Bg(palette.aspireFail)}($Bold(${Fg(palette.black)}( ↓ )))"
+
+    def describe: Teletype = this match
+      case Pass        => e"Pass"
+      case Fail        => e"Fail"
+      case Throws      => e"Throws exception"
+      case CheckThrows => e"Exception in check"
+      case Mixed       => e"Mixed"
+      case Suite       => e"Suite"
+      case Bench       => e"Benchmark"
+      case AspirePass  => e"Aspire passed"
+      case AspireFail  => e"Aspire failed"
+
+// `final` so the capture checker infers a precise self-type rather than the universal capture an
+// extensible class would get — otherwise the nested `Status`/`Summary` types become `^{Report.this}`
+// and leak `any` through the status-legend iteration.
+final class Report(using Environment)(using palette: TestPalette):
+  import Report.Status
   val metrics = textMetrics.wideCharacterWidthMetric
 
   given measurable: Char is Measurable:
@@ -167,33 +198,6 @@ class Report(using Environment)(using palette: TestPalette):
     case bench@ReportLine.Bench(_, _) => Iterable(bench)
     case ReportLine.Suite(_, tests)   => tests.list.flatMap: (_, line) => benches(line)
     case _                            => Nil
-
-  enum Status:
-    case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, AspirePass, AspireFail
-
-    private val nbsp = '\u00a0'
-
-    def symbol(using palette: TestPalette): Teletype = this match
-      case Pass        => e"${Bg(palette.pass)}($Bold(${Fg(palette.black)}( ✓ )))"
-      case Fail        => e"${Bg(palette.fail)}($Bold(${Fg(palette.black)}( ✗ )))"
-      case Throws      => e"${Bg(palette.warning)}($Bold(${Fg(palette.black)}( ! )))"
-      case CheckThrows => e"${Bg(palette.critical)}($Bold(${Fg(palette.black)}( ‼ )))"
-      case Mixed       => e"${Bg(palette.mixed)}($Bold(${Fg(palette.black)}( ? )))"
-      case Suite       => e"   "
-      case Bench       => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp*$nbsp)))"
-      case AspirePass  => e"${Bg(palette.aspirePass)}($Bold(${Fg(palette.black)}( ↑ )))"
-      case AspireFail  => e"${Bg(palette.aspireFail)}($Bold(${Fg(palette.black)}( ↓ )))"
-
-    def describe: Teletype = this match
-      case Pass        => e"Pass"
-      case Fail        => e"Fail"
-      case Throws      => e"Throws exception"
-      case CheckThrows => e"Exception in check"
-      case Mixed       => e"Mixed"
-      case Suite       => e"Suite"
-      case Bench       => e"Benchmark"
-      case AspirePass  => e"Aspire passed"
-      case AspireFail  => e"Aspire failed"
 
   val unitsSeq: List[Teletype] =
     List(e"${Fg(palette.cold)}(µs)", e"${Fg(palette.warm)}(ms)", e"${Fg(palette.hot)}(s) ")
@@ -567,12 +571,18 @@ class Report(using Environment)(using palette: TestPalette):
         val allStatuses =
           List(Pass, Bench, AspirePass, Throws, Fail, AspireFail, Mixed, CheckThrows)
 
-        allStatuses.grouped(4).each: statuses =>
-          Out.println:
-            statuses.map[Teletype]: status =>
-              gossamer.pad[Teletype](e"  ${status.symbol} ${status.describe}")(20)
+        // Printed with index loops rather than `grouped(_).each`/`map` closures: a lambda whose
+        // parameter is a `List` and whose body uses the `Stdio` capability leaks the list's reach
+        // capability into the surrounding `(using Stdio)` scope under capture checking.
+        val cells: IndexedSeq[Teletype] =
+          allStatuses.map: status =>
+            gossamer.pad[Teletype](e"  ${status.symbol} ${status.describe}")(20)
+          . to(IndexedSeq)
 
-            . join(e" ")
+        var cell = 0
+        while cell < cells.length do
+          Out.println(cells.slice(cell, cell + 4).join(e" "))
+          cell += 4
 
         Out.println(t"─"*72)
 

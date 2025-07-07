@@ -91,16 +91,22 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       ???
 
   given runner: Runner[Report] = runner0
-  given testable: Testable = this
+
+  // A pure `Testable` view of this suite rather than `this`: the suite itself captures its
+  // runner and deferred test blocks, so it is a capability, which `Testable`'s pure type
+  // (rightly) forbids. `Testable` equality is structural (name and parent), so the view is
+  // interchangeable with the suite wherever tests are grouped or reported.
+  private val testableView: Testable = Testable(suiteName)
+  given testable: Testable = testableView
 
   def run(): Unit
 
   def apply()(using runner: Runner[Report]): Unit =
     runner0 = runner
-    runner.suite(this, run())
+    runner.suite(testableView, run())
 
   final def main(arguments: IArray[Text]): Unit =
-    try runner.suite(this, run())
+    try runner.suite(testableView, run())
     catch case error: Throwable =>
       runner.terminate(error)
       jl.System.exit(2)
