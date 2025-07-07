@@ -38,11 +38,11 @@ import language.experimental.into
 trait CheckOverflow:
   type Wrap[result]
 
-  inline def addU64(left: U64, right: U64): Wrap[U64]
-  inline def addS64(left: S64, right: S64): Wrap[S64]
-  inline def addU32(left: U32, right: U32): Wrap[U32]
-  inline def addS32(left: S32, right: S32): Wrap[S32]
-  inline def addU16(left: U16, right: U16): Wrap[U16]
-  inline def addS16(left: S16, right: S16): Wrap[S16]
-  inline def addU8(left: U8, right: U8): Wrap[U8]
-  inline def addS8(left: S8, right: S8): Wrap[S8]
+  inline def addU64(left: U64, right: U64): Wrap[U64]^
+  inline def addS64(left: S64, right: S64): Wrap[S64]^
+  inline def addU32(left: U32, right: U32): Wrap[U32]^
+  inline def addS32(left: S32, right: S32): Wrap[S32]^
+  inline def addU16(left: U16, right: U16): Wrap[U16]^
+  inline def addS16(left: S16, right: S16): Wrap[S16]^
+  inline def addU8(left: U8, right: U8): Wrap[U8]^
+  inline def addS8(left: S8, right: S8): Wrap[S8]^
