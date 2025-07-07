@@ -947,13 +947,13 @@ object enigmatic extends Library:
 object escapade extends Library:
   object csi extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object core extends Component(csi, anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, escritoire.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, yossarian.core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units)
 
 object escritoire extends Library:

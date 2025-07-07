@@ -38,13 +38,13 @@ import anticipation.*
 import prepositional.*
 
 object Colorable:
-  def apply[value](using erased Void)[color: Chromatic](color0: color): value is Colorable =
+  def apply[value](using erased void: Void)[color: Chromatic](color0: color): value is Colorable =
     new Colorable:
       type Self = value
       extension (value: value) def color: Fg = Fg(color0.chroma)
 
 
-  def apply[value](using erased Void)[color: Chromatic](chooseColor: value -> color)
+  def apply[value](using erased void: Void)[color: Chromatic](chooseColor: value -> color)
   :   value is Colorable =
 
     new Colorable:
