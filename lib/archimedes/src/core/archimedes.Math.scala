@@ -58,11 +58,9 @@ import zephyrine.ParseError
 //     reusing honeycomb's own serializer.
 
 object Math:
-  given aggregable: (XmlSchema)
-  =>  Tactic[ParseError]
-  =>  Tactic[XmlError]
-  =>  Tactic[MathmlError]
-  =>  Math is Aggregable by Text =
+  given aggregable: (schema: XmlSchema)
+  =>  (parseTactic: Tactic[ParseError], xmlTactic: Tactic[XmlError], mathmlTactic: Tactic[MathmlError])
+  =>  ((Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
 
     source =>
       val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)
@@ -70,13 +68,13 @@ object Math:
 
 
   given loadable: (XmlSchema)
-  =>  Tactic[ParseError]
-  =>  Tactic[XmlError]
-  =>  Tactic[MathmlError]
-  =>  Math is Loadable by Text =
+  =>  (parseTactic: Tactic[ParseError])
+  =>  (xmlTactic: Tactic[XmlError])
+  =>  (mathmlTactic: Tactic[MathmlError])
+  =>  ((Math is Loadable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
 
     source =>
-      val xmlDoc: Document[Xml] = summon[Xml is Loadable by Text].load(source)
+      val xmlDoc: Document[Xml] = summon[(Xml is Loadable by Text)^].load(source)
       val mathElement = MathmlParser.rootElement(xmlDoc.root)
       val parsedMath: Math = MathmlParser.decodeMath(mathElement)
 
@@ -123,7 +121,9 @@ object Math:
   // Wraps the encoder lambda in a class (rather than an inline function value) to
   // avoid inline-given code bloat, mirroring quantitative's `ShowableQuantity`. It
   // must be public because the inline given inlines a reference to it.
-  class QuantityEncodable[units <: Measure](lambda: Quantity[units] => Math)
+  // A pure function (`->`): the instance retains it, and a capturing conversion would make
+  // the typeclass instance itself a capability, which its pure self type (rightly) forbids.
+  class QuantityEncodable[units <: Measure](lambda: Quantity[units] -> Math)
   extends Encodable:
     type Self = Quantity[units]
     type Form = Math
