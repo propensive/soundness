@@ -1515,10 +1515,10 @@ object perihelion extends Library:
 object phoenicia extends Library:
   object core extends Component(quantitative.units, polaris.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object plutocrat extends Library:
   object core extends Component(gossamer.core):
