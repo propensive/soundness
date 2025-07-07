@@ -39,8 +39,10 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import hypotenuse.*
 import kaleidoscope.*
 import prepositional.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 
@@ -49,8 +51,12 @@ import errorDiagnostics.stackTraces
 object Semver:
   given encodable: Semver is Encodable in Text =
     semver =>
-      val suffix = semver.suffix.lay(t"")(t"-"+_.join(t"."))
-      val build = semver.build.lay(t"")(t"+"+_.join(t"."))
+      extension (element: Long | Text) def text: Text = element match
+        case text: Text => text
+        case long: Long => long.show
+
+      val suffix = semver.suffix.lay(t"")(t"-"+_.map(_.text).join(t"."))
+      val build = semver.build.lay(t"")(t"+"+_.map(_.text).join(t"."))
       t"${semver.major}.${semver.minor}.${semver.patch}$suffix$build"
 
   given decodable: Tactic[SemverError] => Semver is Decodable in Text =
@@ -79,11 +85,35 @@ object Semver:
               if patch.starts(t"0") && patch2 != 0 then raise(SemverError(text))
               Semver(major2, minor2, patch2, suffix2, build2)
 
+
+
+  given ordering: Ordering[Semver] = Ordering.fromLessThan: (left, right) =>
+    def compare(left: List[Long | Text], right: List[Long | Text]): Boolean = (left, right) match
+      case (Nil, Nil)                             => false
+      case (Nil, _)                               => false
+      case (_, Nil)                               => true
+      case ((left: Text) :: _, (right: Long) :: _) => true
+      case ((left: Long) :: _, (right: Text) :: _) => false
+
+      case ((left: Long) :: lefts, (right: Long) :: rights) =>
+        if left == right then compare(lefts, rights) else left < right
+
+      case ((left: Text) :: lefts, (right: Text) :: rights) =>
+        if left == right then compare(lefts, rights) else left.s.compareTo(right.s) == -1
+
+    if left.major == right.major then
+      if left.minor == right.minor then
+        if left.patch == right.patch then compare(left.suffix.or(Nil), right.suffix.or(Nil))
+        else left.patch < right.patch
+      else left.minor < right.minor
+    else left.major < right.major
+
+
 case class Semver
             (major:  Long,
              minor:  Long,
              patch:  Long,
-             suffix: Optional[List[Text]],
-             build:  Optional[List[Text]]):
+             suffix: Optional[List[Long | Text]],
+             build:  Optional[List[Long | Text]]):
 
   def development: Boolean = major == 0
