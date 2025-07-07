@@ -59,7 +59,24 @@ trait Calendar extends Findable:
   def mensual(date: Date): Mensual
   def diurnal(date: Date): Day
   def zerothDayOfYear(year: Year): Date
-  def jdn(year: Year, month: Mensual, day: Day): Date raises TimeError
+
+  // The Julian day number for a *valid* year/month/day, without range checking. This is the
+  // per-calendar arithmetic; validity is enforced separately by `jdn`.
+  def computeJdn(year: Year, month: Mensual, day: Day): Date
+
+  // Whether a year/month/day denotes a real date. The default range-checks the day-of-month;
+  // calendars with more complex validity (e.g. the French Republican `Regime`) override it.
+  def validDate(year: Year, month: Mensual, day: Day): Boolean =
+    day() >= 1 && day() <= daysInMonth(month, year)
+
+  // `inline` so the `raises TimeError` context resolves at the call site: a non-inline `raises`
+  // method called inside a deferred block (e.g. a test body) boxes the tactic it summons with the
+  // block's own capability, which capture checking then rejects.
+  inline def jdn(year: Year, month: Mensual, day: Day): Date raises TimeError =
+    if !validDate(year, month, day)
+    then raise(TimeError(_.Invalid(year(), monthOrdinal(year, month) + 1, day(), this)))
+
+    computeJdn(year, month, day)
 
   // The display name of a month. By default this is the month value's own name (the enum case name,
   // which is already the conventional name in most calendars); calendars override it where the name

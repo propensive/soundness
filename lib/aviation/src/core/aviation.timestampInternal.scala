@@ -295,7 +295,7 @@ object timestampInternal:
   object Date:
     def julianDay(day: Int): Date = (day.toLong*aviation.internal.MillisPerDay).asInstanceOf[Date]
 
-    def apply(using calendar: Calendar)
+    inline def apply(using calendar: Calendar)
       ( year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal )
     :   Date raises TimeError =
 
