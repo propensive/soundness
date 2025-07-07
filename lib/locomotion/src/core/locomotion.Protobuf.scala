@@ -73,11 +73,14 @@ trait Protobuf2:
   // higher-priority packed givens in `object Protobuf`. Decoding accepts either
   // form, so a packed field still round-trips here when no `Packable` is in scope.
 
+  // The collection/optional instances below retain their by-name element codecs (and, where
+  // present, a resolution-scoped `Tactic`), which share each instance's given-resolution
+  // lifetime; laundered pure per the codec-thunk seal pattern (see rep/DECISIONS.md).
   given listEncodable: [collection <: Iterable, element]
   =>  ( encodable: => element is Encodable in Protobuf )
   =>  collection[element] is Encodable in Protobuf =
 
-    values =>
+    caps.unsafe.unsafeAssumePure: values =>
       val occurrences = values.to(List).flatMap(encodable.encode(_).occurrences)
       if occurrences.isEmpty then Protobuf.Absent else Protobuf.Repeated(occurrences)
 
@@ -86,7 +89,7 @@ trait Protobuf2:
   =>  ( decodable: => element is Decodable in Protobuf )
   =>  collection[element] is Decodable in Protobuf =
 
-    protobuf =>
+    caps.unsafe.unsafeAssumePure: protobuf =>
       val builder = factory.newBuilder
 
       protobuf.occurrences.foreach: wire =>
@@ -126,8 +129,8 @@ object Protobuf extends Protobuf2:
   // mirroring jacinta's `value in Json` and breviloquence's `value in Cbor`.
   // `value in Protobuf` is just `value { type Form = Protobuf }`, so the
   // cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Protobuf] => Tactic[ProtobufError]
-  =>  (value in Protobuf) is Aggregable by Data =
+  given aggregableIn: [value: Decodable in Protobuf] => (tactic: Tactic[ProtobufError])
+  =>  (((value in Protobuf) is Aggregable by Data)^{tactic}) =
     bytes => message(bytes.read[Data]).as[value].asInstanceOf[value in Protobuf]
 
   // Number-keyed optic: Protobuf fields are addressed by number, not name, so an
@@ -203,24 +206,34 @@ object Protobuf extends Protobuf2:
   given textEncodable: Text is Encodable in Protobuf = text => Wire(WireType.Len, utf8(text))
   given dataEncodable: Data is Encodable in Protobuf = bytes => Wire(WireType.Len, bytes)
 
-  given intDecodable: Tactic[ProtobufError] => Int is Decodable in Protobuf =
-    readVarint(_).toInt
+  given intDecodable: (tactic: Tactic[ProtobufError])
+  =>  Int is Decodable in Protobuf =
+    caps.unsafe.unsafeAssumePure:
+      readVarint(_).toInt
 
-  given longDecodable: Tactic[ProtobufError] => Long is Decodable in Protobuf =
-    readVarint(_)
+  given longDecodable: (tactic: Tactic[ProtobufError])
+  =>  Long is Decodable in Protobuf =
+    caps.unsafe.unsafeAssumePure:
+      readVarint(_)
 
-  given booleanDecodable: Tactic[ProtobufError] => Boolean is Decodable in Protobuf =
-    readVarint(_) != 0
+  given booleanDecodable: (tactic: Tactic[ProtobufError])
+  =>  Boolean is Decodable in Protobuf =
+    caps.unsafe.unsafeAssumePure:
+      readVarint(_) != 0
 
-  given doubleDecodable: Tactic[ProtobufError] => Double is Decodable in Protobuf =
-    protobuf =>
-      if protobuf.isAbsent then 0.0
-      else jl.Double.longBitsToDouble(ProtobufParser(protobuf.payload).fixed64())
+  given doubleDecodable: (tactic: Tactic[ProtobufError])
+  =>  Double is Decodable in Protobuf =
+    caps.unsafe.unsafeAssumePure:
+      protobuf =>
+        if protobuf.isAbsent then 0.0
+        else jl.Double.longBitsToDouble(ProtobufParser(protobuf.payload).fixed64())
 
-  given floatDecodable: Tactic[ProtobufError] => Float is Decodable in Protobuf =
-    protobuf =>
-      if protobuf.isAbsent then 0.0f
-      else jl.Float.intBitsToFloat(ProtobufParser(protobuf.payload).fixed32())
+  given floatDecodable: (tactic: Tactic[ProtobufError])
+  =>  Float is Decodable in Protobuf =
+    caps.unsafe.unsafeAssumePure:
+      protobuf =>
+        if protobuf.isAbsent then 0.0f
+        else jl.Float.intBitsToFloat(ProtobufParser(protobuf.payload).fixed32())
 
   given textDecodable: Text is Decodable in Protobuf =
     protobuf => Text(jl.String(protobuf.payload.mutable(using Unsafe), UTF_8).nn)
@@ -249,23 +262,35 @@ object Protobuf extends Protobuf2:
   given b64Encodable: B64 is Encodable in Protobuf =
     b64 => Wire(WireType.I64, printed(_.fixed64(b64.s64.long)))
 
-  given u32Decodable: Tactic[ProtobufError] => U32 is Decodable in Protobuf =
-    readVarint(_).toInt.bits.u32
+  given u32Decodable: (tactic: Tactic[ProtobufError])
+  =>  U32 is Decodable in Protobuf =
+    caps.unsafe.unsafeAssumePure:
+      readVarint(_).toInt.bits.u32
 
-  given u64Decodable: Tactic[ProtobufError] => U64 is Decodable in Protobuf =
-    readVarint(_).bits.u64
+  given u64Decodable: (tactic: Tactic[ProtobufError])
+  =>  U64 is Decodable in Protobuf =
+    caps.unsafe.unsafeAssumePure:
+      readVarint(_).bits.u64
 
-  given s32Decodable: Tactic[ProtobufError] => S32 is Decodable in Protobuf =
-    protobuf => unzigzag(readVarint(protobuf)).toInt.bits.s32
+  given s32Decodable: (tactic: Tactic[ProtobufError])
+  =>  S32 is Decodable in Protobuf =
+    caps.unsafe.unsafeAssumePure:
+      protobuf => unzigzag(readVarint(protobuf)).toInt.bits.s32
 
-  given s64Decodable: Tactic[ProtobufError] => S64 is Decodable in Protobuf =
-    protobuf => unzigzag(readVarint(protobuf)).bits.s64
+  given s64Decodable: (tactic: Tactic[ProtobufError])
+  =>  S64 is Decodable in Protobuf =
+    caps.unsafe.unsafeAssumePure:
+      protobuf => unzigzag(readVarint(protobuf)).bits.s64
 
-  given b32Decodable: Tactic[ProtobufError] => B32 is Decodable in Protobuf =
-    readFixed32(_).bits
+  given b32Decodable: (tactic: Tactic[ProtobufError])
+  =>  B32 is Decodable in Protobuf =
+    caps.unsafe.unsafeAssumePure:
+      readFixed32(_).bits
 
-  given b64Decodable: Tactic[ProtobufError] => B64 is Decodable in Protobuf =
-    readFixed64(_).bits
+  given b64Decodable: (tactic: Tactic[ProtobufError])
+  =>  B64 is Decodable in Protobuf =
+    caps.unsafe.unsafeAssumePure:
+      readFixed64(_).bits
 
   given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( encodable: inner is Encodable in Protobuf )
@@ -282,7 +307,8 @@ object Protobuf extends Protobuf2:
   =>  ( decodable: => inner is Decodable in Protobuf )
   =>  value is Decodable in Protobuf =
 
-    protobuf => if protobuf.isAbsent then Unset else decodable.decoded(protobuf)
+    caps.unsafe.unsafeAssumePure:
+        protobuf => if protobuf.isAbsent then Unset else decodable.decoded(protobuf)
 
   // Packed `repeated` for numeric scalars (proto3 default): all elements are
   // concatenated into one length-delimited field. Higher priority than the unpacked
@@ -292,7 +318,7 @@ object Protobuf extends Protobuf2:
   =>  ( encodable: => element is Encodable in Protobuf, packable: element is Packable )
   =>  collection[element] is Encodable in Protobuf =
 
-    values =>
+    caps.unsafe.unsafeAssumePure: values =>
       val list = values.to(List)
 
       if list.isEmpty then Absent else
@@ -312,7 +338,7 @@ object Protobuf extends Protobuf2:
   =>  Tactic[ProtobufError]
   =>  collection[element] is Decodable in Protobuf =
 
-    protobuf =>
+    caps.unsafe.unsafeAssumePure: protobuf =>
       val builder = factory.newBuilder
 
       // Accept both packed (one Len field of concatenated values) and unpacked (a
@@ -350,7 +376,7 @@ object Protobuf extends Protobuf2:
   =>  Tactic[ProtobufError]
   =>  Map[key, value] is Decodable in Protobuf =
 
-    protobuf =>
+    caps.unsafe.unsafeAssumePure: protobuf =>
       val entries = protobuf.occurrences.map: entry =>
         val fields = ProtobufParser(entry.payload).fields()
         val key = keyDecodable.decoded(Repeated(fields.at(1).or(Nil)))
@@ -398,7 +424,10 @@ object Protobuf extends Protobuf2:
 
       val numbers = fieldNumbers[derivation]
 
-      protobuf =>
+      // The decode lambda closes over the resolution-scoped `Tactic` that `provide` summons
+      // at the derivation site, sharing the instance's given-resolution lifetime; laundered
+      // pure per the codec-thunk seal pattern (see rep/DECISIONS.md).
+      caps.unsafe.unsafeAssumePure: protobuf =>
         provide[Tactic[ProtobufError]]:
           val map = ProtobufParser(protobuf.payload).fields()
 
@@ -408,7 +437,8 @@ object Protobuf extends Protobuf2:
                 context.decoded(Protobuf.Repeated(values))
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Protobuf =
-      protobuf =>
+      // Laundered pure as for `conjunction` above.
+      caps.unsafe.unsafeAssumePure: protobuf =>
         provide[Tactic[ProtobufError]]:
           provide[Tactic[VariantError]]:
             val map = ProtobufParser(protobuf.payload).fields()
