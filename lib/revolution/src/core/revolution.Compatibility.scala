@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.37.0.                                                                    ┃
+┃    Soundness, version 0.32.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -32,14 +32,7 @@
                                                                                                   */
 package revolution
 
-import anticipation.*
-import distillate.*
-import gossamer.*
-import prepositional.*
+import scala.collection as sc
 
-object VersionNumber:
-  def apply(value: Text)(using Int is Decodable in Text): VersionNumber =
-    VersionNumber(value.cut(t".").to(List).map(_.decode[Int])*)
-
-case class VersionNumber(digits: Int*):
-  def text: Text = digits.map(_.toString.tt).join(".".tt)
+enum Compatibility:
+  case Breaking, Additions, Internal, Unchanged

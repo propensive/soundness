@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.37.0.                                                                    ┃
+┃    Soundness, version 0.32.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,13 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package revolution
 
-export revolution
-. { DecodableManifest, EncodableManifest, Manifest, ManifestAttribute, ManifestEntry, Semver, sv }
+import scala.collection as sc
 
-package manifestAttributes:
-  export revolution.manifestAttributes
-  . { ManifestVersion, MainClass, CreatedBy, ClassPath, ContentType, ExtensionList, ExtensionName,
-      ImplementationTitle, ImplementationVendor, ImplementationVersion, Sealed, SignatureVersion,
-      SpecificationTitle, SpecifacationVendor, SpecifacationVersion }
+import anticipation.*
+import contingency.*
+import distillate.*
+import fulminate.*
+import gossamer.*
+import kaleidoscope.*
+import prepositional.*
+import vacuous.*
+
+import errorDiagnostics.stackTraces
+
+case class SemverError(version: Text)(using Diagnostics)
+extends Error(m"$version is not a valid semantic version")
