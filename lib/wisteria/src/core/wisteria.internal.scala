@@ -114,6 +114,13 @@ object internal:
       case AndType(left, right) =>
         refinementMember(left, name).orElse(refinementMember(right, name))
 
+      // Capture checking wraps inferred types in `@scala.caps.internal.inferred` (and `@retains`
+      // for captures); these are transparent to structural type inspection, so see through them —
+      // otherwise the phantom `VRoot`/`VPath` carrier is invisible and per-path overrides silently
+      // fall back to the default derivation.
+      case AnnotatedType(underlying, _) =>
+        refinementMember(underlying, name)
+
       case _ =>
         None
 
@@ -625,9 +632,10 @@ object internal:
       repr.termSymbol.isNoSymbol && repr.typeSymbol.children.nonEmpty
 
     repr.dealias match
-      case AndType(left, right)   => if parent(left) then productType(right) else productType(left)
-      case Refinement(base, _, _) => productType(base)
-      case other                  => other
+      case AndType(left, right)     => if parent(left) then productType(right) else productType(left)
+      case Refinement(base, _, _)   => productType(base)
+      case AnnotatedType(under, _)  => productType(under)
+      case other                    => other
 
   // Construct a product value from its field-value terms via the primary constructor — no
   // `Mirror`, no `fromProduct`. The constructed type is `productType(derivation)` (stripping any
@@ -758,7 +766,7 @@ object internal:
           val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
           val label = '{$nameExpr.tt.aka["label"]}
 
-          val accessor: Expr[derivation => field] =
+          val accessor: Expr[derivation -> field] =
             '{value => value.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[field]}
 
           val dereference = '{$accessor.aka["dereference"]}

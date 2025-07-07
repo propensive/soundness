@@ -84,9 +84,14 @@ object Tests extends Suite(m"Wisteria tests"):
 
     inline def disjunction[derivation: SumReflection]: Readable[derivation] = text =>
       text.s.split(":").nn.to(List).map(_.nn.tt).absolve match
-        case List(variant, text2) => delegate[derivation](variant):
-          [variant <: derivation] =>
-            context => context.read(text2)
+        case List(variant, text2) =>
+          // Seal the variant-dispatch tactic inside the instance (the austronesian/jacinta
+          // pattern): without it the derived instance captures the enclosing scope's
+          // `Tactic[VariantError]` given and is itself a capability.
+          provide[Tactic[VariantError]]:
+            delegate[derivation](variant):
+              [variant <: derivation] =>
+                context => context.read(text2)
 
   extension (text: Text)
     def read[value](using readable: Readable[value]): value = readable.read(text)
@@ -272,7 +277,14 @@ object Tests extends Suite(m"Wisteria tests"):
   // ===== Tests =====
 
   def run(): Unit =
-    given Tactic[VariantError] = strategies.throwUnsafely
+    // A non-capturing tactic: `throwUnsafely` captures the universal `canThrowAny`, and that
+    // capture flows into every derived instance summoned under it, making the derivation itself
+    // a capability. `uncheckedErrors` throws identically (the tests still observe VariantError)
+    // but captures nothing.
+    erased given uncheckedVariantError: VariantError is Unchecked =
+      new Unchecked { type Self = VariantError }
+
+    given Tactic[VariantError] = strategies.uncheckedErrors
 
     suite(m"Product derivation"):
       test(m"Parse a product via construct"):
