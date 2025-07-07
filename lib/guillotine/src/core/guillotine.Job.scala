@@ -50,14 +50,14 @@ import vacuous.*
 
 object Job:
   given writable: [chunk, command <: Label, result]
-  =>  ProcessInput is Writable by chunk
-  =>  Job[command, result] is Writable by chunk =
+  =>  (writable0: (ProcessInput is Writable by chunk)^)
+  =>  ((Job[command, result] is Writable by chunk)^{writable0}) =
 
     (process, stream) => process.stdin(stream)
 
 
-  given writableText: [command <: Label, result] => Emit[StreamError]
-  =>  Job[command, result] is Writable by Text =
+  given writableText: [command <: Label, result] => (streamCut: Emit[StreamError])
+  =>  ((Job[command, result] is Writable by Text)^{streamCut}) =
 
     (process, stream) => process.stdin(stream.map(_.sysData))
 
@@ -84,15 +84,17 @@ extends Subprocess, ProcessRef:
   def status(): Int = process.waitFor()
 
 
-  def stdin[chunk](stream: LazyList[chunk])(using writable: ProcessInput is Writable by chunk)
+  def stdin[chunk](stream: LazyList[chunk])
+    ( using writable: (ProcessInput is Writable by chunk)^ )
   :   Unit =
     writable.write(ProcessInput(process.getOutputStream.nn), stream)
 
 
-  def await()(using computable: result is Computable): result = computable.compute(this)
+  def await()(using computable: (result is Computable)^): result =
+    computable.compute(this)
 
   def await[duration: Abstractable across Durations to Long](duration: duration)
-    ( using computable: result is Computable )
+    ( using computable: (result is Computable)^ )
   :   result raises AsyncError =
 
     if process.waitFor(duration.generic/1_000_000L, juc.TimeUnit.MILLISECONDS)
@@ -111,7 +113,7 @@ extends Subprocess, ProcessRef:
     Log.warn(ExecEvent.KillProcess(pid))
     process.destroyForcibly()
 
-  def process(using Tactic[PidError]) = Process(pid)
+  def process(using Tactic[PidError]^) = Process(pid)
 
   def startTime[instant: Instantiable across Instants from Long]: Optional[instant] =
     try

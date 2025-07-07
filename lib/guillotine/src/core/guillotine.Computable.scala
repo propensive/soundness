@@ -55,7 +55,8 @@ object Computable:
 
   given string: String is Computable = _.text().s
 
-  given dataStream: Tactic[StreamError] => LazyList[Data] is Computable = _.stdout()
+  given dataStream: (tactic: Tactic[StreamError]) => ((LazyList[Data] is Computable)^{tactic}) =
+    _.stdout()
 
   given exitStatus: Exit is Computable = _.status() match
     case 0     => Exit.Ok
@@ -64,14 +65,15 @@ object Computable:
   given unit: Unit is Computable = exitStatus.map(_ => ())
 
 
-  given instantiable: [instantiable: Instantiable across Paths from Text]
-  =>  instantiable is Computable =
+  given instantiable: [instantiable]
+  =>  ( evidence: (instantiable is Instantiable across Paths from Text)^ )
+  =>  ((instantiable is Computable)^{evidence}) =
 
-    text.map: text => instantiable(text.trim)
+    text.map: text => evidence(text.trim)
 
 
 trait Computable extends Typeclass:
   def compute(process: Subprocess): Self
 
-  def map[self2](lambda: Self => self2): self2 is Computable =
+  def map[self2](lambda: Self => self2): (self2 is Computable)^{this, lambda} =
     process => lambda(compute(process))
