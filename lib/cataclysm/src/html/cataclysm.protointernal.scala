@@ -32,6 +32,7 @@
                                                                                                   */
 package cataclysm
 
+import scala.compiletime.asMatchable
 import scala.quoted.*
 
 import anticipation.*
@@ -100,7 +101,13 @@ private[cataclysm] object protointernal:
   def attributeFor[name <: Label: Type]: Macro[Text] =
     import quotes.reflect.*
 
-    val target = TypeRepr.of[name].absolve match
+    // Capture checking can wrap the instantiated `name` in `@caps.internal.inferred`
+    // `AnnotatedType`s; strip annotations (and dealias) before the structural match.
+    def strip(repr: TypeRepr): TypeRepr = repr.dealias.asMatchable match
+      case AnnotatedType(parent, _) => strip(parent)
+      case other                    => other
+
+    val target = strip(TypeRepr.of[name]).absolve match
       case ConstantType(StringConstant(value)) =>
         value.tt
 

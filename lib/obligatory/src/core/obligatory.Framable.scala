@@ -42,11 +42,9 @@ object Framable:
   // Wraps a `frame` thunk — which reads one frame and returns `Unset` when
   // the stream is exhausted — into an `Iterator[data]`. Hides the lazy
   // `ready` cache and the `hasNext`/`next()` plumbing that every framer
-  // would otherwise duplicate. The thunk is by-name and `inline`, so the
-  // iterator's body still expands to a tight loop and closes over the
-  // caller's `Cursor` (preserving the cursor's operand-type refinement
-  // that a `Cursor[data] => Optional[data]` function boundary would erase).
-  inline def frames[data](inline frame: => Optional[data]): Iterator[data] =
+  // would otherwise duplicate. The thunk is by-name and typically closes
+  // over the caller's `Cursor`, so the iterator honestly captures `frame`.
+  def frames[data](frame: => Optional[data]): Iterator[data]^{frame} =
     new Iterator[data]:
       private var ready: Optional[data] = Unset
 
@@ -59,4 +57,8 @@ object Framable:
 
 
 trait Framable extends Typeclass, Operable:
-  def frames(input: Iterator[Self]): Iterator[Self]
+  // The framed iterator lazily pulls from `input`, so it honestly captures it (and `input` is
+  // tracked as a capability, since the underlying stream may itself capture, e.g. a live socket).
+  // It also captures `this`: a framer constructed from a `Tactic` raises through it lazily,
+  // during iteration, so the iterator retains the instance and its capabilities.
+  def frames(input: Iterator[Self]^): Iterator[Self]^{input, this}

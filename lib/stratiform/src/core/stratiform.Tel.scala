@@ -63,21 +63,11 @@ object Tel extends Tel2:
   type Error = TelError
   val Error: TelError.type = TelError
 
-  // The source `Position` type located by `tel.locate(pointer)` and carried on a
-  // `Tel.Focus`. Defined canonically on `TelError` (where it also locates parse
-  // errors); aliased here for symmetry with `Json.Ast.Position` / `Yaml.Ast.Position`.
-  type Position = TelError.Position
-  val Position: TelError.Position.type = TelError.Position
-
   // The focus carried by `Tel#as[T]` for multi-error accrual: a keyword path
   // identifying the field being decoded (and, for parser-phase errors, an
-  // optional source position). Mirrors `Json.Focus` / `Yaml.Focus`. The
-  // `position` is populated lazily by `withPosition(tel)`, which delegates to
-  // `tel.locate(pointer)`, so a root parsed without `Tel.parseTracked` (hence no
-  // `positionIndex`) leaves `position` Unset and the success path pays nothing.
+  // optional source position). Mirrors `Json.Focus` / `Yaml.Focus`.
   case class Focus(pointer: TelPath = TelPath.Root, position: Optional[TelError.Position] = Unset)
-  derives CanEqual:
-    def withPosition(tel: Tel): Focus = copy(position = tel.locate(pointer))
+  derives CanEqual
 
   extension (tel: Tel)
     def edited(revision: Revision): Tel raises MutationError = revision(tel)
@@ -102,11 +92,17 @@ object Tel extends Tel2:
       tel.asInstanceOf[Tel of topic from topic]
 
   object Encodable:
-    def apply[value](shape0: => Morphology)(lambda: value => Tel): value is Tel.Encodable =
+    def apply[value](shape0: => Morphology)(lambda: value -> Tel): value is Tel.Encodable =
+      // The shape thunk may close over a `Tactic` when field/element codecs are summoned from
+      // tactic-taking givens, but `shape()` only reads static metadata and never encodes or
+      // raises, so the capture is behaviourally inert; laundered pure to keep codec instances
+      // pure. Invariant: a `shape()` implementation must never invoke its tactic. Mirrors
+      // jacinta's codec-thunk seal (see jacinta.Json.scala and rep/DECISIONS.md).
+      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure(() => shape0)
       new Tel.Encodable:
         type Self = value
         def encoded(value: value): Tel = lambda(value)
-        def shape(): Morphology = shape0
+        def shape(): Morphology = shape1()
 
   // A TEL encoder/decoder that also carries the format-neutral `Morphology` of exactly
   // what it reads/writes, so a fused `Encodable & Schematic` / `Decodable &
@@ -119,11 +115,14 @@ object Tel extends Tel2:
     def shape(): Morphology
 
   object Decodable:
-    def apply[value](shape0: => Morphology)(lambda: Tel => value): value is Tel.Decodable =
+    def apply[value](shape0: => Morphology)(decoder: (value is distillate.Decodable in Tel)^)
+    :   ((value is Tel.Decodable)^{decoder}) =
+      // Same shape-thunk laundering as `Tel.Encodable.apply`; see the comment there.
+      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure(() => shape0)
       new Tel.Decodable:
         type Self = value
-        def decoded(tel: Tel): value = lambda(tel)
-        def shape(): Morphology = shape0
+        def decoded(tel: Tel): value = decoder.decoded(tel)
+        def shape(): Morphology = shape1()
 
   trait Decodable extends distillate.Decodable:
     type Form = Tel
@@ -156,13 +155,6 @@ object Tel extends Tel2:
 
       val rootElements =
         applyConstraints(schema.document, IArray.empty[Tel.Element], rootChildren, schema)
-
-      // Fill in a source `Position` for every accrued validation focus by
-      // locating its keyword path in the root — mirrors `Json#as`. A no-op
-      // unless the root was produced by `Tel.parseTracked` (so carries a
-      // `positionIndex`); an unresolvable path (e.g. a missing member) stays Unset.
-      val foci = summon[Foci[Tel.Focus]]
-      foci.supplement(foci.length, _.let(_.withPosition(tel)).vouch)
 
       Tel.Element.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
 
@@ -386,20 +378,11 @@ object Tel extends Tel2:
       while i < compounds.length do
         val compound = compounds(i)
 
-        // Tag every error accrued for this compound (and its descendants) with
-        // its keyword path — mirroring the decode derivation's per-field `focus`
-        // — so that under a `validate[Tel.Focus]` boundary schema-validation
-        // errors carry a pointer (and, for a tracked root, a source position via
-        // `Focus.withPosition`) instead of the bare document root.
-        focus({
-          val base = prior.let(_.pointer).or(TelPath.Root)
-          Tel.Focus(base.prepend(compound.keyword))
-        }):
-          // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it
-          // and emit no element, so remaining siblings are still validated.
-          km.get(compound.keyword) match
-            case Some(entry) => results += assignCompound(compound, entry, schema)
-            case None        => recoverNode(Reason.UnknownKeyword)(())
+        // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
+        // emit no element, so remaining siblings are still validated.
+        km.get(compound.keyword) match
+          case Some(entry) => results += assignCompound(compound, entry, schema)
+          case None        => recoverNode(Reason.UnknownKeyword)(())
 
         i += 1
 
@@ -437,20 +420,12 @@ object Tel extends Tel2:
               case Tel.Element.Node(idx, _, _)  => idx == Optional(flatStart)
               case Tel.Element.Value(idx, _, _) => idx == flatStart
 
-            // A missing required member is reported under its own keyword path.
-            // It has no compound in the source, so `withPosition` leaves the
-            // position Unset (locate finds no node) — but the pointer still names
-            // the absent field.
-            if !filled then focus({
-              val base = prior.let(_.pointer).or(TelPath.Root)
-              Tel.Focus(base.prepend(f.keyword))
-            }):
-              resolveType(f.fieldType, schema) match
-                case s: Scalar => f.default match
-                  case t: Text => results += Tel.Element.Value(flatStart, s, t)
-                  case _       => recoverNode(Reason.RequiredMemberAbsent)(())
+            if !filled then resolveType(f.fieldType, schema) match
+              case s: Scalar => f.default match
+                case t: Text => results += Tel.Element.Value(flatStart, s, t)
+                case _       => recoverNode(Reason.RequiredMemberAbsent)(())
 
-                case _ => recoverNode(Reason.RequiredMemberAbsent)(())
+              case _ => recoverNode(Reason.RequiredMemberAbsent)(())
 
           case _ => ()
 
@@ -780,140 +755,6 @@ object Tel extends Tel2:
   private[stratiform] def parseStream(bytes: Data): Stream[Tel] raises TelError =
     Tel.Parser.parseStream(bytes).map(Tel(_))
 
-  // ── Position tracking (editor / tooling support) ──────────────────────────
-  //
-  // A flat `IArray[Int]` of position descriptors produced alongside the
-  // presentation tree by `Tel.parseTracked`. All internal references are stored
-  // as offsets relative to the start of the containing node descriptor, so any
-  // slice taken at a descriptor boundary is itself a valid `PositionIndex` —
-  // mirrors `jacinta.Json.PositionIndex` and `ypsiloid.Yaml.PositionIndex`.
-  //
-  // Layout per node descriptor at `offset`:
-  //   data(offset)              size of this descriptor (including children)
-  //   data(offset + 1)          1-indexed source line of the node's keyword
-  //   data(offset + 2)          1-indexed source column of the node's keyword
-  //   data(offset + 3)          length in characters of the keyword
-  //   data(offset + 4)          child count
-  //   data(offset + 5 + k)      relative offset (from `offset`) of the k-th child
-  //   … child descriptors laid out contiguously …
-  // The document root occupies the outermost descriptor with a synthetic
-  // (line 1, column 1, length 0) header; its children are the top-level compounds.
-  opaque type PositionIndex = IArray[Int]
-
-  object PositionIndex:
-    private[stratiform] def apply(data: IArray[Int]): PositionIndex = data
-
-  extension (positionIndex: PositionIndex)
-    private[stratiform] def ints: IArray[Int] = positionIndex
-
-  // Parse `bytes` into a `Tel` carrying a `PositionIndex`, so that
-  // `tel.locate(pointer)` / `tel.locateKey(pointer)` resolve a node's keyword
-  // path to its source `Position`, and accrued `Tel.Focus`es can be located via
-  // `withPosition`. Reached from the `read` / `load` givens only when
-  // `parsing.trackPositions` is in scope; otherwise the untracked `parse` runs
-  // and `positionIndex` is left Unset, so the throughput path is unaffected.
-  private def parseTracked(bytes: Data): Tel raises TelError =
-    val (document, triples) = Tel.Parser.parseTracked(bytes)
-    Tel(document, Optional(PositionIndex(buildIndex(document, triples))))
-
-  // Parse `bytes` honouring the in-scope `Tracking` toggle (`parsing.trackPositions`).
-  private def parseTracking(bytes: Data)(using PositionTracking): Tel raises TelError =
-    summon[PositionTracking] match
-      case PositionTracking.On  => parseTracked(bytes)
-      case PositionTracking.Off => parse(bytes)
-
-  // Fold the parser's flat pre-order stream of (line, column, length) triples —
-  // one per compound, in recursive-descent order — into the navigable packed
-  // descriptor layout documented on `PositionIndex`. The AST supplies the tree
-  // shape; the triples supply the coordinates. Runs only under `parseTracked`,
-  // never on the hot path.
-  private[stratiform] def buildIndex(document: Tel.Document, triples: IArray[Int]): IArray[Int] =
-    var cursor = 0
-
-    def build(node: Tel.Subtree, line: Int, column: Int, length: Int): Array[Int] =
-      val children = node.children.flatMap(_.compounds)
-      val childDescriptors = new Array[Array[Int]](children.length)
-      var k = 0
-
-      while k < children.length do
-        val childLine   = triples(cursor)
-        val childColumn = triples(cursor + 1)
-        val childLength = triples(cursor + 2)
-        cursor += 3
-        childDescriptors(k) = build(children(k), childLine, childColumn, childLength)
-        k += 1
-
-      val header = 5 + children.length
-      var total = header
-      k = 0
-
-      while k < children.length do
-        total += childDescriptors(k).length
-        k += 1
-
-      val buffer = new Array[Int](total)
-      buffer(0) = total
-      buffer(1) = line
-      buffer(2) = column
-      buffer(3) = length
-      buffer(4) = children.length
-      var offset = header
-      k = 0
-
-      while k < children.length do
-        buffer(5 + k) = offset
-        System.arraycopy(childDescriptors(k), 0, buffer, offset, childDescriptors(k).length)
-        offset += childDescriptors(k).length
-        k += 1
-
-      buffer
-
-    IArray.unsafeFromArray(build(document, 1, 1, 0))
-
-  // Resolves a `TelPath` to the source `Position` recorded in a tracked `Tel`'s
-  // `PositionIndex`. Exposed uniformly as `tel.locate(path)` / `tel.locateKey(path)`
-  // through zephyrine's `Positionable`, matching `jacinta.Json` and `ypsiloid.Yaml`.
-  given positionable: Tel is Positionable by TelPath to TelError.Position =
-    new Positionable:
-      type Self    = Tel
-      type Operand = TelPath
-      type Result  = TelError.Position
-
-      def locate(value: Tel, path: TelPath): Optional[TelError.Position] =
-        value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, path.keywords.toIndexedSeq, 0, false)
-
-      def locateKey(value: Tel, path: TelPath): Optional[TelError.Position] =
-        value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, path.keywords.toIndexedSeq, 0, true)
-
-  // Walk the packed `PositionIndex` alongside the AST, following `segments`
-  // (a root-first keyword path) from the descriptor at `offset`. TEL has no
-  // separate key/value nodes — a compound's position *is* its keyword — so
-  // `keyMode` differs from the value lookup only at the root, which has no
-  // keyword and yields `Unset`.
-  private def walkIndex
-    ( node:     Tel.Subtree,
-      data:     IArray[Int],
-      offset:   Int,
-      segments: IndexedSeq[Text],
-      i:        Int,
-      keyMode:  Boolean )
-  :   Optional[TelError.Position] =
-
-    if i >= segments.length then
-      if keyMode && i == 0 then Unset
-      else TelError.Position
-        ( line   = data(offset + 1),
-          column = data(offset + 2),
-          length = Optional(data(offset + 3)) )
-    else
-      val children = node.children.flatMap(_.compounds)
-      val k = children.indexWhere(_.keyword == segments(i))
-
-      if k < 0 then Unset
-      else walkIndex(children(k), data, offset + data(offset + 5 + k), segments, i + 1, keyMode)
-
   // Concatenate the chunks of a `Stream[Data]` source into a single byte array.
   private def concatenate(source: Stream[Data]): Data =
     import denominative.nil
@@ -931,33 +772,34 @@ object Tel extends Tel2:
   // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
   // recover those alongside the value. Per §6.1, single-document parsing
   // stops at the first document separator; content after it is ignored.
-  given aggregable: (Tactic[TelError], PositionTracking) => Tel is Aggregable by Data =
-    source => parseTracking(concatenate(source))
+  given aggregable: (tactic: Tactic[TelError]) => ((Tel is Aggregable by Data)^{tactic}) =
+    source => parse(concatenate(source))
 
   // `source.read[Foo in Tel]` shorthand for
   // `source.read[Tel].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
   // for `value in Json`. The `Form` type-tag is added by an
   // `asInstanceOf` cast — `value in Tel` is just
   // `value { type Form = Tel }` so the cast is a no-op at runtime.
-  given aggregableIn: [value: distillate.Decodable in Tel] => (Tactic[TelError], PositionTracking)
+  given aggregableIn: [value: distillate.Decodable in Tel] => Tactic[TelError]
   =>  (value in Tel) is Aggregable by Data =
-    source => parseTracking(concatenate(source)).as[value].asInstanceOf[value in Tel]
+    source => parse(concatenate(source)).as[value].asInstanceOf[value in Tel]
 
   // `source.read[List[Tel]]` / `read[Stream[Tel]]` for a multi-document source
   // (§6.1). `List[Tel]` parses every document eagerly; `Stream[Tel]` parses
   // them lazily on demand (the more specific instance wins over turbulence's
   // generic `Stream` Aggregable, which would otherwise wrap the whole source as
   // a single element).
-  given listAggregable: Tactic[TelError] => List[Tel] is Aggregable by Data =
+  given listAggregable: (tactic: Tactic[TelError]) => ((List[Tel] is Aggregable by Data)^{tactic}) =
     source => parseAll(concatenate(source))
 
-  given streamAggregable: Tactic[TelError] => Stream[Tel] is Aggregable by Data =
+  given streamAggregable: (tactic: Tactic[TelError])
+  =>  ((Stream[Tel] is Aggregable by Data)^{tactic}) =
     source => parseStream(concatenate(source))
 
   // `text.load[Tel]` for any Stream[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.
-  given loadable: (Tactic[TelError], PositionTracking) => Tel is Loadable by Text = stream =>
+  given loadable: (tactic: Tactic[TelError]) => ((Tel is Loadable by Text)^{tactic}) = stream =>
     import denominative.nil
     val builder = new StringBuilder()
     var s = stream
@@ -967,16 +809,10 @@ object Tel extends Tel2:
       s = s.tail
 
     val text = builder.toString
-    val bytes = IArray.unsafeFromArray(text.getBytes("UTF-8").nn)
-    val tel = parseTracking(bytes)
-
-    tel.subtree match
-      case doc: Tel.Document =>
-        turbulence.Document
-          ( tel, Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings) )
-
-      case _ =>
-        turbulence.Document(tel, Tel.Metadata(Unset, Unset, Tel.LineEndings.Lf))
+    val bytes = text.getBytes("UTF-8").nn
+    val doc = Tel.Parser.parse(IArray.unsafeFromArray(bytes))
+    val meta = Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings)
+    turbulence.Document(Tel(doc): Tel, meta)
 
   // Renders a document's presentation back to text, reversing the presentation parser. The whole
   // line-based serialization lives in this instance so that `.show` is the single route to TEL
@@ -1038,7 +874,7 @@ object Tel extends Tel2:
             while start <= sourceText.length do
               val nl = sourceText.indexOf('\n', start)
               val end = if nl < 0 then sourceText.length else nl
-              val seg = sourceText.substring(start, end)
+              val seg = sourceText.substring(start, end).nn
               out(if seg.isEmpty then "" else sourcePad + seg)
               if nl < 0 then start = sourceText.length + 1 else start = nl + 1
 
@@ -1050,7 +886,7 @@ object Tel extends Tel2:
             while start <= payload.length do
               val nl = payload.indexOf('\n', start)
               val end = if nl < 0 then payload.length else nl
-              out(payload.substring(start, end))
+              out(payload.substring(start, end).nn)
               if nl < 0 then start = payload.length + 1 else start = nl + 1
 
             out(delimiter.s)
@@ -1219,12 +1055,12 @@ object Tel extends Tel2:
       new ThreadLocal[Parser]:
         override def initialValue(): Parser = new Parser()
 
-    def parse(cursor: Cursor[Data]): Tel.Document raises TelError =
+    def parse(cursor: Cursor[Data, ?]): Tel.Document raises TelError =
       val p = cached.get.nn
       p.reset(cursor, Unset)
       p.parse()
 
-    def parse(cursor: Cursor[Data], schema: Tels): Tel.Document raises TelError =
+    def parse(cursor: Cursor[Data, ?], schema: Tels): Tel.Document raises TelError =
       val p = cached.get.nn
       p.reset(cursor, schema: Optional[Tels])
       p.parse()
@@ -1248,18 +1084,6 @@ object Tel extends Tel2:
       val p = cached.get.nn
       p.reset(Cursor[Data](input), schema: Optional[Tels])
       p.parse()
-
-    // Tracked parse: one document plus the flat pre-order (line, column, length)
-    // triples backing `Tel.PositionIndex`. Uses `untrackedData` like the plain
-    // path — coordinates come from the parser's own `lineNo` / `leadingSpaces`
-    // bookkeeping, not the cursor's lineation.
-    def parseTracked(input: Data): (Tel.Document, IArray[Int]) raises TelError =
-      import zephyrine.Lineation.untrackedData
-      val p = cached.get.nn
-      p.reset(Cursor[Data](input), Unset)
-      p.tracking = true
-
-      try (p.parse(), IArray.from(p.positionTriples)) finally p.tracking = false
 
     // Streaming parse (§6.1) of a multi-document source into the documents it
     // contains. `parseDocuments` is eager; `parseStream` parses lazily on demand.
@@ -1372,7 +1196,7 @@ object Tel extends Tel2:
     // the parser is cached per-thread and reset across calls. `reset()`
     // re-binds both before each `parse()` invocation.
 
-    private var cursor: Cursor[Data] = null.asInstanceOf[Cursor[Data]]
+    private var cursor: Cursor[Data, ?] = null.asInstanceOf[Cursor[Data, ?]]
     private var schema: Optional[Tels] = Unset
     private var bytes:  Array[Byte] = null.asInstanceOf[Array[Byte]]
     private var pos:    Int = 0
@@ -1424,15 +1248,6 @@ object Tel extends Tel2:
     // just consumed is the final byte of the document; consumed exactly once
     // by the first consumeTrailingBlanksFor that reaches EOF.
     private var documentEndsWithLf: Boolean = false
-
-    // ── Position tracking (set by `Parser.parseTracked`) ──────────────────────
-    // When `tracking` is on, the parser appends one (line, column, length)
-    // triple per compound — in recursive-descent (pre-order) sequence — to
-    // `positionTriples`, from which `Tel.buildIndex` folds the navigable
-    // `PositionIndex`. Off by default, so the throughput-optimised parse path is
-    // untouched (no triple is recorded and no per-compound work is added).
-    private[stratiform] var tracking: Boolean = false
-    private[stratiform] val positionTriples = scala.collection.mutable.ArrayBuffer.empty[Int]
 
     // Ancestor stack of Struct types known for each open compound, used by
     // §19.5's schema-aware E107 recovery. The element at index `i` is the
@@ -1867,15 +1682,13 @@ object Tel extends Tel2:
     // because previously-parsed Inlines reference the old one — we cannot
     // overwrite their bytes. The keyword-fingerprint cache is preserved
     // across resets so frequent keywords stay interned.
-    private[stratiform] def reset(c: Cursor[Data], s: Optional[Tels]): Unit =
+    private[stratiform] def reset(c: Cursor[Data, ?], s: Optional[Tels]): Unit =
       cursor = c
       schema = s
       bytes  = null.asInstanceOf[Array[Byte]]
       pos    = 0
       bufEnd = 0
       lineNo = 1
-      tracking = false
-      positionTriples.clear()
       margin = 0
       sigil  = '#'.toByte
       crlfMode = false
@@ -2619,16 +2432,6 @@ object Tel extends Tel2:
           parseCompoundLine(compoundLine)
           val compoundKeyword = compoundLineKeyword
           val compoundRemark  = compoundLineRemark
-
-          // Record this compound's keyword position *before* descending, so the
-          // triple stream is pre-order (parent before children) — the order
-          // `Tel.buildIndex` folds against the AST. Column is 1-indexed at the
-          // keyword's first character (just past the leading spaces).
-          if tracking then
-            positionTriples += compoundLine
-            positionTriples += compoundLeadingSpaces + 1
-            positionTriples += compoundKeyword.s.length
-
           prevContentLeadingSpaces = compoundLeadingSpaces
           prevLineWasBoundary = false
           // §19.5 recovery needs this compound's keyword on the ancestor
@@ -3435,9 +3238,7 @@ object Tel extends Tel2:
         else Text(sliceText(startMark))
 
 
-class Tel private[stratiform]
-  ( private[stratiform] val subtree:       Tel.Subtree,
-    private[stratiform] val positionIndex: Optional[Tel.PositionIndex] = Unset )
+class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree)
 extends scala.Dynamic, Documentary, Topical, Original:
   type Self = Tel
   type Metadata = Tel.Metadata

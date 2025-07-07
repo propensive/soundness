@@ -47,7 +47,7 @@ private[cataclysm] object ValueTokenizer:
 
     Tokenizer(Cursor[Text](text)).all()
 
-  private class Tokenizer(cursor: Cursor[Text])(using Tactic[CssError]):
+  private class Tokenizer(cursor: Cursor[Text, ?])(using Tactic[CssError]):
     def all(): List[ValueToken] =
       val acc = scala.collection.mutable.ListBuffer[ValueToken]()
       while !cursor.peek.isEnd do acc.append(next())

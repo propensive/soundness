@@ -36,7 +36,6 @@ import anticipation.*
 import denominative.*
 import fulminate.*
 import vacuous.*
-import zephyrine.*
 
 object TelError:
 
@@ -50,24 +49,8 @@ object TelError:
   // character of the line (including any leading spaces). Parse errors
   // that pre-date the document body (e.g. `BomPresent` at offset 0)
   // report `(1, 1)`. Post-parse / validation errors leave `position`
-  // `Unset` unless resolved against a tracked document's `PositionIndex`
-  // (see `Tel.parseTracked` / `Tel.Focus.withPosition`).
-  //
-  // This is also the `Positionable` `Result` for `tel.locate(pointer)`, so it
-  // extends zephyrine's `Format.Position` — `line`/`column` stay 1-based here
-  // while the uniform, public `span` is 0-based (mirrors `Json.Ast.Position` /
-  // `Yaml.Ast.Position`). `length` is the length in characters of the located
-  // token (a compound's keyword), enabling precise LSP ranges.
-  case class Position
-    ( line:                Int,
-      column:              Int,
-      override val offset: Optional[Int] = Unset,
-      override val length: Optional[Int] = Unset )
-  extends Format.Position derives CanEqual:
-    def describe: Text = Text("line "+line+", column "+column)
-
-    override def span: Span =
-      Span.line((line - 1).max(0).z, (column - 1).max(0).z, length.or(0))
+  // `Unset` because they apply to AST nodes rather than source bytes.
+  case class Position(line: Int, column: Int) derives CanEqual
 
   // Recovery strategies prescribed by §19.5 of the TEL specification. Each
   // reason carries the recovery strategy declared for its E-code.
@@ -313,4 +296,5 @@ extends Error
     . or(m"the TEL document is invalid because $reason") ):
 
   // The internal 1-indexed position rendered as a uniform 0-based `Span`.
-  def span: Span = position.lay(Span.empty)(_.span)
+  def span: Span = position.lay(Span.empty): p =>
+    Span.line((p.line - 1).max(0).z, (p.column - 1).max(0).z, 0)

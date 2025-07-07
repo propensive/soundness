@@ -57,7 +57,8 @@ object Auth:
     case ScramSha256(text)         => t"SCRAM-SHA-256 $text"
     case Vapid(text)               => t"vapid $text"
 
-  given decodable: Tactic[AuthError] => Auth is Decodable in Text = value => value match
+  given decodable: (tactic: Tactic[AuthError])
+  =>  ((Auth is Decodable in Text)^{tactic}) = value => value match
     case r"Bearer $token(.*)"        => Bearer(token)
     case r"Digest $digest(.*)"       => Digest(digest)
     case r"HOBA $value(.*)"          => Hoba(value)

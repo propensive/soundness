@@ -134,7 +134,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           . assert(_ == true)
 
     suite(m"Streaming parser — chunk-boundary fuzz"):
-      def chunkedCursor(data: Data, n: Int): Cursor[Data] =
+      def chunkedCursor(data: Data, n: Int): Cursor[Data, ?] =
         val it = new Iterator[Data]:
           var p: Int = 0
           def hasNext: Boolean = p < data.length
@@ -1969,4 +1969,3 @@ object Tests extends Suite(m"Stratiform Tests"):
     RecordsTests()
     VerifyTests()
     AccrualTests()
-    PositionTests()

@@ -55,10 +55,15 @@ object internal:
     import quotes.reflect.*
 
     def unnamed[value: Type](value: Expr[value], tail: Seq[Expr[Any]]) =
-      Expr.summon[Directive of ? >: value].getOrElse:
-        val typeName = Type.of[value].show
-        halt(m"the type $typeName does not uniquely identify a particular HTTP header")
+      // A plain match rather than `getOrElse`: under capture checking the `B >: A` bound of
+      // `getOrElse` is inferred against the capture-decorated summon result and fails.
+      val summoned = Expr.summon[Directive of ? >: value] match
+        case Some(directive) => directive
+        case None =>
+          val typeName = Type.of[value].show
+          halt(m"the type $typeName does not uniquely identify a particular HTTP header")
 
+      summoned
       . absolve
       . match
         case '{type keyType <: Label; $directive: (Directive { type Self = keyType })} =>

@@ -429,11 +429,11 @@ object internal:
     // end. The Scala compiler's lit.pos.end is unreliable for parts containing
     // `$$` (it reports the value length, not the source length); walking the
     // source forward with escape rules gives us the truth.
-    val perPart: IndexedSeq[((String, Int), Int => Int)] =
+    val perPart: IndexedSeq[((String, Int), Int -> Int)] =
       parts.zip(partOrigins).map: (part, origin) =>
         val (srcStart, _) = origin
 
-        val mapping: Int => Int = sourceContent.lay[Int => Int](identity): content =>
+        val mapping: Int -> Int = sourceContent.lay[Int -> Int](identity): content =>
           if srcStart > 0 && srcStart < content.length then
             // Generous upper bound: each value char is at most 6 source chars
             // (\u####), plus a small buffer.
@@ -521,14 +521,14 @@ object internal:
                                   expr.asTerm.underlyingArgument.pos )
 
                         case _ =>
-                          expr match
-                            case '{$expr: Text} =>
-                              expr
-
-                            case _ =>
-                              halt
-                                ( m"the attribute $attribute cannot be used on the element <$tag>",
-                                  expr.asTerm.underlyingArgument.pos )
+                          // Reflective subtype check rather than a `'{$x: Text}` quoted pattern: CC
+                          // stamps `^` on the matched `Expr` types of quoted patterns.
+                          if expr.asTerm.tpe <:< TypeRepr.of[Text]
+                          then expr.asExprOf[Text & value]
+                          else
+                            halt
+                              ( m"the attribute $attribute cannot be used on the element <$tag>",
+                                expr.asTerm.underlyingArgument.pos )
 
               case Hole.Element(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match
@@ -547,8 +547,8 @@ object internal:
               case Hole.Node(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
-                    case Some('{$renderable: Renderable}) =>
-                      '{$renderable.render($expr)}
+                    case Some(renderable) =>
+                      '{$renderable.render($expr)}.asExprOf[Any]
 
                     case _ =>
                       Expr.summon[(? >: value) is Showable] match
@@ -581,11 +581,9 @@ object internal:
                     ( m"a ${TypeRepr.of[value is Showable].show} is required",
                       expr.asTerm.underlyingArgument.pos )
 
-              case Hole.Tagbody => Type.of[value] match
-                case '[Map[Text, Text]] =>
-                  expr
-
-                case _ =>
+              case Hole.Tagbody =>
+                if TypeRepr.of[value] <:< TypeRepr.of[Map[Text, Text]] then expr.asExprOf[Any]
+                else
                   halt
                     ( m"only a ${TypeRepr.of[Map[Text, Text]].show} can be applied in a tag body",
                       expr.asTerm.underlyingArgument.pos )
@@ -761,7 +759,7 @@ object internal:
 
     '{$tag.node(Attributes.from(${Expr.ofList(attributes)}.compact.to(Map)))}.asExprOf[result]
 
-  opaque type Attributes = IArray[String]
+  opaque type Attributes <: IArray[String] = IArray[String]
 
   object Attributes:
     val empty: Attributes = IArray.empty[String]
@@ -903,7 +901,9 @@ object internal:
 
         b.result()
 
-      def each(action: (Text, Text) => Unit): Unit =
+      // Named `eachPair` (not `each`): rudiments' generic one-parameter `each` extension
+      // otherwise wins resolution and rejects the two-parameter lambda.
+      def eachPair(action: (Text, Text) => Unit): Unit =
         val a = storage(attrs)
         var i = 0
 
@@ -911,7 +911,7 @@ object internal:
           action(a(i).asInstanceOf[Text], a(i + 1).asInstanceOf[Text])
           i += 2
 
-      def foreach(action: (Text, Text) => Unit): Unit = each(action)
+      def foreachPair(action: (Text, Text) => Unit): Unit = eachPair(action)
 
       def map[B](f: ((Text, Text)) => B): Iterable[B] =
         val a = storage(attrs)

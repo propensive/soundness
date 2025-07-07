@@ -413,12 +413,12 @@ object internal:
 
     while i < p.length do
       if p.charAt(i) == marker then
-        pieces += p.substring(start, i)
+        pieces += p.substring(start, i).nn
         start = i + 1
 
       i += 1
 
-    pieces += p.substring(start)
+    pieces += p.substring(start).nn
 
     if pieces.length == 1 then p == s
     else
@@ -447,12 +447,12 @@ object internal:
 
           if found < 0 || found > end then ok = false
           else
-            local += Tel.scalar(Text(s.substring(pos, found)))
+            local += Tel.scalar(Text(s.substring(pos, found).nn))
             pos = found + seg.length
             idx += 1
 
         if !ok then false
         else
-          local += Tel.scalar(Text(s.substring(pos, end)))
+          local += Tel.scalar(Text(s.substring(pos, end).nn))
           out ++= local
           true

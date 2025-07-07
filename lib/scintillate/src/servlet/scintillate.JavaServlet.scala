@@ -53,7 +53,8 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
 
   protected def makeConnection
     ( request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse )
-  :   HttpConnection raises StreamError raises HostnameError =
+    ( using Tactic[StreamError], Tactic[HostnameError] )
+  :   HttpConnection =
 
     val uri = request.getRequestURI.nn.tt
     val query = Optional(request.getQueryString).let(_.tt)

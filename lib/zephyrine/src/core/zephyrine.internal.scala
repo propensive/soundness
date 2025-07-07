@@ -38,7 +38,7 @@ import gigantism.*
 import rudiments.*
 
 object internal:
-  def consume(cursor: Expr[Cursor[?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =
+  def consume(cursor: Expr[Cursor[?, ?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =
     import quotes.reflect.*
 
     val text = text0.valueOrAbort

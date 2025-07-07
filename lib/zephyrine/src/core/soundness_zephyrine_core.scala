@@ -32,8 +32,5 @@
                                                                                                   */
 package soundness
 
-export zephyrine.{Addressable, Cursor, Datum, Format, Formatting, Lineation, ParseError,
-    PositionTracking, Producer, Positionable, locate, locateKey}
-
-package parsing:
-  export zephyrine.parsing.trackPositions
+export zephyrine.{Addressable, Cursor, Datum, Format, Formatting, Lineation, ParseError, Producer,
+    Positionable, locate, locateKey}

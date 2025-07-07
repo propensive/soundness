@@ -93,12 +93,12 @@ object Cursor:
 
   // Build a Cursor from an explicit loader. The cursor starts empty; the
   // first `next()` triggers a load.
-  transparent inline def apply[data](inline load: Loader[data])
+  transparent inline def apply[data, cap^](inline load: () ->{cap} Optional[data])
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
-  :   Cursor[data] =
+  :   Cursor[data, cap] =
 
-    new Cursor[data]
+    new Cursor[data, cap]
       ( () => load(),
         Unset,
         DefaultCapacity,
@@ -112,9 +112,9 @@ object Cursor:
   transparent inline def apply[data](initial: data)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
-  :   Cursor[data] =
+  :   Cursor[data, {}] =
 
-    new Cursor[data]
+    new Cursor[data, {}]
       ( () => Unset,
         initial,
         addressable0.length(initial).max(1),
@@ -124,12 +124,12 @@ object Cursor:
 
   // Backwards-compatible factory that adapts an Iterator to the loader API.
   // Lets the existing test suite cross-compile against Cursor.
-  transparent inline def apply[data](iterator: Iterator[data])
+  transparent inline def apply[data](iterator: Iterator[data]^)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
-  :   Cursor[data] =
+  :   Cursor[data, {iterator}]^{iterator} =
 
-    new Cursor[data]
+    new Cursor[data, {iterator}]
       ( () => if iterator.hasNext then iterator.next() else Unset,
         Unset,
         DefaultCapacity,
@@ -146,13 +146,13 @@ object Cursor:
   // `@targetName` (they erase to the same JVM signature) — callers just
   // write `cursor.peek` without caring whether the cursor is byte- or
   // char-based.
-  extension (cursor: Cursor[Data])
+  extension [cap^](cursor: Cursor[Data, cap])
     @targetName("peekByte")
     inline def peek: Datum =
       if cursor.finished then Datum.End
       else Datum.fromRaw(cursor.buffer(using Unsafe)(cursor.unsafePos(using Unsafe)) & 0xff)
 
-  extension (cursor: Cursor[Text])
+  extension [cap^](cursor: Cursor[Text, cap])
     @targetName("peekChar")
     inline def peek: Datum =
       if cursor.finished then Datum.End
@@ -165,7 +165,7 @@ object Cursor:
   // target is `Char` for both variants so callers don't need `'X'.toByte`
   // on `Cursor[Data]`; for ASCII targets the `Datum`-vs-`Char` comparison
   // compiles to a single primitive `int == int`.
-  extension (cursor: Cursor[Data])
+  extension [cap^](cursor: Cursor[Data, cap])
     @targetName("expectByte")
     inline def expect[error <: Exception](target: Char)
       ( inline failure: Diagnostics ?=> error )
@@ -174,7 +174,7 @@ object Cursor:
 
       if cursor.peek == target then cursor.next() else raise(failure)
 
-  extension (cursor: Cursor[Text])
+  extension [cap^](cursor: Cursor[Text, cap])
     @targetName("expectChar")
     inline def expect[error <: Exception](target: Char)
       ( inline failure: Diagnostics ?=> error )
@@ -191,7 +191,7 @@ object Cursor:
   // `hold { val mk = mark; … cue(mk); result }` idiom that parsers like
   // Multipart's boundary detector and Zeppelin's ZIP signature scanner
   // were writing.
-  extension [data](cursor: Cursor[data])
+  extension [data, cap^](cursor: Cursor[data, cap])
     inline def lookahead[result](inline action: Cursor.Held ?=> result): result =
       cursor.hold:
         val saved = cursor.mark
@@ -206,19 +206,24 @@ object Cursor:
   // themselves — the unsafe cast lives in one place inside zephyrine.
   // `Unsafe` is still required: the returned reference is only valid until
   // the next cursor operation that may compact or grow the buffer.
-  extension (cursor: Cursor[Data])
+  extension [cap^](cursor: Cursor[Data, cap])
     @targetName("dataBuffer")
     inline def buffer(using erased Unsafe): Array[Byte] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
 
-  extension (cursor: Cursor[Text])
+  extension [cap^](cursor: Cursor[Text, cap])
     @targetName("textBuffer")
     inline def buffer(using erased Unsafe): Array[Char] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
 
 
-final class Cursor[data]
-  (             load:        () => Optional[data],
+// `cap^` is the capture set of the `load` thunk: `{}` for an in-memory cursor (the loader is a
+// no-op), or the capabilities a streaming loader draws from (e.g. a socket). Tracking it as an
+// explicit capture parameter — rather than letting capture checking infer a blanket self-capture —
+// keeps a pure cursor's type free of a `load`-bearing refinement, so its path-dependent members
+// (`addressable.Storage`/`Operand`) still resolve through any reference.
+final class Cursor[data, cap^]
+  (             load:        () ->{cap} Optional[data],
                 initial:     Optional[data],
                 initialSize: Int,
     tracked val addressable: data is Addressable,

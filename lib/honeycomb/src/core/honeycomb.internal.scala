@@ -578,7 +578,10 @@ object internal:
                             case Some('{type result; $expr: Attribute { type Topic = result }}) =>
                               Expr.summon[(? >: value) is Attributive to result] match
                                 case Some('{$converter: Attributive}) =>
-                                  '{$converter.attribute(${Expr(key.tt)}, $value)}
+                                  // Lift the key as a `String` and reconstruct the `Text` at
+                                  // runtime (`.tt`): splicing a lifted opaque `Text` literal into a
+                                  // capture-checked consumer would demand a spurious `Text^` on it.
+                                  '{$converter.attribute(${Expr(key)}.tt, $value)}
 
                                 case _ => halt:
                                   m"""

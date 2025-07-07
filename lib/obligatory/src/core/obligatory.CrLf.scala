@@ -41,7 +41,8 @@ import vacuous.*
 import zephyrine.*
 
 object CrLf:
-  given framable: Tactic[FrameError] => Text is Framable by CrLf = input =>
+  given framable: (tactic: Tactic[FrameError])
+  =>  ((Text is Framable by CrLf)^{tactic}) = input =>
     val cursor = Cursor(input)
 
     Framable.frames[Text]:

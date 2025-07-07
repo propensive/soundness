@@ -54,10 +54,15 @@ object Postable:
   def apply[response](mediaType0: MediaType, stream0: response => Stream[Data])
   :   response is Postable =
 
+    // `Typeclass` instances are `Pure` by infrastructure, but the streaming lambda may capture
+    // capabilities with the same lifetime as this instance's given resolution; laundered pure —
+    // the jacinta codec-thunk seal pattern (see rep/DECISIONS.md).
+    val stream1: response -> Stream[Data] = caps.unsafe.unsafeAssumePure(stream0)
+
     new Postable:
       type Self = response
       def mediaType(response: response): MediaType = mediaType0
-      def stream(response: response): Stream[Data] = stream0(response)
+      def stream(response: response): Stream[Data] = stream1(response)
 
 
   given text: (encoder: CharEncoder) => Text is Postable =
@@ -76,13 +81,22 @@ object Postable:
 
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
-  =>  Tactic[MediaTypeError]
+  =>  ( tactic: Tactic[MediaTypeError] )
   =>  response is Postable =
+
+    // See `apply`: the instance's `mediaType` raises through the resolution-scoped tactic,
+    // which shares the instance's lifetime; the media-type decoder is resolved once under a
+    // laundered tactic so the instance stays pure, per the codec-thunk seal pattern.
+    val decoder: MediaType is Decodable in Text =
+      given Tactic[MediaTypeError] = caps.unsafe.unsafeAssumePure(tactic)
+      caps.unsafe.unsafeAssumePure(summon[(MediaType is Decodable in Text)^])
 
     new Postable:
       type Self = response
 
-      def mediaType(content: response): MediaType = content.generic(0).decode[MediaType]
+      def mediaType(content: response): MediaType =
+        content.generic(0).decode[MediaType](using decoder)
+
       def stream(content: response): Stream[Data] = content.generic(1)
 
 trait Postable extends Typeclass:
