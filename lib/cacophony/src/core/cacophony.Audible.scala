@@ -43,7 +43,7 @@ import rudiments.*
 import turbulence.*
 
 trait Audible extends Typeclass:
-  audible =>
+  audible: Audible =>
     def name: Text
     def mediaType: MediaType
 

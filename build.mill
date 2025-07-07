@@ -718,10 +718,10 @@ object cacophony extends Library:
   object core extends Component(gesticulate.core, quantitative.units, anticipation.http):
     override def scalaJs = false // audio (`javax.sound.sampled`)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object caduceus extends Library:
   object core extends Component(honeycomb.core):
