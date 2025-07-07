@@ -1761,7 +1761,7 @@ object surveillance extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, galilei.core, imperial.core, diuretic.core, quantitative.units):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object symbolism extends Library:
   object core extends Component(prepositional.core):
