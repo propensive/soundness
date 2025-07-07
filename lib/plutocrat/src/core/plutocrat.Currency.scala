@@ -57,9 +57,9 @@ object Currency:
 
 trait Currency:
   type Self <: Label
-  type Topic <: Label: ValueOf
-  type Transport <: Int & Singleton: ValueOf
-  type Form <: Label: ValueOf
+  type Topic <: Label
+  type Transport <: Int & Singleton
+  type Form <: Label
 
   val code: Text
   val name: Text
