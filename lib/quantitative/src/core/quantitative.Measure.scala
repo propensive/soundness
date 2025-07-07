@@ -32,4 +32,4 @@
                                                                                                   */
 package quantitative
 
-trait Measure
+trait Measure extends caps.Pure
