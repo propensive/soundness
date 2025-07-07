@@ -54,7 +54,7 @@ object Commensurable:
         ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
 
 
-  given orderable: Memory is Orderable:
+  given memory: Memory is Orderable:
     inline def compare
                 (inline left:    Memory,
                  inline right:   Memory,
@@ -87,6 +87,19 @@ object Commensurable:
 
         inline if greater then inline if strict then left.gt(right) else left.ge(right)
         else inline if strict then left.lt(right) else left.le(right)
+
+  given orderable: [value: Ordering] => value is Orderable:
+    inline def compare
+                (inline left:    value,
+                  inline right:   value,
+                  inline strict:  Boolean,
+                  inline greater: Boolean)
+    : Boolean =
+
+        val n = value.compare(left, right)
+        inline if greater
+        then inline if strict then n > 0 else n >= 0
+        else inline if strict then n < 0 else n <= 0
 
 
 trait Commensurable extends Typeclass, Operable:

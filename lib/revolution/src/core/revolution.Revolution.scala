@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.37.0.                                                                    ┃
+┃    Soundness, version 0.32.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,14 +30,38 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package revolution
 
-export revolution
-. { DecodableManifest, EncodableManifest, Manifest, ManifestAttribute, ManifestEntry,
-    VersionNumber, Semver, sv }
+import scala.collection as sc
+import scala.quoted.*
 
-package manifestAttributes:
-  export revolution.manifestAttributes
-  . { ManifestVersion, MainClass, CreatedBy, ClassPath, ContentType, ExtensionList, ExtensionName,
-      ImplementationTitle, ImplementationVendor, ImplementationVersion, Sealed, SignatureVersion,
-      SpecificationTitle, SpecifacationVendor, SpecifacationVersion }
+import anticipation.*
+import contingency.*
+import distillate.*
+import fulminate.*
+import gossamer.*
+import proscenium.*
+import vacuous.*
+
+object Revolution:
+  given Realm(t"revolution")
+
+  def semver(context0: Expr[StringContext]): Macro[Semver] =
+    val semver0 = context0.valueOrAbort match
+      case StringContext(text*) => text match
+        case List(text: String) => safely(text.tt.decode[Semver])
+        case _                  => panic(m"did not expect more than one part in StringContext")
+
+    val semver = semver0.or(halt(m"invalid semantic version"))
+
+    val major = Expr(semver.major)
+    val minor = Expr(semver.minor)
+    val patch = Expr(semver.patch)
+
+    def lift(elements: List[Text | Long]): Expr[List[Text | Long]] = elements match
+      case Nil => '{Nil}
+      case (text: Text) :: more => '{${Expr(text)} :: ${lift(more)}}
+      case (long: Long) :: more => '{${Expr(long)} :: ${lift(more)}}
+
+
+    '{Semver($major, $minor, $patch, ${lift(semver.suffix)}, ${lift(semver.build)})}

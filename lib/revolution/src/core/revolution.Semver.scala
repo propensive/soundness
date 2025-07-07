@@ -55,23 +55,26 @@ object Semver:
         case text: Text => text
         case long: Long => long.show
 
-      val suffix = semver.suffix.lay(t"")(t"-"+_.map(_.text).join(t"."))
-      val build = semver.build.lay(t"")(t"+"+_.map(_.text).join(t"."))
+      val suffix = if semver.suffix.isEmpty then t"" else t"-"+semver.suffix.map(_.text).join(t".")
+      val build = if semver.build.isEmpty then t"" else t"+"+semver.build.map(_.text).join(t".")
+
       t"${semver.major}.${semver.minor}.${semver.patch}$suffix$build"
 
   given decodable: Tactic[SemverError] => Semver is Decodable in Text =
     text =>
       text match
         case r"$major([0-9]+)\.$minor([0-9]+)\.$patch([0-9]+)$suffix(-[^\+]+)?$build(\+.+)?" =>
-          val suffix2 = suffix.let(_.skip(1).cut(t"."))
-          val build2 = build.let(_.skip(1).cut(t"."))
+          val suffix2 = suffix.let(_.skip(1).cut(t".")).or(Nil)
+          val build2 = build.let(_.skip(1).cut(t".")).or(Nil)
 
-          for extra <- List(suffix2, build2).compact do
-            if extra.isEmpty then raise(SemverError(text))
-            for element <- extra do element match
-              case r"0[0-9]+"       => raise(SemverError(element))
-              case r"[0-9A-Za-z-]+" => ()
-              case _                => raise(SemverError(element))
+          if suffix == t"-" || build == t"+" then raise(SemverError(text))
+
+          for extra   <- List(suffix2, build2).compact
+              element <- extra
+          do element match
+            case r"0[0-9]+"       => raise(SemverError(text))
+            case r"[0-9A-Za-z-]+" => ()
+            case _                => raise(SemverError(text))
 
           mitigate:
             case NumberError(_, _) => SemverError(text)
@@ -103,7 +106,7 @@ object Semver:
 
     if left.major == right.major then
       if left.minor == right.minor then
-        if left.patch == right.patch then compare(left.suffix.or(Nil), right.suffix.or(Nil))
+        if left.patch == right.patch then compare(left.suffix, right.suffix)
         else left.patch < right.patch
       else left.minor < right.minor
     else left.major < right.major
@@ -113,7 +116,16 @@ case class Semver
             (major:  Long,
              minor:  Long,
              patch:  Long,
-             suffix: Optional[List[Long | Text]],
-             build:  Optional[List[Long | Text]]):
+             suffix: List[Long | Text],
+             build:  List[Long | Text]):
 
   def development: Boolean = major == 0
+
+  override def equals(that: Any): Boolean = that match
+   	case that: Semver =>
+      major == that.major && minor == that.minor && patch == that.patch && suffix == that.suffix
+
+    case _ =>
+      false
+
+  override def hashCode: Int = (major, minor, patch, suffix).hashCode
