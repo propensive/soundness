@@ -87,10 +87,10 @@ object Tests extends Suite(m"Turbulence tests"):
 
         test(m"roundtrip tests"):
           val stream = string.data.grouped(bs).to(Stream)
-          val result = stream.read[Text]
+          val result: Text = stream.read[Text]
 
-          result
-        . assert(_ == string)
+          result.s
+        . assert(_ == string.s)
 
     val qbf = t"The quick brown fox\njumps over the lazy dog"
     val qbfData = qbf.data
@@ -113,44 +113,64 @@ object Tests extends Suite(m"Turbulence tests"):
 
     suite(m"Reading tests"):
       test(m"Stream Text"):
-        qbf.stream[Text].join
-      . assert(_ == qbf)
+        qbf.stream[Text].join.s
+      . assert(_ == qbf.s)
+
+      test(m"A decoder built inside `attempt` cannot escape the boundary's scope"):
+        // A `CharDecoder` summoned under `strictSanitizer` captures the ambient decode tactic; the
+        // one `attempt` provides is a boundary tactic, so letting the decoder escape the block would
+        // mean decoding (and `break`ing) across an unwound boundary. Capture checking rejects it.
+        demilitarize:
+          attempt[CharDecodeError]:
+            summon[CharDecoder]
+      . assert(_.exists(_.message.contains("outlives its scope")))
+
+      test(m"A fire-and-forget daemon body cannot capture an enclosing boundary tactic"):
+        // `daemon`'s body is a pure `?->{}` context function: capturing the boundary tactic that
+        // `attempt` provides would let the worker `break` an unwound boundary. `async` (awaited in
+        // scope) may capture it; `daemon` may not.
+        demilitarize:
+          import probates.cancelProbate
+          supervise:
+            attempt[StreamError]: tactic ?=>
+              daemon(tactic.record(StreamError(0L.b)))
+      . assert(_.exists(_.message.contains("cannot flow into capture set")))
 
       test(m"Stream Data"):
         qbf.stream[Data].reduce(_ ++ _).to(List)
       . assert(_ == qbfData.to(List))
 
       test(m"Read Text as Text"):
-        qbf.read[Text]
-      . assert(_ == qbf)
+        qbf.read[Text].s
+      . assert(_ == qbf.s)
 
       test(m"Read type as Text with Text and Byte Streamable"):
-        Ref().read[Text]
-      . assert(_ == t"abcdef")
+        Ref().read[Text].s
+      . assert(_ == t"abcdef".s)
 
       test(m"Read type as Data with Text and Byte Streamable"):
         Ref().read[Data].to(List)
       . assert(_ == t"abcdef".data.to(List))
 
       test(m"Read some type as Text with only Text Streamable instance"):
-        Ref2().read[Text]
-      . assert(_ == t"abcdef")
+        Ref2().read[Text].s
+      . assert(_ == t"abcdef".s)
 
       test(m"Read some type as Data with only Text Streamable instance"):
         Ref2().read[Data].to(List)
       . assert(_ == t"abcdef".data.to(List))
 
       test(m"Read some type as Text with only Data Streamable instance"):
-        Ref3().read[Text]
-      . assert(_ == t"abcdef")
+        Ref3().read[Text].s
+      . assert(_ == t"abcdef".s)
 
       test(m"Read some type as Data with only Data Streamable instance"):
         Ref3().read[Data].to(List)
       . assert(_ == t"abcdef".data.to(List))
 
       test(m"Read Text as Stream[Text]"):
-        qbf.read[Stream[Text]].join
-      . assert(_ == qbf)
+        qbf.read[Stream[Text]].join.s
+      . assert(_ == qbf.s)
 
       test(m"Read Text as Data"):
         qbf.read[Data]
@@ -161,12 +181,12 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_.reduce(_ ++ _).to(List) == qbfData.to(List))
 
       test(m"Read Data as Text"):
-        qbfData.read[Text]
-      . assert(_ == qbf)
+        qbfData.read[Text].s
+      . assert(_ == qbf.s)
 
       test(m"Read Data as Stream[Text]"):
-        qbfData.read[Stream[Text]].join
-      . assert(_ == qbf)
+        qbfData.read[Stream[Text]].join.s
+      . assert(_ == qbf.s)
 
       test(m"Read Data as Data"):
         qbfData.read[Data]
@@ -219,74 +239,74 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Write Text to some reference with Text and Data instances"):
         val store = GeneralStore()
         qbf.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Data to some reference with Text and Data instances"):
         val store = GeneralStore()
         qbfData.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Stream[Text] with Text and Data instances"):
         val store = GeneralStore()
         Stream(qbf).writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Stream[Data] with Text and Data instances"):
         val store = GeneralStore()
         Stream(qbfData).writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Text to some reference with only a Data instance"):
         val store = ByteStore()
         qbf.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Data to some reference with only a Data instance"):
         val store = ByteStore()
         qbfData.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Stream[Text] with only Data instance"):
         val store = ByteStore()
         Stream(qbf).writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Stream[Data] with only Data instance"):
         val store = ByteStore()
         Stream(qbfData).writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Text to some reference with only a Text instance"):
         val store = TextStore()
         qbf.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Data to some reference with only a Text instance"):
         val store = TextStore()
         qbfData.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Stream[Text] with only Text instance"):
         val store = TextStore()
         Stream(qbf).writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Stream[Data] with only Text instance"):
         val store = TextStore()
         Stream(qbfData).writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
     // suite(m"Appending tests"):
 

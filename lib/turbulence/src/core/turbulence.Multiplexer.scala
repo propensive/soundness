@@ -46,7 +46,7 @@ import probates.awaitProbate
 case class Multiplexer[key, element]()(using Monitor):
   private case class Removal(key: key)
 
-  private val active: TrieMap[key, Daemon] = TrieMap()
+  private val active: TrieMap[key, Unit] = TrieMap()
   private val queue: juc.LinkedBlockingQueue[element | Removal] = juc.LinkedBlockingQueue()
 
   def close(): Unit = active.keys.each(remove(_))
@@ -58,16 +58,16 @@ case class Multiplexer[key, element]()(using Monitor):
       queue.put(stream.head)
       pump(key, stream.tail)
 
-  // Each source is drained by its own daemon. If one fails (the source stream throws),
-  // a containment removes its key — so the consumer sees that source end rather than
-  // blocking forever on a `Removal` the failed pump never enqueued — and isolates the
+  // Each source is drained by its own task — a child of the multiplexer's surrounding `Monitor`, so
+  // it is supervised and cleaned up when that scope ends rather than escaping as a daemon. If a
+  // source fails (its stream throws), the key is removed — so the consumer sees that source end
+  // rather than blocking forever on a `Removal` the failed pump never enqueued — isolating the
   // failure to that source rather than letting it escape.
   def add(key: key, stream: Stream[element]): Unit =
-    active(key) =
-      contain:
-        case _ => remove(key); Remedy.Accept
+    active(key) = ()
 
-      . protect(daemon(pump(key, stream)))
+    async:
+      try pump(key, stream) catch case _: Exception => remove(key)
 
   private def remove(key: key): Unit = if !active.nil then queue.put(Removal(key))
 

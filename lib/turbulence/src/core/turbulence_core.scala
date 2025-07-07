@@ -58,19 +58,23 @@ extension [value](value: value)
   inline def stream[element]: Stream[element] =
     ${turbulence.internal.stream[value, element]('value)}
 
-  inline def read[result](using readable: value is Readable to result): result =
+  inline def read[result](using readable: (value is Readable to result)^): result =
     readable.read(value)
 
 
   def writeTo[target](target: target)[element]
-    ( using streamable: value is Streamable by element, writable: target is Writable by element )
+    // Capture-polymorphic evidence: writers built from an `Emit[StreamError]` capture it; the
+    // write completes within this call, so nothing is retained and the result stays `Unit`.
+    ( using streamable: (value is Streamable by element)^,
+            writable:   (target is Writable by element)^ )
   :   Unit =
 
     writable.write(target, streamable.stream(value))
 
 extension [value: Streamable by Text](value: value)
-  def load[result <: Documentary: Loadable by Text]: Document[result] =
-    result.load(value.stream[Text])
+  def load[result <: Documentary](using loadable: (result is Loadable by Text)^)
+  :   Document[result] =
+    loadable.load(value.stream[Text])
 
 package stdios:
   given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
@@ -93,11 +97,17 @@ extension [element](stream: Stream[element])
   def deduplicate: Stream[element] =
     def recur(last: element, stream: Stream[element]): Stream[element] =
       stream.flow(Stream()):
-        if last == next then recur(last, more) else next #:: recur(next, more)
+        val head = next.asInstanceOf[element]
+        if last == head then recur(last, more) else head #:: recur(head, more)
 
-    stream.flow(Stream())(next #:: recur(next, more))
+    stream.flow(Stream()):
+      val head = next.asInstanceOf[element]
+      head #:: recur(head, more)
 
 
+  // `next`/`more` are bound with `aka`-label refinements; under capture checking the
+  // labelled singleton type does not simplify away in every position (the aka-Tagged/
+  // castbox class), so use sites strip it with `next.asInstanceOf[element]`.
   inline def flow[result](inline termination: => result)
     ( inline proceed: (element aka "next", Stream[element] aka "more") ?=> result )
   :   result =
@@ -188,7 +198,12 @@ extension [element](stream: Stream[element])
     val out: Spool[element2] = Spool()
 
     async:
-      stream.map: element => async(out.put(lambda(element)))
+      stream.each: element =>
+        // Fan out: each element is mapped on its own supervised worker that puts the result
+        // into the
+        // spool. (`each`, not `map`: the source must be drained to actually spawn the workers.)
+        async(out.put(lambda(element)))
+        ()
 
     out.stream
 
@@ -221,7 +236,7 @@ extension (obj: Stream.type)
   def multiplex[element](streams: Stream[element]*)(using Monitor): Stream[element] =
     multiplexer(streams*).stream
 
-  def multiplexer[element](streams: Stream[element]*)(using Monitor): Multiplexer[Any, element] =
+  def multiplexer[element](streams: Stream[element]*)(using Monitor): Multiplexer[Any, element]^ =
     Multiplexer[Any, element]().tap: multiplexer =>
       streams.zipWithIndex.each: (stream, index) =>
         multiplexer.add(index, stream)
@@ -233,23 +248,34 @@ extension (obj: Stream.type)
   def metronome[generic: Abstractable across Durations to Long](duration: generic)(using Monitor)
   :   Stream[Unit] =
 
+    val spool: Spool[Unit] = Spool()
     val startTime: Long = jl.System.currentTimeMillis
 
-    def recur(iteration: Int): Stream[Unit] =
-      try
+    // Ticking requires the `Monitor` (to `sleep`), which a pure lazy `Stream` cannot itself
+    // capture,
+    // so it runs as a supervised task that pushes ticks into a `Spool`. When the scope is torn
+    // down a
+    // cancelled `sleep` raises `AsyncError`; the spool is then stopped so the consumer's stream ends.
+    async:
+      @tailrec
+      def recur(iteration: Int): Unit =
         sleep(startTime + duration.generic/1_000_000L*iteration)
-        () #:: recur(iteration + 1)
-      catch case error: AsyncError => Stream()
+        spool.put(())
+        recur(iteration + 1)
 
-    recur(0)
+      try recur(0) catch case _: AsyncError => spool.stop()
+
+    spool.stream
 
 
 extension (stream: Stream[Data])
   def discard(bytes: Bytes): Stream[Data] =
     def recur(stream: Stream[Data], count: Bytes): Stream[Data] = stream.flow(Stream()):
-      if next.bytes < count
-      then recur(more, count - next.bytes)
-      else next.drop(count.long.toInt) #:: more
+      val head = next.asInstanceOf[Data]
+
+      if head.bytes < count
+      then recur(more, count - head.bytes)
+      else head.drop(count.long.toInt) #:: more
 
     recur(stream, bytes)
 
@@ -321,8 +347,10 @@ extension (stream: Stream[Data])
   def take(bytes: Bytes): Stream[Data] =
     def recur(stream: Stream[Data], count: Bytes): Stream[Data] =
       stream.flow(Stream()):
-        if next.bytes < count then next #:: recur(more, count - next.bytes)
-        else Stream(next.take(count.long.toInt))
+        val head = next.asInstanceOf[Data]
+
+        if head.bytes < count then head #:: recur(more, count - head.bytes)
+        else Stream(head.take(count.long.toInt))
 
     recur(stream, bytes)
 

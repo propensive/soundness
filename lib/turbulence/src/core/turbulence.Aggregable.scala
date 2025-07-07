@@ -54,7 +54,7 @@ object Aggregable:
         index += bytes.length
         source = source.tail
 
-  given bytesText: (decoder: CharDecoder) => Text is Aggregable by Data =
+  given bytesText: (decoder: CharDecoder^) => ((Text is Aggregable by Data)^{decoder}) =
     bytesData.map(decoder.decoded)
 
   given textText: Text is Aggregable by Text = source0 =>
@@ -75,8 +75,8 @@ object Aggregable:
     element => Stream(aggregable.aggregate(element))
 
 trait Aggregable extends Typeclass, Operable:
-  aggregable =>
+  aggregable: Aggregable =>
   def aggregate(source: Stream[Operand]): Self
 
-  def map[self2](lambda: Self => self2): self2 is Aggregable by Operand = source =>
+  def map[self2](lambda: Self => self2): (self2 is Aggregable by Operand)^{lambda} = source =>
     lambda(aggregable.aggregate(source))

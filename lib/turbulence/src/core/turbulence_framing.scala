@@ -42,7 +42,7 @@ import vacuous.*
 
 extension (stream: Stream[Data])
   inline def framed[width <: U16 | U32](terminator: Optional[width] = Unset)
-    ( using Tactic[StreamError] )
+    ( using Tactic[StreamError]^ )
   :   Stream[Data] =
 
     inline compiletime.erasedValue[width] match
@@ -54,7 +54,7 @@ extension (stream: Stream[Data])
 
 private[turbulence] def framingImpl
   ( stream: Stream[Data], width: Int, terminator: Long )
-  ( using Tactic[StreamError] )
+  ( using Tactic[StreamError]^ )
 :   Stream[Data] =
 
   def take

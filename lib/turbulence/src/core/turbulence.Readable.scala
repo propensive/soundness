@@ -51,32 +51,41 @@ import prepositional.*
 
 trait Readable3:
   given textToData: [source, result]
-  =>  ( streamable: source is Streamable by Text )
-  =>  ( aggregable: result is Aggregable by Data )
+  =>  ( streamable: (source is Streamable by Text)^ )
+  =>  ( aggregable: (result is Aggregable by Data)^ )
   =>  ( encoder: CharEncoder )
-  =>  source is Readable to result =
+  =>  ((source is Readable to result)^) =
     value => aggregable.aggregate(encoder.encoded(streamable.stream(value)))
 
 trait Readable2 extends Readable3:
   given dataToText: [source, result]
-  =>  ( streamable: source is Streamable by Data )
-  =>  ( aggregable: result is Aggregable by Text )
-  =>  ( decoder: CharDecoder )
-  =>  source is Readable to result =
+  =>  ( streamable: (source is Streamable by Data)^ )
+  =>  ( aggregable: (result is Aggregable by Text)^ )
+  =>  ( decoder: CharDecoder^ )
+  =>  ((source is Readable to result)^) =
     value => aggregable.aggregate(decoder.decoded(streamable.stream(value)))
 
 trait Readable1 extends Readable2:
   given textToText: [source, result]
-  =>  ( streamable: source is Streamable by Text )
-  =>  ( aggregable: result is Aggregable by Text )
-  =>  source is Readable to result =
+  =>  ( streamable: (source is Streamable by Text)^ )
+  =>  ( aggregable: (result is Aggregable by Text)^ )
+  =>  ((source is Readable to result)^) =
     value => aggregable.aggregate(streamable.stream(value))
 
 object Readable extends Readable1:
+  // Direct, whole-`Data` instances: when the entire content is already in hand as one `Data`,
+  // decode it in a single step rather than wrapping it in a one-element `Stream` and aggregating.
+  // These are concrete (`Self = Data`), so they take precedence over the generic composed pipelines
+  // by specificity — a whole-file `path.read[Text]` is then a genuinely direct read.
+  given dataData: Data is Readable to Data = identity(_)
+
+  given dataText: (decoder: CharDecoder^) => ((Data is Readable to Text)^{decoder}) =
+    decoder.decoded(_)
+
   given dataToData: [source, result]
-  =>  ( streamable: source is Streamable by Data )
-  =>  ( aggregable: result is Aggregable by Data )
-  =>  source is Readable to result =
+  =>  ( streamable: (source is Streamable by Data)^ )
+  =>  ( aggregable: (result is Aggregable by Data)^ )
+  =>  ((source is Readable to result)^) =
     value => aggregable.aggregate(streamable.stream(value))
 
 @implicitNotFound("turbulence: the source cannot be read as the target type; this needs a "+
