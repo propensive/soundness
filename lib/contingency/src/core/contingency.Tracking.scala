@@ -39,7 +39,7 @@ import vacuous.*
 object Tracking:
   extension [accrual <: Exception, lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
     inline def protect[result](inline lambda: Foci[focus] ?=> lambda[result])
-      ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
+      ( using tactic: Tactic[accrual]^, diagnostics: Diagnostics )
     :   result =
 
       $ {
