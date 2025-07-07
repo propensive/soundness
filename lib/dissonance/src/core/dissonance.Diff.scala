@@ -152,7 +152,7 @@ case class Diff[element](edits: Edit[element]*):
     Diff(edits.map(_.map(lambda))*)
 
 
-  def patch(sequence: Seq[element], update: (element, element) => element = (left, right) => left)
+  def patch(sequence: Seq[element], update: (element, element) -> element = (left, right) => left)
   :   Stream[element] =
 
     def recur(todo: List[Edit[element]], sequence: Seq[element]): Stream[element] = todo match
