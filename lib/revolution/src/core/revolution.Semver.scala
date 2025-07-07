@@ -99,7 +99,7 @@ object Semver:
         if left == right then compare(lefts, rights) else left < right
 
       case ((left: Text) :: lefts, (right: Text) :: rights) =>
-        if left == right then compare(lefts, rights) else left.s.compareTo(right.s) == -1
+        if left == right then compare(lefts, rights) else left.s.compareTo(right.s) < 0
 
     if left.major == right.major then
       if left.minor == right.minor then
