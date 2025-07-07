@@ -1121,10 +1121,10 @@ object frontier extends Library:
   object core extends Component(dendrology.tree, escapade.core, beneficence.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, scintillate.servlet, jacinta.schema):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object fulminate extends Library:
   object core extends Component(anticipation.http, anticipation.print, anticipation.log, proscenium.core, gigantism.core):
