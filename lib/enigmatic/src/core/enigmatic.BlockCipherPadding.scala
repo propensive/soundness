@@ -33,9 +33,9 @@
 package enigmatic
 
 import anticipation.*
+import beneficence.*
 import contingency.*
 import gossamer.*
-import prepositional.*
 
 object BlockCipherPadding:
   def apply[padding](name0: Text): padding is BlockCipherPadding = new BlockCipherPadding:
@@ -48,7 +48,8 @@ object BlockCipherPadding:
 // constructing a `NoPadding` cipher, and hence encrypting with one, demands a
 // `Tactic[CryptoError]` in scope while all other paddings remain total.
 
-trait BlockCipherPadding extends Typeclass:
+trait BlockCipherPadding extends Findable:
+  type Self
   def name: Text
   def verify(length: Int, blockSize: Int, blockAligned: Boolean): Unit = ()
 
@@ -64,7 +65,7 @@ object Iso10126:
 sealed trait Iso10126
 
 object NoPadding:
-  given padding: Tactic[CryptoError] => (NoPadding is BlockCipherPadding) =
+  given padding: Tactic[CryptoError] => ((NoPadding is BlockCipherPadding)^) =
     new BlockCipherPadding:
       type Self = NoPadding
       val name: Text = t"NoPadding"
