@@ -50,7 +50,7 @@ object internal:
       decoder[plane](apply)
 
 
-    private def decoder[plane](lambda: Text => Name[plane]): Name[plane] is Decodable in Text =
+    private def decoder[plane](lambda: Text -> Name[plane]): Name[plane] is Decodable in Text =
       new Decodable:
         type Self = Name[plane]
         type Form = Text
