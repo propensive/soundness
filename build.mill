@@ -867,7 +867,7 @@ object decorum extends Library:
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   object test extends Tests(plugin):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object denominative extends Library:
   object core extends Component(fulminate.core, vacuous.core):
