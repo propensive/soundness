@@ -122,7 +122,7 @@ case class Semver
   def development: Boolean = major == 0
 
   override def equals(that: Any): Boolean = that match
-   	case that: Semver =>
+    case that: Semver =>
       major == that.major && minor == that.minor && patch == that.patch && suffix == that.suffix
 
     case _ =>
