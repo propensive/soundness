@@ -37,11 +37,11 @@ import language.experimental.into
 trait DivisionByZero:
   type Wrap[result]
 
-  inline def divideU64(left: U64, right: U64): Wrap[U64]
-  inline def divideS64(left: S64, right: S64): Wrap[S64]
-  inline def divideU32(left: U32, right: U32): Wrap[U32]
-  inline def divideS32(left: S32, right: S32): Wrap[S32]
-  inline def divideU16(left: U16, right: U16): Wrap[U16]
-  inline def divideS16(left: S16, right: S16): Wrap[S16]
-  inline def divideU8(left: U8, right: U8): Wrap[U8]
-  inline def divideS8(left: S8, right: S8): Wrap[S8]
+  inline def divideU64(left: U64, right: U64): Wrap[U64]^
+  inline def divideS64(left: S64, right: S64): Wrap[S64]^
+  inline def divideU32(left: U32, right: U32): Wrap[U32]^
+  inline def divideS32(left: S32, right: S32): Wrap[S32]^
+  inline def divideU16(left: U16, right: U16): Wrap[U16]^
+  inline def divideS16(left: S16, right: S16): Wrap[S16]^
+  inline def divideU8(left: U8, right: U8): Wrap[U8]^
+  inline def divideS8(left: S8, right: S8): Wrap[S8]^
