@@ -57,7 +57,8 @@ object Tests extends Suite(m"Eucalyptus tests"):
   case class Failing()
 
   object Failing:
-    given writable: Emit[StreamError] => Failing is Writable by Text =
+    given writable: (streamCut: Emit[StreamError])
+    =>  ((Failing is Writable by Text)^{streamCut}) =
       (failing, stream) => stream.each(_ => raise(StreamError(0.b)))
 
   // An event enum whose cases carry *different* categories. Because the marker traits are
