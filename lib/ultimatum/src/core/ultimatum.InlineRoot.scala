@@ -82,19 +82,13 @@ class InlineRoot(widthFn: () => Int, heightFn: () => Int)
 extends GridSurface(widthFn(), 0):
   private var presentedRows: Int = 0
   private var presentedColumns: Int = 0
-  private var presentedTop: Int = 1
   private var invalidated: Boolean = false
-
-  // For `Inline` anchoring: the row offset (from the block's top) at which the cursor was
-  // left after the last frame, so the next frame can rise back to the top relatively.
-  private var flowCursorRow: Int = 0
 
   // Start top-anchored only when the policy pins the block from the first frame;
   // `TopAfterResize` starts bottom-docked and flips on the first `invalidate`.
   private var topAnchored: Boolean = anchoring match
     case InlineAnchoring.TopAnchored | InlineAnchoring.Fullscreen      => true
     case InlineAnchoring.BottomDocked | InlineAnchoring.TopAfterResize => false
-    case InlineAnchoring.Inline                                        => false
 
   private var started: Boolean = false
   private var caretColumn: Int = 0
@@ -118,90 +112,13 @@ extends GridSurface(widthFn(), 0):
     invalidated = true
     if anchoring == InlineAnchoring.TopAfterResize then topAnchored = true
 
-  // Forget everything recorded about what is on screen, so the NEXT frame renders as a
-  // fresh first frame at the current cursor rather than relative to (or docked against)
-  // a prior block. Intended for use after the caller has cleared the screen — e.g. an
-  // `Inline` driver that, on a terminal resize, wipes the reflowed screen and restarts
-  // the flow from the top rather than trying to reconcile the old, now-garbled layout.
-  def reset(): Unit =
-    started = false
-    presentedRows = 0
-    presentedColumns = 0
-    presentedTop = 1
-    flowCursorRow = 0
-    invalidated = false
-
   // Record the caret's block-local target; `flush` positions the hardware cursor at
   // the corresponding absolute screen cell.
   override def showCaret(column: Ordinal, row2: Ordinal): Unit =
     caretColumn = column.n0
     caretRow = row2.n0
 
-  // `Inline` anchoring renders the block RELATIVE to the cursor, so it appears wherever
-  // prior output has flowed to (right after the previous result) and never docks to a
-  // fixed edge. The block's top is not a fixed screen row: on the first frame it is drawn
-  // at the current cursor; on later frames the cursor is risen back to the top via the
-  // recorded `flowCursorRow`. Growing scrolls the screen (and the block) naturally as the
-  // last row's newline hits the foot; shrinking clears the freed rows below, holding the
-  // block's top so the box stays put (freed space becomes blank screen below, not a gap).
-  private def flushInline(): Unit =
-    val columns = gridWidth.min(widthFn())
-    val h       = height
-    invalidated = false
-
-    val frame = StringBuilder()
-    def emit(text: Text): Unit = frame.append(text.s)
-    val termcap = summon[Stdio].termcap
-
-    emit(csi.dectcem(false))
-
-    // Rise to the block's top-left. On the first frame the cursor is already there.
-    emit(t"\r")
-    if started && flowCursorRow > 0 then emit(csi.cuu(flowCursorRow))
-    started = true
-
-    // Draw the block's rows from the top down; a trailing newline past the screen foot
-    // scrolls the block up with the rest of the screen (relative addressing tracks it).
-    var r = 0
-    while r < h do
-      emit(csi.el(2))
-      val rendered = rowContent(r, columns).render(termcap)
-      emit(rendered)
-      if rendered.contains(t"\e") then emit(csi.sgr(0))
-      emit(t"\r")
-      if r < h - 1 then emit(t"\n")
-      r += 1
-    // The cursor now sits at the block's last drawn row (h - 1), column 0.
-
-    // Shrink: clear the rows a taller previous block left below, then return to the last
-    // row. The top does not move, so the box stays put and the freed rows go blank.
-    if presentedRows > h then
-      var k = h
-      while k < presentedRows do
-        emit(t"\n")
-        emit(csi.el(2))
-        k += 1
-
-      emit(csi.cuu(presentedRows - h))
-
-    presentedRows = h
-    presentedColumns = columns
-
-    // Place the caret relative to the block's last row (where the cursor is now).
-    val cr = caretRow.min(h - 1).max(0)
-    if h - 1 - cr > 0 then emit(csi.cuu(h - 1 - cr))
-    emit(t"\r")
-    val cc = caretColumn.min(columns - 1).max(0)
-    if cc > 0 then emit(csi.cuf(cc))
-    flowCursorRow = cr
-    if caretVisible then emit(csi.dectcem(true))
-
-    Out.print(frame.toString.tt)
-
   def flush(): Unit =
-    if anchoring == InlineAnchoring.Inline then flushInline() else flushDocked()
-
-  private def flushDocked(): Unit =
     val rows    = heightFn()
     val columns = gridWidth.min(widthFn())
     val h       = height
@@ -263,11 +180,6 @@ extends GridSurface(widthFn(), 0):
         else
           (rows - h + 1).max(1)
 
-    // Remember where the block was actually drawn, so `finish` can drop the cursor onto
-    // the row immediately after its last line rather than assuming it reaches the screen
-    // foot — which is false when a shrink held the top (`KeepTop`) leaving blank below.
-    presentedTop = top
-
     // Draw the block from its absolute `top` down, clipping each row to the live width
     // so it can never wrap (a wrapped row would scroll the screen and break addressing).
     emit(csi.cup(top, 1))
@@ -325,24 +237,8 @@ extends GridSurface(widthFn(), 0):
   // A `Fullscreen` session leaves the alternate screen buffer, restoring what was
   // there before it started.
   def finish(): Unit =
-    // `Inline` drops the cursor onto a fresh line right below the block, RELATIVELY (from
-    // the caret down to the block's last row, then a newline that scrolls if at the foot),
-    // so the following output — and the next inline block — continues immediately after it.
-    if anchoring == InlineAnchoring.Inline then
-      val down = presentedRows - 1 - flowCursorRow
-      if down > 0 then Out.print(csi.cud(down))
-      Out.print(t"\r\n")
-    else
-      // Drop the cursor just past the block's LAST drawn row (`presentedTop + presentedRows
-      // - 1`) rather than at the screen foot. For a full bottom-docked block the last row IS
-      // the foot, so this is unchanged; but when a `KeepTop` shrink held the block high and
-      // cleared blank below it, this lands the following output right under the block instead
-      // of after the vacated rows. Top-anchored keeps its historic one-line trailing gap.
-      val below =
-        if topAnchored then (presentedRows + 1).min(heightFn())
-        else (presentedTop + presentedRows - 1).max(1).min(heightFn())
-
-      Out.print(csi.cup(below.max(1), 1))
-      Out.print(t"\r\n")
+    val below = if topAnchored then (presentedRows + 1).min(heightFn()) else heightFn()
+    Out.print(csi.cup(below.max(1), 1))
+    Out.print(t"\r\n")
     Out.print(csi.dectcem(true))
     if anchoring == InlineAnchoring.Fullscreen && started then Out.print(t"\e[?1049l")
