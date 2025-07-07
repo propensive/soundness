@@ -41,7 +41,7 @@ object Column:
       textAlign:     Optional[TextAlignment]     = Unset,
       verticalAlign: Optional[VerticalAlignment] = Unset,
       sizing:        Columnar                    = columnar.Paragraph )
-    ( get: row => cell )
+    ( get: row -> cell )
     ( using columnAlignment: ColumnAlignment[cell] = ColumnAlignment.topLeft )
     ( using text.Show[cell] )
   :   Column[row, text] =
@@ -58,12 +58,12 @@ object Column:
 
 case class Column[row, text: Textual]
   ( title:         text,
-    get:           row => text,
+    get:           row -> text,
     textAlign:     TextAlignment,
     verticalAlign: VerticalAlignment,
     sizing:        Columnar ):
 
-  def contramap[row2](lambda: row2 => row): Column[row2, text] =
+  def contramap[row2](lambda: row2 -> row): Column[row2, text] =
     Column[row2, text](title, row => get(lambda(row)), textAlign, verticalAlign, sizing)
 
   def retitle(title: text): Column[row, text] = copy(title = title)

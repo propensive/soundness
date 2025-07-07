@@ -52,8 +52,12 @@ extension [value](value: value)
   def tabulation[text: Textual](using tabular: value is Tabular[text]): Tabulation[text] =
     tabular.tabulate(value)
 
+// `failAttenuation` is a context function `Tactic[TableError] ?=> Attenuation^`: the returned
+// `Attenuation` captures the Tactic *parameter*, so the given value itself captures nothing from its
+// enclosing scope and these can stay package-level givens — accessing `failAttenuation` or
+// `ignoreAttenuation` then captures no capability (unlike a member of an `ExclusiveCapability` object).
 package columnAttenuation:
-  given failAttenuation: Tactic[TableError] => Attenuation =
+  given failAttenuation: Tactic[TableError] => (Attenuation^) =
     (minimum, available) => raise(TableError(minimum, available))
 
   given ignoreAttenuation: Attenuation = (minimum, available) => ()

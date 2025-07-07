@@ -37,7 +37,7 @@ import gossamer.*
 
 object Scaffold:
   @targetName("make")
-  def apply[row](using erased Void)[text: ClassTag: Textual](columns: Column[row, text]*)
+  def apply[row](using erased void: Void)[text: ClassTag: Textual](columns: Column[row, text]*)
   :   Scaffold[row, text] =
 
     new Scaffold(columns*)
