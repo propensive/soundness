@@ -38,4 +38,7 @@ object protointernal:
   object Tagged:
     inline def apply[tag](value: Any): Tagged[value.type, tag] = value
 
-  extension [value, tag](tagged: Tagged[value, tag]) inline def apply(): value = tagged
+  // `Tagged` is an unbounded opaque alias of `value`, so capture checking treats it as capturing;
+  // the cast restores `value`'s own purity on unwrap (the runtime value already is a `value`).
+  extension [value, tag](tagged: Tagged[value, tag]) inline def apply(): value =
+    tagged.asInstanceOf[value]
