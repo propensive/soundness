@@ -42,10 +42,13 @@ import vacuous.*
 
 object Extractable:
   given decodable: [text <: Text, result]
-  =>  ( decodable: Tactic[Exception] ?=> result is Decodable in Text )
+  =>  ( decodable: Tactic[Exception]^ ?=> result is Decodable in Text )
   =>  text is Extractable to result =
 
-    value => safely(decodable(using strategies.throwUnsafely).decoded(value))
+    // Laundered pure: the retained context function shares the instance's given-resolution
+    // lifetime (the codec-thunk seal pattern; see rep/DECISIONS.md).
+    caps.unsafe.unsafeAssumePure:
+      value => safely(decodable(using strategies.throwUnsafely).decoded(value))
 
 
   given optional: [result: Extractable]
@@ -61,28 +64,31 @@ object Extractable:
 
 
   given textChar: [text <: Text] => text is Extractable to Char =
-    text => if text.s.length == 1 then text.s.head else Unset
+  // The `(x: Text)` ascriptions below widen the singleton-bounded parameter to `Text`:
+  // under capture checking the singleton otherwise boxes as a pure-value capture (the
+  // case-2 class); one note here covers every occurrence in this file.
+    text => if (text: Text).s.length == 1 then (text: Text).s.head else Unset
 
   given textByte: [text <: Text] => text is Extractable to Byte =
-    text => try text.s.toByte catch case _: NumberFormatException => Unset
+    text => try (text: Text).s.toByte catch case _: NumberFormatException => Unset
 
   given textShort: [text <: Text] => text is Extractable to Short =
-    text => try text.s.toShort catch case _: NumberFormatException => Unset
+    text => try (text: Text).s.toShort catch case _: NumberFormatException => Unset
 
   given textInt: [text <: Text] => text is Extractable to Int =
-    text => try text.s.toInt catch case e: NumberFormatException => Unset
+    text => try (text: Text).s.toInt catch case e: NumberFormatException => Unset
 
   given textLong: [text <: Text] => text is Extractable to Long =
-    text => try text.s.toLong catch case e: NumberFormatException => Unset
+    text => try (text: Text).s.toLong catch case e: NumberFormatException => Unset
 
   given textFloat: [text <: Text] => text is Extractable to Float = text =>
-    try text.s.toFloat catch case e: NumberFormatException => Unset
+    try (text: Text).s.toFloat catch case e: NumberFormatException => Unset
 
   given textDouble: [text <: Text] => text is Extractable to Double = text =>
-    try text.s.toDouble catch case _: NumberFormatException => Unset
+    try (text: Text).s.toDouble catch case _: NumberFormatException => Unset
 
   given textBoolean: [text <: Text] => text is Extractable to Boolean = v =>
-    if v.s == "true" then true else if v.s == "false" then false else Unset
+    if (v: Text).s == "true" then true else if (v: Text).s == "false" then false else Unset
 
   given shortByte: [short <: Short] => short is Extractable to Byte =
     short => short.toByte.unless(_.toInt != short)
@@ -147,7 +153,7 @@ object Extractable:
 
       mirror match
         case mirror: { def valueOf(name: String): enumeration } @unchecked =>
-          try mirror.valueOf(text.s) catch case error: Exception => Unset
+          try mirror.valueOf((text: Text).s) catch case error: Exception => Unset
 
 
   given fromOrdinal: [enumeration <: Enum: Mirror.SumOf as mirror, int <: Int]
