@@ -1788,7 +1788,7 @@ object tarantula extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object telekinesis extends Library:
   object core extends Component(monotonous.core, coaxial.core, legerdemain.core, turbulence.core):
