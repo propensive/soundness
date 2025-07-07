@@ -1200,10 +1200,10 @@ object gigantism extends Library:
 object gnossienne extends Library:
   object core extends Component(distillate.core, adversaria.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object gossamer extends Library:
   object core extends Component(mercator.core, hieroglyph.core, contextual.core, spectacular.core, hypotenuse.core, distillate.core):
