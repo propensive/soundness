@@ -93,12 +93,12 @@ object Cursor:
 
   // Build a Cursor from an explicit loader. The cursor starts empty; the
   // first `next()` triggers a load.
-  transparent inline def apply[data](inline load: Loader[data])
+  transparent inline def apply[data, cap^](inline load: () ->{cap} Optional[data])
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
-  :   Cursor[data] =
+  :   Cursor[data, cap] =
 
-    new Cursor[data]
+    new Cursor[data, cap]
       ( () => load(),
         Unset,
         DefaultCapacity,
@@ -112,9 +112,9 @@ object Cursor:
   transparent inline def apply[data](initial: data)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
-  :   Cursor[data] =
+  :   Cursor[data, {}] =
 
-    new Cursor[data]
+    new Cursor[data, {}]
       ( () => Unset,
         initial,
         addressable0.length(initial).max(1),
@@ -131,11 +131,14 @@ object Cursor:
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand,
             buffering:    Buffering )
-  :   Cursor[data] =
+  // `Stream over Credit` is not (yet) a declared capability, so the closure over it is
+  // untracked and the cursor's capture set is empty; if the reactive kernel's types become
+  // capabilities, this factory should be re-typed like the iterator one above.
+  :   Cursor[data, {}] =
 
     val block: Int = buffering.capacity(addressable0.substrate)
 
-    new Cursor[data]
+    new Cursor[data, {}]
       ( () =>
           stream.refill(Credit(block)).let: count =>
             val window = stream.window(using Unsafe).asInstanceOf[addressable0.Storage]
@@ -150,12 +153,12 @@ object Cursor:
 
   // Backwards-compatible factory that adapts an Iterator to the loader API.
   // Lets the existing test suite cross-compile against Cursor.
-  transparent inline def apply[data](iterator: Iterator[data])
+  transparent inline def apply[data](iterator: Iterator[data]^)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
-  :   Cursor[data] =
+  :   Cursor[data, {iterator}]^{iterator} =
 
-    new Cursor[data]
+    new Cursor[data, {iterator}]
       ( () => if iterator.hasNext then iterator.next() else Unset,
         Unset,
         DefaultCapacity,
@@ -172,13 +175,13 @@ object Cursor:
   // `@targetName` (they erase to the same JVM signature) — callers just
   // write `cursor.peek` without caring whether the cursor is byte- or
   // char-based.
-  extension (cursor: Cursor[Data])
+  extension [cap^](cursor: Cursor[Data, cap])
     @targetName("peekByte")
     inline def peek: Datum =
       if cursor.finished then Datum.End
       else Datum.fromRaw(cursor.buffer(using Unsafe)(cursor.unsafePos(using Unsafe)) & 0xff)
 
-  extension (cursor: Cursor[Text])
+  extension [cap^](cursor: Cursor[Text, cap])
     @targetName("peekChar")
     inline def peek: Datum =
       if cursor.finished then Datum.End
@@ -191,7 +194,7 @@ object Cursor:
   // target is `Char` for both variants so callers don't need `'X'.toByte`
   // on `Cursor[Data]`; for ASCII targets the `Datum`-vs-`Char` comparison
   // compiles to a single primitive `int == int`.
-  extension (cursor: Cursor[Data])
+  extension [cap^](cursor: Cursor[Data, cap])
     @targetName("expectByte")
     inline def expect[error <: Exception](target: Char)
       ( inline failure: Diagnostics ?=> error )
@@ -200,7 +203,7 @@ object Cursor:
 
       if cursor.peek == target then cursor.next() else raise(failure)
 
-  extension (cursor: Cursor[Text])
+  extension [cap^](cursor: Cursor[Text, cap])
     @targetName("expectChar")
     inline def expect[error <: Exception](target: Char)
       ( inline failure: Diagnostics ?=> error )
@@ -217,7 +220,7 @@ object Cursor:
   // `hold { val mk = mark; … cue(mk); result }` idiom that parsers like
   // Multipart's boundary detector and Zeppelin's ZIP signature scanner
   // were writing.
-  extension [data](cursor: Cursor[data])
+  extension [data, cap^](cursor: Cursor[data, cap])
     inline def lookahead[result](inline action: Cursor.Held ?=> result): result =
       cursor.hold:
         val saved = cursor.mark
@@ -232,19 +235,24 @@ object Cursor:
   // themselves — the unsafe cast lives in one place inside zephyrine.
   // `Unsafe` is still required: the returned reference is only valid until
   // the next cursor operation that may compact or grow the buffer.
-  extension (cursor: Cursor[Data])
+  extension [cap^](cursor: Cursor[Data, cap])
     @targetName("dataBuffer")
-    inline def buffer(using erased Unsafe): Array[Byte] =
+    inline def buffer(using erased unsafe: Unsafe): Array[Byte] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
 
-  extension (cursor: Cursor[Text])
+  extension [cap^](cursor: Cursor[Text, cap])
     @targetName("textBuffer")
-    inline def buffer(using erased Unsafe): Array[Char] =
+    inline def buffer(using erased unsafe: Unsafe): Array[Char] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
 
 
-final class Cursor[data]
-  (             load:        () => Optional[data],
+// `cap^` is the capture set of the `load` thunk: `{}` for an in-memory cursor (the loader is a
+// no-op), or the capabilities a streaming loader draws from (e.g. a socket). Tracking it as an
+// explicit capture parameter — rather than letting capture checking infer a blanket self-capture —
+// keeps a pure cursor's type free of a `load`-bearing refinement, so its path-dependent members
+// (`addressable.Storage`/`Operand`) still resolve through any reference.
+final class Cursor[data, cap^]
+  (             load:        () ->{cap} Optional[data],
                 initial:     Optional[data],
                 initialSize: Int,
     tracked val addressable: data is Addressable,
@@ -375,7 +383,7 @@ final class Cursor[data]
   // Variant of `advance` for callers that have just read the current operand
   // (e.g. via `unsafeBuffer(pos)` in a tight scan loop). Reuses the supplied
   // `operand` instead of re-loading it from the buffer for lineation tracking.
-  inline def unsafeAdvanceWith(operand: addressable.Operand)(using erased Unsafe): Unit =
+  inline def unsafeAdvanceWith(operand: addressable.Operand)(using erased unsafe: Unsafe): Unit =
     pos += 1
 
     if lineationActive then
@@ -388,20 +396,20 @@ final class Cursor[data]
   // per-character lineation update inside `advance`/`unsafeAdvanceWith`, then
   // reconcile lineation in one shot. The caller is responsible for tracking
   // newlines while it scans.
-  inline def unsafeBumpPos(by: Int)(using erased Unsafe): Unit = pos += by
+  inline def unsafeBumpPos(by: Int)(using erased unsafe: Unsafe): Unit = pos += by
 
   // Increase the line counter by `by`, leaving the column counter untouched.
-  inline def unsafeBumpLine(by: Int)(using erased Unsafe): Unit =
+  inline def unsafeBumpLine(by: Int)(using erased unsafe: Unsafe): Unit =
     lineNo = denominative.Ordinal.zerary(lineNo.n0 + by)
 
   // Increase the column counter by `by`. Must not be called across newlines.
-  inline def unsafeBumpColumn(by: Int)(using erased Unsafe): Unit =
+  inline def unsafeBumpColumn(by: Int)(using erased unsafe: Unsafe): Unit =
     columnNo = denominative.Ordinal.zerary(columnNo.n0 + by)
 
   // Set the column counter directly. Used after a bulk advance over a range
   // that contained at least one newline, to set the column to the offset
   // since the most-recent newline.
-  inline def unsafeSetColumn(value: Int)(using erased Unsafe): Unit =
+  inline def unsafeSetColumn(value: Int)(using erased unsafe: Unsafe): Unit =
     columnNo = denominative.Ordinal.zerary(value)
 
   // `next()` is `advance(); more`, so it returns `true` while more data is
@@ -471,19 +479,19 @@ final class Cursor[data]
   // byte/char scan loops this is a major hot-path tax. Callers who know the
   // concrete buffer type can `asInstanceOf` it once at the call site and let
   // the JIT keep the array reference in a register across the inner loop.
-  inline def unsafeBuffer(using erased Unsafe): addressable.Storage = buffer
-  inline def unsafePos(using erased Unsafe): Int = pos
-  inline def unsafeWriteEnd(using erased Unsafe): Int = writeEnd
+  inline def unsafeBuffer(using erased unsafe: Unsafe): addressable.Storage = buffer
+  inline def unsafePos(using erased unsafe: Unsafe): Int = pos
+  inline def unsafeWriteEnd(using erased unsafe: Unsafe): Int = writeEnd
 
   // Bulk-advance without per-byte lineation tracking. Caller is responsible
   // for line/column updates if `lineation.active`. Intended for callers that
   // maintain a parser-local copy of `pos` for register-resident hot loops
   // and only push it back to the cursor at refill or mark/slice points.
-  inline def unsafeAdvanceBy(n: Int)(using erased Unsafe): Unit = pos += n
+  inline def unsafeAdvanceBy(n: Int)(using erased unsafe: Unsafe): Unit = pos += n
 
   // ─── current element ──────────────────────────────────────────────────────
 
-  inline def datum(using erased Unsafe): addressable.Operand =
+  inline def datum(using erased unsafe: Unsafe): addressable.Operand =
     addressable.storageAddress(buffer, pos)
 
   inline def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)

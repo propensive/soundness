@@ -259,18 +259,18 @@ case class TlsAcceptance
     trust:      Tls.Trust = Tls.Trust.Strict,
     revocation: Tls.Revocation = Tls.Revocation.SoftFail ):
 
-  def permitExpired(using erased Permit[Concession.ExpiredCertificate]): TlsAcceptance =
+  def permitExpired(using erased permit: Permit[Concession.ExpiredCertificate]): TlsAcceptance =
     copy(trust = trust.copy(expired = true))
 
-  def permitSelfSigned(using erased Permit[Concession.SelfSignedCertificate]): TlsAcceptance =
+  def permitSelfSigned(using erased permit: Permit[Concession.SelfSignedCertificate]): TlsAcceptance =
     copy(trust = trust.copy(selfSigned = true))
 
-  def permitHostnameMismatch(using erased Permit[Concession.UnverifiedHostname]): TlsAcceptance =
+  def permitHostnameMismatch(using erased permit: Permit[Concession.UnverifiedHostname]): TlsAcceptance =
     copy(trust = trust.copy(hostname = false))
 
   def requireRevocationChecks: TlsAcceptance = copy(revocation = Tls.Revocation.Required)
 
-  def permitRevoked(using erased Permit[Concession.UncheckedRevocation]): TlsAcceptance =
+  def permitRevoked(using erased permit: Permit[Concession.UncheckedRevocation]): TlsAcceptance =
     copy(revocation = Tls.Revocation.Unchecked)
 
   def trusting(anchors: List[jsc.X509Certificate]): TlsAcceptance =

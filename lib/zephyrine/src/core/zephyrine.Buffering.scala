@@ -46,6 +46,8 @@ object Buffering:
 
     def window: Int = 4
 
-trait Buffering:
+// Pure: a `Buffering` is only sizing policy, so instances are untracked under capture
+// checking and closures over them stay pure.
+trait Buffering extends caps.Pure:
   def capacity(substrate: Substrate): Int
   def window: Int

@@ -84,10 +84,16 @@ object DefaultShapeScope:
 
 object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
 
-  private def validateXml[result](xml: Xml)(decode: Xml => result raises XmlError tracks Xml.Focus)
+  // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
+  // cannot be typed under capture checking (its honest type is a curried dependent context
+  // function, an unimplemented compiler restriction), so the decode lambda must beta-reduce
+  // away into `protect`'s inline position. See rep/DECISIONS.md.
+  private inline def validateXml[result](xml: Xml)
+    (inline decode: Xml => result raises XmlError tracks Xml.Focus)
   :   XmlIssues =
-    validate[Xml.Focus](XmlIssues()):
-      case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
+    Validate[XmlIssues, [r] =>> r raises XmlError, Xml.Focus]
+      ( XmlIssues(),
+        { case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error) } )
     . protect(decode(xml))
 
   def run(): Unit =
@@ -218,23 +224,23 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
               "/person[1]/email[1]" )
 
     suite(m"Position-aware focus (tracked Xml)"):
-      def validateWithPositions[result]
+      case class Tagged(items: List[(Text, Optional[Int], Optional[Int])] = Nil)
+                       (using Diagnostics)
+      extends Error(m"${items.length} validation issues"):
+        def +(focus: Text, line: Optional[Int], column: Optional[Int]): Tagged =
+          Tagged(items :+ (focus, line, column))
+
+      inline def validateWithPositions[result]
         ( tracked: Xml.Tracked )
-        ( decode: Xml.Tracked => result raises XmlError tracks Xml.Focus )
+        ( inline decode: Xml.Tracked => result raises XmlError tracks Xml.Focus )
       :   List[(Text, Optional[Int], Optional[Int])] =
-
-        case class Tagged(items: List[(Text, Optional[Int], Optional[Int])] = Nil)
-                         (using Diagnostics)
-        extends Error(m"${items.length} validation issues"):
-          def +(focus: Text, line: Optional[Int], column: Optional[Int]): Tagged =
-            Tagged(items :+ (focus, line, column))
-
-        validate[Xml.Focus](Tagged()):
-          case error: XmlError =>
-            val position = prior.let(_.position)
-            accrual + ( prior.let(_.path.encode).or(t"#"),
-                        position.let(_.line.n1),
-                        position.let(_.column.n1) )
+        Validate[Tagged, [r] =>> r raises XmlError, Xml.Focus]
+          ( Tagged(),
+            { case error: XmlError =>
+                val position = prior.let(_.position)
+                accrual + ( prior.let(_.path.encode).or(t"#"),
+                            position.let(_.line.n1),
+                            position.let(_.column.n1) ) } )
         . protect(decode(tracked)).items
 
       test(m"Missing-field error on a tracked Xml reports the parent's position"):

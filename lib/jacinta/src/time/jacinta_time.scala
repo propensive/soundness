@@ -45,9 +45,15 @@ package encodables:
     Json.Encodable(Morphology.Whole): duration => Json((duration.value*1000).toLong)
 
 package decodables:
-  given instantJsonDecodable: Tactic[JsonError] => (Instant over Posix) is Json.Decodable =
-    Json.Decodable(Morphology.Whole): json =>
-      Instant.of[Posix](json.as[Long])
+  // Laundered pure like jacinta's primitive codecs (codec-thunk seal): as derived-product
+  // field codecs these are summoned against pure expected types.
+  given instantJsonDecodable: (tactic: Tactic[JsonError])
+  =>  (Instant over Posix) is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Whole): json =>
+        Instant.of[Posix](json.root.long)
 
-  given durationJsonDecodable: Tactic[JsonError] => Duration is Json.Decodable =
-    Json.Decodable(Morphology.Whole): json => Duration(json.as[Long])
+  given durationJsonDecodable: (tactic: Tactic[JsonError])
+  =>  Duration is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Whole): json => Duration(json.root.long)

@@ -50,16 +50,21 @@ package jsonPointerRegistries:
   given standaloneRegistry: JsonPointer.Registry:
     protected def lookup(url: HttpUrl): Optional[Json] = Unset
 
-  given fetchingRegistry: (Online, HttpEvent is Loggable, HttpClient) => JsonPointer.Registry:
-    protected def lookup(url: HttpUrl): Optional[Json] =
-      recover:
-        case VariantError(_, _, _) => Unset
-        case ConnectError(_)       => Unset
-        case HttpError(_, _)       => Unset
-        case ParseError(_, _, _)   => Unset
-        case JsonError(_)          => Unset
+  // The registry retains the HTTP client it fetches through, so the instance is a
+  // capability — a given constructed from capabilities produces a capability (Jon,
+  // 2026-07-06; see rep/DECISIONS.md).
+  given fetchingRegistry: (online: Online, loggable: HttpEvent is Loggable, client: HttpClient)
+  =>  (JsonPointer.Registry^{client}) =
+    new JsonPointer.Registry:
+      protected def lookup(url: HttpUrl): Optional[Json] =
+        recover:
+          case VariantError(_, _, _) => Unset
+          case ConnectError(_)       => Unset
+          case HttpError(_, _)       => Unset
+          case ParseError(_, _, _)   => Unset
+          case JsonError(_)          => Unset
 
-      . protect(url.fetch().receive[Json])
+        . protect(url.fetch().receive[Json])
 
 
 extension (json: Json)

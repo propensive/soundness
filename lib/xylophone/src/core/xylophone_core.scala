@@ -118,7 +118,7 @@ private def updateChildElements(xml: Xml, select: Int => Boolean, lambda: Xml =>
     case other =>
       other
 
-given lens: [name <: Label: ValueOf] => (erased DynamicXmlEnabler)
+given lens: [name <: Label: ValueOf] => (erased dynamicXmlEnabler: DynamicXmlEnabler)
 =>  name is Lens from Xml onto Xml =
   Lens(_.applyDynamic(valueOf[name])(Prim), replaceNamedChild(_, valueOf[name], _))
 

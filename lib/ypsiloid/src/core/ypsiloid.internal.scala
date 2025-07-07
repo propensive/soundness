@@ -172,13 +172,13 @@ object internal:
       case Some(s: String) => s
       case _               => Unset
 
-    val perPart: IndexedSeq[((String, Int, Int), Int => Int)] =
+    val perPart: IndexedSeq[((String, Int, Int), Int -> Int)] =
       parts.zip(parts2).zip(partOrigins).map: pair =>
         val ((origPart, parserPart), (srcStart, _)) = pair
         val srcSkip = origPart.length - parserPart.length
         val effectiveStart = srcStart + srcSkip
 
-        val mapping: Int => Int = sourceContent.lay(identity[Int]): content =>
+        val mapping: Int -> Int = sourceContent.lay(identity[Int]): content =>
           if effectiveStart > 0 && effectiveStart < content.length then
             val upper = (effectiveStart + parserPart.length * 6 + 16).min(content.length)
             val sourceText = content.substring(effectiveStart, upper).nn

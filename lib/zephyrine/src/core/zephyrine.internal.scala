@@ -38,7 +38,7 @@ import gigantism.*
 import rudiments.*
 
 object internal:
-  def consume(cursor: Expr[Cursor[?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =
+  def consume(cursor: Expr[Cursor[?, ?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =
     import quotes.reflect.*
 
     val text = text0.valueOrAbort
@@ -65,7 +65,8 @@ object internal:
   // records), not a byte count, so its meaning changes across a `Duct` that
   // changes medium; `Duct.translate` performs that conversion. Unboxed on the
   // hot path.
-  opaque type Credit = Long
+  // The pure upper bound lets capture checking treat transports as untracked values.
+  opaque type Credit <: Long = Long
 
   object Credit:
     inline def apply(count: Long): Credit = count
@@ -73,7 +74,7 @@ object internal:
     extension (credit: Credit)
       inline def count: Long = credit
 
-  opaque type Datum = Int
+  opaque type Datum <: Int = Int
 
   object Datum:
     // Sentinel for an exhausted cursor. The only `Datum` not derivable from a

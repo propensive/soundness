@@ -72,12 +72,14 @@ object DefaultShapeScope:
 
 object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
 
-  private def validateYaml[result](yaml: Yaml)
-                                  (decode: Yaml => result raises YamlError tracks Yaml.Focus)
+  // Inline + direct `Validate` construction; see ypsiloid.AccrualTests and rep/DECISIONS.md.
+  private inline def validateYaml[result](yaml: Yaml)
+    (inline decode: Yaml => result raises YamlError tracks Yaml.Focus)
   :   Issues2 =
-    validate[Yaml.Focus](Issues2()):
-      case error: YamlError =>
-        accrual + (prior.let(_.pointer.encode).or(t"#"), error)
+    Validate[Issues2, [r] =>> r raises YamlError, Yaml.Focus]
+      ( Issues2(),
+        { case error: YamlError =>
+            accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
     . protect(decode(yaml))
 
   def run(): Unit =

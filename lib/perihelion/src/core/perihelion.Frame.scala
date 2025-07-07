@@ -59,8 +59,9 @@ object Frame:
   // `Frame.encode`. `Masking` fixes the direction: a server requires the frame to be
   // masked (a client's), a client requires it to be unmasked (a server's). Uses
   // `peek`/`next`/`take` (not `lay`/`seek`), which don't reference the cursor's erased
-  // `Operand` type, so it works on a bare `Cursor[Data]` parameter.
-  def parse(cursor: Cursor[Data])(using masking: Masking): Optional[Frame] raises WebsocketError =
+  // `Operand` type, so it works on a bare `Cursor[Data, ?]` parameter.
+  def parse(cursor: Cursor[Data, ?])(using masking: Masking)
+  :   Optional[Frame] raises WebsocketError =
     if cursor.finished then Unset else
       val byte0 = cursor.peek.asInt
       cursor.next()

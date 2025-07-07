@@ -66,7 +66,8 @@ object GrpcFraming:
 
     header ++ payload
 
-  given framable: Tactic[GrpcError] => Data is Framable by GrpcFraming = input =>
+  given framable: (tactic: Tactic[GrpcError])
+  =>  ((Data is Framable by GrpcFraming)^{tactic}) = input =>
     def truncated(): Nothing =
       abort(GrpcError(Grpc.Status.Internal, t"the gRPC message frame was truncated"))
 

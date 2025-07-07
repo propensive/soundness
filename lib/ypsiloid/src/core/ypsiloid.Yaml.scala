@@ -59,7 +59,11 @@ import zephyrine.*
 
 import YamlError.Reason
 
+// `Yaml2` is only ever mixed into the `Yaml` object; pinning its self type to `Yaml.type` makes
+// `this` a stable singleton, so the `provide`-wrapped decoder SAMs defined here do not capture an
+// abstract trait self (which capture checking would reject as an impure capability).
 trait Yaml2:
+  this: Yaml.type =>
   given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( encodable: inner is Encodable in Yaml )
   =>  value is Encodable in Yaml =
@@ -75,19 +79,31 @@ trait Yaml2:
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[YamlError]
   =>  ( decodable: => inner is Decodable in Yaml )
-  =>  value is Decodable in Yaml = yaml =>
-    if yaml.root == Unset then Unset else decodable.decoded(yaml)
+  =>  value is Decodable in Yaml =
+    // The by-name inner decoder and resolution-scoped tactic share this instance's
+    // given-resolution lifetime; laundered pure (the codec-thunk seal pattern).
+    caps.unsafe.unsafeAssumePure: yaml =>
+          if yaml.root == Unset then Unset else decodable.decoded(yaml)
 
+
+  // See `decodeMapping`: the `Tactic` is summoned at the SAM and passed to a stable helper, rather
+  // than re-summoned via `provide` inside the SAM (which would capture the `yaml` parameter).
+  private inline def decodePrimitive[value]
+    ( yaml: Yaml )
+    ( using value is Decodable in Text, Tactic[YamlError] )
+  :   value =
+
+    yaml.root.asMatchable match
+      case s: String => s.tt.decode[value]
+
+      case _ =>
+        abort(YamlError(Reason.NotType(Yaml.primitive(yaml.root), YamlPrimitive.Str)))
 
   inline given decodable: [value] => value is Decodable in Yaml = summonFrom:
     case given (`value` is Decodable in Text) =>
       yaml =>
-        provide[Tactic[YamlError]]:
-          yaml.root.asMatchable match
-            case s: String => s.tt.decode[value]
-
-            case _ =>
-              abort(YamlError(Reason.NotType(Yaml.primitive(yaml.root), YamlPrimitive.Str)))
+        decodePrimitive[value](yaml)
+          (using infer[value is Decodable in Text], infer[Tactic[YamlError]])
 
     case given Reflection[`value`] =>
       DecodableDerivation.derived
@@ -100,9 +116,21 @@ trait Yaml2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Yaml =
 
+      // Capabilities are summoned at the derivation site and passed explicitly to `decodeMapping`
+      // rather than re-summoned via `provide` inside the SAM: under capture checking a `provide`
+      // wraps the body in a context function that captures the `yaml` parameter, which the pure
+      // `Decodable` SAM rejects.
       yaml =>
-        provide[Foci[Yaml.Focus]]:
-          provide[Tactic[YamlError]]:
+        decodeMapping[derivation](yaml)
+          ( using infer[ProductReflection[derivation]],
+                  infer[Foci[Yaml.Focus]],
+                  infer[Tactic[YamlError]] )
+
+    private inline def decodeMapping[derivation <: Product]
+      ( yaml: Yaml )
+      ( using ProductReflection[derivation], Foci[Yaml.Focus], Tactic[YamlError] )
+    :   derivation =
+
             val arr: IArray[Any] | Null = yaml.root.asMatchable match
               case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
                 xs.asInstanceOf[IArray[Any]]
@@ -292,13 +320,29 @@ object Yaml extends Yaml2, Dynamic:
   //
   // `null` represents a YAML null. `Unset.type` marks an absent value
   // (e.g. a missing field in a case-class derivation).
-  opaque type Ast =
-    YamlString | YamlInteger | YamlDecimal | YamlBoolean | YamlNull | YamlSequence | YamlMapping |
-      Unset
+  // A phantom `caps.Pure` upper bound keeps capture checking from stamping spurious capture sets on
+  // YAML values (which are always immutable). `Matchable` is *not* in the bound: one member,
+  // `YamlSequence`/`YamlMapping = IArray[Any]`, is not statically `<: Matchable`, which would make
+  // the bound conflict; `.asMatchable` still works (it is universal).
+  opaque type Ast <: caps.Pure =
+    (YamlString | YamlInteger | YamlDecimal | YamlBoolean | YamlNull | YamlSequence | YamlMapping |
+      Unset) & caps.Pure
 
+  // Whether `Yaml.Parser` captures line/column/length descriptors
+  // alongside the AST. The default is `Off`, matching the historic
+  // behaviour. Bring `Yaml.Tracking.On` into scope before calling
+  // `.read[Yaml]` / `.load[Yaml]` / `Yaml.parseAll(...)` to get a
+  // `Yaml` with `positionIndex` populated and `locate(pointer)`
+  // returning concrete `Position`s. Mirrors the precedent set by
+  // `jacinta.NumberMode`.
+  object Tracking:
+    given default: Tracking = Off
+
+  enum Tracking:
+    case On, Off
 
   // A flat `IArray[Int]` of position descriptors, produced alongside the AST
-  // when a `Yaml` is parsed with `PositionTracking.On`. All internal offsets are
+  // when a `Yaml` is parsed with `Tracking.On`. All internal offsets are
   // stored relative to the start of the containing descriptor, so any slice
   // taken at a descriptor boundary is itself a valid `PositionIndex` —
   // mirrors `jacinta.Json.PositionIndex`.
@@ -613,20 +657,29 @@ object Yaml extends Yaml2, Dynamic:
 
     // ── Constructors ────────────────────────────────────────────────────────
 
+    // `Ast` is a pure type (a phantom `caps.Pure` upper bound keeps capture checking from stamping
+    // spurious capture sets on YAML values, which are always immutable). The pure tag is erased, so
+    // every constructor casts its plain underlying value through `make`.
+    private inline def make
+      ( value: Long | Double | Bcd | Boolean | String | IArray[Any] | YamlNull.type | Unset )
+    :   Yaml.Ast =
+
+      value.asInstanceOf[Yaml.Ast]
+
     inline def apply
       ( value:
         Long | Double | Bcd | Boolean | String | IArray[Any] | YamlNull.type | Unset )
     :   Yaml.Ast =
 
-      value
+      make(value)
 
-    val Null: Yaml.Ast = YamlNull
+    val Null: Yaml.Ast = make(YamlNull)
 
-    inline def Bool(value: Boolean): Yaml.Ast = value
-    inline def Integer(value: Long): Yaml.Ast = value
-    inline def Decimal(value: Double): Yaml.Ast = value
-    inline def BcdValue(value: Bcd): Yaml.Ast = value
-    inline def Str(value: Text): Yaml.Ast = value.s
+    inline def Bool(value: Boolean): Yaml.Ast = make(value)
+    inline def Integer(value: Long): Yaml.Ast = make(value)
+    inline def Decimal(value: Double): Yaml.Ast = make(value)
+    inline def BcdValue(value: Bcd): Yaml.Ast = make(value)
+    inline def Str(value: Text): Yaml.Ast = make(value.s)
 
     // Wrap an `IArray[Yaml.Ast]` of items as a sequence node. If the count
     // is even, append the `arrayPad` sentinel so the final node has odd
@@ -634,12 +687,12 @@ object Yaml extends Yaml2, Dynamic:
     def Sequence(items: IArray[Yaml.Ast]): Yaml.Ast =
       val n = items.length
 
-      if (n & 1) == 1 then items.asInstanceOf[IArray[Any]]
+      if (n & 1) == 1 then items.asInstanceOf[Yaml.Ast]
       else
         val padded = new Array[Any](n + 1)
         System.arraycopy(items.asInstanceOf[Array[Any]], 0, padded, 0, n)
         padded(n) = arrayPad
-        padded.asInstanceOf[IArray[Any]]
+        padded.asInstanceOf[Yaml.Ast]
 
     // Wrap parallel keys/values as a mapping node, flattened to alternating
     // `[k0, v0, k1, v1, ...]`. The result has even length.
@@ -654,7 +707,7 @@ object Yaml extends Yaml2, Dynamic:
         arr(i*2 + 1) = v.asInstanceOf[Any]
         i += 1
 
-      arr.asInstanceOf[IArray[Any]]
+      arr.asInstanceOf[Yaml.Ast]
 
     // Build a sequence directly from a raw `Array[Any]` of items (no
     // copy if the length is already odd; pad once otherwise). The parser
@@ -662,17 +715,17 @@ object Yaml extends Yaml2, Dynamic:
     private[ypsiloid] def seqFromAnyArray(items: Array[Any]): Yaml.Ast =
       val n = items.length
 
-      if (n & 1) == 1 then items.asInstanceOf[IArray[Any]]
+      if (n & 1) == 1 then items.asInstanceOf[Yaml.Ast]
       else
         val padded = new Array[Any](n + 1)
         System.arraycopy(items, 0, padded, 0, n)
         padded(n) = arrayPad
-        padded.asInstanceOf[IArray[Any]]
+        padded.asInstanceOf[Yaml.Ast]
 
     // Build a mapping directly from a flat `Array[Any]` of alternating
     // key/value entries. Length must be even.
     private[ypsiloid] def mapFromAnyArray(entries: Array[Any]): Yaml.Ast =
-      entries.asInstanceOf[IArray[Any]]
+      entries.asInstanceOf[Yaml.Ast]
 
     // ── Inspection ──────────────────────────────────────────────────────────
 
@@ -948,10 +1001,10 @@ object Yaml extends Yaml2, Dynamic:
   // `object Yaml` extends `Dynamic`, which suppresses the universal-apply
   // synthesis for `Yaml(...)` once the primary constructor takes more than
   // one parameter; these explicit overloads forward to the constructor.
-  def apply(value: Any): Yaml = new Yaml(value)
+  def apply(value: Any): Yaml = new Yaml(value.asInstanceOf[Yaml.Ast])
 
   def apply(value: Any, positions: Optional[Yaml.PositionIndex]): Yaml =
-    new Yaml(value, positions)
+    new Yaml(value.asInstanceOf[Yaml.Ast], positions)
 
   // Canonical external accessor for the underlying AST. The `root`
   // field on `class Yaml` is package-private so that breaking through
@@ -1058,11 +1111,14 @@ object Yaml extends Yaml2, Dynamic:
   given yaml: Yaml is Decodable in Yaml = identity(_)
   given yamlEncodable: Yaml is Encodable in Yaml = identity(_)
 
-  given bytes: Tactic[YamlError] => Bytes is Decodable in Yaml = _.root.long.b
+  // Laundered pure like the primitive codecs (codec-thunk seal; see rep/DECISIONS.md).
+  given bytes: (tactic: Tactic[YamlError])
+  =>  Bytes is Decodable in Yaml =
+    caps.unsafe.unsafeAssumePure(_.root.long.b)
 
-  given lens: [name <: Label: ValueOf] => (erased DynamicYamlEnabler) => Tactic[YamlError]
-  =>  name is Lens from Yaml onto Yaml =
-    Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+  given lens: [name <: Label: ValueOf] => (erased dynamicYamlEnabler: DynamicYamlEnabler) => (tactic: Tactic[YamlError])
+  =>  ((name is Lens from Yaml onto Yaml)^{tactic}) =
+    Lens(_.selectDynamic(valueOf[name]), (yaml, value) => yaml.modify(valueOf[name], value))
 
   given ordinalOptical: [element] => Ordinal is Optical from Yaml onto Yaml = ordinal =>
     Optic: (origin, lambda) =>
@@ -1151,46 +1207,54 @@ object Yaml extends Yaml2, Dynamic:
     if yaml.root.isAbsent then raise(YamlError(Reason.Absent)) yet sentinel
     else raise(YamlError(Reason.NotType(primitive(yaml.root), expected))) yet sentinel
 
-  given int: Tactic[YamlError] => Int is Decodable in Yaml = yaml =>
+  given int: (tactic: Tactic[YamlError])
+  =>  ((Int is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case n: Long   => n.toInt
       case d: Double => d.toInt
       case _         => primitiveFault(yaml, YamlPrimitive.Integer, 0)
 
-  given long: Tactic[YamlError] => Long is Decodable in Yaml = yaml =>
+  given long: (tactic: Tactic[YamlError])
+  =>  ((Long is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case n: Long   => n
       case d: Double => d.toLong
       case _         => primitiveFault(yaml, YamlPrimitive.Integer, 0L)
 
-  given double: Tactic[YamlError] => Double is Decodable in Yaml = yaml =>
+  given double: (tactic: Tactic[YamlError])
+  =>  ((Double is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case d: Double => d
       case n: Long   => n.toDouble
       case _         => primitiveFault(yaml, YamlPrimitive.Decimal, 0.0)
 
-  given float: Tactic[YamlError] => Float is Decodable in Yaml = yaml =>
+  given float: (tactic: Tactic[YamlError])
+  =>  ((Float is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case d: Double => d.toFloat
       case n: Long   => n.toFloat
       case _         => primitiveFault(yaml, YamlPrimitive.Decimal, 0.0f)
 
-  given boolean: Tactic[YamlError] => Boolean is Decodable in Yaml = yaml =>
+  given boolean: (tactic: Tactic[YamlError])
+  =>  ((Boolean is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case b: Boolean => b
       case _          => primitiveFault(yaml, YamlPrimitive.Bool, false)
 
-  given text: Tactic[YamlError] => Text is Decodable in Yaml = yaml =>
+  given text: (tactic: Tactic[YamlError])
+  =>  ((Text is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case s: String => s.tt
       case _         => primitiveFault(yaml, YamlPrimitive.Str, t"")
 
-  given string: Tactic[YamlError] => String is Decodable in Yaml = yaml =>
+  given string: (tactic: Tactic[YamlError])
+  =>  ((String is Decodable in Yaml)^{tactic}) = yaml =>
     yaml.root.asMatchable match
       case s: String => s
       case _         => primitiveFault(yaml, YamlPrimitive.Str, "")
 
-  given unit: Tactic[YamlError] => Unit is Decodable in Yaml = yaml =>
+  given unit: (tactic: Tactic[YamlError])
+  =>  ((Unit is Decodable in Yaml)^{tactic}) = yaml =>
     if yaml.root.isNull then ()
     else primitiveFault(yaml, YamlPrimitive.Null, ())
 
@@ -1199,73 +1263,77 @@ object Yaml extends Yaml2, Dynamic:
         tactic:    Tactic[YamlError],
         foci:      Foci[Yaml.Focus] )
   =>  ( decodable: => element is Decodable in Yaml )
-  =>  collection[element] is Decodable in Yaml = yaml =>
-    yaml.root.asMatchable match
-      case xs: IArray[?] @unchecked if (xs.length & 1) == 1 =>
-        // Sequence (odd length, possibly with a trailing pad sentinel).
-        val n = xs.length
+  =>  collection[element] is Decodable in Yaml =
+    // By-name element codec + resolution-scoped tactic; laundered pure (the codec-thunk seal).
+    caps.unsafe.unsafeAssumePure: yaml =>
+      yaml.root.asMatchable match
+        case xs: IArray[?] @unchecked if (xs.length & 1) == 1 =>
+          // Sequence (odd length, possibly with a trailing pad sentinel).
+          val n = xs.length
 
-        val effective =
-          if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then n - 1
-          else n
+          val effective =
+            if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then n - 1
+            else n
 
-        val builder = factory.newBuilder
-        var i = 0
+          val builder = factory.newBuilder
+          var i = 0
 
-        while i < effective do
-          val ordinal = denominative.Ordinal.zerary(i)
+          while i < effective do
+            val ordinal = denominative.Ordinal.zerary(i)
 
-          focus({
-            val base = prior.let(_.pointer).or(YamlPath())
-            Yaml.Focus(base.prepend(ordinal))
-          }):
-            builder += decodable.decoded(new Yaml(xs(i).asInstanceOf[Yaml.Ast]))
+            focus({
+              val base = prior.let(_.pointer).or(YamlPath())
+              Yaml.Focus(base.prepend(ordinal))
+            }):
+              builder += decodable.decoded(new Yaml(xs(i).asInstanceOf[Yaml.Ast]))
 
-          i += 1
+            i += 1
 
-        builder.result()
+          builder.result()
 
-      case other =>
-        raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
-                                       YamlPrimitive.Sequence)))
+        case other =>
+          raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
+                                         YamlPrimitive.Sequence)))
 
-        factory.newBuilder.result()
+          factory.newBuilder.result()
 
   given map: [value: Decodable in Yaml] => Tactic[YamlError]
-  =>  Map[Text, value] is Decodable in Yaml = yaml =>
-    yaml.root.asMatchable match
-      case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
-        // Mapping (even length, alternating keys and values flat).
-        val n = xs.length / 2
-        var result = Map.empty[Text, value]
-        var i = 0
+  =>  Map[Text, value] is Decodable in Yaml =
+    // Resolution-scoped tactic and value codec; laundered pure (the codec-thunk seal).
+    caps.unsafe.unsafeAssumePure: yaml =>
+      yaml.root.asMatchable match
+        case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+          // Mapping (even length, alternating keys and values flat).
+          val n = xs.length / 2
+          var result = Map.empty[Text, value]
+          var i = 0
 
-        while i < n do
-          val rawKey = xs(i*2).asInstanceOf[Yaml.Ast]
-          val rawValue = xs(i*2 + 1).asInstanceOf[Yaml.Ast]
+          while i < n do
+            val rawKey = xs(i*2).asInstanceOf[Yaml.Ast]
+            val rawValue = xs(i*2 + 1).asInstanceOf[Yaml.Ast]
 
-          val keyText: Text =
-            if rawKey.isNull then t"null"
-            else rawKey.asMatchable match
-              case s: String  => s.tt
-              case k: Long    => k.toString.tt
-              case k: Double  => k.toString.tt
-              case k: Boolean => k.toString.tt
+            val keyText: Text =
+              if rawKey.isNull then t"null"
+              else rawKey.asMatchable match
+                case s: String  => s.tt
+                case k: Long    => k.toString.tt
+                case k: Double  => k.toString.tt
+                case k: Boolean => k.toString.tt
 
-              case other =>
-                abort(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
-                                               YamlPrimitive.Str)))
+                case other =>
+                  abort(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
+                                                 YamlPrimitive.Str)))
 
-          result = result.updated(keyText, value.decoded(new Yaml(rawValue)))
-          i += 1
+            result = result.updated(keyText, value.decoded(new Yaml(rawValue)))
+            i += 1
 
-        result
+          result
 
-      case other =>
-        raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
-                                       YamlPrimitive.Mapping)))
+        case other =>
+          raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
+                                         YamlPrimitive.Mapping)))
 
-        Map.empty
+          Map.empty
 
   given option: [value: Decodable in Yaml] => Option[value] is Decodable in Yaml = yaml =>
     if yaml.root.isAbsent || yaml.root.isNull then None
@@ -1300,9 +1368,11 @@ object Yaml extends Yaml2, Dynamic:
 
   given iterableEncodable: [collection <: Iterable, element]
   =>  ( encodable: => element is Encodable in Yaml )
-  =>  collection[element] is Encodable in Yaml = values =>
-    val items = IArray.from(values.map(encodable.encode(_).root))
-    Yaml.ast(Yaml.Ast.Sequence(items))
+  =>  collection[element] is Encodable in Yaml =
+    // By-name element codec; laundered pure (the codec-thunk seal).
+    caps.unsafe.unsafeAssumePure: values =>
+      val items = IArray.from(values.map(encodable.encode(_).root))
+      Yaml.ast(Yaml.Ast.Sequence(items))
 
 
   given mapEncodable: [key: Encodable in Text, element]
@@ -1423,47 +1493,48 @@ object Yaml extends Yaml2, Dynamic:
   // ── Parser entry-points ─────────────────────────────────────────────────
 
   // Whether parsing captures line/column/length descriptors alongside the
-  // AST is controlled by the contextual `PositionTracking` mode in scope —
-  // mirrors `jacinta.NumberMode`. Default is `PositionTracking.Off` (no
+  // AST is controlled by the contextual `Tracking` mode in scope —
+  // mirrors `jacinta.NumberMode`. Default is `Tracking.Off` (no
   // descriptor capture). Callers wanting position-aware `Yaml.locate`
   // (and, in subsequent PRs, focus-aware decoding) bring
-  // `PositionTracking.On` into scope before calling `.read[Yaml]` / `.load[Yaml]`
+  // `Tracking.On` into scope before calling `.read[Yaml]` / `.load[Yaml]`
   // / `Yaml.parseAll(...)`.
 
-  given decodable: (Tactic[ParseError], PositionTracking) => Yaml is Decodable in Text =
-    text => summon[PositionTracking] match
-      case PositionTracking.On =>
+  given decodable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  =>  ((Yaml is Decodable in Text)^{tactic}) =
+    text => tracking match
+      case Yaml.Tracking.On =>
         val (ast, ints) = Yaml.Parser.parseTracked(text)
         new Yaml(ast, Yaml.PositionIndex(ints))
 
-      case PositionTracking.Off =>
+      case Yaml.Tracking.Off =>
         Yaml(Yaml.Parser.parse(text))
 
-  private[ypsiloid] def parseAll(input: Text)(using Tactic[ParseError], PositionTracking)
-  :   List[Yaml] =
-
-    summon[PositionTracking] match
-      case PositionTracking.On =>
+  def parseAll(input: Text)(using Tactic[ParseError], Yaml.Tracking): List[Yaml] =
+    summon[Yaml.Tracking] match
+      case Yaml.Tracking.On =>
         Yaml.Parser.parseAllTracked(input).map: (ast, ints) =>
           new Yaml(ast, Yaml.PositionIndex(ints))
 
-      case PositionTracking.Off =>
+      case Yaml.Tracking.Off =>
         Yaml.Parser.parseAll(input).map(Yaml(_))
 
-  given aggregable: (Tactic[ParseError], PositionTracking) => Yaml is Aggregable by Text =
+  given aggregable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  =>  ((Yaml is Aggregable by Text)^{tactic}) =
     summon[Text is Aggregable by Text].map: text =>
-      summon[PositionTracking] match
-        case PositionTracking.On =>
+      summon[Yaml.Tracking] match
+        case Yaml.Tracking.On =>
           val (ast, ints) = Yaml.Parser.parseTracked(text)
           new Yaml(ast, Yaml.PositionIndex(ints))
 
-        case PositionTracking.Off =>
+        case Yaml.Tracking.Off =>
           Yaml(Yaml.Parser.parse(text))
 
   // Multi-document reads (`---`-separated YAML) through the uniform `.read`
   // API: `text.read[List[Yaml]]` yields one `Yaml` per document. Backed by
   // `parseAll`, this replaces the former bespoke `Text.readAll` extension.
-  given aggregableAll: (Tactic[ParseError], PositionTracking) => List[Yaml] is Aggregable by Text =
+  given aggregableAll: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  =>  ((List[Yaml] is Aggregable by Text)^{tactic}) =
     summon[Text is Aggregable by Text].map(parseAll(_))
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes a
@@ -1483,8 +1554,8 @@ object Yaml extends Yaml2, Dynamic:
         ( t"application/yaml; charset=${encoder.encoding.name}",
           HttpStreams.Body(Yaml.unseal(value).show.data) )
 
-  given instantiable: (Tactic[ParseError], PositionTracking)
-  =>  Yaml is Instantiable across HttpRequests from Text =
+  given instantiable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  =>  ((Yaml is Instantiable across HttpRequests from Text)^{tactic}) =
 
     text => LazyList(text).read[Yaml]
 
@@ -1494,16 +1565,16 @@ object Yaml extends Yaml2, Dynamic:
   // `asInstanceOf` cast — `value in Yaml` is just `value { type
   // Form = Yaml }` so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Yaml]
-  =>  ( Tactic[ParseError], Tactic[YamlError], PositionTracking )
-  =>  (value in Yaml) is Aggregable by Text =
+  =>  ( tactic: Tactic[ParseError], yamlTactic: Tactic[YamlError], tracking: Yaml.Tracking )
+  =>  (((value in Yaml) is Aggregable by Text)^{tactic, yamlTactic}) =
 
     summon[Text is Aggregable by Text].map: text =>
-      val yaml = summon[PositionTracking] match
-        case PositionTracking.On =>
+      val yaml = summon[Yaml.Tracking] match
+        case Yaml.Tracking.On =>
           val (ast, ints) = Yaml.Parser.parseTracked(text)
           new Yaml(ast, Yaml.PositionIndex(ints))
 
-        case PositionTracking.Off =>
+        case Yaml.Tracking.Off =>
           Yaml(Yaml.Parser.parse(text))
 
       yaml.as[value].asInstanceOf[value in Yaml]
@@ -1557,7 +1628,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Tracked entry points — produce the AST plus a flat `IArray[Int]`
     // descriptor index. Used by the tracking-aware `Decodable`/`Aggregable`
-    // givens in `object Yaml` when `PositionTracking.On` is in scope.
+    // givens in `object Yaml` when `Yaml.Tracking.On` is in scope.
     def parseTracked(input: Text)(using Tactic[ParseError]): (Yaml.Ast, IArray[Int]) =
       val parser = pool.get.nn
       parser.tracking = true
@@ -1610,7 +1681,7 @@ object Yaml extends Yaml2, Dynamic:
     // pattern: keep `bytes`/`pos`/`bufEnd` as plain fields so the JIT can
     // hold them in registers across hot byte loops. Sync to the cursor
     // before mark/slice/refill operations and refresh after.
-    private var cursor:    Cursor[Data]      = null.asInstanceOf[Cursor[Data]]
+    private var cursor:    Cursor[Data, ?]      = null.asInstanceOf[Cursor[Data, ?]]
     private var heldToken: Cursor.Held | Null = null
     private var bytes:     Array[Byte]       = null.asInstanceOf[Array[Byte]]
     private var pos:       Int               = 0
@@ -1703,12 +1774,12 @@ object Yaml extends Yaml2, Dynamic:
       cursor = makeCursor(input)
       resetParserState()
 
-    // Build a `Cursor[Data]` with the appropriate `Lineation`. The two
+    // Build a `Cursor[Data, ?]` with the appropriate `Lineation`. The two
     // `import`s are mutually exclusive — both define a `Lineation` for
     // `Data` and bringing both into scope at the same time would render
-    // `Cursor[Data]` constructor resolution ambiguous. Local-import-per-
+    // `Cursor[Data, ?]` constructor resolution ambiguous. Local-import-per-
     // branch is the workaround established by jacinta #1147.
-    private def makeCursor(input: Data): Cursor[Data] =
+    private def makeCursor(input: Data): Cursor[Data, ?] =
       if tracking then zephyrine.lineation.linefeedByte.give(Cursor[Data](input))
       else Lineation.untrackedData.give(Cursor[Data](input))
 
@@ -2750,7 +2821,7 @@ object Yaml extends Yaml2, Dynamic:
         if b == Colon then
           // Mapping-key colon iff the byte after the colon is whitespace
           // or end-of-input. The whole input is loaded at parser reset
-          // (`Cursor[Data]` over a single `Data` buffer), so a direct
+          // (`Cursor[Data, ?]` over a single `Data` buffer), so a direct
           // bounds check on the snapshot suffices — no refill needed.
           val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
 
@@ -3451,12 +3522,12 @@ object Yaml extends Yaml2, Dynamic:
       if (n & 1) == 1 then
         val arr = new Array[Any](n)
         buf.copyToArray(arr)
-        arr.asInstanceOf[IArray[Any]].asInstanceOf[Yaml.Ast]
+        arr.asInstanceOf[Yaml.Ast]
       else
         val arr = new Array[Any](n + 1)
         buf.copyToArray(arr)
         arr(n) = Yaml.Ast.arrayPad
-        arr.asInstanceOf[IArray[Any]].asInstanceOf[Yaml.Ast]
+        arr.asInstanceOf[Yaml.Ast]
 
     // The buffer was filled with alternating key/value items, so the count
     // is already even; copy directly into a flat `Array[Any]`.
@@ -3464,7 +3535,7 @@ object Yaml extends Yaml2, Dynamic:
       val n = buf.length
       val arr = new Array[Any](n)
       buf.copyToArray(arr)
-      arr.asInstanceOf[IArray[Any]].asInstanceOf[Yaml.Ast]
+      arr.asInstanceOf[Yaml.Ast]
 
     // Within a flow context, whitespace and newlines are insignificant
     // separators; comments still apply but require leading whitespace
@@ -5655,12 +5726,12 @@ object Yaml extends Yaml2, Dynamic:
       result
 
 
-class Yaml(rootValue: Any, positions: Optional[Yaml.PositionIndex] = Unset)
+class Yaml(rootValue: Yaml.Ast, positions: Optional[Yaml.PositionIndex] = Unset)
 extends Dynamic derives CanEqual:
-  private[ypsiloid] def root: Yaml.Ast = rootValue.asInstanceOf[Yaml.Ast]
+  private[ypsiloid] def root: Yaml.Ast = rootValue
 
   // The flat position-descriptor index produced alongside the AST when this
-  // `Yaml` was parsed under `PositionTracking.On`. `Unset` for non-tracking parses
+  // `Yaml` was parsed under `Tracking.On`. `Unset` for non-tracking parses
   // and for any `Yaml` built from a decoded/computed value.
   def positionIndex: Optional[Yaml.PositionIndex] = positions
 
@@ -5699,16 +5770,16 @@ extends Dynamic derives CanEqual:
   // Dynamic field access — `yaml.foo` desugars to `selectDynamic("foo")`.
   // Gated on an erased `DynamicYamlEnabler` so the feature is opt-in via
   // `import dynamicYamlAccess.enabled`.
-  def selectDynamic(field: String)(using erased DynamicYamlEnabler): Yaml = apply(field.tt)
+  def selectDynamic(field: String)(using erased dynamicYamlEnabler: DynamicYamlEnabler): Yaml = apply(field.tt)
 
-  def applyDynamic(field: String)(index: Int)(using erased DynamicYamlEnabler)
+  def applyDynamic(field: String)(index: Int)(using erased dynamicYamlEnabler: DynamicYamlEnabler)
   :   Yaml raises YamlError =
 
     apply(field.tt)(index)
 
   // Immutable update: `yaml(0) = newValue` desugars to `update(0, newValue)`.
   def update[value: Encodable in Yaml](index: Int, value: value)
-    ( using erased DynamicYamlEnabler )
+    ( using erased dynamicYamlEnabler: DynamicYamlEnabler )
   :   Yaml raises YamlError =
 
     if !root.isArray then
@@ -5730,12 +5801,12 @@ extends Dynamic derives CanEqual:
   // `yaml.foo = newValue` — replaces `foo` if present, or appends a new
   // entry. `yaml.foo = Unset` deletes the entry.
   def updateDynamic(field: String)[value: Encodable in Yaml](value: value)
-    ( using erased DynamicYamlEnabler )
+    ( using erased dynamicYamlEnabler: DynamicYamlEnabler )
   :   Yaml raises YamlError =
 
     modify(field, value.encode)
 
-  def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicYamlEnabler)
+  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamicYamlEnabler: DynamicYamlEnabler)
   :   Yaml raises YamlError =
 
     delete(field)

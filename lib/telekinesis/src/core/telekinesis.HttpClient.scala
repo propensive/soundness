@@ -127,5 +127,8 @@ object HttpClient:
       logResponse:
         loop(jn.URI.create(url.show.s).nn, httpRequest.method, httpRequest.body, redirection.value)
 
-trait HttpClient extends Targetable:
+// An `HttpClient` is a capability: its instances are constructed from other capabilities (a
+// `Tactic`, an `Online` token, a backend) which they retain — a given that takes capabilities
+// as parameters produces a capability (Jon, 2026-07-06; see rep/DECISIONS.md).
+trait HttpClient extends Targetable, caps.ExclusiveCapability:
   def request(request: Http.Request, target: Target): Http.Response logs HttpEvent

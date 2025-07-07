@@ -100,19 +100,30 @@ trait Json2 extends Json3:
 
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[JsonError]
-  =>  ( decodable: => inner is Json.Decodable )
+  =>  ( decodable: => (inner is Json.Decodable) )
   =>  value is Json.Decodable =
 
-    Json.Decodable(Morphology.Opt(decodable.shape())): json =>
-      // An `Optional` field reads `Unset` from an absent key *and* from an
-      // explicit JSON `null`: both mean "no value" on the wire. (Missing keys
-      // arrive here as `Unset`; a present `null` arrives as the `JsonNull`
-      // sentinel.)
-      if json.root.isAbsent || json.root.isNull then Unset else decodable.decoded(json)
+    // The inner codec may capture the consumer's `Tactic` (primitive codecs are tactic-taking
+    // givens), so the by-name argument synthesized by given resolution is not capture-free. A
+    // codec instance is pure by design, and its lifetime is governed by the same given
+    // resolution that bound the tactic, so the whole instance is laundered pure rather than
+    // making every codec instance a capability. (The honest alternative — capturing instance
+    // types throughout — is the given-captures-context design question; see rep/DECISIONS.md.)
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Opt(decodable.shape())): json =>
+        // An `Optional` field reads `Unset` from an absent key *and* from an
+        // explicit JSON `null`: both mean "no value" on the wire. (Missing keys
+        // arrive here as `Unset`; a present `null` arrives as the `JsonNull`
+        // sentinel.)
+        if json.root.isAbsent || json.root.isNull then Unset else decodable.decoded(json)
 
 
-  given bytes: Tactic[JsonError] => Bytes is Json.Decodable =
-    Json.Decodable(Morphology.Whole)(_.root.long.b)
+  // Laundered pure per the codec-thunk seal pattern, like the primitive codecs in
+  // `object Json` (see the comment there and rep/DECISIONS.md).
+  given bytes: (tactic: Tactic[JsonError])
+  =>  Bytes is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Whole)(_.root.long.b)
 
   inline given decodable: [value] => value is Json.Decodable = summonFrom:
     // `Json` decodes to itself. Handled here (not as a separate carrier given) so it
@@ -123,7 +134,11 @@ trait Json2 extends Json3:
       Json.Decodable[Json](Morphology.Any)(identity(_)).asInstanceOf[value is Json.Decodable]
 
     case given (`value` is distillate.Decodable in Text) =>
-      Json.Decodable(Morphology.Str)(provide[Tactic[JsonError]](_.root.string.decode[value]))
+      // The decode lambda closes over the `provide`-summoned tactic, which shares the
+      // instance's given-resolution lifetime; laundered pure per the codec-thunk seal
+      // pattern (see rep/DECISIONS.md), like the primitive codecs.
+      caps.unsafe.unsafeAssumePure:
+        Json.Decodable(Morphology.Str)(provide[Tactic[JsonError]](_.root.string.decode[value]))
 
     case given Reflection[`value`] =>
       DecodableDerivation.derived
@@ -146,47 +161,69 @@ trait Json2 extends Json3:
       // one each for fields and required) keeps the inlined codegen within JVM class
       // limits; it must be inlined here (not factored into a helper) so it does not
       // perturb the `build` traversal below. Built by-name so recursive types compile.
-      Json.Decodable({
-        val fields: List[(Text, Morphology)] =
-          contexts[derivation](): [field] => context => (label, context.shape())
-          . to(List)
+      // The capabilities are summoned at the derivation site and supplied explicitly to
+      // `decodeObject`, rather than re-summoned inside the decoder body via nested `provide`s
+      // (under capture checking those minted distinct root capabilities that failed to unify
+      // with `build`'s per-field lambda). The decode SAM therefore closes over the
+      // resolution-scoped tactic, which shares the instance's given-resolution lifetime, so
+      // the instance is laundered pure per the codec-thunk seal pattern (see the primitive
+      // codecs in `object Json` and rep/DECISIONS.md).
+      caps.unsafe.unsafeAssumePure:
+        Json.Decodable({
+          val fields: List[(Text, Morphology)] =
+            contexts[derivation](): [field] => context => (label, context.shape())
+            . to(List)
 
-        Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
-      }):
-        json =>
-          provide[Foci[Json.Focus]]:
-            provide[Tactic[JsonError]]:
-              val root = json.root
-              val n = root.objectSize
-              val values = scm.HashMap.empty[String, Json.Ast]
-              var i = 0
+          Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
+        }):
+          json =>
+            decodeObject[derivation](json)
+              ( using infer[ProductReflection[derivation]],
+                      infer[Foci[Json.Focus]],
+                      infer[Tactic[JsonError]] )
 
-              while i < n do
-                values.update(root.objectKey(i), root.objectValue(i))
-                i += 1
+    private inline def decodeObject[derivation <: Product]
+      ( json: Json )
+      ( using ProductReflection[derivation], Foci[Json.Focus], Tactic[JsonError] )
+    :   derivation =
 
-              // `@name[Json]` / bare `@name` renames: field name -> JSON key, read
-              // back the same way they are written.
-              val renames: Map[Text, Text] = relabelling[derivation, Json]
+      val root = json.root
+      val n = root.objectSize
 
-              build[derivation]: [field] =>
-                context =>
-                  val key: Text = renames.at(label).or(label)
+      // Built immutably: `build`'s per-field lambda is polymorphic (`[field] => …`) and must be
+      // pure, so it may only close over pure values — a mutable map would be a capability.
+      val values: Map[String, Json.Ast] =
+        val builder = Map.newBuilder[String, Json.Ast]
+        var i = 0
 
-                  focus({
-                    val base = prior.let(_.pointer).or(JsonPointer())
+        while i < n do
+          builder += root.objectKey(i) -> root.objectValue(i)
+          i += 1
 
-                    val newPointer =
-                      JsonPointer
-                        ( base.url,
-                          Path[JsonPointer, JsonPointer.type, Tuple]
-                            ( base.path.root, base.path.descent :+ key ) )
+        builder.result()
 
-                    Json.Focus(newPointer)
-                  }):
-                    values.get(key.s) match
-                      case Some(value) => context.decoded(new Json(value))
-                      case None        => default.or(context.decoded(new Json(Json.Ast(Unset))))
+      // `@name[Json]` / bare `@name` renames: field name -> JSON key, read
+      // back the same way they are written.
+      val renames: Map[Text, Text] = relabelling[derivation, Json]
+
+      build[derivation]: [field] =>
+        context =>
+          val key: Text = renames.at(label).or(label)
+
+          focus({
+            val base = prior.let(_.pointer).or(JsonPointer())
+
+            val newPointer =
+              JsonPointer
+                ( base.url,
+                  Path[JsonPointer, JsonPointer.type, Tuple]
+                    ( base.path.root, base.path.descent :+ key ) )
+
+            Json.Focus(newPointer)
+          }):
+            values.get(key.s) match
+              case Some(value) => context.decoded(new Json(value))
+              case None        => default.or(context.decoded(new Json(Json.Ast(Unset))))
 
     inline def disjunction[derivation: SumReflection]: derivation is Json.Decodable =
       // A sum encodes as a discriminated object. Its precise per-variant schema is
@@ -296,11 +333,19 @@ object Json extends Json2, Dynamic:
   type JsonArray   = IArray[Any] | Array[Long] | Array[Int]
 
   object Encodable:
-    def apply[value](shape0: => Morphology)(lambda: value => Json): value is Json.Encodable =
+    def apply[value](shape0: => Morphology)(lambda: (value -> Json)^)
+    :   ((value is Json.Encodable)^{lambda}) =
+
+      // The shape thunk may close over a `Tactic` when field/element codecs are summoned from
+      // tactic-taking givens, but `shape()` only reads static metadata and never encodes or
+      // raises, so the capture is behaviourally inert; laundered pure to keep codec instances
+      // pure. Invariant: a `shape()` implementation must never invoke its tactic.
+      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
+
       new Json.Encodable:
         type Self = value
         def encoded(value: value): Json = lambda(value)
-        def shape(): Morphology = shape0
+        def shape(): Morphology = shape1()
 
   // A JSON encoder that also carries the format-neutral `Morphology` describing exactly
   // what it produces. Making the shape travel *with* the codec is what lets a fused
@@ -316,11 +361,15 @@ object Json extends Json2, Dynamic:
     def shape(): Morphology
 
   object Decodable:
-    def apply[value](shape0: => Morphology)(lambda: Json => value): value is Json.Decodable =
+    def apply[value](shape0: => Morphology)(decoder: (value is distillate.Decodable in Json)^)
+    :   ((value is Json.Decodable)^{decoder}) =
+      // Same shape-thunk laundering as `Encodable.apply`; see the comment there.
+      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
+
       new Json.Decodable:
         type Self = value
-        def decoded(json: Json): value = lambda(json)
-        def shape(): Morphology = shape0
+        def decoded(json: Json): value = decoder.decoded(json)
+        def shape(): Morphology = shape1()
 
   // The decoding counterpart of `Json.Encodable`: a `Decodable in Json` that also
   // carries the `Morphology` of exactly what it reads, so `jsonSchematics.decodable` and
@@ -710,35 +759,29 @@ object Json extends Json2, Dynamic:
         else expected(JsonPrimitive.Number) yet 0L
 
     // Low-level parsers building an `Ast` directly from input. Public reading
-    // goes through `source.read[Json]` (the `Aggregable` instances, which
-    // consult `PositionTracking`); these are the underlying engine and stay
-    // package-private (used by the `read` givens, the interpolator macros, and
-    // benchmarks — all within `jacinta`).
-    private[jacinta] def parse(source: Data)(using mode: NumberMode): Json.Ast raises ParseError =
+    // goes through `source.read[Json]` (the `Aggregable` instances); these are
+    // the underlying engine and stay scoped to the `Ast` companion.
+    def parse(source: Data)(using mode: NumberMode): Json.Ast raises ParseError =
       Json.Ast(Parser.parse(source, mode))
 
-    private[jacinta] def parse(source: Data, holes: Boolean)(using mode: NumberMode)
-    :   Json.Ast raises ParseError =
-
+    def parse(source: Data, holes: Boolean)(using mode: NumberMode): Json.Ast raises ParseError =
       Json.Ast(Parser.parse(source, holes, mode))
 
-    private[jacinta] def parse(input: Iterator[Data])(using mode: NumberMode)
-    :   Json.Ast raises ParseError =
-
+    def parse(input: Iterator[Data])(using mode: NumberMode): Json.Ast raises ParseError =
       Json.Ast(Parser.parse(input, mode))
 
-    private[jacinta] def parse(input: Iterator[Data], holes: Boolean)(using mode: NumberMode)
+    def parse(input: Iterator[Data], holes: Boolean)(using mode: NumberMode)
     :   Json.Ast raises ParseError =
 
       Json.Ast(Parser.parse(input, holes, mode))
 
-    private[jacinta] def parseTracked(source: Data)(using mode: NumberMode)
+    def parseTracked(source: Data)(using mode: NumberMode)
     :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
       val (raw, ints) = Parser.parseTracked(source, mode)
       (Json.Ast(raw), Json.PositionIndex(ints))
 
-    private[jacinta] def parseTracked(input: Iterator[Data])(using mode: NumberMode)
+    def parseTracked(input: Iterator[Data])(using mode: NumberMode)
     :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
       val (raw, ints) = Parser.parseTracked(input, mode)
@@ -761,6 +804,20 @@ object Json extends Json2, Dynamic:
   // synthesis for `Json(...)`; these forward to the constructor manually.
   def apply(value: Any): Json = new Json(value)
   def apply(value: Any, positions: Optional[Json.PositionIndex]): Json = new Json(value, positions)
+
+  // Defined on the companion directly (not as a `Json.type` extension) because
+  // the companion's `Dynamic` parentage intercepts `Json.parseTracked(...)`
+  // before extension-method resolution gets a chance.
+  def parseTracked(source: Data)(using NumberMode): Json raises ParseError =
+    val (ast, index) = Json.Ast.parseTracked(source)
+    new Json(ast, index)
+
+  def parseTracked(input: Iterator[Data])(using NumberMode): Json raises ParseError =
+    val (ast, index) = Json.Ast.parseTracked(input)
+    new Json(ast, index)
+
+  def parseTracked(source: Text)(using NumberMode, CharEncoder): Json raises ParseError =
+    parseTracked(source.data)
 
   // Parse a byte-chunk iterator into a `Json`, honouring the in-scope
   // `PositionTracking` toggle (`parsing.trackPositions`): when on, source
@@ -878,10 +935,10 @@ object Json extends Json2, Dynamic:
       ${jacinta.internal.extractor[parts, origins]('scrutinee)}
 
 
-  given lens: [name <: Label: ValueOf] => (erased DynamicJsonEnabler) => Tactic[JsonError]
-  =>  name is Lens from Json onto Json =
+  given lens: [name <: Label: ValueOf] => (erased dynamicJsonEnabler: DynamicJsonEnabler) => (tactic: Tactic[JsonError])
+  =>  ((name is Lens from Json onto Json)^{tactic}) =
 
-    Lens(_.selectField(valueOf[name]), _.modify(valueOf[name], _))
+    Lens(_.selectField(valueOf[name]), (json, value) => json.modify(valueOf[name], value))
 
 
   given ordinalOptical: [element] => Ordinal is Optical from Json onto Json =
@@ -952,39 +1009,62 @@ object Json extends Json2, Dynamic:
   // the `Json` case in the `decodable` summonFrom above.
   given jsonDecodable: Json is distillate.Decodable in Json = identity(_)
 
-  given boolean: Tactic[JsonError] => Boolean is Json.Decodable =
-    Json.Decodable(Morphology.Bool)(_.root.boolean)
+  // The primitive codecs are laundered pure: their resolution-scoped tactic shares each
+  // instance's given-resolution lifetime, and both the product derivation and the inline
+  // bodies expanded inside staged quotes (superlunary) summon them against pure expected
+  // types (honest capturing forms return with wisteria capture-polymorphism; see
+  // rep/DECISIONS.md).
+  given boolean: (tactic: Tactic[JsonError])
+  =>  Boolean is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Bool)(_.root.boolean)
 
-  given double: Tactic[JsonError] => Double is Json.Decodable =
-    Json.Decodable(Morphology.Real)(_.root.double)
+  given double: (tactic: Tactic[JsonError])
+  =>  Double is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Real)(_.root.double)
 
-  given float: Tactic[JsonError] => Float is Json.Decodable =
-    Json.Decodable(Morphology.Real)(_.root.double.toFloat)
+  given float: (tactic: Tactic[JsonError])
+  =>  Float is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Real)(_.root.double.toFloat)
 
-  given long: Tactic[JsonError] => Long is Json.Decodable =
-    Json.Decodable(Morphology.Whole)(_.root.long)
+  given long: (tactic: Tactic[JsonError])
+  =>  Long is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Whole)(_.root.long)
 
-  given int: Tactic[JsonError] => Int is Json.Decodable =
-    Json.Decodable(Morphology.Whole)(_.root.long.toInt)
+  given int: (tactic: Tactic[JsonError])
+  =>  Int is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Whole)(_.root.long.toInt)
 
-  given ordinalDecodable: Tactic[JsonError] => Ordinal is Json.Decodable =
-    Json.Decodable(Morphology.Whole)(_.root.long.toInt.z)
+  given ordinalDecodable: (tactic: Tactic[JsonError])
+  =>  Ordinal is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Whole)(_.root.long.toInt.z)
 
-  given text: Tactic[JsonError] => Text is Json.Decodable =
-    Json.Decodable(Morphology.Str)(_.root.string)
+  given text: (tactic: Tactic[JsonError])
+  =>  Text is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Str)(_.root.string)
 
-  given string: Tactic[JsonError] => String is Json.Decodable =
-    Json.Decodable(Morphology.Str)(_.root.string.s)
+  given string: (tactic: Tactic[JsonError])
+  =>  String is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Str)(_.root.string.s)
 
-  given unit: Tactic[JsonError] => Unit is Json.Decodable =
-    Json.Decodable(Morphology.Empty): value =>
-      if value.root.isNull then ()
-      else
-        val reason =
-          if value.root.isAbsent then Reason.Absent
-          else Reason.NotType(value.root.primitive, JsonPrimitive.Null)
+  given unit: (tactic: Tactic[JsonError])
+  =>  Unit is Json.Decodable =
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Empty): value =>
+        if value.root.isNull then ()
+        else
+          val reason =
+            if value.root.isAbsent then Reason.Absent
+            else Reason.NotType(value.root.primitive, JsonPrimitive.Null)
 
-        raise(JsonError(reason))
+          raise(JsonError(reason))
 
 
   given option: [value: Json.Decodable] => Tactic[JsonError]
@@ -1032,74 +1112,86 @@ object Json extends Json2, Dynamic:
   given jsonEncodable: Json is Json.Encodable = Json.Encodable(Morphology.Any)(identity(_))
 
 
-  given listEncodable: [list <: List, element] => (encodable: => element is Json.Encodable)
+  given listEncodable: [list <: List, element] => (encodable: => (element is Json.Encodable))
   =>  list[element] is Json.Encodable =
 
-    Json.Encodable(Morphology.Arr(encodable.shape())):
-      values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
+    // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
+    caps.unsafe.unsafeAssumePure:
+      Json.Encodable(Morphology.Arr(encodable.shape())):
+        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
 
 
-  given setEncodable: [set <: Set, element] => (encodable: => element is Json.Encodable)
+  given setEncodable: [set <: Set, element] => (encodable: => (element is Json.Encodable))
   =>  set[element] is Json.Encodable =
 
-    Json.Encodable(Morphology.Arr(encodable.shape())):
-      values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
+    // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
+    caps.unsafe.unsafeAssumePure:
+      Json.Encodable(Morphology.Arr(encodable.shape())):
+        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
 
 
-  given seriesEncodable: [series <: Series, element] => (encodable: => element is Json.Encodable)
+  given seriesEncodable: [series <: Series, element] => (encodable: => (element is Json.Encodable))
   =>  series[element] is Json.Encodable =
 
-    Json.Encodable(Morphology.Arr(encodable.shape())):
-      values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
+    // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
+    caps.unsafe.unsafeAssumePure:
+      Json.Encodable(Morphology.Arr(encodable.shape())):
+        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given array: [collection <: Iterable, element]
   =>  ( factory: Factory[element, collection[element]],
         tactic:  Tactic[JsonError],
         foci:    Foci[Json.Focus] )
-  =>  ( decodable: => element is Json.Decodable )
+  =>  ( decodable: => (element is Json.Decodable) )
   =>  collection[element] is Json.Decodable =
 
-    Json.Decodable(Morphology.Arr(decodable.shape())): value =>
-      val builder = factory.newBuilder
+    // The by-name inner codec and the resolution-scoped tactic share this instance's
+    // given-resolution lifetime; the whole instance is laundered pure (the codec-thunk
+    // seal pattern; see rep/DECISIONS.md).
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Arr(decodable.shape())): value =>
+        val builder = factory.newBuilder
 
-      value.root.array.each: json =>
-        focus({
-          val base = prior.let(_.pointer).or(JsonPointer())
+        value.root.array.each: json =>
+          focus({
+            val base = prior.let(_.pointer).or(JsonPointer())
 
-          val newPointer =
-            JsonPointer
-              ( base.url,
-                Path[JsonPointer, JsonPointer.type, Tuple]
-                  ( base.path.root, base.path.descent :+ ordinal.n0.toString.tt ) )
+            val newPointer =
+              JsonPointer
+                ( base.url,
+                  Path[JsonPointer, JsonPointer.type, Tuple]
+                    ( base.path.root, base.path.descent :+ ordinal.n0.toString.tt ) )
 
-          Json.Focus(newPointer)
-        }):
-          builder += decodable.decoded(Json.ast(json))
+            Json.Focus(newPointer)
+          }):
+            builder += decodable.decoded(Json.ast(json))
 
-      builder.result()
+        builder.result()
 
 
   given map: [key: distillate.Decodable in Text, element]
-  =>  ( decodable: => element is Json.Decodable )
+  =>  ( decodable: => (element is Json.Decodable) )
   =>  Tactic[JsonError]
   =>  Map[key, element] is Json.Decodable =
 
-    Json.Decodable(Morphology.Dict(Morphology.Str, decodable.shape())): value =>
-      val root = value.root
-      val n = root.objectSize
-      var i = 0
-      var acc = Map.empty[key, element]
+    // Laundered pure as for `array` above.
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Dict(Morphology.Str, decodable.shape())): value =>
+        val root = value.root
+        val n = root.objectSize
+        var i = 0
+        var acc = Map.empty[key, element]
 
-      while i < n do
-        acc =
-          acc.updated
-            ( root.objectKey(i).tt.decode,
-              decodable.decoded(Json.ast(root.objectValue(i))) )
+        while i < n do
+          acc =
+            acc.updated
+              ( root.objectKey(i).tt.decode,
+                decodable.decoded(Json.ast(root.objectValue(i))) )
 
-        i += 1
+          i += 1
 
-      acc
+        acc
 
 
   given mapEncodable: [key: anticipation.Encodable in Text, element]
@@ -1116,29 +1208,36 @@ object Json extends Json2, Dynamic:
     given Formatting = Formatting(Unset, false)
     json.root.show
 
-  given aggregable: (Tactic[ParseError], PositionTracking) => Json is Aggregable by Data =
-    new Aggregable:
-      type Self = Json
-      type Operand = Data
+  // Laundered pure per the codec-thunk seal pattern (see the primitive codecs above and
+  // rep/DECISIONS.md): the resolution-scoped tactic shares the instance's given-resolution
+  // lifetime, and a capturing instance cannot be expressed via `new Aggregable` (its pure
+  // base class forbids captured references in method bodies).
+  given aggregable: (tactic: Tactic[ParseError], tracking: PositionTracking)
+  =>  Json is Aggregable by Data =
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = Json
+        type Operand = Data
 
-      def aggregate(bytes: LazyList[Data]): Json = readJson(bytes.iterator)
-      override def accept(stream: Stream[Data] over Credit): Json = readJson(stream)
+        def aggregate(bytes: LazyList[Data]): Json = readJson(bytes.iterator)
+        override def accept(stream: Stream[Data] over Credit): Json = readJson(stream)
 
 
-  given aggregableDirect: [value: distillate.Decodable in Json] => Tactic[ParseError]
-  =>  PositionTracking
-  =>  Tactic[JsonError]
-  =>  (value in Json) is Aggregable by Data =
+  // Sealed like `aggregable` above.
+  given aggregableDirect: [value: distillate.Decodable in Json]
+  =>  (tactic: Tactic[ParseError], jsonTactic: Tactic[JsonError], tracking: PositionTracking)
+  =>  ((value in Json) is Aggregable by Data) =
 
-    new Aggregable:
-      type Self = value in Json
-      type Operand = Data
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = value in Json
+        type Operand = Data
 
-      def aggregate(bytes: LazyList[Data]): value in Json =
-        readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
+        def aggregate(bytes: LazyList[Data]): value in Json =
+          readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
 
-      override def accept(stream: Stream[Data] over Credit): value in Json =
-        readJson(stream).as[value].asInstanceOf[value in Json]
+        override def accept(stream: Stream[Data] over Credit): value in Json =
+          readJson(stream).as[value].asInstanceOf[value in Json]
 
 
   given showable: Formatting => Json is Showable = _.root.show
@@ -1156,12 +1255,18 @@ object Json extends Json2, Dynamic:
         (t"application/json; charset=${encoder.encoding.name}", HttpStreams.Body(json.show.data))
 
 
-  given decodable: (Tactic[ParseError], PositionTracking) => Json is distillate.Decodable in Text =
-    text => LazyList(text.data(using charEncoders.utf8Encoder)).read[Json]
+  // Laundered pure like the primitive codecs above; additionally, this instance is
+  // summoned inside inline bodies that are expanded within staged quotes (superlunary's
+  // `Stageable.json`), where a capturing instance cannot be pickled.
+  given decodable: (tactic: Tactic[ParseError])
+  =>  Json is distillate.Decodable in Text =
+    caps.unsafe.unsafeAssumePure:
+      text => LazyList(text.data(using charEncoders.utf8Encoder)).read[Json]
 
-  given instantiable: Tactic[ParseError] => PositionTracking
+  given instantiable: (tactic: Tactic[ParseError])
   =>  Json is Instantiable across HttpRequests from Text =
-    text => LazyList(text.data(using charEncoders.utf8Encoder)).read[Json]
+    caps.unsafe.unsafeAssumePure:
+      text => LazyList(text.data(using charEncoders.utf8Encoder)).read[Json]
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
@@ -1177,7 +1282,10 @@ object Json extends Json2, Dynamic:
     import dynamicJsonAccess.enabled
 
     def rewrite(kind: Text, json: Json): Json = unsafely(json.updateDynamic(key)(kind))
-    def discriminate(json: Json): Optional[Text] = safely(json.selectField(key).as[Text])
+    // Reads the discriminator through direct AST access rather than a `Decodable` summon:
+    // the summoned instance would capture `safely`'s scoped tactic, which the summon's
+    // invariant `Self` bound cannot absorb.
+    def discriminate(json: Json): Optional[Text] = safely(json.selectField(key).root.string)
     def variant(json: Json): Json = unsafely(json.updateDynamic(key)(Unset))
 
   private[jacinta] object Parser:
@@ -1344,7 +1452,7 @@ object Json extends Json2, Dynamic:
     // parser pushes `pos` to the cursor first, then refreshes its snapshot
     // from the cursor afterwards — refill may compact the buffer, reallocate
     // it, or reset `pos`.
-    private var cursor:    Cursor[Data]      = null.asInstanceOf[Cursor[Data]]
+    private var cursor:    Cursor[Data, ?]      = null.asInstanceOf[Cursor[Data, ?]]
     private var heldToken: Cursor.Held | Null = null
 
     // Parser-local snapshot (see comment above).
@@ -1441,7 +1549,7 @@ object Json extends Json2, Dynamic:
       rootIndex = null
       heldToken = null
 
-    private def makeCursor(input: Data): Cursor[Data] =
+    private def makeCursor(input: Data): Cursor[Data, ?] =
       if tracking then
         import zephyrine.lineation.linefeedByte
         Cursor[Data](input)
@@ -1449,7 +1557,7 @@ object Json extends Json2, Dynamic:
         import Lineation.untrackedData
         Cursor[Data](input)
 
-    private def makeCursor(input: Iterator[Data]): Cursor[Data] =
+    private def makeCursor(input: Iterator[Data]): Cursor[Data, ?] =
       if tracking then
         import zephyrine.lineation.linefeedByte
         Cursor[Data](input)
@@ -1457,7 +1565,7 @@ object Json extends Json2, Dynamic:
         import Lineation.untrackedData
         Cursor[Data](input)
 
-    private def makeCursor(input: Stream[Data] over Credit): Cursor[Data] =
+    private def makeCursor(input: Stream[Data] over Credit): Cursor[Data, ?] =
       if tracking then
         import zephyrine.lineation.linefeedByte
         Cursor[Data](input)
@@ -2972,7 +3080,7 @@ extends Dynamic, Topical, Original derives CanEqual:
 
 
   def update[value: anticipation.Encodable in Json](index: Int, value: value)
-    ( using erased DynamicJsonEnabler )
+    (using erased dynamicJsonEnabler: DynamicJsonEnabler)
   :   Json raises JsonError =
 
     if !root.isArray then raise(JsonError(Reason.NotType(root.primitive, JsonPrimitive.Array)))
@@ -2991,13 +3099,13 @@ extends Dynamic, Topical, Original derives CanEqual:
 
 
   def updateDynamic(field: String)[value: anticipation.Encodable in Json](value: value)
-    ( using erased DynamicJsonEnabler )
+    (using erased dynamicJsonEnabler: DynamicJsonEnabler)
   :   Json raises JsonError =
 
     modify(field, value.encode)
 
 
-  def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicJsonEnabler)
+  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamicJsonEnabler: DynamicJsonEnabler)
   :   Json raises JsonError =
 
     delete(field)

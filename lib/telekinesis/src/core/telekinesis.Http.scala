@@ -297,14 +297,14 @@ object Http:
     // the message body. The symmetric twin of `Http.Response.parse`'s
     // status-line + header parsing; factored out so a server driving a single
     // cursor across a keep-alive connection can frame the body itself. Scans
-    // with `peek`/`next` rather than `seek` so it works on a bare `Cursor[Data]`
+    // with `peek`/`next` rather than `seek` so it works on a bare `Cursor[Data, ?]`
     // parameter (which loses the `tracked` `Operand = Byte` refinement that
     // `seek`'s signature relies on).
     // `maxRequestLine` and `maxHeaders` bound how many bytes the request line and
     // the header block may occupy, yielding `414`/`431` (rather than reading an
     // unbounded amount) — the scan aborts mid-token once the cap is crossed.
     def parseHead
-      ( cursor: Cursor[Data], maxRequestLine: Int = 8192, maxHeaders: Int = 65536 )
+      ( cursor: Cursor[Data, ?], maxRequestLine: Int = 8192, maxHeaders: Int = 65536 )
     :   Head raises HttpRequestError =
 
       import HttpRequestError.Reason
@@ -391,7 +391,7 @@ object Http:
     // `next`, so — like `parseHead` — it never reads past the body and so never
     // blocks waiting for bytes that will not arrive until the client has our
     // response.
-    def fixedBody(cursor: Cursor[Data], length: Int): LazyList[Data] =
+    def fixedBody(cursor: Cursor[Data, ?], length: Int): LazyList[Data] =
       def recur(remaining: Int): LazyList[Data] =
         if remaining <= 0 || cursor.finished then LazyList() else
           val take = remaining.min(cursor.available)
@@ -415,7 +415,7 @@ object Http:
     // and trailers — i.e. at the next request. Lenient: a malformed length or a
     // truncated stream simply ends the body. Consumes CRLFs with `advance` (not
     // `next`), so it never reads past the body's final `\r\n` (see `parseHead`).
-    def chunkedBody(cursor: Cursor[Data]): LazyList[Data] =
+    def chunkedBody(cursor: Cursor[Data, ?]): LazyList[Data] =
       def hex(digit: Int): Int =
         if digit >= '0' && digit <= '9' then digit - '0'
         else if digit >= 'a' && digit <= 'f' then digit - 'a' + 10
@@ -498,7 +498,9 @@ object Http:
 
     inline def request: this.type = this
 
-    lazy val path: Path on Www under %.type = location.decode[Path on Www under %.type]
+    // `Www`'s `Radical` always succeeds, so decoding the path cannot fail.
+    lazy val path: Path on Www under %.type =
+      unsafely(location.decode[Path on Www under %.type])
 
     def on[scheme <: "http" | "https"](origin: Origin[scheme]): HttpUrl =
       Url[scheme](origin, target)
@@ -520,7 +522,7 @@ object Http:
     object headers extends Dynamic:
       def selectDynamic(name: Label)
         ( using directive: name.type is Directive,
-                decoder:   directive.Topic is Decodable in Text )
+                decoder:   (directive.Topic is Decodable in Text)^ )
       :   List[directive.Topic] =
 
         val name2 = name.tt.uncamel.kebab.lower
@@ -578,7 +580,8 @@ object Http:
             headers.to(List) ++ response.textHeaders,
             response.body )
 
-    given streamable: Tactic[HttpError] => Response is Streamable by Data = response =>
+    given streamable: (tactic: Tactic[HttpError])
+    =>  ((Response is Streamable by Data)^{tactic}) = response =>
       response.status.category match
         case Http.Status.Category.Successful => response.body.stream
 
@@ -781,12 +784,13 @@ object Http:
       if status.category != Http.Status.Category.Successful then Unset else body.stream
 
 
-    def receive[body: Receivable as receivable]: body = receivable.read(this)
+    def receive[body](using receivable: (body is Receivable)^): body =
+      receivable.read(this)
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
         ( using directive: name.type is Directive,
-                decoder:   directive.Topic is Decodable in Text )
+                decoder:   (directive.Topic is Decodable in Text)^ )
       :   List[directive.Topic] =
 
         val name2 = name.tt.uncamel.kebab.lower

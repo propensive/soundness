@@ -42,6 +42,7 @@ import typonym.*
 object Tag:
   def root(children: Set[Text]): Tag =
     new Tag("#root", Attributes.empty, children):
+      this: Tag =>
       type Result = this.type
 
       def node(attributes: Attributes): Result = this
@@ -78,7 +79,7 @@ object Tag:
       . over[Transport]
       . in[Form]
 
-abstract class Tag
+sealed abstract class Tag
   ( label: Text, val presets: Attributes = Attributes.empty, val admissible:  Set[Text] = Set() )
 extends Element(label, presets, IArray()), Formal, Dynamic:
   type Result <: Element

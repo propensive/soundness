@@ -59,7 +59,9 @@ object JsonPointer extends Root(""):
     def apply(url: HttpUrl): Optional[Json] = documents.at(url).or(lookup(url))
     protected def lookup(url: HttpUrl): Optional[Json]
 
-  given navigable: [ordinal <: Ordinal] => ordinal is Navigable on JsonPointer = _.n0.toString.tt
+  given navigable: [ordinal <: Ordinal] => ordinal is Navigable on JsonPointer =
+    // `(ordinal: Ordinal)` widens the singleton-bounded parameter (case-2 pure-value box).
+    ordinal => (ordinal: Ordinal).n0.toString.tt
   given admissible: [ordinal <: Ordinal] => ordinal is Admissible on JsonPointer = _ => ()
   given admissible2: [text <: Text] => text is Admissible on JsonPointer = _ => ()
 
@@ -89,7 +91,8 @@ object JsonPointer extends Root(""):
   // offset of any error. URL-bearing references begin with a non-`#` character
   // and so are rejected as `ExpectedHash`; same-document refs are all OpenAPI's
   // `$ref`s use, and are JSON Pointer fragments per RFC 6901.
-  given decodable: Tactic[JsonPointerError] => JsonPointer is Decodable in Text = text =>
+  given decodable: (tactic: Tactic[JsonPointerError])
+  =>  ((JsonPointer is Decodable in Text)^{tactic}) = text =>
     val string = text.s
 
     if string.isEmpty || string.charAt(0) != '#'
@@ -115,10 +118,21 @@ object JsonPointer extends Root(""):
     Divisible: (pointer, segment) => JsonPointer(pointer.url, pointer.path / segment)
 
   given divisible2: JsonPointer is Divisible by Ordinal to JsonPointer =
-    Divisible: (pointer, segment) => JsonPointer(pointer.url, pointer.path / segment)
+    // An explicit anonymous class rather than the `Divisible:` factory: under capture checking
+    // the factory's lambda parameter mints a fresh capture variable on the pure `Ordinal`
+    // (a case-2 pure-value box, cf. scala/scala3#16978), and a plain SAM conversion crashes
+    // genSJSIR for Scala.js. The explicit instance avoids both.
+    new Divisible:
+      type Self = JsonPointer
+      type Result = JsonPointer
+      type Operand = Ordinal
+
+      def divide(pointer: JsonPointer, segment: Ordinal): JsonPointer =
+        JsonPointer(pointer.url, pointer.path / segment)
 
 case class JsonPointer(url: Optional[HttpUrl] = Unset, path: Path on JsonPointer = JsonPointer):
-  def apply(using registry: JsonPointer.Registry)(document: Json): Json raises JsonPointerError =
+  def apply(using registry: (JsonPointer.Registry)^)(document: Json)
+  :   Json raises JsonPointerError =
     url.let(registry(_).lest(JsonPointerError(JsonPointerError.Reason.UnknownDocument, 0)))
     . or(document)
 

@@ -163,99 +163,105 @@ private def readHandshake(chunks: LazyList[Data], acc: Data): (Data, LazyList[Da
 // reassembled message per element; `transmit` masks and spools at the `Channel` boundary.
 // Client→server frames are masked with a fresh key (RFC 6455 §5.3); a masked server frame
 // is rejected.
-given wsClient: ( Online,
-                  Monitor,
-                  Probate,
-                  Every[SocketOption.Tcp],
-                  Tls,
-                  Tactic[WebsocketError],
-                  Tactic[HttpResponseError],
-                  Tactic[PortError] )
-=>  WsUrl is Duplexable:
+given wsClient: ( online:            Online,
+                  monitor:           Monitor,
+                  probate:           Probate,
+                  options:           Every[SocketOption.Tcp],
+                  tls:               Tls,
+                  websocketError:    Tactic[WebsocketError],
+                  httpResponseError: Tactic[HttpResponseError],
+                  portError:         Tactic[PortError] )
+=>  (((WsUrl is Duplexable) { type Output = Data; type Connection = WsConnection })
+      ^{monitor, websocketError, httpResponseError, portError}) =
+  // The client retains its `Monitor` (the frame pump daemon) and tactics, so the instance
+  // is a capability — a given constructed from capabilities produces a capability (see
+  // rep/DECISIONS.md).
+  new Duplexable:
+    type Self = WsUrl
 
-  type Output = Data
-  type Connection = WsConnection
+    type Output = Data
+    type Connection = WsConnection
 
-  def connect(url: WsUrl, interface: Optional[MacAddress]): WsConnection =
-    val secure: Boolean = url.scheme.name == t"wss"
+    def connect(url: WsUrl, interface: Optional[MacAddress]): WsConnection =
+      val secure: Boolean = url.scheme.name == t"wss"
 
-    val host: Host = url.host.or:
-      abort(WebsocketError(WebsocketError.Reason.Handshake(t"the URL had no host")))
+      val host: Host = url.host.or:
+        abort(WebsocketError(WebsocketError.Reason.Handshake(t"the URL had no host")))
 
-    val defaultPort: Int = if secure then 443 else 80
-    val portNumber: Int = url.authority.lay(defaultPort)(_.port.or(defaultPort))
+      val defaultPort: Int = if secure then 443 else 80
+      val portNumber: Int = url.authority.lay(defaultPort)(_.port.or(defaultPort))
 
-    // `wss` connects over TLS (`SecureEndpoint`), `ws` over plain TCP; everything after is
-    // transport-agnostic, over the `Duplex`.
-    val duplex: Duplex =
-      if secure then
-        val endpoint = SecureEndpoint(host.show, portNumber)
-        summon[SecureEndpoint is Connectable].connect(endpoint, interface)
-      else
-        val endpoint = Endpoint(host.show, Port[Tcp](portNumber))
-        summon[Endpoint[TcpPort] is Connectable].connect(endpoint, interface)
+      // `wss` connects over TLS (`SecureEndpoint`), `ws` over plain TCP; everything after is
+      // transport-agnostic, over the `Duplex`.
+      val duplex: Duplex =
+        if secure then
+          val endpoint = SecureEndpoint(host.show, portNumber)
+          summon[SecureEndpoint is Connectable].connect(endpoint, interface)
+        else
+          val endpoint = Endpoint(host.show, Port[Tcp](portNumber))
+          summon[Endpoint[TcpPort] is Connectable].connect(endpoint, interface)
 
-    // RFC 6455 §4.1: a fresh 16-byte nonce, Base64-encoded, is the `Sec-WebSocket-Key`;
-    // the server's `Sec-WebSocket-Accept` must echo `base64(sha1(key ++ magic))`.
-    val nonce: Data =
-      val bytes = new Array[Byte](16)
-      SecureRandom().nextBytes(bytes)
-      bytes.immutable(using Unsafe)
+      // RFC 6455 §4.1: a fresh 16-byte nonce, Base64-encoded, is the `Sec-WebSocket-Key`;
+      // the server's `Sec-WebSocket-Accept` must echo `base64(sha1(key ++ magic))`.
+      val nonce: Data =
+        val bytes = new Array[Byte](16)
+        SecureRandom().nextBytes(bytes)
+        bytes.immutable(using Unsafe)
 
-    val key: Text = nonce.serialize[Base64]
+      val key: Text = nonce.serialize[Base64]
 
-    val request: Http.Request =
-      Http.Request
-        ( Http.Get,
-          1.1,
-          host,
-          url.requestTarget,
-          List
-            ( Http.Header(t"Connection", t"Upgrade"),
-              Http.Header(t"Upgrade", t"websocket"),
-              Http.Header(t"Sec-WebSocket-Key", key),
-              Http.Header(t"Sec-WebSocket-Version", t"13") ),
-          () => Http.emptyBody() )
+      val request: Http.Request =
+        Http.Request
+          ( Http.Get,
+            1.1,
+            host,
+            url.requestTarget,
+            List
+              ( Http.Header(t"Connection", t"Upgrade"),
+                Http.Header(t"Upgrade", t"websocket"),
+                Http.Header(t"Sec-WebSocket-Key", key),
+                Http.Header(t"Sec-WebSocket-Version", t"13") ),
+            () => Http.emptyBody() )
 
-    duplex.send(Http.Request.serialize(request))
+      duplex.send(Http.Request.serialize(request))
 
-    // Read the response headers up to the CRLFCRLF terminator *without* over-reading:
-    // `Http.Response.parse` on a live socket eagerly refills one chunk past the headers,
-    // which would block here, since a server that only sends the `101` has no frame to
-    // send until we do. So split the header block off the stream and parse just that
-    // finite slice; anything after the terminator is the first inbound frame bytes.
-    val (headerBytes, inbound) = readHandshake(duplex.stream, Data())
-    val response: Http.Response = Http.Response.parse(LazyList(headerBytes))
+      // Read the response headers up to the CRLFCRLF terminator *without* over-reading:
+      // `Http.Response.parse` on a live socket eagerly refills one chunk past the headers,
+      // which would block here, since a server that only sends the `101` has no frame to
+      // send until we do. So split the header block off the stream and parse just that
+      // finite slice; anything after the terminator is the first inbound frame bytes.
+      val (headerBytes, inbound) = readHandshake(duplex.stream, Data())
+      val response: Http.Response = Http.Response.parse(LazyList(headerBytes))
 
-    if response.status != Http.SwitchingProtocols then
-      abort(WebsocketError(WebsocketError.Reason.Handshake(t"the server did not upgrade")))
+      if response.status != Http.SwitchingProtocols then
+        abort(WebsocketError(WebsocketError.Reason.Handshake(t"the server did not upgrade")))
 
-    given accept: ("secWebsocketAccept" is Directive of Text) = identity(_)
-    val expected: Text = t"$key${Websocket.magic}".digest[Sha1].serialize[Base64].keep(28)
+      given accept: ("secWebsocketAccept" is Directive of Text) = identity(_)
+      val expected: Text = t"$key${Websocket.magic}".digest[Sha1].serialize[Base64].keep(28)
 
-    if response.headers.secWebsocketAccept.prim != expected then
-      abort(WebsocketError(WebsocketError.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong")))
+      if response.headers.secWebsocketAccept.prim != expected then
+        abort(WebsocketError(WebsocketError.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong")))
 
-    val masking: Masking = Masking.Client()
-    given Masking = masking
-    val channel: Channel = Channel()
+      val masking: Masking = Masking.Client()
+      given Masking = masking
+      val channel: Channel = Channel()
 
-    // Once the handshake is read, one writer (this pump, draining the spool) and one
-    // reader (`receive`, over `inbound`) share the connection.
-    val pump: Daemon = daemon(duplex.send(channel.stream))
+      // Once the handshake is read, one writer (this pump, draining the spool) and one
+      // reader (`receive`, over `inbound`) share the connection.
+      val pump: Daemon = daemon(duplex.send(channel.stream))
 
-    WsConnection(duplex, channel, masking, inbound, pump)
+      WsConnection(duplex, channel, masking, inbound, pump)
 
-  def receive(connection: WsConnection): LazyList[Data] =
-    given Masking = connection.masking
-    Reader(() => connection.inbound, connection.channel).messages.map(_.bytes)
+    def receive(connection: WsConnection): LazyList[Data] =
+      given Masking = connection.masking
+      Reader(() => connection.inbound, connection.channel).messages.map(_.bytes)
 
-  def transmit(connection: WsConnection, input: LazyList[Data]): Unit =
-    input.each(connection.channel.enqueue(_))
+    def transmit(connection: WsConnection, input: LazyList[Data]): Unit =
+      input.each(connection.channel.enqueue(_))
 
-  def close(connection: WsConnection): Unit =
-    given Masking = connection.masking
-    safely(connection.channel.enqueue(Frame.Close(1000, Data()).encode))
-    connection.channel.stop()
-    safely(connection.pump.attend())
-    connection.duplex.close()
+    def close(connection: WsConnection): Unit =
+      given Masking = connection.masking
+      safely(connection.channel.enqueue(Frame.Close(1000, Data()).encode))
+      connection.channel.stop()
+      safely(connection.pump.attend())
+      connection.duplex.close()

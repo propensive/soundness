@@ -38,10 +38,12 @@ import prepositional.*
 import turbulence.*
 import zephyrine.*
 
+// Sealed per the codec-thunk pattern (see `Json.aggregable` and rep/DECISIONS.md).
 given parserAggregable: Tactic[ParseError] => Json.Ast is Aggregable by Data =
-  new Aggregable:
-    type Self = Json.Ast
-    type Operand = Data
+  caps.unsafe.unsafeAssumePure:
+    new Aggregable:
+      type Self = Json.Ast
+      type Operand = Data
 
-    def aggregate(source: LazyList[Data]): Json.Ast = Json.Ast.parse(source.iterator)
-    override def accept(stream: Stream[Data] over Credit): Json.Ast = Json.Ast.parse(stream)
+      def aggregate(source: LazyList[Data]): Json.Ast = Json.Ast.parse(source.iterator)
+      override def accept(stream: Stream[Data] over Credit): Json.Ast = Json.Ast.parse(stream)

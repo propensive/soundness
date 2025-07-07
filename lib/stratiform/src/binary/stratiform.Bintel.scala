@@ -192,7 +192,10 @@ object Bintel:
   // as the TEL document `schemaDoc` (parseable under the tel-schema axiom). The
   // schema's signature and bintel body are embedded so that a receiver holding
   // only the axiom can decode the result with no external schema resolution.
-  def selfContained(tel: Tel, schemaDoc: Tel): Data raises TelError raises BintelError =
+  def selfContained(tel: Tel, schemaDoc: Tel)
+    ( using Tactic[TelError], Tactic[BintelError] )
+  :   Data =
+
     val axiom      = Tels.Axiom.tels
     val schema     = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc))
     val signature  = SchemaSignature.fromDocument(schemaDoc, axiom)
@@ -435,8 +438,10 @@ object Bintel:
 
   // Decode BinTEL body bytes to a typed value, deriving the schema from the value's type
   // — the inverse of `value.bintel`.
-  def read[value: Tel.Decodable](data: Data)(using value is TelSchematic over Tels.Type)
-  :   value raises BintelError raises TelError =
+  def read[value: Tel.Decodable](data: Data)
+    ( using value is TelSchematic over Tels.Type )
+    ( using Tactic[BintelError], Tactic[TelError] )
+  :   value =
 
     val schema = Tels.tels[value](Text("root"))
     present(decode(data, schema), schema).as[value]

@@ -593,7 +593,7 @@ object Html extends Tag.Container
       new HtmlParser(Cursor[Text](input), permissive)
 
   private[honeycomb] final class HtmlParser
-    ( cursor:        Cursor[Text],
+    ( cursor:        Cursor[Text, ?],
       val permissive: Boolean      = false )
     ( using dom: Dom ):
     private var heldToken: Cursor.Held | Null = null

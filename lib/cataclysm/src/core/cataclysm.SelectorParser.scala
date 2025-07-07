@@ -50,7 +50,7 @@ private[cataclysm] object SelectorParser:
 
     Parser(Cursor[Text](text)).document()
 
-  private class Parser(cursor: Cursor[Text])(using Tactic[CssError]):
+  private class Parser(cursor: Cursor[Text, ?])(using Tactic[CssError]):
     def document(): SelectorList =
       val list = selectorList(relative = false)
       ws()
