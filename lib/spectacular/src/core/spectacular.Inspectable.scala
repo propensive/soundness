@@ -102,81 +102,84 @@ object Inspectable extends Inspectable2:
     case char =>
       if char < 128 && char >= 32
       then char.toString.tt
-      else String.format("\\u%04x", char.toInt).nn.tt
+      else String.format("\\u%04x", Integer.valueOf(char.toInt)).nn.tt
 
+  // The collection instances below retain their by-name element instance, which shares each
+  // instance's given-resolution lifetime, so they are laundered pure rather than making every
+  // Inspectable a capability (the codec-thunk seal pattern; see rep/DECISIONS.md).
   given set: [element] => (inspectable: => element is Inspectable) => Set[element] is Inspectable =
-    _.map(inspectable.text(_)).mkString("{", ", ", "}").tt
+    caps.unsafe.unsafeAssumePure(_.map(inspectable.text(_)).mkString("{", ", ", "}").tt)
 
   given map: [key, value]
   =>  ( inspectableKey: => key is Inspectable, inspectableValue: => value is Inspectable )
   =>  Map[key, value] is Inspectable =
 
-    entries =>
-      entries.map: (key, value) =>
-        inspectableKey.text(key).s+" → "+inspectableValue.text(value).s
+    caps.unsafe.unsafeAssumePure: entries =>
+        entries.map: (key, value) =>
+          inspectableKey.text(key).s+" → "+inspectableValue.text(value).s
 
-      . mkString("{", ", ", "}").tt
+        . mkString("{", ", ", "}").tt
 
 
   given series: [element] => (inspectable: => element is Inspectable)
   =>  Series[element] is Inspectable =
 
-    _.map(inspectable.text(_)).mkString("⟨ ", " ", " ⟩").tt
+    caps.unsafe.unsafeAssumePure(_.map(inspectable.text(_)).mkString("⟨ ", " ", " ⟩").tt)
 
 
   given indexedSeq: [element] => (inspectable: => element is Inspectable)
   =>  IndexedSeq[element] is Inspectable =
-    _.map(inspectable.text(_)).mkString("⟨ ", " ", " ⟩ᵢ").tt
+    caps.unsafe.unsafeAssumePure(_.map(inspectable.text(_)).mkString("⟨ ", " ", " ⟩ᵢ").tt)
 
 
   given list: [element] => (inspectable: => element is Inspectable)
   =>  List[element] is Inspectable =
 
-    _.map(inspectable.text(_)).mkString("[", ", ", "]").tt
+    caps.unsafe.unsafeAssumePure(_.map(inspectable.text(_)).mkString("[", ", ", "]").tt)
 
 
   given array: [element] => (inspectable: => element is Inspectable)
   =>  Array[element] is Inspectable =
 
-    array =>
-      array.iterator.zipWithIndex.map: (value, index) =>
-        val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
-        (subscript+inspectable.text(value).s).tt
+    caps.unsafe.unsafeAssumePure: array =>
+        array.iterator.zipWithIndex.map: (value, index) =>
+          val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
+          (subscript+inspectable.text(value).s).tt
 
-      . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
+        . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
 
 
   given arraySeq: [element] => (inspectable: => element is Inspectable)
   =>  scm.ArraySeq[element] is Inspectable =
-    array =>
-      array.zipWithIndex.map: (value, index) =>
-        val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
-        (subscript+inspectable.text(value).s).tt
+    caps.unsafe.unsafeAssumePure: array =>
+        array.zipWithIndex.map: (value, index) =>
+          val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
+          (subscript+inspectable.text(value).s).tt
 
-      . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
+        . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
 
   given stream: [element] => (inspectable: => element is Inspectable)
   =>  LazyList[element] is Inspectable =
 
-    stream =>
-      def recur(stream: LazyList[element], todo: Int): Text =
-        if todo <= 0 then "..?".tt
-        else if stream.toString == "LazyList(<not computed>)" then "∿∿∿".tt
-        else if stream.nil then "⯁ ".tt
-        else (inspectable.text(stream.head).s+" ⋰ "+recur(stream.tail, todo - 1)).tt
+    caps.unsafe.unsafeAssumePure: stream =>
+        def recur(stream: LazyList[element], todo: Int): Text =
+          if todo <= 0 then "..?".tt
+          else if stream.toString == "LazyList(<not computed>)" then "∿∿∿".tt
+          else if stream.nil then "⯁ ".tt
+          else (inspectable.text(stream.head).s+" ⋰ "+recur(stream.tail, todo - 1)).tt
 
-      recur(stream, 3)
+        recur(stream, 3)
 
 
   given iarray: [element] => (inspectable: => element is Inspectable)
   =>  IArray[element] is Inspectable =
 
-    iarray =>
-      iarray.zipWithIndex.map: (value, index) =>
-        val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
-        subscript+inspectable.text(value).s.tt
+    caps.unsafe.unsafeAssumePure: iarray =>
+        iarray.zipWithIndex.map: (value, index) =>
+          val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
+          subscript+inspectable.text(value).s.tt
 
-      . mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
+        . mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
 
 
   private def arrayPrefix(string: String): String =
@@ -198,9 +201,11 @@ object Inspectable extends Inspectable2:
 
     arrayType+dimension//+renderBraille(string.split("@").nn(1).nn)
 
+  // Laundered pure like the collection instances above; see that comment.
   given option: [value] => (inspectable: => value is Inspectable) => Option[value] is Inspectable =
-    case None        => "None".tt
-    case Some(value) => s"Some(${inspectable.text(value).s})".tt
+    caps.unsafe.unsafeAssumePure:
+      case None        => "None".tt
+      case Some(value) => s"Some(${inspectable.text(value).s})".tt
 
   given none: None.type is Inspectable = none => "None".tt
 
@@ -223,4 +228,4 @@ trait Inspectable2:
 
 trait Inspectable extends Typeclass:
   def text(value: Self): Text
-  def contramap[self2](lambda: self2 => Self): self2 is Inspectable = value => text(lambda(value))
+  def contramap[self2](lambda: self2 => Self): (self2 is Inspectable)^{this, lambda} = value => text(lambda(value))
