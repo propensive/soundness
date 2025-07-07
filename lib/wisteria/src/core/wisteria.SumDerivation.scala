@@ -78,7 +78,7 @@ object SumDerivation:
       ( using reflection: SumReflection[derivation] )
       [ result ]
       ( inline lambda:  [variant <: derivation] => typeclass[variant]
-                        =>  ( typeclass[variant] aka "contextual",
+                        ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   IArray[result] =
@@ -100,7 +100,7 @@ object SumDerivation:
       [ derivation, variants <: Tuple, labels <: Tuple, result ]
       ( inline accumulator: result, index: Int )
       ( inline lambda:  result => [variant <: derivation] => typeclass[variant]
-                        =>  ( typeclass[variant] aka "contextual",
+                        ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               (Int & VariantIndex[variant]) aka "index" ) ?=> result )
     :   result =
@@ -165,7 +165,7 @@ object SumDerivation:
       ( using reflection: SumReflection[derivation] )
       [ result ]
       ( inline lambda:  [variant <: derivation] => typeclass[variant]
-                        =>  ( typeclass[variant] aka "contextual",
+                        ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
@@ -188,7 +188,7 @@ object SumDerivation:
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  variant
-                        =>  ( typeclass[variant] aka "contextual",
+                        ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
@@ -213,7 +213,7 @@ object SumDerivation:
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  typeclass[variant]
-                        =>  ( typeclass[variant] aka "contextual",
+                        ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   Optional[result] =
@@ -261,7 +261,7 @@ object SumDerivation:
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  variant
-                        =>  ( typeclass[variant] aka "contextual",
+                        ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   Optional[result] =

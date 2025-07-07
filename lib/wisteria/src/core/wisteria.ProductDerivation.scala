@@ -42,7 +42,7 @@ object ProductDerivation:
   trait Methods[typeclass[_]]:
     private transparent inline def buildFields[derivation <: Product]
       ( inline lambda:  [field] => typeclass[field]
-                        =>  ( typeclass[field] aka "contextual",
+                        ->  ( typeclass[field] aka "contextual",
                               Default[Optional[field]],
                               Text aka "label",
                               Int & FieldIndex[field] aka "index" ) ?=> field )
@@ -62,7 +62,7 @@ object ProductDerivation:
     protected transparent inline def build[derivation <: Product]
       ( using reflection: ProductReflection[derivation] )
       ( inline lambda:  [field] => typeclass[field]
-                        =>  ( typeclass[field] aka "contextual",
+                        ->  ( typeclass[field] aka "contextual",
                               Default[Optional[field]],
                               Text aka "label",
                               Int & FieldIndex[field] aka "index" ) ?=> field )
@@ -72,11 +72,11 @@ object ProductDerivation:
 
 
     protected transparent inline def construct[constructor[_], derivation <: Product]
-      ( inline bind:  [input, output] => constructor[input] => (input => constructor[output])
+      ( inline bind:  [input, output] => constructor[input] -> (input => constructor[output])
                       =>  constructor[output],
-        inline pure:    [monadic] => monadic => constructor[monadic],
+        inline pure:    [monadic] => monadic -> constructor[monadic],
         inline lambda:  [field] => typeclass[field]
-                        =>  ( typeclass[field] aka "contextual",
+                        ->  ( typeclass[field] aka "contextual",
                               Default[Optional[field]],
                               Text aka "label",
                               Int & FieldIndex[field] aka "index" )
@@ -91,7 +91,7 @@ object ProductDerivation:
       ()
       [ result ]
       ( inline lambda:  [field] => typeclass[field]
-                        =>  ( typeclass[field] aka "contextual",
+                        ->  ( typeclass[field] aka "contextual",
                               Default[Optional[field]],
                               Text aka "label",
                               (derivation => field) aka "dereference",
@@ -126,7 +126,7 @@ object ProductDerivation:
     protected transparent inline def fields[derivation <: Product](inline product: derivation)
       [ result ]
       ( inline lambda:  [field] => field
-                        =>  ( typeclass[field] aka "contextual",
+                        ->  ( typeclass[field] aka "contextual",
                               Default[Optional[field]],
                               Text aka "label",
                               (Int & FieldIndex[field]) aka "index" ) ?=> result )
