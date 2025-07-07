@@ -35,7 +35,7 @@ package symbolism
 import prepositional.*
 
 object Rootable:
-  def apply[root <: Int & Singleton, operand, result](lambda: operand => result)
+  def apply[root <: Int & Singleton, operand, result](lambda: operand -> result)
   :   operand is Rootable[root] to result =
 
     new Rootable[root]:

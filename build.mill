@@ -1766,10 +1766,10 @@ object surveillance extends Library:
 object symbolism extends Library:
   object core extends Component(prepositional.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object synesthesia extends Library:
   object core extends Component(obligatory.json):
