@@ -1691,10 +1691,10 @@ object serpentine extends Library:
 object spectacular extends Library:
   object core extends Component(stenography.core, inimitable.core, wisteria.core, digression.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object stenography extends Library:
   object core extends Component(rudiments.core):

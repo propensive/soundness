@@ -110,5 +110,5 @@ trait Showable extends Typeclass, Communicable:
   def text(value: Self): Text
   def message(value: Self): Message = Message(text(value))
 
-  override def contramap[self2](lambda: self2 => Self): self2 is Showable =
+  override def contramap[self2](lambda: self2 => Self): (self2 is Showable)^{this, lambda} =
     value => text(lambda(value))
