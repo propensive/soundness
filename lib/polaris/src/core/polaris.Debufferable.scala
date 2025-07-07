@@ -39,7 +39,7 @@ import rudiments.*
 import wisteria.*
 
 object Debufferable extends ProductDerivable[Debufferable]:
-  def apply[data](byteWidth: Int)(lambda: (Data, Int) => data): data is Debufferable =
+  def apply[data](byteWidth: Int)(lambda: (Data, Int) -> data): data is Debufferable =
     new:
       def width: Int = byteWidth
 
@@ -64,7 +64,7 @@ object Debufferable extends ProductDerivable[Debufferable]:
   given long: Long is Debufferable = Debufferable(8)(B64(_, _).s64.long)
 
   class Join[derivation <: Product: ProductReflection]
-    ( val width: Int, debuffer0: Buffer => derivation )
+    ( val width: Int, debuffer0: Buffer -> derivation )
   extends Debufferable:
     type Self = derivation
     def debuffer(buffer: Buffer): derivation = debuffer0(buffer)
