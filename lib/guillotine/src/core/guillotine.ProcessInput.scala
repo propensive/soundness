@@ -46,11 +46,14 @@ import turbulence.*
 // never surfaces `java.io.OutputStream` in guillotine's public API. The `Writable` instances
 // delegate to turbulence's `OutputStream` writers.
 object ProcessInput:
-  given data: Emit[StreamError] => ProcessInput is Writable by Data = (stdin, stream) =>
-    summon[ji.OutputStream is Writable by Data].write(stdin.outputStream, stream)
-
-  given text: (Emit[StreamError], CharEncoder) => ProcessInput is Writable by Text =
+  given data: (streamCut: Emit[StreamError])
+  =>  ((ProcessInput is Writable by Data)^{streamCut}) =
     (stdin, stream) =>
-      summon[ji.OutputStream is Writable by Text].write(stdin.outputStream, stream)
+      summon[(ji.OutputStream is Writable by Data)^].write(stdin.outputStream, stream)
+
+  given text: (streamCut: Emit[StreamError], encoder: CharEncoder)
+  =>  ((ProcessInput is Writable by Text)^{streamCut}) =
+    (stdin, stream) =>
+      summon[(ji.OutputStream is Writable by Text)^].write(stdin.outputStream, stream)
 
 class ProcessInput private[guillotine] (private[guillotine] val outputStream: ji.OutputStream)

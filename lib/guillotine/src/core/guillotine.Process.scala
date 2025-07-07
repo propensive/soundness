@@ -42,7 +42,7 @@ import vacuous.*
 object Process:
   private def allHandles = ProcessHandle.allProcesses.nn.iterator.nn.asScala.to(List)
 
-  def apply(pid: Pid)(using pidError: Tactic[PidError]): Process =
+  def apply(pid: Pid)(using pidError: Tactic[PidError]^): Process =
     val handle = ProcessHandle.of(pid.value).nn
     if handle.isPresent then new Process(handle.get.nn) else abort(PidError(pid))
 
