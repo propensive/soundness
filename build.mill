@@ -1914,24 +1914,24 @@ object xenophile extends Library:
   object core extends Component(gossamer.core, prepositional.core, gigantism.core, fulminate.core,
     vacuous.core, hellenism.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object typescript extends Component(core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object native extends Component(core):
     override def scalaJs = false // native FFI via `java.lang.foreign` (Panama) — JVM-only
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object wit extends Component(core, hypotenuse.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object webidl extends Component(core, hypotenuse.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object wasm extends Component(core, wit, hypotenuse.core, anticipation.codec, distillate.core,
     gossamer.core, prepositional.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // The JavaScript materializer: emits Scala.js dynamic calls for WebIDL/TypeScript navigations.
   // The `invoke` extension it exports collides by design with `wasm`'s (they target different
   // Scala.js link outputs), so it is not bundled into the `test` module alongside `wasm`.
@@ -1941,7 +1941,7 @@ object xenophile extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(typescript, native, wit, webidl, wasm):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object querencia extends Library:
   object core extends Component(xenophile.webidl, honeycomb.core, hypotenuse.core, gossamer.core,
