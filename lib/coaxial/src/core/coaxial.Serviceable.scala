@@ -47,7 +47,8 @@ import vacuous.*
 
 object Serviceable:
   given domainSocket: (Tactic[StreamError], Every[SocketOption.Domain])
-  =>  DomainSocket is Serviceable:
+  =>  ( (DomainSocket is Serviceable)^ ) = new Serviceable:
+    type Self = DomainSocket
     type Output = Data
 
     case class Connection(channel: jnc.SocketChannel)
@@ -89,7 +90,8 @@ object Serviceable:
     def close(connection: Connection): Unit = connection.channel.close()
 
   given tcpEndpoint: (Online, Tactic[StreamError], Every[SocketOption.Tcp])
-  =>  Endpoint[TcpPort] is Serviceable:
+  =>  ( (Endpoint[TcpPort] is Serviceable)^ ) = new Serviceable:
+    type Self = Endpoint[TcpPort]
     type Output = Data
     type Connection = jn.Socket
 
@@ -113,7 +115,9 @@ object Serviceable:
     def close(socket: jn.Socket): Unit = socket.close()
     def receive(socket: jn.Socket): Stream[Data] = socket.getInputStream.nn.stream[Data]
 
-  given tcpPort: (Tactic[StreamError], Every[SocketOption.Tcp]) => TcpPort is Serviceable:
+  given tcpPort: (Tactic[StreamError], Every[SocketOption.Tcp])
+  =>  ( (TcpPort is Serviceable)^ ) = new Serviceable:
+    type Self = TcpPort
     type Output = Data
     type Connection = jn.Socket
 

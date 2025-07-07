@@ -35,8 +35,8 @@ package coaxial
 import java.net as jn
 
 import anticipation.*
+import beneficence.*
 import gigantism.*
-import prepositional.*
 import rudiments.*
 import urticose.*
 import vacuous.*
@@ -86,7 +86,8 @@ object Routable:
 
         connection.socket.send(packet)
 
-trait Routable extends Typeclass:
+trait Routable extends Findable:
+  type Self
   type Connection
 
   def connect(endpoint: Self, interface: Optional[MacAddress]): Connection
