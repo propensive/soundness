@@ -43,13 +43,6 @@ import rudiments.*
 import vacuous.*
 
 object internal:
-  def applyFold[value]
-    ( v: value, lambdas: Seq[(Optic from value onto value) => value => value] )
-  :   value =
-
-    lambdas.foldLeft(v): (acc, lambda) =>
-      lambda(Optic.identity[value])(acc)
-
   def lens[self: Type, origin <: Product: Type]: Macro[self is Lens from origin] =
     import quotes.reflect.*
 
@@ -87,8 +80,15 @@ object internal:
 
     import quotes.reflect.*
 
+    // Fold the optic-application lambdas inline (rather than calling a capture-polymorphic helper):
+    // a `[C^]` helper would put a `CapSet` type into this quoted tree, which `pickleQuotes` cannot
+    // pickle. Inlined at the concrete expansion site the lambdas' captures are concrete, so no reach
+    // capability leaks.
     def fallback: Expr[value] =
-      '{panopticon.internal.applyFold[value]($valueExpr, $lambdasExpr)}
+      '{
+          $lambdasExpr.foldLeft($valueExpr): (accumulator, lambda) =>
+            lambda(panopticon.Optic.identity[value])(accumulator)
+        }
 
     sealed trait Step
     case class FieldStep(name: String) extends Step
@@ -488,7 +488,11 @@ object internal:
       val resultEx = emit[value](rootRef, branches)
       Block(List(rootDef), resultEx.asTerm).asExprOf[value]
 
-    Varargs.unapply(lambdasExpr) match
+    // Extract through a `Seq[Any]` view: under capture checking, matching `Varargs` at the capturing
+    // element type `(Optic …) => value => value` hits a boxed/unboxed mismatch. `parseLambda` already
+    // takes `Expr[Any]`, and the single-lambda branch re-ascribes the precise type, so the pure view
+    // loses nothing.
+    Varargs.unapply(lambdasExpr.asExprOf[Seq[Any]]) match
       case None => fallback
 
       case Some(exprs) =>
