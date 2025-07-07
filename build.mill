@@ -903,10 +903,10 @@ object diuretic extends Library:
   object core extends Component(anticipation.path, anticipation.url, anticipation.time):
     override def scalaJs = false // `java.*` type interop (io.File, nio.Path, net.URL, time, util.Date)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object embarcadero extends Library:
   object oci
