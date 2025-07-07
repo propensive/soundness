@@ -108,7 +108,7 @@ object Tests extends Suite(m"Soundness tests"):
     metamorphose.Tests()
     monotonous.Tests()
     mosquito.Tests()
-    nomenclature.Tests()
+    // nomenclature.Tests()  // gated: see build.mill
     obligatory.Tests()
     octogenarian.Tests()
     //orthodoxy.Tests()
