@@ -192,19 +192,19 @@ object Tests extends Suite(m"Stenography Tests"):
     . assert(_ == t"(text: Text) ?=> Int")
 
     test(m"Show polymorphic lambda"):
-      Syntax.name[[field] => (x: field) => Int]
+      Syntax.name[[field] => (x: field) -> Int]
     . assert(_ == t"[field] => (x: field) => Int")
 
     test(m"Show polymorphic lambda with upper bound"):
-      Syntax.name[[field <: String] => (x: field) => Int]
+      Syntax.name[[field <: String] => (x: field) -> Int]
     . assert(_ == t"[field <: String] => (x: field) => Int")
 
     test(m"Show polymorphic lambda with lower bound"):
-      Syntax.name[[field >: String] => (x: field) => Int]
+      Syntax.name[[field >: String] => (x: field) -> Int]
     . assert(_ == t"[field >: String] => (x: field) => Int")
 
     test(m"Show polymorphic lambda with upper and lower bound"):
-      Syntax.name[[field >: String <: AnyRef] => (x: field) => Int]
+      Syntax.name[[field >: String <: AnyRef] => (x: field) -> Int]
     . assert(_ == t"[field >: String <: AnyRef] => (x: field) => Int")
 
     test(m"By-name type"):

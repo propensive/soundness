@@ -1717,12 +1717,12 @@ object spectacular extends Library:
 object stenography extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object stratiform extends Library:
   object core extends Component(zephyrine.core, turbulence.core, panopticon.core, gossamer.core, contingency.core, anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core, gigantism.core, fulminate.core, adversaria.core):
