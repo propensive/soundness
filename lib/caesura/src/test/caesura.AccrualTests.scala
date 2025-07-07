@@ -46,12 +46,13 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
   extends Error(m"${items.length} decoding issues"):
     def +(focus: Text, error: DsvError): Issues = Issues(items :+ (focus, error))
 
-  private def validateDsv[result](dsv: Dsv)
-                                 (decode: Dsv => result raises DsvError tracks CellRef)
+  private inline def validateDsv[result](dsv: Dsv)
+                                 (inline decode: Dsv => result raises DsvError tracks CellRef)
   :   Issues =
-    validate[CellRef](Issues()):
-      case error: DsvError =>
-        accrual + (prior.let(_.column).or(t"#"), error)
+    Validate[Issues, [r] =>> r raises DsvError, CellRef]
+      ( Issues(),
+        { case error: DsvError =>
+            accrual + (prior.let(_.column).or(t"#"), error) } )
     . protect(decode(dsv))
 
   private def row(text: Text): Dsv = text.read[Sheet].rows.head

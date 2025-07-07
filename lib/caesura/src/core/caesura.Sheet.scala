@@ -93,17 +93,21 @@ object Sheet:
               Column[Dsv, Text, Text](name, sizing = columnar.Collapsible(0.5))
                 ( _[Text](name).or(t"") ) )* )
 
-  given aggregable: (format: DsvFormat) => Tactic[DsvError] => Sheet is Aggregable by Text =
-    new Aggregable:
-      type Self = Sheet
-      type Operand = Text
+  // Sealed per the codec-thunk pattern (see rep/DECISIONS.md): the resolution-scoped
+  // tactic shares the instance's given-resolution lifetime.
+  given aggregable: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  =>  Sheet is Aggregable by Text =
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = Sheet
+        type Operand = Text
 
-      def aggregate(text: LazyList[Text]): Sheet = sheet(parse(text))
-      override def accept(stream: Stream[Text] over Credit): Sheet = sheet(parse(stream))
+        def aggregate(text: LazyList[Text]): Sheet = sheet(parse(text))
+        override def accept(stream: Stream[Text] over Credit): Sheet = sheet(parse(stream))
 
-      private def sheet(rows: LazyList[Dsv]): Sheet =
-        if format.header then Sheet(rows, format, rows.prim.let(_.header))
-        else Sheet(rows, format)
+        private def sheet(rows: LazyList[Dsv]): Sheet =
+          if format.header then Sheet(rows, format, rows.prim.let(_.header))
+          else Sheet(rows, format)
 
   given showable: DsvFormat => Sheet is Showable = _.rows.map(_.show).join(t"\n")
   given streamable: DsvFormat => Sheet is Streamable by Text = _.rows.to(LazyList).map(_.show+t"\n")

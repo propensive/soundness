@@ -69,7 +69,10 @@ object Dsv extends Dsv2:
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( decodable: => inner is Decodable in Dsv )
   =>  value is Decodable in Dsv =
-    row => if row.data.length == 0 then Unset else decodable.decoded(row)
+    // The by-name inner decoder shares this instance's given-resolution lifetime; laundered
+    // pure per the codec-thunk seal pattern (see rep/DECISIONS.md).
+    caps.unsafe.unsafeAssumePure:
+      row => if row.data.length == 0 then Unset else decodable.decoded(row)
 
   given encoder: [encodable: Encodable in Text] => encodable is Encodable in Dsv =
     value => Dsv(encodable.encode(value))
@@ -93,36 +96,54 @@ object Dsv extends Dsv2:
       parse(cell).or:
         raise(DsvError(format, DsvError.Reason.Unparseable(cell, expected))) yet sentinel
 
-  given int: (format: DsvFormat) => Tactic[DsvError] => Int is Decodable in Dsv = dsv =>
-    decodeCell(dsv, t"Int", 0): cell =>
-      try Integer.parseInt(cell.s) catch case _: NumberFormatException => Unset
+  // The primitive cell decoders are laundered pure: their resolution-scoped tactic shares each
+  // instance's given-resolution lifetime, and the product derivation summons them against pure
+  // expected types (honest capturing forms return with wisteria capture-polymorphism; see
+  // rep/DECISIONS.md).
+  given int: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  =>  Int is Decodable in Dsv =
+    caps.unsafe.unsafeAssumePure: dsv =>
+      decodeCell(dsv, t"Int", 0): cell =>
+        try Integer.parseInt(cell.s) catch case _: NumberFormatException => Unset
 
-  given long: (format: DsvFormat) => Tactic[DsvError] => Long is Decodable in Dsv = dsv =>
-    decodeCell(dsv, t"Long", 0L): cell =>
-      try java.lang.Long.parseLong(cell.s) catch case _: NumberFormatException => Unset
+  given long: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  =>  Long is Decodable in Dsv =
+    caps.unsafe.unsafeAssumePure: dsv =>
+      decodeCell(dsv, t"Long", 0L): cell =>
+        try java.lang.Long.parseLong(cell.s) catch case _: NumberFormatException => Unset
 
-  given double: (format: DsvFormat) => Tactic[DsvError] => Double is Decodable in Dsv = dsv =>
-    decodeCell(dsv, t"Double", 0.0): cell =>
-      try java.lang.Double.parseDouble(cell.s) catch case _: NumberFormatException => Unset
+  given double: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  =>  Double is Decodable in Dsv =
+    caps.unsafe.unsafeAssumePure: dsv =>
+      decodeCell(dsv, t"Double", 0.0): cell =>
+        try java.lang.Double.parseDouble(cell.s) catch case _: NumberFormatException => Unset
 
-  given float: (format: DsvFormat) => Tactic[DsvError] => Float is Decodable in Dsv = dsv =>
-    decodeCell(dsv, t"Float", 0.0f): cell =>
-      try java.lang.Float.parseFloat(cell.s) catch case _: NumberFormatException => Unset
+  given float: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  =>  Float is Decodable in Dsv =
+    caps.unsafe.unsafeAssumePure: dsv =>
+      decodeCell(dsv, t"Float", 0.0f): cell =>
+        try java.lang.Float.parseFloat(cell.s) catch case _: NumberFormatException => Unset
 
-  given boolean: (format: DsvFormat) => Tactic[DsvError] => Boolean is Decodable in Dsv = dsv =>
-    decodeCell(dsv, t"Boolean", false): cell =>
-      cell.s match
-        case "true"  => true
-        case "false" => false
-        case _       => Unset
+  given boolean: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  =>  Boolean is Decodable in Dsv =
+    caps.unsafe.unsafeAssumePure: dsv =>
+      decodeCell(dsv, t"Boolean", false): cell =>
+        cell.s match
+          case "true"  => true
+          case "false" => false
+          case _       => Unset
 
-  given text: (format: DsvFormat) => Tactic[DsvError] => Text is Decodable in Dsv = dsv =>
-    decodeCell(dsv, t"Text", t""): cell =>
-      cell
+  given text: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  =>  Text is Decodable in Dsv =
+    caps.unsafe.unsafeAssumePure: dsv =>
+      decodeCell(dsv, t"Text", t""): cell =>
+        cell
 
-  given string: (format: DsvFormat) => Tactic[DsvError] => String is Decodable in Dsv = dsv =>
-    decodeCell(dsv, t"String", ""): cell =>
-      cell.s
+  given string: (format: DsvFormat) => (tactic: Tactic[DsvError])
+  =>  String is Decodable in Dsv =
+    caps.unsafe.unsafeAssumePure: dsv =>
+      decodeCell(dsv, t"String", ""): cell =>
+        cell.s
 
 
   inline given decodableDerivation: [value <: Product: ProductReflection]
@@ -136,8 +157,9 @@ object Dsv extends Dsv2:
   // `Sheet` instead (`Sheet.as[Foo]` yields a `LazyList[Foo]`). The `Form` type-tag is
   // added by an `asInstanceOf` cast — `value in Dsv` is just `value { type Form = Dsv }`
   // so the cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Dsv] => (format: DsvFormat) => Tactic[DsvError]
-  =>  (value in Dsv) is Aggregable by Text =
+  given aggregableIn: [value: Decodable in Dsv] => (format: DsvFormat)
+  =>  (tactic: Tactic[DsvError])
+  =>  (((value in Dsv) is Aggregable by Text)^{tactic}) =
     text =>
       summon[Sheet is Aggregable by Text].aggregate(text).rows.head.as[value]
       . asInstanceOf[value in Dsv]
@@ -167,7 +189,7 @@ object Dsv extends Dsv2:
     . join(format.delimiter.show)
 
   object DecodableDerivation extends ProductDerivable[Decodable in Dsv]:
-    class DsvProductDecoder[derivation](lambda: Dsv => derivation)
+    class DsvProductDecoder[derivation](lambda: Dsv -> derivation)
     extends Decodable:
       type Self = derivation
       type Form = Dsv
@@ -183,7 +205,11 @@ object Dsv extends Dsv2:
       // to a single shared instance, so per-instance mutable state would leak between
       // successive decodes.
       provide[Foci[CellRef]]:
-        DsvProductDecoder[derivation]:
+        // The decode lambda may capture the consumer's `Tactic` (field decoders are
+        // tactic-taking givens), with the same lifetime as the instance's given resolution;
+        // laundered pure to keep decoder instances pure — the same rationale as jacinta's
+        // codec-thunk seal (see jacinta.Json.scala and rep/DECISIONS.md).
+        DsvProductDecoder[derivation](caps.unsafe.unsafeAssumePure:
           (row: Dsv) =>
             var count = 0
 
@@ -200,7 +226,7 @@ object Dsv extends Dsv2:
                 count += spans(index)
 
                 focus(CellRef(Prim, label)):
-                  contextual.decoded(row2)
+                  contextual.decoded(row2))
 
   object EncodableDerivation extends ProductDerivable[Encodable in Dsv]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -224,7 +250,7 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
     IArray.tabulate(columns.size)(columns(_))
 
 
-  def selectDynamic[value: Decodable in Text](field: String)(using erased DynamicDsvEnabler)
+  def selectDynamic[value: Decodable in Text](field: String)(using erased dynamicDsvEnabler: DynamicDsvEnabler)
     ( using DsvRedesignation )
   :   Optional[value] =
 
