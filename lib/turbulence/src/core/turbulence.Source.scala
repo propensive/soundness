@@ -63,18 +63,18 @@ object Source extends Source2:
   // request or response body can be `read` directly.
   given httpBody: Buffering => HttpStreams.Body is Source by Data over Credit = _.stream
 
-  given inputStream: [input <: ji.InputStream] => (Tactic[StreamError], Buffering)
-  =>  input is Source by Data over Credit =
+  given inputStream: [input <: ji.InputStream] => (tactic: Tactic[StreamError], buffering: Buffering)
+  =>  ((input is Source by Data over Credit)^{tactic}) =
 
     value => Source.stream(jn.channels.Channels.newChannel(value).nn)
 
-  given channel: (Tactic[StreamError], Buffering)
-  =>  jn.channels.ReadableByteChannel is Source by Data over Credit =
+  given channel: (tactic: Tactic[StreamError], buffering: Buffering)
+  =>  ((jn.channels.ReadableByteChannel is Source by Data over Credit)^{tactic}) =
 
     Source.stream(_)
 
-  given reader: [input <: ji.Reader] => (Tactic[StreamError], Buffering)
-  =>  input is Source by Text over Credit =
+  given reader: [input <: ji.Reader] => (tactic: Tactic[StreamError], buffering: Buffering)
+  =>  ((input is Source by Text over Credit)^{tactic}) =
 
     value =>
       new Stream[Text]:
@@ -127,7 +127,7 @@ object Source extends Source2:
   // time.
   private def stream(input: jn.channels.ReadableByteChannel)
     ( using tactic: Tactic[StreamError], buffering: Buffering )
-  :   Stream[Data] over Credit =
+  :   (Stream[Data] over Credit)^{tactic} =
 
     new Stream[Data]:
       type Transport = Credit
@@ -185,13 +185,13 @@ object Source extends Source2:
 // code migrates without ceremony. Production of the underlying `LazyList` is
 // not demand-controlled.
 trait Source2:
-  given streamableData: [value] => (streamable: value is Streamable by Data)
-  =>  value is Source by Data over Credit =
+  given streamableData: [value] => (streamable: (value is Streamable by Data)^)
+  =>  ((value is Source by Data over Credit)^{streamable}) =
 
     source => Stream(streamable.stream(source).iterator)
 
-  given streamableText: [value] => (streamable: value is Streamable by Text)
-  =>  value is Source by Text over Credit =
+  given streamableText: [value] => (streamable: (value is Streamable by Text)^)
+  =>  ((value is Source by Text over Credit)^{streamable}) =
 
     source => Stream(streamable.stream(source).iterator)
 
@@ -199,5 +199,6 @@ trait Source extends Typeclass, Operable:
   type Transport
   def stream(value: Self): Stream[Operand] over Transport
 
-  def contramap[self2](lambda: self2 => Self): self2 is Source by Operand over Transport =
+  def contramap[self2](lambda: self2 => Self)
+  :   (self2 is Source by Operand over Transport)^{this, lambda} =
     value => stream(lambda(value))

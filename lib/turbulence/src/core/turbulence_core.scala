@@ -59,19 +59,23 @@ extension [value](value: value)
   inline def stream[element]: LazyList[element] =
     ${turbulence.internal.stream[value, element]('value)}
 
-  inline def read[result](using readable: value is Readable to result): result =
+  inline def read[result](using readable: (value is Readable to result)^): result =
     readable.read(value)
 
 
   def writeTo[target](target: target)[element]
-    ( using streamable: value is Streamable by element, writable: target is Writable by element )
+    // Capture-polymorphic evidence: writers built from an `Emit[StreamError]` capture it; the
+    // write completes within this call, so nothing is retained and the result stays `Unit`.
+    ( using streamable: (value is Streamable by element)^,
+            writable:   (target is Writable by element)^ )
   :   Unit =
 
     writable.write(target, streamable.stream(value))
 
 extension [value: Streamable by Text](value: value)
-  def load[result <: Documentary: Loadable by Text]: Document[result] =
-    result.load(value.stream[Text])
+  def load[result <: Documentary](using loadable: (result is Loadable by Text)^)
+  :   Document[result] =
+    loadable.load(value.stream[Text])
 
 extension [medium, transport](stream: Stream[medium] over transport)
   // The detached pump: `flowTo` on its own parasite task, for fire-and-forget
@@ -200,6 +204,9 @@ extension [element](stream: LazyList[element])
     stream.flow(LazyList())(next #:: recur(next, more))
 
 
+  // `next`/`more` are bound with `aka`-label refinements; under capture checking the
+  // labelled singleton type does not simplify away in every position (the aka-Tagged/
+  // castbox class), so use sites strip it with `next.asInstanceOf[element]`.
   inline def flow[result](inline termination: => result)
     ( inline proceed: (element aka "next", LazyList[element] aka "more") ?=> result )
   :   result =
@@ -290,7 +297,12 @@ extension [element](stream: LazyList[element])
     val out: Spool[element2] = Spool()
 
     async:
-      stream.map: element => async(out.put(lambda(element)))
+      stream.each: element =>
+        // Fan out: each element is mapped on its own supervised worker that puts the result
+        // into the
+        // spool. (`each`, not `map`: the source must be drained to actually spawn the workers.)
+        async(out.put(lambda(element)))
+        ()
 
     out.stream
 
@@ -323,7 +335,7 @@ extension (obj: LazyList.type)
   def multiplex[element](streams: LazyList[element]*)(using Monitor): LazyList[element] =
     multiplexer(streams*).stream
 
-  def multiplexer[element](streams: LazyList[element]*)(using Monitor): Multiplexer[Any, element] =
+  def multiplexer[element](streams: LazyList[element]*)(using Monitor): Multiplexer[Any, element]^ =
     Multiplexer[Any, element]().tap: multiplexer =>
       streams.zipWithIndex.each: (stream, index) =>
         multiplexer.add(index, stream)
@@ -335,15 +347,24 @@ extension (obj: LazyList.type)
   def metronome[generic: Abstractable across Durations to Long](duration: generic)(using Monitor)
   :   LazyList[Unit] =
 
+    val spool: Spool[Unit] = Spool()
     val startTime: Long = jl.System.currentTimeMillis
 
-    def recur(iteration: Int): LazyList[Unit] =
-      try
+    // Ticking requires the `Monitor` (to `sleep`), which a pure lazy `Stream` cannot itself
+    // capture,
+    // so it runs as a supervised task that pushes ticks into a `Spool`. When the scope is torn
+    // down a
+    // cancelled `sleep` raises `AsyncError`; the spool is then stopped so the consumer's stream ends.
+    async:
+      @tailrec
+      def recur(iteration: Int): Unit =
         sleep(startTime + duration.generic/1_000_000L*iteration)
-        () #:: recur(iteration + 1)
-      catch case error: AsyncError => LazyList()
+        spool.put(())
+        recur(iteration + 1)
 
-    recur(0)
+      try recur(0) catch case _: AsyncError => spool.stop()
+
+    spool.stream
 
 
 extension (stream: LazyList[Data])
@@ -457,6 +478,6 @@ extension (stream: LazyList[Data])
           offset += count
           count
 
-def spool[item](using erased Void)[result](lambda: Spool[item] => result): result =
+def spool[item](using erased void: Void)[result](lambda: Spool[item] => result): result =
   val spool: Spool[item] = Spool()
   try lambda(spool) finally spool.stop()

@@ -37,6 +37,7 @@ import java.nio as jn
 
 import anticipation.*
 import contingency.*
+import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
@@ -46,6 +47,11 @@ object Streamable:
   given bytes: Data is Streamable by Data = LazyList(_)
   given text: [textual <: Text] => textual is Streamable by Text = LazyList(_)
   given stream: [element] => LazyList[element] is Streamable by element = identity(_)
+
+  // The encoder-bridged counterpart of `Aggregable`'s `bytesText` (`Text is Aggregable by Data`),
+  // so a `Text` can be streamed as `Data` directly — e.g. written to a file with `path.write`.
+  given textData: (encoder: CharEncoder) => Text is Streamable by Data =
+    text => encoder.encoded(LazyList(text))
 
   given inCharReader: (stdio: Stdio) => In.type is Streamable by Char = in =>
     def recur(count: Bytes): LazyList[Char] =
@@ -63,7 +69,8 @@ object Streamable:
 
     LazyList.defer(recur(0L.b))
 
-  given reader: [input <: ji.Reader] => Tactic[StreamError] => input is Streamable by Char =
+  given reader: [input <: ji.Reader] => (tactic: Tactic[StreamError]^)
+  =>  ((input is Streamable by Char)^{tactic}) =
     reader =>
       def recur(count: Bytes): LazyList[Char] =
         try reader.read() match
@@ -76,8 +83,8 @@ object Streamable:
       LazyList.defer(recur(0L.b))
 
 
-  given bufferedReader: [input <: ji.BufferedReader] => Tactic[StreamError]
-  =>  input is Streamable by Line =
+  given bufferedReader: [input <: ji.BufferedReader] => (tactic: Tactic[StreamError]^)
+  =>  ((input is Streamable by Line)^{tactic}) =
 
     reader =>
       def recur(count: Bytes): LazyList[Line] =
@@ -91,13 +98,14 @@ object Streamable:
       LazyList.defer(recur(0L.b))
 
 
-  given inputStream: [input <: ji.InputStream] => Tactic[StreamError]
-  =>  input is Streamable by Data =
+  given inputStream: [input <: ji.InputStream] => (tactic: Tactic[StreamError]^)
+  =>  ((input is Streamable by Data)^{tactic}) =
 
     channel.contramap(jn.channels.Channels.newChannel(_).nn)
 
 
-  given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Streamable by Data =
+  given channel: (tactic: Tactic[StreamError]^)
+  =>  ((jn.channels.ReadableByteChannel is Streamable by Data)^{tactic}) =
     channel =>
       val buffer: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
@@ -122,5 +130,5 @@ object Streamable:
 trait Streamable extends Typeclass, Operable:
   def stream(value: Self): LazyList[Operand]
 
-  def contramap[self2](lambda: self2 => Self): self2 is Streamable by Operand =
+  def contramap[self2](lambda: self2 => Self): (self2 is Streamable by Operand)^{this, lambda} =
     source => stream(lambda(source))

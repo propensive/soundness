@@ -36,7 +36,7 @@ import java.util.concurrent as juc
 
 
 object Spool:
-  private object Termination
+  private object Termination extends scala.caps.Pure
 
 class Spool[item]():
   private val queue: juc.LinkedBlockingQueue[item | Spool.Termination.type] =
@@ -45,10 +45,14 @@ class Spool[item]():
   def put(item: item): Unit = queue.put(item)
   def stop(): Unit = queue.put(Spool.Termination)
 
+  // The `case value =>` catch-all is not credited by exhaustivity checking against the
+  // erased `item | Termination` scrutinee, so the (spurious) warning is suppressed.
+  @scala.annotation.nowarn("msg=match may not be exhaustive")
   def stream: LazyList[item] =
-    LazyList.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
-    . asInstanceOf[LazyList[item]]
+    def pull(): LazyList[item] = queue.take().nn match
+      case Spool.Termination => LazyList()
+      case value             => value.asInstanceOf[item] #:: pull()
 
-  def iterator: Iterator[item] =
-    Iterator.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
-    . asInstanceOf[Iterator[item]]
+    LazyList().lazyAppendedAll(pull())
+
+  def iterator: Iterator[item] = stream.iterator

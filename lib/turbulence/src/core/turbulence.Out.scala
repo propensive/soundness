@@ -45,9 +45,11 @@ object Out:
 
   def println()(using Stdio): Unit = print("\n".tt)
 
-  def println[textual: Printable](lines: Termcap ?=> textual*)(using stdio: Stdio): Unit =
-    lines.map(_(using stdio.termcap)).pipe: lines =>
-      mutex:
-        lines.foreach: line =>
-          print(line)
-          println()
+  def println[textual: Printable as printable, C^](lines: (Termcap ?->{C} textual)*)
+    ( using stdio: Stdio )
+  :   Unit =
+
+    mutex:
+      lines.foreach: line =>
+        stdio.print(printable.print(line(using stdio.termcap), stdio.termcap))
+        stdio.print("\n".tt)
