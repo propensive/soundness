@@ -127,10 +127,11 @@ case class Semver
             (major:      Long,
              minor:      Long,
              patch:      Long,
-             prerelease: List[Long | Text],
-             build:      List[Long | Text]):
+             prerelease: List[Long | Text] = Nil,
+             build:      List[Long | Text] = Nil):
 
   def development: Boolean = major == 0
+  def release: Semver = Semver(major, minor, patch, Nil, Nil)
 
   override def equals(that: Any): Boolean = that match
     case that: Semver =>
@@ -145,8 +146,17 @@ case class Semver
   override def hashCode: Int = (major, minor, patch, prerelease).hashCode
 
   def compatibility(right: Semver): Compatibility =
-    if !prerelease.isEmpty || !right.prerelease.isEmpty then Compatibility.Indeterminate
-    else if major == 0 || right.major == 0 || major != right.major then Compatibility.Indeterminate
-    else if minor < right.minor then Compatibility.Backwards
-    else if minor > right.minor then Compatibility.Forwards
-    else Compatibility.Full
+    if !prerelease.isEmpty || !right.prerelease.isEmpty then Compatibility.Breaking
+    else if major == 0 || right.major == 0 || major != right.major then Compatibility.Breaking
+    else if minor < right.minor then Compatibility.Additions
+    else if minor > right.minor then Compatibility.Breaking
+    else if patch != right.patch then Compatibility.Internal
+    else Compatibility.Unchanged
+
+  def next(api: Compatibility): Semver =
+    import Compatibility.*
+    api match
+      case Breaking  => if major == 0 then Semver(0, minor + 1, 0) else Semver(major + 1, 0, 0)
+      case Additions => Semver(major, minor + 1, 0)
+      case Internal  => Semver(major, minor, patch + 1)
+      case Unchanged => Semver(major, minor, patch + 1)

@@ -35,4 +35,4 @@ package revolution
 import scala.collection as sc
 
 enum Compatibility:
-  case Forwards, Backwards, Full, Indeterminate
+  case Breaking, Additions, Internal, Unchanged
