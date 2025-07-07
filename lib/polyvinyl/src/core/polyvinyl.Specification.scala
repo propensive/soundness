@@ -45,7 +45,9 @@ trait Specification extends Original:
   type Form <: { type Origin = Origin0 }
 
   def fields: Map[Text, Member]
-  def build(data: Origin, transform: Text => Origin => Any): Record
+  // A pure function (`->`): the built Record retains the transform, and a capturing one would
+  // make the record itself a capability, which Record's pure self type (rightly) forbids.
+  def build(data: Origin, transform: Text -> Origin -> Any): Record
   def access(name: Text, value: Origin): Origin
 
 
@@ -112,7 +114,7 @@ trait Specification extends Original:
                   val recordTypeRepr = TypeRepr.of[Record]
                   val (nestedType, nestedCaseDefs) = refine(nested, map.to(List), recordTypeRepr)
 
-                  val matchFn: Expr[Text => Origin => Any] =
+                  val matchFn: Expr[Text -> Origin -> Any] =
                     ' {
                         name =>
                           ${Match('name.asTerm, nestedCaseDefs).asExprOf[Origin => Any]}
@@ -138,7 +140,7 @@ trait Specification extends Original:
 
     val (refined, caseDefs) = refine(value, fields.to(List), TypeRepr.of[Record])
 
-    val matchFn: Expr[Text => Origin => Any] =
+    val matchFn: Expr[Text -> Origin -> Any] =
       '{(name: Text) => ${Match('name.asTerm, caseDefs).asExprOf[Origin => Any]}}
 
     refined.asType.absolve match
