@@ -734,10 +734,10 @@ object caduceus extends Library:
 object caesura extends Library:
   object core extends Component(turbulence.core, escritoire.core, panopticon.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
       mvn"com.univocity:univocity-parsers:2.9.1",
