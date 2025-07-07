@@ -44,8 +44,15 @@ abstract class Builder[textual](size: Optional[Int] = Unset):
   def append(text: textual): this.type = this.also(put(text))
   def append(char: Char): this.type = this.also(putChar(char))
 
-  def build(block: this.type aka "builder" ?=> Unit): textual =
-    block(using this.aka["builder"])
+  def build(block: Builder[textual] aka "builder" ?=> Unit): textual =
+    // A `Builder` accumulates mutable state, so under capture checking `this` is a capability. It is
+    // used only synchronously within `build` (the block cannot outlive this frame), so `this` is
+    // laundered to a pure `Builder[textual]` rather than threading `^` through the whole
+    // builder DSL
+    // (`append`/`appendln`/`builder`). Binding to a non-`this` val also avoids the universally
+    // captured `this.type` that defeats `aka`.
+    val builder: Builder[textual] = caps.unsafe.unsafeAssumePure(this)
+    block(using builder.aka["builder"])
     apply()
 
   def apply(): textual = result()
