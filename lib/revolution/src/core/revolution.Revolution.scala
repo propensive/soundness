@@ -64,4 +64,4 @@ object Revolution:
       case (long: Long) :: more => '{${Expr(long)} :: ${lift(more)}}
 
 
-    '{Semver($major, $minor, $patch, ${lift(semver.suffix)}, ${lift(semver.build)})}
+    '{Semver($major, $minor, $patch, ${lift(semver.prerelease)}, ${lift(semver.build)})}
