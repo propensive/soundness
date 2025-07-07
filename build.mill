@@ -1862,7 +1862,7 @@ object typonym extends Library:
 object ultimatum extends Library:
   object core extends Component(profanity.core, escapade.core, yossarian.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object demo extends Internal(core, ethereal.core, exoskeleton.completions):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1899,7 +1899,7 @@ object ultimatum extends Library:
       PathRef(target)
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object ulysses extends Library:
   object core extends Component(gastronomy.core):
