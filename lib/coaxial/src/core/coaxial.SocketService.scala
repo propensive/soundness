@@ -32,5 +32,8 @@
                                                                                                   */
 package coaxial
 
-trait SocketService:
-  def stop(): Unit
+// A running socket server is a capability: it owns the accept loop and the supervised
+// connection tasks (captured by `stopServer`) until `stop`ped. A named class rather than an
+// anonymous one so the `transparent inline` `listen` does not duplicate it at each call site.
+class SocketService(stopServer: () => Unit) extends caps.ExclusiveCapability:
+  def stop(): Unit = stopServer()
