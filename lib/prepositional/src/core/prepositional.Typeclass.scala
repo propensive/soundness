@@ -34,5 +34,12 @@ package prepositional
 
 import beneficence.Findable
 
+// A `Typeclass` instance is not, in general, pure: many are constructed from capabilities (a
+// `Tactic`, an encoder, a backend) which they retain, so their captures must be trackable
+// rather than asserted away (Jon, 2026-07-06; see rep/DECISIONS.md). Nor is it a capability
+// class: deriving `Capability` would give every stored instance an implied universal capture
+// set, forcing every companion holding given instances to become a capability itself. A plain
+// class tracks exactly what each instance captures: nothing for the (majority) pure
+// instances, and the constructing capabilities for the rest, which declare it explicitly.
 trait Typeclass extends Findable:
   type Self
