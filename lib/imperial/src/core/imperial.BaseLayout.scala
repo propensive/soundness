@@ -47,27 +47,42 @@ object BaseLayout:
     infix def / (name: Text): Dir = Dir(home, name :: path)
 
     def render(homeDir: Text): Text =
-      val slash = if path.nil then t"" else t"/"
-      t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
+      // The filesystem root (`Base`): not home-relative and no path segments → `/`.
+      if !home && path.nil then t"/"
+      else
+        val slash = if path.nil then t"" else t"/"
+        t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
 
+// `caps.Pure`: a layout is pure path data (`part`, `readOnly`, `Dir`); the marker also keeps the
+// `Home.type`/`Base.type` members of nested layouts' `Topic` tuples pure, without which the
+// nested objects' parent types acquire capture variables their pure self types reject.
 case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly: Boolean = false)
-  ( using baseDir: BaseLayout.Dir ):
+  ( using baseDir: BaseLayout.Dir )
+extends caps.Pure:
 
   type Topic = topic
 
-  def absolutePath(using Environment, System)
+  inline def absolutePath(using Environment, System)
   :   Text raises EnvironmentError raises PropertyError =
 
-    val home: Text = Environment.home[Text]
-    val home2: Text = if home.ends(t"/") then home.skip(1, Rtl) else home
-    part.let(baseDir/_).or(baseDir).render(home2)
+    val dir = part.let(baseDir/_).or(baseDir)
+    // Only home-relative layouts need `$HOME`; the `/`-rooted `Base.*` layouts render without it.
+    val home2: Text =
+      if !dir.home then t"" else
+        val home: Text = Environment.home[Text]
+        if home.ends(t"/") then home.skip(1, Rtl) else home
+
+    dir.render(home2)
 
 
   given dir: BaseLayout.Dir =
     BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
 
 
-  def apply[instantiable: Instantiable across Paths from Text]()
+  // `inline` so the `raises` context-functions resolve at the call site: a non-inline `raises`
+  // method called inside a deferred test block boxes its summoned tactic with the block's capability,
+  // which cannot flow into the `raises` existential under capture checking.
+  inline def apply[instantiable: Instantiable across Paths from Text]()
     ( using System, Environment )
   :   instantiable raises PropertyError raises EnvironmentError =
 
