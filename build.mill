@@ -690,7 +690,7 @@ object breviloquence extends Library:
       extends Component(urticose.url, panopticon.core, turbulence.core, adversaria.core,
                        zephyrine.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, sedentary.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
