@@ -2001,10 +2001,10 @@ object xylophone extends Library:
 object yossarian extends Library:
   object core extends Component(iridescence.core, gossamer.core, turbulence.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object ypsiloid extends Library:
   object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core, gigantism.core, contextual.core, jacinta.core, adversaria.core):
