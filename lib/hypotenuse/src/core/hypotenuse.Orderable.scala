@@ -36,22 +36,7 @@ import scala.annotation.*
 
 import prepositional.*
 
-object Orderable:
-  given orderable: [value: Ordering] => value is Orderable:
-    inline def compare
-                (inline left:    value,
-                 inline right:   value,
-                 inline strict:  Boolean,
-                 inline greater: Boolean)
-    : Boolean =
-
-        val n = value.compare(left, right)
-        inline if greater
-        then inline if strict then n > 0 else n >= 0
-        else inline if strict then n < 0 else n <= 0
-
-
-trait Orderable extends Typeclass, Commensurable:
+trait Orderable extends Commensurable:
   private inline def orderable: this.type = this
   type Operand = Self
 

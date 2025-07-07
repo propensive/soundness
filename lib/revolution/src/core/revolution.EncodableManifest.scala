@@ -39,7 +39,7 @@ import proscenium.*
 
 object EncodableManifest:
   given mainClass: ("Main-Class" is EncodableManifest of Fqcn) = _.text
-  given manifestVersion: ("Manifest-Version" is EncodableManifest of VersionNumber) = _.text
+  given manifestVersion: ("Manifest-Version" is EncodableManifest of Semver) = _.encode
   given createdBy: ("Created-By" is EncodableManifest of Text) = identity(_)
 
 trait EncodableManifest extends Topical:
