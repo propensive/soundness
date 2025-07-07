@@ -49,15 +49,14 @@ object Complex:
     complex =>
       compiletime.summonFrom:
         case distributive: (`part` is Distributive) =>
-          provide[Complex[distributive.Operand] is Showable]:
-            provide[distributive.Operand is Zeroic]:
-              val reParts: List[distributive.Operand] = distributive.parts(complex.real)
-              val imParts: List[distributive.Operand] = distributive.parts(complex.imaginary)
-              val parts = reParts.zip(imParts).map(Complex(_, _).show)
-              val parts2 = parts.zip(imParts).map: (part, im) =>
-                if im == zero[distributive.Operand] then part else t"($part)"
-
-              distributive.place(complex.real, parts2)
+          // The `Showable`/`Zeroic` contexts for the operand are supplied
+          // explicitly to `showDistributive` (via the deferred `infer`)
+          // rather than re-summoned inside the body with nested `provide`s,
+          // which under capture checking minted distinct root capabilities
+          // that failed to unify.
+          showDistributive[part](complex, distributive)
+            ( using infer[Complex[distributive.Operand] is Showable],
+                    infer[distributive.Operand is Zeroic] )
 
         case _ =>
           if complex.imaginary == zero[part] then complex.real.show
@@ -65,6 +64,20 @@ object Complex:
           else if complex.imaginary < zero[part]
           then t"${complex.real.show} - ${(-complex.imaginary).show}ℐ"
           else t"${complex.real.show} + ${complex.imaginary.show}ℐ"
+
+  private inline def showDistributive[part]
+    ( complex: Complex[part], distributive: part is Distributive )
+    ( using Complex[distributive.Operand] is Showable, distributive.Operand is Zeroic )
+  :   anticipation.Text =
+
+    val reParts: List[distributive.Operand] = distributive.parts(complex.real)
+    val imParts: List[distributive.Operand] = distributive.parts(complex.imaginary)
+    val parts = reParts.zip(imParts).map(Complex(_, _).show)
+
+    val parts2 = parts.zip(imParts).map: (part, im) =>
+      if im == zero[distributive.Operand] then part else t"($part)"
+
+    distributive.place(complex.real, parts2)
 
 
   given addable: [result, component2, component: Addable by component2 to result as addable]
