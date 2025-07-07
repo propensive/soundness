@@ -42,7 +42,7 @@ object Shutdown:
     type Target = Os.type
 
     def register(value: Os.type, action: Shutdown => Unit): () => Unit =
-      val runnable: Runnable = () => action(instance)
+      val runnable: Runnable^ = () => action(instance)
       val thread: Thread = Thread(runnable)
       Runtime.getRuntime.nn.addShutdownHook(thread)
 

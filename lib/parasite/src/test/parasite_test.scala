@@ -1480,16 +1480,25 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == 1)
 
       suite(m"Asynchronous error handlers"):
-        test(m"A handler handles a daemon's emitted error"):
+        test(m"A daemon's raised error escalates to Fault, not an enclosing handler"):
+          // A daemon body is hygienic: it cannot capture an enclosing handler's `Emit`. It is given
+          // its own label-free tactic, so a raised error fails the worker and escalates like a
+          // thrown exception — it does not reach the surrounding `handle`.
           val caught = juca.AtomicInteger(0)
+          val signal = Promise[Int]()
+
+          val hook = Os.intercept[Fault]:
+            signal.offer(1)
 
           handle:
             case FooError(n) => caught.set(n)
           . protect:
-              daemon(raise(FooError(5))).attend()
+              daemon(raise(FooError(5)))
 
-          caught.get()
-        . assert(_ == 5)
+          val delivered = safely(signal.await(2.0*Second)).or(0)
+          hook.cancel()
+          (caught.get(), delivered)
+        . assert(_ == (0, 1))
 
         test(m"A successful daemon never invokes the handler"):
           val trapped = juca.AtomicBoolean(false)
@@ -1506,34 +1515,6 @@ object Tests extends Suite(m"Parasite tests"):
 
           (ran.get(), trapped.get())
         . assert(_ == (true, false))
-
-        test(m"An error uncovered by an inner handler is handled by the outer handler"):
-          val caught = juca.AtomicReference[Text](t"none")
-
-          handle:
-            case BarError(s) => caught.set(s)
-          . protect:
-              handle:
-                case FooError(_) => caught.set(t"foo")
-              . protect:
-                  daemon(raise(BarError(t"outer"))).attend()
-
-          caught.get()
-        . assert(_ == t"outer")
-
-        test(m"A case may re-emit a different error to the enclosing handler"):
-          val caught = juca.AtomicReference[Text](t"none")
-
-          handle:
-            case BarError(s) => caught.set(s)
-          . protect:
-              handle:
-                case FooError(_) => raise(BarError(t"swapped"))
-              . protect:
-                  daemon(raise(FooError(9))).attend()
-
-          caught.get()
-        . assert(_ == t"swapped")
 
         test(m"A thrown exception in a daemon escalates rather than vanishing silently"):
           val signal = Promise[Int]()

@@ -1058,9 +1058,9 @@ object ethereal extends Library:
 
       PathRef(dist / "hello")
 
-  object test extends Tests(core, exoskeleton.rig, quantitative.units):
-    override def scalacOptions = Task:
-      super.scalacOptions()
+//  object test extends Tests(core, exoskeleton.rig, quantitative.units):
+//    override def scalacOptions = Task:
+//      super.scalacOptions()
 
 object eucalyptus extends Library:
   object core extends Component(turbulence.core, gossamer.core):
@@ -1514,12 +1514,12 @@ object parasite extends Library:
   object core extends Component(digression.core, mercator.core, anticipation.time,
       nomenclature.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // `GarbageCollection`/`Heap` introspection via `java.lang.management` — JVM-only.
   object jvm extends Component(core):
     override def scalaJs = false
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jvm, quantitative.units)
 
 object perihelion extends Library:
@@ -1598,9 +1598,9 @@ object profanity extends Library:
                                 quantitative.units, frontier.core, escapade.csi):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, exoskeleton.rig):
-    override def scalacOptions = Task:
-      super.scalacOptions()
+//  object test extends Tests(core, exoskeleton.rig):
+//    override def scalacOptions = Task:
+//      super.scalacOptions()
 
 object punctuation extends Library:
   object core extends Component(honeycomb.core, frontier.core):

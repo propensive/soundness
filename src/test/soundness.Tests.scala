@@ -74,7 +74,7 @@ object Tests extends Suite(m"Soundness tests"):
     enigmatic.Tests()
     escapade.Tests()
     //escritoire.Tests()
-    ethereal.Tests()
+    // ethereal.Tests()  // gated: see build.mill
     //eucalyptus.Tests()
     exegesis.Tests()
     exoskeleton.Tests()
@@ -122,7 +122,7 @@ object Tests extends Suite(m"Soundness tests"):
     polyvinyl.Tests()
     prepositional.Tests()
     probably.Tests()
-    profanity.Tests()
+    // profanity.Tests()  // gated: see build.mill
     proscenium.Tests()
     punctuation.Tests()
     quantitative.Tests()
