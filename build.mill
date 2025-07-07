@@ -640,7 +640,7 @@ object apoplexy extends Library:
 object austronesian extends Library:
   object core extends Component(probably.core, hellenism.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object aviation extends Library:
