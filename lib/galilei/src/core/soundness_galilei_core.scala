@@ -34,14 +34,21 @@ package soundness
 
 export
   galilei
-  . { accessed, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo, Creatable,
-      create, created, CreateNonexistent, CreateNonexistentParents, D, delete, DeleteRecursively,
-      DereferenceSymlinks, descendants, Directory, Entry, entry, executable, exists, Explorable,
-      Fifo, File, FilesystemAttribute, Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent,
-      javaFile, javaPath, modified, MoveAtomically, moveInto, moveTo, open, Openable,
-      OverwritePreexisting, readable, ReadAccess, size, Socket, Substantiable, Symlink, symlinkInto,
-      symlinkTo, touch, TraversalOrder, UnixEntry, Volume, volume, WindowsEntry, wipe, writable,
-      WriteAccess, WriteSynchronously, Device }
+  . { accessed, append, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
+      Creatable, create, created, CreateNonexistent, CreateNonexistentParents, D, delete,
+      DeleteRecursively, DereferenceSymlinks, descendants, Device, Directory, Dos, Drive, Entry,
+      entry, executable,
+      exists, Explorable, Fifo, File, FilesystemAttribute, Handle, hardLinks, hardLinkTo, hidden,
+      IoError, IoEvent, javaFile, javaPath, Linux, Local, MacOs, modified, MoveAtomically, moveInto,
+      moveTo, open, Openable, OverwritePreexisting, p, Platform, Posix, readable, ReadAccess, size,
+      Socket, Substantiable, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder, UnixEntry,
+      Volume, volume, Windows, WindowsEntry, wipe, writable, write, WriteAccess,
+      WriteSynchronously }
+
+package interfaces.paths:
+  export
+    anticipation.interfaces.paths
+    . { pathOnLinux, pathOnLocal, pathOnMacOs, pathOnPosix, pathOnWindows }
 
 package filesystemOptions:
   export

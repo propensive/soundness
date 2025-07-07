@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.63.0.                                                                    ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,15 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package anticipation
 
-import nomenclature.*
+import galilei.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
 
-object Dos:
-  type Rules = MustMatch["[^.]{1,8}(\\.[^.]{1,3})?"] & MustNotContain[" "] & MustMatch["[!-~]*"]
-
-  inline given Dos is Nominative under Rules = !!
-
-sealed trait Dos
+package interfaces.paths:
+  inline given pathOnLinux: (Path on Linux) is Representative of Paths = !!
+  inline given pathOnWindows: (Path on Windows) is Representative of Paths = !!
+  inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
+  inline given pathOnLocal: (Path on Local) is Representative of Paths = !!
+  inline given pathOnPosix: (Path on Posix) is Representative of Paths = !!

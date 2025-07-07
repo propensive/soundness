@@ -106,7 +106,7 @@ object Upgrade:
         val pendingPath: Path on Linux = pendingDir/t".pending"
 
         pendingPath.open: file =>
-          Stream(bytes).writeTo(file)
+          file.write(Stream(bytes))
 
         val launcher: Text = System.properties.ethereal.script[Text]()
 

@@ -30,30 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
 
-import anticipation.*
-import nomenclature.*
+import gossamer.*
 import prepositional.*
-import rudiments.*
+import serpentine.*
 
-object Windows:
-  type Rules =
-    MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
-      MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
-      MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] &
-      MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotMatch["(?i)PRN(\\.[^.]+)?"] &
-      MustNotMatch["(?i)AUX(\\.[^.]+)?"] & MustNotMatch["(?i)NUL(\\.[^.]+)?"] &
-      MustNotMatch["(?i)COM[0-9](\\.[^.]+)?"] & MustNotMatch["(?i)LPT[0-9](\\.[^.]+)?"]
+object Drive:
+  def apply(letter: Char): Drive = new Drive(letter)
+  def unapply(drive: Drive): Some[Char] = Some(drive.letter)
 
-  inline given Windows is Nominative under Rules = !!
+  given submissible: Drive is Submissible on Windows = _ => ()
 
-  given filesystem: Windows is Filesystem:
-    type UniqueRoot = false
+class Drive(val letter: Char) extends Root(t"$letter:\\"):
+  type Plane = Windows
 
-    val name: Text = "Windows"
-    val separator: Text = "\\"
-    val self: Text = "."
-    val parent: Text = ".."
+  override def equals(that: Any): Boolean = that.absolve match
+    case drive: Drive => letter == drive.letter
+    case _            => false
 
-sealed trait Windows
+  override def hashCode: Int = letter.hashCode

@@ -39,7 +39,7 @@ import distillate.*
 import ethereal.*
 import eucalyptus.*
 import fulminate.*
-import galilei.*
+import galilei.*, galilei.Platform.pathReadable
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -50,13 +50,9 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import errorDiagnostics.emptyDiagnostics
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 import gastronomy.*, providers.javaStdlibProvider
 import internetAccess.online
 import monotonous.*, alphabets.hexLowerCase
@@ -104,7 +100,7 @@ object Packager:
 
           config.signing.lay(zeros): signing =>
             signing.publicKey.lay(zeros): key =>
-              val raw: Data = key.open(_.stream[Data].read[Data])
+              val raw: Data = key.read[Data]
 
               if raw.length != Assembler.PublicKeyLength
               then abort(PackageError(m"The signing public key is the wrong size"))
@@ -120,7 +116,7 @@ object Packager:
           config.runnerSource.absolve match
             case Packaging.RunnerSource.Local(directory) =>
               val file: Path on Linux = t"$directory/$name".decode[Path on Linux]
-              file.open(_.read[Data])
+              file.read[Data]
 
             case Packaging.RunnerSource.Remote(baseUrl, hashes) =>
               val expected: Text =
@@ -155,7 +151,7 @@ object Packager:
 
               Payload(label, patched, gzip = !label.starts(t"windows"))
 
-            val data: Payload = Payload(DataName, appJar.open(_.read[Data]), gzip = false)
+            val data: Payload = Payload(DataName, appJar.read[Data], gzip = false)
             write(config.output, Xeq.installer(stubs :+ data))
             config.output
 
@@ -179,7 +175,7 @@ object Packager:
 
                   (label, t"$base$name", hash)
 
-            val jarData: Data = appJar.open(_.read[Data])
+            val jarData: Data = appJar.read[Data]
             write(config.output, Xeq.onlineLauncher(jarData, entries))
             config.output
 
@@ -188,5 +184,5 @@ object Packager:
   :   Unit raises IoError raises StreamError =
 
     output.create[File]()
-    output.open(Stream(data).writeTo(_))
+    output.write(data)
     output.executable() = true

@@ -48,7 +48,8 @@ import vacuous.*
 import EmailAddressError.Reason.*
 
 object EmailAddress:
-  given decodable: Tactic[EmailAddressError] => EmailAddress is Decodable in Text =
+  given decodable: (tactic: Tactic[EmailAddressError])
+  =>  ((EmailAddress is Decodable in Text)^{tactic}) =
     EmailAddress.parse(_)
 
   given encodable: EmailAddress is Encodable in Text = _.text

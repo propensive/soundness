@@ -50,14 +50,18 @@ object Authority:
   given showable: Authority is Showable = auth =>
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host.show}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
-  given decodable: Tactic[HostnameError]
-  =>  Tactic[IpAddressError]
-  =>  Tactic[UrlError]
-  =>  Authority is Decodable in Text =
+  given decodable: (hostnameTactic: Tactic[HostnameError])
+  =>  (ipTactic: Tactic[IpAddressError])
+  =>  (urlTactic: Tactic[UrlError])
+  =>  ((Authority is Decodable in Text)^{hostnameTactic, ipTactic, urlTactic}) =
     parse(_)
 
+  // The error capabilities are taken as an eager `using` clause rather than a chained `raises`
+  // result, so the nested `parsePort`/`parseHostPort` helpers may capture them; a `raises` chain
+  // makes each a context-function result that an enclosing helper literal cannot capture under CC.
   private def parse(value: Text)
-  :   Authority raises HostnameError raises IpAddressError raises UrlError =
+      (using Tactic[HostnameError], Tactic[IpAddressError], Tactic[UrlError])
+  :   Authority =
 
     import UrlError.{Expectation, Reason}, Expectation.*, Reason.*
 

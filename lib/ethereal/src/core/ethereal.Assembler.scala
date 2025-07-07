@@ -142,7 +142,7 @@ object Assembler:
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
 
     output.open
-      ( file => Stream(patched).writeTo(file),
+      ( file => file.write(Stream(patched)),
         List(jnio.file.StandardOpenOption.TRUNCATE_EXISTING) )
 
     if platformLabel.starts(t"macos") then
@@ -150,6 +150,6 @@ object Assembler:
       safely(mute[ExecEvent](sh"codesign --sign - --force $output".exec[Exit]()))
 
     jarFile.open: jarFile =>
-      Eof(output).open(jarFile.stream[Data].writeTo(_))
+      Eof(output).open(_.write(jarFile.stream))
 
     if !isWindows then output.executable() = true

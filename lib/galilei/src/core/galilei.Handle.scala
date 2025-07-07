@@ -37,8 +37,17 @@ import contingency.*
 import prepositional.*
 import turbulence.*
 
-object Handle:
-  given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
-  given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
-
+// A scoped capability: its `read`/`write` operations are direct methods (not `Streamable`/`Writable`
+// typeclass givens summoned on the handle's own type). Summoning a typeclass on a *scoped* capability's
+// type fails under capture checking — given resolution widens the scoped capture to `{any}` — so the
+// typeclasses are instead summoned on the (non-scoped) source/result types here.
 class Handle(val reader: () => Stream[Data], val writer: Stream[Data] => Unit)
+extends caps.ExclusiveCapability:
+
+  def write[source: Streamable by Data as streamable](source: source): Unit =
+    writer(streamable.stream(source))
+
+  def stream: Stream[Data] = reader()
+
+  def read[result](using readable: (Stream[Data] is Readable to result)^): result =
+    readable.read(reader())

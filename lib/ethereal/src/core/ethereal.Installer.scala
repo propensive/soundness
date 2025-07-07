@@ -145,11 +145,11 @@ object Installer:
             Log.info(DaemonLogEvent.WriteExecutable(filename))
 
             service.executable.open: file =>
-              val stream = file.stream[Data]
+              val stream = file.stream
 
               if prefixSize > 0.b
-              then (stream.take(prefixSize) ++ stream.discard(fileSize - jarSize)).writeTo(file)
-              else stream.writeTo(file)
+              then file.write(stream.take(prefixSize) ++ stream.discard(fileSize - jarSize))
+              else file.write(stream)
 
             file.executable() = true
             Result.Installed(command, file.encode)

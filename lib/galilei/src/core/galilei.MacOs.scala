@@ -30,28 +30,43 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package galilei
 
 import anticipation.*
 import contingency.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import turbulence.*
-import vacuous.*
 
-object Resource:
-  given streamable: [resource <: Resource]
-  =>  ( classloader: Classloader )
-  =>  resource is Streamable by Data =
-    // See `Classpath.streamable`: unscoped throwing tactic + pure classloader; laundered pure.
-    caps.unsafe.unsafeAssumePure:
-      given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
+object MacOs:
+  type Rules =
+    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""] &
+      MustNotEqual["Icon\r"] & MustNotContain[":"]
 
-      Streamable.inputStream.contramap: resource =>
-        classloader.inputStream(resource.path.encode)
+  inline given MacOs is Nominative under Rules = !!
 
-  given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")
+  inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
 
-case class Resource private[hellenism](path: Path on Classpath) extends Locative
+  given filesystem: MacOs is Filesystem:
+    type UniqueRoot = true
+
+    val name: Text = "Mac OS"
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."
+
+  given radical: %.type is Radical:
+    type Plane = MacOs
+
+    def length(text: Text): Int raises PathError = 1
+
+    def decode(text: Text): %.type raises PathError =
+      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
+
+    def encode(root: %.type): Text = t"/"
+
+  given submissible: %.type is Submissible on MacOs = _ => ()
+
+sealed trait MacOs extends Posix

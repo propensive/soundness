@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import galilei.*
 import gossamer.*
 import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
 import hypotenuse.*, arithmeticOptions.overflow.unchecked

@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.63.0.                                                                    ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,28 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package galilei
+
+import scala.quoted.*
 
 import anticipation.*
 import contingency.*
-import gossamer.*
+import distillate.*
+import fulminate.*
+import gigantism.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
-import turbulence.*
 import vacuous.*
 
-object Resource:
-  given streamable: [resource <: Resource]
-  =>  ( classloader: Classloader )
-  =>  resource is Streamable by Data =
-    // See `Classpath.streamable`: unscoped throwing tactic + pure classloader; laundered pure.
-    caps.unsafe.unsafeAssumePure:
-      given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
+object internal:
+  // The platform-aware `p"…"` literal macro: it decodes the string as a POSIX path, falling back to
+  // a Windows path. It lives here with the OS platform types (`Posix`/`Windows`/`Drive`), whose
+  // `Radical` givens it needs at expansion time; the generic compile-time path helpers stay in
+  // `serpentine.internal`.
+  def path(context: Expr[StringContext]): Macro[Path] =
+    val name: String = context.valueOrAbort.parts.head
 
-      Streamable.inputStream.contramap: resource =>
-        classloader.inputStream(resource.path.encode)
+    safely(name.tt.decode[Path on Posix]).let: path =>
+      '{Path[Posix, %.type, Tuple](${Expr(path.root)}, ${Expr.ofList(path.descent.map(Expr(_)))})}
 
-  given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")
+    . or:
+        safely(name.tt.decode[Path on Windows]).let: path =>
+          val varargs = Expr.ofList(path.descent.map(Expr(_)))
+          '{Path[Windows, Drive, Tuple](${Expr(path.root)}, $varargs)}
 
-case class Resource private[hellenism](path: Path on Classpath) extends Locative
+        . or(halt(66, m"The path ${name} is not a valid Windows or POSIX path"))

@@ -33,6 +33,7 @@
 package urticose
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import prepositional.*
 import serpentine.*
@@ -45,9 +46,9 @@ object Www:
   given radical: %.type is Radical:
     type Plane = Www
 
-    def length(text: Text): Int = if text.starts(t"/") then 1 else 0
+    def length(text: Text): Int raises PathError = if text.starts(t"/") then 1 else 0
     def encode(root: %.type): Text = "/"
-    def decode(text: Text): %.type = %
+    def decode(text: Text): %.type raises PathError = %
 
   given filesystem: Www is Filesystem:
     type UniqueRoot = false

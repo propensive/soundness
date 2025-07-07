@@ -72,8 +72,10 @@ object Tarfile:
   def from[plane <: Posix: Filesystem](root: Path on plane)
     ( using DereferenceSymlinks,
             TraversalOrder,
-            plane is Explorable )
-  :   Tarfile raises IoError raises TarError =
+            plane is Explorable,
+            Tactic[IoError],
+            Tactic[TarError] )
+  :   Tarfile =
 
     val entries: LazyList[Tar.Entry] = root.descendants.to(LazyList).map: path =>
       TarFilesystem.entryFor(root, path)
@@ -370,8 +372,11 @@ case class Tarfile
   def deflate: Stream[Data] = this.stream[Data].compress[Deflate]
 
   def extractTo[plane <: Posix: Filesystem](root: Path on plane)
-    ( using CreateNonexistentParents on plane, OverwritePreexisting on plane )
-  :   Unit raises IoError raises TarError =
+    ( using CreateNonexistentParents on plane,
+            OverwritePreexisting on plane,
+            Tactic[IoError],
+            Tactic[TarError] )
+  :   Unit =
 
     entries.foreach: entry =>
       TarFilesystem.applyEntry(root, entry)

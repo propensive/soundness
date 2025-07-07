@@ -88,7 +88,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
     def writeFile(path: Path on Linux, content: Text): Unit =
       if !path.exists() then path.create[File]()
       path.open: handle =>
-        Stream(content.data).writeTo(handle)
+        handle.write(Stream(content.data))
 
     def commitFile(worktree: Worktree, name: Text, content: Text, message: Text): GitHash =
       writeFile(worktree.path / name, content)

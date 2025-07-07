@@ -30,24 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
 
-import anticipation.*
-import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-object Linux:
-  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+object Dos:
+  type Rules = MustMatch["[^.]{1,8}(\\.[^.]{1,3})?"] & MustNotContain[" "] & MustMatch["[!-~]*"]
 
-  inline given nominative: Linux is Nominative under Rules = !!
+  inline given Dos is Nominative under Rules = !!
 
-  given filesystem: Linux is Filesystem:
-    type UniqueRoot = true
-    val name: Text = "Linux"
-    val separator: Text = t"/"
-    val self: Text = t"."
-    val parent: Text = t".."
-
-trait Linux extends Posix
+sealed trait Dos
