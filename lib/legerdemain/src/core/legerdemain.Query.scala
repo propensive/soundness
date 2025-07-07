@@ -131,7 +131,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
   infix def ++ (query: Query) = Query(values ++ query.values)
 
 
-  def selectDynamic[result](label: String)(using erased (label.type is Parametric to result))
+  def selectDynamic[result](label: String)(using erased parametric: label.type is Parametric to result)
     ( using decodable: result is Decodable in Query )
   :   result =
 
@@ -139,7 +139,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
 
 
   def updateDynamic(label: String)[result: Encodable in Query]
-    ( using erased (label.type is Parametric to result) )
+    ( using erased parametric: label.type is Parametric to result )
     ( value: result )
   :   Query =
 
