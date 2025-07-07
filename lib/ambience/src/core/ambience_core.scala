@@ -85,24 +85,21 @@ package temporaryDirectories:
     . or(panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set"))
 
 
-inline def temporaryDirectory[path: Representative of Paths](using temporary: TemporaryDirectory)
+// Resolution goes through `Paths.Resolver` (ordinary implicit search) rather than an inline
+// `summonFrom`: the latter cannot be reduced when `temporaryDirectory`/`workingDirectory` is expanded
+// inside a staged quote (e.g. an ethereal daemon `cli` block printing the working directory).
+inline def temporaryDirectory[path: Representative of Paths]
+  (using temporary: TemporaryDirectory, resolver: Paths.Resolver[path])
 :   path =
 
-  compiletime.summonFrom:
-    case given (`path` is Instantiable across Paths from Paths.Trusted) =>
-      Paths.Trusted(temporary.directory()).instantiate
-
-    case given (`path` is Instantiable across Paths from Text) =>
-      temporary.directory().instantiate
+  resolver(temporary.directory())
 
 
-inline def workingDirectory[path: Representative of Paths](using work: WorkingDirectory): path =
-  compiletime.summonFrom:
-    case given (`path` is Instantiable across Paths from Paths.Trusted) =>
-      Paths.Trusted(work.directory()).instantiate
+inline def workingDirectory[path: Representative of Paths]
+  (using work: WorkingDirectory, resolver: Paths.Resolver[path])
+:   path =
 
-    case given (`path` is Instantiable across Paths from Text) =>
-      work.directory().instantiate
+  resolver(work.directory())
 
 package termcaps:
   given environmentTermcap: Environment => Termcap:

@@ -41,106 +41,141 @@ import prepositional.*
 import vacuous.*
 
 object Variable extends Protovariable:
-  given path: [path: Instantiable across Paths from Text] => (system: System)
+  // Each path-typed `Variable` retains its `Instantiable` evidence, which shares the
+  // instance's given-resolution lifetime; laundered pure per the codec-thunk seal pattern
+  // (see rep/DECISIONS.md). A capturing result would flow into `Environment`'s reader
+  // parameter, which must stay pure: it is summoned inside staged quotes (ethereal daemon
+  // `cli` blocks). These two helpers hold that laundering once for all the givens below.
+  private def pathVariable[name <: Label, path]
+    ( instantiable: (path is Instantiable across Paths from Text)^ )
+  :   Variable[name, path] =
+
+    caps.unsafe.unsafeAssumePure(instantiable(_))
+
+  private def pathListVariable[name <: Label, path]
+    ( instantiable: (path is Instantiable across Paths from Text)^, system: System )
+  :   Variable[name, List[path]] =
+
+    caps.unsafe.unsafeAssumePure:
+      _.cut(system(t"path.separator").or(t":")).to(List).map(instantiable(_))
+
+  given path: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^, system: System )
   =>  Variable["path", List[path]] =
 
-    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+    pathListVariable(instantiable, system)
 
 
-  given xdgDataDirs: [path: Instantiable across Paths from Text] => (system: System)
+  given xdgDataDirs: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^, system: System )
   =>  Variable["xdgDataDirs", List[path]] =
 
-    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+    pathListVariable(instantiable, system)
 
 
-  given xdgConfigDirs: [path: Instantiable across Paths from Text] => (system: System)
+  given xdgConfigDirs: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^, system: System )
   =>  Variable["xdgConfigDirs", List[path]] =
 
-    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+    pathListVariable(instantiable, system)
 
 
-  given xdgDataHome: [path: Instantiable across Paths from Text]
+  given xdgDataHome: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["xdgDataHome", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given xdgConfigHome: [path: Instantiable across Paths from Text]
+  given xdgConfigHome: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["xdgConfigHome", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given xdgStateHome: [path: Instantiable across Paths from Text]
-  =>  ( Variable["xdgStateHome", path] ) =
+  given xdgStateHome: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
+  =>  Variable["xdgStateHome", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given xdgCacheHome: [path: Instantiable across Paths from Text]
+  given xdgCacheHome: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["xdgCacheHome", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given xdgRuntimeDir: [path: Instantiable across Paths from Text]
+  given xdgRuntimeDir: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["xdgRuntimeDir", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given home: [path: Instantiable across Paths from Text]
+  given home: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["home", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given mail: [path: Instantiable across Paths from Text]
+  given mail: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["mail", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given shell: [path: Instantiable across Paths from Text]
+  given shell: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["shell", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given oldpwd: [path: Instantiable across Paths from Text]
+  given oldpwd: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["oldpwd", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given windowid: [path: Instantiable across Paths from Text]
+  given windowid: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["windowid", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given editor: [path: Instantiable across Paths from Text]
+  given editor: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["editor", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given pager: [path: Instantiable across Paths from Text]
+  given pager: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["pager", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given sshAuthSock: [path: Instantiable across Paths from Text]
+  given sshAuthSock: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["sshAuthSock", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
-  given manpager: [path: Instantiable across Paths from Text]
+  given manpager: [path]
+  =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["manpager", path] =
 
-    path(_)
+    pathVariable(instantiable)
 
 
   given columns: (Int is Decodable in Text) => Variable["columns", Int] = _.decode[Int]
