@@ -56,16 +56,29 @@ import Fulfillment.*
 import beneficence.*
 import unsafeExceptions.canThrowAny
 
-sealed trait Monitor extends Resultant, Findable:
+sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
+  self: Monitor^ =>
   val promise: Promise[Result]
 
-  protected[parasite] val workersRef: juca.AtomicReference[Set[Worker]] =
-    juca.AtomicReference(Set())
+  // The live children of this scope. A supervision registry is a *mutable capability collection*
+  // whose contents are fresh worker identities created over time; tracking that precisely is the
+  // "growing capture set" case that capture checking currently delegates to mutation/separation
+  // tracking (still under development), and separation checking itself rejects the aliasing a
+  // supervisor needs (a worker is held at once by its thread, its parent's registry, and its
+  // caller's handle). So this collection is kept untracked: workers are stored boxed as pure
+  // `Worker`, with the `^` dropped at the `addWorker`/`remove` boundary. This is the single capture
+  // escape in the supervision core; sound here because the registry is private bookkeeping that
+  // never leaks a worker's captures outward, and a worker's lifetime is bounded by this very scope.
+  protected[parasite] val workersRef: juca.AtomicReference[Set[Worker^{}]] =
+    juca.AtomicReference[Set[Worker^{}]](Set())
 
-  protected[parasite] def workers: Set[Worker] = workersRef.get().nn
+  protected[parasite] def workers: Set[Worker^{}] = workersRef.get().nn
 
-  protected[parasite] def addWorker(worker: Worker): Unit =
-    workersRef.updateAndGet(_.nn + worker)
+  protected[parasite] def addWorker(worker: Worker^): Unit =
+    workersRef.updateAndGet(_.nn + caps.unsafe.unsafeAssumePure(worker))
+
+  protected[parasite] def remove(monitor: Worker^): Unit =
+    workersRef.updateAndGet(_.nn - caps.unsafe.unsafeAssumePure(monitor))
 
   def name: Optional[Name[Async]]
   def chain: Optional[Chain]
@@ -74,52 +87,57 @@ sealed trait Monitor extends Resultant, Findable:
   def attend(): Unit = promise.attend()
   def ready: Boolean = promise.ready
   def cancel(): Unit
-  def remove(monitor: Worker): Unit = workersRef.updateAndGet(_.nn - monitor)
   def supervisor: Supervisor
 
   def snooze[generic: Abstractable across Durations to Long](duration: generic): Unit =
     jucl.LockSupport.parkNanos(duration.generic)
 
-sealed abstract class Supervisor() extends Monitor:
+// The thread-forking strategy. DECOUPLED from `Monitor` (see capture-checking-capabilities notes):
+// the global strategy singletons (`PlatformSupervisor` etc.) are plain values, NOT capabilities, so
+// they can be referenced anywhere; the supervision tree (capability-tracked `Monitor`s) is rooted
+// locally per `supervise` block by a `Root`.
+trait Supervisor:
+  def name: Name[Async]
+  def fork(name: Optional[Text])(block: => Unit): Thread
+
+// The local root of a supervision tree, created by `supervise`. A `Monitor` (hence a capability),
+// but its lifetime is the `supervise` block, so it does not escape as a global capability.
+class Root(val supervisor: Supervisor) extends Monitor:
   type Result = Unit
 
   def chain: Optional[Chain] = Unset
-
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
-
-  def name: Name[Async]
-  def fork(name: Optional[Text])(block: => Unit): Thread
-  def supervisor: Supervisor = this
-  def stack: Text = name+":".tt
+  def name: Optional[Name[Async]] = supervisor.name
+  def stack: Text = (supervisor.name.s+":").tt
   def cancel(): Unit = ()
   def shutdown(): Unit = workers.each(_.cancel())
 
-object VirtualSupervisor extends Supervisor():
+object VirtualSupervisor extends Supervisor:
   def name: Name[Async] = n"virtual"
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofVirtual().nn.start{ () => block }.nn
 
-object AdaptiveSupervisor extends Supervisor():
+object AdaptiveSupervisor extends Supervisor:
   def name: Name[Async] = n"adaptive"
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
     try VirtualSupervisor.fork(name)(block) catch case error: Throwable =>
       PlatformSupervisor.fork(name)(block)
 
-object PlatformSupervisor extends Supervisor():
+object PlatformSupervisor extends Supervisor:
   def name: Name[Async] = n"platform"
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
-    val runnable: Runnable = () => block
+    val runnable: Runnable^ = () => block
 
     new Thread(runnable).tap: thread =>
       name.let(_.s).let(thread.setName(_))
       thread.start()
 
-abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) extends Monitor:
-  self =>
+abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) extends Monitor:
+  self: Worker^ =>
   private val state: juca.AtomicReference[Fulfillment[Result]] =
     juca.AtomicReference(Fulfillment.Initializing)
 
@@ -136,16 +154,18 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
   def apply(): Optional[Result] = promise()
   def relentlessness: Double = (jl.System.currentTimeMillis - startTime).toDouble/relents
 
-  def delegate(lambda: Monitor -> Unit): Unit = state.updateAndGet: state =>
+  def delegate(lambda: Monitor^ => Unit): Unit = state.updateAndGet: state =>
     workers.each: child => if child.daemon then child.cancel() else lambda(child)
     state
 
   def stack: Text =
-    val ref = name.lay(frame.text.s)(_.s+"@"+frame.text.s)
+    val ref = // The `(x: Text)` ascriptions widen singleton-bounded values (case-2 pure-value box).
+      name.lay((frame.text: Text).s)(name => (name: Text).s+"@"+(frame.text: Text).s)
 
     parent match
-      case supervisor: Supervisor => (supervisor.name.s+"://"+ref).tt
-      case submonitor: Worker     => (submonitor.stack.s+"//"+ref).tt
+      case root: Root         => ((root.supervisor.name: Text).s+"://"+ref).tt
+      case submonitor: Worker => ((submonitor.stack: Text).s+"//"+ref).tt
+      case _                  => ref.tt
 
   def relent(): Unit =
     relents += 1
@@ -165,13 +185,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
     if Thread.interrupted() || state.get() == Cancelled then throw new InterruptedException()
 
 
-  def map[result2](lambda: Result => result2)(using Monitor, Probate)
+  def map[result2](lambda: Result => result2)(using Monitor^, Probate^)
   :   Task[result2] emits AsyncError =
 
     async(lambda(join()))
 
 
-  def bind[result2](lambda: Result => Task[result2])(using Monitor, Probate)
+  def bind[result2](lambda: Result => Task[result2])(using Monitor^, Probate^)
   :   Task[result2] emits AsyncError =
 
     async(lambda(join()).join())
@@ -189,7 +209,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
 
     if state2 == Cancelled then thread.join()
 
-  def result()(using cancel: Tactic[AsyncError]): Result =
+  def result()(using cancel: Tactic[AsyncError]^): Result =
     state.updateAndGet:
       case null                        => abort(AsyncError(Reason.Incomplete))
       case Initializing                => abort(AsyncError(Reason.Incomplete))
@@ -228,7 +248,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
   // `Tactic[error | AsyncError]`. `error` is reconstructed by an unchecked cast that is sound for
   // any failure raised through the body's `AsyncTactic` (the only typed-error path); a genuinely
   // unchecked throwable from the body flows through as the raw `join` would have rethrown it.
-  def deliver[error <: Exception]()(using Tactic[error | AsyncError]): Result =
+  def deliver[error <: Exception]()(using Tactic[error | AsyncError]^): Result =
     promise.attend()
     thread.join()
     fulfilment()
@@ -236,7 +256,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
 
   def deliver[error <: Exception, abstractable: Abstractable across Durations to Long]
     ( duration: abstractable )
-    ( using Tactic[error | AsyncError] )
+    ( using Tactic[error | AsyncError]^ )
   :   Result =
 
     promise.attend(duration)
@@ -245,7 +265,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
     fulfilment()
 
 
-  private def fulfilment[error <: Exception]()(using Tactic[error | AsyncError]): Result =
+  private def fulfilment[error <: Exception]()(using Tactic[error | AsyncError]^): Result =
     state.updateAndGet:
       case Completed(duration, result) => Delivered(duration, result)
       case Delivered(duration, result) => Delivered(duration, result)

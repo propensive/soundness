@@ -52,7 +52,9 @@ object Tenacity:
     def delay(attempt: Ordinal): Optional[Long] raises RetryError =
       if attempt == Prim then 0L else duration.generic
 
-trait Tenacity:
+// A `Tenacity` is a pure retry policy (it holds no capabilities), so it extends `Pure`; this keeps
+// `this` out of capture sets when combinators like `limit` return a fresh policy delegating to it.
+trait Tenacity extends scala.caps.Pure:
   private inline def tenacity: this.type = this
   def delay(attempt: Ordinal): Optional[Long] raises RetryError
 

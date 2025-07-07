@@ -95,7 +95,7 @@ object GarbageCollection:
       val listeners =
         jlm.ManagementFactory.getGarbageCollectorMXBeans().nn.asScala.to(List).flatMap:
           case emitter: jm.NotificationEmitter =>
-            val listener: jm.NotificationListener = (notification, handback) =>
+            val listener: jm.NotificationListener^ = (notification, handback) =>
               if
                 notification.nn.getType() ==
                   csm.GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION
@@ -123,7 +123,9 @@ object GarbageCollection:
 
             emitter.addNotificationListener(listener, null, null)
 
-            List(emitter -> listener)
+            // The listener is registered with the JVM and only retained here to deregister it later;
+            // laundering it to pure keeps that bookkeeping list out of the capture-checked world.
+            List(emitter -> caps.unsafe.unsafeAssumePure(listener))
 
           case _ =>
             Nil
