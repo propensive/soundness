@@ -97,8 +97,12 @@ object internal:
   // Construction (`Quanta(...)`): `base` and `form` come from the expected type, so the cascade
   // is built directly from them rather than by decomposing an opaque `Quanta` type (whose parent
   // would dealias to `Long` within this scope).
+  // Returns just the encoded `Long`; the caller casts it to `Quanta[base] { type Form = form }` in an
+  // inline body. Producing the refined `Quanta` type *inside* the splice makes capture checking box the
+  // `Form` tuple with a fresh capture set, which then fails to unify with the (independently boxed)
+  // expected type; casting in the inline body keeps the refined type out of the macro and clean.
   def assembleParts[base <: AnyUnit: Type, form <: Divisions: Type](values: Expr[Seq[Int]])
-  :   Macro[Quanta[base] { type Form = form }] =
+  :   Macro[Long] =
 
     import quotes.reflect.*
 
@@ -110,9 +114,8 @@ object internal:
     val formUnits = if empty.exists(_ =:= formRepr) then Nil else elements(formRepr)
 
     val multipliers = multipliersOf(TypeRepr.of[base] :: formUnits)
-    val long = encode(multipliers.reverse, inputsOf(values))
 
-    '{Quanta.fromLong[Quanta[base] { type Form = form }]($long)}
+    encode(multipliers.reverse, inputsOf(values))
 
 
   def describeQuanta[quanta: Type](count: Expr[quanta])
