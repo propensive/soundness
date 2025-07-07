@@ -91,7 +91,7 @@ object Redraft:
   private def analyze
     ( directives: List[Directive],
       original:   IndexedSeq[Text],
-      compare:    (Text, Text) => Boolean )
+      compare:    (Text, Text) -> Boolean )
   :   (List[Edit[Text]], List[Anomaly]) =
 
     val n = original.length
@@ -220,7 +220,9 @@ object Redraft:
     context match
       case Context.Full     => Redraft(resolved*)
       case Context.Fixed(k) => Redraft(trim(resolved, k)*)
-      case Context.Minimal  => Redraft(minimize(resolved, original, diff.patch(original).to(List))*)
+
+      case Context.Minimal =>
+        Redraft(minimize(resolved, original, diff.patch(original).to(List))*)
 
   private def trim(directives: List[Directive], k: Int): List[Directive] =
     val keep = directives.map { case Directive.Keep(_) => false; case _ => true }.to(Array)
@@ -267,7 +269,7 @@ object Redraft:
 case class Redraft(directives: Redraft.Directive*):
   def serialize: LazyList[Text] = directives.map(Redraft.render1).to(LazyList)
 
-  def resolve(original: IndexedSeq[Text], compare: (Text, Text) => Boolean = _ == _)
+  def resolve(original: IndexedSeq[Text], compare: (Text, Text) -> Boolean = _ == _)
   :   Diff[Text] raises RedraftError =
 
     val (edits, anomalies) = Redraft.analyze(directives.to(List), original, compare)
@@ -276,12 +278,12 @@ case class Redraft(directives: Redraft.Directive*):
       case anomaly :: _ => abort(RedraftError(anomaly.line, anomaly.text, anomaly.reason))
       case Nil          => Diff(edits*)
 
-  def verify(original: IndexedSeq[Text], compare: (Text, Text) => Boolean = _ == _)
+  def verify(original: IndexedSeq[Text], compare: (Text, Text) -> Boolean = _ == _)
   :   List[Redraft.Anomaly] =
 
     Redraft.analyze(directives.to(List), original, compare)(1)
 
-  def patch(original: IndexedSeq[Text], compare: (Text, Text) => Boolean = _ == _)
+  def patch(original: IndexedSeq[Text], compare: (Text, Text) -> Boolean = _ == _)
   :   LazyList[Text] raises RedraftError =
 
     resolve(original, compare).patch(original)

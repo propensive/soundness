@@ -892,10 +892,10 @@ object digression extends Library:
 object dissonance extends Library:
   object core extends Component(turbulence.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object distillate extends Library:
   object core extends Component(digression.core, inimitable.core, wisteria.core):
