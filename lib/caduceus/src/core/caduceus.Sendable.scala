@@ -42,7 +42,9 @@ object Sendable:
   given text: Text is Sendable =
     text => Email(Map(), Email.Message(Email.Content(Email.Body(text))))
 
-  given htmlDoc: (Dom, Monitor, Probate) => Document[Html] is Sendable =
+  // `^{monitor}` only: neither `Dom` nor `Probate` is capture-tracked.
+  given htmlDoc: (dom: Dom, monitor: Monitor, probate: Probate)
+  =>  ((Document[Html] is Sendable)^{monitor}) =
     html =>
       Email(Map(), Email.Message(Email.Content(Email.Body.HtmlOnly(html.read[Text]))))
 
@@ -50,4 +52,4 @@ object Sendable:
 
 trait Sendable extends Typeclass:
   def email(content: Self): Email
-  def contramap[self2](lambda: self2 => Self): self2 is Sendable = content => email(lambda(content))
+  def contramap[self2](lambda: self2 => Self): (self2 is Sendable)^{this, lambda} = content => email(lambda(content))
