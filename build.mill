@@ -771,10 +771,10 @@ object capricious extends Library:
 object cardinality extends Library:
   object core extends Component(fulminate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object cataclysm extends Library:
   object core extends Component(zephyrine.core, gossamer.core, turbulence.core,
