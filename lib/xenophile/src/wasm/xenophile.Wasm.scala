@@ -51,7 +51,10 @@ object Wasm:
   extension (wasm: Wasm) def as[carrier]: carrier = wasm.value.asInstanceOf[carrier]
 
   // Builds an `Encodable in Wasm` that also exposes the `Carrier` type the value is passed as.
-  private def enc[self, carrier0](lambda: self => carrier0)
+  // The conversion is a pure function (`->`): the anonymous codec instance retains it, and a
+  // capturing lambda would make the codec itself a capability, which `Encodable`'s pure self
+  // type (rightly) forbids.
+  private def enc[self, carrier0](lambda: self -> carrier0)
   :   (self is Encodable in Wasm) { type Carrier = carrier0 } =
 
     new Encodable:
@@ -60,7 +63,7 @@ object Wasm:
       type Carrier = carrier0
       def encoded(value: self): Wasm = Wasm(lambda(value))
 
-  private def dec[self, carrier0](lambda: carrier0 => self)
+  private def dec[self, carrier0](lambda: carrier0 -> self)
   :   (self is Decodable in Wasm) { type Carrier = carrier0 } =
 
     new Decodable:
