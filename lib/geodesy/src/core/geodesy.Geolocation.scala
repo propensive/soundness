@@ -55,7 +55,8 @@ object Geolocation:
 
     . compact
 
-  given decoder: Tactic[GeolocationError] => Geolocation is Decodable in Text =
+  given decoder: (tactic: Tactic[GeolocationError])
+  =>  ((Geolocation is Decodable in Text)^{tactic}) =
     case r"geo:$latitude(-?[0-9]+(\.[0-9]+)?),$longitude(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
       val location =
         unsafely(Location(latitude.decode[Double].deg, longitude.decode[Double].deg))
