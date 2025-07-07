@@ -109,10 +109,21 @@ object internal:
             def apply[value, value2](value: functor[value])(lambda: value => value2)
             :   functor[value2] =
 
+              // Build `(v, l) => v.map(l)` as a reflective lambda whose parameters are real symbols,
+              // then apply it to `value`/`lambda` at the quote level. Quoting the `lambda` parameter
+              // directly into the splice (`'lambda`) would reify it as a boxed `Expr` hole that does
+              // not conform to its unboxed `value ->{any} value2` type under capture checking.
               $ {
-                  'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[value2])
-                  . appliedTo('lambda.asTerm).asExprOf[functor[value2]]
+                  val methodType = MethodType(List("v", "l"))(
+                    _ => List(TypeRepr.of[functor[value]], TypeRepr.of[value => value2]),
+                    _ => TypeRepr.of[functor[value2]])
+
+                  Lambda(Symbol.spliceOwner, methodType, (_, args) =>
+                    args(0).asInstanceOf[Term].select(mapMethods(0)).appliedToType(TypeRepr.of[value2])
+                    . appliedTo(args(1).asInstanceOf[Term])).asExpr
                 }
+              . asInstanceOf[(functor[value], value => value2) => functor[value2]]
+              . apply(value, lambda)
         }
 
     if mapMethods.length == 1 then makeFunctor
@@ -145,13 +156,20 @@ object internal:
             def bind[value, value2](value: monad[value])(lambda: value => monad[value2])
             :   monad[value2] =
 
+              // As in `Functor.apply`: build `(v, l) => v.flatMap(l)` reflectively and apply it at
+              // the quote level, so the capturing `lambda` never crosses a splice boundary as a
+              // boxed `Expr` hole (which capture checking rejects).
               $ {
-                  'value.asTerm
-                  . select(flatMapMethods(0))
-                  . appliedToType(TypeRepr.of[value2])
-                  . appliedTo('lambda.asTerm)
-                  . asExprOf[monad[value2]]
+                  val methodType = MethodType(List("v", "l"))(
+                    _ => List(TypeRepr.of[monad[value]], TypeRepr.of[value => monad[value2]]),
+                    _ => TypeRepr.of[monad[value2]])
+
+                  Lambda(Symbol.spliceOwner, methodType, (_, args) =>
+                    args(0).asInstanceOf[Term].select(flatMapMethods(0))
+                    . appliedToType(TypeRepr.of[value2]).appliedTo(args(1).asInstanceOf[Term])).asExpr
                 }
+              . asInstanceOf[(monad[value], value => monad[value2]) => monad[value2]]
+              . apply(value, lambda)
 
         }
 
