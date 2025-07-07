@@ -42,7 +42,10 @@ object Color:
       Chroma((srgb.red*255).toInt, (srgb.green*255).toInt, (srgb.blue*255).toInt)
 
 
-trait Color:
+// A `Color` is a pure value (it holds no capabilities), so it extends `Pure`; this keeps `this.type`
+// out of capture sets, which the `type Form >: this.type` self-bound requires its concrete
+// subtypes (`type Form = Srgb`, etc.) to satisfy.
+trait Color extends scala.caps.Pure:
   type Form >: this.type <: Color
 
   def in[color <: Color](using perceptual: Form is Perceptual in color): color =
