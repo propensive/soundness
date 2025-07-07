@@ -40,8 +40,6 @@ import scala.util.chaining.*
 import dotty.tools.*, dotc.*, util.*, reporting.*, core.*, config.Settings, Contexts.*
 
 object Subcompiler:
-  val Scala3: Compiler = new Compiler()
-
   class CustomReporter() extends Reporter, HideNonSensicalMessages:
     val errors: scm.ListBuffer[CompileError] = scm.ListBuffer()
 
@@ -162,6 +160,14 @@ object Subcompiler:
           val sourceFile: SourceFile = SourceFile.virtual("<subcompilation>", source)
           val context = currentContext.fresh
 
+          // A FRESH `Compiler` per run (not merely per `compile` call). The
+          // `recompile` loop below re-runs the sub-compilation once per blanked
+          // error region; reusing one compiler across those runs lets the
+          // `cc`/CheckCaptures phase carry a symbol from an earlier run into a
+          // later one, crashing with `StaleSymbolException` under capture
+          // checking. A new compiler each run gives independent phase instances.
+          val scala3: Compiler = new Compiler()
+
           given context0: Context =
             context
             . setReporter(reporter)
@@ -170,9 +176,9 @@ object Subcompiler:
             . setSetting(context.settings.YstopBefore, List("genSJSIR"))
             . setSetting(context.settings.color, "never")
 
-          Scala3.newRun.tap: run =>
+          scala3.newRun.tap: run =>
             run.compileSources(List(sourceFile))
-            if !reporter.hasErrors then finish(Scala3, run)
+            if !reporter.hasErrors then finish(scala3, run)
 
           val newErrors = reporter.errors.to(List)
 
