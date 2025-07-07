@@ -567,12 +567,12 @@ object anthology extends Library:
   object core extends Component(hellenism.jvm, denominative.core):
     override def scalaJs = false // Scala compiler / classpath tooling (dotty, `hellenism`)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
   object `scala` extends Component(core):
     override def scalaJs = false // wraps the Scala compiler (dotty)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object `java` extends Component(core):
@@ -585,7 +585,7 @@ object anthology extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(`scala`, `java`, core, spectacular.core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object anticipation extends Library:
   object generic extends Component(prepositional.core):
