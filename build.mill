@@ -1425,10 +1425,10 @@ object mercator extends Library:
 object metamorphose extends Library:
   object core extends Component(contingency.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object monotonous extends Library:
   object core extends Component(gossamer.core, zephyrine.core):
