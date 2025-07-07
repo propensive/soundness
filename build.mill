@@ -1216,13 +1216,13 @@ object hallucination extends Library:
   object core extends Component(anticipation.gfx, iridescence.core, gesticulate.core):
     override def scalaJs = false // uses `java.awt`/`javax.imageio` (no Scala.js implementation)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object ansi extends Component(escapade.core, core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(ansi):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object harlequin extends Library:
   object core extends Component(anthology.scala, stenography.core, hellenism.jvm):
