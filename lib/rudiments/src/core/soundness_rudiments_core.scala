@@ -35,7 +35,7 @@ package soundness
 export
   rudiments
   . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
-      DecimalConverter, Defaulting, Defaulting2, defines, Digit, each, establish, Exit, fixpoint,
+      DecimalConverter, Defaulting, Defaulting2, defines, Digit, each, establish, Exit,
       fuse, gib,
       give, has, immutable, Inclusive, Indexable, indexBy, intercalate, javaInputStream, kib,
       longestTrain,

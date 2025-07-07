@@ -1647,11 +1647,11 @@ object rudiments extends Library:
       denominative.core
     ):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
   object test extends Tests(core, abacist.core, quantitative.units):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object archimedes extends Library:
   object core extends Component(xylophone.core, honeycomb.core, contextual.core, gigantism.core,

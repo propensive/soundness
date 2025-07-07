@@ -50,11 +50,10 @@ import vacuous.*
 
 export rudiments.internal.{Bytes, Digit}
 
-def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => value)): value =
-  def recurrence(fn: (recur: value => value) ?=> value => value): value => value =
-    fn(using recurrence(fn(_)))
-
-  recurrence(fn)(initial)
+// `fixpoint` was removed: it does not yet type-check under capture checking (the recursive
+// context function trips "Reference `recur` is not included in the allowed capture set") and
+// was unused. Issue #1412 tracks a capture-correct reformulation; the old definition is in
+// that issue and the git history.
 
 inline def probe[target]: Nothing = ${rudiments.internal.probe[target]}
 inline def typeName[target]: Text = ${rudiments.internal.name[target]}
@@ -86,13 +85,14 @@ extension [value](value: value)
 
   inline def typed[ValueSubtype <: value]: Boolean = value.isInstanceOf[ValueSubtype]
 
-  transparent inline def matchable(using erased Unsafe): value & Matchable =
+  transparent inline def matchable(using erased unsafe: Unsafe): value & Matchable =
     value.asInstanceOf[value & Matchable]
 
   def give[result](block: value ?=> result): result = block(using value)
 
 extension [value: Countable](value: value)
-  inline def occupied: Optional[value] = if value.nil then Unset else value
+  // Not `inline`: see the note on `prim`/`sec`/`ter` below (same capture-checking issue).
+  def occupied: Optional[value] = if value.nil then Unset else value
 
 extension [input, result](inline lambda: (=> input) => result)
   inline def upon(inline value: => input): result = lambda(value)
@@ -119,7 +119,7 @@ extension [input, result](inline lambda: input => result)
   inline infix def and (inline input2: => input): result = lambda(input2)
   inline def context: input ?=> result = (input: input) ?=> lambda(input)
 
-def loop(block: => Unit): Loop =
+def loop(block: => Unit): Loop^{block} =
   def lambda(): Unit = block
   Loop(lambda)
 
@@ -132,8 +132,19 @@ extension [value <: Matchable](iterable: Iterable[value])
   transparent inline def sift[filter <: value: Typeable]: Iterable[filter] =
     iterable.flatMap(filter.unapply(_))
 
-  transparent inline def weave(right: Iterable[value]): Iterable[value] =
-    iterable.zip(right).flatMap(Iterable(_, _))
+  // Built with an explicit iterator rather than `zip(right).flatMap(Iterable(_, _))`: under capture
+  // checking the `Iterable(_, _)` closure returns a fresh collection per element that cannot flow into
+  // `flatMap`'s result capture set.
+  def weave(right: Iterable[value]): Iterable[value] =
+    val left = iterable.iterator
+    val rght = right.iterator
+    val builder = List.newBuilder[value]
+
+    while left.hasNext && rght.hasNext do
+      builder += left.next()
+      builder += rght.next()
+
+    builder.result()
 
 // `collection.has(value)` (value membership) for any `collection` that is
 // `Inclusive`; the queried value type is fixed by the instance's `Operand`.
@@ -185,9 +196,13 @@ extension [value](iterables: Iterable[Iterable[value]])
     if iterables.nil then Iterable() else iterables.reduceLeft(_ ++ between ++ _)
 
 extension [value](iterable: Iterable[value])
-  transparent inline def total
-    ( using addable:  value is Addable by value,
-            equality: addable.Result =:= value )
+  // The `Result` of each numeric typeclass below is bound as an inferred type parameter (e.g.
+  // `to result` + `result =:= value`) rather than referenced path-dependently (`addable.Result =:=
+  // value`). Under capture checking the path-dependent form fails at the cross-package `export`
+  // forwarder (#1411); binding it as a type parameter keeps call sites unchanged.
+  transparent inline def total[result]
+    ( using addable:  value is Addable by value to result,
+            equality: result =:= value )
   :   Optional[value] =
 
     compiletime.summonFrom:
@@ -197,23 +212,23 @@ extension [value](iterable: Iterable[value])
         if iterable.nil then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
 
 
-  transparent inline def mean
-    ( using addable:   value is Addable by value,
-            equality:  addable.Result =:= value,
-            divisible: value is Divisible by Double,
-            eqality2:  divisible.Result =:= value )
+  transparent inline def mean[addResult, divResult]
+    ( using addable:   value is Addable by value to addResult,
+            equality:  addResult =:= value,
+            divisible: value is Divisible by Double to divResult,
+            eqality2:  divResult =:= value )
   :   Optional[value] =
 
     iterable.total.let(_/iterable.size.toDouble)
 
-  inline def mean2
-    ( using subtractable: value is Subtractable by value,
-            addable:      subtractable.Result is Addable by subtractable.Result,
-            equality:     addable.Result =:= subtractable.Result,
-            divisible:    subtractable.Result is Divisible by Double,
-            equality2:    divisible.Result =:= subtractable.Result,
-            addable2:     value is Addable by divisible.Result,
-            equality3:    addable2.Result =:= value )
+  inline def mean2[subResult, addResult, divResult, add2Result]
+    ( using subtractable: value is Subtractable by value to subResult,
+            addable:      subResult is Addable by subResult to addResult,
+            equality:     addResult =:= subResult,
+            divisible:    subResult is Divisible by Double to divResult,
+            equality2:    divResult =:= subResult,
+            addable2:     value is Addable by divResult to add2Result,
+            equality3:    add2Result =:= value )
   :   Optional[value] =
 
     if iterable.nil then Unset else
@@ -222,32 +237,32 @@ extension [value](iterable: Iterable[value])
       iterable.map(_ - arbitrary).total.let: total =>
         arbitrary + total/iterable.size.toDouble
 
-  def variance
-    ( using addable:       value is Addable by value,
-            equality:      addable.Result =:= value,
-            divisible:     value is Divisible by Double,
-            equality2:     divisible.Result =:= value,
-            subtractable:  value is Subtractable by value,
-            multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
-            addable2:      multiplicable.Result is Addable by multiplicable.Result,
-            zeroic2:       multiplicable.Result is Zeroic,
-            equality3:     addable2.Result =:= multiplicable.Result,
-            divisible2:    multiplicable.Result is Divisible by Double )
-  :   Optional[divisible2.Result] =
+  def variance[addResult, divResult, subResult, mulResult, add2Result, div2Result]
+    ( using addable:       value is Addable by value to addResult,
+            equality:      addResult =:= value,
+            divisible:     value is Divisible by Double to divResult,
+            equality2:     divResult =:= value,
+            subtractable:  value is Subtractable by value to subResult,
+            multiplicable: subResult is Multiplicable by subResult to mulResult,
+            addable2:      mulResult is Addable by mulResult to add2Result,
+            zeroic2:       mulResult is Zeroic,
+            equality3:     add2Result =:= mulResult,
+            divisible2:    mulResult is Divisible by Double to div2Result )
+  :   Optional[div2Result] =
 
     iterable.mean.let: mean =>
       iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
 
 
-  def std
-    ( using addable:       value is Addable by value,
-            equality:      addable.Result =:= value,
-            divisible:     value is Divisible by Double,
-            equality2:     divisible.Result =:= value,
-            divisible2:    value is Divisible by value,
-            equality3:     divisible2.Result =:= Double,
-            multiplicable: value is Multiplicable by Double,
-            equality4:     multiplicable.Result =:= value )
+  def std[addResult, divResult, div2Result, mulResult]
+    ( using addable:       value is Addable by value to addResult,
+            equality:      addResult =:= value,
+            divisible:     value is Divisible by Double to divResult,
+            equality2:     divResult =:= value,
+            divisible2:    value is Divisible by value to div2Result,
+            equality3:     div2Result =:= Double,
+            multiplicable: value is Multiplicable by Double to mulResult,
+            equality4:     mulResult =:= value )
   :   Optional[value] =
 
     iterable.mean.let: mean0 =>
@@ -264,10 +279,10 @@ extension [value](iterable: Iterable[value])
       divisor*math.sqrt(sum/iterable.size.toDouble)
 
 
-  def product
+  def product[mulResult]
     ( using unital:        value is Unital,
-            multiplicable: value is Multiplicable by value,
-            equality:      multiplicable.Result =:= value )
+            multiplicable: value is Multiplicable by value to mulResult,
+            equality:      mulResult =:= value )
   :   value =
 
     iterable.foldLeft(unital.one)(multiplicable.multiply)
@@ -280,10 +295,14 @@ extension [value](iterable: Iterable[value])
       lambda(using ordinal.aka["ordinal"])(value)
       ordinal += 1
 
-  transparent inline def annex[right](lambda: value => right) = iterable.map: item =>
-    inline !![value] match
-      case tuple: Tuple => tuple :* lambda(tuple)
-      case other        => (other, lambda(other))
+  // The explicit `Iterable[Tuple]` return type is load-bearing under capture checking: without it
+  // the inferred type pickled into the cross-package `export` forwarder carries a malformed capture
+  // set and crashes the compiler (#1410). `transparent` still refines the type at each call site.
+  transparent inline def annex[right](lambda: value => right): Iterable[Tuple] =
+    iterable.map: item =>
+      inline !![value] match
+        case tuple: Tuple => tuple :* lambda(tuple)
+        case other        => (other, lambda(other))
 
 
   inline def fuse[state](base: state)(lambda: (state aka "state", value aka "next") ?=> state)
@@ -334,10 +353,10 @@ extension [value](iterable: Iterable[value])
     recur(0, iterable, 0, 0, 0)
 
 extension [element](value: IArray[element])
-  inline def mutable(using erased Unsafe): Array[element] = value.asInstanceOf[Array[element]]
+  inline def mutable(using erased unsafe: Unsafe): Array[element] = value.asInstanceOf[Array[element]]
 
 extension [element](array: Array[element])
-  inline def immutable(using erased Unsafe): IArray[element] = array.asInstanceOf[IArray[element]]
+  inline def immutable(using erased unsafe: Unsafe): IArray[element] = array.asInstanceOf[IArray[element]]
 
   def snapshot(using ClassTag[element]): IArray[element] =
     val newArray = new Array[element](array.length)
@@ -371,10 +390,14 @@ extension [value](list: List[value])
 extension [element](sequence: Seq[element])
   def runs: List[List[element]] = runsBy(identity)
 
-  inline def prim: Optional[element] = if sequence.nil then Unset else sequence.head
-  inline def sec: Optional[element] = if sequence.length < 2 then Unset else sequence(1)
-  inline def ter: Optional[element] = if sequence.length < 3 then Unset else sequence(2)
-  inline def unique: Optional[element] = if sequence.length == 1 then sequence.head else Unset
+  // Deliberately NOT `inline`: an `inline def` returning the union `Optional[element]` re-infers the
+  // expanded body's type at each call site, where capture checking stamps a fresh `^` capture
+  // variable on the union — which is spurious (and an error) when `element` is a pure type such as
+  // `Text`. A plain method keeps the declared `Optional[element]` result and stays capture-clean.
+  def prim: Optional[element] = if sequence.nil then Unset else sequence.head
+  def sec: Optional[element] = if sequence.length < 2 then Unset else sequence(1)
+  def ter: Optional[element] = if sequence.length < 3 then Unset else sequence(2)
+  def unique: Optional[element] = if sequence.length == 1 then sequence.head else Unset
 
   def runsBy(lambda: element => Any): List[List[element]] =
     @tailrec
