@@ -914,14 +914,14 @@ object embarcadero extends Library:
         gesticulate.core):
     override def scalaJs = false // OCI images; depends on JVM-only `bitumen` (galilei archives)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object containerd extends Component(obligatory.grpc, cordillera.core, coaxial.core, locomotion.core, anticipation.time):
     override def scalaJs = false // container runtime; depends on JVM-only `obligatory.grpc`
     override def scalacOptions = Task:
-      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"), "64")
+      settings.cc(settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"), "64"))
   object test extends Tests(oci, containerd, aviation.core):
     override def scalacOptions = Task:
-      settings.maxInlines(super.scalacOptions(), "64")
+      settings.cc(settings.maxInlines(super.scalacOptions(), "64"))
 
 object enigmatic extends Library:
   object core extends Component(gastronomy.core):
