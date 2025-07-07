@@ -1165,10 +1165,10 @@ object gastronomy extends Library:
   object core extends Component(monotonous.core, turbulence.core):
     override def scalaJs = false // hashing (`java.security` MessageDigest)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object geodesy extends Library:
   object core extends Component(gossamer.core):

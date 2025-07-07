@@ -54,47 +54,58 @@ object Digestible extends Derivable[Digestible]:
         contextual.digest(digestion, variant)
 
 
+  // The collection instances retain their by-name element digesters, which share each
+  // instance's given-resolution lifetime; laundered pure per the codec-thunk seal pattern
+  // (see rep/DECISIONS.md) — the product derivation summons them against pure expected
+  // types, and under 3.9.0 the by-name capture is tracked in the SAM closure.
   given optional: [value] => (digestible: => value is Digestible)
   =>  util.NotGiven[Unset.type <:< value]
   =>  Optional[value] is Digestible =
 
-    (acc, value) => value.let(digestible.digest(acc, _))
+    caps.unsafe.unsafeAssumePure:
+      (acc, value) => value.let(digestible.digest(acc, _))
 
 
   given list: [list <: List, value] => (digestible: => value is Digestible)
   =>  list[value] is Digestible =
 
-    (digestion, list) => list.each(digestible.digest(digestion, _))
+    caps.unsafe.unsafeAssumePure:
+      (digestion, list) => list.each(digestible.digest(digestion, _))
 
 
   given set: [set <: Set, value] => (digestible: => value is Digestible)
   =>  set[value] is Digestible =
 
-    (digestion, set) => set.each(digestible.digest(digestion, _))
+    caps.unsafe.unsafeAssumePure:
+      (digestion, set) => set.each(digestible.digest(digestion, _))
 
 
   given series: [series <: Series, value] => (digestible: => value is Digestible)
   =>  series[value] is Digestible =
 
-    (digestion, series) => series.each(digestible.digest(digestion, _))
+    caps.unsafe.unsafeAssumePure:
+      (digestion, series) => series.each(digestible.digest(digestion, _))
 
 
   given iarray: [value] => (digestible: => value is Digestible) => IArray[value] is Digestible =
-    (digestion, iarray) => iarray.each(digestible.digest(digestion, _))
+    caps.unsafe.unsafeAssumePure:
+      (digestion, iarray) => iarray.each(digestible.digest(digestion, _))
 
 
   given map: [key, value] => (keyDigestible: => key is Digestible)
   =>  ( valueDigestible: => value is Digestible )
   =>  Map[key, value] is Digestible =
 
-    (digestion, map) =>
-      map.each: (key, value) =>
-        keyDigestible.digest(digestion, key)
-        valueDigestible.digest(digestion, value)
+    caps.unsafe.unsafeAssumePure:
+      (digestion, map) =>
+        map.each: (key, value) =>
+          keyDigestible.digest(digestion, key)
+          valueDigestible.digest(digestion, value)
 
 
   given stream: [value] => (digestible: => value is Digestible) => LazyList[value] is Digestible =
-    (digestion, iterable) => iterable.each(digestible.digest(digestion, _))
+    caps.unsafe.unsafeAssumePure:
+      (digestion, iterable) => iterable.each(digestible.digest(digestion, _))
 
   given int: Int is Digestible = (digestion, value) =>
     digestion.append((24 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))
@@ -126,11 +137,15 @@ object Digestible extends Derivable[Digestible]:
     bytes.contramap(value.encode)
 
 trait Digestible extends Typeclass:
-  digestible =>
+  digestible: Digestible =>
 
     def digest(digestion: Digestion, value: Self): Unit
 
-  def contramap[self2](lambda: self2 => Self): self2 is Digestible = new Digestible:
+  // Deviates from the impure-lambda combinator convention: a capturing `contramap` result
+  // makes every SAM conversion to `Digestible` capture-tracked, which rejects the (sealed,
+  // derivation-facing) collection givens above whose closures retain their by-name element
+  // digesters. Digest transforms are pure in practice, so the pure form is kept.
+  def contramap[self2](lambda: self2 -> Self): self2 is Digestible = new Digestible:
     type Self = self2
 
     def digest(digestion: Digestion, value: Self): Unit =
