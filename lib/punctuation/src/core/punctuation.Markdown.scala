@@ -196,13 +196,17 @@ object Markdown:
           Comment(t"[CDATA[$content]]")
 
         case Layout.Heading(line, level, content*) =>
-          level match
+          // Matched at `Int`: capture checking's re-check types the literal patterns' synthesized
+          // binders at `Int`, which fails against the union-typed scrutinee.
+          (level: Int) match
             case 1 => H1(content.map(phrasing(_))*)
             case 2 => H2(content.map(phrasing(_))*)
             case 3 => H3(content.map(phrasing(_))*)
             case 4 => H4(content.map(phrasing(_))*)
             case 5 => H5(content.map(phrasing(_))*)
-            case 6 => H6(content.map(phrasing(_))*)
+            // `_`, not `6`: the union-typed scrutinee makes this exhaustive either way, but
+            // capture checking's re-check mistypes the exhaustivity default it would synthesize.
+            case _ => H6(content.map(phrasing(_))*)
 
         case Layout.CodeBlock(line, info, code) =>
           val formatted = summon[Every[Formattable]].values.foldLeft(Unset: Optional[Html of Flow]):
