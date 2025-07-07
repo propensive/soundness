@@ -91,9 +91,10 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
   def leapYear(year: Year): Boolean = governing(year).leapYear(year)
   def leapYearsSinceEpoch(year: Year): Int = governing(year).leapYearsSinceEpoch(year)
 
-  override def jdn(year: Year, month: Month, day: Day): Date raises TimeError =
-    val located = locate(year, month, day)
+  // Validity in a governed regime is more than a day-of-month range check: a date is real only if the
+  // active government `locate`s it.
+  override def validDate(year: Year, month: Month, day: Day): Boolean =
+    locate(year, month, day).present
 
-    if located.present then located.vouch else
-      raise(TimeError(_.Invalid(year(), month.numerical, day(), this)))
-      Date.julianDay(0)
+  override def computeJdn(year: Year, month: Month, day: Day): Date =
+    locate(year, month, day).or(Date.julianDay(0))

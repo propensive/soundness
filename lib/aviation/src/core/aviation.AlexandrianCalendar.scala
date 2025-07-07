@@ -63,8 +63,5 @@ abstract class AlexandrianCalendar() extends Calendar:
     val doy = dayOfYear(date)
     Day(doy - 30*(if doy > 360 then 12 else (doy - 1)/30))
 
-  def jdn(year: Year, month: Mensual, day: Day): Date raises TimeError =
-    if day() < 1 || day() > daysInMonth(month, year) then
-      raise(TimeError(_.Invalid(year(), monthOrdinal(year, month) + 1, day(), this)))
-
+  def computeJdn(year: Year, month: Mensual, day: Day): Date =
     Date.julianDay(epoch - 1 + 365*(year() - 1) + year()/4 + 30*monthOrdinal(year, month) + day())

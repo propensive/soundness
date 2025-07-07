@@ -120,10 +120,7 @@ class HebrewCalendar() extends Calendar:
 
     Day(remaining + 1)
 
-  def jdn(year: Year, month: HebrewMonth, day: Day): Date raises TimeError =
-    if day() < 1 || day() > daysInMonth(month, year) then
-      raise(TimeError(_.Invalid(year(), monthOrdinal(year, month) + 1, day(), this)))
-
+  def computeJdn(year: Year, month: HebrewMonth, day: Day): Date =
     var total = roshHashanah(year())
     var ordinal = 0
     val target = monthOrdinal(year, month)
