@@ -157,13 +157,16 @@ object internal:
     =>  ( decodable: => element is Decodable in Pojo )
     =>  collection[element] is Decodable in Pojo =
 
-      case array: Array[Pojo @unchecked] =>
-        factory.newBuilder.pipe: builder =>
-          array.iterator.each(builder += decodable.decoded(_))
-          builder.result()
+      // The by-name element codec and resolution-scoped tactic share this instance's
+      // given-resolution lifetime; laundered pure (the codec-thunk seal pattern).
+      caps.unsafe.unsafeAssumePure:
+        case array: Array[Pojo @unchecked] =>
+          factory.newBuilder.pipe: builder =>
+            array.iterator.each(builder += decodable.decoded(_))
+            builder.result()
 
-      case other =>
-        abort(PojoError())
+        case other =>
+          abort(PojoError())
 
 
     extension (pojo: Pojo)
