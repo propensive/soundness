@@ -1395,12 +1395,12 @@ object mandible extends Library:
   object core extends Component(hyperbole.core, galilei.core):
     override def scalaJs = false // depends on JVM-only `hyperbole`
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
   object test extends Tests(core, revolution.core, quantitative.units):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object locomotion extends Library:
   object core
