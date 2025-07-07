@@ -1616,10 +1616,10 @@ object revolution extends Library:
   object core extends Component(serpentine.core, turbulence.core):
     override def scalaJs = false // JAR manifests (`java.util.jar`)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions()
+      settings.cc(super.scalacOptions())
 
 object rudiments extends Library:
   object core extends Component(

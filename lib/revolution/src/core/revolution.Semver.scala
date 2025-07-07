@@ -64,7 +64,7 @@ object Semver:
 
   given showable: Semver is Showable = encodable.encoded(_)
 
-  given decodable: Tactic[SemverError] => Semver is Decodable in Text =
+  given decodable: (tactic: Tactic[SemverError]) => ((Semver is Decodable in Text)^{tactic}) =
     text =>
       text match
         case r"$major([0-9]+)\.$minor([0-9]+)\.$patch([0-9]+)$prerelease(-[^\+]+)?$build(\+.+)?" =>
