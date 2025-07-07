@@ -40,4 +40,30 @@ object Paths:
   // The `java.io.File` / `java.nio.file.Path` "Representative of Paths" bridges live in `diuretic`
   // (with the rest of the `java.*` interop) so that `anticipation.path` stays Scala.js-portable.
 
+  // Resolve a directory `Text` into a `path`, preferring the trusted instantiation — temporary and
+  // working directories come from the OS, so they are trusted — and falling back to plain-text
+  // instantiation. This is resolved by ordinary implicit search (the `trusted` given in the
+  // companion takes priority over `fromText` in the parent), which works inside a staged quote where
+  // an inline `summonFrom` over the two `Instantiable` givens cannot be reduced.
+  trait Resolver[path]:
+    def apply(text: Text): path
+
+  object Resolver extends Resolver2:
+    given trusted: [path] => (instantiable: (path is Instantiable across Paths from Trusted)^)
+    =>  Resolver[path] =
+      // The instance retains its `Instantiable` evidence, which shares the instance's
+      // given-resolution lifetime; laundered pure per the codec-thunk seal pattern (see
+      // rep/DECISIONS.md). A capturing result here would flow into the inline
+      // `workingDirectory`/`temporaryDirectory` resolver parameters, which must stay pure:
+      // they are expanded inside staged quotes (ethereal daemon `cli` blocks).
+      caps.unsafe.unsafeAssumePure: value =>
+        Trusted(value).instantiate
+
+  trait Resolver2:
+    given fromText: [path] => (instantiable: (path is Instantiable across Paths from Text)^)
+    =>  Resolver[path] =
+      // Laundered pure as for `trusted` above.
+      caps.unsafe.unsafeAssumePure: value =>
+        value.instantiate
+
 sealed trait Paths
