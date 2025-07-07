@@ -32,7 +32,7 @@
                                                                                                   */
 package quantitative
 
-trait Dimension
+trait Dimension extends caps.Pure
 
 sealed trait Distance extends Dimension
 sealed trait Mass extends Dimension
