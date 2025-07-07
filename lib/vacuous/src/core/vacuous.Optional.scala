@@ -37,8 +37,12 @@ import language.experimental.pureFunctions
 import scala.quoted.*
 
 object Optional:
-  opaque type Unset <: Matchable = Null
-  val Unset: Unset = null
+  // `<: caps.Pure` (not `<: Null`) makes `Unset` a pure type — so `Optional[v] = Unset | v` is pure
+  // whenever `v` is — WITHOUT exposing `Unset <: Null`, which would make `.nn` strip `Unset` and
+  // perturb how `Unset | v` normalises in given/`summonFrom` resolution. The underlying is `Null`
+  // (intersected with the erased `caps.Pure` marker so it conforms to the bound).
+  opaque type Unset <: Matchable & caps.Pure = Null & caps.Pure
+  val Unset: Unset = null.asInstanceOf[Unset]
 
   given unsetEquality: [value] => CanEqual[value, Unset] = CanEqual.derived
   given equalityUnset: [value] => CanEqual[Unset, value] = CanEqual.derived
