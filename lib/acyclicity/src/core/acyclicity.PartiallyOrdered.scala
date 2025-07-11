@@ -30,6 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package acyclicity
 
-export acyclicity.{Dag, Digraph, Dot, Graph, NodeParser, Subgraph, dot, Poset, PartiallyOrdered}
+import scala.collection.mutable as scm
+
+import proscenium.*
+import rudiments.*
+
+trait PartiallyOrdered:
+  type Self
+  def compare(left: Self, right: Self): Boolean
