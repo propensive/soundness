@@ -142,12 +142,12 @@ open class HtmlTranslator(embeddings: Embedding*) extends Translator:
   def phrasing(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
     case Markdown.Ast.Inline.Weblink(location, content) =>
 
-      def interactive(node: Html[Phrasing]): Html[NonInteractive] = node.absolve match
-        case node: Node[NonInteractive @unchecked] => node
+      def interactive(node: Html[Phrasing]): Html[Noninteractive] = node.absolve match
+        case node: Node[Noninteractive @unchecked] => node
         case text: Text                            => text
         case Unset                                 => t""
 
-      val children: Seq[Html[NonInteractive]] = nonInteractive(content).map(interactive(_))
+      val children: Seq[Html[Noninteractive]] = nonInteractive(content).map(interactive(_))
 
       List(A(href = location)(children))
 
