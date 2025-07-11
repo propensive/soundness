@@ -33,10 +33,13 @@
 package honeycomb
 
 import anticipation.*
+import digression.*
 import fulminate.*
+import gossamer.*
 import prepositional.*
 import proscenium.*
 import spectacular.*
+import vacuous.*
 
 object Renderable:
   import html5.Phrasing
@@ -62,6 +65,20 @@ object Renderable:
 
       case Sgml.Element(label, attributes, children) =>
         Node(label, attributes.map(_.s -> _), children.map(convert(_)))
+
+  given StackTrace is Renderable into html5.Noninteractive = stackTrace =>
+    import html5.*
+
+    List:
+      Div.stack(H2(stackTrace.component),
+                H3(stackTrace.className),
+                H4(stackTrace.message.html),
+                Table(stackTrace.frames.map: frame =>
+                      Tr(Td.at(t"at"),
+                      Td.`class`(frame.method.className),
+                      Td.method(frame.method.method),
+                      Td.file(frame.file),
+                      Td.line(frame.line.let(_.show).or(t"")))))
 
 trait Renderable extends Typeclass:
   type Result <: Label
