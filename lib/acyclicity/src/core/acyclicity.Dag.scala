@@ -61,7 +61,7 @@ object Dag:
   @targetName("fromNodes")
   def apply[node](nodes: (node, Set[node])*): Dag[node] = Dag(Map(nodes*))
 
-case class Dag[node] private(edgeMap: Map[node, Set[node]] = Map()):
+case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   private val reachableCache: scm.HashMap[node, Set[node]] = scm.HashMap()
 
   def keys: Set[node] = edgeMap.keySet
