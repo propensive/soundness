@@ -42,8 +42,8 @@ import spectacular.*
 import DagTile.*
 
 object DagDiagram:
-  def apply[node: ClassTag](dag: Dag[node]): DagDiagram[node] =
-    val nodes = Array.from(dag.sorted)
+  def apply[node](dag: Dag[node]): DagDiagram[node] =
+    val nodes = dag.sorted.to(Vector)
     val indexes: Map[node, Int] = nodes.zipWithIndex.to(Map)
 
     val layout: Array[Array[Int]] = Array.from:
