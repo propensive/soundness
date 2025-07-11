@@ -44,7 +44,7 @@ object html5:
     "a" | "audio" | "button" | "details" | "embed" | "iframe" | "img" | "input" | "label" | "select"
     | "textarea" | "video"
 
-  type NonInteractive =
+  type Noninteractive =
     "abbr" | "address" | "area" | "article" | "aside" | "audio" | "b" | "base" | "bdi" | "bdo"
     | "blockquote" | "br" | "canvas" | "cite" | "code" | "data" | "datalist" | "del" | "dfn"
     | "dialog" | "div" | "dl" | "em" | "fieldset" | "figure" | "footer" | "form" | "h1" | "h2"
@@ -111,7 +111,7 @@ object html5:
   type Sectioning = "article" | "aside" | "nav" | "section"
   type ScriptSupporting = "script" | "template"
 
-  val A = ClearTag["a", NonInteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
+  val A = ClearTag["a", Noninteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
       "hreflang" | "type" | "referrerpolicy"]("a")
 
   val Abbr = Tag["abbr", Phrasing, Global]("abbr")
@@ -152,7 +152,7 @@ object html5:
      ("button")
 
   // complicated
-  val Canvas = ClearTag["canvas", NonInteractive, Global | "width" | "height"]("canvas")
+  val Canvas = ClearTag["canvas", Noninteractive, Global | "width" | "height"]("canvas")
   val Caption = Tag["caption", Flow, Global]("caption") // no tables
   val Cite = Tag["cite", Phrasing, Global]("cite")
   val Code = Tag["code", Phrasing, Global]("code")
