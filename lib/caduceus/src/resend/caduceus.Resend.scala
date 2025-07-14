@@ -40,12 +40,12 @@ import hieroglyph.*
 import jacinta.*
 import merino.*
 import monotonous.*
-import nettlesome.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 
 import charEncoders.utf8

@@ -35,8 +35,8 @@ package telekinesis
 import anticipation.*
 import coaxial.*
 import fulminate.*
-import nettlesome.*
 import prepositional.*
+import urticose.*
 import vacuous.*
 
 object Fetchable:

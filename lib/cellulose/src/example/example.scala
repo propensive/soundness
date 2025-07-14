@@ -35,9 +35,9 @@ package cellulose
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import gossamer.*
-import nettlesome.*
 import spectacular.*
 import turbulence.*, stdioSources.virtualMachine.ansi
+import urticose.*
 
 case class Network(address: MacAddress)
 

@@ -37,7 +37,6 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import nettlesome.*
 import parasite.*
 import prepositional.*
 import proscenium.*
@@ -45,6 +44,7 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import telekinesis.*
+import urticose.*
 import vacuous.*
 
 package httpServers:

@@ -107,7 +107,7 @@ it is intended to represent a canonical way to encode a value as a string, such
 that that text may be decoded to restore the original value.
 
 For example, a `Url` (as defined in
-[Nettlesome](https://github.com/propensive/nettlesome/)) represents the
+[Urticose](https://github.com/propensive/urticose/)) represents the
 structure of a URL, but is encoded in a very standard way to a familiar
 representation of a URL, such as `https://example.com/`. This conversion should
 be provided by an `Encoder` instance, and a corresponding `Decoder` should be
@@ -133,6 +133,3 @@ appropriate `using` clauses to demand the capability to raise errors. If using
 [Contingency](https://github.com/propensive/contingency/) for error handling, that
 implies a `Raises` instance, while Scala's checked exceptions require a
 `CanThrow` instance for the exception type.
-
-
-

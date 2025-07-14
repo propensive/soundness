@@ -36,10 +36,10 @@ import anticipation.*
 import distillate.*
 import fulminate.*
 import legerdemain.*
-import nettlesome.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import urticose.*
 import vacuous.*
 
 import language.dynamics

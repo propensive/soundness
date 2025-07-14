@@ -39,7 +39,6 @@ import eucalyptus.*
 import galilei.*
 import gossamer.*
 import jacinta.*
-import nettlesome.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
@@ -48,6 +47,7 @@ import spectacular.*
 import symbolism.*
 import telekinesis.*
 import turbulence.*
+import urticose.*
 
 import jsonPrinters.indented
 

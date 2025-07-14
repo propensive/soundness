@@ -76,8 +76,8 @@ repository, i.e. without a working tree.
 A repository can also be cloned from an existing repository, either remotely or locally. The `Git.clone` method
 will clone a repository from a URL, a local path or a `SshUrl`, using any Anticipation-aware types, for example:
 ```scala
-import nettlesome.*
 import galilei.*
+import urticose.*
 
 val repo = Git.clone(
   url"https://github.com/propensive/octogenarian",
@@ -141,7 +141,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Octogenarian?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Octogenarian's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -158,7 +158,7 @@ answer to the question, "how can I try Octogenarian?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -219,4 +219,3 @@ The logo shows a stylized version of the Git logo.
 
 Octogenarian is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

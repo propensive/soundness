@@ -36,13 +36,13 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import gossamer.*
-import nettlesome.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import telekinesis.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 
 import jakarta.servlet as js, js.http as jsh
