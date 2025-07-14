@@ -43,8 +43,8 @@ repository, i.e. without a working tree.
 A repository can also be cloned from an existing repository, either remotely or locally. The `Git.clone` method
 will clone a repository from a URL, a local path or a `SshUrl`, using any Anticipation-aware types, for example:
 ```scala
-import nettlesome.*
 import galilei.*
+import urticose.*
 
 val repo = Git.clone(
   url"https://github.com/propensive/octogenarian",
@@ -78,4 +78,3 @@ Certain operations, notably those involving fetching, will run asynchronously, a
 tracked. Asynchronous operations will return a `GitProcess` instance. Calling its `complete` method will return
 its result synchronously, as soon as it finishes. But updates on its progress can be obtained as a
 `LazyList[Progress]` with its `progress` member.
-

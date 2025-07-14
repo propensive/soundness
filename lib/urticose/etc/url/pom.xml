@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>dev.soundness</groupId>
+  <artifactId>urticose-url</artifactId>
+  <version>0.26.0</version>
+  <licenses>
+    <license>
+      <name>Apache 2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <name>Urticose URL</name>
+  <description>Typesafe representations of network concepts</description>
+  <url>https://soundness.dev/urticose</url>
+  <packaging>jar</packaging>
+  <properties>
+    <java.version>21</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>urticose-core</artifactId>
+      <version>0.26.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>serpentine-core</artifactId>
+      <version>0.26.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>nomenclature-core</artifactId>
+      <version>0.26.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>escapade-core</artifactId>
+      <version>0.26.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>anticipation-html</artifactId>
+      <version>0.26.0</version>
+    </dependency>
+  </dependencies>
+  <organization>
+    <name>Propensive</name>
+    <url>https://propensive.com/</url>
+  </organization>
+  <scm>
+    <url>https://github.com/propensive/urticose</url>
+    <connection>scm:git@github.com:propensive/urticose.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>propensive</id>
+      <name>Jon Pretty</name>
+      <email>jon.pretty@propensive.com</email>
+      <url>https://propensive.com/</url>
+    </developer>
+  </developers>
+</project>

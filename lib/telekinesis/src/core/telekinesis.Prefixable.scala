@@ -37,11 +37,11 @@ import denominative.*
 import hieroglyph.*
 import gesticulate.*
 import gossamer.*
-import nettlesome.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import urticose.*
 
 object Prefixable:
   // Request headers

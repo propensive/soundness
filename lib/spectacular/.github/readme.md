@@ -143,7 +143,7 @@ it is intended to represent a canonical way to encode a value as a string, such
 that that text may be decoded to restore the original value.
 
 For example, a `Url` (as defined in
-[Nettlesome](https://github.com/propensive/nettlesome/)) represents the
+[Urticose](https://github.com/propensive/urticose/)) represents the
 structure of a URL, but is encoded in a very standard way to a familiar
 representation of a URL, such as `https://example.com/`. This conversion should
 be provided by an `Encoder` instance, and a corresponding `Decoder` should be
@@ -201,7 +201,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Spectacular?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Spectacular's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -218,7 +218,7 @@ answer to the question, "how can I try Spectacular?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -278,4 +278,3 @@ The logo is a film reel, the medium for distributing a _show_.
 
 Spectacular is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

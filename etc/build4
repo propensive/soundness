@@ -66,9 +66,9 @@ echo —————————— STAGE 4 ——————————
   lib/gastronomy/src/core/*.scala \
   lib/anamnesis/src/core/*.scala \
   lib/legerdemain/src/core/*.scala \
-  lib/nettlesome/src/core/*.scala \
+  lib/urticose/src/core/*.scala \
   lib/coaxial/src/core/*.scala \
-  lib/nettlesome/src/url/*.scala \
+  lib/urticose/src/url/*.scala \
   lib/telekinesis/src/core/*.scala \
   lib/revolution/src/core/*.scala \
   lib/zeppelin/src/core/*.scala \

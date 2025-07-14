@@ -46,7 +46,6 @@ import gossamer.*
 import hellenism.*
 import hieroglyph.*
 import monotonous.*
-import nettlesome.*
 import nomenclature.*
 import parasite.*
 import prepositional.*
@@ -58,6 +57,7 @@ import spectacular.*
 import symbolism.*
 import telekinesis.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 import zeppelin.*
 

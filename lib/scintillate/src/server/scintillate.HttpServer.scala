@@ -37,10 +37,10 @@ import contingency.*
 import digression.*
 import parasite.*
 import proscenium.*
-import nettlesome.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 
 import scala.compiletime.*

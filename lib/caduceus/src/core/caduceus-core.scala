@@ -37,10 +37,10 @@ import contingency.*
 import fulminate.*
 import gesticulate.*
 import hieroglyph.*
-import nettlesome.*
 import prepositional.*
 import proscenium.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 
 import charEncoders.utf8
