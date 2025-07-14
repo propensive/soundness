@@ -38,11 +38,11 @@ import fulminate.*
 import gesticulate.*
 import hieroglyph.*
 import honeycomb.*
-import nettlesome.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 
 import charEncoders.utf8

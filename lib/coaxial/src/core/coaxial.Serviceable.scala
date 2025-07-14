@@ -34,10 +34,10 @@ package coaxial
 
 import anticipation.*
 import contingency.*
-import nettlesome.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 
 import java.net as jn

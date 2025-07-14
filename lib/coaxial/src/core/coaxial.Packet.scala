@@ -33,6 +33,6 @@
 package coaxial
 
 import anticipation.*
-import nettlesome.*
+import urticose.*
 
 case class Packet(data: Bytes, sender: Ipv4 | Ipv6, port: UdpPort)

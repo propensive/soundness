@@ -85,7 +85,7 @@ object Tests extends Suite(m"Soundness tests"):
     metamorphose.Tests()
     monotonous.Tests()
     mosquito.Tests()
-    nettlesome.Tests()
+    urticose.Tests()
     nomenclature.Tests()
     octogenarian.Tests()
     panopticon.Tests()

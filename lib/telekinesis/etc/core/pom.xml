@@ -29,7 +29,7 @@
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
-      <artifactId>nettlesome-url</artifactId>
+      <artifactId>urticose-url</artifactId>
       <version>0.26.0</version>
     </dependency>
     <dependency>

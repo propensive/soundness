@@ -44,7 +44,6 @@ import galilei.*
 import gossamer.*
 import guillotine.*
 import kaleidoscope.*
-import nettlesome.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
@@ -52,6 +51,7 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
+import urticose.*
 import vacuous.*
 
 import GitError.Reason.*

@@ -154,7 +154,7 @@ object soundness extends ScalaModule {
 
   object web extends SoundnessGroupModule {
     def moduleDeps = Seq(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
-        honeycomb.core, nettlesome.core, nettlesome.url, hallucination.core, phoenicia.core,
+        honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
         punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
         telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
         legerdemain.core, caduceus.core, caduceus.resend)
@@ -220,7 +220,7 @@ object test extends ScalaModule {
     mercator.test,
     merino.test,
     metamorphose.test,
-    nettlesome.test,
+    urticose.test,
     nomenclature.test,
     octogenarian.test,
     panopticon.test,
@@ -496,7 +496,7 @@ object burdock extends SoundnessModule {
 
 object caduceus extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(nettlesome.core, gesticulate.core, honeycomb.core)
+    def moduleDeps = Seq(urticose.core, gesticulate.core, honeycomb.core)
   }
 
   object resend extends SoundnessSubModule {
@@ -590,7 +590,7 @@ object chiaroscuro extends SoundnessModule {
 
 object coaxial extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(galilei.core, nettlesome.core)
+    def moduleDeps = Seq(galilei.core, urticose.core)
   }
 
   object test extends ProbablyTestModule {
@@ -678,7 +678,7 @@ object distillate extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core, nettlesome.url)
+    def moduleDeps = Seq(probably.cli, core, urticose.url)
   }
 }
 
@@ -921,7 +921,7 @@ object hellenism extends SoundnessModule {
 
 object honeycomb extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, nettlesome.url)
+    def moduleDeps = Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url)
   }
 
   object test extends ProbablyTestModule {
@@ -1092,7 +1092,7 @@ object mosquito extends SoundnessModule {
   }
 }
 
-object nettlesome extends SoundnessModule {
+object urticose extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(gossamer.core, hypotenuse.core)
   }
@@ -1117,7 +1117,7 @@ object nomenclature extends SoundnessModule {
 
 object octogenarian extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(guillotine.core, galilei.core, ambience.core, gastronomy.core, nettlesome.core, enigmatic.core, anticipation.url)
+    def moduleDeps = Seq(guillotine.core, galilei.core, ambience.core, gastronomy.core, urticose.core, enigmatic.core, anticipation.url)
   }
 
   object test extends ProbablyTestModule {
@@ -1426,7 +1426,7 @@ object tarantula extends SoundnessModule {
 
 object telekinesis extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(monotonous.core, gesticulate.core, nettlesome.url, coaxial.core, legerdemain.core)
+    def moduleDeps = Seq(monotonous.core, gesticulate.core, urticose.url, coaxial.core, legerdemain.core)
   }
 
   object test extends ProbablyTestModule {
@@ -1646,8 +1646,8 @@ object publishing extends Module {
     metamorphose.core.publishLocal().t()
     monotonous.core.publishLocal().t()
     mosquito.core.publishLocal().t()
-    nettlesome.core.publishLocal().t()
-    nettlesome.url.publishLocal().t()
+    urticose.core.publishLocal().t()
+    urticose.url.publishLocal().t()
     nomenclature.core.publishLocal().t()
     octogenarian.core.publishLocal().t()
     panopticon.core.publishLocal().t()

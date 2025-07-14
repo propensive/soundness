@@ -35,12 +35,12 @@ package telekinesis
 import anticipation.*
 import coaxial.*
 import contingency.*
-import nettlesome.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 
 import java.net as jn

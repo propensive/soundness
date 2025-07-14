@@ -33,10 +33,10 @@
 package coaxial
 
 import anticipation.*
-import nettlesome.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import urticose.*
 import vacuous.*
 
 import java.net as jn

@@ -37,11 +37,11 @@ import gesticulate.*
 import gossamer.*
 import hieroglyph.*
 import kaleidoscope.*
-import nettlesome.*
 import prepositional.*
 import proscenium.*
 import serpentine.*
 import spectacular.*
+import urticose.*
 import vacuous.*
 
 trait HtmlAttribute[-value] extends Targetable:

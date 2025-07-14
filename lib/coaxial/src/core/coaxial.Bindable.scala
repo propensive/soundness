@@ -35,11 +35,11 @@ package coaxial
 import anticipation.*
 import contingency.*
 import hypotenuse.*
-import nettlesome.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 
 import scala.compiletime.*

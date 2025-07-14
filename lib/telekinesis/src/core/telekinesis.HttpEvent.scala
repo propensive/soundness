@@ -34,7 +34,7 @@ package telekinesis
 
 import anticipation.*
 import fulminate.*
-import nettlesome.*
+import urticose.*
 
 enum HttpEvent:
   case Response(status: Http.Status)

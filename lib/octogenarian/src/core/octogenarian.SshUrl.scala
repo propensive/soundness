@@ -36,7 +36,7 @@ import scala.compiletime.*
 
 import anticipation.*
 import gossamer.*
-import nettlesome.*
+import urticose.*
 import vacuous.*
 
 case class SshUrl(user: Optional[Text], hostname: Hostname, path: Text):

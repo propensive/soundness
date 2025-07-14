@@ -34,9 +34,9 @@ package scintillate
 
 import anticipation.*
 import contingency.*
-import nettlesome.*
 import parasite.*
 import telekinesis.*
+import urticose.*
 
 trait RequestServable:
   def handle(handle: HttpConnection ?=> Http.Response)(using Monitor, Codicil)

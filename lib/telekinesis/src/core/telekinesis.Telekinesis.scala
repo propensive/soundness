@@ -37,10 +37,10 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import nettlesome.*
 import prepositional.*
 import proscenium.*
 import spectacular.*
+import urticose.*
 import vacuous.*
 
 object Telekinesis:

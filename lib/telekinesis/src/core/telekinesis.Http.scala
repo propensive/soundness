@@ -41,13 +41,13 @@ import gesticulate.*
 import gossamer.*
 import hieroglyph.*
 import legerdemain.*
-import nettlesome.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 import zephyrine.*
 
