@@ -305,13 +305,13 @@ def now()(using clock: Clock): Instant = clock()
 def today()(using clock: Clock, calendar: RomanCalendar, timezone: Timezone): Date =
   (now() in timezone).date
 
-given base60Extractable: [text <: Text] => (Text is Extractable into Int)
-      =>  text is Extractable into Base60 =
+given base60Extractable: [text <: Text] => (Text is Extractable to Int)
+      =>  text is Extractable to Base60 =
   case As[Int](value: Base60) => value
   case _                      => Unset
 
-given base24Extractable: [text <: Text] => (Text is Extractable into Int)
-      =>  text is Extractable into Base24 =
+given base24Extractable: [text <: Text] => (Text is Extractable to Int)
+      =>  text is Extractable to Base24 =
   case As[Int](value: Base24) => value
   case _                      => Unset
 

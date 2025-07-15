@@ -74,7 +74,7 @@ object Dsv:
     case Fresh, Quoted, DoubleQuoted
 
   given abstractable: (CharEncoder, DsvFormat)
-        => Dsv is Abstractable across HttpStreams into HttpStreams.Content =
+        => Dsv is Abstractable across HttpStreams to HttpStreams.Content =
     new Abstractable:
       type Self = Dsv
       type Domain = HttpStreams

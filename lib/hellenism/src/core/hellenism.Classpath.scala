@@ -54,11 +54,11 @@ object Classpath extends Root(t""):
   erased given nominative: Classpath is Nominative under Rules = !!
 
   object Directory:
-    def apply[path: Abstractable across Paths into Text](path: path): ClasspathEntry.Directory =
+    def apply[path: Abstractable across Paths to Text](path: path): ClasspathEntry.Directory =
       ClasspathEntry.Directory(path.generic)
 
   object Jar:
-    def apply[path: Abstractable across Paths into Text](path: path): ClasspathEntry.Jar =
+    def apply[path: Abstractable across Paths to Text](path: path): ClasspathEntry.Jar =
       ClasspathEntry.Jar(path.generic)
 
   given system: Classpath is System:

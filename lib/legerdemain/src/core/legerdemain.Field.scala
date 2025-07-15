@@ -41,7 +41,7 @@ import vacuous.*
 import html5.*
 
 object Field:
-  given renderable: Field is Renderable into Phrasing = field =>
+  given renderable: Field is Renderable to Phrasing = field =>
     List(Input.Text(name = field.name, value = field.value))
 
 case class Field(label: Text, name: Text, value: Text) extends Widget

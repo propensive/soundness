@@ -81,7 +81,7 @@ object ShowProperty:
 
   //given simplePath: ShowProperty[SimplePath] = path => t"url('${path}')"
 
-  given paths: [path: Abstractable across Paths into Text] => ShowProperty[path] =
+  given paths: [path: Abstractable across Paths to Text] => ShowProperty[path] =
     path => t"url('${path.generic}')"
 
   given text: ShowProperty[Text] = identity(_)

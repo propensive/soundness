@@ -74,7 +74,7 @@ object Git:
 
 
   def init
-      [path: Abstractable across Paths into Text]
+      [path: Abstractable across Paths to Text]
        (targetPath: path, bare: Boolean = false)
        (using WorkingDirectory,
               Tactic[GitError],
@@ -96,7 +96,7 @@ object Git:
         case error: IoError   => abort(GitError(InvalidRepoPath))
 
 
-  inline def cloneCommit[source <: Matchable, path: Abstractable across Paths into Text]
+  inline def cloneCommit[source <: Matchable, path: Abstractable across Paths to Text]
               (source: source, targetPath: path, commit: GitHash)
               (using Internet,
                      (Path on Linux) is Decodable in Text,
@@ -109,13 +109,13 @@ object Git:
       val sourceText = inline source match
         case source: SshUrl => source.text
         case other          => summonFrom:
-          case given (`source` is Abstractable across Urls into Text)  => source.generic
-          case given (`source` is Abstractable across Paths into Text) => source.generic
+          case given (`source` is Abstractable across Urls to Text)  => source.generic
+          case given (`source` is Abstractable across Paths to Text) => source.generic
 
       uncheckedCloneCommit(sourceText, targetPath, commit)
 
 
-  inline def clone[source <: Matchable, path: Abstractable across Paths into Text]
+  inline def clone[source <: Matchable, path: Abstractable across Paths to Text]
               (source:     source,
                targetPath: path,
                bare:       Boolean             = false,
@@ -131,13 +131,13 @@ object Git:
       val sourceText = inline source match
         case source: SshUrl => source.text
         case other          => summonFrom:
-          case given (`source` is Abstractable across Urls into Text)  => source.generic
-          case given (`source` is Abstractable across Paths into Text) => source.generic
+          case given (`source` is Abstractable across Urls to Text)  => source.generic
+          case given (`source` is Abstractable across Paths to Text) => source.generic
 
       uncheckedClone(sourceText, targetPath, bare, branch, recursive)
 
 
-  private def uncheckedCloneCommit[path: Abstractable across Paths into Text]
+  private def uncheckedCloneCommit[path: Abstractable across Paths to Text]
                (source: Text, targetPath: path, commit: GitHash)
                (using Internet, (Path on Linux) is Decodable in Text, GitCommand)
                (using gitError:         Tactic[GitError],
@@ -154,7 +154,7 @@ object Git:
         gitRepo
 
 
-  private def uncheckedClone[path: Abstractable across Paths into Text]
+  private def uncheckedClone[path: Abstractable across Paths to Text]
                 (source:     Text,
                  targetPath: path,
                  bare:       Boolean             = false,

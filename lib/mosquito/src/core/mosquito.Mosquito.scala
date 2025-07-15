@@ -147,8 +147,8 @@ object Mosquito:
     def norm
          (using multiplicable: left is Multiplicable by left,
                 addable:       multiplicable.Result is Addable by multiplicable.Result
-                                into multiplicable.Result,
-                rootable:      multiplicable.Result is Rootable[2] into left)
+                                to multiplicable.Result,
+                rootable:      multiplicable.Result is Rootable[2] to left)
     : left =
 
         def recur(sum: multiplicable.Result, i: Int): left =
@@ -168,10 +168,10 @@ object Mosquito:
 
 
     def unitary[square]
-         (using multiplicable: left is Multiplicable by left into square,
-                addable:       square is Addable by square into square,
-                rootable:      square is Rootable[2] into left,
-                divisible:     left is Divisible by left into Double)
+         (using multiplicable: left is Multiplicable by left to square,
+                addable:       square is Addable by square to square,
+                rootable:      square is Rootable[2] to left,
+                divisible:     left is Divisible by left to Double)
     : Vector[Double, size] =
 
         val magnitude: left = left.norm

@@ -71,11 +71,11 @@ object Markdown:
   given showable: InlineMd is Showable = _.serialize
 
   given renderable: [markdown <: Markdown[Markdown.Ast.Node]] => (translator: Translator)
-        => markdown is Renderable into html5.Flow =
+        => markdown is Renderable to html5.Flow =
     content => translator.translate(content.nodes)
 
   given renderable2: [markdown <: Markdown.Ast.Inline] => (translator: Translator)
-        => markdown is Renderable into html5.Phrasing =
+        => markdown is Renderable to html5.Phrasing =
     translator.phrasing(_)
 
   object Ast:

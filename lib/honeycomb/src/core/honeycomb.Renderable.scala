@@ -43,15 +43,15 @@ import vacuous.*
 
 object Renderable:
   import html5.Phrasing
-  given showable: [value: Showable] => value is Renderable into Phrasing = value => List(value.show)
+  given showable: [value: Showable] => value is Renderable to Phrasing = value => List(value.show)
 
-  given message: Message is Renderable into Phrasing = _.segments.flatMap:
+  given message: Message is Renderable to Phrasing = _.segments.flatMap:
     case message: Message => message.html
     case text: Text       => List(text)
     case _                => Nil
 
 
-  given abstractable: [value: Abstractable across HtmlContent into List[Sgml]]
+  given abstractable: [value: Abstractable across HtmlContent to List[Sgml]]
         => value is Renderable:
     type Self = value
     type Result = Label
@@ -66,7 +66,7 @@ object Renderable:
       case Sgml.Element(label, attributes, children) =>
         Node(label, attributes.map(_.s -> _), children.map(convert(_)))
 
-  given StackTrace is Renderable into html5.Flow = stackTrace =>
+  given StackTrace is Renderable to html5.Flow = stackTrace =>
     import html5.*
 
     List:

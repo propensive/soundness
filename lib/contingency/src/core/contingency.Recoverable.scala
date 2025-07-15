@@ -35,7 +35,7 @@ package contingency
 import prepositional.*
 
 object Recoverable:
-  given exception: [error <: Exception] => error is Recoverable into Unit = error => ()
+  given exception: [error <: Exception] => error is Recoverable to Unit = error => ()
 
 trait Recoverable extends Resultant:
   type Self <: Exception

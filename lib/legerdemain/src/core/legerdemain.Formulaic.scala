@@ -47,7 +47,7 @@ import html5.*
 object Formulaic extends ProductDerivable[Formulaic]:
   given elicitable: [value]
         => (elicitable: value is Elicitable)
-        => (renderable: elicitable.Operand is Renderable into Phrasing)
+        => (renderable: elicitable.Operand is Renderable to Phrasing)
         =>  value is Formulaic:
 
 

@@ -47,7 +47,7 @@ infix type from [refined <: { type Origin }, origin] = refined { type Origin = o
 infix type in [refined, form] = refined { type Form = form }
 
 // Resultant
-infix type into [refined <: { type Result }, result] = refined { type Result = result }
+infix type to [refined <: { type Result }, result] = refined { type Result = result }
 
 // Topical
 infix type of [refined <: { type Topic }, topic] = refined { type Topic = topic }

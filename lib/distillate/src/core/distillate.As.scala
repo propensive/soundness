@@ -35,6 +35,6 @@ package distillate
 import prepositional.*
 
 object As:
-  def unapply[result](scrutinee: Any)(using extractable: scrutinee.type is Extractable into result)
+  def unapply[result](scrutinee: Any)(using extractable: scrutinee.type is Extractable to result)
   :       Option[result] =
     extractable.unapply(scrutinee)

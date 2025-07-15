@@ -41,7 +41,7 @@ import vacuous.*
 import html5.*
 
 object RadioGroup:
-  given renderable: RadioGroup is Renderable into Phrasing = group =>
+  given renderable: RadioGroup is Renderable to Phrasing = group =>
     group.options.map: option =>
       Label(Input.Radio(name = group.name, value = option(1)), option(2))
 

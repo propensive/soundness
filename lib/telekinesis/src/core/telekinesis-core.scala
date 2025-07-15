@@ -47,7 +47,7 @@ import language.dynamics
 given realm: Realm = realm"telekinesis"
 
 package queryParameters:
-  erased given arbitrary: [key <: Label, value] => key is Parametric into value = !!
+  erased given arbitrary: [key <: Label, value] => key is Parametric to value = !!
 
 extension [value: Encodable in Query](value: value)
   def query: Query = value.encode
@@ -59,7 +59,7 @@ extension [fetchable: Fetchable](endpoint: fetchable)
   def submit: Http.Submit[fetchable.Target] =
     Http.Submit(fetchable.text(endpoint), fetchable.target(endpoint), fetchable.hostname(endpoint))
 
-extension (url: into HttpUrl)
+extension (url: into[HttpUrl])
   @targetName("withQuery")
   def query(query: Query): HttpUrl =
     val query2 = url.query.let(query ++ _.decode[Query]).or(query)

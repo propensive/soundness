@@ -42,7 +42,7 @@ import vacuous.*
 import html5.*
 
 object Checkbox:
-  given renderable: Checkbox is Renderable into Phrasing = checkbox =>
+  given renderable: Checkbox is Renderable to Phrasing = checkbox =>
     List(Input.Checkbox(name = checkbox.name, checked = (checkbox.value != t"")))
 
 case class Checkbox(name: Text, value: Text) extends Widget

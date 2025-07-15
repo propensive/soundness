@@ -41,7 +41,7 @@ import vacuous.*
 import html5.*
 
 object Combobox:
-  given renderable: Combobox is Renderable into Phrasing = combobox => Seq[Html[Phrasing]]
+  given renderable: Combobox is Renderable to Phrasing = combobox => Seq[Html[Phrasing]]
    (Input(name = combobox.name, list = DomId(combobox.name), value = combobox.value),
     Datalist(id = DomId(combobox.name)):
       combobox.options.map: option =>

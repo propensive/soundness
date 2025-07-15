@@ -59,7 +59,7 @@ object Xml:
     safely(xmlPrinters.compact.print(XmlDoc(XmlAst.Root(Xml.normalize(xml)*)))).or(t"undefined")
 
   given abstractable: (encoding: Encoding { type CanEncode = true }, printer: XmlPrinter[Text])
-        =>  Xml is Abstractable across HttpStreams into HttpStreams.Content =
+        =>  Xml is Abstractable across HttpStreams to HttpStreams.Content =
     new Abstractable:
       type Self = Xml
       type Domain = HttpStreams
