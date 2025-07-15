@@ -121,7 +121,7 @@ case class WebDriver(server: Browser#Server):
       . read[Text]
       . decode[Json]
 
-    def navigateTo[url: Abstractable across Urls into Text](url: url): Json logs HttpEvent =
+    def navigateTo[url: Abstractable across Urls to Text](url: url): Json logs HttpEvent =
       case class Data(url: Text)
       post(t"url", Data(url.generic).json)
 

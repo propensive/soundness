@@ -49,7 +49,7 @@ object Legerdemain:
           case '{ type keyType <: Label
                   ($key: keyType, $value: valueType) } :: tail =>
 
-            Expr.summon[keyType is Parametric into (? >: valueType)].getOrElse:
+            Expr.summon[keyType is Parametric to (? >: valueType)].getOrElse:
               Expr.summon[keyType is Parametric].absolve match
                 case Some('{ $parametric: (Parametric { type Result = resultType }) }) =>
                   halt(m"""the parameter ${key.valueOrAbort} takes values of ${Type.of[resultType]}

@@ -36,7 +36,7 @@ import prepositional.*
 
 object Normalizable:
   inline given derived: [source <: Measure, result <: Measure]
-               => source is Normalizable into result =
+               => source is Normalizable to result =
     ${Quantitative.normalizable[source, result]}
 
 trait Normalizable:

@@ -41,7 +41,7 @@ import vacuous.*
 import html5.*
 
 object Dropdown:
-  given renderable: Dropdown is Renderable into Phrasing = selection =>
+  given renderable: Dropdown is Renderable to Phrasing = selection =>
     List
      (Select(name = selection.name):
         selection.options.map: option =>

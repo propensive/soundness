@@ -43,97 +43,97 @@ import vacuous.*
 object Extractable:
   given decodable: [text <: Text, result]
         => (decodable: Tactic[Exception] ?=> result is Decodable in Text)
-        =>  text is Extractable into result =
+        =>  text is Extractable to result =
      value => safely(decodable(using strategies.throwUnsafely).decoded(value))
 
   given optional: [result: Extractable]
-        =>  Optional[result] is Extractable into result.Result =
+        =>  Optional[result] is Extractable to result.Result =
     value => value.let(result.extract(_))
 
-  given irrefutable: [result] => (irrefutable: Text is Irrefutable into result)
-        =>  String is Irrefutable into result =
+  given irrefutable: [result] => (irrefutable: Text is Irrefutable to result)
+        =>  String is Irrefutable to result =
     value => irrefutable.unapply(value.tt)
 
-  given textChar: [text <: Text] => text is Extractable into Char =
+  given textChar: [text <: Text] => text is Extractable to Char =
     text => if text.s.length == 1 then text.s.head else Unset
 
-  given textByte: [text <: Text] => text is Extractable into Byte =
+  given textByte: [text <: Text] => text is Extractable to Byte =
     text => try text.s.toByte catch case _: NumberFormatException => Unset
 
-  given textShort: [text <: Text] => text is Extractable into Short =
+  given textShort: [text <: Text] => text is Extractable to Short =
     text => try text.s.toShort catch case _: NumberFormatException => Unset
 
-  given textInt: [text <: Text] => text is Extractable into Int =
+  given textInt: [text <: Text] => text is Extractable to Int =
     text => try text.s.toInt catch case e: NumberFormatException => Unset
 
-  given textLong: [text <: Text] => text is Extractable into Long =
+  given textLong: [text <: Text] => text is Extractable to Long =
     text => try text.s.toLong catch case e: NumberFormatException => Unset
 
-  given textFloat: [text <: Text] => text is Extractable into Float = text =>
+  given textFloat: [text <: Text] => text is Extractable to Float = text =>
     try text.s.toFloat catch case e: NumberFormatException => Unset
 
-  given textDouble: [text <: Text] => text is Extractable into Double = text =>
+  given textDouble: [text <: Text] => text is Extractable to Double = text =>
     try text.s.toDouble catch case _: NumberFormatException => Unset
 
-  given textBoolean: [text <: Text] => text is Extractable into Boolean = v =>
+  given textBoolean: [text <: Text] => text is Extractable to Boolean = v =>
     if v.s == "true" then true else if v.s == "false" then false else Unset
 
-  given shortByte: [short <: Short] => short is Extractable into Byte =
+  given shortByte: [short <: Short] => short is Extractable to Byte =
     short => short.toByte.unless(value.toInt != short)
 
-  given intByte: [int <: Int] => int is Extractable into Byte =
+  given intByte: [int <: Int] => int is Extractable to Byte =
     int => int.toByte.unless(value.toInt != int)
 
-  given intShort: [int <: Int] => int is Extractable into Short =
+  given intShort: [int <: Int] => int is Extractable to Short =
     int => int.toShort.unless(value.toInt != int)
 
-  given intFloat: [int <: Int] => int is Extractable into Float =
+  given intFloat: [int <: Int] => int is Extractable to Float =
     int => int.toFloat.unless(value.toInt != int)
 
-  given longByte: [long <: Long] => long is Extractable into Byte =
+  given longByte: [long <: Long] => long is Extractable to Byte =
     long => long.toByte.unless(value.toLong != long)
 
-  given longShort: [long <: Long] => long is Extractable into Short =
+  given longShort: [long <: Long] => long is Extractable to Short =
     long => long.toShort.unless(value.toLong != long)
 
-  given longInt: [long <: Long] => long is Extractable into Int =
+  given longInt: [long <: Long] => long is Extractable to Int =
     long => long.toInt.unless(value.toLong != long)
 
-  given longFloat: [long <: Long] => long is Extractable into Float =
+  given longFloat: [long <: Long] => long is Extractable to Float =
     long => long.toFloat.unless(value.toLong != long)
 
-  given longDouble: [long <: Long] => long is Extractable into Double =
+  given longDouble: [long <: Long] => long is Extractable to Double =
     long => long.toDouble.unless(value.toLong != long)
 
-  given floatByte: [float <: Float] => float is Extractable into Byte =
+  given floatByte: [float <: Float] => float is Extractable to Byte =
     float => float.toByte.unless(value.toFloat != float)
 
-  given floatShort: [float <: Float] => float is Extractable into Short =
+  given floatShort: [float <: Float] => float is Extractable to Short =
     float => float.toShort.unless(value.toFloat != float)
 
-  given floatInt: [float <: Float] => float is Extractable into Int =
+  given floatInt: [float <: Float] => float is Extractable to Int =
     float => float.toInt.unless(value.toFloat != float)
 
-  given floatLong: [float <: Float] => float is Extractable into Long =
+  given floatLong: [float <: Float] => float is Extractable to Long =
     float => float.toLong.unless(value.toFloat != float)
 
-  given doubleByte: [double <: Double] => double is Extractable into Byte =
+  given doubleByte: [double <: Double] => double is Extractable to Byte =
     double => double.toByte.unless(value.toDouble != double)
 
-  given doubleShort: [double <: Double] => double is Extractable into Short =
+  given doubleShort: [double <: Double] => double is Extractable to Short =
     double => double.toShort.unless(value.toDouble != double)
 
-  given doubleInt: [double <: Double] => double is Extractable into Int =
+  given doubleInt: [double <: Double] => double is Extractable to Int =
     double => double.toInt.unless(value.toDouble != double)
 
-  given doubleLong: [double <: Double] => double is Extractable into Long =
+  given doubleLong: [double <: Double] => double is Extractable to Long =
     double => double.toLong.unless(value.toDouble != double)
 
-  given doubleFloat: [double <: Double] => double is Extractable into Float =
+  given doubleFloat: [double <: Double] => double is Extractable to Float =
     double => double.toFloat.unless(value.toDouble != double)
 
   given valueOf: [enumeration <: Enum: Mirror.SumOf as mirror, text <: Text]
-        =>  text is Extractable into enumeration =
+        =>  text is Extractable to enumeration =
     text =>
       import Selectable.reflectiveSelectable
 
@@ -142,7 +142,7 @@ object Extractable:
           try mirror.valueOf(text.s) catch case error: Exception => Unset
 
   given fromOrdinal: [enumeration <: Enum: Mirror.SumOf as mirror, int <: Int]
-        =>  int is Extractable into enumeration =
+        =>  int is Extractable to enumeration =
     ordinal =>
       import Selectable.reflectiveSelectable
       mirror match

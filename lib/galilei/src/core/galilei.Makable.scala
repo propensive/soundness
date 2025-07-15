@@ -56,7 +56,7 @@ object Makable:
   =>   (createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError])
-  =>    Directory is Makable on plane into (Path on plane) =
+  =>    Directory is Makable on plane to (Path on plane) =
     new Makable:
       type Self = Directory
       type Result = Path on Plane
@@ -72,7 +72,7 @@ object Makable:
   =>   (createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError])
-  =>    Socket is Makable into Socket =
+  =>    Socket is Makable to Socket =
     new Makable:
       type Plane = plane
       type Self = Socket
@@ -90,7 +90,7 @@ object Makable:
   =>   (createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError])
-  =>    File is Makable on plane into (Path on plane) =
+  =>    File is Makable on plane to (Path on plane) =
     new Makable:
       type Plane = plane
       type Self = File
@@ -107,7 +107,7 @@ object Makable:
         working:                  WorkingDirectory,
         tactic:                   Tactic[IoError],
         loggable:                 ExecEvent is Loggable)
-  =>    Fifo is Makable into (Path on plane) =
+  =>    Fifo is Makable to (Path on plane) =
     new Makable:
       type Self = Fifo
       type Result = Path on Plane

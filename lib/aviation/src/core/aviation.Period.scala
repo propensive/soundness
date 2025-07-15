@@ -33,10 +33,11 @@
 package aviation
 
 import hypotenuse.*
+import proscenium.*
 import symbolism.*
 import vacuous.*
 
-case class Period(start: into Instant, finish: into Instant):
+case class Period(start: into[Instant], finish: into[Instant]):
   def duration = finish - start
 
   def intersect(period: Period): Optional[Period] =

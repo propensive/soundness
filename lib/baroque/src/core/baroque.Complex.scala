@@ -39,7 +39,7 @@ import quantitative.*
 import spectacular.*
 import symbolism.*
 
-import scala.annotation.{into as _, *}
+import scala.annotation.*
 
 object Complex:
   inline given showableQuantity: [units <: Measure, quantity <: Quantity[units]: Showable]
@@ -86,7 +86,7 @@ object Complex:
                     divisor <: Complex[component2]]
         => (multiplication:  component is Multiplicable by component2,
             multiplication2: component2 is Multiplicable by component2,
-            negatable:       component is Negatable into component,
+            negatable:       component is Negatable to component,
             addition:        multiplication.Result is Addable by multiplication.Result,
             addition2:       multiplication2.Result is Addable by multiplication2.Result,
             divisible:       addition.Result is Divisible by addition2.Result)

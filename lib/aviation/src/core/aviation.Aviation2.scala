@@ -54,7 +54,7 @@ object Aviation2:
   object TaiInstant:
     erased given underlying: Underlying[TaiInstant, Long] = !!
 
-    given generic: Aviation2.TaiInstant is (Abstractable & Instantiable) across Instants into
+    given generic: Aviation2.TaiInstant is (Abstractable & Instantiable) across Instants to
                     Long from Long =
       new Abstractable with Instantiable:
         type Self = Aviation2.TaiInstant
@@ -65,13 +65,13 @@ object Aviation2:
         def genericize(instant: Aviation2.TaiInstant): Long = instant
 
   object InstantSubtractable:
-    given instant: Instant is InstantSubtractable into Duration = new InstantSubtractable:
+    given instant: Instant is InstantSubtractable to Duration = new InstantSubtractable:
       type Self = Instant
       type Result = Duration
       def subtract(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
 
-    given duration: [units <: Measure: Normalizable into Seconds[1]]
-          => Quantity[units] is InstantSubtractable into Instant = new InstantSubtractable:
+    given duration: [units <: Measure: Normalizable to Seconds[1]]
+          => Quantity[units] is InstantSubtractable to Instant = new InstantSubtractable:
       type Self = Quantity[units]
       type Result = Instant
 
@@ -85,13 +85,13 @@ object Aviation2:
     final val Min: Instant = Long.MinValue
     final val Max: Instant = Long.MaxValue
 
-    def apply[instant: Abstractable across Instants into Long](instant: instant): Instant =
+    def apply[instant: Abstractable across Instants to Long](instant: instant): Instant =
       of(instant.generic)
 
     erased given underlying: Underlying[Instant, Long] = !!
     def of(millis: Long): Instant = millis
 
-    given generic: Aviation2.Instant is (Abstractable & Instantiable) across Instants into Long from
+    given generic: Aviation2.Instant is (Abstractable & Instantiable) across Instants to Long from
                     Long =
       new Abstractable with Instantiable:
         type Self = Aviation2.Instant
@@ -113,8 +113,8 @@ object Aviation2:
 
     given ordering: Ordering[Instant] = Ordering.Long
 
-    given plus: [units <: Measure: Normalizable into Seconds[1]]
-          => Instant is Addable by Quantity[units] into Instant = new Addable:
+    given plus: [units <: Measure: Normalizable to Seconds[1]]
+          => Instant is Addable by Quantity[units] to Instant = new Addable:
       type Self = Instant
       type Operand = Quantity[units]
       type Result = Instant
@@ -123,7 +123,7 @@ object Aviation2:
         instant + (duration.normalize.value*1000.0).toLong
 
     given minus: [operand: InstantSubtractable]
-          =>  Instant is Subtractable by operand into operand.Result =
+          =>  Instant is Subtractable by operand to operand.Result =
       operand.subtract(_, _)
 
   type Duration = Quantity[Seconds[1]]
@@ -131,7 +131,7 @@ object Aviation2:
   object Duration:
     def of(millis: Long): Duration = Quantity(millis/1000.0)
 
-    given generic: [units <: Measure: Normalizable into Seconds[1]]
+    given generic: [units <: Measure: Normalizable to Seconds[1]]
           =>  Quantity[units] is (GenericDuration & SpecificDuration) =
       new GenericDuration with SpecificDuration:
         type Self = Quantity[units]
@@ -141,9 +141,9 @@ object Aviation2:
 
         def milliseconds(duration: Quantity[units]): Long = (duration.normalize.value*1000).toLong
 
-  extension (instant: into Instant)
+  extension (instant: into[Instant])
     @targetName("to")
-    infix def ~ (that: into Instant): Period = Period(instant, that)
+    infix def ~ (that: into[Instant]): Period = Period(instant, that)
 
     def tai: TaiInstant = LeapSeconds.tai(instant)
 
@@ -164,5 +164,5 @@ object Aviation2:
 
     def long: Long = instant
 
-  extension (duration: into Duration)
-    def from(instant: into Instant): Period = Period(instant, Instant.plus.add(instant, duration))
+  extension (duration: into[Duration])
+    def from(instant: into[Instant]): Period = Period(instant, Instant.plus.add(instant, duration))

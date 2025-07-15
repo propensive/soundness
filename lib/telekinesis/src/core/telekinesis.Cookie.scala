@@ -77,7 +77,7 @@ object Cookie:
     given encodable: Cookie.Value is Encodable in Http.Header = cookie =>
       Http.Header("Set-Cookie", cookie.show)
 
-    given addable: Http.Response is Addable by Cookie.Value into Http.Response =
+    given addable: Http.Response is Addable by Cookie.Value to Http.Response =
       (response, cookie) =>
         val header = Http.Header(t"set-cookie", cookie.show)
         Http.Response.make(response.status, header :: response.textHeaders, response.body)

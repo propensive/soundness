@@ -97,7 +97,7 @@ object Path:
     path => Message(path.encode)
 
   given generic: [system: System, path <: Path on system]
-        => path is Abstractable across Paths into Text =
+        => path is Abstractable across Paths to Text =
     _.encode
 
   private def conversion[from, to](lambda: from => to): Conversion[from, to] = lambda(_)

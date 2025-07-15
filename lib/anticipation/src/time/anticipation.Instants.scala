@@ -35,7 +35,7 @@ package anticipation
 import prepositional.*
 
 object Instants:
-  given abstractable: Long is Abstractable across Instants into Long = identity(_)
+  given abstractable: Long is Abstractable across Instants to Long = identity(_)
   given instantiable: Long is Instantiable across Instants from Long = identity(_)
 
 erased trait Instants

@@ -47,7 +47,7 @@ extension [units <: Measure](quantity: Quantity[units])
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
 
 
-  inline def normalize[units2 <: Measure](using normalizable: units is Normalizable into units2)
+  inline def normalize[units2 <: Measure](using normalizable: units is Normalizable to units2)
   : Quantity[units2] =
 
       normalizable.normalize(quantity)

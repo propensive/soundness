@@ -42,7 +42,7 @@ import language.dynamics
 
 object CssStylesheet:
   given abstractable: (charEncoder: CharEncoder)
-        =>  CssStylesheet is Abstractable across HttpStreams into HttpStreams.Content =
+        =>  CssStylesheet is Abstractable across HttpStreams to HttpStreams.Content =
     new Abstractable:
       type Self = CssStylesheet
       type Domain = HttpStreams

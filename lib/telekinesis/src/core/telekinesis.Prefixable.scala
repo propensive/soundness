@@ -71,7 +71,7 @@ object Prefixable:
   given ifUnmodifiedSince: ("ifUnmodifiedSince" is Prefixable of Text) = identity(_)
   given maxForwards: ("maxForwards" is Prefixable of Int) = _.toString.tt
 
-  given origin: [url: Abstractable across Urls into Text]
+  given origin: [url: Abstractable across Urls to Text]
         => ("origin" is Prefixable of url) = _.generic
 
   given pragma: ("pragma" is Prefixable of Text) = identity(_)

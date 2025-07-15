@@ -48,13 +48,13 @@ object PropertyDef:
   erased given animation: ("animation" is PropertyDef[Text]) = !!
 
   erased given animationDelay: [duration <: Measure]
-               => (erased duration is Normalizable into Seconds[1])
+               => (erased duration is Normalizable to Seconds[1])
                => ("animationDelay" is PropertyDef[Quantity[duration]]) = !!
 
   erased given animationDirection: ("animationDirection" is PropertyDef[Text]) = !!
 
   given animationDuration: [duration <: Measure]
-        => (erased duration is Normalizable into Seconds[1])
+        => (erased duration is Normalizable to Seconds[1])
         => ("animationDuration" is PropertyDef[Quantity[duration]]) = !!
 
   erased given animationFillMode: ("animationFillMode" is PropertyDef[AnimationFillMode]) = !!
@@ -77,7 +77,7 @@ object PropertyDef:
   //given backgroundImage2: ("backgroundImage" is PropertyDef[Relative]) = !!
 
   erased given backgroundImage3: [path]
-        => (erased path is Abstractable across Paths into Text)
+        => (erased path is Abstractable across Paths to Text)
         => ("backgroundImage" is PropertyDef[path]) = !!
 
   //erased given backgroundImage4: ("backgroundImage" is PropertyDef[SimplePath]) = !!
