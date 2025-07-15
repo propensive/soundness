@@ -127,7 +127,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       . assert(_.nonEmpty)
 
       test(m"Autoconvert known `Path` to `Path on Linux`"):
-        def receive(path: into Path on Linux): Unit = ()
+        def receive(path: into[Path on Linux]): Unit = ()
         receive(% / "foo" / "bar")
 
       .assert()

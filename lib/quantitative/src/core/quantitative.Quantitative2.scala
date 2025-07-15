@@ -221,7 +221,7 @@ trait Quantitative2:
     override def toString(): String = name
 
   def normalizable[source <: Measure: Type, result <: Measure: Type]
-  : Macro[source is Normalizable into result] =
+  : Macro[source is Normalizable to result] =
 
       import quotes.reflect.*
 

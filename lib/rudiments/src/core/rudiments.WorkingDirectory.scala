@@ -35,7 +35,7 @@ package rudiments
 import anticipation.*
 import prepositional.*
 
-  def apply[path: Abstractable across Paths into Text](path: path): WorkingDirectory =
+  def apply[path: Abstractable across Paths to Text](path: path): WorkingDirectory =
     () => path.generic
 
 trait WorkingDirectory:

@@ -58,6 +58,8 @@ export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheck
 export scala.LazyList as Stream
 export scala.DummyImplicit as Void
 
+export Conversion.into
+
 type Nat = Int & Singleton
 type Label = String & Singleton
 

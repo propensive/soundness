@@ -93,7 +93,7 @@ object escapes:
 
   def title(name: Text) = Escape(t"]0;$name\e\\")
 
-  def link[url: Abstractable across Urls into Text](url: url, text: Text): Text =
+  def link[url: Abstractable across Urls to Text](url: url, text: Text): Text =
     t"\e]8;;${url.generic}\e\\$text\e]8;;\e\\"
 
 trait TerminalEscapes:

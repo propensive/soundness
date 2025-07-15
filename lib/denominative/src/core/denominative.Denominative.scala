@@ -72,9 +72,9 @@ object Denominative:
     inline def zerary(inline cardinal: Int): Ordinal = cardinal
     inline def natural(inline cardinal: Int): Ordinal = cardinal - 1
 
-    given addable: Ordinal is Addable by Int into Ordinal = _ + _
-    given subtractable: Ordinal is Subtractable by Ordinal into Int = _ - _
-    given subtractable2: Ordinal is Subtractable by Int into Ordinal = _ - _
+    given addable: Ordinal is Addable by Int to Ordinal = _ + _
+    given subtractable: Ordinal is Subtractable by Ordinal to Int = _ - _
+    given subtractable2: Ordinal is Subtractable by Int to Ordinal = _ - _
 
     given textualizer: Ordinal is Textualizer =
       case Prim    => "prim".tt

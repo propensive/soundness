@@ -63,3 +63,5 @@ export proscenium.{Nat, Label, `~>`, Zero, Mono}
 transparent inline def infer[context]: context = compiletime.summonInline[context]
 
 export proscenium.provide
+
+export Conversion.into

@@ -67,7 +67,7 @@ object HtmlAttribute:
   given accesskey: ("accesskey" is HtmlAttribute[Char]) = _.show
   given action: ("action" is HtmlAttribute[Text]) = identity(_)
 
-  given action2: [url: Abstractable across Urls into Text] => ("action" is HtmlAttribute[url]) =
+  given action2: [url: Abstractable across Urls to Text] => ("action" is HtmlAttribute[url]) =
     _.generic
 
   given allowfullscreen: ("allowfullscreen" is HtmlAttribute[Boolean]) = _ => Unset
@@ -83,7 +83,7 @@ object HtmlAttribute:
   given checkedBoolean: ("checked" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given cite: ("cite" is HtmlAttribute[Text]) = identity(_)
 
-  given cite2: [url: Abstractable across Urls into Text] => ("cite" is HtmlAttribute[url]) =
+  given cite2: [url: Abstractable across Urls to Text] => ("cite" is HtmlAttribute[url]) =
     _.generic
 
   given `class`: ("class" is HtmlAttribute[List[CssClass]]):
@@ -97,7 +97,7 @@ object HtmlAttribute:
   given code: ("code" is HtmlAttribute[Text]) = identity(_) // MediaError
   given codebase: ("codebase" is HtmlAttribute[Text]) = identity(_)
 
-  given codebase2: [url: Abstractable across Urls into Text] => ("codebase" is HtmlAttribute[url]) =
+  given codebase2: [url: Abstractable across Urls to Text] => ("codebase" is HtmlAttribute[url]) =
     _.generic
 
   given cols: ("cols" is HtmlAttribute[Int]) = _.show
@@ -112,7 +112,7 @@ object HtmlAttribute:
   given crossorigin: ("crossorigin" is HtmlAttribute[Crossorigin]) = _.show
   given data: ("data" is HtmlAttribute[Text]) = identity(_)
 
-  given data2: [url: Abstractable across Urls into Text] => ("data" is HtmlAttribute[url]) =
+  given data2: [url: Abstractable across Urls to Text] => ("data" is HtmlAttribute[url]) =
     _.generic
 
   given datetime: ("datetime" is HtmlAttribute[Text]) = identity(_) // To be provided by Aviation
@@ -148,7 +148,7 @@ object HtmlAttribute:
   given form: ("form" is HtmlAttribute[DomId]) = _.name
   given formaction: ("formaction" is HtmlAttribute[Text]) = identity(_) // Provided by Scintillate
 
-  given formaction2: [url: Abstractable across Urls into Text]
+  given formaction2: [url: Abstractable across Urls to Text]
         => ("formaction" is HtmlAttribute[url]) =
     _.generic
 
@@ -163,7 +163,7 @@ object HtmlAttribute:
   given high: ("high" is HtmlAttribute[Double]) = _.toString.show
   given href: ("href" is HtmlAttribute[Text]) = identity(_)
 
-  given href2: [url: Abstractable across Urls into Text] => ("href" is HtmlAttribute[url]) =
+  given href2: [url: Abstractable across Urls to Text] => ("href" is HtmlAttribute[url]) =
     _.generic
 
   inline given href3: [topic, path <: Path of topic under %.type] => Rfc3986 is System
@@ -194,7 +194,7 @@ object HtmlAttribute:
   given low: ("low" is HtmlAttribute[Double]) = _.toString.tt
   given manifest: ("manifest" is HtmlAttribute[Text]) = identity(_) // Provided by Scintillate
 
-  given manifest2: [url: Abstractable across Urls into Text]
+  given manifest2: [url: Abstractable across Urls to Text]
         => ("manifest" is HtmlAttribute[url]) =
     _.generic
 
@@ -221,7 +221,7 @@ object HtmlAttribute:
   given playsinline: ("playsinline" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given poster: ("poster" is HtmlAttribute[Text]) = identity(_)
 
-  given poster2: [url: Abstractable across Urls into Text] => ("poster" is HtmlAttribute[url]) =
+  given poster2: [url: Abstractable across Urls to Text] => ("poster" is HtmlAttribute[url]) =
     _.generic
 
   given preload: ("preload" is HtmlAttribute[Preload]) = _.show
@@ -244,10 +244,10 @@ object HtmlAttribute:
   given spellcheck: ("spellcheck" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given src: ("src" is HtmlAttribute[Text]) = identity(_)
 
-  given src2: [path: Abstractable across Paths into Text] => ("src" is HtmlAttribute[path]) =
+  given src2: [path: Abstractable across Paths to Text] => ("src" is HtmlAttribute[path]) =
     _.generic
 
-  given src3: [url: Abstractable across Urls into Text] => ("src" is HtmlAttribute[url]) = _.generic
+  given src3: [url: Abstractable across Urls to Text] => ("src" is HtmlAttribute[url]) = _.generic
 
   inline given src4: [topic, path <: Path of topic under %.type] => Rfc3986 is System
          => ("src" is HtmlAttribute[path]) =

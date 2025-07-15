@@ -240,7 +240,7 @@ object Json extends Json2, Dynamic:
     try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
 
   given abstractable: (encoder: CharEncoder, printer: JsonPrinter)
-        =>  Json is Abstractable across HttpStreams into HttpStreams.Content =
+        =>  Json is Abstractable across HttpStreams to HttpStreams.Content =
     new Abstractable:
       type Self = Json
       type Domain = HttpStreams

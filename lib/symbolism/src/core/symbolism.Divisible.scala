@@ -38,7 +38,7 @@ import scala.annotation.targetName
 
 object Divisible:
   def apply[dividend, divisor, result](lambda: (dividend, divisor) => result)
-  : dividend is Divisible by divisor into result =
+  : dividend is Divisible by divisor to result =
 
       new Divisible:
         type Self = dividend
@@ -48,28 +48,28 @@ object Divisible:
         def divide(dividend: dividend, divisor: divisor): result = lambda(dividend, divisor)
 
 
-  given double: Double is Divisible by Double into Double = Divisible:
+  given double: Double is Divisible by Double to Double = Divisible:
     (dividend, divisor) => dividend/divisor
 
-  given double2: Double is Divisible by Int into Double = Divisible:
+  given double2: Double is Divisible by Int to Double = Divisible:
     (dividend, divisor) => dividend/divisor
 
-  given float: Float is Divisible by Float into Float = Divisible:
+  given float: Float is Divisible by Float to Float = Divisible:
     (dividend, divisor) => dividend/divisor
 
-  given float2: Float is Divisible by Int into Float = Divisible:
+  given float2: Float is Divisible by Int to Float = Divisible:
     (dividend, divisor) => dividend/divisor
 
-  given long: Long is Divisible by Long into Long = Divisible:
+  given long: Long is Divisible by Long to Long = Divisible:
     (dividend, divisor) => dividend/divisor
 
-  given int: Int is Divisible by Int into Int = Divisible:
+  given int: Int is Divisible by Int to Int = Divisible:
     (dividend, divisor) => dividend/divisor
 
-  given short: Short is Divisible by Short into Short = Divisible:
+  given short: Short is Divisible by Short to Short = Divisible:
     (dividend, divisor) => (dividend/divisor).toShort
 
-  given byte: Byte is Divisible by Byte into Byte = Divisible:
+  given byte: Byte is Divisible by Byte to Byte = Divisible:
     (dividend, divisor) => (dividend/divisor).toByte
 
 trait Divisible extends Typeclass, Operable, Resultant:

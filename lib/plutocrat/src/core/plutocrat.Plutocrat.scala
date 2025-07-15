@@ -68,15 +68,15 @@ object Plutocrat:
         currencyStyle.format(currency, units, subunit)
 
     given addable: [currency <: Currency & Singleton]
-          =>  Money[currency] is Addable by Money[currency] into Money[currency] =
+          =>  Money[currency] is Addable by Money[currency] to Money[currency] =
       _ + _
 
     given subtractable: [currency <: Currency & Singleton]
-          =>  Money[currency] is Subtractable by Money[currency] into Money[currency] =
+          =>  Money[currency] is Subtractable by Money[currency] to Money[currency] =
       _ - _
 
     given multiplicable: [currency <: Currency & Singleton]
-          =>  Money[currency] is Multiplicable by Double into Money[currency] =
+          =>  Money[currency] is Multiplicable by Double to Money[currency] =
       (left, right) =>
         val value = left*right
         (value + value.signum/2).toLong

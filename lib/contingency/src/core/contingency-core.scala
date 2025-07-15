@@ -51,7 +51,7 @@ package strategies:
   given throwSafely: [error <: Exception: CanThrow, success] => ThrowTactic[error, success] =
     ThrowTactic()
 
-  given mitigation: [error <: Exception: Tactic, error2 <: Exception: Mitigable into error]
+  given mitigation: [error <: Exception: Tactic, error2 <: Exception: Mitigable to error]
         =>  Tactic[error2] =
     error.contramap(error2.mitigate(_))
 
@@ -73,7 +73,7 @@ given realm: Realm = realm"contingency"
 def certify[error <: Exception: Tactic](): Unit = error.certify()
 
 
-def raise[success, exception <: Exception: Recoverable into success]
+def raise[success, exception <: Exception: Recoverable to success]
    (error: Diagnostics ?=> exception)
    (using tactic: Tactic[exception])
 : success =
@@ -154,7 +154,7 @@ def abortive[error <: Error](using Quotes, Realm)[success]
 infix type raises [success, error <: Exception] = Tactic[error] ?=> success
 
 infix type mitigates [error <: Exception, error2 <: Exception] =
-  error2 is Mitigable into error
+  error2 is Mitigable to error
 
 infix type tracks [result, focus] = Foci[focus] ?=> result
 

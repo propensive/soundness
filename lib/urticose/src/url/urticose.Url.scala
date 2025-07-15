@@ -68,7 +68,7 @@ extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}${path
 
 object Url:
 
-  given abstractable: HttpUrl is Abstractable across Urls into Text = _.show
+  given abstractable: HttpUrl is Abstractable across Urls to Text = _.show
 
   given showable: [scheme <: Label] => Url[scheme] is Showable = url =>
     val auth = url.authority.lay(t"")(t"//"+_.show)

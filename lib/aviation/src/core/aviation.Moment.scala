@@ -38,7 +38,7 @@ import prepositional.*
 import java.time as jt
 
 object Moment:
-  given generic: RomanCalendar => Moment is Abstractable across Instants into Long =
+  given generic: RomanCalendar => Moment is Abstractable across Instants to Long =
     _.instant.generic
 
 case class Moment(date: Date, time: Clockface, timezone: Timezone):

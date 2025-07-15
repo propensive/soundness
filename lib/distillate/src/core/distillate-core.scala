@@ -39,5 +39,5 @@ extension [format](value: format)
     decodable.decoded(value)
 
 extension (value: Any)
-  def as[result](irrefutable: value.type is Irrefutable into result): result =
+  def as[result](irrefutable: value.type is Irrefutable to result): result =
     irrefutable.unapply(value)

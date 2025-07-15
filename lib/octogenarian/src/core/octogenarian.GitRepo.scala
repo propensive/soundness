@@ -57,7 +57,7 @@ import vacuous.*
 import GitError.Reason.*
 
 object GitRepo:
-  def apply[abstractable: Abstractable across Paths into Text](path: abstractable)
+  def apply[abstractable: Abstractable across Paths to Text](path: abstractable)
   : GitRepo raises PathError raises NameError raises GitError raises IoError =
 
       unsafely(path.generic.decode[Path on Linux]).pipe: path =>
@@ -173,7 +173,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
         case failure       => abort(GitError(BranchFailed))
 
 
-  def add[path: Abstractable across Paths into Text](path: path)(using GitCommand, WorkingDirectory)
+  def add[path: Abstractable across Paths to Text](path: path)(using GitCommand, WorkingDirectory)
   : Unit logs GitEvent raises PathError raises NameError raises ExecError raises GitError =
 
       val relativePath =

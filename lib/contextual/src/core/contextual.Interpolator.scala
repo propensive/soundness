@@ -96,7 +96,7 @@ trait Interpolator[input, state, result]:
               val typeName: String = TypeRepr.of[head].widen.show
 
               halt
-               (m"can't substitute ${Text(typeName)} into this interpolated string",
+               (m"can't substitute ${Text(typeName)} to this interpolated string",
                 head.asTerm.pos)
 
             val (newState, typeclass) = Expr.summon[Insertion[input, head]].fold(notFound):

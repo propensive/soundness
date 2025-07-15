@@ -63,7 +63,7 @@ case class Scalac[version <: Scalac.All](options: List[ScalacOption[version]]):
 
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
-  def apply(classpath: LocalClasspath)[path: Abstractable across Paths into Text]
+  def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
        (sources: Map[Text, Text], out: path)
        (using SystemProperties, Monitor, Codicil)
   : CompileProcess logs CompileEvent raises CompilerError =

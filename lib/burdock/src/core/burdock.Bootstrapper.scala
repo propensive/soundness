@@ -89,7 +89,7 @@ object Bootstrapper:
 
   given burdockVerbosity: ("Burdock-Verbosity" is EncodableManifest of Text) = identity(_)
 
-  case class Requirement(url: into HttpUrl, digest: Text):
+  case class Requirement(url: into[HttpUrl], digest: Text):
     def text = t"$digest:$url"
 
   case class Entry(name: Text, data: Bytes)

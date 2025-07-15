@@ -583,20 +583,20 @@ object Hypotenuse:
     inline def binary: Text = JLong.toBinaryString(s64).nn.tt
 
     @targetName("floorModS64")
-    inline infix def %% (right: into S64): S64 = math.floorMod(s64, right)
+    inline infix def %% (right: Conversion.into[S64]): S64 = math.floorMod(s64, right)
 
     @targetName("floorDivS64")
-    inline infix def /- (right: into S64): S64 = math.floorDiv(s64, right)
+    inline infix def /- (right: Conversion.into[S64]): S64 = math.floorDiv(s64, right)
 
     @targetName("powerS64")
     inline infix def ** (exponent: Double): Double = math.pow(s64.toDouble, exponent)
 
     @targetName("divS64")
-    inline infix def / (right: into S64)(using division: DivisionByZero): division.Wrap[S64] =
+    inline infix def / (right: Conversion.into[S64])(using division: DivisionByZero): division.Wrap[S64] =
       division.divideS64(s64, right)
 
     @targetName("modS64")
-    inline infix def % (right: into S64): S64 = s64%right
+    inline infix def % (right: Conversion.into[S64]): S64 = s64%right
 
     @targetName("bitsS64")
     inline def bits: B64 = s64
@@ -611,7 +611,7 @@ object Hypotenuse:
 
   extension (s32: S32)
     @targetName("plusS32")
-    inline infix def + (right: into S32)(using overflow: CheckOverflow): overflow.Wrap[S32] =
+    inline infix def + (right: Conversion.into[S32])(using overflow: CheckOverflow): overflow.Wrap[S32] =
       overflow.addS32(s32, right)
 
     @targetName("intS32")
@@ -639,17 +639,17 @@ object Hypotenuse:
     inline def binary: Text = JInt.toBinaryString(s32).nn.tt
 
     @targetName("floorModS32")
-    inline infix def %% (right: into S32): S32 = math.floorMod(s32, right)
+    inline infix def %% (right: Conversion.into[S32]): S32 = math.floorMod(s32, right)
 
     @targetName("floorDivS32")
-    inline infix def /- (right: into S32): S32 = math.floorDiv(s32, right)
+    inline infix def /- (right: Conversion.into[S32]): S32 = math.floorDiv(s32, right)
 
     @targetName("divS32")
-    inline infix def / (right: into S32)(using division: DivisionByZero): division.Wrap[S32] =
+    inline infix def / (right: Conversion.into[S32])(using division: DivisionByZero): division.Wrap[S32] =
       division.divideS32(s32, right)
 
     @targetName("modS32")
-    inline infix def % (right: into S32): S32 = s32%right
+    inline infix def % (right: Conversion.into[S32]): S32 = s32%right
 
     @targetName("bitsS32")
     inline def bits: B32 = s32
@@ -664,7 +664,7 @@ object Hypotenuse:
 
   extension (s16: S16)
     @targetName("plusS16")
-    inline infix def + (right: into S16)(using overflow: CheckOverflow): overflow.Wrap[S16] =
+    inline infix def + (right: Conversion.into[S16])(using overflow: CheckOverflow): overflow.Wrap[S16] =
       overflow.addS16(s16, right)
 
     @targetName("shortS16")
@@ -695,17 +695,17 @@ object Hypotenuse:
     inline def binary: Text = JInt.toBinaryString(s16).nn.tt
 
     @targetName("floorModS16")
-    inline infix def %% (right: into S16): S16 = math.floorMod(s16, right).toShort
+    inline infix def %% (right: Conversion.into[S16]): S16 = math.floorMod(s16, right).toShort
 
     @targetName("floorDivS16")
-    inline infix def /- (right: into S16): S16 = math.floorDiv(s16, right).toShort
+    inline infix def /- (right: Conversion.into[S16]): S16 = math.floorDiv(s16, right).toShort
 
     @targetName("divS16")
-    inline infix def / (right: into S16)(using division: DivisionByZero): division.Wrap[S16] =
+    inline infix def / (right: Conversion.into[S16])(using division: DivisionByZero): division.Wrap[S16] =
       division.divideS16(s16, right)
 
     @targetName("modS16")
-    inline infix def % (right: into S16): S16 = (s16%right).toShort
+    inline infix def % (right: Conversion.into[S16]): S16 = (s16%right).toShort
 
     @targetName("bitsS16")
     inline def bits: B16 = s16
@@ -720,7 +720,7 @@ object Hypotenuse:
 
   extension (s8: S8)
     @targetName("plusS8")
-    inline infix def + (right: into S8)(using overflow: CheckOverflow): overflow.Wrap[S8] =
+    inline infix def + (right: Conversion.into[S8])(using overflow: CheckOverflow): overflow.Wrap[S8] =
       overflow.addS8(s8, right)
 
     @targetName("byteS8")
@@ -754,17 +754,17 @@ object Hypotenuse:
     inline def binary: Text = JInt.toBinaryString(s8).nn.tt
 
     @targetName("floorModS8")
-    inline infix def %% (right: into S8): S8 = math.floorMod(s8, right).toByte
+    inline infix def %% (right: Conversion.into[S8]): S8 = math.floorMod(s8, right).toByte
 
     @targetName("floorDivS8")
-    inline infix def /- (right: into S8): S8 = math.floorDiv(s8, right).toByte
+    inline infix def /- (right: Conversion.into[S8]): S8 = math.floorDiv(s8, right).toByte
 
     @targetName("divS8")
-    inline infix def / (right: into S8)(using division: DivisionByZero): division.Wrap[S8] =
+    inline infix def / (right: Conversion.into[S8])(using division: DivisionByZero): division.Wrap[S8] =
       division.divideS8(s8, right)
 
     @targetName("modS8")
-    inline infix def % (right: into S8): S8 = (s8%right).toByte
+    inline infix def % (right: Conversion.into[S8]): S8 = (s8%right).toByte
 
     @targetName("bitsS8")
     inline def bits: B8 = s8
@@ -819,13 +819,13 @@ object Hypotenuse:
     inline infix def >> (inline count: Int): B8 = (bitmap >>> count).toByte
 
     @targetName("andB8")
-    inline infix def & (inline right: into B8): B8 = (bitmap & right).toByte
+    inline infix def & (inline right: Conversion.into[B8]): B8 = (bitmap & right).toByte
 
     @targetName("orB8")
-    transparent inline infix def | (right: into B8): B8 = (bitmap | right).toByte
+    transparent inline infix def | (right: Conversion.into[B8]): B8 = (bitmap | right).toByte
 
     @targetName("xorB8")
-    transparent inline infix def ^ (right: into B8): B8 = (bitmap ^ right).toByte
+    transparent inline infix def ^ (right: Conversion.into[B8]): B8 = (bitmap ^ right).toByte
 
     @targetName("invertB8")
     transparent inline def `unary_~`: B8 = (~bitmap).toByte
@@ -910,13 +910,13 @@ object Hypotenuse:
     inline infix def >> (count: Int): B16 = (bitmap >>> count).toShort
 
     @targetName("andB16")
-    inline infix def & (right: into B16): B16 = (bitmap & right).toShort
+    inline infix def & (right: Conversion.into[B16]): B16 = (bitmap & right).toShort
 
     @targetName("orB16")
-    transparent inline infix def | (right: into B16): B16 = (bitmap | right).toShort
+    transparent inline infix def | (right: Conversion.into[B16]): B16 = (bitmap | right).toShort
 
     @targetName("xorB16")
-    transparent inline infix def ^ (right: into B16): B16 = (bitmap ^ right).toShort
+    transparent inline infix def ^ (right: Conversion.into[B16]): B16 = (bitmap ^ right).toShort
 
     @targetName("invertB16")
     transparent inline def `unary_~`: B16 = (~bitmap).toShort
@@ -1006,13 +1006,13 @@ object Hypotenuse:
     inline infix def >> (count: Int): B32 = bitmap >>> count
 
     @targetName("andB32")
-    inline infix def & (right: into B32): B32 = bitmap & right
+    inline infix def & (right: Conversion.into[B32]): B32 = bitmap & right
 
     @targetName("orB32")
-    transparent inline infix def | (right: into B32): B32 = bitmap | right
+    transparent inline infix def | (right: Conversion.into[B32]): B32 = bitmap | right
 
     @targetName("xorB32")
-    transparent inline infix def ^ (right: into B32): B32 = bitmap ^ right
+    transparent inline infix def ^ (right: Conversion.into[B32]): B32 = bitmap ^ right
 
     @targetName("invertB32")
     transparent inline def `unary_~`: B32 = ~bitmap
@@ -1104,13 +1104,13 @@ object Hypotenuse:
     inline infix def >> (count: Int): B64 = bitmap >>> count
 
     @targetName("andB64")
-    inline infix def & (right: into B64): B64 = bitmap & right
+    inline infix def & (right: Conversion.into[B64]): B64 = bitmap & right
 
     @targetName("orB64")
-    transparent inline infix def | (right: into B64): B64 = bitmap | right
+    transparent inline infix def | (right: Conversion.into[B64]): B64 = bitmap | right
 
     @targetName("xorB64")
-    transparent inline infix def ^ (right: into B64): B64 = bitmap ^ right
+    transparent inline infix def ^ (right: Conversion.into[B64]): B64 = bitmap ^ right
 
     @targetName("invertB64")
     transparent inline def `unary_~`: B64 = ~bitmap
@@ -1172,19 +1172,19 @@ object Hypotenuse:
     inline def double: Double = f64
 
     @targetName("powerF64")
-    inline infix def ** (exponent: into F64): F64 = math.pow(f64, exponent)
+    inline infix def ** (exponent: Conversion.into[F64]): F64 = math.pow(f64, exponent)
 
     @targetName("plusF64")
-    inline infix def + (right: into F64): F64 = f64 + right
+    inline infix def + (right: Conversion.into[F64]): F64 = f64 + right
 
     @targetName("minusF64")
-    inline infix def - (right: into F64): F64 = f64 - right
+    inline infix def - (right: Conversion.into[F64]): F64 = f64 - right
 
     @targetName("timesF64")
-    inline infix def * (right: into F64): F64 = f64*right
+    inline infix def * (right: Conversion.into[F64]): F64 = f64*right
 
     @targetName("divF64")
-    inline infix def / (right: into F64): F64 = f64/right
+    inline infix def / (right: Conversion.into[F64]): F64 = f64/right
 
     @targetName("unaryMinusF64")
     inline def `unary_-`: F64 = -f64
@@ -1257,19 +1257,19 @@ object Hypotenuse:
     inline def double: Double = f32.toDouble
 
     @targetName("powerF32")
-    inline infix def ** (exponent: into F32): F32 = math.pow(f32, exponent).toFloat
+    inline infix def ** (exponent: Conversion.into[F32]): F32 = math.pow(f32, exponent).toFloat
 
     @targetName("plusF32")
-    inline infix def + (right: into F32): F32 = f32 + right
+    inline infix def + (right: Conversion.into[F32]): F32 = f32 + right
 
     @targetName("plusF32")
-    inline infix def - (right: into F32): F32 = f32 - right
+    inline infix def - (right: Conversion.into[F32]): F32 = f32 - right
 
     @targetName("timesF32")
-    inline infix def * (right: into F32): F32 = f32*right
+    inline infix def * (right: Conversion.into[F32]): F32 = f32*right
 
     @targetName("divF32")
-    inline infix def / (right: into F32): F32 = f32/right
+    inline infix def / (right: Conversion.into[F32]): F32 = f32/right
 
     @targetName("unaryMinusF32")
     inline def `unary_-`: F32 = -f32
@@ -1336,13 +1336,13 @@ object Hypotenuse:
     inline def bits: B64 = u64
 
     @targetName("plusU64")
-    inline infix def + (right: into U64): U64 = u64 + right
+    inline infix def + (right: Conversion.into[U64]): U64 = u64 + right
 
     @targetName("minusU64")
-    inline infix def - (right: into U64): U64 = u64 - right
+    inline infix def - (right: Conversion.into[U64]): U64 = u64 - right
 
     @targetName("timesU64")
-    inline infix def * (right: into U64): U64 = u64*right
+    inline infix def * (right: Conversion.into[U64]): U64 = u64*right
 
     @targetName("textU64")
     inline def text: Text = JLong.toUnsignedString(u64).nn.tt
@@ -1360,11 +1360,11 @@ object Hypotenuse:
     inline def binary: Text = JLong.toUnsignedString(u64, 2).nn.tt
 
     @targetName("divU64")
-    inline infix def / (right: into U64)(using division: DivisionByZero): division.Wrap[U64] =
+    inline infix def / (right: Conversion.into[U64])(using division: DivisionByZero): division.Wrap[U64] =
       division.divideU64(u64, right)
 
     @targetName("modU64")
-    inline infix def % (right: into U64): U64 = JLong.remainderUnsigned(u64, right)
+    inline infix def % (right: Conversion.into[U64]): U64 = JLong.remainderUnsigned(u64, right)
 
     @targetName("gcdU64")
     def gcd(right: U64): U64 =
@@ -1374,17 +1374,17 @@ object Hypotenuse:
 
   extension (u32: U32)
     @targetName("plusU32")
-    inline infix def + (right: into U32)(using overflow: CheckOverflow): overflow.Wrap[U32] =
+    inline infix def + (right: Conversion.into[U32])(using overflow: CheckOverflow): overflow.Wrap[U32] =
       overflow.addU32(u32, right)
 
     @targetName("bitsU32")
     inline def bits: B32 = u32
 
     @targetName("minuseU32")
-    inline infix def - (right: into U32): U32 = u32 - right
+    inline infix def - (right: Conversion.into[U32]): U32 = u32 - right
 
     @targetName("timesU32")
-    inline infix def * (right: into U32): U32 = u32*right
+    inline infix def * (right: Conversion.into[U32]): U32 = u32*right
 
     @targetName("textU32")
     inline def text: Text = JInt.toUnsignedString(u32).nn.tt
@@ -1405,11 +1405,11 @@ object Hypotenuse:
     inline def long: Long = JInt.toUnsignedLong(u32)
 
     @targetName("divU32")
-    inline infix def / (right: into U32)(using division: DivisionByZero): division.Wrap[U32] =
+    inline infix def / (right: Conversion.into[U32])(using division: DivisionByZero): division.Wrap[U32] =
       division.divideU32(u32, right)
 
     @targetName("modU32")
-    inline infix def % (right: into U32): U32 = JInt.remainderUnsigned(u32, right)
+    inline infix def % (right: Conversion.into[U32]): U32 = JInt.remainderUnsigned(u32, right)
 
     @targetName("u32ToS64")
     inline def s64: S64 = JInt.toUnsignedLong(u32)
@@ -1425,17 +1425,17 @@ object Hypotenuse:
 
   extension (u16: U16)
     @targetName("plusU16")
-    inline infix def + (right: into U16)(using overflow: CheckOverflow): overflow.Wrap[U16] =
+    inline infix def + (right: Conversion.into[U16])(using overflow: CheckOverflow): overflow.Wrap[U16] =
       overflow.addU16(u16, right)
 
     @targetName("bitsU16")
     inline def bits: B16 = u16
 
     @targetName("minuseU16")
-    inline infix def - (right: into U16): U16 = (u16 - right).toShort
+    inline infix def - (right: Conversion.into[U16]): U16 = (u16 - right).toShort
 
     @targetName("timesU16")
-    inline infix def * (right: into U16): U16 = (u16*right).toShort
+    inline infix def * (right: Conversion.into[U16]): U16 = (u16*right).toShort
 
     @targetName("textU16")
     inline def text: Text = JInt.toUnsignedString(JShort.toUnsignedInt(u16)).nn.tt
@@ -1460,11 +1460,11 @@ object Hypotenuse:
     inline def int: Int = JShort.toUnsignedInt(u16)
 
     @targetName("divU16")
-    inline infix def / (right: into U16)(using division: DivisionByZero): division.Wrap[U16] =
+    inline infix def / (right: Conversion.into[U16])(using division: DivisionByZero): division.Wrap[U16] =
       division.divideU16(u16, right)
 
     @targetName("modU16")
-    inline infix def % (right: into U16): U16 = JInt.remainderUnsigned(u16, right).toShort
+    inline infix def % (right: Conversion.into[U16]): U16 = JInt.remainderUnsigned(u16, right).toShort
 
     @targetName("u16ToS32")
     inline def s32: S32 = JShort.toUnsignedInt(u16)
@@ -1488,17 +1488,17 @@ object Hypotenuse:
 
   extension (u8: U8)
     @targetName("plusU8")
-    inline infix def + (right: into U8)(using overflow: CheckOverflow): overflow.Wrap[U8] =
+    inline infix def + (right: Conversion.into[U8])(using overflow: CheckOverflow): overflow.Wrap[U8] =
       overflow.addU8(u8, right)
 
     @targetName("bitsU8")
     inline def bits: B8 = u8
 
     @targetName("minusU8")
-    inline infix def - (right: into U8): U8 = (u8 - right).toByte
+    inline infix def - (right: Conversion.into[U8]): U8 = (u8 - right).toByte
 
     @targetName("timesU8")
-    inline infix def * (right: into U8): U8 = (u8*right).toByte
+    inline infix def * (right: Conversion.into[U8]): U8 = (u8*right).toByte
 
     @targetName("textU8")
     inline def text: Text = JInt.toUnsignedString(JByte.toUnsignedInt(u8)).nn.tt
@@ -1525,11 +1525,11 @@ object Hypotenuse:
     inline def short: Short = JByte.toUnsignedInt(u8).toShort
 
     @targetName("divU8")
-    inline infix def / (right: into U8)(using division: DivisionByZero): division.Wrap[U8] =
+    inline infix def / (right: Conversion.into[U8])(using division: DivisionByZero): division.Wrap[U8] =
       division.divideU8(u8, right)
 
     @targetName("modU8")
-    inline infix def % (right: into U8): U8 = JInt.remainderUnsigned(u8, right).toByte
+    inline infix def % (right: Conversion.into[U8]): U8 = JInt.remainderUnsigned(u8, right).toByte
 
     @targetName("byteU8")
     inline def byte: Byte = u8

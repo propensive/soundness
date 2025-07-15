@@ -86,7 +86,7 @@ def async[result](using Codepoint)(evaluate: Worker ?=> result)(using Monitor, C
     Task(evaluate(using _), daemon = false, name = Unset)
 
 
-def task[result](using Codepoint)(name: into Text)(evaluate: Worker ?=> result)
+def task[result](using Codepoint)(name: into[Text])(evaluate: Worker ?=> result)
      (using Monitor, Codicil)
 : Task[result] =
 
@@ -102,11 +102,11 @@ def snooze[duration: GenericDuration](duration: duration)(using Monitor): Unit =
 def delay[generic: GenericDuration](duration: generic)(using Monitor): Unit =
   hibernate(jl.System.currentTimeMillis + generic.milliseconds(duration))
 
-def sleep[instant: Abstractable across Instants into Long](instant: instant)(using Monitor): Unit =
+def sleep[instant: Abstractable across Instants to Long](instant: instant)(using Monitor): Unit =
   monitor.snooze(instant.generic - jl.System.currentTimeMillis)
 
 
-def hibernate[instant: Abstractable across Instants into Long](instant: instant)(using Monitor)
+def hibernate[instant: Abstractable across Instants to Long](instant: instant)(using Monitor)
 : Unit =
 
   while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)

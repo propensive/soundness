@@ -37,7 +37,7 @@ import prepositional.*
 import quantitative.*
 
 package interfaces.instants:
-  given aviationInstant: Aviation2.Instant is (Abstractable & Instantiable) across Instants into
+  given aviationInstant: Aviation2.Instant is (Abstractable & Instantiable) across Instants to
                           Long from Long =
     new Abstractable with Instantiable:
       type Self = Aviation2.Instant
@@ -47,7 +47,7 @@ package interfaces.instants:
       export Aviation2.Instant.generic.{genericize, apply}
 
 package interfaces.durations:
-  given aviationDuration: [units <: Measure: Normalizable into Seconds[1]]
+  given aviationDuration: [units <: Measure: Normalizable to Seconds[1]]
         => Quantity[units] is GenericDuration & SpecificDuration =
     new GenericDuration with SpecificDuration:
       type Self = Quantity[units]

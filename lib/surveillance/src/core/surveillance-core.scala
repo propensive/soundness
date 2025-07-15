@@ -38,13 +38,13 @@ import fulminate.*
 import prepositional.*
 import rudiments.*
 
-extension [path: Abstractable across Paths into Text](path: path)
+extension [path: Abstractable across Paths to Text](path: path)
   def watch[result](lambda: Watch => result): result raises WatchError =
     val watchSet = Watch(List(path))
     lambda(watchSet).also:
       watchSet.unregister()
 
-extension [path: Abstractable across Paths into Text](paths: Iterable[path])
+extension [path: Abstractable across Paths to Text](paths: Iterable[path])
   def watch[result](lambda: Watch => result): result raises WatchError =
     val watchSet = Watch(paths)
 

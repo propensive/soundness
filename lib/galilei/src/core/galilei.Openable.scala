@@ -51,7 +51,7 @@ object Openable:
             create:      CreateNonexistent on system,
             streamError: Tactic[StreamError],
             ioError:     Tactic[IoError])
-        =>  path is Openable by jnf.OpenOption into Handle = new Openable:
+        =>  path is Openable by jnf.OpenOption to Handle = new Openable:
 
     type Self = path
     type Operand = jnf.OpenOption

@@ -38,7 +38,7 @@ import scala.annotation.targetName
 
 object Subtractable:
   def apply[minuend, subtrahend, result](lambda: (minuend, subtrahend) => result)
-  : minuend is Subtractable by subtrahend into result =
+  : minuend is Subtractable by subtrahend to result =
 
       new Subtractable:
         type Self = minuend
@@ -49,15 +49,15 @@ object Subtractable:
           lambda(minuend, subtrahend)
 
 
-  given double: Double is Subtractable by Double into Double = Subtractable(_ - _)
-  given float: Float is Subtractable by Float into Float = Subtractable(_ - _)
-  given long: Long is Subtractable by Long into Long = Subtractable(_ - _)
-  given int: Int is Subtractable by Int into Int = Subtractable(_ - _)
+  given double: Double is Subtractable by Double to Double = Subtractable(_ - _)
+  given float: Float is Subtractable by Float to Float = Subtractable(_ - _)
+  given long: Long is Subtractable by Long to Long = Subtractable(_ - _)
+  given int: Int is Subtractable by Int to Int = Subtractable(_ - _)
 
-  given short: Short is Subtractable by Short into Short = Subtractable:
+  given short: Short is Subtractable by Short to Short = Subtractable:
     (minuend, subtrahend) => (minuend - subtrahend).toShort
 
-  given byte: Byte is Subtractable by Byte into Byte = Subtractable:
+  given byte: Byte is Subtractable by Byte to Byte = Subtractable:
     (minuend, subtrahend) => (minuend - subtrahend).toByte
 
 trait Subtractable extends Typeclass, Operable, Resultant:

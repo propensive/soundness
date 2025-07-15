@@ -38,7 +38,7 @@ import scala.annotation.targetName
 
 object Addable:
   def apply[augend, addend, result](lambda: (augend, addend) => result)
-  : augend is Addable by addend into result =
+  : augend is Addable by addend to result =
 
       new Addable:
 
@@ -49,22 +49,22 @@ object Addable:
         def add(augend: augend, addend: addend): result = lambda(augend, addend)
 
 
-  given double: Double is Addable by Double into Double = Addable:
+  given double: Double is Addable by Double to Double = Addable:
     (augend, addend) => augend + addend
 
-  given float: Float is Addable by Float into Float = Addable:
+  given float: Float is Addable by Float to Float = Addable:
     (augend, addend) => augend + addend
 
-  given long: Long is Addable by Long into Long = Addable:
+  given long: Long is Addable by Long to Long = Addable:
     (augend, addend) => augend + addend
 
-  given int: Int is Addable by Int into Int = Addable:
+  given int: Int is Addable by Int to Int = Addable:
     (augend, addend) => augend + addend
 
-  given short: Short is Addable by Short into Short = Addable:
+  given short: Short is Addable by Short to Short = Addable:
     (augend, addend) => (augend + addend).toShort
 
-  given byte: Byte is Addable by Byte into Byte = Addable:
+  given byte: Byte is Addable by Byte to Byte = Addable:
     (augend, addend) => (augend + addend).toByte
 
   given concatenable: [left, right] => (concatenable: left is Concatenable by right)
