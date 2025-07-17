@@ -35,6 +35,6 @@ package anticipation
 import language.experimental.into
 
 object Realm:
-  def make(name: Conversion.into[Text]): Realm = Realm(name)
+  def make(name: Text): Realm = Realm(name)
 
-case class Realm(name: Conversion.into[Text])
+case class Realm(name: Text)

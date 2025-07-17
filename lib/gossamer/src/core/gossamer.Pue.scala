@@ -40,7 +40,7 @@ import language.experimental.pureFunctions
 import language.experimental.into
 
 object Pue:
-  def apply(text: into[Text]): Bytes =
+  def apply(text: Text): Bytes =
     val length = text.length
 
     IArray.create[Byte](length): array =>
