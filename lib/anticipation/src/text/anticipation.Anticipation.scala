@@ -41,7 +41,7 @@ import scala.reflect.*
 import scala.util.*
 
 object Anticipation:
-  opaque type Text <: Matchable = String
+  into opaque type Text <: Matchable = String
 
   object Text:
     def apply(string: String): Text = string
@@ -84,6 +84,8 @@ object Anticipation:
     given conversion: Conversion[String, Text] = identity(_)
 
     erased given canEqual: CanEqual[Text, Text] = erasedValue
+    erased given canEqual2: CanEqual[String, Text] = erasedValue
+    erased given canEqual3: CanEqual[Text, String] = erasedValue
 
     given typeable: Typeable[Text]:
       def unapply(value: Any): Option[value.type & Text] = value.asMatchable match
