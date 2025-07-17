@@ -197,7 +197,7 @@ extension [textual: Textual](text: textual)
 
     recur(Prim, textual.empty)
 
-  def contains(substring: into[Text]): Boolean = textual.indexOf(text, substring).present
+  def contains(substring: Text): Boolean = textual.indexOf(text, substring).present
   def contains(char: Char): Boolean = textual.indexOf(text, char.show).present
 
   def search(regex: Regex, overlap: Boolean = false): Stream[textual] =
@@ -301,14 +301,14 @@ extension [textual: Textual](text: textual)
   def unkebab: List[textual] = text.cut("-".tt)
   def unsnake: List[textual] = text.cut("_".tt)
 
-  def starts(prefix: into[Text]): Boolean =
+  def starts(prefix: Text): Boolean =
     def recur(index: Ordinal): Boolean =
       index > (prefix.length - 1).z
       || textual.unsafeChar(text, index) == prefix.s.charAt(index.n0) && recur(index + 1)
 
     prefix.length <= text.length && recur(Prim)
 
-  def ends(suffix: into[Text]): Boolean = text.keep(suffix.length, Rtl) == suffix
+  def ends(suffix: Text): Boolean = text.keep(suffix.length, Rtl) == suffix
 
   inline def tr(from: Char, to: Char): textual =
     textual.map(text)(char => if char == from then to else char)
@@ -385,11 +385,11 @@ package proximityMeasures:
   given normalizedLevenshteinDistance: Proximity = (left, right) =>
     levenshteinDistance.distance(left, right)/left.length.max(right.length)
 
-extension (text: into[Text])
-  inline def sub(from: into[Text], to: into[Text]): Text =
+extension (text: Text)
+  inline def sub(from: Text, to: Text): Text =
     text.s.replaceAll(jur.Pattern.quote(from.s).nn, to.s).nn.tt
 
-  inline def sub(from: Regex, to: into[Text]): Text = text.s.replaceAll(from.pattern.s, to.s).nn.tt
+  inline def sub(from: Regex, to: Text): Text = text.s.replaceAll(from.pattern.s, to.s).nn.tt
 
   inline def urlEncode: Text = URLEncoder.encode(text.s, "UTF-8").nn.tt
   inline def urlDecode: Text = URLDecoder.decode(text.s, "UTF-8").nn.tt
@@ -397,7 +397,7 @@ extension (text: into[Text])
   inline def bytes(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
   inline def sysBytes: IArray[Byte] = CharEncoder.system.encode(text)
 
-  def proximity(other: into[Text])(using proximity: Proximity): Double =
+  def proximity(other: Text)(using proximity: Proximity): Double =
     proximity.distance(text, other)
 
 extension (iarray: IArray[Char]) def text: Text = String(iarray.mutable(using Unsafe)).tt
@@ -420,7 +420,7 @@ extension [textual: Joinable](values: Iterable[textual])
     Iterable(left, join(separator, penultimate), right).join
 
 extension (builder: StringBuilder)
-  def add(text: into[Text]): Unit = builder.append(text.s)
+  def add(text: Text): Unit = builder.append(text.s)
   def add(char: Char): Unit = builder.append(char)
   def text: Text = builder.toString.tt
 

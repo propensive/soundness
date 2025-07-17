@@ -47,7 +47,7 @@ extension [value, monad[_]](using monad: Monad[monad])(value: monad[value])
   def bind[value2](lambda: value => monad[value2]): monad[value2] =
     monad.flatMap(value)(lambda)
 
-extension (text: Conversion.into[Text])
+extension (text: Text)
   def bind(lambda: Char => Text): Text =
     val builder: StringBuilder = StringBuilder()
     text.s.toCharArray.nn.foreach: char =>

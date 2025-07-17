@@ -41,7 +41,7 @@ import scala.reflect.*
 import scala.util.*
 
 object Anticipation:
-  opaque type Text <: Matchable = String
+  into opaque type Text <: Matchable = String
 
   object Text:
     def apply(string: String): Text = string

@@ -86,7 +86,7 @@ def async[result](using Codepoint)(evaluate: Worker ?=> result)(using Monitor, C
     Task(evaluate(using _), daemon = false, name = Unset)
 
 
-def task[result](using Codepoint)(name: into[Text])(evaluate: Worker ?=> result)
+def task[result](using Codepoint)(name: Text)(evaluate: Worker ?=> result)
      (using Monitor, Codicil)
 : Task[result] =
 

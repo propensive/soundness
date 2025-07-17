@@ -42,7 +42,7 @@ object TextEscapes:
   import errorDiagnostics.stackTraces
 
 
-  def standardEscape(text: Conversion.into[Text], cur: Int, esc: Boolean)
+  def standardEscape(text: Text, cur: Int, esc: Boolean)
   : (Int, Int, Boolean) throws EscapeError =
 
       text.s.charAt(cur) match
@@ -72,7 +72,7 @@ object TextEscapes:
     then throw EscapeError(Message("the unicode escape is incomplete".tt))
     else Integer.parseInt(chars, 16).toChar
 
-  def escape(text: Conversion.into[Text]): Text throws EscapeError =
+  def escape(text: Text): Text throws EscapeError =
     val buf: StringBuilder = StringBuilder()
 
     @tailrec
