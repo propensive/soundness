@@ -37,7 +37,7 @@ import symbolism.*
 
 class Metric(val name: String, val symbol: String, val exponent: Int, val base: 2 | 10):
   def apply[units <: Measure](unit: MetricUnit[units]): Quantity[units] =
-    Quantity(unit*Quantity(base**exponent))
+    Quantity((base**exponent)*unit.value)
 
 object NoPrefix extends Metric("", "", 0, 10)
 
