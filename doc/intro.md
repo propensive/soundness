@@ -12,40 +12,30 @@ a common philosophy of clarity and correctness.
 
 ### Scala 3
 
-Soundness was developed natively for Scala 3, and exploits its extensive new features to the
-maximum. Its sound typesystem and powerful metaprogramming capabilities make it uniquely capable of
-defining APIs which take full advantage of precise types without compromising the legibility of your
-code.
+Soundness was developed natively for Scala 3, and exploits its extensive new features to the maximum. Its sound typesystem and powerful metaprogramming capabilities make it uniquely capable of defining APIs which take full advantage of precise types without compromising the legibility of your code.
 
-Soundness is evolved from, but unencumbered by the legacy of Scala 2. No interface has been
-compromised in its expressiveness for compatibility with Scala 2. Adopting Soundness means a
-full-throated endorsement of the future of Scala.
+Soundness is evolved from, but unencumbered by the legacy of Scala 2. No interface has been compromised in its expressiveness for compatibility with Scala 2. Adopting Soundness means a full-throated endorsement of the future of Scala.
 
 #### Two Golden Principles
 
-At the foundation of Soundness are two core principles: Impossible states should be unrepresentable,
-and transitions between states should be total. Together, these ensure that your program starts in a
-correct state and never leaves it. That means no unexpected runtime errors.
+At the foundation of Soundness are two core principles: Impossible states should be unrepresentable, and transitions between states should be total. Together, these ensure that your program starts in a correct state and never leaves it. That means no unexpected runtime errors.
 
-Every library in the Soundness ecosystem is built on these principles, and coerces your code along a
-path of correctness.
+Every library in the Soundness ecosystem is built on these principles, and coerces your code along a path of correctness.
 
 #### Dependent Typing
 
-Soundness follows the principle that any static analysis the programmer can do, the compiler can do
-better. And any static analysis the compiler _can_ do, it _should_ do. So Soundness makes the the
-Scala compiler do _more_ at compiletime so you don't have to, and so the runtime doesn't have to.
-Scala's powerful type system makes it possible to track more invariants about values at compiletime,
-and to use that information to your advantage.
+Soundness follows the principle that any static analysis the programmer can do, the compiler can do better. And any static analysis the compiler _can_ do, it _should_ do. So Soundness makes the the Scala compiler do _more_ at compiletime so you don't have to, and so the runtime doesn't have to. Scala's powerful type system makes it possible to track more invariants about values at compiletime, and to use that information to your advantage.
 
-Why write the code to handle a failure, if the source code has everything to show it's impossible?
-With Soundness, you don't have to.
+Why write the code to handle a failure, if the source code has everything to show it's impossible? With Soundness, you don't have to.
 
 #### Safe Exceptions
 
+Exceptional states are still valid states. Soundness will force you to handle them to keep
+your program in a valid state. But only if you choose to. If you just want to build a
+quick prototype, you can accept the risk of runtime failure and focus on the happy path.
 
-
-#### Maintenance/Continuity
+Then you can come back later and make it safe—totally safe—incrementally, with
+the compiler's guidance all the way, and without major refactoring.
 
 
 #### Null safety
@@ -72,7 +62,7 @@ Generic derivation provides typeclasses over product and sum types.
 
 Everything just works with everything else—or it's just a typeclass instance away.
 
-#### Safe Literals
+#### Safe by Construction
 
 Soundness makes it impossible to represent impossible states, so values are not
 only known to be safe by construction, but checked at compiletime. When there's
