@@ -138,7 +138,7 @@ extension [textual: Textual](text: textual)
           if !predicate(textual.unsafeChar(text, index - 1), textual.unsafeChar(text, index))
           then recur(from, index + 1)
           else
-            builder.append(text.segment(from ~ index.previous))
+            builder.append(text.segment(from till index))
             builder.append(breakText)
             recur(index, index + 1)
 
@@ -156,23 +156,23 @@ extension [textual: Textual](text: textual)
 
     recur(Prim, extra, words(0))
 
-  def before(ordinal: Ordinal): textual = text.segment(Prim ~ (ordinal - 1))
-  def after(ordinal: Ordinal): textual = text.segment((ordinal + 1) ~ Ult.of(text))
-  def upto(ordinal: Ordinal): textual = text.segment(Prim ~ ordinal)
-  def from(ordinal: Ordinal): textual = text.segment(ordinal ~ Ult.of(text))
+  def before(ordinal: Ordinal): textual = text.segment(Prim till ordinal)
+  def after(ordinal: Ordinal): textual = text.segment((ordinal + 1) thru Ult.of(text))
+  def upto(ordinal: Ordinal): textual = text.segment(Prim thru ordinal)
+  def from(ordinal: Ordinal): textual = text.segment(ordinal thru Ult.of(text))
 
   def slices(size: Int): List[textual] =
     val length = text.length
     List.tabulate[textual]((length - 1)/size + 1): i =>
-      text.segment((i*size).z ~ Ordinal.natural(((i + 1)*size).min(length)))
+      text.segment((i*size).z thru Ordinal.natural(((i + 1)*size).min(length)))
 
   def skip(count: Int, bidi: Bidi = Ltr): textual = bidi match
-    case Ltr => text.segment(count.z ~ Ult.of(text))
-    case Rtl => text.segment(Prim ~ Countback(count).of(text))
+    case Ltr => text.segment(count.z thru Ult.of(text))
+    case Rtl => text.segment(Prim thru Countback(count).of(text))
 
   def keep(count: Int, bidi: Bidi = Ltr): textual = bidi match
     case Ltr => text.segment(Interval.initial(count))
-    case Rtl => text.segment(Countback(count - 1).of(text) ~ Ult.of(text))
+    case Rtl => text.segment(Countback(count - 1).of(text) thru Ult.of(text))
 
   def capitalize: textual = textual.concat(text.keep(1).upper, text.after(Prim))
   def uncapitalize: textual = textual.concat(text.keep(1).lower, text.after(Prim))
@@ -184,15 +184,15 @@ extension [textual: Textual](text: textual)
   def chars: IArray[Char] = textual.text(text).s.toCharArray.nn.immutable(using Unsafe)
 
   def snip(n: Int): (textual, textual) =
-    (text.segment(Prim ~ (n - 1).z), text.segment(n.z ~ Ult.of(text)))
+    (text.segment(Prim till n.z), text.segment(n.z thru Ult.of(text)))
 
   def punch(n: Ordinal): (textual, textual) =
-    (text.segment(Prim ~ (n - 1)), text.segment((n + 1) ~ Ult.of(text)))
+    (text.segment(Prim till n), text.segment((n + 1) thru Ult.of(text)))
 
   def reverse: textual =
     def recur(index: Ordinal, result: textual): textual =
       if index <= Ult.of(text)
-      then recur(index + 1, textual.concat(text.segment(index ~ index), result))
+      then recur(index + 1, textual.concat(text.segment(index thru index), result))
       else result
 
     recur(Prim, textual.empty)
@@ -219,7 +219,7 @@ extension [textual: Textual](text: textual)
   inline def trim: textual =
     val start = text.where(!_.isWhitespace).or(Ult.of(text))
     val end = text.where(!_.isWhitespace, bidi = Rtl).or(Prim)
-    text.segment(start ~ end)
+    text.segment(start thru end)
 
   def where(pred: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
   : Optional[Ordinal] =
@@ -248,7 +248,7 @@ extension [textual: Textual](text: textual)
 
   def dropWhile(pred: Char => Boolean): textual =
     text.where(!pred(_)).lay(textual.empty): ordinal =>
-      text.segment(ordinal ~ Ult.of(text))
+      text.segment(ordinal thru Ult.of(text))
 
   def whilst(pred: Char => Boolean): textual =
     text.where(!pred(_)).lay(textual.empty): ordinal =>

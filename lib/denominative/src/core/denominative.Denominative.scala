@@ -46,6 +46,15 @@ object Denominative:
     @targetName("minus2")
     infix def - (right: Ordinal): Int = ordinal - right
 
+    inline infix def thru (right: Ordinal): Interval = Interval(ordinal, right)
+    inline infix def till (right: Ordinal): Interval = Interval(ordinal, right - 1)
+
+    @targetName("thru2")
+    inline infix def thru (countback: Countback): Bounds = Bounds(ordinal, countback)
+
+    @targetName("till2")
+    inline infix def till (countback: Countback): Bounds = Bounds(ordinal, countback - 1)
+
   extension (inline ordinal: Ordinal)
     @targetName("invert")
     inline def `unary_~`: Countback = Countback(ordinal.n0)
@@ -56,12 +65,6 @@ object Denominative:
     inline def gt(inline right: Ordinal): Boolean = (ordinal: Int) > (right: Int)
     inline def next: Ordinal = ordinal + 1
     inline def previous: Ordinal = (ordinal - 1).max(0)
-
-    @targetName("to")
-    inline infix def ~ (inline right: Ordinal): Interval = Interval(ordinal, right)
-
-    @targetName("to2")
-    inline infix def ~ (inline countback: Countback): Bounds = Bounds(ordinal, countback)
 
     inline def n0: Int = ordinal
     inline def n1: Int = ordinal + 1

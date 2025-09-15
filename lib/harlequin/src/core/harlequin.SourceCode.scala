@@ -123,7 +123,7 @@ object SourceCode:
 
     def stream(lastEnd: Int = 0): Stream[SourceToken] = scanner.token match
       case Tokens.EOF =>
-        untab(text.segment(lastEnd.z ~ Ult.of(text))).filter(_.length > 0)
+        untab(text.segment(lastEnd.z thru Ult.of(text))).filter(_.length > 0)
 
       case token =>
         val start = scanner.offset max lastEnd
@@ -131,7 +131,7 @@ object SourceCode:
         val unparsed: Stream[SourceToken] =
           if lastEnd != start
           then
-            text.segment(lastEnd.z ~ Ordinal.natural(start))
+            text.segment(lastEnd.z thru Ordinal.natural(start))
             . cut(t"\n")
             . to(Stream)
             . flatMap(untab(_).filter(_.length > 0))
@@ -144,7 +144,7 @@ object SourceCode:
 
         val content: Stream[SourceToken] =
           if start == end then Stream() else
-            text.segment(start.z ~ Ordinal.natural(end)).cut(t"\n").to(Stream).flatMap: line =>
+            text.segment(start.z thru Ordinal.natural(end)).cut(t"\n").to(Stream).flatMap: line =>
               Stream
                (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
             . init

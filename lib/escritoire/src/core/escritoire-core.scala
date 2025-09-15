@@ -99,11 +99,11 @@ package columnar:
                       position + 1,
                       lastSpace + 1,
                       lastSpace,
-                      text.segment(lineStart.z ~ Ordinal.natural(lastSpace)) :: lines)
+                      text.segment(lineStart.z thru Ordinal.natural(lastSpace)) :: lines)
 
                 else format(text, position + 1, lineStart, lastSpace, lines)
             else if lineStart == position then lines
-            else text.segment(lineStart.z ~ Ordinal.natural(position)) :: lines
+            else text.segment(lineStart.z thru Ordinal.natural(position)) :: lines
 
 
         lines.to(IndexedSeq).flatMap(format(_, 0, 0, 0, Nil).reverse)

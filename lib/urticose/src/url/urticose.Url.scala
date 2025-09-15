@@ -98,7 +98,7 @@ object Url:
 
               . within:
                   val authEnd = safely(value.where(_ == '/', colon + 3)).or(Ult.of(value))
-                  val hostname = value.segment((colon + 3) ~ authEnd.previous)
+                  val hostname = value.segment((colon + 3) till authEnd)
                   (authEnd, Authority.parse(hostname))
 
             else (colon + 1, Unset)
@@ -109,14 +109,14 @@ object Url:
                 case Zerary(hash) =>
                   Url
                    (Origin(scheme, auth),
-                    value.segment(pathStart ~ qmark.previous),
-                    value.segment((qmark + 1) ~ hash.previous),
+                    value.segment(pathStart till qmark),
+                    value.segment((qmark + 1) till hash),
                     value.after(hash))
 
                 case _ =>
                   Url
                    (Origin(scheme, auth),
-                    value.segment(pathStart ~ qmark.previous),
+                    value.segment(pathStart till qmark),
                     value.after(qmark),
                     Unset)
 
@@ -124,7 +124,7 @@ object Url:
               case Zerary(hash) =>
                 Url
                  (Origin(scheme, auth),
-                  value.segment(pathStart ~ hash.previous),
+                  value.segment(pathStart till hash),
                   Unset,
                   value.after(hash))
 

@@ -290,12 +290,12 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"Hello")
 
       test(m"take a slice from a Text"):
-        t"Hello world".segment(Quin ~ Sept)
+        t"Hello world".segment(Quin thru Sept)
 
       . assert(_ == t"o w")
 
       test(m"take an oversized slice from a Text"):
-        t"Hello world".segment(Quin ~ Ordinal.zerary(100))
+        t"Hello world".segment(Quin thru Ordinal.zerary(100))
 
       . assert(_ == t"o world")
 
