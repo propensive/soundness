@@ -77,7 +77,7 @@ object Hostname:
         val dnsLabels2 = DnsLabel(label) :: dnsLabels
         builder.clear()
 
-        if index <= Ult.of(text) then recur(index + 1, dnsLabels2) else
+        if index < text.limit then recur(index + 1, dnsLabels2) else
           if dnsLabels2.map(_.text.length + 1).sum > 254
           then raise(HostnameError(text, LongHostname))
 

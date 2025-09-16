@@ -50,8 +50,8 @@ object Denominative2:
     inline def next: Countback = end - 1
     inline def previous: Ordinal = start.previous
 
-    inline def of[value: Countable](value: value): Interval =
-      Interval(bounds.start, Ult.of(value))
+    inline def of[countable: Countable](value: countable): Interval =
+      Interval(bounds.start, countable.size(value).u)
 
   extension (countback: Countback)
     @targetName("minus")

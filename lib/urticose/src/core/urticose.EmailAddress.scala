@@ -128,12 +128,12 @@ object EmailAddress:
       if text.starts(t"\"") then quoted(Sec, false) else unquoted(Prim, false)
 
     val domain =
-      if index > Ult.of(text.length) then abort(EmailAddressError(MissingDomain))
+      if index >= text.length.limit then abort(EmailAddressError(MissingDomain))
       else if text.at(index) == '[' then
         try
           if text.ult.let(text.at(_)) != ']' then abort(EmailAddressError(UnclosedIpAddress))
           import strategies.throwUnsafely
-          val ipAddress = text.segment(index.next thru Pen.of(text))
+          val ipAddress = text.segment(index.next thru text.pen.vouch)
 
           if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.skip(5))
           else Ipv4.parse(ipAddress)

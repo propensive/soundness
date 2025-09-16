@@ -97,7 +97,7 @@ object Url:
                   UrlError(value, colon + 3, UrlError.Reason.BadHostname(hostname, reason))
 
               . within:
-                  val authEnd = safely(value.where(_ == '/', colon + 3)).or(Ult.of(value))
+                  val authEnd = safely(value.where(_ == '/', colon + 3)).or(value.limit - 1)
                   val hostname = value.segment((colon + 3) till authEnd)
                   (authEnd, Authority.parse(hostname))
 
@@ -132,7 +132,7 @@ object Url:
                 Url(Origin(scheme, auth), value.from(pathStart), Unset, Unset)
 
         case _ =>
-          abort(UrlError(value, Ult.of(value), UrlError.Reason.Expected(Colon)))
+          abort(UrlError(value, value.limit - 1, UrlError.Reason.Expected(Colon)))
 
   given instantiable: (Tactic[UrlError]) => HttpUrl is Instantiable across Urls from Text =
     _.decode[HttpUrl]

@@ -42,10 +42,6 @@ final val Quin: Ordinal = Ordinal.zerary(4)
 final val Sen: Ordinal  = Ordinal.zerary(5)
 final val Sept: Ordinal = Ordinal.zerary(6)
 
-inline def Ult: Countback   = Countback(0)
-inline def Pen: Countback   = Countback(1)
-inline def Ant: Countback   = Countback(2)
-
 extension (inline cardinal: Int)
   inline def z: Ordinal = Ordinal.zerary(cardinal)
   inline def u: Ordinal = Ordinal.uniary(cardinal)

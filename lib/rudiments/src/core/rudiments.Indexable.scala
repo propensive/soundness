@@ -48,7 +48,7 @@ object Indexable:
       type Result = element
 
       def contains(array: IArray[element], index: Ordinal): Boolean =
-        index.n0 >= 0 && index.n0 <= Ult.of(array).n0
+        index.n0 >= 0 && index.n0 < array.length
 
       def access(array: IArray[element], index: Ordinal): Result = array(index.n0)
 
@@ -59,7 +59,7 @@ object Indexable:
       type Result = element
 
       def contains(seq: IndexedSeq[element], index: Ordinal): Boolean =
-        index.n0 >= 0 && index.n0 <= Ult.of(seq).n0
+        index.n0 >= 0 && index.n0 < seq.length
 
       def access(seq: IndexedSeq[element], index: Ordinal): Result = seq(index.n0)
 

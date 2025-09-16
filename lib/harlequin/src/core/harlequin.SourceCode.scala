@@ -123,7 +123,7 @@ object SourceCode:
 
     def stream(lastEnd: Int = 0): Stream[SourceToken] = scanner.token match
       case Tokens.EOF =>
-        untab(text.segment(lastEnd.z thru Ult.of(text))).filter(_.length > 0)
+        untab(text.segment(lastEnd.z till text.limit)).filter(_.length > 0)
 
       case token =>
         val start = scanner.offset max lastEnd

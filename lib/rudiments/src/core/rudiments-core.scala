@@ -397,6 +397,8 @@ package temporaryDirectories:
       panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set")
 
 extension [countable: Countable](inline value: countable)
+  inline def limit: Ordinal = countable.size(value).z
+
   inline def ult: Optional[Ordinal] =
     if countable.size(value) >= 1 then (countable.size(value) - 1).z else Unset
 

@@ -131,16 +131,16 @@ extension [textual: Textual](text: textual)
 
     @tailrec
     def recur(from: Ordinal = Prim, index: Ordinal = Sec): textual =
-        if index >= Ult.of(text) then
-          builder.append(text.from(from))
-          builder()
+      if index >= text.limit - 1 then
+        builder.append(text.from(from))
+        builder()
+      else
+        if !predicate(textual.unsafeChar(text, index - 1), textual.unsafeChar(text, index))
+        then recur(from, index + 1)
         else
-          if !predicate(textual.unsafeChar(text, index - 1), textual.unsafeChar(text, index))
-          then recur(from, index + 1)
-          else
-            builder.append(text.segment(from till index))
-            builder.append(breakText)
-            recur(index, index + 1)
+          builder.append(text.segment(from till index))
+          builder.append(breakText)
+          recur(index, index + 1)
 
     recur()
 
@@ -157,9 +157,9 @@ extension [textual: Textual](text: textual)
     recur(Prim, extra, words(0))
 
   def before(ordinal: Ordinal): textual = text.segment(Prim till ordinal)
-  def after(ordinal: Ordinal): textual = text.segment((ordinal + 1) thru Ult.of(text))
+  def after(ordinal: Ordinal): textual = text.segment((ordinal + 1) till text.limit)
   def upto(ordinal: Ordinal): textual = text.segment(Prim thru ordinal)
-  def from(ordinal: Ordinal): textual = text.segment(ordinal thru Ult.of(text))
+  def from(ordinal: Ordinal): textual = text.segment(ordinal thru text.limit)
 
   def slices(size: Int): List[textual] =
     val length = text.length
@@ -167,12 +167,12 @@ extension [textual: Textual](text: textual)
       text.segment((i*size).z thru ((i + 1)*size).min(length).u)
 
   def skip(count: Int, bidi: Bidi = Ltr): textual = bidi match
-    case Ltr => text.segment(count.z thru Ult.of(text))
+    case Ltr => text.segment(count.z till text.limit)
     case Rtl => text.segment(Prim thru Countback(count).of(text))
 
   def keep(count: Int, bidi: Bidi = Ltr): textual = bidi match
     case Ltr => text.segment(Interval.initial(count))
-    case Rtl => text.segment(Countback(count - 1).of(text) thru Ult.of(text))
+    case Rtl => text.segment(Countback(count - 1).of(text) till text.limit)
 
   def capitalize: textual = textual.concat(text.keep(1).upper, text.after(Prim))
   def uncapitalize: textual = textual.concat(text.keep(1).lower, text.after(Prim))
@@ -184,14 +184,14 @@ extension [textual: Textual](text: textual)
   def chars: IArray[Char] = textual.text(text).s.toCharArray.nn.immutable(using Unsafe)
 
   def snip(n: Int): (textual, textual) =
-    (text.segment(Prim till n.z), text.segment(n.z thru Ult.of(text)))
+    (text.segment(Prim till n.z), text.segment(n.z till text.limit))
 
   def punch(n: Ordinal): (textual, textual) =
-    (text.segment(Prim till n), text.segment((n + 1) thru Ult.of(text)))
+    (text.segment(Prim till n), text.segment((n + 1) till text.limit))
 
   def reverse: textual =
     def recur(index: Ordinal, result: textual): textual =
-      if index <= Ult.of(text)
+      if index < text.limit
       then recur(index + 1, textual.concat(text.segment(index thru index), result))
       else result
 
@@ -217,7 +217,7 @@ extension [textual: Textual](text: textual)
   def seek(regex: Regex): Optional[textual] = regex.seek(textual.text(text)).let(text.segment(_))
 
   inline def trim: textual =
-    val start = text.where(!_.isWhitespace).or(Ult.of(text))
+    val start = text.where(!_.isWhitespace).or(text.limit - 1)
     val end = text.where(!_.isWhitespace, bidi = Rtl).or(Prim)
     text.segment(start thru end)
 
@@ -229,26 +229,26 @@ extension [textual: Textual](text: textual)
 
     val first: Ordinal = bidi match
       case Ltr => start.or(Prim)
-      case Rtl => start.or(Ult.of(length))
+      case Rtl => start.or(length.limit - 1)
 
     def recur(ordinal: Ordinal): Optional[Ordinal] =
-      if ordinal > Ult.of(text) || ordinal < Prim then Unset
+      if ordinal >= text.limit || ordinal < Prim then Unset
       else if pred(textual.unsafeChar(text, ordinal)) then ordinal
       else recur(ordinal + step)
 
     recur(first)
 
   def before(pred: Char => Boolean): textual =
-    val end: Ordinal = text.where(pred).or(Ult.of(text))
+    val end: Ordinal = text.where(pred).or(text.limit - 1)
     text.before(end)
 
   def upto(pred: Char => Boolean): textual =
-    val end: Ordinal = text.where(pred).or(Ult.of(text))
+    val end: Ordinal = text.where(pred).or(text.limit - 1)
     text.upto(end)
 
   def dropWhile(pred: Char => Boolean): textual =
     text.where(!pred(_)).lay(textual.empty): ordinal =>
-      text.segment(ordinal thru Ult.of(text))
+      text.segment(ordinal till text.limit)
 
   def whilst(pred: Char => Boolean): textual =
     text.where(!pred(_)).lay(textual.empty): ordinal =>
@@ -267,7 +267,7 @@ extension [textual: Textual](text: textual)
         char
 
   inline def count(pred: Char => Boolean): Int =
-    def recur(index: Ordinal, sum: Int): Int = if index > Ult.of(text) then sum else
+    def recur(index: Ordinal, sum: Int): Int = if index >= text.limit then sum else
       val increment = if pred(textual.unsafeChar(text, index)) then 1 else 0
       recur(index + 1, sum + increment)
 
