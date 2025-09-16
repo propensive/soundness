@@ -295,7 +295,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"o w")
 
       test(m"take an oversized slice from a Text"):
-        t"Hello world".segment(Quin thru Ordinal.zerary(100))
+        t"Hello world".segment(Quin thru 100.z)
 
       . assert(_ == t"o world")
 
@@ -506,7 +506,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       test(m"Index of character satisfying predicate with start point after first result"):
         t"oh, Hello World".where(_.isUpper, Sen)
 
-      . assert(_ == Ordinal.zerary(10))
+      . assert(_ == 10.z)
 
       test(m"Take characters while predicate is true"):
         t"HELLOworld".whilst(_.isUpper)
