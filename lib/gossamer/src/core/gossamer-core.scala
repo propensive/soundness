@@ -168,11 +168,11 @@ extension [textual: Textual](text: textual)
 
   def skip(count: Int, bidi: Bidi = Ltr): textual = bidi match
     case Ltr => text.segment(count.z till text.limit)
-    case Rtl => text.segment(Prim thru Countback(count).of(text))
+    case Rtl => text.segment(Prim till text.limit - count)
 
   def keep(count: Int, bidi: Bidi = Ltr): textual = bidi match
     case Ltr => text.segment(Interval.initial(count))
-    case Rtl => text.segment(Countback(count - 1).of(text) till text.limit)
+    case Rtl => text.segment(text.limit - count till text.limit)
 
   def capitalize: textual = textual.concat(text.keep(1).upper, text.after(Prim))
   def uncapitalize: textual = textual.concat(text.keep(1).lower, text.after(Prim))

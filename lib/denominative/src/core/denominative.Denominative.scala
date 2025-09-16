@@ -49,16 +49,7 @@ object Denominative:
     inline infix def thru (right: Ordinal): Interval = Interval(ordinal, right)
     inline infix def till (right: Ordinal): Interval = Interval(ordinal, right - 1)
 
-    @targetName("thru2")
-    inline infix def thru (countback: Countback): Bounds = Bounds(ordinal, countback)
-
-    @targetName("till2")
-    inline infix def till (countback: Countback): Bounds = Bounds(ordinal, countback - 1)
-
   extension (inline ordinal: Ordinal)
-    @targetName("invert")
-    inline def `unary_~`: Countback = Countback(ordinal.n0)
-
     inline def le(inline right: Ordinal): Boolean = (ordinal: Int) <= (right: Int)
     inline def lt(inline right: Ordinal): Boolean = (ordinal: Int) < (right: Int)
     inline def ge(inline right: Ordinal): Boolean = (ordinal: Int) >= (right: Int)

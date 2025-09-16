@@ -50,4 +50,4 @@ extension [countable: Countable](value: countable)
   inline def full: Interval = Interval(Prim, (countable.size(value) - 1).z)
 
 export Denominative.{Ordinal, Interval}
-export Denominative2.{Countback, Bounds}
+export Denominative2.Bounds
