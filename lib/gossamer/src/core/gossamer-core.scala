@@ -164,7 +164,7 @@ extension [textual: Textual](text: textual)
   def slices(size: Int): List[textual] =
     val length = text.length
     List.tabulate[textual]((length - 1)/size + 1): i =>
-      text.segment((i*size).z thru Ordinal.natural(((i + 1)*size).min(length)))
+      text.segment((i*size).z thru ((i + 1)*size).min(length).u)
 
   def skip(count: Int, bidi: Bidi = Ltr): textual = bidi match
     case Ltr => text.segment(count.z thru Ult.of(text))

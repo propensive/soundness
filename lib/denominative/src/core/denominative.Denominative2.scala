@@ -78,4 +78,4 @@ object Denominative2:
     inline def previous: Countback = countback + 1
 
     inline def of[countable: Countable](inline value: countable): Ordinal =
-      Ordinal.natural(countable.size(value) - countback)
+      (countable.size(value) - countback).u

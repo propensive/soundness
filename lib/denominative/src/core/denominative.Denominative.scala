@@ -73,7 +73,7 @@ object Denominative:
 
   object Ordinal:
     inline def zerary(inline cardinal: Int): Ordinal = cardinal
-    inline def natural(inline cardinal: Int): Ordinal = cardinal - 1
+    inline def uniary(inline cardinal: Int): Ordinal = cardinal - 1
 
     given addable: Ordinal is Addable by Int to Ordinal = _ + _
     given subtractable: Ordinal is Subtractable by Ordinal to Int = _ - _
@@ -87,7 +87,7 @@ object Denominative:
       case Quin    => "quin".tt
       case Sen     => "sen".tt
       case Sept    => "sept".tt
-      case ordinal => ("Ordinal.natural("+ordinal+")").tt
+      case ordinal => (""+ordinal+".u").tt
 
   extension (interval: Interval)
     inline def start: Ordinal = ((interval >> 32) & 0xffffffff).toInt

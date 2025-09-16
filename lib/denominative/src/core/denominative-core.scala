@@ -34,13 +34,13 @@ package denominative
 
 import scala.annotation.targetName
 
-final val Prim: Ordinal = Ordinal.natural(1)
-final val Sec: Ordinal  = Ordinal.natural(2)
-final val Ter: Ordinal  = Ordinal.natural(3)
-final val Quat: Ordinal = Ordinal.natural(4)
-final val Quin: Ordinal = Ordinal.natural(5)
-final val Sen: Ordinal  = Ordinal.natural(6)
-final val Sept: Ordinal = Ordinal.natural(7)
+final val Prim: Ordinal = Ordinal.zerary(0)
+final val Sec: Ordinal  = Ordinal.zerary(1)
+final val Ter: Ordinal  = Ordinal.zerary(2)
+final val Quat: Ordinal = Ordinal.zerary(3)
+final val Quin: Ordinal = Ordinal.zerary(4)
+final val Sen: Ordinal  = Ordinal.zerary(5)
+final val Sept: Ordinal = Ordinal.zerary(6)
 
 inline def Ult: Countback   = Countback(0)
 inline def Pen: Countback   = Countback(1)
@@ -48,6 +48,7 @@ inline def Ant: Countback   = Countback(2)
 
 extension (inline cardinal: Int)
   inline def z: Ordinal = Ordinal.zerary(cardinal)
+  inline def u: Ordinal = Ordinal.uniary(cardinal)
 
 extension [countable: Countable](value: countable)
   inline def full: Interval = Interval(Prim, (countable.size(value) - 1).z)

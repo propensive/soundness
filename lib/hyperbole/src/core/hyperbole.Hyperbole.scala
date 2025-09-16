@@ -83,7 +83,7 @@ object Hyperbole:
 
           val lineContent: Teletype = sourceCode.lines(pos.line).map(_.teletype).join
 
-          try lineContent.segment(pos.startColumn.z thru Ordinal.natural(pos.endColumn))
+          try lineContent.segment(pos.startColumn.z thru pos.endColumn.u)
           catch case e: Exception => e""
 
         ((e" "*(pos.startColumn - init.n0))+content)

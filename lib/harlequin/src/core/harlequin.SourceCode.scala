@@ -131,7 +131,7 @@ object SourceCode:
         val unparsed: Stream[SourceToken] =
           if lastEnd != start
           then
-            text.segment(lastEnd.z thru Ordinal.natural(start))
+            text.segment(lastEnd.z thru start.u)
             . cut(t"\n")
             . to(Stream)
             . flatMap(untab(_).filter(_.length > 0))
@@ -144,7 +144,7 @@ object SourceCode:
 
         val content: Stream[SourceToken] =
           if start == end then Stream() else
-            text.segment(start.z thru Ordinal.natural(end)).cut(t"\n").to(Stream).flatMap: line =>
+            text.segment(start.z thru end.u).cut(t"\n").to(Stream).flatMap: line =>
               Stream
                (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
             . init
