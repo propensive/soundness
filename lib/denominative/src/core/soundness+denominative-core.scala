@@ -33,4 +33,4 @@
 package soundness
 
 export denominative
-. { Countable, Prim, Sec, Ter, Quat, Quin, Sen, Sept, full, Ordinal, Interval, Bounds, Zerary, z }
+. { Countable, Prim, Sec, Ter, Quat, Quin, Sen, Sept, full, Ordinal, Interval, Zerary, z }
