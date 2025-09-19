@@ -46,22 +46,16 @@ object Denominative:
     @targetName("minus2")
     infix def - (right: Ordinal): Int = ordinal - right
 
-  extension (inline ordinal: Ordinal)
-    @targetName("invert")
-    inline def `unary_~`: Countback = Countback(ordinal.n0)
+    inline infix def thru (right: Ordinal): Interval = Interval(ordinal, right)
+    inline infix def till (right: Ordinal): Interval = Interval(ordinal, right - 1)
 
+  extension (inline ordinal: Ordinal)
     inline def le(inline right: Ordinal): Boolean = (ordinal: Int) <= (right: Int)
     inline def lt(inline right: Ordinal): Boolean = (ordinal: Int) < (right: Int)
     inline def ge(inline right: Ordinal): Boolean = (ordinal: Int) >= (right: Int)
     inline def gt(inline right: Ordinal): Boolean = (ordinal: Int) > (right: Int)
     inline def next: Ordinal = ordinal + 1
     inline def previous: Ordinal = (ordinal - 1).max(0)
-
-    @targetName("to")
-    inline infix def ~ (inline right: Ordinal): Interval = Interval(ordinal, right)
-
-    @targetName("to2")
-    inline infix def ~ (inline countback: Countback): Bounds = Bounds(ordinal, countback)
 
     inline def n0: Int = ordinal
     inline def n1: Int = ordinal + 1
@@ -70,7 +64,7 @@ object Denominative:
 
   object Ordinal:
     inline def zerary(inline cardinal: Int): Ordinal = cardinal
-    inline def natural(inline cardinal: Int): Ordinal = cardinal - 1
+    inline def uniary(inline cardinal: Int): Ordinal = cardinal - 1
 
     given addable: Ordinal is Addable by Int to Ordinal = _ + _
     given subtractable: Ordinal is Subtractable by Ordinal to Int = _ - _
@@ -84,7 +78,7 @@ object Denominative:
       case Quin    => "quin".tt
       case Sen     => "sen".tt
       case Sept    => "sept".tt
-      case ordinal => ("Ordinal.natural("+ordinal+")").tt
+      case ordinal => (""+ordinal+".u").tt
 
   extension (interval: Interval)
     inline def start: Ordinal = ((interval >> 32) & 0xffffffff).toInt

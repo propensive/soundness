@@ -65,18 +65,6 @@ object Commensurable:
         !strict && left.long == right.long || (left.long < right.long) ^ greater
 
 
-  inline given countback: Countback is Orderable:
-    inline def compare
-                (inline left:    Countback,
-                 inline right:   Countback,
-                 inline strict:  Boolean,
-                 inline greater: Boolean)
-    : Boolean =
-
-        inline if greater then inline if strict then left.gt(right) else left.ge(right)
-        else inline if strict then left.lt(right) else left.le(right)
-
-
   inline given ordinal: Ordinal is Orderable:
     inline def compare
                 (inline left:    Ordinal,

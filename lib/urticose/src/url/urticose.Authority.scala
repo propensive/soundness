@@ -66,7 +66,7 @@ object Authority:
 
           . pipe:
             Authority
-             (Hostname.parse(value.segment((arobase + 1) ~ (colon - 1))), value.keep(arobase.n0), _)
+             (Hostname.parse(value.segment((arobase + 1) till colon)), value.keep(arobase.n0), _)
 
         case _ =>
           Authority(Hostname.parse(value.after(arobase)), value.before(arobase))

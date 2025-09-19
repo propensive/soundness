@@ -38,4 +38,4 @@ trait Hebdomad:
   def start: Weekday
   def weekend(day: Weekday): Boolean
   def weekday(ordinal: Ordinal): Weekday = Weekday.fromOrdinal((start.ordinal + ordinal.n0)%7)
-  def ordinal(day: Weekday): Ordinal = Ordinal.zerary((7 + day.ordinal - start.ordinal)%7)
+  def ordinal(day: Weekday): Ordinal = ((7 + day.ordinal - start.ordinal)%7).z

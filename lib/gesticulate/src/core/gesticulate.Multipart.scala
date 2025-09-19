@@ -118,7 +118,7 @@ object Multipart:
             parts.drop(1).map: param =>
               param.cut(t"=", 2) match
                 case List(key, value) => if value.starts(t"\"") && value.ends(t"\"")
-                                        then key -> value.segment(Sec ~ Pen.of(value))
+                                        then key -> value.segment(Sec thru value.pen.vouch)
                                         else key -> value
                 case _                => raise(MultipartError(Reason.BadDisposition)) yet (t"", t"")
 

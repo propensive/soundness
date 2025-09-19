@@ -84,7 +84,7 @@ object Textual:
     def unsafeChar(text: Text, index: Ordinal): Char = text.s.charAt(index.n0)
 
     def indexOf(text: Text, sub: Text, start: Ordinal): Optional[Ordinal] =
-      text.s.indexOf(sub.s, start.n0).puncture(-1).let(Ordinal.zerary(_))
+      text.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)
 
     def builder(size: Optional[Int]): Builder[Text] = TextBuilder(size)
     def size(text: Self): Int = text.length
