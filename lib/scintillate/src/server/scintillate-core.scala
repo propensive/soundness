@@ -103,4 +103,4 @@ extension (request: Http.Request)
   : HttpUrl raises PathError raises UrlError raises HostnameError =
 
       val scheme = if connection.tls then t"https" else t"http"
-      t"$scheme://${request.host}${request.pathText}".decode[HttpUrl]
+      t"$scheme://${request.host}${request.location}".decode[HttpUrl]
