@@ -214,7 +214,7 @@ object Http:
         t"method"   -> request.method.show,
         t"query"    -> request.query.show,
         t"hostname" -> request.host.show,
-        t"path"     -> request.pathText,
+        t"path"     -> request.location,
         t"body"     -> bodySample,
         t"headers"  -> headers,
         t"params"   -> params
@@ -261,7 +261,7 @@ object Http:
 
     inline def request: this.type = this
 
-    lazy val location: Relative on Rfc3986 = pathText.decode[Relative on Rfc3986]
+    lazy val path: Relative on Rfc3986 = location.decode[Relative on Rfc3986]
 
     def on[scheme <: "http" | "https"](origin: Origin[scheme]): HttpUrl =
       Url[scheme](origin, target)
@@ -278,7 +278,7 @@ object Http:
         case _ =>
           queryText.decode[Query]
 
-    lazy val pathText: Text = target.s.indexOf('?') match
+    lazy val location: Text = target.s.indexOf('?') match
       case -1    => target
       case index => target.keep(index)
 

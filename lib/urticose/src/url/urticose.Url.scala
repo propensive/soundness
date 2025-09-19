@@ -53,17 +53,17 @@ import vacuous.*
 
 class Url[+scheme <: Label]
        (val origin:    Origin[scheme],
-        val pathText:  Text,
+        val location:  Text,
         val query:     Optional[Text] = Unset,
         val fragment:  Optional[Text] = Unset)
-extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}${pathText}"):
+extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$location"):
 
   type Plane = Rfc3986
   type Topic = Zero
 
   def scheme: Scheme[scheme] = origin.scheme
   def authority: Optional[Authority] = origin.authority
-  def requestTarget: Text = pathText+query.lay(t"")(t"?"+_)
+  def requestTarget: Text = location+query.lay(t"")(t"?"+_)
   def host: Optional[Hostname] = authority.let(_.host)
 
 object Url:
@@ -73,7 +73,7 @@ object Url:
   given showable: [scheme <: Label] => Url[scheme] is Showable = url =>
     val auth = url.authority.lay(t"")(t"//"+_.show)
     val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
-    t"${url.scheme}:$auth${url.pathText}$rest"
+    t"${url.scheme}:$auth${url.location}$rest"
 
   given encodable: [scheme <: Label] => Url[scheme] is Encodable in Text = _.show
 
