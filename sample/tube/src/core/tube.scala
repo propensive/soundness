@@ -18,7 +18,7 @@ import printableTypes.message
 import supervisors.global
 import textMetrics.uniform
 import textSanitizers.skip
-import threadModels.platform
+import threading.platform
 import unhandledErrors.stackTrace
 import workingDirectories.daemonClient
 import httpServers.stdlibPublic
@@ -87,7 +87,7 @@ def app(): Unit = cli:
           Exit.Ok
 
         case Install() :: _ => execute:
-          safely(Out.println(TabCompletions.install().communicate))
+          safely(Out.println(Completions.install().communicate))
           Exit.Ok
 
         case Trip() :: _ =>
