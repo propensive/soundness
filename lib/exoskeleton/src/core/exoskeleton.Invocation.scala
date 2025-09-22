@@ -39,7 +39,7 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 
-case class CliInvocation
+case class Invocation
    (arguments:        List[Argument],
     environment:      Environment,
     workingDirectory: WorkingDirectory,

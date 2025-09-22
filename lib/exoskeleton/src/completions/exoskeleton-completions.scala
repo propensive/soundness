@@ -42,10 +42,10 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 
-def execute(block: Effectful ?=> CliInvocation ?=> Exit)(using cli: Cli): Execution =
+def execute(block: Effectful ?=> Invocation ?=> Exit)(using cli: Cli): Execution =
   cli.absolve match
     case completion: Completion => Execution(Exit.Ok)
-    case invocation: CliInvocation => Execution(block(using !!)(using invocation))
+    case invocation: Invocation => Execution(block(using !!)(using invocation))
 
 def explain(explanation: (prior: Optional[Text]) ?=> Optional[Text])(using cli: Cli): Unit =
   cli.explain(explanation)
@@ -89,7 +89,7 @@ package executives:
               signals)
 
           case other =>
-            CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
+            Invocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
@@ -98,6 +98,6 @@ package executives:
         completion.serialize.each(Out.println(_))
         Exit.Ok
 
-      case invocation: CliInvocation =>
+      case invocation: Invocation =>
         try execution(using invocation).exitStatus
         catch case error: Throwable => handler.handle(error)(using invocation.stdio)

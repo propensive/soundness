@@ -83,7 +83,7 @@ package unhandledErrors:
 package executives:
   given direct: (handler: UnhandledErrorHandler) => Executive:
     type Return = Exit
-    type Interface = CliInvocation
+    type Interface = Invocation
 
 
     def invocation
@@ -93,9 +93,9 @@ package executives:
           stdio:            Stdio,
           signals:          Spool[Signal])
          (using interpreter: CliInterpreter)
-    : CliInvocation =
+    : Invocation =
 
-        CliInvocation
+        Invocation
          (Cli.arguments(arguments),
           environments.jre,
           workingDirectories.jre,
@@ -103,9 +103,9 @@ package executives:
           signals)
 
 
-    def process(cli: CliInvocation)(exitStatus: Interface ?=> Exit): Exit =
-      try exitStatus(using cli)
-      catch case error: Throwable => handler.handle(error)(using cli.stdio)
+    def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
+      try exitStatus(using invocation)
+      catch case error: Throwable => handler.handle(error)(using invocation.stdio)
       //handler.handle(exitStatus(using cli))(using cli.stdio)
 
 inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
