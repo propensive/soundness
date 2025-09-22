@@ -32,6 +32,23 @@
                                                                                                   */
 package exoskeleton
 
-trait CliInterpreter:
-  type Parameters <: FlagParameters
-  def interpret(arguments: List[Argument]): Parameters
+import anticipation.*
+import distillate.*
+import prepositional.*
+import proscenium.*
+import vacuous.*
+
+import language.experimental.pureFunctions
+
+object Interpretable:
+  given unit: Unit is Interpretable:
+    override def operand: Boolean = false
+    def interpret(arguments: List[Argument]): Unit = ()
+
+  given decoder: [operand: Decodable in Text] => operand is Interpretable = arguments =>
+    arguments.take(1).absolve match
+      case List(value) => value().decode[operand]
+
+trait Interpretable extends Typeclass:
+  def operand: Boolean = true
+  def interpret(arguments: List[Argument]): Optional[Self]

@@ -48,7 +48,7 @@ import vacuous.*
 
 import scala.collection.mutable as scm
 
-case class CliCompletion
+case class Completion
    (fullArguments:    List[Argument],
     arguments:        List[Argument],
     environment:      Environment,
@@ -58,32 +58,30 @@ case class CliCompletion
     focusPosition:    Int,
     stdio:            Stdio,
     signals:          Spool[Signal])
-   (using interpreter: CliInterpreter)
+   (using interpreter: Interpreter)
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
 
-  val flags: scm.HashMap[Flag, Suggestions[?]] = scm.HashMap()
+  val flags: scm.HashMap[Flag, Discoverable] = scm.HashMap()
   val seenFlags: scm.HashSet[Flag] = scm.HashSet()
   var explanation: Optional[Text] = Unset
   var cursorSuggestions: List[Suggestion] = Nil
 
 
-  def readParameter[operand](flag: Flag)(using FlagInterpreter[operand], Suggestions[operand])
-  : Optional[operand] =
-
-      given cli: Cli = this
-      parameters.read(flag)
+  def readParameter[operand: {Interpretable, Discoverable}](flag: Flag): Optional[operand] =
+    given cli: Cli = this
+    parameters.read(flag)
 
 
   def focus: Argument = arguments(currentArgument)
 
-  override def register(flag: Flag, suggestions: Suggestions[?]): Unit =
-    parameters.focusFlag.let: argument =>
+  override def register(flag: Flag, discoverable: Discoverable): Unit =
+    parameters.focus.let: argument =>
       if flag.matches(argument) && currentArgument == argument.position + 1 then
-        val allSuggestions = suggestions.suggest().to(List)
+        val allSuggestions = discoverable.discover().to(List)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
-    if !flag.secret then flags(flag) = suggestions
+    if !flag.secret then flags(flag) = discoverable
 
   override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
   override def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit =
@@ -112,7 +110,7 @@ extends Cli:
 
   def serialize: List[Text] =
     val items =
-      if cursorSuggestions.isEmpty && parameters.focusFlag.absent
+      if cursorSuggestions.isEmpty && parameters.focus.absent
       then flagSuggestions(focus().starts(t"--"))
       else cursorSuggestions
 

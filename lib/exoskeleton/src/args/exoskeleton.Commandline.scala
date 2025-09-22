@@ -30,15 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package gastronomy
+package exoskeleton
 
-import java.security as js
-
-import anticipation.*
+import contingency.*
 import rudiments.*
 import vacuous.*
 
-class MessageDigestion(md: js.MessageDigest) extends Digestion:
-  private val messageDigest: js.MessageDigest = md
-  def append(bytes: Bytes): Unit = messageDigest.update(bytes.mutable(using Unsafe))
-  def digest(): Bytes = messageDigest.digest.nn.immutable(using Unsafe)
+import language.experimental.pureFunctions
+
+case class Commandline
+   (positional:     List[Argument]                = Nil,
+    parameters:     Map[Argument, List[Argument]] = Map(),
+    postpositional: List[Argument]                = Nil,
+    focus:          Optional[Argument]            = Unset)
+extends Flags:
+
+  def read[operand: {Interpretable, Discoverable as discoverable}](flag: Flag)(using cli: Cli)
+  : Optional[operand] =
+
+      cli.register(flag, discoverable)
+
+      parameters.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
+        cli.present(flag)
+        safely(operand.interpret(operands))

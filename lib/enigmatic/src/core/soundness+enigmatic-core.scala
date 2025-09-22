@@ -33,5 +33,5 @@
 package soundness
 
 export enigmatic
-. { Aes, Cipher, CryptoError, Dsa, Encryption, ExposeSecretKey, Hmac, Pem, PemError, PemLabel,
+. { Aes, Cipher, CryptoError, Dsa, Encryption, Divulgence, Hmac, Pem, PemError, PemLabel,
     PrivateKey, Rsa, Signature, Signing, Symmetric, SymmetricKey, hmac }

@@ -30,6 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
+package exoskeleton
 
-object ExposeSecretKey
+import rudiments.*
+import turbulence.*
+
+trait Backstop:
+  def handle(block: Throwable)(using Stdio): Exit

@@ -58,8 +58,8 @@ object Websocket:
 
   given servable: [ResultType] => Websocket[ResultType] is Servable:
     def serve(websocket: Websocket[ResultType]): Http.Response =
-      given prefix: ("secWebsocketAccept" is Prefixable of Text) = identity(_)
-      given prefix2: ("secWebsocketVersion" is Prefixable of Int) = _.toString.tt
+      given prefix: ("secWebsocketAccept" is Directive of Text) = identity(_)
+      given prefix2: ("secWebsocketVersion" is Directive of Int) = _.toString.tt
 
       Http.Response
        (Http.SwitchingProtocols,
@@ -76,7 +76,7 @@ object Websocket:
 class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => ResultType)
        (using Monitor, Codicil):
 
-  given prefix3: ("secWebsocketKey" is Prefixable of Text) = identity(_)
+  given prefix3: ("secWebsocketKey" is Directive of Text) = identity(_)
   val key: Text = request.headers.secWebsocketKey.prim.or(panic(m"Missing header"))
   private val spool: Spool[Frame] = Spool()
 

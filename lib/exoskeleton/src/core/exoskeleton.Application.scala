@@ -37,7 +37,7 @@ import rudiments.*
 
 abstract class Application:
   import executives.direct
-  import unhandledErrors.genericErrorMessage
+  import backstops.genericErrorMessage
   import parameterInterpretation.posix
   def invoke(using Cli): Exit
   def main(textArguments: IArray[Text]): Unit = application(textArguments)(invoke)

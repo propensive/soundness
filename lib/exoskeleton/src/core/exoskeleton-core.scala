@@ -44,13 +44,13 @@ import turbulence.*
 
 import sun.misc as sm
 
-package unhandledErrors:
-  given silent: UnhandledErrorHandler:
+package backstops:
+  given silent: Backstop:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception => Exit(1)
       case error: Throwable => Exit(2)
 
-  given genericErrorMessage: UnhandledErrorHandler:
+  given genericErrorMessage: Backstop:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(t"An unexpected error occurred.")
@@ -60,7 +60,7 @@ package unhandledErrors:
         Out.println(t"An unexpected error occurred.")
         Exit(2)
 
-  given exceptionMessage: UnhandledErrorHandler:
+  given exceptionMessage: Backstop:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(error.toString.tt)
@@ -70,7 +70,7 @@ package unhandledErrors:
         Out.println(error.toString.tt)
         Exit(2)
 
-  given stackTrace: UnhandledErrorHandler:
+  given stackTrace: Backstop:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(StackTrace(error).teletype)
@@ -81,9 +81,9 @@ package unhandledErrors:
         Exit(2)
 
 package executives:
-  given direct: (handler: UnhandledErrorHandler) => Executive:
+  given direct: (handler: Backstop) => Executive:
     type Return = Exit
-    type Interface = CliInvocation
+    type Interface = Invocation
 
 
     def invocation
@@ -92,10 +92,10 @@ package executives:
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
           signals:          Spool[Signal])
-         (using interpreter: CliInterpreter)
-    : CliInvocation =
+         (using interpreter: Interpreter)
+    : Invocation =
 
-        CliInvocation
+        Invocation
          (Cli.arguments(arguments),
           environments.jre,
           workingDirectories.jre,
@@ -103,15 +103,15 @@ package executives:
           signals)
 
 
-    def process(cli: CliInvocation)(exitStatus: Interface ?=> Exit): Exit =
-      try exitStatus(using cli)
-      catch case error: Throwable => handler.handle(error)(using cli.stdio)
+    def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
+      try exitStatus(using invocation)
+      catch case error: Throwable => handler.handle(error)(using invocation.stdio)
       //handler.handle(exitStatus(using cli))(using cli.stdio)
 
 inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
   lambda(using !![Effectful])
 
-def application(using executive: Executive, interpreter: CliInterpreter)
+def application(using executive: Executive, interpreter: Interpreter)
    (arguments: Iterable[Text], signals: List[Signal] = Nil)
    (block: Cli ?=> executive.Return)
 : Unit =

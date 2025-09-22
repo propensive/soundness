@@ -50,15 +50,12 @@ object Cli:
         Argument(index, text, if focus == index then position else Unset)
 
 
-trait Cli extends ProcessContext:
+trait Cli extends Console:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
-
-  def readParameter[operand](flag: Flag)(using FlagInterpreter[operand], Suggestions[operand])
-  : Optional[operand]
-
-  def register(flag: Flag, suggestions: Suggestions[?]): Unit = ()
+  def readParameter[operand: {Interpretable, Discoverable}](flag: Flag): Optional[operand]
+  def register(flag: Flag, discoverable: Discoverable): Unit = ()
   def present(flag: Flag): Unit = ()
   def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit = ()
   def suggest(argument: Argument, update: (prior: List[Suggestion]) ?=> List[Suggestion]) = ()

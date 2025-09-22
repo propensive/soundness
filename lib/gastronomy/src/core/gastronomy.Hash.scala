@@ -38,7 +38,20 @@ import javax.crypto as jc
 import scala.compiletime.*, ops.int.*
 
 import anticipation.*
+import prepositional.*
 
-trait JavaHashFunction extends HashFunction:
-  def init(): Digestion = new MessageDigestion(js.MessageDigest.getInstance(name.s).nn)
-  def hmac0: jc.Mac = jc.Mac.getInstance(hmacName.s).nn
+object Hash:
+  def java[algorithm <: Algorithm](name0: Text, hmacName0: Text): Hash in algorithm = new Hash:
+    type Form = algorithm
+    val name: Text = name0
+    val hmacName: Text = hmacName0
+    def init(): Digestion = new Digestion.Java(js.MessageDigest.getInstance(name0.s).nn)
+    def hmac0: jc.Mac = jc.Mac.getInstance(hmacName0.s).nn
+
+trait Hash:
+  type Form <: Algorithm
+
+  def name: Text
+  def hmacName: Text
+  def init(): Digestion
+  def hmac0: jc.Mac

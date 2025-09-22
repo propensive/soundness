@@ -34,7 +34,7 @@ package parasite
 
 import language.experimental.pureFunctions
 
-enum Completion[+value]:
+enum Fulfillment[+value]:
   case Initializing, Cancelled
   case Active(startTime: Long)
   case Completed(duration: Long, value: value)

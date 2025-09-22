@@ -43,7 +43,7 @@ enum DaemonEvent:
         (pid:         Pid,
          work:        Text,
          script:      Text,
-         cliInput:    CliInput,
+         cliInput:    Stdin,
          arguments:   List[Text],
          environment: List[Text])
 

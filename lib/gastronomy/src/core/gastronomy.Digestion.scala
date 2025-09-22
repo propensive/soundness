@@ -32,7 +32,17 @@
                                                                                                   */
 package gastronomy
 
+import java.security as js
+
 import anticipation.*
+import rudiments.*
+import vacuous.*
+
+object Digestion:
+  class Java(md: js.MessageDigest) extends Digestion:
+    private val messageDigest: js.MessageDigest = md
+    def append(bytes: Bytes): Unit = messageDigest.update(bytes.mutable(using Unsafe))
+    def digest(): Bytes = messageDigest.digest.nn.immutable(using Unsafe)
 
 trait Digestion:
   def append(bytes: Bytes): Unit

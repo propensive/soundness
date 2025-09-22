@@ -38,7 +38,7 @@ import strategies.throwUnsafely
 import charEncoders.utf8
 import inimitable.*
 import jsonPrinters.minimal
-import threadModels.platform
+import threading.platform
 
 object Tests extends Suite(m"Coaxial tests"):
   def run(): Unit = unsafely:

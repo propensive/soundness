@@ -30,31 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package profanity
 
-import ambience.*
-import anticipation.*
-import profanity.*
-import rudiments.*
 import turbulence.*
-import vacuous.*
 
-case class CliInvocation
-   (arguments:        List[Argument],
-    environment:      Environment,
-    workingDirectory: WorkingDirectory,
-    stdio:            Stdio,
-    signals:          Spool[Signal])
-   (using interpreter: CliInterpreter)
-extends Cli, Stdio:
+object Console:
+  def apply(stdio: Stdio, signals: Spool[Signal] = Spool()): Console =
+    inline def stdio0: Stdio = stdio
+    inline def signals0: Spool[Signal] = signals
 
-  export stdio.{termcap, out, err, in}
+    new Console:
+      val stdio: Stdio = stdio0
+      def signals: Spool[Signal] = signals0
 
-  private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
-
-
-  def readParameter[operand](flag: Flag)(using FlagInterpreter[operand], Suggestions[operand])
-  : Optional[operand] =
-
-      given cli: Cli = this
-      parameters.read(flag)
+trait Console:
+  val stdio: Stdio
+  def signals: Spool[Signal]

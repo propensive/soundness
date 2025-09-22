@@ -30,16 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package parasite
 
-import anticipation.*
-import distillate.*
-import gossamer.*
-import prepositional.*
+import language.experimental.pureFunctions
 
-object CliInput:
-  given decoder: CliInput is Decodable in Text = text => valueOf(text.lower.capitalize.s)
-  given encodable: CliInput is Encodable in Text = _.toString.tt.lower
-
-enum CliInput:
-  case Terminal, Pipe
+trait Threading:
+  def supervisor(): Supervisor

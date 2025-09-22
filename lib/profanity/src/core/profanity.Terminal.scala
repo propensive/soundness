@@ -50,15 +50,15 @@ object Terminal:
   def disablePaste: Text = t"\e[?2004l"
 
 case class Terminal(signals: Spool[Signal])
-   (using context: ProcessContext, monitor: Monitor, codicil: Codicil)
+  (using console: Console, monitor: Monitor, codicil: Codicil)
 extends Interactivity[TerminalEvent]:
 
-  export context.stdio.{in, out, err}
+  export console.stdio.{in, out, err}
 
-  val keyboard: StandardKeyboard = StandardKeyboard()
+  val keyboard: Keyboard.Standard = Keyboard.Standard()
   val rows0: Promise[Int] = Promise()
   val columns0: Promise[Int] = Promise()
-  var mode: Optional[TerminalMode] = Unset
+  var mode: Optional[Luminance] = Unset
   var rows: Optional[Int] = Unset
   var columns: Optional[Int] = Unset
 
@@ -72,9 +72,9 @@ extends Interactivity[TerminalEvent]:
 
   given stdio: Stdio = new Stdio:
     val termcap = cap
-    val out = context.stdio.out
-    val err = context.stdio.err
-    val in = context.stdio.in
+    val out = console.stdio.out
+    val err = console.stdio.err
+    val in = console.stdio.in
 
   val events: Spool[TerminalEvent] = Spool()
   def eventStream(): Stream[TerminalEvent] = events.stream
@@ -101,7 +101,7 @@ extends Interactivity[TerminalEvent]:
         events.put(resize)
 
       case bgColor@TerminalInfo.BgColor(red, green, blue) =>
-        mode = if dark(red, green, blue) then TerminalMode.Dark else TerminalMode.Light
+        mode = if dark(red, green, blue) then Luminance.Dark else Luminance.Light
         events.put(bgColor)
 
       case other =>

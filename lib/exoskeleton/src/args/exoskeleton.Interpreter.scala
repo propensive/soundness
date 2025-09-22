@@ -32,40 +32,6 @@
                                                                                                   */
 package exoskeleton
 
-import anticipation.*
-import fulminate.*
-
-enum TabCompletionsInstallation:
-  case CommandNotOnPath(script: Text)
-  case Shells
-        (zsh:  TabCompletionsInstallation.InstallResult,
-         bash: TabCompletionsInstallation.InstallResult,
-         fish: TabCompletionsInstallation.InstallResult)
-
-object TabCompletionsInstallation:
-  given communicable: TabCompletionsInstallation is Communicable =
-    case CommandNotOnPath(script) =>
-      m"The ${script} command is not on the PATH, so completions scripts cannot be installed."
-
-    case Shells(zsh, bash, fish) =>
-      m"$zsh\n\n$bash\n\n$fish"
-
-  object InstallResult:
-    given communicable: InstallResult is Communicable =
-      case Installed(shell, path) =>
-        m"The $shell completion script was installed to $path."
-
-      case AlreadyInstalled(shell, path) =>
-        m"A $shell completion script already exists at $path."
-
-      case NoWritableLocation(shell) =>
-        m"No writable install location could be found for $shell completions."
-
-      case ShellNotInstalled(shell) =>
-        m"The $shell shell is not installed."
-
-  enum InstallResult:
-    case Installed(shell: Shell, path: Text)
-    case AlreadyInstalled(shell: Shell, path: Text)
-    case NoWritableLocation(shell: Shell)
-    case ShellNotInstalled(shell: Shell)
+trait Interpreter:
+  type Parameters <: Flags
+  def interpret(arguments: List[Argument]): Parameters

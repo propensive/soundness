@@ -38,7 +38,7 @@ import eucalyptus.*, logging.stdout
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
-import parasite.*, threadModels.virtual
+import parasite.*, threading.virtual
 import probably.*
 import proscenium.*
 import rudiments.*

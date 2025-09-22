@@ -42,16 +42,16 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 
-def execute(block: Effectful ?=> CliInvocation ?=> Exit)(using cli: Cli): Execution =
+def execute(block: Effectful ?=> Invocation ?=> Exit)(using cli: Cli): Execution =
   cli.absolve match
-    case completion: CliCompletion => Execution(Exit.Ok)
-    case invocation: CliInvocation => Execution(block(using !!)(using invocation))
+    case completion: Completion => Execution(Exit.Ok)
+    case invocation: Invocation => Execution(block(using !!)(using invocation))
 
 def explain(explanation: (prior: Optional[Text]) ?=> Optional[Text])(using cli: Cli): Unit =
   cli.explain(explanation)
 
 package executives:
-  given completions: (handler: UnhandledErrorHandler) => Executive:
+  given completions: (backstop: Backstop) => Executive:
     type Interface = Cli
     type Return = Execution
 
@@ -62,7 +62,7 @@ package executives:
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
           signals:          Spool[Signal])
-         (using interpreter: CliInterpreter)
+         (using interpreter: Interpreter)
     : Cli =
 
         arguments match
@@ -77,7 +77,7 @@ package executives:
 
             val focus = if shell == Shell.Zsh then focus0 - 1 else focus0
 
-            CliCompletion
+            Completion
              (Cli.arguments(arguments, focus - 1, position),
               Cli.arguments(rest, focus - 1, position),
               environment,
@@ -89,15 +89,15 @@ package executives:
               signals)
 
           case other =>
-            CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
+            Invocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
-      case completion: CliCompletion =>
+      case completion: Completion =>
         given stdio: Stdio = completion.stdio
         completion.serialize.each(Out.println(_))
         Exit.Ok
 
-      case invocation: CliInvocation =>
+      case invocation: Invocation =>
         try execution(using invocation).exitStatus
-        catch case error: Throwable => handler.handle(error)(using invocation.stdio)
+        catch case error: Throwable => backstop.handle(error)(using invocation.stdio)

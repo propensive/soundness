@@ -33,11 +33,11 @@
 package soundness
 
 export exoskeleton
-. { application, Application, CliInvocation, Effectful, Executive, InstallError, ShellContext,
-    UnhandledErrorHandler, effectful }
+. { application, Application, Invocation, Effectful, Executive, InstallError, ShellContext,
+    Backstop, effectful }
 
 package unhandledErrors:
-  export exoskeleton.unhandledErrors.{silent, genericErrorMessage, exceptionMessage, stackTrace}
+  export exoskeleton.backstops.{silent, genericErrorMessage, exceptionMessage, stackTrace}
 
 package executives:
   export exoskeleton.executives.direct

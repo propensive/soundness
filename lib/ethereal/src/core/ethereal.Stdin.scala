@@ -30,12 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package ethereal
 
-import language.experimental.pureFunctions
+import anticipation.*
+import distillate.*
+import gossamer.*
+import prepositional.*
 
-object Suggestions:
-  def noSuggestions[operand]: Suggestions[operand] = () => Nil
+object Stdin:
+  given decoder: Stdin is Decodable in Text = text => valueOf(text.lower.capitalize.s)
+  given encodable: Stdin is Encodable in Text = _.toString.tt.lower
 
-trait Suggestions[-operand]:
-  def suggest(): Iterable[Suggestion]
+enum Stdin:
+  case Terminal, Pipe

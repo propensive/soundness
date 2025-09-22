@@ -55,17 +55,17 @@ object Telekinesis:
       import quotes.reflect.*
 
       def unnamed[value: Type](value: Expr[value], tail: Seq[Expr[Any]]) =
-        Expr.summon[Prefixable of ? >: value].getOrElse:
+        Expr.summon[Directive of ? >: value].getOrElse:
           val typeName = TypeRepr.of[value].show
           halt(m"the type $typeName does not uniquely identify a particular HTTP header")
 
         . absolve
         . match
-            case '{ type keyType <: Label; $prefixable: (Prefixable { type Self = keyType }) } =>
+            case '{ type keyType <: Label; $directive: (Directive { type Self = keyType }) } =>
               TypeRepr.of[keyType].absolve match
                 case ConstantType(StringConstant(key)) =>
                   val header =
-                    '{Http.Header(${Expr(key)}.tt.uncamel.kebab, $prefixable.encode($value))}
+                    '{Http.Header(${Expr(key)}.tt.uncamel.kebab, $directive.encode($value))}
 
                   expand(tail, method, status, header :: done)
 
@@ -92,11 +92,11 @@ object Telekinesis:
         case '{ type keyType <: Label; ($key: keyType, $value: valueType) } +: tail =>
           val name: Text = key.value.get.tt.uncamel.map(_.capitalize).kebab
 
-          val Prefixable = Expr.summon[keyType is Prefixable of valueType].getOrElse:
+          val Directive = Expr.summon[keyType is Directive of valueType].getOrElse:
             val typeName = TypeRepr.of[valueType].show
             halt(m"the header $name cannot take a value of type $typeName")
 
-          val header = '{Http.Header($key.tt.uncamel.kebab, $Prefixable.encode($value))}
+          val header = '{Http.Header($key.tt.uncamel.kebab, $Directive.encode($value))}
           expand(tail, method, status, header :: done)
 
         case '{ $value: valueType } +: tail =>

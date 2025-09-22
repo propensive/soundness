@@ -34,11 +34,48 @@ package exoskeleton
 
 import anticipation.*
 import fulminate.*
+import gossamer.*
+import vacuous.*
 
 given realm: Realm = realm"exoskeleton"
 
 package parameterInterpretation:
-  given simple: SimpleParameterInterpreter.type = SimpleParameterInterpreter
-  given posix: PosixCliInterpreter.type = PosixCliInterpreter
+  given simple: Interpreter:
+    type Parameters = Arguments
+    def interpret(arguments: List[Argument]): Arguments = Arguments(arguments*)
+
+  given posix: Interpreter:
+    type Parameters = Commandline
+
+    def interpret(arguments: List[Argument]): Commandline =
+      def recur
+           (todo:        List[Argument],
+            arguments:   List[Argument],
+            current:     Optional[Argument],
+            commandline: Commandline)
+      : Commandline =
+
+          def push(): Commandline = current match
+            case Unset =>
+              Commandline(arguments.reverse)
+
+            case current: Argument =>
+              commandline.copy
+               (parameters = commandline.parameters.updated(current, arguments.reverse))
+
+          todo match
+            case head :: tail =>
+              if head() == t"--" then push().copy(postpositional = tail)
+              else if head().starts(t"-") then recur(tail, Nil, head, push())
+              else
+                val commandline2 =
+                  if head.cursor.present then commandline.copy(focus = current) else commandline
+                recur(tail, head :: arguments, current, commandline2)
+
+            case Nil =>
+              push()
+
+
+      recur(arguments, Nil, Unset, Commandline())
 
 def arguments(using cli: Cli): List[Argument] = cli.arguments

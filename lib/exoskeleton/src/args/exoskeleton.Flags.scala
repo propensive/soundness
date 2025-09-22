@@ -30,9 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package parasite
+package exoskeleton
 
-import language.experimental.pureFunctions
+import vacuous.*
 
-trait ThreadModel:
-  def supervisor(): Supervisor
+trait Flags:
+  def read[operand: {Interpretable, Discoverable}](flag: Flag)(using Cli): Optional[operand]
+  def focus: Optional[Argument]

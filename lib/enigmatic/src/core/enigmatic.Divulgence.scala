@@ -30,19 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package profanity
+package enigmatic
 
-import turbulence.*
-
-object ProcessContext:
-  def apply(stdio: Stdio, signals: Spool[Signal] = Spool()): ProcessContext =
-    inline def stdio0: Stdio = stdio
-    inline def signals0: Spool[Signal] = signals
-
-    new ProcessContext:
-      val stdio: Stdio = stdio0
-      def signals: Spool[Signal] = signals0
-
-trait ProcessContext:
-  val stdio: Stdio
-  def signals: Spool[Signal]
+object Divulgence

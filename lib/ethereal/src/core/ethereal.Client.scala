@@ -30,13 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package ethereal
 
 import anticipation.*
-import vacuous.*
+import contingency.*
+import guillotine.*
+import parasite.*
+import prepositional.*
+import profanity.*
+import proscenium.*
+import rudiments.*
+import turbulence.*
 
-case class SuggestionsState
-   (suggestions: Map[Argument, () => List[Suggestion]],
-    explanation: Optional[Text],
-    known:       Set[Flag],
-    present:     Set[Flag])
+import java.net as jn
+import java.io as ji
+
+import language.experimental.pureFunctions
+
+object Client:
+  @targetName("make")
+  def apply[bus <: Matchable](pid: Pid): Client of bus =
+    new Client(pid):
+      type Topic = bus
+
+case class Client(pid: Pid) extends Topical:
+  type Topic <: Matchable
+  val stderr: Promise[ji.OutputStream] = Promise()
+  val signals: Spool[Signal] = Spool()
+  val bus: Spool[Topic] = Spool()
+  val terminatePid: Promise[Pid] = Promise()
+  val exitPromise: Promise[Exit] = Promise()
+  def receive(message: Topic): Unit = bus.put(message)
+  val socket: Promise[jn.Socket] = Promise()
+  def close(): Unit = safely(socket.await(1000L).close())

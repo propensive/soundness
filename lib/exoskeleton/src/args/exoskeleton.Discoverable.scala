@@ -30,16 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package gastronomy
+package exoskeleton
 
-import javax.crypto as jc
+import language.experimental.pureFunctions
 
-import anticipation.*
+import prepositional.*
 
-trait HashFunction:
-  type Form <: Algorithm
+object Discoverable:
+  def noSuggestions[operand]: operand is Discoverable = () => Nil
 
-  def name: Text
-  def hmacName: Text
-  def init(): Digestion
-  def hmac0: jc.Mac
+trait Discoverable extends Typeclass:
+  def discover(): Iterable[Suggestion]

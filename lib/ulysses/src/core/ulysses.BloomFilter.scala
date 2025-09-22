@@ -45,25 +45,25 @@ import scala.collection.mutable as scm
 
 object BloomFilter:
   def apply[element: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)
-       [hash <: Algorithm]
-       (using HashFunction in hash)
-  : BloomFilter[element, hash] =
+       [algorithm <: Algorithm]
+       (using Hash in algorithm)
+  : BloomFilter[element, algorithm] =
 
       val bitSize: Int = (-1.44*approximateSize*ln(targetErrorRate.double).double).toInt
       val hashCount: Int = ((bitSize.toDouble/approximateSize.toDouble)*ln(2.0).double + 0.5).toInt
       new BloomFilter(bitSize, hashCount, sci.BitSet())
 
 
-case class BloomFilter[element: Digestible, hash <: Algorithm]
+case class BloomFilter[element: Digestible, algorithm <: Algorithm]
    (bitSize: Int, hashCount: Int, bits: sci.BitSet)
-   (using HashFunction in hash):
+   (using Hash in algorithm):
 
   private val requiredEntropyBits = ln(bitSize ** hashCount).double.toInt + 1
 
   private def hash(value: element): BigInt =
     def recur(count: Int = 0, bytes: List[Array[Byte]] = Nil): BigInt =
       if bytes.map(_.length).sum*8 < requiredEntropyBits
-      then recur(count + 1, (count, value).digest[hash].bytes.mutable(using Unsafe) :: bytes)
+      then recur(count + 1, (count, value).digest[algorithm].bytes.mutable(using Unsafe) :: bytes)
       else BigInt(bytes.to(Array).flatten).abs
 
     recur()
@@ -78,13 +78,13 @@ case class BloomFilter[element: Digestible, hash <: Algorithm]
     recur(hash(value), 0)
 
   @targetName("add")
-  infix def + (value: element): BloomFilter[element, hash] =
+  infix def + (value: element): BloomFilter[element, algorithm] =
     val bitSet = scm.BitSet()
     additions(value, bitSet)
     BloomFilter(bitSize, hashCount, bits | bitSet)
 
   @targetName("addAll")
-  infix def ++ (elements: Iterable[element]): BloomFilter[element, hash] =
+  infix def ++ (elements: Iterable[element]): BloomFilter[element, algorithm] =
     val bitSet = scm.BitSet()
     elements.each(additions(_, bitSet))
     BloomFilter(bitSize, hashCount, bits | bitSet)

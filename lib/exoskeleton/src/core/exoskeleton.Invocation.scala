@@ -32,8 +32,27 @@
                                                                                                   */
 package exoskeleton
 
+import ambience.*
+import anticipation.*
+import profanity.*
 import rudiments.*
 import turbulence.*
+import vacuous.*
 
-trait UnhandledErrorHandler:
-  def handle(block: Throwable)(using Stdio): Exit
+case class Invocation
+   (arguments:        List[Argument],
+    environment:      Environment,
+    workingDirectory: WorkingDirectory,
+    stdio:            Stdio,
+    signals:          Spool[Signal])
+   (using interpreter: Interpreter)
+extends Cli, Stdio:
+
+  export stdio.{termcap, out, err, in}
+
+  private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
+
+
+  def readParameter[operand: {Interpretable, Discoverable}](flag: Flag): Optional[operand] =
+    given cli: Cli = this
+    parameters.read(flag)
