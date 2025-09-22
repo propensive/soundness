@@ -35,5 +35,5 @@ package exoskeleton
 import rudiments.*
 import turbulence.*
 
-trait UnhandledErrorHandler:
+trait Backstop:
   def handle(block: Throwable)(using Stdio): Exit

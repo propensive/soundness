@@ -88,7 +88,7 @@ def cli[bus <: Matchable](using executive: Executive)
    (using interpreter:   Interpreter,
           stderrSupport: StderrSupport = daemonConfig.supportStderr,
           model:         ThreadModel,
-          handler:       UnhandledErrorHandler)
+          handler:       Backstop)
       : Unit =
 
   given realm: Realm = realm"ethereal"
@@ -294,7 +294,7 @@ def cli[bus <: Matchable](using executive: Executive)
               socket.close()
               Log.info(DaemonLogEvent.CloseConnection(pid))
 
-  application(using executives.direct(using unhandledErrors.silent))(Nil):
+  application(using executives.direct(using backstops.silent))(Nil):
     import stdioSources.virtualMachine.ansi
     import asyncTermination.await
 

@@ -51,7 +51,7 @@ def explain(explanation: (prior: Optional[Text]) ?=> Optional[Text])(using cli: 
   cli.explain(explanation)
 
 package executives:
-  given completions: (handler: UnhandledErrorHandler) => Executive:
+  given completions: (backstop: Backstop) => Executive:
     type Interface = Cli
     type Return = Execution
 
@@ -100,4 +100,4 @@ package executives:
 
       case invocation: Invocation =>
         try execution(using invocation).exitStatus
-        catch case error: Throwable => handler.handle(error)(using invocation.stdio)
+        catch case error: Throwable => backstop.handle(error)(using invocation.stdio)

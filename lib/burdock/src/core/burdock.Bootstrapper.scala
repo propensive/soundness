@@ -64,7 +64,7 @@ import zeppelin.*
 import charDecoders.utf8
 import textSanitizers.skip
 import stdioSources.virtualMachine.ansi
-import unhandledErrors.stackTrace
+import backstops.stackTrace
 import executives.direct
 import parameterInterpretation.posix
 import systemProperties.jre
