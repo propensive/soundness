@@ -43,9 +43,9 @@ import prepositional.*
 import rudiments.*
 
 extension [encodable: Encodable in Bytes](value: encodable)
-  def hmac[hash <: Algorithm](key: Bytes)(using function: HashFunction in hash): Hmac in hash =
+  def hmac[algorithm <: Algorithm](key: Bytes)(using hash: Hash in algorithm): Hmac in algorithm =
 
-    val mac = function.hmac0
-    mac.init(SecretKeySpec(key.to(Array), function.name.s))
+    val mac = hash.hmac0
+    mac.init(SecretKeySpec(key.to(Array), hash.name.s))
 
     Hmac(unsafely(mac.doFinal(encodable.encode(value).mutable).nn.immutable))

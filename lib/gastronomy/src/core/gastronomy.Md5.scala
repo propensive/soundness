@@ -37,9 +37,7 @@ import gossamer.*
 import prepositional.*
 
 object Md5:
-  given hashFunction: JavaHashFunction in Md5:
-    val name: Text = t"MD5"
-    val hmacName: Text = t"HmacMD5"
+  given hash: Hash in Md5 = Hash.java(t"MD5", t"HmacMD5")
 
 sealed trait Md5 extends Algorithm:
   type Bits = 128
