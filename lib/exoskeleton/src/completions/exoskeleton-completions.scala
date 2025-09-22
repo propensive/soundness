@@ -62,7 +62,7 @@ package executives:
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
           signals:          Spool[Signal])
-         (using interpreter: CliInterpreter)
+         (using interpreter: Interpreter)
     : Cli =
 
         arguments match

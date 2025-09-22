@@ -45,7 +45,7 @@ case class Invocation
     workingDirectory: WorkingDirectory,
     stdio:            Stdio,
     signals:          Spool[Signal])
-   (using interpreter: CliInterpreter)
+   (using interpreter: Interpreter)
 extends Cli, Stdio:
 
   export stdio.{termcap, out, err, in}

@@ -40,11 +40,11 @@ import vacuous.*
 given realm: Realm = realm"exoskeleton"
 
 package parameterInterpretation:
-  given simple: CliInterpreter:
+  given simple: Interpreter:
     type Parameters = Arguments
     def interpret(arguments: List[Argument]): Arguments = Arguments(arguments*)
 
-  given posix: CliInterpreter:
+  given posix: Interpreter:
     type Parameters = PosixParameters
     def interpret(arguments: List[Argument]): PosixParameters =
       def recur

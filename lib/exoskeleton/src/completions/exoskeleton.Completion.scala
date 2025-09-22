@@ -58,7 +58,7 @@ case class Completion
     focusPosition:    Int,
     stdio:            Stdio,
     signals:          Spool[Signal])
-   (using interpreter: CliInterpreter)
+   (using interpreter: Interpreter)
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
 

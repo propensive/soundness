@@ -92,7 +92,7 @@ package executives:
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
           signals:          Spool[Signal])
-         (using interpreter: CliInterpreter)
+         (using interpreter: Interpreter)
     : Invocation =
 
         Invocation
@@ -111,7 +111,7 @@ package executives:
 inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
   lambda(using !![Effectful])
 
-def application(using executive: Executive, interpreter: CliInterpreter)
+def application(using executive: Executive, interpreter: Interpreter)
    (arguments: Iterable[Text], signals: List[Signal] = Nil)
    (block: Cli ?=> executive.Return)
 : Unit =

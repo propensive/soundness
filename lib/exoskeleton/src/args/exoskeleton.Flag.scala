@@ -71,7 +71,7 @@ case class Flag
 
   def apply[operand]()
        (using cli:             Cli,
-              interpreter:     CliInterpreter,
+              interpreter:     Interpreter,
               interpretable:   operand is Interpretable,
               suggestions:     operand is Discoverable   = Discoverable.noSuggestions)
   : Optional[operand] =
@@ -81,7 +81,7 @@ case class Flag
 
 
   def select[operand](options: Iterable[operand])
-       (using cli: Cli, interpreter: CliInterpreter, suggestible: operand is Suggestible)
+       (using cli: Cli, interpreter: Interpreter, suggestible: operand is Suggestible)
   : Optional[operand] =
 
       val mapping: Map[Text, operand] =

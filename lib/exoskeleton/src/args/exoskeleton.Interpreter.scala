@@ -32,6 +32,6 @@
                                                                                                   */
 package exoskeleton
 
-trait CliInterpreter:
+trait Interpreter:
   type Parameters <: FlagParameters
   def interpret(arguments: List[Argument]): Parameters
