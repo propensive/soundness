@@ -142,10 +142,10 @@ def cli[bus <: Matchable](using executive: Executive)
   val baseDir: Path on Linux = runtimeDir.or(stateHome) //name
   val portFile: Path on Linux = baseDir/name/"port"
   val pidFile: Path on Linux = baseDir/name/"pid"
-  val clients: scc.TrieMap[Pid, Client[bus]] = scc.TrieMap()
+  val clients: scc.TrieMap[Pid, Client of bus] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
 
-  def client(pid: Pid): Client[bus] = clients.getOrElseUpdate(pid, Client(pid))
+  def client(pid: Pid): Client of bus = clients.getOrElseUpdate(pid, Client[bus](pid))
 
   lazy val termination: Unit =
     portFile.wipe()

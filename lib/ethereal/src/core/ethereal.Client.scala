@@ -36,7 +36,9 @@ import anticipation.*
 import contingency.*
 import guillotine.*
 import parasite.*
+import prepositional.*
 import profanity.*
+import proscenium.*
 import rudiments.*
 import turbulence.*
 
@@ -45,12 +47,19 @@ import java.io as ji
 
 import language.experimental.pureFunctions
 
-case class Client[bus <: Matchable](pid: Pid):
+object Client:
+  @targetName("make")
+  def apply[bus <: Matchable](pid: Pid): Client of bus =
+    new Client(pid):
+      type Topic = bus
+
+case class Client(pid: Pid) extends Topical:
+  type Topic <: Matchable
   val stderr: Promise[ji.OutputStream] = Promise()
   val signals: Spool[Signal] = Spool()
-  val bus: Spool[bus] = Spool()
+  val bus: Spool[Topic] = Spool()
   val terminatePid: Promise[Pid] = Promise()
   val exitPromise: Promise[Exit] = Promise()
-  def receive(message: bus): Unit = bus.put(message)
+  def receive(message: Topic): Unit = bus.put(message)
   val socket: Promise[jn.Socket] = Promise()
   def close(): Unit = safely(socket.await(1000L).close())
