@@ -34,8 +34,8 @@ package exoskeleton
 
 import vacuous.*
 
-case class Arguments(sequence: Argument*) extends FlagParameters:
+case class Arguments(sequence: Argument*) extends Flags:
   def read[operand: {Interpretable, Discoverable}](flag: Flag)(using Cli): Optional[operand] =
       Unset // FIXME
 
-  def focusFlag: Optional[Argument] = Unset
+  def focus: Optional[Argument] = Unset

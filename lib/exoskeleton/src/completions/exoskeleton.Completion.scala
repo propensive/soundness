@@ -76,7 +76,7 @@ extends Cli:
   def focus: Argument = arguments(currentArgument)
 
   override def register(flag: Flag, discoverable: Discoverable): Unit =
-    parameters.focusFlag.let: argument =>
+    parameters.focus.let: argument =>
       if flag.matches(argument) && currentArgument == argument.position + 1 then
         val allSuggestions = discoverable.discover().to(List)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
@@ -110,7 +110,7 @@ extends Cli:
 
   def serialize: List[Text] =
     val items =
-      if cursorSuggestions.isEmpty && parameters.focusFlag.absent
+      if cursorSuggestions.isEmpty && parameters.focus.absent
       then flagSuggestions(focus().starts(t"--"))
       else cursorSuggestions
 

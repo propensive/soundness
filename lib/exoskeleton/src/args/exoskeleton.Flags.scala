@@ -34,6 +34,6 @@ package exoskeleton
 
 import vacuous.*
 
-trait FlagParameters:
+trait Flags:
   def read[operand: {Interpretable, Discoverable}](flag: Flag)(using Cli): Optional[operand]
-  def focusFlag: Optional[Argument]
+  def focus: Optional[Argument]

@@ -38,12 +38,12 @@ import vacuous.*
 
 import language.experimental.pureFunctions
 
-case class PosixParameters
+case class Commandline
    (positional:     List[Argument]                = Nil,
     parameters:     Map[Argument, List[Argument]] = Map(),
     postpositional: List[Argument]                = Nil,
-    focusFlag:      Optional[Argument]            = Unset)
-extends FlagParameters:
+    focus:          Optional[Argument]            = Unset)
+extends Flags:
 
   def read[operand: {Interpretable, Discoverable as discoverable}](flag: Flag)(using cli: Cli)
   : Optional[operand] =

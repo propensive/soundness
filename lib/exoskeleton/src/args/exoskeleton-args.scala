@@ -45,18 +45,18 @@ package parameterInterpretation:
     def interpret(arguments: List[Argument]): Arguments = Arguments(arguments*)
 
   given posix: Interpreter:
-    type Parameters = PosixParameters
-    def interpret(arguments: List[Argument]): PosixParameters =
+    type Parameters = Commandline
+    def interpret(arguments: List[Argument]): Commandline =
       def recur
            (todo:       List[Argument],
             arguments:  List[Argument],
             current:    Optional[Argument],
-            parameters: PosixParameters)
-      : PosixParameters =
+            parameters: Commandline)
+      : Commandline =
 
-          def push(): PosixParameters = current match
+          def push(): Commandline = current match
             case Unset =>
-              PosixParameters(arguments.reverse)
+              Commandline(arguments.reverse)
 
             case current: Argument =>
               parameters.copy(parameters = parameters.parameters.updated(current, arguments.reverse))
@@ -67,13 +67,13 @@ package parameterInterpretation:
               else if head().starts(t"-") then recur(tail, Nil, head, push())
               else
                 val parameters2 =
-                  if head.cursor.present then parameters.copy(focusFlag = current) else parameters
+                  if head.cursor.present then parameters.copy(focus = current) else parameters
                 recur(tail, head :: arguments, current, parameters2)
 
             case Nil =>
               push()
 
 
-      recur(arguments, Nil, Unset, PosixParameters())
+      recur(arguments, Nil, Unset, Commandline())
 
 def arguments(using cli: Cli): List[Argument] = cli.arguments
