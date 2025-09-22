@@ -59,8 +59,8 @@ case class Flag
     description: Optional[Text] = Unset,
     secret: Boolean             = false):
 
-  def suggest[operand: Interpretable](suggestions: Suggestions[operand])(using cli: Cli): Unit =
-    cli.register(this, suggestions)
+  def suggest[operand: {Interpretable, Discoverable as discoverable}](using cli: Cli): Unit =
+    cli.register(this, discoverable)
 
   def matches(key: Argument): Boolean =
     val flag =
@@ -73,7 +73,7 @@ case class Flag
        (using cli:             Cli,
               interpreter:     CliInterpreter,
               interpretable:   operand is Interpretable,
-              suggestions:     Suggestions[operand] = Suggestions.noSuggestions)
+              suggestions:     operand is Discoverable   = Discoverable.noSuggestions)
   : Optional[operand] =
 
       cli.register(this, suggestions)
@@ -91,6 +91,6 @@ case class Flag
         case List(value) => mapping.at(value())
         case _           => Unset
 
-      given suggestions: Suggestions[operand] = () => options.map(suggestible.suggest(_))
+      given suggestions: operand is Discoverable = () => options.map(suggestible.suggest(_))
 
       this()

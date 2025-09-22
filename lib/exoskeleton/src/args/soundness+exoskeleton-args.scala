@@ -35,7 +35,7 @@ package soundness
 export exoskeleton
 . { Argument, Arguments, Cli, CliInterpreter, Flag, Interpretable, FlagParameters,
     PosixCliInterpreter, PosixParameters, Shell, SimpleParameterInterpreter, Subcommand, Suggestion,
-    Suggestions, Suggestible, Switch, arguments }
+    Discoverable, Suggestible, Switch, arguments }
 
 package parameterInterpretation:
   export exoskeleton.parameterInterpretation.{simple, posix}

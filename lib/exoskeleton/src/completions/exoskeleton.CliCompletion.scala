@@ -62,28 +62,26 @@ case class CliCompletion
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
 
-  val flags: scm.HashMap[Flag, Suggestions[?]] = scm.HashMap()
+  val flags: scm.HashMap[Flag, Discoverable] = scm.HashMap()
   val seenFlags: scm.HashSet[Flag] = scm.HashSet()
   var explanation: Optional[Text] = Unset
   var cursorSuggestions: List[Suggestion] = Nil
 
 
-  def readParameter[operand: Interpretable](flag: Flag)(using Suggestions[operand])
-  : Optional[operand] =
-
-      given cli: Cli = this
-      parameters.read(flag)
+  def readParameter[operand: {Interpretable, Discoverable}](flag: Flag): Optional[operand] =
+    given cli: Cli = this
+    parameters.read(flag)
 
 
   def focus: Argument = arguments(currentArgument)
 
-  override def register(flag: Flag, suggestions: Suggestions[?]): Unit =
+  override def register(flag: Flag, discoverable: Discoverable): Unit =
     parameters.focusFlag.let: argument =>
       if flag.matches(argument) && currentArgument == argument.position + 1 then
-        val allSuggestions = suggestions.suggest().to(List)
+        val allSuggestions = discoverable.discover().to(List)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
-    if !flag.secret then flags(flag) = suggestions
+    if !flag.secret then flags(flag) = discoverable
 
   override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
   override def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit =

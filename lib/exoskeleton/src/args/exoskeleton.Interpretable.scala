@@ -49,7 +49,6 @@ object Interpretable:
     arguments.take(1).absolve match
       case List(value) => value().decode[operand]
 
-trait Interpretable:
-  type Self
+trait Interpretable extends Typeclass:
   def operand: Boolean = true
   def interpret(arguments: List[Argument]): Optional[Self]

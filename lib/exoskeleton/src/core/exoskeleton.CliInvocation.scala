@@ -53,8 +53,6 @@ extends Cli, Stdio:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
 
 
-  def readParameter[operand: Interpretable](flag: Flag)(using Suggestions[operand])
-  : Optional[operand] =
-
-      given cli: Cli = this
-      parameters.read(flag)
+  def readParameter[operand: {Interpretable, Discoverable}](flag: Flag): Optional[operand] =
+    given cli: Cli = this
+    parameters.read(flag)

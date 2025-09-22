@@ -45,12 +45,10 @@ case class PosixParameters
     focusFlag:      Optional[Argument]            = Unset)
 extends FlagParameters:
 
-  def read[operand: Interpretable](flag: Flag)
-       (using cli:         Cli,
-              suggestions: Suggestions[operand])
+  def read[operand: {Interpretable, Discoverable as discoverable}](flag: Flag)(using cli: Cli)
   : Optional[operand] =
 
-      cli.register(flag, suggestions)
+      cli.register(flag, discoverable)
 
       parameters.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
         cli.present(flag)

@@ -34,8 +34,10 @@ package exoskeleton
 
 import language.experimental.pureFunctions
 
-object Suggestions:
-  def noSuggestions[operand]: Suggestions[operand] = () => Nil
+import prepositional.*
 
-trait Suggestions[-operand]:
-  def suggest(): Iterable[Suggestion]
+object Discoverable:
+  def noSuggestions[operand]: operand is Discoverable = () => Nil
+
+trait Discoverable extends Typeclass:
+  def discover(): Iterable[Suggestion]
