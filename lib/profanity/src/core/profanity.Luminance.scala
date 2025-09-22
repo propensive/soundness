@@ -32,5 +32,5 @@
                                                                                                   */
 package profanity
 
-enum TerminalMode:
+enum Luminance:
   case Dark, Light

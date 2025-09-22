@@ -58,7 +58,7 @@ extends Interactivity[TerminalEvent]:
   val keyboard: StandardKeyboard = StandardKeyboard()
   val rows0: Promise[Int] = Promise()
   val columns0: Promise[Int] = Promise()
-  var mode: Optional[TerminalMode] = Unset
+  var mode: Optional[Luminance] = Unset
   var rows: Optional[Int] = Unset
   var columns: Optional[Int] = Unset
 
@@ -101,7 +101,7 @@ extends Interactivity[TerminalEvent]:
         events.put(resize)
 
       case bgColor@TerminalInfo.BgColor(red, green, blue) =>
-        mode = if dark(red, green, blue) then TerminalMode.Dark else TerminalMode.Light
+        mode = if dark(red, green, blue) then Luminance.Dark else Luminance.Light
         events.put(bgColor)
 
       case other =>
