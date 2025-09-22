@@ -45,14 +45,14 @@ given stdio: (terminal: Terminal) => Stdio = terminal.stdio
 
 
 def interactive[result](block: (terminal: Terminal) ?=> result)
-   (using context: ProcessContext, monitor: Monitor, codicil: Codicil)
+   (using console: Console, monitor: Monitor, codicil: Codicil)
    (using BracketedPasteMode,
           BackgroundColorDetection,
           TerminalFocusDetection,
           TerminalSizeDetection)
 : result raises TerminalError =
 
-    given terminal: Terminal = Terminal(context.signals)
+    given terminal: Terminal = Terminal(console.signals)
 
     if summon[BackgroundColorDetection]() then Out.print(Terminal.reportBackground)
     if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
@@ -60,7 +60,7 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
     if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
 
     try
-      if context.stdio.platform then
+      if console.stdio.platform then
         val processBuilder =
           ProcessBuilder("stty", "intr", "undef", "-echo", "icanon", "raw", "opost")
 

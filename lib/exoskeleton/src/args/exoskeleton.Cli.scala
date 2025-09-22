@@ -50,7 +50,7 @@ object Cli:
         Argument(index, text, if focus == index then position else Unset)
 
 
-trait Cli extends ProcessContext:
+trait Cli extends Console:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory

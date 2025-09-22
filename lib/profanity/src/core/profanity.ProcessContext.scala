@@ -34,15 +34,15 @@ package profanity
 
 import turbulence.*
 
-object ProcessContext:
-  def apply(stdio: Stdio, signals: Spool[Signal] = Spool()): ProcessContext =
+object Console:
+  def apply(stdio: Stdio, signals: Spool[Signal] = Spool()): Console =
     inline def stdio0: Stdio = stdio
     inline def signals0: Spool[Signal] = signals
 
-    new ProcessContext:
+    new Console:
       val stdio: Stdio = stdio0
       def signals: Spool[Signal] = signals0
 
-trait ProcessContext:
+trait Console:
   val stdio: Stdio
   def signals: Spool[Signal]

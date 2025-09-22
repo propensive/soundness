@@ -50,10 +50,10 @@ object Terminal:
   def disablePaste: Text = t"\e[?2004l"
 
 case class Terminal(signals: Spool[Signal])
-   (using context: ProcessContext, monitor: Monitor, codicil: Codicil)
+  (using console: Console, monitor: Monitor, codicil: Codicil)
 extends Interactivity[TerminalEvent]:
 
-  export context.stdio.{in, out, err}
+  export console.stdio.{in, out, err}
 
   val keyboard: Keyboard.Standard = Keyboard.Standard()
   val rows0: Promise[Int] = Promise()
@@ -72,9 +72,9 @@ extends Interactivity[TerminalEvent]:
 
   given stdio: Stdio = new Stdio:
     val termcap = cap
-    val out = context.stdio.out
-    val err = context.stdio.err
-    val in = context.stdio.in
+    val out = console.stdio.out
+    val err = console.stdio.err
+    val in = console.stdio.in
 
   val events: Spool[TerminalEvent] = Spool()
   def eventStream(): Stream[TerminalEvent] = events.stream
