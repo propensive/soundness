@@ -33,7 +33,7 @@
 package soundness
 
 export parasite
-. { Codicil, Completion, AsyncError, Daemon, Hook, Monitor, Promise, Task, ThreadModel, Chain,
+. { Codicil, Fulfillment, AsyncError, Daemon, Hook, Monitor, Promise, Task, ThreadModel, Chain,
     Transgression, monitor, daemon, async, task, relent, cancel, sleep, snooze, hibernate, delay,
     race, supervise, Tenacity, retry, Observation, System, Destruction, Shutdown, intercept,
     Interceptable, GarbageCollection, Timeout, Heap }

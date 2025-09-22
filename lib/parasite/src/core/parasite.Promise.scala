@@ -46,7 +46,7 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-import Completion.*
+import Fulfillment.*
 
 object Promise:
   enum State[+value]:

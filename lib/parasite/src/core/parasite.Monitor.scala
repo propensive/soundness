@@ -51,7 +51,7 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-import Completion.*
+import Fulfillment.*
 import AsyncError.Reason
 
 sealed trait Monitor extends Resultant:
@@ -108,8 +108,8 @@ object PlatformSupervisor extends Supervisor():
 
 abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) extends Monitor:
   self =>
-  private val state: juca.AtomicReference[Completion[Result]] =
-    juca.AtomicReference(Completion.Initializing)
+  private val state: juca.AtomicReference[Fulfillment[Result]] =
+    juca.AtomicReference(Fulfillment.Initializing)
 
   private var relents: Int = 1
   private val startTime: Long = jl.System.currentTimeMillis
