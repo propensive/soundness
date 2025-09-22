@@ -142,11 +142,10 @@ def cli[bus <: Matchable](using executive: Executive)
   val baseDir: Path on Linux = runtimeDir.or(stateHome) //name
   val portFile: Path on Linux = baseDir/name/"port"
   val pidFile: Path on Linux = baseDir/name/"pid"
-  val clients: scc.TrieMap[Pid, ClientConnection[bus]] = scc.TrieMap()
+  val clients: scc.TrieMap[Pid, Client[bus]] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
 
-  def client(pid: Pid): ClientConnection[bus] =
-    clients.getOrElseUpdate(pid, ClientConnection(pid))
+  def client(pid: Pid): Client[bus] = clients.getOrElseUpdate(pid, Client(pid))
 
   lazy val termination: Unit =
     portFile.wipe()
@@ -192,7 +191,7 @@ def cli[bus <: Matchable](using executive: Executive)
             DaemonEvent.Exit(line().decode[Pid])
 
           case t"i" =>
-            val cliInput: CliInput = if line() == t"p" then CliInput.Pipe else CliInput.Terminal
+            val stdin: Stdin = if line() == t"p" then Stdin.Pipe else Stdin.Terminal
             val pid: Pid = Pid(line().decode[Int])
             val script: Text = line()
             val pwd: Text = line()
@@ -200,7 +199,7 @@ def cli[bus <: Matchable](using executive: Executive)
             val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount).to(List)
             val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
 
-            DaemonEvent.Init(pid, pwd, script, cliInput, textArguments, environment)
+            DaemonEvent.Init(pid, pwd, script, stdin, textArguments, environment)
 
           case _ =>
             Unset

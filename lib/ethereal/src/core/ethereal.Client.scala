@@ -45,7 +45,7 @@ import java.io as ji
 
 import language.experimental.pureFunctions
 
-case class ClientConnection[bus <: Matchable](pid: Pid):
+case class Client[bus <: Matchable](pid: Pid):
   val stderr: Promise[ji.OutputStream] = Promise()
   val signals: Spool[Signal] = Spool()
   val bus: Spool[bus] = Spool()

@@ -37,9 +37,9 @@ import distillate.*
 import gossamer.*
 import prepositional.*
 
-object CliInput:
-  given decoder: CliInput is Decodable in Text = text => valueOf(text.lower.capitalize.s)
-  given encodable: CliInput is Encodable in Text = _.toString.tt.lower
+object Stdin:
+  given decoder: Stdin is Decodable in Text = text => valueOf(text.lower.capitalize.s)
+  given encodable: Stdin is Encodable in Text = _.toString.tt.lower
 
-enum CliInput:
+enum Stdin:
   case Terminal, Pipe

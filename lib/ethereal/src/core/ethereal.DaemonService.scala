@@ -45,7 +45,7 @@ import language.experimental.pureFunctions
 case class DaemonService[bus <: Matchable]
    (pid:        Pid,
     shutdown:   () => Unit,
-    cliInput:   CliInput,
+    cliInput:   Stdin,
     script:     Path on Linux,
     deliver:    bus => Unit,
     bus:        Stream[bus],
