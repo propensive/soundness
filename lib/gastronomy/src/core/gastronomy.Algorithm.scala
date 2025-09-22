@@ -34,6 +34,4 @@ package gastronomy
 
 import proscenium.*
 
-trait Algorithm:
-  type Of <: Nat
-  type Size = Of
+trait Algorithm
