@@ -40,15 +40,16 @@ import vacuous.*
 
 import language.experimental.pureFunctions
 
-object FlagInterpreter:
-  given unit: FlagInterpreter[Unit]:
+object Interpretable:
+  given unit: Unit is Interpretable:
     override def operand: Boolean = false
     def interpret(arguments: List[Argument]): Unit = ()
 
-  given decoder: [operand: Decodable in Text] => FlagInterpreter[operand] = arguments =>
+  given decoder: [operand: Decodable in Text] => operand is Interpretable = arguments =>
     arguments.take(1).absolve match
       case List(value) => value().decode[operand]
 
-trait FlagInterpreter[operand]:
+trait Interpretable:
+  type Self
   def operand: Boolean = true
-  def interpret(arguments: List[Argument]): Optional[operand]
+  def interpret(arguments: List[Argument]): Optional[Self]

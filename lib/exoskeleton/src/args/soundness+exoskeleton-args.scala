@@ -33,7 +33,7 @@
 package soundness
 
 export exoskeleton
-. { Argument, Arguments, Cli, CliInterpreter, Flag, FlagInterpreter, FlagParameters,
+. { Argument, Arguments, Cli, CliInterpreter, Flag, Interpretable, FlagParameters,
     PosixCliInterpreter, PosixParameters, Shell, SimpleParameterInterpreter, Subcommand, Suggestion,
     Suggestions, Suggestible, Switch, arguments }
 

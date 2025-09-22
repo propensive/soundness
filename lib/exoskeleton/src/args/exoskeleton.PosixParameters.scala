@@ -45,9 +45,8 @@ case class PosixParameters
     focusFlag:      Optional[Argument]            = Unset)
 extends FlagParameters:
 
-  def read[operand](flag: Flag)
+  def read[operand: Interpretable](flag: Flag)
        (using cli:         Cli,
-              interpreter: FlagInterpreter[operand],
               suggestions: Suggestions[operand])
   : Optional[operand] =
 
@@ -55,4 +54,4 @@ extends FlagParameters:
 
       parameters.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
         cli.present(flag)
-        safely(interpreter.interpret(operands))
+        safely(operand.interpret(operands))
