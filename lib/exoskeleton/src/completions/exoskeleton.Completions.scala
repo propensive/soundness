@@ -55,7 +55,7 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
-object TabCompletions:
+object Completions:
   enum Installation:
     case CommandNotOnPath(script: Text)
     case Shells

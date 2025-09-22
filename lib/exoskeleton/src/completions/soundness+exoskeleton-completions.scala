@@ -33,7 +33,7 @@
 package soundness
 
 export exoskeleton
-. { execute, explain, Completion, Execution, SuggestionsState, TabCompletions, Pathname }
+. { execute, explain, Completion, Execution, SuggestionsState, Completions, Pathname }
 
 package executives:
   export exoskeleton.executives.completions
