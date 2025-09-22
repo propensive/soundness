@@ -87,7 +87,7 @@ package keyboards:
     type Keypress = Int
     def process(stream: Stream[Char]): Stream[Int] = stream.map(_.toInt)
 
-  given standard: (monitor: Monitor, codicil: Codicil) => StandardKeyboard = StandardKeyboard()
+  given standard: (monitor: Monitor, codicil: Codicil) => Keyboard.Standard = Keyboard.Standard()
 
 package terminalOptions:
   given bracketedPasteMode: BracketedPasteMode = () => true
