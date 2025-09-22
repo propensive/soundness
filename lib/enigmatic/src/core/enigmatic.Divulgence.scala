@@ -32,4 +32,4 @@
                                                                                                   */
 package enigmatic
 
-object ExposeSecretKey
+object Divulgence

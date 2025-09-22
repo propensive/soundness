@@ -66,4 +66,4 @@ class PrivateKey[cipher <: Cipher](private[enigmatic] val privateBytes: Bytes):
       Signature(cipher.sign(encodable.encode(value), privateBytes))
 
 
-  def pem(reveal: ExposeSecretKey.type): Pem = Pem(PemLabel.PrivateKey, privateBytes)
+  def pem(reveal: Divulgence.type): Pem = Pem(PemLabel.PrivateKey, privateBytes)
