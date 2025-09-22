@@ -39,7 +39,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import feudalism.*
-import parasite.*, threadModels.platform
+import parasite.*, threading.platform
 import prepositional.*
 import proscenium.*
 import rudiments.*

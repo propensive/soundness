@@ -42,7 +42,7 @@ import asyncTermination.cancel
 import logging.silent
 import html5.*
 import charEncoders.utf8
-import threadModels.platform
+import threading.platform
 import errorDiagnostics.stackTraces
 
 case class Group(org: Organization)

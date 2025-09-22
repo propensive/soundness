@@ -49,10 +49,10 @@ import proscenium.*
 import symbolism.*
 import vacuous.*
 
-package threadModels:
-  given platform: ThreadModel = () => PlatformSupervisor
-  given virtual: ThreadModel = () => VirtualSupervisor
-  given adaptive: ThreadModel = () => AdaptiveSupervisor
+package threading:
+  given platform: Threading = () => PlatformSupervisor
+  given virtual: Threading = () => VirtualSupervisor
+  given adaptive: Threading = () => AdaptiveSupervisor
 
 package asyncTermination:
   given await: Codicil = _.delegate(_.attend())
@@ -128,10 +128,10 @@ extension [result](stream: Stream[result])
     if async(stream.isEmpty).await() then Stream() else stream.head #:: stream.tail.concurrent
 
 
-def supervise[result](block: Monitor ?=> result)(using model: ThreadModel, codepoint: Codepoint)
+def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)
 : result raises AsyncError =
 
-    block(using model.supervisor())
+    block(using threading.supervisor())
 
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)

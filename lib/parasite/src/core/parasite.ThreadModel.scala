@@ -34,5 +34,5 @@ package parasite
 
 import language.experimental.pureFunctions
 
-trait ThreadModel:
+trait Threading:
   def supervisor(): Supervisor

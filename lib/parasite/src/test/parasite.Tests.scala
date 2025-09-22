@@ -46,7 +46,7 @@ import turbulence.*
 
 import strategies.throwUnsafely
 
-import threadModels.virtual
+import threading.virtual
 import asyncTermination.cancel
 
 import errorDiagnostics.stackTraces

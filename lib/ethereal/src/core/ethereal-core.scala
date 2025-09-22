@@ -87,7 +87,7 @@ def cli[bus <: Matchable](using executive: Executive)
    (block: DaemonService[bus] ?=> executive.Interface ?=> executive.Return)
    (using interpreter:   Interpreter,
           stderrSupport: StderrSupport = daemonConfig.supportStderr,
-          model:         ThreadModel,
+          threading:     Threading,
           handler:       Backstop)
       : Unit =
 
