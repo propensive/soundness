@@ -48,7 +48,7 @@ import vacuous.*
 
 import scala.collection.mutable as scm
 
-case class CliCompletion
+case class Completion
    (fullArguments:    List[Argument],
     arguments:        List[Argument],
     environment:      Environment,

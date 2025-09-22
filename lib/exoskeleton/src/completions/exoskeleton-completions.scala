@@ -44,7 +44,7 @@ import vacuous.*
 
 def execute(block: Effectful ?=> CliInvocation ?=> Exit)(using cli: Cli): Execution =
   cli.absolve match
-    case completion: CliCompletion => Execution(Exit.Ok)
+    case completion: Completion => Execution(Exit.Ok)
     case invocation: CliInvocation => Execution(block(using !!)(using invocation))
 
 def explain(explanation: (prior: Optional[Text]) ?=> Optional[Text])(using cli: Cli): Unit =
@@ -77,7 +77,7 @@ package executives:
 
             val focus = if shell == Shell.Zsh then focus0 - 1 else focus0
 
-            CliCompletion
+            Completion
              (Cli.arguments(arguments, focus - 1, position),
               Cli.arguments(rest, focus - 1, position),
               environment,
@@ -93,7 +93,7 @@ package executives:
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
-      case completion: CliCompletion =>
+      case completion: Completion =>
         given stdio: Stdio = completion.stdio
         completion.serialize.each(Out.println(_))
         Exit.Ok
