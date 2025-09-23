@@ -91,6 +91,6 @@ case class Flag
         case List(value) => mapping.at(value())
         case _           => Unset
 
-      given suggestions: operand is Discoverable = () => options.map(suggestible.suggest(_))
+      given suggestions: operand is Discoverable = _ => options.map(suggestible.suggest(_))
 
       this()

@@ -62,7 +62,6 @@ object Pathname:
         val directory = argument().ends(t"/")
         val prototype = workingDirectory.resolve(argument())
         val root = prototype.empty
-
         val base: Optional[Path on Linux] = if directory then prototype else prototype.parent
         val children0 = base.lay(Nil)(_.children.to(List))
 
