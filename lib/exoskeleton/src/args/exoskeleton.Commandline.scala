@@ -45,7 +45,8 @@ case class Commandline
     focus:          Optional[Argument]            = Unset)
 extends Flags:
 
-  def read[operand: {Interpretable, Discoverable as discoverable}](flag: Flag)(using cli: Cli)
+  def read[operand: Interpretable](flag: Flag)
+       (using cli: Cli, discoverable: (? <: operand) is Discoverable)
   : Optional[operand] =
 
       cli.register(flag, discoverable)

@@ -68,9 +68,10 @@ extends Cli:
   var cursorSuggestions: List[Suggestion] = Nil
 
 
-  def readParameter[operand: {Interpretable, Discoverable}](flag: Flag): Optional[operand] =
-    given cli: Cli = this
-    parameters.read(flag)
+  def readParameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
+  : Optional[operand] =
+      given cli: Cli = this
+      parameters.read(flag)
 
 
   def focus: Argument = arguments(currentArgument)

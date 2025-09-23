@@ -66,11 +66,15 @@ object CodlEncoder extends CodlEncoder2:
   given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
   given text: CodlFieldWriter[Text] = _.show
 
-  given optional: [encodable] => (encodable: => CodlEncoder[encodable]) => CodlEncoder[Optional[encodable]]:
-    def schema: CodlSchema = encodable.schema.optional
 
-    def encode(value: Optional[encodable]): List[IArray[CodlNode]] =
-      value.let(encodable.encode(_)).or(List())
+  given optional: [encodable] => (encodable: => CodlEncoder[encodable])
+  =>  CodlEncoder[Optional[encodable]]:
+
+        def schema: CodlSchema = encodable.schema.optional
+
+        def encode(value: Optional[encodable]): List[IArray[CodlNode]] =
+          value.let(encodable.encode(_)).or(List())
+
 
   given option: [encodable: CodlEncoder] => CodlEncoder[Option[encodable]]:
     def schema: CodlSchema = encodable.schema.optional

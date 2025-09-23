@@ -66,7 +66,7 @@ object Probably:
 
           def lift(predicate: Expr[Any]): Option[Expr[Any]] = predicate.asTerm match
             case Inlined(_, _, predicate) => lift(predicate.asExpr)
-            case Block(List(DefDef(a1, _, _, Some(expression))), Closure(Ident(a2), _)) if a1 == a2 =>
+            case Block(List(DefDef(a, _, _, Some(expression))), Closure(Ident(b), _)) if a == b =>
               expression match
                 case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
                 case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)

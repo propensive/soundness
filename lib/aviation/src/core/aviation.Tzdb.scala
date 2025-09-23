@@ -62,7 +62,8 @@ object Tzdb:
     case Zone(area: Text, location: Option[Text], info: Trie[ZoneInfo])
     case Link(from: Text, to: Text)
 
-  case class ZoneInfo(stdoff: into[Duration], rules: Text, format: Text => Text, until: Option[Text])
+  case class ZoneInfo
+              (stdoff: into[Duration], rules: Text, format: Text => Text, until: Option[Text])
 
   enum MonthDate:
     case Last(month: Month, day: Weekday)

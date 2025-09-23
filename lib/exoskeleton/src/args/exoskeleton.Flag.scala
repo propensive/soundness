@@ -48,7 +48,7 @@ object Flag:
     case char: Char => t"-$char"
     case text: Text => t"--$text"
 
-  given communicable: Flag is Showable = _.name.absolve match
+  given showable: Flag is Showable = _.name.absolve match
     case name: Text => t"--$name"
     case name: Char => t"-$name"
 
@@ -73,7 +73,7 @@ case class Flag
        (using cli:             Cli,
               interpreter:     Interpreter,
               interpretable:   operand is Interpretable,
-              suggestions:     operand is Discoverable   = Discoverable.noSuggestions)
+              suggestions:     (? <: operand) is Discoverable   = Discoverable.noSuggestions)
   : Optional[operand] =
 
       cli.register(this, suggestions)

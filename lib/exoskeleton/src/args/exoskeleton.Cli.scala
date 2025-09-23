@@ -54,7 +54,10 @@ trait Cli extends Console:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
-  def readParameter[operand: {Interpretable, Discoverable}](flag: Flag): Optional[operand]
+
+  def readParameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
+  : Optional[operand]
+
   def register(flag: Flag, discoverable: Discoverable): Unit = ()
   def present(flag: Flag): Unit = ()
   def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit = ()
