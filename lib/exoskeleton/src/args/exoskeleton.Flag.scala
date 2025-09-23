@@ -77,7 +77,7 @@ case class Flag
   : Optional[operand] =
 
       cli.register(this, suggestions)
-      cli.readParameter(this)
+      cli.parameter(this)
 
 
   def select[operand](options: Iterable[operand])
