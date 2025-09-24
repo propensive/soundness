@@ -19,8 +19,8 @@ failFile="$baseDir/fail"
 invocation="$0"
 script="$(realpath "$invocation")"
 doDownload=0
-minimumJava=21
-preferredJava=21
+minimumJava=%%JAVA_MINIMUM%%
+preferredJava=%%JAVA_PREFERRED%%
 javaHome="$dataHomeDir/java"
 javaBundle="jre"
 javaDefault="${javaHome}/${preferredJava}-${javaBundle}"
@@ -102,7 +102,7 @@ download() {
   elif command -v wget > /dev/null 2>&1
   then
     printf "Downloading Java %s from %s\n" "$preferredJava" "$url"
-    wget -q -O - "${LINK}" | tar xz -C "$tmpDir" 2> /dev/null || (printf "The download failed." && exit 1)
+    wget -q -O - "$url" | tar xz -C "$tmpDir" 2> /dev/null || (printf "The download failed." && exit 1)
     printf "Download complete\n"
   else
     rmdir "$tmpDir" > /dev/null 2>&1

@@ -116,6 +116,9 @@ def cli[bus <: Matchable](using executive: Executive)
             Exit.Fail(1).terminate()
 
           case destination: Text =>
+            val javaMinimum = safely(Properties.build.java.minimum[Int]()).or(21)
+            val javaPreferred = safely(Properties.build.java.preferred[Int]()).or(24)
+
             val path = safely(destination.decode[Path on Linux]).or:
               val work: Path on Linux = workingDirectory
               work + destination.decode[Relative on Linux]
@@ -124,7 +127,13 @@ def cli[bus <: Matchable](using executive: Executive)
             val buildId = safely(buildIdPath.read[Text].trim).or(t"0")
             val prefixPath: Path on Classpath = Classpath/"ethereal"/"prefix"
             val prefix = prefixPath.read[Text]
-            path.open(prefix.sub(t"%%BUILD_ID%%", buildId).writeTo(_))
+
+            path.open: file =>
+              prefix
+              . sub("%%BUILD_ID%%", buildId)
+              . sub("%%JAVA_MINIMUM%%", javaMinimum.show)
+              . sub("%%JAVA_PREFERRED%%", javaPreferred.show)
+              . writeTo(file)
 
             jarFile.open: jarFile =>
               Eof(path).open(jarFile.stream[Bytes].writeTo(_))
