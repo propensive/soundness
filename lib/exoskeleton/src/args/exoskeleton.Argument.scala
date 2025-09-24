@@ -38,8 +38,25 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-case class Argument(position: Int, value: Text, cursor: Optional[Int], tab: Optional[Ordinal]):
-  def apply(): Text = value
+object Argument:
+  enum Format:
+    case Full, FlagSuffix, EqualityPrefix, EqualitySuffix
+    case CharFlag(index: Ordinal)
+
+case class Argument
+            (position: Int,
+             value:    Text,
+             cursor:   Optional[Int],
+             tab:      Optional[Ordinal],
+             format:   Argument.Format):
+
+  def apply(): Text = format match
+    case Argument.Format.Full            => value
+    case Argument.Format.FlagSuffix      => value.skip(2)
+    case Argument.Format.CharFlag(index) => t"-${value.at(index).or('-')}"
+    case Argument.Format.EqualityPrefix  => value.before(value.index("=").or(Prim))
+    case Argument.Format.EqualitySuffix  => value.after(value.index("=").or(Prim))
+
   def prefix: Optional[Text] = cursor.let(value.keep(_))
   def suffix: Optional[Text] = cursor.let(value.skip(_))
 
