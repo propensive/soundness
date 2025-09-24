@@ -55,13 +55,9 @@ package parameterInterpretation:
             commandline: Commandline)
       : Commandline =
 
-          def push(): Commandline = current match
-            case Unset =>
-              Commandline(arguments.reverse)
-
-            case current: Argument =>
-              commandline.copy
-               (parameters = commandline.parameters.updated(current, arguments.reverse))
+          def push(): Commandline = current.lay(Commandline(arguments.reverse)): current =>
+            commandline.copy
+             (parameters = commandline.parameters.updated(current, arguments.reverse))
 
           todo match
             case head :: tail =>

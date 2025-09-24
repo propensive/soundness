@@ -19,10 +19,10 @@ failFile="$baseDir/fail"
 invocation="$0"
 script="$(realpath "$invocation")"
 doDownload=0
-minimumJava=21
-preferredJava=21
+minimumJava=%%JAVA_MINIMUM%%
+preferredJava=%%JAVA_PREFERRED%%
 javaHome="$dataHomeDir/java"
-javaBundle="jre"
+javaBundle="%%JAVA_BUNDLE%%"
 javaDefault="${javaHome}/${preferredJava}-${javaBundle}"
 continue=1
 pendingUpdate="${dataHomeDir}/${name}/.pending"
@@ -35,12 +35,20 @@ payloadSize=0
 jarSize=0
 
 backout() {
+  local -i timestamp now
   if [ -f "$failFile" ]
   then
-    [ -t 0 ] && stty "$ttystate"
-    printf "\nThe %s daemon process failed to start.\n" "$name" >&2
-    printf "Remove the file %s before trying again.\n" "$failFile" >&2
-    exit 1
+    if [ -f "$pidFile" ]
+    then
+      now=$(date +%s)
+      timestamp=$(stat -c %Y "$failFile" 2> /dev/null || stat -f %B "$failFile")
+      [ $((now - timestamp)) -ge 2 ] && rm -f "$failFile" "$pidFile"
+    else
+      [ -t 0 ] && stty "$ttystate"
+      printf "\nThe %s daemon process failed to start.\n" "$name" >&2
+      printf "Remove the file %s before trying again.\n" "$failFile" >&2
+      exit 1
+    fi
   fi
 }
 
@@ -80,7 +88,7 @@ arch() {
 }
 
 adoptiumUrl() {
-  local baseUrl access force
+  local baseUrl access
   baseUrl="https://api.adoptium.net"
   access="ga"
   os="$(operatingSystem)"
@@ -97,16 +105,17 @@ download() {
   if command -v curl > /dev/null 2>&1
   then
     printf "Downloading Java %s from %s\n" "$preferredJava" "$url"
-    curl -sL "$url" | tar xz -C "$tmpDir" 2> /dev/null || (printf "The download failed.\n" && exit 1)
+    curl -sL "$url" | tar xz -C "$tmpDir" 2> /dev/null || { printf "The download failed.\n"; exit 1; }
     printf "Download complete\n"
   elif command -v wget > /dev/null 2>&1
   then
     printf "Downloading Java %s from %s\n" "$preferredJava" "$url"
-    wget -q -O - "${LINK}" | tar xz -C "$tmpDir" 2> /dev/null || (printf "The download failed." && exit 1)
+    wget -q -O - "$url" | tar xz -C "$tmpDir" 2> /dev/null || { printf "The download failed.\n"; exit 1; }
     printf "Download complete\n"
   else
     rmdir "$tmpDir" > /dev/null 2>&1
-    printf "Could not download the file because neither \e[1mcurl\e[0m nor \e[1mwget\e[0m was on the path."
+    printf "Could not download the file because neither \e[1mcurl\e[0m nor \e[1mwget\e[0m was on the path.\n"
+    exit 1
   fi
 
   dir="$(dirname "$(find "${tmpDir}" -name release | head -n1)")"
@@ -146,19 +155,19 @@ findJava() {
   do checkJavaVersion "$candidate/bin/java" && javaCmd="$candidate/bin/java" && return
   done
 
-  [[ $payloadSize > 0 ]] && extract && javaCmd="$javaHome/bin/java" && return
+  [[ $payloadSize -gt 0 ]] && extract && javaCmd="$javaHome/bin/java" && return
   [[ $doDownload = 1 ]] && download && return
 
-  printf "\nJava $minimumJava or later is required, but no suitable version of Java was found.\n" >&2
+  printf "\nJava %s or later is required, but no suitable version of Java was found.\n" "${minimumJava}" >&2
   printf "You can install \e[1mjava\e[0m with one of the following commands:\n\n" >&2
   command -v pacman > /dev/null && printf "  > \e[1mpacman -S jre-openjdk\e[0m\n" >&2
-  command -v emerge > /dev/null && printf "  > \e[1memerge dev-java/openjdk-${minimumJava}\e[0m\n" >&2
-  command -v yum > /dev/null    && printf "  > \e[1myum install java-${minimumJava}-openjdk\e[0m\n" >&2
-  command -v dnf > /dev/null    && printf "  > \e[1mdnf install java-${minimumJava}-openjdk\e[0m\n" >&2
-  command -v apt > /dev/null    && printf "  > \e[1mapt update && apt install openjdk-${minimumJava}-jre\e[0m\n" >&2
-  command -v zypper > /dev/null && printf "  > \e[1mzypper install openjdk-${minimumJava}-headless\e[0m\n" >&2
+  command -v emerge > /dev/null && printf "  > \e[1memerge dev-java/openjdk-%s\e[0m\n" "${minimumJava}" >&2
+  command -v yum > /dev/null    && printf "  > \e[1myum install java-%s-openjdk\e[0m\n" "${minimumJava}" >&2
+  command -v dnf > /dev/null    && printf "  > \e[1mdnf install java-%s-openjdk\e[0m\n" "${minimumJava}" >&2
+  command -v apt > /dev/null    && printf "  > \e[1mapt update && apt install openjdk-%s-jre\e[0m\n" "${minimumJava}" >&2
+  command -v zypper > /dev/null && printf "  > \e[1mzypper install openjdk-%s-headless\e[0m\n" "${minimumJava}" >&2
   command -v brew > /dev/null   && printf "  > \e[1mbrew update && brew install java\e[0m\n" >&2
-  printf "  > \e[1m$invocation --download\e[0m\n\n" >&2
+  printf "  > \e[1m%s --download\e[0m\n\n" "${invocation}" >&2
 
   exit 1
 }
@@ -189,6 +198,7 @@ setup() {
   buildId=%%BUILD_ID%%
 }
 
+# shellcheck disable=SC2329
 handle() {
   # shellcheck disable=SC2317
   case "$1" in
@@ -235,7 +245,7 @@ active() {
   local path
   local -i pid
   path="$1"
-  [ -s "$pidFile" ] && kill -0 $(<"$pidFile") 2> /dev/null
+  [ -s "$pidFile" ] && kill -0 "$(<"$pidFile")" 2> /dev/null
 }
 
 checkState() {
@@ -308,4 +318,5 @@ kill $launchPid 2> /dev/null
 kill $stdoutPid 2> /dev/null
 kill $stderrPid 2> /dev/null
 terminate
+# shellcheck disable=SC2317
 exit 1
