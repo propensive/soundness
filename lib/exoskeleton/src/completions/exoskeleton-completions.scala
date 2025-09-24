@@ -34,6 +34,7 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import profanity.*
@@ -55,7 +56,6 @@ package executives:
     type Interface = Cli
     type Return = Execution
 
-
     def invocation
          (arguments:        Iterable[Text],
           environment:      Environment,
@@ -66,7 +66,7 @@ package executives:
     : Cli =
 
         arguments match
-          case t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position) :: t"--"
+          case t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position) :: tty :: t"--"
                :: command
                :: rest =>
 
@@ -77,16 +77,20 @@ package executives:
 
             val focus = if shell == Shell.Zsh then focus0 - 1 else focus0
 
+            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus - 1, position))
+
             Completion
-             (Cli.arguments(arguments, focus - 1, position),
-              Cli.arguments(rest, focus - 1, position),
+             (Cli.arguments(arguments, focus - 1, position, tab),
+              Cli.arguments(rest, focus - 1, position, tab),
               environment,
               workingDirectory,
               shell,
               focus - 1,
               position,
               stdio,
-              signals)
+              signals,
+              tty,
+              tab)
 
           case other =>
             Invocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)

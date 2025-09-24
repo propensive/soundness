@@ -189,7 +189,10 @@ object ProductDerivation:
     // erasedness of the tuple.
 
     private transparent inline def fold
-                                    [derivation <: Product, fields <: Tuple, labels <: Tuple, result]
+                                    [derivation <: Product,
+                                     fields     <: Tuple,
+                                     labels     <: Tuple,
+                                     result]
                                     (using requirement: ContextRequirement)
                                     (inline tuple: fields, accumulator: result, index: Int)
                                     (inline lambda: result
@@ -226,7 +229,10 @@ object ProductDerivation:
 
 
     private transparent inline def fold
-                                    [derivation <: Product, fields <: Tuple, labels <: Tuple, result]
+                                    [derivation <: Product,
+                                     fields     <: Tuple,
+                                     labels     <: Tuple,
+                                     result]
                                     (using requirement: ContextRequirement)
                                     (inline accumulator: result, index: Int)
                                     (inline lambda: result

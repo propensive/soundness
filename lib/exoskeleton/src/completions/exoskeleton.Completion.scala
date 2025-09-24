@@ -34,6 +34,7 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import denominative.*
 import escapade.*
 import gossamer.*
 import guillotine.*
@@ -57,7 +58,9 @@ case class Completion
     currentArgument:  Int,
     focusPosition:    Int,
     stdio:            Stdio,
-    signals:          Spool[Signal])
+    signals:          Spool[Signal],
+    tty:              Text,
+    tab:              Ordinal)
    (using interpreter: Interpreter)
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
@@ -68,9 +71,10 @@ extends Cli:
   var cursorSuggestions: List[Suggestion] = Nil
 
 
-  def readParameter[operand: {Interpretable, Discoverable}](flag: Flag): Optional[operand] =
-    given cli: Cli = this
-    parameters.read(flag)
+  def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
+  : Optional[operand] =
+      given cli: Cli = this
+      parameters.read(flag)
 
 
   def focus: Argument = arguments(currentArgument)
@@ -78,7 +82,7 @@ extends Cli:
   override def register(flag: Flag, discoverable: Discoverable): Unit =
     parameters.focus.let: argument =>
       if flag.matches(argument) && currentArgument == argument.position + 1 then
-        val allSuggestions = discoverable.discover().to(List)
+        val allSuggestions = discoverable.discover(tab).to(List)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
     if !flag.secret then flags(flag) = discoverable

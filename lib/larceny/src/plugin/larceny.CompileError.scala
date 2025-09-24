@@ -38,7 +38,7 @@ object CompileError:
 
   enum Reason:
     case NoExplanation
-    case EmptyCatchOrFinallyBlock                                                          // inactive
+    case EmptyCatchOrFinallyBlock                                                          // old
     case EmptyCatchBlock
     case EmptyCatchAndFinallyBlock
     case DeprecatedWithOperator
@@ -48,11 +48,11 @@ object CompileError:
     case TypeMismatch
     case NotAMember
     case EarlyDefinitionsNotSupported
-    case TopLevelImplicitClass                                                             // inactive
+    case TopLevelImplicitClass                                                             // old
     case ImplicitCaseClass
     case ImplicitClassPrimaryConstructorArity
     case ObjectMayNotHaveSelfType
-    case TupleTooLong                                                                      // inactive
+    case TupleTooLong                                                                      // old
     case RepeatedModifier
     case InterpolatedStringError
     case UnboundPlaceholderParameter
@@ -74,7 +74,7 @@ object CompileError:
     case PkgDuplicateSymbol
     case ExistentialTypesNoLongerSupported
     case UnboundWildcardType
-    case DanglingThisInPath                                                                // inactive
+    case DanglingThisInPath                                                                // old
     case OverridesNothing
     case OverridesNothingButNameExists
     case ForwardReferenceExtendsOverDefinition
@@ -92,14 +92,14 @@ object CompileError:
     case AmbiguousOverload
     case ReassignmentToVal
     case TypeDoesNotTakeParameters
-    case ParameterizedTypeLacksArguments                                                   // inactive
+    case ParameterizedTypeLacksArguments                                                   // old
     case VarValParametersMayNotBeCallByName
     case MissingTypeParameterFor
     case DoesNotConformToBound
     case DoesNotConformToSelfType
     case DoesNotConformToSelfTypeCantBeInstantiated
     case AbstractMemberMayNotHaveModifier
-    case TopLevelCantBeImplicit                                                            // inactive
+    case TopLevelCantBeImplicit                                                            // old
     case TypesAndTraitsCantBeImplicit
     case OnlyClassesCanBeAbstract
     case AbstractOverrideOnlyInTraits
@@ -117,8 +117,8 @@ object CompileError:
     case ValueClassesMayNotWrapAnotherValueClass
     case ValueClassParameterMayNotBeAVar
     case ValueClassNeedsExactlyOneValParam
-    case OnlyCaseClassOrCaseObjectAllowed                                                  // inactive
-    case ExpectedTopLevelDef                                                               // inactive
+    case OnlyCaseClassOrCaseObjectAllowed                                                  // old
+    case ExpectedTopLevelDef                                                               // old
     case AnonymousFunctionMissingParamType
     case SuperCallsNotAllowedInlineable
     case NotAPath
@@ -193,7 +193,7 @@ object CompileError:
     case ExtensionCanOnlyHaveDefs
     case UnexpectedPatternForSummonFrom
     case AnonymousInstanceCannotBeEmpty
-    case TypeSpliceInValPattern                                                            // inactive
+    case TypeSpliceInValPattern                                                            // old
     case ModifierNotAllowedForDefinition
     case CannotExtendJavaEnum
     case InvalidReferenceInImplicitNotFoundAnnotation
@@ -201,7 +201,7 @@ object CompileError:
     case JavaEnumParentArgs
     case AlreadyDefined
     case CaseClassInInlinedCode
-    case OverrideTypeMismatchError                                                         // inactive
+    case OverrideTypeMismatchError                                                         // old
     case OverrideError
     case MatchableWarning
     case CannotExtendFunction

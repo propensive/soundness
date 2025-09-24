@@ -34,6 +34,7 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import denominative.*
 import gossamer.*
 import profanity.*
 import rudiments.*
@@ -42,19 +43,23 @@ import vacuous.*
 object Cli:
   def arguments
        (textArguments: Iterable[Text],
-        focus:         Optional[Int] = Unset,
-        position:      Optional[Int] = Unset)
+        focus:         Optional[Int]     = Unset,
+        position:      Optional[Int]     = Unset,
+        tab:           Optional[Ordinal] = Unset)
   : List[Argument] =
 
       textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
-        Argument(index, text, if focus == index then position else Unset)
+        Argument(index, text, if focus == index then position else Unset, tab)
 
 
 trait Cli extends Console:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
-  def readParameter[operand: {Interpretable, Discoverable}](flag: Flag): Optional[operand]
+
+  def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
+  : Optional[operand]
+
   def register(flag: Flag, discoverable: Discoverable): Unit = ()
   def present(flag: Flag): Unit = ()
   def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit = ()

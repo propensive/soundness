@@ -33,11 +33,12 @@
 package exoskeleton
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
 
-case class Argument(position: Int, value: Text, cursor: Optional[Int]):
+case class Argument(position: Int, value: Text, cursor: Optional[Int], tab: Optional[Ordinal]):
   def apply(): Text = value
   def prefix: Optional[Text] = cursor.let(value.keep(_))
   def suffix: Optional[Text] = cursor.let(value.skip(_))
@@ -46,8 +47,7 @@ case class Argument(position: Int, value: Text, cursor: Optional[Int]):
     cli.suggest(this, update)
 
 
-  def select[operand: Suggestible](options: Seq[operand])
-       (using cli: Cli, interpreter: Interpreter)
+  def select[operand: Suggestible](options: Seq[operand])(using cli: Cli, interpreter: Interpreter)
   : Optional[operand] =
 
       val mapping: Map[Text, operand] =

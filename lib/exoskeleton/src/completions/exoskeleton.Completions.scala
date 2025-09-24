@@ -32,9 +32,12 @@
                                                                                                   */
 package exoskeleton
 
+import scala.collection.mutable as scm
+
 import ambience.*, environments.jre, systemProperties.jre
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import galilei.*
@@ -56,6 +59,18 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
 object Completions:
+
+  case class Tab(arguments: List[Text], focus: Int, cursor: Int, count: Int = 0):
+    def next: Tab = copy(count = count + 1)
+    def zero: Tab = copy(count = 0)
+
+  private var cache: scm.HashMap[Text, Tab] = scm.HashMap()
+
+  def tab(tty: Text, tab0: Tab): Ordinal =
+    cache.at(tty).let { tab => tab.next.unless(tab.zero != tab0) }.or(tab0).tap { cache(tty) = _ }
+    . count
+    . z
+
   enum Installation:
     case CommandNotOnPath(script: Text)
     case Shells
@@ -183,7 +198,7 @@ object Completions:
       t"""|#compdef $command
           |local -a ln
           |_$command() {
-          |  $command '{completions}' zsh "$$CURRENT" "$${#PREFIX}" -- $$words | while IFS=$$'\\0' read -r -A ln
+          |  $command '{completions}' zsh "$$CURRENT" "$${#PREFIX}" "$$TTY" -- $$words | while IFS=$$'\\0' read -r -A ln
           |  do
           |    desc=($${ln[1]})
           |    compadd -Q "$${(@)ln:1}"
@@ -196,14 +211,14 @@ object Completions:
     case Shell.Fish =>
       t"""|function completions
           |  set position (count (commandline --tokenize --cut-at-cursor))
-          |  ${command} '{completions}' fish $$position (commandline -C -t) -- (commandline -o)
+          |  ${command} '{completions}' fish $$position (commandline -C -t) (tty) -- (commandline -o)
           |end
           |complete -f -c $command -a '(completions)'
           |""".s.stripMargin.tt
 
     case Shell.Bash =>
       t"""|_${command}_complete() {
-          |  output="$$(${command} '{completions}' bash $$COMP_CWORD 0 -- $$COMP_LINE)"
+          |  output="$$(${command} '{completions}' bash $$COMP_CWORD 0 $$(tty) -- $$COMP_LINE)"
           |  COMPREPLY=($$output)
           |}
           |complete -F _${command}_complete $command

@@ -41,6 +41,7 @@ import hieroglyph.*, textMetrics.uniform
 import profanity.*
 import rudiments.*
 import turbulence.*
+import vacuous.*
 
 import sun.misc as sm
 
@@ -96,7 +97,7 @@ package executives:
     : Invocation =
 
         Invocation
-         (Cli.arguments(arguments),
+         (Cli.arguments(arguments, Unset, Unset, Unset),
           environments.jre,
           workingDirectories.jre,
           stdio,

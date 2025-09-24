@@ -34,10 +34,11 @@ package exoskeleton
 
 import language.experimental.pureFunctions
 
+import denominative.*
 import prepositional.*
 
 object Discoverable:
-  def noSuggestions[operand]: operand is Discoverable = () => Nil
+  def noSuggestions[operand]: operand is Discoverable = _ => Nil
 
 trait Discoverable extends Typeclass:
-  def discover(): Iterable[Suggestion]
+  def discover(tab: Ordinal): Iterable[Suggestion]
