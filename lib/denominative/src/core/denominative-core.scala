@@ -34,6 +34,8 @@ package denominative
 
 import scala.annotation.targetName
 
+import symbolism.*
+
 final val Prim: Ordinal = Ordinal.zerary(0)
 final val Sec: Ordinal  = Ordinal.zerary(1)
 final val Ter: Ordinal  = Ordinal.zerary(2)
@@ -45,6 +47,9 @@ final val Sept: Ordinal = Ordinal.zerary(6)
 extension (inline cardinal: Int)
   inline def z: Ordinal = Ordinal.zerary(cardinal)
   inline def u: Ordinal = Ordinal.uniary(cardinal)
+
+  inline def from(ordinal: Ordinal): Interval = ordinal till (ordinal + cardinal)
+  inline def upto(ordinal: Ordinal): Interval = (ordinal - cardinal) till ordinal
 
 extension [countable: Countable](value: countable)
   inline def full: Interval = Interval(Prim, (countable.size(value) - 1).z)
