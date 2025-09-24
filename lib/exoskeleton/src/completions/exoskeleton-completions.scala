@@ -77,21 +77,20 @@ package executives:
 
             val focus = if shell == Shell.Zsh then focus0 - 1 else focus0
 
-            val completion =
-              Completion
-               (Cli.arguments(arguments, focus - 1, position),
-                Cli.arguments(rest, focus - 1, position),
-                environment,
-                workingDirectory,
-                shell,
-                focus - 1,
-                position,
-                stdio,
-                signals,
-                tty,
-                Prim)
+            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus - 1, position))
 
-            completion.copy(tab = Completions.tab(completion))
+            Completion
+             (Cli.arguments(arguments, focus - 1, position, tab),
+              Cli.arguments(rest, focus - 1, position, tab),
+              environment,
+              workingDirectory,
+              shell,
+              focus - 1,
+              position,
+              stdio,
+              signals,
+              tty,
+              tab)
 
           case other =>
             Invocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)

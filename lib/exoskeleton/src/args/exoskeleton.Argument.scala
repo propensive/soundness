@@ -33,11 +33,12 @@
 package exoskeleton
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
 
-case class Argument(position: Int, value: Text, cursor: Optional[Int]):
+case class Argument(position: Int, value: Text, cursor: Optional[Int], tab: Optional[Ordinal]):
   def apply(): Text = value
   def prefix: Optional[Text] = cursor.let(value.keep(_))
   def suffix: Optional[Text] = cursor.let(value.skip(_))

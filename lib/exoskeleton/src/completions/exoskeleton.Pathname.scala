@@ -34,11 +34,14 @@ package exoskeleton
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import galilei.*
 import gossamer.*
+import hypotenuse.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 
@@ -54,14 +57,32 @@ object Pathname:
         val core = path.skip(point)
         Suggestion(core, Unset, incomplete = path != argument(), prefix = prefix)
 
-      if argument().empty then argument.suggest:
-        workingDirectory.children.to(List).map: path =>
-          suggest(path.name)
+      if argument() == t"." then argument.suggest:
+        suggest(t"../")
+        :: workingDirectory.children.to(List).filter(_.name.starts(t".")).map: path =>
+          val directory = safely(path.entry() == galilei.Directory).or(false)
+          suggest(if directory then path.name+t"/" else path.name)
+
+      else if argument() == t".." then argument.suggest:
+        suggest(t"../")
+        :: workingDirectory.children.to(List).filter(_.name.starts(t"..")).map: path =>
+          val directory = safely(path.entry() == galilei.Directory).or(false)
+          suggest(if directory then path.name+t"/" else path.name)
+
+      else if argument().empty then argument.suggest:
+        val children0 = workingDirectory.children.to(List)
+        val showAll = argument.tab.or(Prim) > Prim
+        val children = if !showAll then children0.filter(!_.name.starts(t".")) else children0
+
+        children.map: path =>
+          val directory = safely(path.entry() == galilei.Directory).or(false)
+          suggest(if directory then path.name+t"/" else path.name)
+
       else
         val absolute = argument().starts(t"/")
         val directory = argument().ends(t"/")
         val prototype = workingDirectory.resolve(argument())
-        val root = prototype.empty
+        val showAll = argument.tab.or(Prim) > Prim || prototype.name.starts(t".")
         val base: Optional[Path on Linux] = if directory then prototype else prototype.parent
         val children0 = base.lay(Nil)(_.children.to(List))
 
@@ -69,17 +90,13 @@ object Pathname:
           if directory then children0 else children0.filter(_.name.starts(prototype.name))
 
         argument.suggest:
-          children.map: path =>
+          val children2 = if !showAll then children.filter(!_.name.starts(t".")) else children
+
+          children2.map: path =>
             val directory = safely(path.entry() == galilei.Directory).or(false)
             val slash = if directory then t"/" else t""
 
-            if absolute then
-              val encoded = path.encode
-              val core = encoded+slash
-              suggest(core)
-            else
-              val encoded = path.relativeTo(workingDirectory).encode
-              val core = encoded+slash
-              suggest(core)
+            suggest:
+              if absolute then path.encode+slash else path.relativeTo(workingDirectory).encode+slash
 
     safely(workingDirectory.resolve(argument())).option

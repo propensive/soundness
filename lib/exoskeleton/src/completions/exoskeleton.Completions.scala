@@ -60,21 +60,16 @@ import filesystemOptions.writeAccess.enabled
 
 object Completions:
 
-  case class Tab(arguments: List[Argument], focus: Int, cursor: Int, count: Ordinal = Prim)
-  var tabCache: scm.HashMap[Text, Tab] = scm.HashMap()
+  case class Tab(arguments: List[Text], focus: Int, cursor: Int, count: Int = 0):
+    def next: Tab = copy(count = count + 1)
+    def zero: Tab = copy(count = 0)
 
-  def tab(completion: Completion): Ordinal =
-    val tab2 = Tab(completion.fullArguments, completion.focusPosition, completion.currentArgument)
+  private var cache: scm.HashMap[Text, Tab] = scm.HashMap()
 
-    val tab3 =
-      tabCache.at(completion.tty).let: tab =>
-        if tab.copy(count = Prim) == tab2 then tab.copy(count = tab.count + 1) else tab2
-
-      . or(tab2)
-
-    tabCache(completion.tty) = tab3
-
-    tab3.count
+  def tab(tty: Text, tab0: Tab): Ordinal =
+    cache.at(tty).let { tab => tab.next.unless(tab.zero != tab0) }.or(tab0).tap { cache(tty) = _ }
+    . count
+    . z
 
   enum Installation:
     case CommandNotOnPath(script: Text)
