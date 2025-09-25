@@ -34,6 +34,7 @@ package hellenism
 
 import java.net as jn
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import fulminate.*
