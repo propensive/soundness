@@ -39,6 +39,7 @@ import escapade.*
 import gossamer.*
 import guillotine.*
 import hieroglyph.*, textMetrics.uniform
+import hypotenuse.*
 import profanity.*
 import proscenium.*
 import rudiments.*
@@ -78,6 +79,14 @@ extends Cli:
 
   def focus: Argument = arguments(currentArgument)
 
+  def focused(argument: Argument): Boolean =
+    currentArgument == argument.position && argument.format.match
+      case Argument.Format.Full              => true
+      case Argument.Format.EqualityPrefix    => false
+      case Argument.Format.EqualitySuffix    => argument.value.contains(t"=")
+      case Argument.Format.CharFlag(ordinal) => false
+      case Argument.Format.FlagSuffix        => focusPosition.z > Sec
+
   override def register(flag: Flag, discoverable: Discoverable): Unit =
     parameters.focus.let: argument =>
       if flag.matches(argument) && currentArgument == argument.position + 1 then
@@ -95,9 +104,10 @@ extends Cli:
                  update:   (prior: List[Suggestion]) ?=> List[Suggestion],
                  prefix:   Text,
                  suffix:   Text) =
-    if argument.position == focus.position
-    then cursorSuggestions = update(using cursorSuggestions).map: suggestion =>
-      suggestion.copy(prefix = prefix+suggestion.prefix, suffix = suggestion.suffix+suffix)
+    if focused(argument) then
+      cursorSuggestions = update(using cursorSuggestions).map: suggestion =>
+        if suggestion.expanded then suggestion
+        else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
     (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>
@@ -132,7 +142,7 @@ extends Cli:
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
 
         val itemLines: List[Command] = items.flatMap:
-          case Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix) =>
+          case Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix, _) =>
             val hiddenParam = if hidden then sh"-n" else sh""
             val aliasText = aliases.join(t" ").fit(aliasesWidth)
             val prefix2 = if prefix.empty then sh"" else sh"-p $prefix"
@@ -179,7 +189,7 @@ extends Cli:
 
       case Shell.Fish =>
         items.flatMap:
-          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _) =>
+          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _) =>
             (suggestion.text :: aliases).map: text =>
               description.absolve match
                 case Unset                 => t"$text"
