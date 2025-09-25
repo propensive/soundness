@@ -431,10 +431,6 @@ object Tests extends Suite(m"Aviation Tests"):
           t"2022-11-15T23:59:59Z".decode[Instant]
         . assert(_ == Instant(1668556799000L))
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 3fa63bc73 (Add some more ISO 8601 tests)
       suite(m"RFC 1123"):
         import timestampDecoders.rfc1123
         test(m"basic with GMT timezone"):
