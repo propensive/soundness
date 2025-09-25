@@ -1396,6 +1396,16 @@ object serpentine extends SoundnessModule {
   }
 }
 
+object sinister extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(honeycomb.core, telekinesis.core, enigmatic.core, jacinta.core, hallucination.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
+}
+
 object spectacular extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(rudiments.core, inimitable.core, contingency.core, wisteria.core, digression.core)
