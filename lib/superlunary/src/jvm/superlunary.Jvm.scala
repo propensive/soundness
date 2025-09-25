@@ -52,7 +52,7 @@ import textSanitizers.skip
 import systemProperties.jre
 import classloaders.system
 
-object Jvm extends Dispatcher:
+object Jvm extends Rig:
   type Result[output] = output
   type Form = Text
   type Target = LocalClasspath

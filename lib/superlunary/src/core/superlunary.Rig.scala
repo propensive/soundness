@@ -57,7 +57,7 @@ import interfaces.paths.pathOnLinux
 import scala.quoted.*
 
 
-trait Dispatcher(using classloader: Classloader) extends Targetable, Formal, Transportive:
+trait Rig(using classloader: Classloader) extends Targetable, Formal, Transportive:
   type Result[output]
   type Transport <: Object
 
