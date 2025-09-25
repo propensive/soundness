@@ -70,7 +70,6 @@ extends Cli:
   var explanation: Optional[Text] = Unset
   var cursorSuggestions: List[Suggestion] = Nil
 
-
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   : Optional[operand] =
       given cli: Cli = this
@@ -91,8 +90,14 @@ extends Cli:
   override def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit =
     explanation = update(using explanation)
 
-  override def suggest(argument: Argument, update: (prior: List[Suggestion]) ?=> List[Suggestion]) =
-    if argument == focus then cursorSuggestions = update(using cursorSuggestions)
+  override def suggest
+                (argument: Argument,
+                 update:   (prior: List[Suggestion]) ?=> List[Suggestion],
+                 prefix:   Text,
+                 suffix:   Text) =
+    if argument.position == focus.position
+    then cursorSuggestions = update(using cursorSuggestions).map: suggestion =>
+      suggestion.copy(prefix = prefix+suggestion.prefix, suffix = suggestion.suffix+suffix)
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
     (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>

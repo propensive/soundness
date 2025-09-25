@@ -63,4 +63,10 @@ trait Cli extends Console:
   def register(flag: Flag, discoverable: Discoverable): Unit = ()
   def present(flag: Flag): Unit = ()
   def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit = ()
-  def suggest(argument: Argument, update: (prior: List[Suggestion]) ?=> List[Suggestion]) = ()
+
+  def suggest
+       (argument: Argument,
+        update:   (prior: List[Suggestion]) ?=> List[Suggestion],
+        prefix:   Text,
+        suffix:   Text) =
+    ()
