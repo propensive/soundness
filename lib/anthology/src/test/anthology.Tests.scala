@@ -34,8 +34,8 @@ package anthology
 
 import soundness.*
 
-import workingDirectories.virtualMachine
-import systemProperties.virtualMachine
+import workingDirectories.jre
+import systemProperties.jre
 import supervisors.global
 import asyncTermination.cancel
 import logging.silent
@@ -61,7 +61,7 @@ object Tests extends Suite(m"Anthology Tests"):
         val classpath = LocalClasspath.system()
         val dir: Path on Linux = workingDirectory[Path on Linux] / Name[Linux](t"tmp")
 
-        mend:
+        recover:
           case CompilerError() =>
             println(t"Compiler error")
 
@@ -100,7 +100,7 @@ object Tests extends Suite(m"Anthology Tests"):
         val classpath = LocalClasspath.system()
         val dir: Path on Linux = workingDirectory[Path on Linux] / Name[Linux](t"tmp")
 
-        mend:
+        recover:
           case CompilerError() =>
             println(t"Compiler error")
 
