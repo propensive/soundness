@@ -49,7 +49,7 @@ object Cli:
   : List[Argument] =
 
       textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
-        Argument(index, text, if focus == index then position else Unset, tab)
+        Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
 
 
 trait Cli extends Console:
@@ -63,4 +63,10 @@ trait Cli extends Console:
   def register(flag: Flag, discoverable: Discoverable): Unit = ()
   def present(flag: Flag): Unit = ()
   def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit = ()
-  def suggest(argument: Argument, update: (prior: List[Suggestion]) ?=> List[Suggestion]) = ()
+
+  def suggest
+       (argument: Argument,
+        update:   (prior: List[Suggestion]) ?=> List[Suggestion],
+        prefix:   Text,
+        suffix:   Text) =
+    ()

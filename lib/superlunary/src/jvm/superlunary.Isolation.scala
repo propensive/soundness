@@ -56,7 +56,7 @@ import textSanitizers.skip
 import systemProperties.jre
 import classloaders.system
 
-object Isolation extends Dispatcher:
+object Isolation extends Rig:
   type Result[output] = output
   type Form = Array[Pojo]
   type Target = Classloader

@@ -30,110 +30,49 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package exoskeleton
 
-import java.util.function as juf
+import soundness.*
 
-import ambience.*
-import anthology.*
-import anticipation.*
-import contingency.*
-import digression.*
-import distillate.*
-import galilei.*
-import hellenism.*
-import inimitable.*
-import nomenclature.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import symbolism.*
-import vacuous.*
+import errorDiagnostics.stackTraces
 
-import interfaces.paths.pathOnLinux
+def enter(keypresses: (Text | Char)*)(using session: Tmux.Session): Unit raises TmuxError =
+  given WorkingDirectory = session.workingDirectory
+  import logging.silent
+  mitigate:
+    case ExecError(_, _, _) => TmuxError()
 
-import scala.quoted.*
+  . within:
+      keypresses.each:
+        case text: Text => sh"tmux send-keys -t ${session.id} '$text'".exec[Unit]()
+        case char: Char => sh"tmux send-keys -t ${session.id} '$char'".exec[Unit]()
 
+case class TmuxError()(using Diagnostics) extends Error(m"can't execute tmux")
 
-trait Dispatcher(using classloader: Classloader) extends Targetable, Formal, Transportive:
-  type Result[output]
-  type Transport <: Object
+object Tmux:
+  case class Session(id: Text, workingDirectory: WorkingDirectory)
+  case class Capture(screen: Text, cursor: (Ordinal, Ordinal))
 
-  protected val scalac: Scalac[?]
-  protected def invoke[output](dispatch: Dispatch[output, Form, Target]): Result[output]
-  private var cache: Map[Codepoint, (Target, juf.Function[Form, Form])] = Map()
+  def session(width: Int = 80, height: Int = 24)[result](action: Session ?=> result)
+       (using WorkingDirectory)
+  : Capture raises TmuxError logs ExecEvent =
 
-  lazy val settings2: staging.Compiler.Settings =
-    staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
+      mitigate:
+        case ExecError(_, _, _) => TmuxError()
+        case NumberError(_, _)  => TmuxError()
+      . within:
+          val session = Session(Uuid().show, summon[WorkingDirectory])
+          sh"tmux new-session -d -s ${session.id} -x $width -y $height '/bin/zsh -l'".exec[Unit]()
 
-  lazy val compiler2: staging.Compiler = staging.Compiler.make(classloader.java)(using settings2)
+          sh"tmux send-keys -t ${session.id} 'PS1=\"> \"; autoload -Uz compinit; compinit' C-m C-l"
+          . exec[Unit]()
 
-  def deploy(path: Path on Linux): Target
+          action(using session)
 
-  inline def dispatch[output]
-              (body: (References over Transport) ?=> Quotes ?=> Expr[output])
-              [version <: Scalac.Versions]
-              (using codepoint:    Codepoint,
-                     properties:   SystemProperties,
-                     directory:    TemporaryDirectory,
-                     dispatchable: Dispatchable over Transport in Form)
-  : Result[output] raises CompilerError raises RemoteError =
+          val content = sh"tmux capture-pane -pt ${session.id}".exec[Text]().trim
+          val x = sh"tmux display-message -pt ${session.id} '#{cursor_x}'".exec[Text]().decode[Int].z
+          val y = sh"tmux display-message -pt ${session.id} '#{cursor_y}'".exec[Text]().decode[Int].z
 
-      val references: References over Transport = References[Transport]()
+          sh"tmux kill-session -t ${session.id}".exec[Unit]()
 
-      val (target, function): (Target, juf.Function[Form, Form]) =
-        if cache.contains(codepoint) then
-          given staging.Compiler = compiler2
-
-          // This is necessary to allocate references as a side effect
-          staging.withQuotes:
-            '{  (array: Array[Object]) =>
-                  ${  references() = 'array
-                      body(using references)  }  }
-
-          cache(codepoint)
-
-        else
-          val uuid = Uuid()
-
-          val out =
-            import strategies.throwUnsafely
-            (temporaryDirectory / uuid).on[Linux]
-
-          val settings: staging.Compiler.Settings =
-            staging.Compiler.Settings.make
-              (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
-
-          given compiler: staging.Compiler =
-            staging.Compiler.make(classloader.java)(using settings)
-
-          val function: juf.Function[Form, Form] = staging.run:
-            '{  form =>
-                  dispatchable.serialize:
-
-                    val array = new Array[Object](1)
-                    array(0) =
-                      dispatchable.embed[output]
-                       (${  references() = '{dispatchable.deserialize(form)}
-                            body(using references)  })
-                    array  }
-
-          val target = deploy(out)
-          cache = cache.updated(codepoint, (target, function))
-
-          (target, function)
-
-      invoke[output]
-        (Dispatch
-          (target,
-          function =>
-            dispatchable.extract[output]:
-              dispatchable.deserialize(function(dispatchable.serialize(references())))
-              . head.asInstanceOf[Transport]))
-
-      // catch case throwable: Throwable =>
-      //   println(throwable)
-      //   throwable.printStackTrace()
-      //   abort(CompilerError())
+          Capture(content, (x, y))

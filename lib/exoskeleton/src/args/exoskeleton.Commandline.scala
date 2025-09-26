@@ -45,6 +45,10 @@ case class Commandline
     focus:          Optional[Argument]            = Unset)
 extends Flags:
 
+  def addParameter(key: Argument, values: List[Argument]): Commandline =
+    val parameters2 = parameters.updated(key, values)
+    Commandline(positional, parameters, postpositional, focus)
+
   def read[operand: Interpretable](flag: Flag)
        (using cli: Cli, discoverable: (? <: operand) is Discoverable)
   : Optional[operand] =

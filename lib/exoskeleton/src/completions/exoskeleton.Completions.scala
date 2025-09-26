@@ -201,7 +201,7 @@ object Completions:
           |  $command '{completions}' zsh "$$CURRENT" "$${#PREFIX}" "$$TTY" -- $$words | while IFS=$$'\\0' read -r -A ln
           |  do
           |    desc=($${ln[1]})
-          |    compadd -Q "$${(@)ln:1}"
+          |    compadd "$${(@)ln:1}"
           |  done
           |}
           |_$command

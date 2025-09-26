@@ -39,6 +39,7 @@ import escapade.*
 import gossamer.*
 import guillotine.*
 import hieroglyph.*, textMetrics.uniform
+import hypotenuse.*
 import profanity.*
 import proscenium.*
 import rudiments.*
@@ -70,7 +71,6 @@ extends Cli:
   var explanation: Optional[Text] = Unset
   var cursorSuggestions: List[Suggestion] = Nil
 
-
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   : Optional[operand] =
       given cli: Cli = this
@@ -78,6 +78,14 @@ extends Cli:
 
 
   def focus: Argument = arguments(currentArgument)
+
+  def focused(argument: Argument): Boolean =
+    currentArgument == argument.position && argument.format.match
+      case Argument.Format.Full              => true
+      case Argument.Format.EqualityPrefix    => false
+      case Argument.Format.EqualitySuffix    => argument.value.contains(t"=")
+      case Argument.Format.CharFlag(ordinal) => false
+      case Argument.Format.FlagSuffix        => focusPosition.z > Sec
 
   override def register(flag: Flag, discoverable: Discoverable): Unit =
     parameters.focus.let: argument =>
@@ -91,8 +99,15 @@ extends Cli:
   override def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit =
     explanation = update(using explanation)
 
-  override def suggest(argument: Argument, update: (prior: List[Suggestion]) ?=> List[Suggestion]) =
-    if argument == focus then cursorSuggestions = update(using cursorSuggestions)
+  override def suggest
+                (argument: Argument,
+                 update:   (prior: List[Suggestion]) ?=> List[Suggestion],
+                 prefix:   Text,
+                 suffix:   Text) =
+    if focused(argument) then
+      cursorSuggestions = update(using cursorSuggestions).map: suggestion =>
+        if suggestion.expanded then suggestion
+        else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
     (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>
@@ -103,9 +118,7 @@ extends Cli:
           case main :: aliases =>
             List
              (Suggestion
-               (Flag.serialize(main),
-                flag.description,
-                aliases = aliases.map(Flag.serialize(_))))
+               (Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
 
           case Nil => Nil
 
@@ -127,7 +140,7 @@ extends Cli:
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
 
         val itemLines: List[Command] = items.flatMap:
-          case Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix) =>
+          case Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix, _) =>
             val hiddenParam = if hidden then sh"-n" else sh""
             val aliasText = aliases.join(t" ").fit(aliasesWidth)
             val prefix2 = if prefix.empty then sh"" else sh"-p $prefix"
@@ -174,7 +187,7 @@ extends Cli:
 
       case Shell.Fish =>
         items.flatMap:
-          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _) =>
+          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _) =>
             (suggestion.text :: aliases).map: text =>
               description.absolve match
                 case Unset                 => t"$text"
