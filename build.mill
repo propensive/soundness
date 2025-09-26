@@ -53,7 +53,7 @@ object settings {
     "-Wimplausible-patterns",
     "-Wsafe-init",
     "-Xmax-inlines", "100",
-    "-Ycc-new",
+    //"-Ycc-new",
     "-Yno-flexible-types",
     "-Yexplicit-nulls",
     "-Ycheck-all-patmat",
@@ -1408,7 +1408,7 @@ object spectacular extends SoundnessModule {
 
 object superlunary extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(anticipation.css, symbolism.core, anticipation.text, anticipation.http, jacinta.core, inimitable.core, gastronomy.core, ambience.core, hellenism.core, anthology.scala)
+    def moduleDeps = Seq(anticipation.css, symbolism.core, anticipation.text, anticipation.http, jacinta.core, inimitable.core, gastronomy.core, ambience.core, hellenism.core, anthology.scala, austronesian.core)
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-staging_3:${scalaVersion()}")
   }
 

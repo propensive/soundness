@@ -117,7 +117,7 @@ object Tests extends Suite(m"Soundness tests"):
 
 object FailingTests extends Suite(m"Failing tests"):
   def run(): Unit =
-    //austronesian.Tests()
+    //austronesian.Tests() - crashing on compile
     // cellulose.Tests() - class file too large
     mandible.Tests()
     //merino.Tests() - crashing

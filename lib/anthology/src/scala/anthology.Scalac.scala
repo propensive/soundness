@@ -54,12 +54,15 @@ import scala.util.control as suc
 import language.adhocExtensions
 
 object Scalac:
-  type All = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6
+  type Versions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7
+
+  case class Option[-version <: Versions](flags: Text*)
+
   private var Scala3: dtd.Compiler = new dtd.Compiler()
   def refresh(): Unit = synchronized { Scala3 = new dtd.Compiler() }
   def compiler(): dtd.Compiler = Scala3
 
-case class Scalac[version <: Scalac.All](options: List[ScalacOption[version]]):
+case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[version]]):
 
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
