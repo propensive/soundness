@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 declare javaCmd portFile pidFile ttystate script tmpPipe dataHomeDir data stderr javaBundle pendingUpdate
-declare -i doDownload minimumJava preferredJava pid port version buildId stdoutPid stderrPid continue pipePid argCount launchPid payloadSize jarSize
+declare -i doDownload minimumJava preferredJava pid port version buildId stdoutPid stderrPid continue pipePid argCount launchPid payloadSize jarSize initParameters
 declare -a args signals sttyOptions
 
 # The TTY settings to use for terminal input

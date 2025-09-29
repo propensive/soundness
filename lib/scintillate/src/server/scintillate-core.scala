@@ -97,10 +97,3 @@ given realm: Realm = realm"scintillate"
 
 extension (request: Http.Request)
   def as[body: Acceptable]: body = body.accept(request)
-
-
-  def path(using connection: HttpConnection)
-  : HttpUrl raises PathError raises UrlError raises HostnameError =
-
-      val scheme = if connection.tls then t"https" else t"http"
-      t"$scheme://${request.host}${request.location}".decode[HttpUrl]

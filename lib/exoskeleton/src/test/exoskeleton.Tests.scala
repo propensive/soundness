@@ -35,7 +35,33 @@ package exoskeleton
 import soundness.*
 
 import unsafeExceptions.canThrowAny
+import classloaders.system
+import systemProperties.jre
+import temporaryDirectories.systemProperties
+
+import strategies.throwUnsafely
 
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
-    ()
+    test(m"Test a deployment"):
+      ShellScript(t"foo").dispatch:
+        '{  import executives.completions
+            import backstops.silent
+            import parameterInterpretation.posix
+            import threading.platform
+            import workingDirectories.jre
+            import errorDiagnostics.stackTraces
+            import logging.silent
+
+            val Run = Subcommand("run", e"a command to run")
+
+            cli:
+              Completions.ensure()
+              arguments match
+                case Run() :: _ =>
+                  execute(Out.println(t"yes") yet Exit.Ok)
+                case _     => execute(Out.println("no") yet Exit.Fail(1))
+
+            t"finished"  }
+
+    . assert()

@@ -58,7 +58,8 @@ object Zipfile:
   given openable: Zipfile is Openable:
     type Self = Zipfile
     type Operand = Unit
-    type Result = Root
+    type Result = Zip.ZipRoot
+
     protected type Transport = jnf.FileSystem
 
     def init(value: Zipfile, options: List[Operand]): Transport =
@@ -72,30 +73,23 @@ object Zipfile:
 
   private val cache: scc.TrieMap[Text, Semaphore] = scc.TrieMap()
 
-  def write[path: Abstractable across Paths to Text](path: path)(stream: Stream[ZipEntry]): Unit =
-    val filename = path.generic
-    val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(filename.s)))
-    val directories: scm.HashSet[Path on Zip] = scm.HashSet()
+  def write[path: Abstractable across Paths to Text](path: path)(stream: Iterable[ZipEntry])
+  : Unit raises ZipError =
 
-    def addEntry(path: Path on Zip): Boolean =
-      directories(path)
-      || { directories += path
-           out.putNextEntry(juz.ZipEntry(path.encode.s))
-           out.closeEntry()
-           false }
+      val filename = path.generic
+      val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(filename.s)))
 
-    for entry <- stream do
-      entry.ref.ancestors.reverse.exists: path =>
-        directories(path) || addEntry(path)
+      for entry <- stream do
+        val ref = entry.ref.encode
+        val ref2 = if ref.starts("/") then ref.skip(1).s else ref.s
+        out.putNextEntry(juz.ZipEntry(ref2))
 
-      out.putNextEntry(juz.ZipEntry(entry.ref.encode.s))
+        entry.content().each: bytes =>
+          out.write(bytes.mutable(using Unsafe))
 
-      entry.content().each: bytes =>
-        out.write(bytes.mutable(using Unsafe))
+        out.closeEntry()
 
-      out.closeEntry()
-
-    out.close()
+      out.close()
 
 
 case class Zipfile(path: Text):

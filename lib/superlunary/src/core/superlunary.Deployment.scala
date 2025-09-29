@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.34.0.                                                                    ┃
+┃    Soundness, version 0.41.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -32,50 +32,9 @@
                                                                                                   */
 package superlunary
 
-import scala.reflect.Selectable.reflectiveSelectable
-
-import ambience.*, systemProperties.jre
-import anthology.*
 import anticipation.*
-import austronesian.*
-import contingency.*
-import distillate.*
-import eucalyptus.*
 import gossamer.*
-import guillotine.*
 import hellenism.*
-import hieroglyph.*
-import prepositional.*
-import rudiments.*
 import serpentine.*
-import turbulence.*
-import vacuous.*
 
-import charDecoders.utf8
-import textSanitizers.skip
-import systemProperties.jre
-import classloaders.system
-
-object Isolation extends Rig:
-  type Result[output] = output
-  type Form = Array[Pojo]
-  type Target = Classloader
-  type Transport = Pojo
-
-  def deploy(out: Path on Linux): Classloader = classpath(out).classloader()
-  val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
-
-  protected def invoke[output](deployment: Deployment[output, Form, Target]): output =
-    import workingDirectories.systemProperties
-    import logging.silent
-
-    deployment.remote: input =>
-      val classloader: Classloader = deployment.target
-      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
-      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-      val method = cls.getMethod("apply").nn
-      val function = method.invoke(instance)
-      val cls2 = function.getClass
-      val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
-      method2.setAccessible(true)
-      method2.invoke(function, input).asInstanceOf[Array[Pojo]]
+case class Deployment[output, form, target](target: target, remote: (form => form) => output)

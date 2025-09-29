@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.34.0.                                                                    ┃
+┃    Soundness, version 0.41.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,52 +30,92 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package exoskeleton
 
-import scala.reflect.Selectable.reflectiveSelectable
-
-import ambience.*, systemProperties.jre
 import anthology.*
 import anticipation.*
-import austronesian.*
 import contingency.*
+import digression.*
 import distillate.*
 import eucalyptus.*
+import galilei.*
 import gossamer.*
 import guillotine.*
 import hellenism.*
 import hieroglyph.*
+import jacinta.*
 import prepositional.*
+import revolution.*
 import rudiments.*
 import serpentine.*
+import spectacular.*
+import superlunary.*
+import symbolism.*
 import turbulence.*
-import vacuous.*
+import zeppelin.*
 
-import charDecoders.utf8
-import textSanitizers.skip
-import systemProperties.jre
-import classloaders.system
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.createNonexistent.disabled
+import filesystemTraversal.preOrder
+import manifestAttributes.*
 
-object Isolation extends Rig:
+import logging.silent
+import workingDirectories.jre
+import charEncoders.utf8
+
+
+case class ShellScript(name: Text)(using Classloader) extends Rig:
   type Result[output] = output
-  type Form = Array[Pojo]
-  type Target = Classloader
-  type Transport = Pojo
+  type Form = Text
+  type Target = Path on Linux
+  type Transport = Json
 
-  def deploy(out: Path on Linux): Classloader = classpath(out).classloader()
-  val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
+  def deploy(out: Path on Linux): Path on Linux =
+    val jarfile = out.peer("tmpfile.jar")
+    val target = unsafely(out.peer(name))
+    println(jarfile.encode.toString)
+    val manifest =
+      Manifest
+       (ManifestVersion(()),
+        CreatedBy(t"Soundness"),
+        MainClass(fqcn"superlunary.Executor2"))
 
-  protected def invoke[output](deployment: Deployment[output, Form, Target]): output =
-    import workingDirectories.systemProperties
-    import logging.silent
+    unsafely:
+      Zipfile.write(jarfile):
+        ZipEntry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest)
+        :: classpath(out).entries.to(List).flatMap:
+          case ClasspathEntry.Directory(directory) =>
+            unsafely:
+              val root = directory.decode[Path on Linux]
+              root.descendants.to(List).map: file =>
+                file.open: handle =>
+                  val ref = %.on[Zip] + file.relativeTo(root).on[Zip]
+                  ZipEntry(ref, handle.read[Bytes])
 
+          case ClasspathEntry.Jar(jar) =>
+            println(t"Jar: $jar")
+            unsafely:
+              val jarfile = workingDirectory[Path on Linux].resolve(jar)
+              jarfile.open: handle =>
+                ZipStream(handle).keep { path => path.show != t"META-INF/MANIFEST.MF" }
+                . map: entry =>
+                    ZipEntry(entry.ref, entry.read[Bytes])
+
+                . to(List)
+
+          case _ =>
+            List()
+
+      sh"java -Dbuild.executable=$target -jar $jarfile '[]'".exec[Exit]() match
+        case Exit.Ok      => target
+        case Exit.Fail(_) => ???
+
+
+  protected val scalac: Scalac[3.7] = Scalac(List(scalacOptions.experimental))
+
+  protected def invoke[output](deployment: Deployment[output, Text, Path on Linux]): output =
+    println(deployment.target)
     deployment.remote: input =>
-      val classloader: Classloader = deployment.target
-      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
-      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-      val method = cls.getMethod("apply").nn
-      val function = method.invoke(instance)
-      val cls2 = function.getClass
-      val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
-      method2.setAccessible(true)
-      method2.invoke(function, input).asInstanceOf[Array[Pojo]]
+      t"[\"result\"]"

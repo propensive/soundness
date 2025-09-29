@@ -53,17 +53,28 @@ import symbolism.*
 import vacuous.*
 
 import interfaces.paths.pathOnLinux
+import systemProperties.jre
 
 import scala.quoted.*
 
 
-trait Rig(using classloader: Classloader) extends Targetable, Formal, Transportive:
+trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transportive:
   type Result[output]
   type Transport <: Object
 
   protected val scalac: Scalac[?]
-  protected def invoke[output](dispatch: Dispatch[output, Form, Target]): Result[output]
+  protected def invoke[output](deployment: Deployment[output, Form, Target]): Result[output]
   private var cache: Map[Codepoint, (Target, juf.Function[Form, Form])] = Map()
+  protected val classloader = classloader0
+
+  def classpath(out: Path on Linux): LocalClasspath = LocalClasspath:
+    Classpath.Directory(out)
+    :: (classloaders.threadContext.classpath.match
+      case classpath: LocalClasspath =>
+        classpath.entries
+
+      case _ =>
+        unsafely(Properties.java.`class`.path().decode[LocalClasspath]).entries)
 
   lazy val settings2: staging.Compiler.Settings =
     staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
@@ -78,7 +89,7 @@ trait Rig(using classloader: Classloader) extends Targetable, Formal, Transporti
               (using codepoint:    Codepoint,
                      properties:   SystemProperties,
                      directory:    TemporaryDirectory,
-                     dispatchable: Dispatchable over Transport in Form)
+                     deployable:   Deployable over Transport in Form)
   : Result[output] raises CompilerError raises RemoteError =
 
       val references: References over Transport = References[Transport]()
@@ -111,12 +122,12 @@ trait Rig(using classloader: Classloader) extends Targetable, Formal, Transporti
 
           val function: juf.Function[Form, Form] = staging.run:
             '{  form =>
-                  dispatchable.serialize:
+                  deployable.serialize:
 
                     val array = new Array[Object](1)
                     array(0) =
-                      dispatchable.embed[output]
-                       (${  references() = '{dispatchable.deserialize(form)}
+                      deployable.embed[output]
+                       (${  references() = '{deployable.deserialize(form)}
                             body(using references)  })
                     array  }
 
@@ -126,11 +137,11 @@ trait Rig(using classloader: Classloader) extends Targetable, Formal, Transporti
           (target, function)
 
       invoke[output]
-        (Dispatch
+        (Deployment
           (target,
           function =>
-            dispatchable.extract[output]:
-              dispatchable.deserialize(function(dispatchable.serialize(references())))
+            deployable.extract[output]:
+              deployable.deserialize(function(deployable.serialize(references())))
               . head.asInstanceOf[Transport]))
 
       // catch case throwable: Throwable =>

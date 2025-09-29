@@ -38,6 +38,7 @@ import ambience.*, environments.jre, systemProperties.jre
 import anticipation.*
 import contingency.*
 import denominative.*
+import digression.*
 import distillate.*
 import fulminate.*
 import galilei.*
@@ -105,6 +106,12 @@ object Completions:
       case AlreadyInstalled(shell: Shell, path: Text)
       case NoWritableLocation(shell: Shell)
       case ShellNotInstalled(shell: Shell)
+
+  def ensure(force: Boolean = false)(using ShellContext, WorkingDirectory, Diagnostics)
+  : Unit logs CliEvent =
+
+      safely(idempotent(effectful(install(force))))
+
 
   def install(force: Boolean = false)(using service: ShellContext)
        (using WorkingDirectory, Effectful, Diagnostics)

@@ -814,7 +814,11 @@ object exoskeleton extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, args, core, completions)
+    def moduleDeps = Seq(probably.cli, args, core, completions, superlunary.core, ethereal.core, jacinta.core, zeppelin.core, revolution.core)
+    def ivyDeps = Agg(
+      ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      ivy"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
   }
 }
 

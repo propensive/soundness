@@ -32,9 +32,19 @@
                                                                                                   */
 package superlunary
 
-import anticipation.*
-import gossamer.*
-import hellenism.*
-import serpentine.*
+import java.io as ji
+import scala.reflect.Selectable.reflectiveSelectable
 
-case class Dispatch[output, format, target](target: target, remote: (format => format) => output)
+import vacuous.*
+
+object Executor2:
+  def main(input: Array[String]): Unit =
+    val cls = Class.forName("Generated$Code$From$Quoted").nn
+    val instance = cls.getDeclaredConstructor().nn.newInstance().nn
+    val method = cls.getMethod("apply").nn
+    val function = method.invoke(instance).nn
+    val cls2 = function.getClass.nn
+    val method2 = function.getClass.nn.getMethod("apply", classOf[Object]).nn
+    method2.setAccessible(true)
+    val parameters = Optional(System.getenv("INPUT_PARAMETERS")).or("[]")
+    method2.invoke(function, parameters)

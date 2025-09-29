@@ -40,7 +40,7 @@ import rudiments.*
 object Fqcn:
   def valid(char: Char): Boolean =
     char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || char >= '0' && char <= '9'
-    || char == '_'
+    || char == '_' || char == '$'
 
   def apply(name: Text): Fqcn raises FqcnError =
     val parts = IArray.from(name.s.split("\\.").nn.map(_.nn))

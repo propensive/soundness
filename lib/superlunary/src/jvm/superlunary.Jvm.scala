@@ -58,23 +58,15 @@ object Jvm extends Rig:
   type Target = LocalClasspath
   type Transport = Json
 
-  def deploy(out: Path on Linux): LocalClasspath =
-    classloaders.threadContext.classpath match
-      case classpath: LocalClasspath =>
-        LocalClasspath(classpath.entries :+ Classpath.Directory(out))
-
-      case _ =>
-        val systemClasspath = unsafely(Properties.java.`class`.path().decode[LocalClasspath])
-        LocalClasspath(Classpath.Directory(out) :: systemClasspath.entries)
-
+  def deploy(out: Path on Linux): LocalClasspath = classpath(out)
 
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
-  protected def invoke[output](dispatch: Dispatch[output, Form, Target]): output =
+  protected def invoke[output](deployment: Deployment[output, Form, Target]): output =
     import workingDirectories.systemProperties
     import logging.silent
 
-    dispatch.remote: input =>
+    deployment.remote: input =>
       println("Using "+input)
-      val cmd = sh"java -classpath ${dispatch.target()} superlunary.Executor $input"
+      val cmd = sh"java -classpath ${deployment.target()} superlunary.Executor $input"
       unsafely(cmd.exec[Text]())
