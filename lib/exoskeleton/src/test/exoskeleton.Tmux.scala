@@ -36,43 +36,47 @@ import soundness.*
 
 import errorDiagnostics.stackTraces
 
-def enter(keypresses: (Text | Char)*)(using session: Tmux.Session): Unit raises TmuxError =
-  given WorkingDirectory = session.workingDirectory
+def enter(keypresses: (Text | Char)*)(using tmux: Tmux): Unit raises TmuxError =
+  given WorkingDirectory = tmux.workingDirectory
   import logging.silent
   mitigate:
     case ExecError(_, _, _) => TmuxError()
 
   . within:
       keypresses.each:
-        case text: Text => sh"tmux send-keys -t ${session.id} '$text'".exec[Unit]()
-        case char: Char => sh"tmux send-keys -t ${session.id} '$char'".exec[Unit]()
+        case text: Text => sh"tmux send-keys -t ${tmux.id} '$text'".exec[Unit]()
+        case char: Char => sh"tmux send-keys -t ${tmux.id} '$char'".exec[Unit]()
+
+def screenshot()(using tmux: Tmux)(using WorkingDirectory): Screenshot = unsafely:
+  import logging.silent
+  val content = sh"tmux capture-pane -pt ${tmux.id}".exec[Text]().trim
+  val x = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]().decode[Int].z
+  val y = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]().decode[Int].z
+
+  Screenshot(content, (x, y))
+
 
 case class TmuxError()(using Diagnostics) extends Error(m"can't execute tmux")
+case class Tmux(id: Text, workingDirectory: WorkingDirectory)
+case class Screenshot(screen: Text, cursor: (Ordinal, Ordinal))
 
-object Tmux:
-  case class Session(id: Text, workingDirectory: WorkingDirectory)
-  case class Capture(screen: Text, cursor: (Ordinal, Ordinal))
-
-  def session(width: Int = 80, height: Int = 24)[result](action: Session ?=> result)
+extension (tool: Tool)
+  def tmux(width: Int = 80, height: Int = 24)[result](action: Tmux ?=> result)
        (using WorkingDirectory)
-  : Capture raises TmuxError logs ExecEvent =
+  : result raises TmuxError logs ExecEvent =
 
       mitigate:
         case ExecError(_, _, _) => TmuxError()
         case NumberError(_, _)  => TmuxError()
       . within:
-          val session = Session(Uuid().show, summon[WorkingDirectory])
-          sh"tmux new-session -d -s ${session.id} -x $width -y $height '/bin/zsh -l'".exec[Unit]()
+          val tmux = Tmux(Uuid().show, summon[WorkingDirectory])
+          sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '/bin/zsh -l'".exec[Unit]()
 
-          sh"tmux send-keys -t ${session.id} 'PS1=\"> \"; autoload -Uz compinit; compinit' C-m C-l"
+          sh"tmux send-keys -t ${tmux.id} 'PS1=\"> \"; autoload -Uz compinit; compinit' C-m C-l"
           . exec[Unit]()
 
-          action(using session)
+          val result = action(using tmux)
 
-          val content = sh"tmux capture-pane -pt ${session.id}".exec[Text]().trim
-          val x = sh"tmux display-message -pt ${session.id} '#{cursor_x}'".exec[Text]().decode[Int].z
-          val y = sh"tmux display-message -pt ${session.id} '#{cursor_y}'".exec[Text]().decode[Int].z
+          sh"tmux kill-session -t ${tmux.id}".exec[Exit]()
 
-          sh"tmux kill-session -t ${session.id}".exec[Unit]()
-
-          Capture(content, (x, y))
+          result

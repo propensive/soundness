@@ -63,7 +63,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   type Transport <: Object
 
   protected val scalac: Scalac[?]
-  protected def invoke[output](deployment: Deployment[output, Form, Target]): Result[output]
+  protected def invoke[output](provision: Provision[output, Form, Target]): Result[output]
   private var cache: Map[Codepoint, (Target, juf.Function[Form, Form])] = Map()
   protected val classloader = classloader0
 
@@ -81,15 +81,15 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
   lazy val compiler2: staging.Compiler = staging.Compiler.make(classloader.java)(using settings2)
 
-  def deploy(path: Path on Linux): Target
+  def provision(path: Path on Linux): Target
 
   inline def dispatch[output]
               (body: (References over Transport) ?=> Quotes ?=> Expr[output])
               [version <: Scalac.Versions]
-              (using codepoint:    Codepoint,
-                     properties:   SystemProperties,
-                     directory:    TemporaryDirectory,
-                     deployable:   Deployable over Transport in Form)
+              (using codepoint:     Codepoint,
+                     properties:    SystemProperties,
+                     directory:     TemporaryDirectory,
+                     provisionable: Provisionable over Transport in Form)
   : Result[output] raises CompilerError raises RemoteError =
 
       val references: References over Transport = References[Transport]()
@@ -122,26 +122,26 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
           val function: juf.Function[Form, Form] = staging.run:
             '{  form =>
-                  deployable.serialize:
+                  provisionable.serialize:
 
                     val array = new Array[Object](1)
                     array(0) =
-                      deployable.embed[output]
-                       (${  references() = '{deployable.deserialize(form)}
+                      provisionable.embed[output]
+                       (${  references() = '{provisionable.deserialize(form)}
                             body(using references)  })
                     array  }
 
-          val target = deploy(out)
+          val target = provision(out)
           cache = cache.updated(codepoint, (target, function))
 
           (target, function)
 
       invoke[output]
-        (Deployment
+        (Provision
           (target,
           function =>
-            deployable.extract[output]:
-              deployable.deserialize(function(deployable.serialize(references())))
+            provisionable.extract[output]:
+              provisionable.deserialize(function(provisionable.serialize(references())))
               . head.asInstanceOf[Transport]))
 
       // catch case throwable: Throwable =>

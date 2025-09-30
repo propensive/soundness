@@ -38,13 +38,16 @@ import unsafeExceptions.canThrowAny
 import classloaders.system
 import systemProperties.jre
 import temporaryDirectories.systemProperties
+import workingDirectories.jre
+import supervisors.global
+import logging.silent
 
 import strategies.throwUnsafely
 
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
-    test(m"Test a deployment"):
-      ShellScript(t"foo").dispatch:
+    val tool: Tool =
+      ShellScript(t"quux").dispatch:
         '{  import executives.completions
             import backstops.silent
             import parameterInterpretation.posix
@@ -53,15 +56,27 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             import errorDiagnostics.stackTraces
             import logging.silent
 
-            val Run = Subcommand("run", e"a command to run")
+            val Alpha = Subcommand("alpha", e"a command to run")
+            val Beta = Subcommand("beta", e"a command to run")
 
             cli:
               Completions.ensure()
               arguments match
-                case Run() :: _ =>
-                  execute(Out.println(t"yes") yet Exit.Ok)
-                case _     => execute(Out.println("no") yet Exit.Fail(1))
+                case Alpha() :: _ =>
+                  execute(Out.println(t"yes a") yet Exit.Ok)
+                case Beta() :: _ =>
+                  execute(Out.println(t"yes b") yet Exit.Ok)
+                case _     =>
+                  execute(Out.println("no") yet Exit.Fail(1))
 
             t"finished"  }
+
+    test(m"Test a deployment"):
+      tool.tmux():
+        delay(60L)
+        enter(t"quux a")
+        enter('\t')
+        delay(20L)
+        println(screenshot())
 
     . assert()

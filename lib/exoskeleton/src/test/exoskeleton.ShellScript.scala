@@ -58,24 +58,29 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistent.disabled
+import filesystemOptions.createNonexistentParents.disabled
+import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.deleteRecursively.disabled
 import filesystemTraversal.preOrder
 import manifestAttributes.*
 
 import logging.silent
 import workingDirectories.jre
+import homeDirectories.jre
 import charEncoders.utf8
 
 
+case class Tool(path: Path on Linux)
+
 case class ShellScript(name: Text)(using Classloader) extends Rig:
-  type Result[output] = output
+  type Result[output] = Tool
   type Form = Text
   type Target = Path on Linux
   type Transport = Json
 
-  def deploy(out: Path on Linux): Path on Linux =
+  def provision(out: Path on Linux): Path on Linux =
     val jarfile = out.peer("tmpfile.jar")
     val target = unsafely(out.peer(name))
-    println(jarfile.encode.toString)
     val manifest =
       Manifest
        (ManifestVersion(()),
@@ -95,7 +100,6 @@ case class ShellScript(name: Text)(using Classloader) extends Rig:
                   ZipEntry(ref, handle.read[Bytes])
 
           case ClasspathEntry.Jar(jar) =>
-            println(t"Jar: $jar")
             unsafely:
               val jarfile = workingDirectory[Path on Linux].resolve(jar)
               jarfile.open: handle =>
@@ -115,7 +119,16 @@ case class ShellScript(name: Text)(using Classloader) extends Rig:
 
   protected val scalac: Scalac[3.7] = Scalac(List(scalacOptions.experimental))
 
-  protected def invoke[output](deployment: Deployment[output, Text, Path on Linux]): output =
-    println(deployment.target)
-    deployment.remote: input =>
-      t"[\"result\"]"
+
+  protected def invoke[output](provision: Provision[output, Text, Path on Linux]): Tool =
+    val tool = unsafely(homeDirectory[Path on Linux] / ".local" / "bin" / name)
+
+    provision.remote: input =>
+      unsafely:
+        safely(tool.delete())
+        provision.target.copyTo(tool)
+        println(sh"$tool".exec[Text]())
+
+      t"""[""]"""
+
+    Tool(tool)

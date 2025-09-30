@@ -82,7 +82,7 @@ package backstops:
         Exit(2)
 
 package executives:
-  given direct: (handler: Backstop) => Executive:
+  given direct: (backstop: Backstop) => Executive:
     type Return = Exit
     type Interface = Invocation
 
@@ -106,8 +106,7 @@ package executives:
 
     def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
       try exitStatus(using invocation)
-      catch case error: Throwable => handler.handle(error)(using invocation.stdio)
-      //handler.handle(exitStatus(using cli))(using cli.stdio)
+      catch case error: Throwable => backstop.handle(error)(using invocation.stdio)
 
 inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
   lambda(using !![Effectful])

@@ -174,8 +174,7 @@ extension [plane: System](path: Path on plane)
       destination
 
 
-  def copyInto
-       (destination: Path on plane)
+  def copyInto(destination: Path on plane)
        (using overwritePreexisting: OverwritePreexisting on plane,
               dereferenceSymlinks:  DereferenceSymlinks,
               substantiable:        (Path on plane) is Substantiable)
