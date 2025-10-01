@@ -42,11 +42,11 @@ import rudiments.*
 import vacuous.*
 
 object variables extends Dynamic:
-  inline def applyDynamicNamed[result](apply: "apply")(variables: (String, String)*)
+  inline def applyDynamicNamed[result](apply: "apply")(variables: (String, Text)*)
               (using environment0: Environment)
               (block: Environment ?=> result)
   : result =
 
-      val map = variables.map(_.tt.uncamel.snake.upper -> _.tt).toMap
+      val map = variables.map(_.tt.uncamel.snake.upper -> _).toMap
       val environment: Environment = name => map.at(name).or(environment0.variable(name))
       block(using environment)

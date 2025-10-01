@@ -34,12 +34,17 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import contingency.*
 import digression.*
+import distillate.*
 import escapade.*
+import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
+import prepositional.*
 import profanity.*
 import rudiments.*
+import serpentine.*
 import turbulence.*
 import vacuous.*
 
@@ -92,7 +97,8 @@ package executives:
           environment:      Environment,
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
-          signals:          Spool[Signal])
+          signals:          Spool[Signal],
+          service:          ShellContext)
          (using interpreter: Interpreter)
     : Invocation =
 
@@ -101,7 +107,8 @@ package executives:
           environments.jre,
           workingDirectories.jre,
           stdio,
-          signals)
+          signals,
+          arguments.size == 0 || arguments.head != t"{admin}")
 
 
     def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
@@ -120,6 +127,13 @@ def application(using executive: Executive, interpreter: Interpreter)
   signals.each: signal =>
     sm.Signal.handle(sm.Signal(signal.shortName.s), event => spool.put(signal))
 
+  val context = new ShellContext:
+    def script: Path on Linux =
+      safely(ProcessHandle.current.nn.info.nn.command.nn.get.nn.tt.decode[Path on Linux])
+      . or(panic(m"cannot determine java invocation"))
+
+    def scriptName: Text = script.name
+
   // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment
   // variables
   val cli =
@@ -128,6 +142,7 @@ def application(using executive: Executive, interpreter: Interpreter)
       environments.jre,
       workingDirectories.jre,
       stdioSources.virtualMachine.ansi,
-      spool)
+      spool,
+      context)
 
   System.exit(executive.process(cli)(block)())

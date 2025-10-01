@@ -47,7 +47,8 @@ trait Executive:
         environment:      Environment,
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
-        signals:          Spool[Signal])
+        signals:          Spool[Signal],
+        service:          ShellContext)
        (using interpreter: Interpreter)
   : Interface
 

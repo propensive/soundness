@@ -79,6 +79,11 @@ object Completions:
            bash: Installation.InstallResult,
            fish: Installation.InstallResult)
 
+    def paths: List[Text] =
+      this match
+        case CommandNotOnPath(_) => Nil
+        case Shells(zsh, bash, fish) => List(zsh, bash, fish).map(_.pathname).compact
+
   object Installation:
     given communicable: Installation is Communicable =
       case CommandNotOnPath(script) =>
@@ -107,10 +112,14 @@ object Completions:
       case NoWritableLocation(shell: Shell)
       case ShellNotInstalled(shell: Shell)
 
-  def ensure(force: Boolean = false)(using ShellContext, WorkingDirectory, Diagnostics)
-  : Unit logs CliEvent =
+      def pathname: Optional[Text] = this.only:
+        case Installed(_, path)        => path
+        case AlreadyInstalled(_, path) => path
 
-      safely(idempotent(effectful(install(force))))
+  def ensure(force: Boolean = false)(using ShellContext, WorkingDirectory, Diagnostics)
+  : List[Text] logs CliEvent =
+
+      safely(effectful(install(force))).let(_.paths).or(Nil)
 
 
   def install(force: Boolean = false)(using service: ShellContext)

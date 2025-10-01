@@ -36,10 +36,15 @@ import ambience.*
 import anticipation.*
 import denominative.*
 import distillate.*
+import eucalyptus.*
+import fulminate.*
 import gossamer.*
+import guillotine.*
+import parasite.*
 import profanity.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
 import turbulence.*
 import vacuous.*
 
@@ -61,7 +66,8 @@ package executives:
           environment:      Environment,
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
-          signals:          Spool[Signal])
+          signals:          Spool[Signal],
+          service:          ShellContext)
          (using interpreter: Interpreter)
     : Cli =
 
@@ -92,16 +98,38 @@ package executives:
               tty,
               tab)
 
+          case t"{admin}" :: command :: Nil =>
+            given Stdio = stdio
+            command match
+              case t"pid"     => Out.println(OsProcess().pid.value.show) yet Exit.Ok
+              case t"quit"    => java.lang.System.exit(0) yet Exit.Ok
+              case t"install" =>
+                given ShellContext = service
+                given WorkingDirectory = workingDirectory
+                import errorDiagnostics.stackTraces
+                import logging.silent
+                Out.println(Completions.ensure(force = true).join(t"\n"))
+                Exit.Ok
+
+              case _       =>
+                Exit.Fail(1)
+
+            Invocation
+             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, false)
+
           case other =>
-            Invocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
+            Invocation
+             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, true)
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
       case completion: Completion =>
-        given stdio: Stdio = completion.stdio
+        given Stdio = completion.stdio
         completion.serialize.each(Out.println(_))
         Exit.Ok
 
       case invocation: Invocation =>
+        given Stdio = invocation.stdio
+
         try execution(using invocation).exitStatus
         catch case error: Throwable => backstop.handle(error)(using invocation.stdio)

@@ -44,14 +44,14 @@ case class Invocation
     environment:      Environment,
     workingDirectory: WorkingDirectory,
     stdio:            Stdio,
-    signals:          Spool[Signal])
+    signals:          Spool[Signal],
+    proceed:          Boolean)
    (using interpreter: Interpreter)
 extends Cli, Stdio:
 
   export stdio.{termcap, out, err, in}
 
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
-
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   : Optional[operand] =

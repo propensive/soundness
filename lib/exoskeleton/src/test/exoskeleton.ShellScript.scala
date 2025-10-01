@@ -32,6 +32,7 @@
                                                                                                   */
 package exoskeleton
 
+import ambience.*
 import anthology.*
 import anticipation.*
 import contingency.*
@@ -70,10 +71,24 @@ import homeDirectories.jre
 import charEncoders.utf8
 
 
-case class Tool(path: Path on Linux)
+case class Tool(path: Path on Linux, pid: Pid):
+  def command: Text = path.name
 
-case class ShellScript(name: Text)(using Classloader) extends Rig:
-  type Result[output] = Tool
+case class Launcher(path: Path on Linux):
+  def sandbox[result](block: (tool: Tool) ?=> result): result =
+    val completionScripts = unsafely(sh"$path '{admin}' install".exec[Text]())
+    val pid = Pid(unsafely(sh"$path '{admin}' pid".exec[Text]().trim.decode[Int]))
+    val tool = Tool(path, pid)
+
+    block(using tool).also:
+      unsafely:
+        sh"$path '{admin}' quit".exec[Exit]()
+        completionScripts.trim.lines.map(_.decode[Path on Linux]).each(_.delete())
+
+
+
+case class ShellScript(name: Text)(using Classloader, Environment) extends Rig:
+  type Result[output] = Launcher
   type Form = Text
   type Target = Path on Linux
   type Transport = Json
@@ -81,11 +96,9 @@ case class ShellScript(name: Text)(using Classloader) extends Rig:
   def provision(out: Path on Linux): Path on Linux =
     val jarfile = out.peer("tmpfile.jar")
     val target = unsafely(out.peer(name))
+
     val manifest =
-      Manifest
-       (ManifestVersion(()),
-        CreatedBy(t"Soundness"),
-        MainClass(fqcn"superlunary.Executor2"))
+      Manifest(ManifestVersion(()), CreatedBy(t"Soundness"), MainClass(fqcn"superlunary.Executor2"))
 
     unsafely:
       Zipfile.write(jarfile):
@@ -116,19 +129,16 @@ case class ShellScript(name: Text)(using Classloader) extends Rig:
         case Exit.Ok      => target
         case Exit.Fail(_) => ???
 
-
   protected val scalac: Scalac[3.7] = Scalac(List(scalacOptions.experimental))
 
 
-  protected def invoke[output](provision: Provision[output, Text, Path on Linux]): Tool =
-    val tool = unsafely(homeDirectory[Path on Linux] / ".local" / "bin" / name)
-
+  protected def invoke[output](provision: Provision[output, Text, Path on Linux]): Launcher =
     provision.remote: input =>
       unsafely:
-        safely(tool.delete())
-        provision.target.copyTo(tool)
-        println(sh"$tool".exec[Text]())
+        variables(inputParameters = input):
+          println("input = "+input)
+          sh"${provision.target}".exec[Exit]()
 
       t"""[""]"""
 
-    Tool(tool)
+    Launcher(provision.target)

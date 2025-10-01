@@ -46,5 +46,5 @@ object Executor2:
     val cls2 = function.getClass.nn
     val method2 = function.getClass.nn.getMethod("apply", classOf[Object]).nn
     method2.setAccessible(true)
-    val parameters = Optional(System.getenv("INPUT_PARAMETERS")).or("[]")
+    val parameters = Optional(System.getenv("INPUT_PARAMETERS")).or("""["failed"]""")
     method2.invoke(function, parameters)

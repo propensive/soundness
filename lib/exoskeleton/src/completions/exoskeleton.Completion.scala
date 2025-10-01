@@ -70,6 +70,7 @@ extends Cli:
   val seenFlags: scm.HashSet[Flag] = scm.HashSet()
   var explanation: Optional[Text] = Unset
   var cursorSuggestions: List[Suggestion] = Nil
+  def proceed: Boolean = true
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   : Optional[operand] =
@@ -151,17 +152,17 @@ extends Cli:
             val mainLine = description.absolve match
               case Unset =>
                 if prefix.empty then sh"'' $hiddenParam -- $core"
-                else sh"'' $hiddenParam -U $prefix2 $suffix2 -- $core"
+                else sh"'' $hiddenParam $prefix2 $suffix2 -- $core"
 
               case description: Text =>
-                sh"'${core.fit(width)} $aliasText -U $prefix2 $suffix2 -- $description' -d desc -l $hiddenParam -- $core"
+                sh"'${core.fit(width)} $aliasText $prefix2 $suffix2 -- $description' -d desc -l $hiddenParam -- $core"
 
               case description: Teletype =>
                 val desc = description.render(termcap)
-                sh"'${core.fit(width)} $aliasText -U $prefix2 $suffix2 -- $desc' -d desc -l $hiddenParam -- $core"
+                sh"'${core.fit(width)} $aliasText $prefix2 $suffix2 -- $desc' -d desc -l $hiddenParam -- $core"
 
             val duplicateLine =
-              if !incomplete then List() else List(sh"'' -U $prefix2 $suffix2 -S '' -- $core")
+              if !incomplete then List() else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
 
             val aliasLines = aliases.map: text =>
               description.absolve match

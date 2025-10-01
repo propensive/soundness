@@ -80,8 +80,7 @@ package daemonConfig:
   given doNotSupportStderr: StderrSupport = () => false
   given supportStderr: StderrSupport = () => true
 
-def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] =
-  service
+def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service
 
 def cli[bus <: Matchable](using executive: Executive)
    (block: DaemonService[bus] ?=> executive.Interface ?=> executive.Return)
@@ -294,12 +293,14 @@ def cli[bus <: Matchable](using executive: Executive)
             try
               val cli: executive.Interface =
                 executive.invocation
-                 (textArguments, environment, () => directory, stdio, connection.signals)
+                 (textArguments, environment, () => directory, stdio, connection.signals, service)
 
-              val result = block(using service)(using cli)
-              val exitStatus: Exit = executive.process(cli)(result)
+              if cli.proceed then
+                val result = block(using service)(using cli)
+                val exitStatus: Exit = executive.process(cli)(result)
 
-              connection.exitPromise.fulfill(exitStatus)
+                connection.exitPromise.fulfill(exitStatus)
+              else connection.exitPromise.fulfill(Exit.Ok)
 
             catch
               case exception: Exception =>
