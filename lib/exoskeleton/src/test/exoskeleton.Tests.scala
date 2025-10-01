@@ -43,61 +43,42 @@ import workingDirectories.jre
 import supervisors.global
 import logging.silent
 import embeddings.automatic
+import autopsies.contrastExpectations
+import threading.platform
 
 import strategies.throwUnsafely
+import parameterInterpretation.posix
+import backstops.silent
+import errorDiagnostics.stackTraces
 
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
     val foo: Text = "hello"
-    val launcher: Launcher =
-      ShellScript(t"bap").dispatch:
-        '{  import executives.completions
-            import backstops.silent
-            import parameterInterpretation.posix
-            import threading.platform
-            import workingDirectories.jre
-            import errorDiagnostics.stackTraces
-            import logging.silent
+    Sandbox(t"abcde").dispatch:
+      '{  import executives.completions
 
-            val Alpha = Subcommand("alpha", e"a command to run")
-            val Beta = Subcommand(${foo}, e"a different command to run")
+          val Alpha = Subcommand("alpha", e"a command to run")
+          val Beta = Subcommand("beta", e"another command to run")
+          val Gamma = Subcommand("gamma", e"a different command to run")
 
-            cli:
-              arguments match
-                case Alpha() :: _ => execute(Exit.Ok)
-                case Beta() :: _  => execute(Exit.Ok)
-                case _            => execute(Exit.Fail(1))
+          cli:
+            arguments match
+              case Alpha() :: _ => execute(Exit.Ok)
+              case Beta() :: _  => execute(Exit.Ok)
+              case Gamma() :: _ => execute(Exit.Ok)
+              case _            => execute(Exit.Fail(1))
 
-            t"finished"  }
+          t"finished"  }
 
-    test(m"Test a deployment"):
-      launcher.sandbox:
-        tmux(shell = Shell.Bash):
-          delay(100L)
-          enter(t"${tool.command} ")
-          delay(200L)
-          enter('\t')
-          delay(200L)
-          enter('\t')
-          delay(200L)
-          println(screenshot()().trim)
+    . sandbox:
+        test(m"Test subcommands on bash"):
+          tmux(shell = Shell.Bash)(Tmux.completions(t""))
+        . assert(_ == t"alpha  beta   gamma")
 
-        println(t"---")
-        tmux(shell = Shell.Zsh):
-          delay(500L)
-          enter(t"${tool.command} ")
-          delay(200L)
-          enter('\t')
-          delay(200L)
-          println(screenshot()().trim)
+        test(m"Test subcommands on zsh"):
+          tmux(shell = Shell.Zsh)(Tmux.completions(t""))
+        . assert(_ == t"alpha     -- a command to run\nbeta      -- another command to run\ngamma     -- a different command to run")
 
-        println(t"---")
-        tmux(shell = Shell.Fish):
-          delay(100L)
-          enter(t"${tool.command} ")
-          delay(200L)
-          enter('\t')
-          delay(200L)
-          println(screenshot()().trim)
-
-    . assert()
+        test(m"Test subcommands on fish"):
+          tmux(shell = Shell.Fish, width = 120)(Tmux.completions(t""))
+        . assert(_ == t"alpha  (a command to run)  beta  (another command to run)  gamma  (a different command to run)")

@@ -67,6 +67,5 @@ object Jvm extends Rig:
     import logging.silent
 
     provision.remote: input =>
-      println("Using "+input)
       val cmd = sh"java -classpath ${provision.target()} superlunary.Executor $input"
       unsafely(cmd.exec[Text]())

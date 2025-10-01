@@ -37,8 +37,8 @@ export probably
     Reporter, Trial, Testable, Tolerance, Min, Mean, Max, BySpeed, ===, !==, ByTime, Geometric,
     Arithmetic, +/-, test, suite, aspire, assert, check, matches, debug, Checkable }
 
-package testContexts:
+package harnesses:
   export probably.harnesses.threadLocal
 
-package testAutopsies:
-  export probably.testAutopsies.{none, contrastExpectations}
+package autopsies:
+  export probably.autopsies.{none, contrastExpectations}

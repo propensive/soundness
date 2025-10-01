@@ -71,24 +71,24 @@ import homeDirectories.jre
 import charEncoders.utf8
 
 
-case class Tool(path: Path on Linux, pid: Pid):
-  def command: Text = path.name
+object Sandbox:
+  case class Tool(path: Path on Linux, pid: Pid):
+    def command: Text = path.name
 
-case class Launcher(path: Path on Linux):
-  def sandbox[result](block: (tool: Tool) ?=> result): result =
-    val completionScripts = unsafely(sh"$path '{admin}' install".exec[Text]())
-    val pid = Pid(unsafely(sh"$path '{admin}' pid".exec[Text]().trim.decode[Int]))
-    val tool = Tool(path, pid)
+  case class Launcher(path: Path on Linux):
+    def sandbox[result](block: (tool: Tool) ?=> result): result =
+      val completionScripts = unsafely(sh"$path '{admin}' install".exec[Text]())
+      val pid = Pid(unsafely(sh"$path '{admin}' pid".exec[Text]().trim.decode[Int]))
+      val tool = Tool(path, pid)
 
-    block(using tool).also:
-      unsafely:
-        sh"$path '{admin}' quit".exec[Exit]()
-        completionScripts.trim.lines.map(_.decode[Path on Linux]).each(_.delete())
+      block(using tool).also:
+        unsafely:
+          sh"$path '{admin}' quit".exec[Exit]()
+          completionScripts.trim.lines.map(_.decode[Path on Linux]).each(_.delete())
 
 
-
-case class ShellScript(name: Text)(using Classloader, Environment) extends Rig:
-  type Result[output] = Launcher
+case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
+  type Result[output] = Sandbox.Launcher
   type Form = Text
   type Target = Path on Linux
   type Transport = Json
@@ -132,13 +132,14 @@ case class ShellScript(name: Text)(using Classloader, Environment) extends Rig:
   protected val scalac: Scalac[3.7] = Scalac(List(scalacOptions.experimental))
 
 
-  protected def invoke[output](provision: Provision[output, Text, Path on Linux]): Launcher =
-    provision.remote: input =>
-      unsafely:
-        variables(inputParameters = input):
-          println("input = "+input)
-          sh"${provision.target}".exec[Exit]()
+  protected def invoke[output](provision: Provision[output, Text, Path on Linux])
+  : Sandbox.Launcher =
 
-      t"""[""]"""
+      provision.remote: input =>
+        unsafely:
+          variables(inputParameters = input):
+            sh"${provision.target}".exec[Exit]()
 
-    Launcher(provision.target)
+        t"""[""]"""
+
+      Sandbox.Launcher(provision.target)

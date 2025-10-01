@@ -54,7 +54,6 @@ object Provisionable:
     type Form = Text
 
     inline def deserialize(text: Text | Null): Array[Object] =
-      println(text)
       provide[Tactic[RemoteError]]:
         given RemoteError mitigates JsonError = error => RemoteError(RemoteError.Reason.Deserialization)
         Array.from(provide[Json is Decodable in Text](text.nn.decode[Json].as[List[Json]]))
