@@ -60,12 +60,22 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           val Alpha = Subcommand("alpha", e"a command to run")
           val Beta = Subcommand("beta", e"another command to run")
           val Gamma = Subcommand("gamma", e"a different command to run")
+          val RedHat = Subcommand("red hat", e"Red Hat Linux")
+          val Ubuntu = Subcommand("ubuntu", e"Ubuntu")
+          val Gentoo = Subcommand("gentoo", e"Gentoo Linux")
+
 
           cli:
             arguments match
               case Alpha() :: _ => execute(Exit.Ok)
               case Beta() :: _  => execute(Exit.Ok)
-              case Gamma() :: _ => execute(Exit.Ok)
+              case Gamma() :: distribution =>
+                distribution match
+                  case RedHat() :: _ => execute(Exit.Ok)
+                  case Ubuntu() :: _ => execute(Exit.Ok)
+                  case Gentoo() :: _ => execute(Exit.Ok)
+                  case _             => execute(Exit.Ok)
+
               case _            => execute(Exit.Fail(1))
 
           t"finished"  }
@@ -82,3 +92,15 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         test(m"Test subcommands on fish"):
           tmux(shell = Shell.Fish, width = 120)(Tmux.completions(t""))
         . assert(_ == t"alpha  (a command to run)  beta  (another command to run)  gamma  (a different command to run)")
+
+        test(m"Test subcommands with spaces on bash"):
+          tmux(shell = Shell.Bash)(Tmux.completions(t"gamma "))
+        . assert(_ == t"gentoo   red hat  ubuntu")
+
+        test(m"Test subcommands on zsh"):
+          tmux(shell = Shell.Zsh)(Tmux.completions(t"gamma "))
+        . assert(_ == t"gentoo      -- Gentoo Linux\nred hat     -- Red Hat Linux\nubuntu      -- Ubuntu")
+
+        test(m"Test subcommands with spaces on fish"):
+          tmux(shell = Shell.Fish, width = 120)(Tmux.completions(t"gamma "))
+        . assert(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")

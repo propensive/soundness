@@ -106,11 +106,8 @@ def tmux(shell: Shell = Shell.Zsh, width: Int = 80, height: Int = 24)[result]
 
         shell match
           case Shell.Zsh  =>
-            val fpath: Path on Linux = summon[Sandbox.Tool].path.parent.vouch / "zsh"
-            unsafely(fpath.make[Directory]())
             sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
             sh"""tmux send-keys -t ${tmux.id} "path+=(\"$path\")" C-m""".exec[Unit]()
-            sh"""tmux send-keys -t ${tmux.id} "fpath+=(\"$fpath\")" C-m""".exec[Unit]()
             sh"""tmux send-keys -t ${tmux.id} "autoload -Uz compinit; compinit" C-m""".exec[Unit]()
             Tmux.attend:
               sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()

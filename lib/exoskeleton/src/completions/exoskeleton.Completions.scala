@@ -234,8 +234,7 @@ object Completions:
 
     case Shell.Bash =>
       t"""|_${command}_complete() {
-          |  output="$$(${command} '{completions}' bash $$COMP_CWORD 0 $$(tty) -- $$COMP_LINE)"
-          |  COMPREPLY=($$output)
+          |  readarray -t COMPREPLY < <(${command} '{completions}' bash $$COMP_CWORD 0 $$(tty) -- $$COMP_LINE)
           |}
           |complete -F _${command}_complete $command
           |""".s.stripMargin.tt
