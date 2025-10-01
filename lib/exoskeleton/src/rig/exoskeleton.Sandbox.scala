@@ -45,6 +45,7 @@ import guillotine.*
 import hellenism.*
 import hieroglyph.*
 import jacinta.*
+import parasite.*
 import prepositional.*
 import revolution.*
 import rudiments.*
@@ -53,6 +54,7 @@ import spectacular.*
 import superlunary.*
 import symbolism.*
 import turbulence.*
+import vacuous.*
 import zeppelin.*
 
 import filesystemOptions.readAccess.enabled
@@ -69,11 +71,21 @@ import logging.silent
 import workingDirectories.jre
 import homeDirectories.jre
 import charEncoders.utf8
+import codicils.cancel
 
 
 object Sandbox:
   case class Tool(path: Path on Linux, pid: Pid):
     def command: Text = path.name
+
+    def completions(using Monitor)[result](block: => Unit): Optional[Text] =
+      val promise = Promise[Text]()
+
+      async:
+        promise.offer(safely(sh"$path '{admin}' await".exec[Text]()).or(t"failed"))
+
+      block
+      safely(promise.await())
 
   case class Launcher(path: Path on Linux):
     def sandbox[result](block: (tool: Tool) ?=> result): result =
@@ -83,7 +95,7 @@ object Sandbox:
 
       block(using tool).also:
         unsafely:
-          sh"$path '{admin}' quit".exec[Exit]()
+          sh"$path '{admin}' kill".exec[Exit]()
           completionScripts.trim.lines.map(_.decode[Path on Linux]).each(_.delete())
 
 
@@ -93,7 +105,7 @@ case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
   type Target = Path on Linux
   type Transport = Json
 
-  def provision(out: Path on Linux): Path on Linux =
+  def stage(out: Path on Linux): Path on Linux =
     val jarfile = out.peer("tmpfile.jar")
     val target = unsafely(out.peer(name))
 
@@ -132,14 +144,14 @@ case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
   protected val scalac: Scalac[3.7] = Scalac(List(scalacOptions.experimental))
 
 
-  protected def invoke[output](provision: Provision[output, Text, Path on Linux])
+  protected def invoke[output](stage: Stage[output, Text, Path on Linux])
   : Sandbox.Launcher =
 
-      provision.remote: input =>
+      stage.remote: input =>
         unsafely:
           variables(inputParameters = input):
-            sh"${provision.target}".exec[Exit]()
+            sh"${stage.target}".exec[Exit]()
 
         t"""[""]"""
 
-      Sandbox.Launcher(provision.target)
+      Sandbox.Launcher(stage.target)

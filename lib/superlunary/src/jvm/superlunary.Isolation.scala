@@ -62,15 +62,15 @@ object Isolation extends Rig:
   type Target = Classloader
   type Transport = Pojo
 
-  def provision(out: Path on Linux): Classloader = classpath(out).classloader()
+  def stage(out: Path on Linux): Classloader = classpath(out).classloader()
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
-  protected def invoke[output](provision: Provision[output, Form, Target]): output =
+  protected def invoke[output](stage: Stage[output, Form, Target]): output =
     import workingDirectories.systemProperties
     import logging.silent
 
-    provision.remote: input =>
-      val classloader: Classloader = provision.target
+    stage.remote: input =>
+      val classloader: Classloader = stage.target
       val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
       val instance = cls.getDeclaredConstructor().nn.newInstance().nn
       val method = cls.getMethod("apply").nn

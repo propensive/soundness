@@ -34,6 +34,7 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import ethereal.*
 import profanity.*
 import rudiments.*
 import turbulence.*
@@ -50,8 +51,7 @@ trait Executive:
         stdio:            Stdio,
         signals:          Spool[Signal],
         service:          ShellContext,
-        euid:             Optional[Int],
-        username:         Text)
+        login:            Login)
        (using interpreter: Interpreter)
   : Interface
 

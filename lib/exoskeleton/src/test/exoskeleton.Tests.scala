@@ -50,6 +50,9 @@ import strategies.throwUnsafely
 import parameterInterpretation.posix
 import backstops.silent
 import errorDiagnostics.stackTraces
+import stdioSources.virtualMachine.ansi
+
+import Shell.*
 
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
@@ -59,7 +62,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
           val Alpha = Subcommand("alpha", e"a command to run")
           val Beta = Subcommand("beta", e"another command to run")
-          val Gamma = Subcommand("gamma", e"a different command to run")
+          val Distribution = Subcommand("distribution", e"a different command to run")
           val RedHat = Subcommand("red hat", e"Red Hat Linux")
           val Ubuntu = Subcommand("ubuntu", e"Ubuntu")
           val Gentoo = Subcommand("gentoo", e"Gentoo Linux")
@@ -69,10 +72,15 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             arguments match
               case Alpha() :: _ => execute(Exit.Ok)
               case Beta() :: _  => execute(Exit.Ok)
-              case Gamma() :: distribution =>
+              case Distribution() :: distribution =>
                 distribution match
-                  case RedHat() :: _ => execute(Exit.Ok)
-                  case Ubuntu() :: _ => execute(Exit.Ok)
+                  case RedHat() :: _ =>
+                    Flag("one", description = t"there is only one")()
+                    execute(Exit.Ok)
+                  case Ubuntu() :: _ =>
+                    Flag("one", description = t"the first one")()
+                    Flag("two", description = t"the second one")()
+                    execute(Exit.Ok)
                   case Gentoo() :: _ => execute(Exit.Ok)
                   case _             => execute(Exit.Ok)
 
@@ -82,25 +90,68 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
     . sandbox:
         test(m"Test subcommands on bash"):
-          tmux(shell = Shell.Bash)(Tmux.completions(t""))
-        . assert(_ == t"alpha  beta   gamma")
+          Bash.tmux()(Tmux.completions(t""))
+        . assert(_ == t"alpha         beta          distribution")
 
         test(m"Test subcommands on zsh"):
-          tmux(shell = Shell.Zsh)(Tmux.completions(t""))
-        . assert(_ == t"alpha     -- a command to run\nbeta      -- another command to run\ngamma     -- a different command to run")
+          Zsh.tmux()(Tmux.completions(t""))
+        . assert(_ == t"alpha            -- a command to run\nbeta             -- another command to run\ndistribution     -- a different command to run")
 
         test(m"Test subcommands on fish"):
-          tmux(shell = Shell.Fish, width = 120)(Tmux.completions(t""))
-        . assert(_ == t"alpha  (a command to run)  beta  (another command to run)  gamma  (a different command to run)")
+          Fish.tmux(width = 120)(Tmux.completions(t""))
+        . assert(_ == t"alpha  (a command to run)  beta  (another command to run)  distribution  (a different command to run)")
 
         test(m"Test subcommands with spaces on bash"):
-          tmux(shell = Shell.Bash)(Tmux.completions(t"gamma "))
+          Bash.tmux()(Tmux.completions(t"distribution "))
         . assert(_ == t"gentoo   red hat  ubuntu")
 
-        test(m"Test subcommands on zsh"):
-          tmux(shell = Shell.Zsh)(Tmux.completions(t"gamma "))
+        test(m"Test subcommands with spaces on zsh"):
+          Zsh.tmux()(Tmux.completions(t"distribution "))
         . assert(_ == t"gentoo      -- Gentoo Linux\nred hat     -- Red Hat Linux\nubuntu      -- Ubuntu")
 
         test(m"Test subcommands with spaces on fish"):
-          tmux(shell = Shell.Fish, width = 120)(Tmux.completions(t"gamma "))
+          Fish.tmux(width = 120)(Tmux.completions(t"distribution "))
         . assert(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
+
+        test(m"Test flags on bash"):
+          Bash.tmux()(Tmux.completions(t"distribution ubuntu "))
+        . assert(_ == t"--one  --two")
+
+        test(m"Test flags on fish"):
+          Fish.tmux(width = 120)(Tmux.completions(t"distribution ubuntu "))
+        . assert(_ == t"--one  (the first one)  --two  (the second one)")
+
+        test(m"Autocomplete progress for flag in Fish"):
+          Fish.tmux(width = 120):
+            Tmux.progress(t"distribution ubuntu ")
+        . assert(_ == t"distribution ubuntu --^")
+
+        test(m"Autocomplete progress for flag in Bash"):
+          Bash.tmux():
+            Tmux.progress(t"distribution ubuntu ")
+        . assert(_ == t"distribution ubuntu --^")
+
+        test(m"Autocomplete progress for flag in Zsh"):
+          Zsh.tmux():
+            Tmux.progress(t"distribution ubuntu ")
+        . assert(_ == t"distribution ubuntu --^")
+
+        test(m"Test flags on zsh"):
+          Zsh.tmux()(Tmux.completions(t"distribution ubuntu --"))
+        . assert(_ == t"--one     -- the first one\n--two     -- the second one")
+
+        test(m"Test capture 1"):
+          tool.completions:
+            Zsh.tmux()(Tmux.completions(t"distribution ubuntu "))
+
+        . assert()
+
+        test(m"Test subcommands with spaces on zsh"):
+          Zsh.tmux()(Tmux.completions(t"distribution "))
+        . assert(_ == t"gentoo      -- Gentoo Linux\nred hat     -- Red Hat Linux\nubuntu      -- Ubuntu")
+
+        test(m"Test capture 2"):
+          tool.completions:
+            Zsh.tmux()(Tmux.completions(t"distribution "))
+
+        . assert()

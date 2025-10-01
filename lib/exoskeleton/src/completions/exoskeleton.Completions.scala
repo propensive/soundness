@@ -45,6 +45,7 @@ import galilei.*
 import gossamer.{where as _, *}
 import guillotine.*
 import nomenclature.*
+import parasite.*
 import prepositional.*
 import rudiments.*, homeDirectories.systemProperties
 import serpentine.*
@@ -60,6 +61,18 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
 object Completions:
+
+  private var completionRequest: Promise[List[Argument]] = Promise()
+  private var completionResponse: Promise[List[Text]] = Promise()
+
+  def prepare(): Unit =
+    completionRequest = Promise()
+    completionResponse = Promise()
+
+  def request(completion: Completion): Unit = completionRequest.offer(completion.arguments)
+  def response(text: List[Text]): Unit = completionResponse.offer(text)
+  def awaitRequest(): Optional[List[Argument]] = safely(completionRequest.await(60_000L))
+  def awaitResponse(): Optional[List[Text]] = safely(completionResponse.await(10_000L))
 
   case class Tab(arguments: List[Text], focus: Int, cursor: Int, count: Int = 0):
     def next: Tab = copy(count = count + 1)
@@ -216,8 +229,8 @@ object Completions:
           |_$command() {
           |  $command '{completions}' zsh "$$CURRENT" "$${#PREFIX}" "$$TTY" -- $$words | while IFS=$$'\\0' read -r -A ln
           |  do
-          |    desc=($${ln[1]})
-          |    compadd "$${(@)ln:1}"
+          |    desc=("$${ln[1]}")
+          |    compadd -Q "$${(@)ln:1}"
           |  done
           |}
           |_$command

@@ -35,6 +35,7 @@ package exoskeleton
 import ambience.*
 import anticipation.*
 import denominative.*
+import ethereal.*
 import escapade.*
 import gossamer.*
 import guillotine.*
@@ -62,8 +63,7 @@ case class Completion
     signals:          Spool[Signal],
     tty:              Text,
     tab:              Ordinal,
-    userId:           Optional[Int],
-    username:         Text)
+    login:            Login)
    (using interpreter: Interpreter)
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)

@@ -75,59 +75,26 @@ object Tmux:
       attend(enter('\t'))
       screenshot().screen.filter(!_.starts(t"> ")).join(t"\n").trim
 
+  def progress(text: Text, decorate: Char => Text = char => t"^")
+       (using tool: Sandbox.Tool, tmux: Tmux)
+       (using Monitor, WorkingDirectory)
+  : Text raises TmuxError =
+
+      enter(tool.command)
+      enter(' ')
+      enter(text)
+      attend(enter('\t'))
+      screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")
+
 case class TmuxError()(using Diagnostics) extends Error(m"can't execute tmux")
 case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height: Int, shell: Shell)
 
 case class Screenshot(screen: IArray[Text], size: (Int, Int), cursor: (Ordinal, Ordinal)):
   def apply(): Text = screen.join("\n")
-  def cursor(char: Char): Text = ???
 
-def tmux(shell: Shell = Shell.Zsh, width: Int = 80, height: Int = 24)[result]
-      (action: (tmux: Tmux) ?=> result)
-      (using WorkingDirectory, Sandbox.Tool, Monitor)
-: result raises TmuxError logs ExecEvent =
+  def currentLine(decorate: Char => Text): Text =
+    val line0 = screen.at(cursor(1)).or(t"")
+    val line = line0+t" "*(size(0) - line0.length)
 
-    mitigate:
-      case ExecError(_, _, _) => TmuxError()
-      case NumberError(_, _)  => TmuxError()
-
-    . within:
-        given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
-        val shellPath = shell match
-          case Shell.Zsh  => t"zsh"
-          case Shell.Fish => t"fish"
-          case Shell.Bash => t"bash"
-
-        sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellPath -l'".exec[Unit]()
-        Tmux.attend:
-          ()
-
-        val path = summon[Sandbox.Tool].path.parent.vouch.encode
-
-        shell match
-          case Shell.Zsh  =>
-            sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
-            sh"""tmux send-keys -t ${tmux.id} "path+=(\"$path\")" C-m""".exec[Unit]()
-            sh"""tmux send-keys -t ${tmux.id} "autoload -Uz compinit; compinit" C-m""".exec[Unit]()
-            Tmux.attend:
-              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
-
-          case Shell.Bash =>
-            sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
-            sh"""tmux send-keys -t ${tmux.id} 'export PATH="$path:$$PATH"' C-m""".exec[Unit]()
-            sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-ambiguous on"' C-m""".exec[Unit]()
-            sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-unmodified on"' C-m""".exec[Unit]()
-            Tmux.attend:
-              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
-
-          case Shell.Fish =>
-            sh"""tmux send-keys -t ${tmux.id} "function fish_prompt; echo -n '> '; end" C-m""".exec[Unit]()
-            sh"""tmux send-keys -t ${tmux.id} 'fish_add_path "$path"' C-m""".exec[Unit]()
-            Tmux.attend:
-              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
-
-        val result = action
-
-        sh"tmux kill-session -t ${tmux.id}".exec[Exit]()
-
-        result
+    t"${line.before(cursor(0))}${line.at(cursor(0)).let(decorate).or(t"?")}${line.from(cursor(0))}"
+    . trim

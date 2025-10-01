@@ -49,7 +49,7 @@ import vacuous.*
 
 object Watch:
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
-    import asyncTermination.await
+    import codicils.await
     def stop(): Unit = pollLoop.stop()
     val async: Optional[Task[Unit]] = safely(supervise(task("surveillance".tt)(pollLoop.run())))
 

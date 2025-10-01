@@ -36,6 +36,7 @@ import ambience.*
 import anticipation.*
 import denominative.*
 import distillate.*
+import ethereal.*
 import eucalyptus.*
 import fulminate.*
 import gossamer.*
@@ -45,6 +46,7 @@ import profanity.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -68,8 +70,7 @@ package executives:
           stdio:            Stdio,
           signals:          Spool[Signal],
           service:          ShellContext,
-          euid:             Optional[Int],
-          username:         Text)
+          login:            Login)
          (using interpreter: Interpreter)
     : Cli =
 
@@ -99,14 +100,27 @@ package executives:
               signals,
               tty,
               tab,
-              euid,
-              username)
+              login)
+            . tap(Completions.request(_))
 
           case t"{admin}" :: command :: Nil =>
             given Stdio = stdio
             command match
               case t"pid"     => Out.println(OsProcess().pid.value.show) yet Exit.Ok
-              case t"quit"    => java.lang.System.exit(0) yet Exit.Ok
+              case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
+
+              case t"await"   =>
+                Out.println(t"Awaiting up to 60 seconds for the next tab completion request...")
+                Completions.prepare()
+
+                Completions.awaitRequest().or(Nil).map: argument =>
+                  Out.println(t"<- ${argument.inspect}")
+
+                Completions.awaitResponse().or(Nil).map: completion =>
+                  Out.println(completion.cut('\u0000').map(t"["+_+t"]").join(t"-> ", t" ", t""))
+
+                Exit.Ok
+
               case t"install" =>
                 given ShellContext = service
                 given WorkingDirectory = workingDirectory
@@ -119,17 +133,17 @@ package executives:
                 Exit.Fail(1)
 
             Invocation
-             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, false, euid, username)
+             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, false, login)
 
           case other =>
             Invocation
-             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, true, euid, username)
+             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, true, login)
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
       case completion: Completion =>
         given Stdio = completion.stdio
-        completion.serialize.each(Out.println(_))
+        completion.serialize.tap(Completions.response(_)).each(Out.println(_))
         Exit.Ok
 
       case invocation: Invocation =>

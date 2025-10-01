@@ -32,55 +32,58 @@
                                                                                                   */
 package exoskeleton
 
-import anticipation.*
-import denominative.*
-import gossamer.*
-import rudiments.*
-import spectacular.*
-import symbolism.*
-import vacuous.*
+import soundness.*
 
-object Argument:
-  enum Format:
-    case Full, FlagSuffix, EqualityPrefix, EqualitySuffix
-    case CharFlag(index: Ordinal)
+import errorDiagnostics.stackTraces
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.overwritePreexisting.disabled
 
-  given inspectable: Argument is Inspectable = argument =>
-    t"${argument.position}: ${argument.value.inspect} / ${argument.format} => ${argument().inspect}"
+extension (shell: Shell)
+  def tmux(width: Int = 80, height: Int = 24)[result](action: (tmux: Tmux) ?=> result)
+        (using WorkingDirectory, Sandbox.Tool, Monitor)
+  : result raises TmuxError logs ExecEvent =
 
+      mitigate:
+        case ExecError(_, _, _) => TmuxError()
+        case NumberError(_, _)  => TmuxError()
 
-case class Argument
-            (position: Int,
-             value:    Text,
-             cursor:   Optional[Int],
-             tab:      Optional[Ordinal],
-             format:   Argument.Format):
+      . within:
+          given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
+          val shellPath = shell match
+            case Shell.Zsh  => t"zsh"
+            case Shell.Fish => t"fish"
+            case Shell.Bash => t"bash"
 
-  def apply(): Text = format match
-    case Argument.Format.Full            => value
-    case Argument.Format.FlagSuffix      => value.skip(2)
-    case Argument.Format.CharFlag(index) => t"-${value.at(index + 1).or('-')}"
-    case Argument.Format.EqualityPrefix  => value.before(value.index("=").or(Prim))
-    case Argument.Format.EqualitySuffix  => value.after(value.index("=").or(Prim))
+          sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellPath -l'".exec[Unit]()
+          Tmux.attend:
+            ()
 
-  def prefix: Optional[Text] = cursor.let(value.keep(_))
-  def suffix: Optional[Text] = cursor.let(value.skip(_))
+          val path = summon[Sandbox.Tool].path.parent.vouch.encode
 
-  def suggest(using cli: Cli)(update: (prior: List[Suggestion]) ?=> List[Suggestion]) =
-    val (prefix, suffix) = format match
-      case Argument.Format.Full            => (t"", t"")
-      case Argument.Format.FlagSuffix      => (value.keep(2), t"")
-      case Argument.Format.CharFlag(index) => (value.before(index + 1), value.after(index + 1))
-      case Argument.Format.EqualityPrefix  => (t"", value.after(value.index("=").or(Prim)))
-      case Argument.Format.EqualitySuffix  => (value.before(value.index("=").or(Prim)), t"")
+          shell match
+            case Shell.Zsh  =>
+              sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} "path+=(\"$path\")" C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} "autoload -Uz compinit; compinit" C-m""".exec[Unit]()
+              Tmux.attend:
+                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
-    cli.suggest(this, update, prefix, suffix)
+            case Shell.Bash =>
+              sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} 'export PATH="$path:$$PATH"' C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-ambiguous on"' C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-unmodified on"' C-m""".exec[Unit]()
+              Tmux.attend:
+                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
-  def select[operand: Suggestible](options: Seq[operand])(using cli: Cli, interpreter: Interpreter)
-  : Optional[operand] =
+            case Shell.Fish =>
+              sh"""tmux send-keys -t ${tmux.id} "function fish_prompt; echo -n '> '; end" C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} 'fish_add_path --global "$path"' C-m""".exec[Unit]()
+              Tmux.attend:
+                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
-      val mapping: Map[Text, operand] =
-        options.map { option => (operand.suggest(option).text, option) }.to(Map)
+          val result = action
 
-      suggest(options.to(List).map(operand.suggest(_)))
-      mapping.at(this())
+          sh"tmux kill-session -t ${tmux.id}".exec[Exit]()
+
+          result

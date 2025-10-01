@@ -48,8 +48,8 @@ import strategies.mitigation
 
 import scala.quoted.*
 
-object Provisionable:
-  given json: Provisionable:
+object Stageable:
+  given json: Stageable:
     type Transport = Json
     type Form = Text
 
@@ -67,7 +67,7 @@ object Provisionable:
       given RemoteError mitigates JsonError = error => RemoteError(RemoteError.Reason.Unknown)
       provide[entity is Decodable in Json](json.as[entity])
 
-  given pojo: Provisionable:
+  given pojo: Stageable:
     type Transport = Pojo
     type Form = Array[Pojo]
 
@@ -80,7 +80,7 @@ object Provisionable:
     inline def extract[entity](pojo: Pojo): entity =
       infer[entity is Decodable in Pojo].decoded(pojo)
 
-trait Provisionable extends Transportive, Formal:
+trait Stageable extends Transportive, Formal:
   type Transport <: Object
 
   inline def embed[entity](value: entity): Transport

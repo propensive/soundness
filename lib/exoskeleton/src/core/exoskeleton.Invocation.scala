@@ -34,6 +34,7 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import ethereal.*
 import profanity.*
 import rudiments.*
 import turbulence.*
@@ -46,8 +47,7 @@ case class Invocation
     stdio:            Stdio,
     signals:          Spool[Signal],
     proceed:          Boolean,
-    userId:           Optional[Int],
-    username:         Text)
+    login:            Login)
    (using interpreter: Interpreter)
 extends Cli, Stdio:
 

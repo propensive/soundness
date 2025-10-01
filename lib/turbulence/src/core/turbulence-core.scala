@@ -42,7 +42,7 @@ import anticipation.*
 import capricious.*
 import contingency.*
 import hypotenuse.*
-import parasite.*, asyncTermination.await
+import parasite.*, codicils.await
 import prepositional.*
 import proscenium.*
 import rudiments.*

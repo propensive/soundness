@@ -35,6 +35,7 @@ package exoskeleton
 import ambience.*
 import anticipation.*
 import denominative.*
+import ethereal.*
 import gossamer.*
 import profanity.*
 import rudiments.*
@@ -57,8 +58,7 @@ trait Cli extends Console:
   def environment: Environment
   def workingDirectory: WorkingDirectory
   def proceed: Boolean
-  def username: Text
-  def userId: Optional[Int]
+  def login: Login
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   : Optional[operand]

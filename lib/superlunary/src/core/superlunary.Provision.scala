@@ -37,4 +37,4 @@ import gossamer.*
 import hellenism.*
 import serpentine.*
 
-case class Provision[output, form, target](target: target, remote: (form => form) => output)
+case class Stage[output, form, target](target: target, remote: (form => form) => output)

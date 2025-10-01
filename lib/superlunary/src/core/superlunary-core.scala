@@ -44,13 +44,13 @@ import rudiments.*
 object embeddings:
   inline given automatic: [value]
                => (refs: References)
-               => (provisionable: Provisionable over refs.Transport)
+               => (stageable: Stageable over refs.Transport)
                => Quotes
                => Conversion[value, Expr[value]] =
     value =>
-      val encoded: provisionable.Transport = provisionable.embed[value](value)
+      val encoded: stageable.Transport = stageable.embed[value](value)
       val allocation: Int = refs.allocate(encoded)
 
       '{  import strategies.throwUnsafely
-          provisionable.extract[value]
+          stageable.extract[value]
            (${refs.array}(${Expr(allocation)}).asInstanceOf[refs.Transport])  }

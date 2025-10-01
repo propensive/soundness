@@ -38,6 +38,7 @@ import contingency.*
 import digression.*
 import distillate.*
 import escapade.*
+import ethereal.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
@@ -99,8 +100,7 @@ package executives:
           stdio:            Stdio,
           signals:          Spool[Signal],
           service:          ShellContext,
-          euid:             Optional[Int],
-          username:         Text)
+          login:            Login)
          (using interpreter: Interpreter)
     : Invocation =
 
@@ -111,8 +111,7 @@ package executives:
           stdio,
           signals,
           arguments.size == 0 || arguments.head != t"{admin}",
-          euid,
-          username)
+          login)
 
 
     def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
@@ -148,7 +147,6 @@ def application(using executive: Executive, interpreter: Interpreter)
       stdioSources.virtualMachine.ansi,
       spool,
       context,
-      Unset,
-      ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt)
+      Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset))
 
   System.exit(executive.process(cli)(block)())
