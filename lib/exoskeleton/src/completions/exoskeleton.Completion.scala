@@ -61,7 +61,9 @@ case class Completion
     stdio:            Stdio,
     signals:          Spool[Signal],
     tty:              Text,
-    tab:              Ordinal)
+    tab:              Ordinal,
+    userId:           Optional[Int],
+    username:         Text)
    (using interpreter: Interpreter)
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)

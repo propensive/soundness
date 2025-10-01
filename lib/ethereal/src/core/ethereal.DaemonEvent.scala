@@ -41,6 +41,8 @@ import language.experimental.pureFunctions
 enum DaemonEvent:
   case Init
         (pid:         Pid,
+         euid:        Int,
+         username:    Text,
          work:        Text,
          script:      Text,
          cliInput:    Stdin,

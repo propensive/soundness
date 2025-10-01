@@ -153,6 +153,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
     . within(Properties.ethereal.name[Text]())
 
+  val userId: Optional[Int] = safely(Properties.ethereal.user.id[Int]())
+  val userName: Optional[Text] = safely(Properties.ethereal.user.name[Text]())
+
   val runtimeDir: Optional[Path on Linux] = Xdg.runtimeDir
   val stateHome: Path on Linux = Xdg.stateHome
   val baseDir: Path on Linux = runtimeDir.or(stateHome) //name
@@ -209,13 +212,15 @@ def cli[bus <: Matchable](using executive: Executive)
           case t"i" =>
             val stdin: Stdin = if line() == t"p" then Stdin.Pipe else Stdin.Terminal
             val pid: Pid = Pid(line().decode[Int])
+            val euid: Int = line().decode[Int]
+            val username: Text = line()
             val script: Text = line()
             val pwd: Text = line()
             val argCount: Int = line().decode[Int]
             val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount).to(List)
             val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
 
-            DaemonEvent.Init(pid, pwd, script, stdin, textArguments, environment)
+            DaemonEvent.Init(pid, euid, username, pwd, script, stdin, textArguments, environment)
 
           case _ =>
             Unset
@@ -243,7 +248,9 @@ def cli[bus <: Matchable](using executive: Executive)
             Log.fine(DaemonLogEvent.StderrRequest(pid))
             client(pid).stderr.offer(socket.getOutputStream.nn)
 
-          case DaemonEvent.Init(pid, directory, scriptName, shellInput, textArguments, env) =>
+          case DaemonEvent.Init
+                (pid, euid, username, directory, scriptName, shellInput, textArguments, env) =>
+
             Log.fine(DaemonLogEvent.Init(pid))
             val connection = client(pid)
             connection.socket.fulfill(socket)
@@ -293,7 +300,14 @@ def cli[bus <: Matchable](using executive: Executive)
             try
               val cli: executive.Interface =
                 executive.invocation
-                 (textArguments, environment, () => directory, stdio, connection.signals, service)
+                 (textArguments,
+                  environment,
+                  () => directory,
+                  stdio,
+                  connection.signals,
+                  service,
+                  euid,
+                  username)
 
               if cli.proceed then
                 val result = block(using service)(using cli)

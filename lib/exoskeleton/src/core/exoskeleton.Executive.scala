@@ -37,6 +37,7 @@ import anticipation.*
 import profanity.*
 import rudiments.*
 import turbulence.*
+import vacuous.*
 
 trait Executive:
   type Return
@@ -48,7 +49,9 @@ trait Executive:
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
         signals:          Spool[Signal],
-        service:          ShellContext)
+        service:          ShellContext,
+        euid:             Optional[Int],
+        username:         Text)
        (using interpreter: Interpreter)
   : Interface
 

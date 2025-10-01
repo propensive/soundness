@@ -98,7 +98,9 @@ package executives:
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
           signals:          Spool[Signal],
-          service:          ShellContext)
+          service:          ShellContext,
+          euid:             Optional[Int],
+          username:         Text)
          (using interpreter: Interpreter)
     : Invocation =
 
@@ -108,7 +110,9 @@ package executives:
           workingDirectories.jre,
           stdio,
           signals,
-          arguments.size == 0 || arguments.head != t"{admin}")
+          arguments.size == 0 || arguments.head != t"{admin}",
+          euid,
+          username)
 
 
     def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
@@ -143,6 +147,8 @@ def application(using executive: Executive, interpreter: Interpreter)
       workingDirectories.jre,
       stdioSources.virtualMachine.ansi,
       spool,
-      context)
+      context,
+      Unset,
+      ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt)
 
   System.exit(executive.process(cli)(block)())

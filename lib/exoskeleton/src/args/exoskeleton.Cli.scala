@@ -57,6 +57,8 @@ trait Cli extends Console:
   def environment: Environment
   def workingDirectory: WorkingDirectory
   def proceed: Boolean
+  def username: Text
+  def userId: Optional[Int]
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   : Optional[operand]

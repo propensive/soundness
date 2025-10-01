@@ -45,7 +45,9 @@ case class Invocation
     workingDirectory: WorkingDirectory,
     stdio:            Stdio,
     signals:          Spool[Signal],
-    proceed:          Boolean)
+    proceed:          Boolean,
+    userId:           Optional[Int],
+    username:         Text)
    (using interpreter: Interpreter)
 extends Cli, Stdio:
 

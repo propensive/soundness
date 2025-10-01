@@ -178,7 +178,7 @@ launch() {
   startTime="$(date +%s%3N)"
   echo "$pid" > "$pidFile"
   [ -x "$javaCmd" ] || extract
-  (nohup "$javaCmd" -Dethereal.startTime="$startTime" -Dethereal.name="$name" -Dethereal.script="$script" -Dethereal.payloadSize=$payloadSize -Dethereal.jarSize=$jarSize -Dethereal.command="$(command -v "$name")" -Dethereal.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2> >(logger -t "$name") || abort) &
+  (nohup "$javaCmd" -Dethereal.startTime="$startTime" -Dethereal.name="$name" -Dethereal.user.id="$EUID" -Dethereal.user.name="$USER" -Dethereal.script="$script" -Dethereal.payloadSize=$payloadSize -Dethereal.jarSize=$jarSize -Dethereal.command="$(command -v "$name")" -Dethereal.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2> >(logger -t "$name") || abort) &
   launchPid=$!
 
   while [[ ! -s "$portFile" ]] && [[ ! -f "$failFile" ]]
@@ -282,7 +282,7 @@ mkfifo -m 600 "$tmpPipe" && exec 2> /dev/null 3<> "$tmpPipe" && rm "$tmpPipe" ||
 [ -t 0 ] && stty "${sttyOptions[@]}" > /dev/null 2>&1
 exec 2> /dev/null 7<> /dev/tcp/localhost/$port || exit 2
 [ -t 0 ] && printf "i\nt\n" >&7 || printf "i\np\n" >&7
-printf "%s\n%s\n" "$pid" "$script" >&7
+printf "%s\n%s\n%s\n%s\n" "$pid" "$EUID" "$USER" "$script" >&7
 pwd >&7
 printf "%s\n" "$argCount" >&7
 printf '%s\0' "${args[@]}" >&7

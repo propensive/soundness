@@ -67,7 +67,9 @@ package executives:
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
           signals:          Spool[Signal],
-          service:          ShellContext)
+          service:          ShellContext,
+          euid:             Optional[Int],
+          username:         Text)
          (using interpreter: Interpreter)
     : Cli =
 
@@ -96,7 +98,9 @@ package executives:
               stdio,
               signals,
               tty,
-              tab)
+              tab,
+              euid,
+              username)
 
           case t"{admin}" :: command :: Nil =>
             given Stdio = stdio
@@ -115,11 +119,11 @@ package executives:
                 Exit.Fail(1)
 
             Invocation
-             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, false)
+             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, false, euid, username)
 
           case other =>
             Invocation
-             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, true)
+             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, true, euid, username)
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
