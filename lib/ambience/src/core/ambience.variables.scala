@@ -30,11 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package ambience
+
+import language.dynamics
 
 import anticipation.*
+import contingency.*
 import gossamer.*
-import hellenism.*
-import serpentine.*
+import proscenium.*
+import rudiments.*
+import vacuous.*
 
-case class Dispatch[output, format, target](target: target, remote: (format => format) => output)
+object variables extends Dynamic:
+  inline def applyDynamicNamed[result](apply: "apply")(variables: (String, Text)*)
+              (using environment0: Environment)
+              (block: Environment ?=> result)
+  : result =
+
+      val map = variables.map(_.tt.uncamel.snake.upper -> _).toMap
+      val environment: Environment = name => map.at(name).or(environment0.variable(name))
+      block(using environment)

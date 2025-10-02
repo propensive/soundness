@@ -41,7 +41,7 @@ case class IdName(id: Text, name: Text)
 
 import Decomposition.*
 
-import testAutopsies.contrastExpectations
+import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Chiaroscuro tests"):
   def run(): Unit =

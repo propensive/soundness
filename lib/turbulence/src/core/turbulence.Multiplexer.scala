@@ -37,7 +37,7 @@ import language.experimental.pureFunctions
 import java.util.concurrent as juc
 
 import anticipation.*
-import parasite.*, asyncTermination.await
+import parasite.*, codicils.await
 import proscenium.*
 import rudiments.*
 

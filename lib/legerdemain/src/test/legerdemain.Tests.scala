@@ -38,7 +38,7 @@ import telekinesis.*
 import formulations.default
 import strategies.throwUnsafely
 import httpServers.stdlib
-import asyncTermination.cancel
+import codicils.cancel
 import logging.silent
 import html5.*
 import charEncoders.utf8

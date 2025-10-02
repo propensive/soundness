@@ -56,34 +56,26 @@ import textSanitizers.skip
 import systemProperties.jre
 import classloaders.system
 
-object Isolation extends Dispatcher:
+object Isolation extends Rig:
   type Result[output] = output
   type Form = Array[Pojo]
   type Target = Classloader
   type Transport = Pojo
 
-  def deploy(out: Path on Linux): Classloader = classloaders.threadContext.classpath match
-    case classpath: LocalClasspath =>
-      LocalClasspath(classpath.entries :+ Classpath.Directory(out)).classloader()
-
-    case _ =>
-      val systemClasspath = unsafely(Properties.java.`class`.path().decode[LocalClasspath])
-      LocalClasspath(Classpath.Directory(out) :: systemClasspath.entries).classloader()
-
-
+  def stage(out: Path on Linux): Classloader = classpath(out).classloader()
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
-  protected def invoke[output](dispatch: Dispatch[output, Form, Target]): output =
+  protected def invoke[output](stage: Stage[output, Form, Target]): output =
     import workingDirectories.systemProperties
     import logging.silent
 
-    dispatch.remote: input =>
-      val classloader: Classloader = dispatch.target
+    stage.remote: input =>
+      val classloader: Classloader = stage.target
       val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
       val instance = cls.getDeclaredConstructor().nn.newInstance().nn
       val method = cls.getMethod("apply").nn
-      val function = method.invoke(instance).nn
-      val cls2 = function.getClass.nn
-      val method2 = function.getClass.nn.getMethod("apply", classOf[Object]).nn
+      val function = method.invoke(instance)
+      val cls2 = function.getClass
+      val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
       method2.setAccessible(true)
       method2.invoke(function, input).asInstanceOf[Array[Pojo]]

@@ -215,6 +215,7 @@ extension [textual: Textual](text: textual)
     else Stream()
 
   def seek(regex: Regex): Optional[textual] = regex.seek(textual.text(text)).let(text.segment(_))
+  def index(substring: Text): Optional[Ordinal] = textual.indexOf(text, substring)
 
   inline def trim: textual =
     val start = text.where(!_.isWhitespace).or(text.limit - 1)

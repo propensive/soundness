@@ -60,12 +60,12 @@ class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
     safely(keep(_.descent == ref.descent).map(identity(_)).headOption.get).or:
       abort(ZipError())
 
-  def each(lambda: ZipEntry => Unit): Unit raises ZipError = map[Unit](lambda)
+  def each(lambda: ZipEntry => Unit): Unit raises ZipError = map[Unit](lambda).strict
 
   def map[element](lambda: ZipEntry => element): Stream[element] raises ZipError =
     val conduit = Conduit(stream())
-
     if !conduit.search(0x50, 0x4b, 0x03, 0x04) then Stream() else
+
       conduit.truncate()
       val zipIn = juz.ZipInputStream(conduit.remainder.inputStream)
 

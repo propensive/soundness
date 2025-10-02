@@ -57,7 +57,10 @@ object Computable:
     reader.lines().nn.toScala(List).map(_.tt)
 
   given text: Text is Computable = proc =>
-    Text.construct(stream.compute(proc).map(_.s).each(append(_)))
+    Text.construct:
+      stream.compute(proc).each: line =>
+        append(line.s)
+        append('\n')
 
   given string: String is Computable = proc =>
     Text.construct(stream.compute(proc).map(_.s).each(append(_))).s

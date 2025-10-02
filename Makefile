@@ -5,6 +5,10 @@ test:
 	mill test.assembly
 	java -cp out/test/assembly.dest/out.jar soundness.Tests
 
+test.exoskeleton:
+	mill exoskeleton.test.assembly
+	java -cp out/exoskeleton/test/assembly.dest/out.jar exoskeleton.Tests
+
 failing:
 	mill test.assembly
 	java -cp out/test/assembly.dest/out.jar soundness.FailingTests

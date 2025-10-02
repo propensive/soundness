@@ -41,8 +41,8 @@ export parasite
 package threading:
   export parasite.threading.{platform, virtual, adaptive}
 
-package asyncTermination:
-  export parasite.asyncTermination.{await, cancel, fail, panic}
+package codicils:
+  export parasite.codicils.{await, cancel, fail, panic}
 
 package supervisors:
   export parasite.supervisors.global

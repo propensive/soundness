@@ -66,7 +66,7 @@ import textSanitizers.skip
 import stdioSources.virtualMachine.ansi
 import backstops.stackTrace
 import executives.direct
-import parameterInterpretation.posix
+import interpreters.posix
 import systemProperties.jre
 import workingDirectories.systemProperties
 import internetAccess.enabled

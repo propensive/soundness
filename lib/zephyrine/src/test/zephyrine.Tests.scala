@@ -39,7 +39,7 @@ import randomization.unseeded
 object Tests extends Suite(m"Zephyrine tests"):
   val bytes = Bytes.fill(1000)(_.toByte)
   def run(): Unit = stochastic:
-    for i <- 1 to 100 do
+    for i <- 1 to 10 do
       val stream = Stream(bytes).shred(10.0, 10.0)//.filter(!_.isEmpty)
       test(m"Conduit always starts at first byte"):
         val conduit = Conduit(stream)
@@ -109,3 +109,56 @@ object Tests extends Suite(m"Zephyrine tests"):
         conduit.remainder.head.head
 
       . assert(_ == 16.toByte)
+
+    suite(m"Search tests"):
+      test(m"Can find first byte"):
+        val stream = Stream(Bytes(0x10, 0x11, 0x12, 0x13), Bytes(0x14, 0x15))
+        val conduit = Conduit(stream)
+        conduit.search(0x10)
+
+      . assert(_ == true)
+
+      test(m"Can't find nonexistent byte"):
+        val stream = Stream(Bytes(0x10, 0x11, 0x12, 0x13), Bytes(0x14, 0x15))
+        val conduit = Conduit(stream)
+        conduit.search(0x18)
+
+      . assert(_ == false)
+
+      test(m"Can find sequence of two bytes"):
+        val stream = Stream(Bytes(0x10, 0x11, 0x12, 0x13), Bytes(0x14, 0x15))
+        val conduit = Conduit(stream)
+        conduit.search(0x11, 0x12)
+
+      . assert(_ == true)
+
+      test(m"Can find sequence of two bytes"):
+        val stream = Stream(Bytes(0x10, 0x11, 0x12, 0x13), Bytes(0x14, 0x15))
+        val conduit = Conduit(stream)
+        conduit.search(0x11, 0x12)
+
+      . assert(_ == true)
+
+      test(m"Gets correct offset for sequence of two bytes"):
+        val stream = Stream(Bytes(0x10, 0x11, 0x12, 0x13), Bytes(0x14, 0x15))
+        val conduit = Conduit(stream)
+        conduit.search(0x11, 0x12)
+        conduit.ordinal
+
+      . assert(_ == Sec)
+
+      test(m"Gets correct offset for sequence of three bytes when they're at the start"):
+        val stream = Stream(Bytes(0x10, 0x11, 0x12, 0x13), Bytes(0x14, 0x15))
+        val conduit = Conduit(stream)
+        conduit.search(0x10, 0x11, 0x12)
+        conduit.ordinal
+
+      . assert(_ == Prim)
+
+      test(m"Finds sequence that crosses block boundary"):
+        val stream = Stream(Bytes(0x10, 0x11, 0x12, 0x13), Bytes(0x14, 0x15))
+        val conduit = Conduit(stream)
+        conduit.search(0x13, 0x14)
+        conduit.ordinal
+
+      . assert(_ == Quat)

@@ -34,12 +34,20 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import contingency.*
 import denominative.*
 import distillate.*
+import ethereal.*
+import eucalyptus.*
+import fulminate.*
 import gossamer.*
+import guillotine.*
+import parasite.*
 import profanity.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -61,7 +69,9 @@ package executives:
           environment:      Environment,
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
-          signals:          Spool[Signal])
+          signals:          Spool[Signal],
+          service:          ShellContext,
+          login:            Login)
          (using interpreter: Interpreter)
     : Cli =
 
@@ -90,18 +100,48 @@ package executives:
               stdio,
               signals,
               tty,
-              tab)
+              tab,
+              login)
+
+          case t"{admin}" :: command :: Nil =>
+            given Stdio = stdio
+            command match
+              case t"pid"     => Out.println(OsProcess().pid.value.show) yet Exit.Ok
+              case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
+
+              case t"await"   =>
+                Cli.prepare()
+                safely(Cli.await()).or(Nil).map(Out.println(_))
+                Exit.Ok
+
+              case t"install" =>
+                given ShellContext = service
+                given WorkingDirectory = workingDirectory
+                import errorDiagnostics.stackTraces
+                import logging.silent
+                Out.println(Completions.ensure(force = true).join(t"\n"))
+                Exit.Ok
+
+              case _       =>
+                Exit.Fail(1)
+
+            Invocation
+             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, false, login)
 
           case other =>
-            Invocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
+            Invocation
+             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, true, login)
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
       case completion: Completion =>
-        given stdio: Stdio = completion.stdio
-        completion.serialize.each(Out.println(_))
+        given Stdio = completion.stdio
+        completion.serialize.tap(_.each(Cli.log(_))).each(Out.println(_))
+        Cli.done()
         Exit.Ok
 
       case invocation: Invocation =>
+        given Stdio = invocation.stdio
+
         try execution(using invocation).exitStatus
         catch case error: Throwable => backstop.handle(error)(using invocation.stdio)

@@ -30,14 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package superlunary
 
 import anticipation.*
-import rudiments.*
+import gossamer.*
+import hellenism.*
+import serpentine.*
 
-abstract class Application:
-  import executives.direct
-  import backstops.genericErrorMessage
-  import interpreters.posix
-  def invoke(using Cli): Exit
-  def main(textArguments: IArray[Text]): Unit = application(textArguments)(invoke)
+case class Stage[output, form, target](target: target, remote: (form => form) => output)

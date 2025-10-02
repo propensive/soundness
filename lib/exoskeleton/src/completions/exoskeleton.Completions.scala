@@ -38,12 +38,14 @@ import ambience.*, environments.jre, systemProperties.jre
 import anticipation.*
 import contingency.*
 import denominative.*
+import digression.*
 import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.{where as _, *}
 import guillotine.*
 import nomenclature.*
+import parasite.*
 import prepositional.*
 import rudiments.*, homeDirectories.systemProperties
 import serpentine.*
@@ -59,7 +61,6 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
 object Completions:
-
   case class Tab(arguments: List[Text], focus: Int, cursor: Int, count: Int = 0):
     def next: Tab = copy(count = count + 1)
     def zero: Tab = copy(count = 0)
@@ -77,6 +78,11 @@ object Completions:
           (zsh:  Installation.InstallResult,
            bash: Installation.InstallResult,
            fish: Installation.InstallResult)
+
+    def paths: List[Text] =
+      this match
+        case CommandNotOnPath(_) => Nil
+        case Shells(zsh, bash, fish) => List(zsh, bash, fish).map(_.pathname).compact
 
   object Installation:
     given communicable: Installation is Communicable =
@@ -105,6 +111,16 @@ object Completions:
       case AlreadyInstalled(shell: Shell, path: Text)
       case NoWritableLocation(shell: Shell)
       case ShellNotInstalled(shell: Shell)
+
+      def pathname: Optional[Text] = this.only:
+        case Installed(_, path)        => path
+        case AlreadyInstalled(_, path) => path
+
+  def ensure(force: Boolean = false)(using ShellContext, WorkingDirectory, Diagnostics)
+  : List[Text] logs CliEvent =
+
+      safely(effectful(install(force))).let(_.paths).or(Nil)
+
 
   def install(force: Boolean = false)(using service: ShellContext)
        (using WorkingDirectory, Effectful, Diagnostics)
@@ -200,7 +216,7 @@ object Completions:
           |_$command() {
           |  $command '{completions}' zsh "$$CURRENT" "$${#PREFIX}" "$$TTY" -- $$words | while IFS=$$'\\0' read -r -A ln
           |  do
-          |    desc=($${ln[1]})
+          |    desc=("$${ln[1]}")
           |    compadd -Q "$${(@)ln:1}"
           |  done
           |}
@@ -218,8 +234,7 @@ object Completions:
 
     case Shell.Bash =>
       t"""|_${command}_complete() {
-          |  output="$$(${command} '{completions}' bash $$COMP_CWORD 0 $$(tty) -- $$COMP_LINE)"
-          |  COMPREPLY=($$output)
+          |  readarray -t COMPREPLY < <(${command} '{completions}' bash $$COMP_CWORD 0 $$(tty) -- $$COMP_LINE)
           |}
           |complete -F _${command}_complete $command
           |""".s.stripMargin.tt

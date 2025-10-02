@@ -32,12 +32,58 @@
                                                                                                   */
 package exoskeleton
 
-import anticipation.*
-import rudiments.*
+import soundness.*
 
-abstract class Application:
-  import executives.direct
-  import backstops.genericErrorMessage
-  import interpreters.posix
-  def invoke(using Cli): Exit
-  def main(textArguments: IArray[Text]): Unit = application(textArguments)(invoke)
+import errorDiagnostics.stackTraces
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.overwritePreexisting.disabled
+
+extension (shell: Shell)
+  def tmux(width: Int = 80, height: Int = 24)[result](action: (tmux: Tmux) ?=> result)
+        (using WorkingDirectory, Sandbox.Tool, Monitor)
+  : result raises TmuxError logs ExecEvent =
+
+      mitigate:
+        case ExecError(_, _, _) => TmuxError()
+        case NumberError(_, _)  => TmuxError()
+
+      . within:
+          given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
+          val shellPath = shell match
+            case Shell.Zsh  => t"zsh"
+            case Shell.Fish => t"fish"
+            case Shell.Bash => t"bash"
+
+          sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellPath -l'".exec[Unit]()
+          Tmux.attend:
+            ()
+
+          val path = summon[Sandbox.Tool].path.parent.vouch.encode
+
+          shell match
+            case Shell.Zsh  =>
+              sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} "path+=(\"$path\")" C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} "autoload -Uz compinit; compinit" C-m""".exec[Unit]()
+              Tmux.attend:
+                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
+
+            case Shell.Bash =>
+              sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} 'export PATH="$path:$$PATH"' C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-ambiguous on"' C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-unmodified on"' C-m""".exec[Unit]()
+              Tmux.attend:
+                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
+
+            case Shell.Fish =>
+              sh"""tmux send-keys -t ${tmux.id} "function fish_prompt; echo -n '> '; end" C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} 'fish_add_path --global "$path"' C-m""".exec[Unit]()
+              Tmux.attend:
+                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
+
+          val result = action
+
+          sh"tmux kill-session -t ${tmux.id}".exec[Exit]()
+
+          result

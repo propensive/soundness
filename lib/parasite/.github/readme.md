@@ -172,11 +172,11 @@ The child task runs continuously for ten seconds. Does that mean the call to `pa
 take ten seconds too? That depends!
 
 Three options are available, as contextual values:
-- `asyncTermination.await` will wait for all child tasks to terminate,
-- `asyncTermination.cancel` will cancel the child asks at the first opportunity, and
-- `asyncTermination.fail` will cause the call to `parent.await()` to throw an error
+- `codicils.await` will wait for all child tasks to terminate,
+- `codicils.cancel` will cancel the child asks at the first opportunity, and
+- `codicils.fail` will cause the call to `parent.await()` to throw an error
   (which must be handled) if any incomplete tasks exist when the parent task returns.
-- `asyncTermination.panic` behaves like `asyncTermination.fail`, but throws an unchecked `Panic`
+- `codicils.panic` behaves like `codicils.fail`, but throws an unchecked `Panic`
   error.
 
 Each of these options may be more useful in different scenarios.
@@ -305,7 +305,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Parasite?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Parasite's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -322,7 +322,7 @@ answer to the question, "how can I try Parasite?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -382,4 +382,3 @@ The logo shows a tick symbol, indicative of a task (which has been completed).
 
 Parasite is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

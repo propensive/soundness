@@ -102,21 +102,24 @@ class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => Resu
       val mask = conduit.take(4)
       val payload = unmask(conduit.take(length), mask)
 
+      import Websocket.Opcode.*
       opcode match
-        case Websocket.Opcode.Continuation =>
+        case Continuation =>
           Frame.Continuation(fin, payload) #:: recur()
-        case Websocket.Opcode.Text         =>
+        case Text         =>
           Frame.Text(fin, payload) #:: recur()
-        case Websocket.Opcode.Binary       =>
+        case Binary       =>
           Frame.Binary(fin, payload) #:: recur()
-        case Websocket.Opcode.Ping         =>
+        case Ping         =>
           spool.put(Frame.Pong(payload))
           recur()
-        case Websocket.Opcode.Pong         =>
+        case Pong         =>
           recur()
-        case Websocket.Opcode.Close        =>
+        case Close        =>
           spool.put(Frame.Close(1000))
           spool.stop()
+          Stream()
+        case Reserved0 | Reserved1 | Reserved2 | Reserved3 | Reserved4 =>
           Stream()
 
     recur()

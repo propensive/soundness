@@ -60,6 +60,8 @@ object Zip:
     & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["<"] & MustNotContain[">"]
     & MustNotContain["|"]
 
+  erased given compliant: Linux is Compliant on Zip = !!
+  erased given compliant2: MacOs is Compliant on Zip = !!
   erased given nominative: Zip is Nominative under Rules = !!
   given submissible: %.type is Submissible on Zip = _ => ()
 

@@ -33,5 +33,17 @@
 package superlunary
 
 import fulminate.*
+import gossamer.*
+import spectacular.*
 
-case class RemoteError()(using Diagnostics) extends Error(m"failed to perform a remote operation")
+object RemoteError:
+  enum Reason:
+    case Serialization, Deserialization, Unknown
+
+  given Reason is Showable =
+    case Reason.Serialization   => t"the output could not be serialized"
+    case Reason.Deserialization => t"the input could not be deserialized"
+    case Reason.Unknown         => t"of an unknown reason"
+
+case class RemoteError(reason: RemoteError.Reason)(using Diagnostics)
+extends Error(m"failed to perform a remote operation because $reason")

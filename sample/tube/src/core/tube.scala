@@ -12,7 +12,7 @@ import errorDiagnostics.stackTraces
 import executives.completions
 import homeDirectories.systemProperties
 import logging.silent
-import asyncTermination.cancel
+import codicils.cancel
 import parameterInterpretation.posix
 import printableTypes.message
 import supervisors.global

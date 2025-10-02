@@ -598,7 +598,6 @@ object Bytecode:
     def transform(stack: List[Frame]): List[Frame] =
       import Frame.*
       this match
-        case anyithng => stack
         case Nop                      => stack
         case New(_)                   => L(t"class") :: stack
         case Dup                      => stack.head :: stack.head :: stack.tail

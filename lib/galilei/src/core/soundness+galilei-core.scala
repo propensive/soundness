@@ -39,7 +39,8 @@ export galilei
            TraversalOrder, Volume, WriteAccess, WriteSynchronously, C, D, open, javaPath, javaFile,
            children, descendants, size, delete, wipe, volume, hardLinkTo, entry, copyTo, copyInto,
            moveTo, moveInto, symlinkTo, symlinkInto, modified, accessed, readable, writable, hidden,
-           touch, make, created, executable, hardLinks, exists }
+           touch, make, created, executable, hardLinks, exists, WindowsEntry, UnixEntry, File,
+           Directory, Fifo, BlockDevice, CharDevice }
 
 package filesystemOptions:
   export galilei.filesystemOptions

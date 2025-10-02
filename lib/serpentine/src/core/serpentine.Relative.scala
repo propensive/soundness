@@ -102,7 +102,9 @@ object Relative:
         . reverse
         . join(ascender*relative.ascent, system.separator, t"")
 
-  given showable: [system: System] => Relative on system is Showable = _.encode
+  given showable: [system: System, relative <: Relative on system]
+  => relative is Showable =
+       _.encode
 
   transparent inline given quotient: [system, relative <: (Relative on system) | Text]
                            => relative is Quotient =
@@ -145,8 +147,12 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
         path.each(infer[Text is Admissible on system].check(_))
 
   inline def on[system]: Relative of Topic under Limit on system =
-    check[Topic, system](descent.to(List))
-    this.asInstanceOf[Relative of Topic under Limit on system]
+    summonFrom:
+      case compliant: (Plane is Compliant on `system`) =>
+        this.asInstanceOf[Relative of Topic under Limit on system]
+      case _ =>
+        check[Topic, system](descent.to(List))
+        this.asInstanceOf[Relative of Topic under Limit on system]
 
   transparent inline def parent = inline !![Topic] match
     case head *: tail => Relative[Plane, tail.type, Limit](ascent, descent.tail*)

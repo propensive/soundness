@@ -47,7 +47,7 @@ import turbulence.*
 import strategies.throwUnsafely
 
 import threading.virtual
-import asyncTermination.cancel
+import codicils.cancel
 
 import errorDiagnostics.stackTraces
 
@@ -278,7 +278,7 @@ object Tests extends Suite(m"Parasite tests"):
         .assert(_ == 2)
 
         test(m"Incomplete child is awaited"):
-          import asyncTermination.await
+          import codicils.await
           var value = 1
           val task = async:
             value = 2
@@ -292,7 +292,7 @@ object Tests extends Suite(m"Parasite tests"):
         println("C")
 
         test(m"Incomplete child is cancelled"):
-          import asyncTermination.cancel
+          import codicils.cancel
           var value = 1
           val task = async:
             value = 2

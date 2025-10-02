@@ -39,7 +39,7 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
-import parasite.*, asyncTermination.cancel
+import parasite.*, codicils.cancel
 import prepositional.*
 import proscenium.*
 import rudiments.*
