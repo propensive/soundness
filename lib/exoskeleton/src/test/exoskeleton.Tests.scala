@@ -47,7 +47,7 @@ import autopsies.contrastExpectations
 import threading.platform
 
 import strategies.throwUnsafely
-import parameterInterpretation.posix
+import interpreters.posix
 import backstops.silent
 import errorDiagnostics.stackTraces
 import stdioSources.virtualMachine.ansi
@@ -57,7 +57,7 @@ import Shell.*
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
     val foo: Text = "hello"
-    Sandbox(t"abcde").dispatch:
+    Sandbox(t"abcd").dispatch:
       '{  import executives.completions
 
           val Alpha = Subcommand("alpha", e"a command to run")
@@ -66,6 +66,8 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           val RedHat = Subcommand("red hat", e"Red Hat Linux")
           val Ubuntu = Subcommand("ubuntu", e"Ubuntu")
           val Gentoo = Subcommand("gentoo", e"Gentoo Linux")
+
+          class Color(name: Text)
 
 
           cli:
@@ -81,7 +83,15 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                     Flag("one", description = t"the first one")()
                     Flag("two", description = t"the second one")()
                     execute(Exit.Ok)
-                  case Gentoo() :: _ => execute(Exit.Ok)
+                  case Gentoo() :: _ =>
+                    given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
+                    given Color is Interpretable =
+                      case arg :: Nil => Color(arg())
+                      case _          => Color(t"unknown")
+
+                    Flag("color", description = "red, green or blue")[Color]()
+                    execute(Exit.Ok)
+
                   case _             => execute(Exit.Ok)
 
               case _            => execute(Exit.Fail(1))
@@ -89,6 +99,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           t"finished"  }
 
     . sandbox:
+        println(summon[Sandbox.Tool].path)
         test(m"Test subcommands on bash"):
           Bash.tmux()(Tmux.completions(t""))
         . assert(_ == t"alpha         beta          distribution")
@@ -151,7 +162,44 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         . assert(_ == t"gentoo      -- Gentoo Linux\nred hat     -- Red Hat Linux\nubuntu      -- Ubuntu")
 
         test(m"Test capture 2"):
-          tool.completions:
-            Zsh.tmux()(Tmux.completions(t"distribution "))
+          Zsh.tmux()(Tmux.completions(t"distribution "))
 
         . assert()
+
+        test(m"flag parameter on zsh"):
+          Zsh.tmux()(Tmux.completions(t"distribution gentoo --color "))
+        . assert(_ == t"blue   green  red")
+
+        test(m"flag parameter on bash"):
+          Bash.tmux()(Tmux.completions(t"distribution gentoo --color "))
+        . assert(_ == t"blue   green  red")
+
+        test(m"flag parameter on fish"):
+          Fish.tmux()(Tmux.completions(t"distribution gentoo --color "))
+        . assert(_ == t"blue  green  red")
+
+        test(m"flag parameter with `=` on zsh"):
+          Zsh.tmux()(Tmux.completions(t"distribution gentoo --color="))
+        . assert(_ == t"blue   green  red")
+
+        test(m"flag parameter with `=` on bash"):
+          Bash.tmux()(Tmux.completions(t"distribution gentoo --color="))
+        . assert(_ == t"--color=blue   --color=green  --color=red")
+
+        test(m"flag parameter with `=` on fish"):
+          Fish.tmux()(Tmux.completions(t"distribution gentoo --color="))
+        . assert(_ == t"--color=blue  --color=green  --color=red")
+
+        test(m"Capture flag parameter with `=` on zsh"):
+          Zsh.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+        . assert(_ == t"distribution gentoo --color=blue ^")
+
+        test(m"Capture flag parameter with `=` on bash"):
+          tool.completions:
+            Bash.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+        . assert(_ == t"distribution gentoo --color=blue ^")
+
+        test(m"Capture flag parameter with `=` on fish"):
+          tool.completions:
+            Fish.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+        . assert(_ == t"distribution gentoo --color=blue ^")

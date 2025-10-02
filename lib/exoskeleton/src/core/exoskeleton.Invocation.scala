@@ -53,7 +53,7 @@ extends Cli, Stdio:
 
   export stdio.{termcap, out, err, in}
 
-  private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
+  private lazy val parameters: interpreter.Topic = interpreter.interpret(arguments)
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   : Optional[operand] =

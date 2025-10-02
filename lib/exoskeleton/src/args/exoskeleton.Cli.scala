@@ -34,14 +34,29 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import contingency.*
 import denominative.*
 import ethereal.*
 import gossamer.*
+import parasite.*
 import profanity.*
 import rudiments.*
 import vacuous.*
 
 object Cli:
+  private var messages: List[Text] = Nil
+  private var trigger: Promise[Unit] = Promise()
+
+  def prepare(): Unit =
+    messages = Nil
+    trigger = Promise()
+
+  def done(): Unit = trigger.offer(())
+
+  def log(input: Text): Unit = messages ::= input
+
+  def await(): List[Text] = safely(trigger.await(10000L)) yet messages.reverse
+
   def arguments
        (textArguments: Iterable[Text],
         focus:         Optional[Int]     = Unset,

@@ -34,6 +34,7 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import contingency.*
 import denominative.*
 import distillate.*
 import ethereal.*
@@ -101,7 +102,6 @@ package executives:
               tty,
               tab,
               login)
-            . tap(Completions.request(_))
 
           case t"{admin}" :: command :: Nil =>
             given Stdio = stdio
@@ -110,15 +110,8 @@ package executives:
               case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
 
               case t"await"   =>
-                Out.println(t"Awaiting up to 60 seconds for the next tab completion request...")
-                Completions.prepare()
-
-                Completions.awaitRequest().or(Nil).map: argument =>
-                  Out.println(t"<- ${argument.inspect}")
-
-                Completions.awaitResponse().or(Nil).map: completion =>
-                  Out.println(completion.cut('\u0000').map(t"["+_+t"]").join(t"-> ", t" ", t""))
-
+                Cli.prepare()
+                safely(Cli.await()).or(Nil).map(Out.println(_))
                 Exit.Ok
 
               case t"install" =>
@@ -143,7 +136,8 @@ package executives:
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
       case completion: Completion =>
         given Stdio = completion.stdio
-        completion.serialize.tap(Completions.response(_)).each(Out.println(_))
+        completion.serialize.tap(_.each(Cli.log(_))).each(Out.println(_))
+        Cli.done()
         Exit.Ok
 
       case invocation: Invocation =>

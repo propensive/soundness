@@ -36,21 +36,22 @@ import anticipation.*
 import denominative.*
 import fulminate.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 given realm: Realm = realm"exoskeleton"
 
-package parameterInterpretation:
+package interpreters:
   given simple: Interpreter:
-    type Parameters = Arguments
+    type Topic = Arguments
     def interpret(arguments: List[Argument]): Arguments = Arguments(arguments*)
 
   given posixClustering: Interpreter:
-    type Parameters = Commandline
+    type Topic = Commandline
     def interpret(arguments: List[Argument]): Commandline = interpreter(arguments, true)
 
   given posix: Interpreter:
-    type Parameters = Commandline
+    type Topic = Commandline
     def interpret(arguments: List[Argument]): Commandline = interpreter(arguments, false)
 
   private def interpreter(arguments: List[Argument], clustering: Boolean): Commandline =
@@ -90,7 +91,15 @@ package parameterInterpretation:
               else List(key -> values)
             . to(Map)
 
-          commandline.copy(parameters = parameters2)
+          val focus2 = current.let: current =>
+            val focusCursor: Ordinal = current.cursor.or(current.value.length).z
+
+            (parameters2.keySet ++ parameters2.values.flatten).find: argument =>
+              current.position == argument.position && argument.contains(focusCursor)
+
+            . optional
+
+          commandline.copy(parameters = parameters2, focus = focus2)
 
         todo match
           case head :: tail =>
@@ -102,7 +111,8 @@ package parameterInterpretation:
               recur(tail, head :: arguments, current, commandline2)
 
           case Nil =>
-            postprocess(push())
+            postprocess(push()).tap: result =>
+              Cli.log(result.toString.tt)
 
     recur(arguments, Nil, Unset, Commandline())
 

@@ -39,3 +39,4 @@ trait Flags:
   : Optional[operand]
 
   def focus: Optional[Argument]
+  def at(flag: Flag): List[Argument]

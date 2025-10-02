@@ -33,5 +33,5 @@
 package exoskeleton
 
 trait Interpreter:
-  type Parameters <: Flags
-  def interpret(arguments: List[Argument]): Parameters
+  type Topic <: Flags
+  def interpret(arguments: List[Argument]): Topic

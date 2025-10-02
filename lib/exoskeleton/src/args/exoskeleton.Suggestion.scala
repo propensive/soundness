@@ -43,7 +43,7 @@ import language.experimental.pureFunctions
 object Suggestion:
   def apply
        (core:        Text,
-        description: Optional[Text | Teletype],
+        description: Optional[Text | Teletype] = Unset,
         hidden:      Boolean                   = false,
         incomplete:  Boolean                   = false,
         aliases:     List[Text]                = Nil,

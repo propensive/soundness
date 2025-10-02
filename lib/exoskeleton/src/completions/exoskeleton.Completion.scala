@@ -66,7 +66,7 @@ case class Completion
     login:            Login)
    (using interpreter: Interpreter)
 extends Cli:
-  private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
+  private lazy val parameters: interpreter.Topic = interpreter.interpret(arguments)
 
   val flags: scm.HashMap[Flag, Discoverable] = scm.HashMap()
   val seenFlags: scm.HashSet[Flag] = scm.HashSet()
@@ -76,13 +76,13 @@ extends Cli:
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   : Optional[operand] =
+
       given cli: Cli = this
       parameters.read(flag)
 
 
-  def focus: Argument = arguments(currentArgument)
-
   def focused(argument: Argument): Boolean =
+    Cli.log(t"focused(${argument()})")
     currentArgument == argument.position && argument.format.match
       case Argument.Format.Full              => true
       case Argument.Format.EqualityPrefix    => false
@@ -91,14 +91,28 @@ extends Cli:
       case Argument.Format.FlagSuffix        => focusPosition.z > Sec
 
   override def register(flag: Flag, discoverable: Discoverable): Unit =
+    Cli.log(t"register(${flag.toString})")
+    Cli.log(t"Found "+parameters.at(flag).toString.tt)
+
+    val operands = parameters.at(flag)
+
     parameters.focus.let: argument =>
+      if operands.contains(argument) then
+        Cli.log(operands.toString+" contains "+argument)
+        val allSuggestions = discoverable.discover(tab).to(List)
+        Cli.log(allSuggestions.toString)
+        if allSuggestions != Nil then cursorSuggestions = allSuggestions
+
       if flag.matches(argument) && currentArgument == argument.position + 1 then
         val allSuggestions = discoverable.discover(tab).to(List)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
     if !flag.secret then flags(flag) = discoverable
 
-  override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
+  override def present(flag: Flag): Unit =
+    Cli.log(t"present(${flag.toString})")
+    if !flag.repeatable then seenFlags += flag
+
   override def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit =
     explanation = update(using explanation)
 
@@ -128,14 +142,27 @@ extends Cli:
       else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases =
           flag.aliases.map(Flag.serialize(_))))
 
+  def focusText: Text = arguments.find(_.position == currentArgument).get.value
+
   def serialize: List[Text] =
-    val items =
+    val items0 =
       if cursorSuggestions.isEmpty && parameters.focus.absent
-      then flagSuggestions(focus().starts(t"--"))
+      then flagSuggestions(focusText.starts(t"--"))
       else cursorSuggestions
 
+
+    val items = parameters.focus.lay(items0) { focus => items0.map(focus.wrap(_)) }
+
+    Cli.log("items = "+items)
     shell match
       case Shell.Zsh =>
+        Cli.log:
+          s"""
+              focusText = $focusText
+              cursorSuggestions = $cursorSuggestions
+              parameters.focus = ${parameters.focus}
+              flagSuggestions = ${flagSuggestions(true)}""".tt
+
         val title = explanation.let { explanation => List(sh"'' -X $explanation") }.or(Nil)
         val termcap: Termcap = termcapDefinitions.xtermTrueColor
 
@@ -180,13 +207,14 @@ extends Cli:
 
             mainLine :: duplicateLine ::: aliasLines
 
+        (title ++ itemLines).map(_.toString.tt).map(Cli.log)
         (title ++ itemLines).map(_.arguments.join(t"\u0000"))
 
       case Shell.Bash =>
         items.filter(!_.hidden).flatMap: suggestion =>
-          suggestion.text :: suggestion.aliases
+          (suggestion.text :: suggestion.aliases)
 
-        . filter(_.starts(focus()))
+        . filter(_.starts(focusText))
 
       case Shell.Fish =>
         items.flatMap:

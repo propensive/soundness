@@ -35,6 +35,7 @@ package exoskeleton
 import anticipation.*
 import denominative.*
 import gossamer.*
+import hypotenuse.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -56,6 +57,18 @@ case class Argument
              tab:      Optional[Ordinal],
              format:   Argument.Format):
 
+  override def toString(): String = this.inspect.s
+
+  def wrap(suggestion: Suggestion): Suggestion = format match
+    case Argument.Format.Full            => suggestion
+    case Argument.Format.FlagSuffix      => suggestion // FIXME
+    case Argument.Format.CharFlag(index) => suggestion // FIXME
+    case Argument.Format.EqualityPrefix  => suggestion
+      suggestion.copy(core = suggestion.core+t"="+value.after(value.index("=").or(Prim)))
+    case Argument.Format.EqualitySuffix  =>
+      val suggestion2 = suggestion.copy(prefix = value.before(value.index("=").or(Prim))+t"=")
+      suggestion2
+
   def apply(): Text = format match
     case Argument.Format.Full            => value
     case Argument.Format.FlagSuffix      => value.skip(2)
@@ -65,6 +78,13 @@ case class Argument
 
   def prefix: Optional[Text] = cursor.let(value.keep(_))
   def suffix: Optional[Text] = cursor.let(value.skip(_))
+
+  def contains(ordinal: Ordinal) = format match
+    case Argument.Format.Full            => true
+    case Argument.Format.FlagSuffix      => ordinal > Sec
+    case Argument.Format.CharFlag(index) => ordinal - 2 == index
+    case Argument.Format.EqualityPrefix  => value.index("=").or(Prim) > ordinal
+    case Argument.Format.EqualitySuffix  => value.index("=").or(Prim) < ordinal
 
   def suggest(using cli: Cli)(update: (prior: List[Suggestion]) ?=> List[Suggestion]) =
     val (prefix, suffix) = format match
