@@ -41,6 +41,7 @@ import gossamer.*
 import guillotine.*
 import hieroglyph.*, textMetrics.uniform
 import hypotenuse.*
+import inimitable.*
 import profanity.*
 import proscenium.*
 import rudiments.*
@@ -58,7 +59,7 @@ case class Completion
     workingDirectory: WorkingDirectory,
     shell:            Shell,
     currentArgument:  Int,
-    focusPosition:    Int,
+    focusPosition:    Optional[Int],
     stdio:            Stdio,
     signals:          Spool[Signal],
     tty:              Text,
@@ -88,7 +89,7 @@ extends Cli:
       case Argument.Format.EqualityPrefix    => false
       case Argument.Format.EqualitySuffix    => argument.value.contains(t"=")
       case Argument.Format.CharFlag(ordinal) => false
-      case Argument.Format.FlagSuffix        => focusPosition.z > Sec
+      case Argument.Format.FlagSuffix        => focusPosition.let(_.z > Sec).or(true)
 
   override def register(flag: Flag, discoverable: Discoverable): Unit =
     Cli.log(t"register(${flag.toString})")
@@ -144,7 +145,7 @@ extends Cli:
 
   def serialize: List[Text] =
     val items0 =
-      if cursorSuggestions.isEmpty && parameters.focus.absent
+      if cursorSuggestions.isEmpty
       then flagSuggestions(focusText.starts(t"--"))
       else cursorSuggestions
 
@@ -162,13 +163,13 @@ extends Cli:
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
 
         val itemLines: List[Command] = items.flatMap:
-          case Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix, _) =>
+          case Suggestion(core0, description, hidden, incomplete, aliases, prefix, suffix, _) =>
             val hiddenParam = if hidden then sh"-n" else sh""
-            val aliasText = aliases.join(t" ").fit(aliasesWidth)
+            val shortFlag = focusText.starts(t"-") && !focusText.starts(t"--")
+            val aliasText = if shortFlag then core0 else aliases.join(t" ").fit(aliasesWidth)
             val prefix2 = if prefix.empty then sh"" else sh"-p $prefix"
             val suffix2 = if suffix.empty then sh"" else sh"-s $suffix"
-
-            val text = prefix+core+suffix
+            val core = if shortFlag then aliases.headOption.getOrElse(core0) else core0
 
             val mainLine = description.absolve match
               case Unset =>
@@ -176,30 +177,18 @@ extends Cli:
                 else sh"'' $hiddenParam $prefix2 $suffix2 -- $core"
 
               case description: Text =>
-                sh"'${core.fit(width)} $aliasText $prefix2 $suffix2 -- $description' -d desc -l $hiddenParam -- $core"
+                sh"'${core.fit(width)} $aliasText -- $description' $prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
 
               case description: Teletype =>
                 val desc = description.render(termcap)
-                sh"'${core.fit(width)} $aliasText $prefix2 $suffix2 -- $desc' -d desc -l $hiddenParam -- $core"
+                sh"'${core.fit(width)} $aliasText -- $desc' $prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
 
             val duplicateLine =
               if !incomplete then List() else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
 
-            val aliasLines = aliases.map: text =>
-              description.absolve match
-                case Unset             =>
-                  sh"'' -n -- $text"
+            mainLine :: duplicateLine
 
-                case description: Text =>
-                  sh"'${core.fit(width)} $aliasText -- $description' -d desc -l -n -- $core"
-
-                case description: Teletype =>
-                  val desc = description.render(termcap)
-                  sh"'${core.fit(width)} $aliasText -- $desc' -d desc -l -n -- $core"
-
-            mainLine :: duplicateLine ::: aliasLines
-
-        (title ++ itemLines).map(_.toString.tt).map(Cli.log)
+        (title ++ itemLines).map(_.arguments.join(t" // ")).map(Cli.log)
         (title ++ itemLines).map(_.arguments.join(t"\u0000"))
 
       case Shell.Bash =>

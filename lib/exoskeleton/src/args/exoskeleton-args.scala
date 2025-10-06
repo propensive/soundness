@@ -116,7 +116,7 @@ package interpreters:
 
           case Nil =>
             postprocess(push()).tap: result =>
-              Cli.log(result.toString.tt)
+              Cli.log("RESULT: "+result)
 
     recur(arguments, Nil, Unset, Commandline())
 

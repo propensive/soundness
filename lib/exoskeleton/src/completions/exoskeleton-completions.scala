@@ -76,7 +76,8 @@ package executives:
     : Cli =
 
         arguments match
-          case t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position) :: tty :: t"--"
+          case t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty
+               :: t"--"
                :: command
                :: rest =>
 
@@ -88,7 +89,7 @@ package executives:
             val focus1 =
               if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
 
-            Cli.log(s"$shellName $focus1 $position $tty -- $command $rest")
+            Cli.log(s"$shellName $focus1 $position0 $tty -- $command $rest")
 
 
             def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
@@ -100,10 +101,8 @@ package executives:
 
             val rest2 = read(rest.to(List), false, Nil)
             val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
-            Cli.log(t"rest2 = ${rest2.inspect}")
-
-            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position))
-
+            val position = if shell == Shell.Bash then Unset else position0
+            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
             val equalses = rest.take(focus0).count(_ == t"=")
             val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 

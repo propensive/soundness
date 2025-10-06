@@ -61,7 +61,7 @@ case class Argument
 
   def wrap(suggestion: Suggestion): Suggestion = format match
     case Argument.Format.Full            => suggestion
-    case Argument.Format.FlagSuffix      => suggestion // FIXME
+    case Argument.Format.FlagSuffix      => suggestion.copy(prefix = value.keep(2))
     case Argument.Format.CharFlag(index) => suggestion // FIXME
     case Argument.Format.EqualityPrefix  => suggestion
       suggestion.copy(core = suggestion.core+t"="+value.after(value.index("=").or(Prim)))
