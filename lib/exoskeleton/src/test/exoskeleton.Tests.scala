@@ -54,7 +54,7 @@ import stdioSources.virtualMachine.ansi
 import Shell.*
 
 object Tests extends Suite(m"Exoskeleton Tests"):
-  def run(): Unit = if githubActions then
+  def run(): Unit = if !githubActions then
     val foo: Text = "hello"
     Sandbox(t"abcd").dispatch:
       '{  import executives.completions
