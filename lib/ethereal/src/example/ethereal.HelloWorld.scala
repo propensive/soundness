@@ -35,7 +35,7 @@ package ethereal
 import soundness.*
 
 import executives.completions
-import parameterInterpretation.posix
+import interpreters.posix
 import threading.virtual
 import unhandledErrors.stackTrace
 
