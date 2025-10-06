@@ -94,8 +94,6 @@ package interpreters:
           val focus2 = current.let: current =>
             val focusCursor: Ordinal = current.cursor.or(current.value.length).z
 
-            Cli.log(s"current: $current   focusCursor: $focusCursor")
-
             (parameters2.keySet ++ parameters2.values.flatten).find: argument =>
               current.position == argument.position && argument.contains(focusCursor)
 
@@ -115,8 +113,7 @@ package interpreters:
               recur(tail, head :: arguments, current, commandline2)
 
           case Nil =>
-            postprocess(push()).tap: result =>
-              Cli.log("RESULT: "+result)
+            postprocess(push())
 
     recur(arguments, Nil, Unset, Commandline())
 

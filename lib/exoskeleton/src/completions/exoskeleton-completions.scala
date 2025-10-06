@@ -89,8 +89,6 @@ package executives:
             val focus1 =
               if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
 
-            Cli.log(s"$shellName $focus1 $position0 $tty -- $command $rest")
-
 
             def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
               case Nil                                 => done.reverse
@@ -153,7 +151,7 @@ package executives:
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
       case completion: Completion =>
         given Stdio = completion.stdio
-        completion.serialize.tap(_.each(Cli.log(_))).each(Out.println(_))
+        completion.serialize.each(Out.println(_))
         Cli.done()
         Exit.Ok
 

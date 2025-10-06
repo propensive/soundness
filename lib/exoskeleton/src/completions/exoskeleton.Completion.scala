@@ -83,7 +83,6 @@ extends Cli:
 
 
   def focused(argument: Argument): Boolean =
-    Cli.log(t"focused(${argument()})")
     currentArgument == argument.position && argument.format.match
       case Argument.Format.Full              => true
       case Argument.Format.EqualityPrefix    => false
@@ -92,16 +91,11 @@ extends Cli:
       case Argument.Format.FlagSuffix        => focusPosition.let(_.z > Sec).or(true)
 
   override def register(flag: Flag, discoverable: Discoverable): Unit =
-    Cli.log(t"register(${flag.toString})")
-    Cli.log(t"Found "+parameters.at(flag).toString.tt)
-
     val operands = parameters.at(flag)
 
     parameters.focus.let: argument =>
       if operands.contains(argument) then
-        Cli.log(operands.toString+" contains "+argument)
         val allSuggestions = discoverable.discover(tab).to(List)
-        Cli.log(allSuggestions.toString)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
       if flag.matches(argument) && currentArgument == argument.position + 1 then
@@ -152,8 +146,6 @@ extends Cli:
 
     val items = parameters.focus.lay(items0) { focus => items0.map(focus.wrap(_)) }
 
-    Cli.log("items0 = "+items0)
-
     shell match
       case Shell.Zsh =>
         val title = explanation.let { explanation => List(sh"'' -X $explanation") }.or(Nil)
@@ -188,7 +180,6 @@ extends Cli:
 
             mainLine :: duplicateLine
 
-        (title ++ itemLines).map(_.arguments.join(t" // ")).map(Cli.log)
         (title ++ itemLines).map(_.arguments.join(t"\u0000"))
 
       case Shell.Bash =>
