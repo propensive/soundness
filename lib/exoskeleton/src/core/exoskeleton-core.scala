@@ -38,7 +38,6 @@ import contingency.*
 import digression.*
 import distillate.*
 import escapade.*
-import ethereal.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform

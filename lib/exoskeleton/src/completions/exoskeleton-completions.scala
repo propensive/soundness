@@ -37,7 +37,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
-import ethereal.*
 import eucalyptus.*
 import fulminate.*
 import gossamer.*

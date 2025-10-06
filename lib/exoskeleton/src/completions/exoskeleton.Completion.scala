@@ -35,7 +35,6 @@ package exoskeleton
 import ambience.*
 import anticipation.*
 import denominative.*
-import ethereal.*
 import escapade.*
 import gossamer.*
 import guillotine.*

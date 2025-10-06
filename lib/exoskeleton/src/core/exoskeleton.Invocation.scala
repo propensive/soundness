@@ -34,7 +34,6 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
-import ethereal.*
 import profanity.*
 import rudiments.*
 import turbulence.*

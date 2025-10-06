@@ -36,7 +36,6 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import denominative.*
-import ethereal.*
 import gossamer.*
 import parasite.*
 import profanity.*

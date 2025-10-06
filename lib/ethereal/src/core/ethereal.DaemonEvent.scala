@@ -33,6 +33,7 @@
 package ethereal
 
 import anticipation.*
+import exoskeleton.*
 import guillotine.*
 import profanity.*
 
