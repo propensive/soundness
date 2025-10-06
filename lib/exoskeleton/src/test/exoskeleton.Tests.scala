@@ -184,7 +184,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
         test(m"flag parameter with `=` on bash"):
           Bash.tmux()(Tmux.completions(t"distribution gentoo --color="))
-        . assert(_ == t"--color=blue   --color=green  --color=red")
+        . assert(_ == t"blue   green  red")
 
         test(m"flag parameter with `=` on fish"):
           Fish.tmux()(Tmux.completions(t"distribution gentoo --color="))
@@ -195,11 +195,9 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         . assert(_ == t"distribution gentoo --color=blue ^")
 
         test(m"Capture flag parameter with `=` on bash"):
-          tool.completions:
-            Bash.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+          Bash.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
         . assert(_ == t"distribution gentoo --color=blue ^")
 
-        test(m"Capture flag parameter with `=` on fish"):
-          tool.completions:
-            Fish.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
-        . assert(_ == t"distribution gentoo --color=blue ^")
+        test(m"Capture on fish for comparison with bash"):
+          Fish.tmux()(Tmux.progress(t"distribution gentoo --color b"))
+        . assert(_ == t"distribution gentoo --color blue ^")

@@ -109,9 +109,7 @@ extends Cli:
 
     if !flag.secret then flags(flag) = discoverable
 
-  override def present(flag: Flag): Unit =
-    Cli.log(t"present(${flag.toString})")
-    if !flag.repeatable then seenFlags += flag
+  override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
 
   override def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit =
     explanation = update(using explanation)
@@ -153,16 +151,10 @@ extends Cli:
 
     val items = parameters.focus.lay(items0) { focus => items0.map(focus.wrap(_)) }
 
-    Cli.log("items = "+items)
+    Cli.log("items0 = "+items0)
+
     shell match
       case Shell.Zsh =>
-        Cli.log:
-          s"""
-              focusText = $focusText
-              cursorSuggestions = $cursorSuggestions
-              parameters.focus = ${parameters.focus}
-              flagSuggestions = ${flagSuggestions(true)}""".tt
-
         val title = explanation.let { explanation => List(sh"'' -X $explanation") }.or(Nil)
         val termcap: Termcap = termcapDefinitions.xtermTrueColor
 

@@ -199,22 +199,13 @@ object Completions:
 
         . or(Installation.InstallResult.NoWritableLocation(shell))
 
-  // def messages(shell: Shell, global: Boolean): List[Message] =
-  //   if shell == Shell.Zsh && !global
-  //   then List(m"""Make sure that your ${t"~/.zshrc"} file contains the following lines:
-
-  //     fpath=(~/.zsh/completion $$fpath)
-  //     autoload -U compinit
-  //     compinit
-  //   """)
-  //   else Nil
-
   def script(shell: Shell, command: Text): Text = shell match
     case Shell.Zsh =>
       t"""|#compdef $command
           |local -a ln
           |_$command() {
-          |  $command '{completions}' zsh "$$CURRENT" "$${#PREFIX}" "$$TTY" -- $$words | while IFS=$$'\\0' read -r -A ln
+          |  $command '{completions}' zsh "$$CURRENT" "$${#PREFIX}" "$$TTY" \\
+          |    -- $$words | while IFS=$$'\\0' read -r -A ln
           |  do
           |    desc=("$${ln[1]}")
           |    compadd -Q "$${(@)ln:1}"
@@ -227,14 +218,17 @@ object Completions:
     case Shell.Fish =>
       t"""|function completions
           |  set position (count (commandline --tokenize --cut-at-cursor))
-          |  ${command} '{completions}' fish $$position (commandline -C -t) (tty) -- (commandline -o)
+          |  ${command} '{completions}' fish $$position (commandline -C -t) (tty) \\
+          |    -- (commandline -o)
           |end
           |complete -f -c $command -a '(completions)'
           |""".s.stripMargin.tt
 
     case Shell.Bash =>
       t"""|_${command}_complete() {
-          |  readarray -t COMPREPLY < <(${command} '{completions}' bash $$COMP_CWORD 0 $$(tty) -- $$COMP_LINE)
+          |  _init_completion -n = || return
+          |  readarray -t COMPREPLY < <(${command} '{completions}' bash $$COMP_CWORD 0 $$(tty) \\
+          |    -- $${COMP_WORDS[@]})
           |}
           |complete -F _${command}_complete $command
           |""".s.stripMargin.tt

@@ -85,17 +85,35 @@ package executives:
               case t"fish" => Shell.Fish
               case _       => Shell.Bash
 
-            val focus = if shell == Shell.Zsh then focus0 - 1 else focus0
+            val focus1 =
+              if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
 
-            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus - 1, position))
+            Cli.log(s"$shellName $focus1 $position $tty -- $command $rest")
+
+
+            def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
+              case Nil                                 => done.reverse
+              case t"=" :: tail if shell == Shell.Bash => read(tail, false, done)
+
+              case head :: tail =>
+                read(tail, head.starts(t"--"), head :: done)
+
+            val rest2 = read(rest.to(List), false, Nil)
+            val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
+            Cli.log(t"rest2 = ${rest2.inspect}")
+
+            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position))
+
+            val equalses = rest.take(focus0).count(_ == t"=")
+            val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 
             Completion
-             (Cli.arguments(arguments, focus - 1, position, tab),
-              Cli.arguments(rest, focus - 1, position, tab),
+             (Cli.arguments(arguments, focus2, position, tab),
+              Cli.arguments(rest2, focus2, position, tab),
               environment,
               workingDirectory,
               shell,
-              focus - 1,
+              focus2,
               position,
               stdio,
               signals,

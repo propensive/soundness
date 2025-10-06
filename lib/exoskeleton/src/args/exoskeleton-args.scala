@@ -94,6 +94,8 @@ package interpreters:
           val focus2 = current.let: current =>
             val focusCursor: Ordinal = current.cursor.or(current.value.length).z
 
+            Cli.log(s"current: $current   focusCursor: $focusCursor")
+
             (parameters2.keySet ++ parameters2.values.flatten).find: argument =>
               current.position == argument.position && argument.contains(focusCursor)
 
@@ -105,6 +107,8 @@ package interpreters:
           case head :: tail =>
             if head.value == t"--" then push().copy(postpositional = tail)
             else if head.value.starts(t"-") then recur(tail, Nil, head, push())
+            //else if head.value == t"=" && arguments == Nil
+            //then recur(tail, Nil, current, commandline)
             else
               val commandline2 =
                 if head.cursor.present then commandline.copy(focus = current) else commandline
