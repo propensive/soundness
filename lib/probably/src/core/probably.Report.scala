@@ -73,8 +73,6 @@ object Report:
   given detail: Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
 
 class Report(using Environment):
-  private val githubCi: Boolean = safely(Environment.githubActions[Text]).present
-
   val metrics = textMetrics.eastAsianScripts
   given measurable: Char is Measurable:
     def width(char: Char): Int = char match

@@ -35,7 +35,7 @@ package soundness
 export probably
 . { Baseline, Benchmark, Inclusion, Verdict, Runner, Test, Harness, TestId, Report,
     Reporter, Trial, Testable, Tolerance, Min, Mean, Max, BySpeed, ===, !==, ByTime, Geometric,
-    Arithmetic, +/-, test, suite, aspire, assert, check, matches, debug, Checkable }
+    Arithmetic, +/-, test, suite, aspire, assert, check, matches, debug, Checkable, githubActions }
 
 package harnesses:
   export probably.harnesses.threadLocal
