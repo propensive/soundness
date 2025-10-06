@@ -174,8 +174,7 @@ extension [plane: System](path: Path on plane)
       destination
 
 
-  def copyInto
-       (destination: Path on plane)
+  def copyInto(destination: Path on plane)
        (using overwritePreexisting: OverwritePreexisting on plane,
               dereferenceSymlinks:  DereferenceSymlinks,
               substantiable:        (Path on plane) is Substantiable)
@@ -257,7 +256,7 @@ extension [plane: System](path: Path on plane)
     jnf.Files.setLastModifiedTime
      (path.javaPath, jnfa.FileTime.fromMillis(java.lang.System.currentTimeMillis))
 
-  def make[EntryType: Makable on plane](): EntryType.Result = EntryType.make(path)
+  def make[entry: Makable on plane](): entry.Result = entry.make(path)
 
 extension (path: Path on Windows)
   def created[instant: Instantiable across Instants from Long](): instant raises IoError =

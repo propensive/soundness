@@ -34,12 +34,19 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import contingency.*
 import denominative.*
 import distillate.*
+import eucalyptus.*
+import fulminate.*
 import gossamer.*
+import guillotine.*
+import parasite.*
 import profanity.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -61,12 +68,15 @@ package executives:
           environment:      Environment,
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
-          signals:          Spool[Signal])
+          signals:          Spool[Signal],
+          service:          ShellContext,
+          login:            Login)
          (using interpreter: Interpreter)
     : Cli =
 
         arguments match
-          case t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position) :: tty :: t"--"
+          case t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty
+               :: t"--"
                :: command
                :: rest =>
 
@@ -75,33 +85,77 @@ package executives:
               case t"fish" => Shell.Fish
               case _       => Shell.Bash
 
-            val focus = if shell == Shell.Zsh then focus0 - 1 else focus0
+            val focus1 =
+              if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
 
-            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus - 1, position))
+
+            def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
+              case Nil                                 => done.reverse
+              case t"=" :: tail if shell == Shell.Bash => read(tail, false, done)
+
+              case head :: tail =>
+                read(tail, head.starts(t"--"), head :: done)
+
+            val rest2 = read(rest.to(List), false, Nil)
+            val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
+            val position = if shell == Shell.Bash then Unset else position0
+            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
+            val equalses = rest.take(focus0).count(_ == t"=")
+            val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 
             Completion
-             (Cli.arguments(arguments, focus - 1, position, tab),
-              Cli.arguments(rest, focus - 1, position, tab),
+             (Cli.arguments(arguments, focus2, position, tab),
+              Cli.arguments(rest2, focus2, position, tab),
               environment,
               workingDirectory,
               shell,
-              focus - 1,
+              focus2,
               position,
               stdio,
               signals,
               tty,
-              tab)
+              tab,
+              login)
+
+          case t"{admin}" :: command :: Nil =>
+            given Stdio = stdio
+            command match
+              case t"pid"     => Out.println(OsProcess().pid.value.show) yet Exit.Ok
+              case t"kill"    => java.lang.System.exit(0) yet Exit.Ok
+
+              case t"await"   =>
+                Cli.prepare()
+                safely(Cli.await()).or(Nil).map(Out.println(_))
+                Exit.Ok
+
+              case t"install" =>
+                given ShellContext = service
+                given WorkingDirectory = workingDirectory
+                import errorDiagnostics.stackTraces
+                import logging.silent
+                Out.println(Completions.ensure(force = true).join(t"\n"))
+                Exit.Ok
+
+              case _       =>
+                Exit.Fail(1)
+
+            Invocation
+             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, false, login)
 
           case other =>
-            Invocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
+            Invocation
+             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, true, login)
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
       case completion: Completion =>
-        given stdio: Stdio = completion.stdio
+        given Stdio = completion.stdio
         completion.serialize.each(Out.println(_))
+        Cli.done()
         Exit.Ok
 
       case invocation: Invocation =>
+        given Stdio = invocation.stdio
+
         try execution(using invocation).exitStatus
         catch case error: Throwable => backstop.handle(error)(using invocation.stdio)

@@ -39,6 +39,8 @@ import escapade.*
 import gossamer.*
 import guillotine.*
 import hieroglyph.*, textMetrics.uniform
+import hypotenuse.*
+import inimitable.*
 import profanity.*
 import proscenium.*
 import rudiments.*
@@ -56,31 +58,45 @@ case class Completion
     workingDirectory: WorkingDirectory,
     shell:            Shell,
     currentArgument:  Int,
-    focusPosition:    Int,
+    focusPosition:    Optional[Int],
     stdio:            Stdio,
     signals:          Spool[Signal],
     tty:              Text,
-    tab:              Ordinal)
+    tab:              Ordinal,
+    login:            Login)
    (using interpreter: Interpreter)
 extends Cli:
-  private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
+  private lazy val parameters: interpreter.Topic = interpreter.interpret(arguments)
 
   val flags: scm.HashMap[Flag, Discoverable] = scm.HashMap()
   val seenFlags: scm.HashSet[Flag] = scm.HashSet()
   var explanation: Optional[Text] = Unset
   var cursorSuggestions: List[Suggestion] = Nil
-
+  def proceed: Boolean = true
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   : Optional[operand] =
+
       given cli: Cli = this
       parameters.read(flag)
 
 
-  def focus: Argument = arguments(currentArgument)
+  def focused(argument: Argument): Boolean =
+    currentArgument == argument.position && argument.format.match
+      case Argument.Format.Full              => true
+      case Argument.Format.EqualityPrefix    => false
+      case Argument.Format.EqualitySuffix    => argument.value.contains(t"=")
+      case Argument.Format.CharFlag(ordinal) => false
+      case Argument.Format.FlagSuffix        => focusPosition.let(_.z > Sec).or(true)
 
   override def register(flag: Flag, discoverable: Discoverable): Unit =
+    val operands = parameters.at(flag)
+
     parameters.focus.let: argument =>
+      if operands.contains(argument) then
+        val allSuggestions = discoverable.discover(tab).to(List)
+        if allSuggestions != Nil then cursorSuggestions = allSuggestions
+
       if flag.matches(argument) && currentArgument == argument.position + 1 then
         val allSuggestions = discoverable.discover(tab).to(List)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
@@ -88,11 +104,19 @@ extends Cli:
     if !flag.secret then flags(flag) = discoverable
 
   override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
+
   override def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit =
     explanation = update(using explanation)
 
-  override def suggest(argument: Argument, update: (prior: List[Suggestion]) ?=> List[Suggestion]) =
-    if argument == focus then cursorSuggestions = update(using cursorSuggestions)
+  override def suggest
+                (argument: Argument,
+                 update:   (prior: List[Suggestion]) ?=> List[Suggestion],
+                 prefix:   Text,
+                 suffix:   Text) =
+    if focused(argument) then
+      cursorSuggestions = update(using cursorSuggestions).map: suggestion =>
+        if suggestion.expanded then suggestion
+        else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
     (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>
@@ -103,20 +127,23 @@ extends Cli:
           case main :: aliases =>
             List
              (Suggestion
-               (Flag.serialize(main),
-                flag.description,
-                aliases = aliases.map(Flag.serialize(_))))
+               (Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
 
           case Nil => Nil
 
       else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases =
           flag.aliases.map(Flag.serialize(_))))
 
+  def focusText: Text = arguments.find(_.position == currentArgument).get.value
+
   def serialize: List[Text] =
-    val items =
-      if cursorSuggestions.isEmpty && parameters.focus.absent
-      then flagSuggestions(focus().starts(t"--"))
+    val items0 =
+      if cursorSuggestions.isEmpty
+      then flagSuggestions(focusText.starts(t"--"))
       else cursorSuggestions
+
+
+    val items = parameters.focus.lay(items0) { focus => items0.map(focus.wrap(_)) }
 
     shell match
       case Shell.Zsh =>
@@ -127,54 +154,42 @@ extends Cli:
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
 
         val itemLines: List[Command] = items.flatMap:
-          case Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix) =>
+          case Suggestion(core0, description, hidden, incomplete, aliases, prefix, suffix, _) =>
             val hiddenParam = if hidden then sh"-n" else sh""
-            val aliasText = aliases.join(t" ").fit(aliasesWidth)
+            val shortFlag = focusText.starts(t"-") && !focusText.starts(t"--")
+            val aliasText = if shortFlag then core0 else aliases.join(t" ").fit(aliasesWidth)
             val prefix2 = if prefix.empty then sh"" else sh"-p $prefix"
             val suffix2 = if suffix.empty then sh"" else sh"-s $suffix"
-
-            val text = prefix+core+suffix
+            val core = if shortFlag then aliases.headOption.getOrElse(core0) else core0
 
             val mainLine = description.absolve match
               case Unset =>
                 if prefix.empty then sh"'' $hiddenParam -- $core"
-                else sh"'' $hiddenParam -U $prefix2 $suffix2 -- $core"
+                else sh"'' $hiddenParam $prefix2 $suffix2 -- $core"
 
               case description: Text =>
-                sh"'${core.fit(width)} $aliasText -U $prefix2 $suffix2 -- $description' -d desc -l $hiddenParam -- $core"
+                sh"'${core.fit(width)} $aliasText -- $description' $prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
 
               case description: Teletype =>
                 val desc = description.render(termcap)
-                sh"'${core.fit(width)} $aliasText -U $prefix2 $suffix2 -- $desc' -d desc -l $hiddenParam -- $core"
+                sh"'${core.fit(width)} $aliasText -- $desc' $prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
 
             val duplicateLine =
-              if !incomplete then List() else List(sh"'' -U $prefix2 $suffix2 -S '' -- $core")
+              if !incomplete then List() else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
 
-            val aliasLines = aliases.map: text =>
-              description.absolve match
-                case Unset             =>
-                  sh"'' -n -- $text"
-
-                case description: Text =>
-                  sh"'${core.fit(width)} $aliasText -- $description' -d desc -l -n -- $core"
-
-                case description: Teletype =>
-                  val desc = description.render(termcap)
-                  sh"'${core.fit(width)} $aliasText -- $desc' -d desc -l -n -- $core"
-
-            mainLine :: duplicateLine ::: aliasLines
+            mainLine :: duplicateLine
 
         (title ++ itemLines).map(_.arguments.join(t"\u0000"))
 
       case Shell.Bash =>
         items.filter(!_.hidden).flatMap: suggestion =>
-          suggestion.text :: suggestion.aliases
+          (suggestion.text :: suggestion.aliases)
 
-        . filter(_.starts(focus()))
+        . filter(_.starts(focusText))
 
       case Shell.Fish =>
         items.flatMap:
-          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _) =>
+          case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _) =>
             (suggestion.text :: aliases).map: text =>
               description.absolve match
                 case Unset                 => t"$text"

@@ -54,7 +54,7 @@ package threading:
   given virtual: Threading = () => VirtualSupervisor
   given adaptive: Threading = () => AdaptiveSupervisor
 
-package asyncTermination:
+package codicils:
   given await: Codicil = _.delegate(_.attend())
   given cancel: Codicil = _.delegate(_.cancel())
 

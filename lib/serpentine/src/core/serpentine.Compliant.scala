@@ -30,11 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package serpentine
 
-import anticipation.*
-import gossamer.*
-import hellenism.*
-import serpentine.*
+import prepositional.*
 
-case class Dispatch[output, format, target](target: target, remote: (format => format) => output)
+trait Compliant extends Typeclass, Planar

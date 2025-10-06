@@ -40,3 +40,4 @@ case class Arguments(sequence: Argument*) extends Flags:
       Unset // FIXME
 
   def focus: Optional[Argument] = Unset
+  def at(flag: Flag): List[Argument] = Nil

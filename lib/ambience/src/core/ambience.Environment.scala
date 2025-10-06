@@ -42,7 +42,6 @@ import vacuous.*
 
 trait Environment:
   def variable(name: Text): Optional[Text]
-  def knownVariables: Set[Text] = Set()
 
 object Environment extends Dynamic:
   def apply[variable](variable: Text)

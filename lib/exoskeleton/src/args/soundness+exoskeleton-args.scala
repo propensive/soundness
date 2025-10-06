@@ -36,5 +36,5 @@ export exoskeleton
 . { Argument, Arguments, Cli, Interpreter, Flag, Interpretable, Flags, Commandline, Shell,
     Subcommand, Suggestion, Discoverable, Suggestible, Switch, arguments }
 
-package parameterInterpretation:
-  export exoskeleton.parameterInterpretation.{simple, posix}
+package interpreters:
+  export exoskeleton.interpreters.{simple, posix, posixClustering}

@@ -52,29 +52,20 @@ import textSanitizers.skip
 import systemProperties.jre
 import classloaders.system
 
-object Jvm extends Dispatcher:
+object Jvm extends Rig:
   type Result[output] = output
   type Form = Text
   type Target = LocalClasspath
   type Transport = Json
 
-  def deploy(out: Path on Linux): LocalClasspath =
-    classloaders.threadContext.classpath match
-      case classpath: LocalClasspath =>
-        LocalClasspath(classpath.entries :+ Classpath.Directory(out))
-
-      case _ =>
-        val systemClasspath = unsafely(Properties.java.`class`.path().decode[LocalClasspath])
-        LocalClasspath(Classpath.Directory(out) :: systemClasspath.entries)
-
+  def stage(out: Path on Linux): LocalClasspath = classpath(out)
 
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
-  protected def invoke[output](dispatch: Dispatch[output, Form, Target]): output =
+  protected def invoke[output](stage: Stage[output, Form, Target]): output =
     import workingDirectories.systemProperties
     import logging.silent
 
-    dispatch.remote: input =>
-      println("Using "+input)
-      val cmd = sh"java -classpath ${dispatch.target()} superlunary.Executor $input"
+    stage.remote: input =>
+      val cmd = sh"java -classpath ${stage.target()} superlunary.Executor $input"
       unsafely(cmd.exec[Text]())

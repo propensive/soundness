@@ -30,14 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package superlunary
 
-import anticipation.*
-import rudiments.*
+import java.io as ji
+import scala.reflect.Selectable.reflectiveSelectable
 
-abstract class Application:
-  import executives.direct
-  import backstops.genericErrorMessage
-  import interpreters.posix
-  def invoke(using Cli): Exit
-  def main(textArguments: IArray[Text]): Unit = application(textArguments)(invoke)
+import vacuous.*
+
+object Executor2:
+  def main(input: Array[String]): Unit =
+    val cls = Class.forName("Generated$Code$From$Quoted").nn
+    val instance = cls.getDeclaredConstructor().nn.newInstance().nn
+    val method = cls.getMethod("apply").nn
+    val function = method.invoke(instance)
+    val cls2 = function.getClass
+    val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
+    method2.setAccessible(true)
+    val parameters = Optional(System.getenv("INPUT_PARAMETERS")).or("""["failed"]""")
+    method2.invoke(function, parameters)

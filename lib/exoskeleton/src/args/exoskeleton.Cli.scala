@@ -34,13 +34,28 @@ package exoskeleton
 
 import ambience.*
 import anticipation.*
+import contingency.*
 import denominative.*
 import gossamer.*
+import parasite.*
 import profanity.*
 import rudiments.*
 import vacuous.*
 
 object Cli:
+  private var messages: List[Text] = Nil
+  private var trigger: Promise[Unit] = Promise()
+
+  def prepare(): Unit =
+    messages = Nil
+    trigger = Promise()
+
+  def done(): Unit = trigger.offer(())
+
+  def log(input: Text): Unit = messages ::= input
+
+  def await(): List[Text] = safely(trigger.await(10000L)) yet messages.reverse
+
   def arguments
        (textArguments: Iterable[Text],
         focus:         Optional[Int]     = Unset,
@@ -49,13 +64,15 @@ object Cli:
   : List[Argument] =
 
       textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
-        Argument(index, text, if focus == index then position else Unset, tab)
+        Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
 
 
 trait Cli extends Console:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
+  def proceed: Boolean
+  def login: Login
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   : Optional[operand]
@@ -63,4 +80,10 @@ trait Cli extends Console:
   def register(flag: Flag, discoverable: Discoverable): Unit = ()
   def present(flag: Flag): Unit = ()
   def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit = ()
-  def suggest(argument: Argument, update: (prior: List[Suggestion]) ?=> List[Suggestion]) = ()
+
+  def suggest
+       (argument: Argument,
+        update:   (prior: List[Suggestion]) ?=> List[Suggestion],
+        prefix:   Text,
+        suffix:   Text) =
+    ()

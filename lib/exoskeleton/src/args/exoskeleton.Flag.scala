@@ -73,7 +73,7 @@ case class Flag
        (using cli:             Cli,
               interpreter:     Interpreter,
               interpretable:   operand is Interpretable,
-              suggestions:     (? <: operand) is Discoverable   = Discoverable.noSuggestions)
+              suggestions:     (? <: operand) is Discoverable = Discoverable.noSuggestions)
   : Optional[operand] =
 
       cli.register(this, suggestions)

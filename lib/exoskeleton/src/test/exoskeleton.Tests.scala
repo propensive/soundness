@@ -35,7 +35,204 @@ package exoskeleton
 import soundness.*
 
 import unsafeExceptions.canThrowAny
+import classloaders.system
+import environments.jre
+import systemProperties.jre
+import temporaryDirectories.systemProperties
+import workingDirectories.jre
+import supervisors.global
+import logging.silent
+import embeddings.automatic
+import autopsies.contrastExpectations
+import threading.platform
+
+import strategies.throwUnsafely
+import backstops.silent
+import errorDiagnostics.stackTraces
+import stdioSources.virtualMachine.ansi
+
+import Shell.*
 
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
-    ()
+    val foo: Text = "hello"
+    Sandbox(t"abcd").dispatch:
+      '{  import executives.completions
+          import interpreters.posix
+
+          val Alpha = Subcommand("alpha", e"a command to run")
+          val Beta = Subcommand("beta", e"another command to run")
+          val Distribution = Subcommand("distribution", e"a different command to run")
+          val RedHat = Subcommand("red hat", e"Red Hat Linux")
+          val Ubuntu = Subcommand("ubuntu", e"Ubuntu")
+          val Gentoo = Subcommand("gentoo", e"Gentoo Linux")
+
+          class Color(name: Text)
+
+          cli:
+            arguments match
+              case Alpha() :: _ => execute(Exit.Ok)
+              case Beta() :: _  => execute(Exit.Ok)
+              case Distribution() :: distribution =>
+                distribution match
+                  case RedHat() :: _ =>
+                    Flag("one", description = t"there is only one")()
+                    execute(Exit.Ok)
+                  case Ubuntu() :: _ =>
+                    Flag("one", description = t"the first one")()
+                    Flag("two", description = t"the second one")()
+                    execute(Exit.Ok)
+                  case Gentoo() :: _ =>
+                    given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
+                    given Color is Interpretable =
+                      case arg :: Nil => Color(arg())
+                      case _          => Color(t"unknown")
+
+                    Flag("color", false, List('f'), description = "red, green or blue")[Color]()
+                    execute(Exit.Ok)
+
+                  case _             => execute(Exit.Ok)
+
+              case _            => execute(Exit.Fail(1))
+
+          t"finished"  }
+
+    . sandbox:
+        println(summon[Sandbox.Tool].path.encode)
+        test(m"Test subcommands on bash"):
+          Bash.tmux()(Tmux.completions(t""))
+        . assert(_ == t"alpha         beta          distribution")
+
+        test(m"Test subcommands on zsh"):
+          Zsh.tmux()(Tmux.completions(t""))
+        . assert(_ == t"alpha          -- a command to run\nbeta           -- another command to run\ndistribution   -- a different command to run")
+
+        test(m"Test subcommands on fish"):
+          Fish.tmux(width = 120)(Tmux.completions(t""))
+        . assert(_ == t"alpha  (a command to run)  beta  (another command to run)  distribution  (a different command to run)")
+
+        test(m"Test subcommands with spaces on bash"):
+          Bash.tmux()(Tmux.completions(t"distribution "))
+        . assert(_ == t"gentoo   red hat  ubuntu")
+
+        test(m"Test subcommands with spaces on zsh"):
+          Zsh.tmux()(Tmux.completions(t"distribution "))
+        . assert(_ == t"gentoo    -- Gentoo Linux\nred hat   -- Red Hat Linux\nubuntu    -- Ubuntu")
+
+        test(m"Test subcommands with spaces on fish"):
+          Fish.tmux(width = 120)(Tmux.completions(t"distribution "))
+        . assert(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
+
+        test(m"Test flags on bash"):
+          Bash.tmux()(Tmux.completions(t"distribution ubuntu "))
+        . assert(_ == t"--one  --two")
+
+        test(m"Test flags on fish"):
+          Fish.tmux(width = 120)(Tmux.completions(t"distribution ubuntu "))
+        . assert(_ == t"--one  (the first one)  --two  (the second one)")
+
+        test(m"Autocomplete progress for flag in Fish"):
+          Fish.tmux(width = 120):
+            Tmux.progress(t"distribution ubuntu ")
+        . assert(_ == t"distribution ubuntu --^")
+
+        test(m"Autocomplete progress for flag in Bash"):
+          Bash.tmux():
+            Tmux.progress(t"distribution ubuntu ")
+        . assert(_ == t"distribution ubuntu --^")
+
+        test(m"Autocomplete progress for flag in Zsh"):
+          Zsh.tmux():
+            Tmux.progress(t"distribution ubuntu ")
+        . assert(_ == t"distribution ubuntu --^")
+
+        test(m"Test flags on zsh"):
+          Zsh.tmux()(Tmux.completions(t"distribution ubuntu --"))
+        . assert(_ == t"--one   -- the first one\n--two   -- the second one")
+
+        test(m"Test capture 1"):
+          tool.completions:
+            Zsh.tmux()(Tmux.completions(t"distribution ubuntu "))
+
+        . assert()
+
+        test(m"Test subcommands with spaces on zsh"):
+          Zsh.tmux()(Tmux.completions(t"distribution "))
+        . assert(_ == t"gentoo    -- Gentoo Linux\nred hat   -- Red Hat Linux\nubuntu    -- Ubuntu")
+
+        test(m"Test capture 2"):
+          Zsh.tmux()(Tmux.completions(t"distribution "))
+
+        . assert()
+
+        test(m"flag parameter on zsh"):
+          Zsh.tmux()(Tmux.completions(t"distribution gentoo --color "))
+        . assert(_ == t"blue   green  red")
+
+        test(m"flag parameter on bash"):
+          Bash.tmux()(Tmux.completions(t"distribution gentoo --color "))
+        . assert(_ == t"blue   green  red")
+
+        test(m"flag parameter on fish"):
+          Fish.tmux()(Tmux.completions(t"distribution gentoo --color "))
+        . assert(_ == t"blue  green  red")
+
+        test(m"flag parameter with `=` on zsh"):
+          Zsh.tmux()(Tmux.completions(t"distribution gentoo --color="))
+        . assert(_ == t"blue   green  red")
+
+        test(m"flag parameter with `=` on bash"):
+          Bash.tmux()(Tmux.completions(t"distribution gentoo --color="))
+        . assert(_ == t"blue   green  red")
+
+        test(m"flag parameter with `=` on fish"):
+          Fish.tmux()(Tmux.completions(t"distribution gentoo --color="))
+        . assert(_ == t"--color=blue  --color=green  --color=red")
+
+        test(m"completion of flag parameter with `=` on zsh"):
+          Zsh.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+        . assert(_ == t"distribution gentoo --color=blue ^")
+
+        test(m"completion of flag parameter with `=` on bash"):
+          Bash.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+        . assert(_ == t"distribution gentoo --color=blue ^")
+
+        test(m"completion of flag parameter with `=` on fish"):
+          Fish.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+        . assert(_ == t"distribution gentoo --color=blue ^")
+
+        test(m"short flag options on zsh"):
+          Zsh.tmux()(Tmux.progress(t"distribution gentoo -"))
+        . assert(_ == t"distribution gentoo -f ^")
+
+        test(m"short flag options on fish"):
+          Fish.tmux()(Tmux.completions(t"distribution gentoo -"))
+        . assert(_ == t"-f  --color  (red, green or blue)")
+
+        test(m"short flag options on bash"):
+          Bash.tmux()(Tmux.completions(t"distribution gentoo -"))
+        . assert(_ == t"--color  -f")
+
+        test(m"flag options on zsh"):
+          Zsh.tmux()(Tmux.progress(t"distribution gentoo --"))
+        . assert(_ == t"distribution gentoo --color ^")
+
+        test(m"flag options on fish"):
+          Fish.tmux()(Tmux.progress(t"distribution gentoo --"))
+        . assert(_ == t"distribution gentoo --color ^")
+
+        test(m"flag options on bash"):
+          Bash.tmux()(Tmux.progress(t"distribution gentoo --"))
+        . assert(_ == t"distribution gentoo --color ^")
+
+        test(m"completion of short flag parameter on zsh"):
+          Zsh.tmux()(Tmux.progress(t"distribution gentoo -fb"))
+        . assert(_ == t"distribution gentoo -fblue ^")
+
+        test(m"completion of short flag parameter on bash"):
+          Bash.tmux()(Tmux.progress(t"distribution gentoo -fb"))
+        . assert(_ == t"distribution gentoo -fblue ^")
+
+        test(m"completion of short flag parameter on fish"):
+          Fish.tmux()(Tmux.progress(t"distribution gentoo -fb"))
+        . assert(_ == t"distribution gentoo -fblue ^")

@@ -34,7 +34,7 @@ package soundness
 
 export ambience
 . { Environment, EnvironmentError, EnvironmentVariable, Properties, PropertyAccess,
-    SystemProperties, SystemProperty, SystemPropertyError, Xdg }
+    SystemProperties, SystemProperty, SystemPropertyError, Xdg, variables }
 
 package systemProperties:
   export ambience.systemProperties.{empty, jre}

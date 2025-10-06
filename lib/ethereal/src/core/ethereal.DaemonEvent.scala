@@ -33,6 +33,7 @@
 package ethereal
 
 import anticipation.*
+import exoskeleton.*
 import guillotine.*
 import profanity.*
 
@@ -41,6 +42,7 @@ import language.experimental.pureFunctions
 enum DaemonEvent:
   case Init
         (pid:         Pid,
+         login:       Login,
          work:        Text,
          script:      Text,
          cliInput:    Stdin,

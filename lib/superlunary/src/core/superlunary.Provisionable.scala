@@ -32,108 +32,58 @@
                                                                                                   */
 package superlunary
 
-import java.util.function as juf
-
-import ambience.*
-import anthology.*
 import anticipation.*
+import austronesian.*
 import contingency.*
-import digression.*
-import distillate.*
-import galilei.*
-import hellenism.*
-import inimitable.*
-import nomenclature.*
+import distillate.{as as _, *}
+import fulminate.*
+import jacinta.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import serpentine.*
-import spectacular.*
-import symbolism.*
-import vacuous.*
 
 import interfaces.paths.pathOnLinux
+import errorDiagnostics.stackTraces
+import strategies.mitigation
 
 import scala.quoted.*
 
+object Stageable:
+  given json: Stageable:
+    type Transport = Json
+    type Form = Text
 
-trait Dispatcher(using classloader: Classloader) extends Targetable, Formal, Transportive:
-  type Result[output]
+    inline def deserialize(text: Text | Null): Array[Object] =
+      provide[Tactic[RemoteError]]:
+        given RemoteError mitigates JsonError = error => RemoteError(RemoteError.Reason.Deserialization)
+        Array.from(provide[Json is Decodable in Text](text.nn.decode[Json].as[List[Json]]))
+
+    inline def serialize(value: Array[Object]): Text =
+      value.to(List).map(_.asInstanceOf[Json]).json.encode
+
+    inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.json)
+
+    inline def extract[entity](json: Json): entity = provide[Tactic[RemoteError]]:
+      given RemoteError mitigates JsonError = error => RemoteError(RemoteError.Reason.Unknown)
+      provide[entity is Decodable in Json](json.as[entity])
+
+  given pojo: Stageable:
+    type Transport = Pojo
+    type Form = Array[Pojo]
+
+    inline def deserialize(value: Array[Pojo] | Null): Array[Object] = value.asInstanceOf[Array[Object]]
+    inline def serialize(value: Array[Object]): Array[Pojo] = value.asInstanceOf[Array[Pojo]]
+
+    inline def embed[entity](value: entity): Pojo =
+      infer[entity is Encodable in Pojo].encoded(value)
+
+    inline def extract[entity](pojo: Pojo): entity =
+      infer[entity is Decodable in Pojo].decoded(pojo)
+
+trait Stageable extends Transportive, Formal:
   type Transport <: Object
 
-  protected val scalac: Scalac[?]
-  protected def invoke[output](dispatch: Dispatch[output, Form, Target]): Result[output]
-  private var cache: Map[Codepoint, (Target, juf.Function[Form, Form])] = Map()
-
-  lazy val settings2: staging.Compiler.Settings =
-    staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
-
-  lazy val compiler2: staging.Compiler = staging.Compiler.make(classloader.java)(using settings2)
-
-  def deploy(path: Path on Linux): Target
-
-  inline def dispatch[output]
-              (body: (References over Transport) ?=> Quotes ?=> Expr[output])
-              [version <: Scalac.Versions]
-              (using codepoint:    Codepoint,
-                     properties:   SystemProperties,
-                     directory:    TemporaryDirectory,
-                     dispatchable: Dispatchable over Transport in Form)
-  : Result[output] raises CompilerError raises RemoteError =
-
-      val references: References over Transport = References[Transport]()
-
-      val (target, function): (Target, juf.Function[Form, Form]) =
-        if cache.contains(codepoint) then
-          given staging.Compiler = compiler2
-
-          // This is necessary to allocate references as a side effect
-          staging.withQuotes:
-            '{  (array: Array[Object]) =>
-                  ${  references() = 'array
-                      body(using references)  }  }
-
-          cache(codepoint)
-
-        else
-          val uuid = Uuid()
-
-          val out =
-            import strategies.throwUnsafely
-            (temporaryDirectory / uuid).on[Linux]
-
-          val settings: staging.Compiler.Settings =
-            staging.Compiler.Settings.make
-              (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
-
-          given compiler: staging.Compiler =
-            staging.Compiler.make(classloader.java)(using settings)
-
-          val function: juf.Function[Form, Form] = staging.run:
-            '{  form =>
-                  dispatchable.serialize:
-
-                    val array = new Array[Object](1)
-                    array(0) =
-                      dispatchable.embed[output]
-                       (${  references() = '{dispatchable.deserialize(form)}
-                            body(using references)  })
-                    array  }
-
-          val target = deploy(out)
-          cache = cache.updated(codepoint, (target, function))
-
-          (target, function)
-
-      invoke[output]
-        (Dispatch
-          (target,
-          function =>
-            dispatchable.extract[output]:
-              dispatchable.deserialize(function(dispatchable.serialize(references())))
-              . head.asInstanceOf[Transport]))
-
-      // catch case throwable: Throwable =>
-      //   println(throwable)
-      //   throwable.printStackTrace()
-      //   abort(CompilerError())
+  inline def embed[entity](value: entity): Transport
+  inline def serialize(values: Array[Object]): Form
+  inline def deserialize(value: Form | Null): Array[Object]
+  inline def extract[entity](value: Transport): entity

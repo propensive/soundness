@@ -30,14 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package ambience
+
+import language.dynamics
 
 import anticipation.*
+import contingency.*
+import gossamer.*
+import proscenium.*
 import rudiments.*
+import vacuous.*
 
-abstract class Application:
-  import executives.direct
-  import backstops.genericErrorMessage
-  import interpreters.posix
-  def invoke(using Cli): Exit
-  def main(textArguments: IArray[Text]): Unit = application(textArguments)(invoke)
+object variables extends Dynamic:
+  inline def applyDynamicNamed[result](apply: "apply")(variables: (String, Text)*)
+              (using environment0: Environment)
+              (block: Environment ?=> result)
+  : result =
+
+      val map = variables.map(_.tt.uncamel.snake.upper -> _).toMap
+      val environment: Environment = name => map.at(name).or(environment0.variable(name))
+      block(using environment)

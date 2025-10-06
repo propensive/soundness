@@ -106,8 +106,7 @@ object Teletypeable:
 
     val packages: Map[Text, Int] =
       dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
-      . zipWithIndex.map: (prefix, idx) =>
-          prefix -> heat(idx)
+      . zipWithIndex.map(_ -> heat(_))
       . to(Map)
 
     val methodWidth = stack.frames.map(_.method.method.length).maxOption.getOrElse(0)
@@ -135,11 +134,8 @@ object Teletypeable:
           val color = packages(frame.method.prefix)
           if sameClass
           then
-            val prefixLength = frame.method.prefix.length
-            val classLength = frame.method.cls.length
-            val pkg = e"${Fg(color/2)}(${t"⠐"*prefixLength})"
-            val cls = e"$Bold(${Fg(color)}(${t"⠂"*classLength}))"
-            e"${t" "*(classWidth - prefixLength - classLength - 1)}$pkg $cls"
+            e"${Fg(0x222222)}(${frame.method.prefix}.${frame.method.cls})"
+            . fit(classWidth, Rtl)
           else
             e"${Fg(color/2)}(${frame.method.prefix}.$Bold(${Fg(color)}(${frame.method.cls})))"
             . fit(classWidth, Rtl)
@@ -148,9 +144,9 @@ object Teletypeable:
         val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"")})"
         val sameFile = frame.file == lastFile
         lastFile = frame.file
-        val file2 = (if sameFile then t"⠂"*frame.file.length else frame.file).fit(fileWidth, Rtl)
+        val file2 = frame.file.fit(fileWidth, Rtl)
 
-        e"$msg\n  $gray(at) $className$gray($dot)$method ${Fg(0x5faeaf)}($file2)$gray(:)$line"
+        e"$msg\n  $gray(at) $className$gray($dot)$method ${Fg(if sameFile then 0x111111 else 0x5faeaf)}($file2)$gray(:)$line"
 
     stack.cause.lay(root): cause =>
       e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"

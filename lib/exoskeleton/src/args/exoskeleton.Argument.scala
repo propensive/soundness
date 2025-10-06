@@ -35,17 +35,66 @@ package exoskeleton
 import anticipation.*
 import denominative.*
 import gossamer.*
+import hypotenuse.*
 import rudiments.*
+import spectacular.*
+import symbolism.*
 import vacuous.*
 
-case class Argument(position: Int, value: Text, cursor: Optional[Int], tab: Optional[Ordinal]):
-  def apply(): Text = value
+object Argument:
+  enum Format:
+    case Full, FlagSuffix, EqualityPrefix, EqualitySuffix
+    case CharFlag(index: Ordinal)
+
+  given inspectable: Argument is Inspectable = argument =>
+    t"${argument.position}: ${argument.value.inspect} / ${argument.format} => ${argument().inspect}"
+
+
+case class Argument
+            (position: Int,
+             value:    Text,
+             cursor:   Optional[Int],
+             tab:      Optional[Ordinal],
+             format:   Argument.Format):
+
+  override def toString(): String = this.inspect.s
+
+  def wrap(suggestion: Suggestion): Suggestion = format match
+    case Argument.Format.Full            => suggestion
+    case Argument.Format.FlagSuffix      => suggestion.copy(prefix = value.keep(2))
+    case Argument.Format.CharFlag(index) => suggestion // FIXME
+    case Argument.Format.EqualityPrefix  => suggestion
+      suggestion.copy(core = suggestion.core+t"="+value.after(value.index("=").or(Prim)))
+    case Argument.Format.EqualitySuffix  =>
+      val suggestion2 = suggestion.copy(prefix = value.before(value.index("=").or(Prim))+t"=")
+      suggestion2
+
+  def apply(): Text = format match
+    case Argument.Format.Full            => value
+    case Argument.Format.FlagSuffix      => value.skip(2)
+    case Argument.Format.CharFlag(index) => t"-${value.at(index + 1).or('-')}"
+    case Argument.Format.EqualityPrefix  => value.before(value.index("=").or(Prim))
+    case Argument.Format.EqualitySuffix  => value.after(value.index("=").or(Prim))
+
   def prefix: Optional[Text] = cursor.let(value.keep(_))
   def suffix: Optional[Text] = cursor.let(value.skip(_))
 
-  def suggest(using cli: Cli)(update: (prior: List[Suggestion]) ?=> List[Suggestion]) =
-    cli.suggest(this, update)
+  def contains(ordinal: Ordinal) = format match
+    case Argument.Format.Full            => true
+    case Argument.Format.FlagSuffix      => ordinal > Sec
+    case Argument.Format.CharFlag(index) => ordinal - 2 == index
+    case Argument.Format.EqualityPrefix  => value.index("=").or(Prim) > ordinal
+    case Argument.Format.EqualitySuffix  => value.index("=").or(Prim) < ordinal
 
+  def suggest(using cli: Cli)(update: (prior: List[Suggestion]) ?=> List[Suggestion]) =
+    val (prefix, suffix) = format match
+      case Argument.Format.Full            => (t"", t"")
+      case Argument.Format.FlagSuffix      => (value.keep(2), t"")
+      case Argument.Format.CharFlag(index) => (value.before(index + 1), value.after(index + 1))
+      case Argument.Format.EqualityPrefix  => (t"", value.after(value.index("=").or(Prim)))
+      case Argument.Format.EqualitySuffix  => (value.before(value.index("=").or(Prim)), t"")
+
+    cli.suggest(this, update, prefix, suffix)
 
   def select[operand: Suggestible](options: Seq[operand])(using cli: Cli, interpreter: Interpreter)
   : Optional[operand] =
