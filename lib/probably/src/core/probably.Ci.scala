@@ -30,60 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package probably
 
-import soundness.*
+import ambience.*
+import anticipation.*
+import contingency.*
+import gossamer.*
+import vacuous.*
 
-import errorDiagnostics.stackTraces
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.overwritePreexisting.disabled
+object Ci:
+  import environments.jre
+  def apply(): Boolean =
+    githubActions || gitlabCi || circleCi || travisCi || jenkins || azurePipelines || teamCity
+    || bitbucketPipelines || buildkite || appVeyor || drone || semaphore || buddy
 
-extension (shell: Shell)
-  def tmux(width: Int = 80, height: Int = 24)[result](action: (tmux: Tmux) ?=> result)
-        (using WorkingDirectory, Sandbox.Tool, Monitor)
-  : result raises TmuxError logs ExecEvent =
-
-      mitigate:
-        case ExecError(_, _, _) => TmuxError()
-        case NumberError(_, _)  => TmuxError()
-
-      . within:
-          given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
-          val shellPath = shell match
-            case Shell.Zsh  => t"zsh"
-            case Shell.Fish => t"fish"
-            case Shell.Bash => t"bash"
-
-          sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellPath -l'".exec[Unit]()
-          Tmux.attend:
-            ()
-
-          val path = summon[Sandbox.Tool].path.parent.vouch.encode
-
-          shell match
-            case Shell.Zsh  =>
-              sh"""tmux send-keys -t ${tmux.id} 'precmd_functions=() preexec_functions=() PROMPT="> " RPROMPT=""' C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} "path+=(\"$path\")" C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} "autoload -Uz compinit; compinit -u" C-m""".exec[Unit]()
-              Tmux.attend:
-                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
-
-            case Shell.Bash =>
-              sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} 'export PATH="$path:$$PATH"' C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-ambiguous on"' C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-unmodified on"' C-m""".exec[Unit]()
-              Tmux.attend:
-                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
-
-            case Shell.Fish =>
-              sh"""tmux send-keys -t ${tmux.id} "function fish_prompt; echo -n '> '; end" C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} 'fish_add_path --global "$path"' C-m""".exec[Unit]()
-              Tmux.attend:
-                sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
-
-          val result = action
-
-          sh"tmux kill-session -t ${tmux.id}".exec[Exit]()
-
-          result
+  def githubActions: Boolean = safely(Environment.githubActions[Text]) == t"true"
+  def gitlabCi: Boolean = safely(Environment.gitlabCi[Text]) == t"true"
+  def circleCi: Boolean = safely(Environment.circleci[Text]) == t"true"
+  def travisCi: Boolean = safely(Environment.travis[Text]) == t"true"
+  def jenkins: Boolean = safely(Environment.jenkinsUrl[Text]).present
+  def azurePipelines: Boolean = safely(Environment.tfBuild[Text]) == t"true"
+  def teamCity: Boolean = safely(Environment.teamcityVersion[Text]).present
+  def bitbucketPipelines: Boolean = safely(Environment.bitbucketBuildNumber[Text]).present
+  def buildkite: Boolean = safely(Environment.buildkite[Text]) == t"true"
+  def appVeyor: Boolean = safely(Environment.appveyor[Text]) == t"true"
+  def drone: Boolean = safely(Environment.drone[Text]) == t"true"
+  def semaphore: Boolean = safely(Environment.semaphore[Text]) == t"true"
+  def buddy: Boolean = safely(Environment.buddyWorkspaceId[Text]).present
