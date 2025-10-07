@@ -44,6 +44,8 @@ import spectacular.*
 import language.strictEquality
 import language.experimental.into
 
+import autopsies.contrastExpectations
+
 given decimalizer: Decimalizer = Decimalizer(3)
 
 object Tests extends Suite(m"Quantitative Tests"):
@@ -87,6 +89,12 @@ object Tests extends Suite(m"Quantitative Tests"):
         Speed(10*Kilo(Metre)/Hour)
 
       . assert()
+
+
+
+
+
+
 
       test(m"Cannot subtract quantities of different units"):
         demilitarize:

@@ -354,6 +354,15 @@ trait Quantitative2:
       case _ =>
         halt(m"the operands represent different physical quantities")
 
+  private def incompatibleTypeText(left: UnitsMap, right: UnitsMap)(using Quotes): String =
+    (left.dimensionality.quantityName, right.dimensionality.quantityName) match
+      case (Some(leftName), Some(rightName)) =>
+        "quantitative: the left operand represents "+leftName+", but the right operand represents "+
+        rightName+"; these are incompatible physical quantities"
+
+      case _ =>
+        "quantitative: the operands represent different physical quantities"
+
 
   def mulTypeclass
        [left         <: Measure:         Type,
@@ -501,15 +510,14 @@ trait Quantitative2:
       val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
       val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
-      if left2 != right2 then incompatibleTypes(left, right)
-
-      if !invert.valueOrAbort
-      then if closed then '{$leftValue <= $rightValue} else '{$leftValue < $rightValue}
-      else if closed then '{$leftValue >= $rightValue} else '{$leftValue > $rightValue}
+      if left2 != right2 then '{compiletime.error(${Expr(incompatibleTypeText(left, right))})} else
+        if !invert.valueOrAbort
+        then if closed then '{$leftValue <= $rightValue} else '{$leftValue < $rightValue}
+        else if closed then '{$leftValue >= $rightValue} else '{$leftValue > $rightValue}
 
 
   def add[left <: Measure: Type, right <: Measure: Type]
-       (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]], sub: Expr[Boolean])
+       (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]])
        (using Quotes)
   : Expr[Any] =
 
@@ -519,27 +527,49 @@ trait Quantitative2:
       val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
       val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
-      if left2 != right2 then incompatibleTypes(left, right)
+      if left2 != right2 then '{compiletime.error(${Expr(incompatibleTypeText(left, right))})} else
+        val resultValue = '{$leftValue + $rightValue}
 
-      val resultValue = sub.value match
-        case Some(sub) => if sub then '{$leftValue - $rightValue} else '{$leftValue + $rightValue}
-        case None      => '{if $sub then $leftValue - $rightValue else $leftValue + $rightValue}
-
-      left2.repr.map(_.asType).absolve match
-        case Some('[type unitsType <: Measure; unitsType]) => '{Quantity[unitsType]($resultValue)}
-        case _                                             => resultValue
+        left2.repr.map(_.asType).absolve match
+          case Some('[type unitsType <: Measure; unitsType]) => '{Quantity[unitsType]($resultValue)}
+          case _                                             => resultValue
 
 
-  def subTypeclass[left <: Measure: Type, right <: Measure: Type](using Quotes)
-  : Expr[Quantity[left] is Subtractable by Quantity[right]] =
+  def sub[left <: Measure: Type, right <: Measure: Type]
+       (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]])
+       (using Quotes)
+  : Expr[Any] =
+
+      val left: UnitsMap = UnitsMap[left]
+      val right: UnitsMap = UnitsMap[right]
+
+      val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
+      val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
+
+      if left2 != right2 then '{compiletime.error(${Expr(incompatibleTypeText(left, right))})} else
+        val resultValue = '{$leftValue - $rightValue}
+
+        left2.repr.map(_.asType).absolve match
+          case Some('[type unitsType <: Measure; unitsType]) => '{Quantity[unitsType]($resultValue)}
+          case _                                             => resultValue
+
+
+
+  def subTypeclass
+       [left      <: Measure:         Type,
+        quantity  <: Quantity[left]:  Type,
+        right     <: Measure:         Type,
+        quantity2 <: Quantity[right]: Type]
+       (using Quotes)
+  : Expr[quantity is Subtractable by quantity2] =
 
       val (units, _) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
 
       units.repr.map(_.asType).absolve match
         case Some('[type measure <: Measure; measure]) =>
-          '{ Subtractable[Quantity[left], Quantity[right], Quantity[measure]] {
+          '{ Subtractable[quantity, quantity2, Quantity[measure]] {
               (left, right) =>
-                ${Quantitative.add('left, 'right, '{true}).asExprOf[Quantity[measure]]} } }
+                ${Quantitative.sub('left, 'right).asExprOf[Quantity[measure]]} } }
 
 
   def addTypeclass
@@ -556,7 +586,7 @@ trait Quantitative2:
         case Some('[type result <: Measure; result]) =>
           '{ Addable[quantity, quantity2, Quantity[result]] {
               (left, right) =>
-                ${Quantitative.add('left, 'right, '{false}).asExprOf[Quantity[result]]} } }
+                ${Quantitative.add('left, 'right).asExprOf[Quantity[result]]} } }
 
 
   def norm[units <: Measure: Type, norm[power <: Nat] <: Units[power, ?]: Type]
