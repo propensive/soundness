@@ -211,6 +211,7 @@ object test extends ScalaModule {
     anticipation.test,
     austronesian.test,
     aviation.test,
+    baroque.test,
     burdock.test,
     caesura.test,
     caduceus.test,
@@ -218,6 +219,7 @@ object test extends ScalaModule {
     capricious.test,
     cardinality.test,
     cataclysm.test,
+    cellulose.test,
     charisma.test,
     contextual.test,
     contingency.test,
@@ -286,7 +288,6 @@ object test extends ScalaModule {
     zephyrine.test,
 
     // Compiling, not passing
-    baroque.test, // failing
     chiaroscuro.test, // failing
     enigmatic.test,  // failing
     mandible.test,  // failing
@@ -301,7 +302,6 @@ object test extends ScalaModule {
     // Not compiling
     // austronesian
     // bitumen
-    // cellulose
     // coaxial
     // cosmopolite
     // embarcadero

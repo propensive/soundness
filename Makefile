@@ -9,6 +9,10 @@ test.exoskeleton:
 	mill exoskeleton.test.assembly
 	java -cp out/exoskeleton/test/assembly.dest/out.jar exoskeleton.Tests
 
+test.cellulose:
+	mill cellulose.test.assembly
+	java -cp out/cellulose/test/assembly.dest/out.jar cellulose.Tests
+
 failing:
 	mill test.assembly
 	java -cp out/test/assembly.dest/out.jar soundness.FailingTests
