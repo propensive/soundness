@@ -254,6 +254,8 @@ object test extends ScalaModule {
     mercator.test,
     merino.test,
     metamorphose.test,
+    monotonous.test,
+    mosquito.test,
     urticose.test,
     nomenclature.test,
     octogenarian.test,
@@ -267,6 +269,7 @@ object test extends ScalaModule {
     profanity.test,
     proscenium.test,
     punctuation.test,
+    quantitative.test,
     revolution.test,
     rudiments.test,
     scintillate.test,
@@ -291,10 +294,7 @@ object test extends ScalaModule {
     chiaroscuro.test, // failing
     enigmatic.test,  // failing
     mandible.test,  // failing
-    monotonous.test,   // failing
-    mosquito.test,  // failing
     parasite.test,  // failing
-    quantitative.test,  // failing
     satirical.test,  // crashing
     telekinesis.test,
     umbrageous.test
@@ -1131,7 +1131,7 @@ object mosquito extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, quantitative.units, core)
+    def moduleDeps = Seq(probably.cli, quantitative.units, core, baroque.core)
   }
 }
 
