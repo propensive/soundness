@@ -30,15 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package probably
 
-export probably
-. { Baseline, Benchmark, Inclusion, Verdict, Runner, Test, Harness, TestId, Report,
-    Reporter, Trial, Testable, Tolerance, Min, Mean, Max, BySpeed, ===, !==, ByTime, Geometric,
-    Arithmetic, +/-, test, suite, aspire, assert, check, matches, debug, Checkable, Ci }
+import ambience.*
+import anticipation.*
+import contingency.*
+import vacuous.*
 
-package harnesses:
-  export probably.harnesses.threadLocal
+object Ci:
+  def githubActions(using Environment): Boolean = safely(Environment.githubActions[Text]).present
+  def gitlabCi(using Environment): Boolean = safely(Environment.gitlabCi[Text]).present
+  def circleCi(using Environment): Boolean = safely(Environment.circleci[Text]).present
+  def travisCi(using Environment): Boolean = safely(Environment.travis[Text]).present
+  def jenkins(using Environment): Boolean = safely(Environment.jenkinsUrl[Text]).present
+  def azurePipelines(using Environment): Boolean = safely(Environment.tfBuild[Text]).present
+  def teamCity(using Environment): Boolean = safely(Environment.teamcityVersion[Text]).present
 
-package autopsies:
-  export probably.autopsies.{none, contrastExpectations}
+  def bitbucketPipelines(using Environment): Boolean =
+    safely(Environment.bitbucketBuildNumber[Text]).present
+
+  def buildkite(using Environment): Boolean = safely(Environment.buildkite[Text]).present
+  def appVeyor(using Environment): Boolean = safely(Environment.appveyor[Text]).present
+  def drone(using Environment): Boolean = safely(Environment.drone[Text]).present
+  def semaphore(using Environment): Boolean = safely(Environment.semaphore[Text]).present
+  def buddy(using Environment): Boolean = safely(Environment.buddyWorkspaceId[Text]).present

@@ -92,8 +92,6 @@ extension [test](test: Test[test])
 extension [value](inline value: value)(using inline test: Harness)
   inline def debug: value = ${Probably.debug('value, 'test)}
 
-def githubActions(using Environment): Boolean = safely(Environment.githubActions[Text]).present
-
 package harnesses:
   given threadLocal: Harness:
     private val delegate: Option[Harness] =
