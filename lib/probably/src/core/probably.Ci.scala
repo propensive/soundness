@@ -35,22 +35,25 @@ package probably
 import ambience.*
 import anticipation.*
 import contingency.*
+import gossamer.*
 import vacuous.*
 
 object Ci:
-  def githubActions(using Environment): Boolean = safely(Environment.githubActions[Text]).present
-  def gitlabCi(using Environment): Boolean = safely(Environment.gitlabCi[Text]).present
-  def circleCi(using Environment): Boolean = safely(Environment.circleci[Text]).present
-  def travisCi(using Environment): Boolean = safely(Environment.travis[Text]).present
-  def jenkins(using Environment): Boolean = safely(Environment.jenkinsUrl[Text]).present
-  def azurePipelines(using Environment): Boolean = safely(Environment.tfBuild[Text]).present
-  def teamCity(using Environment): Boolean = safely(Environment.teamcityVersion[Text]).present
+  import environments.jre
+  def apply(): Boolean =
+    githubActions || gitlabCi || circleCi || travisCi || jenkins || azurePipelines || teamCity
+    || bitbucketPipelines || buildkite || appVeyor || drone || semaphore || buddy
 
-  def bitbucketPipelines(using Environment): Boolean =
-    safely(Environment.bitbucketBuildNumber[Text]).present
-
-  def buildkite(using Environment): Boolean = safely(Environment.buildkite[Text]).present
-  def appVeyor(using Environment): Boolean = safely(Environment.appveyor[Text]).present
-  def drone(using Environment): Boolean = safely(Environment.drone[Text]).present
-  def semaphore(using Environment): Boolean = safely(Environment.semaphore[Text]).present
-  def buddy(using Environment): Boolean = safely(Environment.buddyWorkspaceId[Text]).present
+  def githubActions: Boolean = safely(Environment.githubActions[Text]) == t"true"
+  def gitlabCi: Boolean = safely(Environment.gitlabCi[Text]) == t"true"
+  def circleCi: Boolean = safely(Environment.circleci[Text]) == t"true"
+  def travisCi: Boolean = safely(Environment.travis[Text]) == t"true"
+  def jenkins: Boolean = safely(Environment.jenkinsUrl[Text]).present
+  def azurePipelines: Boolean = safely(Environment.tfBuild[Text]) == t"true"
+  def teamCity: Boolean = safely(Environment.teamcityVersion[Text]).present
+  def bitbucketPipelines: Boolean = safely(Environment.bitbucketBuildNumber[Text]).present
+  def buildkite: Boolean = safely(Environment.buildkite[Text]) == t"true"
+  def appVeyor: Boolean = safely(Environment.appveyor[Text]) == t"true"
+  def drone: Boolean = safely(Environment.drone[Text]) == t"true"
+  def semaphore: Boolean = safely(Environment.semaphore[Text]) == t"true"
+  def buddy: Boolean = safely(Environment.buddyWorkspaceId[Text]).present
