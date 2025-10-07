@@ -233,8 +233,8 @@ object Tests extends Suite(m"Quantitative Tests"):
       .assert(_ == 9.842519685039369*Foot)
 
       test(m"Convert m² to ft²"):
-        (Metre*Metre).in[Feet]
-      .assert(_ == 10.76391041670972*Foot*Foot)
+        (π*Metre*Metre).in[Feet]
+      .assert(_ == 33.815821889033906*Foot*Foot)
 
       test(m"Conversion to seconds does nothing"):
         (3*Metre).in[Seconds]
