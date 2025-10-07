@@ -2,7 +2,7 @@
 
 export SOUNDNESS=$(git describe --tags $(git rev-list --tags --max-count 1))
 echo "Setting version to $SOUNDNESS"
-for FILE in lib/*/src/*/*.scala
+for FILE in build.mill src/*/*.scala lib/*/src/*/*.scala
 do
   echo "Updating header in $FILE"
   cat etc/header.txt | envsubst > .tmpfile
