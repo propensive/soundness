@@ -90,12 +90,6 @@ object Tests extends Suite(m"Quantitative Tests"):
 
       . assert()
 
-
-
-
-
-
-
       test(m"Cannot subtract quantities of different units"):
         demilitarize:
           Metre - 2*Second
