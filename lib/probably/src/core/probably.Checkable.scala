@@ -32,6 +32,7 @@
                                                                                                   */
 package probably
 
+import hypotenuse.*
 import prepositional.*
 
 object Checkable:
@@ -39,6 +40,9 @@ object Checkable:
 
   given tolerance: Double is Checkable against Tolerance =
     (double, tolerance) => tolerance.covers(double)
+
+  inline given commensurable: [value: Commensurable by value] => value is Checkable against value =
+    (left, right) => left <= right && right <= left
 
 trait Checkable extends Typeclass, Contrastive:
   def check(left: Self, right: Contrast): Boolean

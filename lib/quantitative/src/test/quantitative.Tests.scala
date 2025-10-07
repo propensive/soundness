@@ -163,7 +163,7 @@ object Tests extends Suite(m"Quantitative Tests"):
         val x = 2*Metre
         val y = 3*Foot*Foot
         y/x
-      .assert(_ == 0.13935456000000002*Metre)
+      .assert(_ === 0.13935456000000002*Metre)
 
       test(m"Mixed units of the same dimension can be added"):
         2*Metre + 2*Foot
@@ -233,7 +233,7 @@ object Tests extends Suite(m"Quantitative Tests"):
       .assert(_ == 9.842519685039369*Foot)
 
       test(m"Convert m² to ft²"):
-        (π*Metre*Metre).in[Feet]
+        (π*π*Metre*Metre).in[Feet]
       .assert(_ == 33.815821889033906*Foot*Foot)
 
       test(m"Conversion to seconds does nothing"):
