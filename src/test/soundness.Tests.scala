@@ -97,6 +97,7 @@ object Tests extends Suite(m"Soundness tests"):
     profanity.Tests()
     proscenium.Tests()
     punctuation.Tests()
+    quantitative.Tests()
     revolution.Tests()
     rudiments.Tests()
     scintillate.Tests()
@@ -122,7 +123,6 @@ object FailingTests extends Suite(m"Failing tests"):
     mandible.Tests()
     //merino.Tests() - crashing
     parasite.Tests()
-    quantitative.Tests()
     //satirical.Tests() - crashing
     //telekinesis.Tests() - crashing
     // turbulence.Tests() - deadlock

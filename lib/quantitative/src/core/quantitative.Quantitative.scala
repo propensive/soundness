@@ -94,9 +94,12 @@ object Quantitative extends Quantitative2:
                              =>  quantity is Addable by quantity2 =
       ${Quantitative.addTypeclass[left, quantity, right, quantity2]}
 
-    transparent inline given subtractable: [left <: Measure, right <: Measure]
-                             =>  Quantity[left] is Subtractable by Quantity[right] =
-      ${Quantitative.subTypeclass[left, right]}
+    transparent inline given subtractable: [left <: Measure,
+                                            quantity <: Quantity[left],
+                                            right <: Measure,
+                                            quantity2 <: Quantity[right]]
+                             =>  quantity is Subtractable by quantity2 =
+      ${Quantitative.subTypeclass[left, quantity, right, quantity2]}
 
     transparent inline given multiplicable: [left <: Measure,
                                              multiplicand <: Quantity[left],

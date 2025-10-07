@@ -32,17 +32,12 @@
                                                                                                   */
 package quantitative
 
-import fulminate.*
-import symbolism.*
-import rudiments.*
-import gossamer.*
-import hypotenuse.*
-import larceny.*
-import probably.*
-import spectacular.*
+import soundness.*
 
 import language.strictEquality
 import language.experimental.into
+
+import autopsies.contrastExpectations
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
@@ -161,7 +156,7 @@ object Tests extends Suite(m"Quantitative Tests"):
         val x = 2*Metre
         val y = 3*Foot*Foot
         y/x
-      .assert(_ == 0.13935456000000002*Metre)
+      .assert(_ === 0.13935456000000002*Metre)
 
       test(m"Mixed units of the same dimension can be added"):
         2*Metre + 2*Foot
@@ -231,8 +226,8 @@ object Tests extends Suite(m"Quantitative Tests"):
       .assert(_ == 9.842519685039369*Foot)
 
       test(m"Convert m² to ft²"):
-        (Metre*Metre).in[Feet]
-      .assert(_ == 10.76391041670972*Foot*Foot)
+        (π*Metre*Metre).in[Feet]
+      .assert(_ === 33.815821889033906*Foot*Foot +/- 0.000000001*Foot*Foot)
 
       test(m"Conversion to seconds does nothing"):
         (3*Metre).in[Seconds]
