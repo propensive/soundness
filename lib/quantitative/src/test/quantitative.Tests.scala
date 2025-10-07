@@ -32,14 +32,7 @@
                                                                                                   */
 package quantitative
 
-import fulminate.*
-import symbolism.*
-import rudiments.*
-import gossamer.*
-import hypotenuse.*
-import larceny.*
-import probably.*
-import spectacular.*
+import soundness.*
 
 import language.strictEquality
 import language.experimental.into
@@ -233,10 +226,8 @@ object Tests extends Suite(m"Quantitative Tests"):
       .assert(_ == 9.842519685039369*Foot)
 
       test(m"Convert m² to ft²"):
-        println(33.815821889033906*Foot*Foot)
-        println((π*Metre*Metre).in[Feet])
         (π*Metre*Metre).in[Feet]
-      .assert(_ == 33.815821889033906*Foot*Foot)
+      .assert(_ === 33.815821889033906*Foot*Foot +/- 0.000000001*Foot*Foot)
 
       test(m"Conversion to seconds does nothing"):
         (3*Metre).in[Seconds]

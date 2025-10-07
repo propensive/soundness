@@ -38,8 +38,8 @@ import prepositional.*
 object Checkable:
   given iarray: [left, right] => IArray[left] is Checkable against IArray[right] = _.sameElements(_)
 
-  given tolerance: Double is Checkable against Tolerance =
-    (double, tolerance) => tolerance.covers(double)
+  given tolerance2: [value] => value is Checkable against Tolerance[value] =
+    (value, tolerance) => tolerance.covers(value)
 
   inline given commensurable: [value: Commensurable by value] => value is Checkable against value =
     (left, right) => left <= right && right <= left

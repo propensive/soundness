@@ -39,8 +39,10 @@ import chiaroscuro.*
 import digression.*
 import fulminate.*
 import gossamer.*
+import hypotenuse.*
 import prepositional.*
 import proscenium.*
+import symbolism.*
 import vacuous.*
 
 given realm: Realm = realm"probably"
@@ -58,9 +60,18 @@ extension [left](left: left)
   infix def !== [right](right: right)(using checkable: left is Checkable against right): Boolean =
     !checkable.check(left, right)
 
-extension (value: Double)
+extension [value](value: value)
   @targetName("plusOrMinus")
-  infix def +/- (tolerance: Double): Tolerance = Tolerance(value, tolerance)
+    inline infix def +/- (tolerance: value)
+                         (using inline commensurable: value is Commensurable by value,
+                                       addable:       value is Addable by value,
+                                       equality:      addable.Result =:= value,
+                                       subtractable:  value is Subtractable by value,
+                                       equality2:     subtractable.Result =:= value)
+    : Tolerance[value] =
+
+        Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
+
 
 def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
   TestId(name, suite, codepoint)
