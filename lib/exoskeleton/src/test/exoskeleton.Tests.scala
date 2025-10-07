@@ -98,7 +98,11 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           t"finished"  }
 
     . sandbox:
-        println(summon[Sandbox.Tool].path.encode)
+        // Warmup runs to avoid timing issues in CI
+        Bash.tmux()(Tmux.completions(t""))
+        Zsh.tmux()(Tmux.completions(t""))
+        Fish.tmux(width = 120)(Tmux.completions(t""))
+
         test(m"Test subcommands on bash"):
           Bash.tmux()(Tmux.completions(t""))
         . assert(_ == t"alpha         beta          distribution")
