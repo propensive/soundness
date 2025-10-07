@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.43.0.                                                                    ┃
+┃    Soundness, version 0.27.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,101 +30,49 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package parallelotope
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    burdock.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    contextual.Tests()
-    contingency.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    enigmatic.Tests()
-    ethereal.Tests()
-    exoskeleton.Tests()
-    feudalism.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gossamer.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    urticose.Tests()
-    nomenclature.Tests()
-    octogenarian.Tests()
-    panopticon.Tests()
-    parallelotope.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests
-    surveillance.Tests
-    symbolism.Tests
-    tarantula.Tests()
-    typonym.Tests()
-    ulysses.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    wisteria.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
+import jdk.incubator.vector.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    //austronesian.Tests() - crashing on compile
-    // cellulose.Tests() - class file too large
-    mandible.Tests()
-    //merino.Tests() - crashing
-    parasite.Tests()
-    quantitative.Tests()
-    //satirical.Tests() - crashing
-    //telekinesis.Tests() - crashing
-    // turbulence.Tests() - deadlock
-    //umbrageous.Tests()
+import escapade.*
+import hyperbole.*
+
+import scala.quoted.*
+
+export Parallelotope.Simd
+
+object Parallelotope:
+  opaque type Simd = Array[Byte]
+
+  object Simd:
+    val species = ByteVector.SPECIES_PREFERRED
+    inline def apply(array: Array[Byte] | IArray[Byte]): Simd = array.asInstanceOf[Simd]
+
+  extension (simd: Simd)
+    inline def length: Int = simd.length
+    inline def lookFor(inline predicate: Byte => Boolean): Int =
+      ${Parallelotope2.lookFor('simd, 'predicate)}
+
+
+object Parallelotope2:
+  def lookFor(data: Expr[Simd], predicate: Expr[Byte => Boolean])(using Quotes): Expr[Int] =
+    import quotes.reflect.*
+
+    predicate match
+      case '{ (x: Byte) => $body(x): Boolean } =>
+        body match
+          case '{ (x: Any) => x == ($rhs: Any) } =>
+            println(predicate.show)
+            println(body.show)
+            println(rhs.show)
+          case other =>
+            println("other")
+
+      case other =>
+        report.error(introspect(predicate).teletype.plain.s)
+
+    '{
+        val species = ByteVector.SPECIES_PREFERRED
+        val length = $data.length
+        0
+    }
