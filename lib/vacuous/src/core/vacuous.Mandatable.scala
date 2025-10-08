@@ -30,35 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cellulose
+package vacuous
 
-import contingency.*
-import rudiments.*
-import vacuous.*
-import wisteria.*
+import prepositional.*
 
-import scala.deriving.*
+object Mandatable:
+  transparent inline given mandatable: [typeRef] => typeRef is Mandatable =
+    ${Vacuous.mandatable[typeRef]}
 
-object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
-  inline def join[derivation <: Product: ProductReflection]: CodlDecoder[derivation] =
-    def schema: CodlSchema =
-      val elements = contexts:
-        [field] => context =>
-          val label2 = compiletime.summonFrom:
-            case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
-            case _                                        => label
-
-          CodlSchema.Entry(label2, context.schema)
-
-      Struct(elements.to(List), Arity.One)
-
-    def decode(values: List[Indexed]): derivation raises CodlReadError =
-      construct:
-        [field] => context =>
-          val label2 = compiletime.summonFrom:
-            case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
-            case _                                        => label
-
-          context.decoded(values.prim.lest(CodlReadError(label2)).get(label2))
-
-    CodlDecoder[derivation](schema, decode)
+erased trait Mandatable extends Typeclass:
+  type Result <: Self

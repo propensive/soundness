@@ -62,11 +62,34 @@ object Vacuous:
     then halt(m"type ${Type.of[typeRef]} cannot be proven distinct from ${Type.of[union]}")
     else '{erasedValue[typeRef is Distinct from union]}
 
+  def mandatable[typeRef: Type]: Macro[typeRef is Mandatable] =
+    import quotes.reflect.*
+
+    var seen = false
+
+    def recur(repr: TypeRepr): TypeRepr = repr match
+      case OrType(left, right) =>
+        if left <:< TypeRepr.of[Unset.type] then
+          seen = true
+          recur(right)
+        else if right <:< TypeRepr.of[Unset.type] then
+          seen = true
+          recur(left)
+        else OrType(recur(left), recur(right))
+
+      case other =>
+        other
+
+    recur(TypeRepr.of[typeRef]).asType match
+      case '[result] =>
+        if seen then '{erasedValue[typeRef is Mandatable to result]}
+        else halt(m"the value is not an `Optional`")
+
 
   def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value]): Macro[value] =
     import quotes.reflect.*
 
-    optional.runtimeChecked match
+    optional.absolve match
       case '{ $optional: optionalType } => check[optionalType]
 
     def optimize(term: Term): Term = term match
