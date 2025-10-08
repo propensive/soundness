@@ -166,15 +166,15 @@ object HtmlAttribute:
   given href2: [url: Abstractable across Urls to Text] => ("href" is HtmlAttribute[url]) =
     _.generic
 
-  inline given href3: [topic, path <: Path of topic under %.type] => Rfc3986 is System
+  inline given href3: [topic, path <: Path of topic under %.type] => UrlSpace is System
          => ("href" is HtmlAttribute[path]) =
-    _.on[Rfc3986].encode
+    _.on[UrlSpace].encode
 
-  inline given href4: [topic, path <: Path of topic] => Rfc3986 is System
+  inline given href4: [topic, path <: Path of topic] => UrlSpace is System
          => ("href" is HtmlAttribute[path]) =
-    _.on[Rfc3986].encode
+    _.on[UrlSpace].encode
 
-  inline given href4: [path <: Path on Rfc3986] => ("href" is HtmlAttribute[path]) = _.encode
+  inline given href4: [path <: Path on UrlSpace] => ("href" is HtmlAttribute[path]) = _.encode
 
   // Needs to be provided by Cosmopolite
   given hreflang: ("hreflang" is HtmlAttribute[Text]) = identity(_)
@@ -249,13 +249,13 @@ object HtmlAttribute:
 
   given src3: [url: Abstractable across Urls to Text] => ("src" is HtmlAttribute[url]) = _.generic
 
-  inline given src4: [topic, path <: Path of topic under %.type] => Rfc3986 is System
+  inline given src4: [topic, path <: Path of topic under %.type] => UrlSpace is System
          => ("src" is HtmlAttribute[path]) =
-    _.on[Rfc3986].encode
+    _.on[UrlSpace].encode
 
-  inline given src5: [topic, path <: Path of topic] => Rfc3986 is System
+  inline given src5: [topic, path <: Path of topic] => UrlSpace is System
          => ("src" is HtmlAttribute[path]) =
-    _.on[Rfc3986].encode
+    _.on[UrlSpace].encode
 
 
   given srcdoc: ("srcdoc" is HtmlAttribute[Html[?]]) = _.show

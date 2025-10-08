@@ -58,7 +58,7 @@ class Url[+scheme <: Label]
         val fragment:  Optional[Text] = Unset)
 extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$location"):
 
-  type Plane = Rfc3986
+  type Plane = UrlSpace
   type Topic = Zero
 
   def scheme: Scheme[scheme] = origin.scheme
