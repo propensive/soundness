@@ -39,14 +39,14 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 
-erased trait Rfc3986
+erased trait UrlSpace
 
-object Rfc3986:
-  given submissible: (%.type is Submissible on Rfc3986) = void => ()
-  given admissible: [text <: Text] => (text is Admissible on Rfc3986) = void => ()
-  given admissible2: [string <: String] => (string is Admissible on Rfc3986) = void => ()
+object UrlSpace:
+  given submissible: (%.type is Submissible on UrlSpace) = void => ()
+  given admissible: [text <: Text] => (text is Admissible on UrlSpace) = void => ()
+  given admissible2: [string <: String] => (string is Admissible on UrlSpace) = void => ()
 
-  given system: Rfc3986 is System:
+  given system: UrlSpace is System:
     type UniqueRoot = false
     val separator: Text = t"/"
     val self: Text = t"."

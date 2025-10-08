@@ -261,7 +261,7 @@ object Http:
 
     inline def request: this.type = this
 
-    lazy val path: Relative on Rfc3986 = location.decode[Relative on Rfc3986]
+    lazy val path: Relative on UrlSpace = location.decode[Relative on UrlSpace]
 
     def on[scheme <: "http" | "https"](origin: Origin[scheme]): HttpUrl =
       Url[scheme](origin, target)
