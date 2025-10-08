@@ -43,7 +43,7 @@ object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
       case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
       case _                                        => Map()
 
-    val schema: CodlSchema =
+    def schema: CodlSchema =
       val elements = contexts:
         [field] => context => CodlSchema.Entry(mapping.at(label).or(label), context.schema)
 

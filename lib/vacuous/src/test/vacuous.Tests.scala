@@ -38,118 +38,119 @@ import soundness.*
 
 object Tests extends Suite(m"Vacuous Tests"):
   def run(): Unit =
-   suite(m"Vacuous tests"):
-     test(m"String is concrete"):
-       erased val x = summon[String is Concrete]
-     . assert()
+    suite(m"Vacuous tests"):
+      test(m"String is concrete"):
+        erased val x = summon[String is Concrete]
+      . assert()
 
-     test(m"Abstract method type is not concrete"):
-       demilitarize:
-         def abstractType[notConcrete]: Unit =
-           summon[notConcrete is Concrete]
-       . map(_.message)
-     . assert(_ == List(t"vacuous: type notConcrete is abstract"))
+      test(m"Abstract method type is not concrete"):
+        demilitarize:
+          def abstractType[notConcrete]: Unit =
+            summon[notConcrete is Concrete]
+        . map(_.message)
+      . assert(_ == List(t"vacuous: type notConcrete is abstract"))
 
-     test(m"Unexpanded inlined abstract method type is not concrete"):
-       demilitarize:
-         inline def abstractType[notConcrete]: Unit =
-           summon[notConcrete is Concrete]
-       . map(_.message)
-     . assert(_ == Nil)
+      test(m"Unexpanded inlined abstract method type is not concrete"):
+        demilitarize:
+          inline def abstractType[notConcrete]: Unit =
+            summon[notConcrete is Concrete]
+        . map(_.message)
+      . assert(_ == Nil)
 
-     test(m"Expanded inlined abstract method type is not concrete"):
-       demilitarize:
-         inline def abstractType[notConcrete]: Unit =
-           summon[notConcrete is Concrete]
+      test(m"Expanded inlined abstract method type is not concrete"):
+        demilitarize:
+          inline def abstractType[notConcrete]: Unit =
+            summon[notConcrete is Concrete]
 
-         erased val x = abstractType[Int]
+          erased val x = abstractType[Int]
 
-       . map(_.message)
-     . assert(_ == Nil)
+        . map(_.message)
+      . assert(_ == Nil)
 
-     test(m"Int and String are distinct types"):
-       demilitarize:
-         erased val x = infer[Int is Distinct from String]
+      test(m"Int and String are distinct types"):
+        demilitarize:
+          erased val x = infer[Int is Distinct from String]
 
-       . map(_.message)
-     . assert(_ == Nil)
+        . map(_.message)
+      . assert(_ == Nil)
 
-     test(m"Int and (Int | String) are not distinct types"):
-       demilitarize:
-         erased val x = compiletime.summonInline[Int is Distinct from (Int | String)]
+      test(m"Int and (Int | String) are not distinct types"):
+        demilitarize:
+          erased val x = compiletime.summonInline[Int is Distinct from (Int | String)]
 
-       . map(_.message)
-     . assert(_.nonEmpty)
+        . map(_.message)
+      . assert(_.nonEmpty)
 
-     test(m"String is not distinct from itself"):
-       demilitarize:
-         erased val x = compiletime.summonInline[String is Distinct from String]
+      test(m"String is not distinct from itself"):
+        demilitarize:
+          erased val x = compiletime.summonInline[String is Distinct from String]
 
-       . map(_.message)
-     . assert(_.nonEmpty)
+        . map(_.message)
+      . assert(_.nonEmpty)
 
-     test(m"Abstract type is not proven distinct from anything, e.g. String"):
-       demilitarize:
-         def foo[T]: Unit = infer[T is Distinct from String].unit
-         foo[String]
+      test(m"Abstract type is not proven distinct from anything, e.g. String"):
+        demilitarize:
+          def foo[T]: Unit = infer[T is Distinct from String].unit
+          foo[String]
 
-       . map(_.message)
-     . assert(_.contains(t"vacuous: type T is abstract"))
+        . map(_.message)
+      . assert(_.contains(t"vacuous: type T is abstract"))
 
-     test(m"Abstract type is not proven distinct from anything, e.g. Int"):
-       demilitarize:
-         def foo[T]: Unit = infer[T is Distinct from String].unit
-         foo[Int]
+      test(m"Abstract type is not proven distinct from anything, e.g. Int"):
+        demilitarize:
+          def foo[T]: Unit = infer[T is Distinct from String].unit
+          foo[Int]
 
-       . map(_.message)
-     . assert(_.contains(t"vacuous: type T is abstract"))
+        . map(_.message)
+      . assert(_.contains(t"vacuous: type T is abstract"))
 
-     test(m"Inline abstract type is not proven distinct from anything, e.g. Int"):
-       demilitarize:
-         inline def foo[T]: Unit =
-           erased val x = infer[T is Distinct from String]
+      test(m"Inline abstract type is not proven distinct from anything, e.g. Int"):
+        demilitarize:
+          inline def foo[T]: Unit =
+            erased val x = infer[T is Distinct from String]
 
-         foo[Int]
+          foo[Int]
 
-       . map(_.message)
-     . assert(_ == Nil)
+        . map(_.message)
+      . assert(_ == Nil)
 
-     test(m"Inline abstract type is not proven distinct from anything, e.g. String"):
-       demilitarize:
-         inline def foo[T]: Unit =
-           erased val x = infer[T is Distinct from String]
+      test(m"Inline abstract type is not proven distinct from anything, e.g. String"):
+        demilitarize:
+          inline def foo[T]: Unit =
+            erased val x = infer[T is Distinct from String]
 
-         foo[String]
+          foo[String]
 
-       . map(_.message)
-     . assert(_.nonEmpty)
+        . map(_.message)
+      . assert(_.nonEmpty)
 
-     test(m"String is not distinct from String | Int"):
-       demilitarize:
-         inline def foo[T]: Unit =
-           erased val x = infer[T is Distinct from (String | Int)]
+      test(m"String is not distinct from String | Int"):
+        demilitarize:
+          inline def foo[T]: Unit =
+            erased val x = infer[T is Distinct from (String | Int)]
 
-         foo[String]
+          foo[String]
 
-       . map(_.message)
-     . assert(_.nonEmpty)
+        . map(_.message)
+      . assert(_.nonEmpty)
 
-     test(m"String singleton is not distinct from String"):
-       demilitarize:
-         inline def foo[T]: Unit =
-           erased val x = infer[T is Distinct from (String | Int)]
+      test(m"String singleton is not distinct from String"):
+        demilitarize:
+          inline def foo[T]: Unit =
+            erased val x = infer[T is Distinct from (String | Int)]
 
-         foo[""]
+          foo[""]
 
-       . map(_.message)
-     . assert(_.nonEmpty)
+        . map(_.message)
+      . assert(_.nonEmpty)
 
-     test(m"String singleton is not distinct from different String singleton"):
-       demilitarize:
-         inline def foo[T]: Unit =
-           erased val x = infer[T is Distinct from "foo"]
 
-         foo[""]
+      test(m"String singleton is not distinct from different String singleton"):
+        demilitarize:
+          inline def foo[T]: Unit =
+            erased val x = infer[T is Distinct from "foo"]
 
-       . map(_.message)
-     . assert(_ == Nil)
+          foo[""]
+
+        . map(_.message)
+      . assert(_ == Nil)

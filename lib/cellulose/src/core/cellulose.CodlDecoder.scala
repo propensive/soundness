@@ -69,17 +69,19 @@ object CodlDecoder:
     val schema: CodlSchema = Field(Arity.One)
     def decoded(nodes: List[Indexed]): Unit raises CodlReadError = ()
 
-  given optional: [value] => (decodable: => CodlDecoder[value]) => CodlDecoder[Optional[value]]:
-    def schema: CodlSchema = decodable.schema.optional
+  given optional: [value >: Unset.type: Mandatable] => (decoder: => CodlDecoder[value.Result])
+        => CodlDecoder[value]:
 
-    def decoded(nodes: List[Indexed]): Optional[value] raises CodlReadError =
-      if nodes.isEmpty then Unset else decodable.decoded(nodes)
+    def schema: CodlSchema = decoder.schema.optional
 
-  given option: [value] => (value: => CodlDecoder[value]) => CodlDecoder[Option[value]]:
-    def schema: CodlSchema = value.schema.optional
+    def decoded(nodes: List[Indexed]): value raises CodlReadError =
+      if nodes.isEmpty then Unset else decoder.decoded(nodes)
 
-    def decoded(nodes: List[Indexed]): Option[value] raises CodlReadError =
-      if nodes.isEmpty then None else Some(value.decoded(nodes))
+  given option: [decodable] => (decoder: => CodlDecoder[decodable]) => CodlDecoder[Option[decodable]]:
+    def schema: CodlSchema = decoder.schema.optional
+
+    def decoded(nodes: List[Indexed]): Option[decodable] raises CodlReadError =
+      if nodes.isEmpty then None else Some(decoder.decoded(nodes))
 
   given list: [element] => (element: => CodlDecoder[element]) => CodlDecoder[List[element]] =
     new CodlDecoder[List[element]]:

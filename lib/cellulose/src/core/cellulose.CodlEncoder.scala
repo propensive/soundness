@@ -67,13 +67,16 @@ object CodlEncoder extends CodlEncoder2:
   given text: CodlFieldWriter[Text] = _.show
 
 
-  given optional: [encodable] => (encodable: => CodlEncoder[encodable])
-  =>  CodlEncoder[Optional[encodable]]:
+  given optional: [inner, value >: Unset.type: Mandatable to inner]
+        => (encoder: => CodlEncoder[inner])
+        => CodlEncoder[value]:
 
-        def schema: CodlSchema = encodable.schema.optional
+    def schema: CodlSchema = encoder.schema.optional
 
-        def encode(value: Optional[encodable]): List[IArray[CodlNode]] =
-          value.let(encodable.encode(_)).or(List())
+    def encode(element: value): List[IArray[CodlNode]] =
+      element.let: element =>
+        encoder.encode(element.asInstanceOf[inner])
+      . or(List())
 
 
   given option: [encodable: CodlEncoder] => CodlEncoder[Option[encodable]]:

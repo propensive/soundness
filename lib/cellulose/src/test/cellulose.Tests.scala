@@ -1114,9 +1114,14 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
       .assert(_ == List(t"hello", t"world"))
 
       case class Foo(alpha: Text, beta: Optional[Text])
-      // test(m"roundtrip a case class with an optional parameter"):
-      //   roundtrip(Foo(t"one", t"two"))
-      // .assert(_ == Foo(t"one", t"two"))
+      try
+        test(m"roundtrip a case class with an optional parameter"):
+          roundtrip(Foo(t"one", t"two"))
+        .assert(_ == Foo(t"one", t"two"))
+
+      catch
+        case throwable: Throwable =>
+          throwable.printStackTrace()
 
       test(m"roundtrip a case class with an optional parameter, unset"):
         roundtrip(Foo(t"one", Unset))
@@ -1129,11 +1134,11 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
       val complex = Bar(List(Baz(t"a", 2, Unset), Baz(t"c", 6, 'e')), Quux(t"e", List(1, 2, 4)))
 
       // FIXME: Fails at runtime
-      // test(m"roundtrip a complex case class"):
-      //   summon[CodlDecoder[Baz]]
-      //   summon[CodlDecoder[List[Baz]]]
-      //   roundtrip(complex)
-      // .assert(_ == complex)
+      test(m"roundtrip a complex case class"):
+        summon[CodlDecoder[Baz]]
+        summon[CodlDecoder[List[Baz]]]
+        roundtrip(complex)
+      .assert(_ == complex)
 
       def print[T: CodlDecoder: CodlEncoder](value: T): Text =
         val writer = new ji.StringWriter()
@@ -1141,19 +1146,19 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
         writer.toString().show
 
       // FIXME: Fails at runtime
-      // test(m"print a simple case class"):
-      //   print(Foo(t"one", t"two"))
-      // .assert(_ == t"alpha  one\nbeta  two\n")
+      test(m"print a simple case class"):
+        print(Foo(t"one", t"two"))
+      .assert(_ == t"alpha  one\nbeta  two\n")
 
       // FIXME: Fails at runtime
-      // test(m"print a complex case class"):
-      //   print(complex)
-      // .assert(_ == t"foo\n  gamma  a\n  delta  2\nfoo\n  gamma  c\n  delta  6\n  eta  e\nquux\n  alpha  e\n  beta  1\n  beta  2\n  beta  4\n")
+      test(m"print a complex case class"):
+        print(complex)
+      .assert(_ == t"foo\n  gamma  a\n  delta  2\nfoo\n  gamma  c\n  delta  6\n  eta  e\nquux\n  alpha  e\n  beta  1\n  beta  2\n  beta  4\n")
 
       // FIXME: Fails at runtime
-      // test(m"roundtrip a complex case class "):
-      //   read(print(complex)).as[Bar]
-      // .assert(_ == complex)
+      test(m"roundtrip a complex case class "):
+        read(print(complex)).as[Bar]
+      .assert(_ == complex)
 
       // test(m"Print a case class using positional parameters"):
       //   print(User(12, t"user@example.com", List(Privilege(t"read", true), Privilege(t"write", false))))
