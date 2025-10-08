@@ -580,8 +580,7 @@ trait Quantitative2:
        (using Quotes)
   : Expr[quantity is Addable by quantity2] =
 
-      val (units, _) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
-
+      val (units, other) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
       units.repr.map(_.asType).absolve match
         case Some('[type result <: Measure; result]) =>
           '{ Addable[quantity, quantity2, Quantity[result]] {

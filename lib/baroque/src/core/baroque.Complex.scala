@@ -54,17 +54,17 @@ object Complex:
   given showable: [component: Showable] => Complex[component] is Showable =
     complex => t"${complex.real.show} + ${complex.imaginary.show}𝕚"
 
-  inline given addable: [component: Addable by component as addable]
-               =>  Complex[component] is Addable by Complex[component] =
-    Addable[Complex[component], Complex[component], Complex[addable.Result]]:
+  given addable: [result, component: Addable by component to result as addable]
+               =>  Complex[component] is Addable by Complex[component] to Complex[result] =
+    Addable[Complex[component], Complex[component], Complex[result]]:
       (left, right) =>
-        Complex[addable.Result](left.real + right.real, left.imaginary + right.imaginary)
+        Complex[result](left.real + right.real, left.imaginary + right.imaginary)
 
-  inline given subtractable: [component: Subtractable by component as subtractable]
-               =>  Complex[component] is Subtractable by Complex[component] =
-    Subtractable[Complex[component], Complex[component], Complex[subtractable.Result]]:
+  given subtractable: [result, component: Subtractable by component to result as subtractable]
+               =>  Complex[component] is Subtractable by Complex[component] to Complex[result] =
+    Subtractable[Complex[component], Complex[component], Complex[result]]:
       (left, right) =>
-        Complex[subtractable.Result](left.real - right.real, left.imaginary - right.imaginary)
+        Complex[result](left.real - right.real, left.imaginary - right.imaginary)
 
   inline given multiplicable: [component, multiplicand <: Complex[component]]
                => (multiplication: component is Multiplicable by component,

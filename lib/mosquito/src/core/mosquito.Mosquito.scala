@@ -57,14 +57,15 @@ object Mosquito:
                     size <: Int,
                     left <: Vector[value, size],
                     value2,
-                    right <: Vector[value2, size]]
-          => (addable: value is Addable by value2)
+                    right <: Vector[value2, size],
+                    result]
+          => (addable: value is Addable by value2 to result)
           => left is Addable:
       type Self = left
       type Operand = right
-      type Result = Vector[addable.Result, size]
+      type Result = Vector[result, size]
 
-      def add(left: left, right: right): Vector[addable.Result, size] =
+      def add(left: left, right: right): Vector[result, size] =
         def recur(left: Tuple, right: Tuple): Tuple = left match
           case leftHead *: leftTail => right match
             case rightHead *: rightTail =>
@@ -79,18 +80,25 @@ object Mosquito:
 
         recur(left, right)
 
+    given negatable: [value, size <: Int, vector <: Vector[value, size], result]
+          => (negatable: value is Negatable to result)
+          => vector is Negatable:
+      type Result = Vector[result, size]
+      def negate(operand: vector): Vector[result, size] = operand.map(negatable.negate(_))
+
     given subtractable: [value,
                          size <: Int,
                          left <: Vector[value, size],
                          value2,
-                         right <: Vector[value2, size]]
-          => (subtractable: value is Subtractable by value2)
+                         right <: Vector[value2, size],
+                         result]
+          => (subtractable: value is Subtractable by value2 to result)
           => left is Subtractable:
       type Self = left
       type Operand = right
-      type Result = Vector[subtractable.Result, size]
+      type Result = Vector[result, size]
 
-      def subtract(left: left, right: right): Vector[subtractable.Result, size] =
+      def subtract(left: left, right: right): Vector[result, size] =
         def recur(left: Tuple, right: Tuple): Tuple = left match
           case leftHead *: leftTail => right match
             case rightHead *: rightTail =>

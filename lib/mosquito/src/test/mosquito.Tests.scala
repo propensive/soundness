@@ -32,6 +32,7 @@
                                                                                                   */
 package mosquito
 
+import baroque.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
@@ -41,6 +42,10 @@ import quantitative.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
+
+import autopsies.contrastExpectations
+
+given Decimalizer(4)
 
 object Tests extends Suite(m"Mosquito tests"):
   def run(): Unit =
@@ -128,3 +133,31 @@ object Tests extends Suite(m"Mosquito tests"):
       test(m"Scalar divide matrices"):
         m1/2
       .assert(_ == Matrix[2, 3]((0, 1, 1), (2, 2, 3)))
+
+    suite(m"Interesting types"):
+      test(m"Dot product of a vector of quantities"):
+        val v1 = Vector(5*Inch, 2*Inch, Inch)
+        val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+        v1.dot(v2)
+      .assert(_ == 22*Inch*Inch)
+
+      test(m"Cross product of a vector of quantities"):
+        val v1 = Vector(5*Inch, 2*Inch, Inch)
+        val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+        v1.cross(v2)
+      .assert(_ == Vector(9*Inch, -28*Inch, 11*Inch))
+
+      test(m"Sum of two vectors of quantities"):
+        val v1 = Vector(5*Inch, 2*Inch, Inch)
+        val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+        v1 + v2
+      .assert(_ == Vector(7*Inch, 5*Inch, 7*Inch))
+
+      test(m"Sum of two vectors of different quantities"):
+        val v1 = Vector(5*Inch, 2*Inch, Inch)
+        val v2 = Vector(2*Metre, 3*Metre, 6*Metre)
+        println(v1.show)
+        println(v2.show)
+
+        val sum = v1 + v1
+      .assert()
