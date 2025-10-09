@@ -43,51 +43,6 @@ import wisteria.*
 
 import scala.deriving.*
 
-object CodlSchematic:
-  def apply[value](schema0: => CodlSchema): value is CodlSchematic =
-    new:
-      def schema: CodlSchema = schema0
-
-  def apply[value](lambda: Text => value): value is CodlSchematic = new CodlSchematic:
-    type Self = value
-    val schema: CodlSchema = Field(Arity.One)
-
-  inline given derived: [value] => value is CodlSchematic = compiletime.summonFrom:
-    case given (`value` is Decodable in Text) => field[`value`]
-    case given ProductReflection[`value`]     => CodlSchematicDerivation.derived[`value`]
-
-  def field[value: Decodable in Text]: value is CodlSchematic = apply(value.decoded(_))
-
-  given boolean: Boolean is CodlSchematic = apply(_ == t"yes")
-  given text: Text is CodlSchematic = apply(identity(_))
-
-  given unit: Unit is CodlSchematic:
-    val schema: CodlSchema = Field(Arity.One)
-
-  given optional: [value >: Unset.type: Mandatable] => (decoder: => value.Result is CodlSchematic)
-        => value is CodlSchematic:
-
-    def schema: CodlSchema = decoder.schema.optional
-
-  given option: [decodable] => (decoder: => decodable is CodlSchematic)
-        => Option[decodable] is CodlSchematic:
-    def schema: CodlSchema = decoder.schema.optional
-
-  given list: [element] => (element: => element is CodlSchematic) => List[element] is CodlSchematic =
-    new CodlSchematic:
-      type Self = List[element]
-      def schema: CodlSchema = element.schema match
-        case Field(_, validator) => Field(Arity.Many, validator)
-        case struct: Struct      => struct.copy(structArity = Arity.Many)
-
-  given set: [element] => (element: => element is CodlSchematic) => Set[element] is CodlSchematic:
-    def schema: CodlSchema = element.schema match
-      case Field(_, validator) => Field(Arity.Many, validator)
-      case struct: Struct      => struct.copy(structArity = Arity.Many)
-
-trait CodlSchematic extends Typeclass:
-  def schema: CodlSchema
-
 trait CodlDecodable extends Typeclass:
   def decoded(value: List[Indexed]): Self raises CodlError
 
@@ -134,7 +89,7 @@ object CodlDecodable:
     new CodlDecodable:
       type Self = List[element]
       def decoded(value: List[Indexed]): List[element] raises CodlError =
-        element.schema match
+        element.schema() match
           case Field(_, validator) => value.flatMap(_.children).map: node =>
             decodable.decoded(List(CodlDoc(node)))
 
@@ -143,7 +98,7 @@ object CodlDecodable:
 
   given set: [element: CodlSchematic] => (decodable: => element is CodlDecodable) => Set[element] is CodlDecodable:
     def decoded(value: List[Indexed]): Set[element] raises CodlError =
-      element.schema match
+      element.schema() match
         case Field(_, validator) =>
           value.flatMap(_.children).map { node => decodable.decoded(List(CodlDoc(node))) }.to(Set)
 

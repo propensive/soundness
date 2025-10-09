@@ -32,22 +32,43 @@
                                                                                                   */
 package cellulose
 
+import anticipation.*
 import contingency.*
+import distillate.*
+import gossamer.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 import wisteria.*
 
 import scala.deriving.*
 
-object CodlSchematicDerivation extends ProductDerivable[CodlSchematic]:
-  inline def join[derivation <: Product: ProductReflection]: derivation is CodlSchematic =
-    () =>
-      val elements = contexts:
-        [field] => context =>
-          val label2 = compiletime.summonFrom:
-            case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
-            case _                                        => label
+object CodlSchematic:
+  inline given derived: [value] => value is CodlSchematic = compiletime.summonFrom:
+    case given (`value` is Decodable in Text) => () => Field(Arity.One)
+    case given ProductReflection[`value`]     => CodlSchematicDerivation.derived[`value`]
 
-          CodlSchema.Entry(label2, context.schema())
+  given boolean: Boolean is CodlSchematic = () => Field(Arity.One)
+  given text: Text is CodlSchematic = () => Field(Arity.One)
+  given unit: Unit is CodlSchematic = () => Field(Arity.One)
 
-      Struct(elements.to(List), Arity.One)
+  given optional: [value >: Unset.type: Mandatable] => (schematic: => value.Result is CodlSchematic)
+        => value is CodlSchematic =
+    () => schematic.schema().optional
+
+  given option: [value] => (schematic: => value is CodlSchematic)
+        => Option[value] is CodlSchematic =
+    () => schematic.schema().optional
+
+  given list: [element] => (element: => element is CodlSchematic) => List[element] is CodlSchematic =
+    () => element.schema() match
+      case Field(_, validator) => Field(Arity.Many, validator)
+      case struct: Struct      => struct.copy(structArity = Arity.Many)
+
+  given set: [element] => (element: => element is CodlSchematic) => Set[element] is CodlSchematic =
+    () => element.schema() match
+      case Field(_, validator) => Field(Arity.Many, validator)
+      case struct: Struct      => struct.copy(structArity = Arity.Many)
+
+trait CodlSchematic extends Typeclass:
+  def schema(): CodlSchema

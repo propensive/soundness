@@ -43,23 +43,22 @@ object CodlEncodableDerivation extends ProductDerivable[CodlEncodable]:
       case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
       case _                                        => Map()
 
-    def schema: CodlSchema =
-      val elements = contexts:
-        [field] => context => CodlSchema.Entry(mapping.at(label).or(label), context.schema)
-
-      Struct(elements.to(List), Arity.One)
-
     def encode(product: derivation): List[IArray[CodlNode]] = List:
+      val schemata: IArray[CodlSchema.Entry] =
+        CodlSchematicDerivation.join[derivation].schema() match
+          case Struct(elements, _) => IArray.from(elements)
+
       IArray.from:
         fields(product):
           [field] => field =>
             val label2 = mapping.at(label).or(label)
+            val schematic = compiletime.summonInline[field is CodlSchematic]
 
             context.encode(field).map: value =>
-              CodlNode(Data(label2, value, Layout.empty, context.schema))
+              CodlNode(Data(label2, value, Layout.empty, schemata(index).schema))
 
             . filter(!_.empty)
 
         . to(List).flatten
 
-    CodlEncodable(schema, encode)
+    CodlEncodable(encode)
