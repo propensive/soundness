@@ -34,6 +34,7 @@ package xylophone
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
@@ -41,6 +42,7 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import zephyrine.*
 
 import language.dynamics
 
@@ -54,7 +56,15 @@ sealed trait Xml:
   def string(using XmlPrinter[Text]): Text raises XmlAccessError =
     summon[XmlPrinter[Text]].print(XmlDoc(XmlAst.Root(Xml.normalize(this)*)))
 
-object Xml:
+object Xml extends Format:
+  def name: Text = "XML"
+
+  case class Position(line: Int, column: Int) extends Format.Position:
+    def describe: Text = t"line $line, column $column"
+
+  case class Issue() extends Format.Issue:
+    def describe: Message = m"parsing failed without explanation"
+
   given showable: Xml is Showable = xml =>
     safely(xmlPrinters.compact.print(XmlDoc(XmlAst.Root(Xml.normalize(xml)*)))).or(t"undefined")
 
@@ -79,7 +89,7 @@ object Xml:
 
   . join
 
-  def parse(content: Text): XmlDoc raises XmlParseError =
+  def parse(content: Text): XmlDoc raises ParseError =
     import org.w3c.dom as owd, owd.Node.*
     import org.xml.sax as oxs
     import javax.xml.parsers.*
@@ -94,7 +104,7 @@ object Xml:
         val array = content.bytes(using charEncoders.utf8).mutable(using Unsafe)
         builder.parse(ByteArrayInputStream(array)).nn
       catch case e: oxs.SAXParseException =>
-        abort(XmlParseError(e.getLineNumber - 1, e.getColumnNumber - 1))
+        abort(ParseError(Xml, Xml.Position(e.getLineNumber - 1, e.getColumnNumber - 1), Xml.Issue()))
 
     def getNamespace(node: owd.Node): Optional[Namespace] =
       Option(node.getPrefix) match
