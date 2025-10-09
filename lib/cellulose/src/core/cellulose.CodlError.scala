@@ -37,5 +37,5 @@ import fulminate.*
 import gossamer.*
 import vacuous.*
 
-case class CodlReadError(label: Optional[Text] = Unset)(using Diagnostics)
+case class CodlError(label: Optional[Text] = Unset)(using Diagnostics)
 extends Error(m"the CoDL value ${label.or(t"<unknown>")} is not of the right format")

@@ -106,7 +106,7 @@ object Codl extends Format:
 
   def read[value: CodlDecoder](using Void)[source](source: source)
        (using readable: source is Readable by Text)
-  : value raises ParseError raises CodlReadError =
+  : value raises ParseError raises CodlError =
 
       summon[CodlDecoder[value]].schema.parse(readable.stream(source)).as[value]
 
