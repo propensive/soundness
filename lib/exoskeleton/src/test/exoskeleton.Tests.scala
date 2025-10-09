@@ -76,11 +76,11 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               case Distribution() :: distribution =>
                 distribution match
                   case RedHat() :: _ =>
-                    Flag("one", description = t"there is only one")()
+                    Flag[Text]("one", description = t"there is only one")()
                     execute(Exit.Ok)
                   case Ubuntu() :: _ =>
-                    Flag("one", description = t"the first one")()
-                    Flag("two", description = t"the second one")()
+                    Flag[Text]("one", description = t"the first one")()
+                    Flag[Text]("two", description = t"the second one")()
                     execute(Exit.Ok)
                   case Gentoo() :: _ =>
                     given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
@@ -88,7 +88,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                       case arg :: Nil => Color(arg())
                       case _          => Color(t"unknown")
 
-                    Flag("color", false, List('f'), description = "red, green or blue")[Color]()
+                    Flag[Color]("color", false, List('f'), description = "red, green or blue")()
                     execute(Exit.Ok)
 
                   case _             => execute(Exit.Ok)

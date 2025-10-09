@@ -36,12 +36,21 @@ import anticipation.*
 import denominative.*
 import fulminate.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
 
 import language.experimental.pureFunctions
+
+trait Defaulting2:
+  erased given [value, anything] => value is Defaulting to anything = !!
+
+object Defaulting extends Defaulting2:
+  erased given [value] => value is Defaulting to value = !!
+
+erased trait Defaulting extends Typeclass, Resultant
 
 object Flag:
   def serialize(name: Text | Char): Text = name.absolve match
@@ -52,15 +61,29 @@ object Flag:
     case name: Text => t"--$name"
     case name: Char => t"-$name"
 
-case class Flag
-   (name: Text | Char,
-    repeatable: Boolean         = false,
-    aliases: List[Text | Char]  = Nil,
-    description: Optional[Text] = Unset,
-    secret: Boolean             = false):
+  @targetName("make")
+  def apply[topic: Defaulting to Any]
+       (name:        Text | Char,
+        repeatable:  Boolean           = false,
+        aliases:     List[Text | Char] = Nil,
+        description: Optional[Text]    = Unset,
+        secret:      Boolean           = false)
+  : Flag of topic =
+      new Flag(name, repeatable, aliases, description, secret):
+        type Topic = topic
 
-  def suggest[operand: {Interpretable, Discoverable as discoverable}](using cli: Cli): Unit =
-    cli.register(this, discoverable)
+case class Flag
+   (name:        Text | Char,
+    repeatable:  Boolean,
+    aliases:     List[Text | Char],
+    description: Optional[Text],
+    secret:      Boolean)
+extends Topical:
+
+  def suggest(using interpretable: Topic is Interpretable, discoverable: Topic is Discoverable)(using cli: Cli)
+  : Unit =
+
+      cli.register(this, discoverable)
 
   def matches(key: Argument): Boolean =
     val flag =
@@ -69,28 +92,28 @@ case class Flag
 
     flag == name || aliases.contains(flag)
 
-  def apply[operand]()
+  def apply()
        (using cli:             Cli,
               interpreter:     Interpreter,
-              interpretable:   operand is Interpretable,
-              suggestions:     (? <: operand) is Discoverable = Discoverable.noSuggestions)
-  : Optional[operand] =
+              interpretable:   Topic is Interpretable,
+              suggestions:     (? <: Topic) is Discoverable = Discoverable.noSuggestions)
+  : Optional[Topic] =
 
       cli.register(this, suggestions)
       cli.parameter(this)
 
 
-  def select[operand](options: Iterable[operand])
-       (using cli: Cli, interpreter: Interpreter, suggestible: operand is Suggestible)
-  : Optional[operand] =
+  def select(options: Iterable[Topic])
+       (using cli: Cli, interpreter: Interpreter, suggestible: Topic is Suggestible)
+  : Optional[Topic] =
 
-      val mapping: Map[Text, operand] =
+      val mapping: Map[Text, Topic] =
         options.map { option => (suggestible.suggest(option).text, option) }.to(Map)
 
-      given interpretable: operand is Interpretable =
+      given interpretable: Topic is Interpretable =
         case List(value) => mapping.at(value())
         case _           => Unset
 
-      given suggestions: operand is Discoverable = _ => options.map(suggestible.suggest(_))
+      given suggestions: Topic is Discoverable = _ => options.map(suggestible.suggest(_))
 
       this()
