@@ -45,8 +45,11 @@ import rudiments.*
 import spectacular.*
 import turbulence.*, stdioSources.virtualMachine
 import vacuous.*
+import zephyrine.*
 
 import errorDiagnostics.stackTraces
+
+import Codl.Issue.*
 
 import java.io as ji
 
@@ -154,9 +157,9 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
       test(m"after LF next newline must not include CR"):
         val reader = interpret(t"a\nbc\r\n")
         for i <- 0 until 4 do reader.next()
-        capture[CodlError](reader.next().char)
+        capture[ParseError](reader.next().char)
       .matches:
-        case CodlError(_, _, _, CodlError.Reason.CarriageReturnMismatch(false)) =>
+        case ParseError(Codl, _, Codl.Issue.CarriageReturnMismatch(false)) =>
 
       test(m"after CR/LF next CR/LF does not fail"):
         val reader = interpret(t"a\r\nbc\r\n")
@@ -167,9 +170,9 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
       test(m"after CR/LF next newline must include CR"):
         val reader = interpret(t"a\r\nbc\n")
         for i <- 0 until 4 do reader.next()
-        capture[CodlError](reader.next().char)
+        capture[ParseError](reader.next().char)
       .matches:
-        case CodlError(_, _, _, CodlError.Reason.CarriageReturnMismatch(true)) =>
+        case ParseError(Codl, _, Codl.Issue.CarriageReturnMismatch(true)) =>
 
       test(m"can capture start of text"):
         val reader = interpret(t"abcdef")
@@ -457,32 +460,32 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
         parseText(t"""|root
                       |     surplus-indented
                       |""".s.stripMargin.show)(1)
-      .assert(_.has(CodlToken.Error(CodlError(1, 5, 1, CodlError.Reason.SurplusIndent))))
+      .assert(_.has(CodlToken.Error(ParseError(Codl, Codl.Position(1, 5, 1), Codl.Issue.SurplusIndent))))
 
       test(m"Uneven indentation"):
         parseText(t"""|root
                       | uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_.has(CodlToken.Error(CodlError(1, 1, 1, CodlError.Reason.UnevenIndent(0, 1)))))
+      .assert(_.has(CodlToken.Error(ParseError(Codl, Codl.Position(1, 1, 1), Codl.Issue.UnevenIndent(0, 1)))))
 
       test(m"Uneven indentation 2"):
         parseText(t"""|root
                       |   uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_.has(CodlToken.Error(CodlError(1, 3, 1, CodlError.Reason.UnevenIndent(0, 3)))))
+      .assert(_.has(CodlToken.Error(ParseError(Codl, Codl.Position(1, 3, 1), Codl.Issue.UnevenIndent(0, 3)))))
 
       test(m"Insufficient indentation"):
         parseText(t"""|     root
                       |    uneven indented
                       |""".s.stripMargin.show)(1)
-      .assert(_.has(CodlToken.Error(CodlError(1, 4, 1, CodlError.Reason.InsufficientIndent))))
+      .assert(_.has(CodlToken.Error(ParseError(Codl, Codl.Position(1, 4, 1), Codl.Issue.InsufficientIndent))))
 
       test(m"Uneven de-indentation"):
         parseText(t"""|root
                       |  child
                       | deindentation
                       |""".s.stripMargin.show)(1)
-      .assert(_.has(CodlToken.Error(CodlError(2, 1, 1, CodlError.Reason.UnevenIndent(0, 1)))))
+      .assert(_.has(CodlToken.Error(ParseError(Codl, Codl.Position(2, 1, 1), Codl.Issue.UnevenIndent(0, 1)))))
 
     suite(m"Access tests"):
       import dynamicCodlAccess.enabled
@@ -648,8 +651,8 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Terminator without newline and spurious content"):
         try read(t"root\n    one two\n##spurious") yet Unset
-        catch case error: CodlError => error
-      .assert(_ == CodlError(2, 2, 1, BadTermination))
+        catch case error: ParseError => error
+      .assert(_ == ParseError(Codl, Codl.Position(2, 2, 1), BadTermination))
 
     suite(m"Schema tests"):
       import dynamicCodlAccess.enabled
@@ -712,11 +715,11 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Invalid top-level node"):
         capture(topSchema.parse(t"riot"))
-      .assert(_ == CodlError(0, 0, 4, InvalidKey(t"riot", t"riot")))
+      .assert(_ == ParseError(Codl, Codl.Position(0, 0, 4), InvalidKey(t"riot", t"riot")))
 
       test(m"Indent after comment forbidden"):
         capture(Codl.parse(t"root\n  # comment\n    child"))
-      .assert(_ == CodlError(1, 2, 1, CodlError.Reason.IndentAfterComment))
+      .assert(_ == ParseError(Codl, Codl.Position(1, 2, 1), Codl.Issue.IndentAfterComment))
 
       test(m"Validate second top-level node"):
         rootSchema.parse(t"child\nsecond").second().schema
@@ -738,7 +741,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Missing required node throws exception"):
         capture(requiredChild.parse(t"root"))
-      .assert(_ == CodlError(0, 0, 4, MissingKey(t"root", t"child")))
+      .assert(_ == ParseError(Codl, Codl.Position(0, 0, 4), MissingKey(t"root", t"child")))
 
       test(m"Present required node does not throw exception"):
         requiredChild.parse(t"root\n  child").untyped.root().child()
@@ -751,8 +754,8 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
                             )
 
       test(m"Duplicated unique child is forbidden"):
-        capture[CodlError](requiredChild.parse(t"root\n  child\n  child"))
-      .assert(_ == CodlError(2, 2, 5, DuplicateKey(t"child", t"child")))
+        capture[ParseError](requiredChild.parse(t"root\n  child\n  child"))
+      .assert(_ == ParseError(Codl, Codl.Position(2, 2, 5), DuplicateKey(t"child", t"child")))
 
       test(m"Duplicated repeatable child is permitted"):
         repeatableChild.parse(t"root\n  child\n  child").untyped.root().child(1)
@@ -773,8 +776,8 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
       .assert(_ == Data(t"child"))
 
       test(m"'At least one' may not mean zero"):
-        capture[CodlError](requiredChild.parse(t"root"))
-      .assert(_ == CodlError(0, 0, 4, MissingKey(t"root", t"child")))
+        capture[ParseError](requiredChild.parse(t"root"))
+      .assert(_ == ParseError(Codl, Codl.Position(0, 0, 4), MissingKey(t"root", t"child")))
 
       def childWithTwoParams(alpha: Arity, beta: Arity) =
         Struct(AtMostOne,
@@ -800,11 +803,11 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Surplus parameters"):
         capture(childWithTwoParams(One, One).parse(t"root\n  child one two three"))
-      .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
+      .assert(_ == ParseError(Codl, Codl.Position(1, 16, 5), SurplusParams(t"three", t"child")))
 
       test(m"Two surplus parameters"):
         capture(childWithTwoParams(One, One).parse(t"root\n  child one two three four"))
-      .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
+      .assert(_ == ParseError(Codl, Codl.Position(1, 16, 5), SurplusParams(t"three", t"child")))
 
       test(m"Two optional parameters not specified"):
         childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child").root().child().layout
@@ -821,7 +824,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Two optional parameters with one surplus"):
         capture(childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child one two three").root().child())
-      .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
+      .assert(_ == ParseError(Codl, Codl.Position(1, 16, 5), SurplusParams(t"three", t"child")))
 
       test(m"Variadic parameters are counted"):
         childWithTwoParams(One, Many).parse(t"root\n  child one two three four").root().child().layout.params
@@ -837,11 +840,11 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"'at least one' parameters are not optional"):
         capture(childWithTwoParams(One, AtLeastOne).parse(t"root\n  child one"))
-      .assert(_ == CodlError(1, 2, 5, MissingKey(t"child", t"beta")))
+      .assert(_ == ParseError(Codl, Codl.Position(1, 2, 5), MissingKey(t"child", t"beta")))
 
       test(m"Variadic first parameters don't count for second"):
         capture(childWithTwoParams(AtLeastOne, AtLeastOne).parse(t"root\n  child one two three"))
-      .assert(_ == CodlError(1, 2, 5, MissingKey(t"child", t"beta")))
+      .assert(_ == ParseError(Codl, Codl.Position(1, 2, 5), MissingKey(t"child", t"beta")))
 
       test(m"Two optional parameters not specified on root"):
         rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child").child().layout.params
@@ -857,7 +860,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Two optional parameters with one surplus on root"):
         capture(rootWithTwoParams(AtMostOne, AtMostOne).parse(t"  child one two three").child())
-      .assert(_ == CodlError(0, 16, 5, SurplusParams(t"three", t"child")))
+      .assert(_ == ParseError(Codl, Codl.Position(0, 16, 5), SurplusParams(t"three", t"child")))
 
       test(m"Variadic parameters are counted on root"):
         rootWithTwoParams(One, Many).parse(t"  child one two three four").child().layout.params
@@ -873,11 +876,11 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"'at least one' parameters are not optional on root"):
         capture(rootWithTwoParams(One, AtLeastOne).parse(t"  child one"))
-      .assert(_ == CodlError(0, 2, 5, MissingKey(t"child", t"beta")))
+      .assert(_ == ParseError(Codl, Codl.Position(0, 2, 5), MissingKey(t"child", t"beta")))
 
       test(m"Variadic first parameters don't count for second on root"):
         capture(rootWithTwoParams(AtLeastOne, AtLeastOne).parse(t"  child one two three"))
-      .assert(_ == CodlError(0, 2, 5, MissingKey(t"child", t"beta")))
+      .assert(_ == ParseError(Codl, Codl.Position(0, 2, 5), MissingKey(t"child", t"beta")))
 
     suite(m"Path tests"):
       import dynamicCodlAccess.enabled
@@ -927,7 +930,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Cannot have duplicate IDs of the same type"):
         capture(repetitionSchema.parse(t"ABC first One\nABC second Two\nABC first Primary"))
-      .assert(_ == CodlError(2, 4, 5, CodlError.Reason.DuplicateId(t"first", 0, 4)))
+      .assert(_ == ParseError(Codl, Codl.Position(2, 4, 5), Codl.Issue.DuplicateId(t"first", 0, 4)))
 
     suite(m"Binary tests"):
 

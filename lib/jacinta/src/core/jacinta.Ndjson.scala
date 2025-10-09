@@ -38,10 +38,11 @@ import merino.*
 import prepositional.*
 import proscenium.*
 import turbulence.*
+import zephyrine.*
 
 object Ndjson:
   def parse[source: Readable by Line](value: source)
-       (using Text is Readable by Bytes): Ndjson raises JsonParseError =
+       (using Text is Readable by Bytes): Ndjson raises ParseError =
 
     Ndjson(value.stream[Line].map { line => Json.parse(line.content) })
 

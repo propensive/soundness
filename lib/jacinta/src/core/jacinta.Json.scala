@@ -52,6 +52,7 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 import wisteria.*
+import zephyrine.*
 
 import JsonError.Reason
 
@@ -232,7 +233,7 @@ object Json extends Json2, Dynamic:
 
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
-  inline def parse[source](value: source): Json raises JsonParseError = summonFrom:
+  inline def parse[source](value: source): Json raises ParseError = summonFrom:
       case given (`source` is Readable by Bytes) => Json(JsonAst.parse(value))
       case given (`source` is Readable by Text)  => Json(JsonAst.parse(value.read[Bytes]))
 
@@ -249,10 +250,10 @@ object Json extends Json2, Dynamic:
       def genericize(json: Json): HttpStreams.Content =
         (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.bytes))
 
-  given decodable: Tactic[JsonParseError] => Json is Decodable in Text =
+  given decodable: Tactic[ParseError] => Json is Decodable in Text =
     text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
-  given instantiable: Tactic[JsonParseError] => Json is Instantiable across HttpRequests from Text =
+  given instantiable: Tactic[ParseError] => Json is Instantiable across HttpRequests from Text =
     text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =

@@ -42,13 +42,71 @@ import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
+
+import Codl.Issue.*
 
 erased trait Codl
 
-object Codl:
+object Codl extends Format:
+  def name: Text = t"CoDL"
+
+  case class Position(line: Int, column: Int, length: Int) extends Format.Position:
+    def describe: Text = t"line $line, column $column"
+
+  enum Issue extends Format.Issue:
+    case UnexpectedCarriageReturn
+    case BadSubstitution
+    case BadTermination
+    case CarriageReturnMismatch(required: Boolean)
+    case UnevenIndent(initial: Int, indent: Int)
+    case IndentAfterComment, SurplusIndent, InsufficientIndent
+
+    case MissingKey(point: Text, key: Text)
+    case DuplicateKey(point: Text, key: Text)
+    case SurplusParams(point: Text, cmd: Text)
+    case InvalidKey(point: Text, key: Text)
+    case DuplicateId(point: Text, line: Int, col: Int)
+
+    def describe: Message = this match
+      case BadSubstitution           => m"a substitution cannot be made at this point"
+      case SurplusIndent             => m"too much indentation was given"
+      case InsufficientIndent        => m"insufficient indentation was specified"
+      case MissingKey(point, key)    => m"the value $key was missing at $point"
+      case DuplicateKey(point, key)  => m"the unique key $key has already been used at $point"
+      case SurplusParams(point, key) => m"too many parameters were given to the key $key at $point"
+      case InvalidKey(point, key)    => m"the key $key was invalid at $point"
+
+      case DuplicateId(point, line, col) =>
+        m"the unique ID has been used before at $line:$col, $point"
+
+
+      case UnexpectedCarriageReturn =>
+        m"""a carriage return character ('\\r') was followed by a character other than a newline
+            ('\\n')"""
+
+      case CarriageReturnMismatch(true) =>
+        m"""a newline character ('\\n') was found without a preceding carriage return ('\\r'), which
+            does not match the document's prior newline convention"""
+
+      case CarriageReturnMismatch(false) =>
+        m"""a carriage return ('\\r') was encountered, which does not match the document's prior
+            newline convention"""
+
+      case UnevenIndent(initial, indent) =>
+        m"""the indentation level of ${indent - initial} (with a margin of $initial) is not an exact
+            multiple of 2"""
+
+      case IndentAfterComment =>
+        m"indentation was given after a comment; the comment should be aligned with its next key"
+
+      case BadTermination =>
+        m"two # symbols terminates the document and must appear alone on a line"
+
+
   def read[value: CodlDecoder](using Void)[source](source: source)
        (using readable: source is Readable by Text)
-  : value raises CodlError raises CodlReadError =
+  : value raises ParseError raises CodlError =
 
       summon[CodlDecoder[value]].schema.parse(readable.stream(source)).as[value]
 
@@ -58,7 +116,7 @@ object Codl:
         schema:    CodlSchema = CodlSchema.Free,
         subs:      List[Data] = Nil,
         fromStart: Boolean    = false)
-       (using readable: source is Readable by Text, aggregate: Tactic[CodlError])
+       (using readable: source is Readable by Text, aggregate: Tactic[ParseError])
   : CodlDoc =
 
       val (margin, stream) =
@@ -105,7 +163,7 @@ object Codl:
 
               schema.requiredKeys.each: key =>
                 if !node.data.let(_.has(key)).or(false) then raise:
-                  CodlError(line, col, node.key.or(t"?").length, MissingKey(node.key.or(t"?"), key))
+                  ParseError(Codl, Position(line, col, node.key.or(t"?").length), MissingKey(node.key.or(t"?"), key))
 
               node
 
@@ -162,7 +220,7 @@ object Codl:
 
               case CodlToken.Indent =>
                 if focus.key.absent
-                then raise(CodlError(focus.line, focus.col, 1, IndentAfterComment))
+                then raise(ParseError(Codl, Position(focus.line, focus.col, 1), IndentAfterComment))
 
                 go(focus = Proto(), peers = Nil, stack = (focus -> peers) :: stack)
 
@@ -203,7 +261,7 @@ object Codl:
                         if peerIds.contains(uniqueId(0)) then
                           val first = peerIds(uniqueId(0))
                           val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
-                          raise(CodlError(line, col, uniqueId(0).length, duplicate))
+                          raise(ParseError(Codl, Position(line, col, uniqueId(0).length), duplicate))
 
                       val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                       go(focus = focus2, peerIds = peerIds2, lines = 0)
@@ -216,14 +274,14 @@ object Codl:
                         if peerIds.contains(uniqueId(0)) then
                           val first = peerIds(uniqueId(0))
                           val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
-                          raise(CodlError(line, col, uniqueId(0).length, duplicate))
+                          raise(ParseError(Codl, Position(line, col, uniqueId(0).length), duplicate))
 
                       val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                       go(focus = focus2, peerIds = peerIds2, lines = 0)
 
                     case struct@Struct(_, _) => struct.param(focus.children.length) match
                       case Unset =>
-                        raise(CodlError(line, col, word.length, SurplusParams(word, key)))
+                        raise(ParseError(Codl, Position(line, col, word.length), SurplusParams(word, key)))
                         go()
 
                       case entry: CodlSchema.Entry =>
@@ -234,7 +292,7 @@ object Codl:
                           if peerIds.contains(uniqueId(0)) then
                             val first = peerIds(uniqueId(0))
                             val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
-                            raise(CodlError(line, col, uniqueId(0).length, duplicate))
+                            raise(ParseError(Codl, Position(line, col, uniqueId(0).length), duplicate))
 
                         val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                         go(focus = focus2, peerIds = peerIds2, lines = 0)
@@ -243,11 +301,11 @@ object Codl:
                     val fschema: CodlSchema =
                       if schema == CodlSchema.Free then schema
                       else schema(word).or:
-                        raise(CodlError(line, col, word.length, InvalidKey(word, word)))
+                        raise(ParseError(Codl, Position(line, col, word.length), InvalidKey(word, word)))
                         CodlSchema.Free
 
                     if fschema.unique && peers.exists(_.data.let(_.key) == word)
-                    then raise(CodlError(line, col, word.length, DuplicateKey(word, word)))
+                    then raise(ParseError(Codl, Position(line, col, word.length), DuplicateKey(word, word)))
 
                     go(focus = Proto(word, line, col, extra = extra2, schema = fschema,
                         multiline = block), lines = 0)
@@ -280,7 +338,7 @@ object Codl:
 
 
   def tokenize(in: Stream[Text], fromStart: Boolean = false)(using Diagnostics)
-  : (Int, Stream[CodlToken]) raises CodlError =
+  : (Int, Stream[CodlToken]) raises ParseError =
 
       val reader: PositionReader = new PositionReader(in.map(identity))
 
@@ -291,7 +349,7 @@ object Codl:
       import State.*
 
       @tailrec
-      def cue(count: Int = 0)(using Tactic[CodlError]): (Character, Int) =
+      def cue(count: Int = 0)(using Tactic[ParseError]): (Character, Int) =
         val ch = reader.next()
         if ch.char == '\n' || ch.char == ' ' then cue(count + 1) else (ch, count)
 
@@ -320,8 +378,10 @@ object Codl:
       : Stream[CodlToken] =
 
           inline def next(): Character =
-            try reader.next()
-            catch case err: CodlError => Character('\n', err.line, err.col)
+            try reader.next() catch
+              case error: ParseError => error match
+                case ParseError(Codl, Codl.Position(line, column, _), _) =>
+                  Character('\n', line, column)
 
 
           inline def recur
@@ -339,7 +399,7 @@ object Codl:
             val char = next()
 
             if char.char != '\n' && char != Character.End
-            then fail(Comment, CodlError(char.line, col(char), 1, BadTermination))
+            then fail(Comment, ParseError(Codl, Position(char.line, col(char), 1), BadTermination))
             else
               if char == Character.End then Stream()
               else Stream(CodlToken.Body(reader.charStream()))
@@ -389,20 +449,20 @@ object Codl:
             else token() #:: istream(char, count = count + 1, indent = indent, padding = false)
 
 
-          def fail(next: State, error: CodlError, adjust: Optional[Int] = Unset)
+          def fail(next: State, error: ParseError, adjust: Optional[Int] = Unset)
           : Stream[CodlToken] =
 
               CodlToken.Error(error) #:: irecur(next, indent = adjust.or(char.column))
 
 
           def newline(next: State): Stream[CodlToken] =
-            if diff > 4 then fail(Margin, CodlError(char.line, col(char), 1, SurplusIndent), indent)
+            if diff > 4 then fail(Margin, ParseError(this, Position(char.line, col(char), 1), SurplusIndent), indent)
             else if char.column < margin
-            then fail(Indent, CodlError(char.line, col(char), 1, InsufficientIndent), margin)
+            then fail(Indent, ParseError(Codl, Position(char.line, col(char), 1), InsufficientIndent), margin)
             else if diff%2 != 0 then
               fail
                (Indent,
-                CodlError(char.line, col(char), 1, UnevenIndent(margin, char.column)),
+                ParseError(Codl, Position(char.line, col(char), 1), UnevenIndent(margin, char.column)),
                 char.column + 1)
             else diff match
               case 2 => CodlToken.Indent #:: irecur(next, indent = char.column)
@@ -459,7 +519,7 @@ object Codl:
   object Prefix extends Interpolator[List[Data], State, CodlDoc]:
     protected def complete(state: State): CodlDoc = ???
       // try Codl.parse(state.content, CodlSchema.Free, state.subs.reverse, fromStart = true)
-      // catch case error: AggregateError[CodlError] => ???
+      // catch case error: AggregateError[ParseError] => ???
 
     def initial: State = State(Nil, Nil)
     def skip(state: State): State = insert(state, List(Data(t"_")))

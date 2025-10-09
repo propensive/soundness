@@ -42,6 +42,7 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
+import zephyrine.*
 
 import Character.*
 
@@ -83,7 +84,7 @@ class PositionReader(private var in: Stream[Text]):
     case _ =>
       lastCol += 1
 
-  def next()(using Tactic[CodlError]): Character =
+  def next()(using Tactic[ParseError]): Character =
     if finished then throw IllegalStateException("Attempted to read past the end of the stream")
     read() match
       case -1 =>
@@ -92,16 +93,16 @@ class PositionReader(private var in: Stream[Text]):
       case '\r' =>
         requireCr match
           case Unset => requireCr = true
-          case false => raise(CodlError(lastLine, lastCol, 1, CarriageReturnMismatch(false)))
+          case false => raise(ParseError(Codl, Codl.Position(lastLine, lastCol, 1), Codl.Issue.CarriageReturnMismatch(false)))
           case true  => ()
 
-        if read() != '\n' then raise(CodlError(lastLine, lastCol, 1, UnexpectedCarriageReturn))
+        if read() != '\n' then raise(ParseError(Codl, Codl.Position(lastLine, lastCol, 1), Codl.Issue.UnexpectedCarriageReturn))
 
         Character('\n', lastLine, lastCol).tap(advance)
 
       case '\n' =>
         requireCr match
-          case true  => raise(CodlError(lastLine, lastCol, 1, CarriageReturnMismatch(true)))
+          case true  => raise(ParseError(Codl, Codl.Position(lastLine, lastCol, 1), Codl.Issue.CarriageReturnMismatch(true)))
           case Unset => requireCr = false
           case false => ()
 

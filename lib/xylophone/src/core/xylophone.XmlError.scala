@@ -30,10 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cellulose
+package xylophone
 
-import anticipation.*
 import fulminate.*
+import gossamer.*
 
-case class MissingIndexValueError(index: Int)(using Diagnostics)
-extends Error(m"the index $index does not exist in the CoDL document")
+object XmlError:
+  enum Reason:
+    case Read
+    case Access(index: Int, path: XmlPath)
+
+  given Reason is Communicable =
+    case Reason.Read                => m"the value could not be read"
+    case Reason.Access(index, path) =>
+      val node = if index ==0 then t"any nodes" else t"node $index"
+      m"could not access ${node} at path ${Xml.pathString(path)}"
+
+case class XmlError(reason: XmlError.Reason)(using Diagnostics)
+extends Error(m"XML access failed because $reason")

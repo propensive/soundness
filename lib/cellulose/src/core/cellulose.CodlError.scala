@@ -34,70 +34,26 @@ package cellulose
 
 import anticipation.*
 import fulminate.*
-
-export CodlError.Reason.*
+import gossamer.*
+import vacuous.*
 
 object CodlError:
-  given communicable: Reason is Communicable =
-    case UnexpectedCarriageReturn =>
-      m"""a carriage return character ('\\r') was followed by a character other than a newline
-          ('\\n')"""
-
-    case CarriageReturnMismatch(true) =>
-      m"""a newline character ('\\n') was found without a preceding carriage return ('\\r'), which
-          does not match the document's prior newline convention"""
-
-    case CarriageReturnMismatch(false) =>
-      m"""a carriage return ('\\r') was encountered, which does not match the document's prior
-          newline convention"""
-
-    case UnevenIndent(initial, indent) =>
-      m"""the indentation level of ${indent - initial} (with a margin of $initial) is not an exact
-          multiple of 2"""
-
-    case IndentAfterComment =>
-      m"indentation was given after a comment; the comment should be aligned with its next key"
-
-    case BadSubstitution =>
-      m"a substitution cannot be made at this point"
-
-    case BadTermination =>
-      m"two # symbols terminates the document and must appear alone on a line"
-
-    case SurplusIndent =>
-      m"too much indentation was given"
-
-    case InsufficientIndent =>
-      m"insufficient indentation was specified"
-
-    case MissingKey(point, key) =>
-      m"the value $key was missing at $point"
-
-    case DuplicateKey(point, key) =>
-      m"the unique key $key has already been used at $point"
-
-    case SurplusParams(point, key) =>
-      m"too many parameters were given to the key $key at $point"
-
-    case InvalidKey(point, key) =>
-      m"the key $key was invalid at $point"
-
-    case DuplicateId(point, line, col) =>
-      m"the unique ID has been used before at $line:$col, $point"
-
   enum Reason:
-    case UnexpectedCarriageReturn
-    case BadSubstitution
-    case BadTermination
-    case CarriageReturnMismatch(required: Boolean)
-    case UnevenIndent(initial: Int, indent: Int)
-    case IndentAfterComment, SurplusIndent, InsufficientIndent
+    case BadFormat(label: Optional[Text])
+    case MissingValue(key: Text)
+    case MissingIndexValue(index: Int)
+    case MultipleIds(key: Text)
 
-    case MissingKey(point: Text, key: Text)
-    case DuplicateKey(point: Text, key: Text)
-    case SurplusParams(point: Text, cmd: Text)
-    case InvalidKey(point: Text, key: Text)
-    case DuplicateId(point: Text, line: Int, col: Int)
+  given communicable: Reason is Communicable =
+    case Reason.MissingValue(key)        => m"the key $key does not exist in the document"
+    case Reason.MissingIndexValue(index) => m"the index $index does not exist in the document"
 
-case class CodlError(line: Int, col: Int, length: Int, reason: CodlError.Reason)(using Diagnostics)
-extends Error(m"could not read the CoDL document at $line:$col: $reason")
+    case Reason.MultipleIds(key) =>
+      m"multiple parameters of $key have been marked as identifiers"
+
+    case Reason.BadFormat(label) =>
+      m"the value ${label.or(t"<unknown>")} is not in the right format"
+
+
+case class CodlError(reason: CodlError.Reason)(using Diagnostics)
+extends Error(m"the CoDL was not valid because $reason")

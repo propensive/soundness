@@ -43,16 +43,16 @@ import wisteria.*
 import scala.deriving.*
 
 trait CodlDecoder[value]:
-  def decoded(value: List[Indexed]): value raises CodlReadError
+  def decoded(value: List[Indexed]): value raises CodlError
   def schema: CodlSchema
 
 object CodlDecoder:
   def apply[value]
-       (schema0: => CodlSchema, decode0: Tactic[CodlReadError] ?=> List[Indexed] => value)
+       (schema0: => CodlSchema, decode0: Tactic[CodlError] ?=> List[Indexed] => value)
   : CodlDecoder[value] =
 
       new:
-        def decoded(value: List[Indexed]): value raises CodlReadError = decode0(value)
+        def decoded(value: List[Indexed]): value raises CodlError = decode0(value)
         def schema: CodlSchema  = schema0
 
 
@@ -67,20 +67,20 @@ object CodlDecoder:
 
   given unit: CodlDecoder[Unit]:
     val schema: CodlSchema = Field(Arity.One)
-    def decoded(nodes: List[Indexed]): Unit raises CodlReadError = ()
+    def decoded(nodes: List[Indexed]): Unit raises CodlError = ()
 
   given optional: [value >: Unset.type: Mandatable] => (decoder: => CodlDecoder[value.Result])
         => CodlDecoder[value]:
 
     def schema: CodlSchema = decoder.schema.optional
 
-    def decoded(nodes: List[Indexed]): value raises CodlReadError =
+    def decoded(nodes: List[Indexed]): value raises CodlError =
       if nodes.isEmpty then Unset else decoder.decoded(nodes)
 
   given option: [decodable] => (decoder: => CodlDecoder[decodable]) => CodlDecoder[Option[decodable]]:
     def schema: CodlSchema = decoder.schema.optional
 
-    def decoded(nodes: List[Indexed]): Option[decodable] raises CodlReadError =
+    def decoded(nodes: List[Indexed]): Option[decodable] raises CodlError =
       if nodes.isEmpty then None else Some(decoder.decoded(nodes))
 
   given list: [element] => (element: => CodlDecoder[element]) => CodlDecoder[List[element]] =
@@ -89,7 +89,7 @@ object CodlDecoder:
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-      def decoded(value: List[Indexed]): List[element] raises CodlReadError =
+      def decoded(value: List[Indexed]): List[element] raises CodlError =
         element.schema match
           case Field(_, validator) => value.flatMap(_.children).map: node =>
             element.decoded(List(CodlDoc(node)))
@@ -102,7 +102,7 @@ object CodlDecoder:
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-    def decoded(value: List[Indexed]): Set[element] raises CodlReadError =
+    def decoded(value: List[Indexed]): Set[element] raises CodlError =
       element.schema match
         case Field(_, validator) =>
           value.flatMap(_.children).map { node => element.decoded(List(CodlDoc(node))) }.to(Set)

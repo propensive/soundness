@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export merino.{JsonAst, JsonParseError}
+export merino.{JsonAst}

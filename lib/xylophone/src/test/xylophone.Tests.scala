@@ -203,17 +203,17 @@ object Tests extends Suite(m"Xylophone tests"):
     test(m"access error; proactively resolving head nodes"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
       capture(xml.company().staff().cto().name().as[Text])
-    .assert(_ == XmlAccessError(0, List(t"company", 0, t"staff", 0, t"cto")))
+    .assert(_ == XmlError(0, List(t"company", 0, t"staff", 0, t"cto")))
 
     test(m"access error; taking all children"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
       capture(xml.company.staff.cto.name().as[Text])
-    .assert(_ == XmlAccessError(0, List(t"company", t"staff", t"cto", t"name")))
+    .assert(_ == XmlError(0, List(t"company", t"staff", t"cto", t"name")))
 
     test(m"access non-zero node"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
       capture(xml.company(1).staff().cto.name().as[Text])
-    .assert(_ == XmlAccessError(1, List(t"company")))
+    .assert(_ == XmlError(1, List(t"company")))
 
     // test(m"simple literal content is as expected"):
     //   x"""<root attribute=""/>""".show

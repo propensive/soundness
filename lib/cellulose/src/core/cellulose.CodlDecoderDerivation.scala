@@ -52,13 +52,13 @@ object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
 
       Struct(elements.to(List), Arity.One)
 
-    def decode(values: List[Indexed]): derivation raises CodlReadError =
+    def decode(values: List[Indexed]): derivation raises CodlError =
       construct:
         [field] => context =>
           val label2 = compiletime.summonFrom:
             case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
             case _                                        => label
 
-          context.decoded(values.prim.lest(CodlReadError(label2)).get(label2))
+          context.decoded(values.prim.lest(CodlError(CodlError.Reason.BadFormat(label2))).get(label2))
 
     CodlDecoder[derivation](schema, decode)

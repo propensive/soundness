@@ -65,8 +65,8 @@ trait Indexed extends Dynamic:
 
   def ids: Set[Text] = idIndex.keySet
 
-  def apply(idx: Int = 0)(using Tactic[MissingIndexValueError]): CodlNode =
-    children.at(idx.z).lest(MissingIndexValueError(idx))
+  def apply(idx: Int = 0)(using Tactic[CodlError]): CodlNode =
+    children.at(idx.z).lest(CodlError(CodlError.Reason.MissingIndexValue(idx)))
 
   def apply(key: Text): List[CodlNode] = index.at(key).or(Nil).map(children(_))
 
@@ -80,14 +80,12 @@ trait Indexed extends Dynamic:
         List.range(idx, layout.params).map: idx =>
           Data(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
 
-  def selectDynamic(key: String)(using erased DynamicCodlEnabler)
-  : List[Data] raises MissingValueError =
-
-      index(key.show).map(children(_).data).collect:
-        case data: Data => data
+  def selectDynamic(key: String)(using erased DynamicCodlEnabler): List[Data] raises CodlError =
+    index(key.show).map(children(_).data).collect:
+      case data: Data => data
 
 
   def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)
-  : Data raises MissingValueError =
+  : Data raises CodlError =
 
       selectDynamic(key)(idx)

@@ -47,9 +47,9 @@ trait XmlDecoder[value]:
     list => lambda(read(list))
 
 object XmlDecoder extends Derivation[XmlDecoder]:
-  given text(using Tactic[XmlReadError]): XmlDecoder[Text] = list =>
+  given text(using Tactic[XmlError]): XmlDecoder[Text] = list =>
     val elements = childElements(list).collect { case XmlAst.Textual(text) => text }
-    if elements.length == 0 then raise(XmlReadError()) yet "".tt else elements.head
+    if elements.length == 0 then raise(XmlError(XmlError.Reason.Read)) yet "".tt else elements.head
 
   given decodable: [value: Decodable in Text] => XmlDecoder[value] = value =>
     value.absolve match
