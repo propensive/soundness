@@ -104,7 +104,7 @@ object Codl extends Format:
         m"two # symbols terminates the document and must appear alone on a line"
 
 
-  def read[value: CodlDecodable](using Void)[source](source: source)
+  def read[value: {CodlDecodable, CodlSchematic}](using Void)[source](source: source)
        (using readable: source is Readable by Text)
   : value raises ParseError raises CodlError =
 

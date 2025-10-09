@@ -39,15 +39,17 @@ import wisteria.*
 
 import scala.deriving.*
 
-object CodlDecodableDerivation extends ProductDerivable[CodlDecodable]:
-  inline def join[derivation <: Product: ProductReflection]: derivation is CodlDecodable =
-    def decode(values: List[Indexed]): derivation raises CodlError =
-      construct:
+object CodlSchematicDerivation extends ProductDerivable[CodlSchematic]:
+  inline def join[derivation <: Product: ProductReflection]: derivation is CodlSchematic =
+    def schema: CodlSchema =
+      val elements = contexts:
         [field] => context =>
           val label2 = compiletime.summonFrom:
             case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
             case _                                        => label
 
-          context.decoded(values.prim.lest(CodlError(CodlError.Reason.BadFormat(label2))).get(label2))
+          CodlSchema.Entry(label2, context.schema)
 
-    CodlDecodable[derivation](decode)
+      Struct(elements.to(List), Arity.One)
+
+    CodlSchematic[derivation](schema)
