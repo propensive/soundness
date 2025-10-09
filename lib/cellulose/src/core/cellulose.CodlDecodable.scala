@@ -37,6 +37,7 @@ import contingency.*
 import distillate.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import wisteria.*
 
@@ -55,15 +56,25 @@ object CodlDecodable:
         def decoded(value: List[Indexed]): value raises CodlError = decode0(value)
         def schema: CodlSchema  = schema0
 
+  def apply[value](lambda: Text => value): value is CodlDecodable = new CodlDecodable:
+    type Self = value
+    val schema: CodlSchema = Field(Arity.One)
+
+    def decoded(nodes: List[Indexed]): value raises CodlError =
+      nodes.prim.lest(CodlError(CodlError.Reason.BadFormat(Unset))).children match
+        case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
+
+        case _ =>
+          abort(CodlError(CodlError.Reason.BadFormat(Unset)))
 
   inline given derived: [value] => value is CodlDecodable = compiletime.summonFrom:
     case given (`value` is Decodable in Text) => field[`value`]
     case given ProductReflection[`value`]     => CodlDecodableDerivation.derived[`value`]
 
-  def field[value: Decodable in Text]: value is CodlDecodable = CodlFieldReader(value.decoded(_))
+  def field[value: Decodable in Text]: value is CodlDecodable = apply(value.decoded(_))
 
-  given boolean: Boolean is CodlDecodable = CodlFieldReader(_ == t"yes")
-  given text: Text is CodlDecodable = CodlFieldReader(identity(_))
+  given boolean: Boolean is CodlDecodable = apply(_ == t"yes")
+  given text: Text is CodlDecodable = apply(identity(_))
 
   given unit: Unit is CodlDecodable:
     val schema: CodlSchema = Field(Arity.One)

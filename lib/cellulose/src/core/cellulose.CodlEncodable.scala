@@ -63,10 +63,17 @@ object CodlEncodable extends CodlEncodable2:
         def schema: CodlSchema = schema0
         def encode(value: value): List[IArray[CodlNode]] = encode0(value)
 
+  def apply[value](lambda: value => Text): value is CodlEncodable = new CodlEncodable:
+    type Self = value
+    def schema: CodlSchema = Field(Arity.One)
+    def encodeField(value: value): Text = lambda(value)
 
-  given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
-  given text: CodlFieldWriter[Text] = _.show
+    def encode(value: value): List[IArray[CodlNode]] =
+      List(IArray(CodlNode(Data(encodeField(value)))))
 
+
+  given boolean: Boolean is CodlEncodable = apply(if _ then t"yes" else t"no")
+  given text: Text is CodlEncodable = apply(_.show)
 
   given optional: [inner, value >: Unset.type: Mandatable to inner]
         => (encoder: => inner is CodlEncodable)
