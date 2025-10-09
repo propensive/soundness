@@ -88,7 +88,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                       case arg :: Nil => Color(arg())
                       case _          => Color(t"unknown")
 
-                    Flag("color", false, List('f'), description = "red, green or blue")[Color]()
+                    Flag[Color]("color", false, List('f'), description = "red, green or blue")()
                     execute(Exit.Ok)
 
                   case _             => execute(Exit.Ok)
