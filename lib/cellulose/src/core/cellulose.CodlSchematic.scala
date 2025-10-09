@@ -33,71 +33,42 @@
 package cellulose
 
 import anticipation.*
+import contingency.*
+import distillate.*
 import gossamer.*
 import prepositional.*
-import spectacular.*
+import rudiments.*
 import vacuous.*
 import wisteria.*
 
-trait CodlEncoder[value]:
-  def encode(value: value): List[IArray[CodlNode]]
-  def schema: CodlSchema
+import scala.deriving.*
 
-trait CodlEncoder2:
-  def field[encodable: Encodable in Text]: CodlEncoder[encodable] = new CodlEncoder[encodable]:
-    def schema: CodlSchema = Field(Arity.One)
+object CodlSchematic:
+  inline given derived: [value] => value is CodlSchematic = compiletime.summonFrom:
+    case given (`value` is Decodable in Text) => () => Field(Arity.One)
+    case given ProductReflection[`value`]     => CodlSchematicDerivation.derived[`value`]
 
-    def encode(value: encodable): List[IArray[CodlNode]] =
-      List(IArray(CodlNode(Data(encodable.encode(value)))))
+  given boolean: Boolean is CodlSchematic = () => Field(Arity.One)
+  given text: Text is CodlSchematic = () => Field(Arity.One)
+  given unit: Unit is CodlSchematic = () => Field(Arity.One)
 
-  inline given derived: [value] => CodlEncoder[value] = compiletime.summonFrom:
-    case given (`value` is Encodable in Text) => field[value]
-    case given ProductReflection[`value`]     => CodlEncoderDerivation.derived[value]
+  given optional: [value >: Unset.type: Mandatable] => (schematic: => value.Result is CodlSchematic)
+        => value is CodlSchematic =
+    () => schematic.schema().optional
 
-object CodlEncoder extends CodlEncoder2:
-  def apply[value](schema0: CodlSchema, encode0: value => List[IArray[CodlNode]])
-  : CodlEncoder[value] =
+  given option: [value] => (schematic: => value is CodlSchematic)
+        => Option[value] is CodlSchematic =
+    () => schematic.schema().optional
 
-      new:
-        def schema: CodlSchema = schema0
-        def encode(value: value): List[IArray[CodlNode]] = encode0(value)
-
-
-  given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
-  given text: CodlFieldWriter[Text] = _.show
-
-
-  given optional: [inner, value >: Unset.type: Mandatable to inner]
-        => (encoder: => CodlEncoder[inner])
-        => CodlEncoder[value]:
-
-    def schema: CodlSchema = encoder.schema.optional
-
-    def encode(element: value): List[IArray[CodlNode]] =
-      element.let: element =>
-        encoder.encode(element.asInstanceOf[inner])
-      . or(List())
-
-
-  given option: [encodable: CodlEncoder] => CodlEncoder[Option[encodable]]:
-    def schema: CodlSchema = encodable.schema.optional
-
-    def encode(value: Option[encodable]): List[IArray[CodlNode]] = value match
-      case None        => List()
-      case Some(value) => encodable.encode(value)
-
-  given list: [element] => (element: => CodlEncoder[element]) => CodlEncoder[List[element]]:
-    def schema: CodlSchema = element.schema match
+  given list: [element] => (element: => element is CodlSchematic) => List[element] is CodlSchematic =
+    () => element.schema() match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-    def encode(value: List[element]): List[IArray[CodlNode]] =
-      value.map(element.encode(_).head)
-
-  given set: [element: CodlEncoder] => CodlEncoder[Set[element]]:
-    def schema: CodlSchema = element.schema match
+  given set: [element] => (element: => element is CodlSchematic) => Set[element] is CodlSchematic =
+    () => element.schema() match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-    def encode(value: Set[element]): List[IArray[CodlNode]] =
-      value.map(element.encode(_).head).to(List)
+trait CodlSchematic extends Typeclass:
+  def schema(): CodlSchema

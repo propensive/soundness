@@ -33,79 +33,61 @@
 package cellulose
 
 import anticipation.*
-import contingency.*
-import distillate.*
 import gossamer.*
 import prepositional.*
+import spectacular.*
 import vacuous.*
 import wisteria.*
 
-import scala.deriving.*
+trait CodlEncodable extends Typeclass:
+  def encode(value: Self): List[IArray[CodlNode]]
 
-trait CodlDecoder[value]:
-  def decoded(value: List[Indexed]): value raises CodlError
-  def schema: CodlSchema
+trait CodlEncodable2:
+  def field[encodable: Encodable in Text]: encodable is CodlEncodable = new CodlEncodable:
+    type Self = encodable
 
-object CodlDecoder:
-  def apply[value]
-       (schema0: => CodlSchema, decode0: Tactic[CodlError] ?=> List[Indexed] => value)
-  : CodlDecoder[value] =
+    def encode(value: encodable): List[IArray[CodlNode]] =
+      List(IArray(CodlNode(Data(encodable.encode(value)))))
 
-      new:
-        def decoded(value: List[Indexed]): value raises CodlError = decode0(value)
-        def schema: CodlSchema  = schema0
+  inline given derived: [value] => value is CodlEncodable = compiletime.summonFrom:
+    case given (`value` is Encodable in Text) => field[value]
+    case given ProductReflection[`value`]     => CodlEncodableDerivation.derived[value]
+
+object CodlEncodable extends CodlEncodable2:
+  def apply[value](encode0: value => List[IArray[CodlNode]]): value is CodlEncodable =
+    new:
+      def encode(value: value): List[IArray[CodlNode]] = encode0(value)
+
+  def apply2[value](lambda: value => Text): value is CodlEncodable = new CodlEncodable:
+    type Self = value
+    def encodeField(value: value): Text = lambda(value)
+
+    def encode(value: value): List[IArray[CodlNode]] =
+      List(IArray(CodlNode(Data(encodeField(value)))))
 
 
-  inline given derived: [value] => CodlDecoder[value] = compiletime.summonFrom:
-    case given (`value` is Decodable in Text) => field[`value`]
-    case given ProductReflection[`value`]     => CodlDecoderDerivation.derived[`value`]
+  given boolean: Boolean is CodlEncodable = apply2(if _ then t"yes" else t"no")
+  given text: Text is CodlEncodable = apply2(_.show)
 
-  def field[value: Decodable in Text]: CodlDecoder[value] = CodlFieldReader(value.decoded(_))
+  given optional: [inner, value >: Unset.type: Mandatable to inner]
+        => (encoder: => inner is CodlEncodable)
+        => value is CodlEncodable:
 
-  given boolean: CodlDecoder[Boolean] = CodlFieldReader(_ == t"yes")
-  given text: CodlDecoder[Text] = CodlFieldReader(identity(_))
+    def encode(element: value): List[IArray[CodlNode]] =
+      element.let: element =>
+        encoder.encode(element.asInstanceOf[inner])
+      . or(List())
 
-  given unit: CodlDecoder[Unit]:
-    val schema: CodlSchema = Field(Arity.One)
-    def decoded(nodes: List[Indexed]): Unit raises CodlError = ()
 
-  given optional: [value >: Unset.type: Mandatable] => (decoder: => CodlDecoder[value.Result])
-        => CodlDecoder[value]:
+  given option: [encodable: CodlEncodable] => Option[encodable] is CodlEncodable:
+    def encode(value: Option[encodable]): List[IArray[CodlNode]] = value match
+      case None        => List()
+      case Some(value) => encodable.encode(value)
 
-    def schema: CodlSchema = decoder.schema.optional
+  given list: [element] => (element: => element is CodlEncodable) => List[element] is CodlEncodable:
+    def encode(value: List[element]): List[IArray[CodlNode]] =
+      value.map(element.encode(_).head)
 
-    def decoded(nodes: List[Indexed]): value raises CodlError =
-      if nodes.isEmpty then Unset else decoder.decoded(nodes)
-
-  given option: [decodable] => (decoder: => CodlDecoder[decodable]) => CodlDecoder[Option[decodable]]:
-    def schema: CodlSchema = decoder.schema.optional
-
-    def decoded(nodes: List[Indexed]): Option[decodable] raises CodlError =
-      if nodes.isEmpty then None else Some(decoder.decoded(nodes))
-
-  given list: [element] => (element: => CodlDecoder[element]) => CodlDecoder[List[element]] =
-    new CodlDecoder[List[element]]:
-      def schema: CodlSchema = element.schema match
-        case Field(_, validator) => Field(Arity.Many, validator)
-        case struct: Struct      => struct.copy(structArity = Arity.Many)
-
-      def decoded(value: List[Indexed]): List[element] raises CodlError =
-        element.schema match
-          case Field(_, validator) => value.flatMap(_.children).map: node =>
-            element.decoded(List(CodlDoc(node)))
-
-          case struct: Struct =>
-            value.map { v => element.decoded(List(v)) }
-
-  given set: [element] => (element: => CodlDecoder[element]) => CodlDecoder[Set[element]]:
-    def schema: CodlSchema = element.schema match
-      case Field(_, validator) => Field(Arity.Many, validator)
-      case struct: Struct      => struct.copy(structArity = Arity.Many)
-
-    def decoded(value: List[Indexed]): Set[element] raises CodlError =
-      element.schema match
-        case Field(_, validator) =>
-          value.flatMap(_.children).map { node => element.decoded(List(CodlDoc(node))) }.to(Set)
-
-        case struct: Struct =>
-          value.map { v => element.decoded(List(v)) }.to(Set)
+  given set: [element: CodlEncodable] => Set[element] is CodlEncodable:
+    def encode(value: Set[element]): List[IArray[CodlNode]] =
+      value.map(element.encode(_).head).to(List)

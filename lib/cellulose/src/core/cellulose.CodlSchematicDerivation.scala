@@ -32,34 +32,22 @@
                                                                                                   */
 package cellulose
 
-import anticipation.*
+import contingency.*
 import rudiments.*
 import vacuous.*
 import wisteria.*
 
-object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
-  inline def join[derivation <: Product: ProductReflection]: CodlEncoder[derivation] =
-    val mapping: Map[Text, Text] = compiletime.summonFrom:
-      case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
-      case _                                        => Map()
+import scala.deriving.*
 
-    def schema: CodlSchema =
+object CodlSchematicDerivation extends ProductDerivable[CodlSchematic]:
+  inline def join[derivation <: Product: ProductReflection]: derivation is CodlSchematic =
+    () =>
       val elements = contexts:
-        [field] => context => CodlSchema.Entry(mapping.at(label).or(label), context.schema)
+        [field] => context =>
+          val label2 = compiletime.summonFrom:
+            case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
+            case _                                        => label
+
+          CodlSchema.Entry(label2, context.schema())
 
       Struct(elements.to(List), Arity.One)
-
-    def encode(product: derivation): List[IArray[CodlNode]] = List:
-      IArray.from:
-        fields(product):
-          [field] => field =>
-            val label2 = mapping.at(label).or(label)
-
-            context.encode(field).map: value =>
-              CodlNode(Data(label2, value, Layout.empty, context.schema))
-
-            . filter(!_.empty)
-
-        . to(List).flatten
-
-    CodlEncoder(schema, encode)

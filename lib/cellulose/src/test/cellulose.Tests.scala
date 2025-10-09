@@ -1046,7 +1046,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
         read(t"root one  two three  four five\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")(), CodlNode(t"four five")())))
 
-    def roundtrip[T: CodlEncoder: CodlDecoder](value: T): T = value.codl.as[T]
+    def roundtrip[T: {CodlEncodable, CodlDecodable, CodlSchematic}](value: T): T = value.codl.as[T]
 
     Tests2()
 
@@ -1055,7 +1055,7 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
   given Realm = realm"tests"
 
   def run(): Unit = supervise:
-    def roundtrip[T: CodlEncoder: CodlDecoder](value: T): T = value.codl.as[T]
+    def roundtrip[T: {CodlEncodable, CodlDecodable, CodlSchematic}](value: T): T = value.codl.as[T]
     def read(text: Text): CodlDoc = Codl.parse(text)
     suite(m"Generic Derivation tests"):
 
@@ -1136,31 +1136,28 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
 
       val complex = Bar(List(Baz(t"a", 2, Unset), Baz(t"c", 6, 'e')), Quux(t"e", List(1, 2, 4)))
 
-      // FIXME: Fails at runtime
-      test(m"roundtrip a complex case class"):
-        summon[CodlDecoder[Baz]]
-        summon[CodlDecoder[List[Baz]]]
-        roundtrip(complex)
-      .assert(_ == complex)
 
-      def print[T: CodlDecoder: CodlEncoder](value: T): Text =
+      def print[T: {CodlDecodable, CodlEncodable, CodlSchematic}](value: T): Text =
         val writer = new ji.StringWriter()
         Printer.print(writer, value.codl)
         writer.toString().show
 
-      // FIXME: Fails at runtime
       test(m"print a simple case class"):
         print(Foo(t"one", t"two"))
       .assert(_ == t"alpha  one\nbeta  two\n")
 
-      // FIXME: Fails at runtime
       test(m"print a complex case class"):
+        println(print(complex))
         print(complex)
       .assert(_ == t"foo\n  gamma  a\n  delta  2\nfoo\n  gamma  c\n  delta  6\n  eta  e\nquux\n  alpha  e\n  beta  1\n  beta  2\n  beta  4\n")
 
-      // FIXME: Fails at runtime
-      test(m"roundtrip a complex case class "):
+      println("------")
+      test(m"roundtrip a complex case class 1"):
         read(print(complex)).as[Bar]
+      .assert(_ == complex)
+
+      test(m"roundtrip a complex case class 2"):
+        roundtrip(complex)
       .assert(_ == complex)
 
       // test(m"Print a case class using positional parameters"):

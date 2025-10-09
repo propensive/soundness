@@ -5,9 +5,9 @@ test:
 	mill test.assembly
 	java -cp out/test/assembly.dest/out.jar soundness.Tests
 
-test.mosquito:
-	mill mosquito.test.assembly
-	java -cp out/mosquito/test/assembly.dest/out.jar mosquito.Tests
+test.cellulose:
+	mill cellulose.test.assembly
+	java -cp out/cellulose/test/assembly.dest/out.jar cellulose.Tests
 
 failing:
 	mill test.assembly
