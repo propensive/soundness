@@ -176,6 +176,12 @@ object HtmlAttribute:
 
   inline given href4: [path <: Path on UrlSpace] => ("href" is HtmlAttribute[path]) = _.encode
 
+  inline given href5: [relative <: Relative on UrlSpace] => ("href" is HtmlAttribute[relative]) =
+    _.encode
+
+  given href6: [path: Abstractable across Paths to Text] => ("href" is HtmlAttribute[path]) =
+    _.generic
+
   // Needs to be provided by Cosmopolite
   given hreflang: ("hreflang" is HtmlAttribute[Text]) = identity(_)
 
@@ -257,6 +263,8 @@ object HtmlAttribute:
          => ("src" is HtmlAttribute[path]) =
     _.on[UrlSpace].encode
 
+  inline given src5: [relative <: Relative on UrlSpace] => ("src" is HtmlAttribute[relative]) =
+    _.encode
 
   given srcdoc: ("srcdoc" is HtmlAttribute[Html[?]]) = _.show
   given srclang: ("srclang" is HtmlAttribute[Text]) = identity(_)
