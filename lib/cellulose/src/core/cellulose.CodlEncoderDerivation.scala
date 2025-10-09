@@ -37,8 +37,8 @@ import rudiments.*
 import vacuous.*
 import wisteria.*
 
-object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
-  inline def join[derivation <: Product: ProductReflection]: CodlEncoder[derivation] =
+object CodlEncoderDerivation extends ProductDerivable[CodlEncoder]:
+  inline def join[derivation <: Product: ProductReflection]: derivation is CodlEncoder =
     val mapping: Map[Text, Text] = compiletime.summonFrom:
       case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
       case _                                        => Map()

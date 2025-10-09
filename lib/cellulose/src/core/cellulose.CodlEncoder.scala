@@ -39,24 +39,25 @@ import spectacular.*
 import vacuous.*
 import wisteria.*
 
-trait CodlEncoder[value]:
-  def encode(value: value): List[IArray[CodlNode]]
+trait CodlEncoder extends Typeclass:
+  def encode(value: Self): List[IArray[CodlNode]]
   def schema: CodlSchema
 
 trait CodlEncoder2:
-  def field[encodable: Encodable in Text]: CodlEncoder[encodable] = new CodlEncoder[encodable]:
+  def field[encodable: Encodable in Text]: encodable is CodlEncoder = new CodlEncoder:
+    type Self = encodable
     def schema: CodlSchema = Field(Arity.One)
 
     def encode(value: encodable): List[IArray[CodlNode]] =
       List(IArray(CodlNode(Data(encodable.encode(value)))))
 
-  inline given derived: [value] => CodlEncoder[value] = compiletime.summonFrom:
+  inline given derived: [value] => value is CodlEncoder = compiletime.summonFrom:
     case given (`value` is Encodable in Text) => field[value]
     case given ProductReflection[`value`]     => CodlEncoderDerivation.derived[value]
 
 object CodlEncoder extends CodlEncoder2:
   def apply[value](schema0: CodlSchema, encode0: value => List[IArray[CodlNode]])
-  : CodlEncoder[value] =
+  : value is CodlEncoder =
 
       new:
         def schema: CodlSchema = schema0
@@ -68,8 +69,8 @@ object CodlEncoder extends CodlEncoder2:
 
 
   given optional: [inner, value >: Unset.type: Mandatable to inner]
-        => (encoder: => CodlEncoder[inner])
-        => CodlEncoder[value]:
+        => (encoder: => inner is CodlEncoder)
+        => value is CodlEncoder:
 
     def schema: CodlSchema = encoder.schema.optional
 
@@ -79,14 +80,14 @@ object CodlEncoder extends CodlEncoder2:
       . or(List())
 
 
-  given option: [encodable: CodlEncoder] => CodlEncoder[Option[encodable]]:
+  given option: [encodable: CodlEncoder] => Option[encodable] is CodlEncoder:
     def schema: CodlSchema = encodable.schema.optional
 
     def encode(value: Option[encodable]): List[IArray[CodlNode]] = value match
       case None        => List()
       case Some(value) => encodable.encode(value)
 
-  given list: [element] => (element: => CodlEncoder[element]) => CodlEncoder[List[element]]:
+  given list: [element] => (element: => element is CodlEncoder) => List[element] is CodlEncoder:
     def schema: CodlSchema = element.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
@@ -94,7 +95,7 @@ object CodlEncoder extends CodlEncoder2:
     def encode(value: List[element]): List[IArray[CodlNode]] =
       value.map(element.encode(_).head)
 
-  given set: [element: CodlEncoder] => CodlEncoder[Set[element]]:
+  given set: [element: CodlEncoder] => Set[element] is CodlEncoder:
     def schema: CodlSchema = element.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)

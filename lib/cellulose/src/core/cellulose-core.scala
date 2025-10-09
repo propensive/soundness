@@ -37,7 +37,7 @@ import rudiments.*
 extension (inline ctx: StringContext)
   transparent inline def codl(inline parts: Any*): CodlDoc = ${Codl.Prefix.expand('ctx, 'parts)}
 
-extension [value](value: value)(using encoder: CodlEncoder[value])
+extension [value](value: value)(using encoder: value is CodlEncoder)
   def codl: CodlDoc = CodlDoc(IArray.from(encoder.encode(value).flatten), encoder.schema, 0)
 
 package codlPrinters:

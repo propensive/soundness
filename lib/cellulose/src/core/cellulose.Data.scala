@@ -42,9 +42,9 @@ import vacuous.*
 import language.dynamics
 
 object Data:
-  given insertion: [T: CodlEncoder] => Insertion[List[Data], T] =
+  given insertion: [entity: CodlEncoder] => Insertion[List[Data], entity] =
     value =>
-      summon[CodlEncoder[T]].encode(value).head.to(List).map(_.data).collect:
+      entity.encode(value).head.to(List).map(_.data).collect:
         case data: Data => data
 
   given inspectable: Data is Inspectable = data => t"Data(${data.key}, ${data.children.length})"
