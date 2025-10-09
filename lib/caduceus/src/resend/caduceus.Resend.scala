@@ -47,6 +47,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
 import charEncoders.utf8
 import jsonPrinters.minimal
@@ -100,7 +101,7 @@ package couriers:
 
       mitigate:
         case ConnectError(reason)         => Out.println(reason.communicate) yet error
-        case JsonParseError(_, _, reason) => Out.println(reason.communicate) yet error
+        case ParseError(_, _, reason)     => Out.println(reason.describe) yet error
         case HttpError(status, _)         => Out.println(status.communicate) yet error
         case JsonError(reason)            => Out.println(reason.communicate) yet error
         case MediaTypeError(_, _)         => error

@@ -33,21 +33,71 @@
 package merino
 
 import scala.annotation.*
+import scala.collection.mutable.ArrayBuffer
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import hypotenuse.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import scala.collection.mutable.ArrayBuffer
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 import JsonAst.AsciiByte.*
-import JsonParseError.Reason
 
-object JsonAst:
+object JsonAst extends Format:
+  def name: Text = "JSON"
+
+  case class Position(line: Int, column: Int) extends Format.Position:
+    def describe: Text = ("line "+line+", column "+column).tt
+
+  enum Issue extends Format.Issue:
+    case EmptyInput
+    case UnexpectedChar(found: Char)
+    case ExpectedTrue
+    case ExpectedFalse
+    case ExpectedNull
+    case ExpectedSomeValue(char: Char)
+    case ExpectedColon(found: Char)
+    case InvalidWhitespace
+    case ExpectedString(found: Char)
+    case ExpectedHexDigit(found: Char)
+    case PrematureEnd
+    case NumberHasLeadingZero
+    case SpuriousContent(found: Char)
+    case LeadingDecimalPoint
+    case NotEscaped(char: Char)
+    case IncorrectEscape(char: Char)
+    case MultipleDecimalPoints
+    case ExpectedDigit(found: Char)
+
+    def describe: Message = this match
+      case EmptyInput              => m"the input was empty"
+      case UnexpectedChar(found)   => m"the character $found was not expected here"
+      case ExpectedTrue            => m"true was expected"
+      case ExpectedFalse           => m"false was expected"
+      case ExpectedNull            => m"null was expected"
+      case ExpectedSomeValue(char) => m"a value was expected but $char was found instead"
+      case ExpectedColon(found)    => m"a colon was expected but $found was found instead"
+      case InvalidWhitespace       => m"invalid whitespace was found"
+      case ExpectedString(found)   => m"a string was expected but $found was found instead"
+      case ExpectedHexDigit(found) => m"a hexadecimal digit was expected"
+      case PrematureEnd            => m"the content ended prematurely"
+      case SpuriousContent(found)  => m"$found was found after the full JSON value was read"
+      case LeadingDecimalPoint     => m"a number cannot start with a decimal point"
+      case NotEscaped(char)        => m"the character $char must be escaped with a backslash"
+      case ExpectedDigit(found)    => m"a digit was expected but $found was found instead"
+      case MultipleDecimalPoints   => m"a number cannot contain more than one decimal point"
+
+      case NumberHasLeadingZero =>
+        m"a number cannot start with a zero except when followed by a decimal point"
+
+      case IncorrectEscape(char) =>
+        m"the character $char was escaped with a backslash unnecessarily"
+
   object AsciiByte:
     inline final val Tab:          9   = 9   // '\t'
     inline final val Newline:      10  = 10  // '\n'
@@ -106,7 +156,7 @@ object JsonAst:
       value
 
 
-  def parse[readable: Readable by Bytes](source: readable): JsonAst raises JsonParseError =
+  def parse[readable: Readable by Bytes](source: readable): JsonAst raises ParseError =
 
     // FIXME: This is a horrible hack to avoid the problems with streaming
     val stream: Stream[Bytes] = Stream(readable.stream(source).read[Bytes])
@@ -114,7 +164,9 @@ object JsonAst:
     var colStart: Int = 0
 
     try
-      if stream.isEmpty then abort(JsonParseError(0, 0, Reason.EmptyInput))
+      if stream.isEmpty
+      then abort(ParseError(this, Position(0, 0), Issue.EmptyInput))
+
       val block: Bytes = stream.head
       val penultimate = block.length - 1
       var cur: Int = 0
@@ -191,14 +243,15 @@ object JsonAst:
               (ch == Newline || ch == Tab || ch == Return)
         do next()
 
-      def error(reason: Reason): Nothing = abort(JsonParseError(line, cur - colStart, reason))
+      def error(issue: Issue): Nothing =
+        abort(ParseError(this, Position(line, cur - colStart), issue))
 
       def parseValue(minus: Boolean = false): JsonAst =
         val ch = current
         if (ch & bin"1111 1000") == Num0 || (ch & bin"1111 1110") == bin"0011 1000" then
           next()
           parseNumber(ch & bin"0000 1111", minus)
-        else if minus then error(Reason.ExpectedDigit(ch.toChar))
+        else if minus then error(Issue.ExpectedDigit(ch.toChar))
         else (current: @switch) match
           case Quote       => next(); parseString()
           case Minus       => next(); parseValue(true)
@@ -207,7 +260,7 @@ object JsonAst:
           case LowerN      => next(); parseNull()
           case LowerT      => next(); parseTrue()
           case OpenBrace   => next(); parseObject()
-          case ch          => error(Reason.ExpectedSomeValue(ch.toChar))
+          case ch          => error(Issue.ExpectedSomeValue(ch.toChar))
 
       def parseObject(): (IArray[String], IArray[Any]) =
         val keys: ArrayBuffer[String] = getStringArrayBuffer()
@@ -237,13 +290,13 @@ object JsonAst:
                       keys += str
                       values += value
                       continue = false
-                    case ch  => error(Reason.UnexpectedChar(ch.toChar))
-                case ch => error(Reason.ExpectedColon(ch.toChar))
+                    case ch  => error(Issue.UnexpectedChar(ch.toChar))
+                case ch => error(Issue.ExpectedColon(ch.toChar))
             case CloseBrace =>
-              if !keys.isEmpty then error(Reason.ExpectedSomeValue('}'))
+              if !keys.isEmpty then error(Issue.ExpectedSomeValue('}'))
               next()
               continue = false
-            case ch => error(Reason.ExpectedString(ch.toChar))
+            case ch => error(Issue.ExpectedString(ch.toChar))
 
         val result = (keys.toArray, values.toArray).asInstanceOf[(IArray[String], IArray[Any])]
 
@@ -259,7 +312,7 @@ object JsonAst:
           skip()
           current match
             case CloseBracket =>
-              if !arrayItems.isEmpty then error(Reason.ExpectedSomeValue(']'))
+              if !arrayItems.isEmpty then error(Issue.ExpectedSomeValue(']'))
               continue = false
             case ch =>
               val value = parseValue()
@@ -267,7 +320,7 @@ object JsonAst:
               current match
                 case Comma        => arrayItems += value
                 case CloseBracket => arrayItems += value; continue = false
-                case ch           => error(Reason.ExpectedSomeValue(ch.toChar))
+                case ch           => error(Issue.ExpectedSomeValue(ch.toChar))
 
           next()
 
@@ -288,7 +341,7 @@ object JsonAst:
               size = cur - start - difference
 
             case Tab | Newline | Return =>
-              error(Reason.InvalidWhitespace)
+              error(Issue.InvalidWhitespace)
 
             case Backslash =>
               getNext() match
@@ -340,12 +393,12 @@ object JsonAst:
                 case LowerR    => appendChar('\r')
                 case LowerT    => appendChar('\t')
                 case LowerU    => appendChar(parseUnicode())
-                case ch        => error(Reason.IncorrectEscape(ch.toChar))
+                case ch        => error(Issue.IncorrectEscape(ch.toChar))
               next()
 
             case ch =>
               ((ch >> 5): @switch) match
-                case 0 => error(Reason.NotEscaped(ch.toChar))
+                case 0 => error(Issue.NotEscaped(ch.toChar))
                 case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
                 case _ =>
                   if (ch & bin"1110 0000") == bin"1100 0000" then
@@ -373,7 +426,7 @@ object JsonAst:
         if ch <= Num9 && ch >= Num0 then ch - Num0
         else if ch <= UpperF && ch >= UpperA then ch - UpperA
         else if ch <= LowerF && ch >= LowerA then ch - LowerA
-        else error(Reason.ExpectedHexDigit(ch.toChar))
+        else error(Issue.ExpectedHexDigit(ch.toChar))
 
       def parseFalse(): false =
         var x: Long = current << 8
@@ -382,7 +435,7 @@ object JsonAst:
         x |= getNext()
         x <<= 8
         x |= getNext()
-        if x != 1634497381L then error(Reason.ExpectedFalse)
+        if x != 1634497381L then error(Issue.ExpectedFalse)
         next()
         false
 
@@ -391,7 +444,7 @@ object JsonAst:
         x |= getNext()
         x <<= 8
         x |= getNext()
-        if x != 7501157L then error(Reason.ExpectedTrue)
+        if x != 7501157L then error(Issue.ExpectedTrue)
         next()
         true
 
@@ -400,7 +453,7 @@ object JsonAst:
         x |= getNext()
         x <<= 8
         x |= getNext()
-        if x != 7695468L then error(Reason.ExpectedNull)
+        if x != 7695468L then error(Issue.ExpectedNull)
         next()
         null
 
@@ -470,12 +523,12 @@ object JsonAst:
             if ch <= Num9 && ch >= Num0 then digit(decimalPosition != 0, ch)
             else (ch: @switch) match
               case Period =>
-                if decimalPosition != 0 then error(Reason.MultipleDecimalPoints)
+                if decimalPosition != 0 then error(Issue.MultipleDecimalPoints)
                 decimalPosition = cur
                 next()
                 ch = current
                 if ch <= Num9 && ch >= Num0 then digit(decimalPosition != 0, ch)
-                else error(Reason.ExpectedDigit(ch.toChar))
+                else error(Issue.ExpectedDigit(ch.toChar))
 
                 while
                   ch = current
@@ -504,7 +557,7 @@ object JsonAst:
                   case _ =>
                     ()
                 if ch <= Num9 && ch >= Num0 then exponent = (ch & 15)
-                else error(Reason.ExpectedDigit(ch.toChar))
+                else error(Issue.ExpectedDigit(ch.toChar))
 
                 if minus then exponent *= -1
                 next()
@@ -522,7 +575,7 @@ object JsonAst:
                   colStart = cur
                   line += 1
                 if decimalPosition != 0 && scale == 0 then scale = decimalPosition - cur + 1
-                else if leadingZero && mantissa != 0 then error(Reason.NumberHasLeadingZero)
+                else if leadingZero && mantissa != 0 then error(Issue.NumberHasLeadingZero)
 
                 if negative then mantissa *= -1
                 val exp = exponent + scale
@@ -533,7 +586,7 @@ object JsonAst:
                 continue = false
 
               case ch =>
-                error(Reason.UnexpectedChar(ch.toChar))
+                error(Issue.UnexpectedChar(ch.toChar))
             end if
           end while
           number
@@ -545,7 +598,7 @@ object JsonAst:
               next()
               val mantissa2 = if negative then -mantissa else mantissa
               mantissa2.toDouble*math.pow(10.0, exponent.toDouble + scale)
-            else error(Reason.PrematureEnd)
+            else error(Issue.PrematureEnd)
 
       def parseLargeNumber(hasDecimalPoint: Boolean): Unit =
         var decimalPoint: Boolean = hasDecimalPoint
@@ -560,7 +613,7 @@ object JsonAst:
             next()
           else (ch: @switch) match
             case Period =>
-              if decimalPoint then error(Reason.MultipleDecimalPoints)
+              if decimalPoint then error(Issue.MultipleDecimalPoints)
               numberText.append('.')
               decimalPoint = true
               next()
@@ -595,7 +648,7 @@ object JsonAst:
               continue = false
 
             case ch =>
-              error(Reason.UnexpectedChar(ch.toChar))
+              error(Issue.UnexpectedChar(ch.toChar))
 
       skip()
       val result = parseValue()
@@ -606,7 +659,7 @@ object JsonAst:
             colStart = cur
             line += 1
           case Tab | Return | Space => ()
-          case other                => error(Reason.SpuriousContent(other.toChar))
+          case other                => error(Issue.SpuriousContent(other.toChar))
 
         next()
 
@@ -614,4 +667,4 @@ object JsonAst:
 
     catch
       case err: ArrayIndexOutOfBoundsException =>
-        abort(JsonParseError(line, stream.head.length, Reason.PrematureEnd))
+        abort(ParseError(this, Position(line, stream.head.length), Issue.PrematureEnd))

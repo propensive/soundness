@@ -592,7 +592,7 @@ object cataclysm extends SoundnessModule {
 
 object cellulose extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(eucalyptus.core, chiaroscuro.core, kaleidoscope.core, polyvinyl.core)
+    def moduleDeps = Seq(eucalyptus.core, chiaroscuro.core, kaleidoscope.core, polyvinyl.core, zephyrine.core)
   }
 
   object test extends ProbablyTestModule {
@@ -1097,7 +1097,7 @@ object mercator extends SoundnessModule {
 
 object merino extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(turbulence.core)
+    def moduleDeps = Seq(turbulence.core, zephyrine.core)
   }
 
   object test extends ProbablyTestModule {
@@ -1559,7 +1559,7 @@ object wisteria extends SoundnessModule {
 
 object xylophone extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(wisteria.core, gossamer.core, turbulence.core)
+    def moduleDeps = Seq(wisteria.core, gossamer.core, turbulence.core, zephyrine.core)
   }
 
   object test extends ProbablyTestModule {
