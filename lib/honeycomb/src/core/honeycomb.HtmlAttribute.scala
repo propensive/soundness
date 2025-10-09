@@ -161,6 +161,7 @@ object HtmlAttribute:
   given height: ("height" is HtmlAttribute[Int]) = _.show
   given hidden: ("hidden" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given high: ("high" is HtmlAttribute[Double]) = _.toString.show
+
   given href: ("href" is HtmlAttribute[Text]) = identity(_)
 
   given href2: [url: Abstractable across Urls to Text] => ("href" is HtmlAttribute[url]) =
@@ -176,11 +177,15 @@ object HtmlAttribute:
 
   inline given href4: [path <: Path on UrlSpace] => ("href" is HtmlAttribute[path]) = _.encode
 
-  inline given href5: [relative <: Relative on UrlSpace] => ("href" is HtmlAttribute[relative]) =
+  given href5: [path: Abstractable across Paths to Text] => ("href" is HtmlAttribute[path]) =
+    _.generic
+
+  given href6: [relative <: Relative on UrlSpace] => ("href" is HtmlAttribute[relative]) =
     _.encode
 
-  given href6: [path: Abstractable across Paths to Text] => ("href" is HtmlAttribute[path]) =
-    _.generic
+  inline given href7: [topic, relative <: Relative of topic]
+               => ("href" is HtmlAttribute[relative]) =
+    _.on[UrlSpace].encode
 
   // Needs to be provided by Cosmopolite
   given hreflang: ("hreflang" is HtmlAttribute[Text]) = identity(_)
@@ -256,15 +261,17 @@ object HtmlAttribute:
   given src3: [url: Abstractable across Urls to Text] => ("src" is HtmlAttribute[url]) = _.generic
 
   inline given src4: [topic, path <: Path of topic under %.type] => UrlSpace is System
-         => ("src" is HtmlAttribute[path]) =
-    _.on[UrlSpace].encode
+         => ("src" is HtmlAttribute[path]):
+    def convert(value: path): Text = value.on[UrlSpace].encode
 
   inline given src5: [topic, path <: Path of topic] => UrlSpace is System
          => ("src" is HtmlAttribute[path]) =
     _.on[UrlSpace].encode
 
-  inline given src5: [relative <: Relative on UrlSpace] => ("src" is HtmlAttribute[relative]) =
-    _.encode
+  given src5: [relative <: Relative on UrlSpace] => ("src" is HtmlAttribute[relative]) = _.encode
+
+  inline given src6: [topic, relative <: Relative of topic] => ("src" is HtmlAttribute[relative]):
+    def convert(value: relative): Text = value.on[UrlSpace].encode
 
   given srcdoc: ("srcdoc" is HtmlAttribute[Html[?]]) = _.show
   given srclang: ("srclang" is HtmlAttribute[Text]) = identity(_)
