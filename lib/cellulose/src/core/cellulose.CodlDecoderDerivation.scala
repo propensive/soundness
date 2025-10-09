@@ -39,8 +39,8 @@ import wisteria.*
 
 import scala.deriving.*
 
-object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
-  inline def join[derivation <: Product: ProductReflection]: CodlDecoder[derivation] =
+object CodlDecoderDerivation extends ProductDerivable[CodlDecoder]:
+  inline def join[derivation <: Product: ProductReflection]: derivation is CodlDecoder =
     def schema: CodlSchema =
       val elements = contexts:
         [field] => context =>

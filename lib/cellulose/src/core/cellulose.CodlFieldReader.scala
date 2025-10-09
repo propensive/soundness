@@ -37,7 +37,8 @@ import contingency.*
 import rudiments.*
 import vacuous.*
 
-class CodlFieldReader[value](lambda: Text => value) extends CodlDecoder[value]:
+class CodlFieldReader[value](lambda: Text => value) extends CodlDecoder:
+  type Self = value
   val schema: CodlSchema = Field(Arity.One)
 
   def decoded(nodes: List[Indexed]): value raises CodlError =

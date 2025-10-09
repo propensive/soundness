@@ -108,7 +108,7 @@ object Codl extends Format:
        (using readable: source is Readable by Text)
   : value raises ParseError raises CodlError =
 
-      summon[CodlDecoder[value]].schema.parse(readable.stream(source)).as[value]
+      value.schema.parse(readable.stream(source)).as[value]
 
 
   def parse[source]

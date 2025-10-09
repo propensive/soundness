@@ -1138,8 +1138,8 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
 
       // FIXME: Fails at runtime
       test(m"roundtrip a complex case class"):
-        summon[CodlDecoder[Baz]]
-        summon[CodlDecoder[List[Baz]]]
+        summon[Baz is CodlDecoder]
+        summon[List[Baz] is CodlDecoder]
         roundtrip(complex)
       .assert(_ == complex)
 
