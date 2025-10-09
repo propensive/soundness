@@ -39,6 +39,7 @@ import prepositional.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 import language.dynamics
 
@@ -78,7 +79,7 @@ extends Dynamic:
 
 
   def parse[source](source: source)(using readable: source is Readable by Text)
-  : CodlDoc raises CodlError =
+  : CodlDoc raises ParseError =
 
       Codl.parse(source, this)
 

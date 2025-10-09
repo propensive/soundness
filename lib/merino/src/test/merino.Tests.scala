@@ -43,6 +43,7 @@ import probably.*
 import rudiments.*, workingDirectories.systemProperties
 import turbulence.*
 import sedentary.*
+import zephyrine.*
 import errorDiagnostics.stackTraces
 
 import java.io as ji
@@ -65,8 +66,8 @@ object Tests extends Suite(m"Merino tests"):
         test(Message(file.getName.nn.dropRight(5).tt)):
           capture(JsonAst.parse(ji.BufferedInputStream(ji.FileInputStream(file))))
         .matches:
-          case JsonParseError(_, _, _) => true
-          case _                       => false
+          case ParseError(_, _, _) => true
+          case _                   => false
 
     val testDir = ji.File(workingDirectory, "data")
 

@@ -37,13 +37,14 @@ import contextual.*
 import gossamer.*
 import proscenium.*
 import spectacular.*, booleanStyles.trueFalse
+import zephyrine.*
 
 enum CodlToken:
   case Indent, Peer, Blank, Argument
   case Outdent(n: Int)
   case Item(text: Text, line: Int, col: Int, block: Boolean = false)
   case Comment(text: Text, line: Int, col: Int)
-  case Error(error: CodlError)
+  case Error(error: ParseError)
   case Body(stream: Stream[Char])
 
 object CodlToken:
