@@ -35,11 +35,14 @@ package cellulose
 import anticipation.*
 import contingency.*
 import rudiments.*
+import vacuous.*
 
 class CodlFieldReader[value](lambda: Text => value) extends CodlDecoder[value]:
   val schema: CodlSchema = Field(Arity.One)
 
   def decoded(nodes: List[Indexed]): value raises CodlError =
-    nodes.prim.lest(CodlError()).children match
+    nodes.prim.lest(CodlError(CodlError.Reason.BadFormat(Unset))).children match
       case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
-      case _                                         => abort(CodlError())
+
+      case _ =>
+        abort(CodlError(CodlError.Reason.BadFormat(Unset)))

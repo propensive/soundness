@@ -37,5 +37,23 @@ import fulminate.*
 import gossamer.*
 import vacuous.*
 
-case class CodlError(label: Optional[Text] = Unset)(using Diagnostics)
-extends Error(m"the CoDL value ${label.or(t"<unknown>")} is not of the right format")
+object CodlError:
+  enum Reason:
+    case BadFormat(label: Optional[Text])
+    case MissingValue(key: Text)
+    case MissingIndexValue(index: Int)
+    case MultipleIds(key: Text)
+
+  given communicable: Reason is Communicable =
+    case Reason.MissingValue(key)        => m"the key $key does not exist in the document"
+    case Reason.MissingIndexValue(index) => m"the index $index does not exist in the document"
+
+    case Reason.MultipleIds(key) =>
+      m"multiple parameters of $key have been marked as identifiers"
+
+    case Reason.BadFormat(label) =>
+      m"the value ${label.or(t"<unknown>")} is not in the right format"
+
+
+case class CodlError(reason: CodlError.Reason)(using Diagnostics)
+extends Error(m"the CoDL was not valid because $reason")
