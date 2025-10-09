@@ -35,6 +35,16 @@ package xylophone
 import fulminate.*
 import gossamer.*
 
-case class XmlAccessError(index: Int, path: XmlPath)(using Diagnostics)
-extends Error(m"""could not access ${if index == 0 then t"any nodes" else t"node $index"} at path
-    ${Xml.pathString(path)}""")
+object XmlError:
+  enum Reason:
+    case Read
+    case Access(index: Int, path: XmlPath)
+
+  given Reason is Communicable =
+    case Reason.Read                => m"the value could not be read"
+    case Reason.Access(index, path) =>
+      val node = if index ==0 then t"any nodes" else t"node $index"
+      m"could not access ${node} at path ${Xml.pathString(path)}"
+
+case class XmlError(reason: XmlError.Reason)(using Diagnostics)
+extends Error(m"XML access failed because $reason")

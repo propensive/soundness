@@ -51,9 +51,9 @@ sealed trait Xml:
   def root: XmlAst.Root
 
   @targetName("add")
-  infix def + (other: Xml): XmlDoc raises XmlAccessError
+  infix def + (other: Xml): XmlDoc raises XmlError
 
-  def string(using XmlPrinter[Text]): Text raises XmlAccessError =
+  def string(using XmlPrinter[Text]): Text raises XmlError =
     summon[XmlPrinter[Text]].print(XmlDoc(XmlAst.Root(Xml.normalize(this)*)))
 
 object Xml extends Format:
@@ -147,13 +147,13 @@ object Xml extends Format:
     readNode(root.getDocumentElement.nn).absolve match
       case elem@XmlAst.Element(_, _, _, _) => XmlDoc(XmlAst.Root(elem))
 
-  def normalize(xml: Xml): List[XmlAst] raises XmlAccessError =
+  def normalize(xml: Xml): List[XmlAst] raises XmlError =
     def recur(path: XmlPath, current: List[XmlAst]): List[XmlAst] = path.absolve match
       case Nil =>
         current
 
       case (idx: Int) :: tail =>
-        if current.length <= idx then abort(XmlAccessError(idx, path))
+        if current.length <= idx then abort(XmlError(XmlError.Reason.Access(idx, path)))
         recur(tail, List(current(idx)))
 
       case (unit: Unit) :: tail =>
@@ -173,9 +173,10 @@ object Xml extends Format:
 
         recur(tail, next)
 
-    try recur(xml.pointer, xml.root.content.to(List))
-    catch case err: XmlAccessError =>
-      abort(XmlAccessError(err.index, xml.pointer.dropRight(err.path.length)))
+    try recur(xml.pointer, xml.root.content.to(List)) catch
+      case error: XmlError => error match
+        case XmlError(XmlError.Reason.Access(index, path)) =>
+          abort(XmlError(XmlError.Reason.Access(index, xml.pointer.dropRight(path.length))))
 
 case class XmlFragment(head: Text | Unit, path: XmlPath, root: XmlAst.Root)
 extends Xml, Dynamic:
@@ -189,11 +190,10 @@ extends Xml, Dynamic:
   def `*`: XmlFragment = XmlFragment((), head :: path, root)
 
   @targetName("add")
-  infix def + (other: Xml): XmlDoc raises XmlAccessError =
+  infix def + (other: Xml): XmlDoc raises XmlError =
     XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
-  def as[value](using decoder: XmlDecoder[value]): value raises XmlAccessError raises XmlReadError =
-    apply().as[value]
+  def as[value](using decoder: XmlDecoder[value]): value raises XmlError = apply().as[value]
 
 case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dynamic:
   def selectDynamic(tagName: String): XmlFragment = XmlFragment(tagName.tt, head :: path, root)
@@ -205,11 +205,10 @@ case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dyn
   def `*`: XmlFragment = XmlFragment((), head :: path, root)
 
   @targetName("add")
-  infix def + (other: Xml): XmlDoc raises XmlAccessError =
+  infix def + (other: Xml): XmlDoc raises XmlError =
     XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
-  def as[value: XmlDecoder](using Tactic[XmlReadError], Tactic[XmlAccessError]): value =
-    summon[XmlDecoder[value]].read(Xml.normalize(this))
+  def as[value: XmlDecoder]: value raises XmlError = value.read(Xml.normalize(this))
 
 case class XmlDoc(root: XmlAst.Root) extends Xml, Dynamic:
   def pointer: XmlPath = Nil
@@ -220,8 +219,8 @@ case class XmlDoc(root: XmlAst.Root) extends Xml, Dynamic:
   def `*`: XmlFragment = XmlFragment((), Nil, root)
 
   @targetName("add")
-  infix def + (other: Xml): XmlDoc raises XmlAccessError =
+  infix def + (other: Xml): XmlDoc raises XmlError =
     XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
-  def as[value: XmlDecoder](using Tactic[XmlAccessError], Tactic[XmlReadError]): value =
+  def as[value: XmlDecoder]: value raises XmlError =
     summon[XmlDecoder[value]].read(Xml.normalize(this))
