@@ -1046,7 +1046,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
         read(t"root one  two three  four five\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")(), CodlNode(t"four five")())))
 
-    def roundtrip[T: CodlEncoder: CodlDecoder](value: T): T = value.codl.as[T]
+    def roundtrip[T: CodlEncodable: CodlDecodable](value: T): T = value.codl.as[T]
 
     Tests2()
 
@@ -1055,7 +1055,7 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
   given Realm = realm"tests"
 
   def run(): Unit = supervise:
-    def roundtrip[T: CodlEncoder: CodlDecoder](value: T): T = value.codl.as[T]
+    def roundtrip[T: CodlEncodable: CodlDecodable](value: T): T = value.codl.as[T]
     def read(text: Text): CodlDoc = Codl.parse(text)
     suite(m"Generic Derivation tests"):
 
@@ -1138,12 +1138,12 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
 
       // FIXME: Fails at runtime
       test(m"roundtrip a complex case class"):
-        summon[Baz is CodlDecoder]
-        summon[List[Baz] is CodlDecoder]
+        summon[Baz is CodlDecodable]
+        summon[List[Baz] is CodlDecodable]
         roundtrip(complex)
       .assert(_ == complex)
 
-      def print[T: CodlDecoder: CodlEncoder](value: T): Text =
+      def print[T: CodlDecodable: CodlEncodable](value: T): Text =
         val writer = new ji.StringWriter()
         Printer.print(writer, value.codl)
         writer.toString().show

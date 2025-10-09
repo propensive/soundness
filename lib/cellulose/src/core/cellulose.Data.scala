@@ -42,7 +42,7 @@ import vacuous.*
 import language.dynamics
 
 object Data:
-  given insertion: [entity: CodlEncoder] => Insertion[List[Data], entity] =
+  given insertion: [entity: CodlEncodable] => Insertion[List[Data], entity] =
     value =>
       entity.encode(value).head.to(List).map(_.data).collect:
         case data: Data => data
