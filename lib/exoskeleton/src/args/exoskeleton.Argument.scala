@@ -46,6 +46,8 @@ object Argument:
     case Full, FlagSuffix, EqualityPrefix, EqualitySuffix
     case CharFlag(index: Ordinal)
 
+  def unapply(argument: Argument): Some[Text] = Some(argument())
+
   given inspectable: Argument is Inspectable = argument =>
     t"${argument.position}: ${argument.value.inspect} / ${argument.format} => ${argument().inspect}"
 
