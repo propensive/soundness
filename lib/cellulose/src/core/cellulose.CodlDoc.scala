@@ -53,33 +53,6 @@ object CodlDoc:
 
   given similarity: Similarity[CodlDoc] = _.schema == _.schema
 
-  // given contrastable: CodlDoc is Contrastable:
-  //     type Self = CodlDoc
-  //     def apply(left: CodlDoc, right: CodlDoc) =
-  //       if left == right then Juxtaposition.Same(left.inspect) else
-  //         val comparison = IArray.from:
-  //           (t"[schema]", left.schema.contrast(right.schema)) +:
-  //           (t"[margin]", left.margin.contrast(right.margin)) +:
-  //           diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-  //             case Par(_, _, v)      =>
-  //               v.let(_.key).or(t"—") -> Juxtaposition.Same(v.let(_.inspect).toString.tt)
-
-  //             case Ins(_, v)         =>
-  //               v.let(_.key).or(t"—") -> Juxtaposition.Different(t"—", v.inspect)
-
-  //             case Del(_, v)         =>
-  //               v.let(_.key).or(t"—")
-  //               -> Juxtaposition.Different(v.let(_.inspect).toString.tt, t"—")
-
-  //             case Sub(_, v, lv, rv) =>
-  //               val key =
-  //                 if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—")
-  //                 else t"${lv.let(_.key).or(t"—")}/${rv.let(_.key).or(t"—")}"
-
-  //               key -> lv.contrast(rv)
-
-  //         Juxtaposition.Collation(comparison, t"", t"")
-
 case class CodlDoc
    (children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: Stream[Char] = Stream())
 extends Indexed:
@@ -123,7 +96,7 @@ extends Indexed:
 
     copy(children = recur(children, input.children))
 
-  def as[value: CodlDecodable]: value raises CodlError = value.decoded(List(this))
+  def as[value: CodlDecodable]: value raises CodlError = value.decoded(Codl(List(this)))
   def uncommented: CodlDoc = CodlDoc(children.map(_.uncommented), schema, margin, body)
   def untyped: CodlDoc = CodlDoc(children.map(_.untyped), CodlSchema.Free, margin, body)
   def wiped = uncommented.untyped
