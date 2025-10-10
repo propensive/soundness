@@ -41,12 +41,14 @@ import scala.deriving.*
 
 class CodlDecodableDerivation()(using Tactic[CodlError]) extends ProductDerivable[CodlDecodable]:
   inline def join[derivation <: Product: ProductReflection]: derivation is CodlDecodable =
-    def decode(values: List[Indexed]): derivation = construct:
+    def decode(values: List[Codllike]): derivation = construct:
       [field] => context =>
         val label2 = compiletime.summonFrom:
           case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
           case _                                        => label
 
-        context.decoded(values.prim.lest(CodlError(CodlError.Reason.BadFormat(label2))).get(label2))
+        context.decoded:
+          Data("", values.prim.lest(CodlError(CodlError.Reason.BadFormat(label2))).children)
+          . get(label2)
 
     CodlDecodable[derivation](decode)

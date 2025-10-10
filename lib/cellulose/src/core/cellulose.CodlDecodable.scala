@@ -45,20 +45,20 @@ import wisteria.*
 import scala.deriving.*
 
 trait CodlDecodable extends Typeclass:
-  def decoded(value: List[Indexed]): Self
+  def decoded(value: List[Codllike]): Self
 
 object CodlDecodable:
-  def apply[value](decode0: Tactic[CodlError] ?=> List[Indexed] => value)
+  def apply[value](decode0: Tactic[CodlError] ?=> List[Codllike] => value)
   : value is CodlDecodable raises CodlError =
 
       new:
-        def decoded(value: List[Indexed]): value = decode0(value)
+        def decoded(value: List[Codllike]): value = decode0(value)
 
-  def apply2[value](lambda: Text => value): value is CodlDecodable raises CodlError =
+  def decodable[value](lambda: Text => value): value is CodlDecodable raises CodlError =
     new CodlDecodable:
       type Self = value
 
-      def decoded(nodes: List[Indexed]): value =
+      def decoded(nodes: List[Codllike]): value =
         nodes.prim.lest(CodlError(CodlError.Reason.BadFormat(Unset))).children match
           case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
 
@@ -71,42 +71,36 @@ object CodlDecodable:
       case given ProductReflection[`value`]     => CodlDecodableDerivation().derived[`value`]
 
   def field[value: Decodable in Text]: value is CodlDecodable raises CodlError =
-    apply2(value.decoded(_))
+    decodable(value.decoded(_))
 
-  given boolean: Tactic[CodlError] => Boolean is CodlDecodable = apply2(_ == t"yes")
-  given text: Tactic[CodlError] => Text is CodlDecodable = apply2(identity(_))
-
-  given unit: Unit is CodlDecodable:
-    def decoded(nodes: List[Indexed]): Unit = ()
+  given boolean: Tactic[CodlError] => Boolean is CodlDecodable = decodable(_ == t"yes")
+  given text: Tactic[CodlError] => Text is CodlDecodable = decodable(identity(_))
+  given unit: Unit is CodlDecodable = _ => ()
 
   given optional: [value >: Unset.type: Mandatable] => (decoder: => value.Result is CodlDecodable)
-        => value is CodlDecodable:
-
-    def decoded(nodes: List[Indexed]): value =
-      if nodes.isEmpty then Unset else decoder.decoded(nodes)
+        => value is CodlDecodable =
+    nodes => if nodes.isEmpty then Unset else decoder.decoded(nodes)
 
   given option: [decodable] => (decoder: => decodable is CodlDecodable)
-        => Option[decodable] is CodlDecodable:
-    def decoded(nodes: List[Indexed]): Option[decodable] =
-      if nodes.isEmpty then None else Some(decoder.decoded(nodes))
+        => Option[decodable] is CodlDecodable =
+    nodes => if nodes.isEmpty then None else Some(decoder.decoded(nodes))
 
   given list: [element: CodlSchematic] => (decodable: => element is CodlDecodable)
         => List[element] is CodlDecodable =
-    new CodlDecodable:
-      type Self = List[element]
-      def decoded(value: List[Indexed]): List[element] =
-        element.schema() match
-          case Field(_, validator) => value.flatMap(_.children).map: node =>
-            decodable.decoded(List(CodlDoc(node)))
 
-          case struct: Struct =>
-            value.map { v => decodable.decoded(List(v)) }
+    value => element.schema() match
+      case Field(_, validator) => value.flatMap(_.children).map: node =>
+        decodable.decoded(List(CodlDoc(node)))
 
-  given set: [element: CodlSchematic] => (decodable: => element is CodlDecodable) => Set[element] is CodlDecodable:
-    def decoded(value: List[Indexed]): Set[element] =
+      case struct: Struct =>
+        value.map(List(_)).map(decodable.decoded(_))
+
+  given set: [element: CodlSchematic] => (decodable: => element is CodlDecodable)
+        => Set[element] is CodlDecodable =
+    value =>
       element.schema() match
         case Field(_, validator) =>
           value.flatMap(_.children).map { node => decodable.decoded(List(CodlDoc(node))) }.to(Set)
 
         case struct: Struct =>
-          value.map { v => decodable.decoded(List(v)) }.to(Set)
+          value.map(List(_)).map(decodable.decoded(_)).to(Set)

@@ -1148,7 +1148,6 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
       .assert(_ == t"alpha  one\nbeta  two\n")
 
       test(m"print a complex case class"):
-        println(print(complex))
         print(complex)
       .assert(_ == t"foo\n  gamma  a\n  delta  2\nfoo\n  gamma  c\n  delta  6\n  eta  e\nquux\n  alpha  e\n  beta  1\n  beta  2\n  beta  4\n")
 

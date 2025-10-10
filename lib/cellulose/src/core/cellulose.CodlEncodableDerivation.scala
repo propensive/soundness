@@ -39,27 +39,29 @@ import rudiments.*
 import vacuous.*
 import wisteria.*
 
-object CodlEncodableDerivation extends ProductDerivable[Encodable in Codl]:
-  inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Codl =
-    val mapping: Map[Text, Text] = compiletime.summonFrom:
-      case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
-      case _                                        => Map()
+trait Cellulose2:
+  object EncodableDerivation extends ProductDerivable[Encodable in Codl]:
+    inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Codl =
+      val mapping: Map[Text, Text] = compiletime.summonFrom:
+        case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
+        case _                                        => Map()
 
-    product => Codl:
-      List:
-        val schemata: IArray[CodlSchema.Entry] =
-          CodlSchematicDerivation.join[derivation].schema().absolve match
-            case Struct(elements, _) => IArray.from(elements)
+      product => Codl:
+        List:
+          val schemata: IArray[CodlSchema.Entry] =
+            CodlSchematicDerivation.join[derivation].schema().absolve match
+              case Struct(elements, _) => IArray.from(elements)
 
-        IArray.from:
-          fields(product):
-            [field] => field =>
-              val label2 = mapping.at(label).or(label)
-              val schematic = compiletime.summonInline[field is CodlSchematic]
+          Codllike:
+            IArray.from:
+              fields(product):
+                [field] => field =>
+                  val label2 = mapping.at(label).or(label)
+                  val schematic = compiletime.summonInline[field is CodlSchematic]
 
-              context.encoded(field).list.map: value =>
-                CodlNode(Data(label2, value, Layout.empty, schemata(index).schema))
+                  context.encoded(field).list.map: value =>
+                    CodlNode(Data(label2, value.children, Layout.empty, schemata(index).schema))
 
-              . filter(!_.empty)
+                  . filter(!_.empty)
 
-          . to(List).flatten
+              . to(List).flatten

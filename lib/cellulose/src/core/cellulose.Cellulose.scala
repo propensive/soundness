@@ -47,26 +47,25 @@ import zephyrine.*
 
 export Cellulose.Codl
 
-
-object Cellulose:
-  opaque type Codl = List[IArray[CodlNode]]
+object Cellulose extends Cellulose2:
+  opaque type Codl = List[Codllike]
 
   import Codl.Issue.*
 
-  extension (codl: Codl) def list: List[IArray[CodlNode]] = codl
+  extension (codl: Codl) def list: List[Codllike] = codl
 
   object Codl extends Format:
     def name: Text = t"CoDL"
 
-    def apply(value: List[IArray[CodlNode]]): Codl = value
-    def wrap(value: Text): Codl = Codl(List(IArray(CodlNode(Data(value)))))
+    def apply(value: List[Codllike]): Codl = value
+    def wrap(value: Text): Codl = Codl(List(Codllike(IArray(CodlNode(Data(value))))))
 
     def field[encodable: Encodable in Text]: encodable is Encodable in Codl = new Encodable:
       type Self = encodable
       type Form = Codl
 
       def encoded(value: encodable): Codl =
-        Codl(List(IArray(CodlNode(Data(encodable.encoded(value))))))
+        Codl(List(Codllike(IArray(CodlNode(Data(encodable.encoded(value)))))))
 
     case class Position(line: Int, column: Int, length: Int) extends Format.Position:
       def describe: Text = t"line $line, column $column"
@@ -75,7 +74,7 @@ object Cellulose:
 
     inline given derived: [value] => value is Encodable in Codl = compiletime.summonFrom:
       case given (`value` is Encodable in Text) => Codl.field[value]
-      case given ProductReflection[`value`]     => CodlEncodableDerivation.derived[value]
+      case given ProductReflection[`value`]     => EncodableDerivation.derived[value]
 
     given booleanEncodable: Boolean is Encodable in Codl =
       value => Codl.wrap(if value then t"yes" else t"no")

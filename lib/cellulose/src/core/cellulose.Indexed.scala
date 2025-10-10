@@ -41,7 +41,14 @@ import vacuous.*
 
 import language.dynamics
 
-trait Indexed extends Dynamic:
+object Codllike:
+  def apply(children0: IArray[CodlNode]): Codllike = new Codllike:
+    def children = children0
+
+trait Codllike:
+  def children: IArray[CodlNode]
+
+trait Indexed extends Codllike, Dynamic:
   def children: IArray[CodlNode]
   def schema: CodlSchema
   def layout: Layout
