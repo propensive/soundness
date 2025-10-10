@@ -40,54 +40,38 @@ import vacuous.*
 import wisteria.*
 
 trait CodlEncodable extends Typeclass:
-  def encode(value: Self): List[IArray[CodlNode]]
+  def encoded(value: Self): Codl
 
 trait CodlEncodable2:
-  def field[encodable: Encodable in Text]: encodable is CodlEncodable = new CodlEncodable:
-    type Self = encodable
-
-    def encode(value: encodable): List[IArray[CodlNode]] =
-      List(IArray(CodlNode(Data(encodable.encode(value)))))
-
   inline given derived: [value] => value is CodlEncodable = compiletime.summonFrom:
-    case given (`value` is Encodable in Text) => field[value]
+    case given (`value` is Encodable in Text) => Codl.field[value]
     case given ProductReflection[`value`]     => CodlEncodableDerivation.derived[value]
 
 object CodlEncodable extends CodlEncodable2:
-  def apply[value](encode0: value => List[IArray[CodlNode]]): value is CodlEncodable =
-    new:
-      def encode(value: value): List[IArray[CodlNode]] = encode0(value)
-
-  def apply2[value](lambda: value => Text): value is CodlEncodable = new CodlEncodable:
+  def encoder[value](lambda: value => Text): value is CodlEncodable = new CodlEncodable:
     type Self = value
-    def encodeField(value: value): Text = lambda(value)
-
-    def encode(value: value): List[IArray[CodlNode]] =
-      List(IArray(CodlNode(Data(encodeField(value)))))
+    def encoded(value: value): Codl = Codl(List(IArray(CodlNode(Data(lambda(value))))))
 
 
-  given boolean: Boolean is CodlEncodable = apply2(if _ then t"yes" else t"no")
-  given text: Text is CodlEncodable = apply2(_.show)
+  given booleanEncodable: Boolean is CodlEncodable = encoder(if _ then t"yes" else t"no")
+  given textEncodable: Text is CodlEncodable = encoder(_.show)
 
-  given optional: [inner, value >: Unset.type: Mandatable to inner]
+  given optionalEncodable: [inner, value >: Unset.type: Mandatable to inner]
         => (encoder: => inner is CodlEncodable)
-        => value is CodlEncodable:
-
-    def encode(element: value): List[IArray[CodlNode]] =
+        => value is CodlEncodable =
+    element =>
       element.let: element =>
-        encoder.encode(element.asInstanceOf[inner])
-      . or(List())
+        encoder.encoded(element.asInstanceOf[inner])
+      . or(Codl(List()))
 
 
-  given option: [encodable: CodlEncodable] => Option[encodable] is CodlEncodable:
-    def encode(value: Option[encodable]): List[IArray[CodlNode]] = value match
-      case None        => List()
-      case Some(value) => encodable.encode(value)
+  given optionEncodable: [encodable: CodlEncodable] => Option[encodable] is CodlEncodable:
+    def encoded(value: Option[encodable]): Codl = value match
+      case None        => Codl(List())
+      case Some(value) => encodable.encoded(value)
 
-  given list: [element] => (element: => element is CodlEncodable) => List[element] is CodlEncodable:
-    def encode(value: List[element]): List[IArray[CodlNode]] =
-      value.map(element.encode(_).head)
+  given listEncodable: [element] => (element: => element is CodlEncodable) => List[element] is CodlEncodable:
+    def encoded(value: List[element]): Codl = Codl(value.map(element.encoded(_).list.head))
 
-  given set: [element: CodlEncodable] => Set[element] is CodlEncodable:
-    def encode(value: Set[element]): List[IArray[CodlNode]] =
-      value.map(element.encode(_).head).to(List)
+  given setEncodable: [element: CodlEncodable] => Set[element] is CodlEncodable:
+    def encoded(value: Set[element]): Codl = Codl(value.map(element.encoded(_).list.head).to(List))

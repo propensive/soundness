@@ -39,9 +39,9 @@ import wisteria.*
 
 import scala.deriving.*
 
-object CodlDecodableDerivation extends ProductDerivable[CodlDecodable]:
+class CodlDecodableDerivation()(using Tactic[CodlError]) extends ProductDerivable[CodlDecodable]:
   inline def join[derivation <: Product: ProductReflection]: derivation is CodlDecodable =
-    def decode(values: List[Indexed]): derivation raises CodlError = construct:
+    def decode(values: List[Indexed]): derivation = construct:
       [field] => context =>
         val label2 = compiletime.summonFrom:
           case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)

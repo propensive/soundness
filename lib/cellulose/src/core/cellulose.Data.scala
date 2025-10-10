@@ -44,7 +44,7 @@ import language.dynamics
 object Data:
   given insertion: [entity: CodlEncodable] => Insertion[List[Data], entity] =
     value =>
-      entity.encode(value).head.to(List).map(_.data).collect:
+      entity.encoded(value).list.head.to(List).map(_.data).collect:
         case data: Data => data
 
   given inspectable: Data is Inspectable = data => t"Data(${data.key}, ${data.children.length})"
