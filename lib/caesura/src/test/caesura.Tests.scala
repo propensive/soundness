@@ -122,6 +122,7 @@ object Tests extends Suite(m"Caesura tests"):
         Dsv.parse(t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""").rows
       .assert(_ == Stream(Row(t"f\"oo", t"\"Hello\nWorld\"")))
 
+
     suite(m"Alternative formats"):
       test(m"Parse TSV data"):
         import dsvFormats.tsv
@@ -132,6 +133,8 @@ object Tests extends Suite(m"Caesura tests"):
         import dsvFormats.tsvWithHeader
         Dsv.parse(t"Greeting\tAddressee\nHello\tWorld\n")
       .assert(_ == Dsv(Stream(Row(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeader, IArray(t"Greeting", t"Addressee")))
+
+
 
     suite(m"Dynamic JSON access"):
       import dynamicDsvAccess.enabled
@@ -156,6 +159,7 @@ object Tests extends Suite(m"Caesura tests"):
         val dsv = Dsv.parse(t"greeting\tnumber\nHello\t23\n")
         dsv.rows.head.number[Int]
       .assert(_ == 23)
+
 
     test(m"decode case class"):
       import dsvFormats.csv

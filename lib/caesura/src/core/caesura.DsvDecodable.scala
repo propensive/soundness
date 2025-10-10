@@ -45,23 +45,22 @@ import wisteria.*
 import scala.compiletime.*
 
 object DsvDecodable extends ProductDerivable[DsvDecodable]:
-  class DsvProductDecoder[derivation](count: Int, lambda: Row => derivation)
+  class DsvProductDecoder[derivation](lambda: Row => derivation)
   extends DsvDecodable:
     type Self = derivation
-    override def width: Int = count
     def decoded(row: Row): derivation = lambda(row)
 
   inline def join[derivation <: Product: ProductReflection]: derivation is DsvDecodable =
-    val sum = contexts { [field] => context => context.width }.sum
     var rowNumber: Ordinal = Prim
+    val widths: IArray[Int] = DsvWidth.derived[derivation].widths()
     var count = 0
 
     provide[Foci[CellRef]]:
-      DsvProductDecoder[derivation](sum, (row: Row) => construct:
+      DsvProductDecoder[derivation]((row: Row) => construct:
         [field] => context =>
-          val index = row.columns.let(_.at(label)).or(count)
-          val row2 = Row(row.data.drop(index))
-          count += context.width
+          val i = row.columns.let(_.at(label)).or(count)
+          count += widths(index)
+          val row2 = Row(row.data.drop(i))
           focus(CellRef(rowNumber, label)):
             typeclass.decoded(row2))
 
@@ -70,4 +69,12 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
 
 trait DsvDecodable extends Typeclass:
   def decoded(elems: Row): Self
-  def width: Int = 1
+
+object DsvWidth extends ProductDerivable[DsvWidth]:
+  inline def join[derivation <: Product: ProductReflection]: derivation is DsvWidth =
+    () => contexts { [field] => context => context.widths().sum }
+
+  given decoder: [decodable: Decodable in Text] => decodable is DsvWidth = () => IArray(1)
+
+trait DsvWidth extends Typeclass:
+  def widths(): IArray[Int]
