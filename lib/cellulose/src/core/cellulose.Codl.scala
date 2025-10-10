@@ -85,31 +85,23 @@ object Cellulose:
     given optionalEncodable: [inner, value >: Unset.type: Mandatable to inner]
           => (encoder: => inner is Encodable in Codl)
           => value is Encodable in Codl =
-      element =>
-        element.let: element =>
-          encoder.encoded(element.asInstanceOf[inner])
 
-        . or(Codl(List()))
+      _.let(_.asInstanceOf[inner]).lay(Codl(Nil))(encoder.encoded(_))
 
 
-    given optionEncodable: [encodable: Encodable in Codl] => Option[encodable] is Encodable:
-      type Form = Codl
-      def encoded(value: Option[encodable]): Codl = value match
+    given optionEncodable: [encodable: Encodable in Codl]
+          => Option[encodable] is Encodable in Codl =
+
         case None        => Codl(List())
         case Some(value) => encodable.encoded(value)
 
-    given listEncodable: [element] => (element: => element is Encodable in Codl) => List[element] is Encodable:
-      type Form = Codl
-      def encoded(value: List[element]): Codl = Codl(value.map(element.encoded(_).list.head))
+    given listEncodable: [element] => (element: => element is Encodable in Codl)
+          => List[element] is Encodable in Codl =
 
-    given setEncodable: [element: Encodable in Codl] => Set[element] is Encodable:
-      type Form = Codl
-      def encoded(value: Set[element]): Codl = Codl(value.map(element.encoded(_).list.head).to(List))
+        value => Codl(value.map(element.encoded(_).list.head))
 
-
-
-
-
+    given setEncodable: [element: Encodable in Codl] => Set[element] is Encodable in Codl =
+      value => Codl(value.map(element.encoded(_).list.head).to(List))
 
 
     enum Issue extends Format.Issue:

@@ -65,7 +65,7 @@ trait Indexed extends Dynamic:
 
   def ids: Set[Text] = idIndex.keySet
 
-  def apply(idx: Int = 0)(using Tactic[CodlError]): CodlNode =
+  def apply(idx: Int = 0): CodlNode raises CodlError =
     children.at(idx.z).lest(CodlError(CodlError.Reason.MissingIndexValue(idx)))
 
   def apply(key: Text): List[CodlNode] = index.at(key).or(Nil).map(children(_))
