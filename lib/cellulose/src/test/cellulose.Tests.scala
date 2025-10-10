@@ -39,6 +39,7 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import parasite.*, threading.virtual
+import prepositional.*
 import probably.*
 import proscenium.*
 import rudiments.*
@@ -1046,7 +1047,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
         read(t"root one  two three  four five\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")(), CodlNode(t"four five")())))
 
-    def roundtrip[T: {CodlEncodable, CodlDecodable, CodlSchematic}](value: T): T = value.codl.as[T]
+    def roundtrip[T: {Encodable in Codl, CodlDecodable, CodlSchematic}](value: T): T = value.codl.as[T]
 
     Tests2()
 
@@ -1055,7 +1056,7 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
   given Realm = realm"tests"
 
   def run(): Unit = supervise:
-    def roundtrip[T: {CodlEncodable, CodlDecodable, CodlSchematic}](value: T): T = value.codl.as[T]
+    def roundtrip[T: {Encodable in Codl, CodlDecodable, CodlSchematic}](value: T): T = value.codl.as[T]
     def read(text: Text): CodlDoc = Codl.parse(text)
     suite(m"Generic Derivation tests"):
 
@@ -1137,7 +1138,7 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
       val complex = Bar(List(Baz(t"a", 2, Unset), Baz(t"c", 6, 'e')), Quux(t"e", List(1, 2, 4)))
 
 
-      def print[T: {CodlDecodable, CodlEncodable, CodlSchematic}](value: T): Text =
+      def print[T: {CodlDecodable, Encodable in Codl, CodlSchematic}](value: T): Text =
         val writer = new ji.StringWriter()
         Printer.print(writer, value.codl)
         writer.toString().show

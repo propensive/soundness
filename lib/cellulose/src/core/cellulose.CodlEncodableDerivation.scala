@@ -33,13 +33,14 @@
 package cellulose
 
 import anticipation.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
 import wisteria.*
 
-object CodlEncodableDerivation extends ProductDerivable[CodlEncodable]:
-  inline def join[derivation <: Product: ProductReflection]: derivation is CodlEncodable =
+object CodlEncodableDerivation extends ProductDerivable[Encodable in Codl]:
+  inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Codl =
     val mapping: Map[Text, Text] = compiletime.summonFrom:
       case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
       case _                                        => Map()

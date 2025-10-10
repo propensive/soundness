@@ -42,6 +42,7 @@ import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import wisteria.*
 import zephyrine.*
 
 export Cellulose.Codl
@@ -58,18 +59,52 @@ object Cellulose:
     def name: Text = t"CoDL"
 
     def apply(value: List[IArray[CodlNode]]): Codl = value
+    def wrap(value: Text): Codl = Codl(List(IArray(CodlNode(Data(value)))))
 
-    def field[encodable: Encodable in Text]: encodable is CodlEncodable = new CodlEncodable:
+    def field[encodable: Encodable in Text]: encodable is Encodable in Codl = new Encodable:
       type Self = encodable
+      type Form = Codl
 
       def encoded(value: encodable): Codl =
-        Codl(List(IArray(CodlNode(Data(encodable.encode(value))))))
+        Codl(List(IArray(CodlNode(Data(encodable.encoded(value))))))
 
     case class Position(line: Int, column: Int, length: Int) extends Format.Position:
       def describe: Text = t"line $line, column $column"
 
 
 
+    inline given derived: [value] => value is Encodable in Codl = compiletime.summonFrom:
+      case given (`value` is Encodable in Text) => Codl.field[value]
+      case given ProductReflection[`value`]     => CodlEncodableDerivation.derived[value]
+
+    given booleanEncodable: Boolean is Encodable in Codl =
+      value => Codl.wrap(if value then t"yes" else t"no")
+
+    given textEncodable: Text is Encodable in Codl = value => Codl.wrap(value)
+
+    given optionalEncodable: [inner, value >: Unset.type: Mandatable to inner]
+          => (encoder: => inner is Encodable in Codl)
+          => value is Encodable in Codl =
+      element =>
+        element.let: element =>
+          encoder.encoded(element.asInstanceOf[inner])
+
+        . or(Codl(List()))
+
+
+    given optionEncodable: [encodable: Encodable in Codl] => Option[encodable] is Encodable:
+      type Form = Codl
+      def encoded(value: Option[encodable]): Codl = value match
+        case None        => Codl(List())
+        case Some(value) => encodable.encoded(value)
+
+    given listEncodable: [element] => (element: => element is Encodable in Codl) => List[element] is Encodable:
+      type Form = Codl
+      def encoded(value: List[element]): Codl = Codl(value.map(element.encoded(_).list.head))
+
+    given setEncodable: [element: Encodable in Codl] => Set[element] is Encodable:
+      type Form = Codl
+      def encoded(value: Set[element]): Codl = Codl(value.map(element.encoded(_).list.head).to(List))
 
 
 

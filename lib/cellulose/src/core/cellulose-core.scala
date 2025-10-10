@@ -32,12 +32,14 @@
                                                                                                   */
 package cellulose
 
+import anticipation.*
+import prepositional.*
 import rudiments.*
 
 extension (inline ctx: StringContext)
   transparent inline def codl(inline parts: Any*): CodlDoc = ${Codl.Prefix.expand('ctx, 'parts)}
 
-extension [encodable: {CodlEncodable, CodlSchematic}](value: encodable)
+extension [encodable: {Encodable in Codl, CodlSchematic}](value: encodable)
   def codl: CodlDoc =
     CodlDoc(IArray.from(encodable.encoded(value).list.flatten), encodable.schema(), 0)
 
