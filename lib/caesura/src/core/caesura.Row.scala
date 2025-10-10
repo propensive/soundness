@@ -33,20 +33,23 @@
 package caesura
 
 import anticipation.*
+import contingency.*
 import denominative.*
 import distillate.*
 import gossamer.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import wisteria.*
 
 import scala.compiletime.*
 
 import language.dynamics
 
 case class Row(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
-  def as[cell: DsvDecodable]: cell = cell.decoded(this)
+  def as[cell: Decodable in Row]: cell = cell.decoded(this)
 
   def header: Optional[IArray[Text]] = columns.let: map =>
     val columns = map.map(_.swap)
@@ -75,6 +78,18 @@ object Row:
   def apply(iterable: Iterable[Text]): Row = new Row(IArray.from(iterable))
   def apply(text: Text*): Row = new Row(IArray.from(text))
 
+  given decoder: [decodable: Decodable in Text] => decodable is Decodable in Row =
+    value => decodable.decoded(value.data.head)
+
+  given encoder: [encodable: Encodable in Text] => encodable is Encodable in Row =
+    value => Row(encodable.encode(value))
+
+  inline given decodableDerivation: [value <: Product: ProductReflection]
+               => value is Decodable in Row = DecodableDerivation.derived[value]
+
+  inline given encodableDerivation: [value <: Product: ProductReflection]
+               => value is Encodable in Row = EncodableDerivation.derived[value]
+
   given showable: (format: DsvFormat) => Row is Showable =
     _.data.map: cell =>
       if !cell.contains(format.Quote) then cell else
@@ -88,3 +103,35 @@ object Row:
           append(format.quote)
 
     . join(format.delimiter.show)
+
+  object DecodableDerivation extends ProductDerivable[Decodable in Row]:
+    class DsvProductDecoder[derivation](lambda: Row => derivation)
+    extends Decodable:
+      type Self = derivation
+      type Form = Row
+      def decoded(row: Row): derivation = lambda(row)
+
+    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Row =
+      var rowNumber: Ordinal = Prim
+      val spans: IArray[Int] = Spannable.derived[derivation].spans()
+      var count = 0
+
+      provide[Foci[CellRef]]:
+        DsvProductDecoder[derivation]((row: Row) => construct:
+          [field] => context =>
+            val i = row.columns.let(_.at(label)).or(count)
+            count += spans(index)
+            val row2 = Row(row.data.drop(i))
+            focus(CellRef(rowNumber, label)):
+              typeclass.decoded(row2))
+
+  object EncodableDerivation extends ProductDerivable[Encodable in Row]:
+    inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Row =
+      value =>
+        val cells =
+          fields(value):
+            [field] => field => context.encode(field).data
+          . to(List)
+          . flatten
+
+        Row(cells)

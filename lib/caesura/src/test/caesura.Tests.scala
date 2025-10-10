@@ -161,6 +161,7 @@ object Tests extends Suite(m"Caesura tests"):
       .assert(_ == 23)
 
 
+
     test(m"decode case class"):
       import dsvFormats.csv
       Dsv.parse(t"""hello,world""").rows.head.as[Foo]

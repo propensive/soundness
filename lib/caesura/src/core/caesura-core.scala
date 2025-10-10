@@ -32,7 +32,9 @@
                                                                                                   */
 package caesura
 
+import anticipation.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 
 package dsvFormats:
@@ -50,7 +52,7 @@ package dsvRedesignations:
   given capitalizedWords: DsvRedesignation = _.uncamel.map(_.capitalize).join(t" ")
   given lowerWords: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
 
-extension [encodable: DsvEncodable](value: encodable) def dsv: Row = encodable.encode(value)
+extension [encodable: Encodable in Row](value: encodable) def dsv: Row = encodable.encode(value)
 
-extension [encodable: DsvEncodable](value: Seq[encodable])
+extension [encodable: Encodable in Row](value: Seq[encodable])
   def dsv: Dsv = Dsv(value.to(Stream).map(encodable.encode(_)))

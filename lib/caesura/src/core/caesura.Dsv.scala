@@ -35,6 +35,7 @@ package caesura
 import anticipation.*
 import contingency.*
 import denominative.*
+import distillate.*
 import escritoire.*
 import gossamer.*
 import hieroglyph.*
@@ -55,7 +56,7 @@ case class Dsv
     format:  Optional[DsvFormat]    = Unset,
     columns: Optional[IArray[Text]] = Unset):
 
-  def as[value: DsvDecodable]: Stream[value] tracks CellRef = rows.map(_.as[value])
+  def as[value: Decodable in Row]: Stream[value] tracks CellRef = rows.map(_.as[value])
 
   override def hashCode: Int =
     (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
