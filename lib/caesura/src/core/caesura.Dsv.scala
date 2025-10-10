@@ -35,156 +35,103 @@ package caesura
 import anticipation.*
 import contingency.*
 import denominative.*
-import escritoire.*
+import distillate.*
 import gossamer.*
-import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
-import symbolism.*
-import turbulence.*
 import vacuous.*
+import wisteria.*
 
 import scala.compiletime.*
 
-import java.util as ju
+import language.dynamics
 
-case class Dsv
-   (rows:    Stream[Row],
-    format:  Optional[DsvFormat]    = Unset,
-    columns: Optional[IArray[Text]] = Unset):
+case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
+  def as[cell: Decodable in Dsv]: cell = cell.decoded(this)
 
-  def as[value: DsvDecodable]: Stream[value] tracks CellRef = rows.map(_.as[value])
+  def header: Optional[IArray[Text]] = columns.let: map =>
+    val columns = map.map(_.swap)
+    IArray.tabulate(columns.size)(columns(_))
 
-  override def hashCode: Int =
-    (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
-      ju.Arrays.hashCode(array.mutable(using Unsafe))
+  def selectDynamic[value: Decodable in Text](field: String)
+       (using DynamicDsvEnabler, DsvRedesignation)
+  : Optional[value] =
+
+      apply(summon[DsvRedesignation].transform(field.tt))
+
+
+  def apply[value: Decodable in Text](field: Text): Optional[value] =
+    columns.let(_.at(field)).let { index => data.at(index.z) }.let(value.decoded(_))
+
+  override def hashCode: Int = data.indices.fuse(0)(state*31 + data(next).hashCode)
 
   override def equals(that: Any): Boolean = that.asMatchable match
-    case dsv: Dsv =>
-      dsv.rows == rows && dsv.format == format && columns.lay(dsv.columns == Unset): columns =>
-        dsv.columns.lay(false)(columns.sameElements(_))
+    case row: Dsv =>
+      data.length == row.data.length && data.indices.all: index =>
+        data(index) == row.data(index)
 
-    case _ =>
-      false
+    case _        => false
 
 object Dsv:
-  private enum State:
-    case Fresh, Quoted, DoubleQuoted
+  def apply(iterable: Iterable[Text]): Dsv = new Dsv(IArray.from(iterable))
+  def apply(text: Text*): Dsv = new Dsv(IArray.from(text))
 
-  given abstractable: (CharEncoder, DsvFormat)
-        => Dsv is Abstractable across HttpStreams to HttpStreams.Content =
-    new Abstractable:
-      type Self = Dsv
-      type Domain = HttpStreams
-      type Result = HttpStreams.Content
+  given decoder: [decodable: Decodable in Text] => decodable is Decodable in Dsv =
+    value => decodable.decoded(value.data.head)
 
-      def genericize(dsv: Dsv): HttpStreams.Content =
-        val mediaType: Text =
-          dsv.format.let(_.delimiter) match
-            case '\t' => t"text/tab-separated-values"
-            case _    => t"text/csv"
+  given encoder: [encodable: Encodable in Text] => encodable is Encodable in Dsv =
+    value => Dsv(encodable.encode(value))
 
-        (mediaType, dsv.stream[Text].map(_.bytes))
+  inline given decodableDerivation: [value <: Product: ProductReflection]
+               => value is Decodable in Dsv = DecodableDerivation.derived[value]
 
+  inline given encodableDerivation: [value <: Product: ProductReflection]
+               => value is Encodable in Dsv = EncodableDerivation.derived[value]
 
-  given tabular: Dsv is Tabular[Text]:
-    type Element = Row
-    def rows(value: Dsv) = value.rows
+  given showable: (format: DsvFormat) => Dsv is Showable =
+    _.data.map: cell =>
+      if !cell.contains(format.Quote) then cell else
+        Text.construct:
+          append(format.quote)
 
-    def table(dsv: Dsv): Table[Row, Text] =
-      val columns: List[Text] =
-        dsv.columns.let(_.to(List)).or:
-          dsv.rows.prim.let: head =>
-            (1 to head.data.length).to(List).map(_.toString.tt)
+          cell.s.foreach: char =>
+            if char == format.quote then append(char)
+            append(char)
 
-        . or(Nil)
+          append(format.quote)
 
-      Table[Row]
-       ((columns.map: name =>
-          Column[Row, Text, Text](name, sizing = columnar.Collapsible(0.5))
-           (_[Text](name).or(t"")))*)
+    . join(format.delimiter.show)
 
+  object DecodableDerivation extends ProductDerivable[Decodable in Dsv]:
+    class DsvProductDecoder[derivation](lambda: Dsv => derivation)
+    extends Decodable:
+      type Self = derivation
+      type Form = Dsv
+      def decoded(row: Dsv): derivation = lambda(row)
 
-  def parse[source: Readable by Text](source: source)(using format: DsvFormat)
-  : Dsv raises DsvError =
+    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Dsv =
+      var rowNumber: Ordinal = Prim
+      val spans: IArray[Int] = Spannable.derived[derivation].spans()
+      var count = 0
 
-      val rows = recur(source.stream[Text])
-      if format.header then Dsv(rows, format, rows.prim.let(_.header)) else Dsv(rows, format)
+      provide[Foci[CellRef]]:
+        DsvProductDecoder[derivation]((row: Dsv) => construct:
+          [field] => context =>
+            val i = row.columns.let(_.at(label)).or(count)
+            count += spans(index)
+            val row2 = Dsv(row.data.drop(i))
+            focus(CellRef(rowNumber, label)):
+              typeclass.decoded(row2))
 
+  object EncodableDerivation extends ProductDerivable[Encodable in Dsv]:
+    inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Dsv =
+      value =>
+        val cells =
+          fields(value):
+            [field] => field => context.encode(field).data
+          . to(List)
+          . flatten
 
-  given showable: DsvFormat => Dsv is Showable = _.rows.map(_.show).join(t"\n")
-  given readable: DsvFormat => Dsv is Readable by Text = _.rows.to(Stream).map(_.show+t"\n")
-
-
-  private def recur
-               (content:  Stream[Text],
-                index:    Ordinal                  = Prim,
-                column:   Int                      = 0,
-                cells:    Array[Text]              = new Array[Text](0),
-                builder:  TextBuilder              = TextBuilder(),
-                state:    State                    = State.Fresh,
-                headings: Optional[Map[Text, Int]] = Unset)
-               (using format: DsvFormat, tactic: Tactic[DsvError])
-  : Stream[Row] =
-
-      inline def putCell(): Array[Text] =
-        val cells2 = if cells.length <= column then cells :+ builder() else
-          cells(column) = builder()
-          cells
-
-        cells2.also(builder.clear())
-
-      inline def advance() =
-        val cells = putCell()
-        recur(content, index + 1, column + 1, cells, builder, State.Fresh, headings)
-
-      inline def next(char: Char): Stream[Row] =
-        builder.put(char) yet recur(content, index + 1, column, cells, builder, state, headings)
-
-      inline def quote(): Stream[Row] = state match
-        case State.Fresh =>
-          if !builder.empty then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
-          recur(content, index + 1, column, cells, builder, State.Quoted, headings)
-
-        case State.Quoted =>
-          recur(content, index + 1, column, cells, builder, State.DoubleQuoted, headings)
-
-        case State.DoubleQuoted =>
-          builder.put(format.Quote)
-          recur(content, index + 1, column, cells, builder, State.Quoted, headings)
-
-      inline def fresh(): Array[Text] = new Array[Text](cells.length)
-
-      inline def putRow(): Stream[Row] =
-        val cells = putCell()
-
-        if format.header && headings.absent then
-          val map: Map[Text, Int] = cells.to(List).zipWithIndex.to(Map)
-          recur(content, index + 1, 0, fresh(), builder, State.Fresh, map)
-        else
-          (column + 1).until(cells.length).each: index =>
-            cells(index) = t""
-
-          val row = Row(unsafely(cells.immutable), headings)
-          row #:: recur(content, index + 1, 0, fresh(), builder, State.Fresh, headings)
-
-      content.flow(if column == 0 && builder.empty then Stream() else putRow()):
-        if !head.has(index) then recur(tail, Prim, column, cells, builder, state, headings) else
-          head.s.charAt(index.n0) match
-            case format.Delimiter =>
-              if state != State.Quoted then advance() else next(format.Delimiter)
-
-            case format.Quote =>
-              quote()
-
-            case '\n' | '\r' =>
-              if column == 0 && builder.empty
-              then recur(content, index + 1, 0, cells, builder, State.Fresh, headings)
-              else if state != State.Quoted then putRow()
-              else next(head.s.charAt(index.n0))
-
-            case char =>
-              builder.put(char)
-              recur(content, index + 1, column, cells, builder, state, headings)
+        Dsv(cells)

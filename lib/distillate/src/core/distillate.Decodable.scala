@@ -42,9 +42,10 @@ import rudiments.*
 import wisteria.*
 import vacuous.*
 
-object Decodable:
+trait Decodable2:
   given generic: [value] => value is Decodable in value = identity(_)
 
+object Decodable extends Decodable2:
   given int: (number: Tactic[NumberError]) => Int is Decodable in Text = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Int)) yet 0

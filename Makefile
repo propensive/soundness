@@ -5,9 +5,9 @@ test:
 	mill test.assembly
 	java -cp out/test/assembly.dest/out.jar soundness.Tests
 
-test.cellulose:
-	mill cellulose.test.assembly
-	java -cp out/cellulose/test/assembly.dest/out.jar cellulose.Tests
+test.caesura:
+	mill caesura.test.assembly
+	java -cp out/caesura/test/assembly.dest/out.jar caesura.Tests
 
 failing:
 	mill test.assembly

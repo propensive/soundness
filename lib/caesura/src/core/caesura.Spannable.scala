@@ -44,30 +44,11 @@ import wisteria.*
 
 import scala.compiletime.*
 
-object DsvDecodable extends ProductDerivable[DsvDecodable]:
-  class DsvProductDecoder[derivation](count: Int, lambda: Row => derivation)
-  extends DsvDecodable:
-    type Self = derivation
-    override def width: Int = count
-    def decoded(row: Row): derivation = lambda(row)
+object Spannable extends ProductDerivable[Spannable]:
+  inline def join[derivation <: Product: ProductReflection]: derivation is Spannable =
+    () => contexts { [field] => context => context.spans().sum }
 
-  inline def join[derivation <: Product: ProductReflection]: derivation is DsvDecodable =
-    val sum = contexts { [field] => context => context.width }.sum
-    var rowNumber: Ordinal = Prim
-    var count = 0
+  given decoder: [decodable: Decodable in Text] => decodable is Spannable = () => IArray(1)
 
-    provide[Foci[CellRef]]:
-      DsvProductDecoder[derivation](sum, (row: Row) => construct:
-        [field] => context =>
-          val index = row.columns.let(_.at(label)).or(count)
-          val row2 = Row(row.data.drop(index))
-          count += context.width
-          focus(CellRef(rowNumber, label)):
-            typeclass.decoded(row2))
-
-  given decoder: [decodable: Decodable in Text] => decodable is DsvDecodable =
-    value => decodable.decoded(value.data.head)
-
-trait DsvDecodable extends Typeclass:
-  def decoded(elems: Row): Self
-  def width: Int = 1
+trait Spannable extends Typeclass:
+  def spans(): IArray[Int]
