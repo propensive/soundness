@@ -32,22 +32,51 @@
                                                                                                   */
 package cellulose
 
+import anticipation.*
 import contingency.*
+import distillate.*
+import prepositional.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 import wisteria.*
 
-import scala.deriving.*
+trait Cellulose2:
+  object EncodableDerivation extends ProductDerivable[Encodable in Codl]:
+    inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Codl =
+      val mapping: Map[Text, Text] = compiletime.summonFrom:
+        case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
+        case _                                        => Map()
 
-class CodlDecodableDerivation()(using Tactic[CodlError]) extends ProductDerivable[CodlDecodable]:
-  inline def join[derivation <: Product: ProductReflection]: derivation is CodlDecodable =
-    values => construct:
-      [field] => context =>
-        val label2 = compiletime.summonFrom:
-          case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
-          case _                                        => label
+      product => Codl:
+        List:
+          val schemata: IArray[CodlSchema.Entry] =
+            CodlSchematicDerivation.join[derivation].schema().absolve match
+              case Struct(elements, _) => IArray.from(elements)
 
-        context.decoded:
-          Codl:
-            Data("", values.list.prim.lest(CodlError(CodlError.Reason.BadFormat(label2))).children)
-            . get(label2)
+          Codllike:
+            IArray.from:
+              fields(product):
+                [field] => field =>
+                  val label2 = mapping.at(label).or(label)
+                  val schematic = compiletime.summonInline[field is CodlSchematic]
+
+                  context.encoded(field).list.map: value =>
+                    CodlNode(Data(label2, value.children, Layout.empty, schemata(index).schema))
+
+                  . filter(!_.empty)
+
+              . to(List).flatten
+
+  class DecodableDerivation()(using Tactic[CodlError]) extends ProductDerivable[Decodable in Codl]:
+    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Codl =
+      values => construct:
+        [field] => context =>
+          val label2 = compiletime.summonFrom:
+            case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
+            case _                                        => label
+
+          context.decoded:
+            Codl:
+              Data("", values.list.prim.lest(CodlError(CodlError.Reason.BadFormat(label2))).children)
+              . get(label2)

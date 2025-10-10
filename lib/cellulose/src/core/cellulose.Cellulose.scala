@@ -35,6 +35,7 @@ package cellulose
 import anticipation.*
 import contextual.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
@@ -60,12 +61,19 @@ object Cellulose extends Cellulose2:
     def apply(value: List[Codllike]): Codl = value
     def wrap(value: Text): Codl = Codl(List(Codllike(IArray(CodlNode(Data(value))))))
 
-    def field[encodable: Encodable in Text]: encodable is Encodable in Codl = new Encodable:
-      type Self = encodable
-      type Form = Codl
+    def decodableField[value: Decodable in Text]: value is Decodable in Codl raises CodlError =
+      decodable(value.decoded(_))
 
-      def encoded(value: encodable): Codl =
-        Codl(List(Codllike(IArray(CodlNode(Data(encodable.encoded(value)))))))
+    def decodable[value](lambda: Text => value): value is Decodable in Codl raises CodlError =
+      codl =>
+        codl.list.prim.lest(CodlError(CodlError.Reason.BadFormat(Unset))).children match
+          case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
+
+          case _ =>
+            abort(CodlError(CodlError.Reason.BadFormat(Unset)))
+
+    def field[encodable: Encodable in Text]: encodable is Encodable in Codl =
+      value => Codl(List(Codllike(IArray(CodlNode(Data(encodable.encoded(value)))))))
 
     case class Position(line: Int, column: Int, length: Int) extends Format.Position:
       def describe: Text = t"line $line, column $column"
@@ -102,6 +110,43 @@ object Cellulose extends Cellulose2:
     given setEncodable: [element: Encodable in Codl] => Set[element] is Encodable in Codl =
       value => Codl(value.map(element.encoded(_).list.head).to(List))
 
+    inline given derived: [value] => Tactic[CodlError] => value is Decodable in Codl =
+      compiletime.summonFrom:
+        case given (`value` is Decodable in Text) => decodableField[`value`]
+        case given ProductReflection[`value`]     => DecodableDerivation().derived[`value`]
+
+    given booleanDecodable: Tactic[CodlError] => Boolean is Decodable in Codl = decodable(_ == t"yes")
+    given textDecodable: Tactic[CodlError] => Text is Decodable in Codl = decodable(identity(_))
+    given unitDecodable: Unit is Decodable in Codl = _ => ()
+
+    given optionalDecodable: [value >: Unset.type: Mandatable]
+          => (decoder: => value.Result is Decodable in Codl)
+          =>  value is Decodable in Codl =
+      codl => if codl.list.isEmpty then Unset else decoder.decoded(codl)
+
+    given optionDecodable: [decodable] => (decoder: => decodable is Decodable in Codl)
+          => Option[decodable] is Decodable in Codl =
+      codl => if codl.list.isEmpty then None else Some(decoder.decoded(codl))
+
+    given listDecodable: [element: CodlSchematic] => (decodable: => element is Decodable in Codl)
+          => List[element] is Decodable in Codl =
+
+      value => element.schema() match
+        case Field(_, validator) => value.list.flatMap(_.children).map: node =>
+          decodable.decoded(Codl(List(CodlDoc(node))))
+
+        case struct: Struct =>
+          value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_))
+
+    given setDecodable: [element: CodlSchematic] => (decodable: => element is Decodable in Codl)
+          => Set[element] is Decodable in Codl =
+      value =>
+        element.schema() match
+          case Field(_, validator) =>
+            value.list.flatMap(_.children).map { node => decodable.decoded(Codl(List(CodlDoc(node)))) }.to(Set)
+
+          case struct: Struct =>
+            value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_)).to(Set)
 
     enum Issue extends Format.Issue:
       case UnexpectedCarriageReturn
@@ -153,7 +198,7 @@ object Cellulose extends Cellulose2:
           m"two # symbols terminates the document and must appear alone on a line"
 
 
-    def read[value: {CodlDecodable, CodlSchematic}](using Void)[source](source: source)
+    def read[value: {Decodable in Codl, CodlSchematic}](using Void)[source](source: source)
         (using readable: source is Readable by Text)
     : value raises ParseError raises CodlError =
 

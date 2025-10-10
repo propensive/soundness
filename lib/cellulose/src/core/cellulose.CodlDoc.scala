@@ -36,6 +36,8 @@ import anticipation.*
 import chiaroscuro.*
 import contingency.*
 import dissonance.*
+import distillate.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -96,7 +98,7 @@ extends Indexed:
 
     copy(children = recur(children, input.children))
 
-  def as[value: CodlDecodable]: value raises CodlError = value.decoded(Codl(List(this)))
+  def as[value: Decodable in Codl]: value raises CodlError = value.decoded(Codl(List(this)))
   def uncommented: CodlDoc = CodlDoc(children.map(_.uncommented), schema, margin, body)
   def untyped: CodlDoc = CodlDoc(children.map(_.untyped), CodlSchema.Free, margin, body)
   def wiped = uncommented.untyped
