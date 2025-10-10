@@ -33,61 +33,50 @@
 package cellulose
 
 import anticipation.*
-import gossamer.*
+import contingency.*
+import distillate.*
 import prepositional.*
-import spectacular.*
+import proscenium.*
+import rudiments.*
 import vacuous.*
 import wisteria.*
 
-trait CodlEncodable extends Typeclass:
-  def encode(value: Self): List[IArray[CodlNode]]
+trait Cellulose2:
+  object EncodableDerivation extends ProductDerivable[Encodable in Codl]:
+    inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Codl =
+      val mapping: Map[Text, Text] = compiletime.summonFrom:
+        case relabelling: CodlRelabelling[derivation] => relabelling.relabelling()
+        case _                                        => Map()
 
-trait CodlEncodable2:
-  def field[encodable: Encodable in Text]: encodable is CodlEncodable = new CodlEncodable:
-    type Self = encodable
+      product => Codl:
+        List:
+          val schemata: IArray[CodlSchema.Entry] =
+            CodlSchematicDerivation.join[derivation].schema().absolve match
+              case Struct(elements, _) => IArray.from(elements)
 
-    def encode(value: encodable): List[IArray[CodlNode]] =
-      List(IArray(CodlNode(Data(encodable.encode(value)))))
+          Codllike:
+            IArray.from:
+              fields(product):
+                [field] => field =>
+                  val label2 = mapping.at(label).or(label)
+                  val schematic = compiletime.summonInline[field is CodlSchematic]
 
-  inline given derived: [value] => value is CodlEncodable = compiletime.summonFrom:
-    case given (`value` is Encodable in Text) => field[value]
-    case given ProductReflection[`value`]     => CodlEncodableDerivation.derived[value]
+                  context.encoded(field).list.map: value =>
+                    CodlNode(Data(label2, value.children, Layout.empty, schemata(index).schema))
 
-object CodlEncodable extends CodlEncodable2:
-  def apply[value](encode0: value => List[IArray[CodlNode]]): value is CodlEncodable =
-    new:
-      def encode(value: value): List[IArray[CodlNode]] = encode0(value)
+                  . filter(!_.empty)
 
-  def apply2[value](lambda: value => Text): value is CodlEncodable = new CodlEncodable:
-    type Self = value
-    def encodeField(value: value): Text = lambda(value)
+              . to(List).flatten
 
-    def encode(value: value): List[IArray[CodlNode]] =
-      List(IArray(CodlNode(Data(encodeField(value)))))
+  class DecodableDerivation()(using Tactic[CodlError]) extends ProductDerivable[Decodable in Codl]:
+    inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Codl =
+      values => construct:
+        [field] => context =>
+          val label2 = compiletime.summonFrom:
+            case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
+            case _                                        => label
 
-
-  given boolean: Boolean is CodlEncodable = apply2(if _ then t"yes" else t"no")
-  given text: Text is CodlEncodable = apply2(_.show)
-
-  given optional: [inner, value >: Unset.type: Mandatable to inner]
-        => (encoder: => inner is CodlEncodable)
-        => value is CodlEncodable:
-
-    def encode(element: value): List[IArray[CodlNode]] =
-      element.let: element =>
-        encoder.encode(element.asInstanceOf[inner])
-      . or(List())
-
-
-  given option: [encodable: CodlEncodable] => Option[encodable] is CodlEncodable:
-    def encode(value: Option[encodable]): List[IArray[CodlNode]] = value match
-      case None        => List()
-      case Some(value) => encodable.encode(value)
-
-  given list: [element] => (element: => element is CodlEncodable) => List[element] is CodlEncodable:
-    def encode(value: List[element]): List[IArray[CodlNode]] =
-      value.map(element.encode(_).head)
-
-  given set: [element: CodlEncodable] => Set[element] is CodlEncodable:
-    def encode(value: Set[element]): List[IArray[CodlNode]] =
-      value.map(element.encode(_).head).to(List)
+          context.decoded:
+            Codl:
+              Data("", values.list.prim.lest(CodlError(CodlError.Reason.BadFormat(label2))).children)
+              . get(label2)

@@ -41,7 +41,14 @@ import vacuous.*
 
 import language.dynamics
 
-trait Indexed extends Dynamic:
+object Codllike:
+  def apply(children0: IArray[CodlNode]): Codllike = new Codllike:
+    def children = children0
+
+trait Codllike:
+  def children: IArray[CodlNode]
+
+trait Indexed extends Codllike, Dynamic:
   def children: IArray[CodlNode]
   def schema: CodlSchema
   def layout: Layout
@@ -65,7 +72,7 @@ trait Indexed extends Dynamic:
 
   def ids: Set[Text] = idIndex.keySet
 
-  def apply(idx: Int = 0)(using Tactic[CodlError]): CodlNode =
+  def apply(idx: Int = 0): CodlNode raises CodlError =
     children.at(idx.z).lest(CodlError(CodlError.Reason.MissingIndexValue(idx)))
 
   def apply(key: Text): List[CodlNode] = index.at(key).or(Nil).map(children(_))

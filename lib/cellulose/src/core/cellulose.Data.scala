@@ -35,6 +35,7 @@ package cellulose
 import anticipation.*
 import contextual.*
 import gossamer.{where as _, *}
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -42,9 +43,9 @@ import vacuous.*
 import language.dynamics
 
 object Data:
-  given insertion: [entity: CodlEncodable] => Insertion[List[Data], entity] =
+  given insertion: [entity: Encodable in Codl] => Insertion[List[Data], entity] =
     value =>
-      entity.encode(value).head.to(List).map(_.data).collect:
+      entity.encoded(value).list.head.children.to(List).map(_.data).collect:
         case data: Data => data
 
   given inspectable: Data is Inspectable = data => t"Data(${data.key}, ${data.children.length})"
