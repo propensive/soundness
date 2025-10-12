@@ -302,11 +302,12 @@ case class Stop(name: Text):
 
 enum TubeLine:
   case Bakerloo, Central, Circle, District, HammersmithCity, Jubilee, Metropolitan, Northern,
-       Piccadilly, Victoria, WaterlooCity, Elizabeth, Dlr, LondonOverground, Thameslink
+       Piccadilly, Victoria, WaterlooCity, Elizabeth, Dlr, Thameslink, Lioness, Mildmay, Windrush,
+       Weaver, Suffragette, Liberty
 
   def open: Boolean = this match
-    case Dlr | Elizabeth | LondonOverground => true
-    case _                                  => false
+    case Dlr | Elizabeth | Lioness | Mildmay | Windrush | Weaver | Suffragette | Liberty => true
+    case _                                                                               => false
 
   def color: Rgb24 = this match
     case Bakerloo         => rgb"#B36305"
@@ -321,8 +322,14 @@ enum TubeLine:
     case Victoria         => rgb"#0098D4"
     case WaterlooCity     => rgb"#95CDBA"
     case Dlr              => rgb"#00AFAD"
-    case LondonOverground => rgb"#FA7B05"
     case Elizabeth        => rgb"#60399E"
     case Thameslink       => rgb"#D7C1D9"
+    case Lioness          => rgb"#FFa600"
+    case Mildmay          => rgb"#006FEF"
+    case Windrush         => rgb"#C90033"
+    case Weaver           => rgb"#9B0058"
+    case Suffragette      => rgb"#18A95D"
+    case Liberty          => rgb"#61686B"
+
 
 erased trait Naptan
