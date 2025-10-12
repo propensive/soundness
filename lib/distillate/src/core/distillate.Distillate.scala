@@ -39,7 +39,7 @@ import fulminate.*
 import proscenium.*
 
 object Distillate:
-  given realm: Realm = realm"distillate"
+  private given realm: Realm = realm"distillate"
   def enumerable[enumeration <: reflect.Enum: Type]: Macro[enumeration is Enumerable] =
     import quotes.reflect.*
 

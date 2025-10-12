@@ -45,7 +45,7 @@ import proscenium.*
 import vacuous.*
 
 object Kaleidoscope:
-  given realm: Realm = realm"kaleidoscope"
+  private given realm: Realm = realm"kaleidoscope"
 
   def glob(context: Expr[StringContext]): Macro[Any] =
     val parts = context.value.get.parts.map(Text(_)).map(Glob.parse(_).regex.s).to(List)

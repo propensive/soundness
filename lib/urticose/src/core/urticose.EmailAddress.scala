@@ -53,7 +53,7 @@ import scala.compiletime.*
 import EmailAddressError.Reason.*
 
 object EmailAddress:
-  given realm: Realm = realm"urticose"
+  private given realm: Realm = realm"urticose"
 
   given decodable: Tactic[EmailAddressError] => EmailAddress is Decodable in Text =
     EmailAddress.parse(_)

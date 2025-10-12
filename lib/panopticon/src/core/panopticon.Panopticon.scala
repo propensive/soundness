@@ -42,7 +42,7 @@ import scala.compiletime.*
 import language.dynamics
 
 object Panopticon:
-  given realm: Realm = realm"panopticon"
+  private given realm: Realm = realm"panopticon"
   opaque type Lens[from, path <: Tuple, to] = Int
   opaque type InitLens[from] = Int
 

@@ -45,7 +45,7 @@ import proscenium.*
 import symbolism.*
 import vacuous.*
 
-given realm: Realm = realm"probably"
+private given realm: Realm = realm"probably"
 
 given decimalizer: Decimalizer = Decimalizer(3)
 

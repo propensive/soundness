@@ -50,7 +50,7 @@ import scala.quoted.*
 import HostnameError.Reason.*
 
 object Hostname:
-  given realm: Realm = realm"urticose"
+  private given realm: Realm = realm"urticose"
 
   given showable: Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
 

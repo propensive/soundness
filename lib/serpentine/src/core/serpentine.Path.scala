@@ -47,7 +47,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-given Realm = Realm(t"serpentine")
+private given Realm = Realm(t"serpentine")
 
 object Path:
   @targetName("Root")

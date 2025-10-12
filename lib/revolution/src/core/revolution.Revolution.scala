@@ -44,7 +44,7 @@ import proscenium.*
 import vacuous.*
 
 object Revolution:
-  given Realm(t"revolution")
+  private given Realm(t"revolution")
 
   def semver(context0: Expr[StringContext]): Macro[Semver] =
     val semver0 = context0.valueOrAbort match

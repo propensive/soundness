@@ -35,4 +35,4 @@ package anthology
 import anticipation.*
 import fulminate.*
 
-given realm: Realm = realm"anthology"
+private given realm: Realm = realm"anthology"

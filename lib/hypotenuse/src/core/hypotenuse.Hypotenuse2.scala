@@ -44,7 +44,7 @@ import proscenium.*
 import rudiments.*
 
 object Hypotenuse2:
-  given realm: Realm = realm"hypotenuse"
+  private given realm: Realm = realm"hypotenuse"
 
   def bin(expr: Expr[StringContext]): Macro[AnyVal] =
     import quotes.reflect.*

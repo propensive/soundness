@@ -35,6 +35,6 @@ package tarantula
 import anticipation.*
 import fulminate.*
 
-given realm: Realm = realm"tarantula"
+private given realm: Realm = realm"tarantula"
 
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]

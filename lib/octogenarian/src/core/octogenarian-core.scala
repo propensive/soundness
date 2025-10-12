@@ -47,7 +47,7 @@ import serpentine.*
 
 import GitError.Reason.*
 
-given realm: Realm = realm"octogenarian"
+private given realm: Realm = realm"octogenarian"
 
 package gitCommands:
   given environmentDefault: (WorkingDirectory, GitEvent is Loggable)

@@ -68,7 +68,7 @@ package strategies:
     def abort(error: Diagnostics ?=> error): Nothing = throw error
     def certify(): Unit = ()
 
-given realm: Realm = realm"contingency"
+private given realm: Realm = realm"contingency"
 
 def certify[error <: Exception: Tactic](): Unit = error.certify()
 

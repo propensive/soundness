@@ -44,7 +44,7 @@ import vacuous.*
 import scala.quoted.*
 
 object Gossamer:
-  given realm: Realm = realm"gossamer"
+  private given realm: Realm = realm"gossamer"
 
   object opaques:
     opaque type Ascii = anticipation.Bytes

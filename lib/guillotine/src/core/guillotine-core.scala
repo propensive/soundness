@@ -37,7 +37,7 @@ import language.experimental.pureFunctions
 import anticipation.*
 import fulminate.*
 
-given realm: Realm = realm"guillotine"
+private given realm: Realm = realm"guillotine"
 
 extension (inline context: StringContext)
   transparent inline def sh(inline parts: Any*): Any = ${Guillotine.sh('context, 'parts)}

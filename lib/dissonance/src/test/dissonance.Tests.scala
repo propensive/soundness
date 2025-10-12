@@ -47,7 +47,7 @@ import proximityMeasures.levenshteinDistance
 import strategies.throwUnsafely
 
 object Tests extends Suite(m"Dissonance tests"):
-  given Realm = realm"tests"
+  private given Realm = realm"tests"
 
   def run(): Unit =
     suite(m"Diff tests"):

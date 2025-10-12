@@ -39,7 +39,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-given realm: Realm = realm"exoskeleton"
+private given realm: Realm = realm"exoskeleton"
 
 package interpreters:
   given simple: Interpreter:

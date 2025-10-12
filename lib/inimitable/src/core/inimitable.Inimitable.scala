@@ -40,7 +40,7 @@ import fulminate.*
 import proscenium.*
 
 object Inimitable:
-  given realm: Realm = realm"inimitable"
+  private given realm: Realm = realm"inimitable"
 
   def uuid(expr: Expr[StringContext]): Macro[Uuid] =
     val uuid = abortive(Uuid.parse(expr.valueOrAbort.parts.head.tt))

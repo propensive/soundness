@@ -52,7 +52,7 @@ import scala.quoted.*
 import IpAddressError.Reason, Reason.*
 
 object Urticose:
-  given realm: Realm = realm"urticose"
+  private given realm: Realm = realm"urticose"
 
   private lazy val serviceNames: Map[(Boolean, Text), Int] =
     val stream =

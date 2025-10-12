@@ -62,7 +62,7 @@ case class Privilege(name: Text, grant: Boolean)
 
 object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
-  given Realm = realm"tests"
+  private given Realm = realm"tests"
 
   def run(): Unit = supervise:
     import CodlToken.*
@@ -1054,7 +1054,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
 object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
 
-  given Realm = realm"tests"
+  private given Realm = realm"tests"
 
   def run(): Unit = supervise:
     def roundtrip[T: {Encodable in Codl, Decodable in Codl, CodlSchematic}](value: T): T = value.codl.as[T]

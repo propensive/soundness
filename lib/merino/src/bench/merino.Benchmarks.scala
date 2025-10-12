@@ -89,7 +89,7 @@ object Benchmarks extends Suite(m"Merino tests"):
 
       . benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
 
-given realm: Realm = Realm(t"tests")
+private given realm: Realm = Realm(t"tests")
 
 lazy val jsonExample1 = """
 
