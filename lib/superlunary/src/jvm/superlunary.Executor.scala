@@ -40,9 +40,9 @@ object Executor:
     val cls = Class.forName("Generated$Code$From$Quoted").nn
     val instance = cls.getDeclaredConstructor().nn.newInstance().nn
     val method = cls.getMethod("apply").nn
-    val function = method.invoke(instance).nn
-    val cls2 = function.getClass.nn
-    val method2 = function.getClass.nn.getMethod("apply", classOf[Object]).nn
+    val function = method.invoke(instance)
+    val cls2 = function.getClass
+    val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
     method2.setAccessible(true)
     method2.invoke(function, input).asInstanceOf[String]
 

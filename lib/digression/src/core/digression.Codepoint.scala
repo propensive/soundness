@@ -45,4 +45,4 @@ object Codepoint:
     juc.ConcurrentHashMap()
 
 case class Codepoint(source: Text, line: Int):
-  def text: Text = Text(s"${source.s.split("/").nn.last.nn}:$line")
+  def text: Text = Text(s"${source.s.split("/").nn.last}:$line")

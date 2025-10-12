@@ -49,9 +49,9 @@ object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
     else if next.s.length == 6 && next.s.all: char =>
       char.isDigit || ((char | 32) >= 'a' && (char | 32) <= 'f')
     then
-      val red = Integer.parseInt(next.s.substring(0, 2).nn, 16)
-      val green = Integer.parseInt(next.s.substring(2, 4).nn, 16)
-      val blue = Integer.parseInt(next.s.substring(4, 6).nn, 16)
+      val red = Integer.parseInt(next.s.substring(0, 2), 16)
+      val green = Integer.parseInt(next.s.substring(2, 4), 16)
+      val blue = Integer.parseInt(next.s.substring(4, 6), 16)
 
       Some(Rgb24(red, green, blue))
 

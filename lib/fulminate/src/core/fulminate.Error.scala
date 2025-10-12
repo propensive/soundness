@@ -43,7 +43,7 @@ transparent abstract class Error(val message: Message, private val cause: Throwa
    (using val diagnostics: Diagnostics)
 extends Exception(message.text.s, cause, false, diagnostics.captureStack):
   this: Error =>
-  def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
+  def fullClass: List[Text] = List(getClass.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
   def className: Text = fullClass.last
   def component: Text = fullClass.head
 

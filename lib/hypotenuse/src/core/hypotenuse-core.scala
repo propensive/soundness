@@ -201,7 +201,7 @@ extension (byte: Byte)
   inline def hex: Text = JInt.toHexString(byte).nn.tt
 
   @targetName("base32Byte")
-  inline def base32: Text = JInt.toString(byte, 32).nn.tt
+  inline def base32: Text = JInt.toString(byte, 32).tt
 
   @targetName("binaryByte")
   inline def binary: Text = JInt.toBinaryString(byte).nn.tt
@@ -238,7 +238,7 @@ extension (short: Short)
   inline def hex: Text = JInt.toHexString(short).nn.tt
 
   @targetName("base32Short")
-  inline def base32: Text = JInt.toString(short, 32).nn.tt
+  inline def base32: Text = JInt.toString(short, 32).tt
 
   @targetName("binaryShort")
   inline def binary: Text = JInt.toBinaryString(short).nn.tt
@@ -275,7 +275,7 @@ extension (int: Int)
   inline def hex: Text = JInt.toHexString(int).nn.tt
 
   @targetName("base32Int")
-  inline def base32: Text = JInt.toString(int, 32).nn.tt
+  inline def base32: Text = JInt.toString(int, 32).tt
 
   @targetName("binaryInt")
   inline def binary: Text = JInt.toBinaryString(int).nn.tt
@@ -306,7 +306,7 @@ extension (long: Long)
   inline def hex: Text = JLong.toHexString(long).nn.tt
 
   @targetName("base32Long")
-  inline def base32: Text = JLong.toString(long, 32).nn.tt
+  inline def base32: Text = JLong.toString(long, 32).tt
 
   @targetName("binaryLong")
   inline def binary: Text = JLong.toBinaryString(long).nn.tt

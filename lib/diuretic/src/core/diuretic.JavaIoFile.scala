@@ -42,5 +42,5 @@ object JavaIoFile extends Abstractable, Instantiable:
   type Origin = Text
   type Result = Text
 
-  def apply(path: Text): ji.File = ji.File(path.s).nn
+  def apply(path: Text): ji.File = ji.File(path.s)
   def genericize(value: ji.File): Text = value.getAbsolutePath.nn.toString.tt

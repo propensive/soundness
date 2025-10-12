@@ -360,7 +360,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[U16]:
       inline def fromDigits(digits: String): U16 = ${Hypotenuse2.parseU16('digits)}
 
-    given textualizer: U16 is Textualizer = u16 => JShort.toUnsignedInt(u16).toString.nn.tt
+    given textualizer: U16 is Textualizer = u16 => JShort.toUnsignedInt(u16).toString.tt
     inline def apply(inline bits: B16): U16 = bits
 
 
@@ -422,7 +422,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[U8]:
       inline def fromDigits(digits: String): U8 = ${Hypotenuse2.parseU8('digits)}
 
-    given textualizer: U8 is Textualizer = u8 => JByte.toUnsignedInt(u8).toString.nn.tt
+    given textualizer: U8 is Textualizer = u8 => JByte.toUnsignedInt(u8).toString.tt
     inline def apply(inline bits: B8): U8 = bits
 
     inline given orderable: U8 is Orderable:
@@ -565,7 +565,7 @@ object Hypotenuse:
     inline def hex: Text = JLong.toHexString(s64).nn.tt
 
     @targetName("base32S64")
-    inline def base32: Text = JLong.toString(s64, 32).nn.tt
+    inline def base32: Text = JLong.toString(s64, 32).tt
 
     @targetName("binaryS64")
     inline def binary: Text = JLong.toBinaryString(s64).nn.tt
@@ -623,7 +623,7 @@ object Hypotenuse:
     inline def hex: Text = JInt.toHexString(s32).nn.tt
 
     @targetName("base32S32")
-    inline def base32: Text = JInt.toString(s32, 32).nn.tt
+    inline def base32: Text = JInt.toString(s32, 32).tt
 
     @targetName("binaryS32")
     inline def binary: Text = JInt.toBinaryString(s32).nn.tt
@@ -681,7 +681,7 @@ object Hypotenuse:
     inline def hex: Text = JInt.toHexString(s16).nn.tt
 
     @targetName("base32S16")
-    inline def base32: Text = JInt.toString(s16, 32).nn.tt
+    inline def base32: Text = JInt.toString(s16, 32).tt
 
     @targetName("binaryS16")
     inline def binary: Text = JInt.toBinaryString(s16).nn.tt
@@ -742,7 +742,7 @@ object Hypotenuse:
     inline def hex: Text = JInt.toHexString(s8).nn.tt
 
     @targetName("base32S8")
-    inline def base32: Text = JInt.toString(s8, 32).nn.tt
+    inline def base32: Text = JInt.toString(s8, 32).tt
 
     @targetName("binaryS8")
     inline def binary: Text = JInt.toBinaryString(s8).nn.tt

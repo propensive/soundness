@@ -42,10 +42,10 @@ import vacuous.*
 
 sealed trait ClasspathEntry:
   def javaUrl: jn.URL = this match
-    case ClasspathEntry.Directory(path) => ji.File(path.s).nn.toURI.nn.toURL.nn
-    case ClasspathEntry.Jar(path)       => ji.File(path.s).nn.toURI.nn.toURL.nn
-    case ClasspathEntry.Url(url)        => jn.URL(url.s).nn
-    case ClasspathEntry.JavaRuntime     => jn.URL("jrt:/").nn
+    case ClasspathEntry.Directory(path) => ji.File(path.s).toURI.nn.toURL.nn
+    case ClasspathEntry.Jar(path)       => ji.File(path.s).toURI.nn.toURL.nn
+    case ClasspathEntry.Url(url)        => jn.URL(url.s)
+    case ClasspathEntry.JavaRuntime     => jn.URL("jrt:/")
 
 object ClasspathEntry:
   case class Directory(path: Text) extends ClasspathEntry:
@@ -64,7 +64,7 @@ object ClasspathEntry:
       ClasspathEntry.JavaRuntime
 
     case t"file" =>
-      val path: Text = url.nn.getPath.nn.tt
+      val path: Text = url.getPath.nn.tt
       if path.ends(t"/") then ClasspathEntry.Directory(path) else ClasspathEntry.Jar(path)
 
     case t"http" | t"https" =>
