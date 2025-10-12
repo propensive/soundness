@@ -43,4 +43,4 @@ object JavaNetUrl extends Abstractable, Instantiable:
   type Domain = Urls
 
   def genericize(value: jn.URL): Text = value.toString.tt
-  def apply(text: Text): jn.URL = jn.URI(text.s).nn.toURL().nn
+  def apply(text: Text): jn.URL = jn.URI(text.s).toURL().nn
