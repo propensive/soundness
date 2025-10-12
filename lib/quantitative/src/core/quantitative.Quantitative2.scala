@@ -44,7 +44,7 @@ import scala.quoted.*
 import scala.compiletime.*
 
 trait Quantitative2:
-  given realm: Realm = realm"quantitative"
+  private given realm: Realm = realm"quantitative"
 
   case class UnitPower(ref: UnitRef, power: Int)
 

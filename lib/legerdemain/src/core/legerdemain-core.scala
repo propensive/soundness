@@ -42,7 +42,7 @@ import vacuous.*
 
 import html5.*
 
-given realm: Realm = realm"legerdemain"
+private given realm: Realm = realm"legerdemain"
 
 
 def elicit[value: Formulaic]

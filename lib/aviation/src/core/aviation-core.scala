@@ -51,7 +51,7 @@ export Aviation2.{Instant, Duration}
 export Aviation.{Date, Year, Day, Anniversary, WorkingDays}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
-given realm: Realm = realm"aviation"
+private given realm: Realm = realm"aviation"
 
 package timestampDecoders:
   given iso8601: Tactic[TimeError] => Instant is Decodable in Text = Iso8601.parse(_)

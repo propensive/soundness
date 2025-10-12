@@ -45,7 +45,7 @@ import proscenium.*
 import rudiments.*
 import wisteria.*
 
-given Realm = realm"austronesian"
+private given Realm = realm"austronesian"
 
 object Austronesian2:
   object EncodableDerivation extends Derivation[[entity] =>> entity is Encodable in Pojo]:

@@ -43,7 +43,7 @@ import vacuous.*
 
 trait Interpolator[input, state, result]:
   given canThrow: CanThrow[InterpolationError] = !!
-  given realm: Realm = realm"contextual"
+  private given realm: Realm = realm"contextual"
 
   protected def initial: state
   protected def parse(state: state, next: Text): state

@@ -48,7 +48,7 @@ import fulminate.*
 import symbolism.*
 
 object Hypotenuse:
-  given realm: Realm = realm"hypotenuse"
+  private given realm: Realm = realm"hypotenuse"
 
   type Bits[bits <: 8 | 16 | 32 | 64] <: B8 | B16 | B32 | B64 = bits match
     case 8  => B8

@@ -39,7 +39,7 @@ import fulminate.*
 import proscenium.*
 
 object Hieroglyph:
-  given realm: Realm = realm"hieroglyph"
+  private given realm: Realm = realm"hieroglyph"
   opaque type CharRange = Long
 
   object CharRange:

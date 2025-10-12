@@ -181,4 +181,4 @@ object Tests extends Suite(m"Merino tests"):
 
 
 
-given realm: Realm = Realm(t"tests")
+private given realm: Realm = Realm(t"tests")

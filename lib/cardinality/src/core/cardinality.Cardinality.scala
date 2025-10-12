@@ -54,7 +54,7 @@ object Cardinality:
      [Value1Type <: Double, Value2Type <: Double, Value3Type <: Double, Value4Type <: Double] =
     Max[Max[Value1Type, Value2Type], Max[Value3Type, Value4Type]]
 
-  given realm: Realm = realm"cardinality"
+  private given realm: Realm = realm"cardinality"
 
 
   def apply[left <: Double: Type, right <: Double: Type](digits: Expr[String])

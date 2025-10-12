@@ -41,7 +41,7 @@ package eucalyptus
 // import scala.quoted.*
 
 // object Eucalyptus:
-//   given realm: Realm = realm"eucalyptus"
+//   private given realm: Realm = realm"eucalyptus"
 
 //   def record[message: Type, text: Type]
 //        (level:          Expr[Level],

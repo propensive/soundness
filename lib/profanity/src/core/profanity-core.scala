@@ -39,7 +39,7 @@ import parasite.*
 import proscenium.*
 import turbulence.*
 
-given realm: Realm = realm"profanity"
+private given realm: Realm = realm"profanity"
 
 given stdio: (terminal: Terminal) => Stdio = terminal.stdio
 
