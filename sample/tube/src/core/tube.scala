@@ -13,7 +13,7 @@ import executives.completions
 import homeDirectories.systemProperties
 import logging.silent
 import codicils.cancel
-import parameterInterpretation.posix
+import interpreters.posix
 import printableTypes.message
 import supervisors.global
 import textMetrics.uniform
@@ -38,7 +38,7 @@ type HoursAndMinutes = Quanta[(Hours[1], Minutes[1])]
 given quantaDecoder: Tactic[JsonError] => HoursAndMinutes is Decodable in Json =
   summon[Int is Decodable in Json].map(Quanta(_))
 
-given (Tactic[JsonParseError], Tactic[JsonError])
+given (Tactic[ParseError], Tactic[JsonError])
       => (decodable: Text is Decodable in Json)
       =>  Route is Decodable in Json =
   decodable.map: points =>
@@ -49,9 +49,9 @@ given (Tactic[JsonParseError], Tactic[JsonError])
 val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
 val Trip = Subcommand(t"trip", e"plan a trip on the London Underground")
-val Start = Flag(t"start", false, List('s'), t"The start of your journey")
-val Destination = Flag(t"destination", false, List('d'), t"The end of your journey")
-val Departure = Flag(t"departure", false, List('D'), t"The departure time in HHMM format")
+val Start = Flag[StationRow](t"start", false, List('s'), t"The start of your journey")
+val Destination = Flag[StationRow](t"destination", false, List('d'), t"The end of your journey")
+val Departure = Flag[Text](t"departure", false, List('D'), t"The departure time in HHMM format")
 
 extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name match
   case r"HUB.*" =>
@@ -97,7 +97,7 @@ def app(): Unit = cli:
           val destination0: Optional[StationRow] =
             Destination.select(start0.lay(stations)(stations - _.id).values)
 
-          val departure0: Optional[Text] = Departure[Text]()
+          val departure0: Optional[Text] = Departure()
 
           execute:
             recover:
@@ -161,7 +161,7 @@ object Data:
               import filesystemOptions.writeAccess.enabled
               file.open(stream.writeTo(_))
 
-          Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
+          Sheet.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
   def plan(start: StationRow, end: StationRow, time: Text)(using Online): Plan raises UserError =
     val sourceUrl =
@@ -177,8 +177,9 @@ object Data:
       case JsonError(reason) =>
         accrual + m"Unexpected JSON response from TfL: $reason at $focus when accessing $sourceUrl"
 
-      case JsonParseError(line, _, reason) =>
-        accrual + m"Could not parse JSON response: $reason at line $line"
+      case ParseError(_, position, reason) => position.absolve match
+        case JsonAst.Position(line, _) =>
+          accrual + m"Could not parse JSON response: ${reason.describe} at line $line"
 
     . within:
         val response = sourceUrl.fetch(accept = media"application/json")
@@ -204,7 +205,7 @@ object Output:
       Out.println(e"$Underline(Option ${ordinal.n1}), ${journey.duration}")
       val startTitle = e"$Reverse( $Bold(${start.name.upper}) )"
       val destinationTitle = e"$Reverse( $Bold(${end.name.upper}) )"
-      val last = Ordinal.natural(journey.legs.length)
+      val last = journey.legs.length.z
       def indent(ordinal: Ordinal, extra: Int): Text = t" "*(ordinal.n0*5 + 10 + extra)
 
       Out.println(e"${indent(Prim, 9)}${startTitle.center(40)}\n")
@@ -301,11 +302,12 @@ case class Stop(name: Text):
 
 enum TubeLine:
   case Bakerloo, Central, Circle, District, HammersmithCity, Jubilee, Metropolitan, Northern,
-       Piccadilly, Victoria, WaterlooCity, Elizabeth, Dlr, LondonOverground, Thameslink
+       Piccadilly, Victoria, WaterlooCity, Elizabeth, Dlr, Thameslink, Lioness, Mildmay, Windrush,
+       Weaver, Suffragette, Liberty
 
   def open: Boolean = this match
-    case Dlr | Elizabeth | LondonOverground => true
-    case _                                  => false
+    case Dlr | Elizabeth | Lioness | Mildmay | Windrush | Weaver | Suffragette | Liberty => true
+    case _                                                                               => false
 
   def color: Rgb24 = this match
     case Bakerloo         => rgb"#B36305"
@@ -320,8 +322,14 @@ enum TubeLine:
     case Victoria         => rgb"#0098D4"
     case WaterlooCity     => rgb"#95CDBA"
     case Dlr              => rgb"#00AFAD"
-    case LondonOverground => rgb"#FA7B05"
     case Elizabeth        => rgb"#60399E"
     case Thameslink       => rgb"#D7C1D9"
+    case Lioness          => rgb"#FFa600"
+    case Mildmay          => rgb"#006FEF"
+    case Windrush         => rgb"#C90033"
+    case Weaver           => rgb"#9B0058"
+    case Suffragette      => rgb"#18A95D"
+    case Liberty          => rgb"#61686B"
+
 
 erased trait Naptan
