@@ -41,6 +41,7 @@ import gossamer.*
 import probably.*
 import proscenium.*
 import rudiments.*
+import turbulence.*
 
 import proximityMeasures.levenshteinDistance
 
@@ -149,19 +150,19 @@ object Tests extends Suite(m"Dissonance tests"):
       val reverseStream = Stream(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar")
 
       test(m"Parse a simple diff file"):
-        Diff.parse(diffStream)
+        diffStream.read[Diff[Text]]
       .assert(_ == Diff(Par(0, 0), Del(1, t"bar"), Ins(1, t"quux"), Ins(2, t"bop")))
 
       test(m"Apply parsed diff to source to get result"):
-        Diff.parse(diffStream).patch(start)
+        diffStream.read[Diff[Text]].patch(start)
       .assert(_ == end)
 
       test(m"Parse reverse diff file"):
-        Diff.parse(reverseStream)
+        reverseStream.read[Diff[Text]]
       .assert(_ == Diff(Par(0, 0), Del(1, t"quux"), Del(2, t"bop"), Ins(1, t"bar")))
 
       test(m"Apply parsed diff to source to get result"):
-        Diff.parse(reverseStream).patch(end)
+        reverseStream.read[Diff[Text]].patch(end)
       .assert(_ == start)
 
     suite(m"Diff serialization tests"):
