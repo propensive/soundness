@@ -78,9 +78,9 @@ object SourceCode:
     else if token >= 78 && token <= 99 then Accent.Symbol
     else Accent.Parens
 
-  // This list was found in scala/scala3:compiler/src/dotty/tools/dotc/core/parsing/Parserse.scala
+  // This list was found in scala/scala3:compiler/src/dotty/tools/dotc/core/parsing/Parsers.scala
   private val soft: Set[Text] =
-    Set(t"inline", t"opaque", t"open", t"transparent", t"infix", t"mut", t"erased", t"tracked")
+    Set(t"inline", t"opaque", t"open", t"transparent", t"infix", t"update", t"erased", t"tracked")
 
   def apply(language: ProgrammingLanguage, text: Text): SourceCode =
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)

@@ -233,9 +233,8 @@ object Json extends Json2, Dynamic:
 
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
-  inline def parse[source](value: source): Json raises ParseError = summonFrom:
-      case given (`source` is Readable by Bytes) => Json(JsonAst.parse(value))
-      case given (`source` is Readable by Text)  => Json(JsonAst.parse(value.read[Bytes]))
+  given aggregable: Tactic[ParseError] => Json is Aggregable by Bytes =
+    bytes => Json(JsonAst.parse(bytes))
 
   given showable: JsonPrinter => Json is Showable = json =>
     try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
@@ -251,10 +250,10 @@ object Json extends Json2, Dynamic:
         (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.bytes))
 
   given decodable: Tactic[ParseError] => Json is Decodable in Text =
-    text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
+    text => Stream(text.bytes(using charEncoders.utf8)).read[Json]
 
   given instantiable: Tactic[ParseError] => Json is Instantiable across HttpRequests from Text =
-    text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
+    text => Stream(text.bytes(using charEncoders.utf8)).read[Json]
 
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
