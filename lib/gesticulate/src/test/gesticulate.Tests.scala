@@ -33,6 +33,7 @@
 package gesticulate
 
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import probably.*
@@ -44,27 +45,27 @@ import errorDiagnostics.stackTraces
 object Tests extends Suite(m"Gesticulate tests"):
   def run(): Unit =
     test(m"parse media type's type"):
-      Media.parse(t"application/json").group
+      t"application/json".decode[MediaType].group
     .assert(_ == Media.Group.Application)
 
     test(m"parse media type's subtype"):
-      Media.parse(t"application/json").subtype
+      t"application/json".decode[MediaType].subtype
     .assert(_ == Media.Subtype.Standard(t"json"))
 
     test(m"parse media type suffix"):
-      Media.parse(t"application/epub+zip").suffixes
+      t"application/epub+zip".decode[MediaType].suffixes
     .assert(_ == List(Media.Suffix.Zip))
 
     test(m"parse full media type"):
-      Media.parse(t"application/json")
+      t"application/json".decode[MediaType]
     .assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json")))
 
     test(m"parse full media type with parameter"):
-      Media.parse(t"application/json; charset=UTF-8")
+      t"application/json; charset=UTF-8".decode[MediaType]
     .assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json"),
         parameters = List((t"charset", t"UTF-8"))))
 
     test(m"invalid media type"):
-      capture(Media.parse(t"applicationjson"))
+      capture(t"applicationjson".decode[MediaType])
     .assert(_ == MediaTypeError(t"applicationjson",
         MediaTypeError.Reason.NotOneSlash))
