@@ -35,12 +35,16 @@ package dissonance
 import anticipation.*
 import contingency.*
 import fulminate.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
+import turbulence.*
 import vacuous.*
 
 object Diff:
-  def parse(lines: Stream[Text]): Diff[Text] raises DiffError =
+  given aggregable: Tactic[DiffError] => Diff[Text] is Aggregable by Text = parse(_)
+
+  private def parse(lines: Stream[Text]): Diff[Text] raises DiffError =
     def recur
          (todo: Stream[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
     : Diff[Text] =

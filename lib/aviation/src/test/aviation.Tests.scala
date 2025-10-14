@@ -41,31 +41,31 @@ object Tests extends Suite(m"Aviation Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
       test(m"Parse a canonical date"):
-        Date.parse(t"2011-12-13")
+        t"2011-12-13".decode[Date]
       .check(_ == 2011-Dec-13)
 
       test(m"Parse a date with a single-digit month"):
-        Date.parse(t"2011-09-13")
+        t"2011-09-13".decode[Date]
       .assert(_ == 2011-Sep-13)
 
       test(m"Parse a date in the distant past"):
-        Date.parse(t"59-09-13")
+        t"59-09-13".decode[Date]
       .assert(_ == 59-Sep-13)
 
       test(m"Month cannot be higher than 12"):
-        capture(Date.parse(t"59-13-13"))
+        capture(t"59-13-13".decode[Date])
       .assert(_ == TimeError(_.Unknown(t"13", t"month")))
 
       test(m"Month cannot be less than 1"):
-        capture(Date.parse(t"59-0-13"))
+        capture(t"59-0-13".decode[Date])
       .assert(_ == TimeError(_.Unknown(t"0", t"month")))
 
       test(m"Day cannot be over 31"):
-        capture(Date.parse(t"59-11-32"))
+        capture(t"59-11-32".decode[Date])
       .assert(_ == TimeError(_.Invalid(59, 11, 32, calendars.gregorian)))
 
       test(m"Day must exist in month"):
-        capture(Date.parse(t"59-11-31"))
+        capture(t"59-11-31".decode[Date])
       .assert(_ == TimeError(_.Invalid(59, 11, 31, calendars.gregorian)))
 
 

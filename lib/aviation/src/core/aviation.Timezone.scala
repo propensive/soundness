@@ -35,7 +35,9 @@ package aviation
 import anticipation.*
 import contextual.*
 import contingency.*
+import distillate.*
 import fulminate.*
+import prepositional.*
 import rudiments.*
 
 import java.util as ju
@@ -47,16 +49,16 @@ case class Timezone private(name: Text):
 object Timezone:
   private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)
 
-  def apply(name: Text)(using Tactic[TimezoneError]): Timezone = parse(name)
+  def apply(name: Text): Timezone raises TimezoneError = name.decode[Timezone]
 
-  def parse(name: Text)(using Tactic[TimezoneError]): Timezone =
+  given decodable: Tactic[TimezoneError] => Timezone is Decodable in Text = name =>
     try jt.ZoneId.of(name.s) yet new Timezone(name)
     catch case _: jt.zone.ZoneRulesException =>
       raise(TimezoneError(name)) yet new Timezone(ids.head)
 
   object Tz extends Verifier[Timezone]:
     def verify(name: Text): Timezone =
-      try throwErrors(Timezone.parse(name))
+      try throwErrors(name.decode[Timezone])
       catch case err: TimezoneError =>
         import errorDiagnostics.empty
         throw InterpolationError(err.message)

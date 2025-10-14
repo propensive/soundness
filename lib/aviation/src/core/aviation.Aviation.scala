@@ -192,7 +192,16 @@ object Aviation:
 
       . join(summon[DateSeparation].separator)
 
-    given decoder: Tactic[TimeError] => Date is Decodable in Text = parse(_)
+    given decoder: Tactic[TimeError] => Date is Decodable in Text = value =>
+      import calendars.gregorian
+
+      value.cut(t"-").to(List) match
+        case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
+          Date(year, Month(month), day)
+
+        case cnt =>
+          raise(TimeError(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit))) yet 2000-Jan-1
+
 
     given encodable: RomanCalendar => Date is Encodable in Text = date =>
       import hieroglyph.textMetrics.uniform
@@ -242,15 +251,6 @@ object Aviation:
       type Operand = Timespan
       def add(date: Date, timespan: Timespan): Date = calendar.add(date, timespan)
 
-    def parse(value: Text): Date raises TimeError =
-      import calendars.gregorian
-
-      value.cut(t"-").to(List) match
-        case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
-          Date(year, Month(month), day)
-
-        case cnt =>
-          raise(TimeError(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit))) yet 2000-Jan-1
 
   extension (date: Date)
     def day(using calendar: Calendar): calendar.Diurnal = calendar.diurnal(date)

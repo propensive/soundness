@@ -44,6 +44,6 @@ object Ndjson:
   def parse[source: Readable by Line](value: source)
        (using Text is Readable by Bytes): Ndjson raises ParseError =
 
-    Ndjson(value.stream[Line].map { line => Json.parse(line.content) })
+    Ndjson(value.stream[Line].map { line => line.content.read[Json] })
 
 case class Ndjson(stream: Stream[Json])

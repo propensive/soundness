@@ -45,118 +45,118 @@ object Tests extends Suite(m"Punctuation tests"):
 
   def run(): Unit =
     test(m"get a heading"):
-      Markdown.parse(t"# Heading 1") match
+      t"# Heading 1".read[Md] match
         case Markdown(Heading(1, Prose(str))) => str
         case _                                  => t""
     .check(_ == t"Heading 1")
 
     test(m"get a level 2 heading"):
-      Markdown.parse(t"## Heading 2")
+      t"## Heading 2".read[Md]
     .assert(_ == Markdown(Heading(2, Prose(t"Heading 2"))))
 
     test(m"get a bullet list"):
-      Markdown.parse(t" - Item 1\n - Item 2")
+      t" - Item 1\n - Item 2".read[Md]
     .assert(_ == Markdown(BulletList(Unset, false, ListItem(Paragraph(Prose(t"Item 1"))),
         ListItem(Paragraph(Prose(t"Item 2"))))))
 
     test(m"get an ordered list"):
-      Markdown.parse(t" 1. Item 1\n 2. Item 2")
+      t" 1. Item 1\n 2. Item 2".read[Md]
     .assert(_ == Markdown(BulletList(1, false, ListItem(Paragraph(Prose(t"Item 1"))),
         ListItem(Paragraph(Prose(t"Item 2"))))))
 
     test(m"plain paragraph"):
-      Markdown.parseInline(t"Here is some content in\na paragraph.")
+      t"Here is some content in\na paragraph.".read[InlineMd]
     .assert(_ == Markdown(Prose(t"Here is some content in\na paragraph.")))
 
     test(m"directional apostrophe"):
-      Markdown.parseInline(t"It's great.")
+      t"It's great.".read[InlineMd]
     .assert(_ == Markdown(Prose(t"It’s great.")))
 
     test(m"directional double-quotes"):
-      Markdown.parseInline(t"""Some "quoted" text.""")
+      t"""Some "quoted" text.""".read[InlineMd]
     .assert(_ == Markdown(Prose(t"Some “quoted” text.")))
 
     test(m"directional single-quotes"):
-      Markdown.parseInline(t"""Some 'quoted' text.""")
+      t"""Some 'quoted' text.""".read[InlineMd]
     .assert(_ == Markdown(Prose(t"Some ‘quoted’ text.")))
 
     test(m"conversion of emdashes"):
-      Markdown.parse(t"""An em-dash--so elegant!""")
+      t"""An em-dash--so elegant!""".read[Md]
     .assert(_ == Markdown(Paragraph(Prose(t"An em-dash—so elegant!"))))
 
     test(m"strongly emphasised text"):
-      Markdown.parseInline(t"Here is some __strongly emphasised text__.")
+      t"Here is some __strongly emphasised text__.".read[InlineMd]
     .assert(_ == Markdown(Prose(t"Here is some "),
         Strong(Prose(t"strongly emphasised text")), Prose(t".")))
 
     test(m"emphasised text"):
-      Markdown.parseInline(t"Here is some *emphasised text*.")
+      t"Here is some *emphasised text*.".read[InlineMd]
     .assert(_ == Markdown(Prose(t"Here is some "), Emphasis(Prose(t"emphasised text")),
         Prose(t".")))
 
     test(m"some code"):
-      Markdown.parseInline(t"Here is some `source code`.")
+      t"Here is some `source code`.".read[InlineMd]
     .assert(_ == Markdown(Prose(t"Here is some "), SourceCode(t"source code"), Prose(t".")))
 
     test(m"a code block"):
-      Markdown.parse(t"""```
-                          |echo Hello World
-                          |```""".s.stripMargin.show)
+      t"""```
+         |echo Hello World
+         |```""".s.stripMargin.show.read[Md]
     .assert(_ == Markdown(FencedCode(Unset, Unset, t"echo Hello World\n")))
 
     test(m"a syntax-aware code block"):
-      Markdown.parse(t"""```scala
-                          |echo Hello World
-                          |```""".s.stripMargin.show)
+      t"""```scala
+         |echo Hello World
+         |```""".s.stripMargin.show.read[Md]
     .assert(_ == Markdown(FencedCode(t"scala", Unset, t"echo Hello World\n")))
 
     test(m"a link"):
-      Markdown.parse(t"Take a look [here](http://example.com/)")
+      t"Take a look [here](http://example.com/)".read[Md]
     .assert(_ == Markdown(Paragraph(Prose(t"Take a look "), Weblink(t"http://example.com/",
         Prose(t"here")))))
 
     test(m"an image"):
-      Markdown.parse(t"Take a look ![alt text](http://example.com/image.jpg)")
+      t"Take a look ![alt text](http://example.com/image.jpg)".read[Md]
     .assert(_ == Markdown(Paragraph(Prose(t"Take a look "), Image(t"alt text",
         t"http://example.com/image.jpg"))))
 
     test(m"a block quote"):
-      Markdown.parse(t"> This paragraph is\n> indented.")
+      t"> This paragraph is\n> indented.".read[Md]
     .assert(_ == Markdown(Blockquote(Paragraph(Prose(t"This paragraph is\nindented.")))))
 
     test(m"indented content"):
-      Markdown.parse(t"    This paragraph is\n    indented.\n")
+      t"    This paragraph is\n    indented.\n".read[Md]
     .assert(_ == Markdown(FencedCode(Unset, Unset, t"This paragraph is\nindented.\n")))
 
     test(m"hard linebreak"):
-      Markdown.parse(t"Line 1  \nLine 2\n")
+      t"Line 1  \nLine 2\n".read[Md]
     .assert(_ == Markdown(Paragraph(Prose(t"Line 1"), LineBreak, Prose(t"Line 2"))))
 
     test(m"referenced images"):
-      Markdown.parse(t"""![images reference][ref]
-                       |
-                       |[ref]: http://example.com/image.jpg
-                       |""".s.stripMargin.show)
+      t"""![images reference][ref]
+         |
+         |[ref]: http://example.com/image.jpg
+         |""".s.stripMargin.show.read[Md]
     .assert(_ == Markdown(Paragraph(Image(t"images reference", t"http://example.com/image.jpg")),
         Reference(t"ref", t"http://example.com/image.jpg")))
 
     test(m"referenced link"):
-      Markdown.parse(t"""[link reference][ref]
-                       |
-                       |[ref]: http://example.com/
-                       |""".s.stripMargin.show)
+      t"""[link reference][ref]
+         |
+         |[ref]: http://example.com/
+         |""".s.stripMargin.show.read[Md]
     .assert(_ == Markdown(Paragraph(Weblink(t"http://example.com/", Prose(t"link reference"))),
         Reference(t"ref", t"http://example.com/")))
 
     test(m"thematic break"):
-      Markdown.parse(t"""Paragraph 1
-                       |***
-                       |Paragraph 2""".s.stripMargin.show)
+      t"""Paragraph 1
+         |***
+         |Paragraph 2""".s.stripMargin.show.read[Md]
     .assert(_ == Markdown(Paragraph(Prose(t"Paragraph 1")), ThematicBreak(),
         Paragraph(Prose(t"Paragraph 2"))))
 
     test(m"email link"):
-      Markdown.parse(t"Email me <nobody@example.com>!")
+      t"Email me <nobody@example.com>!".read[Md]
     .assert(_ == Markdown(Paragraph(Prose(t"Email me "), Weblink(t"nobody@example.com",
         Prose(t"mailto:nobody@example.com")), Prose(t"!"))))
 

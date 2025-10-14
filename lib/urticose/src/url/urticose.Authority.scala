@@ -38,8 +38,10 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import denominative.*
+import distillate.*
 import fulminate.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -49,7 +51,10 @@ object Authority:
   given showable: Authority is Showable = auth =>
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
-  def parse(value: Text): Authority raises HostnameError raises UrlError =
+  given decodable: Tactic[HostnameError] => Tactic[UrlError] => Authority is Decodable in Text =
+    parse(_)
+
+  private def parse(value: Text): Authority raises HostnameError raises UrlError =
     import UrlError.{Expectation, Reason}, Expectation.*, Reason.*
 
     safely(value.where(_ == '@')).asMatchable match
@@ -66,10 +71,10 @@ object Authority:
 
           . pipe:
             Authority
-             (Hostname.parse(value.segment((arobase + 1) till colon)), value.keep(arobase.n0), _)
+             (value.segment((arobase + 1) till colon).decode[Hostname], value.keep(arobase.n0), _)
 
         case _ =>
-          Authority(Hostname.parse(value.after(arobase)), value.before(arobase))
+          Authority(value.after(arobase).decode[Hostname], value.before(arobase))
 
       case _ => value.where(_ == ':').asMatchable match
         case Zerary(colon) =>
@@ -82,9 +87,9 @@ object Authority:
             case _ =>
               raise(UrlError(value, colon + 1, Expected(Number))) yet 0
 
-          . pipe(Authority(Hostname.parse(value.before(colon)), Unset, _))
+          . pipe(Authority(value.before(colon).decode[Hostname], Unset, _))
 
         case _ =>
-          Authority(Hostname.parse(value))
+          Authority(value.decode[Hostname])
 
 case class Authority(host: Hostname, userInfo: Optional[Text] = Unset, port: Optional[Int] = Unset)

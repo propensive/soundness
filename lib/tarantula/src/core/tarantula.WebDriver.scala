@@ -83,8 +83,8 @@ case class WebDriver(server: Browser#Server):
         . read[Text]
         . decode[Json]
 
-      def click(): Unit logs HttpEvent = post(t"click", Json.parse(t"{}"))
-      def clear(): Unit logs HttpEvent = post(t"clear", Json.parse(t"{}"))
+      def click(): Unit logs HttpEvent = post(t"click", t"{}".read[Json])
+      def clear(): Unit logs HttpEvent = post(t"clear", t"{}".read[Json])
 
       def screenshot(): Raster in Png logs HttpEvent =
         get(t"screenshot").value.as[Text].deserialize[Base64].read[Raster in Png]
@@ -125,9 +125,9 @@ case class WebDriver(server: Browser#Server):
       case class Data(url: Text)
       post(t"url", Data(url.generic).json)
 
-    def refresh(): Unit logs HttpEvent = post(t"refresh", Json.parse(t"{}")).as[Json]
-    def forward(): Unit logs HttpEvent = post(t"forward", Json.parse(t"{}")).as[Json]
-    def back(): Unit logs HttpEvent = post(t"back", Json.parse(t"{}")).as[Json]
+    def refresh(): Unit logs HttpEvent = post(t"refresh", t"{}".read[Json]).as[Json]
+    def forward(): Unit logs HttpEvent = post(t"forward", t"{}".read[Json]).as[Json]
+    def back(): Unit logs HttpEvent = post(t"back", t"{}".read[Json]).as[Json]
     def title(): Text logs HttpEvent = get(t"title").as[Json].value.as[Text]
     def url[url: Instantiable across Urls from Text](): url logs HttpEvent =
       url(get(t"url").url.as[Text])
@@ -156,6 +156,6 @@ case class WebDriver(server: Browser#Server):
   def startSession(): Session logs HttpEvent =
     given online: Online = Online
     val url = url"http://localhost:${server.port}/session"
-    val json = url.submit()(Json.parse(t"""{"capabilities":{}}""")).read[Text].decode[Json]
+    val json = url.submit()(t"""{"capabilities":{}}""".read[Json]).read[Text].decode[Json]
 
     Session(json.value.sessionId.as[Text])

@@ -41,7 +41,13 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 
-object Receivable:
+trait Receivable2:
+  given instantiable: [content: Instantiable across HttpRequests from Text] => Tactic[HttpError]
+        =>  content is Receivable =
+    Receivable:
+      body => content(body.read[Bytes].utf8)
+
+object Receivable extends Receivable2:
 
   def apply[result](lambda: Stream[Bytes] => result): result is Receivable raises HttpError =
     response =>
@@ -49,13 +55,8 @@ object Receivable:
 
   given text: Tactic[HttpError] => Text is Receivable = Receivable(_.read[Bytes].utf8)
 
-  given readable: [stream: Aggregable by Bytes] => Tactic[HttpError] =>  stream is Receivable =
+  given readable: [stream: Aggregable by Bytes] => Tactic[HttpError] => stream is Receivable =
     Receivable(stream.aggregate(_))
-
-  given instantiable: [content: Instantiable across HttpRequests from Text] => Tactic[HttpError]
-        =>  content is Receivable =
-    Receivable:
-      body => content(body.read[Bytes].utf8)
 
   given httpStatus: Http.Status is Receivable = _.status
 

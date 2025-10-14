@@ -696,7 +696,7 @@ object digression extends SoundnessModule {
 
 object dissonance extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core, contingency.core)
+    def moduleDeps = Seq(rudiments.core, contingency.core, turbulence.core)
   }
 
   object test extends ProbablyTestModule {

@@ -36,9 +36,11 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import denominative.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import hypotenuse.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -53,6 +55,7 @@ object Hostname:
   private given realm: Realm = realm"urticose"
 
   given showable: Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
+  given decodable: Tactic[HostnameError] => Hostname is Decodable in Text = parse(_)
 
   def expand(context: Expr[StringContext]): Macro[Hostname] = abortive:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
@@ -65,7 +68,7 @@ object Hostname:
 
       '{Hostname($labels*)}
 
-  def parse(text: Text): Hostname raises HostnameError =
+  private def parse(text: Text): Hostname raises HostnameError =
     val builder: TextBuilder = TextBuilder()
 
     def recur(index: Ordinal, dnsLabels: List[DnsLabel]): Hostname = text.at(index) match

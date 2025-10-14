@@ -65,9 +65,9 @@ object HttpConnection:
     val version: Http.Version = Http.Version.parse(exchange.getProtocol.nn.tt)
 
     val host = unsafely:
-      Hostname.parse:
-        Optional(uri.getHost).let(_.tt).or:
-          exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName.nn.tt
+      Optional(uri.getHost).let(_.tt).or:
+        exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName.nn.tt
+      . decode[Hostname]
 
     lazy val in = exchange.getRequestBody.nn
 

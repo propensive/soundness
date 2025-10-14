@@ -329,7 +329,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
 
   transparent inline def peer(child: Any)(using child.type is Admissible on Plane)
-  :     Path on Plane under Limit =
+  : Path on Plane under Limit =
     inline !![Topic] match
       case _: (head *: tail) =>
         Path.of[Plane, Limit, child.type *: tail]

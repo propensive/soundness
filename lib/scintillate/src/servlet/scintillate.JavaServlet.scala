@@ -71,7 +71,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
         Http.Request
          (method      = request.getMethod.nn.show.decode[Http.Method],
           version     = Http.Version.parse(request.getProtocol.nn.tt),
-          host        = unsafely(Hostname.parse(request.getServerName.nn.tt)),
+          host        = unsafely(request.getServerName.nn.tt.decode[Hostname]),
           target      = target,
           body        = () => streamBody(request),
           textHeaders = headers)

@@ -46,28 +46,28 @@ object Tests extends Suite(m"Jacinta Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
       test(m"Parse a number"):
-        Json.parse(t"42").as[Int]
+        t"42".read[Json].as[Int]
       .assert(_ == 42)
 
       test(m"Parse a string"):
-        val s = Json.parse(t"\"string\"")
+        val s = t"\"string\"".read[Json]
         s.as[Text]
       .assert(_ == t"string")
 
       test(m"Parse true"):
-        Json.parse(t"true").as[Boolean]
+        t"true".read[Json].as[Boolean]
       .assert(identity)
 
       test(m"Parse false"):
-        Json.parse(t"false").as[Boolean]
+        t"false".read[Json].as[Boolean]
       .assert(!_)
 
       test(m"Parse float"):
-        Json.parse(t"3.1415").as[Float]
+        t"3.1415".read[Json].as[Float]
       .assert(_ == 3.1415f)
 
       test(m"Parse double"):
-        Json.parse(t"3.1415926").as[Double]
+        t"3.1415926".read[Json].as[Double]
       .assert(_ == 3.1415926)
 
     suite(m"Serialization"):
@@ -113,36 +113,36 @@ object Tests extends Suite(m"Jacinta Tests"):
       .assert(_ == Json.of(x = 1.json, y = t"two".json))
 
       test(m"Parse from JSON"):
-        Json.parse(t"""{"x": 1}""")
+        t"""{"x": 1}""".read[Json]
       .assert(_ == Json.of(x = 1.json))
 
       test(m"Read case class"):
-        Json.parse(t"""{"x": 1, "y": "two"}""").as[Foo]
+        t"""{"x": 1, "y": "two"}""".read[Json].as[Foo]
       .assert(_ == Foo(1, t"two"))
 
       test(m"Extract an absent Option"):
         case class OptFoo(x: Option[Int])
-        Json.parse(t"""{"y": 1}""").as[OptFoo].x
+        t"""{"y": 1}""".read[Json].as[OptFoo].x
       .assert(_ == None)
 
       test(m"Extract an option"):
         case class OptFoo(x: Option[Int])
-        Json.parse(t"""{"x": 1}""").as[OptFoo].x
+        t"""{"x": 1}""".read[Json].as[OptFoo].x
       .assert(_ == Some(1))
 
       test(m"Extract a present Optional"):
         case class OptionalFoo(x: Optional[Int])
-        Json.parse(t"""{"x": 1}""").as[OptionalFoo].x
+        t"""{"x": 1}""".read[Json].as[OptionalFoo].x
       .assert(_ == 1)
 
       test(m"Extract an absent Optional"):
         case class OptionalFoo(x: Optional[Int])
-        Json.parse(t"""{"y": 1}""").as[OptionalFoo].x
+        t"""{"y": 1}""".read[Json].as[OptionalFoo].x
       .assert(_ == Unset)
 
       test(m"Extract a None"):
         case class OptFoo(x: Option[Int])
-        Json.parse(t"""{"y": 1}""").as[OptFoo].x
+        t"""{"y": 1}""".read[Json].as[OptFoo].x
       .assert(_ == None)
 
     suite(m"Generic derivation tests"):
@@ -161,15 +161,15 @@ object Tests extends Suite(m"Jacinta Tests"):
       val beatles = t"""{"guitarists": [$john, $george], "drummer": $ringo, "bassist": $paul}"""
 
       val paulObj = test(m"Extract a Person"):
-        Json.parse(paul).as[Person]
+        paul.read[Json].as[Person]
       .check(_ == Person(t"Paul", 81))
 
       val ringoObj = test(m"Extract a different person"):
-        Json.parse(ringo).as[Person]
+        ringo.read[Json].as[Person]
       .check(_ == Person(t"Ringo", 82))
 
       test(m"Extract a band"):
-        Json.parse(beatles).as[Band]
+        beatles.read[Json].as[Band]
       .assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
 
       enum Player:
@@ -184,11 +184,11 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Decode a coproduct"):
         summon[Int is Decodable in Json]
-        Json.parse(paulCoproduct).as[Player]
+        paulCoproduct.read[Json].as[Player]
       .assert(_ == Player.Bassist(paulObj))
 
       test(m"Decode a coproduct as a precise subtype"):
-        Json.parse(paulCoproduct).as[Player.Bassist]
+        paulCoproduct.read[Json].as[Player.Bassist]
       .assert(_ == Player.Bassist(paulObj))
 
       case class NewBand(members: Set[Player])
@@ -202,5 +202,5 @@ object Tests extends Suite(m"Jacinta Tests"):
       .check(_ == t"""{"members":[{"_type":"Bassist","person":{"name":"Paul","age":81}},{"_type":"Drummer","person":{"name":"Ringo","age":82}},{"_type":"Guitarist","person":{"name":"John","age":40}},{"_type":"Guitarist","person":{"name":"George","age":58}}]}""")
 
       test(m"Decode a NewBand"):
-        Json.parse(newBandText).as[NewBand]
+        newBandText.read[Json].as[NewBand]
       .assert(_ == newBand)
