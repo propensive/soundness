@@ -108,12 +108,9 @@ object Sheet:
            (_[Text](name).or(t"")))*)
 
 
-  def parse[source: Readable by Text](source: source)(using format: DsvFormat)
-  : Sheet raises DsvError =
-
-      val rows = recur(source.stream[Text])
-      if format.header then Sheet(rows, format, rows.prim.let(_.header)) else Sheet(rows, format)
-
+  given aggregable: (format: DsvFormat) => Tactic[DsvError] => Sheet is Aggregable by Text = text =>
+    val rows = recur(text)
+    if format.header then Sheet(rows, format, rows.prim.let(_.header)) else Sheet(rows, format)
 
   given showable: DsvFormat => Sheet is Showable = _.rows.map(_.show).join(t"\n")
   given readable: DsvFormat => Sheet is Readable by Text = _.rows.to(Stream).map(_.show+t"\n")

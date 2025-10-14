@@ -40,6 +40,7 @@ import probably.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import turbulence.*
 
 import errorDiagnostics.stackTraces
 
@@ -51,87 +52,87 @@ object Tests extends Suite(m"Caesura tests"):
       import dsvFormats.csv
 
       test(m"simple parse"):
-        Sheet.parse(t"""hello,world""").rows.head
+        t"""hello,world""".read[Sheet].rows.head
       .assert(_ == Dsv(t"hello", t"world"))
 
       test(m"simple parse with quotes"):
-        Sheet.parse(t""""hello","world"""").rows.head
+        t""""hello","world"""".read[Sheet].rows.head
       .assert(_ == Dsv(t"hello", t"world"))
 
       test(m"empty unquoted field at start"):
-        Sheet.parse(t",hello,world").rows.head
+        t",hello,world".read[Sheet].rows.head
       .assert(_ == Dsv(t"", t"hello", t"world"))
 
       test(m"empty unquoted field at end"):
-        Sheet.parse(t"hello,world,").rows.head
+        t"hello,world,".read[Sheet].rows.head
       .assert(_ == Dsv(t"hello", t"world", t""))
 
       test(m"empty unquoted field in middle"):
-        Sheet.parse(t"hello,,world").rows.head
+        t"hello,,world".read[Sheet].rows.head
       .assert(_ == Dsv(t"hello", t"", t"world"))
 
       test(m"empty quoted field at start"):
-        Sheet.parse(t""""","hello","world"""").rows.head
+        t""""","hello","world"""".read[Sheet].rows.head
       .assert(_ == Dsv(t"", t"hello", t"world"))
 
       test(m"empty quoted field at end"):
-        Sheet.parse(t""""hello","world",""""").rows.head
+        t""""hello","world",""""".read[Sheet].rows.head
       .assert(_ == Dsv(t"hello", t"world", t""))
 
       test(m"empty quoted field in middle"):
-        Sheet.parse(t""""hello","","world"""").rows.head
+        t""""hello","","world"""".read[Sheet].rows.head
       .assert(_ == Dsv(t"hello", t"", t"world"))
 
       test(m"quoted comma"):
-        Sheet.parse(t""""hello,world"""").rows.head
+        t""""hello,world"""".read[Sheet].rows.head
       .assert(_ == Dsv(t"hello,world"))
 
       test(m"escaped quotes"):
-        Sheet.parse(t""""hello""world"""").rows.head
+        t""""hello""world"""".read[Sheet].rows.head
       .assert(_ == Dsv(t"""hello"world"""))
 
       test(m"misplaced quote"):
-        capture(Sheet.parse(t"""hello,wo"rld"""))
+        capture[DsvError](t"""hello,wo"rld""".read[Sheet])
       .assert(_ == DsvError(summon[DsvFormat], DsvError.Reason.MisplacedQuote))
 
       test(m"multi-line CSV without trailing newline"):
-        Sheet.parse(t"""foo,bar\nbaz,quux""").rows
+        t"""foo,bar\nbaz,quux""".read[Sheet].rows
       .assert(_ == Stream(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with trailing newline"):
-        Sheet.parse(t"""foo,bar\nbaz,quux\n""").rows
+        t"""foo,bar\nbaz,quux\n""".read[Sheet].rows
       .assert(_ == Stream(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with CR and LF"):
-        Sheet.parse(t"""foo,bar\r\nbaz,quux\r\n""").rows
+        t"""foo,bar\r\nbaz,quux\r\n""".read[Sheet].rows
       .assert(_ == Stream(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with quoted newlines"):
-        Sheet.parse(t""""foo","bar"\n"baz","quux"\n""").rows
+        t""""foo","bar"\n"baz","quux"\n""".read[Sheet].rows
       .assert(_ == Stream(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with newlines and quotes in cells"):
-        Sheet.parse(t""""f""oo","Hello\nWorld"\nbaz,"1\n2\n3\n"\n""").rows
+        t""""f""oo","Hello\nWorld"\nbaz,"1\n2\n3\n"\n""".read[Sheet].rows
       .assert(_ == Stream(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\n2\n3\n")))
 
       test(m"multi-line CSV with quoted quotes adjacent to newlines"):
-        Sheet.parse(t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""").rows
+        t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""".read[Sheet].rows
       .assert(_ == Stream(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\"\n\"2\n3\n")))
 
       test(m"multi-line CSV with quoted quotes adjacent to open/close quotes"):
-        Sheet.parse(t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""").rows
+        t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""".read[Sheet].rows
       .assert(_ == Stream(Dsv(t"f\"oo", t"\"Hello\nWorld\"")))
 
 
     suite(m"Alternative formats"):
       test(m"Parse TSV data"):
         import dsvFormats.tsv
-        Sheet.parse(t"Hello\tWorld\n").rows
+        t"Hello\tWorld\n".read[Sheet].rows
       .assert(_ == Stream(Dsv(t"Hello", t"World")))
 
       test(m"Parse TSV data"):
         import dsvFormats.tsvWithHeader
-        Sheet.parse(t"Greeting\tAddressee\nHello\tWorld\n")
+        t"Greeting\tAddressee\nHello\tWorld\n".read[Sheet]
       .assert(_ == Sheet(Stream(Dsv(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeader, IArray(t"Greeting", t"Addressee")))
 
 
@@ -142,21 +143,21 @@ object Tests extends Suite(m"Caesura tests"):
       test(m"Access field by name"):
         import dsvFormats.tsvWithHeader
         import dsvRedesignations.unchanged
-        val dsv = Sheet.parse(t"greeting\taddressee\nHello\tWorld\n")
+        val dsv = t"greeting\taddressee\nHello\tWorld\n".read[Sheet]
         dsv.rows.head.addressee[Text]
       .assert(_ == t"World")
 
       test(m"Access field by mapped name"):
         import dsvFormats.tsvWithHeader
         import dsvRedesignations.capitalizedWords
-        val dsv = Sheet.parse(t"Personal Greeting\tTarget Person\nHello\tWorld\n")
+        val dsv = t"Personal Greeting\tTarget Person\nHello\tWorld\n".read[Sheet]
         dsv.rows.head.targetPerson[Text]
       .assert(_ == t"World")
 
       test(m"Access field by name 2"):
         import dsvFormats.tsvWithHeader
         import dsvRedesignations.unchanged
-        val dsv = Sheet.parse(t"greeting\tnumber\nHello\t23\n")
+        val dsv = t"greeting\tnumber\nHello\t23\n".read[Sheet]
         dsv.rows.head.number[Int]
       .assert(_ == 23)
 
@@ -164,12 +165,12 @@ object Tests extends Suite(m"Caesura tests"):
 
     test(m"decode case class"):
       import dsvFormats.csv
-      Sheet.parse(t"""hello,world""").rows.head.as[Foo]
+      t"""hello,world""".read[Sheet].rows.head.as[Foo]
     .assert(_ == Foo(t"hello", t"world"))
 
     test(m"decode complex case class"):
       import dsvFormats.csv
-      Sheet.parse(t"""0.1,two,three,4,five,six""").rows.head.as[Bar]
+      t"""0.1,two,three,4,five,six""".read[Sheet].rows.head.as[Bar]
     .assert(_ == Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
 
     test(m"encode case class"):
@@ -197,17 +198,17 @@ object Tests extends Suite(m"Caesura tests"):
 
     test(m"simple parse TSV"):
       import dsvFormats.tsv
-      Sheet.parse(t"hello\tworld")
+      t"hello\tworld".read[Sheet]
     .assert(_ == Sheet(Stream(Dsv(t"hello", t"world")), format = dsvFormats.tsv))
 
     test(m"decode case class from TSV"):
       import dsvFormats.tsv
-      Sheet.parse(t"hello\tworld").rows.head.as[Foo]
+      t"hello\tworld".read[Sheet].rows.head.as[Foo]
     .assert(_ == Foo(t"hello", t"world"))
 
     test(m"decode case class from CSV by headings"):
       import dsvFormats.csvWithHeader
-      Sheet.parse(t"greeting,name\nhello,world").rows.head.as[Quux]
+      t"greeting,name\nhello,world".read[Sheet].rows.head.as[Quux]
     .assert(_ == Quux(t"world", t"hello"))
 
     test(m"convert case class to TSV"):
