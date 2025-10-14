@@ -104,7 +104,7 @@ object Urticose:
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
       given encodable: Ipv4 is Encodable in Text = _.show
-      given decoder: Tactic[IpAddressError] => Ipv4 is Decodable in Text = parse(_)
+      given decodable: Tactic[IpAddressError] => Ipv4 is Decodable in Text = parse(_)
 
       lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
 
@@ -177,7 +177,7 @@ object Urticose:
       given showable: TcpPort is Showable = _.number.show
       given encodable: TcpPort is Encodable in Text = _.number.show
 
-      given decoder: (Tactic[NumberError], Tactic[PortError]) => TcpPort is Decodable in Text =
+      given decodable: (Tactic[NumberError], Tactic[PortError]) => TcpPort is Decodable in Text =
         text => apply(text.decode[Int])
 
       def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
@@ -191,7 +191,7 @@ object Urticose:
       given showable: UdpPort is Showable = _.number.show
       given encodable: UdpPort is Encodable in Text = _.number.show
 
-      given decoder: (Tactic[NumberError], Tactic[PortError]) => UdpPort is Decodable in Text =
+      given decodable: (Tactic[NumberError], Tactic[PortError]) => UdpPort is Decodable in Text =
         text => apply(text.decode[Int])
 
       def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]
@@ -266,19 +266,21 @@ object Urticose:
 
     abortive:
       if text.contains(t".") then
-        val ipv4 = Ipv4.parse(text)
+        val ipv4 = text.decode[Ipv4]
         '{Ipv4(${Expr(ipv4.byte0)}, ${Expr(ipv4.byte1)}, ${Expr(ipv4.byte2)}, ${Expr(ipv4.byte3)})}
 
       else
-        val ipv6 = Ipv6.parse(text)
+        val ipv6 = text.decode[Ipv6]
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
   def mac(context: Expr[StringContext]): Macro[MacAddress] = abortive:
-    val macAddress = MacAddress.parse(context.valueOrAbort.parts.head.tt)
+    val macAddress = context.valueOrAbort.parts.head.tt.decode[MacAddress]
     '{MacAddress(${Expr(macAddress.long)})}
 
   object Ipv6:
     lazy val Localhost: Ipv6 = apply(0, 0, 0, 0, 0, 0, 0, 1)
+
+    given decodable: Tactic[IpAddressError] => Ipv6 is Decodable in Text = parse(_)
 
     given toExpr: ToExpr[Ipv6]:
       def apply(ipv6: Ipv6)(using Quotes): Expr[Ipv6] =

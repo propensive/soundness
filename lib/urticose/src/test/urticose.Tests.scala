@@ -58,7 +58,7 @@ object Tests extends Suite(m"Urticose tests"):
 
     suite(m"IPv4 tests"):
       test(m"Parse in IPv4 address"):
-        Ipv4.parse(t"1.2.3.4")
+        t"1.2.3.4".decode[Ipv4]
       .assert(_ == Ipv4(1, 2, 3, 4))
 
       test(m"Show an Ipv4 address"):
@@ -79,23 +79,23 @@ object Tests extends Suite(m"Urticose tests"):
 
     suite(m"IPv6 tests"):
       test(m"Parse an IPv6 address"):
-        Ipv6.parse(t"2001:db8:0000:1:1:1:1:1")
+        t"2001:db8:0000:1:1:1:1:1".decode[Ipv6]
       .assert(_ == Ipv6(0x2001, 0xdb8, 0, 0x1, 0x1, 0x1, 0x1, 0x1))
 
       test(m"Render an IPv6 address"):
-        Ipv6.parse(t"2001:db8:0000:1:1:1:1:1").show
+        t"2001:db8:0000:1:1:1:1:1".decode[Ipv6].show
       .assert(_ == t"2001:db8:0:1:1:1:1:1")
 
       test(m"Parse zero IPv6 address"):
-        Ipv6.parse(t"::")
+        t"::".decode[Ipv6]
       .assert(_ == Ipv6(0, 0, 0, 0, 0, 0, 0, 0))
 
       test(m"Parse zero-leading IPv6 address"):
-        Ipv6.parse(t"::2")
+        t"::2".decode[Ipv6]
       .assert(_ == Ipv6(0, 0, 0, 0, 0, 0, 0, 2))
 
       test(m"Parse zeroes-trailing IPv6 address"):
-        Ipv6.parse(t"8::")
+        t"8::".decode[Ipv6]
       .assert(_ == Ipv6(8, 0, 0, 0, 0, 0, 0, 0))
 
       test(m"Show zero IPv6 address"):
@@ -123,7 +123,7 @@ object Tests extends Suite(m"Urticose tests"):
       .assert(_ == t"255.112.0.0/12")
 
       test(m"Parse an IPv6 containing capital letters"):
-        Ipv6.parse(t"2001:DB8::1:1:1:1:1")
+        t"2001:DB8::1:1:1:1:1".decode[Ipv6]
       .assert(_ == Ipv6(0x2001, 0xdb8, 0, 0x1, 0x1, 0x1, 0x1, 0x1))
 
       test(m"Invalid IP address is compile error"):
@@ -131,35 +131,35 @@ object Tests extends Suite(m"Urticose tests"):
       .assert(_ == List(t"urticose: the IP address is not valid because the address contains 6 period-separated groups instead of 4"))
 
       test(m"IP address byte out of range"):
-        capture(Ipv4.parse(t"100.300.200.0"))
+        capture(t"100.300.200.0".decode[Ipv4])
       .assert(_ == IpAddressError(IpAddressError.Reason.Ipv4ByteOutOfRange(300)))
 
       test(m"IPv4 address wrong number of bytes"):
-        capture(Ipv4.parse(t"10.3.20.0.8"))
+        capture(t"10.3.20.0.8".decode[Ipv4])
       .assert(_ == IpAddressError(IpAddressError.Reason.Ipv4WrongNumberOfGroups(5)))
 
       test(m"IPv6 address non-hex value"):
-        capture(Ipv6.parse(t"::8:abcg:abc:1234"))
+        capture(t"::8:abcg:abc:1234".decode[Ipv6])
       .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6GroupNotHex(t"abcg")))
 
       test(m"IPv6 address too many groups"):
-        capture(Ipv6.parse(t"1:2:3:4::5:6:7:8"))
+        capture(t"1:2:3:4::5:6:7:8".decode[Ipv6])
       .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6TooManyNonzeroGroups(8)))
 
       test(m"IPv6 address wrong number of groups"):
-        capture(Ipv6.parse(t"1:2:3:4:5:6:7:8:9"))
+        capture(t"1:2:3:4:5:6:7:8:9".decode[Ipv6])
       .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6WrongNumberOfGroups(9)))
 
       test(m"IPv6 address wrong number of groups"):
-        capture(Ipv6.parse(t"1:2:3:4:5:6:7:8:9"))
+        capture(t"1:2:3:4:5:6:7:8:9".decode[Ipv6])
       .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6WrongNumberOfGroups(9)))
 
       test(m"IPv6 duplicate double-colon"):
-        capture(Ipv6.parse(t"1::3:7::9"))
+        capture(t"1::3:7::9".decode[Ipv6])
       .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6MultipleDoubleColons))
 
       test(m"IPv6 address wrong-length group"):
-        capture(Ipv6.parse(t"::8:abcde:abc:1234"))
+        capture(t"::8:abcde:abc:1234".decode[Ipv6])
       .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6GroupWrongLength(t"abcde")))
 
     suite(m"Email address tests"):
@@ -459,35 +459,35 @@ object Tests extends Suite(m"Urticose tests"):
       import MacAddressError.Reason.*
 
       test(m"Test simple MAC address"):
-        MacAddress.parse(t"01-23-45-ab-cd-ef")
+        t"01-23-45-ab-cd-ef".decode[MacAddress]
       .assert(_ == MacAddress(1251004370415L))
 
       test(m"Check MAC address with too few groups"):
-        capture[MacAddressError](MacAddress.parse(t"01-23-ab-cd-ef"))
+        capture[MacAddressError](t"01-23-ab-cd-ef".decode[MacAddress])
       .assert(_ == MacAddressError(WrongGroupCount(5)))
 
       test(m"Check MAC address with too few groups"):
-        capture[MacAddressError](MacAddress.parse(t"01-23-45-67-ab-cd-ef"))
+        capture[MacAddressError](t"01-23-45-67-ab-cd-ef".decode[MacAddress])
       .assert(_ == MacAddressError(WrongGroupCount(7)))
 
       test(m"Check MAC address with short group"):
-        capture[MacAddressError](MacAddress.parse(t"01-23-45-6-ab-cd"))
+        capture[MacAddressError](t"01-23-45-6-ab-cd".decode[MacAddress])
       .assert(_ == MacAddressError(WrongGroupLength(3, 1)))
 
       test(m"Check MAC address with long group"):
-        capture[MacAddressError](MacAddress.parse(t"01-23-45-67-ab-cde"))
+        capture[MacAddressError](t"01-23-45-67-ab-cde".decode[MacAddress])
       .assert(_ == MacAddressError(WrongGroupLength(5, 3)))
 
       test(m"Check MAC address with empty group"):
-        capture[MacAddressError](MacAddress.parse(t"01-23-45--ab-cd"))
+        capture[MacAddressError](t"01-23-45--ab-cd".decode[MacAddress])
       .assert(_ == MacAddressError(WrongGroupLength(3, 0)))
 
       test(m"Check MAC address with non-hex character"):
-        capture[MacAddressError](MacAddress.parse(t"01-23-45-6g-ab-cd"))
+        capture[MacAddressError](t"01-23-45-6g-ab-cd".decode[MacAddress])
       .assert(_ == MacAddressError(NotHex(3, t"6g")))
 
       test(m"Show a MAC address"):
-        MacAddress.parse(t"01-23-45-ab-cd-ef").show
+        t"01-23-45-ab-cd-ef".decode[MacAddress].show
       .assert(_ == t"01-23-45-ab-cd-ef")
 
       test(m"Create a MAC address statically (and show it)"):

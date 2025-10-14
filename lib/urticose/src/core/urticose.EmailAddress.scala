@@ -135,8 +135,8 @@ object EmailAddress:
           import strategies.throwUnsafely
           val ipAddress = text.segment(index.next thru text.pen.vouch)
 
-          if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.skip(5))
-          else Ipv4.parse(ipAddress)
+          if ipAddress.starts(t"IPv6:") then ipAddress.skip(5).decode[Ipv6]
+          else ipAddress.decode[Ipv4]
         catch case error: IpAddressError => abort(EmailAddressError(InvalidDomain(error)))
 
       else
