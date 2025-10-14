@@ -37,6 +37,7 @@ import contextual.*
 import contingency.*
 import fulminate.*
 import gossamer.*
+import turbulence.*
 import vacuous.*
 
 import scala.compiletime.*
@@ -55,11 +56,11 @@ object Md:
 
     def complete(state: Input): Markdown[Markdown.Ast.Node] = state match
       case Input.Inline(state) =>
-        safely(Markdown.parseInline(state)).or:
+        safely(state.read[InlineMd]).or:
           throw InterpolationError(m"the markdown could not be parsed")
 
       case Input.Block(state)  =>
-        safely(Markdown.parse(state)).or:
+        safely(state.read[InlineMd]).or:
           throw InterpolationError(m"the markdown could not be parsed")
 
     def initial: Input = Input.Inline(t"")
@@ -75,11 +76,11 @@ object Md:
         case Input.Inline(state)   => Input.Inline(t"$state$content")
 
     def parseInline(text: Text): Optional[Input.Inline] = safely:
-      Markdown.parseInline(text)
+      text.read[InlineMd]
       Input.Inline(text)
 
     def parseBlock(text: Text): Optional[Input.Block] = safely:
-      Markdown.parse(text)
+      text.read[Md]
       Input.Block(text)
 
     def parse(state: Input, next: Text): Input = state match
@@ -89,7 +90,7 @@ object Md:
 
       case Input.Block(state) =>
         safely:
-          Markdown.parse(t"$state$next")
+          t"$state$next".read[Md]
           Input.Block(t"$state$next")
 
         . or:

@@ -66,7 +66,6 @@ case class Markdown[+markdown <: Markdown.Ast.Node](nodes: markdown*):
     buf.text
 
 object Markdown:
-  given decoder: Tactic[MarkdownError] => InlineMd is Decodable in Text = parseInline(_)
   given encodable: InlineMd is Encodable in Text = _.serialize
   given showable: InlineMd is Showable = _.serialize
 
@@ -158,24 +157,25 @@ object Markdown:
   private val parser = Parser.builder(options).nn.build().nn
 
 
-  def parse[readable: Readable by Text](value: readable)(using Tactic[MarkdownError])
-  : Markdown[Markdown.Ast.Block] =
-
-      val text = value.stream[Text].read[Text]
+  given aggregable: Tactic[MarkdownError] => Md is Aggregable by Text =
+    chunks =>
+      val text = chunks.read[Text]
       val root = parser.parse(text.s).nn
       val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _))
 
       Markdown(nodes.collect { case child: Markdown.Ast.Block => child }*)
 
+  given aggregable2: Tactic[MarkdownError] => InlineMd is Aggregable by Text =
+    chunks =>
+      chunks.read[Md] match
+        case Markdown(Paragraph(xs*)) =>
+          Markdown[Markdown.Ast.Inline](xs*)
 
-  def parseInline(text: Text)(using Tactic[MarkdownError]): InlineMd = parse(text) match
-    case Markdown(Paragraph(xs*)) =>
-      Markdown[Markdown.Ast.Inline](xs*)
+        case other =>
+          raise(MarkdownError(MarkdownError.Reason.BlockInsideInline))
+          Markdown[Markdown.Ast.Inline]()
 
-    case other =>
-      raise(MarkdownError(MarkdownError.Reason.BlockInsideInline))
-      Markdown[Markdown.Ast.Inline]()
-
+  given decoder: Tactic[MarkdownError] => InlineMd is Decodable in Text = _.read[InlineMd]
 
   @tailrec
   private def coalesce[markdown >: Prose <: Markdown.Ast.Inline]
