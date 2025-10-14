@@ -166,181 +166,181 @@ object Tests extends Suite(m"Urticose tests"):
       import EmailAddressError.Reason.*
 
       test(m"simple@example.com"):
-        EmailAddress.parse(t"simple@example.com")
+        t"simple@example.com".decode[EmailAddress]
       .assert()
 
       test(m"very.common@example.com"):
-        EmailAddress.parse(t"very.common@example.com")
+        t"very.common@example.com".decode[EmailAddress]
       .assert()
 
       test(m"x@example.com"):
-        EmailAddress.parse(t"x@example.com")
+        t"x@example.com".decode[EmailAddress]
       .assert()
 
       test(m"long.email-address-with-hyphens@and.subdomains.example.com"):
-        EmailAddress.parse(t"long.email-address-with-hyphens@and.subdomains.example.com")
+        t"long.email-address-with-hyphens@and.subdomains.example.com".decode[EmailAddress]
       .assert()
 
       test(m"user.name+tag+sorting@example.com"):
-        EmailAddress.parse(t"user.name+tag+sorting@example.com")
+        t"user.name+tag+sorting@example.com".decode[EmailAddress]
       .assert()
 
       test(m"name/surname@example.com"):
-        EmailAddress.parse(t"name/surname@example.com")
+        t"name/surname@example.com".decode[EmailAddress]
       .assert()
 
       test(m"admin@example"):
-        EmailAddress.parse(t"admin@example")
+        t"admin@example".decode[EmailAddress]
       .assert()
 
       test(m"example@s.example"):
-        EmailAddress.parse(t"example@s.example")
+        t"example@s.example".decode[EmailAddress]
       .assert()
 
       test(m"\" \"@example.org"):
-        EmailAddress.parse(t"\" \"@example.org")
+        t"\" \"@example.org".decode[EmailAddress]
       .assert()
 
       test(m"\"john..doe\"@example.org"):
-        EmailAddress.parse(t"\"john..doe\"@example.org")
+        t"\"john..doe\"@example.org".decode[EmailAddress]
       .assert()
 
       test(m"mailhost!username@example.org"):
-        EmailAddress.parse(t"mailhost!username@example.org")
+        t"mailhost!username@example.org".decode[EmailAddress]
       .assert()
 
       test(m"\"very.(),:;<>[]\\\".VERY.\\\"very@\\\\ \\\"very\\\".unusual\"@strange.example.com"):
-        EmailAddress.parse(t"\"very.(),:;<>[]\\\".VERY.\\\"very@\\\\ \\\"very\\\".unusual\"@strange.example.com")
+        t"\"very.(),:;<>[]\\\".VERY.\\\"very@\\\\ \\\"very\\\".unusual\"@strange.example.com".decode[EmailAddress]
       .assert()
 
       test(m"user%example.com@example.org"):
-        EmailAddress.parse(t"user%example.com@example.org")
+        t"user%example.com@example.org".decode[EmailAddress]
       .assert()
 
       test(m"user-@example.org"):
-        EmailAddress.parse(t"user-@example.org")
+        t"user-@example.org".decode[EmailAddress]
       .assert()
 
       test(m"postmaster@[123.123.123.123]"):
-        EmailAddress.parse(t"postmaster@[123.123.123.123]")
+        t"postmaster@[123.123.123.123]".decode[EmailAddress]
       .assert()
 
       test(m"postmaster@[IPv6:2001:0db8:85a3:0000:0000:8a2e:0370:7334]"):
-        EmailAddress.parse(t"postmaster@[IPv6:2001:0db8:85a3:0000:0000:8a2e:0370:7334]")
+        t"postmaster@[IPv6:2001:0db8:85a3:0000:0000:8a2e:0370:7334]".decode[EmailAddress]
       .assert()
 
       test(m"Empty email address"):
-        capture(EmailAddress.parse(t""))
+        capture(t"".decode[EmailAddress])
       .assert(_ == EmailAddressError(Empty))
 
       test(m"abc.example.com"):
-        capture(EmailAddress.parse(t"abc.example.com"))
+        capture(t"abc.example.com".decode[EmailAddress])
       .assert(_ == EmailAddressError(MissingAtSymbol))
 
       test(m"a@b@c@example.com"):
-        capture(EmailAddress.parse(t"a@b@c@example.com"))
+        capture(t"a@b@c@example.com".decode[EmailAddress])
       .assert(_ == EmailAddressError(InvalidDomain(HostnameError(t"b@c@example.com", HostnameError.Reason.InvalidChar('@')))))
 
       test(m"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com"):
-        capture(EmailAddress.parse(t"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com"))
+        capture(t"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com".decode[EmailAddress])
       .assert(_ == EmailAddressError(InvalidChar('\\')))
 
       test(m"just\"not\"right@example.com"):
-        capture(EmailAddress.parse(t"just\"not\"right@example.com"))
+        capture(t"just\"not\"right@example.com".decode[EmailAddress])
       .assert(_ == EmailAddressError(InvalidChar('\"')))
 
       test(m"this is\\\"not\\allowed@example.com"):
-        capture(EmailAddress.parse(t"this is\\\"not\\allowed@example.com"))
+        capture(t"this is\\\"not\\allowed@example.com".decode[EmailAddress])
       .assert(_ == EmailAddressError(InvalidChar(' ')))
 
       test(m"this\\ still\\\"not\\\\allowed@example.com"):
-        capture(EmailAddress.parse(t"this\\ still\\\"not\\\\allowed@example.com"))
+        capture(t"this\\ still\\\"not\\\\allowed@example.com".decode[EmailAddress])
       .assert(_ == EmailAddressError(InvalidChar('\\')))
 
       test(m"1234567890123456789012345678901234567890123456789012345678901234+x@example.com"):
-        capture(EmailAddress.parse(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com"))
+        capture(t"1234567890123456789012345678901234567890123456789012345678901234+x@example.com".decode[EmailAddress])
       .assert(_ == EmailAddressError(LongLocalPart))
 
       test(m"user@[not-an-ip]"):
-        capture(EmailAddress.parse(t"user@[not-an-ip]"))
+        capture(t"user@[not-an-ip]".decode[EmailAddress])
       .assert(_ == EmailAddressError(InvalidDomain(IpAddressError(IpAddressError.Reason.Ipv4WrongNumberOfGroups(1)))))
 
       test(m"i.like.underscores@but_they_are_not_allowed_in_this_part"):
-        capture(EmailAddress.parse(t"i.like.underscores@but_they_are_not_allowed_in_this_part"))
+        capture(t"i.like.underscores@but_they_are_not_allowed_in_this_part".decode[EmailAddress])
       .assert(_ == EmailAddressError(InvalidDomain(HostnameError(t"but_they_are_not_allowed_in_this_part", HostnameError.Reason.InvalidChar('_')))))
 
       test(m"I❤️CHOCOLATE🍫@example.com"):
-        capture(EmailAddress.parse(t"I❤️CHOCOLATE🍫@example.com"))
+        capture(t"I❤️CHOCOLATE🍫@example.com".decode[EmailAddress])
       .matches:
         case EmailAddressError(InvalidChar(_)) =>
 
       test(m"Create an email address at compiletime"):
         email"test@example.com"
-      .assert(_ == EmailAddress.parse(t"test@example.com"))
+      .assert(_ == t"test@example.com".decode[EmailAddress])
 
       test(m"Create an IPv4 email address at compiletime"):
         email"test@[192.168.0.1]"
-      .assert(_ == EmailAddress.parse(t"test@[192.168.0.1]"))
+      .assert(_ == t"test@[192.168.0.1]".decode[EmailAddress])
 
       test(m"Create an IPv6 email address at compiletime"):
         email"test@[IPv6:1234::6789]"
-      .assert(_ == EmailAddress.parse(t"test@[IPv6:1234::6789]"))
+      .assert(_ == t"test@[IPv6:1234::6789]".decode[EmailAddress])
 
       test(m"Create a quoted email address at compiletime"):
         email""""test user"@example.com"""
-      .assert(_ == EmailAddress.parse(t""""test user"@example.com"""))
+      .assert(_ == t""""test user"@example.com""".decode[EmailAddress])
 
       test(m"forbidden.@example.com"):
-        capture(EmailAddress.parse(t"forbidden.@example.com"))
+        capture(t"forbidden.@example.com".decode[EmailAddress])
       .assert(_ == EmailAddressError(TerminalPeriod))
 
       test(m".forbidden@example.com"):
-        capture(EmailAddress.parse(t".forbidden@example.com"))
+        capture(t".forbidden@example.com".decode[EmailAddress])
       .assert(_ == EmailAddressError(InitialPeriod))
 
       test(m"not..allowed@example.com"):
-        capture(EmailAddress.parse(t"not..allowed@example.com"))
+        capture(t"not..allowed@example.com".decode[EmailAddress])
       .assert(_ == EmailAddressError(SuccessivePeriods))
 
       test(m""""unescaped quote " is forbidden"@example.com"""):
-        capture(EmailAddress.parse(t""""unescaped quote " is forbidden"@example.com"""))
+        capture(t""""unescaped quote " is forbidden"@example.com""".decode[EmailAddress])
       .assert(_ == EmailAddressError(UnescapedQuote))
 
       test(m""""unclosed.quote@example.com"""):
-        capture(EmailAddress.parse(t""""unclosed.quote@example.com"""))
+        capture(t""""unclosed.quote@example.com""".decode[EmailAddress])
       .assert(_ == EmailAddressError(UnclosedQuote))
 
       test(m"""missing.domain@"""):
-        capture(EmailAddress.parse(t"""missing.domain@"""))
+        capture(t"""missing.domain@""".decode[EmailAddress])
       .assert(_ == EmailAddressError(MissingDomain))
 
       test(m"""unclosed IP address domain"""):
-        capture(EmailAddress.parse(t"""user@[192.168.0.1"""))
+        capture(t"""user@[192.168.0.1""".decode[EmailAddress])
       .assert(_ == EmailAddressError(UnclosedIpAddress))
 
     suite(m"URL tests"):
       test(m"parse Authority with username and password"):
-        Authority.parse(t"username:password@example.com")
+        t"username:password@example.com".decode[Authority]
       .assert(_ == Authority(example.com, t"username:password"))
 
       test(m"parse Authority with username but not password"):
-        Authority.parse(t"username@example.com")
+        t"username@example.com".decode[Authority]
       .assert(_ == Authority(example.com, t"username"))
 
       test(m"parse Authority with username, password and port"):
-        Authority.parse(t"username:password@example.com:8080")
+        t"username:password@example.com:8080".decode[Authority]
       .assert(_ == Authority(example.com, t"username:password", 8080))
 
       test(m"parse Authority with username and port"):
-        Authority.parse(t"username@example.com:8080")
+        t"username@example.com:8080".decode[Authority]
       .assert(_ == Authority(example.com, t"username", 8080))
 
       test(m"parse Authority with username, numerical password and port"):
-        Authority.parse(t"username:1234@example.com:8080")
+        t"username:1234@example.com:8080".decode[Authority]
       .assert(_ == Authority(example.com, t"username:1234", 8080))
 
       test(m"Authority with invalid port fails"):
-        capture(Authority.parse(t"username@example.com:no"))
+        capture(t"username@example.com:no".decode[Authority])
       .matches:
         case UrlError(_, position, UrlError.Reason.Expected(UrlError.Expectation.Number)) if position == 21.z =>
 
@@ -401,50 +401,50 @@ object Tests extends Suite(m"Urticose tests"):
 
     suite(m"Hostname tests"):
       test(m"Parse a simple hostname"):
-        Hostname.parse(t"www.example.com")
+        t"www.example.com".decode[Hostname]
       .assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"example"), DnsLabel(t"com")))
 
       test(m"A hostname cannot end in a period"):
-        capture[HostnameError](Hostname.parse(t"www.example."))
+        capture[HostnameError](t"www.example.".decode[Hostname])
       .assert(_ == HostnameError(t"www.example.", HostnameError.Reason.EmptyDnsLabel(2)))
 
       test(m"A hostname cannot start with a period"):
-        capture[HostnameError](Hostname.parse(t".example.com"))
+        capture[HostnameError](t".example.com".decode[Hostname])
       .assert(_ == HostnameError(t".example.com", HostnameError.Reason.EmptyDnsLabel(0)))
 
       test(m"A hostname cannot have adjacent periods"):
-        capture[HostnameError](Hostname.parse(t"www..com"))
+        capture[HostnameError](t"www..com".decode[Hostname])
       .assert(_ == HostnameError(t"www..com", HostnameError.Reason.EmptyDnsLabel(1)))
 
       test(m"A hostname cannot contain symbols"):
-        capture[HostnameError](Hostname.parse(t"www.maybe?.com"))
+        capture[HostnameError](t"www.maybe?.com".decode[Hostname])
       .assert(_ == HostnameError(t"www.maybe?.com", HostnameError.Reason.InvalidChar('?')))
 
       test(m"A DNS Label cannot begin with a dash"):
-        capture[HostnameError](Hostname.parse(t"www.-maybe.com"))
+        capture[HostnameError](t"www.-maybe.com".decode[Hostname])
       .assert(_ == HostnameError(t"www.-maybe.com", HostnameError.Reason.InitialDash(t"-maybe")))
 
       test(m"A hostname can contain two consecutive dashes"):
-        Hostname.parse(t"www.exam--ple.com")
+        t"www.exam--ple.com".decode[Hostname]
       .assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"exam--ple"), DnsLabel(t"com")))
 
       test(m"A DNS label cannot be longer than 63 characters"):
-        capture[HostnameError](Hostname.parse(t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com"))
+        capture[HostnameError](t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com".decode[Hostname])
       .assert(_ == HostnameError(
         t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com",
         HostnameError.Reason.LongDnsLabel(t"abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij")
       ))
 
       test(m"A DNS label may be 63 characters long"):
-        Hostname.parse(t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghi.com")
+        t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghi.com".decode[Hostname]
       .assert(_ == Hostname(DnsLabel(t"www"), DnsLabel(t"abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghi"), DnsLabel(t"com")))
 
       test(m"A DNS label may be 253 characters long"):
-        Hostname.parse(t"www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.com")
+        t"www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.com".decode[Hostname]
       .assert()
 
       test(m"A DNS label may not be longer than 253 characters"):
-        capture[HostnameError](Hostname.parse(t"www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy.com"))
+        capture(t"www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy.com".decode[Hostname])
       .assert(_.reason == HostnameError.Reason.LongHostname)
 
       test(m"Parse hostname at compiletime"):

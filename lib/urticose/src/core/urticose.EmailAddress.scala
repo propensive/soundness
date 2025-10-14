@@ -142,7 +142,7 @@ object EmailAddress:
       else
         try
           import strategies.throwUnsafely
-          Hostname.parse(text.skip(index.n0))
+          text.skip(index.n0).decode[Hostname]
         catch case error: HostnameError =>
           abort(EmailAddressError(InvalidDomain(error)))
 
