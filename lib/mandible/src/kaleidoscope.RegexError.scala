@@ -30,26 +30,51 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package caduceus
+package kaleidoscope
 
-import anticipation.*
-import contingency.*
 import fulminate.*
-import gesticulate.*
-import hieroglyph.*
-import prepositional.*
-import proscenium.*
-import turbulence.*
-import urticose.*
-import vacuous.*
 
-import charEncoders.utf8
+import RegexError.Reason.*
 
-object Attachable:
-  given generic: [entity: {Nominable, Media, Readable by Bytes}] => entity is Attachable =
-    value => Asset(entity.name(value), entity.mediaType(value), value.stream[Bytes])
+object RegexError:
+  enum Reason:
+    case UnclosedGroup, ExpectedGroup, BadRepetition, Uncapturable, UnexpectedChar, NotInGroup,
+        IncompleteRepetition, InvalidPattern, UnclosedEscape, EmptyCharClass, ZeroMaximum
 
-  given asset: Asset is Attachable = identity(_)
+  object Reason:
+    given communicable: Reason is Communicable =
+      case UnclosedGroup =>
+        m"a capturing group was not closed"
 
-trait Attachable extends Typeclass:
-  def attachment(entity: Self): Asset
+      case ExpectedGroup =>
+        m"a capturing group was expected immediately following an extractor"
+
+      case BadRepetition =>
+        m"the maximum number of repetitions is less than the minimum"
+
+      case Uncapturable =>
+        m"a capturing group inside a repeating group can not be extracted"
+
+      case UnexpectedChar =>
+        m"the repetition range contained an unexpected character"
+
+      case NotInGroup =>
+        m"a closing parenthesis was found without a corresponding opening parenthesis"
+
+      case IncompleteRepetition =>
+        m"the repetition range was not closed"
+
+      case InvalidPattern =>
+        m"the pattern was invalid"
+
+      case UnclosedEscape =>
+        m"nothing followed the escape character `\`"
+
+      case EmptyCharClass =>
+        m"the character class is empty"
+
+      case ZeroMaximum =>
+        m"the maximum number of repetitions must be greater than zero"
+
+case class RegexError(index: Int, reason: RegexError.Reason)(using Diagnostics)
+extends Error(m"the regular expression could not be parsed because $reason at $index")

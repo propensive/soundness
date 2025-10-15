@@ -44,6 +44,7 @@ object Tests extends Suite(m"Soundness tests"):
     aviation.Tests()
     baroque.Tests()
     burdock.Tests()
+    caduceus.Tests()
     caesura.Tests()
     camouflage.Tests()
     capricious.Tests()

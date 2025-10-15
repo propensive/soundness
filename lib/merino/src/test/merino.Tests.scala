@@ -58,13 +58,13 @@ object Tests extends Suite(m"Merino tests"):
     suite(m"Positive tests"):
       (tests.listFiles.nn.map(_.nn).to(List).filter(_.getName.nn.startsWith("y_")) ++ tests2.listFiles.nn.map(_.nn).to(List)).each: file =>
         test(Message(file.getName.nn.dropRight(5).tt)):
-          JsonAst.parse(ji.BufferedInputStream(ji.FileInputStream(file)))
+          ji.BufferedInputStream(ji.FileInputStream(file)).read[JsonAst]
         .check()
 
     suite(m"Negative tests"):
       tests.listFiles.nn.map(_.nn).filter(_.getName.nn.startsWith("n_")).each: file =>
         test(Message(file.getName.nn.dropRight(5).tt)):
-          capture(JsonAst.parse(ji.BufferedInputStream(ji.FileInputStream(file))))
+          capture(ji.BufferedInputStream(ji.FileInputStream(file)).read[JsonAst])
         .matches:
           case ParseError(_, _, _) => true
           case _                   => false
@@ -95,88 +95,88 @@ object Tests extends Suite(m"Merino tests"):
       // .benchmark()
 
       test(m"Parse big file with Merino"):
-        JsonAst.parse(file2)
+        file2.read[JsonAst]
       .benchmark()
 
     suite(m"Number tests"):
       test(m"Parse 0e+1"):
-        JsonAst.parse(t"0e+1")
+        t"0e+1".read[JsonAst]
       .assert(_ == JsonAst(0L))
 
       test(m"Parse 0e1"):
-        JsonAst.parse(t"0e1")
+        t"0e1".read[JsonAst]
       .assert(_ == JsonAst(0L))
 
       test(m"Parse ' 4'"):
-        JsonAst.parse(t" 4")
+        t" 4".read[JsonAst]
       .assert(_ == JsonAst(4L))
 
       test(m"Parse small negative number"):
-        JsonAst.parse(t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001")
+        t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001".read[JsonAst]
       .assert(_ == JsonAst(-1.0e-78))
 
       test(m"Parse 20e1"):
-        JsonAst.parse(t"20e1")
+        t"20e1".read[JsonAst]
       .assert(_ == JsonAst(200L))
 
       test(m"Parse 123e65"):
-        JsonAst.parse(t"123e65")
+        t"123e65".read[JsonAst]
       .assert(_ == JsonAst(1.23e67))
 
       test(m"Parse -0"):
-        JsonAst.parse(t"-0")
+        t"-0".read[JsonAst]
       .assert(_ == JsonAst(-0.0))
 
       test(m"Parse -123"):
-        JsonAst.parse(t"-123")
+        t"-123".read[JsonAst]
       .assert(_ == JsonAst(-123L))
 
       test(m"Parse -1"):
-        JsonAst.parse(t"-1")
+        t"-1".read[JsonAst]
       .assert(_ == JsonAst(-1L))
 
       test(m"Parse 1E22"):
-        JsonAst.parse(t"1E22")
+        t"1E22".read[JsonAst]
       .assert(_ == JsonAst(1.0E22))
 
       test(m"Parse 1E-2"):
-        JsonAst.parse(t"1E-2")
+        t"1E-2".read[JsonAst]
       .assert(_ == JsonAst(1.0E-2))
 
       test(m"Parse 1E+2"):
-        JsonAst.parse(t"1E+2")
+        t"1E+2".read[JsonAst]
       .assert(_ == JsonAst(1.0E2))
 
       test(m"Parse 123e45"):
-        JsonAst.parse(t"123e45")
+        t"123e45".read[JsonAst]
       .assert(_ == JsonAst(1.23E47))
 
       test(m"Parse 123.456e78"):
-        JsonAst.parse(t"123.456e78")
+        t"123.456e78".read[JsonAst]
       .assert(_ == JsonAst(1.23456E80))
 
       test(m"Parse 1e-2"):
-        JsonAst.parse(t"1e-2")
+        t"1e-2".read[JsonAst]
       .assert(_ == JsonAst(1.0E-2))
 
       test(m"Parse 1e+2"):
-        JsonAst.parse(t"1e+2")
+        t"1e+2".read[JsonAst]
       .assert(_ == JsonAst(1.0E2))
 
       test(m"Parse 123"):
-        JsonAst.parse(t"123")
+        t"123".read[JsonAst]
       .assert(_ == JsonAst(123L))
 
       test(m"Parse 123.456789"):
-        JsonAst.parse(t"123.456789")
+        t"123.456789".read[JsonAst]
       .assert(_ == JsonAst(123.456789))
 
       test(m"Parse \"Hello World\""):
-        JsonAst.parse(t"\"Hello World\"")
+        t"\"Hello World\"".read[JsonAst]
       .assert(_ == JsonAst("Hello World"))
 
       test(m"Parse \"\""):
-        JsonAst.parse(t"\"\"")
+        t"\"\"".read[JsonAst]
       .assert(_ == JsonAst(""))
 
 
