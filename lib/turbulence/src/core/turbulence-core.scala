@@ -41,6 +41,7 @@ import java.util.zip as juz
 import anticipation.*
 import capricious.*
 import contingency.*
+import hieroglyph.*
 import hypotenuse.*
 import parasite.*, codicils.await
 import prepositional.*
@@ -50,18 +51,61 @@ import symbolism.*
 import vacuous.*
 
 extension [value](value: value)
-  def stream[element](using readable: value is Readable by element): Stream[element] =
-    readable.stream(value)
+  inline def stream[element]: Stream[element] =
+    inline compiletime.erasedValue[element] match
+      case _: Bytes => compiletime.summonFrom:
+        case readable: (`value` is Readable by Bytes) =>
+          readable.asInstanceOf[value is Readable by element].stream(value)
 
-  inline def read[result]: result =
-    compiletime.summonFrom:
-      case aggregable: (`result` is Aggregable by Bytes) =>
-        provide[value is Readable by Bytes]:
-          aggregable.aggregate(value.stream[Bytes])
+        case readable: (`value` is Readable by Text) => compiletime.summonFrom:
+          case encoder: CharEncoder =>
+            encoder.encoded(readable.stream(value)).asInstanceOf[Stream[element]]
 
-      case aggregable: (`result` is Aggregable by Text) =>
-        provide[value is Readable by Text]:
-          aggregable.aggregate(value.stream[Text])
+        case _ => compiletime.error("a contextual `CharDecoder` is required")
+
+      case _: Text => compiletime.summonFrom:
+        case readable: (`value` is Readable by Text) =>
+          readable.asInstanceOf[value is Readable by element].stream(value)
+
+        case readable: (`value` is Readable by Bytes) => compiletime.summonFrom:
+          case decoder: CharDecoder =>
+            decoder.decoded(readable.stream(value)).asInstanceOf[Stream[element]]
+
+          case _ => compiletime.error("a contextual `CharEncoder` is required")
+
+      case _ => compiletime.summonFrom:
+        case readable: (`value` is Readable by `element`) => readable.stream(value)
+        case _ =>
+          compiletime.error("a contextual `Readable` is required")
+
+  inline def read[result]: result = compiletime.summonFrom:
+    case aggregable: (`result` is Aggregable by Bytes) => compiletime.summonFrom:
+      case given (`value` is Readable by Bytes) =>
+        aggregable.aggregate(value.stream[Bytes])
+
+      case given (`value` is Readable by Text) => compiletime.summonFrom:
+        case encoder: CharEncoder =>
+          aggregable.aggregate(encoder.encoded(value.stream[Text]))
+
+        case _ =>
+          compiletime.error("a contextual `CharEncoder` is required")
+
+      case _ =>
+        compiletime.error("a contextual `Readable` instance is required")
+
+    case aggregable: (`result` is Aggregable by Text) => compiletime.summonFrom:
+      case given (`value` is Readable by Text) =>
+        aggregable.aggregate(value.stream[Text])
+
+      case given (`value` is Readable by Bytes) => compiletime.summonFrom:
+        case decoder: CharDecoder =>
+          aggregable.aggregate(decoder.decoded(value.stream[Bytes]))
+
+        case _ =>
+          compiletime.error("a contextual `CharDecoder` is required")
+
+      case _ =>
+        compiletime.error("a contextual `Readable` instance is required")
 
 
   def writeTo[target](target: target)[element]

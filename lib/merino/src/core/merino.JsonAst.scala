@@ -156,10 +156,12 @@ object JsonAst extends Format:
       value
 
 
-  def parse[readable: Readable by Bytes](source: readable): JsonAst raises ParseError =
-
+  given Tactic[ParseError] => JsonAst is Aggregable by Bytes = source =>
     // FIXME: This is a horrible hack to avoid the problems with streaming
-    val stream: Stream[Bytes] = Stream(readable.stream(source).read[Bytes])
+    parse(source.read[Bytes])
+
+  def parse(source: Bytes): JsonAst raises ParseError =
+    val stream: Stream[Bytes] = Stream(source)
     var line: Int = 0
     var colStart: Int = 0
 

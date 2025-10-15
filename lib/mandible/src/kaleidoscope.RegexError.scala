@@ -30,155 +30,51 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package merino
+package kaleidoscope
 
-import ambience.*, systemProperties.jre
-import anticipation.*, interfaces.paths.javaIoFile
-import contingency.*, strategies.throwUnsafely
-import eucalyptus.*
 import fulminate.*
-import gossamer.*
-import hieroglyph.*, charEncoders.utf8
-import probably.*
-import rudiments.*, workingDirectories.systemProperties
-import turbulence.*
-import sedentary.*
-import zephyrine.*
-import errorDiagnostics.stackTraces
 
-import java.io as ji
+import RegexError.Reason.*
 
-//import unsafeExceptions.canThrowAny
+object RegexError:
+  enum Reason:
+    case UnclosedGroup, ExpectedGroup, BadRepetition, Uncapturable, UnexpectedChar, NotInGroup,
+        IncompleteRepetition, InvalidPattern, UnclosedEscape, EmptyCharClass, ZeroMaximum
 
-object Tests extends Suite(m"Merino tests"):
-  def run(): Unit =
-    val tests = ji.File(ji.File(workingDirectory, "tests"), "test_parsing")
-    val tests2 = ji.File(ji.File(workingDirectory, "tests"), "test_transform")
+  object Reason:
+    given communicable: Reason is Communicable =
+      case UnclosedGroup =>
+        m"a capturing group was not closed"
 
-    suite(m"Positive tests"):
-      (tests.listFiles.nn.map(_.nn).to(List).filter(_.getName.nn.startsWith("y_")) ++ tests2.listFiles.nn.map(_.nn).to(List)).each: file =>
-        test(Message(file.getName.nn.dropRight(5).tt)):
-          ji.BufferedInputStream(ji.FileInputStream(file)).read[JsonAst]
-        .check()
+      case ExpectedGroup =>
+        m"a capturing group was expected immediately following an extractor"
 
-    suite(m"Negative tests"):
-      tests.listFiles.nn.map(_.nn).filter(_.getName.nn.startsWith("n_")).each: file =>
-        test(Message(file.getName.nn.dropRight(5).tt)):
-          capture(ji.BufferedInputStream(ji.FileInputStream(file)).read[JsonAst])
-        .matches:
-          case ParseError(_, _, _) => true
-          case _                   => false
+      case BadRepetition =>
+        m"the maximum number of repetitions is less than the minimum"
 
-    val testDir = ji.File(workingDirectory, "data")
+      case Uncapturable =>
+        m"a capturing group inside a repeating group can not be extracted"
 
-    suite(m"Parse large files"):
-      val file: Bytes = test(m"Read file"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(testDir, "huge.json"))).read[Bytes]
-      .check()
+      case UnexpectedChar =>
+        m"the repetition range contained an unexpected character"
 
-      val file2: Bytes = test(m"Read file 2"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(testDir, "huge2.json"))).read[Bytes]
-      .check()
+      case NotInGroup =>
+        m"a closing parenthesis was found without a corresponding opening parenthesis"
 
-      // test(m"Parse huge file with Jawn"):
-      //   import org.typelevel.jawn.*, ast.*
-      //   JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file.mutable(using Unsafe)).nn)
-      // .benchmark()
+      case IncompleteRepetition =>
+        m"the repetition range was not closed"
 
-      // test(m"Parse huge file with Merino"):
-      //   JsonAst.parse(file)
-      // .benchmark()
+      case InvalidPattern =>
+        m"the pattern was invalid"
 
-      // test(m"Parse big file with Jawn"):
-      //   import org.typelevel.jawn.*, ast.*
-      //   JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file2.mutable(using Unsafe)).nn)
-      // .benchmark()
+      case UnclosedEscape =>
+        m"nothing followed the escape character `\`"
 
-      test(m"Parse big file with Merino"):
-        file2.read[JsonAst]
-      .benchmark()
+      case EmptyCharClass =>
+        m"the character class is empty"
 
-    suite(m"Number tests"):
-      test(m"Parse 0e+1"):
-        t"0e+1".read[JsonAst]
-      .assert(_ == JsonAst(0L))
+      case ZeroMaximum =>
+        m"the maximum number of repetitions must be greater than zero"
 
-      test(m"Parse 0e1"):
-        t"0e1".read[JsonAst]
-      .assert(_ == JsonAst(0L))
-
-      test(m"Parse ' 4'"):
-        t" 4".read[JsonAst]
-      .assert(_ == JsonAst(4L))
-
-      test(m"Parse small negative number"):
-        t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001".read[JsonAst]
-      .assert(_ == JsonAst(-1.0e-78))
-
-      test(m"Parse 20e1"):
-        t"20e1".read[JsonAst]
-      .assert(_ == JsonAst(200L))
-
-      test(m"Parse 123e65"):
-        t"123e65".read[JsonAst]
-      .assert(_ == JsonAst(1.23e67))
-
-      test(m"Parse -0"):
-        t"-0".read[JsonAst]
-      .assert(_ == JsonAst(-0.0))
-
-      test(m"Parse -123"):
-        t"-123".read[JsonAst]
-      .assert(_ == JsonAst(-123L))
-
-      test(m"Parse -1"):
-        t"-1".read[JsonAst]
-      .assert(_ == JsonAst(-1L))
-
-      test(m"Parse 1E22"):
-        t"1E22".read[JsonAst]
-      .assert(_ == JsonAst(1.0E22))
-
-      test(m"Parse 1E-2"):
-        t"1E-2".read[JsonAst]
-      .assert(_ == JsonAst(1.0E-2))
-
-      test(m"Parse 1E+2"):
-        t"1E+2".read[JsonAst]
-      .assert(_ == JsonAst(1.0E2))
-
-      test(m"Parse 123e45"):
-        t"123e45".read[JsonAst]
-      .assert(_ == JsonAst(1.23E47))
-
-      test(m"Parse 123.456e78"):
-        t"123.456e78".read[JsonAst]
-      .assert(_ == JsonAst(1.23456E80))
-
-      test(m"Parse 1e-2"):
-        t"1e-2".read[JsonAst]
-      .assert(_ == JsonAst(1.0E-2))
-
-      test(m"Parse 1e+2"):
-        t"1e+2".read[JsonAst]
-      .assert(_ == JsonAst(1.0E2))
-
-      test(m"Parse 123"):
-        t"123".read[JsonAst]
-      .assert(_ == JsonAst(123L))
-
-      test(m"Parse 123.456789"):
-        t"123.456789".read[JsonAst]
-      .assert(_ == JsonAst(123.456789))
-
-      test(m"Parse \"Hello World\""):
-        t"\"Hello World\"".read[JsonAst]
-      .assert(_ == JsonAst("Hello World"))
-
-      test(m"Parse \"\""):
-        t"\"\"".read[JsonAst]
-      .assert(_ == JsonAst(""))
-
-
-
-private given realm: Realm = Realm(t"tests")
+case class RegexError(index: Int, reason: RegexError.Reason)(using Diagnostics)
+extends Error(m"the regular expression could not be parsed because $reason at $index")

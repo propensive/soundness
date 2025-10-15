@@ -48,16 +48,6 @@ object Readable:
   given bytes: Bytes is Readable by Bytes = Stream(_)
   given text: [textual <: Text] => textual is Readable by Text = Stream(_)
 
-  given encodingAdapter: [readable: Readable by Text] => (encoder: CharEncoder)
-        =>  readable is Readable by Bytes =
-
-    source => encoder.encoded(readable.stream(source))
-
-  given decodingAdapter: [readable: Readable by Bytes] => (decoder: CharDecoder)
-        =>  readable is Readable by Text =
-
-    source => decoder.decoded(readable.stream(source))
-
   given stream: [element] => Stream[element] is Readable by element = identity(_)
 
   given inCharReader: (stdio: Stdio) => In.type is Readable by Char = in =>

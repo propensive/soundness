@@ -234,7 +234,7 @@ object Json extends Json2, Dynamic:
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
   given aggregable: Tactic[ParseError] => Json is Aggregable by Bytes =
-    bytes => Json(JsonAst.parse(bytes))
+    bytes => Json(bytes.read[JsonAst])
 
   given showable: JsonPrinter => Json is Showable = json =>
     try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
