@@ -69,13 +69,15 @@ import filesystemOptions.createNonexistent.disabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.disabled
 
+import interfaces.paths.pathOnLinux
+
 
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
      (using classloader: Classloader)
 : Bytecode =
 
     val uuid = Uuid()
-    val out: Path on Linux = unsafely(temporaryDirectory[Path on Linux]/uuid)
+    val out: Path on Linux = unsafely(temporaryDirectory/uuid)
     val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
     val settings: staging.Compiler.Settings =

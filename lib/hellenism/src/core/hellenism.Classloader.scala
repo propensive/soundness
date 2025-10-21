@@ -52,6 +52,13 @@ class Classloader(val java: ClassLoader):
 
   def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
 
+  def use[result](block: => result): result =
+    val classloader0 = Thread.currentThread.nn.getContextClassLoader().nn
+    val thread = Thread.currentThread.nn
+
+    try thread.setContextClassLoader(java) yet block
+    finally thread.setContextClassLoader(classloader0)
+
   protected def urlClassloader: Optional[jn.URLClassLoader] = java match
     case java: jn.URLClassLoader => java
     case _                       => parent.let(_.urlClassloader)
