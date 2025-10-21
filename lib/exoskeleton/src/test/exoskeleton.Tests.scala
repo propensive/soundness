@@ -192,16 +192,16 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         . assert(_ == t"blue  green  red")
 
         test(m"flag parameter on zsh is not repeatable"):
-          Zsh.tmux()(Tmux.completions(t"distribution gentoo --color red "))
-        . assert(_ == t"")
+          Zsh.tmux()(Tmux.progress(t"distribution gentoo --color red "))
+        . assert(_ == t"distribution gentoo --color red ^")
 
         test(m"flag parameter on bash is not repeatable"):
-          Bash.tmux()(Tmux.completions(t"distribution gentoo --color red "))
-        . assert(_ == t"")
+          Bash.tmux()(Tmux.progress(t"distribution gentoo --color red "))
+        . assert(_ == t"distribution gentoo --color red ^")
 
         test(m"flag parameter on fish is not repeatable"):
-          Fish.tmux()(Tmux.completions(t"distribution gentoo --color red "))
-        . assert(_ == t"")
+          Fish.tmux()(Tmux.progress(t"distribution gentoo --color red "))
+        . assert(_ == t"distribution gentoo --color red ^")
 
         test(m"repeatable flag parameter on zsh is repeatable"):
           Zsh.tmux()(Tmux.progress(t"gamma --colors red "))
