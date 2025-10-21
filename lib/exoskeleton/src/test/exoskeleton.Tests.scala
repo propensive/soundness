@@ -62,6 +62,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
           val Alpha = Subcommand("alpha", e"a command to run")
           val Beta = Subcommand("beta", e"another command to run")
+          val Gamma = Subcommand("gamma", e"a third command to run", hidden = true)
           val Distribution = Subcommand("distribution", e"a different command to run")
           val RedHat = Subcommand("red hat", e"Red Hat Linux")
           val Ubuntu = Subcommand("ubuntu", e"Ubuntu")
@@ -73,6 +74,15 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             arguments match
               case Alpha() :: _ => execute(Exit.Ok)
               case Beta() :: _  => execute(Exit.Ok)
+              case Gamma() :: _ =>
+                given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
+                given Color is Interpretable =
+                  case arg :: Nil => Color(arg())
+                  case _          => Color(t"unknown")
+
+                Flag[Color]("colors", repeatable = true, aliases = List('c'), description = "multiple reds, greens or blues")()
+                execute(Exit.Ok)
+
               case Distribution() :: distribution =>
                 distribution match
                   case RedHat() :: _ =>
@@ -88,7 +98,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                       case arg :: Nil => Color(arg())
                       case _          => Color(t"unknown")
 
-                    Flag[Color]("color", false, List('f'), description = "red, green or blue")()
+                    Flag[Color]("color", aliases = List('f'), description = "red, green or blue")()
                     execute(Exit.Ok)
 
                   case _             => execute(Exit.Ok)
@@ -180,6 +190,30 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         test(m"flag parameter on fish"):
           Fish.tmux()(Tmux.completions(t"distribution gentoo --color "))
         . assert(_ == t"blue  green  red")
+
+        test(m"flag parameter on zsh is not repeatable"):
+          Zsh.tmux()(Tmux.progress(t"distribution gentoo --color red "))
+        . assert(_ == t"distribution gentoo --color red ^")
+
+        test(m"flag parameter on bash is not repeatable"):
+          Bash.tmux()(Tmux.progress(t"distribution gentoo --color red "))
+        . assert(_ == t"distribution gentoo --color red ^")
+
+        test(m"flag parameter on fish is not repeatable"):
+          Fish.tmux()(Tmux.progress(t"distribution gentoo --color red "))
+        . assert(_ == t"distribution gentoo --color red ^")
+
+        test(m"repeatable flag parameter on zsh is repeatable"):
+          Zsh.tmux()(Tmux.progress(t"gamma --colors red "))
+        . assert(_ == t"gamma --colors red --colors ^")
+
+        test(m"repeatable flag parameter on bash is repeatable"):
+          Bash.tmux()(Tmux.progress(t"gamma --colors red "))
+        . assert(_ == t"gamma --colors red -^")
+
+        test(m"repeatable flag parameter on fish is repeatable"):
+          Fish.tmux()(Tmux.progress(t"gamma --colors red "))
+        . assert(_ == t"gamma --colors red -^")
 
         test(m"flag parameter with `=` on zsh"):
           Zsh.tmux()(Tmux.completions(t"distribution gentoo --color="))
