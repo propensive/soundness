@@ -105,8 +105,6 @@ package interpreters:
           case head :: tail =>
             if head.value == t"--" then push().copy(postpositional = tail)
             else if head.value.starts(t"-") then recur(tail, Nil, head, push())
-            //else if head.value == t"=" && arguments == Nil
-            //then recur(tail, Nil, current, commandline)
             else
               val commandline2 =
                 if head.cursor.present then commandline.copy(focus = current) else commandline
