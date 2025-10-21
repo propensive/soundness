@@ -168,11 +168,13 @@ extends Cli:
                 else sh"'' $hiddenParam $prefix2 $suffix2 -- $core"
 
               case description: Text =>
-                sh"'${core.fit(width)} $aliasText -- $description' $prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
+                val params = sh"$prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
+                sh"'${core.fit(width)} $aliasText -- $description' $params"
 
               case description: Teletype =>
                 val desc = description.render(termcap)
-                sh"'${core.fit(width)} $aliasText -- $desc' $prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
+                val params = sh"$prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
+                sh"'${core.fit(width)} $aliasText -- $desc' $params"
 
             val duplicateLine =
               if !incomplete then List() else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
