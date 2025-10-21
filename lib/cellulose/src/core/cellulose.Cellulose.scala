@@ -198,11 +198,11 @@ object Cellulose extends Cellulose2:
           m"two # symbols terminates the document and must appear alone on a line"
 
 
-    def read[value: {Decodable in Codl, CodlSchematic}](using Void)[source](source: source)
-        (using readable: source is Readable by Text)
+    inline def read[value: {Decodable in Codl, CodlSchematic}](using Void)[source: Readable by Text]
+                (source: source)
     : value raises ParseError raises CodlError =
 
-        value.schema().parse(readable.stream(source)).as[value]
+        value.schema().parse(source.stream[Text]).as[value]
 
 
     def parse[source]
@@ -219,14 +219,14 @@ object Cellulose extends Cellulose2:
         val baseSchema: CodlSchema = schema
 
         case class Proto
-                    (key:      Optional[Text]   = Unset,
-                    line:     Int              = 0,
-                    col:      Int              = 0,
-                    children:  List[CodlNode]  = Nil,
-                    extra:     Optional[Extra] = Unset,
-                    schema:    CodlSchema      = CodlSchema.Free,
-                    params:    Int             = 0,
-                    multiline: Boolean         = false):
+                    (key:       Optional[Text]  = Unset,
+                     line:      Int             = 0,
+                     col:       Int             = 0,
+                     children:  List[CodlNode]  = Nil,
+                     extra:     Optional[Extra] = Unset,
+                     schema:    CodlSchema      = CodlSchema.Free,
+                     params:    Int             = 0,
+                     multiline: Boolean         = false):
 
           def commit(child: Proto): (Optional[(Text, (Int, Int))], Proto) =
             val closed = child.close
