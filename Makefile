@@ -5,9 +5,9 @@ test:
 	mill test.assembly
 	java -cp out/test/assembly.dest/out.jar soundness.Tests
 
-test.caesura:
-	mill caesura.test.assembly
-	java -cp out/caesura/test/assembly.dest/out.jar caesura.Tests
+test.%:
+	mill $*.test.assembly
+	java -cp out/$*/test/assembly.dest/out.jar $*.Tests
 
 failing:
 	mill test.assembly
