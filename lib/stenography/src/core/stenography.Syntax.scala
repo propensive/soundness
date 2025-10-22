@@ -54,7 +54,6 @@ enum Syntax:
   case Infix(left: Optional[Syntax], middle: Text, right: Optional[Syntax])
   case Prefix(middle: Text, right: Syntax)
   case Application(left: Syntax, elements: List[Syntax], infix: Boolean)
-  case Selection(left: Syntax, right: Text)
   case Named(isUsing: Boolean, name: Text, syntax: Syntax)
   case Tuple(isType: Boolean, syntaxes: List[Syntax])
   case Singleton(typename: Typename)
@@ -68,7 +67,6 @@ enum Syntax:
     case Infix(_, middle, _)  => Syntax.precedence(middle.s.head)
     case Prefix(_, _)         => 0
     case Application(_, _, _) => 10
-    case Selection(_, _)      => 10
     case Named(_, _, _)       => 0
     case Tuple(_, _)          => 10
     case Singleton(_)         => 10
@@ -84,7 +82,6 @@ object Syntax:
       case Symbolic(text)                      => text
       case Project(base, text)                 => t"$base#$text"
       case Constant(text)                      => text
-      case Selection(left, right)              => t"$left.$right"
       case Prefix(prefix, base)                => t"$prefix $base"
       case Infix(Unset, middle, right: Syntax) => t"$middle $right"
       case Infix(left: Syntax, middle, Unset)  => t"$left $middle"
