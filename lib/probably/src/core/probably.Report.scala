@@ -79,8 +79,17 @@ class Report(using Environment):
       case '✓' | '✗' | '⎇' => 1
       case _                => metrics.width(char)
 
-  var failure: Optional[(Throwable, Set[TestId])] = Unset
-  var pass: Boolean = false
+  private var failure: Optional[(Throwable, Set[TestId])] = Unset
+  private var pass: Boolean = false
+  private var coverage: Option[Coverage] = None
+  private val lines: ReportLine.Suite = ReportLine.Suite(Unset)
+
+  private val details: scm.SortedMap[TestId, scm.ArrayBuffer[Verdict.Detail]] =
+    scm.TreeMap[TestId, scm.ArrayBuffer[Verdict.Detail]]()
+    . withDefault(_ => scm.ArrayBuffer[Verdict.Detail]())
+
+  def passed: Boolean = failure.absent && pass
+
 
   class TestsMap():
     private var tests: ListMap[TestId, ReportLine] = ListMap()
@@ -93,6 +102,7 @@ class Report(using Environment):
     def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine = synchronized:
       if !tests.contains(testId) then tests = tests.updated(testId, reportLine)
       tests(testId)
+
 
   enum ReportLine:
     case Suite(suite: Optional[Testable], tests: TestsMap = TestsMap())
@@ -122,7 +132,6 @@ class Report(using Environment):
 
         List(Summary(status, testId, buf.length, min, max, avg))
 
-  private val lines: ReportLine.Suite = ReportLine.Suite(Unset)
 
   def resolve(suite: Optional[Testable]): ReportLine.Suite =
     suite.option.map: suite =>
@@ -131,13 +140,7 @@ class Report(using Environment):
 
     . getOrElse(lines)
 
-  private var coverage: Option[Coverage] = None
-
-  private val details: scm.SortedMap[TestId, scm.ArrayBuffer[Verdict.Detail]] =
-    scm.TreeMap[TestId, scm.ArrayBuffer[Verdict.Detail]]()
-    . withDefault(_ => scm.ArrayBuffer[Verdict.Detail]())
-
-  def declareSuite(suite: Testable): Report = this.also:
+  def declare(suite: Testable): Report = this.also:
     resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite)
 
   def fail(error: Throwable, active: Set[TestId]): Unit = failure = (error, active)
@@ -158,7 +161,7 @@ class Report(using Environment):
   enum Status:
     case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench
 
-    val nbsp = '\u00a0'
+    private val nbsp = '\u00a0'
 
     def color: Rgb24 = this match
       case Pass        => rgb"#8abd00"
@@ -187,11 +190,7 @@ class Report(using Environment):
       case Suite       => e"Suite"
       case Bench       => e"Benchmark"
 
-  val unitsSeq: List[Teletype] = List(
-    e"$BurlyWood(µs)",
-    e"$Goldenrod(ms)",
-    e"$Sienna(s) "
-  )
+  val unitsSeq: List[Teletype] = List(e"$BurlyWood(µs)", e"$Goldenrod(ms)", e"$Sienna(s) ")
 
   def showTime(n: Long, units: List[Teletype] = unitsSeq): Teletype = units match
     case Nil =>
@@ -244,7 +243,6 @@ class Report(using Environment):
       )
 
     val columns: Int = safely(Environment.columns.decode[Int]).or(120)
-
     val summaryLines = lines.summaries
 
     coverage.each: coverage =>
@@ -332,7 +330,7 @@ class Report(using Environment):
         val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
         val total: Int = totals.values.sum
         val failed: Int = total - passed
-        if total == passed then pass = true
+        if total == passed && failure.absent then pass = true
 
         if !tabulation then
           Out.print(e"${escapes.Reset}")

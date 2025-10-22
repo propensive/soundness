@@ -69,7 +69,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       jl.System.exit(2)
     finally try
       runner.complete()
-      if runner.report.pass then jl.System.exit(0) else jl.System.exit(1)
+      if runner.report.passed then jl.System.exit(0) else jl.System.exit(1)
     catch case err: EnvironmentError =>
       jl.System.out.nn.println(StackTrace(err).teletype)
       jl.System.exit(3)

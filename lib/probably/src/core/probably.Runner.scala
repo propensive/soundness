@@ -74,10 +74,11 @@ class Runner[report]()(using reporter: Reporter[report]):
 
   def suite(suite: Testable, block: Testable ?=> Unit): Unit =
     if !skip(suite.id) then
-      reporter.declareSuite(report, suite)
+      reporter.declare(report, suite)
       block(using suite)
 
   def terminate(error: Throwable): Unit = synchronized:
     reporter.fail(report, error, active)
+    reporter.complete(report)
 
   def complete(): Unit = reporter.complete(report)
