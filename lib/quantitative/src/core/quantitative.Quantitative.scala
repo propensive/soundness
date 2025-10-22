@@ -36,6 +36,7 @@ import anticipation.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
+import probably.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -93,6 +94,13 @@ object Quantitative extends Quantitative2:
                                        quantity2 <: Quantity[right]]
                              =>  quantity is Addable by quantity2 =
       ${Quantitative.addTypeclass[left, quantity, right, quantity2]}
+
+    inline given checkable: [left <: Measure,
+                             quantity <: Quantity[left],
+                             right <: Measure,
+                             quantity2 <: Quantity[right]]
+                 =>  quantity is Checkable against quantity2 =
+      ${Quantitative.checkable[left, quantity, right, quantity2]}
 
     transparent inline given subtractable: [left <: Measure,
                                             quantity <: Quantity[left],

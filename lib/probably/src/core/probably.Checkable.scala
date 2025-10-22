@@ -44,5 +44,16 @@ object Checkable:
   inline given commensurable: [value: Commensurable by value] => value is Checkable against value =
     (left, right) => left <= right && right <= left
 
+
+  def apply[self, contrast](lambda: (self, contrast) => Boolean)
+  : self is Checkable against contrast =
+
+      new Checkable:
+        type Self = self
+        type Contrast = contrast
+
+        def check(self: Self, contrast: Contrast): Boolean = lambda(self, contrast)
+
+
 trait Checkable extends Typeclass, Contrastive:
   def check(left: Self, right: Contrast): Boolean
