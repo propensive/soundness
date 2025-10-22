@@ -182,3 +182,7 @@ object Tests extends Suite(m"Stenography Tests"):
     test(m"Named tuple"):
       Syntax.name[(x: Int, y: String, z: Exception)]
     .assert(_ == t"(x: Int, y: String, z: Exception)")
+
+    test(m"Type lambda"):
+      Syntax.name[[T] =>> Option[T]]
+    .assert(_ == t"[T] =>> Option[T]")
