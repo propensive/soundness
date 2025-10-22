@@ -32,64 +32,15 @@
                                                                                                   */
 package stenography
 
-import soundness.*
+import scala.quoted.*
 
-object Typename:
-  def apply(text: Text): Typename = text.where(_ == '.', bidi = Rtl).lay(Top(text)): position =>
-    val next = text.after(position)
-    if next.ends(t"package$$") then apply(text.before(position))
-    else Term(apply(text.before(position)), text.after(position))
+import anticipation.*
+import spectacular.*
 
-  def decode(text: Text): Typename =
-    def entity(start: Ordinal, end: Ordinal, isType: Boolean, parent: Optional[Typename])
-    : Typename =
-        val part = text.segment(start thru end)
-        parent.lay(Typename.Top(part)): name =>
-          if isType then Typename.Type(name, part) else Typename.Term(name, part)
+object Stenography:
+  def name[typename <: AnyKind: Type](using Quotes): Expr[Text] =
+    import quotes.reflect.*
 
+    given Scope = Scope(Set(Typename("scala"), Typename("scala.Predef"), Typename("prepositional")))
 
-    def recur(position: Ordinal, start: Ordinal, isType: Boolean, typename: Optional[Typename])
-    : Typename =
-        text.at(position) match
-          case Unset =>
-            entity(start, position - 1, isType, typename)
-
-          case char@('.' | ':') =>
-            recur
-             (position + 1,
-              position + 1,
-              char == ':',
-              entity(start, position - 1, isType, typename))
-
-          case char  =>
-            recur(position + 1, start, isType, typename)
-
-    recur(Prim, Prim, false, Unset)
-
-
-  given (scope: Scope) => Typename is Showable =
-    case Typename.Top(name)          => name
-    case Typename.Term(parent, name) => if scope.has(parent) then name else parent.show+t"."+name
-    case Typename.Type(parent, name) => if scope.has(parent) then name else parent.show+t"."+name
-
-enum Typename:
-  case Top(name: Text)
-  case Term(parent0: Typename, name: Text)
-  case Type(parent0: Typename, name: Text)
-
-  def child(name: Text, isType: Boolean) = if isType then Type(this, name) else Term(this, name)
-
-  def parent: Typename = this match
-    case Type(parent, _) => parent
-    case Term(parent, _) => parent
-    case Top(_)          => this
-
-  def id: Text = this match
-    case Top(name)          => name
-    case Term(parent, name) => t"${parent.id}.${name.urlEncode}"
-    case Type(parent, name) => t"${parent.id}:${name.urlEncode}"
-
-  def text: Text = this match
-    case Top(name)          => name
-    case Term(parent, name) => t"${parent.text}.$name"
-    case Type(parent, name) => t"${parent.text}⌗$name"
+    Expr(Syntax(TypeRepr.of[typename]).show)
