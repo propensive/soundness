@@ -36,6 +36,7 @@ import anticipation.*
 import fulminate.*
 import hypotenuse.*
 import prepositional.*
+import probably.*
 import proscenium.*
 import rudiments.*
 import symbolism.*
@@ -535,6 +536,25 @@ trait Quantitative2:
           case _                                             => resultValue
 
 
+  def check[left <: Measure: Type, right <: Measure: Type]
+       (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]])
+       (using Quotes)
+  : Expr[Boolean] =
+
+      val left: UnitsMap = UnitsMap[left]
+      val right: UnitsMap = UnitsMap[right]
+
+      val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
+      val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
+
+      if left2 != right2 then '{compiletime.error(${Expr(incompatibleTypeText(left, right))})}
+      else '{
+        println($leftValue)
+        println($rightValue)
+        $leftValue == $rightValue
+      }
+
+
   def sub[left <: Measure: Type, right <: Measure: Type]
        (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]])
        (using Quotes)
@@ -586,6 +606,21 @@ trait Quantitative2:
           '{ Addable[quantity, quantity2, Quantity[result]] {
               (left, right) =>
                 ${Quantitative.add('left, 'right).asExprOf[Quantity[result]]} } }
+
+  def checkable
+       [left      <: Measure:         Type,
+        quantity  <: Quantity[left]:  Type,
+        right     <: Measure:         Type,
+        quantity2 <: Quantity[right]: Type]
+       (using Quotes)
+  : Expr[quantity is Checkable against quantity2] =
+
+      val (units, other) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
+
+      units.repr.map(_.asType).absolve match
+        case Some('[type result <: Measure; result]) =>
+          '{  Checkable[quantity, quantity2] {
+                (left, right) => ${Quantitative.check('left, 'right)} } }
 
 
   def norm[units <: Measure: Type, norm[power <: Nat] <: Units[power, ?]: Type]

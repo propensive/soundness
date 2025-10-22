@@ -131,6 +131,8 @@ trait ProbablyTestModule extends BaseScalaModule {
     "-Xplugin",
     (larceny.plugin.assembly().path).toString()
   )
+
+  def consoleScalacOptions = scalacOptions()
 }
 
 trait SoundnessGroupModule extends BaseScalaModule with PublishModule {
@@ -1309,7 +1311,7 @@ object punctuation extends SoundnessModule {
 
 object quantitative extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time)
+    def moduleDeps = Seq(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time, probably.core)
   }
   object units extends SoundnessSubModule {
     def moduleDeps = Seq(core)

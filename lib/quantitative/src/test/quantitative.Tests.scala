@@ -133,6 +133,23 @@ object Tests extends Suite(m"Quantitative Tests"):
         .map(_.message)
       .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents area; these are incompatible physical quantities"))
 
+      test(m"Units of the same dimension can be checked for equivalence (and found equal)"):
+        Mile === 1760*Yard
+
+      . assert(_ == true)
+
+      test(m"Units of the same dimension can be checked for equivalence (and found unequal)"):
+        Mile === Inch
+
+      . assert(_ == false)
+
+      test(m"Units of different measures cannot be compared"):
+        demilitarize:
+          Mile === Joule
+
+        . map(_.message)
+      . assert(_ == List("quantitative: the left operand represents distance, but the right operand represents energy; these are incompatible physical quantities"))
+
     suite(m"Automatic conversions"):
       test(m"Conversions are applied automatically to RHS in multiplication"):
         val x = 2*Metre
