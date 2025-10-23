@@ -48,9 +48,9 @@ sealed trait ProgrammingLanguage:
 
 object Scala extends ProgrammingLanguage:
   enum Context:
-   case Top
-   case Term
-   case Type
+    case Top
+    case Term
+    case Type
 
   override def preprocess(text: Text, context: Optional[Context]): Text =
     context match

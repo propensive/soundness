@@ -35,12 +35,11 @@ package stenography
 import language.experimental.pureFunctions
 
 import soundness.*
+import prepositional.*
 
 import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Stenography Tests"):
-  import prepositional.*
-  import soundness.*
 
   def run(): Unit =
     import anticipation.*

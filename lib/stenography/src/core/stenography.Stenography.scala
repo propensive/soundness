@@ -38,8 +38,17 @@ import anticipation.*
 import spectacular.*
 
 object Stenography:
+  import dotty.tools.dotc.*
+
   def name[typename <: AnyKind: Type](using Quotes): Expr[Text] =
     import quotes.reflect.*
+    val outer = quotes match
+      case quotes: runtime.impl.QuotesImpl =>
+        given ctx: core.Contexts.Context = quotes.ctx
+        ctx.compilationUnit.tpdTree match
+          case ast.tpd.PackageDef(_, statements) =>
+            statements.collect:
+              case ast.tpd.Import(name, List(SimpleSelector("_"))) => Typename(name.show)
 
     def owners(symbol: Symbol): List[Tree] =
       val parent =
@@ -48,12 +57,6 @@ object Stenography:
         else symbol.maybeOwner
       try symbol.tree :: owners(parent) catch case _ =>
         Nil
-
-    // The code to capture the imports has two major issues:
-    //   1.  It's unable to capture imports from the top-level. It doesn't seem possible to get
-    //       access to the tree corresponding to the compilation unit from inside a macro.
-    //   2.  Imports which occur _after_ the application point of the macro are also considered
-    //       in-scope.
 
     val imports = owners(Symbol.spliceOwner).flatMap:
       case tree@DefDef(_, _, _, Some(Block(entries, _))) => entries.collect:
@@ -69,6 +72,6 @@ object Stenography:
       case tree =>
         Nil
 
-    given Scope = Scope(Set(Typename("scala"), Typename("scala.Predef")) ++ imports.to(Set))
+    given Scope = Scope(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer)
 
     Expr(Syntax(TypeRepr.of[typename]).show)
