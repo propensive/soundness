@@ -1422,7 +1422,7 @@ object spectacular extends SoundnessModule {
 
 object stenography extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(distillate.core, spectacular.core, gossamer.core, turbulence.core)
+    def moduleDeps = Seq(spectacular.core, gossamer.core, turbulence.core)
   }
 
   object test extends ProbablyTestModule {

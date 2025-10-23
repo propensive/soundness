@@ -51,8 +51,9 @@ enum Syntax:
   case Constant(text: Text)
   case Project(base: Syntax, text: Text)
   case Refined(syntax: Syntax, types: ListMap[Text, Syntax], terms: ListMap[Text, Syntax])
-  case Infix(left: Optional[Syntax], middle: Text, right: Optional[Syntax])
+  case Infix(left: Syntax, middle: Text, right: Syntax)
   case Prefix(middle: Text, right: Syntax)
+  case Suffix(left: Syntax, suffix: Text)
   case Application(left: Syntax, elements: List[Syntax], infix: Boolean)
   case Selection(left: Syntax, right: Text)
   case Named(isUsing: Boolean, name: Text, syntax: Syntax)
@@ -68,6 +69,7 @@ enum Syntax:
     case Refined(_, _, _)      => 0
     case Infix(_, middle, _)   => Syntax.precedence(middle.s.head)
     case Prefix(_, _)          => 0
+    case Suffix(_, _)          => 0
     case Application(_, _, _)  => 10
     case Selection(_, _)       => 10
     case Named(_, _, _)        => 0
@@ -78,8 +80,6 @@ enum Syntax:
 object Syntax:
   inline def name[typename <: AnyKind]: Text = ${Stenography.name[typename]}
 
-  def suffix(syntax: Syntax, suffix: Text): Syntax.Infix = Syntax.Infix(syntax, suffix, Unset)
-
   given showable: (scope: Scope) => Syntax is Showable:
     def text(syntax: Syntax): Text = syntax match
       case Simple(typename)                    => typename.show
@@ -88,8 +88,7 @@ object Syntax:
       case Constant(text)                      => text
       case Selection(left, right)              => t"$left.$right"
       case Prefix(prefix, base)                => t"$prefix $base"
-      case Infix(Unset, middle, right: Syntax) => t"$middle $right"
-      case Infix(left: Syntax, middle, Unset)  => t"$left $middle"
+      case Suffix(base, suffix)                => t"$base$suffix"
       case Tuple(false, elements)              => t"(${elements.map(_.show).join(t", ")})"
       case Tuple(true, elements)               => t"[${elements.map(_.show).join(t", ")}]"
       case Singleton(typename)                 => t"$typename.type"
@@ -239,7 +238,7 @@ object Syntax:
       case OrType(left, right)   => Syntax.Infix(apply(left), "|", apply(right))
       case AndType(left, right)  => Syntax.Infix(apply(left), "&", apply(right))
       case ByNameType(tpe)       => Syntax.Prefix("=>", apply(tpe))
-      case FlexibleType(tpe)     => Syntax.Infix(apply(tpe), "?", Unset)
+      case FlexibleType(tpe)     => Syntax.Suffix(apply(tpe), "?")
 
       case typ@AppliedType(base, args0) =>
         if typ.isFunctionType then
