@@ -190,7 +190,7 @@ object soundness extends ScalaModule {
     def moduleDeps = Seq(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
         honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
         punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
-        telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
+        telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
         legerdemain.core, caduceus.core, caduceus.resend)
   }
 
@@ -262,7 +262,7 @@ object test extends ScalaModule {
     nomenclature.test,
     octogenarian.test,
     panopticon.test,
-    perihelion.test,
+    //perihelion.test,
     phoenicia.test,
     polaris.test,
     polyvinyl.test,
@@ -278,6 +278,7 @@ object test extends ScalaModule {
     sedentary.test,
     serpentine.test,
     spectacular.test,
+    stenography.test,
     superlunary.test,
     surveillance.test,
     symbolism.test,
@@ -1190,7 +1191,7 @@ object parasite extends SoundnessModule {
   }
 }
 
-object perihelion extends SoundnessModule {
+/*object perihelion extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(telekinesis.core, scintillate.server, gastronomy.core, eucalyptus.core)
   }
@@ -1198,7 +1199,7 @@ object perihelion extends SoundnessModule {
   object test extends ProbablyTestModule {
     def moduleDeps = Seq(probably.cli, core)
   }
-}
+}*/
 
 object phoenicia extends SoundnessModule {
   object core extends SoundnessSubModule {
@@ -1412,6 +1413,16 @@ object serpentine extends SoundnessModule {
 object spectacular extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(rudiments.core, inimitable.core, contingency.core, wisteria.core, digression.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
+}
+
+object stenography extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(spectacular.core, gossamer.core, turbulence.core)
   }
 
   object test extends ProbablyTestModule {
@@ -1697,7 +1708,7 @@ object publishing extends Module {
     octogenarian.core.publishLocal().t()
     panopticon.core.publishLocal().t()
     parasite.core.publishLocal().t()
-    perihelion.core.publishLocal().t()
+    //perihelion.core.publishLocal().t()
     phoenicia.core.publishLocal().t()
     plutocrat.core.publishLocal().t()
     polaris.core.publishLocal().t()
