@@ -1422,7 +1422,7 @@ object spectacular extends SoundnessModule {
 
 object stenography extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(spectacular.core, gossamer.core, turbulence.core)
+    def moduleDeps = Seq(rudiments.core)
     def ivyDeps = Agg(
       ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
     )

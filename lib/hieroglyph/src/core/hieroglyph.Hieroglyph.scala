@@ -47,7 +47,7 @@ object Hieroglyph:
     def apply(char: Char): CharRange = (char.toLong << 32) + char.toInt
     def apply(char: Int): CharRange = (char.toLong << 32) + char
 
-    given textualizer: CharRange is Textualizer = range => "${range.from}..${range.to}".tt
+    given textualizable: CharRange is Textualizable = range => "${range.from}..${range.to}".tt
 
   given ordering: Ordering[CharRange] = Ordering.Long
 

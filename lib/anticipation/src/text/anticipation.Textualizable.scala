@@ -34,6 +34,6 @@ package anticipation
 
 import prepositional.*
 
-trait Textualizer extends Typeclass:
+trait Textualizable extends Typeclass:
   extension (value: Self) def textual: Text = convert(value)
   def convert(value: Self): Text

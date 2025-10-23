@@ -37,10 +37,8 @@ import scala.collection.mutable as scm
 import scala.collection.immutable.ListMap
 
 import anticipation.*
-import gossamer.*
 import proscenium.*
 import rudiments.{is as _, *}
-import spectacular.*
 import symbolism.*
 import vacuous.*
 
@@ -77,45 +75,43 @@ enum Syntax:
     case Signature(_, _, _)    => 10
     case Singleton(_)          => 10
 
+  def text(using scope: Scope): Text = this match
+    case Simple(typename)                    => typename.text
+    case Symbolic(text)                      => text
+    case Project(base, text)                 => s"${base.text}#$text".tt
+    case Constant(text)                      => text
+    case Selection(left, right)              => s"${left.text}.${right}"
+    case Prefix(prefix, base)                => s"$prefix ${base.text}".tt
+    case Suffix(base, suffix)                => s"${base.text}$suffix".tt
+    case Tuple(false, elements)              => s"(${elements.map(_.text).mkString(", ")})".tt
+    case Tuple(true, elements)               => s"[${elements.map(_.text).mkString(", ")}]".tt
+    case Singleton(typename)                 => s"${typename.text}.type".tt
+
+    case Signature(method, syntaxes, result) =>
+      s"${syntaxes.map(_.text).mkString}${if method then ": " else ""}${result.text}".tt
+
+    case Application(left, elements, infix) => left match
+      case Simple(Typename.Type(parent, name)) if infix && scope.has(parent) =>
+       Infix(elements(0), name, elements(1)).text
+
+      case _ =>
+        left.text+elements.map(_.text).mkString("[", ", ", "]").tt
+
+    case Refined(base, members, defs) =>
+      val members2 = members.map { (name, syntax) => s"type $name = ${syntax.text}".tt }
+      val defs2 = defs.map { (name, syntax) => s"def $name${syntax.text}".tt }
+      s"${base.text} { ${(members2 ++ defs2).mkString("; ")} }".tt
+
+    case Infix(left: Syntax, middle, right: Syntax) =>
+      val left2 = if left.precedence < precedence then Syntax.Tuple(false, List(left)) else left
+      val right2 = if right.precedence < precedence then Syntax.Tuple(false, List(right)) else right
+      s"${left2.text} $middle ${right2.text}".tt
+
+    case Named(isUsing, name, syntax) =>
+      if isUsing then s"using $name: ${syntax.text}".tt else s"$name: ${syntax.text}".tt
+
 object Syntax:
   inline def name[typename <: AnyKind]: Text = ${Stenography.name[typename]}
-
-  given showable: (scope: Scope) => Syntax is Showable:
-    def text(syntax: Syntax): Text = syntax match
-      case Simple(typename)                    => typename.show
-      case Symbolic(text)                      => text
-      case Project(base, text)                 => t"$base#$text"
-      case Constant(text)                      => text
-      case Selection(left, right)              => t"$left.$right"
-      case Prefix(prefix, base)                => t"$prefix $base"
-      case Suffix(base, suffix)                => t"$base$suffix"
-      case Tuple(false, elements)              => t"(${elements.map(_.show).join(t", ")})"
-      case Tuple(true, elements)               => t"[${elements.map(_.show).join(t", ")}]"
-      case Singleton(typename)                 => t"$typename.type"
-
-      case Signature(method, syntaxes, result) =>
-        if method then t"${syntaxes.map(_.show).join}: $result"
-        else t"${syntaxes.map(_.show).join}$result"
-
-      case Application(left, elements, infix)   => left match
-        case Simple(Typename.Type(parent, name)) if infix && scope.has(parent) =>
-          text(Infix(elements(0), name, elements(1)))
-
-        case _ =>
-          left.show+elements.map(_.show).join(t"[", t", ", t"]")
-
-      case Refined(base, members, defs) =>
-        val members2 = members.map { (name, syntax) => t"type $name = $syntax" }
-        val defs2 = defs.map { (name, syntax) => t"def $name$syntax" }
-        t"$base { ${(members2 ++ defs2).join(t"; ")} }"
-
-      case Infix(left: Syntax, middle, right: Syntax) =>
-        val left2 = if left.precedence < syntax.precedence then Syntax.Tuple(false, List(left)) else left
-        val right2 = if right.precedence < syntax.precedence then Syntax.Tuple(false, List(right)) else right
-        t"$left2 $middle $right2"
-
-      case Named(isUsing, name, syntax) =>
-        if isUsing then t"using $name: $syntax" else t"$name: $syntax"
 
   val cache: scm.HashMap[Any, Syntax] = scm.HashMap()
 
@@ -170,14 +166,14 @@ object Syntax:
   def apply(using Quotes)(repr: quotes.reflect.TypeRepr): Syntax = cache.establish(repr):
     import quotes.reflect.*
 
-    def isPackage(name: Text): Boolean = name.ends(t"$$package") || name == t"package"
+    def isPackage(name: String): Boolean = name.endsWith("$package") || name == "package"
 
     repr.absolve match
       case ThisType(tpe) =>
         apply(tpe)
 
       case typeRef@TypeRef(NoPrefix(), name) =>
-        if name.tt.starts(t"_$$") then Syntax.Symbolic(name.tt.skip(2))
+        if name.startsWith("_$$") then Syntax.Symbolic(name.drop(2))
         else Syntax.Simple(Typename(typeRef.typeSymbol.fullName.tt))
 
       case typeRef@TypeRef(prefix, name) =>
@@ -185,13 +181,13 @@ object Syntax:
           case singleton@Syntax.Singleton(typename) =>
             val module = typeRef.typeSymbol.flags.is(Flags.Module)
 
-            val name2 = if module then name.tt.skip(1, Rtl) else name.tt
+            val name2 = if module then name.dropRight(1) else name
             if isPackage(name2) then singleton else Syntax.Simple(Typename.Type(typename, name2))
 
           case simple@Syntax.Simple(typename) =>
             val module = typeRef.typeSymbol.flags.is(Flags.Module)
 
-            val name2 = if module then name.tt.skip(1, Rtl) else name.tt
+            val name2 = if module then name.dropRight(1) else name
             if isPackage(name2) then simple else typename match
               case Typename.Term(_, _) => Syntax.Simple(Typename.Type(typename, name2))
               case Typename.Top(_)     => Syntax.Simple(Typename.Type(typename, name2))
@@ -204,7 +200,7 @@ object Syntax:
             Syntax.Selection(symbolic, name)
 
           case other =>
-            Syntax.Constant(t"<unknown>")
+            Syntax.Constant("<unknown>")
 
       case termRef@TermRef(NoPrefix(), name) =>
         Syntax.Singleton(Typename(termRef.termSymbol.fullName.tt))
@@ -215,10 +211,10 @@ object Syntax:
       case termRef@TermRef(prefix, name) =>
         apply(prefix) match
           case singleton@Syntax.Singleton(typename) =>
-            if isPackage(name.tt) then singleton else Syntax.Singleton(Typename.Term(typename, name))
+            if isPackage(name) then singleton else Syntax.Singleton(Typename.Term(typename, name))
 
           case simple@Syntax.Simple(typename) =>
-            if isPackage(name.tt) then simple else Syntax.Singleton(Typename.Term(typename, name))
+            if isPackage(name) then simple else Syntax.Singleton(Typename.Term(typename, name))
 
           case refined@Syntax.Refined(base, members, defs) =>
             if members.contains(name) then members(name.tt) else Syntax.Project(refined, name.tt)
@@ -227,12 +223,12 @@ object Syntax:
             Syntax.Selection(symbolic, name)
 
           case other =>
-            Syntax.Constant(t"<unknown>")
+            Syntax.Constant("<unknown>")
 
       case AnnotatedType(tpe, annotation) =>
         // FIXME: We don't have access to `into` information, so this is a hack
         if annotation.toString.contains("object annotation),into)")
-        then Syntax.Prefix(t"into", apply(tpe))
+        then Syntax.Prefix("into", apply(tpe))
         else apply(tpe)
 
       case OrType(left, right)   => Syntax.Infix(apply(left), "|", apply(right))
@@ -254,28 +250,29 @@ object Syntax:
         else if defn.isTupleClass(base.typeSymbol)
         then Syntax.Tuple(false, args0.map(apply(_)))
         else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
-        then args0(0) match
-          case AppliedType(_, names) => apply(args0(1)) match
+        then args0(0).absolve match
+          case AppliedType(_, names) => apply(args0(1)).absolve match
             case Syntax.Tuple(_, elements) =>
               Syntax.Tuple
                (false,
                 names.zip(elements).map:
-                  case (ConstantType(StringConstant(name)), element) =>
-                    Syntax.Named(false, name.tt, element))
+                  _.absolve match
+                    case (ConstantType(StringConstant(name)), element) =>
+                      Syntax.Named(false, name.tt, element))
 
         else Syntax.Application(apply(base), args0.map(apply(_)), false)
 
-      case ConstantType(constant) => constant match
-        case ByteConstant(byte)     => Syntax.Constant(t"$byte.toByte")
-        case ShortConstant(short)   => Syntax.Constant(t"$short.toShort")
-        case IntConstant(int)       => Syntax.Constant(int.show)
-        case LongConstant(long)     => Syntax.Constant(t"${long}L")
+      case ConstantType(constant) => constant.absolve match
+        case ByteConstant(byte)     => Syntax.Constant(s"$byte.toByte")
+        case ShortConstant(short)   => Syntax.Constant(s"$short.toShort")
+        case IntConstant(int)       => Syntax.Constant(int.toString.tt)
+        case LongConstant(long)     => Syntax.Constant(s"${long}L")
         case BooleanConstant(true)  => Syntax.Constant("true")
         case BooleanConstant(false) => Syntax.Constant("false")
-        case StringConstant(str)    => Syntax.Constant(t"\"$str\"")
-        case CharConstant(char)     => Syntax.Constant(t"'$char'")
-        case DoubleConstant(double) => Syntax.Constant(t"${double.toString}")
-        case FloatConstant(float)   => Syntax.Constant(t"${float.toString}F")
+        case StringConstant(str)    => Syntax.Constant(s"\"$str\"")
+        case CharConstant(char)     => Syntax.Constant(s"'$char'")
+        case DoubleConstant(double) => Syntax.Constant(s"${double.toString}")
+        case FloatConstant(float)   => Syntax.Constant(s"${float.toString}F")
         case UnitConstant()         => Syntax.Constant("()")
         case NullConstant()         => Syntax.Constant("null")
         case ClassOfConstant(cls)   => Syntax.Application(Syntax.Constant("classOf"), List(apply(cls)), false)
@@ -284,7 +281,7 @@ object Syntax:
         apply(member)
 
       case Refinement(base, name, member) =>
-        if name == "Self" then Syntax.Infix(apply(base), t"is", apply(member)) else
+        if name == "Self" then Syntax.Infix(apply(base), "is", apply(member)) else
           val refined: Syntax.Refined = apply(base) match
             case refined@Syntax.Refined(base, members, defs) => refined
             case other =>
@@ -327,20 +324,7 @@ object Syntax:
         case TypeLambda(params, _, _) => Syntax.Symbolic(params(n))
         case MethodType(params, _, _) => Syntax.Symbolic(params(n))
         case PolyType(params, _, _)   => Syntax.Symbolic(params(n))
-        case other => Syntax.Constant(t"ParamRef")
-
-      // case classInfo: dotty.tools.dotc.core.Types.ClassInfo =>
-      //   val parents = classInfo.declaredParents.flatMap: tpe =>
-      //     List(apply(tpe.asInstanceOf[TypeRepr]), Comma)
-      //   Syntax(0, parents.dropRight(1)*)
-
-      // case TypeDef(name, tree: TypeTree) =>
-      //   Syntax(0, Syntax.Member(name.tt), apply(tree.tpe))
-
-      // case ref: dotty.tools.dotc.core.Types.LazyRef =>
-      //   Out.println(ref.rf(using quotes.ctx.compilerContext))
-      //   Syntax.Constant(t"...lazy ref...")
+        case other => Syntax.Constant("ParamRef")
 
       case other =>
-        //Out.println(t"Other kind of type: ${other.toString}")
-        Syntax.Constant(t"...other: ${other.toString}...")
+        Syntax.Constant(s"...other: ${other.toString}...")

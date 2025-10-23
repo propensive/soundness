@@ -47,7 +47,7 @@ trait Showable extends Typeclass, Communicable:
   def message(value: Self): Message = Message(text(value))
 
 object Showable:
-  given showable: [value: Textualizer] => value is Showable = value.textual(_)
+  given showable: [value: Textualizable] => value is Showable = value.textual(_)
 
   given text: [text <: Text] => text is Showable = identity(_)
   given string: String is Showable = _.tt

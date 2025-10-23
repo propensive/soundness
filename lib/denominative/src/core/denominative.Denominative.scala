@@ -70,7 +70,7 @@ object Denominative:
     given subtractable: Ordinal is Subtractable by Ordinal to Int = _ - _
     given subtractable2: Ordinal is Subtractable by Int to Ordinal = _ - _
 
-    given textualizer: Ordinal is Textualizer =
+    given textualizable: Ordinal is Textualizable =
       case Prim    => "prim".tt
       case Sec     => "sec".tt
       case Ter     => "ter".tt

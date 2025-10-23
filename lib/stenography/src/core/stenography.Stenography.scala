@@ -35,17 +35,17 @@ package stenography
 import scala.quoted.*
 
 import anticipation.*
-import spectacular.*
+import proscenium.*
 
 object Stenography:
   import dotty.tools.dotc.*
 
   def name[typename <: AnyKind: Type](using Quotes): Expr[Text] =
     import quotes.reflect.*
-    val outer = quotes match
+    val outer = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
         given ctx: core.Contexts.Context = quotes.ctx
-        ctx.compilationUnit.tpdTree match
+        ctx.compilationUnit.tpdTree.absolve match
           case ast.tpd.PackageDef(_, statements) =>
             statements.collect:
               case ast.tpd.Import(name, List(SimpleSelector("_"))) => Typename(name.show)
@@ -74,4 +74,4 @@ object Stenography:
 
     given Scope = Scope(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer)
 
-    Expr(Syntax(TypeRepr.of[typename]).show)
+    Expr(Syntax(TypeRepr.of[typename]).text)

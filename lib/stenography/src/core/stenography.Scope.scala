@@ -32,7 +32,5 @@
                                                                                                   */
 package stenography
 
-import soundness.*
-
 case class Scope(typenames: Set[Typename]):
   def has(typename: Typename): Boolean = typenames.contains(typename)
