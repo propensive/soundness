@@ -6,6 +6,7 @@ test:
 	java -cp out/test/assembly.dest/out.jar soundness.Tests
 
 test.%:
+	mill clean $*.test
 	mill $*.test.assembly
 	java -cp out/$*/test/assembly.dest/out.jar $*.Tests
 
