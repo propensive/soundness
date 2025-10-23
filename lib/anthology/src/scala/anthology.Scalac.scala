@@ -88,9 +88,9 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
 
         override def progress
                       (current:      Int,
-                      total:        Int,
-                      currentStage: String | Null,
-                      nextStage:    String | Null)
+                       total:        Int,
+                       currentStage: String | Null,
+                       nextStage:    String | Null)
         : Boolean =
 
           val int = (100.0*current/total).toInt

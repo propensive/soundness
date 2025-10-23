@@ -50,26 +50,30 @@ enum Syntax:
   case Symbolic(text: Text)
   case Constant(text: Text)
   case Project(base: Syntax, text: Text)
-  case Refined(syntax: Syntax, members: ListMap[Text, Syntax])
+  case Refined(syntax: Syntax, types: ListMap[Text, Syntax], terms: ListMap[Text, Syntax])
   case Infix(left: Optional[Syntax], middle: Text, right: Optional[Syntax])
   case Prefix(middle: Text, right: Syntax)
   case Application(left: Syntax, elements: List[Syntax], infix: Boolean)
+  case Selection(left: Syntax, right: Text)
   case Named(isUsing: Boolean, name: Text, syntax: Syntax)
   case Tuple(isType: Boolean, syntaxes: List[Syntax])
+  case Signature(method: Boolean, syntaxes: List[Syntax], result: Syntax)
   case Singleton(typename: Typename)
 
   def precedence: Int = this match
-    case Simple(_)            => 10
-    case Symbolic(_)          => 10
-    case Constant(_)          => 10
-    case Project(_, _)        => 9
-    case Refined(_, _)        => 0
-    case Infix(_, middle, _)  => Syntax.precedence(middle.s.head)
-    case Prefix(_, _)         => 0
-    case Application(_, _, _) => 10
-    case Named(_, _, _)       => 0
-    case Tuple(_, _)          => 10
-    case Singleton(_)         => 10
+    case Simple(_)             => 10
+    case Symbolic(_)           => 10
+    case Constant(_)           => 10
+    case Project(_, _)         => 9
+    case Refined(_, _, _)      => 0
+    case Infix(_, middle, _)   => Syntax.precedence(middle.s.head)
+    case Prefix(_, _)          => 0
+    case Application(_, _, _)  => 10
+    case Selection(_, _)       => 10
+    case Named(_, _, _)        => 0
+    case Tuple(_, _)           => 10
+    case Signature(_, _, _)    => 10
+    case Singleton(_)          => 10
 
 object Syntax:
   inline def name[typename <: AnyKind]: Text = ${Stenography.name[typename]}
@@ -82,12 +86,18 @@ object Syntax:
       case Symbolic(text)                      => text
       case Project(base, text)                 => t"$base#$text"
       case Constant(text)                      => text
+      case Selection(left, right)              => t"$left.$right"
       case Prefix(prefix, base)                => t"$prefix $base"
       case Infix(Unset, middle, right: Syntax) => t"$middle $right"
       case Infix(left: Syntax, middle, Unset)  => t"$left $middle"
       case Tuple(false, elements)              => t"(${elements.map(_.show).join(t", ")})"
       case Tuple(true, elements)               => t"[${elements.map(_.show).join(t", ")}]"
       case Singleton(typename)                 => t"$typename.type"
+
+      case Signature(method, syntaxes, result) =>
+        if method then t"${syntaxes.map(_.show).join}: $result"
+        else t"${syntaxes.map(_.show).join}$result"
+
       case Application(left, elements, infix)   => left match
         case Simple(Typename.Type(parent, name)) if infix && scope.has(parent) =>
           text(Infix(elements(0), name, elements(1)))
@@ -95,9 +105,10 @@ object Syntax:
         case _ =>
           left.show+elements.map(_.show).join(t"[", t", ", t"]")
 
-      case Refined(base, members)              =>
-        val members2 = members.map { (name, syntax) => t"type $name = $syntax" }.join(t"; ")
-        t"$base { $members2 }"
+      case Refined(base, members, defs) =>
+        val members2 = members.map { (name, syntax) => t"type $name = $syntax" }
+        val defs2 = defs.map { (name, syntax) => t"def $name$syntax" }
+        t"$base { ${(members2 ++ defs2).join(t"; ")} }"
 
       case Infix(left: Syntax, middle, right: Syntax) =>
         val left2 = if left.precedence < syntax.precedence then Syntax.Tuple(false, List(left)) else left
@@ -133,6 +144,30 @@ object Syntax:
       else if ub.typeSymbol == defn.AnyClass then Syntax.Infix(sub, ">:", apply(lb))
       else Syntax.Infix(Syntax.Infix(sub, ">:", apply(lb)), "<:", apply(ub))
 
+  def signature(using Quotes)(name: Text, repr: quotes.reflect.TypeRepr): Syntax.Signature =
+    import quotes.reflect.*
+
+    repr.absolve match
+      case MethodType(args0, types, result) =>
+        val params =
+          args0.zip(types).map: (arg, tpe) =>
+            Syntax.Named(false, arg, apply(tpe))
+
+        Syntax.Signature(true, List(Syntax.Tuple(false, params)), apply(result))
+
+      case ByNameType(tpe) =>
+        Syntax.Signature(true, List(), apply(tpe))
+
+      case TypeBounds(lb, ub) =>
+        Syntax.Signature(false, Nil, bounds(Syntax.Symbolic("?"), lb, ub))
+
+      case TypeLambda(args0, boundsList, tpe) =>
+        val args = args0.zip(boundsList).map:
+          case (arg, TypeBounds(lb, ub)) => bounds(Syntax.Symbolic(arg), lb, ub)
+
+        Syntax.Signature(false, List(Syntax.Tuple(true, args)), apply(tpe))
+
+
   def apply(using Quotes)(repr: quotes.reflect.TypeRepr): Syntax = cache.establish(repr):
     import quotes.reflect.*
 
@@ -163,8 +198,11 @@ object Syntax:
               case Typename.Top(_)     => Syntax.Simple(Typename.Type(typename, name2))
               case Typename.Type(_, _) => Syntax.Project(simple, name2)
 
-          case refined@Syntax.Refined(base, members) =>
+          case refined@Syntax.Refined(base, members, defs) =>
             if members.contains(name) then members(name.tt) else Syntax.Project(refined, name.tt)
+
+          case symbolic@Syntax.Symbolic(_) =>
+            Syntax.Selection(symbolic, name)
 
           case other =>
             Syntax.Constant(t"<unknown>")
@@ -183,8 +221,11 @@ object Syntax:
           case simple@Syntax.Simple(typename) =>
             if isPackage(name.tt) then simple else Syntax.Singleton(Typename.Term(typename, name))
 
-          case refined@Syntax.Refined(base, members) =>
+          case refined@Syntax.Refined(base, members, defs) =>
             if members.contains(name) then members(name.tt) else Syntax.Project(refined, name.tt)
+
+          case symbolic@Syntax.Symbolic(_) =>
+            Syntax.Selection(symbolic, name)
 
           case other =>
             Syntax.Constant(t"<unknown>")
@@ -206,28 +247,24 @@ object Syntax:
             case List(one) => apply(one)
             case many      => Syntax.Tuple(false, many.map(apply(_)))
 
-          val result = args0.last
           val arrow = if typ.isContextFunctionType then "?=>" else "=>"
 
-          Syntax.Infix(args, arrow, apply(result))
-
+          Syntax.Infix(args, arrow, apply(args0.last))
         else if args0.length == 2 && repr.typeSymbol.flags.is(Flags.Infix)
         then Syntax.Application(apply(base), args0.map(apply(_)), true)
+        else if defn.isTupleClass(base.typeSymbol)
+        then Syntax.Tuple(false, args0.map(apply(_)))
+        else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
+        then args0(0) match
+          case AppliedType(_, names) => apply(args0(1)) match
+            case Syntax.Tuple(_, elements) =>
+              Syntax.Tuple
+               (false,
+                names.zip(elements).map:
+                  case (ConstantType(StringConstant(name)), element) =>
+                    Syntax.Named(false, name.tt, element))
 
-        else
-          if defn.isTupleClass(base.typeSymbol) then Syntax.Tuple(false, args0.map(apply(_)))
-          else
-            if base <:< TypeRepr.of[NamedTuple.NamedTuple] then
-              args0(0) match
-                case AppliedType(_, names) => apply(args0(1)) match
-                  case Syntax.Tuple(_, elements) =>
-                    Syntax.Tuple
-                     (false,
-                      names.zip(elements).map:
-                        case (ConstantType(StringConstant(name)), element) =>
-                          Syntax.Named(false, name.tt, element))
-
-            else Syntax.Application(apply(base), args0.map(apply(_)), false)
+        else Syntax.Application(apply(base), args0.map(apply(_)), false)
 
       case ConstantType(constant) => constant match
         case ByteConstant(byte)     => Syntax.Constant(t"$byte.toByte")
@@ -248,17 +285,16 @@ object Syntax:
         apply(member)
 
       case Refinement(base, name, member) =>
-        if name == "Self" then Syntax.Infix(apply(base), t"is", apply(member))
-        else apply(base) match
-          case Syntax.Refined(base, members) =>
-            Syntax.Refined(base, members.updated(name, apply(member)))
+        if name == "Self" then Syntax.Infix(apply(base), t"is", apply(member)) else
+          val refined: Syntax.Refined = apply(base) match
+            case refined@Syntax.Refined(base, members, defs) => refined
+            case other =>
+              Syntax.Refined(other, ListMap(), ListMap())
 
-          case other =>
-            if base.typeSymbol.fullName == "scala.PolyFunction" && name == "apply"
-            then apply(member)
-
-            else if base.isFunctionType && name == "apply" then other
-            else Syntax.Refined(other, ListMap(name.tt -> apply(member)))
+          signature(name, member) match
+            case signature@Syntax.Signature(method, _, _) =>
+              if method then refined.copy(terms = refined.terms.updated(name, signature))
+              else refined.copy(types = refined.types.updated(name, signature))
 
       case TypeBounds(lb, ub) =>
         bounds(Syntax.Symbolic("?"), lb, ub)
@@ -282,8 +318,11 @@ object Syntax:
 
         Syntax.Infix(Syntax.Tuple(true, args), "=>", apply(result))
 
-      case TypeLambda(args0, _, tpe)            =>
-        Syntax.Infix(Syntax.Tuple(true, args0.map(Syntax.Symbolic(_))), "=>>", apply(tpe))
+      case TypeLambda(args0, boundsList, tpe) =>
+        val args = args0.zip(boundsList).map:
+          case (arg, TypeBounds(lb, ub)) => bounds(Syntax.Symbolic(arg), lb, ub)
+
+        Syntax.Infix(Syntax.Tuple(true, args), "=>>", apply(tpe))
 
       case ParamRef(binder, n) => binder match
         case TypeLambda(params, _, _) => Syntax.Symbolic(params(n))
