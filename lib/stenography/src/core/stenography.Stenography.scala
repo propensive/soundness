@@ -54,6 +54,7 @@ object Stenography:
     //       access to the tree corresponding to the compilation unit from inside a macro.
     //   2.  Imports which occur _after_ the application point of the macro are also considered
     //       in-scope.
+
     val imports = owners(Symbol.spliceOwner).flatMap:
       case tree@DefDef(_, _, _, Some(Block(entries, _))) => entries.collect:
         case Import(name, List(SimpleSelector("_"))) => Typename(name.show)
@@ -68,6 +69,6 @@ object Stenography:
       case tree =>
         Nil
 
-    given Scope = Scope(imports.to(Set))
+    given Scope = Scope(Set(Typename("scala"), Typename("scala.Predef")) ++ imports.to(Set))
 
     Expr(Syntax(TypeRepr.of[typename]).show)

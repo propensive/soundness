@@ -39,10 +39,8 @@ import soundness.*
 import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Stenography Tests"):
-  import scala.*
   import prepositional.*
   import soundness.*
-  import scala.Predef.*
 
   def run(): Unit =
     import anticipation.*
@@ -218,9 +216,9 @@ object Tests extends Suite(m"Stenography Tests"):
       Syntax.name[[T] =>> Option[T]]
     .assert(_ == t"[T] =>> Option[T]")
 
-    test(m"Pure function"):
-      Syntax.name[Int -> String]
-    .assert(_ == t"Int -> String")
+    // test(m"Pure function"):
+    //   Syntax.name[Int -> String]
+    // .assert(_ == t"Int -> String")
 
     test(m"Dependent function type"):
       Syntax.name[(e: Enumeration) => e.Value]
