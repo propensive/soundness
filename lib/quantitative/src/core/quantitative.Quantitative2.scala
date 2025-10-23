@@ -211,7 +211,7 @@ trait Quantitative2:
                       case typeRef@TypeRef(_, _) => UnitRef(typeRef.asType, typeRef.show)
 
                   case other =>
-                    halt(m"principal units had an unexpected type: $other")
+                    halt(m"principal units had an unexpected type: ${other.show}")
 
 
     override def equals(that: Any): Boolean = that.asMatchable match

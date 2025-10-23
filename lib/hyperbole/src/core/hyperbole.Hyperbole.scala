@@ -132,7 +132,7 @@ object Hyperbole:
             parameter: Optional[Text]     = Unset)
       : TastyTree =
 
-          val shown = tree.let(_.show.tt).or(repr.let(_.show.tt)).or(t"")
+          val shown = tree.let(_.show.tt).or(repr.let(_.show)).or(t"")
           val code = tree.let(source(_)).or(e"")
 
           TastyTree(tag, typeName, name, shown, code, Nil, parameter, true, false)
@@ -230,7 +230,7 @@ object Hyperbole:
         val typeName =
           safely:
             tree.asExpr match
-              case '{ $term: tpe } => TypeRepr.of[tpe].show.tt
+              case '{ $term: tpe } => TypeRepr.of[tpe].show
               case _               => Unset
           . or(t"")
 

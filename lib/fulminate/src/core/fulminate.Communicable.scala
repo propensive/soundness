@@ -49,13 +49,7 @@ object Communicable:
   given long: Long is Communicable = long => Message(long.toString.tt)
   given message: Message is Communicable = identity(_)
 
-  given meta: [meta] => Quotes => Type[meta] is Communicable =
-    tpe => Message(quotes.reflect.TypeRepr.of(using tpe).show.tt)
-
   given [text: Textualizable] => text is Communicable = value => Message(value.textual)
-
-  given typeRepr: (quotes: Quotes) => quotes.reflect.TypeRepr is Communicable =
-    tpe => Message(tpe.show)
 
   given term: (quotes: Quotes) => quotes.reflect.Term is Communicable = term => Message(term.show)
   given expr: [expr] => Quotes => Expr[expr] is Communicable = tpe => Message(tpe.show)

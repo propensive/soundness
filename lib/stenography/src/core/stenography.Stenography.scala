@@ -41,6 +41,9 @@ object Stenography:
   import dotty.tools.dotc.*
 
   def name[typename <: AnyKind: Type](using Quotes): Expr[Text] =
+    Expr(name2[typename])
+
+  def name2[typename <: AnyKind: Type](using Quotes): Text =
     import quotes.reflect.*
     val outer = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
@@ -74,4 +77,4 @@ object Stenography:
 
     given Scope = Scope(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer)
 
-    Expr(Syntax(TypeRepr.of[typename]).text)
+    Syntax(TypeRepr.of[typename]).text

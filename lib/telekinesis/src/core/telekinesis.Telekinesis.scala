@@ -56,7 +56,7 @@ object Telekinesis:
 
       def unnamed[value: Type](value: Expr[value], tail: Seq[Expr[Any]]) =
         Expr.summon[Directive of ? >: value].getOrElse:
-          val typeName = TypeRepr.of[value].show
+          val typeName = Type.of[value].show
           halt(m"the type $typeName does not uniquely identify a particular HTTP header")
 
         . absolve
@@ -93,7 +93,7 @@ object Telekinesis:
           val name: Text = key.value.get.tt.uncamel.map(_.capitalize).kebab
 
           val Directive = Expr.summon[keyType is Directive of valueType].getOrElse:
-            val typeName = TypeRepr.of[valueType].show
+            val typeName = Type.of[valueType].show
             halt(m"the header $name cannot take a value of type $typeName")
 
           val header = '{Http.Header($key.tt.uncamel.kebab, $Directive.encode($value))}

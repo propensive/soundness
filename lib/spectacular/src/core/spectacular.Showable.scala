@@ -32,6 +32,8 @@
                                                                                                   */
 package spectacular
 
+import scala.quoted.*
+
 import anticipation.*
 import denominative.*
 import digression.*
@@ -40,6 +42,7 @@ import inimitable.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import stenography.*
 import vacuous.*
 
 trait Showable extends Typeclass, Communicable:
@@ -80,11 +83,16 @@ object Showable:
 
   given zerary: Ordinal is Showable = ordinal => s"${ordinal.n0}.₀".tt
 
+  given typeRepr: (quotes: Quotes) => quotes.reflect.TypeRepr is Showable = repr =>
+    Stenography.name2(using repr.asType)
+
+  given meta: [meta] => (quotes: Quotes) => Type[meta] is Showable =
+    Stenography.name2[meta](using _)
+
   given stackTrace: StackTrace is Showable = stack =>
     val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
     val classWidth = stack.frames.map(_.method.className.s.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.s.length).maxOption.getOrElse(0)
-
     val fullClass = s"${stack.component}.${stack.className}".tt
     val init = s"$fullClass: ${stack.message}".tt
 

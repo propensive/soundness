@@ -1412,7 +1412,7 @@ object serpentine extends SoundnessModule {
 
 object spectacular extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core, inimitable.core, contingency.core, wisteria.core, digression.core)
+    def moduleDeps = Seq(rudiments.core, stenography.core, inimitable.core, contingency.core, wisteria.core, digression.core)
   }
 
   object test extends ProbablyTestModule {

@@ -61,7 +61,8 @@ object Honeycomb:
               . orElse(Expr.summon[HtmlAttribute[valueType]])
               . getOrElse:
                   val typeName = TypeRepr.of[valueType]
-                  halt(m"the attribute name cannot be uniquely determined from its type, $typeName")
+                  halt(m"""the attribute name cannot be uniquely determined from its type,
+                           ${typeName.show}""")
 
             val key: Text = expr.absolve match
               case '{ type keyType <: Label
@@ -84,7 +85,7 @@ object Honeycomb:
               . orElse(Expr.summon[keyType is HtmlAttribute[valueType]])
               . getOrElse:
                   val typeName = TypeRepr.of[valueType]
-                  halt(m"the attribute $attribute cannot take a value of type $typeName")
+                  halt(m"the attribute $attribute cannot take a value of type ${typeName.show}")
 
             '{  $expr.convert($value) match
                   case HtmlAttribute.NotShown => Unset

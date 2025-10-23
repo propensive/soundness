@@ -271,7 +271,7 @@ object Contingency:
                       '{$errorTactic.contramap($partialFunction(_).asInstanceOf[errorType])}.asTerm
 
                     case None =>
-                      halt(m"There is no available handler for ${TypeRepr.of[errorType]}")
+                      halt(m"There is no available handler for ${TypeRepr.of[errorType].show}")
           case _ =>
             halt(m"argument to `mitigate` should be a partial function implemented as match cases")
 
