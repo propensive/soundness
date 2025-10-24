@@ -58,6 +58,7 @@ enum Syntax:
   case Tuple(isType: Boolean, syntaxes: List[Syntax])
   case Signature(method: Boolean, syntaxes: List[Syntax], result: Syntax)
   case Singleton(typename: Typename)
+  case Compound(syntaxes: List[Syntax])
 
   def precedence: Int = this match
     case Simple(_)             => 10
@@ -74,6 +75,7 @@ enum Syntax:
     case Tuple(_, _)           => 10
     case Signature(_, _, _)    => 10
     case Singleton(_)          => 10
+    case Compound(_)           => 0
 
   def text(using scope: Scope): Text = this match
     case Simple(typename)                    => typename.text
@@ -86,6 +88,7 @@ enum Syntax:
     case Tuple(false, elements)              => s"(${elements.map(_.text).mkString(", ")})".tt
     case Tuple(true, elements)               => s"[${elements.map(_.text).mkString(", ")}]".tt
     case Singleton(typename)                 => s"${typename.text}.type".tt
+    case Compound(syntaxes)                  => syntaxes.map(_.text).mkString.tt
 
     case Signature(method, syntaxes, result) =>
       s"${syntaxes.map(_.text).mkString}${if method then ": " else ""}${result.text}".tt
