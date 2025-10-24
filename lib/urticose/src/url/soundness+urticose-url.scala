@@ -33,4 +33,4 @@
 package soundness
 
 export urticose
-. { url, email, host, Authority, Scheme, Url, UrlError, HttpUrl, UrlFragment, Origin, UrlSpace }
+. { url, email, host, Authority, Scheme, Url, UrlError, HttpUrl, UrlFragment, Origin, Www }
