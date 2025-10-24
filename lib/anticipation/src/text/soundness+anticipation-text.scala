@@ -33,4 +33,4 @@
 package soundness
 
 export anticipation.Anticipation.Text
-export anticipation.{Textualizer, Legible, ss, tt}
+export anticipation.{Textualizable, Legible, ss, tt}

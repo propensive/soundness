@@ -32,13 +32,21 @@
                                                                                                   */
 package stenography
 
-import soundness.*
+import java.net as jn
+
+import anticipation.*
+import denominative.*
+import rudiments.*
+import symbolism.*
+import vacuous.*
 
 object Typename:
-  def apply(text: Text): Typename = text.where(_ == '.', bidi = Rtl).lay(Top(text)): position =>
-    val next = text.after(position)
-    if next.ends(t"package$$") then apply(text.before(position))
-    else Term(apply(text.before(position)), text.after(position))
+  def apply(text: Text): Typename = text.s.lastIndexOf('.') match
+    case -1 => Top(text)
+    case position =>
+      val next = text.s.substring(position + 1).nn
+      if next.endsWith("package$") then apply(text.s.substring(0, position).nn)
+      else Term(apply(text.s.substring(0, position).nn.tt), text.s.substring(position + 1).nn.tt)
 
   def decode(text: Text): Typename =
     def entity(start: Ordinal, end: Ordinal, isType: Boolean, parent: Optional[Typename])
@@ -67,11 +75,6 @@ object Typename:
     recur(Prim, Prim, false, Unset)
 
 
-  given (scope: Scope) => Typename is Showable =
-    case Typename.Top(name)          => name
-    case Typename.Term(parent, name) => if scope.has(parent) then name else parent.show+t"."+name
-    case Typename.Type(parent, name) => if scope.has(parent) then name else parent.show+t"."+name
-
 enum Typename:
   case Top(name: Text)
   case Term(parent0: Typename, name: Text)
@@ -86,10 +89,15 @@ enum Typename:
 
   def id: Text = this match
     case Top(name)          => name
-    case Term(parent, name) => t"${parent.id}.${name.urlEncode}"
-    case Type(parent, name) => t"${parent.id}:${name.urlEncode}"
+    case Term(parent, name) => s"${parent.id}.${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
+    case Type(parent, name) => s"${parent.id}:${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
 
-  def text: Text = this match
+  def render: Text = this match
     case Top(name)          => name
-    case Term(parent, name) => t"${parent.text}.$name"
-    case Type(parent, name) => t"${parent.text}⌗$name"
+    case Term(parent, name) => s"${parent.render}.$name".tt
+    case Type(parent, name) => s"${parent.render}⌗$name".tt
+
+  def text(using scope: Scope): Text = this match
+    case Typename.Top(name)          => name
+    case Typename.Term(parent, name) => if scope.has(parent) then name else s"${parent.text}.$name"
+    case Typename.Type(parent, name) => if scope.has(parent) then name else s"${parent.text}.$name"

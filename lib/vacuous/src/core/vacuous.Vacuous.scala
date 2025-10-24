@@ -44,13 +44,13 @@ object Vacuous:
     import quotes.reflect.*
     if TypeRepr.of[Unset.type] <:< TypeRepr.of[value].widen
     then '{null.asInstanceOf[Optionality[value]]}
-    else halt(m"the type ${TypeRepr.of[value].widen} is not an `Optional`")
+    else halt(m"the type ${TypeRepr.of[value].widen.show} is not an `Optional`")
 
   def concrete[typeRef: Type]: Macro[typeRef is Concrete] =
     import quotes.reflect.*
 
     if TypeRepr.of[typeRef].typeSymbol.isAbstractType
-    then halt(m"type ${Type.of[typeRef]} is abstract")
+    then halt(m"type ${TypeRepr.of[typeRef].show} is abstract")
     else '{erasedValue[typeRef is Concrete]}
 
   def distinct[typeRef: Type, union: Type]: Macro[typeRef is Distinct from union] =
@@ -59,7 +59,8 @@ object Vacuous:
     concrete[typeRef]
 
     if TypeRepr.of[typeRef] <:< TypeRepr.of[union]
-    then halt(m"type ${Type.of[typeRef]} cannot be proven distinct from ${Type.of[union]}")
+    then halt(m"""type ${TypeRepr.of[typeRef].show} cannot be proven distinct from
+                  ${TypeRepr.of[union].show}""")
     else '{erasedValue[typeRef is Distinct from union]}
 
   def mandatable[typeRef: Type]: Macro[typeRef is Mandatable] =

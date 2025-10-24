@@ -82,7 +82,7 @@ object Rudiments:
 
   def probe[target: Type]: Macro[Nothing] =
     import quotes.reflect.*
-    halt(m"the type is ${TypeRepr.of[target].dealias.widen}")
+    halt(m"the type is ${TypeRepr.of[target].dealias.widen.show}")
 
   def name[target: Type]: Macro[Text] =
     import quotes.reflect.*

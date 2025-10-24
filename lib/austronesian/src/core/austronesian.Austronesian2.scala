@@ -108,7 +108,7 @@ object Austronesian2:
         case '{ $argument: argument } =>
 
           val encodable = Expr.summon[argument is Encodable in Pojo].getOrElse:
-            halt(m"${Type.of[argument]} is not encodable as a standard library parameter")
+            halt(m"${TypeRepr.of[argument].show} is not encodable as a standard library parameter")
 
           '{$encodable.encoded($argument)}
 

@@ -41,7 +41,7 @@ import scala.jdk.CollectionConverters.SetHasAsScala
 import java.nio as jn, jn.charset as jnc
 
 object Encoding:
-  given textualizer: Encoding is Textualizer = _.name
+  given textualizable: Encoding is Textualizable = _.name
   given communicable: Encoding is Communicable = encoding => Message(encoding.name)
 
   private val allCharsets: Set[jnc.Charset] =

@@ -95,7 +95,7 @@ object Nomenclature2:
         '{$checks; $name.asInstanceOf[Name[system]]}
 
       case None =>
-        halt(m"Couldn't find a `Nominative` instance on ${Type.of[system]}")
+        halt(m"Couldn't find a `Nominative` instance on ${TypeRepr.of[system].show}")
 
   def parse2[plane: Type, name <: String: Type](scrutinee: Expr[Name[plane]])
   : Macro[Boolean] =

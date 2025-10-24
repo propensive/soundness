@@ -38,6 +38,7 @@ import anticipation.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
+import spectacular.*
 
 object Legerdemain:
   def query(values: Expr[Seq[(Label, Any)]]): Macro[Query] =
@@ -52,16 +53,17 @@ object Legerdemain:
             Expr.summon[keyType is Parametric to (? >: valueType)].getOrElse:
               Expr.summon[keyType is Parametric].absolve match
                 case Some('{ $parametric: (Parametric { type Result = resultType }) }) =>
-                  halt(m"""the parameter ${key.valueOrAbort} takes values of ${Type.of[resultType]}
-                          but the provided value had type ${Type.of[valueType]}""")
+                  halt(m"""the parameter ${key.valueOrAbort} takes values of
+                           ${Type.of[resultType].show} but the provided value had type
+                           ${Type.of[valueType].show}""")
 
                 case None =>
                   halt(m"could not find a contextual Parametric value for ${key.valueOrAbort}")
 
 
             val encodable = Expr.summon[valueType is Encodable in Query].getOrElse:
-              halt(m"""there is no contextual ${Type.of[Encodable in Query]} instance for values
-                      of ${Type.of[valueType]}""")
+              halt(m"""there is no contextual ${Type.of[Encodable in Query].show} instance for
+                       values of ${Type.of[valueType].show}""")
 
             val parameters = '{ given valueType is Encodable in Query = $encodable
                                 $value.encode.prefix($key.tt).values }

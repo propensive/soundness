@@ -36,6 +36,7 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import proscenium.*
+import spectacular.*
 
 import scala.quoted.*
 
@@ -53,7 +54,7 @@ object Cataclysm:
       case '{type key <: Label; ($key: key, $value: value)} +: tail =>
         val exp: Expr[key is PropertyDef[value]] =
           Expr.summon[key is PropertyDef[value]].getOrElse:
-            val typeName = TypeRepr.of[value].show
+            val typeName = Type.of[value].show
             halt(m"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
 
         '{

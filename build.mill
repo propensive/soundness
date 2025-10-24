@@ -1412,7 +1412,7 @@ object serpentine extends SoundnessModule {
 
 object spectacular extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core, inimitable.core, contingency.core, wisteria.core, digression.core)
+    def moduleDeps = Seq(rudiments.core, stenography.core, inimitable.core, contingency.core, wisteria.core, digression.core)
   }
 
   object test extends ProbablyTestModule {
@@ -1422,7 +1422,7 @@ object spectacular extends SoundnessModule {
 
 object stenography extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(spectacular.core, gossamer.core, turbulence.core)
+    def moduleDeps = Seq(rudiments.core)
     def ivyDeps = Agg(
       ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
     )
@@ -1735,6 +1735,7 @@ object publishing extends Module {
     sedentary.core.publishLocal().t()
     serpentine.core.publishLocal().t()
     spectacular.core.publishLocal().t()
+    stenography.core.publishLocal().t()
     superlunary.core.publishLocal().t()
     superlunary.jvm.publishLocal().t()
     surveillance.core.publishLocal().t()

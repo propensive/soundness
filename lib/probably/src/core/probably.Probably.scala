@@ -58,10 +58,10 @@ object Probably:
         case '{ $runner: Runner[report] } =>
 
           val inclusion = Expr.summon[Inclusion[report, Verdict]].getOrElse:
-            halt(m"Can't embed test verdicts in ${Type.of[report]}")
+            halt(m"Can't embed test verdicts in ${Type.of[report].show}")
 
           val inclusion2 = Expr.summon[Inclusion[report, Verdict.Detail]].getOrElse:
-            halt(m"Can't embed test details in ${Type.of[report]}")
+            halt(m"Can't embed test details in ${Type.of[report].show}")
 
 
           def lift(predicate: Expr[Any]): Option[Expr[Any]] = predicate.asTerm match
