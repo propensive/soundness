@@ -38,6 +38,7 @@ import contextual.*
 import contingency.*
 import dissonance.*
 import gossamer.{where as _, *}
+import rudiments.*
 import spectacular.*
 import vacuous.*
 

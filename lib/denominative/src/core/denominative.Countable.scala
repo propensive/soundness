@@ -36,11 +36,25 @@ import anticipation.*
 import prepositional.*
 
 object Countable:
-  given seq: [element] => Seq[element] is Countable = _.length
   given iarray: [element] => IArray[element] is Countable = _.length
-  given indexedSeq: [element] => IndexedSeq[element] is Countable = _.length
-  given text: Text is Countable = _.s.length
   given int: Int is Countable = identity(_)
+
+  given seq: [element] => Seq[element] is Countable:
+    def size(self: Seq[element]): Int = self.length
+    override def empty(self: Seq[element]): Boolean = self.isEmpty
+
+  given set: [element] => Set[element] is Countable:
+    def size(self: Set[element]): Int = self.size
+    override def empty(self: Set[element]): Boolean = self.isEmpty
+
+  given indexedSeq: [element] => IndexedSeq[element] is Countable:
+    def size(self: IndexedSeq[element]): Int = self.length
+    override def empty(self: IndexedSeq[element]): Boolean = self.isEmpty
+
+  given text: Text is Countable:
+    def size(self: Text): Int = self.s.length
+    override def empty(self: Text): Boolean = self.s.isEmpty
 
 trait Countable extends Typeclass:
   def size(self: Self): Int
+  def empty(self: Self): Boolean = size(self) > 0

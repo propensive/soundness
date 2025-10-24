@@ -40,7 +40,7 @@ export rudiments
     WorkingDirectoryError, HomeDirectoryError, WorkingDirectory, HomeDirectory, workingDirectory,
     homeDirectory, prim, sec, ter, unwind, at, Indexable, yet, Bijection, bijection, segment,
     Segmentable, Digit, temporaryDirectory, total, product, mean, variance, standardDeviation,
-    annex, intercalate, Defaulting }
+    annex, intercalate, Defaulting, occupied }
 
 package workingDirectories:
   export rudiments.workingDirectories.{systemProperties, default}
