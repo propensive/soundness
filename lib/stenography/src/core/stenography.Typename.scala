@@ -97,7 +97,7 @@ enum Typename:
     case Term(parent, name) => s"${parent.render}.$name".tt
     case Type(parent, name) => s"${parent.render}⌗$name".tt
 
-  def text(using scope: Scope): Text = this match
+  def text(using imports: Imports): Text = this match
     case Typename.Top(name)          => name
-    case Typename.Term(parent, name) => if scope.has(parent) then name else s"${parent.text}.$name"
-    case Typename.Type(parent, name) => if scope.has(parent) then name else s"${parent.text}.$name"
+    case Typename.Term(parent, name) => if imports.has(parent) then name else s"${parent.text}.$name"
+    case Typename.Type(parent, name) => if imports.has(parent) then name else s"${parent.text}.$name"

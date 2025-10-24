@@ -32,5 +32,5 @@
                                                                                                   */
 package stenography
 
-case class Scope(typenames: Set[Typename]):
+case class Imports(typenames: Set[Typename]):
   def has(typename: Typename): Boolean = typenames.contains(typename)
