@@ -1735,6 +1735,7 @@ object publishing extends Module {
     sedentary.core.publishLocal().t()
     serpentine.core.publishLocal().t()
     spectacular.core.publishLocal().t()
+    stenography.core.publishLocal().t()
     superlunary.core.publishLocal().t()
     superlunary.jvm.publishLocal().t()
     surveillance.core.publishLocal().t()
