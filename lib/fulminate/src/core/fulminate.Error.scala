@@ -33,6 +33,7 @@
 package fulminate
 
 import anticipation.*
+import proscenium.*
 
 object Error:
   def apply(throwable: Throwable): Error = throwable match

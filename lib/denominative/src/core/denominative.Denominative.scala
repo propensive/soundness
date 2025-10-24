@@ -34,6 +34,7 @@ package denominative
 
 import anticipation.*
 import prepositional.*
+import proscenium.*
 import symbolism.*
 
 import scala.annotation.targetName

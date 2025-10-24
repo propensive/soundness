@@ -39,6 +39,8 @@ import scala.collection.mutable as scm
 
 import language.adhocExtensions
 
+import proscenium.*
+
 class LarcenyTransformer() extends PluginPhase:
   import tpd.*
 

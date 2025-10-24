@@ -32,6 +32,8 @@
                                                                                                   */
 package anticipation
 
+import proscenium.*
+
 infix type logs [result, event] = (event is Loggable) ?=> result
 
 infix type transcribes [event, event2] = Transcribable:

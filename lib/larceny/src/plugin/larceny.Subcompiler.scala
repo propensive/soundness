@@ -36,8 +36,11 @@ import dotty.tools.*, dotc.*, util.*, reporting.*, core.*, config.Settings, Cont
 
 import scala.util.chaining.*
 import scala.collection.mutable as scm
+import Predef.augmentString
 
 import language.adhocExtensions
+
+import proscenium.*
 
 object Subcompiler:
   val Scala3: Compiler = new Compiler()
@@ -49,7 +52,7 @@ object Subcompiler:
       try
         var pos = diagnostic.pos
         while pos.outer != NoSourcePosition do pos = pos.outer
-        val code = String(ctx.compilationUnit.source.content.slice(pos.start, pos.end))
+        val code = String(Array.from(ctx.compilationUnit.source.content.slice(pos.start, pos.end)))
         val offset = pos.point - pos.start
         val ordinal = diagnostic.msg.errorId.ordinal
 
@@ -118,7 +121,8 @@ object Subcompiler:
                           if done.contains(region) then recompile(tail, done, source) else
 
                             val newSource =
-                              source.take(from)+"{}"+(" "*(to - from - 2))+source.drop(to)
+                              source.substring(0, from).nn+"{}"+(" "*(to - from - 2)).nn
+                              . concat(source.substring(to).nn)
 
                             recompile(tail, done + region, newSource)
 

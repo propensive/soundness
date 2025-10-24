@@ -33,6 +33,7 @@
 package symbolism
 
 import prepositional.*
+import proscenium.*
 
 import scala.annotation.targetName
 

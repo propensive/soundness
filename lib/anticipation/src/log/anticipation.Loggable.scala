@@ -35,6 +35,7 @@ package anticipation
 import language.experimental.into
 
 import prepositional.*
+import proscenium.*
 
 object Loggable:
   given transcribable: [input: Loggable, output: Transcribable to input] => output is Loggable =

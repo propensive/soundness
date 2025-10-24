@@ -34,6 +34,7 @@ package denominative
 
 import anticipation.*
 import prepositional.*
+import proscenium.*
 
 object Countable:
   given seq: [element] => Seq[element] is Countable = _.length

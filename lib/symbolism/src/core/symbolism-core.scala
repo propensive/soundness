@@ -35,6 +35,7 @@ package symbolism
 import scala.annotation.*
 
 import prepositional.*
+import proscenium.*
 
 extension [value: Rootable[2] as rootable](value: value)
   def sqrt: rootable.Result = rootable.root(value)
