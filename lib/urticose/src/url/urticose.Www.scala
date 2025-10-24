@@ -39,14 +39,14 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 
-erased trait UrlSpace
+erased trait Www
 
-object UrlSpace:
-  given submissible: (%.type is Submissible on UrlSpace) = void => ()
-  given admissible: [text <: Text] => (text is Admissible on UrlSpace) = void => ()
-  given admissible2: [string <: String] => (string is Admissible on UrlSpace) = void => ()
+object Www:
+  given submissible: (%.type is Submissible on Www) = void => ()
+  given admissible: [text <: Text] => (text is Admissible on Www) = void => ()
+  given admissible2: [string <: String] => (string is Admissible on Www) = void => ()
 
-  given system: UrlSpace is System:
+  given system: Www is System:
     type UniqueRoot = false
     val separator: Text = t"/"
     val self: Text = t"."
