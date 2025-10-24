@@ -179,6 +179,10 @@ object Tests extends Suite(m"Stenography Tests"):
       Syntax.name[Addable { type Hkt[Bar] = Option[Bar] }]
     .assert(_ == t"Addable { type Hkt = [Bar] =>> Option[Bar] }")
 
+    // test(m"Refined type member with selection"):
+    //   Syntax.name[Addable { val foo: String; type Bar = foo.type }]
+    // .assert(_ == t"Addable { val foo: String; type Bar = foo.type }")
+
     test(m"Refined higher-kinded type member 2"):
       Syntax.name[Addable { type Hkt[Bar <: String] = Option[Bar] }]
     .assert(_ == t"Addable { type Hkt = [Bar <: String] =>> Option[Bar] }")
