@@ -75,6 +75,6 @@ object Stenography:
       case tree =>
         Nil
 
-    given Scope = Scope(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer)
+    given Imports = Imports(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer)
 
     Syntax(TypeRepr.of[typename]).text

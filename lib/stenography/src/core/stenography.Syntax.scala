@@ -77,7 +77,7 @@ enum Syntax:
     case Singleton(_)          => 10
     case Compound(_)           => 0
 
-  def text(using scope: Scope): Text = this match
+  def text(using imports: Imports): Text = this match
     case Simple(typename)                    => typename.text
     case Symbolic(text)                      => text
     case Project(base, text)                 => s"${base.text}#$text".tt
@@ -94,7 +94,7 @@ enum Syntax:
       s"${syntaxes.map(_.text).mkString}${if method then ": " else ""}${result.text}".tt
 
     case Application(left, elements, infix) => left match
-      case Simple(Typename.Type(parent, name)) if infix && scope.has(parent) =>
+      case Simple(Typename.Type(parent, name)) if infix && imports.has(parent) =>
        Infix(elements(0), name, elements(1)).text
 
       case _ =>
