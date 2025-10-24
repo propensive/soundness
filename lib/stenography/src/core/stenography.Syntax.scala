@@ -116,7 +116,18 @@ enum Syntax:
 object Syntax:
   inline def name[typename <: AnyKind]: Text = ${Stenography.name[typename]}
 
-  val cache: scm.HashMap[Any, Syntax] = scm.HashMap()
+  val Space: Syntax.Symbolic = Syntax.Symbolic(" ")
+  val Colon: Syntax.Symbolic = Syntax.Symbolic(": ")
+  val Comma: Syntax.Symbolic = Syntax.Symbolic(", ")
+  val Open: Syntax.Symbolic = Syntax.Symbolic("(")
+  val Close: Syntax.Symbolic = Syntax.Symbolic(")")
+  val OpenType: Syntax.Symbolic = Syntax.Symbolic("[")
+  val CloseType: Syntax.Symbolic = Syntax.Symbolic("]")
+  val Plus: Syntax.Symbolic = Syntax.Symbolic("+")
+  val Minus: Syntax.Symbolic = Syntax.Symbolic("-")
+
+  private val cache: scm.HashMap[Any, Syntax] = scm.HashMap()
+  def clear(): Unit = cache.clear()
 
   def precedence(char: Char): Int = char match
     case '|'                   => 1
@@ -130,17 +141,63 @@ object Syntax:
     case char if char.isLetter => 0
     case _                     => 9
 
-  def bounds(using Quotes)(sub: Syntax, lb: quotes.reflect.TypeRepr, ub: quotes.reflect.TypeRepr)
+  def bounds(using Quotes)
+       (sub: Syntax, lower: quotes.reflect.TypeRepr, upper: quotes.reflect.TypeRepr)
   : Syntax =
 
       import quotes.reflect.*
 
-      if lb == ub then apply(lb)
-      else if lb.typeSymbol == defn.NothingClass && ub.typeSymbol == defn.AnyClass
+      if lower == upper then apply(lower)
+      else if lower.typeSymbol == defn.NothingClass && upper.typeSymbol == defn.AnyClass
       then sub
-      else if lb.typeSymbol == defn.NothingClass then Syntax.Infix(sub, "<:", apply(ub))
-      else if ub.typeSymbol == defn.AnyClass then Syntax.Infix(sub, ">:", apply(lb))
-      else Syntax.Infix(Syntax.Infix(sub, ">:", apply(lb)), "<:", apply(ub))
+      else if lower.typeSymbol == defn.NothingClass then Syntax.Infix(sub, "<:", apply(upper))
+      else if upper.typeSymbol == defn.AnyClass then Syntax.Infix(sub, ">:", apply(lower))
+      else Syntax.Infix(Syntax.Infix(sub, ">:", apply(lower)), "<:", apply(upper))
+
+
+  def clause(using Quotes)(clause: quotes.reflect.ParamClause, showUsing: Boolean): Syntax =
+    import quotes.reflect.*
+    clause match
+      case TermParamClause(termDefs) =>
+        val contextual = termDefs.exists(_.symbol.flags.is(Flags.Given))
+
+        val defs = termDefs.flatMap:
+          case valDef@ValDef(name, rtn, default) =>
+            val syntax =
+              if name.startsWith("evidence$") || name.startsWith("x$")
+              then List(apply(rtn.tpe), Comma)
+              else List(Syntax.Symbolic(name.tt), Colon, apply(rtn.tpe), Comma)
+
+            if valDef.symbol.flags.is(Flags.Inline)
+            then Syntax.Symbolic("inline ") :: syntax
+            else syntax
+
+
+        val usingKeyword = if contextual && showUsing then List(Syntax.Symbolic("using ")) else Nil
+
+        Syntax.Compound(Open +: (usingKeyword ++ defs.dropRight(1)) :+ Close)
+
+      case TypeParamClause(typeDefs) =>
+        val defs = typeDefs.flatMap:
+          case typeDef@TypeDef(name, bounds) =>
+            val flags = typeDef.symbol.flags
+
+            def variance(list: List[Syntax]): List[Syntax] =
+              if flags.is(Flags.Covariant) then Syntax.Plus :: list
+              else if flags.is(Flags.Contravariant) then Syntax.Minus :: list
+              else list
+
+            bounds match
+              case TypeBoundsTree(lower, upper) =>
+                variance(List(Syntax.bounds(Syntax.Symbolic(name.tt), lower.tpe, upper.tpe), Comma))
+
+              case LambdaTypeTree(typeDefs, other) =>
+                variance(List(Syntax.Symbolic(name), Comma))
+
+              case other =>
+                variance(List(Syntax.Symbolic(name), Comma))
+
+        Syntax.Compound(OpenType +: defs.dropRight(1) :+ CloseType)
 
   def signature(using Quotes)(name: Text, repr: quotes.reflect.TypeRepr): Syntax.Signature =
     import quotes.reflect.*
@@ -156,14 +213,17 @@ object Syntax:
       case ByNameType(tpe) =>
         Syntax.Signature(true, List(), apply(tpe))
 
-      case TypeBounds(lb, ub) =>
-        Syntax.Signature(false, Nil, bounds(Syntax.Symbolic("?"), lb, ub))
+      case TypeBounds(lower, upper) =>
+        Syntax.Signature(false, Nil, bounds(Syntax.Symbolic("?"), lower, upper))
 
       case TypeLambda(args0, boundsList, tpe) =>
         val args = args0.zip(boundsList).map:
-          case (arg, TypeBounds(lb, ub)) => bounds(Syntax.Symbolic(arg), lb, ub)
+          case (arg, TypeBounds(lower, upper)) => bounds(Syntax.Symbolic(arg), lower, upper)
 
         Syntax.Signature(false, List(Syntax.Tuple(true, args)), apply(tpe))
+
+      case other =>
+        Syntax.Signature(true, List(), apply(other))
 
 
   def apply(using Quotes)(repr: quotes.reflect.TypeRepr): Syntax = cache.establish(repr):
@@ -263,6 +323,9 @@ object Syntax:
                     case (ConstantType(StringConstant(name)), element) =>
                       Syntax.Named(false, name.tt, element))
 
+          case ref@TypeRef(prefix, name) =>
+            apply(ref)
+
         else Syntax.Application(apply(base), args0.map(apply(_)), false)
 
       case ConstantType(constant) => constant.absolve match
@@ -295,8 +358,8 @@ object Syntax:
               if method then refined.copy(terms = refined.terms.updated(name, signature))
               else refined.copy(types = refined.types.updated(name, signature))
 
-      case TypeBounds(lb, ub) =>
-        bounds(Syntax.Symbolic("?"), lb, ub)
+      case TypeBounds(lower, upper) =>
+        bounds(Syntax.Symbolic("?"), lower, upper)
 
       case method@MethodType(args0, types, result) =>
         val unnamed = args0.forall(_.startsWith("x$"))
@@ -313,13 +376,13 @@ object Syntax:
 
       case typ@PolyType(args0, types, result) =>
         val args = args0.zip(types).map:
-          case (name, TypeBounds(lb, ub)) => bounds(Syntax.Symbolic(name), lb, ub)
+          case (name, TypeBounds(lower, upper)) => bounds(Syntax.Symbolic(name), lower, upper)
 
         Syntax.Infix(Syntax.Tuple(true, args), "=>", apply(result))
 
       case TypeLambda(args0, boundsList, tpe) =>
         val args = args0.zip(boundsList).map:
-          case (arg, TypeBounds(lb, ub)) => bounds(Syntax.Symbolic(arg), lb, ub)
+          case (arg, TypeBounds(lower, upper)) => bounds(Syntax.Symbolic(arg), lower, upper)
 
         Syntax.Infix(Syntax.Tuple(true, args), "=>>", apply(tpe))
 
@@ -328,6 +391,12 @@ object Syntax:
         case MethodType(params, _, _) => Syntax.Symbolic(params(n))
         case PolyType(params, _, _)   => Syntax.Symbolic(params(n))
         case other => Syntax.Constant("ParamRef")
+
+      case RecursiveType(tpe) =>
+        apply(tpe)
+
+      case RecursiveThis(tpe) =>
+        Syntax.Constant("<recursive>")
 
       case other =>
         Syntax.Constant(s"...other: ${other.toString}...")
