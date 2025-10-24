@@ -53,5 +53,6 @@ extension (inline cardinal: Int)
 
 extension [countable: Countable](value: countable)
   inline def full: Interval = Interval(Prim, (countable.size(value) - 1).z)
+  inline def empty: Boolean = countable.empty(value)
 
 export Denominative.{Ordinal, Interval}

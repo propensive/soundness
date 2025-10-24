@@ -47,7 +47,7 @@ extends Molecular:
   def molecule: Molecule = this
 
 object Molecule:
-  def empty: Molecule = Molecule(Map(), 0)
+  def apply(): Molecule = Molecule(Map(), 0)
 
   given showable: Molecule is Showable = molecule =>
     val orderedElements =

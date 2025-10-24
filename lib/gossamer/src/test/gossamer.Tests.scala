@@ -109,13 +109,13 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == t"INDECISIVE")
 
-      test(m"Empty string not populated"):
-        t"".populated
+      test(m"Empty string not occupied"):
+        t"".occupied
 
       . assert(_ == Unset)
 
-      test(m"Non-empty string populated"):
-        t"Hello World".populated
+      test(m"Non-empty string occupied"):
+        t"Hello World".occupied
 
       . assert(_ == t"Hello World")
 
@@ -179,13 +179,13 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == 11)
 
-      test(m"empty Text should not be populated"):
-        t"".populated
+      test(m"empty Text should not be occupied"):
+        t"".occupied
 
       . assert(_ == Unset)
 
-      test(m"non-empty Text should be populated"):
-        t"Hello".populated
+      test(m"non-empty Text should be occupied"):
+        t"Hello".occupied
 
       . assert(_ == t"Hello")
 

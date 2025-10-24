@@ -120,7 +120,6 @@ extension [textual: Textual](words: Iterable[textual])
 
 extension [textual: Textual](text: textual)
   inline def length: Int = textual.length(text)
-  inline def populated: Optional[textual] = if text == textual.empty then Unset else text
   inline def lower: textual = textual.map(text)(_.toLower)
   inline def upper: textual = textual.map(text)(_.toUpper)
   def plain: Text = textual.text(text)
@@ -179,7 +178,6 @@ extension [textual: Textual](text: textual)
 
   inline def tail: textual = text.skip(1, Ltr)
   inline def init: textual = text.skip(1, Rtl)
-  inline def empty: Boolean = text.length == 0
 
   def chars: IArray[Char] = textual.text(text).s.toCharArray.nn.immutable(using Unsafe)
 

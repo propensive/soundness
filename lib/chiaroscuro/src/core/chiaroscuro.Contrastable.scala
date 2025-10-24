@@ -33,6 +33,7 @@
 package chiaroscuro
 
 import anticipation.*
+import denominative.*
 import dissonance.*
 import gossamer.*
 import hieroglyph.*
@@ -100,8 +101,8 @@ object Contrastable:
 
     given set: [element: Showable] => Set[element] is Contrastable.Foundation = (left, right) =>
       if left == right then Juxtaposition.Same(left.show) else
-        val leftOnly = (left -- right).map(_.show)
-        val rightOnly = (right -- left).map(_.show)
+        val leftOnly: Set[Text] = (left -- right).map(_.show)
+        val rightOnly: Set[Text] = (right -- left).map(_.show)
 
         def describe(set: Set[Text]): Text =
           (if set.size > 5 then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}" else set.to(List))
