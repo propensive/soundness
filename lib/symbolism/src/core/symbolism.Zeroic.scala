@@ -33,6 +33,7 @@
 package symbolism
 
 import prepositional.*
+import proscenium.*
 
 object Zeroic:
   given long: Long is Zeroic:

@@ -33,6 +33,7 @@
 package anticipation
 
 import prepositional.*
+import proscenium.*
 import symbolism.*
 
 import scala.compiletime.*

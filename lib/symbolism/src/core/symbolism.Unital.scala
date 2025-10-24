@@ -33,6 +33,7 @@
 package symbolism
 
 import prepositional.*
+import proscenium.*
 
 object Unital:
   given long: Long is Unital = () => 1L

@@ -33,6 +33,7 @@
 package anticipation
 
 import prepositional.*
+import proscenium.*
 
 object Encodable:
   given bytes: Bytes is Encodable in Bytes = identity(_)

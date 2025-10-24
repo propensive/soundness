@@ -33,6 +33,7 @@
 package anticipation
 
 import prepositional.*
+import proscenium.*
 
 trait SpecificDuration extends Typeclass:
   def duration(milliseconds: Long): Self

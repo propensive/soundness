@@ -33,6 +33,7 @@
 package fulminate
 
 import anticipation.*
+import proscenium.*
 
 object Panic:
   def apply(error: Exception): Panic =

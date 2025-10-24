@@ -54,6 +54,7 @@ object settings {
     "-Wsafe-init",
     "-Xmax-inlines", "100",
     //"-Ycc-new",
+    "-Yno-predef",
     "-Yno-flexible-types",
     "-Yexplicit-nulls",
     "-Ycheck-all-patmat",
@@ -419,7 +420,7 @@ object anthology extends SoundnessModule {
 
 object anticipation extends SoundnessModule {
   object generic extends SoundnessSubModule {
-    def moduleDeps = Seq(prepositional.core)
+    def moduleDeps = Seq(proscenium.core, prepositional.core)
   }
 
   object text extends SoundnessSubModule {
@@ -431,7 +432,7 @@ object anticipation extends SoundnessModule {
   }
 
   object gfx extends SoundnessSubModule {
-    def moduleDeps = Seq(prepositional.core)
+    def moduleDeps = Seq(proscenium.core, prepositional.core)
   }
 
   object css extends SoundnessSubModule {
@@ -459,7 +460,7 @@ object anticipation extends SoundnessModule {
   }
 
   object color extends SoundnessSubModule {
-    def moduleDeps = Seq(prepositional.core)
+    def moduleDeps = Seq(proscenium.core, prepositional.core)
   }
 
   object log extends SoundnessSubModule {
@@ -850,8 +851,7 @@ object fulminate extends SoundnessModule {
       symbolism.core,
       anticipation.print,
       anticipation.http,
-      anticipation.log,
-      proscenium.core
+      anticipation.log
     )
 
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
@@ -1058,7 +1058,7 @@ object kaleidoscope extends SoundnessModule {
 
 object larceny extends SoundnessModule {
   object plugin extends SoundnessSubModule {
-    def moduleDeps = Seq()
+    def moduleDeps = Seq(proscenium.core)
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   }
 
@@ -1345,8 +1345,7 @@ object rudiments extends SoundnessModule {
       anticipation.codec,
       fulminate.core,
       vacuous.core,
-      denominative.core,
-      proscenium.core
+      denominative.core
     )
   }
 
@@ -1465,7 +1464,7 @@ object surveillance extends SoundnessModule {
 
 object symbolism extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(prepositional.core)
+    def moduleDeps = Seq(proscenium.core, prepositional.core)
   }
 
   object test extends ProbablyTestModule {
@@ -1525,7 +1524,7 @@ object ulysses extends SoundnessModule {
 
 object umbrageous extends SoundnessModule {
   object plugin extends SoundnessSubModule {
-    def moduleDeps = Seq()
+    def moduleDeps = Seq(proscenium.core)
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   }
 

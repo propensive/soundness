@@ -33,6 +33,7 @@
 package anticipation
 
 import prepositional.*
+import proscenium.*
 
 object Instants:
   given abstractable: Long is Abstractable across Instants to Long = identity(_)

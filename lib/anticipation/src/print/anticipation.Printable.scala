@@ -35,6 +35,7 @@ package anticipation
 import scala.annotation.*
 
 import prepositional.*
+import proscenium.*
 
 object Printable:
   given text: Text is Printable = (text, termcap) => text

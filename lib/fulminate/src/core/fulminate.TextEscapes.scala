@@ -53,7 +53,7 @@ object TextEscapes:
         case 'f' if esc   => ('\f', cur + 1, false)
         case 'b' if esc   => ('\b', cur + 1, false)
         case 't' if esc   => ('\t', cur + 1, false)
-        case 'u' if esc   => (parseUnicode(text.s.slice(cur + 1, cur + 5)), cur + 5, false)
+        case 'u' if esc   => (parseUnicode(text.s.substring(cur + 1, cur + 5).nn), cur + 5, false)
         case 'e' if esc   => ('\u001b', cur + 1, false)
         case '"' if esc   => ('"', cur + 1, false)
         case '\'' if esc  => ('\'', cur + 1, false)

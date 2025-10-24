@@ -32,6 +32,8 @@
                                                                                                   */
 package anticipation
 
+import proscenium.*
+
 enum Sgml:
   case Textual(text: Text)
   case Element(name: Text, attributes: Map[Text, Text], children: List[Sgml])

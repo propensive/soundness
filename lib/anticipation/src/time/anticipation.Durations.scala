@@ -33,6 +33,7 @@
 package anticipation
 
 import prepositional.*
+import proscenium.*
 
 object Durations:
   inline def ms(long: Long): Double = long.toDouble*1_000_000

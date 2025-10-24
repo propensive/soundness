@@ -34,6 +34,7 @@ package denominative
 
 import anticipation.*
 import prepositional.*
+import proscenium.*
 
 object Countable:
   given iarray: [element] => IArray[element] is Countable = _.length

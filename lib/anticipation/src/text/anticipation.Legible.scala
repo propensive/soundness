@@ -33,6 +33,7 @@
 package anticipation
 
 import prepositional.*
+import proscenium.*
 
 trait Legible extends Typeclass:
   def text(value: Self): Text

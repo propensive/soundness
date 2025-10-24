@@ -33,6 +33,7 @@
 package symbolism
 
 import prepositional.*
+import proscenium.*
 
 object Rootable:
   def apply[root <: Int & Singleton, operand, result](lambda: operand => result)
