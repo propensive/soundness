@@ -286,7 +286,7 @@ object Syntax:
             Syntax.Selection(symbolic, name)
 
           case other =>
-            other
+            Syntax.Constant("<unknown>")
 
       case AnnotatedType(tpe, annotation) =>
         // FIXME: We don't have access to `into` information, so this is a hack
