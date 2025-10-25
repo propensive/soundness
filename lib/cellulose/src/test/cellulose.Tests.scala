@@ -1161,6 +1161,50 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
         roundtrip(complex)
       .assert(_ == complex)
 
+
+    suite(m"Generic derivation tests"):
+      case class Base1(domain: Text, language: Optional[Text])
+      case class Base2(domain: Text, language: Optional[Text], entry: List[Text])
+      case class Base3(domain: Text, language: Optional[Text], entry: List[Entry])
+      case class Base4(domain: Text, language: Optional[Text], entry: Entry)
+      case class Entry(name: Text, value: Int)
+
+      test(m"Amok example"):
+        println("Base1:")
+        println(summon[Base1 is CodlSchematic].schema())
+        t"domain  java\nlanguage  scala\n".read[CodlDoc of Base1].materialize
+      . assert(_ == Base1("java", "scala"))
+
+      test(m"Amok example 2"):
+        t"domain  java\nlanguage  scala\n".read[CodlDoc of Base2].materialize
+      . assert(_ == Base2("java", "scala", Nil))
+
+      test(m"Amok example 2a"):
+        t"domain  java\nlanguage  scala\nentry  alpha\n".read[CodlDoc of Base2].materialize
+      . assert(_ == Base2("java", "scala", List(t"alpha")))
+
+      test(m"Amok example 3"):
+        println("Base2:")
+        println(summon[Base2 is CodlSchematic].schema())
+        t"domain  java\nlanguage  scala\nentry  alpha\nentry  beta\n".read[CodlDoc of Base2].materialize
+      . assert(_ == Base2("java", "scala", List(t"alpha", t"beta")))
+
+      test(m"Amok example 4"):
+        t"domain  java\nlanguage  scala\n".read[CodlDoc of Base3].materialize
+      . assert(_ == Base3("java", "scala", Nil))
+
+      test(m"Amok example 4a"):
+        println("Base3:")
+        println(summon[Base3 is CodlSchematic].schema())
+        t"domain  java\nlanguage  scala\nentry  alpha  42\nentry  beta  42\n".read[CodlDoc of Base3].materialize
+      . assert(_ == Base3("java", "scala", List(Entry(t"alpha", 42), Entry(t"beta", 42))))
+
+      test(m"Amok example 5"):
+        println("Base4:")
+        println(summon[Base4 is CodlSchematic].schema())
+        t"domain  java\nlanguage  scala\nentry  alpha  42\n".read[CodlDoc of Base4].materialize
+      . assert(_ == Base4("java", "scala", Entry(t"alpha", 42)))
+
       // test(m"Print a case class using positional parameters"):
       //   print(User(12, t"user@example.com", List(Privilege(t"read", true), Privilege(t"write", false))))
       // .assert(_ == t"")

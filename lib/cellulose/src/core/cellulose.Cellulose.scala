@@ -41,6 +41,7 @@ import gossamer.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
 import turbulence.*
 import vacuous.*
 import wisteria.*
@@ -66,11 +67,12 @@ object Cellulose extends Cellulose2:
 
     def decodable[value](lambda: Text => value): value is Decodable in Codl raises CodlError =
       codl =>
-        codl.list.prim.lest(CodlError(CodlError.Reason.BadFormat(Unset))).children match
-          case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
+        codl.list.prim.lest(CodlError(CodlError.Reason.BadFormat(Unset)))
+        . children match
+            case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
 
-          case _ =>
-            abort(CodlError(CodlError.Reason.BadFormat(Unset)))
+            case _ =>
+              abort(CodlError(CodlError.Reason.BadFormat(Unset)))
 
     def field[encodable: Encodable in Text]: encodable is Encodable in Codl =
       value => Codl(List(Codllike(IArray(CodlNode(Data(encodable.encoded(value)))))))
@@ -78,9 +80,7 @@ object Cellulose extends Cellulose2:
     case class Position(line: Int, column: Int, length: Int) extends Format.Position:
       def describe: Text = t"line $line, column $column"
 
-
-
-    inline given derived: [value] => value is Encodable in Codl = compiletime.summonFrom:
+    inline given derivedEncodable: [value] => value is Encodable in Codl = compiletime.summonFrom:
       case given (`value` is Encodable in Text) => Codl.field[value]
       case given ProductReflection[`value`]     => EncodableDerivation.derived[value]
 
@@ -110,12 +110,14 @@ object Cellulose extends Cellulose2:
     given setEncodable: [element: Encodable in Codl] => Set[element] is Encodable in Codl =
       value => Codl(value.map(element.encoded(_).list.head).to(List))
 
-    inline given derived: [value] => Tactic[CodlError] => value is Decodable in Codl =
+    inline given derivedDecodable: [value] => Tactic[CodlError] => value is Decodable in Codl =
       compiletime.summonFrom:
         case given (`value` is Decodable in Text) => decodableField[`value`]
         case given ProductReflection[`value`]     => DecodableDerivation().derived[`value`]
 
-    given booleanDecodable: Tactic[CodlError] => Boolean is Decodable in Codl = decodable(_ == t"yes")
+    given booleanDecodable: Tactic[CodlError] => Boolean is Decodable in Codl =
+      decodable(_ == t"yes")
+
     given textDecodable: Tactic[CodlError] => Text is Decodable in Codl = decodable(identity(_))
     given unitDecodable: Unit is Decodable in Codl = _ => ()
 
@@ -128,10 +130,10 @@ object Cellulose extends Cellulose2:
           => Option[decodable] is Decodable in Codl =
       codl => if codl.list.isEmpty then None else Some(decoder.decoded(codl))
 
-    given listDecodable: [element: CodlSchematic] => (decodable: => element is Decodable in Codl)
+    given listDecodable: [element] => (decodable: => element is Decodable in Codl, schematic: => element is CodlSchematic)
           => List[element] is Decodable in Codl =
 
-      value => element.schema() match
+      value => schematic.schema() match
         case Field(_, validator) => value.list.flatMap(_.children).map: node =>
           decodable.decoded(Codl(List(CodlDoc(node))))
 
@@ -198,15 +200,15 @@ object Cellulose extends Cellulose2:
           m"two # symbols terminates the document and must appear alone on a line"
 
 
-    def read[value: {Decodable in Codl, CodlSchematic}](using Void)[source](source: source)
-        (using readable: source is Readable by Text)
-    : value raises ParseError raises CodlError =
+    def read[entity: {Decodable in Codl, CodlSchematic}](using Void)[readable: Readable by Text]
+         (source: readable)
+    : entity raises ParseError raises CodlError =
 
-        value.schema().parse(readable.stream(source)).as[value]
+        entity.schema().parse(source.stream[Text]).as[entity]
 
 
     def parse[source]
-        (source:    source,
+         (source:    source,
           schema:    CodlSchema = CodlSchema.Free,
           subs:      List[Data] = Nil,
           fromStart: Boolean    = false)
@@ -220,13 +222,13 @@ object Cellulose extends Cellulose2:
 
         case class Proto
                     (key:      Optional[Text]   = Unset,
-                    line:     Int              = 0,
-                    col:      Int              = 0,
-                    children:  List[CodlNode]  = Nil,
-                    extra:     Optional[Extra] = Unset,
-                    schema:    CodlSchema      = CodlSchema.Free,
-                    params:    Int             = 0,
-                    multiline: Boolean         = false):
+                     line:     Int              = 0,
+                     col:      Int              = 0,
+                     children:  List[CodlNode]  = Nil,
+                     extra:     Optional[Extra] = Unset,
+                     schema:    CodlSchema      = CodlSchema.Free,
+                     params:    Int             = 0,
+                     multiline: Boolean         = false):
 
           def commit(child: Proto): (Optional[(Text, (Int, Int))], Proto) =
             val closed = child.close
@@ -264,7 +266,7 @@ object Cellulose extends Cellulose2:
 
         @tailrec
         def recur
-            (tokens:  Stream[CodlToken],
+             (tokens:  Stream[CodlToken],
               focus:   Proto,
               peers:   List[CodlNode],
               peerIds: Map[Text, (Int, Int)],

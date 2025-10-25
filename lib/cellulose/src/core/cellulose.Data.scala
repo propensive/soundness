@@ -83,3 +83,5 @@ extends Indexed:
 
   override def hashCode: Int =
     key.hashCode ^ children.toSeq.hashCode ^ layout.hashCode ^ schema.hashCode
+
+  override def toString: String = s"$key[${children.mkString(", ")}]:${schema}"

@@ -43,7 +43,7 @@ enum Arity:
   def unique: Boolean = !variadic
 
   def symbol: Text = this match
-    case One        => t""
+    case One        => t"#"
     case AtLeastOne => t"+"
     case AtMostOne  => t"?"
     case Many       => t"*"

@@ -70,7 +70,8 @@ trait Cellulose2:
 
   class DecodableDerivation()(using Tactic[CodlError]) extends ProductDerivable[Decodable in Codl]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Codl =
-      values => construct:
+      values =>
+       construct:
         [field] => context =>
           val label2 = compiletime.summonFrom:
             case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
@@ -78,5 +79,8 @@ trait Cellulose2:
 
           context.decoded:
             Codl:
-              Data("", values.list.prim.lest(CodlError(CodlError.Reason.BadFormat(label2))).children)
-              . get(label2)
+              values.list.prim.let:
+                case doc: CodlDoc => doc.get(label2)
+                case data: Data   => data.get(label2)
+
+              . lest(CodlError(CodlError.Reason.BadFormat(label2)))

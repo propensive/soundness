@@ -40,8 +40,9 @@ extension (inline ctx: StringContext)
   transparent inline def codl(inline parts: Any*): CodlDoc = ${Codl.Prefix.expand('ctx, 'parts)}
 
 extension [encodable: {Encodable in Codl, CodlSchematic}](value: encodable)
-  def codl: CodlDoc =
-    CodlDoc(IArray.from(encodable.encoded(value).list.map(_.children).flatten), encodable.schema(), 0)
+  def codl: CodlDoc of encodable =
+    new CodlDoc(IArray.from(encodable.encoded(value).list.map(_.children).flatten), encodable.schema(), 0):
+      type Topic = encodable
 
 package codlPrinters:
   given standard: CodlPrinter = CodlPrinter.standardPrinter

@@ -86,6 +86,8 @@ case class CodlNode(data: Optional[Data] = Unset, extra: Optional[Extra] = Unset
   def fieldValue: Optional[Text] = paramValue.or(structValue)
   def promote(n: Int) = copy(data = data.let(_.promote(n)))
 
+  override def toString: String = data.toString
+
   def apply(key: Text): List[Data] = data.lay(List[CodlNode]())(_(key)).map(_.data).collect:
     case data: Data => data
 
