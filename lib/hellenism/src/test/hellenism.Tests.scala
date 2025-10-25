@@ -34,5 +34,18 @@ package hellenism
 
 import soundness.*
 
+import autopsies.contrastExpectations
+
 object Tests extends Suite(m"Proscenium Tests"):
-  def run(): Unit = ()
+  def run(): Unit =
+    test(m"check that a classpath file is accessible"):
+      cp"/scala/Option.class"
+    . assert()
+
+    test(m"check that a nonexistent classpath file is an error"):
+      demilitarize(cp"/missing.txt").map(_.message)
+    . assert(_ == List(t"hellenism: the path /missing.txt is not on the classpath"))
+
+    test(m"check that an invalid classpath path is an error"):
+      demilitarize(cp"foobar").map(_.message)
+    . assert(_ == List(t"hellenism: the path foobar is not a valid classpath path"))

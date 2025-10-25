@@ -44,8 +44,8 @@ sealed trait ClasspathEntry:
   def javaUrl: jn.URL = this match
     case ClasspathEntry.Directory(path) => ji.File(path.s).toURI.nn.toURL.nn
     case ClasspathEntry.Jar(path)       => ji.File(path.s).toURI.nn.toURL.nn
-    case ClasspathEntry.Url(url)        => jn.URL(url.s)
-    case ClasspathEntry.JavaRuntime     => jn.URL("jrt:/")
+    case ClasspathEntry.Url(url)        => jn.URI(url.s).toURL().nn
+    case ClasspathEntry.JavaRuntime     => jn.URI("jrt:/").toURL().nn
 
 object ClasspathEntry:
   case class Directory(path: Text) extends ClasspathEntry:
