@@ -34,6 +34,8 @@ package serpentine
 
 import soundness.*
 
+import autopsies.contrastExpectations
+
 object Tests extends Suite(m"Serpentine Benchmarks"):
   def run(): Unit =
     suite(m"Constructions"):
@@ -562,3 +564,26 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
           case _ => false
 
       . assert(identity(_))
+
+    suite(m"Interpolation tests"):
+      test(m"Windows path"):
+        p"""C:\Windows\System32\file.txt""": Path on Windows
+      . assert(_ == Drive('C') / "Windows" / "System32" / "file.txt")
+
+      test(m"Linux path"):
+        p"/home/user/data.csv": Path on Linux
+      . assert(_ == % / "home" / "user" / "data.csv")
+
+      test(m"Linux path does not conform to Windows"):
+        demilitarize:
+          p"/home/user/data.csv": Path on Windows
+      . assert(_.length > 0)
+
+      test(m"Windows path does not conform to Linux"):
+        demilitarize:
+          p"""D:\Foo\Bar""": Path on Linux
+      . assert(_.length > 0)
+
+      test(m"Invalid path"):
+        demilitarize(p"123").map(_.message)
+      . assert(_ == List("serpentine: The path 123 is not a valid Windows on Linux path"))

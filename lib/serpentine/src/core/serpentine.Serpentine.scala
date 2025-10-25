@@ -32,11 +32,22 @@
                                                                                                   */
 package serpentine
 
-export Path.`%`
-export Relative.{`^`, `?`}
+import scala.quoted.*
 
-type Posix = MacOs | Linux
-type Filesystem = Posix | Windows
+import anticipation.*
+import contingency.*
+import distillate.*
+import fulminate.*
+import prepositional.*
+import proscenium.*
+import vacuous.*
 
-extension (inline context: StringContext)
-  transparent inline def p(): Path = ${Serpentine.path('context)}
+object Serpentine:
+  def path(context: Expr[StringContext]): Macro[Path] =
+    val name: String = context.valueOrAbort.parts.head
+    safely(name.tt.decode[Path on Linux]).let: path =>
+      '{Path.of[Linux, %.type, Tuple](${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)}
+    . or:
+        safely(name.tt.decode[Path on Windows]).let: path =>
+          '{Path.of[Windows, Drive, Tuple](${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)}
+        . or(halt(m"The path ${name} is not a valid Windows on Linux path"))
