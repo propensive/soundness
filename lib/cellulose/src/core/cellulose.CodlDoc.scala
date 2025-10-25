@@ -41,7 +41,9 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 import java.io as ji
 
@@ -52,12 +54,20 @@ object CodlDoc:
 
   given inspectable: CodlDoc is Inspectable = _.write
   given showable: (printer: CodlPrinter) => CodlDoc is Showable = printer.serialize(_)
-
   given similarity: Similarity[CodlDoc] = _.schema == _.schema
+
+  given aggregable: [subject: CodlSchematic] => Tactic[ParseError]
+        => (CodlDoc of subject) is Aggregable by Text =
+    subject.schema().parse(_).asInstanceOf[CodlDoc of subject]
 
 case class CodlDoc
    (children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: Stream[Char] = Stream())
 extends Indexed:
+
+  type Topic
+
+  override def toString: String = s"^[${children.mkString(", ")}]"
+
   override def equals(that: Any) = that.matchable(using Unsafe) match
     case that: CodlDoc =>
       schema == that.schema && margin == that.margin && children.sameElements(that.children)
@@ -70,8 +80,9 @@ extends Indexed:
   def layout: Layout = Layout.empty
   def paramIndex: Map[Text, Int] = Map()
 
-  def merge(input: CodlDoc): CodlDoc =
+  def materialize(using Topic is Decodable in Codl): Topic raises CodlError = as[Topic]
 
+  def merge(input: CodlDoc): CodlDoc =
     def cmp(x: CodlNode, y: CodlNode): Boolean =
       if x.uniqueId.absent || y.uniqueId.absent then
         if x.data.absent || y.data.absent then x.extra == y.extra

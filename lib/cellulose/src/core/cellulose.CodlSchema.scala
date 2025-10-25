@@ -55,7 +55,7 @@ object CodlSchema:
     def schema: CodlSchema = getSchema()
     def tuple: (Text, CodlSchema) = key -> schema
 
-    override def toString(): String = t"$key${schema.arity.symbol}".s
+    override def toString(): String = t"$key[${schema.toString}]".s
 
   // FIXME
   object Free extends Struct(List(Entry(t"?", Field(Arity.Many))), Arity.Many):
@@ -77,12 +77,8 @@ extends Dynamic:
   def optional: CodlSchema
   def entry(n: Int): Entry = subschemas(n)
 
-
-  def parse[source](source: source)(using readable: source is Readable by Text)
-  : CodlDoc raises ParseError =
-
-      Codl.parse(source, this)
-
+  def parse[source: Readable by Text](source: source): CodlDoc raises ParseError =
+    Codl.parse(source, this)
 
   def apply(key: Text): Optional[CodlSchema] = dictionary.at(key).or(dictionary.at(Unset)).or(Unset)
   def apply(idx: Int): Entry = subschemas(idx)
@@ -112,6 +108,7 @@ extends Dynamic:
 case class Field(fieldArity: Arity, fieldValidator: Optional[Text => Boolean] = Unset)
 extends CodlSchema(IArray(), fieldArity, fieldValidator):
   def optional: Field = Field(Arity.AtMostOne, fieldValidator)
+  override def toString(): String = fieldArity.symbol.toString
 
 object Struct:
   def apply(arity: Arity, subschemas: (Text, CodlSchema)*): Struct =
@@ -143,4 +140,4 @@ extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
     recur(subschemas.to(List), Nil)
 
   override def toString(): String =
-    structSubschemas.map(_.toString).map(Text(_)).join(t"(", t", ", t")${structArity.symbol}").s
+    t"${structArity.symbol}${structSubschemas.map(_.toString.tt).join(t"(", t", ", t")")}".s
