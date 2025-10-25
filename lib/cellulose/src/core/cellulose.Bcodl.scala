@@ -61,7 +61,7 @@ object Bcodl:
     dataNodes.each:
       case Data(key, children, _, _) =>
         schema match
-          case Field(_, _) =>
+          case Field(_) =>
             write(out, key)
 
           case _ =>
@@ -76,7 +76,7 @@ object Bcodl:
     def recur(schema: CodlSchema): List[CodlNode] =
       List.range(0, readNumber(reader)).map: _ =>
         schema match
-          case Field(_, _) =>
+          case Field(_) =>
             val key = readText(reader)
             CodlNode(Data(key, IArray(), Layout.empty, CodlSchema.Free))
 

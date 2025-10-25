@@ -62,13 +62,13 @@ object CodlSchematic:
 
   given list: [element] => (element: => element is CodlSchematic) => List[element] is CodlSchematic =
     () => element.schema() match
-      case Field(_, validator) => Field(Arity.Many, validator)
-      case struct: Struct      => struct.copy(structArity = Arity.Many)
+      case Field(_)       => Field(Arity.Many)
+      case struct: Struct => struct.copy(structArity = Arity.Many)
 
   given set: [element] => (element: => element is CodlSchematic) => Set[element] is CodlSchematic =
     () => element.schema() match
-      case Field(_, validator) => Field(Arity.Many, validator)
-      case struct: Struct      => struct.copy(structArity = Arity.Many)
+      case Field(_)       => Field(Arity.Many)
+      case struct: Struct => struct.copy(structArity = Arity.Many)
 
 trait CodlSchematic extends Typeclass:
   def schema(): CodlSchema
