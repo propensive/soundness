@@ -58,18 +58,20 @@ object Hellenism extends Hellenism2:
     def classpathEntry: Optional[ClasspathEntry] =
       ClasspathEntry(classRef.getProtectionDomain.nn.getCodeSource.nn.getLocation.nn)
 
-  def classpath(context: Expr[StringContext]): Macro[Path on Classpath] =
+  def classpath(context: Expr[StringContext]): Macro[Resource] =
     val name: String = context.valueOrAbort.parts.head
     val path = safely(name.tt.decode[Path on Classpath]).or:
       halt(m"the path $name is not a valid classpath path")
 
-    Optional(getClass.getResourceAsStream(name)).or(halt(m"the path $name is not on the classpath"))
+    Optional(classOf[Hellenism.type].getResourceAsStream(name)).or:
+      halt(m"the path $name is not on the classpath")
 
     import classloaders.system
 
     '{
-        Path.of[Classpath, Classpath.type, Tuple]
-         (${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)  }
+        Resource:
+          Path.of[Classpath, Classpath.type, Tuple]
+           (${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)  }
 
 
 
