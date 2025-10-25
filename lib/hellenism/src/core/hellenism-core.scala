@@ -32,8 +32,15 @@
                                                                                                   */
 package hellenism
 
+import anticipation.*
+import prepositional.*
+import serpentine.*
+
 package classloaders:
   given threadContext: Classloader = Classloader.threadContext
   given system: Classloader = new Classloader(ClassLoader.getSystemClassLoader.nn)
   given platform: Classloader = new Classloader(ClassLoader.getPlatformClassLoader.nn)
   given scala: Classloader = Classloader[List]
+
+extension (inline context: StringContext)
+  inline def cp(): Path on Classpath = ${Hellenism.classpath('context)}
