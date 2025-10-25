@@ -66,8 +66,7 @@ object CodlSchema:
   def apply(subschemas: List[(Text, CodlSchema)]): CodlSchema =
     Struct(subschemas.map(Entry(_, _)), Arity.AtMostOne)
 
-sealed trait CodlSchema(val subschemas: IArray[CodlSchema.Entry], val arity: Arity,
-                        val validator: Optional[Text => Boolean])
+sealed trait CodlSchema(val subschemas: IArray[CodlSchema.Entry], val arity: Arity)
 extends Dynamic:
   import CodlSchema.Entry
   protected lazy val dictionary: Map[Optional[Text], CodlSchema] = subschemas.map(_.tuple).to(Map)
@@ -105,9 +104,8 @@ extends Dynamic:
 
   export arity.{required, variadic, unique}
 
-case class Field(fieldArity: Arity, fieldValidator: Optional[Text => Boolean] = Unset)
-extends CodlSchema(IArray(), fieldArity, fieldValidator):
-  def optional: Field = Field(Arity.AtMostOne, fieldValidator)
+case class Field(fieldArity: Arity) extends CodlSchema(IArray(), fieldArity):
+  def optional: Field = Field(Arity.AtMostOne)
   override def toString(): String = fieldArity.symbol.toString
 
 object Struct:
@@ -115,7 +113,7 @@ object Struct:
     Struct(subschemas.map(CodlSchema.Entry(_, _)).to(List), arity)
 
 case class Struct(structSubschemas: List[CodlSchema.Entry], structArity: Arity = Arity.AtMostOne)
-extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
+extends CodlSchema(IArray.from(structSubschemas), structArity):
   import CodlSchema.Entry
 
   def optional: Struct = Struct(structSubschemas, Arity.AtMostOne)

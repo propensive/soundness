@@ -134,7 +134,7 @@ object Cellulose extends Cellulose2:
           => List[element] is Decodable in Codl =
 
       value => schematic.schema() match
-        case Field(_, validator) => value.list.flatMap(_.children).map: node =>
+        case Field(_) => value.list.flatMap(_.children).map: node =>
           decodable.decoded(Codl(List(CodlDoc(node))))
 
         case struct: Struct =>
@@ -144,7 +144,7 @@ object Cellulose extends Cellulose2:
           => Set[element] is Decodable in Codl =
       value =>
         element.schema() match
-          case Field(_, validator) =>
+          case Field(_) =>
             value.list.flatMap(_.children).map { node => decodable.decoded(Codl(List(CodlDoc(node)))) }.to(Set)
 
           case struct: Struct =>
@@ -349,7 +349,7 @@ object Cellulose extends Cellulose2:
 
                   focus.key match
                     case key: Text => focus.schema match
-                      case field@Field(_, _) =>
+                      case field@Field(_) =>
                         val (uniqueId, focus2) =
                           focus.commit(Proto(word, line, col, multiline = block))
 
