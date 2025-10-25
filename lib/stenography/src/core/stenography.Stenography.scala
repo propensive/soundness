@@ -53,6 +53,9 @@ object Stenography:
             statements.collect:
               case ast.tpd.Import(name, List(SimpleSelector("_"))) => Typename(name.show)
 
+          case _ =>
+            Nil
+
     def owners(symbol: Symbol): List[Tree] =
       val parent =
         if symbol.maybeOwner.isPackageDef then

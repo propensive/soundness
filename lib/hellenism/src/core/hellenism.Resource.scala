@@ -33,14 +33,21 @@
 package hellenism
 
 import anticipation.*
+import contingency.*
+import gossamer.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
+import turbulence.*
+import vacuous.*
 
-package classloaders:
-  given threadContext: Classloader = Classloader.threadContext
-  given system: Classloader = new Classloader(ClassLoader.getSystemClassLoader.nn)
-  given platform: Classloader = new Classloader(ClassLoader.getPlatformClassLoader.nn)
-  given scala: Classloader = Classloader[List]
+object Resource:
+  given readable: (classloader: Classloader) => Resource is Readable by Bytes =
+    given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
 
-extension (inline context: StringContext)
-  inline def cp(): Resource = ${Hellenism.classpath('context)}
+    Readable.inputStream.contramap: resource =>
+      classloader.inputStream(resource.path.encode)
+
+  given nominable: Resource is Nominable = _.path.descent.prim.or(t"/")
+
+case class Resource private[hellenism](path: Path on Classpath)
