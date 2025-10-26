@@ -32,6 +32,12 @@
                                                                                                   */
 package gesticulate
 
+import anticipation.*
+import turbulence.*
+
 extension (inline ctx: StringContext)
   transparent inline def media(inline parts: String*): MediaType =
     ${Media.Prefix.expand('ctx, 'parts)}
+
+extension [media](value: media)
+  inline def ascribe(media: MediaType): Content = Content(media, value.stream[Bytes])

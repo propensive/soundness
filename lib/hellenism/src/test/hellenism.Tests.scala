@@ -35,12 +35,22 @@ package hellenism
 import soundness.*
 
 import autopsies.contrastExpectations
+import classloaders.threadContext
 
 object Tests extends Suite(m"Proscenium Tests"):
   def run(): Unit =
     test(m"check that a classpath file is accessible"):
       cp"/scala/Option.class"
     . assert()
+
+    test(m"Decode a classpath"):
+      unsafely:
+        t"/scala/Option.class".decode[Path on Classpath]
+    . assert(_ == Classpath / "scala" / "Option.class")
+
+    test(m"check that a classpath file is readable"):
+      cp"/scala/Option.class".read[Bytes]
+    . assert(_.length > 0)
 
     test(m"check that a nonexistent classpath file is an error"):
       demilitarize(cp"/missing.txt").map(_.message)
