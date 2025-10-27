@@ -41,7 +41,10 @@ extension (inline ctx: StringContext)
 
 extension [encodable: {Encodable in Codl, CodlSchematic}](value: encodable)
   def codl: CodlDoc of encodable =
-    new CodlDoc(IArray.from(encodable.encoded(value).list.map(_.children).flatten), encodable.schema(), 0):
+    new CodlDoc
+         (IArray.from(encodable.encoded(value).list.map(_.children).flatten),
+          encodable.schema(),
+          0):
       type Topic = encodable
 
 package codlPrinters:

@@ -33,8 +33,8 @@
 package soundness
 
 export caesura
-. { CellRef, Sheet, Spannable, DsvFormat, DsvRedesignation, dynamicDsvAccess, DynamicDsvEnabler, Dsv,
-    dsv, DsvError }
+. { CellRef, Sheet, Spannable, DsvFormat, DsvRedesignation, dynamicDsvAccess, DynamicDsvEnabler,
+    Dsv, dsv, DsvError }
 
 package dsvFormats:
   export caesura.dsvFormats.{csv, csvWithHeader, tsv, tsvWithHeader, ssv, ssvWithHeader}

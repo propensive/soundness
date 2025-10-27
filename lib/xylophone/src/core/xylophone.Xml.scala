@@ -104,7 +104,8 @@ object Xml extends Format:
         val array = content.bytes(using charEncoders.utf8).mutable(using Unsafe)
         builder.parse(ByteArrayInputStream(array)).nn
       catch case e: oxs.SAXParseException =>
-        abort(ParseError(Xml, Xml.Position(e.getLineNumber - 1, e.getColumnNumber - 1), Xml.Issue()))
+        abort
+         (ParseError(Xml, Xml.Position(e.getLineNumber - 1, e.getColumnNumber - 1), Xml.Issue()))
 
     def getNamespace(node: owd.Node): Optional[Namespace] =
       Option(node.getPrefix) match

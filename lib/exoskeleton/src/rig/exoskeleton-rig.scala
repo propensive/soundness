@@ -62,23 +62,36 @@ extension (shell: Shell)
 
           shell match
             case Shell.Zsh  =>
-              sh"""tmux send-keys -t ${tmux.id} 'precmd_functions=() preexec_functions=() PROMPT="> " RPROMPT=""' C-m""".exec[Unit]()
+              val command = t"""precmd_functions=() preexec_functions=() PROMPT="> " RPROMPT="""""
+              sh"""tmux send-keys -t ${tmux.id} $command C-m""".exec[Unit]()
               sh"""tmux send-keys -t ${tmux.id} "path+=(\"$path\")" C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} "autoload -Uz compinit; compinit -u" C-m""".exec[Unit]()
+
+              sh"""tmux send-keys -t ${tmux.id} "autoload -Uz compinit; compinit -u" C-m"""
+              . exec[Unit]()
+
               Tmux.attend:
                 sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
             case Shell.Bash =>
               sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
               sh"""tmux send-keys -t ${tmux.id} 'export PATH="$path:$$PATH"' C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-ambiguous on"' C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-unmodified on"' C-m""".exec[Unit]()
+
+              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-ambiguous on"' C-m"""
+              . exec[Unit]()
+
+              sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-unmodified on"' C-m"""
+              . exec[Unit]()
+
               Tmux.attend:
                 sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 
             case Shell.Fish =>
-              sh"""tmux send-keys -t ${tmux.id} "function fish_prompt; echo -n '> '; end" C-m""".exec[Unit]()
-              sh"""tmux send-keys -t ${tmux.id} 'fish_add_path --global "$path"' C-m""".exec[Unit]()
+              sh"""tmux send-keys -t ${tmux.id} "function fish_prompt; echo -n '> '; end" C-m"""
+              . exec[Unit]()
+
+              sh"""tmux send-keys -t ${tmux.id} 'fish_add_path --global "$path"' C-m"""
+              . exec[Unit]()
+
               Tmux.attend:
                 sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
 

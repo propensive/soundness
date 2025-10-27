@@ -114,9 +114,12 @@ def cli[bus <: Matchable](using executive: Executive)
             Out.println(e"    java -Dbuild.executable=$Italic(<filename>) -jar $relativeJar")
             Out.println()
             Out.println(e"Other $Italic(-D) Java options:")
-            Out.println(e"  build.java.preferred  -- preferred major version, e.g. $Italic(24) (default) or 21")
-            Out.println(e"  build.java.minimum    -- minimum major version, e.g. $Italic(21) (default) or 16")
-            Out.println(e"  build.java.bundle     -- required bundle type, $Italic(jre) (default) or $Italic(jdk)")
+            val detail = e"preferred major version, e.g. $Italic(24) (default) or 21"
+            Out.println(e"  build.java.preferred  -- $detail")
+            val detail2 = e"minimum major version, e.g. $Italic(21) (default) or 16"
+            Out.println(e"  build.java.minimum    -- $detail2")
+            val detail3 = e"required bundle type, $Italic(jre) (default) or $Italic(jdk)"
+            Out.println(e"  build.java.bundle     -- $detail3")
             Out.println()
             Exit.Fail(1).terminate()
 

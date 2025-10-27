@@ -398,7 +398,9 @@ inline def asin(f64: Conversion.into[F64]): F64 = F64(math.asin(f64.double))
 inline def sinh(f64: Conversion.into[F64]): F64 = F64(math.sinh(f64.double))
 inline def tan(f64: Conversion.into[F64]): F64 = F64(math.tan(f64.double))
 inline def atan(f64: Conversion.into[F64]): F64 = F64(math.atan(f64.double))
-inline def hyp(first: Conversion.into[F64], second: F64): F64 = F64(math.hypot(first.double, second.double))
+
+inline def hyp(first: Conversion.into[F64], second: F64): F64 =
+  F64(math.hypot(first.double, second.double))
 
 inline def exp(f64: Conversion.into[F64]): F64 = F64(math.exp(f64.double))
 inline def expm1(f64: Conversion.into[F64]): F64 = F64(math.expm1(f64.double))
