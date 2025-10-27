@@ -32,11 +32,14 @@
                                                                                                   */
 package rudiments
 
+import java.io as ji
+import java.nio.file as jnf
+
 import anticipation.*
 import prepositional.*
 
-  def apply[path: Abstractable across Paths to Text](path: path): WorkingDirectory =
-    () => path.generic
+object Representative:
+  erased given javaIoFile: ji.File is Representative of Paths = !!
+  erased given javaNioFilePath: jnf.Path is Representative of Paths = !!
 
-trait WorkingDirectory:
-  def directory(): Text
+erased trait Representative extends Typeclass, Topical

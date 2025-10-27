@@ -32,4 +32,7 @@
                                                                                                   */
 package anticipation
 
+object Paths:
+  case class Trusted(text: Text)
+
 erased trait Paths

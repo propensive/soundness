@@ -50,6 +50,11 @@ import vacuous.*
 private given Realm = Realm(t"serpentine")
 
 object Path:
+  erased given pathOnLinux: (Path on Linux) is Representative of Paths = !!
+  erased given pathOnWindows: (Path on Windows) is Representative of Paths = !!
+  erased given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
+  erased given pathOnLocal: (Path on Local) is Representative of Paths = !!
+
   @targetName("Root")
   object % extends Path(t"/"):
     type Topic = EmptyTuple
@@ -67,6 +72,12 @@ object Path:
 
   given nominable: [system] => (Path on system) is Nominable = path =>
     path.descent.prim.or(path.root)
+
+  given trustedInstantiable: [system: System]
+        =>  (radical: Tactic[PathError] ?=> Radical on system)
+        =>  (Path on system) is Instantiable across Paths from Paths.Trusted =
+    given Radical on system = radical(using strategies.throwUnsafely)
+    _.text.decode[Path on system]
 
   given instantiable: [system: System]
         =>  Radical on system

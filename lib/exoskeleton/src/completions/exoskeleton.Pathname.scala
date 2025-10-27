@@ -58,6 +58,7 @@ object Pathname:
         Suggestion(core, Unset, incomplete = path != argument(), prefix = prefix)
 
       if argument() == t"." then argument.suggest:
+        val wd: Path on Linux = workingDirectory
         suggest(t"../")
         :: workingDirectory.children.to(List).filter(_.name.starts(t".")).map: path =>
           val directory = safely(path.entry() == galilei.Directory).or(false)

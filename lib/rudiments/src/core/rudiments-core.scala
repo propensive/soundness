@@ -353,20 +353,25 @@ extension (bytes: Bytes)
   def memory: Memory = Memory(bytes.size)
 
 
-def workingDirectory[path: Instantiable across Paths from Text](using directory: WorkingDirectory)
-: path =
+inline def workingDirectory[path: Representative of Paths](using work: WorkingDirectory): path =
+  compiletime.summonFrom:
+    case given (`path` is Instantiable across Paths from Paths.Trusted) =>
+      Paths.Trusted(work.directory()).instantiate
 
-    directory.path[path]
+    case given (`path` is Instantiable across Paths from Text) =>
+      work.directory().instantiate
+
+inline def temporaryDirectory[path: Representative of Paths]
+            (using temporary: TemporaryDirectory): path =
+  compiletime.summonFrom:
+    case given (`path` is Instantiable across Paths from Paths.Trusted) =>
+      Paths.Trusted(temporary.directory()).instantiate
+
+    case given (`path` is Instantiable across Paths from Text) =>
+      temporary.directory().instantiate
 
 
 def homeDirectory[path: Instantiable across Paths from Text](using directory: HomeDirectory)
-: path =
-
-    directory.path[path]
-
-
-def temporaryDirectory[path: Instantiable across Paths from Text]
-   (using directory: TemporaryDirectory)
 : path =
 
     directory.path[path]
