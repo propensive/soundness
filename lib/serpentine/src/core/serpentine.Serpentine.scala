@@ -49,5 +49,7 @@ object Serpentine:
       '{Path.of[Linux, %.type, Tuple](${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)}
     . or:
         safely(name.tt.decode[Path on Windows]).let: path =>
-          '{Path.of[Windows, Drive, Tuple](${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)}
+          val varargs = Varargs(path.descent.map(Expr(_)))
+          '{  Path.of[Windows, Drive, Tuple](${Expr(path.root)}, $varargs*)  }
+
         . or(halt(m"The path ${name} is not a valid Windows on Linux path"))

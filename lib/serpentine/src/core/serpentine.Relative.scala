@@ -116,7 +116,9 @@ object Relative:
           relative.descent match
             case Nil | _ :: Nil => None
             case _ :: _ :: Nil  => Some((relative.descent(1), relative.descent(0)))
-            case _              => Some((relative.descent.last, Relative(0, relative.descent.init*)))
+
+            case _ =>
+              Some((relative.descent.last, Relative(0, relative.descent.init*)))
 
         case _ => None
 
