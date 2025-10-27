@@ -42,6 +42,7 @@ object Architecture:
     case t"x86" | t"i386"     => X86(32)
     case t"x86_64" | t"amd64" => X86(64)
     case t"arm"               => Arm(32)
+    case t"aarch64"           => Arm(64)
     case t"ppc"               => Ppc(32)
     case t"ppc64"             => Ppc(64)
     case t"ppc64le"           => Ppc(64, true)

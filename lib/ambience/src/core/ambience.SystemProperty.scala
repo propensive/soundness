@@ -45,22 +45,25 @@ import prepositional.*
 import proscenium.*
 import vacuous.*
 
-trait SystemProperty[name <: String, property]:
-  def read(value: Optional[Text], property: Text): property
+trait SystemProperty extends Typeclass, Topical:
+  type Self <: String
+  def read(value: Optional[Text], property: Text): Topic
 
 object SystemProperty:
-  def apply[name <: String, property](lambda: Text => property): SystemProperty[name, property] =
-    new:
-      def read(value: Optional[Text], property: Text): property =
+  def apply[name <: String, property](lambda: Text => property)
+  : name is SystemProperty of property =
+      (value, property) =>
         lambda(value.or(panic(m"the system property $property was unavailable")))
 
-  given generic: [unknown <: String & Singleton] => Tactic[SystemPropertyError]
-        => SystemProperty[unknown, Text] =
+  given generic: [label <: String & Singleton] => Tactic[SystemPropertyError]
+        => label is SystemProperty of Text =
     (value, property) => value.lest(SystemPropertyError(property))
 
 
-  given javaHome: [path: Instantiable across Paths from Text] => SystemProperty["java.home", path] =
-    SystemProperty(path(_))
+  given javaHome: [path: Instantiable across Paths from Text]
+        => ("java.home" is SystemProperty of path) =
+
+      SystemProperty(path(_))
 
 
   // given javaLibraryPath: [path: Instantiable across Paths from Text]
@@ -77,17 +80,18 @@ object SystemProperty:
   //   _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 
 
-  given javaVersion: SystemProperty["java.version", Text] = SystemProperty(identity)
-  given javaVendor: SystemProperty["java.vendor", Text] = SystemProperty(identity)
-  given javaVendorUrl: SystemProperty["java.vendor.url", Text] = SystemProperty(identity)
+  given javaVersion: ("java.version" is SystemProperty of Text) = SystemProperty(identity)
+  given javaVendor: ("java.vendor" is SystemProperty of Text) = SystemProperty(identity)
+  given javaVendorUrl: ("java.vendor.url" is SystemProperty of Text) = SystemProperty(identity)
 
 
   given javaRuntimeVersion: Tactic[SystemPropertyError]
-        => SystemProperty["java.runtime.version", Text] =
+        => ("java.runtime.version" is SystemProperty of Text) =
     (value, name) => value.lest(SystemPropertyError(name))
 
 
-  given javaClassVersion: Tactic[NumberError] => SystemProperty["java.runtime.version", Int] =
+  given javaClassVersion: ("java.runtime.version" is SystemProperty of Int) =
+    given Tactic[NumberError] = strategies.throwUnsafely
     SystemProperty(_.decode[Int])
 
 
@@ -98,28 +102,33 @@ object SystemProperty:
   //   _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 
 
-  given fileSeparator: SystemProperty["file.separator", Char] = SystemProperty(_.decode[Char])
-  given pathSeparator: SystemProperty["path.separator", Char] = SystemProperty(_.decode[Char])
-  given lineSeparator: SystemProperty["line.separator", Text] = SystemProperty(identity)
-  given userName: SystemProperty["user.name", Text] = SystemProperty(identity)
+  given fileSeparator: ("file.separator" is SystemProperty of Char) = SystemProperty(_.decode[Char])
+  given pathSeparator: ("path.separator" is SystemProperty of Char) = SystemProperty(_.decode[Char])
+  given lineSeparator: ("line.separator" is SystemProperty of Text) = SystemProperty(identity)
+  given userName: ("user.name" is SystemProperty of Text) = SystemProperty(identity)
 
 
-  given userHome: [path: Instantiable across Paths from Text] => SystemProperty["user.home", path] =
+  given userHome: [path: Instantiable across Paths from Text]
+        => ("user.home" is SystemProperty of path) =
     SystemProperty(path(_))
 
 
-  given userDir: [path: Instantiable across Paths from Text] => SystemProperty["user.dir", path] =
-    SystemProperty(path(_))
+  given userDir: [path: Instantiable across Paths from Text]
+        => ("user.dir" is SystemProperty of path) =
+
+      SystemProperty(path(_))
 
 
-  given osName: SystemProperty["os.name", Text] = SystemProperty(identity)
-  given osVersion: SystemProperty["os.version", Text] = SystemProperty(identity)
-  given osArch: SystemProperty["os.arch", Architecture] = SystemProperty(_.decode[Architecture])
+  given osName: ("os.name" is SystemProperty of Text) = SystemProperty(identity)
+  given osVersion: ("os.version" is SystemProperty of Text) = SystemProperty(identity)
+
+  given osArch: ("os.arch" is SystemProperty of Architecture) =
+    SystemProperty(_.decode[Architecture])
 
 
-  given decoder: [unknown <: Label, property] => (decoder: property is Decodable in Text)
+  given decoder: [label <: Label, property] => (decoder: property is Decodable in Text)
         =>  Tactic[SystemPropertyError]
-        =>  SystemProperty[unknown, property] =
+        =>  label is SystemProperty of property =
 
     (value, name) =>
       decoder.decoded(value.lest(SystemPropertyError(name)))
