@@ -36,11 +36,12 @@ import language.dynamics
 
 import anticipation.*
 import contingency.*
+import prepositional.*
 import vacuous.*
 
 object Properties extends Dynamic:
   def apply[property](property: Text)
-       (using properties: SystemProperties, reader: SystemProperty[String, property])
+       (using properties: SystemProperties, reader: String is SystemProperty of property)
   : property =
 
       reader.read(properties(property), property)

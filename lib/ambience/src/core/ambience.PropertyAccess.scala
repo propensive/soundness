@@ -38,6 +38,7 @@ import scala.compiletime.ops.string.*
 
 import anticipation.*
 import contingency.*
+import prepositional.*
 import proscenium.*
 import vacuous.*
 
@@ -47,7 +48,7 @@ case class PropertyAccess[name <: String](property: String) extends Dynamic:
 
 
   def applyDynamic[property](key: String)()
-       (using properties: SystemProperties, reader: SystemProperty[name+"."+key.type, property])
+    (using properties: SystemProperties, reader: (name+"."+key.type) is SystemProperty of property)
   : property =
 
       val name = property+"."+key
@@ -55,7 +56,7 @@ case class PropertyAccess[name <: String](property: String) extends Dynamic:
 
 
   inline def apply[property]()
-              (using properties: SystemProperties, reader: SystemProperty[name, property])
+              (using properties: SystemProperties, reader: name is SystemProperty of property)
   : property =
 
       val name = valueOf[name]
