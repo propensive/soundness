@@ -52,8 +52,9 @@ import java.io as ji
 
 object Tests extends Suite(m"Merino tests"):
   def run(): Unit =
-    val tests = ji.File(ji.File(workingDirectory, "tests"), "test_parsing")
-    val tests2 = ji.File(ji.File(workingDirectory, "tests"), "test_transform")
+    val work: ji.File = workingDirectory
+    val tests = ji.File(ji.File(work, "tests"), "test_parsing")
+    val tests2 = ji.File(ji.File(work, "tests"), "test_transform")
 
     suite(m"Positive tests"):
       (tests.listFiles.nn.map(_.nn).to(List).filter(_.getName.nn.startsWith("y_")) ++ tests2.listFiles.nn.map(_.nn).to(List)).each: file =>
@@ -69,7 +70,7 @@ object Tests extends Suite(m"Merino tests"):
           case ParseError(_, _, _) => true
           case _                   => false
 
-    val testDir = ji.File(workingDirectory, "data")
+    val testDir = ji.File(work, "data")
 
     suite(m"Parse large files"):
       val file: Bytes = test(m"Read file"):

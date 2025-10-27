@@ -36,3 +36,4 @@ import prepositional.*
 
 trait Instantiable extends Typeclass, Domainal, Original:
   def apply(source: Origin): Self
+  extension (origin: Origin) def instantiate: Self = apply(origin)
