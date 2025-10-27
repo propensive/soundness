@@ -70,18 +70,18 @@ object ProductDerivation:
          (using requirement: ContextRequirement)
          [derivation <: Product]
          (using reflection: ProductReflection[derivation])
-         (inline bind:   [input, output]
-                         =>  constructor[input]
-                         => (input => constructor[output])
-                         =>  constructor[output],
-                             inline pure:   [monadic] => monadic => constructor[monadic],
-                             inline lambda: [field]
-                                            =>  requirement.Optionality[typeclass[field]]
-                                            => (typeclass: requirement.Optionality[typeclass[field]],
-                                                default:   Default[Optional[field]],
-                                                label:     Text,
-                                                index:     Int & FieldIndex[field])
-                                           ?=>  constructor[field])
+         (inline bind: [input, output]
+                       =>  constructor[input]
+                       => (input => constructor[output])
+                       =>  constructor[output],
+                           inline pure:   [monadic] => monadic => constructor[monadic],
+                           inline lambda: [field]
+                                          =>  requirement.Optionality[typeclass[field]]
+                                          => (typeclass: requirement.Optionality[typeclass[field]],
+                                              default:   Default[Optional[field]],
+                                              label:     Text,
+                                              index:     Int & FieldIndex[field])
+                                         ?=>  constructor[field])
     : constructor[derivation] =
 
         type Fields = reflection.MirroredElemTypes

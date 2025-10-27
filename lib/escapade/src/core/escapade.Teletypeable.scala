@@ -146,7 +146,8 @@ object Teletypeable:
         lastFile = frame.file
         val file2 = frame.file.fit(fileWidth, Rtl)
 
-        e"$msg\n  $gray(at) $className$gray($dot)$method ${Fg(if sameFile then 0x111111 else 0x5faeaf)}($file2)$gray(:)$line"
+        val foreground = Fg(if sameFile then 0x111111 else 0x5faeaf)
+        e"$msg\n  $gray(at) $className$gray($dot)$method $foreground($file2)$gray(:)$line"
 
     stack.cause.lay(root): cause =>
       e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"

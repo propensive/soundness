@@ -72,7 +72,8 @@ case class Flag
     secret:      Boolean)
 extends Topical:
 
-  def suggest(using interpretable: Topic is Interpretable, discoverable: Topic is Discoverable)(using cli: Cli)
+  def suggest(using interpretable: Topic is Interpretable, discoverable: Topic is Discoverable)
+       (using cli: Cli)
   : Unit =
 
       cli.register(this, discoverable)

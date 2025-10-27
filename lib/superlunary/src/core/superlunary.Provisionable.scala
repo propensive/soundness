@@ -55,7 +55,9 @@ object Stageable:
 
     inline def deserialize(text: Text | Null): Array[Object] =
       provide[Tactic[RemoteError]]:
-        given RemoteError mitigates JsonError = error => RemoteError(RemoteError.Reason.Deserialization)
+        given RemoteError mitigates JsonError =
+          error => RemoteError(RemoteError.Reason.Deserialization)
+
         Array.from(provide[Json is Decodable in Text](text.nn.decode[Json].as[List[Json]]))
 
     inline def serialize(value: Array[Object]): Text =
@@ -71,7 +73,9 @@ object Stageable:
     type Transport = Pojo
     type Form = Array[Pojo]
 
-    inline def deserialize(value: Array[Pojo] | Null): Array[Object] = value.asInstanceOf[Array[Object]]
+    inline def deserialize(value: Array[Pojo] | Null)
+    : Array[Object] = value.asInstanceOf[Array[Object]]
+
     inline def serialize(value: Array[Object]): Array[Pojo] = value.asInstanceOf[Array[Pojo]]
 
     inline def embed[entity](value: entity): Pojo =

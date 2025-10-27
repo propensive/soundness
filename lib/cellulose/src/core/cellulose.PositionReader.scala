@@ -93,18 +93,39 @@ class PositionReader(private var in: Stream[Text]):
       case '\r' =>
         requireCr match
           case Unset => requireCr = true
-          case false => raise(ParseError(Codl, Codl.Position(lastLine, lastCol, 1), Codl.Issue.CarriageReturnMismatch(false)))
-          case true  => ()
+          case false =>
+            raise
+             (ParseError
+               (Codl,
+                Codl.Position(lastLine, lastCol, 1),
+                Codl.Issue.CarriageReturnMismatch(false)))
 
-        if read() != '\n' then raise(ParseError(Codl, Codl.Position(lastLine, lastCol, 1), Codl.Issue.UnexpectedCarriageReturn))
+          case true  =>
+            ()
+
+        if read() != '\n'
+        then raise
+              (ParseError
+                (Codl,
+                 Codl.Position(lastLine, lastCol, 1),
+                 Codl.Issue.UnexpectedCarriageReturn))
 
         Character('\n', lastLine, lastCol).tap(advance)
 
       case '\n' =>
         requireCr match
-          case true  => raise(ParseError(Codl, Codl.Position(lastLine, lastCol, 1), Codl.Issue.CarriageReturnMismatch(true)))
-          case Unset => requireCr = false
-          case false => ()
+          case true  =>
+            raise
+             (ParseError
+               (Codl,
+                Codl.Position(lastLine, lastCol, 1),
+                Codl.Issue.CarriageReturnMismatch(true)))
+
+          case Unset =>
+            requireCr = false
+
+          case false =>
+            ()
 
         Character('\n', lastLine, lastCol).tap(advance)
 

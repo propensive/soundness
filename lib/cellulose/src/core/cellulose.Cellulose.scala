@@ -130,7 +130,8 @@ object Cellulose extends Cellulose2:
           => Option[decodable] is Decodable in Codl =
       codl => if codl.list.isEmpty then None else Some(decoder.decoded(codl))
 
-    given listDecodable: [element] => (decodable: => element is Decodable in Codl, schematic: => element is CodlSchematic)
+    given listDecodable: [element]
+          => (decodable: => element is Decodable in Codl, schematic: => element is CodlSchematic)
           => List[element] is Decodable in Codl =
 
       value => schematic.schema() match
@@ -145,7 +146,9 @@ object Cellulose extends Cellulose2:
       value =>
         element.schema() match
           case Field(_) =>
-            value.list.flatMap(_.children).map { node => decodable.decoded(Codl(List(CodlDoc(node)))) }.to(Set)
+            value.list.flatMap(_.children).map: node =>
+              decodable.decoded(Codl(List(CodlDoc(node))))
+            . to(Set)
 
           case struct: Struct =>
             value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_)).to(Set)
@@ -170,7 +173,7 @@ object Cellulose extends Cellulose2:
         case InsufficientIndent        => m"insufficient indentation was specified"
         case MissingKey(point, key)    => m"the value $key was missing at $point"
         case DuplicateKey(point, key)  => m"the unique key $key has already been used at $point"
-        case SurplusParams(point, key) => m"too many parameters were given to the key $key at $point"
+        case SurplusParams(point, key) => m"too many parameters for the key $key at $point"
         case InvalidKey(point, key)    => m"the key $key was invalid at $point"
 
         case DuplicateId(point, line, col) =>
@@ -182,16 +185,16 @@ object Cellulose extends Cellulose2:
               ('\\n')"""
 
         case CarriageReturnMismatch(true) =>
-          m"""a newline character ('\\n') was found without a preceding carriage return ('\\r'), which
-              does not match the document's prior newline convention"""
+          m"""a newline character ('\\n') was found without a preceding carriage return ('\\r'),
+              which does not match the document's prior newline convention"""
 
         case CarriageReturnMismatch(false) =>
           m"""a carriage return ('\\r') was encountered, which does not match the document's prior
               newline convention"""
 
         case UnevenIndent(initial, indent) =>
-          m"""the indentation level of ${indent - initial} (with a margin of $initial) is not an exact
-              multiple of 2"""
+          m"""the indentation level of ${indent - initial} (with a margin of $initial) is not an
+              exact multiple of 2"""
 
         case IndentAfterComment =>
           m"indentation was given after a comment; the comment should be aligned with its next key"
@@ -259,7 +262,10 @@ object Cellulose extends Cellulose2:
 
                 schema.requiredKeys.each: key =>
                   if !node.data.let(_.has(key)).or(false) then raise:
-                    ParseError(Codl, Position(line, col, node.key.or(t"?").length), MissingKey(node.key.or(t"?"), key))
+                    ParseError
+                     (Codl,
+                      Position(line, col, node.key.or(t"?").length),
+                      MissingKey(node.key.or(t"?"), key))
 
                 node
 
@@ -310,13 +316,15 @@ object Cellulose extends Cellulose2:
 
                   case _ =>
                     val proto =
-                      Proto(Unset, extra = focus.extra.or(if lines == 0 then Unset else Extra(lines)))
+                      Proto
+                       (Unset, extra = focus.extra.or(if lines == 0 then Unset else Extra(lines)))
 
                     go(focus = proto)
 
                 case CodlToken.Indent =>
                   if focus.key.absent
-                  then raise(ParseError(Codl, Position(focus.line, focus.col, 1), IndentAfterComment))
+                  then
+                    raise(ParseError(Codl, Position(focus.line, focus.col, 1), IndentAfterComment))
 
                   go(focus = Proto(), peers = Nil, stack = (focus -> peers) :: stack)
 
@@ -357,7 +365,8 @@ object Cellulose extends Cellulose2:
                           if peerIds.contains(uniqueId(0)) then
                             val first = peerIds(uniqueId(0))
                             val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
-                            raise(ParseError(Codl, Position(line, col, uniqueId(0).length), duplicate))
+                            raise
+                             (ParseError(Codl, Position(line, col, uniqueId(0).length), duplicate))
 
                         val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                         go(focus = focus2, peerIds = peerIds2, lines = 0)
@@ -370,25 +379,33 @@ object Cellulose extends Cellulose2:
                           if peerIds.contains(uniqueId(0)) then
                             val first = peerIds(uniqueId(0))
                             val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
-                            raise(ParseError(Codl, Position(line, col, uniqueId(0).length), duplicate))
+                            raise
+                             (ParseError(Codl, Position(line, col, uniqueId(0).length), duplicate))
 
                         val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                         go(focus = focus2, peerIds = peerIds2, lines = 0)
 
                       case struct@Struct(_, _) => struct.param(focus.children.length) match
                         case Unset =>
-                          raise(ParseError(Codl, Position(line, col, word.length), SurplusParams(word, key)))
+                          raise
+                           (ParseError
+                             (Codl, Position(line, col, word.length), SurplusParams(word, key)))
+
                           go()
 
                         case entry: CodlSchema.Entry =>
-                          val peer = Proto(word, line, col, schema = entry.schema, multiline = block)
+                          val peer =
+                            Proto(word, line, col, schema = entry.schema, multiline = block)
+
                           val (uniqueId, focus2) = focus.commit(peer)
 
                           uniqueId.let: uniqueId =>
                             if peerIds.contains(uniqueId(0)) then
                               val first = peerIds(uniqueId(0))
                               val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
-                              raise(ParseError(Codl, Position(line, col, uniqueId(0).length), duplicate))
+                              raise
+                               (ParseError
+                                 (Codl, Position(line, col, uniqueId(0).length), duplicate))
 
                           val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                           go(focus = focus2, peerIds = peerIds2, lines = 0)
@@ -397,11 +414,16 @@ object Cellulose extends Cellulose2:
                       val fschema: CodlSchema =
                         if schema == CodlSchema.Free then schema
                         else schema(word).or:
-                          raise(ParseError(Codl, Position(line, col, word.length), InvalidKey(word, word)))
+                          raise
+                           (ParseError
+                             (Codl, Position(line, col, word.length), InvalidKey(word, word)))
                           CodlSchema.Free
 
                       if fschema.unique && peers.exists(_.data.let(_.key) == word)
-                      then raise(ParseError(Codl, Position(line, col, word.length), DuplicateKey(word, word)))
+                      then
+                        raise
+                         (ParseError
+                           (Codl, Position(line, col, word.length), DuplicateKey(word, word)))
 
                       go(focus = Proto(word, line, col, extra = extra2, schema = fschema,
                           multiline = block), lines = 0)
@@ -417,7 +439,8 @@ object Cellulose extends Cellulose2:
                     go(focus = Proto
                                 (line  = line,
                                 col   = col,
-                                extra = extra.copy(blank = lines, comments = txt :: extra.comments)))
+                                extra = extra.copy
+                                         (blank = lines, comments = txt :: extra.comments)))
 
               case _ => stack match
                 case Nil =>
@@ -495,7 +518,8 @@ object Cellulose extends Cellulose2:
               val char = next()
 
               if char.char != '\n' && char != Character.End
-              then fail(Comment, ParseError(Codl, Position(char.line, col(char), 1), BadTermination))
+              then
+                fail(Comment, ParseError(Codl, Position(char.line, col(char), 1), BadTermination))
               else
                 if char == Character.End then Stream()
                 else Stream(CodlToken.Body(reader.charStream()))
@@ -552,13 +576,24 @@ object Cellulose extends Cellulose2:
 
 
             def newline(next: State): Stream[CodlToken] =
-              if diff > 4 then fail(Margin, ParseError(this, Position(char.line, col(char), 1), SurplusIndent), indent)
+              if diff > 4
+              then
+                fail
+                 (Margin,
+                  ParseError(this, Position(char.line, col(char), 1), SurplusIndent),
+                  indent)
+
               else if char.column < margin
-              then fail(Indent, ParseError(Codl, Position(char.line, col(char), 1), InsufficientIndent), margin)
+              then
+                fail
+                 (Indent,
+                  ParseError(Codl, Position(char.line, col(char), 1), InsufficientIndent),
+                  margin)
               else if diff%2 != 0 then
                 fail
                  (Indent,
-                  ParseError(Codl, Position(char.line, col(char), 1), UnevenIndent(margin, char.column)),
+                  ParseError
+                   (Codl, Position(char.line, col(char), 1), UnevenIndent(margin, char.column)),
                   char.column + 1)
               else diff match
                 case 2 => CodlToken.Indent #:: irecur(next, indent = char.column)

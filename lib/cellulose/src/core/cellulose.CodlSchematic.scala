@@ -60,7 +60,9 @@ object CodlSchematic:
         => Option[value] is CodlSchematic =
     () => schematic.schema().optional
 
-  given list: [element] => (element: => element is CodlSchematic) => List[element] is CodlSchematic =
+  given list: [element] => (element: => element is CodlSchematic)
+        => List[element] is CodlSchematic =
+
     () => element.schema() match
       case Field(_)       => Field(Arity.Many)
       case struct: Struct => struct.copy(structArity = Arity.Many)

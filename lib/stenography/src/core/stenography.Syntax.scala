@@ -341,7 +341,8 @@ object Syntax:
         case FloatConstant(float)   => Syntax.Constant(s"${float.toString}F")
         case UnitConstant()         => Syntax.Constant("()")
         case NullConstant()         => Syntax.Constant("null")
-        case ClassOfConstant(cls)   => Syntax.Application(Syntax.Constant("classOf"), List(apply(cls)), false)
+        case ClassOfConstant(cls)   => Syntax.Application
+                                        (Syntax.Constant("classOf"), List(apply(cls)), false)
 
       case Refinement(base, "apply", member) =>
         apply(member)
@@ -367,7 +368,9 @@ object Syntax:
         val args =
           if args0.isEmpty then Syntax.Tuple(false, Nil)
           else if unnamed then Syntax.Tuple(false, types.map(apply(_)))
-          else Syntax.Tuple(false, args0.zip(types).map { (member, typ) => Syntax.Named(false, member, apply(typ)) })
+          else Syntax.Tuple
+                (false,
+                 args0.zip(types).map { (member, typ) => Syntax.Named(false, member, apply(typ)) })
 
         val arrow = if method.isContextual then "?=>" else "=>"
         if unnamed && args0.length == 1
