@@ -76,11 +76,11 @@ object Http:
   case class Header(key: Text, value: Text)
 
   object Method:
-    given formmethod: ("formmethod" is GenericHtmlAttribute2[Method]):
+    given formmethod: ("formmethod" is GenericHtmlAttribute[Method]):
       def name: Text = t"formmethod"
       def serialize(method: Method): Text = method.show
 
-    given method: ("method" is GenericHtmlAttribute2[Method]):
+    given method: ("method" is GenericHtmlAttribute[Method]):
       def name: Text = t"method"
       def serialize(method: Method): Text = method.show
 

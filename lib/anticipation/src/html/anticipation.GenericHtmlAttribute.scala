@@ -32,7 +32,7 @@
                                                                                                   */
 package anticipation
 
-trait GenericHtmlAttribute2[-value]:
+trait GenericHtmlAttribute[-value]:
   type Self <: String & Singleton
   def name: Text
   def serialize(value: value): Text
