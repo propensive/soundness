@@ -56,9 +56,9 @@ object Honeycomb:
       def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[Optional[(String, Optional[Text])]]] =
         exprs match
           case '{("", $value: valueType)} +: tail =>
-            val expr: Expr[HtmlAttribute[valueType]] =
-              Expr.summon[HtmlAttribute[valueType] onto name]
-              . orElse(Expr.summon[HtmlAttribute[valueType]])
+            val expr: Expr[HtmlAttribute[? >: valueType]] =
+              Expr.summon[HtmlAttribute[? >: valueType] onto name]
+              . orElse(Expr.summon[HtmlAttribute[? >: valueType]])
               . getOrElse:
                   val typeName = TypeRepr.of[valueType]
                   halt(m"""the attribute name cannot be uniquely determined from its type,

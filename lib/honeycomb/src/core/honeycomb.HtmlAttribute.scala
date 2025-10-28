@@ -44,7 +44,7 @@ import spectacular.*
 import urticose.*
 import vacuous.*
 
-trait HtmlAttribute[-value] extends Targetable:
+trait HtmlAttribute[value] extends Targetable:
   type Self <: Label
   def convert(value: value): Optional[Text | HtmlAttribute.NotShown.type]
   def rename: Optional[Text] = Unset
