@@ -63,16 +63,16 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 
   given iarray: [element: {Randomizable, ClassTag}] => (size: RandomSize)
         =>  IArray[element] is Randomizable =
+
     random =>
       given random0: Random = random
       IArray.fill(size.generate(random))(arbitrary[element]())
 
-  given doubl: Distribution => Double is Randomizable = summon[Distribution].transform(_)
+  given double: Distribution => Double is Randomizable = summon[Distribution].transform(_)
 
-  inline def join[derivation <: Product: ProductReflection]: derivation is Randomizable =
-    random =>
-      stochastic(using infer[Randomization]):
-        construct { [field] => _.from(summon[Random]) }
+  inline def join[derivation <: Product: ProductReflection]: derivation is Randomizable = random =>
+    stochastic(using infer[Randomization]):
+      construct { [field] => _.from(summon[Random]) }
 
   inline def split[derivation: SumReflection]: derivation is Randomizable = random =>
     stochastic(using infer[Randomization]):

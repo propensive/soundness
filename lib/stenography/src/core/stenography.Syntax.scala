@@ -237,10 +237,9 @@ object Syntax:
     repr.absolve match
       case ThisType(ref) =>
         apply(ref) match
-          case syntax@Syntax.Simple(Typename.Top(name))   => syntax
-          case syntax@Syntax.Simple(Typename.Type(_, _))  => syntax
           case Syntax.Simple(Typename.Term(parent, name)) =>
             Syntax.Simple(Typename.Type(parent, name))
+          case syntax => syntax
 
       case typeRef@TypeRef(NoPrefix(), name) =>
         Syntax.Simple(Typename.Top(name))
@@ -361,7 +360,7 @@ object Syntax:
         apply(member)
 
       case Refinement(base, name, member) =>
-        if name == "Self" then Syntax.Infix(apply(base), "is", apply(member)) else
+        if name == "Self" then Syntax.Infix(apply(member), "is", apply(base)) else
           val refined: Syntax.Refined = apply(base) match
             case refined@Syntax.Refined(base, members, defs) => refined
             case other =>
