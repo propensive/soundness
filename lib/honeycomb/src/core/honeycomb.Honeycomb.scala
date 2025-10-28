@@ -56,9 +56,9 @@ object Honeycomb:
       def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[Optional[(String, Optional[Text])]]] =
         exprs match
           case '{("", $value: valueType)} +: tail =>
-            val expr: Expr[HtmlAttribute[valueType]] =
-              Expr.summon[HtmlAttribute[valueType] onto name]
-              . orElse(Expr.summon[HtmlAttribute[valueType]])
+            val expr: Expr[Attribute of (? >: valueType)] =
+              Expr.summon[Attribute of (? >: valueType) onto name]
+              . orElse(Expr.summon[Attribute of ? >: valueType])
               . getOrElse:
                   val typeName = TypeRepr.of[valueType]
                   halt(m"""the attribute name cannot be uniquely determined from its type,
@@ -66,31 +66,31 @@ object Honeycomb:
 
             val key: Text = expr.absolve match
               case '{ type keyType <: Label
-                      $attribute: (HtmlAttribute[valueType] { type Self = keyType}) } =>
+                      $attribute: (Attribute { type Topic = valueType; type Self = keyType}) } =>
                 TypeRepr.of[keyType].absolve match
                   case ConstantType(StringConstant(key)) => key.tt
 
 
             '{  $expr.convert($value) match
-                  case HtmlAttribute.NotShown => Unset
-                  case Unset                  => ($expr.rename.or(${Expr(key)}).s, Unset)
-                  case attribute: Text        => ($expr.rename.or(${Expr(key)}).s, attribute)
+                  case Attribute.NotShown => Unset
+                  case Unset              => ($expr.rename.or(${Expr(key)}).s, Unset)
+                  case attribute: Text    => ($expr.rename.or(${Expr(key)}).s, attribute)
             } :: recur(tail)
 
           case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
             val attribute: String = key.value.get
 
-            val expr: Expr[keyType is HtmlAttribute[valueType]] =
-              Expr.summon[keyType is HtmlAttribute[valueType] onto name]
-              . orElse(Expr.summon[keyType is HtmlAttribute[valueType]])
+            val expr: Expr[keyType is Attribute of valueType] =
+              Expr.summon[keyType is Attribute of valueType onto name]
+              . orElse(Expr.summon[keyType is Attribute of valueType])
               . getOrElse:
                   val typeName = TypeRepr.of[valueType]
                   halt(m"the attribute $attribute cannot take a value of type ${typeName.show}")
 
             '{  $expr.convert($value) match
-                  case HtmlAttribute.NotShown => Unset
-                  case Unset                  => ($expr.rename.or($key.tt).s, Unset)
-                  case attribute: Text        => ($expr.rename.or($key.tt).s, attribute)
+                  case Attribute.NotShown => Unset
+                  case Unset              => ($expr.rename.or($key.tt).s, Unset)
+                  case attribute: Text    => ($expr.rename.or($key.tt).s, attribute)
             } :: recur(tail)
 
           case _ =>

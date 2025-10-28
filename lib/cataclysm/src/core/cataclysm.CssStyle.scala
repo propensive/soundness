@@ -36,7 +36,7 @@ import anticipation.*
 import gossamer.*
 
 object CssStyle:
-  given generic: ("style" is GenericHtmlAttribute[CssStyle]):
+  given generic: ("style" is GenericHtmlAttribute2[CssStyle]):
     def serialize(value: CssStyle): Text = value.properties.map(_.text).join(t";")
     def name: Text = t"style"
 
