@@ -261,7 +261,7 @@ object Http:
 
     inline def request: this.type = this
 
-    lazy val path: Relative on Www = location.decode[Relative on Www]
+    lazy val path: Path on Www = location.decode[Path on Www]
 
     def on[scheme <: "http" | "https"](origin: Origin[scheme]): HttpUrl =
       Url[scheme](origin, target)

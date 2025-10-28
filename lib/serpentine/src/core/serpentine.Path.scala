@@ -155,6 +155,8 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       safely(text.decode[Path on Plane]).or(safely(this + text.decode[Relative on Plane])).or:
         abort(PathError(_.InvalidRoot))
 
+  def precedes(path: Path on Plane): Boolean =
+    path.root == root && path.descent.drop(path.descent.length - descent.length) == descent
 
   transparent inline def depth: Int = inline !![Topic] match
     case Zero         => 0
