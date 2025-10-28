@@ -191,7 +191,10 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       this.asInstanceOf[Path of Topic under Limit on system]
 
   def graft[radical: Radical on Plane](root: radical): Path of Topic under root.type =
-    Path.of[Plane, root.type, Topic](radical.encode(root), descent*)
+    Path.of(radical.encode(root), descent*)
+
+  def shift(n: Int): Path on Plane under Limit =
+    Path.of(root, descent.take(depth - n)*)
 
   transparent inline def sameRoot(right: Path): Boolean = summonFrom:
     case plane: (Plane is System) =>
