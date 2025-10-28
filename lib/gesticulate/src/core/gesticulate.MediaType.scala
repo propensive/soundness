@@ -69,19 +69,19 @@ object MediaType:
   given encodable: MediaType is Encodable in Text = _.show
   given decodable: Tactic[MediaTypeError] => MediaType is Decodable in Text = Media.parse(_)
 
-  given formenctype: ("formenctype" is GenericHtmlAttribute[MediaType]):
+  given formenctype: ("formenctype" is GenericHtmlAttribute2[MediaType]):
     def name: Text = t"formenctype"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
-  given media: ("media" is GenericHtmlAttribute[MediaType]):
+  given media: ("media" is GenericHtmlAttribute2[MediaType]):
     def name: Text = t"media"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
-  given enctype: ("enctype" is GenericHtmlAttribute[MediaType]):
+  given enctype: ("enctype" is GenericHtmlAttribute2[MediaType]):
     def name: Text = t"enctype"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
-  given htype: ("htype" is GenericHtmlAttribute[MediaType]):
+  given htype: ("htype" is GenericHtmlAttribute2[MediaType]):
     def name: Text = t"type"
     def serialize(mediaType: MediaType): Text = mediaType.show
 

@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anticipation.{GenericHtmlAttribute, Sgml}
+export anticipation.{GenericHtmlAttribute2, Sgml}
