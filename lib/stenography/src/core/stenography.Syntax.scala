@@ -235,10 +235,15 @@ object Syntax:
     def isPackage(name: String): Boolean = name.endsWith("$package") || name == "package"
 
     repr.absolve match
-      case ThisType(tpe) =>
-        apply(tpe)
+      case ThisType(ref) =>
+        apply(ref) match
+          case syntax@Syntax.Simple(Typename.Top(name))   => syntax
+          case syntax@Syntax.Simple(Typename.Type(_, _))  => syntax
+          case Syntax.Simple(Typename.Term(parent, name)) =>
+            Syntax.Simple(Typename.Type(parent, name))
 
-      case typeRef@TypeRef(NoPrefix(), name) => symbolic(name)
+      case typeRef@TypeRef(NoPrefix(), name) =>
+        Syntax.Simple(Typename.Top(name))
 
       case typeRef@TypeRef(prefix, name) =>
         val module = typeRef.typeSymbol.flags.is(Flags.Module)
@@ -263,8 +268,12 @@ object Syntax:
           case symbolic@Syntax.Symbolic(_) =>
             Syntax.Selection(symbolic, name)
 
+          case selection: Selection =>
+            Syntax.Selection(selection, name)
+
           case other =>
             Syntax.Constant("<unknown>")
+
 
       case termRef@TermRef(NoPrefix(), name) =>
         Syntax.Singleton(Typename.Top(name))
@@ -285,6 +294,9 @@ object Syntax:
 
           case symbolic@Syntax.Symbolic(_) =>
             Syntax.Selection(symbolic, name)
+
+          case selection: Selection =>
+            Syntax.Selection(selection, name)
 
           case other =>
             Syntax.Constant("<unknown>")

@@ -227,6 +227,7 @@ object Tests extends Suite(m"Stenography Tests"):
       Syntax.name[[T] =>> Option[T]]
     .assert(_ == t"[T] =>> Option[T]")
 
+
     // test(m"Pure function"):
     //   Syntax.name[Int -> String]
     // .assert(_ == t"Int -> String")

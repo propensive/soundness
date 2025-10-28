@@ -41,12 +41,18 @@ import symbolism.*
 import vacuous.*
 
 object Typename:
-  def apply(text: Text): Typename = text.s.lastIndexOf('.') match
-    case -1 => Top(text)
-    case position =>
-      val next = text.s.substring(position + 1).nn
-      if next.endsWith("package$") then apply(text.s.substring(0, position).nn)
-      else Term(apply(text.s.substring(0, position).nn.tt), text.s.substring(position + 1).nn.tt)
+  def apply(text: Text): Typename =
+    text.s.lastIndexOf('#') match
+      case -1 =>
+        text.s.lastIndexOf('.') match
+          case -1 => Top(text)
+
+          case position =>
+            val next = text.s.substring(position + 1).nn
+            if next.endsWith("package$") then apply(text.s.substring(0, position).nn)
+            else Term(apply(text.s.substring(0, position).nn.tt), text.s.substring(position + 1).nn.tt)
+      case position =>
+        Type(apply(text.s.substring(0, position).nn.tt), text.s.substring(position + 1).nn.tt)
 
   def decode(text: Text): Typename =
     def entity(start: Ordinal, end: Ordinal, isType: Boolean, parent: Optional[Typename])
@@ -113,8 +119,9 @@ enum Typename:
     case Top(name) => name
     case other     => s"${parent.render}${symbol("⌗")}$name".tt
 
-  def text(using imports: Imports): Text = this match
-    case Typename.Top(_) => name
+  def text(using imports: Imports): Text =
+    this match
+      case Typename.Top(name) => name
 
-    case child =>
-      if imports.has(parent) then name else s"${parent.text}${symbol("#")}$name"
+      case child =>
+        if imports.has(parent) then name else s"${parent.text}${symbol("#")}$name"
