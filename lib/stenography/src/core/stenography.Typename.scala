@@ -76,11 +76,16 @@ object Typename:
 
 
 enum Typename:
-  case Top(name: Text)
-  case Term(parent0: Typename, name: Text)
-  case Type(parent0: Typename, name: Text)
+  case Top(name0: Text)
+  case Term(parent0: Typename, name0: Text)
+  case Type(parent0: Typename, name0: Text)
 
   def child(name: Text, isType: Boolean) = if isType then Type(this, name) else Term(this, name)
+
+  def name: Text = this match
+    case Type(_, name) => name
+    case Term(_, name) => name
+    case Top(name)     => name
 
   def parent: Typename = this match
     case Type(parent, _) => parent
@@ -89,19 +94,27 @@ enum Typename:
 
   def id: Text = this match
     case Top(name)          => name
-    case Term(parent, name) => s"${parent.id}.${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
-    case Type(parent, name) => s"${parent.id}:${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
+
+    case Term(parent, name) =>
+      s"${parent.id}${symbol(":")}${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
+
+    case Type(parent, name) =>
+      s"${parent.id}${symbol(":")}${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
+
+  def typeParent: Boolean = parent match
+    case Type(_, _) => true
+    case _          => false
+
+  def symbol(typeSymbol: Text = "#", termSymbol: Text = "."): Text = parent match
+    case Type(_, _) => typeSymbol
+    case _          => termSymbol
 
   def render: Text = this match
-    case Top(name)          => name
-    case Term(parent, name) => s"${parent.render}.$name".tt
-    case Type(parent, name) => s"${parent.render}⌗$name".tt
+    case Top(name) => name
+    case other     => s"${parent.render}${symbol("⌗")}$name".tt
 
   def text(using imports: Imports): Text = this match
-    case Typename.Top(name) => name
+    case Typename.Top(_) => name
 
-    case Typename.Term(parent, name) =>
-      if imports.has(parent) then name else s"${parent.text}.$name"
-
-    case Typename.Type(parent, name) =>
-      if imports.has(parent) then name else s"${parent.text}.$name"
+    case child =>
+      if imports.has(parent) then name else s"${parent.text}${symbol("#")}$name"
