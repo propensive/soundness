@@ -129,6 +129,9 @@ object Syntax:
   private val cache: scm.HashMap[Any, Syntax] = scm.HashMap()
   def clear(): Unit = cache.clear()
 
+  def symbolic(name: Text): Syntax.Symbolic =
+    Symbolic(if name.s.startsWith("_$") then name.s.drop(2).tt else name)
+
   def precedence(char: Char): Int = char match
     case '|'                   => 1
     case '^'                   => 2
@@ -162,18 +165,18 @@ object Syntax:
         val contextual = termDefs.exists(_.symbol.flags.is(Flags.Given))
 
         val defs = termDefs.flatMap:
-          case valDef@ValDef(name, rtn, default) =>
+          case valDef@ValDef(name, meta, default) =>
             val syntax =
               if name.startsWith("evidence$") || name.startsWith("x$")
-              then List(apply(rtn.tpe), Comma)
-              else List(Syntax.Symbolic(name.tt), Colon, apply(rtn.tpe), Comma)
+              then List(apply(meta.tpe), Comma)
+              else List(symbolic(name.tt), Colon, apply(meta.tpe), Comma)
 
             if valDef.symbol.flags.is(Flags.Inline)
-            then Syntax.Symbolic("inline ") :: syntax
+            then symbolic("inline ") :: syntax
             else syntax
 
 
-        val usingKeyword = if contextual && showUsing then List(Syntax.Symbolic("using ")) else Nil
+        val usingKeyword = if contextual && showUsing then List(symbolic("using ")) else Nil
 
         Syntax.Compound(Open +: (usingKeyword ++ defs.dropRight(1)) :+ Close)
 
@@ -189,13 +192,13 @@ object Syntax:
 
             bounds match
               case TypeBoundsTree(lower, upper) =>
-                variance(List(Syntax.bounds(Syntax.Symbolic(name.tt), lower.tpe, upper.tpe), Comma))
+                variance(List(Syntax.bounds(symbolic(name.tt), lower.tpe, upper.tpe), Comma))
 
               case LambdaTypeTree(typeDefs, other) =>
-                variance(List(Syntax.Symbolic(name), Comma))
+                variance(List(symbolic(name), Comma))
 
               case other =>
-                variance(List(Syntax.Symbolic(name), Comma))
+                variance(List(symbolic(name), Comma))
 
         Syntax.Compound(OpenType +: defs.dropRight(1) :+ CloseType)
 
@@ -214,11 +217,11 @@ object Syntax:
         Syntax.Signature(true, List(), apply(tpe))
 
       case TypeBounds(lower, upper) =>
-        Syntax.Signature(false, Nil, bounds(Syntax.Symbolic("?"), lower, upper))
+        Syntax.Signature(false, Nil, bounds(symbolic("?"), lower, upper))
 
       case TypeLambda(args0, boundsList, tpe) =>
         val args = args0.zip(boundsList).map:
-          case (arg, TypeBounds(lower, upper)) => bounds(Syntax.Symbolic(arg), lower, upper)
+          case (arg, TypeBounds(lower, upper)) => bounds(symbolic(arg), lower, upper)
 
         Syntax.Signature(false, List(Syntax.Tuple(true, args)), apply(tpe))
 
@@ -232,25 +235,28 @@ object Syntax:
     def isPackage(name: String): Boolean = name.endsWith("$package") || name == "package"
 
     repr.absolve match
-      case ThisType(tpe) =>
-        apply(tpe)
+      case ThisType(ref) =>
+        apply(ref) match
+          case syntax@Syntax.Simple(Typename.Top(name))   => syntax
+          case syntax@Syntax.Simple(Typename.Type(_, _))  => syntax
+          case Syntax.Simple(Typename.Term(parent, name)) =>
+            Syntax.Simple(Typename.Type(parent, name))
 
       case typeRef@TypeRef(NoPrefix(), name) =>
-        if name.startsWith("_$$") then Syntax.Symbolic(name.drop(2))
-        else Syntax.Simple(Typename(typeRef.typeSymbol.fullName.tt))
+        Syntax.Simple(Typename.Top(name))
 
       case typeRef@TypeRef(prefix, name) =>
-        apply(prefix) match
-          case singleton@Syntax.Singleton(typename) =>
-            val module = typeRef.typeSymbol.flags.is(Flags.Module)
+        val module = typeRef.typeSymbol.flags.is(Flags.Module)
+        val name2 = if module then name.dropRight(1) else name
 
-            val name2 = if module then name.dropRight(1) else name
-            if isPackage(name2) then singleton else Syntax.Simple(Typename.Type(typename, name2))
+        if prefix.typeSymbol.flags.is(Flags.Package)
+        then Syntax.Simple(Typename.Type(Typename.Top(prefix.show.tt), name2))
+        else apply(prefix) match
+          case singleton@Syntax.Singleton(typename) =>
+            if isPackage(name2) then singleton
+            else Syntax.Simple(Typename.Type(typename, name2))
 
           case simple@Syntax.Simple(typename) =>
-            val module = typeRef.typeSymbol.flags.is(Flags.Module)
-
-            val name2 = if module then name.dropRight(1) else name
             if isPackage(name2) then simple else typename match
               case Typename.Term(_, _) => Syntax.Simple(Typename.Type(typename, name2))
               case Typename.Top(_)     => Syntax.Simple(Typename.Type(typename, name2))
@@ -262,14 +268,18 @@ object Syntax:
           case symbolic@Syntax.Symbolic(_) =>
             Syntax.Selection(symbolic, name)
 
+          case selection: Selection =>
+            Syntax.Selection(selection, name)
+
           case other =>
             Syntax.Constant("<unknown>")
 
+
       case termRef@TermRef(NoPrefix(), name) =>
-        Syntax.Singleton(Typename(termRef.termSymbol.fullName.tt))
+        Syntax.Singleton(Typename.Top(name))
 
       case termRef@TermRef(ThisType(TypeRef(NoPrefix(), "<root>")), name) =>
-        Syntax.Singleton(Typename(termRef.termSymbol.fullName.tt))
+        Syntax.Singleton(Typename.Top(name))
 
       case termRef@TermRef(prefix, name) =>
         apply(prefix) match
@@ -284,6 +294,9 @@ object Syntax:
 
           case symbolic@Syntax.Symbolic(_) =>
             Syntax.Selection(symbolic, name)
+
+          case selection: Selection =>
+            Syntax.Selection(selection, name)
 
           case other =>
             Syntax.Constant("<unknown>")
@@ -379,20 +392,21 @@ object Syntax:
 
       case typ@PolyType(args0, types, result) =>
         val args = args0.zip(types).map:
-          case (name, TypeBounds(lower, upper)) => bounds(Syntax.Symbolic(name), lower, upper)
+          case (name, TypeBounds(lower, upper)) =>
+            bounds(symbolic(name), lower, upper)
 
         Syntax.Infix(Syntax.Tuple(true, args), "=>", apply(result))
 
       case TypeLambda(args0, boundsList, tpe) =>
         val args = args0.zip(boundsList).map:
-          case (arg, TypeBounds(lower, upper)) => bounds(Syntax.Symbolic(arg), lower, upper)
+          case (arg, TypeBounds(lower, upper)) => bounds(symbolic(arg), lower, upper)
 
         Syntax.Infix(Syntax.Tuple(true, args), "=>>", apply(tpe))
 
       case ParamRef(binder, n) => binder match
-        case TypeLambda(params, _, _) => Syntax.Symbolic(params(n))
-        case MethodType(params, _, _) => Syntax.Symbolic(params(n))
-        case PolyType(params, _, _)   => Syntax.Symbolic(params(n))
+        case TypeLambda(params, _, _) => symbolic(params(n))
+        case MethodType(params, _, _) => symbolic(params(n))
+        case PolyType(params, _, _)   => symbolic(params(n))
         case other => Syntax.Constant("ParamRef")
 
       case RecursiveType(tpe) =>

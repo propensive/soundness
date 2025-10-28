@@ -34,8 +34,12 @@ package stenography
 
 import language.experimental.pureFunctions
 
-import soundness.*
+import fulminate.*
+import gossamer.*
 import prepositional.*
+import probably.*
+import spectacular.*
+import symbolism.*
 
 import autopsies.contrastExpectations
 
@@ -73,7 +77,7 @@ object Tests extends Suite(m"Stenography Tests"):
 
     test(m"Show `List[Int]`"):
       Syntax.name[List[Int]]
-    .assert(_ == t"collection.immutable.List[Int]")
+    .assert(_ == t"scala.collection.immutable.List[Int]")
 
     test(m"Show constant String type"):
       Syntax.name["hello"]
@@ -98,6 +102,10 @@ object Tests extends Suite(m"Stenography Tests"):
     test(m"Show singleton type"):
       Syntax.name[None.type]
     .assert(_ == t"None.type")
+
+    test(m"Show name with package"):
+      Syntax.name[turbulence.Readable]
+    .assert(_ == t"turbulence.Readable")
 
     test(m"Show typeclass type"):
       Syntax.name[Addable by Int to Double]
@@ -218,6 +226,7 @@ object Tests extends Suite(m"Stenography Tests"):
     test(m"Type lambda"):
       Syntax.name[[T] =>> Option[T]]
     .assert(_ == t"[T] =>> Option[T]")
+
 
     // test(m"Pure function"):
     //   Syntax.name[Int -> String]

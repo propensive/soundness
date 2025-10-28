@@ -28,4 +28,4 @@ jobs:
         distribution: 'temurin' # See 'Supported distributions' for available options
         java-version: '23'
     - name: Mill Build
-      run: ./mill test.assembly && make ci
+      run: ./mill --ticker false --silent test.assembly && make ci

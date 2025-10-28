@@ -41,12 +41,18 @@ import symbolism.*
 import vacuous.*
 
 object Typename:
-  def apply(text: Text): Typename = text.s.lastIndexOf('.') match
-    case -1 => Top(text)
-    case position =>
-      val next = text.s.substring(position + 1).nn
-      if next.endsWith("package$") then apply(text.s.substring(0, position).nn)
-      else Term(apply(text.s.substring(0, position).nn.tt), text.s.substring(position + 1).nn.tt)
+  def apply(text: Text): Typename =
+    text.s.lastIndexOf('#') match
+      case -1 =>
+        text.s.lastIndexOf('.') match
+          case -1 => Top(text)
+
+          case position =>
+            val next = text.s.substring(position + 1).nn
+            if next.endsWith("package$") then apply(text.s.substring(0, position).nn)
+            else Term(apply(text.s.substring(0, position).nn.tt), text.s.substring(position + 1).nn.tt)
+      case position =>
+        Type(apply(text.s.substring(0, position).nn.tt), text.s.substring(position + 1).nn.tt)
 
   def decode(text: Text): Typename =
     def entity(start: Ordinal, end: Ordinal, isType: Boolean, parent: Optional[Typename])
@@ -76,11 +82,16 @@ object Typename:
 
 
 enum Typename:
-  case Top(name: Text)
-  case Term(parent0: Typename, name: Text)
-  case Type(parent0: Typename, name: Text)
+  case Top(name0: Text)
+  case Term(parent0: Typename, name0: Text)
+  case Type(parent0: Typename, name0: Text)
 
   def child(name: Text, isType: Boolean) = if isType then Type(this, name) else Term(this, name)
+
+  def name: Text = this match
+    case Type(_, name) => name
+    case Term(_, name) => name
+    case Top(name)     => name
 
   def parent: Typename = this match
     case Type(parent, _) => parent
@@ -89,19 +100,28 @@ enum Typename:
 
   def id: Text = this match
     case Top(name)          => name
-    case Term(parent, name) => s"${parent.id}.${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
-    case Type(parent, name) => s"${parent.id}:${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
+
+    case Term(parent, name) =>
+      s"${parent.id}${symbol(":")}${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
+
+    case Type(parent, name) =>
+      s"${parent.id}${symbol(":")}${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
+
+  def typeParent: Boolean = parent match
+    case Type(_, _) => true
+    case _          => false
+
+  def symbol(typeSymbol: Text = "#", termSymbol: Text = "."): Text = parent match
+    case Type(_, _) => typeSymbol
+    case _          => termSymbol
 
   def render: Text = this match
-    case Top(name)          => name
-    case Term(parent, name) => s"${parent.render}.$name".tt
-    case Type(parent, name) => s"${parent.render}⌗$name".tt
+    case Top(name) => name
+    case other     => s"${parent.render}${symbol("⌗")}$name".tt
 
-  def text(using imports: Imports): Text = this match
-    case Typename.Top(name) => name
+  def text(using imports: Imports): Text =
+    this match
+      case Typename.Top(name) => name
 
-    case Typename.Term(parent, name) =>
-      if imports.has(parent) then name else s"${parent.text}.$name"
-
-    case Typename.Type(parent, name) =>
-      if imports.has(parent) then name else s"${parent.text}.$name"
+      case child =>
+        if imports.has(parent) then name else s"${parent.text}${symbol("#")}$name"
