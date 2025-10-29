@@ -66,10 +66,10 @@ extension [value](value: value)
   def twin: (value, value) = (value, value)
   def triple: (value, value, value) = (value, value, value)
 
-  inline def iff(inline predicate: Boolean)(inline lambda: value => value): value =
+  inline def when(inline predicate: Boolean)(inline lambda: value => value): value =
     if predicate then lambda(value) else value
 
-  inline def iff(inline predicate: value => Boolean)(inline lambda: value => value): value =
+  inline def when(inline predicate: value => Boolean)(inline lambda: value => value): value =
     if predicate(value) then lambda(value) else value
 
   inline def is[ValueSubtype <: value]: Boolean = value.isInstanceOf[ValueSubtype]
