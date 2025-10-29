@@ -36,7 +36,7 @@ import anticipation.*
 import contextual.*
 import gossamer.*
 import proscenium.*
-import spectacular.*, booleanStyles.trueFalse
+import spectacular.*, affirmations.trueFalse
 import zephyrine.*
 
 enum CodlToken:
