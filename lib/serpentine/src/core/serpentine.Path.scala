@@ -155,6 +155,8 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       safely(text.decode[Path on Plane]).or(safely(this + text.decode[Relative on Plane])).or:
         abort(PathError(_.InvalidRoot))
 
+  def precedes(path: Path on Plane): Boolean =
+    path.root == root && path.descent.drop(path.descent.length - descent.length) == descent
 
   transparent inline def depth: Int = inline !![Topic] match
     case Zero         => 0
@@ -189,7 +191,10 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       this.asInstanceOf[Path of Topic under Limit on system]
 
   def graft[radical: Radical on Plane](root: radical): Path of Topic under root.type =
-    Path.of[Plane, root.type, Topic](radical.encode(root), descent*)
+    Path.of(radical.encode(root), descent*)
+
+  def shift(n: Int): Path on Plane under Limit =
+    Path.of(root, descent.take(depth - n)*)
 
   transparent inline def sameRoot(right: Path): Boolean = summonFrom:
     case plane: (Plane is System) =>

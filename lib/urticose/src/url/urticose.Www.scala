@@ -33,6 +33,7 @@
 package urticose
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
@@ -45,6 +46,12 @@ object Www:
   given submissible: (%.type is Submissible on Www) = void => ()
   given admissible: [text <: Text] => (text is Admissible on Www) = void => ()
   given admissible2: [string <: String] => (string is Admissible on Www) = void => ()
+
+  given radical: %.type is Radical:
+    type Plane = Www
+    def length(text: Text): Int = if text.starts(t"/") then 1 else 0
+    def encode(root: %.type): Text = "/"
+    def decode(text: Text): %.type = %
 
   given system: Www is System:
     type UniqueRoot = false

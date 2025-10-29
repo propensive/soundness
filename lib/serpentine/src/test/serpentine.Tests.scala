@@ -381,6 +381,34 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
         val result: Path of Mono["home"] = path1.conjunction(path2)
       . assert()
 
+      test(m"Precedence check"):
+        val path1: Path on Linux = % / "foo" / "bar" / "baz"
+        val path2: Path on Linux = % / "foo" / "bar"
+        path2.precedes(path1)
+      . assert(_ == true)
+
+      test(m"False precedence check"):
+        val path1: Path on Linux = % / "foo" / "bar" / "baz"
+        val path2: Path on Linux = % / "foo" / "bar"
+        path1.precedes(path2)
+      . assert(_ == false)
+
+      test(m"Precedence check for equal paths"):
+        val path1: Path on Linux = % / "foo" / "bar" / "baz"
+        val path2: Path on Linux = % / "foo" / "bar" / "baz"
+        path1.precedes(path2)
+      . assert(_ == true)
+
+      test(m"Shift a path by 1"):
+        val path: Path on Linux = % / "foo" / "bar" / "baz"
+        path.shift(1)
+      . assert(_ == % / "bar" / "baz")
+
+      test(m"Shift a path by 2"):
+        val path: Path on Linux = % / "foo" / "bar" / "baz"
+        path.shift(2)
+      . assert(_ == % / "baz")
+
     suite(m"Relative tests"):
       test(m"Relative type retains plane"):
         demilitarize:
