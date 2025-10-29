@@ -33,9 +33,6 @@
 package spectacular
 
 import anticipation.*
-import fulminate.*
 
-import language.experimental.pureFunctions
-
-case class EnumCaseError(text: Text)(using Diagnostics)
-extends Error(m"$text is not a valid enumeration case")
+case class Affirmation(yes: Text, no: Text):
+  def apply(boolean: Boolean): Text = if boolean then yes else no

@@ -61,7 +61,7 @@ object Showable:
   given byte: Byte is Showable = byte => byte.toString.tt
   given message: Message is Showable = _.text
   given double: (decimalizer: DecimalConverter) => Double is Showable = decimalizer.decimalize(_)
-  given boolean: (booleanStyle: BooleanStyle) => Boolean is Showable = booleanStyle(_)
+  given boolean: (affirmation: Affirmation) => Boolean is Showable = affirmation(_)
   given option: [value: Showable] => Option[value] is Showable = _.fold("none".tt)(value.text(_))
   given uuid: Uuid is Showable = _.text
   given memory: Memory is Showable = _.text

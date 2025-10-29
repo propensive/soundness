@@ -212,22 +212,22 @@ object Tests extends Suite(m"Spectacular Tests"):
       .assert(_ == t"43")
 
       test(m"Show yes/no booleans"):
-        import booleanStyles.yesNo
+        import affirmations.yesNo
         t"${true} ${false}"
       .assert(_ == t"yes no")
 
       test(m"Show true/false booleans"):
-        import booleanStyles.trueFalse
+        import affirmations.trueFalse
         t"${true} ${false}"
       .assert(_ == t"true false")
 
       test(m"Show on/off booleans"):
-        import booleanStyles.onOff
+        import affirmations.onOff
         t"${true} ${false}"
       .assert(_ == t"on off")
 
       test(m"Show 1/0 booleans"):
-        import booleanStyles.oneZero
+        import affirmations.oneZero
         t"${true} ${false}"
       .assert(_ == t"1 0")
 

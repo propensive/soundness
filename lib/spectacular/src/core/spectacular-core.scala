@@ -37,8 +37,8 @@ import anticipation.*
 extension [showable: Showable](value: showable) def show: Text = showable.text(value)
 extension [inspectable: Inspectable](value: inspectable) def inspect: Text = inspectable.text(value)
 
-package booleanStyles:
-  given yesNo: BooleanStyle = BooleanStyle("yes".tt, "no".tt)
-  given onOff: BooleanStyle = BooleanStyle("on".tt, "off".tt)
-  given trueFalse: BooleanStyle = BooleanStyle("true".tt, "false".tt)
-  given oneZero: BooleanStyle = BooleanStyle("1".tt, "0".tt)
+package affirmations:
+  given yesNo: Affirmation = Affirmation("yes".tt, "no".tt)
+  given onOff: Affirmation = Affirmation("on".tt, "off".tt)
+  given trueFalse: Affirmation = Affirmation("true".tt, "false".tt)
+  given oneZero: Affirmation = Affirmation("1".tt, "0".tt)
