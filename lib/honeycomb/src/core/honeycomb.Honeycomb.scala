@@ -89,8 +89,8 @@ object Honeycomb:
 
             '{  $expr.convert($value) match
                   case Attribute.NotShown => Unset
-                  case Unset              => ($expr.rename.or($key.tt).s, Unset)
                   case attribute: Text    => ($expr.rename.or($key.tt).s, attribute)
+                  case _                  => ($expr.rename.or($key.tt).s, Unset)
             } :: recur(tail)
 
           case _ =>
