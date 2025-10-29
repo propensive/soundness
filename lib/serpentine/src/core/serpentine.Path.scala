@@ -70,6 +70,16 @@ object Path:
 
         Path.of(root, parts2.reverse.map(system.unescape(_))*)
 
+  given decodable2: [system: System, root] => (radical: root is Radical on system)
+        =>  (Path on system under root) is Decodable in Text =
+
+      text =>
+        val root = radical.encode(radical.decode(text))
+        val parts = text.skip(radical.length(text)).cut(system.separator)
+        val parts2 = if parts.last == t"" then parts.init else parts
+
+        Path.of(root, parts2.reverse.map(system.unescape(_))*)
+
   given nominable: [system] => (Path on system) is Nominable = path =>
     path.descent.prim.or(path.root)
 
@@ -118,12 +128,14 @@ object Path:
     conversion(_.on[system])
 
 
-  transparent inline given quotient: [system, path <: Path on system] => path is Quotient =
+  transparent inline given quotient: [system, root, path <: Path on system under root]
+                     => (radical: root is Radical on system)
+                     => path is Quotient =
     ( path =>
         if path.empty then None
-        else if path.descent.length == 1 then Some((path.root, path.descent.head))
-        else Some((path.root, Relative(0, path.descent*))) )
-    : path is Quotient of Text over (Relative on system) | Text
+        else if path.descent.length == 1 then Some((radical.decode(path.root), path.descent.head))
+        else Some((radical.decode(path.root), Relative(0, path.descent*))) )
+    : path is Quotient of root over (Relative on system) | Text
 
 
 case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:

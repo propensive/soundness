@@ -527,20 +527,23 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
     suite(m"Pattern matching"):
 
-      val shortPath: Path on Linux = % / "home"
-      val path: Path on Linux = % / "home" / "work" / "data"
+      val shortPath: Path on Linux under %.type = % / "home"
+      val path: Path on Linux under %.type = % / "home" / "work" / "data"
+
+      given Tactic[PathError] = strategies.throwUnsafely
+      summon[%.type is Radical on Linux]
 
       test(m"Match root on a simple path"):
         path.only:
           case root /: right => root
 
-      . assert(_ == t"/")
+      . assert(_ == %)
 
       test(m"Match root on a short path"):
         shortPath.only:
           case root /: right => root
 
-      . assert(_ == t"/")
+      . assert(_ == %)
 
       test(m"Match descent on a simple path"):
         path.only:
