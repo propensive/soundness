@@ -34,11 +34,13 @@ package scintillate
 
 import anticipation.*
 import contingency.*
+import digression.*
 import distillate.*
 import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hellenism.*
+import hieroglyph.*
 import parasite.*
 import prepositional.*
 import proscenium.*
@@ -81,7 +83,6 @@ package httpServers:
 
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
 
-
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.Response)
    (using connection: HttpConnection)
 : Http.Response raises AuthError =
@@ -108,8 +109,14 @@ package webserverErrorPages:
     import hieroglyph.charEncoders.utf8
     Http.Response(Unfulfilled(t"An error occurred which prevented the request from completing."))
 
-  given standard: WebserverErrorPage = (request, throwable) =>
-    import classloaders.system
-    summon[Resource is Readable by Bytes]
-    val page = cp"/scintillate/error.html".stream[Bytes].ascribe(media"text/html")
-    Http.Response(Unfulfilled(page))
+  import classloaders.system
+  private val prefix: Bytes = cp"/scintillate/error.pre.html".read[Bytes]
+  private val postfix: Bytes = cp"/scintillate/error.post.html".read[Bytes]
+
+  given standard: WebserverErrorPage = (throwable, request) =>
+    Http.Response(Unfulfilled(Stream(prefix, postfix).ascribe(media"text/html")))
+
+  given stackTraces: WebserverErrorPage = (throwable, request) =>
+    import charEncoders.utf8
+    val stack = t"<pre>${throwable.stackTrace}</pre>".read[Bytes]
+    Http.Response(Unfulfilled(Stream(prefix, stack, postfix).ascribe(media"text/html")))
