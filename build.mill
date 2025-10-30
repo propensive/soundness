@@ -103,20 +103,16 @@ trait SoundnessModule extends Module {
 }
 
 trait SoundnessSubModule extends BaseScalaModule with SonatypeCentralPublishModule {
-  def resources = Task {
-    Seq(PathRef(millSourcePath / ".." / ".." / "res"))
-  }
-  def sources = Task.Sources {
-    Seq(PathRef(millSourcePath))
-  }
+  def resources = T.sources { Seq(PathRef(millSourcePath / ".." / ".." / "res")) }
+  def compileResources = T.sources { Seq(PathRef(millSourcePath / ".." / ".." / "res")) }
+  def sources = T.sources { Seq(PathRef(millSourcePath)) }
 }
 
 trait ProbablyTestModule extends BaseScalaModule {
   def finalMainClass = (millSourcePath / ".." / "..").last + ".Tests"
   def moduleDeps: Seq[ScalaModule] = Seq(probably.cli)
-  def resources = Task {
-    Seq(PathRef(millSourcePath / ".." / ".." / "res"))
-  }
+  def resources = T.sources { Seq(PathRef(millSourcePath / ".." / ".." / "res")) }
+  def compileResources = T.sources { Seq(PathRef(millSourcePath / ".." / ".." / "res")) }
 
   def sources = Task.Sources {
     Seq(PathRef(millSourcePath))
@@ -1377,7 +1373,7 @@ object savagery extends SoundnessModule {
 
 object scintillate extends SoundnessModule {
   object server extends SoundnessSubModule {
-    def moduleDeps = Seq(telekinesis.core)
+    def moduleDeps = Seq(telekinesis.core, hellenism.core)
   }
 
   object servlet extends SoundnessSubModule {
