@@ -38,3 +38,6 @@ export scintillate
 
 package httpServers:
   export scintillate.httpServers.{stdlib, stdlibPublic}
+
+package webserverErrorPages:
+  export scintillate.webserverErrorPages.{minimal, standard}

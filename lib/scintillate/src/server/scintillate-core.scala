@@ -36,7 +36,9 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
+import gesticulate.*
 import gossamer.*
+import hellenism.*
 import parasite.*
 import prepositional.*
 import proscenium.*
@@ -44,6 +46,7 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import telekinesis.*
+import turbulence.*
 import urticose.*
 import vacuous.*
 
@@ -104,3 +107,9 @@ package webserverErrorPages:
   given minimal: WebserverErrorPage = (request, throwable) =>
     import hieroglyph.charEncoders.utf8
     Http.Response(Unfulfilled(t"An error occurred which prevented the request from completing."))
+
+  given standard: WebserverErrorPage = (request, throwable) =>
+    import classloaders.system
+    summon[Resource is Readable by Bytes]
+    val page = cp"/scintillate/error.html".stream[Bytes].ascribe(media"text/html")
+    Http.Response(Unfulfilled(page))
