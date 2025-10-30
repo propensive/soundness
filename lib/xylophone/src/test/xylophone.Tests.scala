@@ -48,7 +48,7 @@ import errorDiagnostics.stackTraces
 case class Worker(name: Text, age: Int)
 case class Firm(name: Text, ceo: Worker)
 
-case class Book(title: Text, @xmlAttribute isbn: Text)
+case class Book(title: Text, @attribute isbn: Text)
 case class Bibliography(author: Text, book: Book)
 
 enum ColorVal:

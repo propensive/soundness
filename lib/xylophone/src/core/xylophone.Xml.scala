@@ -182,7 +182,7 @@ object Xml extends Format:
 case class XmlFragment(head: Text | Unit, path: XmlPath, root: XmlAst.Root)
 extends Xml, Dynamic:
   def apply(idx: Int = 0): XmlNode = XmlNode(idx, head :: path, root)
-  def attribute(key: Text): Attribute = apply(0).attribute(key)
+  def attribute(key: Text): XmlAttribute = apply(0).attribute(key)
   def pointer: XmlPath = (head :: path).reverse
   def selectDynamic(tagName: String): XmlFragment = XmlFragment(tagName.tt, head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
@@ -199,7 +199,7 @@ extends Xml, Dynamic:
 case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dynamic:
   def selectDynamic(tagName: String): XmlFragment = XmlFragment(tagName.tt, head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
-  def attribute(attribute: Text): Attribute = Attribute(this, attribute)
+  def attribute(attribute: Text): XmlAttribute = XmlAttribute(this, attribute)
   def pointer: XmlPath = (head :: path).reverse
 
   @targetName("all")

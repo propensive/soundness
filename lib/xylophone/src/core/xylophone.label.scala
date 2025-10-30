@@ -34,4 +34,4 @@ package xylophone
 
 import proscenium.*
 
-case class xmlLabel(name: String) extends StaticAnnotation
+case class label(name: String) extends StaticAnnotation

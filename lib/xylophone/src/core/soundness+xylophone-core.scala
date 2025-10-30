@@ -33,9 +33,8 @@
 package soundness
 
 export xylophone
-. { Attribute, Namespace, StandardXmlPrinter, Xml, XmlError, XmlAst, xmlAttribute, XmlDecoder,
-    XmlEncoder, XmlInterpolation, xmlLabel, XmlName, XmlPrinter, x,
-    XmlPath }
+. { XmlAttribute, Namespace, StandardXmlPrinter, Xml, XmlError, XmlAst, attribute, XmlDecoder,
+    XmlEncoder, XmlInterpolation, label, XmlName, XmlPrinter, x, XmlPath }
 
 package xmlPrinters:
   export xylophone.xmlPrinters.compact
