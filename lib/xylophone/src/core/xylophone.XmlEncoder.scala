@@ -51,7 +51,7 @@ object XmlEncoder extends Derivation[XmlEncoder]:
   given int: XmlEncoder[Int] = int =>
     XmlAst.Element(XmlName(t"Int"), List(XmlAst.Textual(int.show)))
 
-  private val attributeAttribute = xmlAttribute()
+  private val attributeAttribute = attribute()
 
   inline def join[derivation <: Product: ProductReflection]: XmlEncoder[derivation] =
     value =>

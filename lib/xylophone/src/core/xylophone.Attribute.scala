@@ -32,17 +32,6 @@
                                                                                                   */
 package xylophone
 
-import anticipation.*
-import contingency.*
-import gossamer.*
-import rudiments.*
-import vacuous.*
+import proscenium.*
 
-case class Attribute(node: XmlNode, attribute: Text):
-  def as[value: XmlDecoder]: value raises XmlError =
-    val attributes = Xml.normalize(node).prim match
-      case XmlAst.Element(_, _, attributes, _) => attributes
-      case _                                   => abort(XmlError(XmlError.Reason.Read))
-
-    value.read
-     (List(XmlAst.Element(XmlName(t"empty"), List(XmlAst.Textual(attributes(XmlName(attribute)))))))
+case class attribute() extends StaticAnnotation
