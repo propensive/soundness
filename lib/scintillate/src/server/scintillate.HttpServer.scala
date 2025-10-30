@@ -48,42 +48,25 @@ import scala.compiletime.*
 import java.net as jn
 import com.sun.net.httpserver as csnh
 
-case class HttpServer(port: Int, localhostOnly: Boolean = true) extends RequestServable:
+case class HttpServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
+extends RequestServable:
   def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
   : Service logs HttpServerEvent raises ServerError =
 
-      def handle(exchange: csnh.HttpExchange | Null) =
+      def handle(exchange: csnh.HttpExchange | Null): Unit =
         try
-          val responder = new Responder:
-
-            def addHeader(key: Text, value: Text): Unit =
-              exchange.nn.getResponseHeaders.nn.add(key.s, value.s)
-
-            def sendBody(status: Int, body: Stream[Bytes]): Unit =
-              val length = body match
-                case Stream()     => -1
-                case Stream(data) => data.length
-                case _              => 0
-
-              exchange.nn.sendResponseHeaders(status, length)
-
-              try
-                body.map(_.mutable(using Unsafe)).each: bytes =>
-                  exchange.nn.getResponseBody.nn.write(bytes)
-              catch case e: StreamError => () // FIXME: Should this be ignored?
-
-              exchange.nn.getResponseBody.nn.flush()
-              exchange.nn.close()
-
           val connection = HttpConnection(exchange.nn)
 
-          connection.respond(handler(using connection))
+          connection.respond:
+            try handler(using connection) catch case throwable: Throwable =>
+              errorPage.handle(throwable, connection)
+
 
         catch case NonFatal(exception) => exception.printStackTrace()
 
       def startServer(): com.sun.net.httpserver.HttpServer raises ServerError =
         try
-          val host = if localhostOnly then "localhost" else "0.0.0.0"
+          val host = if local then "localhost" else "0.0.0.0"
           val httpServer = csnh.HttpServer.create(jn.InetSocketAddress(host, port), 0).nn
           httpServer.createContext("/").nn.setHandler(handle(_))
           httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
