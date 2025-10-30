@@ -36,6 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
+import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Aviation Tests"):
   def run(): Unit =
@@ -201,6 +202,22 @@ object Tests extends Suite(m"Aviation Tests"):
         given calendar: Calendar = calendars.gregorian
         2016-Apr-11
       .assert(_ == 2016-Apr-11)
+
+      test(m"Subtract dates"):
+        2018-Nov-19 - (2017-Sep-1)
+      .assert(_ == Quanta[Mono[Days[1]]](444))
+
+      test(m"Subtract days from a date"):
+        2018-Nov-19 - Quanta[Mono[Days[1]]](2)
+      .assert(_ == 2018-Nov-17)
+
+      test(m"Add days to a date"):
+        2018-Nov-19 + Quanta[Mono[Days[1]]](2)
+      .assert(_ == 2018-Nov-21)
+
+      test(m"Add days to a date, order reversed"):
+        Quanta[Mono[Days[1]]](2) + (2018-Nov-19)
+      .assert(_ == 2018-Nov-21)
 
       test(m"Get Gregorian date"):
         given calendar: Calendar = calendars.gregorian

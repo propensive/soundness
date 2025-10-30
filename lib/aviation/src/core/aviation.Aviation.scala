@@ -32,6 +32,7 @@
                                                                                                   */
 package aviation
 
+import abacist.*
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -43,6 +44,7 @@ import hypotenuse.*
 import kaleidoscope.*
 import prepositional.*
 import proscenium.*
+import quantitative.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -165,6 +167,18 @@ object Aviation:
 
     trait Format(val name: Text):
       type Issue: Communicable
+
+    given subtractable: Date is Subtractable by Date to Quanta[Mono[Days[1]]] = (end, start) =>
+      Quanta(end - start)
+
+    given subtractable2: Date is Subtractable by Quanta[Mono[Days[1]]] to Date = (end, start) =>
+      end - start[Days]
+
+    given addable: Date is Addable by Quanta[Mono[Days[1]]] to Date = (left, right) =>
+      left + right[Days]
+
+    given addable2: Quanta[Mono[Days[1]]] is Addable by Date to Date = (left, right) =>
+      left[Days] + right
 
     given showable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable = date =>
       import DateNumerics.*, Years.*
