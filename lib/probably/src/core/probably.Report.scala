@@ -120,10 +120,10 @@ class Report(using Environment):
 
       case Test(testId, buf) =>
         val status =
-          if buf.all(_.is[Verdict.Pass]) then Status.Pass
-          else if buf.all(_.is[Verdict.Fail]) then Status.Fail
-          else if buf.all(_.is[Verdict.Throws]) then Status.Throws
-          else if buf.all(_.is[Verdict.CheckThrows]) then Status.CheckThrows
+          if buf.all(_.typed[Verdict.Pass]) then Status.Pass
+          else if buf.all(_.typed[Verdict.Fail]) then Status.Fail
+          else if buf.all(_.typed[Verdict.Throws]) then Status.Throws
+          else if buf.all(_.typed[Verdict.CheckThrows]) then Status.CheckThrows
           else Status.Mixed
 
         val min: Long = buf.map(_.duration).min

@@ -38,7 +38,7 @@ import scala.collection.immutable.ListMap
 
 import anticipation.*
 import proscenium.*
-import rudiments.{is as _, *}
+import rudiments.*
 import symbolism.*
 import vacuous.*
 

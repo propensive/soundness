@@ -82,7 +82,7 @@ extends Dynamic:
   def apply(key: Text): Optional[CodlSchema] = dictionary.at(key).or(dictionary.at(Unset)).or(Unset)
   def apply(idx: Int): Entry = subschemas(idx)
 
-  private lazy val fieldCount: Int = subschemas.indexWhere(!_.schema.is[Field]) match
+  private lazy val fieldCount: Int = subschemas.indexWhere(!_.schema.typed[Field]) match
     case -1    => subschemas.size
     case count => count
 

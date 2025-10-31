@@ -72,7 +72,7 @@ extension [value](value: value)
   inline def when(inline predicate: value => Boolean)(inline lambda: value => value): value =
     if predicate(value) then lambda(value) else value
 
-  inline def is[ValueSubtype <: value]: Boolean = value.isInstanceOf[ValueSubtype]
+  inline def typed[ValueSubtype <: value]: Boolean = value.isInstanceOf[ValueSubtype]
 
   transparent inline def matchable(using Unsafe): value & Matchable =
     value.asInstanceOf[value & Matchable]
