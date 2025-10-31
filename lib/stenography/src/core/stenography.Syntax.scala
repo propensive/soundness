@@ -83,8 +83,8 @@ enum Syntax:
     case Application(_, _, _)  => 10
     case Selection(_, _)       => 10
     case Sequence(_, _)        => 10
-    case Declaration(_, _, _)    => 10
-    case Value(_)          => 10
+    case Declaration(_, _, _)  => 10
+    case Value(_)              => 10
 
   def text(using imports: Imports): Text = this match
     case Simple(typename)          => typename.text
@@ -96,7 +96,7 @@ enum Syntax:
     case Suffix(base, suffix)      => s"${base.text}$suffix".tt
     case Sequence(false, elements) => s"(${elements.map(_.text).mkString(", ")})".tt
     case Sequence(true, elements)  => s"[${elements.map(_.text).mkString(", ")}]".tt
-    case Value(typename)       => s"${typename.text}.type".tt
+    case Value(typename)           => s"${typename.text}.type".tt
     case Compound(syntaxes)        => syntaxes.map(_.text).mkString.tt
 
     case Declaration(method, syntaxes, result) =>
