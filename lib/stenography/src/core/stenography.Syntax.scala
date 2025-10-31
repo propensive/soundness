@@ -54,7 +54,7 @@ enum Syntax:
   case Application(left: Syntax, elements: List[Syntax], infix: Boolean)
   case Selection(left: Syntax, right: Text)
   case Named(isUsing: Boolean, name: Text, syntax: Syntax)
-  case Sequence(isType: Boolean, syntaxes: List[Syntax])
+  case Sequence(style: '(' | '[' | '{', syntaxes: List[Syntax])
   case Declaration(method: Boolean, syntaxes: List[Syntax], result: Syntax)
   case Value(typename: Typename)
   case Compound(syntaxes: List[Syntax])
@@ -63,8 +63,9 @@ enum Syntax:
     case Structural(_, _, _)   => 0
     case Prefix(_, _)          => 0
     case Named(_, _, _)        => 0
-    case Compound(_)           => 0
     case Suffix(_, _)          => 0
+    case Infix(_, "<:", _)     => 10
+    case Infix(_, ">:", _)     => 10
     case Infix(_, middle, _)   => middle.s.head match
       case '|'                   => 1
       case '^'                   => 2
@@ -77,6 +78,7 @@ enum Syntax:
       case char if char.isLetter => 0
       case _                     => 9
     case Projection(_, _)      => 9
+    case Compound(_)           => 10
     case Simple(_)             => 10
     case Symbolic(_)           => 10
     case Primitive(_)          => 10
@@ -87,17 +89,18 @@ enum Syntax:
     case Value(_)              => 10
 
   def text(using imports: Imports): Text = this match
-    case Simple(typename)          => typename.text
-    case Symbolic(text)            => text
-    case Projection(base, text)    => s"${base.text}#$text".tt
-    case Primitive(text)           => text
-    case Selection(left, right)    => s"${left.text}.${right}"
-    case Prefix(prefix, base)      => s"$prefix ${base.text}".tt
-    case Suffix(base, suffix)      => s"${base.text}$suffix".tt
-    case Sequence(false, elements) => s"(${elements.map(_.text).mkString(", ")})".tt
-    case Sequence(true, elements)  => s"[${elements.map(_.text).mkString(", ")}]".tt
-    case Value(typename)           => s"${typename.text}.type".tt
-    case Compound(syntaxes)        => syntaxes.map(_.text).mkString.tt
+    case Simple(typename)        => typename.text
+    case Symbolic(text)          => text
+    case Projection(base, text)  => s"${base.text}#$text".tt
+    case Primitive(text)         => text
+    case Selection(left, right)  => s"${left.text}.${right}"
+    case Prefix(prefix, base)    => s"$prefix ${base.text}".tt
+    case Suffix(base, suffix)    => s"${base.text}$suffix".tt
+    case Sequence('(', elements) => s"(${elements.map(_.text).mkString(", ")})".tt
+    case Sequence('[', elements) => s"[${elements.map(_.text).mkString(", ")}]".tt
+    case Sequence('{', elements) => s"{${elements.map(_.text).mkString(", ")}}".tt
+    case Value(typename)         => s"${typename.text}.type".tt
+    case Compound(syntaxes)      => syntaxes.map(_.text).mkString.tt
 
     case Declaration(method, syntaxes, result) =>
       s"${syntaxes.map(_.text).mkString}${if method then ": " else ""}${result.text}".tt
@@ -115,8 +118,8 @@ enum Syntax:
       s"${base.text} { ${(members2 ++ defs2).mkString("; ")} }".tt
 
     case Infix(left: Syntax, middle, right: Syntax) =>
-      val left2 = if left.precedence < precedence then Sequence(false, List(left)) else left
-      val right2 = if right.precedence < precedence then Sequence(false, List(right)) else right
+      val left2 = if left.precedence < precedence then Sequence('(', List(left)) else left
+      val right2 = if right.precedence < precedence then Sequence('(', List(right)) else right
       s"${left2.text} $middle ${right2.text}".tt
 
     case Named(isUsing, name, syntax) =>
@@ -154,62 +157,77 @@ object Syntax:
       else if upper.typeSymbol == defn.AnyClass then Infix(sub, ">:", apply(lower))
       else Infix(Infix(sub, ">:", apply(lower)), "<:", apply(upper))
 
+  def contextBounds(using Quotes)(clauses: List[quotes.reflect.ParamClause]): Map[Text, Syntax] =
+    import quotes.reflect.*
 
-  def clause(using Quotes)(clause: quotes.reflect.ParamClause, showUsing: Boolean): Syntax =
+    clauses.flatMap:
+      case TermParamClause(defs) => defs.collect:
+        case ValDef(name, meta, default) if name.startsWith("evidence$") =>
+          apply(meta.tpe) match
+            case Infix(Simple(typename), "is", right)          => List(typename -> right)
+            case Application(Simple(typename), List(right), _) => List(typename -> right)
+            case _                                             => Nil
+
+      case _ => Nil
+
+    . flatten
+    . groupBy(_(0).name)
+    . view
+    . mapValues: bounds =>
+        bounds.length match
+          case 1 => bounds(0)(1)
+          case _ => Sequence('{', bounds.map(_(1)))
+    . to(Map)
+
+  def clause(using Quotes)(clause: quotes.reflect.ParamClause, showUsing: Boolean, context: Map[Text, Syntax]): Syntax =
     import quotes.reflect.*
 
     clause match
       case TermParamClause(termDefs) =>
         val contextual = termDefs.exists(_.symbol.flags.is(Flags.Given))
 
-        val defs = termDefs.flatMap:
-          case valDef@ValDef(name, meta, default) =>
+        val items0 = termDefs.filter:
+          case ValDef(name, _, _) if !name.startsWith("evidence$") => true
+          case _                                                   => false
+
+        var parens = items0.length != 1 || showUsing
+
+        val items = items0.map:
+          case valDef@ValDef(name, meta, default) if !name.startsWith("evidence$") =>
+            val evidence = name.startsWith("x$")
             val syntax =
-              if name.startsWith("evidence$") || name.startsWith("x$")
-              then List(apply(meta.tpe), Comma)
-              else List(symbolic(name.tt), Colon, apply(meta.tpe), Comma)
+              if evidence then apply(meta.tpe)
+              else
+                parens = true
+                Named(contextual && showUsing, name.tt, apply(meta.tpe))
 
-            if valDef.symbol.flags.is(Flags.Inline)
-            then symbolic("inline ") :: syntax
-            else syntax
+            if valDef.symbol.flags.is(Flags.Inline) then Prefix("inline", syntax) else syntax
 
-
-        val usingKeyword = if contextual && showUsing then List(symbolic("using ")) else Nil
-
-        Compound(Open +: (usingKeyword ++ defs.dropRight(1)) :+ Close)
+        if !parens then items(0) else Sequence('(', items)
 
       case TypeParamClause(typeDefs) =>
-        val defs = typeDefs.flatMap:
+        val items = typeDefs.map:
           case typeDef@TypeDef(name, bounds) =>
             val flags = typeDef.symbol.flags
 
-            def variance(list: List[Syntax]): List[Syntax] =
-              if flags.is(Flags.Covariant) then Plus :: list
-              else if flags.is(Flags.Contravariant) then Minus :: list
-              else list
+            val ref = symbolic(name)
 
-            bounds match
-              case TypeBoundsTree(lower, upper) =>
-                variance(List(typeBounds(symbolic(name.tt), lower.tpe, upper.tpe), Comma))
+            val syntax = bounds match
+              case TypeBoundsTree(lower, upper)    => typeBounds(symbolic(name.tt), lower.tpe, upper.tpe)
+              case LambdaTypeTree(typeDefs, other) => symbolic(name) // FIXME: todo
+              case other                           => symbolic(name)
 
-              case LambdaTypeTree(typeDefs, other) =>
-                variance(List(symbolic(name), Comma))
+            context.at(name.tt).lay(syntax)(Infix(syntax, ": ", _))
 
-              case other =>
-                variance(List(symbolic(name), Comma))
-
-        Compound(OpenType +: defs.dropRight(1) :+ CloseType)
+        Sequence('[', items)
 
   def signature(using Quotes)(name: Text, repr: quotes.reflect.TypeRepr): Declaration =
     import quotes.reflect.*
 
     repr.absolve match
       case MethodType(args0, types, result) =>
-        val params =
-          args0.zip(types).map: (arg, tpe) =>
-            Named(false, arg, apply(tpe))
-
-        Declaration(true, List(Sequence(false, params)), apply(result))
+        val params = args0.zip(types).map { (arg, tpe) => Named(false, arg, apply(tpe)) }
+        Declaration(true, List(Sequence('(', params)), apply(result))
 
       case ByNameType(tpe) =>
         Declaration(true, List(), apply(tpe))
@@ -221,7 +239,7 @@ object Syntax:
         val args = args0.zip(bounds).map:
           case (arg, TypeBounds(lower, upper)) => typeBounds(symbolic(arg), lower, upper)
 
-        Declaration(false, List(Sequence(true, args)), apply(tpe))
+        Declaration(false, List(Sequence('[', args)), apply(tpe))
 
       case other =>
         Declaration(true, List(), apply(other))
@@ -233,10 +251,9 @@ object Syntax:
     def isPackage(name: String): Boolean = name.endsWith("$package") || name == "package"
 
     repr.absolve match
-      case ThisType(ref) =>
-        apply(ref) match
-          case Simple(Typename.Type(parent, name)) => Simple(Typename.Term(parent, name))
-          case syntax => syntax
+      case ThisType(ref) => apply(ref) match
+        case Simple(Typename.Type(parent, name)) => Simple(Typename.Term(parent, name))
+        case syntax => syntax
 
       case typeRef@TypeRef(NoPrefix(), name) =>
         Simple(Typename.Top(name))
@@ -309,7 +326,7 @@ object Syntax:
         if typ.isFunctionType then
           val args = args0.init match
             case List(one) => apply(one)
-            case many      => Sequence(false, many.map(apply(_)))
+            case many      => Sequence('(', many.map(apply(_)))
 
           val arrow = if typ.isContextFunctionType then "?=>" else "=>"
 
@@ -317,13 +334,13 @@ object Syntax:
         else if args0.length == 2 && repr.typeSymbol.flags.is(Flags.Infix)
         then Application(apply(base), args0.map(apply(_)), true)
         else if defn.isTupleClass(base.typeSymbol)
-        then Sequence(false, args0.map(apply(_)))
+        then Sequence('(', args0.map(apply(_)))
         else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
         then args0(0).absolve match
           case AppliedType(_, names) => apply(args0(1)).absolve match
             case Sequence(_, elements) =>
               Sequence
-               (false,
+               ('(',
                 names.zip(elements).map:
                   _.absolve match
                     case (ConstantType(StringConstant(name)), element) =>
@@ -370,10 +387,10 @@ object Syntax:
         val unnamed = args0.forall(_.startsWith("x$"))
 
         val args =
-          if args0.isEmpty then Sequence(false, Nil)
-          else if unnamed then Sequence(false, types.map(apply(_)))
+          if args0.isEmpty then Sequence('(', Nil)
+          else if unnamed then Sequence('(', types.map(apply(_)))
           else Sequence
-                (false,
+                ('(',
                  args0.zip(types).map { (member, typ) => Named(false, member, apply(typ)) })
 
         val arrow = if method.isContextual then "?=>" else "=>"
@@ -386,13 +403,13 @@ object Syntax:
           case (name, TypeBounds(lower, upper)) =>
             typeBounds(symbolic(name), lower, upper)
 
-        Infix(Sequence(true, args), "=>", apply(result))
+        Infix(Sequence('[', args), "=>", apply(result))
 
       case TypeLambda(args0, bounds, tpe) =>
         val args = args0.zip(bounds).map:
           case (arg, TypeBounds(lower, upper)) => typeBounds(symbolic(arg), lower, upper)
 
-        Infix(Sequence(true, args), "=>>", apply(tpe))
+        Infix(Sequence('[', args), "=>>", apply(tpe))
 
       case ParamRef(binder, n) => binder match
         case TypeLambda(params, _, _) => symbolic(params(n))
