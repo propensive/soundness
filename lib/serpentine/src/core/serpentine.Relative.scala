@@ -86,9 +86,13 @@ object Relative:
 
               Relative(ascent, descent*)
 
-  inline given [topic, ascent <: Int, system]
-         =>  Conversion[Relative of topic under ascent, Relative of topic under ascent on system] =
-    conversion(_.on[system])
+
+  inline given conversion: [topic, ascent <: Int, system]
+               =>  Conversion[Relative of topic under ascent,
+                              Relative of topic under ascent on system] =
+
+      conversion(_.on[system])
+
 
   given encodable: [system: System] => Relative on system is Encodable in Text =
     relative =>

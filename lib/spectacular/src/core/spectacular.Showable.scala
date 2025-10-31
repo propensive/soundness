@@ -84,10 +84,10 @@ object Showable:
   given zerary: Ordinal is Showable = ordinal => s"${ordinal.n0}.₀".tt
 
   given typeRepr: (quotes: Quotes) => quotes.reflect.TypeRepr is Showable = repr =>
-    Stenography.name2(using repr.asType)
+    Stenography.name(using repr.asType)
 
   given meta: [meta] => (quotes: Quotes) => Type[meta] is Showable =
-    Stenography.name2[meta](using _)
+    Stenography.name[meta](using _)
 
   given stackTrace: StackTrace is Showable = stack =>
     val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
