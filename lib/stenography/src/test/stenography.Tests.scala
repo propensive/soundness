@@ -90,7 +90,7 @@ object Tests extends Suite(m"Stenography Tests"):
 
     test(m"Show `List[Int]`"):
       Syntax.name[List[Int]]
-    .assert(_ == t"scala.collection.immutable.List[Int]")
+    .assert(_ == t"collection.immutable.List[Int]")
 
     test(m"Show constant String type"):
       Syntax.name["hello"]
