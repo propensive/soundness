@@ -114,7 +114,7 @@ enum Syntax:
       if isUsing then s"using $name: ${syntax.text}".tt else s"$name: ${syntax.text}".tt
 
 object Syntax:
-  inline def name[typename <: AnyKind]: Text = ${Stenography.name[typename]}
+  inline def name[typename <: AnyKind]: Text = ${Stenography.typename[typename]}
 
   val Space: Syntax.Symbolic = Syntax.Symbolic(" ")
   val Colon: Syntax.Symbolic = Syntax.Symbolic(": ")
@@ -242,6 +242,7 @@ object Syntax:
           case syntax => syntax
 
       case typeRef@TypeRef(NoPrefix(), name) =>
+        //println("top: "+name)
         Syntax.Simple(Typename.Top(name))
 
       case typeRef@TypeRef(prefix, name) =>
@@ -249,7 +250,7 @@ object Syntax:
         val name2 = if module then name.dropRight(1) else name
 
         if prefix.typeSymbol.flags.is(Flags.Package)
-        then Syntax.Simple(Typename.Type(Typename.Top(prefix.show.tt), name2))
+        then Syntax.Simple(Typename.Type(Typename(prefix.show.tt), name2))
         else apply(prefix) match
           case singleton@Syntax.Singleton(typename) =>
             if isPackage(name2) then singleton

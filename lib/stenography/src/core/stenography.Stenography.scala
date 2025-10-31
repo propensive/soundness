@@ -40,10 +40,9 @@ import proscenium.*
 object Stenography:
   import dotty.tools.dotc.*
 
-  def name[typename <: AnyKind: Type](using Quotes): Expr[Text] =
-    Expr(name2[typename])
+  def typename[typename <: AnyKind: Type]: Macro[Text] = Expr(name[typename])
 
-  def name2[typename <: AnyKind: Type](using Quotes): Text =
+  def name[typename <: AnyKind: Type](using Quotes): Text =
     import quotes.reflect.*
     val outer = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>

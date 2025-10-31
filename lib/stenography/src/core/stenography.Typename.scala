@@ -41,87 +41,60 @@ import symbolism.*
 import vacuous.*
 
 object Typename:
+  def fromUrl(text: Text): Typename = apply(text.s.replaceAll("~", "#").nn.tt)
+
   def apply(text: Text): Typename =
-    text.s.lastIndexOf('#') match
-      case -1 =>
-        text.s.lastIndexOf('.') match
-          case -1 => Top(text)
+    def recur(i: Ordinal, start: Ordinal, typename: Optional[Typename]): Typename =
+      def next = text.segment(start thru i - 1)
 
-          case position =>
-            val next = text.s.substring(position + 1).nn
-            if next.endsWith("package$") then apply(text.s.substring(0, position).nn)
-            else Term(apply(text.s.substring(0, position).nn.tt), text.s.substring(position + 1).nn.tt)
-      case position =>
-        Type(apply(text.s.substring(0, position).nn.tt), text.s.substring(position + 1).nn.tt)
+      text.at(i) match
+        case Unset => typename.lay(Typename.Top(next))(Typename.Term(_, next))
+        case '.'   => recur(i + 1, i + 1, typename.lay(Typename.Top(next))(Typename.Term(_, next)))
+        case '#'   => recur(i + 1, i + 1, typename.lay(Typename.Top(next))(Typename.Type(_, next)))
+        case char  => recur(i + 1, start, typename)
 
-  def decode(text: Text): Typename =
-    def entity(start: Ordinal, end: Ordinal, isType: Boolean, parent: Optional[Typename])
-    : Typename =
-        val part = text.segment(start thru end)
-        parent.lay(Typename.Top(part)): name =>
-          if isType then Typename.Type(name, part) else Typename.Term(name, part)
-
-
-    def recur(position: Ordinal, start: Ordinal, isType: Boolean, typename: Optional[Typename])
-    : Typename =
-        text.at(position) match
-          case Unset =>
-            entity(start, position - 1, isType, typename)
-
-          case char@('.' | ':') =>
-            recur
-             (position + 1,
-              position + 1,
-              char == ':',
-              entity(start, position - 1, isType, typename))
-
-          case char  =>
-            recur(position + 1, start, isType, typename)
-
-    recur(Prim, Prim, false, Unset)
+    recur(Prim, Prim, Unset)
 
 
 enum Typename:
-  case Top(name0: Text)
-  case Term(parent0: Typename, name0: Text)
-  case Type(parent0: Typename, name0: Text)
+  case Top(name: Text)
+  case Term(parent0: Typename, name: Text)
+  case Type(parent0: Typename, name: Text)
 
+  def name: Text
   def child(name: Text, isType: Boolean) = if isType then Type(this, name) else Term(this, name)
 
-  def name: Text = this match
-    case Type(_, name) => name
-    case Term(_, name) => name
-    case Top(name)     => name
+  def companionObject: Typename = this match
+    case Type(parent, name) => Term(parent, name)
+    case other              => other
 
-  def parent: Typename = this match
+  def companionType: Typename = this match
+    case Term(parent, name) => Type(parent, name)
+    case other              => other
+
+  def parent: Optional[Typename] = this match
     case Type(parent, _) => parent
     case Term(parent, _) => parent
-    case Top(_)          => this
-
-  def id: Text = this match
-    case Top(name)          => name
-
-    case Term(parent, name) =>
-      s"${parent.id}${symbol(":")}${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
-
-    case Type(parent, name) =>
-      s"${parent.id}${symbol(":")}${jn.URLEncoder.encode(name.s, "UTF-8")}".tt
-
-  def typeParent: Boolean = parent match
-    case Type(_, _) => true
-    case _          => false
+    case Top(_)          => Unset
 
   def symbol(typeSymbol: Text = "#", termSymbol: Text = "."): Text = parent match
+    case Unset      => ""
     case Type(_, _) => typeSymbol
-    case _          => termSymbol
+    case Term(_, _) => termSymbol
+    case Top(_)     => termSymbol
 
   def render: Text = this match
-    case Top(name) => name
-    case other     => s"${parent.render}${symbol("⌗")}$name".tt
+    case Top(name)          => name
+    case Type(parent, name) => s"${parent.render}${symbol("⌗")}$name".tt
+    case Term(parent, name) => s"${parent.render}${symbol("⌗")}$name".tt
 
-  def text(using imports: Imports): Text =
+  def url: Text =
+    val name2 = java.net.URLEncoder.encode(name.s).nn.tt
+
     this match
-      case Typename.Top(name) => name
+      case Top(_)          => name2
+      case Type(parent, _) => s"${parent.url}${symbol("~")}$name2".tt
+      case Term(parent, _) => s"${parent.url}${symbol("~")}$name2".tt
 
-      case child =>
-        if imports.has(parent) then name else s"${parent.text}${symbol("#")}$name"
+  def text(using imports: Imports): Text = parent.lay(name): parent =>
+    if imports.has(parent) then name else s"${parent.text}${symbol("#")}$name".tt

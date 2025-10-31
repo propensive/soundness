@@ -34,6 +34,7 @@ package stenography
 
 import language.experimental.pureFunctions
 
+import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
@@ -47,6 +48,18 @@ object Tests extends Suite(m"Stenography Tests"):
 
   def run(): Unit =
     import anticipation.*
+    test(m"Decode a term"):
+      Typename(t"immutable.List")
+    .assert(_ == Typename.Term(Typename.Top("immutable"), "List"))
+
+    test(m"Decode a type of a term"):
+      Typename(t"immutable.List#Value")
+    .assert(_ == Typename.Term(Typename.Type(Typename.Top("immutable"), "List"), "Value"))
+
+    test(m"Decode a term of a term"):
+      Typename(t"immutable.List.Value")
+    .assert(_ == Typename.Term(Typename.Term(Typename.Top("immutable"), "List"), "Value"))
+
     test(m"Show `Int`"):
       Syntax.name[Int]
     .assert(_ == t"Int")
