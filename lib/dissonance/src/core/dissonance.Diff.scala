@@ -155,10 +155,10 @@ case class Diff[element](edits: Edit[element]*):
         case Par(pos2, rpos2, _) :: tail => recur(tail, pos2 + 1, rpos2 + 1)
 
         case _ =>
-          val dels = todo.takeWhile(_.is[Del[element]]).collect:
+          val dels = todo.takeWhile(_.typed[Del[element]]).collect:
             case del: Del[element] => del
 
-          val inss = todo.drop(dels.length).takeWhile(_.is[Ins[element]]).collect:
+          val inss = todo.drop(dels.length).takeWhile(_.typed[Ins[element]]).collect:
             case ins: Ins[element] => ins
 
           Chunk(pos, rpos, dels, inss) #::
