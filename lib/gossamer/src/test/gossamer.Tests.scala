@@ -35,6 +35,7 @@ package gossamer
 import soundness.*
 
 import textMetrics.uniform
+import autopsies.contrastExpectations
 
 case class Person(name: Text, age: Int)
 
@@ -851,3 +852,70 @@ object Tests extends Suite(m"Gossamer Tests"):
         Decimalizer(decimalPlaces = 1).decimalize(0.0)
 
       . assert(_ == t"0.0")
+
+    suite(m"BK-Tree tests"):
+      import proximityMeasures.levenshteinDistance
+      val words: List[Text] = List("ba", "baa", "baal", "baar", "baba", "babe", "babu",
+        "baby", "bac", "bach", "back", "bad", "bade", "bae", "baff", "baft",
+        "bag", "baga", "bago", "bah", "baho", "baht", "bail", "bain", "bait",
+        "baka", "bake", "baku", "bal", "bald", "bale", "bali", "balk", "ball",
+        "balm", "balu", "bam", "ban", "banc", "band", "bane", "bang", "bani",
+        "bank", "bant", "bap", "bar", "bara", "barb", "bard", "bare", "bari",
+        "bark", "barm", "barn", "baru", "bas", "base", "bash", "bask", "bass",
+        "bast", "bat", "bate", "bath", "bats", "batt", "batz", "baud", "baul",
+        "baun", "baw", "bawd", "bawl", "bawn", "bay", "baya", "baze", "be",
+        "bead", "beak", "beal", "beam", "bean", "bear", "beat", "beau", "beck",
+        "bed", "bee", "beef", "beek", "been", "beer", "bees", "beet", "beg",
+        "bego", "behn", "bel", "bela", "beld", "bell", "belt", "bely", "bema",
+        "ben", "bena", "bend", "bene", "beng", "beni", "benj", "benn", "beno",
+        "bent", "ber", "bere", "berg", "berm", "bes", "besa", "best", "bet",
+        "beta", "beth", "bevy", "bey", "bhat", "bhoy", "bhut", "bias", "bib",
+        "bibb", "bibi", "bice", "bick", "bid", "bide", "bien", "bier", "biff",
+        "big", "biga", "bigg", "bija", "bike", "bikh", "bile", "bilk", "bill",
+        "bilo", "bin", "bind", "bine", "bing", "binh", "bink", "bino", "bint",
+        "biod", "bion", "bios", "bird", "biri", "birk", "birl", "birn", "birr",
+        "bis", "bit", "bite", "biti", "bito", "bitt", "biwa", "biz", "bizz",
+        "blab", "blad", "blae", "blah", "blan", "blas", "blat", "blaw", "blay",
+        "bleb", "bled", "blee", "bleo", "blet", "blip", "blo", "blob", "bloc",
+        "blot", "blow", "blub", "blue", "blup", "blur", "bo", "boa", "boar",
+        "boat", "bob", "boba", "bobo", "boce", "bock", "bod", "bode", "body",
+        "bog", "boga", "bogo", "bogy", "boho", "boid", "boil", "bojo", "boke",
+        "bola", "bold", "bole", "bolk", "boll", "bolo", "bolt", "bom", "boma",
+        "bomb", "bon", "bond", "bone", "bong", "bonk", "bony", "boo", "boob",
+        "bood", "boof", "book", "bool", "boom", "boon", "boor", "boot", "bop",
+        "bor", "bora", "bord", "bore", "borg", "borh", "born", "boro", "bort",
+        "bose", "bosh", "bosk", "bosn", "boss", "bot", "bota", "bote", "both",
+        "bott", "boud", "bouk", "boun", "bout", "bouw", "bow", "bowk", "bowl",
+        "boxy", "boy", "boza", "bozo", "bra", "brab", "brad", "brae", "brag",
+        "bran", "brat", "braw", "bray", "bred", "bree", "brei", "bret", "brew",
+        "brey", "brig", "brim", "brin", "brit", "brob", "brod", "brog", "broo",
+        "brot", "brow", "brut", "bu", "bual", "bub", "buba", "bubo", "buck",
+        "bud", "buda", "buff", "bufo", "bug", "buhl", "buhr", "bukh", "bulb",
+        "bulk", "bull", "bult", "bum", "bump", "bun", "buna", "bund", "bung",
+        "bunk", "bunt", "buoy", "bur", "burd", "bure", "burg", "buri", "burl",
+        "burn", "buro", "burp", "burr", "burt", "bury", "bus", "bush", "busk",
+        "buss", "bust", "busy", "but", "butt", "buy", "buzz", "by", "bye", "byee",
+        "bygo", "byon", "byre", "byth")
+
+      val lexicon = Lexicon(words)
+
+      test(m"There is one exact match on `book`"):
+        lexicon.search("book", 0)
+      . assert(_ == Set("book"))
+
+      test(m"There are no exact matches on `booq`"):
+        lexicon.search("booq", 0)
+      . assert(_ == Set())
+
+      test(m"There several matches at distance 1 from `book`"):
+        lexicon.search("book", 1)
+      . assert(_ == Set("boon", "bolk", "bouk", "boot", "book", "boor", "boo", "boof", "boob",
+                        "bonk", "bool", "bowk", "bosk", "boom", "bood", "bock"))
+
+      test(m"There many matches at distance 2 from `book`"):
+        lexicon.search("book", 2).size
+      . assert(_ == 112)
+
+      test(m"All the matches are found at distance 3"):
+        lexicon.search("book", 3).size
+      . assert(_ == words.size)

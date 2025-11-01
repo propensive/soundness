@@ -317,7 +317,7 @@ extension [textual: Textual](text: textual)
   inline def superscripts: textual = textual.map(text)(_.superscript.or(' '))
 
 package proximityMeasures:
-  given jaroDistance: Proximity = (left, right) =>
+  given jaroDistance: (Proximity { type Triangulable = false }) by Double = (left, right) =>
    if left == right then 1.0 else
      val maxDist: Int = left.length.max(right.length)/2 - 1
      val found1 = new scm.BitSet(left.length)
@@ -349,7 +349,7 @@ package proximityMeasures:
      else (matches.toDouble/left.length + matches.toDouble/right.length +
          (matches - count/2.0)/matches)/3
 
-  given prefixMatch: Proximity = (left, right) =>
+  given prefixMatch: (Proximity { type Triangulable = false }) by Int = (left, right) =>
     val limit = left.length.min(right.length)
 
     def recur(index: Int = 0): Int = if index >= limit then index else
@@ -357,12 +357,12 @@ package proximityMeasures:
 
     recur()
 
-  given jaroWinklerDistance: Proximity = (left, right) =>
+  given jaroWinklerDistance: (Proximity { type Triangulable = false }) by Double = (left, right) =>
     val scale = 0.1
     val distance = jaroDistance.distance(left, right)
-    distance + scale*prefixMatch.distance(left, right).min(4.0)*(1.0 - distance)
+    distance + scale*prefixMatch.distance(left, right).min(4)*(1.0 - distance)
 
-  given levenshteinDistance: Proximity = (left, right) =>
+  given levenshteinDistance: (Proximity { type Triangulable = true }) by Int = (left, right) =>
     val m = left.s.length
     val n = right.length
     val old = new Array[Int](n + 1)
@@ -381,8 +381,8 @@ package proximityMeasures:
 
     dist(n)
 
-  given normalizedLevenshteinDistance: Proximity = (left, right) =>
-    levenshteinDistance.distance(left, right)/left.length.max(right.length)
+  given normalizedLevenshteinDistance: (Proximity { type Triangulable = false }) by Double =
+    (left, right) => levenshteinDistance.distance(left, right)/left.length.max(right.length)
 
 extension (text: Text)
   inline def sub(from: Text, to: Text): Text =
@@ -396,7 +396,7 @@ extension (text: Text)
   inline def bytes(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
   inline def sysBytes: IArray[Byte] = CharEncoder.system.encode(text)
 
-  def proximity(other: Text)(using proximity: Proximity): Double =
+  def proximity(other: Text)(using proximity: Proximity): proximity.Operand =
     proximity.distance(text, other)
 
 extension (iarray: IArray[Char]) def text: Text = String(iarray.mutable(using Unsafe)).tt
