@@ -43,7 +43,8 @@ import proscenium.*
 import rudiments.*
 import turbulence.*
 
-import proximityMeasures.levenshteinDistance
+import proximities.levenshteinDistance
+import caseSensitivity.caseSensitive
 
 import strategies.throwUnsafely
 

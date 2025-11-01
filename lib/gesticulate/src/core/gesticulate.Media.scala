@@ -48,7 +48,8 @@ import scala.io.*
 import language.dynamics
 
 import errorDiagnostics.empty
-import proximityMeasures.levenshteinDistance
+import proximities.levenshteinDistance
+import caseSensitivity.caseInsensitive
 
 object Media:
   given text: Text is Media:
