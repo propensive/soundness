@@ -35,4 +35,6 @@ package gossamer
 import anticipation.*
 
 trait Proximity:
-  def distance(left: Text, right: Text): Double
+  type Operand
+  type Triangulable <: Boolean
+  def distance(left: Text, right: Text): Operand

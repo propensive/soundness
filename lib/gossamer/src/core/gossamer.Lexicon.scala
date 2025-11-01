@@ -30,11 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package gossamer
 
-export serpentine
-. { Admissible, Ascent, Case, Dos, Drive, Linux, MacOs, Navigable, Path, Radical, Relative, Root,
-    Submissible, System, Windows, ^, %, ?, Posix, PathError, p }
+import scala.collection.mutable as scm
 
-package interfaces.paths:
-  export anticipation.interfaces.paths.{pathOnLinux, pathOnWindows, pathOnMacOs, pathOnLocal}
+import anticipation.*
+import hypotenuse.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
+
+object Lexicon:
+
+  def apply(terms: Iterable[Text])(using Proximity { type Triangulable = true } by Int): Lexicon =
+    new Lexicon(terms.headOption.getOrElse(t"")).tap: tree =>
+      terms.drop(1).each(tree.add(_))
+
+class Lexicon(val term: Text)(using Proximity by Int):
+  val children: scm.HashMap[Int, Lexicon] = scm.HashMap()
+
+  def add(child: Text): Unit =
+    val distance = term.proximity(child)
+    children.at(distance).let(_.add(child)).or(children(distance) = new Lexicon(child))
+
+  override def toString: String = s"$term[${children.map { (k, v) => s"$k->${v}" }.mkString(" ")}]"
+
+  def search(query: Text, radius: Int): Set[Text] =
+    val distance = query.proximity(term)
+    children.collect:
+      case (key, tree) if (distance - radius) <= key <= (distance + radius) =>
+        tree.search(query, radius)
+    . to(Set)
+    . flatten
+    ++ (if distance <= radius then Set(term) else Set())
