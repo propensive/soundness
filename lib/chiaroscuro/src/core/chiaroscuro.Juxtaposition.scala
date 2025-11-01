@@ -151,7 +151,7 @@ object Juxtaposition:
               if comparison.all(_(1).singleChar)
               then
                 import proximities.levenshteinDistance
-                import caseSensitivity.caseSensitive
+                import caseSensitivity.sensitive
                 val d = left.proximity(right).toInt
                 Row(line(t"▪"),
                     e"${rgb"#00aa00"}($left)",

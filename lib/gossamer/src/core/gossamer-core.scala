@@ -382,8 +382,8 @@ package proximities:
         dist(0) = old(0) + 1
 
         for j <- 1 to n do
-          dist(j) = (old(j - 1) + (if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1))
-          . min(old(j) + 1).min(dist(j - 1) + 1)
+          val c = if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
+          dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
 
         for j <- 0 to n do old(j) = dist(j)
 
@@ -449,4 +449,8 @@ package enumIdentification:
     Identifiable(_.uncamel.camel, _.unsnake.pascal)
 
 package caseSensitivity:
-  export CaseSensitivity.{caseSensitive, caseInsensitive}
+  given sensitive: CaseSensitivity = _ == _
+  given insensitive: CaseSensitivity = _.majuscule == _.majuscule
+
+  given smart: CaseSensitivity = (left, right) =>
+    left == right || left.isLower && left.majuscule == right
