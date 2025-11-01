@@ -41,25 +41,40 @@ import rudiments.*
 import vacuous.*
 
 object Lexicon:
+  def empty[element](using Proximity by Int): Lexicon[element] = new Lexicon[element]:
+    private var lexicon: Optional[Lexicon[element]] = Unset
 
-  def apply(terms: Iterable[Text])(using Proximity { type Triangulable = true } by Int): Lexicon =
-    new Lexicon(terms.headOption.getOrElse(t"")).tap: tree =>
-      terms.drop(1).each(tree.add(_))
+    def update(key: Text, value: element): Unit =
+      lexicon.let(_.update(key, value)).or:
+        lexicon = Node(key, value)
 
-class Lexicon(val term: Text)(using Proximity by Int):
-  val children: scm.HashMap[Int, Lexicon] = scm.HashMap()
+    def search(query: Text, radius: Int): Set[element] = lexicon.lay(Set())(_.search(query, radius))
 
-  def add(child: Text): Unit =
-    val distance = term.proximity(child)
-    children.at(distance).let(_.add(child)).or(children(distance) = new Lexicon(child))
+  def apply(terms: List[Text])(using Proximity { type Triangulable = true } by Int): Lexicon[Text] =
+    apply(terms.bi.to(Map))
 
-  override def toString: String = s"$term[${children.map { (k, v) => s"$k->${v}" }.mkString(" ")}]"
+  def apply[element](terms: Map[Text, element])(using Proximity { type Triangulable = true } by Int)
+  : Lexicon[element] =
 
-  def search(query: Text, radius: Int): Set[Text] =
-    val distance = query.proximity(term)
-    children.collect:
-      case (key, tree) if (distance - radius) <= key <= (distance + radius) =>
-        tree.search(query, radius)
-    . to(Set)
-    . flatten
-    ++ (if distance <= radius then Set(term) else Set())
+      if terms.isEmpty then empty[element] else Node(terms.head(0), terms.head(1)).tap: tree =>
+        terms.drop(1).each(tree(_) = _)
+
+  class Node[element](term: Text, value: element)(using Proximity by Int) extends Lexicon[element]:
+    val children: scm.HashMap[Int, Lexicon[element]] = scm.HashMap()
+
+    def update(key: Text, value: element): Unit =
+      val distance = term.proximity(key)
+      children.at(distance).let(_(key) = value).or(children(distance) = new Node(key, value))
+
+    def search(query: Text, radius: Int): Set[element] =
+      val distance = query.proximity(term)
+      children.collect:
+        case (key, tree) if (distance - radius) <= key <= (distance + radius) =>
+          tree.search(query, radius)
+      . to(Set)
+      . flatten
+      ++ (if distance <= radius then Set(value) else Set())
+
+trait Lexicon[element]:
+  def update(key: Text, value: element): Unit
+  def search(query: Text, radius: Int): Set[element]
