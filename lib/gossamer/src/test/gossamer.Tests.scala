@@ -855,6 +855,7 @@ object Tests extends Suite(m"Gossamer Tests"):
 
     suite(m"BK-Tree tests"):
       import proximityMeasures.levenshteinDistance
+
       val words: List[Text] = List("ba", "baa", "baal", "baar", "baba", "babe", "babu",
         "baby", "bac", "bach", "back", "bad", "bade", "bae", "baff", "baft",
         "bag", "baga", "bago", "bah", "baho", "baht", "bail", "bain", "bait",
