@@ -36,13 +36,14 @@ import soundness.*
 
 import textMetrics.uniform
 import autopsies.contrastExpectations
+import caseSensitivity.caseSensitive
 
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(m"Gossamer Tests"):
   def run(): Unit =
     suite(m"Minimum Edit Distance"):
-      import proximityMeasures.levenshteinDistance
+      import proximities.levenshteinDistance
 
       test(m"equal strings have zero edit distance"):
         t"Hello world".proximity(t"Hello world")
@@ -854,7 +855,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"0.0")
 
     suite(m"BK-Tree tests"):
-      import proximityMeasures.levenshteinDistance
+      import proximities.levenshteinDistance
 
       val words: List[Text] = List("ba", "baa", "baal", "baar", "baba", "babe", "babu",
         "baby", "bac", "bach", "back", "bad", "bade", "bae", "baff", "baft",

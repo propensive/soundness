@@ -316,8 +316,8 @@ extension [textual: Textual](text: textual)
   inline def subscripts: textual = textual.map(text)(_.subscript.or(' '))
   inline def superscripts: textual = textual.map(text)(_.superscript.or(' '))
 
-package proximityMeasures:
-  given jaroDistance: (Proximity { type Triangulable = false }) by Double = (left, right) =>
+package proximities:
+  given jaroDistance: (sensitivity: CaseSensitivity) => Proximity by Double = (left, right) =>
    if left == right then 1.0 else
      val maxDist: Int = left.length.max(right.length)/2 - 1
      val found1 = new scm.BitSet(left.length)
@@ -328,7 +328,7 @@ package proximityMeasures:
        if i >= left.length then matches else
          if j >= (i + maxDist + 1).min(right.length)
          then recur(i + 1, (i + 1 - maxDist).max(0), matches)
-         else if left.s.charAt(i) == right.s.charAt(j) && !found2(j) then
+         else if sensitivity.compare(left.s.charAt(i), right.s.charAt(j)) && !found2(j) then
            found1(i) = true
            found2(j) = true
            recur(i + 1, (i + 1 - maxDist).max(0), matches + 1)
@@ -340,7 +340,12 @@ package proximityMeasures:
        if i >= left.length then count else if found1(i) then
          def next(j: Int): Int = if found2(j) then j else next(j + 1)
          val j2 = next(j)
-         trans(i + 1, j2 + 1, if left.s.charAt(i) == right.s.charAt(j2) then count else count + 1)
+
+         trans(i + 1,
+               j2 + 1,
+               if sensitivity.compare(left.s.charAt(i), right.s.charAt(j2))
+               then count else count + 1)
+
        else trans(i + 1, j, count)
 
      val count = trans(0, 0, 0)
@@ -349,39 +354,42 @@ package proximityMeasures:
      else (matches.toDouble/left.length + matches.toDouble/right.length +
          (matches - count/2.0)/matches)/3
 
-  given prefixMatch: (Proximity { type Triangulable = false }) by Int = (left, right) =>
+  given prefixMatch: (sensitivity: CaseSensitivity) => Proximity by Int = (left, right) =>
     val limit = left.length.min(right.length)
 
     def recur(index: Int = 0): Int = if index >= limit then index else
-      if left.s.charAt(index) == right.s.charAt(index) then recur(index + 1) else index
+      if sensitivity.compare(left.s.charAt(index), right.s.charAt(index))
+      then recur(index + 1) else index
 
     recur()
 
-  given jaroWinklerDistance: (Proximity { type Triangulable = false }) by Double = (left, right) =>
+  given jaroWinklerDistance: CaseSensitivity => Proximity by Double = (left, right) =>
     val scale = 0.1
     val distance = jaroDistance.distance(left, right)
     distance + scale*prefixMatch.distance(left, right).min(4)*(1.0 - distance)
 
-  given levenshteinDistance: (Proximity { type Triangulable = true }) by Int = (left, right) =>
-    val m = left.s.length
-    val n = right.length
-    val old = new Array[Int](n + 1)
-    val dist = new Array[Int](n + 1)
+  given levenshteinDistance: (sensitivity: CaseSensitivity)
+        => (Proximity { type Triangulable = true }) by Int =
+    (left, right) =>
+      val m = left.s.length
+      val n = right.length
+      val old = new Array[Int](n + 1)
+      val dist = new Array[Int](n + 1)
 
-    for j <- 1 to n do old(j) = old(j - 1) + 1
+      for j <- 1 to n do old(j) = old(j - 1) + 1
 
-    for i <- 1 to m do
-      dist(0) = old(0) + 1
+      for i <- 1 to m do
+        dist(0) = old(0) + 1
 
-      for j <- 1 to n do
-        dist(j) = (old(j - 1) + (if left.s.charAt(i - 1) == right.s.charAt(j - 1) then 0 else 1))
-        . min(old(j) + 1).min(dist(j - 1) + 1)
+        for j <- 1 to n do
+          dist(j) = (old(j - 1) + (if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1))
+          . min(old(j) + 1).min(dist(j - 1) + 1)
 
-      for j <- 0 to n do old(j) = dist(j)
+        for j <- 0 to n do old(j) = dist(j)
 
-    dist(n)
+      dist(n)
 
-  given normalizedLevenshteinDistance: (Proximity { type Triangulable = false }) by Double =
+  given normalizedLevenshteinDistance: CaseSensitivity => Proximity by Double =
     (left, right) => levenshteinDistance.distance(left, right)/left.length.max(right.length)
 
 extension (text: Text)
@@ -439,3 +447,6 @@ package enumIdentification:
 
   given camelCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(_.uncamel.camel, _.unsnake.pascal)
+
+package caseSensitivity:
+  export CaseSensitivity.{caseSensitive, caseInsensitive}
