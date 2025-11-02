@@ -30,15 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package scintillate
 
-export scintillate
-. { cookie, basicAuth, request, Acceptable, HttpConnection, HttpServer, HttpServerEvent,
-    NotFound, Redirect, RequestServable, Responder, Retrievable, ServerError, Unfulfilled,
-    NoCache }
+import telekinesis.*
 
-package httpServers:
-  export scintillate.httpServers.{stdlib, stdlibPublic}
+object NoCache:
+  given servable: [content: Servable] => NoCache[content] is Servable = uncached =>
+    val response = content.serve(uncached.content)
+    val noStore = Http.Header("cache-control", "no-store")
+    val noCache = Http.Header("pragma", "no-cache")
+    val expiry = Http.Header("expires", "0")
+    val headers = noStore :: noCache :: expiry :: response.textHeaders
 
-package webserverErrorPages:
-  export scintillate.webserverErrorPages.{minimal, standard, stackTraces}
+    Http.Response.make(response.status, headers, response.body)
+
+case class NoCache[content](content: content)
