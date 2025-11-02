@@ -61,7 +61,11 @@ extension [value](value: value)
           case encoder: CharEncoder =>
             encoder.encoded(readable.stream(value)).asInstanceOf[Stream[element]]
 
-        case _ => compiletime.error("a contextual `CharDecoder` is required")
+          case _ =>
+            compiletime.error("a contextual `CharEncoder` is required to stream Bytes with only a `Readable by Text` instance")
+
+        case _ =>
+          compiletime.error("a contextual `Readable` is required to stream `Bytes`")
 
       case _: Text => compiletime.summonFrom:
         case readable: (`value` is Readable by Text) =>
@@ -71,41 +75,26 @@ extension [value](value: value)
           case decoder: CharDecoder =>
             decoder.decoded(readable.stream(value)).asInstanceOf[Stream[element]]
 
-          case _ => compiletime.error("a contextual `CharEncoder` is required")
+          case _ =>
+            compiletime.error("a contextual `CharDecoder` is required to stream Text with only a `Readable by Bytes` instance")
+
+        case _ =>
+          compiletime.error("a contextual `Readable` is required to stream `Text`")
 
       case _ => compiletime.summonFrom:
         case readable: (`value` is Readable by `element`) => readable.stream(value)
         case _ =>
-          compiletime.error("a contextual `Readable` is required")
+          compiletime.error("a contextual `Readable` is required to stream")
 
   inline def read[result]: result = compiletime.summonFrom:
-    case aggregable: (`result` is Aggregable by Bytes) => compiletime.summonFrom:
-      case given (`value` is Readable by Bytes) =>
-        aggregable.aggregate(value.stream[Bytes])
+    case aggregable: (`result` is Aggregable by Bytes) =>
+      aggregable.aggregate(value.stream[Bytes])
 
-      case given (`value` is Readable by Text) => compiletime.summonFrom:
-        case encoder: CharEncoder =>
-          aggregable.aggregate(encoder.encoded(value.stream[Text]))
+    case aggregable: (`result` is Aggregable by Text) =>
+      aggregable.aggregate(value.stream[Text])
 
-        case _ =>
-          compiletime.error("a contextual `CharEncoder` is required")
-
-      case _ =>
-        compiletime.error("a contextual `Readable` instance is required")
-
-    case aggregable: (`result` is Aggregable by Text) => compiletime.summonFrom:
-      case given (`value` is Readable by Text) =>
-        aggregable.aggregate(value.stream[Text])
-
-      case given (`value` is Readable by Bytes) => compiletime.summonFrom:
-        case decoder: CharDecoder =>
-          aggregable.aggregate(decoder.decoded(value.stream[Bytes]))
-
-        case _ =>
-          compiletime.error("a contextual `CharDecoder` is required")
-
-      case _ =>
-        compiletime.error("a contextual `Readable` instance is required")
+    case _ =>
+      compiletime.error("a contextual `Readable` instance is required to read")
 
 
   def writeTo[target](target: target)[element]
