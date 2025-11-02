@@ -44,7 +44,7 @@ import rudiments.*
 import turbulence.*
 
 import proximities.levenshteinDistance
-import caseSensitivity.caseSensitive
+import caseSensitivity.sensitive
 
 import strategies.throwUnsafely
 

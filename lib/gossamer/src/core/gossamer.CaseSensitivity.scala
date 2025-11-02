@@ -34,10 +34,5 @@ package gossamer
 
 import hieroglyph.*
 
-object CaseSensitivity:
-  given caseSensitive: CaseSensitivity = _ eq _
-  given caseInsensitive: CaseSensitivity = _.majuscule == _.majuscule
-
-
 trait CaseSensitivity:
   def compare(left: Char, right: Char): Boolean

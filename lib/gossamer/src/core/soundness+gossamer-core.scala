@@ -59,4 +59,4 @@ package proximities:
   export gossamer.proximities.normalizedLevenshteinDistance
 
 package caseSensitivity:
-  export gossamer.caseSensitivity.{caseSensitive, caseInsensitive}
+  export gossamer.caseSensitivity.{sensitive, insensitive, smart}

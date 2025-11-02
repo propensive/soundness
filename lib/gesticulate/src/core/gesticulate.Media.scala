@@ -49,7 +49,7 @@ import language.dynamics
 
 import errorDiagnostics.empty
 import proximities.levenshteinDistance
-import caseSensitivity.caseInsensitive
+import caseSensitivity.insensitive
 
 object Media:
   given text: Text is Media:

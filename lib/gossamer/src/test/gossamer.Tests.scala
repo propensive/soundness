@@ -36,7 +36,7 @@ import soundness.*
 
 import textMetrics.uniform
 import autopsies.contrastExpectations
-import caseSensitivity.caseSensitive
+import caseSensitivity.sensitive
 
 case class Person(name: Text, age: Int)
 
