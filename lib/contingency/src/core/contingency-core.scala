@@ -153,6 +153,11 @@ def abortive[error <: Error](using Quotes, Realm)[success]
 
 infix type raises [success, error <: Exception] = Tactic[error] ?=> success
 
+infix type raising[success, errors] = errors match
+  case EmptyTuple.type => success
+  case left *: right   => Tactic[left] ?=> raising[success, right]
+  case _               => Tactic[errors] ?=> success
+
 infix type mitigates [error <: Exception, error2 <: Exception] =
   error2 is Mitigable to error
 
