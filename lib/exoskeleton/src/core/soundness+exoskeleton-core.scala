@@ -36,7 +36,7 @@ export exoskeleton
 . { application, Application, Invocation, Effectful, Executive, InstallError, ShellContext,
     Backstop, effectful }
 
-package unhandledErrors:
+package backstops:
   export exoskeleton.backstops.{silent, genericErrorMessage, exceptionMessage, stackTrace}
 
 package executives:
