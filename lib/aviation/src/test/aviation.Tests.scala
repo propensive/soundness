@@ -327,7 +327,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
     suite(m"Decoding instants"):
       suite(m"ISO 8601"):
-        import timestampDecoders.iso8601
+        import instantDecodables.iso8601
         test(m"with Z suffix (UTC)"):
           t"1994-11-06T08:49:37Z".decode[Instant]
         . assert(_ == Instant(784111777000L))
@@ -449,7 +449,7 @@ object Tests extends Suite(m"Aviation Tests"):
         . assert(_ == Instant(1668556799000L))
 
       suite(m"RFC 1123"):
-        import timestampDecoders.rfc1123
+        import instantDecodables.rfc1123
         test(m"basic with GMT timezone"):
           t"Sun, 06 Nov 1994 08:49:37 GMT".decode[Instant]
         . assert(_ == Instant(784111777000L))

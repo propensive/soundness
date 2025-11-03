@@ -52,21 +52,20 @@ object Timestamp:
   given showable: (Clockface is Showable, Date is Showable) => Timestamp is Showable =
     timestamp => s"${timestamp.time.show}, ${timestamp.date.show}".tt
 
-  given decodable: Tactic[TimestampError] => Timestamp is Decodable in Text = text =>
-    text match
-      case r"$year(\d{4})-$month(\d{2})-$day(\d{2})T$hour(\d{2}):$minute(\d{2}):$second(\d{2})" =>
-        mitigate:
-          case NumberError(_, _) => TimestampError(text)
-          case TimeError(_)      => TimestampError(text)
+  given decodable: Tactic[TimestampError] => Timestamp is Decodable in Text = text => text match
+    case r"$year(\d{4})-$month(\d{2})-$day(\d{2})[ T]$hour(\d{2}):$minute(\d{2}):$second(\d{2})" =>
+      mitigate:
+        case NumberError(_, _) => TimestampError(text)
+        case TimeError(_)      => TimestampError(text)
 
-        . within:
-            Timestamp
-             (Date(year.decode[Year], Month(month.decode[Int]), Day(day.decode[Int])),
-              Clockface
-               (Base24(hour.decode[Int]), Base60(minute.decode[Int]), Base60(second.decode[Int])))
+      . within:
+          Timestamp
+           (Date(year.decode[Year], Month(month.decode[Int]), Day(day.decode[Int])),
+            Clockface
+             (Base24(hour.decode[Int]), Base60(minute.decode[Int]), Base60(second.decode[Int])))
 
-      case value =>
-        raise(TimestampError(value)) yet Timestamp(2000-Jan-1, Clockface(0, 0, 0))
+    case value =>
+      raise(TimestampError(value)) yet Timestamp(2000-Jan-1, Clockface(0, 0, 0))
 
 case class Timestamp(date: Date, time: Clockface):
   def year(using calendar: Calendar): calendar.Annual = date.year
