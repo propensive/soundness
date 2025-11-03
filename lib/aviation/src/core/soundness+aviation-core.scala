@@ -90,5 +90,5 @@ package timeFormats:
 package hebdomads:
   export aviation.hebdomads.{european, northAmerican, jewish}
 
-package timestampDecoders:
-  export aviation.timestampDecoders.{iso8601, rfc1123}
+package instantDecodables:
+  export aviation.instantDecodables.{iso8601, rfc1123}

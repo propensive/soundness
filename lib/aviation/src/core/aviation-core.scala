@@ -53,7 +53,7 @@ export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 private given realm: Realm = realm"aviation"
 
-package timestampDecoders:
+package instantDecodables:
   given iso8601: Tactic[TimeError] => Instant is Decodable in Text = Iso8601.parse(_)
   given rfc1123: Tactic[TimeError] => Instant is Decodable in Text = Rfc1123.parse(_)
 
