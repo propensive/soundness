@@ -323,12 +323,11 @@ object test extends ScalaModule {
     Seq(PathRef(millSourcePath / ".." / "src" / "test"))
   }
   override def finalMainClass: Target[String] = "soundness.Tests"
-
 }
 
 // ------------------------ SAMPLES ------------------------
 
-object sample extends ScalaModule {
+/*object sample extends ScalaModule {
   def scalaVersion = settings.scalaVersion
   def moduleDeps = Seq(soundness.all)
 
@@ -340,7 +339,7 @@ object sample extends ScalaModule {
       Seq(PathRef(millSourcePath / "src" / "core"))
     }
   }
-}
+}*/
 
 // ------------------------ MODULES ------------------------
 
@@ -406,6 +405,10 @@ object anthology extends SoundnessModule {
 
   object `java` extends SoundnessSubModule {
     def moduleDeps = Seq(galilei.core, ambience.core, core, anticipation.log)
+  }
+
+  object bundle extends SoundnessSubModule {
+    def moduleDeps = Seq(core, zeppelin.core, hellenism.core, galilei.core, revolution.core, eucalyptus.core)
   }
 
   object test extends ProbablyTestModule {
@@ -813,7 +816,7 @@ object exoskeleton extends SoundnessModule {
   }
 
   object rig extends ProbablyTestModule {
-    def moduleDeps = Seq(completions, superlunary.core, ethereal.core, jacinta.core, zeppelin.core, revolution.core)
+    def moduleDeps = Seq(completions, superlunary.core, ethereal.core, jacinta.core, zeppelin.core, revolution.core, anthology.bundle)
     def ivyDeps = Agg(
       ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       ivy"org.scala-lang:scala3-staging_3:${scalaVersion()}"
@@ -1388,11 +1391,11 @@ object scintillate extends SoundnessModule {
 
 object sedentary extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(probably.core, diuretic.core)
+    def moduleDeps = Seq(probably.core, superlunary.jvm, anthology.bundle, urticose.url, diuretic.core)
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, quantitative.units)
   }
 }
 
@@ -1432,7 +1435,10 @@ object stenography extends SoundnessModule {
 object superlunary extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(anticipation.css, symbolism.core, anticipation.text, anticipation.http, jacinta.core, inimitable.core, gastronomy.core, ambience.core, hellenism.core, anthology.scala, austronesian.core)
-    def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-staging_3:${scalaVersion()}")
+    def ivyDeps = Agg(
+      ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      ivy"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
   }
 
   object jvm extends SoundnessSubModule {

@@ -41,14 +41,12 @@ object Benchmark:
   type Percentiles = 80 | 85 | 90 | 95 | 96 | 97 | 98 | 99
 
 case class Benchmark
-   (total:      Long,
-    count:      Int,
-    min:        Double,
-    mean:       Double,
-    max:        Double,
-    sd:         Double,
-    confidence: Benchmark.Percentiles,
-    baseline:   Optional[Baseline]):
+   (nanoseconds: Long,
+    iterations:  Long,
+    mean:        Double,
+    sd:          Double,
+    confidence:  Benchmark.Percentiles,
+    baseline:    Optional[Baseline]):
 
   def zScore(percentile: Benchmark.Percentiles): Double = percentile match
     case 80 => 0.842
@@ -60,5 +58,5 @@ case class Benchmark
     case 98 => 2.054
     case 99 => 2.326
 
-  def confidenceInterval: Long = (zScore(confidence)*sd/math.sqrt(count.toDouble)).toLong
+  def confidenceInterval: Long = (zScore(confidence)*sd/math.sqrt(iterations.toDouble)).toLong
   def throughput: Long = (1000000000.0/mean).toLong

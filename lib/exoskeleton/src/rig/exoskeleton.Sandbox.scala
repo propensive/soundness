@@ -106,36 +106,11 @@ case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
   type Transport = Json
 
   def stage(out: Path on Linux): Path on Linux =
-    val jarfile = out.peer("tmpfile.jar")
     val target = unsafely(out.peer(name))
 
-    val manifest =
-      Manifest(ManifestVersion(()), CreatedBy(t"Soundness"), MainClass(fqcn"superlunary.Executor2"))
-
     unsafely:
-      Zipfile.write(jarfile):
-        ZipEntry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest)
-        :: classpath(out).entries.to(List).flatMap:
-          case ClasspathEntry.Directory(directory) =>
-            unsafely:
-              val root = directory.decode[Path on Linux]
-              root.descendants.to(List).map: file =>
-                file.open: handle =>
-                  val ref = %.on[Zip] + file.relativeTo(root).on[Zip]
-                  ZipEntry(ref, handle.read[Bytes])
-
-          case ClasspathEntry.Jar(jar) =>
-            unsafely:
-              val jarfile = workingDirectory[Path on Linux].resolve(jar)
-              jarfile.open: handle =>
-                ZipStream(handle).keep { path => path.show != t"META-INF/MANIFEST.MF" }
-                . map: entry =>
-                    ZipEntry(entry.ref, entry.read[Bytes])
-
-                . to(List)
-
-          case _ =>
-            List()
+      val jarfile = unsafely(out.peer(t"$name.jar"))
+      val bundle = Bundler.bundle(out, jarfile, fqcn"superlunary.Executor2")
 
       sh"java -Dbuild.executable=$target -jar $jarfile '[]'".exec[Exit]() match
         case Exit.Ok      => target

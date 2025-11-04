@@ -30,112 +30,45 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package guillotine
-
-import language.experimental.pureFunctions
-
-import java.io as ji
-
-import scala.annotation.targetName
-import scala.compiletime.*
+package sedentary
 
 import anticipation.*
-import contextual.*
 import contingency.*
+import eucalyptus.*
 import fulminate.*
 import gossamer.*
-import kaleidoscope.*
-import proscenium.*
+import guillotine.*
+import inimitable.*
+import prepositional.*
 import rudiments.*
-import spectacular.*
+import serpentine.*
+import urticose.*
 
-sealed trait Executable:
-  type Exec <: Label
+import workingDirectories.jre
+import errorDiagnostics.stackTraces
+import logging.silent
 
-  def fork[result]()(using working: WorkingDirectory)
-  : Process[Exec, result] logs ExecEvent raises ExecError
+trait BenchmarkDevice:
+  def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError
+  def invoke(path: Path on Linux, input: Text): Text raises BenchError
+  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError
 
+class NetworkDevice(user: Text, host: Hostname) extends BenchmarkDevice:
+  def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
+    safely(sh"scp $path $user@$host:$uuid.jar".exec[Exit]()).lest(BenchError())
 
-  def exec[result: Computable]()(using working: WorkingDirectory)
-  : result logs ExecEvent raises ExecError =
+  def invoke(path: Path on Linux, input: Text): Text raises BenchError =
+    //val command = sh"sudo taskset -c 2 chrt -b 0 nice -n -20 ionice -c1 -n0 java -XX:+AlwaysPreTouch -Xms1g -Xmx1g -XX:CICompilerCount=2 -XX:+UseSerialGC -jar ${path.name} '$input' 2> /dev/null"
+    val command = sh"java -XX:+AlwaysPreTouch -Xms1g -Xmx1g -XX:CICompilerCount=2 -XX:+UseSerialGC -jar ${path.name} '$input' 2> /dev/null"
+    safely(sh"""ssh $user@$host ${command.escape}""".exec[Text]()).lest(BenchError())
 
-      fork[result]().await()
+  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
+    safely(sh"ssh $user@$host rm $path".exec[Text]()).lest(BenchError())
 
+object LocalhostDevice extends BenchmarkDevice:
+  def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError = ()
 
-  def apply()
-       (using erased intelligible: Exec is Intelligible,
-                     working:      WorkingDirectory,
-                     computable:   intelligible.Result is Computable)
-  : intelligible.Result logs ExecEvent raises ExecError =
+  def invoke(path: Path on Linux, input: Text): Text raises BenchError =
+    safely(sh"java -jar $path $input".exec[Text]()).lest(BenchError())
 
-      fork[intelligible.Result]().await()
-
-
-  def apply(command: Executable): Pipeline = command match
-    case Pipeline(commands*) => this match
-      case Pipeline(commands2*) => Pipeline((commands ++ commands2)*)
-      case command: Command => Pipeline((commands :+ command)*)
-
-    case command: Command    => this match
-      case Pipeline(commands2*) => Pipeline((command +: commands2)*)
-      case command2: Command    => Pipeline(command, command2)
-
-  @targetName("pipeTo")
-  infix def | (command: Executable): Pipeline = command(this)
-
-object Command:
-  private def formattedArguments(arguments: Seq[Text]): Text =
-    arguments.map: argument =>
-      if argument.contains(t"\"") && !argument.contains(t"'") then t"""'$argument'"""
-      else if argument.contains(t"'") && !argument.contains(t"\"") then t""""$argument""""
-      else if argument.contains(t"'") && argument.contains(t"\"")
-      then t""""${argument.sub(r"""\"""", t"\\\\\"")}""""
-      else if argument.contains(t" ") || argument.contains(t"\t") || argument.contains(t"\\")
-      then t"'$argument'"
-      else argument
-
-    . join(t" ")
-
-  given inspectable: Command is Inspectable = command =>
-    val commandText: Text = formattedArguments(command.arguments)
-    if commandText.contains(t"\"") then t"sh\"\"\"$commandText\"\"\"" else t"sh\"$commandText\""
-
-  given showable: Command is Showable = command => formattedArguments(command.arguments)
-
-case class Command(arguments: Text*) extends Executable:
-  def fork[result]()(using working: WorkingDirectory)
-      : Process[Exec, result] logs ExecEvent raises ExecError =
-
-    val processBuilder = ProcessBuilder(arguments.ss*)
-    processBuilder.directory(ji.File(working.directory().s))
-
-    Log.info(ExecEvent.ProcessStart(this))
-
-    try new Process(processBuilder.start().nn)
-    catch case errror: ji.IOException => abort(ExecError(this, Stream(), Stream()))
-
-  def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"\'")}'" }.join(t" ")
-
-
-object Pipeline:
-  given communicable: Pipeline is Communicable =
-    pipeline => m"${pipeline.commands.map(_.show).join(t" | ")}"
-
-  given inspectable: Pipeline is Inspectable = _.commands.map(_.inspect).join(t" | ")
-  given showable: Pipeline is Showable = _.commands.map(_.show).join(t" | ")
-
-case class Pipeline(commands: Command*) extends Executable:
-  def fork[result]()(using working: WorkingDirectory)
-      : Process[Exec, result] logs ExecEvent raises ExecError =
-
-    val processBuilders = commands.map: command =>
-      val processBuilder = ProcessBuilder(command.arguments.ss*)
-
-      processBuilder.directory(ji.File(working.directory().s))
-
-      processBuilder.nn
-
-    Log.info(ExecEvent.PipelineStart(commands))
-
-    val pipeline = ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last
-    new Process[Exec, result](pipeline)
+  def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError = ()

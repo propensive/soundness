@@ -30,69 +30,146 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
-
-import anticipation.*
-import contextual.*
-import contingency.*
-import denominative.*
-import distillate.*
-import fulminate.*
-import gossamer.*
-import hypotenuse.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import spectacular.*
-import symbolism.*
-import vacuous.*
+package sedentary
 
 import scala.quoted.*
 
-import HostnameError.Reason.*
+import ambience.*
+import anthology.*
+import anticipation.*
+import contingency.*
+import digression.*
+import distillate.*
+import eucalyptus.*
+import fulminate.*
+import galilei.*
+import gossamer.*
+import guillotine.*
+import hellenism.*
+import hieroglyph.*
+import inimitable.*
+import jacinta.*
+import parasite.*
+import prepositional.*
+import probably.*
+import revolution.*
+import rudiments.*
+import serpentine.*
+import spectacular.*
+import superlunary.*
+import symbolism.*
+import turbulence.*
+import vacuous.*
+import zeppelin.*
 
-object Hostname:
-  private given realm: Realm = realm"urticose"
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.createNonexistent.disabled
+import filesystemOptions.createNonexistentParents.disabled
+import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.deleteRecursively.disabled
+import filesystemTraversal.preOrder
+import manifestAttributes.*
 
-  given showable: Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
-  given decodable: Tactic[HostnameError] => Hostname is Decodable in Text = parse(_)
-  given encodable: Hostname is Encodable in Text = showable.text(_)
+import logging.silent
+import workingDirectories.jre
+import homeDirectories.jre
+import charEncoders.utf8
+import codicils.cancel
 
-  def expand(context: Expr[StringContext]): Macro[Hostname] = abortive:
-    Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
 
-  given toExpr: ToExpr[Hostname]:
-    def apply(hostname: Hostname)(using Quotes): Expr[Hostname] =
-      val labels = Varargs:
-        hostname.dnsLabels.map: label =>
-          '{DnsLabel(${Expr(label.text)})}
+case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice) extends Rig:
+  type Result[output] = output
+  type Form = Text
+  type Target = Path on Linux
+  type Transport = Json
 
-      '{Hostname($labels*)}
+  inline def apply[duration: GenericDuration, report]
+              (name: Message)
+              (target:     duration,
+               iterations: Optional[Int]                   = Unset,
+               warmups:    Optional[Int]                   = Unset,
+               confidence: Optional[Benchmark.Percentiles] = Unset,
+               baseline:   Optional[Baseline]              = Unset)
+              (body0: (References over Transport) ?=> Quotes ?=> Expr[Unit])
+              [version <: Scalac.Versions]
+              (using SystemProperties,
+                     TemporaryDirectory,
+                     Stageable over Transport in Form)
+              (using runner:    Runner[report],
+                     inclusion: Inclusion[report, Benchmark],
+                     suite:     Testable,
+                     codepoint: Codepoint)
+  : Unit raises CompilerError raises RemoteError =
 
-  private def parse(text: Text): Hostname raises HostnameError =
-    val builder: TextBuilder = TextBuilder()
+    val testId = TestId(name, suite, codepoint)
+    val confidence0: Optional[Benchmark.Percentiles] = confidence
 
-    def recur(index: Ordinal, dnsLabels: List[DnsLabel]): Hostname = text.at(index) match
-      case '.' | Unset =>
-        val label = builder()
-        if label.empty then raise(HostnameError(text, EmptyDnsLabel(dnsLabels.length)))
-        if label.length > 63 then raise(HostnameError(text, LongDnsLabel(label)))
-        if label.starts(t"-") then raise(HostnameError(text, InitialDash(label)))
-        val dnsLabels2 = DnsLabel(label) :: dnsLabels
-        builder.clear()
 
-        if index < text.limit then recur(index + 1, dnsLabels2) else
-          if dnsLabels2.map(_.text.length + 1).sum > 254
-          then raise(HostnameError(text, LongHostname))
+    val body: (References over Transport) ?=> Quotes ?=> Expr[List[Long]] =
+      val iterations0: Optional[Int] = iterations
+      val iterations2: Int = iterations0.or(5)
+      val target2: Expr[Long] = Expr(duration.nanoseconds(target)/iterations2)
+      '{  var count: Int = 1
+          var d: Long = 0
 
-          Hostname(dnsLabels2.reverse*)
+          // Run 10 times initially
+          for j <- 0 until 10 do $body0
 
-      case char: Char =>
-        if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
-        then builder.append(char.toString.tt)
-        else raise(HostnameError(text, InvalidChar(char)))
-        recur(index + 1, dnsLabels)
+          // Keep doubling the count until we get one run
+          while d < $target2 do
+            count *= 2
+            val t0 = java.lang.System.nanoTime
+            for i <- 0 until count do $body0
+            d = java.lang.System.nanoTime - t0
 
-    recur(Prim, Nil)
+          var rate: Double = d.toDouble/count
+          count = ($target2/rate).toInt
+          val result = new Array[Long](${Expr(iterations2)} + 1)
 
-case class Hostname(dnsLabels: DnsLabel*)
+          for i <- 0 until ${Expr(5)} do
+            val t0 = java.lang.System.nanoTime
+            for j <- 0 until count do $body0
+            val t1 = java.lang.System.nanoTime - t0
+            rate = t1.toDouble/count
+            count = ($target2/rate).toInt
+
+          result(0) = count
+
+          for i <- 1 to ${Expr(iterations2)} do
+            val t0 = java.lang.System.nanoTime
+            for j <- 0 until count do $body0
+            val t1 = java.lang.System.nanoTime - t0
+            result(i) = t1
+
+          result.to(List)  }
+
+    val results0 = dispatch(body)
+    val sample: Long = results0(0)
+    val results = results0.drop(1)
+
+
+    val total = results.sum
+    val iterations0: Optional[Int] = iterations
+    val count = sample*iterations0.or(5)
+    val sampleMean0 = results.map(_.toDouble/sample).mean
+    val sampleMean = sampleMean0.or(0.0)
+    val sum = results.map(_.toDouble/sample - sampleMean).bi.map(_*_).sum
+    val variance = sample*sum/(iterations0.or(5) - 1)
+    val sd = math.sqrt(variance)
+    val benchmark = Benchmark(total, count, total.toDouble/count, sd, confidence0.or(95), baseline)
+    inclusion.include(runner.report, testId, benchmark)
+
+  def stage(out: Path on Linux): Path on Linux = unsafely:
+    val uuid = Uuid()
+    val jarfile = unsafely(out.peer(t"$uuid.jar"))
+    Bundler.bundle(out, jarfile, fqcn"superlunary.Executor")
+    device.deploy(jarfile, uuid)
+    jarfile
+
+  protected val scalac: Scalac[3.7] = Scalac(List(scalacOptions.experimental))
+
+  protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
+    stage.remote: input =>
+      unsafely(device.invoke(stage.target, input))

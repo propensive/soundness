@@ -115,7 +115,7 @@ class Report(using Environment):
         if suite.absent then rest
         else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
 
-      case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _)) =>
+      case Bench(testId, bench@Benchmark(_, _, _, _, _, _)) =>
         List(Summary(Status.Bench, testId, 0, 0, 0, 0))
 
       case Test(testId, buf) =>
@@ -422,13 +422,12 @@ class Report(using Environment):
             e"$CadetBlue(${s.test.id})",
           Column(e"$Bold(Test)"): s =>
             e"${s.test.name}",
-
-          Column(e"$Bold(Min)", textAlign = TextAlignment.Right): s =>
-            showTime(s.benchmark.min.toLong),
-
-          Column(e"$Bold(Mean)", textAlign = TextAlignment.Right): s =>
+          Column(e"$Bold(n)", textAlign = TextAlignment.Right): s =>
+            s.benchmark.iterations.toLong,
+          Column(e"$Bold(μ)", textAlign = TextAlignment.Right): s =>
             showTime(s.benchmark.mean.toLong),
-
+          Column(e"$Bold(σ)", textAlign = TextAlignment.Right): s =>
+            showTime(s.benchmark.sd.toLong),
           Column(e"$Bold(Confidence)", textAlign = TextAlignment.Right): s =>
             e"P${s.benchmark.confidence: Int} ${confInt(s.benchmark)}",
 
@@ -446,9 +445,7 @@ class Report(using Environment):
               def metric(value: Double) = if baseline.metric == ByTime then value else 1/value
 
               val value = baseline.compare match
-                case Compare.Min  => op(metric(bench.benchmark.min), metric(c.benchmark.min))
                 case Compare.Mean => op(metric(bench.benchmark.mean), metric(c.benchmark.mean))
-                case Compare.Max  => op(metric(bench.benchmark.max), metric(c.benchmark.max))
 
               val valueWithUnits = baseline.metric match
                 case ByTime  => showTime(value.toLong)
