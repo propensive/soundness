@@ -39,8 +39,8 @@ import language.experimental.genericNumberLiterals
 import scala.annotation.tailrec
 
 object Gamma:
-  def approximate(mean: Double, standardDeviation: Double): Gamma =
-    val variance = standardDeviation**2
+  def approximate(mean: Double, std: Double): Gamma =
+    val variance = std**2
     val scale: Double = variance/mean
     val shape: Double = (mean**2)/variance
     Gamma(shape, scale)

@@ -384,14 +384,13 @@ object Tests extends Suite(m"Quantitative Tests"):
       . assert(_ == 6*Second)
 
       test(m"Average some values"):
-        List(1*Second, 2*Second, 3*Second).mean
+        List(1*Second, 2*Second, 3*Second).mean.vouch
       . assert(_ == 2*Second)
 
       test(m"Variance of some values"):
-        List(1*Second, 2*Second, 3*Second).variance
+        List(1*Second, 2*Second, 3*Second).variance.vouch
       . assert(_ == (2/3.0)*Second*Second)
 
       test(m"Standard deviation of some values"):
-        summon[Quantity[Seconds[2]] is Rootable[2]]
-        List(1*Second, 2*Second, 3*Second).standardDeviation
+        List(1*Second, 2*Second, 3*Second).std.vouch
       . assert(_ == (2/3.0).sqrt*Second)
