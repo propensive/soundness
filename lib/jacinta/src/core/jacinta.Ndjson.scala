@@ -41,8 +41,8 @@ import turbulence.*
 import zephyrine.*
 
 object Ndjson:
-  def parse[source: Readable by Line](value: source)
-       (using Text is Readable by Bytes): Ndjson raises ParseError =
+  def parse[source: Streamable by Line](value: source)
+       (using Text is Streamable by Bytes): Ndjson raises ParseError =
 
     Ndjson(value.stream[Line].map { line => line.content.read[Json] })
 

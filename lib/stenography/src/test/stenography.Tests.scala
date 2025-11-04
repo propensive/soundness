@@ -117,8 +117,8 @@ object Tests extends Suite(m"Stenography Tests"):
     .assert(_ == t"None.type")
 
     test(m"Show name with package"):
-      Syntax.name[turbulence.Readable]
-    .assert(_ == t"turbulence.Readable")
+      Syntax.name[turbulence.Streamable]
+    .assert(_ == t"turbulence.Streamable")
 
     test(m"Show typeclass type"):
       Syntax.name[Addable by Int to Double]

@@ -39,7 +39,7 @@ import turbulence.*
 import vacuous.*
 
 object Part:
-  given readable: Part is Readable by Bytes = _.body
+  given streamable: Part is Streamable by Bytes = _.body
 
 case class Part
    (disposition: Optional[Multipart.Disposition],

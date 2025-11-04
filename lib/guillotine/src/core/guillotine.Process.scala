@@ -64,10 +64,10 @@ class Process[+exec <: Label, result](process: java.lang.Process) extends Proces
   def attend(): Unit = process.waitFor()
 
   def stdout(): Stream[Bytes] raises StreamError =
-    Readable.inputStream.stream(process.getInputStream.nn)
+    Streamable.inputStream.stream(process.getInputStream.nn)
 
   def stderr(): Stream[Bytes] raises StreamError =
-    Readable.inputStream.stream(process.getErrorStream.nn)
+    Streamable.inputStream.stream(process.getErrorStream.nn)
 
 
   def stdin[chunk](stream: Stream[chunk])(using writable: ji.OutputStream is Writable by chunk)

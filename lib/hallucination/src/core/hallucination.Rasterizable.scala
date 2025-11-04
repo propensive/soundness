@@ -50,7 +50,7 @@ trait Rasterizable extends Typeclass:
 
     //protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
 
-    def read[input: Readable by Bytes](inputType: input): Raster in Self raises RasterError =
+    def read[input: Streamable by Bytes](inputType: input): Raster in Self raises RasterError =
       val reader: ji.ImageReader = ji.ImageIO.getImageReadersByFormatName(name.s).nn.next().nn
       reader.setInput(ji.ImageIO.createImageInputStream(inputType.read[Bytes].javaInputStream).nn)
 

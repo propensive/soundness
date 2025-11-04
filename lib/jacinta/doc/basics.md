@@ -24,9 +24,9 @@ value representing an array of complex objects.
 We can obtain a `Json` value by constructing one from existing values.. Or we can parse some textual
 input.
 
-The `Json.parse` method takes any input that is `Readable by Bytes`. This includes not only
+The `Json.parse` method takes any input that is `Streamable by Bytes`. This includes not only
 `Text` and `Bytes` values, but other types like filesystem `Path`s—if suitable context is provided
-for a `Readable by Bytes` value to be resolved.
+for a `Streamable by Bytes` value to be resolved.
 
 Here is an example of parsing `Text` as JSON:
 ```scala

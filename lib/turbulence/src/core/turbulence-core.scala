@@ -54,37 +54,37 @@ extension [value](value: value)
   inline def stream[element]: Stream[element] =
     inline compiletime.erasedValue[element] match
       case _: Bytes => compiletime.summonFrom:
-        case readable: (`value` is Readable by Bytes) =>
-          readable.asInstanceOf[value is Readable by element].stream(value)
+        case streamable: (`value` is Streamable by Bytes) =>
+          streamable.asInstanceOf[value is Streamable by element].stream(value)
 
-        case readable: (`value` is Readable by Text) => compiletime.summonFrom:
+        case streamable: (`value` is Streamable by Text) => compiletime.summonFrom:
           case encoder: CharEncoder =>
-            encoder.encoded(readable.stream(value)).asInstanceOf[Stream[element]]
+            encoder.encoded(streamable.stream(value)).asInstanceOf[Stream[element]]
 
           case _ =>
-            compiletime.error("a contextual `CharEncoder` is required to stream Bytes with only a `Readable by Text` instance")
+            compiletime.error("a contextual `CharEncoder` is required to stream Bytes with only a `Streamable by Text` instance")
 
         case _ =>
-          compiletime.error("a contextual `Readable` is required to stream `Bytes`")
+          compiletime.error("a contextual `Streamable` is required to stream `Bytes`")
 
       case _: Text => compiletime.summonFrom:
-        case readable: (`value` is Readable by Text) =>
-          readable.asInstanceOf[value is Readable by element].stream(value)
+        case streamable: (`value` is Streamable by Text) =>
+          streamable.asInstanceOf[value is Streamable by element].stream(value)
 
-        case readable: (`value` is Readable by Bytes) => compiletime.summonFrom:
+        case streamable: (`value` is Streamable by Bytes) => compiletime.summonFrom:
           case decoder: CharDecoder =>
-            decoder.decoded(readable.stream(value)).asInstanceOf[Stream[element]]
+            decoder.decoded(streamable.stream(value)).asInstanceOf[Stream[element]]
 
           case _ =>
-            compiletime.error("a contextual `CharDecoder` is required to stream Text with only a `Readable by Bytes` instance")
+            compiletime.error("a contextual `CharDecoder` is required to stream Text with only a `Streamable by Bytes` instance")
 
         case _ =>
-          compiletime.error("a contextual `Readable` is required to stream `Text`")
+          compiletime.error("a contextual `Streamable` is required to stream `Text`")
 
       case _ => compiletime.summonFrom:
-        case readable: (`value` is Readable by `element`) => readable.stream(value)
+        case streamable: (`value` is Streamable by `element`) => streamable.stream(value)
         case _ =>
-          compiletime.error("a contextual `Readable` is required to stream")
+          compiletime.error("a contextual `Streamable` is required to stream")
 
   inline def read[result]: result = compiletime.summonFrom:
     case aggregable: (`result` is Aggregable by Bytes) =>
@@ -94,14 +94,14 @@ extension [value](value: value)
       aggregable.aggregate(value.stream[Text])
 
     case _ =>
-      compiletime.error("a contextual `Readable` instance is required to read")
+      compiletime.error("a contextual `Streamable` instance is required to read")
 
 
   def writeTo[target](target: target)[element]
-       (using readable: value is Readable by element, writable: target is Writable by element)
+       (using streamable: value is Streamable by element, writable: target is Writable by element)
   : Unit =
 
-      writable.write(target, readable.stream(value))
+      writable.write(target, streamable.stream(value))
 
 
 package stdioSources:

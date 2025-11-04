@@ -55,7 +55,7 @@ To read every entry from a `ZipFile`, call `ZipFile#entries()`. This will return
 of `ZipEntry`s in the order they are stored within the file, each one consisting of a `Relative` path (relative to
 the root of the ZIP file) and a method to get its contents.
 
-`ZipEntry`s support [Turbulence](https://github.com/propensive/turbulence/)'s `Readable` interface, so they can be
+`ZipEntry`s support [Turbulence](https://github.com/propensive/turbulence/)'s `Streamable` interface, so they can be
 read as any type for which an `Aggregable` instance exists.
 
 #### Appending files to an existing ZIP file
@@ -100,7 +100,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Zeppelin?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Zeppelin's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -117,7 +117,7 @@ answer to the question, "how can I try Zeppelin?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -177,4 +177,3 @@ The logo shows the overlaid shapes of three zippers.
 
 Zeppelin is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

@@ -69,7 +69,7 @@ object Servable:
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
         Http.Response.make(Http.Ok, headers, Stream(encodable.encode(value)))
 
-      case given (`media` is Readable by Bytes)       => value =>
+      case given (`media` is Streamable by Bytes)       => value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
         Http.Response.make(Http.Ok, headers, value.stream[Bytes])
 

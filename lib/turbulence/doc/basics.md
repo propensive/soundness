@@ -110,7 +110,7 @@ algorithms on byte streams.
 ### Reading, Writing (and Appending)
 
 Turbulence defines four key typeclass interfaces related to streaming:
-`Readable`, `Writable` and `Aggregable`, and
+`Streamable`, `Writable` and `Aggregable`, and
 
 #### `Funnel`s
 

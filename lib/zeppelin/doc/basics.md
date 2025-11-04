@@ -26,7 +26,7 @@ To read every entry from a `ZipFile`, call `ZipFile#entries()`. This will return
 of `ZipEntry`s in the order they are stored within the file, each one consisting of a `Relative` path (relative to
 the root of the ZIP file) and a method to get its contents.
 
-`ZipEntry`s support [Turbulence](https://github.com/propensive/turbulence/)'s `Readable` interface, so they can be
+`ZipEntry`s support [Turbulence](https://github.com/propensive/turbulence/)'s `Streamable` interface, so they can be
 read as any type for which an `Aggregable` instance exists.
 
 #### Appending files to an existing ZIP file
@@ -39,6 +39,3 @@ This method includes two additional parameters: a `prefix`, a `Bytes`
 typically used to make the ZIP file executable; and a `timestamp` value for
 specifying the timestamp of each entry appended to the ZIP file. If no
 `timestamp` is specified, the current time will be used.
-
-
-

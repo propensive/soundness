@@ -44,13 +44,13 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-object Readable:
-  given bytes: Bytes is Readable by Bytes = Stream(_)
-  given text: [textual <: Text] => textual is Readable by Text = Stream(_)
+object Streamable:
+  given bytes: Bytes is Streamable by Bytes = Stream(_)
+  given text: [textual <: Text] => textual is Streamable by Text = Stream(_)
 
-  given stream: [element] => Stream[element] is Readable by element = identity(_)
+  given stream: [element] => Stream[element] is Streamable by element = identity(_)
 
-  given inCharReader: (stdio: Stdio) => In.type is Readable by Char = in =>
+  given inCharReader: (stdio: Stdio) => In.type is Streamable by Char = in =>
     def recur(count: Memory): Stream[Char] =
       stdio.reader.read() match
         case -1  => Stream()
@@ -58,7 +58,7 @@ object Readable:
 
     Stream.defer(recur(0L.b))
 
-  given inByteReader: (stdio: Stdio) => In.type is Readable by Byte = in =>
+  given inByteReader: (stdio: Stdio) => In.type is Streamable by Byte = in =>
     def recur(count: Memory): Stream[Byte] =
       stdio.in.read() match
         case -1  => Stream()
@@ -66,7 +66,7 @@ object Readable:
 
     Stream.defer(recur(0L.b))
 
-  given reader: [input <: ji.Reader] => Tactic[StreamError] => input is Readable by Char = reader =>
+  given reader: [input <: ji.Reader] => Tactic[StreamError] => input is Streamable by Char = reader =>
     def recur(count: Memory): Stream[Char] =
       try reader.read() match
         case -1  => Stream()
@@ -78,7 +78,7 @@ object Readable:
     Stream.defer(recur(0L.b))
 
   given bufferedReader: [input <: ji.BufferedReader] => Tactic[StreamError]
-        =>  input is Readable by Line =
+        =>  input is Streamable by Line =
     reader =>
       def recur(count: Memory): Stream[Line] =
         try reader.readLine() match
@@ -91,10 +91,10 @@ object Readable:
       Stream.defer(recur(0L.b))
 
   given inputStream: [input <: ji.InputStream] => Tactic[StreamError]
-        =>  input is Readable by Bytes =
+        =>  input is Streamable by Bytes =
     channel.contramap(jn.channels.Channels.newChannel(_).nn)
 
-  given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Readable by Bytes =
+  given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Streamable by Bytes =
     channel =>
       val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
@@ -116,8 +116,8 @@ object Readable:
 
       Stream.defer(recur(0))
 
-trait Readable extends Typeclass, Operable:
+trait Streamable extends Typeclass, Operable:
   def stream(value: Self): Stream[Operand]
 
-  def contramap[self2](lambda: self2 => Self): self2 is Readable by Operand =
+  def contramap[self2](lambda: self2 => Self): self2 is Streamable by Operand =
     source => stream(lambda(source))

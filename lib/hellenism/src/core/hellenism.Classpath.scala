@@ -94,13 +94,13 @@ object Classpath extends Root(t""):
         case jar: ClasspathEntry.Jar                  => jar
         case runtime: ClasspathEntry.JavaRuntime.type => runtime
 
-  given readableBytes: [path <: Path on Classpath]
+  given streamable: [path <: Path on Classpath]
         => Tactic[ClasspathError]
         => (classloader: Classloader)
-        => path is Readable by Bytes =
+        => path is Streamable by Bytes =
     given Tactic[StreamError] = strategies.throwUnsafely
 
-    Readable.inputStream.contramap: path =>
+    Streamable.inputStream.contramap: path =>
       classloader.inputStream(path.encode)
 
 trait Classpath:

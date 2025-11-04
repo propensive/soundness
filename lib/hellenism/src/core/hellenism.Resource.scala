@@ -42,10 +42,10 @@ import turbulence.*
 import vacuous.*
 
 object Resource:
-  given readable: (classloader: Classloader) => Resource is Readable by Bytes =
+  given streamable: (classloader: Classloader) => Resource is Streamable by Bytes =
     given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
 
-    Readable.inputStream.contramap: resource =>
+    Streamable.inputStream.contramap: resource =>
       classloader.inputStream(resource.path.encode)
 
   given nominable: Resource is Nominable = _.path.descent.prim.or(t"/")

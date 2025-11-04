@@ -76,7 +76,7 @@ extends Dynamic:
   def optional: CodlSchema
   def entry(n: Int): Entry = subschemas(n)
 
-  def parse[source: Readable by Text](source: source): CodlDoc raises ParseError =
+  def parse[source: Streamable by Text](source: source): CodlDoc raises ParseError =
     Codl.parse(source, this)
 
   def apply(key: Text): Optional[CodlSchema] = dictionary.at(key).or(dictionary.at(Unset)).or(Unset)

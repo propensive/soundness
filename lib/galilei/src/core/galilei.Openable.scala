@@ -75,7 +75,7 @@ object Openable:
 
     def handle(channel: jnc.FileChannel): Handle =
       Handle
-       (() => Readable.channel.stream(channel).stream[Bytes],
+       (() => Streamable.channel.stream(channel).stream[Bytes],
         Writable.channel.write(channel, _))
 
 
