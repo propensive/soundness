@@ -40,26 +40,28 @@ import systemProperties.jre
 import temporaryDirectories.environment
 import jsonPrinters.minimal
 import autopsies.contrastExpectations
+import embeddings.automatic
 
-//given BenchmarkDevice = LocalhostDevice
-given BenchmarkDevice = NetworkDevice(t"propensive", host"europium.local")
+given BenchmarkDevice = LocalhostDevice
+//given BenchmarkDevice = NetworkDevice(t"propensive", host"europium.local")
 
 import strategies.throwUnsafely
 
 val bench = Bench()
 
+object Data:
+  val text1 = t"""{ "age": true }"""
+  val text2 = t"""{ "age": "42.383748721234512345" }"""
+
 object Tests extends Suite(m"Sedentary Tests"):
   def run(): Unit =
     suite(m"List manipulation"):
       val baseline = Baseline()
-      bench(m"Reverse a list")(target = 20*Second, iterations = 10, warmups = 100, confidence = 95, baseline = baseline):
-        '{  val list = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
-            list.reverse  }
 
-      bench(m"Reverse a medium list")(target = 20*Second, iterations = 10, warmups = 10, confidence = 95, baseline = baseline):
-        '{  val list = List(1, 2, 3, 4, 5, 6, 7, 8)
-            list.reverse  }
+      bench(m"Read JSON with age as int")(target = 10*Second, iterations = 10, warmups = 10, confidence = 99, baseline = baseline):
+        '{  import charEncoders.utf8
+            unsafely(Data.text1.read[Json])  }
 
-      bench(m"Reverse a shorter list")(target = 20*Second, iterations = 10, warmups = 10, confidence = 95, baseline = baseline):
-        '{  val list = List(1, 2, 3, 4, 5)
-            list.reverse  }
+      bench(m"Read JSON with age as string")(target = 10*Second, iterations = 10, warmups = 10, confidence = 99, baseline = baseline):
+        '{  import charEncoders.utf8
+            unsafely(Data.text2.read[Json])  }
