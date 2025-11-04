@@ -45,25 +45,25 @@ object Tests extends Suite(m"Capricious Tests"):
           given Distribution = Gaussian(0.0, 1.0)
           List.fill(10000)(arbitrary[Double]())
 
-      . assert(_.mean === 0.0 +/- 0.02)
+      . assert(_.mean.vouch === 0.0 +/- 0.02)
 
       test(m"Normal distribution standard deviation"):
         stochastic:
           given Distribution = Gaussian(0.0, 2.0)
           List.fill(10000)(arbitrary[Double]())
 
-      . assert(_.standardDeviation === 2.0 +/- 0.05)
+      . assert(_.std.vouch === 2.0 +/- 0.05)
 
       test(m"Gamma distribution mean"):
         stochastic:
           given distribution: Gamma = Gamma.approximate(100, 10)
           List.fill(100000)(arbitrary[Double]())
 
-      . assert(_.mean === 100.0 +/- 0.1)
+      . assert(_.mean.vouch === 100.0 +/- 0.1)
 
       test(m"Gamma distribution standard deviation"):
         stochastic:
           given distribution: Gamma = Gamma.approximate(100, 10)
           List.fill(100000)(arbitrary[Double]())
 
-      . assert(_.standardDeviation === 10.0 +/- 0.1)
+      . assert(_.std.vouch === 10.0 +/- 0.1)

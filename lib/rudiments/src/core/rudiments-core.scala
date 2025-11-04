@@ -155,18 +155,11 @@ extension [value](iterable: Iterable[value])
                                  divisible: value is Divisible by Double,
                                  eqality2:  divisible.Result =:= value)
   : Optional[value] =
-
-    compiletime.summonFrom:
-      case zeroic: ((? <: value) is Zeroic) =>
-        iterable.foldLeft[value](zeroic.zero)(addable.add)/iterable.size.toDouble
-
-      case _ =>
-        iterable.total.let(_/iterable.size.toDouble)
+      iterable.total.let(_/iterable.size.toDouble)
 
 
   def variance
-       (using zeroic:        value is Zeroic,
-              addable:       value is Addable by value,
+       (using addable:       value is Addable by value,
               equality:      addable.Result =:= value,
               divisible:     value is Divisible by Double,
               equality2:     divisible.Result =:= value,
@@ -176,13 +169,13 @@ extension [value](iterable: Iterable[value])
               zeroic2:       multiplicable.Result is Zeroic,
               equality3:     addable2.Result =:= multiplicable.Result,
               divisible2:    multiplicable.Result is Divisible by Double)
-  : divisible2.Result =
+  : Optional[divisible2.Result] =
 
-      val mean: value = iterable.mean
-      iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
+      iterable.mean.let: mean =>
+        iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
 
 
-  def standardDeviation
+  def std
        (using addable:       value is Addable by value,
               equality:      addable.Result =:= value,
               divisible:     value is Divisible by Double,
@@ -204,7 +197,7 @@ extension [value](iterable: Iterable[value])
           val y: Double = x - mean2
           sum += y*y
 
-        divisor*math.sqrt(sum)
+        divisor*math.sqrt(sum/iterable.size.toDouble)
 
 
   def product

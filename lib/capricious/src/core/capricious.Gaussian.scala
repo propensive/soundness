@@ -36,9 +36,9 @@ import hypotenuse.*
 
 import language.experimental.genericNumberLiterals
 
-case class Gaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends Distribution:
+case class Gaussian(mean: Double = 0.0, std: Double = 1.0) extends Distribution:
   def transform(random: Random): Double =
     val u0 = randomDistributions.uniformUnitInterval.transform(random)
     val u1 = randomDistributions.uniformUnitInterval.transform(random)
 
-    ((ln(u0)*(-2.0)).sqrt*cos(2*π*u1)*standardDeviation + mean).double
+    ((ln(u0)*(-2.0)).sqrt*cos(2*π*u1)*std + mean).double
