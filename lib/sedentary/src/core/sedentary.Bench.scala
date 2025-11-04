@@ -30,90 +30,146 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package probably
+package sedentary
 
-import anticipation.*
+import scala.quoted.*
+
 import ambience.*
+import anthology.*
+import anticipation.*
 import contingency.*
-import chiaroscuro.*
 import digression.*
+import distillate.*
+import eucalyptus.*
 import fulminate.*
+import galilei.*
 import gossamer.*
-import hypotenuse.*
+import guillotine.*
+import hellenism.*
+import hieroglyph.*
+import inimitable.*
+import jacinta.*
+import parasite.*
 import prepositional.*
-import proscenium.*
+import probably.*
+import revolution.*
+import rudiments.*
+import serpentine.*
+import spectacular.*
+import superlunary.*
 import symbolism.*
+import turbulence.*
 import vacuous.*
+import zeppelin.*
 
-private given realm: Realm = realm"probably"
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.createNonexistent.disabled
+import filesystemOptions.createNonexistentParents.disabled
+import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.deleteRecursively.disabled
+import filesystemTraversal.preOrder
+import manifestAttributes.*
 
-given decimalizer: Decimalizer = Decimalizer(4)
-
-export Baseline.Compare.{Min, Mean, Max}
-export Baseline.Metric.{BySpeed, ByTime}
-export Baseline.Mode.{Arithmetic, Geometric}
-
-extension [left](left: left)
-  infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    checkable.check(left, right)
-
-  infix def !== [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    !checkable.check(left, right)
-
-extension [value](value: value)
-  @targetName("plusOrMinus")
-    inline infix def +/- (tolerance: value)
-                         (using inline commensurable: value is Commensurable by value,
-                                       addable:       value is Addable by value,
-                                       equality:      addable.Result =:= value,
-                                       subtractable:  value is Subtractable by value,
-                                       equality2:     subtractable.Result =:= value)
-    : Tolerance[value] =
-
-        Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
+import logging.silent
+import workingDirectories.jre
+import homeDirectories.jre
+import charEncoders.utf8
+import codicils.cancel
 
 
-def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
-  TestId(name, suite, codepoint)
+case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice) extends Rig:
+  type Result[output] = output
+  type Form = Text
+  type Target = Path on Linux
+  type Transport = Json
+
+  inline def apply[duration: GenericDuration, report]
+              (name: Message)
+              (target:     duration,
+               iterations: Optional[Int]                   = Unset,
+               warmups:    Optional[Int]                   = Unset,
+               confidence: Optional[Benchmark.Percentiles] = Unset,
+               baseline:   Optional[Baseline]              = Unset)
+              (body0: (References over Transport) ?=> Quotes ?=> Expr[Unit])
+              [version <: Scalac.Versions]
+              (using SystemProperties,
+                     TemporaryDirectory,
+                     Stageable over Transport in Form)
+              (using runner:    Runner[report],
+                     inclusion: Inclusion[report, Benchmark],
+                     suite:     Testable,
+                     codepoint: Codepoint)
+  : Unit raises CompilerError raises RemoteError =
+
+    val testId = TestId(name, suite, codepoint)
+    val confidence0: Optional[Benchmark.Percentiles] = confidence
 
 
-def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
-   (block: Testable ?=> Unit)
-: Unit =
+    val body: (References over Transport) ?=> Quotes ?=> Expr[List[Long]] =
+      val iterations0: Optional[Int] = iterations
+      val iterations2: Int = iterations0.or(5)
+      val target2: Expr[Long] = Expr(duration.nanoseconds(target)/iterations2)
+      '{  var count: Int = 1
+          var d: Long = 0
 
-    runner.suite(Testable(name, suite), block)
+          // Run 10 times initially
+          for j <- 0 until 10 do $body0
+
+          // Keep doubling the count until we get one run
+          while d < $target2 do
+            count *= 2
+            val t0 = java.lang.System.nanoTime
+            for i <- 0 until count do $body0
+            d = java.lang.System.nanoTime - t0
+
+          var rate: Double = d.toDouble/count
+          count = ($target2/rate).toInt
+          val result = new Array[Long](${Expr(iterations2)} + 1)
+
+          for i <- 0 until ${Expr(5)} do
+            val t0 = java.lang.System.nanoTime
+            for j <- 0 until count do $body0
+            val t1 = java.lang.System.nanoTime - t0
+            rate = t1.toDouble/count
+            count = ($target2/rate).toInt
+
+          result(0) = count
+
+          for i <- 1 to ${Expr(iterations2)} do
+            val t0 = java.lang.System.nanoTime
+            for j <- 0 until count do $body0
+            val t1 = java.lang.System.nanoTime - t0
+            result(i) = t1
+
+          result.to(List)  }
+
+    val results0 = dispatch(body)
+    val sample: Long = results0(0)
+    val results = results0.drop(1)
 
 
-extension [test](test: Test[test])
-  inline def aspire(inline predicate: test => Boolean): Unit =
-    ${Probably.aspire[test]('test)}
+    val total = results.sum
+    val iterations0: Optional[Int] = iterations
+    val count = sample*iterations0.or(5)
+    val sampleMean0 = results.map(_.toDouble/sample).mean
+    val sampleMean = sampleMean0.or(0.0)
+    val sum = results.map(_.toDouble/sample - sampleMean).bi.map(_*_).sum
+    val variance = sample*sum/(iterations0.or(5) - 1)
+    val sd = math.sqrt(variance)
+    val benchmark = Benchmark(total, count, total.toDouble/count, sd, confidence0.or(95), baseline)
+    inclusion.include(runner.report, testId, benchmark)
 
+  def stage(out: Path on Linux): Path on Linux = unsafely:
+    val uuid = Uuid()
+    val jarfile = unsafely(out.peer(t"$uuid.jar"))
+    Bundler.bundle(out, jarfile, fqcn"superlunary.Executor")
+    device.deploy(jarfile, uuid)
+    jarfile
 
-  inline def assert(inline predicate: test => Boolean): Unit =
-    ${Probably.assert[test]('test, 'predicate)}
+  protected val scalac: Scalac[3.7] = Scalac(List(scalacOptions.experimental))
 
-
-  inline def check(inline predicate: test => Boolean): test =
-    ${Probably.check[test]('test, 'predicate)}
-
-  inline def assert(): Unit = ${Probably.assert[test]('test, '{Probably.succeed})}
-  inline def check(): test = ${Probably.check[test]('test, '{Probably.succeed})}
-  inline def matches(inline pf: test ~> Any): Unit = assert(pf.isDefinedAt(_))
-
-extension [value](inline value: value)(using inline test: Harness)
-  inline def debug: value = ${Probably.debug('value, 'test)}
-
-package harnesses:
-  given threadLocal: Harness:
-    private val delegate: Option[Harness] =
-      Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
-
-    override def capture[value: Decomposable](name: Text, value: value): value =
-      delegate.map(_.capture[value](name, value)).getOrElse(value)
-
-package autopsies:
-  given contrastExpectations: Autopsy:
-    type Analyse = true
-
-  given none: Autopsy:
-    type Analyse = false
+  protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
+    stage.remote: input =>
+      unsafely(device.invoke(stage.target, input))

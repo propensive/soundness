@@ -56,6 +56,7 @@ object Hostname:
 
   given showable: Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
   given decodable: Tactic[HostnameError] => Hostname is Decodable in Text = parse(_)
+  given encodable: Hostname is Encodable in Text = showable.text(_)
 
   def expand(context: Expr[StringContext]): Macro[Hostname] = abortive:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))

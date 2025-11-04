@@ -95,9 +95,9 @@ object Tests extends Suite(m"Merino tests"):
       //   JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file2.mutable(using Unsafe)).nn)
       // .benchmark()
 
-      test(m"Parse big file with Merino"):
-        file2.read[JsonAst]
-      .benchmark()
+      // test(m"Parse big file with Merino"):
+      //   file2.read[JsonAst]
+      // .benchmark()
 
     suite(m"Number tests"):
       test(m"Parse 0e+1"):
