@@ -47,21 +47,5 @@ given BenchmarkDevice = LocalhostDevice
 
 import strategies.throwUnsafely
 
-val bench = Bench()
-
-object Data:
-  val text1 = t"""{ "age": true }"""
-  val text2 = t"""{ "age": "42.383748721234512345" }"""
-
 object Tests extends Suite(m"Sedentary Tests"):
-  def run(): Unit =
-    suite(m"List manipulation"):
-      val baseline = Baseline()
-
-      bench(m"Read JSON with age as int")(target = 10*Second, iterations = 10, warmups = 10, confidence = 99, baseline = baseline):
-        '{  import charEncoders.utf8
-            unsafely(Data.text1.read[Json])  }
-
-      bench(m"Read JSON with age as string")(target = 10*Second, iterations = 10, warmups = 10, confidence = 99, baseline = baseline):
-        '{  import charEncoders.utf8
-            unsafely(Data.text2.read[Json])  }
+  def run(): Unit = ()
