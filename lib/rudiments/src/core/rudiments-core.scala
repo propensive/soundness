@@ -152,8 +152,9 @@ extension [value](iterable: Iterable[value])
   transparent inline def mean
                           (using addable:   value is Addable by value,
                                  equality:  addable.Result =:= value,
-                                 divisible: value is Divisible by Double)
-  : Optional[divisible.Result] =
+                                 divisible: value is Divisible by Double,
+                                 eqality2:  divisible.Result =:= value)
+  : Optional[value] =
 
     compiletime.summonFrom:
       case zeroic: ((? <: value) is Zeroic) =>
@@ -168,34 +169,42 @@ extension [value](iterable: Iterable[value])
               addable:       value is Addable by value,
               equality:      addable.Result =:= value,
               divisible:     value is Divisible by Double,
-              subtractable:  value is Subtractable by divisible.Result,
+              equality2:     divisible.Result =:= value,
+              subtractable:  value is Subtractable by value,
               multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
               addable2:      multiplicable.Result is Addable by multiplicable.Result,
               zeroic2:       multiplicable.Result is Zeroic,
-              equality2:     addable2.Result =:= multiplicable.Result,
+              equality3:     addable2.Result =:= multiplicable.Result,
               divisible2:    multiplicable.Result is Divisible by Double)
   : divisible2.Result =
 
-      val mean: divisible.Result = iterable.mean
+      val mean: value = iterable.mean
       iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
 
 
   def standardDeviation
-       (using zeroic:        value is Zeroic,
-              addable:       value is Addable by value,
+       (using addable:       value is Addable by value,
               equality:      addable.Result =:= value,
               divisible:     value is Divisible by Double,
-              subtractable:  value is Subtractable by divisible.Result,
-              multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
-              addable2:      multiplicable.Result is Addable by multiplicable.Result,
-              zeroic2:       multiplicable.Result is Zeroic,
-              equality2:     addable2.Result =:= multiplicable.Result,
-              divisible2:    multiplicable.Result is Divisible by Double,
-              rootable:      divisible2.Result is Rootable[2])
-  : rootable.Result =
+              equality2:     divisible.Result =:= value,
+              divisible2:    value is Divisible by value,
+              equality3:     divisible2.Result =:= Double,
+              multiplicable: value is Multiplicable by Double,
+              equality4:     multiplicable.Result =:= value)
+  : Optional[value] =
 
-      val mean: divisible.Result = iterable.mean
-      (iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble).sqrt
+      iterable.mean.let: mean0 =>
+        val mean: value = mean0
+        val divisor: value = iterable.head
+        var sum: Double = 0.0
+        val mean2: Double = mean/divisor
+
+        for item <- iterable do
+          val x: Double = item/divisor
+          val y: Double = x - mean2
+          sum += y*y
+
+        divisor*math.sqrt(sum)
 
 
   def product
