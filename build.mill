@@ -600,6 +600,9 @@ object cellulose extends SoundnessModule {
   object test extends ProbablyTestModule {
     def moduleDeps = Seq(probably.cli, core)
   }
+  object bench extends ProbablyTestModule {
+    def moduleDeps = Seq(core, probably.cli, sedentary.core, quantitative.units)
+  }
 }
 
 object charisma extends SoundnessModule {

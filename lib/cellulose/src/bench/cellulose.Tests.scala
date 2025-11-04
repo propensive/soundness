@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.46.0.                                                                    ┃
+┃    Soundness, version 0.45.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,148 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package zephyrine
+package cellulose
 
-import scala.reflect.*
+import soundness.*
 
-import anticipation.*
-import denominative.*
-import hypotenuse.*
-import proscenium.*
-import rudiments.*
-import symbolism.*
-import vacuous.*
+import errorDiagnostics.stackTraces
+import charDecoders.utf8
+import charEncoders.utf8
+import textSanitizers.skip
+import classloaders.system
+import environments.jre
+import systemProperties.jre
+import temporaryDirectories.environment
+import strategies.throwUnsafely
 
-object Conduit:
-  enum State:
-    case Data, Clutch, End
+given BenchmarkDevice = NetworkDevice(t"propensive", host"europium.local")
 
-class Conduit(input0: Stream[Bytes]):
-  private val input: Stream[Bytes] = input0.filter(_.nonEmpty)
-  private var stream: Stream[Bytes] = if input.isEmpty then Stream() else input.tail
-  private var current: Bytes = if input.isEmpty then Bytes() else input.head
-  private var index: Ordinal = Prim
-  private var done: Int = 0
-  private var clutch: Boolean = false
+object Tests extends Suite(m"Benchmarks"):
 
-  private var stream0: Stream[Bytes] = stream
-  private var current0: Bytes = current
-  private var index0: Ordinal = index
-  private var done0: Int = done
-  private var clutch0: Boolean = clutch
+  val source: Text = cp"/example.codl".read[Text]
+  val bench = Bench()
 
-  def block: Bytes = current
-  def datum: Int = try current(index.n0) catch case _: ArrayIndexOutOfBoundsException => -1
-  def ordinal: Ordinal = index
+  val x = source.stream[Text]
+  summon[CodlDoc is Aggregable by Text]
 
-  def remainder: Stream[Bytes] = stream
-
-  def next(): Boolean = step() match
-    case Conduit.State.Clutch => if stream.isEmpty then false else (cue() yet next())
-    case state                => state != Conduit.State.Clutch
-
-  def expect(chars: Char*): Boolean =
-    var result = true
-    chars.each: char =>
-      if result && datum == char then next() else result = false
-    result
-
-  final def break(): Unit = if !clutch then
-    val prefix = current.slice(0, index.n1)
-    clutch = true
-
-    if current.length == index.n1 then current = prefix else
-      val suffix = current.drop(index.n1)
-      current = prefix
-      val stream0 = stream
-      stream = suffix #:: stream0
-
-  final def truncate(): Unit = if !clutch then
-    val prefix = current.slice(0, index.n0)
-    val suffix = current.drop(index.n0)
-    clutch = true
-    current = prefix
-    val stream0 = stream
-    stream = suffix #:: stream0
-
-
-
-  final def save(): Bytes =
-    val rnd = math.random()
-    val length = (index + done) - (index0 + done0)
-    IArray.create(length): array =>
-      var sourceIndex = index0.n0
-      var destinationIndex = 0
-      var head = current0
-      var tail = stream0
-
-      def recur(): Unit =
-        val count = (head.length - sourceIndex).min(array.length - destinationIndex)
-        System.arraycopy(head.mutable(using Unsafe), sourceIndex, array, destinationIndex, count)
-        destinationIndex += count
-        if destinationIndex < array.length then
-          head = tail.head
-          tail = tail.tail
-          sourceIndex = 0
-          recur()
-
-      recur()
-
-  @tailrec
-  final def seek(byte: Byte): Boolean = next() && (if datum != byte then seek(byte) else true)
-
-  @tailrec
-  final def skip(count: Int): Unit = if count > 0 then next() yet skip(count - 1)
-
-  @tailrec
-  final def step(): Conduit.State =
-    if clutch then
-      if stream.isEmpty then Conduit.State.End else
-        clutch = false
-        step()
-    else
-      index += 1
-      if index.n0 >= current.size then
-        clutch = true
-        Conduit.State.Clutch
-      else Conduit.State.Data
-
-  final def cue(): Unit = if !stream.isEmpty then
-    done += current.length
-    current = stream.head
-    val tail = stream.tail
-    stream = tail
-    index = Prim - 1
-    clutch = false
-
-  final def mark(): Unit =
-    current0 = current
-    stream0 = stream
-    index0 = index
-    done0 = done
-    clutch0 = clutch
-
-  final def revert(): Unit =
-    current = current0
-    stream = stream0
-    index = index0
-    done = done0
-    clutch = clutch0
-
-  def search(chars: Char*): Boolean =
-    def recur(chars: Char*): Boolean =
-      !chars.isEmpty && seek(chars.head.toByte)
-      && { mark()
-           if expect(chars*) then revert() yet true else revert() yet recur(chars*) }
-
-    mark()
-    if expect(chars*) then revert() yet true else recur(chars*)
-
-  final def take(count: Int): Bytes =
-    mark()
-    skip(count)
-    save()
-
-  final inline def lookahead[result](inline action: => result): result =
-    mark()
-    try action finally revert()
+  def run(): Unit =
+    suite(m"Compare parsing performance"):
+      bench(m"One plus one")(target = 1*Second, iterations = 10, warmups = 10, confidence = 95, baseline = Baseline()):
+        '{  import charDecoders.utf8
+            import textSanitizers.skip
+            unsafely(source.read[CodlDoc])  }

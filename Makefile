@@ -10,6 +10,11 @@ test.%:
 	mill $*.test.assembly
 	java -cp out/$*/test/assembly.dest/out.jar $*.Tests
 
+bench.%:
+	mill clean $*.bench
+	mill $*.bench.assembly
+	java -cp out/$*/bench/assembly.dest/out.jar $*.Tests
+
 failing:
 	mill test.assembly
 	java -cp out/test/assembly.dest/out.jar soundness.FailingTests
