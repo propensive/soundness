@@ -32,5 +32,12 @@
                                                                                                   */
 package quantitative
 
-trait Offset[units <: Measure]:
-  def value(): Double
+import anticipation.*
+import proscenium.*
+import rudiments.*
+
+trait Rankines[Power <: Nat] extends Units[Power, Temperature]
+
+object Rankines:
+  given designation: Designation[Rankines[1]] = () => "R".tt
+  erased given ratio: Ratio[Rankines[1] & Kelvins[-1], 1.8] = !!

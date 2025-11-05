@@ -50,16 +50,40 @@ object Quantitative extends Quantitative2:
   opaque type Quantity[units <: Measure] = Double
   opaque type MetricUnit[units <: Measure] <: Quantity[units] = Double
 
+  opaque type Celsius = Double
+  opaque type Fahrenheit = Double
+
+  object Celsius:
+    def apply(value: Double): Celsius = value
+    given addable: Celsius is Addable by Quantity[Kelvins[1]] to Celsius = _ + _.value
+    given subtractable: Celsius is Subtractable by Quantity[Kelvins[1]] to Celsius = _ - _.value
+    given subtractable2: Celsius is Subtractable by Celsius to Quantity[Kelvins[1]] = _ - _
+
+    given subtractable3: Celsius is Subtractable by Fahrenheit to Quantity[Kelvins[1]] =
+      _ - _.celsius
+
+    given showable: Decimalizer => Celsius is Showable = value => t"${value.show} °C"
+
+  object Fahrenheit:
+    def apply(value: Double): Fahrenheit = value
+    given addable: Fahrenheit is Addable by Quantity[Rankines[1]] to Fahrenheit = _ + _.value
+
+    given subtractable: Fahrenheit is Subtractable by Quantity[Rankines[1]] to Fahrenheit =
+      _ - _.value
+
+    given subtractable2: Fahrenheit is Subtractable by Fahrenheit to Quantity[Rankines[1]] = _ - _
+    given subtractable3: Fahrenheit is Subtractable by Celsius to Quantity[Rankines[1]] =
+      _ - 32 - _*9/5
+
+    given showable: Decimalizer => Fahrenheit is Showable = value => t"${value.show} °F"
+
+  extension (celsius: Celsius) def fahrenheit: Fahrenheit = 32 + celsius*9/5
+  extension (fahrenheit: Fahrenheit) def celsius: Celsius = (fahrenheit - 32)*5/9
+
   extension [units <: Measure](quantity: Quantity[units])
     def underlying: Double = quantity
 
-    inline def value: Double =
-      val double: Double = compiletime.summonFrom:
-        case offset: Offset[`units`] => (quantity - offset.value()): Double
-        case _                       => quantity: Double
-
-      double
-
+    inline def value: Double = quantity
     inline def amount[name <: Label]: Text = ${Quantitative.amount[units]}
 
   object MetricUnit:
@@ -241,4 +265,4 @@ object Quantitative extends Quantitative2:
 
       . join(t"·")
 
-export Quantitative.{Quantity, MetricUnit}
+export Quantitative.{Quantity, MetricUnit, Celsius, Fahrenheit}

@@ -343,11 +343,11 @@ object Tests extends Suite(m"Quantitative Tests"):
 
     suite(m"Offset quantities"):
       test(m"Get Celsius value"):
-        (300*Kelvin).in[Celsius].show
+        (AbsoluteZero + 300*Kelvin).show
       .assert(_ == t"26.9 °C")
 
       test(m"Get Fahrenheit value"):
-        (300*Kelvin).in[Fahrenheit].show
+        (AbsoluteZero + 300*Kelvin).fahrenheit.show
       .assert(_ == t"80.3 °F")
 
       test(m"Create Celsius value"):
@@ -360,22 +360,22 @@ object Tests extends Suite(m"Quantitative Tests"):
 
       test(m"Check stored Celsius value"):
         Celsius(30).toString.show
-      .assert(_ == t"303.15")
+      .assert(_ == t"30.0")
 
       test(m"Check stored Fahrenheit value"):
         Fahrenheit(30).toString.show
-      .assert(_ == t"489.67")
+      .assert(_ == t"30.0")
 
       test(m"Convert Fahrenheit value to Kelvin"):
-        Fahrenheit(0).in[Kelvins].show
+        (Fahrenheit(0) - AbsoluteZero).in[Kelvins].show
       .assert(_ == t"255 K")
 
-      test(m"Convert Fahrenheit value to Celsius via Kelvin"):
-        Fahrenheit(100).in[Kelvins].in[Celsius].show
-      .assert(_ == t"37.8 °C")
+      test(m"Convert Fahrenheit value to Kelvin"):
+        (Fahrenheit(100) - AbsoluteZero).show
+      .assert(_ == t"560 R")
 
       test(m"Convert Fahrenheit directly to Celsius"):
-        Fahrenheit(100).in[Celsius].show
+        Fahrenheit(100).celsius.show
       .assert(_ == t"37.8 °C")
 
     suite(m"Aggregation tests"):
