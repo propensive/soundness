@@ -55,7 +55,7 @@ object Receivable extends Receivable2:
 
   given text: Tactic[HttpError] => Text is Receivable = Receivable(_.read[Bytes].utf8)
 
-  given readable: [stream: Aggregable by Bytes] => Tactic[HttpError] => stream is Receivable =
+  given streamable: [stream: Aggregable by Bytes] => Tactic[HttpError] => stream is Receivable =
     Receivable(stream.aggregate(_))
 
   given httpStatus: Http.Status is Receivable = _.status

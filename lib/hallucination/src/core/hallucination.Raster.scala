@@ -77,14 +77,14 @@ object Raster:
    for x <- 0 until width; y <- 0 until height do image.setRGB(x, y, pixel(x, y).asInt)
    new Raster(image)
 
-  def apply[readable: Readable by Bytes](input: readable): Raster =
+  def apply[streamable: Streamable by Bytes](input: streamable): Raster =
     new Raster(ji.ImageIO.read(input.read[Bytes].javaInputStream).nn)
 
   def apply[form: Rasterizable as rasterizable](image: jai.BufferedImage): Raster in form =
     new Raster(image):
       type Form = form
 
-  given readable: [form: Rasterizable] => (Raster in form) is Readable by Bytes = raster =>
+  given streamable: [form: Rasterizable] => (Raster in form) is Streamable by Bytes = raster =>
     val out = StreamOutputStream()
     ji.ImageIO.write(raster.image, form.name.s, out)
     out.close()

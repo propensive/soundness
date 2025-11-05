@@ -53,9 +53,9 @@ value representing an array of complex objects.
 We can obtain a `Json` value by constructing one from existing values.. Or we can parse some textual
 input.
 
-The `Json.parse` method takes any input that is `Readable by Bytes`. This includes not only
+The `Json.parse` method takes any input that is `Streamable by Bytes`. This includes not only
 `Text` and `Bytes` values, but other types like filesystem `Path`s—if suitable context is provided
-for a `Readable by Bytes` value to be resolved.
+for a `Streamable by Bytes` value to be resolved.
 
 Here is an example of parsing `Text` as JSON:
 ```scala
@@ -257,7 +257,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Jacinta?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Jacinta's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -274,7 +274,7 @@ answer to the question, "how can I try Jacinta?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -334,4 +334,3 @@ The logo shows a pair of braces—important syntax in JSON—positioned to look 
 
 Jacinta is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

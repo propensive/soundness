@@ -48,7 +48,7 @@ import zephyrine.*
 import java.util.zip as juz
 
 object ZipStream:
-  def apply[readable: Readable by Bytes](source: readable): ZipStream logs Text =
+  def apply[streamable: Streamable by Bytes](source: streamable): ZipStream logs Text =
     new ZipStream(() => source.stream[Bytes], _ => true)
 
 class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):

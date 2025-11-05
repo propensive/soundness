@@ -45,7 +45,7 @@ import turbulence.*
 import vacuous.*
 
 object Manifest:
-  protected def parse[readable: Readable by Bytes](source: readable): Manifest =
+  protected def parse[streamable: Streamable by Bytes](source: streamable): Manifest =
     val java = juj.Manifest(source.read[Stream[Bytes]].inputStream)
 
     Manifest:
@@ -54,7 +54,7 @@ object Manifest:
 
       . to(Map)
 
-  given readable: Manifest is Readable by Bytes = manifest => Stream(manifest.serialize)
+  given streamable: Manifest is Streamable by Bytes = manifest => Stream(manifest.serialize)
   given aggregable: Manifest is Aggregable by Bytes = parse(_)
 
   def apply(entries: ManifestEntry*): Manifest = Manifest:

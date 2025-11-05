@@ -113,7 +113,7 @@ object Sheet:
     if format.header then Sheet(rows, format, rows.prim.let(_.header)) else Sheet(rows, format)
 
   given showable: DsvFormat => Sheet is Showable = _.rows.map(_.show).join(t"\n")
-  given readable: DsvFormat => Sheet is Readable by Text = _.rows.to(Stream).map(_.show+t"\n")
+  given streamable: DsvFormat => Sheet is Streamable by Text = _.rows.to(Stream).map(_.show+t"\n")
 
 
   private def recur

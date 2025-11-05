@@ -1497,7 +1497,7 @@ object telekinesis extends SoundnessModule {
 
 object turbulence extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(hieroglyph.core, parasite.core, capricious.core)
+    def moduleDeps = Seq(hieroglyph.core, parasite.core, capricious.core, stenography.core)
   }
 
   object test extends ProbablyTestModule {

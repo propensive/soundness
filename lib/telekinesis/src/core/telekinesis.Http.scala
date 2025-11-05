@@ -319,14 +319,14 @@ object Http:
         Response
          (1.1, status0.or(response.status), headers.to(List) ++ response.textHeaders, response.body)
 
-    given readable: Tactic[HttpError] => Response is Readable by Bytes = response =>
+    given streamable: Tactic[HttpError] => Response is Streamable by Bytes = response =>
       val body = response.status.category match
         case Http.Status.Category.Successful => response.body
 
         case _ =>
           raise(HttpError(response.status, response.textHeaders)) yet response.body
 
-      body.stream
+      body.stream[Bytes]
 
     def make(status: Status, headers: List[Header], body: Stream[Bytes]): Response =
       new Response(1.1, status, headers, body)

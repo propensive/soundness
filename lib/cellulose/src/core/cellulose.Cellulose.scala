@@ -203,8 +203,8 @@ object Cellulose extends Cellulose2:
           m"two # symbols terminates the document and must appear alone on a line"
 
 
-    def read[entity: {Decodable in Codl, CodlSchematic}](using Void)[readable: Readable by Text]
-         (source: readable)
+    def read[entity: {Decodable in Codl, CodlSchematic}](using Void)[streamable: Streamable by Text]
+         (source: streamable)
     : entity raises ParseError raises CodlError =
 
         entity.schema().parse(source.stream[Text]).as[entity]
@@ -215,11 +215,11 @@ object Cellulose extends Cellulose2:
           schema:    CodlSchema = CodlSchema.Free,
           subs:      List[Data] = Nil,
           fromStart: Boolean    = false)
-        (using readable: source is Readable by Text, aggregate: Tactic[ParseError])
+        (using streamable: source is Streamable by Text, aggregate: Tactic[ParseError])
     : CodlDoc =
 
         val (margin, stream) =
-          tokenize(readable.stream(source), fromStart)(using aggregate.diagnostics)
+          tokenize(streamable.stream(source), fromStart)(using aggregate.diagnostics)
 
         val baseSchema: CodlSchema = schema
 

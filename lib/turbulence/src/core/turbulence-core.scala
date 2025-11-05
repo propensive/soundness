@@ -51,57 +51,15 @@ import symbolism.*
 import vacuous.*
 
 extension [value](value: value)
-  inline def stream[element]: Stream[element] =
-    inline compiletime.erasedValue[element] match
-      case _: Bytes => compiletime.summonFrom:
-        case readable: (`value` is Readable by Bytes) =>
-          readable.asInstanceOf[value is Readable by element].stream(value)
-
-        case readable: (`value` is Readable by Text) => compiletime.summonFrom:
-          case encoder: CharEncoder =>
-            encoder.encoded(readable.stream(value)).asInstanceOf[Stream[element]]
-
-          case _ =>
-            compiletime.error("a contextual `CharEncoder` is required to stream Bytes with only a `Readable by Text` instance")
-
-        case _ =>
-          compiletime.error("a contextual `Readable` is required to stream `Bytes`")
-
-      case _: Text => compiletime.summonFrom:
-        case readable: (`value` is Readable by Text) =>
-          readable.asInstanceOf[value is Readable by element].stream(value)
-
-        case readable: (`value` is Readable by Bytes) => compiletime.summonFrom:
-          case decoder: CharDecoder =>
-            decoder.decoded(readable.stream(value)).asInstanceOf[Stream[element]]
-
-          case _ =>
-            compiletime.error("a contextual `CharDecoder` is required to stream Text with only a `Readable by Bytes` instance")
-
-        case _ =>
-          compiletime.error("a contextual `Readable` is required to stream `Text`")
-
-      case _ => compiletime.summonFrom:
-        case readable: (`value` is Readable by `element`) => readable.stream(value)
-        case _ =>
-          compiletime.error("a contextual `Readable` is required to stream")
-
-  inline def read[result]: result = compiletime.summonFrom:
-    case aggregable: (`result` is Aggregable by Bytes) =>
-      aggregable.aggregate(value.stream[Bytes])
-
-    case aggregable: (`result` is Aggregable by Text) =>
-      aggregable.aggregate(value.stream[Text])
-
-    case _ =>
-      compiletime.error("a contextual `Readable` instance is required to read")
+  inline def stream[element]: Stream[element] = ${Turbulence.stream[value, element]('value)}
+  inline def read[result]: result = ${Turbulence.read[value, result]('value)}
 
 
   def writeTo[target](target: target)[element]
-       (using readable: value is Readable by element, writable: target is Writable by element)
+       (using streamable: value is Streamable by element, writable: target is Writable by element)
   : Unit =
 
-      writable.write(target, readable.stream(value))
+      writable.write(target, streamable.stream(value))
 
 
 package stdioSources:

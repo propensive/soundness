@@ -95,18 +95,18 @@ object Tests extends Suite(m"Turbulence tests"):
     val qbfBytes = qbf.bytes
 
     object Ref:
-      given Ref is Readable by Text = ref => Stream(t"abc", t"def")
-      given Ref is Readable by Bytes = ref => Stream(t"abc".bytes, t"def".bytes)
+      given Ref is Streamable by Text = ref => Stream(t"abc", t"def")
+      given Ref is Streamable by Bytes = ref => Stream(t"abc".bytes, t"def".bytes)
 
     case class Ref()
 
     object Ref2:
-      given Ref2 is Readable by Text = ref => Stream(t"abc", t"def")
+      given Ref2 is Streamable by Text = ref => Stream(t"abc", t"def")
 
     case class Ref2()
 
     object Ref3:
-      given Ref3 is Readable by Bytes = ref => Stream(t"abc".bytes, t"def".bytes)
+      given Ref3 is Streamable by Bytes = ref => Stream(t"abc".bytes, t"def".bytes)
 
     case class Ref3()
 
@@ -123,27 +123,27 @@ object Tests extends Suite(m"Turbulence tests"):
         qbf.read[Text]
       .assert(_ == qbf)
 
-      test(m"Read some type as Text with Text and Byte Readable instance"):
+      test(m"Read some type as Text with Text and Byte Streamable instance"):
         Ref().read[Text]
       .assert(_ == t"abcdef")
 
-      test(m"Read some type as Bytes with Text and Byte Readable instance"):
+      test(m"Read some type as Bytes with Text and Byte Streamable instance"):
         Ref().read[Bytes].to(List)
       .assert(_ == t"abcdef".bytes.to(List))
 
-      test(m"Read some type as Text with only Text Readable instance"):
+      test(m"Read some type as Text with only Text Streamable instance"):
         Ref2().read[Text]
       .assert(_ == t"abcdef")
 
-      test(m"Read some type as Bytes with only Text Readable instance"):
+      test(m"Read some type as Bytes with only Text Streamable instance"):
         Ref2().read[Bytes].to(List)
       .assert(_ == t"abcdef".bytes.to(List))
 
-      test(m"Read some type as Text with only Bytes Readable instance"):
+      test(m"Read some type as Text with only Bytes Streamable instance"):
         Ref3().read[Text]
       .assert(_ == t"abcdef")
 
-      test(m"Read some type as Bytes with only Bytes Readable instance"):
+      test(m"Read some type as Bytes with only Bytes Streamable instance"):
         Ref3().read[Bytes].to(List)
       .assert(_ == t"abcdef".bytes.to(List))
 
