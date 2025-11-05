@@ -63,6 +63,7 @@ object Quantitative extends Quantitative2:
       _ - _.celsius
 
     given showable: Decimalizer => Celsius is Showable = value => t"${value.show} °C"
+    given checkable: Celsius is Checkable against Fahrenheit = _ == _.celsius
 
   object Fahrenheit:
     def apply(value: Double): Fahrenheit = value
@@ -76,6 +77,7 @@ object Quantitative extends Quantitative2:
       _ - 32 - _*9/5
 
     given showable: Decimalizer => Fahrenheit is Showable = value => t"${value.show} °F"
+    given checkable: Fahrenheit is Checkable against Celsius = _.celsius == _
 
   extension (celsius: Celsius) def fahrenheit: Fahrenheit = 32 + celsius*9/5
   extension (fahrenheit: Fahrenheit) def celsius: Celsius = (fahrenheit - 32)*5/9
