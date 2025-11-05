@@ -94,8 +94,6 @@ class Conduit(input0: Stream[Bytes]):
     val stream0 = stream
     stream = suffix #:: stream0
 
-
-
   final def save(): Bytes =
     val rnd = math.random()
     val length = (index + done) - (index0 + done0)

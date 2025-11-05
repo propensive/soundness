@@ -55,8 +55,20 @@ object Tests extends Suite(m"Benchmarks"):
   summon[CodlDoc is Aggregable by Text]
 
   def run(): Unit =
+    suite(m"Test CodlRefs"):
+      test(m"test CodlRefs"):
+        import celluloid.*
+        List[Text]("one", "two", "three", "four", "five", "six", "seven").map(CodlRef(_)).to(Set)
+      .assert(_.size == 7)
+
     suite(m"Compare parsing performance"):
-      bench(m"One plus one")(target = 1*Second, iterations = 10, warmups = 10, confidence = 95, baseline = Baseline()):
+      bench(m"Original parser")(target = 5*Second, iterations = 10, warmups = 5, confidence = 95, baseline = Baseline()):
         '{  import charDecoders.utf8
             import textSanitizers.skip
             unsafely(source.read[CodlDoc])  }
+
+      bench(m"New parser")(target = 5*Second, iterations = 10, warmups = 5, confidence = 95, baseline = Baseline()):
+        '{  import celluloid.*
+            import charDecoders.utf8
+            import textSanitizers.skip
+            unsafely(source.load[Codl])  }
