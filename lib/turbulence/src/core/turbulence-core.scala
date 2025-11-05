@@ -86,15 +86,7 @@ extension [value](value: value)
         case _ =>
           compiletime.error("a contextual `Streamable` is required to stream")
 
-  inline def read[result]: result = compiletime.summonFrom:
-    case aggregable: (`result` is Aggregable by Bytes) =>
-      aggregable.aggregate(value.stream[Bytes])
-
-    case aggregable: (`result` is Aggregable by Text) =>
-      aggregable.aggregate(value.stream[Text])
-
-    case _ =>
-      compiletime.error("a contextual `Streamable` instance is required to read")
+  inline def read[result]: result = ${Turbulence.read[value, result]('value)}
 
 
   def writeTo[target](target: target)[element]
