@@ -54,7 +54,7 @@ object Multipart:
   def parse[input: Streamable by Bytes](input: input, boundary0: Optional[Text] = Unset)
   : Multipart raises MultipartError =
 
-      val conduit = Conduit(input.stream)
+      val conduit = Conduit(input.stream[Bytes])
       conduit.mark()
       conduit.next()
       if conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))

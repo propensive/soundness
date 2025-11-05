@@ -123,3 +123,41 @@ object Turbulence:
                   ${name[source is Streamable]} was found"""
 
         halt(m"unable to read ${name[source]} as ${name[result]}: "+reason)
+
+  def stream[source: Type, operand: Type](source: Expr[source]): Macro[Stream[operand]] =
+    import quotes.reflect.*
+
+    val bytes = TypeRepr.of[operand] =:= TypeRepr.of[Bytes]
+    val text = TypeRepr.of[operand] =:= TypeRepr.of[Text]
+
+    lazy val streamableBytes: Optional[Expr[source is Streamable by Bytes]] =
+      Expr.summon[source is Streamable by Bytes].optional
+
+    lazy val streamable: Optional[Expr[source is Streamable by operand]] =
+      Expr.summon[source is Streamable by operand].optional
+
+    lazy val streamableText: Optional[Expr[source is Streamable by Text]] =
+      Expr.summon[source is Streamable by Text].optional
+
+    lazy val decoder: Optional[Expr[CharDecoder]] = Expr.summon[CharDecoder].optional
+    lazy val encoder: Optional[Expr[CharEncoder]] = Expr.summon[CharEncoder].optional
+
+    val otherName =
+      if bytes then name[source is Streamable by Text] else name[source is Streamable by Bytes]
+
+    Expr.summon[source is Streamable by operand].optional.let: streamable =>
+      '{$streamable.stream($source)}
+    . or:
+        if text && streamableBytes.present then decoder.let: decoder =>
+          '{$decoder.decoded(${streamableBytes.vouch}.stream($source))} match
+            case '{$stream: Stream[`operand`]} => stream
+        . or:
+            halt(m"can not stream ${name[source]} as ${name[Text]} without a ${name[CharDecoder]}")
+
+        else if bytes && streamableText.present then encoder.let: encoder =>
+          '{$encoder.encoded(${streamableText.vouch}.stream($source))} match
+            case '{$stream: Stream[`operand`]} => stream
+        . or:
+            halt(m"can not stream ${name[source]} as ${name[Bytes]} without a ${name[CharEncoder]}")
+
+        else halt(m"""no ${name[source is Streamable by operand]} (or $otherName) was found""")

@@ -51,41 +51,7 @@ import symbolism.*
 import vacuous.*
 
 extension [value](value: value)
-  inline def stream[element]: Stream[element] =
-    inline compiletime.erasedValue[element] match
-      case _: Bytes => compiletime.summonFrom:
-        case streamable: (`value` is Streamable by Bytes) =>
-          streamable.asInstanceOf[value is Streamable by element].stream(value)
-
-        case streamable: (`value` is Streamable by Text) => compiletime.summonFrom:
-          case encoder: CharEncoder =>
-            encoder.encoded(streamable.stream(value)).asInstanceOf[Stream[element]]
-
-          case _ =>
-            compiletime.error("a contextual `CharEncoder` is required to stream Bytes with only a `Streamable by Text` instance")
-
-        case _ =>
-          compiletime.error("a contextual `Streamable` is required to stream `Bytes`")
-
-      case _: Text => compiletime.summonFrom:
-        case streamable: (`value` is Streamable by Text) =>
-          streamable.asInstanceOf[value is Streamable by element].stream(value)
-
-        case streamable: (`value` is Streamable by Bytes) => compiletime.summonFrom:
-          case decoder: CharDecoder =>
-            decoder.decoded(streamable.stream(value)).asInstanceOf[Stream[element]]
-
-          case _ =>
-            compiletime.error("a contextual `CharDecoder` is required to stream Text with only a `Streamable by Bytes` instance")
-
-        case _ =>
-          compiletime.error("a contextual `Streamable` is required to stream `Text`")
-
-      case _ => compiletime.summonFrom:
-        case streamable: (`value` is Streamable by `element`) => streamable.stream(value)
-        case _ =>
-          compiletime.error("a contextual `Streamable` is required to stream")
-
+  inline def stream[element]: Stream[element] = ${Turbulence.stream[value, element]('value)}
   inline def read[result]: result = ${Turbulence.read[value, result]('value)}
 
 

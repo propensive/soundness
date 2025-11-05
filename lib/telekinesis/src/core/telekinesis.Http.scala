@@ -326,7 +326,7 @@ object Http:
         case _ =>
           raise(HttpError(response.status, response.textHeaders)) yet response.body
 
-      body.stream
+      body.stream[Bytes]
 
     def make(status: Status, headers: List[Header], body: Stream[Bytes]): Response =
       new Response(1.1, status, headers, body)
