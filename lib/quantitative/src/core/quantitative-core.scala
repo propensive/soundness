@@ -40,6 +40,8 @@ import prepositional.*
 import proscenium.*
 import symbolism.*
 
+val AbsoluteZero: Celsius = Celsius(-273.15)
+
 extension [units <: Measure](quantity: Quantity[units])
   transparent inline def in[units2[power <: Nat] <: Units[power, ?]]: Any =
     ${Quantitative.norm[units, units2]('quantity)}
