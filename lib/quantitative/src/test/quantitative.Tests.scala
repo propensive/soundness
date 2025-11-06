@@ -343,39 +343,44 @@ object Tests extends Suite(m"Quantitative Tests"):
 
     suite(m"Offset quantities"):
       test(m"Get Celsius value"):
-        (AbsoluteZero + 300*Kelvin).show
+        import temperatureScales.celsius
+        (zero[Temperature] + 300*Kelvin).show
       .assert(_ == t"26.9 °C")
 
       test(m"Get Fahrenheit value"):
-        (AbsoluteZero + 300*Kelvin).fahrenheit.show
+        import temperatureScales.fahrenheit
+        (zero[Temperature] + 300*Kelvin).show
       .assert(_ == t"80.3 °F")
 
       test(m"Create Celsius value"):
+        import temperatureScales.celsius
         Celsius(30).show
       .assert(_ == t"30.0 °C")
 
       test(m"Create Fahrenheit value"):
+        import temperatureScales.fahrenheit
         Fahrenheit(30).show
       .assert(_ == t"30.0 °F")
 
       test(m"Check stored Celsius value"):
         Celsius(30).toString.show
-      .assert(_ == t"30.0")
+      .assert(_ == t"303.15")
 
       test(m"Check stored Fahrenheit value"):
-        Fahrenheit(30).toString.show
-      .assert(_ == t"30.0")
+        Fahrenheit(32).toString.show
+      .assert(_ == t"273.15")
 
       test(m"Convert Fahrenheit value to Kelvin"):
-        (Fahrenheit(0) - AbsoluteZero).in[Kelvins].show
+        (Fahrenheit(0) - zero[Temperature]).in[Kelvins].show
       .assert(_ == t"255 K")
 
-      test(m"Convert Fahrenheit value to Kelvin"):
-        (Fahrenheit(100) - AbsoluteZero).show
-      .assert(_ == t"560 R")
+      test(m"Convert Fahrenheit value to Rankine"):
+        (Fahrenheit(100) - zero[Temperature]).in[Rankines].show
+      .assert(_ == t"560 °R")
 
       test(m"Convert Fahrenheit directly to Celsius"):
-        Fahrenheit(100).celsius.show
+        import temperatureScales.celsius
+        Fahrenheit(100).show
       .assert(_ == t"37.8 °C")
 
     suite(m"Aggregation tests"):

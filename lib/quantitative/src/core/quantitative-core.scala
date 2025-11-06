@@ -40,8 +40,6 @@ import prepositional.*
 import proscenium.*
 import symbolism.*
 
-val AbsoluteZero: Celsius = Celsius(-273.15)
-
 extension [units <: Measure](quantity: Quantity[units])
   transparent inline def in[units2[power <: Nat] <: Units[power, ?]]: Any =
     ${Quantitative.norm[units, units2]('quantity)}
@@ -64,3 +62,13 @@ extension [units <: Measure](quantity: Quantity[units])
   inline def units: Map[Text, Int] = ${Quantitative.collectUnits[units]}
   inline def express(using Decimalizer): Text = t"${quantity.value} ${Quantity.expressUnits(units)}"
   inline def dimension: Text = ${Quantitative.describe[units]}
+
+package temperatureScales:
+  given kelvin: TemperatureScale:
+    def suffix: Text = t"K"
+    def apply(value: Double): Temperature = Temperature(value)
+    def kelvin(value: Temperature): Double = value.kelvin
+
+  given celsius: TemperatureScale = Celsius
+  given rankine: TemperatureScale = Rankine
+  given fahrenheit: TemperatureScale = Fahrenheit

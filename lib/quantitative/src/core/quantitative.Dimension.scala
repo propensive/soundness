@@ -37,7 +37,7 @@ trait Dimension
 erased trait Distance extends Dimension
 erased trait Mass extends Dimension
 erased trait Time extends Dimension
+erased trait Heat extends Dimension
 erased trait Current extends Dimension
 erased trait Luminosity extends Dimension
-erased trait Temperature extends Dimension
 erased trait AmountOfSubstance extends Dimension

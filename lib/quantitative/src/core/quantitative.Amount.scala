@@ -46,7 +46,7 @@ object Amount:
   erased given mass: Amount[Units[1, Mass], "mass"] = !!
   erased given time: Amount[Units[1, Time], "time"] = !!
   erased given current: Amount[Units[1, Current], "current"] = !!
-  erased given temperature: Amount[Units[1, Temperature], "temperature"] = !!
+  erased given heat: Amount[Units[1, Heat], "temperature"] = !!
   erased given luminosity: Amount[Units[1, Luminosity], "luminosity"] = !!
 
   inline def apply[units <: Measure]: Text = ${Quantitative.amount[units]}
@@ -67,7 +67,7 @@ object Amount:
     Units[-2, Distance] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
 
   type ThermalResistance =
-    Units[-2, Distance] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
+    Units[-2, Distance] & Units[-1, Mass] & Units[3, Time] & Units[1, Heat]
 
   type Capacitance = Units[-2, Distance] & Units[-1, Mass] & Units[4, Time] & Units[1, Current]
   type CurrentDensity = Units[-2, Distance] & Units[1, Current]
@@ -76,11 +76,11 @@ object Amount:
   type AreaDensity = Units[-2, Distance] & Units[1, Mass]
 
   type ThermalResistivity =
-    Units[-1, Distance] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
+    Units[-1, Distance] & Units[-1, Mass] & Units[3, Time] & Units[1, Heat]
 
   type Magnetization = Units[-1, Distance] & Units[1, Current]
   type OpticalPower = Units[-1, Distance]
-  type TempratureGradient = Units[-1, Distance] & Units[1, Temperature]
+  type TempratureGradient = Units[-1, Distance] & Units[1, Heat]
   type Pressure = Units[-1, Distance] & Units[1, Mass] & Units[-2, Time]
   type DynamicViscosity = Units[-1, Distance] & Units[1, Mass] & Units[-1, Time]
   type LinearDensity = Units[-1, Distance] & Units[1, Mass]
@@ -102,13 +102,13 @@ object Amount:
     Units[1, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
 
   type ThermalConductivity =
-    Units[1, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
+    Units[1, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-1, Heat]
 
   type Permeability = Units[1, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
   type Force = Units[1, Distance] & Units[1, Mass] & Units[-2, Time]
   type Momentum = Units[1, Distance] & Units[1, Mass] & Units[-1, Time]
   type AbsorbedDoseRate = Units[2, Distance] & Units[-3, Time]
-  type SpecificHeatCapacity = Units[2, Distance] & Units[-2, Time] & Units[-1, Temperature]
+  type SpecificHeatCapacity = Units[2, Distance] & Units[-2, Time] & Units[-1, Heat]
   type SpecificEnergy = Units[2, Distance] & Units[-2, Time]
   type Area = Units[2, Distance]
   type MagneticMoment = Units[2, Distance] & Units[1, Current]
@@ -118,15 +118,15 @@ object Amount:
     Units[2, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
 
   type ThermalConductance =
-    Units[2, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
+    Units[2, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-1, Heat]
 
   type Power = Units[2, Distance] & Units[1, Mass] & Units[-3, Time]
   type Inductance = Units[2, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
   type MagneticFlux = Units[2, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
-  type Entropy = Units[2, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
+  type Entropy = Units[2, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-1, Heat]
 
   type MolarEntropy =
-    Units[2, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature] & Units[-1,
+    Units[2, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-1, Heat] & Units[-1,
         AmountOfSubstance]
 
   type ChemicalPotential =

@@ -75,3 +75,5 @@ extension [multiplicand](left: multiplicand)
 object `/:`:
   def unapply[entity: Quotient](value: entity): Option[(entity.Numerator, entity.Denominator)] =
     entity.decompose(value)
+
+inline def zero[value: Zeroic]: value = value.zero
