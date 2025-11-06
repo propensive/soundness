@@ -37,7 +37,7 @@ import soundness.*
 import executives.completions
 import interpreters.posix
 import threading.virtual
-import unhandledErrors.stackTrace
+import backstops.stackTrace
 
 @main
 def run(): Unit = cli:
