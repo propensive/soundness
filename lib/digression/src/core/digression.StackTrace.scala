@@ -61,7 +61,7 @@ object StackTrace:
       "ⲛ".tt  -> "class initializer".tt,
       "ℓ".tt  -> "lazy initializer".tt,
       "Σ".tt  -> "specialized method".tt,
-      "Ξ".tt  -> "object".tt)
+      "✶".tt  -> "object".tt)
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()
@@ -228,7 +228,7 @@ object StackTrace:
 
     else if rewritten.s.endsWith("#") then
       val pivot = rewritten.s.lastIndexOf(".")
-      val sub = if rewritten.s.endsWith("⋮#") then "⋮" else "Ξ"
+      val sub = if rewritten.s.endsWith("⋮#") then "⋮" else "✶"
 
       (rewritten.s.substring(0, pivot).nn+"."+sub+rewritten.s.substring(pivot + 1).nn.dropRight(1))
       . tt
