@@ -42,5 +42,5 @@ object Principal:
   given time: Principal[Time, Seconds]()
   given current: Principal[Current, Amperes]()
   given luminosity: Principal[Luminosity, Candelas]()
-  given temperature: Principal[Temperature, Kelvins]()
+  given heat: Principal[Heat, Kelvins]()
   given amountOfSubstance: Principal[AmountOfSubstance, Moles]()

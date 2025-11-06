@@ -49,38 +49,37 @@ import language.implicitConversions
 object Quantitative extends Quantitative2:
   opaque type Quantity[units <: Measure] = Double
   opaque type MetricUnit[units <: Measure] <: Quantity[units] = Double
+  opaque type Temperature = Double
 
-  opaque type Celsius = Double
-  opaque type Fahrenheit = Double
+  extension (temperature: Temperature)
+    def kelvin: Double = temperature
+    def celsius: Double = temperature - 273.15
+    def fahrenheit: Double = celsius*9/5 + 32
+    def rankine: Double = temperature*9/5
 
-  object Celsius:
-    def apply(value: Double): Celsius = value
-    given addable: Celsius is Addable by Quantity[Kelvins[1]] to Celsius = _ + _.value
-    given subtractable: Celsius is Subtractable by Quantity[Kelvins[1]] to Celsius = _ - _.value
-    given subtractable2: Celsius is Subtractable by Celsius to Quantity[Kelvins[1]] = _ - _
+  object Temperature:
+    def apply(value: Double): Temperature = value
 
-    given subtractable3: Celsius is Subtractable by Fahrenheit to Quantity[Kelvins[1]] =
-      _ - _.celsius
+    given showable: (scale: TemperatureScale, decimalizer: Decimalizer) => Temperature is Showable =
+      temperature => t"${scale.kelvin(temperature)} ${scale.suffix}"
 
-    given showable: Decimalizer => Celsius is Showable = value => t"${value.show} °C"
-    given checkable: Celsius is Checkable against Fahrenheit = _ == _.celsius
+    given zeroic: Temperature is Zeroic:
+      inline def zero: Temperature = Temperature(0)
 
-  object Fahrenheit:
-    def apply(value: Double): Fahrenheit = value
-    given addable: Fahrenheit is Addable by Quantity[Rankines[1]] to Fahrenheit = _ + _.value
+    given addable: Temperature is Addable by Quantity[Kelvins[1]] to Temperature =
+      _ + _.value
 
-    given subtractable: Fahrenheit is Subtractable by Quantity[Rankines[1]] to Fahrenheit =
+    given addable2: Temperature is Addable by Quantity[Rankines[1]] to Temperature =
+      _ + _.value*9/5
+
+    given subtractable: Temperature is Subtractable by Quantity[Kelvins[1]] to Temperature =
       _ - _.value
 
-    given subtractable2: Fahrenheit is Subtractable by Fahrenheit to Quantity[Rankines[1]] = _ - _
-    given subtractable3: Fahrenheit is Subtractable by Celsius to Quantity[Rankines[1]] =
-      _ - 32 - _*9/5
+    given subtractable2: Temperature is Subtractable by Quantity[Rankines[1]] to Temperature =
+      _ - _.value*9/5
 
-    given showable: Decimalizer => Fahrenheit is Showable = value => t"${value.show} °F"
-    given checkable: Fahrenheit is Checkable against Celsius = _.celsius == _
-
-  extension (celsius: Celsius) def fahrenheit: Fahrenheit = 32 + celsius*9/5
-  extension (fahrenheit: Fahrenheit) def celsius: Celsius = (fahrenheit - 32)*5/9
+    given subtractable3: Temperature is Subtractable by Temperature to Quantity[Kelvins[1]] =
+      (left, right) => Quantity(left.kelvin - right.kelvin)
 
   extension [units <: Measure](quantity: Quantity[units])
     def underlying: Double = quantity
@@ -267,4 +266,4 @@ object Quantitative extends Quantitative2:
 
       . join(t"·")
 
-export Quantitative.{Quantity, MetricUnit, Celsius, Fahrenheit}
+export Quantitative.{Quantity, MetricUnit, Temperature}
