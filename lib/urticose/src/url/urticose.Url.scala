@@ -65,6 +65,7 @@ extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$locat
   def authority: Optional[Authority] = origin.authority
   def requestTarget: Text = location+query.lay(t"")(t"?"+_)
   def host: Optional[Hostname] = authority.let(_.host)
+  def path: Path on Www = location.decode[Path on Www]
 
 object Url:
 
