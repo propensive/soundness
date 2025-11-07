@@ -109,14 +109,13 @@ package webserverErrorPages:
     import hieroglyph.charEncoders.utf8
     Http.Response(Unfulfilled(t"An error occurred which prevented the request from completing."))
 
-  import classloaders.system
-  private val prefix: Bytes = cp"/scintillate/error.pre.html".read[Bytes]
-  private val postfix: Bytes = cp"/scintillate/error.post.html".read[Bytes]
+  private def prefix(using Classloader): Bytes = cp"/scintillate/error.pre.html".read[Bytes]
+  private def postfix(using Classloader): Bytes = cp"/scintillate/error.post.html".read[Bytes]
 
-  given standard: WebserverErrorPage = (throwable, request) =>
+  given standard: Classloader => WebserverErrorPage = (throwable, request) =>
     Http.Response(Unfulfilled(Stream(prefix, postfix).ascribe(media"text/html")))
 
-  given stackTraces: WebserverErrorPage = (throwable, request) =>
+  given stackTraces: Classloader => WebserverErrorPage = (throwable, request) =>
     import charEncoders.utf8
     val stack = t"<pre>${throwable.stackTrace}</pre>".read[Bytes]
     Http.Response(Unfulfilled(Stream(prefix, stack, postfix).ascribe(media"text/html")))
