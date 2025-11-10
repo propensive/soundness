@@ -51,33 +51,37 @@ object Complex:
       val units = Quantity.expressUnits(complex.real.units)
       t"(${re.show} + ${im.show}𝕚) $units"
 
-  given showable: [component: Showable] => Complex[component] is Showable =
-    complex => t"${complex.real.show} + ${complex.imaginary.show}𝕚"
+  given showable: [component: {Showable, Zeroic}] => Complex[component] is Showable =
+    complex =>
+      if complex.imaginary == zero[component] then complex.real.show
+      else if complex.real == zero[component] then t"${complex.imaginary.show}i"
+      else t"${complex.real.show} + ${complex.imaginary.show}𝕚"
 
-  given addable: [result, component: Addable by component to result as addable]
-               =>  Complex[component] is Addable by Complex[component] to Complex[result] =
-    Addable[Complex[component], Complex[component], Complex[result]]:
+  given addable: [result, component2, component: Addable by component2 to result as addable]
+               =>  Complex[component] is Addable by Complex[component2] to Complex[result] =
+    Addable[Complex[component], Complex[component2], Complex[result]]:
       (left, right) =>
         Complex[result](left.real + right.real, left.imaginary + right.imaginary)
 
-  given subtractable: [result, component: Subtractable by component to result as subtractable]
-               =>  Complex[component] is Subtractable by Complex[component] to Complex[result] =
-    Subtractable[Complex[component], Complex[component], Complex[result]]:
+  given subtractable: [result,
+                       component2,
+                       component: Subtractable by component2 to result as subtractable]
+               =>  Complex[component] is Subtractable by Complex[component2] to Complex[result] =
+    Subtractable[Complex[component], Complex[component2], Complex[result]]:
       (left, right) =>
         Complex[result](left.real - right.real, left.imaginary - right.imaginary)
 
-  inline given multiplicable: [component, multiplicand <: Complex[component]]
-               => (multiplication: component is Multiplicable by component,
+  inline given multiplicable: [component, component2]
+               => (multiplication: component is Multiplicable by component2,
                    addition:       multiplication.Result is Addable by multiplication.Result,
                    subtraction:    multiplication.Result is Subtractable by multiplication.Result)
-               =>  Complex[component] is Multiplicable by Complex[component] =
-    Multiplicable[Complex[component],
-                  Complex[component],
-                  Complex[addition.Result | subtraction.Result]]:
-      (left, right) =>
-        Complex
-         (left.real*right.real - left.imaginary*right.imaginary,
-          left.real*right.imaginary + left.imaginary*right.real)
+               =>  Complex[component] is Multiplicable by Complex[component2] =
+    Multiplicable
+     [Complex[component], Complex[component2], Complex[addition.Result | subtraction.Result]]:
+        (left, right) =>
+          Complex
+           (left.real*right.real - left.imaginary*right.imaginary,
+            left.real*right.imaginary + left.imaginary*right.real)
 
 
   given divisible: [component,
@@ -110,35 +114,6 @@ object Complex:
 
 
 case class Complex[component](real: component, imaginary: component):
-  @targetName("add")
-  inline infix def + [component2](right: Complex[component2])
-                     (using addition: component is Addable by component2)
-  : Complex[addition.Result] =
-
-      Complex(this.real + right.real, this.imaginary + right.imaginary)
-
-
-  @targetName("sub")
-  inline infix def - [component2](right: Complex[component2])
-                     (using subtraction: component is Subtractable by component2)
-  : Complex[subtraction.Result] =
-
-      Complex(this.real - right.real, this.imaginary - right.imaginary)
-
-
-  @targetName("mul")
-  inline infix def * [component2](right: Complex[component2])
-                     (using multiplication: component is Multiplicable by component2,
-                            addition:       multiplication.Result is Addable by
-                                             multiplication.Result,
-                            subtraction:    multiplication.Result is Subtractable by
-                                             multiplication.Result)
-  : Complex[subtraction.Result | addition.Result] =
-
-      Complex
-       (real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real)
-
-
   inline def argument
               (using multiplication: component is Multiplicable by component,
                      addition:       multiplication.Result is Addable by multiplication.Result,
