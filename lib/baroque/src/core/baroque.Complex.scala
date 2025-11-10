@@ -33,6 +33,7 @@
 package baroque
 
 import anticipation.*
+import geodesy.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
@@ -106,11 +107,11 @@ object Complex:
       Complex(-complex.real, -complex.imaginary)
 
 
-  def polar[component: Multiplicable by Double as multiplication]
-       (modulus: component, argument: Double)
+  def apply[component: Multiplicable by Double as multiplication]
+       (modulus: component, argument: Angle)
   : Complex[multiplication.Result] =
 
-      Complex(modulus*math.cos(argument), modulus*math.sin(argument))
+      Complex(modulus*math.cos(argument.radians), modulus*math.sin(argument.radians))
 
 
 case class Complex[component](real: component, imaginary: component):
@@ -120,9 +121,9 @@ case class Complex[component](real: component, imaginary: component):
                      sqrt:           addition.Result is Rootable[2],
                      division:       component is Divisible by sqrt.Result,
                      equality:       division.Result =:= Double)
-  : Double =
+  : Angle =
 
-      scala.math.atan2(imaginary/modulus, real/modulus)
+      Angle(scala.math.atan2(imaginary/modulus, real/modulus))
 
 
   inline def modulus
@@ -144,7 +145,7 @@ case class Complex[component](real: component, imaginary: component):
                      multiplication2: sqrt2.Result is Multiplicable by Double)
   : Complex[multiplication2.Result] =
 
-      Complex.polar(modulus.sqrt, argument/2.0)
+      Complex(modulus.sqrt, argument/2.0)
 
 
   @targetName("conjugate")
