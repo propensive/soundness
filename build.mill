@@ -502,7 +502,7 @@ object baroque extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core, abacist.core, quantitative.units)
+    def moduleDeps = Seq(probably.cli, core, abacist.core, quantitative.units, mosquito.core)
   }
 }
 
