@@ -498,11 +498,11 @@ object aviation extends SoundnessModule {
 
 object baroque extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, quantitative.core)
+    def moduleDeps = Seq(gossamer.core, quantitative.core, geodesy.core)
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core, quantitative.units)
+    def moduleDeps = Seq(probably.cli, core, abacist.core, quantitative.units, mosquito.core)
   }
 }
 

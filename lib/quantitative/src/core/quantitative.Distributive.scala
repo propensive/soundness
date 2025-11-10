@@ -30,122 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package abacist
+package quantitative
 
 import anticipation.*
 import gossamer.*
-import hypotenuse.*
-import quantitative.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
-import spectacular.*
-import symbolism.*
 
-import scala.compiletime.*, ops.int.*
-
-object Abacist2:
-  opaque type Quanta[units <: Tuple] = Long
-
-  object Quanta:
-    erased given underlying: [units <: Tuple] => Underlying[Quanta[units], Long] = !!
-    given zeroic: [units <: Tuple] => Quanta[units] is Zeroic:
-      inline def zero: Quanta[units] = 0L
-
-    given typeable: [units <: Tuple] => Typeable[Quanta[units]]:
-      def unapply(count: Any): Option[count.type & Quanta[units]] = count.asMatchable match
-        case count: Long => Some(count)
-        case _           => None
-
-
-    inline given [units <: Tuple] => Quanta[units] is Commensurable:
-      type Operand = Quanta[units]
-
-      inline def compare
-                  (inline left:        Quanta[units],
-                   inline right:       Quanta[units],
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
-      : Boolean =
-
-          inline if greaterThan
-          then inline if strict then left > right else left >= right
-          else inline if strict then left < right else left <= right
-
-
-    inline given distributive: [units <: Tuple] => Quanta[units] is Distributive by Long =
-      new Distributive:
-        type Self = Quanta[units]
-        type Operand = Long
-
-        def parts(value: Quanta[units]): List[Long] = value.components.map(_(1)).to(List)
-
-        def place(value: Quanta[units], parts: List[Text]): Text =
-          parts.zip(value.components.map(_(0))).map: (number, units) =>
-            t"$number $units"
-          . join(t", ")
-
-    def fromLong[units <: Tuple](long: Long): Quanta[units] = long
-    given integral: [units <: Tuple] => Integral[Quanta[units]] = summon[Integral[Long]]
-
-    inline def apply[units <: Tuple](inline values: Int*): Quanta[units] =
-      ${Abacist.make[units]('values)}
-
-    given addable: [units <: Tuple] => Quanta[units] is Addable:
-      type Operand = Quanta[units]
-      type Result = Quanta[units]
-
-      def add(left: Quanta[units], right: Quanta[units]): Quanta[units] = left + right
-
-    given subtractable: [units <: Tuple] => Quanta[units] is Subtractable:
-      type Operand = Quanta[units]
-      type Result = Quanta[units]
-
-      def subtract(left: Quanta[units], right: Quanta[units]): Quanta[units] = left - right
-
-    given multiplicable: [units <: Tuple] => Quanta[units] is Multiplicable:
+object Distributive:
+  inline given distributive: [measure <: Measure] => Quantity[measure] is Distributive by Double =
+    val units = Quantity.units[measure]
+    new Distributive:
+      type Self = Quantity[measure]
       type Operand = Double
-      type Result = Quanta[units]
 
-      def multiply(left: Quanta[units], right: Double): Quanta[units] = left.multiply(right)
+      def parts(value: Quantity[measure]): List[Double] = List(value.underlying)
 
-    given divisible: [units <: Tuple] => Quanta[units] is Divisible:
-      type Operand = Double
-      type Result = Quanta[units]
+      def place(value: Quantity[measure], parts: List[Text]): Text =
+        t"${parts(0)} $units"
 
-      def divide(left: Quanta[units], right: Double): Quanta[units] = left.divide(right)
-
-    given negatable: [units <: Tuple] => Quanta[units] is Negatable to Quanta[units] = -_
-
-    inline given showable: [units <: Tuple] => Quanta[units] is Showable = summonFrom:
-      case names: UnitsNames[units] => count =>
-        val nonzeroComponents = count.components.filter(_(1) != 0)
-        val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
-        val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
-        units.weave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
-
-      case _ => count =>
-        val nonzeroComponents = count.components.filter(_(1) != 0)
-        nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
-
-  extension [units <: Tuple](count: Quanta[units])
-    def longValue: Long = count
-
-  extension [units <: Tuple](inline count: Quanta[units])
-    inline def apply[unit[power <: Nat] <: Units[power, ? <: Dimension]]: Int =
-      ${Abacist.get[units, unit[1]]('count)}
-
-    transparent inline def quantity: Any = ${Abacist.toQuantity[units]('count)}
-    inline def components: ListMap[Text, Long] = ${Abacist.describeQuanta[units]('count)}
-
-    transparent inline def multiply(inline multiplier: Double): Any =
-      ${Abacist.multiplyQuanta('count, 'multiplier, false)}
-
-    transparent inline def divide(inline multiplier: Double): Any =
-      ${Abacist.multiplyQuanta('count, 'multiplier, true)}
-
-
-    transparent inline def collapse(length: Int)(using length.type < Tuple.Size[units] =:= true)
-    : Quanta[Tuple.Drop[units, length.type]] =
-
-        count
+trait Distributive extends Typeclass:
+  type Operand
+  def parts(value: Self): List[Operand]
+  def place(value: Self, parts: List[Text]): Text

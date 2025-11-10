@@ -33,8 +33,11 @@
 package baroque
 
 import anticipation.*
+import geodesy.*
 import gossamer.*
+import hypotenuse.*
 import prepositional.*
+import proscenium.*
 import quantitative.*
 import spectacular.*
 import symbolism.*
@@ -42,42 +45,53 @@ import symbolism.*
 import scala.annotation.*
 
 object Complex:
-  inline given showableQuantity: [units <: Measure, quantity <: Quantity[units]: Showable]
-        => Double is Showable
-        => Complex[quantity] is Showable =
+  inline given showable: [value: {Showable, Zeroic, Commensurable by value, Negatable to value}]
+               =>  Complex[value] is Showable =
     complex =>
-      val re = complex.real.underlying
-      val im = complex.imaginary.underlying
-      val units = Quantity.expressUnits(complex.real.units)
-      t"(${re.show} + ${im.show}𝕚) $units"
+      compiletime.summonFrom:
+        case distributive: (`value` is Distributive) =>
+          provide[Complex[distributive.Operand] is Showable]:
+            provide[distributive.Operand is Zeroic]:
+              val reParts: List[distributive.Operand] = distributive.parts(complex.real)
+              val imParts: List[distributive.Operand] = distributive.parts(complex.imaginary)
+              val parts = reParts.zip(imParts).map(Complex(_, _).show)
+              val parts2 = parts.zip(imParts).map: (part, im) =>
+                if im == zero[distributive.Operand] then part else t"($part)"
 
-  given showable: [component: Showable] => Complex[component] is Showable =
-    complex => t"${complex.real.show} + ${complex.imaginary.show}𝕚"
+              distributive.place(complex.real, parts2)
 
-  given addable: [result, component: Addable by component to result as addable]
-               =>  Complex[component] is Addable by Complex[component] to Complex[result] =
-    Addable[Complex[component], Complex[component], Complex[result]]:
+        case _ =>
+          if complex.imaginary == zero[value] then complex.real.show
+          else if complex.real == zero[value] then t"${complex.imaginary.show}𝕚"
+          else if complex.imaginary < zero[value]
+          then t"${complex.real.show} - ${(-complex.imaginary).show}𝕚"
+          else t"${complex.real.show} + ${complex.imaginary.show}𝕚"
+
+  given addable: [result, component2, component: Addable by component2 to result as addable]
+               =>  Complex[component] is Addable by Complex[component2] to Complex[result] =
+    Addable[Complex[component], Complex[component2], Complex[result]]:
       (left, right) =>
         Complex[result](left.real + right.real, left.imaginary + right.imaginary)
 
-  given subtractable: [result, component: Subtractable by component to result as subtractable]
-               =>  Complex[component] is Subtractable by Complex[component] to Complex[result] =
-    Subtractable[Complex[component], Complex[component], Complex[result]]:
+  given subtractable: [result,
+                       component2,
+                       component: Subtractable by component2 to result as subtractable]
+               =>  Complex[component] is Subtractable by Complex[component2] to Complex[result] =
+    Subtractable[Complex[component], Complex[component2], Complex[result]]:
       (left, right) =>
         Complex[result](left.real - right.real, left.imaginary - right.imaginary)
 
-  inline given multiplicable: [component, multiplicand <: Complex[component]]
-               => (multiplication: component is Multiplicable by component,
+  inline given multiplicable: [component, component2]
+               => (multiplication: component is Multiplicable by component2,
                    addition:       multiplication.Result is Addable by multiplication.Result,
                    subtraction:    multiplication.Result is Subtractable by multiplication.Result)
-               =>  Complex[component] is Multiplicable by Complex[component] =
-    Multiplicable[Complex[component],
-                  Complex[component],
-                  Complex[addition.Result | subtraction.Result]]:
-      (left, right) =>
-        Complex
-         (left.real*right.real - left.imaginary*right.imaginary,
-          left.real*right.imaginary + left.imaginary*right.real)
+               =>  Complex[component] is Multiplicable by Complex[component2] =
+    Multiplicable
+     [Complex[component], Complex[component2], Complex[addition.Result | subtraction.Result]]:
+        (left, right) =>
+          Complex
+           (left.real*right.real - left.imaginary*right.imaginary,
+            left.real*right.imaginary + left.imaginary*right.real)
 
 
   given divisible: [component,
@@ -101,53 +115,29 @@ object Complex:
          ((left.real*right.real + left.imaginary*right.imaginary)/denominator,
           (left.imaginary*right.real + (-left.real)*right.imaginary)/denominator)
 
+  given negatable: [component: Negatable]
+        => Complex[component] is Negatable to Complex[component.Result] = complex =>
 
-  def polar[component: Multiplicable by Double as multiplication]
-       (modulus: component, argument: Double)
+      Complex(-complex.real, -complex.imaginary)
+
+
+  def apply[component: Multiplicable by Double as multiplication]
+       (modulus: component, argument: Angle)
   : Complex[multiplication.Result] =
 
-      Complex(modulus*math.cos(argument), modulus*math.sin(argument))
+      Complex(modulus*math.cos(argument.radians), modulus*math.sin(argument.radians))
 
 
 case class Complex[component](real: component, imaginary: component):
-  @targetName("add")
-  inline infix def + [component2](right: Complex[component2])
-                     (using addition: component is Addable by component2)
-  : Complex[addition.Result] =
-
-      Complex(this.real + right.real, this.imaginary + right.imaginary)
-
-
-  @targetName("sub")
-  inline infix def - [component2](right: Complex[component2])
-                     (using subtraction: component is Subtractable by component2)
-  : Complex[subtraction.Result] =
-
-      Complex(this.real - right.real, this.imaginary - right.imaginary)
-
-
-  @targetName("mul")
-  inline infix def * [component2](right: Complex[component2])
-                     (using multiplication: component is Multiplicable by component2,
-                            addition:       multiplication.Result is Addable by
-                                             multiplication.Result,
-                            subtraction:    multiplication.Result is Subtractable by
-                                             multiplication.Result)
-  : Complex[subtraction.Result | addition.Result] =
-
-      Complex
-       (real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real)
-
-
   inline def argument
               (using multiplication: component is Multiplicable by component,
                      addition:       multiplication.Result is Addable by multiplication.Result,
                      sqrt:           addition.Result is Rootable[2],
                      division:       component is Divisible by sqrt.Result,
                      equality:       division.Result =:= Double)
-  : Double =
+  : Angle =
 
-      scala.math.atan2(imaginary/modulus, real/modulus)
+      Angle(scala.math.atan2(imaginary/modulus, real/modulus))
 
 
   inline def modulus
@@ -169,13 +159,9 @@ case class Complex[component](real: component, imaginary: component):
                      multiplication2: sqrt2.Result is Multiplicable by Double)
   : Complex[multiplication2.Result] =
 
-      Complex.polar(modulus.sqrt, argument/2.0)
+      Complex(modulus.sqrt, argument/2.0)
 
 
   @targetName("conjugate")
   inline def unary_~(using neg: component is Negatable): Complex[component | neg.Result] =
     Complex(real, -imaginary)
-
-  @targetName("neg")
-  inline def unary_-(using neg: component is Negatable): Complex[component | neg.Result] =
-    Complex(-real, -imaginary)

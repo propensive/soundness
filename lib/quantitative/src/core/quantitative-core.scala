@@ -53,12 +53,8 @@ extension [units <: Measure](quantity: Quantity[units])
       normalizable.normalize(quantity)
 
 
-  inline def sqrt(using root: Quantity[units] is Rootable[2]): root.Result =
-    root.root(quantity)
-
-  inline def cbrt(using root: Quantity[units] is Rootable[3]): root.Result =
-    root.root(quantity)
-
+  inline def sqrt(using root: Quantity[units] is Rootable[2]): root.Result = root.root(quantity)
+  inline def cbrt(using root: Quantity[units] is Rootable[3]): root.Result = root.root(quantity)
   inline def units: Map[Text, Int] = ${Quantitative.collectUnits[units]}
   inline def express(using Decimalizer): Text = t"${quantity.value} ${Quantity.expressUnits(units)}"
   inline def dimension: Text = ${Quantitative.describe[units]}
