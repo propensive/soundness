@@ -37,6 +37,7 @@ import geodesy.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
+import proscenium.*
 import quantitative.*
 import spectacular.*
 import symbolism.*
@@ -47,11 +48,24 @@ object Complex:
   inline given showable: [value: {Showable, Zeroic, Commensurable by value, Negatable to value}]
                =>  Complex[value] is Showable =
     complex =>
-      if complex.imaginary == zero[value] then complex.real.show
-      else if complex.real == zero[value] then t"${complex.imaginary.show}𝕚"
-      else if complex.imaginary < zero[value]
-      then t"${complex.real.show} - ${(-complex.imaginary).show}𝕚"
-      else t"${complex.real.show} + ${complex.imaginary.show}𝕚"
+      compiletime.summonFrom:
+        case dimensional: (`value` is Dimensional) =>
+          provide[Complex[dimensional.Operand] is Showable]:
+            provide[dimensional.Operand is Zeroic]:
+              val reParts: List[dimensional.Operand] = dimensional.parts(complex.real)
+              val imParts: List[dimensional.Operand] = dimensional.parts(complex.imaginary)
+              val parts = reParts.zip(imParts).map(Complex(_, _).show)
+              val parts2 = parts.zip(imParts).map: (part, im) =>
+                if im == zero[dimensional.Operand] then part else t"($part)"
+
+              dimensional.place(complex.real, parts2)
+
+        case _ =>
+          if complex.imaginary == zero[value] then complex.real.show
+          else if complex.real == zero[value] then t"${complex.imaginary.show}𝕚"
+          else if complex.imaginary < zero[value]
+          then t"${complex.real.show} - ${(-complex.imaginary).show}𝕚"
+          else t"${complex.real.show} + ${complex.imaginary.show}𝕚"
 
   given addable: [result, component2, component: Addable by component2 to result as addable]
                =>  Complex[component] is Addable by Complex[component2] to Complex[result] =

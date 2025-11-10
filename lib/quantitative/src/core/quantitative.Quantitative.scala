@@ -99,6 +99,9 @@ object Quantitative extends Quantitative2:
     erased given underlying: [units <: Measure] => Underlying[Quantity[units], Double] = !!
     erased given canEqual: [units <: Measure] => CanEqual[Quantity[units], Quantity[units]] = !!
 
+    inline def unitsMap[units <: Measure]: Map[Text, Int] = ${Quantitative.collectUnits[units]}
+    inline def units[units <: Measure]: Text = expressUnits(unitsMap[units])
+
     given zeroic: [units <: Measure] => Quantity[units] is Zeroic:
       inline def zero: Quantity[units] = Quantity(0.0)
 

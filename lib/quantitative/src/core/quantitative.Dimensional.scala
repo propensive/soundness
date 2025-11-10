@@ -32,39 +32,24 @@
                                                                                                   */
 package quantitative
 
-import language.experimental.into
-
 import anticipation.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
-import symbolism.*
 
-extension [units <: Measure](quantity: Quantity[units])
-  transparent inline def in[units2[power <: Nat] <: Units[power, ?]]: Any =
-    ${Quantitative.norm[units, units2]('quantity)}
+object Dimensional:
+  inline given dimensional: [measure <: Measure] => Quantity[measure] is Dimensional by Double =
+    val units = Quantity.units[measure]
+    new Dimensional:
+      type Self = Quantity[measure]
+      type Operand = Double
 
-  transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
+      def parts(value: Quantity[measure]): List[Double] = List(value.underlying)
 
+      def place(value: Quantity[measure], parts: List[Text]): Text =
+        t"${parts(0)} $units"
 
-  inline def normalize[units2 <: Measure](using normalizable: units is Normalizable to units2)
-  : Quantity[units2] =
-
-      normalizable.normalize(quantity)
-
-
-  inline def sqrt(using root: Quantity[units] is Rootable[2]): root.Result = root.root(quantity)
-  inline def cbrt(using root: Quantity[units] is Rootable[3]): root.Result = root.root(quantity)
-  inline def units: Map[Text, Int] = ${Quantitative.collectUnits[units]}
-  inline def express(using Decimalizer): Text = t"${quantity.value} ${Quantity.expressUnits(units)}"
-  inline def dimension: Text = ${Quantitative.describe[units]}
-
-package temperatureScales:
-  given kelvin: TemperatureScale:
-    def suffix: Text = t"K"
-    def apply(value: Double): Temperature = Temperature(value)
-    def kelvin(value: Temperature): Double = value.kelvin
-
-  given celsius: TemperatureScale = Celsius
-  given rankine: TemperatureScale = Rankine
-  given fahrenheit: TemperatureScale = Fahrenheit
+trait Dimensional extends Typeclass:
+  type Operand
+  def parts(value: Self): List[Operand]
+  def place(value: Self, parts: List[Text]): Text
