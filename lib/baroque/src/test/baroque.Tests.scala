@@ -49,6 +49,18 @@ object Tests extends Suite(m"Baroque tests"):
       Complex(1, 3).show
     .assert(_ == t"1 + 3𝕚")
 
+    test(m"Show a complex number with negative imaginary"):
+      Complex(1, -3).show
+    .assert(_ == t"1 - 3𝕚")
+
+    test(m"Show a complex number with no imaginary part"):
+      Complex(1, 0).show
+    .assert(_ == t"1")
+
+    test(m"Show a complex number with no real part"):
+      Complex(0, 3).show
+    .assert(_ == t"3𝕚")
+
     test(m"Show a quantity complex number"):
       val re = 1.0*Metre/Second
       val im = Metre*9.0/Second
@@ -110,3 +122,11 @@ object Tests extends Suite(m"Baroque tests"):
     test(m"Multiply complex quantity numbers"):
       Complex(18.0*Foot, 1.4*Foot)*Complex(4.0*Kilo(Gram), 2.0*Kilo(Gram))
     .assert(_ == Complex(69.2*Foot*Kilo(Gram), 41.6*Foot*Kilo(Gram)))
+
+    test(m"Negate a complex number"):
+      -Complex(10.0, 7.0)
+    .assert(_ == Complex(-10.0, -7.0))
+
+    test(m"Negate a complex quantity"):
+      -Complex(10*Inch, 7*Inch)
+    .assert(_ == Complex(-10*Inch, -7*Inch))

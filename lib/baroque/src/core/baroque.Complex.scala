@@ -34,6 +34,7 @@ package baroque
 
 import anticipation.*
 import gossamer.*
+import hypotenuse.*
 import prepositional.*
 import quantitative.*
 import spectacular.*
@@ -42,19 +43,13 @@ import symbolism.*
 import scala.annotation.*
 
 object Complex:
-  inline given showableQuantity: [units <: Measure, quantity <: Quantity[units]: Showable]
-        => Double is Showable
-        => Complex[quantity] is Showable =
+  inline given showable: [value: {Showable, Zeroic, Commensurable by value, Negatable to value}]
+               =>  Complex[value] is Showable =
     complex =>
-      val re = complex.real.underlying
-      val im = complex.imaginary.underlying
-      val units = Quantity.expressUnits(complex.real.units)
-      t"(${re.show} + ${im.show}𝕚) $units"
-
-  given showable: [component: {Showable, Zeroic}] => Complex[component] is Showable =
-    complex =>
-      if complex.imaginary == zero[component] then complex.real.show
-      else if complex.real == zero[component] then t"${complex.imaginary.show}i"
+      if complex.imaginary == zero[value] then complex.real.show
+      else if complex.real == zero[value] then t"${complex.imaginary.show}𝕚"
+      else if complex.imaginary < zero[value]
+      then t"${complex.real.show} - ${(-complex.imaginary).show}𝕚"
       else t"${complex.real.show} + ${complex.imaginary.show}𝕚"
 
   given addable: [result, component2, component: Addable by component2 to result as addable]
@@ -105,6 +100,11 @@ object Complex:
          ((left.real*right.real + left.imaginary*right.imaginary)/denominator,
           (left.imaginary*right.real + (-left.real)*right.imaginary)/denominator)
 
+  given negatable: [component: Negatable]
+        => Complex[component] is Negatable to Complex[component.Result] = complex =>
+
+      Complex(-complex.real, -complex.imaginary)
+
 
   def polar[component: Multiplicable by Double as multiplication]
        (modulus: component, argument: Double)
@@ -150,7 +150,3 @@ case class Complex[component](real: component, imaginary: component):
   @targetName("conjugate")
   inline def unary_~(using neg: component is Negatable): Complex[component | neg.Result] =
     Complex(real, -imaginary)
-
-  @targetName("neg")
-  inline def unary_-(using neg: component is Negatable): Complex[component | neg.Result] =
-    Complex(-real, -imaginary)
