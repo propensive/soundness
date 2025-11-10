@@ -32,6 +32,7 @@
                                                                                                   */
 package baroque
 
+import abacist.*
 import fulminate.*
 import gossamer.*
 import probably.*
@@ -66,6 +67,19 @@ object Tests extends Suite(m"Baroque tests"):
       val im = Metre*9.0/Second
       Complex[Quantity[Metres[1] & Seconds[-1]]](1.0*Metre/Second, Metre*9.0/Second).show
     .assert(_ == t"(1.00 + 9.00𝕚) m·s¯¹")
+
+    test(m"Show a quantity complex number with only a real part"):
+      val re = 1.0*Metre/Second
+      val im = 0.0*Metre/Second
+      Complex[Quantity[Metres[1] & Seconds[-1]]](re, im).show
+    .assert(_ == t"1.00 m·s¯¹")
+
+    test(m"Show a quantity value in feet and inches"):
+      type Distance = Quanta[(Yards[1], Feet[1], Inches[1])]
+      val re: Distance = Quanta(1, 2, 0)
+      val im: Distance = Quanta(2, 0, 6)
+      Complex[Distance](re, im).show
+    .assert(_ == t"(1 + 2𝕚) yd, 2 ft, (6𝕚) in")
 
     test(m"Add two int-complex numbers"):
       Complex(1, 2) + Complex(8, 2)

@@ -49,16 +49,16 @@ object Complex:
                =>  Complex[value] is Showable =
     complex =>
       compiletime.summonFrom:
-        case dimensional: (`value` is Dimensional) =>
-          provide[Complex[dimensional.Operand] is Showable]:
-            provide[dimensional.Operand is Zeroic]:
-              val reParts: List[dimensional.Operand] = dimensional.parts(complex.real)
-              val imParts: List[dimensional.Operand] = dimensional.parts(complex.imaginary)
+        case distributive: (`value` is Distributive) =>
+          provide[Complex[distributive.Operand] is Showable]:
+            provide[distributive.Operand is Zeroic]:
+              val reParts: List[distributive.Operand] = distributive.parts(complex.real)
+              val imParts: List[distributive.Operand] = distributive.parts(complex.imaginary)
               val parts = reParts.zip(imParts).map(Complex(_, _).show)
               val parts2 = parts.zip(imParts).map: (part, im) =>
-                if im == zero[dimensional.Operand] then part else t"($part)"
+                if im == zero[distributive.Operand] then part else t"($part)"
 
-              dimensional.place(complex.real, parts2)
+              distributive.place(complex.real, parts2)
 
         case _ =>
           if complex.imaginary == zero[value] then complex.real.show

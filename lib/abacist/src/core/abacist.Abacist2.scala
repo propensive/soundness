@@ -33,7 +33,10 @@
 package abacist
 
 import anticipation.*
+import gossamer.*
+import hypotenuse.*
 import quantitative.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -54,6 +57,33 @@ object Abacist2:
         case count: Long => Some(count)
         case _           => None
 
+
+    inline given [units <: Tuple] => Quanta[units] is Commensurable:
+      type Operand = Quanta[units]
+
+      inline def compare
+                  (inline left:        Quanta[units],
+                   inline right:       Quanta[units],
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
+      : Boolean =
+
+          inline if greaterThan
+          then inline if strict then left > right else left >= right
+          else inline if strict then left < right else left <= right
+
+
+    inline given distributive: [units <: Tuple] => Quanta[units] is Distributive by Long =
+      new Distributive:
+        type Self = Quanta[units]
+        type Operand = Long
+
+        def parts(value: Quanta[units]): List[Long] = value.components.map(_(1)).to(List)
+
+        def place(value: Quanta[units], parts: List[Text]): Text =
+          parts.zip(value.components.map(_(0))).map: (number, units) =>
+            t"$number $units"
+          . join(t", ")
 
     def fromLong[units <: Tuple](long: Long): Quanta[units] = long
     given integral: [units <: Tuple] => Integral[Quanta[units]] = summon[Integral[Long]]
@@ -85,6 +115,8 @@ object Abacist2:
 
       def divide(left: Quanta[units], right: Double): Quanta[units] = left.divide(right)
 
+    given negatable: [units <: Tuple] => Quanta[units] is Negatable to Quanta[units] = -_
+
     inline given showable: [units <: Tuple] => Quanta[units] is Showable = summonFrom:
       case names: UnitsNames[units] => count =>
         val nonzeroComponents = count.components.filter(_(1) != 0)
@@ -100,9 +132,6 @@ object Abacist2:
     def longValue: Long = count
 
   extension [units <: Tuple](inline count: Quanta[units])
-    @targetName("negate")
-    inline def `unary_-`: Quanta[units] = -count
-
     inline def apply[unit[power <: Nat] <: Units[power, ? <: Dimension]]: Int =
       ${Abacist.get[units, unit[1]]('count)}
 

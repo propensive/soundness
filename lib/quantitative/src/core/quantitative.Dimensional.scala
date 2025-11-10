@@ -37,10 +37,10 @@ import gossamer.*
 import prepositional.*
 import proscenium.*
 
-object Dimensional:
-  inline given dimensional: [measure <: Measure] => Quantity[measure] is Dimensional by Double =
+object Distributive:
+  inline given distributive: [measure <: Measure] => Quantity[measure] is Distributive by Double =
     val units = Quantity.units[measure]
-    new Dimensional:
+    new Distributive:
       type Self = Quantity[measure]
       type Operand = Double
 
@@ -49,7 +49,7 @@ object Dimensional:
       def place(value: Quantity[measure], parts: List[Text]): Text =
         t"${parts(0)} $units"
 
-trait Dimensional extends Typeclass:
+trait Distributive extends Typeclass:
   type Operand
   def parts(value: Self): List[Operand]
   def place(value: Self, parts: List[Text]): Text
