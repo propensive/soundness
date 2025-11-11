@@ -35,8 +35,8 @@ package sedentary
 import soundness.*
 
 import classloaders.system
-import environments.jre
-import systems.jre
+import environments.java
+import systems.java
 import temporaryDirectories.environment
 import jsonPrinters.minimal
 import autopsies.contrastExpectations

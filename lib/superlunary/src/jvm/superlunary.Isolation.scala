@@ -34,7 +34,7 @@ package superlunary
 
 import scala.reflect.Selectable.reflectiveSelectable
 
-import ambience.*, systems.jre
+import ambience.*, systems.java
 import anthology.*
 import anticipation.*
 import austronesian.*
@@ -53,7 +53,7 @@ import vacuous.*
 
 import charDecoders.utf8
 import textSanitizers.skip
-import systems.jre
+import systems.java
 import classloaders.system
 
 object Isolation extends Rig:

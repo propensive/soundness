@@ -51,8 +51,8 @@ import vacuous.*
 import zeppelin.*
 
 import manifestAttributes.*
-import workingDirectories.jre
-import systems.jre
+import workingDirectories.java
+import systems.java
 import logging.silent
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
@@ -71,7 +71,7 @@ object Bundler:
         classpath.entries
 
       case _ =>
-        unsafely(Properties.java.`class`.path().decode[LocalClasspath]).entries)
+        unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
 
   def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
   : Path on Linux =

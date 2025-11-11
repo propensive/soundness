@@ -32,6 +32,9 @@
                                                                                                   */
 package ambience
 
+import java.nio.file as jnf
+import java.lang as jl
+
 import language.experimental.pureFunctions
 
 import anticipation.*
@@ -45,33 +48,33 @@ package systems:
   given empty: System:
     def apply(name: Text): Unset.type = Unset
 
-  given jre: System:
-    def apply(name: Text): Optional[Text] = Optional(System.getProperty(name.s)).let(_.tt)
+  given java: System:
+    def apply(name: Text): Optional[Text] = Optional(jl.System.getProperty(name.s)).let(_.tt)
 
 package workingDirectories:
   given system: (properties: System) => WorkingDirectory =
     () => properties(t"user.dir").or(panic(m"the property `user.dir` should be present"))
 
-  given jre: WorkingDirectory = system(using ambience.systems.jre)
+  given java: WorkingDirectory = system(using ambience.systems.java)
 
   given system: WorkingDirectory = () =>
-    Optional(System.getProperty("user.dir")).let(_.tt).or:
+    Optional(jl.System.getProperty("user.dir")).let(_.tt).or:
       panic(m"the `user.dir` system property is not set")
 
-  given default: WorkingDirectory = () => java.nio.file.Paths.get("").nn.toAbsolutePath.toString
+  given default: WorkingDirectory = () => jnf.Paths.get("").nn.toAbsolutePath.toString
 
 package homeDirectories:
   given system: (properties: System) => HomeDirectory =
     () => properties(t"user.home").or(panic(m"the property `user.home` should be present"))
 
-  given jre: HomeDirectory = system(using ambience.systems.jre)
+  given java: HomeDirectory = system(using ambience.systems.java)
 
   given system: HomeDirectory = () =>
-    Optional(System.getProperty("user.home")).let(_.tt).or:
+    Optional(jl.System.getProperty("user.home")).let(_.tt).or:
       panic(m"the `user.home` system property is not set")
 
   given environment: HomeDirectory = () =>
-    List("HOME", "USERPROFILE", "HOMEPATH").map(System.getenv(_)).map(Optional(_)).compact.prim
+    List("HOME", "USERPROFILE", "HOMEPATH").map(jl.System.getenv(_)).map(Optional(_)).compact.prim
     . let(_.tt)
     . or(panic(m"none of `HOME`, `USERPROFILE` or `HOMEPATH` environment variables is set"))
 
@@ -80,16 +83,18 @@ package environments:
   given empty: Environment:
     def variable(name: Text): Unset.type = Unset
 
-  given jre: Environment:
-    def variable(name: Text): Optional[Text] = Optional(System.getenv(name.s)).let(_.tt)
+  given java: Environment:
+    def variable(name: Text): Optional[Text] = Optional(jl.System.getenv(name.s)).let(_.tt)
 
 package temporaryDirectories:
-  given system: TemporaryDirectory = () =>
-    Optional(System.getProperty("java.io.tmpdir")).let(_.tt).or:
+  given java: TemporaryDirectory = () =>
+    Optional(jl.System.getProperty("java.io.tmpdir")).let(_.tt).or:
       panic(m"the `java.io.tmpdir` system property is not set")
 
-  given environment: TemporaryDirectory = () =>
-    List("TMPDIR", "TMP", "TEMP").map(System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt).or:
+  given system: (system: System) => TemporaryDirectory = () => jl.System.getProperty("java.io.tmpdir").nn.tt
+
+  given environment: Environment => TemporaryDirectory = () =>
+    List("TMPDIR", "TMP", "TEMP").map(jl.System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt).or:
       panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set")
 
 

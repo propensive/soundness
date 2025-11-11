@@ -51,11 +51,11 @@ object LocalClasspath:
 
   given encodable: System => LocalClasspath is Encodable in Text = _()
 
-  given decodable: (System, Tactic[SystemPropertyError])
+  given decodable: (System, Tactic[PropertyError])
         => LocalClasspath is Decodable in Text =
     classpath =>
       val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
-        classpath.cut(Properties.path.separator()).map: path =>
+        classpath.cut(System.properties.path.separator()).map: path =>
           if path.ends(t"/") then ClasspathEntry.Directory(path)
           else if path.ends(t".jar") then ClasspathEntry.Jar(path)
           else ClasspathEntry.Directory(path)
@@ -99,4 +99,4 @@ extends Classpath:
       case ClasspathEntry.Jar(jar)             => List(jar)
       case _                                   => Nil
 
-    . join(unsafely(Properties.path.separator()))
+    . join(unsafely(System.properties.path.separator()))

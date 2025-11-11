@@ -32,11 +32,13 @@
                                                                                                   */
 package superlunary
 
+import java.lang as jl
+
 import scala.quoted.*
 
 import soundness.*
 
-import systems.jre
+import systems.java
 import temporaryDirectories.system
 import embeddings.automatic
 import strategies.throwUnsafely
@@ -50,10 +52,10 @@ object Tests extends Suite(m"Superlunary Tests"):
         '{  val x = ${message.name}
             val y = ${message.count}
             println(y)
-            Example(t"Time: $x $y ${java.lang.System.currentTimeMillis - ${message}.count}", 9)  }
+            Example(t"Time: $x $y ${jl.System.currentTimeMillis - ${message}.count}", 9)  }
 
-      println(fn(Example(t"one", java.lang.System.currentTimeMillis)))
-      println(fn(Example(t"two", java.lang.System.currentTimeMillis)))
+      println(fn(Example(t"one", jl.System.currentTimeMillis)))
+      println(fn(Example(t"two", jl.System.currentTimeMillis)))
 
       var count = 100
       println:

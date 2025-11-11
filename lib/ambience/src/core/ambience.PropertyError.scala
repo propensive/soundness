@@ -34,17 +34,10 @@ package ambience
 
 import language.dynamics
 
+import scala.compiletime.ops.string.*
+
 import anticipation.*
-import contingency.*
-import prepositional.*
-import vacuous.*
+import fulminate.*
 
-object Properties extends Dynamic:
-  def apply[property](property: Text)
-       (using properties: System, reader: String is SystemProperty of property)
-  : property =
-
-      reader.read(properties(property), property)
-
-
-  def selectDynamic(key: String): PropertyAccess[key.type] = PropertyAccess[key.type](key)
+case class PropertyError(property: Text)(using Diagnostics)
+extends Error(m"the system property $property was not defined")

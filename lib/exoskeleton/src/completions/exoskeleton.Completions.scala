@@ -34,7 +34,7 @@ package exoskeleton
 
 import scala.collection.mutable as scm
 
-import ambience.*, environments.jre, systems.jre
+import ambience.*, environments.java, systems.java
 import anticipation.*
 import contingency.*
 import denominative.*

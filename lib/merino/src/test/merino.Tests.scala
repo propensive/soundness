@@ -32,7 +32,9 @@
                                                                                                   */
 package merino
 
-import ambience.*, systems.jre
+import java.io as ji
+
+import ambience.*, systems.java
 import anticipation.*, interfaces.paths.javaIoFile
 import contingency.*, strategies.throwUnsafely
 import eucalyptus.*
@@ -45,8 +47,6 @@ import turbulence.*
 import sedentary.*
 import zephyrine.*
 import errorDiagnostics.stackTraces
-
-import java.io as ji
 
 //import unsafeExceptions.canThrowAny
 

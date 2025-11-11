@@ -45,7 +45,7 @@ object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
 
   override def apply[path: Instantiable across Paths from Text]()
                 (using System, Environment)
-  : path raises SystemPropertyError raises EnvironmentError =
+  : path raises PropertyError raises EnvironmentError =
 
       path(t"/")
 

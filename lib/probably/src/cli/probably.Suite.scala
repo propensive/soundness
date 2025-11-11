@@ -34,7 +34,7 @@ package probably
 
 import java.lang as jl
 
-import ambience.*, environments.jre
+import ambience.*, environments.java
 import anticipation.*
 import contingency.*
 import digression.*

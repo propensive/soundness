@@ -34,8 +34,14 @@ package ethereal
 
 import language.experimental.pureFunctions
 
+import java.net as jn
+import java.io as ji
+import java.lang as jl
+
+import scala.compiletime.*
+
 import scala.collection.concurrent as scc
-import ambience.*, systems.jre
+import ambience.*, systems.java
 import anticipation.*
 import contingency.*
 import digression.*
@@ -62,8 +68,6 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import scala.compiletime.*
-
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
@@ -72,9 +76,6 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
 given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
-
-import java.net as jn
-import java.io as ji
 
 package daemonConfig:
   given doNotSupportStderr: StderrSupport = () => false
@@ -92,20 +93,20 @@ def cli[bus <: Matchable](using executive: Executive)
 
   given realm: Realm = realm"ethereal"
 
-  import environments.jre
+  import environments.java
   import strategies.throwUnsafely
   import workingDirectories.system
   import stdioSources.virtualMachine.ansi
 
   val name: Text =
     recover:
-      case SystemPropertyError(_) =>
-        val jarFile: Path on Linux = Properties.java.`class`.path[Text]().pipe: jarFile =>
+      case PropertyError(_) =>
+        val jarFile: Path on Linux = System.properties.java.`class`.path[Text]().pipe: jarFile =>
           safely(jarFile.decode[Path on Linux]).or:
             val work: Path on Linux = workingDirectory
             work + jarFile.decode[Relative on Linux]
 
-        safely(Properties.build.executable[Text]()).absolve match
+        safely(System.properties.build.executable[Text]()).absolve match
           case Unset =>
             Out.println(e"$Bold(This application must be invoked with the Ethereal launch script)")
             Out.println(e"To build an Ethereal executable, run:")
@@ -124,9 +125,9 @@ def cli[bus <: Matchable](using executive: Executive)
             Exit.Fail(1).terminate()
 
           case destination: Text =>
-            val javaMinimum = safely(Properties.build.java.minimum[Int]()).or(21)
-            val javaPreferred = safely(Properties.build.java.preferred[Int]()).or(24)
-            val jdk = safely(Properties.build.java.bundle[Text]() == t"jdk").or(false)
+            val javaMinimum = safely(System.properties.build.java.minimum[Int]()).or(21)
+            val javaPreferred = safely(System.properties.build.java.preferred[Int]()).or(24)
+            val jdk = safely(System.properties.build.java.bundle[Text]() == t"jdk").or(false)
 
             val path = safely(destination.decode[Path on Linux]).or:
               val work: Path on Linux = workingDirectory
@@ -154,10 +155,10 @@ def cli[bus <: Matchable](using executive: Executive)
 
             Exit.Ok.terminate()
 
-    . within(Properties.ethereal.name[Text]())
+    . within(System.properties.ethereal.name[Text]())
 
-  val userId: Optional[Int] = safely(Properties.ethereal.user.id[Int]())
-  val userName: Optional[Text] = safely(Properties.ethereal.user.name[Text]())
+  val userId: Optional[Int] = safely(System.properties.ethereal.user.id[Int]())
+  val userName: Optional[Text] = safely(System.properties.ethereal.user.name[Text]())
 
   val runtimeDir: Optional[Path on Linux] = Xdg.runtimeDir
   val stateHome: Path on Linux = Xdg.stateHome
@@ -172,7 +173,7 @@ def cli[bus <: Matchable](using executive: Executive)
   lazy val termination: Unit =
     portFile.wipe()
     pidFile.wipe()
-    java.lang.System.exit(0)
+    jl.System.exit(0)
 
   def shutdown(pid: Optional[Pid])(using Stdio): Unit logs DaemonLogEvent =
     Log.warn(DaemonLogEvent.Shutdown)

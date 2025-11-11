@@ -67,7 +67,7 @@ import stdioSources.virtualMachine.ansi
 import backstops.stackTrace
 import executives.direct
 import interpreters.posix
-import systems.jre
+import systems.java
 import workingDirectories.system
 import internetAccess.enabled
 import logging.silent

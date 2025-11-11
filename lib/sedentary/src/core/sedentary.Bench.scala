@@ -32,6 +32,8 @@
                                                                                                   */
 package sedentary
 
+import java.lang as jl
+
 import scala.quoted.*
 
 import ambience.*
@@ -73,8 +75,8 @@ import filesystemTraversal.preOrder
 import manifestAttributes.*
 
 import logging.silent
-import workingDirectories.jre
-import homeDirectories.jre
+import workingDirectories.java
+import homeDirectories.java
 import charEncoders.utf8
 import codicils.cancel
 
@@ -120,27 +122,27 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
           // Keep doubling the count until we get one run
           while d < $target2 do
             count *= 2
-            val t0 = java.lang.System.nanoTime
+            val t0 = jl.System.nanoTime
             for i <- 0 until count do $body0
-            d = java.lang.System.nanoTime - t0
+            d = jl.System.nanoTime - t0
 
           var rate: Double = d.toDouble/count
           count = ($target2/rate).toInt
           val result = new Array[Long](${Expr(iterations2)} + 1)
 
           for i <- 0 until ${Expr(5)} do
-            val t0 = java.lang.System.nanoTime
+            val t0 = jl.System.nanoTime
             for j <- 0 until count do $body0
-            val t1 = java.lang.System.nanoTime - t0
+            val t1 = jl.System.nanoTime - t0
             rate = t1.toDouble/count
             count = ($target2/rate).toInt
 
           result(0) = count
 
           for i <- 1 to ${Expr(iterations2)} do
-            val t0 = java.lang.System.nanoTime
+            val t0 = jl.System.nanoTime
             for j <- 0 until count do $body0
-            val t1 = java.lang.System.nanoTime - t0
+            val t1 = jl.System.nanoTime - t0
             result(i) = t1
 
           result.to(List)  }

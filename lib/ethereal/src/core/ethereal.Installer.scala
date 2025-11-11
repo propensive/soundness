@@ -111,12 +111,12 @@ object Installer:
        (using Effectful, Diagnostics)
   : Result logs DaemonLogEvent raises InstallError =
 
-      import workingDirectories.jre
-      import systems.jre
+      import workingDirectories.java
+      import systems.java
 
       mitigate:
         case PathError(_, _)        => InstallError(InstallError.Reason.Environment)
-        case SystemPropertyError(_) => InstallError(InstallError.Reason.Environment)
+        case PropertyError(_) => InstallError(InstallError.Reason.Environment)
         case NumberError(_, _)      => InstallError(InstallError.Reason.Environment)
         case IoError(_, _, _)       => InstallError(InstallError.Reason.Io)
         case NameError(_, _, _)     => InstallError(InstallError.Reason.Io)
@@ -130,8 +130,8 @@ object Installer:
           if safely(scriptPath.decode[Path on Linux]) == service.script && !force
           then Result.AlreadyOnPath(command, service.script.encode)
           else
-            val payloadSize: Memory = Memory(Properties.ethereal.payloadSize[Int]())
-            val jarSize: Memory = Memory(Properties.ethereal.jarSize[Int]())
+            val payloadSize: Memory = Memory(System.properties.ethereal.payloadSize[Int]())
+            val jarSize: Memory = Memory(System.properties.ethereal.jarSize[Int]())
             val scriptFile: Path on Linux = service.script
             val fileSize = scriptFile.size()
             val prefixSize = fileSize - payloadSize - jarSize

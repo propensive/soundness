@@ -32,8 +32,22 @@
                                                                                                   */
 package ambience
 
+import language.dynamics
+
 import anticipation.*
+import prepositional.*
 import vacuous.*
+
+object System:
+  object properties extends Dynamic:
+    def apply[property](property: Text)
+         (using properties: System, reader: String is Property of property)
+    : property =
+
+        reader.read(properties(property), property)
+
+
+    def selectDynamic(key: String): Property.Access[key.type] = Property.Access[key.type](key)
 
 trait System:
   def apply(name: Text): Optional[Text]

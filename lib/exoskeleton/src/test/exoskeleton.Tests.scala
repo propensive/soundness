@@ -36,8 +36,8 @@ import soundness.*
 
 import unsafeExceptions.canThrowAny
 import classloaders.system
-import environments.jre
-import systems.jre
+import environments.java
+import systems.java
 import temporaryDirectories.system
 import workingDirectories.default
 import supervisors.global

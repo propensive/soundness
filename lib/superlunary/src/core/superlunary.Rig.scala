@@ -53,7 +53,7 @@ import symbolism.*
 import vacuous.*
 
 import interfaces.paths.pathOnLinux
-import systems.jre
+import systems.java
 
 import scala.quoted.*
 
@@ -74,7 +74,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
         classpath.entries
 
       case _ =>
-        unsafely(Properties.java.`class`.path().decode[LocalClasspath]).entries)
+        unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
 
   lazy val settings2: staging.Compiler.Settings =
     staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))

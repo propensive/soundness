@@ -55,7 +55,7 @@ case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly
   type Topic = topic
 
   def absolutePath(using Environment, System)
-  : Text raises EnvironmentError raises SystemPropertyError =
+  : Text raises EnvironmentError raises PropertyError =
 
       val home: Text = Environment.home[Text]
       val home2: Text = if home.ends(t"/") then home.skip(1, Rtl) else home
@@ -68,7 +68,7 @@ case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly
 
   def apply[instantiable: Instantiable across Paths from Text]()
        (using System, Environment)
-  : instantiable raises SystemPropertyError raises EnvironmentError =
+  : instantiable raises PropertyError raises EnvironmentError =
 
       val path: Text = absolutePath
       instantiable(path)
