@@ -67,14 +67,14 @@ object SystemProperty:
 
 
   // given javaLibraryPath: [path: Instantiable across Paths from Text]
-  //       => (systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
+  //       => (system: System, systemProperty: Tactic[SystemPropertyError])
   //       =>  SystemProperty["java.library.path", List[path]] =
 
   //   _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
 
 
   // given javaClassPath: [path: Instantiable across Paths from Text]
-  //       => (systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
+  //       => (system: System, systemProperty: Tactic[SystemPropertyError])
   //       =>  SystemProperty["java.class.path", List[path]] =
 
   //   _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
@@ -96,7 +96,7 @@ object SystemProperty:
 
 
   // given javaExtDirs: [path: Instantiable across Paths from Text]
-  //       => (systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
+  //       => (system: System, systemProperty: Tactic[SystemPropertyError])
   //       =>  SystemProperty["java.ext.dirs", List[path]] =
 
   //   _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))

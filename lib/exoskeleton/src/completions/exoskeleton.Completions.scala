@@ -34,7 +34,7 @@ package exoskeleton
 
 import scala.collection.mutable as scm
 
-import ambience.*, environments.jre, systemProperties.jre
+import ambience.*, environments.jre, systems.jre
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -47,7 +47,7 @@ import guillotine.*
 import nomenclature.*
 import parasite.*
 import prepositional.*
-import rudiments.*, homeDirectories.systemProperties
+import rudiments.*, homeDirectories.system
 import serpentine.*
 import spectacular.*
 import symbolism.*

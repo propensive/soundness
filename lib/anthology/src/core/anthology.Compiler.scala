@@ -42,5 +42,5 @@ import prepositional.*
 trait Compiler:
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
        (sources: Map[Text, Text], out: path)
-       (using SystemProperties, Monitor)
+       (using System, Monitor)
   : CompileProcess logs CompileEvent raises CompilerError

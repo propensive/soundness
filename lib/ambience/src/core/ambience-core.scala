@@ -41,32 +41,32 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-package systemProperties:
-  given empty: SystemProperties:
+package systems:
+  given empty: System:
     def apply(name: Text): Unset.type = Unset
 
-  given jre: SystemProperties:
+  given jre: System:
     def apply(name: Text): Optional[Text] = Optional(System.getProperty(name.s)).let(_.tt)
 
 package workingDirectories:
-  given system: (properties: SystemProperties) => WorkingDirectory =
+  given system: (properties: System) => WorkingDirectory =
     () => properties(t"user.dir").or(panic(m"the property `user.dir` should be present"))
 
-  given jre: WorkingDirectory = system(using ambience.systemProperties.jre)
+  given jre: WorkingDirectory = system(using ambience.systems.jre)
 
-  given systemProperties: WorkingDirectory = () =>
+  given system: WorkingDirectory = () =>
     Optional(System.getProperty("user.dir")).let(_.tt).or:
       panic(m"the `user.dir` system property is not set")
 
   given default: WorkingDirectory = () => java.nio.file.Paths.get("").nn.toAbsolutePath.toString
 
 package homeDirectories:
-  given system: (properties: SystemProperties) => HomeDirectory =
+  given system: (properties: System) => HomeDirectory =
     () => properties(t"user.home").or(panic(m"the property `user.home` should be present"))
 
-  given jre: HomeDirectory = system(using ambience.systemProperties.jre)
+  given jre: HomeDirectory = system(using ambience.systems.jre)
 
-  given systemProperties: HomeDirectory = () =>
+  given system: HomeDirectory = () =>
     Optional(System.getProperty("user.home")).let(_.tt).or:
       panic(m"the `user.home` system property is not set")
 
@@ -84,7 +84,7 @@ package environments:
     def variable(name: Text): Optional[Text] = Optional(System.getenv(name.s)).let(_.tt)
 
 package temporaryDirectories:
-  given systemProperties: TemporaryDirectory = () =>
+  given system: TemporaryDirectory = () =>
     Optional(System.getProperty("java.io.tmpdir")).let(_.tt).or:
       panic(m"the `java.io.tmpdir` system property is not set")
 

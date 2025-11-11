@@ -48,23 +48,20 @@ trait EnvironmentVariable[alias <: Label, +variable] extends Pure:
   def read(value: Text): variable
 
 object EnvironmentVariable extends EnvironmentVariable2:
-  given path: [path: Instantiable across Paths from Text]
-        => (systemProperties: SystemProperties)
+  given path: [path: Instantiable across Paths from Text] => (system: System)
         =>  EnvironmentVariable["path", List[path]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
+    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
 
-  given xdgDataDirs: [path: Instantiable across Paths from Text]
-        => (systemProperties: SystemProperties)
+  given xdgDataDirs: [path: Instantiable across Paths from Text] => (system: System)
         =>  EnvironmentVariable["xdgDataDirs", List[path]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
+    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
 
-  given xdgConfigDirs: [path: Instantiable across Paths from Text]
-        => (systemProperties: SystemProperties)
+  given xdgConfigDirs: [path: Instantiable across Paths from Text] => (system: System)
         =>  EnvironmentVariable["xdgConfigDirs", List[path]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
+    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
 
   given xdgDataHome: [path: Instantiable across Paths from Text]
         =>  EnvironmentVariable["xdgDataHome", path] =

@@ -36,7 +36,7 @@ import soundness.*
 
 import classloaders.system
 import environments.jre
-import systemProperties.jre
+import systems.jre
 import temporaryDirectories.environment
 import jsonPrinters.minimal
 import autopsies.contrastExpectations

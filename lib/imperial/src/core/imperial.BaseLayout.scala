@@ -54,7 +54,7 @@ case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly
 
   type Topic = topic
 
-  def absolutePath(using Environment, SystemProperties)
+  def absolutePath(using Environment, System)
   : Text raises EnvironmentError raises SystemPropertyError =
 
       val home: Text = Environment.home[Text]
@@ -67,7 +67,7 @@ case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly
 
 
   def apply[instantiable: Instantiable across Paths from Text]()
-       (using SystemProperties, Environment)
+       (using System, Environment)
   : instantiable raises SystemPropertyError raises EnvironmentError =
 
       val path: Text = absolutePath

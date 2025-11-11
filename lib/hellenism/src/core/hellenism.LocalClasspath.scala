@@ -49,9 +49,9 @@ import errorDiagnostics.stackTraces
 
 object LocalClasspath:
 
-  given encodable: SystemProperties => LocalClasspath is Encodable in Text = _()
+  given encodable: System => LocalClasspath is Encodable in Text = _()
 
-  given decodable: (SystemProperties, Tactic[SystemPropertyError])
+  given decodable: (System, Tactic[SystemPropertyError])
         => LocalClasspath is Decodable in Text =
     classpath =>
       val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
@@ -93,7 +93,7 @@ class LocalClasspath private
     val entrySet: Set[ClasspathEntry])
 extends Classpath:
 
-  def apply()(using SystemProperties): Text =
+  def apply()(using System): Text =
     entries.flatMap:
       case ClasspathEntry.Directory(directory) => List(directory)
       case ClasspathEntry.Jar(jar)             => List(jar)

@@ -47,7 +47,7 @@ object Local:
   type Rules = Windows.Rules & MacOs.Rules
   erased given nominative: Local is Nominative under Rules = !!
 
-  given filesystem: SystemProperties => Local is Filesystem:
+  given filesystem: System => Local is Filesystem:
     type UniqueRoot = false
 
     val separator: Text = Properties.path.separator().show

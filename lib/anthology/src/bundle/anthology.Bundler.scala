@@ -52,7 +52,7 @@ import zeppelin.*
 
 import manifestAttributes.*
 import workingDirectories.jre
-import systemProperties.jre
+import systems.jre
 import logging.silent
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled

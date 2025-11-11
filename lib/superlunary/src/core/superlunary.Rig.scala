@@ -53,7 +53,7 @@ import symbolism.*
 import vacuous.*
 
 import interfaces.paths.pathOnLinux
-import systemProperties.jre
+import systems.jre
 
 import scala.quoted.*
 
@@ -87,7 +87,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
               (body: (References over Transport) ?=> Quotes ?=> Expr[output])
               [version <: Scalac.Versions]
               (using codepoint:     Codepoint,
-                     properties:    SystemProperties,
+                     properties:    System,
                      directory:     TemporaryDirectory,
                      stageable:     Stageable over Transport in Form)
   : Result[output] raises CompilerError raises RemoteError =

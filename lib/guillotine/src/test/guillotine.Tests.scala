@@ -32,7 +32,7 @@
                                                                                                   */
 package guillotine
 
-import ambience.*, systemProperties.virtualMachine
+import ambience.*, systems.virtualMachine
 import anticipation.*
 import contextual.*
 import contingency.*, strategies.throwUnsafely

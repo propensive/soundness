@@ -128,8 +128,8 @@ Support for system properties is provided in much the same way as for
 environment variables:
 - access is provided through the `Properties` object, by `Text` value or
   dynamic member access
-- `systemProperties.jvm` provides the standard system properties from the JVM
-- alternative instances of `SystemProperties` can be defined to provide
+- `systems.jvm` provides the standard system properties from the JVM
+- alternative instances of `System` can be defined to provide
   substitute values
 - `SystemProperty` provides the same functionality as `EnvironmentVariable`
 - a `SystemPropertyError` will be raised instead of an `EnvironmentError`
@@ -140,7 +140,7 @@ slightly different from `Environment`, though: since property names use a
 "dotted" format, they can be accessed as dynamic members of the `Properties`
 object, for example,
 ```scala
-import systemProperties.jvm
+import systems.jvm
 
 val home = Properties.user.home()
 ```

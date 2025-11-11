@@ -78,7 +78,7 @@ object Installer:
 
 
   def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
-       (using Environment, HomeDirectory, SystemProperties)
+       (using Environment, HomeDirectory, System)
   : List[Path on Linux] logs DaemonLogEvent raises InstallError =
 
       mitigate:
@@ -112,7 +112,7 @@ object Installer:
   : Result logs DaemonLogEvent raises InstallError =
 
       import workingDirectories.jre
-      import systemProperties.jre
+      import systems.jre
 
       mitigate:
         case PathError(_, _)        => InstallError(InstallError.Reason.Environment)

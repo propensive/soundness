@@ -35,5 +35,5 @@ package ambience
 import anticipation.*
 import vacuous.*
 
-trait SystemProperties:
+trait System:
   def apply(name: Text): Optional[Text]
