@@ -114,8 +114,8 @@ object Abacist:
        (count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean)
   : Macro[Any] =
 
-      if division then '{Quanta.fromLong[units](($count.longValue/$multiplier + 0.5).toLong)}
-      else '{Quanta.fromLong[units](($count.longValue*$multiplier + 0.5).toLong)}
+      if division then '{Quanta.fromLong[units](($count.long/$multiplier + 0.5).toLong)}
+      else '{Quanta.fromLong[units](($count.long*$multiplier + 0.5).toLong)}
 
 
   def toQuantity[units <: Tuple: Type](count: Expr[Quanta[units]]): Macro[Any] =
@@ -126,7 +126,7 @@ object Abacist:
 
       quantityUnit.power(1).asType.absolve match
         case '[type quantity <: Measure; quantity] =>
-          '{Quantity[quantity]($count.longValue*$ratioExpr)}
+          '{Quantity[quantity]($count.long*$ratioExpr)}
 
 
   def fromQuantity[quantity <: Measure: Type, units <: Tuple: Type]
@@ -152,7 +152,7 @@ object Abacist:
       val multiplier: Multiplier = multipliers[units].where(_.unitPower == lookupUnit).or:
         halt(m"the Quanta does not include this unit")
 
-      '{(($value.longValue/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
+      '{(($value.long/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
 
   private case class Multiplier(unitPower: UnitPower, subdivision: Int, max: Int)
 

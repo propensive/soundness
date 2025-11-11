@@ -49,6 +49,22 @@ trait Quantitative2:
 
   case class UnitPower(ref: UnitRef, power: Int)
 
+
+  trait Temperature2:
+    inline given orderable: Temperature is Commensurable:
+      type Contrast = Temperature
+
+      inline def compare
+                  (inline left:    Temperature,
+                  inline right:   Temperature,
+                  inline strict:  Boolean,
+                  inline greater: Boolean)
+      : Boolean =
+
+          !strict && left.kelvin == right.kelvin || (left.kelvin < right.kelvin) ^ greater
+
+
+
   private object UnitsMap:
     def apply[measure <: Measure: Type](using Quotes): UnitsMap =
       import quotes.reflect.*

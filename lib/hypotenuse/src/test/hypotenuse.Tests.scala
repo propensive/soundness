@@ -34,6 +34,7 @@ package hypotenuse
 
 import soundness.*
 
+import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Hypotenuse tests"):
   def run(): Unit =
@@ -69,6 +70,45 @@ object Tests extends Suite(m"Hypotenuse tests"):
       test(m"Check first two bits as preceding")(B64(Bytes(0, 0, 0, 0, 0, 0, 0, 6))(Ter.preceding(2)))
       . assert(_ == B64(2))
 
+
+    suite(m"Median tests"):
+      test(m"Simple median"):
+        Iterable[Double](7, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21).median
+      . assert(_ == 7.0)
+
+      test(m"Simple median, different pivot"):
+        Iterable(25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).median
+      . assert(_ == 7.0)
+
+      test(m"Simple median, even items"):
+        Iterable(25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7, 8).median
+      . assert(_ == 7.5)
+
+      test(m"Simple median, even items, different order"):
+        Iterable(8, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).median
+      . assert(_ == 7.5)
+
+      test(m"Simple median, even items, different elements"):
+        Iterable(10, 125, -1, 124, -2, -3, 123, -4, 122, -5, 121, 9).median
+      . assert(_ == 9.5)
+
+      test(m"Median of temperatures"):
+        Iterable(Fahrenheit(10), Celsius(35), Celsius(40)).median
+      . assert(_ == Celsius(35))
+
+      test(m"Median of even number of temperatures"):
+        Iterable(Fahrenheit(40), Celsius(35), Celsius(45), Celsius(80)).median
+      . assert(_ == Celsius(40))
+
+      test(m"Median of quantities"):
+        Iterable(10*Metre/Second, 30*Metre/Second, 5*Metre/Second, 20*Metre/Second).median
+      . assert(_ == 15*Metre/Second)
+
+      // type Height = Quanta[(Feet[1], Inches[1])]
+
+      // test(m"Median of quanta"):
+      //   Iterable[Quanta[Height]](Quanta[Height](6, 11), Quanta[Height](5, 10), Quanta[Height](6, 2)).median
+      // . assert(_ == Quanta[Height](6, 2))
 
     suite(m"Inequality tests"):
       test(m"1.2 < x < 1.4"):

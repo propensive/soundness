@@ -45,7 +45,7 @@ import symbolism.*
 import scala.annotation.*
 
 object Complex:
-  inline given showable: [value: {Showable, Zeroic, Commensurable by value, Negatable to value}]
+  inline given showable: [value: {Showable, Zeroic, Commensurable against value, Negatable to value}]
                =>  Complex[value] is Showable =
     complex =>
       compiletime.summonFrom:

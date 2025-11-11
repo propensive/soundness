@@ -38,7 +38,8 @@ export quantitative
     Principal, Redesignation, Quantity, MetricUnit, Quantifiable, invert, in, units, express,
     dimension, Metric, NoPrefix, Deka, Hecto, Kilo, Mega, Giga, Tera, Peta, Exa, Zetta, Yotta,
     Ronna, Quetta, Deci, Centi, Milli, Micro, Nano, Pico, Femto, Atto, Zepto, Yocto, Ronto, Quecto,
-    Kibi, Mebi, Gibi, Tebi, Pebi, Exbi, Zebi, Yobi, Normalizable, normalize }
+    Kibi, Mebi, Gibi, Tebi, Pebi, Exbi, Zebi, Yobi, Normalizable, normalize, Celsius,
+    Rankine, Fahrenheit }
 
 package temperatureScales:
   export quantitative.temperatureScales.{kelvin, rankine, fahrenheit, celsius}

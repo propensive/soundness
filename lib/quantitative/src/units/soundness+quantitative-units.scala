@@ -38,7 +38,7 @@ export quantitative
     Coulomb, Volt, Farad, Ohm, Siemens, Weber, Tesla, Henry, Lux, Becquerel, Gray, Sievert, Katal,
     Metre, Gram, Candela, Mole, Ampere, Kelvin, Second, Inch, Foot, Yard, Mile, Lightyear,
     NauticalMile, Furlong, Grain, Ounce, Pound, Stone, Hundredweight, Ton, SolarDay, Hour, Minute,
-    Are, Acre, Litre, FluidOunce, Pint, Quart, Gallon, Celsius, Days, Drams, Fahrenheit, Feet,
+    Are, Acre, Litre, FluidOunce, Pint, Quart, Gallon, Days, Drams, Feet,
     Furlongs, Grains, Hours, Hundredweights, Inches, Lightyears, Miles, Minutes, NauticalMiles,
     Ounces, Picas, Points, Pounds, Quarters, Rankines, SiderealDays, Stones, Tons, Yards }
 
