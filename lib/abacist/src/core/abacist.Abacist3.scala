@@ -46,17 +46,6 @@ import scala.compiletime.*, ops.int.*
 
 trait Abacist3:
   trait Quanta2:
-    inline given distributive: [units <: Tuple] => Quanta[units] is Distributive:
-      type Self = Quanta[units]
-      type Operand = Long
-
-      def parts(value: Quanta[units]): List[Long] = value.components.map(_(1)).to(List)
-
-      def place(value: Quanta[units], parts: List[Text]): Text =
-        parts.zip(value.components.map(_(0))).map: (number, units) =>
-          t"$number $units"
-        . join(t", ")
-
     inline given commensurable: [units <: Tuple] => Quanta[units] is Commensurable:
       type Contrast = Quanta[units]
 

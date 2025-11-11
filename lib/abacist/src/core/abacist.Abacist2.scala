@@ -100,6 +100,22 @@ object Abacist2 extends Abacist3:
         val nonzeroComponents = count.components.filter(_(1) != 0)
         nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
 
+    inline given distributive2: [units <: Tuple] => Quanta[units] is Distributive by Long =
+      distributive[units](_.components.map(_(1)).to(List)): (value, parts) =>
+        parts.zip(value.components.map(_(0))).map: (number, units) =>
+          t"$number $units"
+        . join(t", ")
+
+    def distributive[units <: Tuple](parts0: Quanta[units] => List[Long])
+         (place0: (Quanta[units], List[Text]) => Text)
+    : Quanta[units] is Distributive by Long =
+
+        new Distributive:
+          type Self = Quanta[units]
+          type Operand = Long
+          def parts(value: Quanta[units]): List[Long] = parts0(value)
+          def place(value: Quanta[units], parts: List[Text]): Text = place0(value, parts)
+
   extension [units <: Tuple](count: Quanta[units])
     def long: Long = count
 
