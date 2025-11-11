@@ -34,7 +34,8 @@ package soundness
 
 export ambience
 . { Environment, EnvironmentError, EnvironmentVariable, Properties, PropertyAccess,
-    SystemProperties, SystemProperty, SystemPropertyError, Xdg, variables }
+    SystemProperties, SystemProperty, SystemPropertyError, Xdg, variables, TemporaryDirectory,
+    temporaryDirectory }
 
 package systemProperties:
   export ambience.systemProperties.{empty, jre}
@@ -47,3 +48,6 @@ package workingDirectories:
 
 package homeDirectories:
   export rudiments.homeDirectories.jre
+
+package temporaryDirectories:
+  export ambience.temporaryDirectories.{systemProperties, environment}

@@ -30,16 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package anticipation
 
 import java.io as ji
 import java.nio.file as jnf
 
 import anticipation.*
 import prepositional.*
-
-object Representative:
-  erased given javaIoFile: ji.File is Representative of Paths = !!
-  erased given javaNioFilePath: jnf.Path is Representative of Paths = !!
 
 erased trait Representative extends Typeclass, Topical

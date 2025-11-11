@@ -38,6 +38,7 @@ import java.lang.classfile.instruction as jlci
 import scala.reflect.*
 import scala.quoted.*
 
+import ambience.*
 import anthology.*
 import anticipation.*
 import contingency.*

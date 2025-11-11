@@ -363,16 +363,6 @@ inline def workingDirectory[path: Representative of Paths](using work: WorkingDi
     case given (`path` is Instantiable across Paths from Text) =>
       work.directory().instantiate
 
-inline def temporaryDirectory[path: Representative of Paths]
-            (using temporary: TemporaryDirectory): path =
-  compiletime.summonFrom:
-    case given (`path` is Instantiable across Paths from Paths.Trusted) =>
-      Paths.Trusted(temporary.directory()).instantiate
-
-    case given (`path` is Instantiable across Paths from Text) =>
-      temporary.directory().instantiate
-
-
 def homeDirectory[path: Instantiable across Paths from Text](using directory: HomeDirectory)
 : path =
 
@@ -396,15 +386,6 @@ package homeDirectories:
     . let(_.tt)
     . or:
         panic(m"none of `HOME`, `USERPROFILE` or `HOMEPATH` environment variables is set")
-
-package temporaryDirectories:
-  given systemProperties: TemporaryDirectory = () =>
-    Optional(System.getProperty("java.io.tmpdir")).let(_.tt).or:
-      panic(m"the `java.io.tmpdir` system property is not set")
-
-  given environment: TemporaryDirectory = () =>
-    List("TMPDIR", "TMP", "TEMP").map(System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt).or:
-      panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set")
 
 extension [countable: Countable](inline value: countable)
   inline def limit: Ordinal = countable.size(value).z
