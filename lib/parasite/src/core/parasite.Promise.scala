@@ -42,6 +42,7 @@ import java.lang as jl
 
 import anticipation.*
 import contingency.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
@@ -113,8 +114,8 @@ final case class Promise[value]():
     case Incomplete(waiting) => waiting.each(jucl.LockSupport.unpark)
     case _                   => ()
 
-  def await[generic: GenericDuration](duration: generic): value raises AsyncError =
-    val deadline = jl.System.nanoTime() + generic.milliseconds(duration)*1000000L
+  def await[generic: Abstractable across Durations to Long](duration: generic): value raises AsyncError =
+    val deadline = jl.System.nanoTime() + duration.generic
 
     @tailrec
     def recur(): value =
@@ -127,8 +128,8 @@ final case class Promise[value]():
 
     recur()
 
-  def attend[generic: GenericDuration](duration: generic): Unit =
-    val deadline = jl.System.nanoTime() + generic.milliseconds(duration)*1000000L
+  def attend[generic: Abstractable across Durations to Long](duration: generic): Unit =
+    val deadline = jl.System.nanoTime() + duration.generic
 
     @tailrec
     def recur(): Unit =

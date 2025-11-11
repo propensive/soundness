@@ -68,8 +68,8 @@ sealed trait Monitor extends Resultant:
   def remove(monitor: Worker): Unit = workers -= monitor
   def supervisor: Supervisor
 
-  def snooze[generic: GenericDuration](duration: generic): Unit =
-    jucl.LockSupport.parkNanos(generic.nanoseconds(duration))
+  def snooze[generic: Abstractable across Durations to Long](duration: generic): Unit =
+    jucl.LockSupport.parkNanos(duration.generic)
 
 sealed abstract class Supervisor() extends Monitor:
   type Result = Unit
@@ -181,7 +181,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
         case other                => panic(m"impossible state")
 
 
-  def await[duration: GenericDuration](duration: duration): Result raises AsyncError =
+  def await[abstractable: Abstractable across Durations to Long](duration: abstractable): Result raises AsyncError =
     promise.attend(duration)
     thread.join()
     result()

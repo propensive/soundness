@@ -34,8 +34,10 @@ package diuretic
 
 import anticipation.*
 
-object JavaLongDuration extends GenericDuration, SpecificDuration:
+object JavaLongDuration extends Abstractable, Instantiable:
   type Self = Long
+  type Origin = Long
+  type Result = Long
 
-  def milliseconds(long: Long): Long = long
-  def duration(value: Long): Long = value
+  def genericize(long: Long): Long = long
+  def apply(value: Long): Long = value

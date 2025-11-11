@@ -35,6 +35,7 @@ package parasite
 import anticipation.*
 import contingency.*
 import denominative.*
+import prepositional.*
 import vacuous.*
 
 trait Tenacity:
@@ -46,11 +47,11 @@ trait Tenacity:
       if attempt.n1 > n then abort(RetryError(attempt.n1 - 1)) else tenacity.delay(attempt)
 
 object Tenacity:
-  def exponential[duration: GenericDuration](initial: duration, base: Double): Tenacity = new:
+  def exponential[duration: Abstractable across Durations to Long](initial: duration, base: Double): Tenacity = new:
     def delay(attempt: Ordinal): Optional[Long] raises RetryError =
       if attempt == Prim then 0L
-      else (duration.milliseconds(initial)*math.pow(base, attempt.n1)).toLong
+      else (initial.generic/1_000_000L*math.pow(base, attempt.n1)).toLong
 
-  def fixed[generic: GenericDuration](duration: generic): Tenacity = new:
+  def fixed[generic: Abstractable across Durations to Long](duration: generic): Tenacity = new:
     def delay(attempt: Ordinal): Optional[Long] raises RetryError =
-      if attempt == Prim then 0L else generic.milliseconds(duration)
+      if attempt == Prim then 0L else duration.generic/1_000_000L

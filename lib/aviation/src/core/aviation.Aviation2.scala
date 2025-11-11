@@ -54,7 +54,7 @@ object Aviation2:
   object TaiInstant:
     erased given underlying: Underlying[TaiInstant, Long] = !!
 
-    given generic: Aviation2.TaiInstant is (Abstractable & Instantiable) across Instants to
+    given generic: Aviation2.TaiInstant is Abstractable & Instantiable across Instants to
                     Long from Long =
       new Abstractable with Instantiable:
         type Self = Aviation2.TaiInstant
@@ -91,7 +91,7 @@ object Aviation2:
     erased given underlying: Underlying[Instant, Long] = !!
     def of(millis: Long): Instant = millis
 
-    given generic: Aviation2.Instant is (Abstractable & Instantiable) across Instants to Long from
+    given generic: Aviation2.Instant is Abstractable & Instantiable across Instants to Long from
                     Long =
       new Abstractable with Instantiable:
         type Self = Aviation2.Instant
@@ -132,14 +132,18 @@ object Aviation2:
     def of(millis: Long): Duration = Quantity(millis/1000.0)
 
     given generic: [units <: Measure: Normalizable to Seconds[1]]
-          =>  Quantity[units] is (GenericDuration & SpecificDuration) =
-      new GenericDuration with SpecificDuration:
+          =>  Quantity[units] is Abstractable & Instantiable across Durations from Long to Long =
+      new Abstractable with Instantiable:
         type Self = Quantity[units]
+        type Origin = Long
+        type Result = Long
+        type Domain = Durations
 
-        def duration(milliseconds: Long): Quantity[units] =
-          Quantity(milliseconds.toDouble/units.ratio())
+        def apply(nanoseconds: Long): Quantity[units] =
+          Quantity(nanoseconds.toDouble/1_000_000_000.0/units.ratio())
 
-        def milliseconds(duration: Quantity[units]): Long = (duration.normalize.value*1000).toLong
+        def genericize(duration: Quantity[units]): Long =
+          (duration.normalize.value*1_000_000_000L).toLong
 
   extension (instant: into[Instant])
     @targetName("to")

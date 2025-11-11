@@ -43,4 +43,4 @@ trait ProcessRef:
   def alive: Boolean
   def attend(): Unit
   def startTime[instant: Instantiable across Instants from Long]: Optional[instant]
-  def cpuUsage[duration: SpecificDuration]: Optional[duration]
+  def cpuUsage[instantiable: Instantiable across Durations from Long]: Optional[instantiable]
