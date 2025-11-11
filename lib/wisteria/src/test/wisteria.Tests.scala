@@ -38,6 +38,8 @@ import scala.util.Try
 import scala.deriving.Mirror.ProductOf
 import scala.deriving.Mirror.SumOf
 
+import autopsies.contrastExpectations
+
 object SumOnly extends SumDerivation[SumOnly]:
 
   given SumOnly[SumOnlyEnum.Alpha] = alpha => println(s"$alpha is an alpha")
@@ -270,3 +272,12 @@ object Tests extends Suite(m"Wisteria tests"):
       val producer = summon[Producer[Simple]]
       println(producer.produce("Third"))
       println(Try(producer.produce("Secondd")))
+
+
+    suite(m"Arithmetic tests"):
+      case class User(name: Text, age: Int)
+
+      test(m"Addable tests"):
+        import arithmetic.addable
+        User("foo", 10) + User("bar", 15)
+      . assert(_ == User("foobar", 25))
