@@ -32,4 +32,4 @@
                                                                                                   */
 package parasite
 
-object System
+object Os

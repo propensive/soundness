@@ -54,9 +54,9 @@ object Fault:
     Thread.setDefaultUncaughtExceptionHandler(Handler) yet Handler
 
   given interceptable: Fault is Interceptable:
-    type Target = System.type
+    type Target = Os.type
 
-    def register(value: System.type, action: Fault => Unit): () => Unit =
+    def register(value: Os.type, action: Fault => Unit): () => Unit =
       val handle: Fault => Unit = action(_)
       handler.tasks.updateAndGet(_.nn + handle)
 

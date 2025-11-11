@@ -103,7 +103,7 @@ extension (logObject: Log.type)
         private lazy val spool: Spool[writable.Operand] = Spool().tap: spool =>
           val task = async(spool.stream.writeTo(target))
 
-          System.intercept[Shutdown]:
+          Os.intercept[Shutdown]:
             spool.stop()
             safely(task.await())
 

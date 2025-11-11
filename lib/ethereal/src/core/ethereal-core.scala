@@ -332,7 +332,7 @@ def cli[bus <: Matchable](using executive: Executive)
     import stdioSources.virtualMachine.ansi
     import codicils.await
 
-    System.intercept[Shutdown]:
+    Os.intercept[Shutdown]:
       portFile.wipe()
       pidFile.wipe()
 
