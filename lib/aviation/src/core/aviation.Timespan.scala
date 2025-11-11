@@ -33,22 +33,27 @@
 package aviation
 
 import anticipation.*
+import prepositional.*
 import proscenium.*
 import symbolism.*
 
 object Timespan:
-  given genericDuration: Timespan is GenericDuration & SpecificDuration =
-    new GenericDuration with SpecificDuration:
+  given genericDuration: Timespan is Instantiable & Abstractable across Durations from Long to Long =
+    new Abstractable with Instantiable:
       type Self = Timespan
-      def duration(milliseconds: Long): Timespan =
-        val hours: Int = (milliseconds/3600000L).toInt
-        val minutes: Int = ((milliseconds%3600000L)/60000L).toInt
-        val seconds: Int = ((milliseconds%60000L)/1000L).toInt
+      type Domain = Durations
+      type Origin = Long
+      type Result = Long
+
+      def apply(nanoseconds: Long): Timespan =
+        val hours: Int = ((nanoseconds/1_000_000L)/3600000L).toInt
+        val minutes: Int = (((nanoseconds/1_000_000L)%3600000L)/60000L).toInt
+        val seconds: Int = (((nanoseconds/1_000_000L)%60000L)/1000L).toInt
 
         new Timespan(0, 0, 0, hours, minutes, seconds)
 
-      def milliseconds(period: Timespan): Long =
-        period.hours*3600000L + period.minutes*60000L + period.seconds*1000L
+      def genericize(period: Timespan): Long =
+        (period.hours*3600000L + period.minutes*60000L + period.seconds*1000L)*1_000_000L
 
   def apply(denomination: StandardTime, n: Int): Timespan = denomination.absolve match
     case StandardTime.Year   => Timespan(n, 0, 0, 0, 0, 0)

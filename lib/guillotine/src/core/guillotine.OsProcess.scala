@@ -69,6 +69,6 @@ class OsProcess private (java: ProcessHandle) extends ProcessRef:
     val instant = java.info.nn.startInstant.nn
     if instant.isPresent then instantiable(instant.get.nn.toEpochMilli) else Unset
 
-  def cpuUsage[duration: SpecificDuration]: Optional[duration] =
+  def cpuUsage[instantiable: Instantiable across Durations from Long]: Optional[instantiable] =
     val duration = java.info.nn.totalCpuDuration.nn
-    if duration.isPresent then SpecificDuration(duration.get.nn.toMillis) else Unset
+    if duration.isPresent then instantiable(duration.get.nn.toNanos) else Unset

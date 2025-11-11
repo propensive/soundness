@@ -98,7 +98,7 @@ class Process[+exec <: Label, result](process: java.lang.Process) extends Proces
       osProcess.startTime[instant]
     catch case _: PidError => Unset
 
-  def cpuUsage[instant: SpecificDuration]: Optional[instant] =
+  def cpuUsage[instant: Instantiable across Durations from Long]: Optional[instant] =
     try
       import strategies.throwUnsafely
       osProcess.cpuUsage[instant]

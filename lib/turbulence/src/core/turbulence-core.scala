@@ -106,15 +106,15 @@ extension [element](stream: Stream[element])
 
   def strict: Stream[element] = stream.length yet stream
 
-  def rate[generic: {GenericDuration, SpecificDuration}](duration: generic)(using Monitor)
+  def rate[generic: {Abstractable across Durations to Long, Instantiable across Durations from Long}](duration: generic)(using Monitor)
   : Stream[element] raises AsyncError =
 
       def recur(stream: Stream[element], last: Long): Stream[element] =
         stream.flow(Stream()):
           val duration2 =
-            SpecificDuration(generic.milliseconds(duration) - (jl.System.currentTimeMillis - last))
+            generic(duration.generic - (jl.System.currentTimeMillis - last)*1_000_000L)
 
-          if generic.milliseconds(duration2) > 0 then snooze(duration2)
+          if duration2.generic > 0 then snooze(duration2)
           stream
 
       async(recur(stream, jl.System.currentTimeMillis)).await()
@@ -153,7 +153,7 @@ extension [element](stream: Stream[element])
 
     Stream.defer(recur(true, stream.map(Some(_)).multiplex(tap.stream), Nil))
 
-  def cluster[duration: GenericDuration](duration: duration, maxSize: Optional[Int] = Unset)
+  def cluster[duration: Abstractable across Durations to Long](duration: duration, maxSize: Optional[Int] = Unset)
        (using Monitor)
   : Stream[List[element]] =
 
@@ -216,12 +216,12 @@ extension (obj: Stream.type)
   def defer[element](stream: => Stream[element]): Stream[element] =
     (null.asInstanceOf[element] #:: stream).tail
 
-  def metronome[generic: GenericDuration](duration: generic)(using Monitor): Stream[Unit] =
+  def metronome[generic: Abstractable across Durations to Long](duration: generic)(using Monitor): Stream[Unit] =
     val startTime: Long = jl.System.currentTimeMillis
 
     def recur(iteration: Int): Stream[Unit] =
       try
-        sleep(startTime + generic.milliseconds(duration)*iteration)
+        sleep(startTime + duration.generic/1_000_000L*iteration)
         () #:: recur(iteration + 1)
       catch case error: AsyncError => Stream()
 

@@ -96,20 +96,24 @@ def task[result](using Codepoint)(name: Text)(evaluate: Worker ?=> result)
 def relent[result]()(using Worker): Unit = monitor.relent()
 def cancel[result]()(using Monitor): Unit = monitor.cancel()
 
-def snooze[duration: GenericDuration](duration: duration)(using Monitor): Unit =
-  monitor.snooze(duration)
 
-def delay[generic: GenericDuration](duration: generic)(using Monitor): Unit =
-  hibernate(jl.System.currentTimeMillis + generic.milliseconds(duration))
+def snooze[duration: Abstractable across Durations to Long](duration: duration)(using Monitor)
+: Unit =
+
+    monitor.snooze(duration)
+
+
+def delay[generic: Abstractable across Durations to Long](duration: generic)(using Monitor): Unit =
+  hibernate(jl.System.currentTimeMillis + duration.generic/1_000_000L)
 
 def sleep[instant: Abstractable across Instants to Long](instant: instant)(using Monitor): Unit =
-  monitor.snooze(instant.generic - jl.System.currentTimeMillis)
+  monitor.snooze((instant.generic - jl.System.currentTimeMillis)*1_000_000L)
 
 
 def hibernate[instant: Abstractable across Instants to Long](instant: instant)(using Monitor)
 : Unit =
 
-  while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
+    while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
 
 
 extension [result](tasks: Seq[Task[result]])

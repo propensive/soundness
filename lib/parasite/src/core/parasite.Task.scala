@@ -39,6 +39,7 @@ import anticipation.*
 import contingency.*
 import digression.*
 import mercator.*
+import prepositional.*
 import vacuous.*
 
 object Task:
@@ -71,7 +72,8 @@ trait Task[+result]:
   def attend(): Unit
   def cancel(): Unit
 
-  def await[duration: GenericDuration](duration: duration): result raises AsyncError
+  def await[duration: Abstractable across Durations to Long](duration: duration)
+  : result raises AsyncError
 
   def bind[result2](lambda: result => Task[result2])(using Monitor, Codicil)
   : Task[result2] raises AsyncError

@@ -108,13 +108,13 @@ object Quantitative extends Quantitative2:
     given numeric: [units <: Measure] => Numeric[Quantity[units]] = summon[Numeric[Double]]
 
     given genericDuration: [units <: Measure: Normalizable to Seconds[1]]
-          =>  Quantity[units] is GenericDuration =
+          =>  Quantity[units] is Abstractable across Durations to Long =
       quantity => (quantity.normalize*1000.0).toLong
 
 
     given specificDuration: [units <: Measure: Normalizable to Seconds[1]]
-          =>  Quantity[units] is SpecificDuration =
-      long => Quantity[units](long*units.ratio()/1000.0)
+          =>  Quantity[units] is Instantiable across Durations from Long =
+      long => Quantity[units](long*units.ratio()/1_000_000_000.0)
 
     transparent inline given addable: [left <: Measure,
                                        quantity <: Quantity[left],

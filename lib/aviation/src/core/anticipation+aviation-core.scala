@@ -37,7 +37,7 @@ import prepositional.*
 import quantitative.*
 
 package interfaces.instants:
-  given aviationInstant: Aviation2.Instant is (Abstractable & Instantiable) across Instants to
+  given aviationInstant: Aviation2.Instant is Abstractable & Instantiable across Instants to
                           Long from Long =
     new Abstractable with Instantiable:
       type Self = Aviation2.Instant
@@ -48,10 +48,14 @@ package interfaces.instants:
 
 package interfaces.durations:
   given aviationDuration: [units <: Measure: Normalizable to Seconds[1]]
-        => Quantity[units] is GenericDuration & SpecificDuration =
-    new GenericDuration with SpecificDuration:
+        => Quantity[units] is Abstractable & Instantiable across Durations to Long from Long =
+    new Abstractable with Instantiable:
+      type Origin = Long
+      type Result = Long
+      type Domain = Durations
       type Self = Quantity[units]
-      def duration(milliseconds: Long): Quantity[units] =
-        Quantity(milliseconds.toDouble*units.ratio())
 
-      def milliseconds(duration: Quantity[units]): Long = (duration.normalize.value*1000).toLong
+      def apply(nanoseconds: Long): Quantity[units] =
+        Quantity((nanoseconds.toDouble/1_000_000_000.0)*units.ratio())
+
+      def genericize(duration: Quantity[units]): Long = (duration.normalize.value*1_000_000_000.0).toLong

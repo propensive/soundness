@@ -36,12 +36,13 @@ import java.lang as jl
 
 import anticipation.*
 import parasite.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 
 object Cache:
-  def apply[generic: GenericDuration, value](duration: generic): Cache[value] =
-    new Cache[value](generic.milliseconds(duration))
+  def apply[generic: Abstractable across Durations to Long, value](duration: generic): Cache[value] =
+    new Cache[value](duration.generic/1_000_000L)
 
   def apply[value](): Cache[value] = new Cache(Unset)
 

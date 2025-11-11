@@ -42,10 +42,10 @@ import anticipation.*
 import prepositional.*
 
 object Timeout:
-  def apply[duration: GenericDuration](timeout0: duration)(action: => Unit)(using Monitor, Codicil)
+  def apply[duration: Abstractable across Durations to Long](timeout0: duration)(action: => Unit)(using Monitor, Codicil)
   : Timeout =
 
-      val timeout = duration.milliseconds(timeout0)
+      val timeout = timeout0.generic/1_000_000L
 
       def process(expiry: juca.AtomicLong): Task[Unit] = task("timeout".tt):
         while jl.System.currentTimeMillis < expiry.get()

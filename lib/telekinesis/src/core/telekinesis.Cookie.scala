@@ -52,7 +52,7 @@ object Cookie:
 
   // For some reason it seems necessary to use `DummyImplicit` instead of `Void` here
   def apply[value: {Encodable in Text, Decodable in Text}](using DummyImplicit)
-       [duration: GenericDuration]
+       [duration: Abstractable across Durations to Long]
        (name:     Text,
         domain:   Optional[Hostname]     = Unset,
         expiry:   Optional[duration] = Unset,
@@ -60,7 +60,7 @@ object Cookie:
         httpOnly: Boolean                = false,
         path:     Optional[Text]         = Unset) =
 
-    new Cookie[value](name, domain, expiry.let(duration.milliseconds(_)), secure, httpOnly, path)
+    new Cookie[value](name, domain, expiry.let(_.generic/1_000_000L), secure, httpOnly, path)
 
   object Value:
     given showable: Value is Showable = cookie =>

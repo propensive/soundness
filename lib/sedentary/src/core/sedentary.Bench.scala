@@ -87,7 +87,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
   type Target = Path on Linux
   type Transport = Json
 
-  inline def apply[duration: GenericDuration, report]
+  inline def apply[duration: Abstractable across Durations to Long, report]
               (name: Message)
               (target:     duration,
                iterations: Optional[Int]                   = Unset,
@@ -112,7 +112,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     val body: (References over Transport) ?=> Quotes ?=> Expr[List[Long]] =
       val iterations0: Optional[Int] = iterations
       val iterations2: Int = iterations0.or(5)
-      val target2: Expr[Long] = Expr(duration.nanoseconds(target)/iterations2)
+      val target2: Expr[Long] = Expr(target.generic/iterations2)
       '{  var count: Int = 1
           var d: Long = 0
 

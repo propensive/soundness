@@ -40,7 +40,7 @@ object Durations:
   inline def ns(long: Long): Double = long.toDouble
   inline def ns(double: Double): Long = double.toLong
 
-  given abstractable: Long is Abstractable across Durations to Double = _.toDouble
-  given instantiable: Long is Instantiable across Durations from Double = _.toLong
+  given instantiable: Long is Instantiable across Durations from Long = identity(_)
+  given abstractable: Long is Abstractable across Durations to Long = identity(_)
 
 erased trait Durations
