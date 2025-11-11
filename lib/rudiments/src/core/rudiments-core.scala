@@ -157,6 +157,20 @@ extension [value](iterable: Iterable[value])
   : Optional[value] =
       iterable.total.let(_/iterable.size.toDouble)
 
+  inline def mean2
+              (using subtractable: value is Subtractable by value,
+                     addable:      subtractable.Result is Addable by subtractable.Result,
+                     equality:     addable.Result =:= subtractable.Result,
+                     divisible:    subtractable.Result is Divisible by Double,
+                     equality2:    divisible.Result =:= subtractable.Result,
+                     addable2:     value is Addable by divisible.Result,
+                     equality3:    addable2.Result =:= value)
+  : Optional[value] =
+
+      if iterable.isEmpty then Unset else
+        val arbitrary = iterable.head
+        iterable.map(_ - arbitrary).total.let: total =>
+          arbitrary + total/iterable.size.toDouble
 
   def variance
        (using addable:       value is Addable by value,

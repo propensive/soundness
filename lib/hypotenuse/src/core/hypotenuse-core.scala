@@ -44,6 +44,7 @@ import contingency.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
+import vacuous.*
 
 export Hypotenuse.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
 
@@ -51,6 +52,53 @@ export Hypotenuse.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32,
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${Hypotenuse2.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${Hypotenuse2.hex('context)}
+
+extension [value](iterable: Iterable[value])
+  inline def minimum(using commensurable: value is Commensurable against value): Optional[value] =
+    if iterable.isEmpty then Unset else
+      var current = iterable.head
+      iterable.tail.each: element =>
+        if element < current then current = element
+
+      current
+
+  inline def maximum(using commensurable: value is Commensurable against value): Optional[value] =
+    if iterable.isEmpty then Unset else
+      var current = iterable.head
+      iterable.tail.each: element =>
+        if element > current then current = element
+
+      current
+
+  inline def median
+              (using commensurable: value is Commensurable against value,
+                     subtractable:  value is Subtractable by value,
+                     divisible:     subtractable.Result is Divisible by Double,
+                     addable:       value is Addable by divisible.Result)
+  : Optional[addable.Result] =
+
+      def recur(n: Int, items: List[value]): value =
+        val pivot = items.head
+        var left: List[value] = Nil
+        var right: List[value] = Nil
+
+        items.tail.each: item =>
+          if item < pivot then left ::= item else right ::= item
+
+        if left.length == n then pivot
+        else if left.length < n then recur(n - left.length - 1, right)
+        else recur(n, left)
+
+      val size = iterable.size
+      if size == 0 then Unset
+      else if size%2 == 0 then
+        val first = recur((size - 1)/2, iterable.to(List))
+        val second = recur((size + 1)/2, iterable.to(List))
+        first + (second - first)/2.0
+      else
+        val result: value = recur((size - 1)/2, iterable.to(List))
+        result + (result - result)/1.0
+
 
 extension (float: Float)
   @targetName("absFloat")
@@ -411,7 +459,7 @@ inline def log1p(f64: Conversion.into[F64]): F64 = F64(math.log1p(f64.double))
 extension [left](inline left: left)
   @targetName("lt")
   inline infix def < [right](inline right: right)
-                     (using inline commensurable: left is Commensurable by right)
+                     (using inline commensurable: left is Commensurable against right)
   : Boolean =
 
       commensurable.compare(left, right, true, false)
@@ -419,7 +467,7 @@ extension [left](inline left: left)
 
   @targetName("lte")
   inline infix def <= [right](inline right: right)
-                      (using inline commensurable: left is Commensurable by right)
+                      (using inline commensurable: left is Commensurable against right)
   : Boolean =
 
       commensurable.compare(left, right, false, false)
@@ -427,7 +475,7 @@ extension [left](inline left: left)
 
   @targetName("gt")
   inline infix def > [right](inline right: right)
-                     (using inline commensurable: left is Commensurable by right)
+                     (using inline commensurable: left is Commensurable against right)
   : Boolean =
 
       commensurable.compare(left, right, true, true)
@@ -435,7 +483,7 @@ extension [left](inline left: left)
 
   @targetName("gte")
   inline infix def >= [right](inline right: right)
-    (using inline commensurable: left is Commensurable by right)
+    (using inline commensurable: left is Commensurable against right)
   : Boolean =
 
       commensurable.compare(left, right, false, true)

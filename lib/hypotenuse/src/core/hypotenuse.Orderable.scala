@@ -38,7 +38,7 @@ import prepositional.*
 
 trait Orderable extends Commensurable:
   private inline def orderable: this.type = this
-  type Operand = Self
+  type Contrast = Self
 
   def contramap[self](lambda: self => Self): self is Orderable = new Orderable:
     type Self = self

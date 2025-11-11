@@ -41,7 +41,7 @@ import rudiments.*
 object Commensurable:
   inline given numeric: [operand <: Long | Int | Double | Char | Byte | Short | Float]
         =>  Boolean is Commensurable:
-    type Operand = operand
+    type Contrast = operand
 
 
     inline def compare
@@ -90,10 +90,10 @@ object Commensurable:
         else inline if strict then n < 0 else n <= 0
 
 
-trait Commensurable extends Typeclass, Operable:
+trait Commensurable extends Typeclass, Contrastive:
   inline def compare
               (inline left:        Self,
-               inline right:       Operand,
+               inline right:       Contrast,
                inline strict:      Boolean,
                inline greaterThan: Boolean)
   : Boolean

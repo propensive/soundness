@@ -108,7 +108,7 @@ object Hypotenuse:
 
 
     inline given commensurableInt: F64 is Commensurable:
-      type Operand = Int
+      type Contrast = Int
 
       inline def compare
                   (inline left:        F64,
@@ -135,7 +135,7 @@ object Hypotenuse:
       inline def multiply(left: F64, right: Double): F64 = left*right
 
     inline given commensurable: F64 is Commensurable:
-      type Operand = Double
+      type Contrast = Double
 
 
       inline def compare

@@ -1001,7 +1001,7 @@ object hypotenuse extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, quantitative.units, abacist.core)
   }
 }
 
@@ -1350,7 +1350,7 @@ object rudiments extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, abacist.core, quantitative.units)
   }
 }
 

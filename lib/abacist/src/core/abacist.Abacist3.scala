@@ -30,19 +30,43 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package abacist
 
-export quantitative
-. { Galileo, Poise, Franklin, Biot, Debye, Erg, Dyne, Calorie, Langley, Phot, Stokes, Lambert, Emu,
-    Oersted, Maxwell, Gauss, Gilbert, Darcy, Barye, Kayser, Hertz, Newton, Pascal, Joule, Watt,
-    Coulomb, Volt, Farad, Ohm, Siemens, Weber, Tesla, Henry, Lux, Becquerel, Gray, Sievert, Katal,
-    Metre, Gram, Candela, Mole, Ampere, Kelvin, Second, Inch, Foot, Yard, Mile, Lightyear,
-    NauticalMile, Furlong, Grain, Ounce, Pound, Stone, Hundredweight, Ton, SolarDay, Hour, Minute,
-    Are, Acre, Litre, FluidOunce, Pint, Quart, Gallon, Days, Drams, Feet,
-    Furlongs, Grains, Hours, Hundredweights, Inches, Lightyears, Miles, Minutes, NauticalMiles,
-    Ounces, Picas, Points, Pounds, Quarters, Rankines, SiderealDays, Stones, Tons, Yards }
+import anticipation.*
+import gossamer.*
+import hypotenuse.*
+import quantitative.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import spectacular.*
+import symbolism.*
 
-package constants:
-  export quantitative.constants
-  . { SpeedOfLightInVacuum, MagneticConstant, ElectricConstant, CharacteristicImpedanceOfVacuum,
-      PlanckConstant, GravitationalConstant, ElementaryCharge, AvogadroConstant, BoltzmannConstant }
+import scala.compiletime.*, ops.int.*
+
+trait Abacist3:
+  trait Quanta2:
+    inline given distributive: [units <: Tuple] => Quanta[units] is Distributive:
+      type Self = Quanta[units]
+      type Operand = Long
+
+      def parts(value: Quanta[units]): List[Long] = value.components.map(_(1)).to(List)
+
+      def place(value: Quanta[units], parts: List[Text]): Text =
+        parts.zip(value.components.map(_(0))).map: (number, units) =>
+          t"$number $units"
+        . join(t", ")
+
+    inline given commensurable: [units <: Tuple] => Quanta[units] is Commensurable:
+      type Contrast = Quanta[units]
+
+      inline def compare
+                  (inline left:        Quanta[units],
+                   inline right:       Quanta[units],
+                   inline strict:      Boolean,
+                   inline greaterThan: Boolean)
+      : Boolean =
+
+          inline if greaterThan
+          then inline if strict then left.long > right.long else left.long >= right.long
+          else inline if strict then left.long < right.long else left.long <= right.long

@@ -61,6 +61,12 @@ object Addable:
   given int: Int is Addable by Int to Int = Addable:
     (augend, addend) => augend + addend
 
+  given int2: Int is Addable by Double to Double = Addable:
+    (augend, addend) => augend + addend
+
+  given int3: Double is Addable by Int to Double = Addable:
+    (augend, addend) => augend + addend
+
   given short: Short is Addable by Short to Short = Addable:
     (augend, addend) => (augend + addend).toShort
 

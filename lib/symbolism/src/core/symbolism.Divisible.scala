@@ -60,17 +60,32 @@ object Divisible:
   given float2: Float is Divisible by Int to Float = Divisible:
     (dividend, divisor) => dividend/divisor
 
+  given float3: Float is Divisible by Double to Double = Divisible:
+    (dividend, divisor) => dividend/divisor
+
   given long: Long is Divisible by Long to Long = Divisible:
+    (dividend, divisor) => dividend/divisor
+
+  given long2: Long is Divisible by Double to Double = Divisible:
     (dividend, divisor) => dividend/divisor
 
   given int: Int is Divisible by Int to Int = Divisible:
     (dividend, divisor) => dividend/divisor
 
+  given int2: Int is Divisible by Double to Double = Divisible:
+    (dividend, divisor) => dividend/divisor
+
   given short: Short is Divisible by Short to Short = Divisible:
     (dividend, divisor) => (dividend/divisor).toShort
 
+  given short2: Short is Divisible by Double to Double = Divisible:
+    (dividend, divisor) => dividend/divisor
+
   given byte: Byte is Divisible by Byte to Byte = Divisible:
     (dividend, divisor) => (dividend/divisor).toByte
+
+  given byte2: Byte is Divisible by Double to Double = Divisible:
+    (dividend, divisor) => dividend/divisor
 
 trait Divisible extends Typeclass, Operable, Resultant:
   type Dividend = Self

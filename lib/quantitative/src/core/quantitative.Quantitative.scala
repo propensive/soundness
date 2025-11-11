@@ -57,7 +57,7 @@ object Quantitative extends Quantitative2:
     def fahrenheit: Double = celsius*9/5 + 32
     def rankine: Double = temperature*9/5
 
-  object Temperature:
+  object Temperature extends Temperature2:
     def apply(value: Double): Temperature = value
 
     given showable: (scale: TemperatureScale, decimalizer: Decimalizer) => Temperature is Showable =
@@ -80,6 +80,8 @@ object Quantitative extends Quantitative2:
 
     given subtractable3: Temperature is Subtractable by Temperature to Quantity[Kelvins[1]] =
       (left, right) => Quantity(left.kelvin - right.kelvin)
+
+
 
   extension [units <: Measure](quantity: Quantity[units])
     def underlying: Double = quantity
@@ -218,7 +220,7 @@ object Quantitative extends Quantitative2:
     inline def apply[units <: Measure](value: Double): Quantity[units] = value
 
     given commensurable: [units <: Measure, units2 <: Measure] => Quantity[units] is Commensurable:
-      type Operand = Quantity[units2]
+      type Contrast = Quantity[units2]
 
 
       inline def compare

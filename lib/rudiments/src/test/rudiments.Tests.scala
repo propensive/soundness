@@ -34,6 +34,8 @@ package rudiments
 
 import soundness.*
 
+import autopsies.contrastExpectations
+
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(m"Rudiments Tests"):
@@ -54,6 +56,39 @@ object Tests extends Suite(m"Rudiments Tests"):
     // test(m"Display a PID"):
     //   Pid(2999).toString
     // .assert(_ == "↯2999")
+
+    suite(m"Mean tests"):
+      test(m"Simple median"):
+        Iterable[Double](7, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21).mean.vouch
+      . assert(_ === 12.454545 ± 0.00001)
+
+      test(m"Simple median, different pivot"):
+        Iterable[Double](25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).mean.vouch
+      . assert(_ === 12.454545 ± 0.00001)
+
+      test(m"Simple median, even items"):
+        Iterable[Double](25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7, 8).mean.vouch
+      . assert(_ === 12.1 ± 0.1)
+
+      test(m"Simple median, even items, different order"):
+        Iterable[Double](8, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7).mean.vouch
+      . assert(_ === 12.1 ± 0.1)
+
+      test(m"Simple median, even items, different elements"):
+        Iterable[Double](10, 125, -1, 124, -2, -3, 123, -4, 122, -5, 121, 9).mean.vouch
+      . assert(_ === 51.6 ± 0.1)
+
+      test(m"Mean of temperatures"):
+        Iterable(Fahrenheit(10), Fahrenheit(10), Fahrenheit(40)).mean2.vouch
+      . assert(_ == Fahrenheit(20))
+
+      test(m"Mean of even number of temperatures"):
+        Iterable(Celsius(40), Celsius(35), Celsius(45), Celsius(75)).mean2.vouch
+      . assert(_ == Celsius(48.75))
+
+      test(m"Mean of quantities"):
+        Iterable(10*Metre/Second, 30*Metre/Second, 5*Metre/Second, 20*Metre/Second).mean.vouch
+      . assert(_ == 16.25*Metre/Second)
 
     suite(m"bin tests"):
       test(m"Specify a byte"):

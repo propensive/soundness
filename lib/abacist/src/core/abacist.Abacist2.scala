@@ -44,10 +44,10 @@ import symbolism.*
 
 import scala.compiletime.*, ops.int.*
 
-object Abacist2:
+object Abacist2 extends Abacist3:
   opaque type Quanta[units <: Tuple] = Long
 
-  object Quanta:
+  object Quanta extends Quanta2:
     erased given underlying: [units <: Tuple] => Underlying[Quanta[units], Long] = !!
     given zeroic: [units <: Tuple] => Quanta[units] is Zeroic:
       inline def zero: Quanta[units] = 0L
@@ -56,34 +56,6 @@ object Abacist2:
       def unapply(count: Any): Option[count.type & Quanta[units]] = count.asMatchable match
         case count: Long => Some(count)
         case _           => None
-
-
-    inline given [units <: Tuple] => Quanta[units] is Commensurable:
-      type Operand = Quanta[units]
-
-      inline def compare
-                  (inline left:        Quanta[units],
-                   inline right:       Quanta[units],
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
-      : Boolean =
-
-          inline if greaterThan
-          then inline if strict then left > right else left >= right
-          else inline if strict then left < right else left <= right
-
-
-    inline given distributive: [units <: Tuple] => Quanta[units] is Distributive by Long =
-      new Distributive:
-        type Self = Quanta[units]
-        type Operand = Long
-
-        def parts(value: Quanta[units]): List[Long] = value.components.map(_(1)).to(List)
-
-        def place(value: Quanta[units], parts: List[Text]): Text =
-          parts.zip(value.components.map(_(0))).map: (number, units) =>
-            t"$number $units"
-          . join(t", ")
 
     def fromLong[units <: Tuple](long: Long): Quanta[units] = long
     given integral: [units <: Tuple] => Integral[Quanta[units]] = summon[Integral[Long]]
@@ -129,7 +101,7 @@ object Abacist2:
         nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
 
   extension [units <: Tuple](count: Quanta[units])
-    def longValue: Long = count
+    def long: Long = count
 
   extension [units <: Tuple](inline count: Quanta[units])
     inline def apply[unit[power <: Nat] <: Units[power, ? <: Dimension]]: Int =
