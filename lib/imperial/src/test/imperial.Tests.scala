@@ -40,7 +40,7 @@ given Environment =
   case t"HOME" => t"/home/work"
   case _       => Unset
 
-given SystemProperties =
+given System =
   case t"user.home" => t"/home/work"
   case _            => t""
 

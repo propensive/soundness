@@ -70,7 +70,7 @@ package filesystemTraversal:
   given preOrder: TraversalOrder = TraversalOrder.PreOrder
   given postOrder: TraversalOrder = TraversalOrder.PostOrder
 
-extension [plane: System](path: Path on plane)
+extension [plane: Filesystem](path: Path on plane)
 
   inline def children(using explorable: plane is Explorable): Stream[Path on plane] =
     explorable.children(path)
@@ -264,7 +264,7 @@ extension (path: Path on Windows)
       val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
       instant(attributes.creationTime().nn.toInstant.nn.toEpochMilli)
 
-extension [plane <: Posix: System](path: Path on plane)
+extension [plane <: Posix: Filesystem](path: Path on plane)
   def executable: FilesystemAttribute.Executable[plane] =
     FilesystemAttribute.Executable(path)
 
@@ -312,7 +312,7 @@ package filesystemOptions:
     given disabled: CopyAttributes = () => Nil
 
   object deleteRecursively:
-    given enabled: [plane: System] => Tactic[IoError]
+    given enabled: [plane: Filesystem] => Tactic[IoError]
           => (explorable: plane is Explorable)
           =>  DeleteRecursively on plane:
 
@@ -327,7 +327,7 @@ package filesystemOptions:
       def conditionally[result](path: Path on Plane)(operation: => result): result =
         path.children.each(recur(_)) yet operation
 
-    given disabled: [plane: {System, Explorable}] => Tactic[IoError]
+    given disabled: [plane: {Filesystem, Explorable}] => Tactic[IoError]
           =>  DeleteRecursively on plane:
 
       type Plane = plane
@@ -339,7 +339,7 @@ package filesystemOptions:
         else operation
 
   object overwritePreexisting:
-    given enabled: [plane: System]
+    given enabled: [plane: Filesystem]
           => (deleteRecursively: DeleteRecursively on plane)
           =>  OverwritePreexisting on plane:
       type Plane = plane
@@ -347,7 +347,7 @@ package filesystemOptions:
       def apply[result](path: Path on Plane)(operation: => result): result =
         deleteRecursively.conditionally(path)(operation)
 
-    given disabled: [plane: System] => Tactic[IoError]
+    given disabled: [plane: Filesystem] => Tactic[IoError]
     =>  OverwritePreexisting on plane:
 
       type Plane = plane
@@ -357,7 +357,7 @@ package filesystemOptions:
           abort(IoError(path, IoError.Operation.Write, Reason.AlreadyExists))
 
   object createNonexistentParents:
-    given enabled: [plane: System] => Tactic[IoError] => (Path on plane) is Substantiable
+    given enabled: [plane: Filesystem] => Tactic[IoError] => (Path on plane) is Substantiable
           =>  CreateNonexistentParents on plane:
 
       def apply[result](path: Path on plane)(operation: => result): result =
@@ -370,7 +370,7 @@ package filesystemOptions:
 
         operation
 
-    given disabled: [plane: System] => Tactic[IoError]
+    given disabled: [plane: Filesystem] => Tactic[IoError]
           =>  CreateNonexistentParents on plane:
       type Plane = plane
 
@@ -378,7 +378,7 @@ package filesystemOptions:
         path.protect(Operation.Write)(block)
 
   object createNonexistent:
-    given enabled: [plane: System]
+    given enabled: [plane: Filesystem]
           => (create: CreateNonexistentParents on plane)
           =>  (Path on plane) is Substantiable
           =>  CreateNonexistent on plane:
@@ -393,7 +393,7 @@ package filesystemOptions:
 
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.CREATE)
 
-    given disabled: [plane: System] => Tactic[IoError]
+    given disabled: [plane: Filesystem] => Tactic[IoError]
           =>  CreateNonexistent on plane:
 
       type Plane = plane

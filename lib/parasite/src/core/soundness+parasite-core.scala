@@ -35,7 +35,7 @@ package soundness
 export parasite
 . { Codicil, Fulfillment, AsyncError, Daemon, Hook, Monitor, Promise, Task, Threading, Chain,
     Transgression, monitor, daemon, async, task, relent, cancel, sleep, snooze, hibernate, delay,
-    race, supervise, Tenacity, retry, Observation, System, Destruction, Shutdown, intercept,
+    race, supervise, Tenacity, retry, Observation, Os, Destruction, Shutdown, intercept,
     Interceptable, GarbageCollection, Timeout, Heap }
 
 package threading:

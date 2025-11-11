@@ -30,12 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package ambience
 
-import anticipation.*
-import prepositional.*
+import fulminate.*
 
-trait TemporaryDirectory:
-  def directory(): Text
-
-  def path[path: Instantiable across Paths from Text]: path = path(directory())
+case class WorkingDirectoryError()(using Diagnostics)
+extends Error(m"there is no working directory")

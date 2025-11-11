@@ -30,17 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package ambience
 
 import anticipation.*
-import gossamer.*
 import prepositional.*
 
-trait System extends Typeclass:
-  type UniqueRoot <: Boolean
+  def apply[path: Abstractable across Paths to Text](path: path): WorkingDirectory =
+    () => path.generic
 
-  val separator: Text
-  val self: Text
-  val parent: Text
-  def escape(part: Text): Text = part
-  def unescape(part: Text): Text = part
+trait WorkingDirectory:
+  def directory(): Text

@@ -32,12 +32,10 @@
                                                                                                   */
 package ambience
 
-import language.dynamics
-
-import scala.compiletime.ops.string.*
-
 import anticipation.*
-import fulminate.*
+import prepositional.*
 
-case class SystemPropertyError(property: Text)(using Diagnostics)
-extends Error(m"the system property $property was not defined")
+trait HomeDirectory:
+  def directory(): Text
+
+  def path[path: Instantiable across Paths from Text]: path = path(directory())

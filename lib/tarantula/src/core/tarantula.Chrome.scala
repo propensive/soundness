@@ -32,6 +32,7 @@
                                                                                                   */
 package tarantula
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import gossamer.*

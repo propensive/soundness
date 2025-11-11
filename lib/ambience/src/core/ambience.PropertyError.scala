@@ -30,13 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package ambience
+
+import language.dynamics
+
+import scala.compiletime.ops.string.*
 
 import anticipation.*
-import prepositional.*
+import fulminate.*
 
-  def apply[path: Abstractable across Paths to Text](path: path): WorkingDirectory =
-    () => path.generic
-
-trait WorkingDirectory:
-  def directory(): Text
+case class PropertyError(property: Text)(using Diagnostics)
+extends Error(m"the system property $property was not defined")

@@ -50,7 +50,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 case class Kotlinc
    [compiler <: KotlinVersions]
    (sources: Map[Text, Text], classpath: LocalClasspath, out: Path):
-  def apply()(using SystemProperties): List[Diagnostic] raises KotlinError =
+  def apply()(using System): List[Diagnostic] raises KotlinError =
     val compiler = K2JVMCompiler()
     val configuration = CompilerConfiguration().apply: _ =>
       put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)

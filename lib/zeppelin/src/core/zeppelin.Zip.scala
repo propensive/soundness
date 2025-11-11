@@ -68,7 +68,7 @@ object Zip:
   class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t""):
     type Plane = Zip
 
-  given system: Zip is System:
+  given filesystem: Zip is Filesystem:
     type UniqueRoot = false
 
     val separator: Text = t"/"

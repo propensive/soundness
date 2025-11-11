@@ -34,6 +34,7 @@ package octogenarian
 
 import scala.compiletime.*
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import denominative.*

@@ -32,8 +32,6 @@
                                                                                                   */
 package ambience
 
-import anticipation.*
-import vacuous.*
+import fulminate.*
 
-trait SystemProperties:
-  def apply(name: Text): Optional[Text]
+case class HomeDirectoryError()(using Diagnostics) extends Error(m"there is no home directory")

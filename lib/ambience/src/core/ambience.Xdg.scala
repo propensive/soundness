@@ -84,14 +84,14 @@ object Xdg:
 
 
   def dataDirs[path: Instantiable across Paths from Text]
-       (using environment: Environment, systemProperties: SystemProperties)
+       (using environment: Environment, system: System)
   : List[path] =
 
       safely(Environment.xdgDataDirs[List[path]]).or:
         List(t"/usr/local/share", t"/usr/share").map(path(_))
 
 
-  def configDirs[path: Instantiable across Paths from Text](using Environment, SystemProperties)
+  def configDirs[path: Instantiable across Paths from Text](using Environment, System)
   : List[path] =
 
       safely(Environment.xdgConfigDirs[List[path]]).or(List(t"/etc/xdg").map(path(_)))

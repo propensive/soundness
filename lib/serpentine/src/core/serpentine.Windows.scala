@@ -51,7 +51,7 @@ object Windows:
 
   erased given Windows is Nominative under Rules = !!
 
-  given system: Windows is System:
+  given filesystem: Windows is Filesystem:
     type UniqueRoot = false
 
     val separator: Text = t"\\"

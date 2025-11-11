@@ -32,6 +32,7 @@
                                                                                                   */
 package sedentary
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import eucalyptus.*
@@ -44,7 +45,7 @@ import rudiments.*
 import serpentine.*
 import urticose.*
 
-import workingDirectories.jre
+import workingDirectories.java
 import errorDiagnostics.stackTraces
 import logging.silent
 

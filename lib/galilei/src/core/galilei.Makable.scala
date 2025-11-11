@@ -32,6 +32,7 @@
                                                                                                   */
 package galilei
 
+import ambience.*
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -52,7 +53,7 @@ import java.nio.channels as jnc
 import language.experimental.pureFunctions
 
 object Makable:
-  given [plane: System]
+  given [plane: Filesystem]
   =>   (createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError])
@@ -68,7 +69,7 @@ object Makable:
             jnf.Files.createDirectory(jnf.Path.of(path.encode.s).nn)
             path
 
-  given socket: [plane <: Posix: System]
+  given socket: [plane <: Posix: Filesystem]
   =>   (createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError])
@@ -86,7 +87,7 @@ object Makable:
             channel.bind(address)
             Socket(channel)
 
-  given file: [plane: System]
+  given file: [plane: Filesystem]
   =>   (createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError])
@@ -101,7 +102,7 @@ object Makable:
           overwritePreexisting(path):
             jnf.Files.createFile(path.javaPath)
 
-  given fifo: [plane: System]
+  given fifo: [plane: Filesystem]
   =>   (createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         working:                  WorkingDirectory,

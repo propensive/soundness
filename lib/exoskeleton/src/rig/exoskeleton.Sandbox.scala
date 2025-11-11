@@ -68,8 +68,8 @@ import filesystemTraversal.preOrder
 import manifestAttributes.*
 
 import logging.silent
-import workingDirectories.jre
-import homeDirectories.jre
+import workingDirectories.java
+import homeDirectories.java
 import charEncoders.utf8
 import codicils.cancel
 

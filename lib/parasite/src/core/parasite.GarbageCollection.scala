@@ -96,9 +96,9 @@ object GarbageCollection:
       case other                          => Some(Other(text))
 
   given interceptable: GarbageCollection is Interceptable:
-    type Target = System.type
+    type Target = Os.type
 
-    def register(value: System.type, action: GarbageCollection => Unit): () => Unit =
+    def register(value: Os.type, action: GarbageCollection => Unit): () => Unit =
       val listeners =
         jlm.ManagementFactory.getGarbageCollectorMXBeans().nn.asScala.to(List).flatMap:
           case emitter: jm.NotificationEmitter =>

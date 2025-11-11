@@ -30,8 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package ambience
 
-import fulminate.*
+import anticipation.*
+import prepositional.*
 
-case class HomeDirectoryError()(using Diagnostics) extends Error(m"there is no home directory")
+trait TemporaryDirectory:
+  def directory(): Text
+
+  def path[path: Instantiable across Paths from Text]: path = path(directory())

@@ -42,9 +42,9 @@ import prepositional.*
 object Shutdown:
   private val instance: Shutdown = Shutdown()
   given interceptable: Shutdown is Interceptable:
-    type Target = System.type
+    type Target = Os.type
 
-    def register(value: System.type, action: Shutdown => Unit): () => Unit =
+    def register(value: Os.type, action: Shutdown => Unit): () => Unit =
       val runnable: Runnable = () => action(instance)
       val thread: Thread = Thread(runnable)
       Runtime.getRuntime.nn.addShutdownHook(thread)

@@ -32,7 +32,7 @@
                                                                                                   */
 package superlunary
 
-import ambience.*, systemProperties.jre
+import ambience.*, systems.java
 import anthology.*
 import anticipation.*
 import contingency.*
@@ -49,7 +49,7 @@ import turbulence.*
 
 import charDecoders.utf8
 import textSanitizers.skip
-import systemProperties.jre
+import systems.java
 import classloaders.system
 
 object Jvm extends Rig:
@@ -63,7 +63,7 @@ object Jvm extends Rig:
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    import workingDirectories.systemProperties
+    import workingDirectories.system
     import logging.silent
 
     stage.remote: input =>

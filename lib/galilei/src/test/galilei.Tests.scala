@@ -34,7 +34,7 @@ package galilei
 
 import soundness.*
 
-import environments.jre
+import environments.java
 import temporaryDirectories.environment
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled

@@ -36,10 +36,10 @@ import soundness.*
 
 import unsafeExceptions.canThrowAny
 import classloaders.system
-import environments.jre
-import systemProperties.jre
-import temporaryDirectories.systemProperties
-import workingDirectories.jre
+import environments.java
+import systems.java
+import temporaryDirectories.system
+import workingDirectories.default
 import supervisors.global
 import logging.silent
 import embeddings.automatic

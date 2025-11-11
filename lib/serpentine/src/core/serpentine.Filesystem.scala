@@ -30,105 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ambience
-
-import language.dynamics
-
-import scala.compiletime.ops.string.*
+package serpentine
 
 import anticipation.*
-import contingency.*
-import distillate.*
-import fulminate.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
-import vacuous.*
 
-trait SystemProperty extends Typeclass, Topical:
-  type Self <: String
-  def read(value: Optional[Text], property: Text): Topic
+trait Filesystem extends Typeclass:
+  type UniqueRoot <: Boolean
 
-object SystemProperty:
-  def apply[name <: String, property](lambda: Text => property)
-  : name is SystemProperty of property =
-      (value, property) =>
-        lambda(value.or(panic(m"the system property $property was unavailable")))
-
-  given generic: [label <: String & Singleton] => Tactic[SystemPropertyError]
-        => label is SystemProperty of Text =
-    (value, property) => value.lest(SystemPropertyError(property))
-
-
-  given javaHome: [path: Instantiable across Paths from Text]
-        => ("java.home" is SystemProperty of path) =
-
-      SystemProperty(path(_))
-
-
-  // given javaLibraryPath: [path: Instantiable across Paths from Text]
-  //       => (systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-  //       =>  SystemProperty["java.library.path", List[path]] =
-
-  //   _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
-
-
-  // given javaClassPath: [path: Instantiable across Paths from Text]
-  //       => (systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-  //       =>  SystemProperty["java.class.path", List[path]] =
-
-  //   _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
-
-
-  given javaVersion: ("java.version" is SystemProperty of Text) = SystemProperty(identity)
-  given javaVendor: ("java.vendor" is SystemProperty of Text) = SystemProperty(identity)
-  given javaVendorUrl: ("java.vendor.url" is SystemProperty of Text) = SystemProperty(identity)
-
-
-  given javaRuntimeVersion: Tactic[SystemPropertyError]
-        => ("java.runtime.version" is SystemProperty of Text) =
-    (value, name) => value.lest(SystemPropertyError(name))
-
-
-  given javaClassVersion: ("java.runtime.version" is SystemProperty of Int) =
-    given Tactic[NumberError] = strategies.throwUnsafely
-    SystemProperty(_.decode[Int])
-
-
-  // given javaExtDirs: [path: Instantiable across Paths from Text]
-  //       => (systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-  //       =>  SystemProperty["java.ext.dirs", List[path]] =
-
-  //   _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(path(_))
-
-
-  given fileSeparator: ("file.separator" is SystemProperty of Char) = SystemProperty(_.decode[Char])
-  given pathSeparator: ("path.separator" is SystemProperty of Char) = SystemProperty(_.decode[Char])
-  given lineSeparator: ("line.separator" is SystemProperty of Text) = SystemProperty(identity)
-  given userName: ("user.name" is SystemProperty of Text) = SystemProperty(identity)
-
-
-  given userHome: [path: Instantiable across Paths from Text]
-        => ("user.home" is SystemProperty of path) =
-    SystemProperty(path(_))
-
-
-  given userDir: [path: Instantiable across Paths from Text]
-        => ("user.dir" is SystemProperty of path) =
-
-      SystemProperty(path(_))
-
-
-  given osName: ("os.name" is SystemProperty of Text) = SystemProperty(identity)
-  given osVersion: ("os.version" is SystemProperty of Text) = SystemProperty(identity)
-
-  given osArch: ("os.arch" is SystemProperty of Architecture) =
-    SystemProperty(_.decode[Architecture])
-
-
-  given decoder: [label <: Label, property] => (decoder: property is Decodable in Text)
-        =>  Tactic[SystemPropertyError]
-        =>  label is SystemProperty of property =
-
-    (value, name) =>
-      decoder.decoded(value.lest(SystemPropertyError(name)))
+  val separator: Text
+  val self: Text
+  val parent: Text
+  def escape(part: Text): Text = part
+  def unescape(part: Text): Text = part

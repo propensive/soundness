@@ -44,8 +44,8 @@ import vacuous.*
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
 
   override def apply[path: Instantiable across Paths from Text]()
-                (using SystemProperties, Environment)
-  : path raises SystemPropertyError raises EnvironmentError =
+                (using System, Environment)
+  : path raises PropertyError raises EnvironmentError =
 
       path(t"/")
 

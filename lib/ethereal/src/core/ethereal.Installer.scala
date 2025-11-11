@@ -78,7 +78,7 @@ object Installer:
 
 
   def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
-       (using Environment, HomeDirectory, SystemProperties)
+       (using Environment, HomeDirectory, System)
   : List[Path on Linux] logs DaemonLogEvent raises InstallError =
 
       mitigate:
@@ -111,12 +111,12 @@ object Installer:
        (using Effectful, Diagnostics)
   : Result logs DaemonLogEvent raises InstallError =
 
-      import workingDirectories.jre
-      import systemProperties.jre
+      import workingDirectories.java
+      import systems.java
 
       mitigate:
         case PathError(_, _)        => InstallError(InstallError.Reason.Environment)
-        case SystemPropertyError(_) => InstallError(InstallError.Reason.Environment)
+        case PropertyError(_) => InstallError(InstallError.Reason.Environment)
         case NumberError(_, _)      => InstallError(InstallError.Reason.Environment)
         case IoError(_, _, _)       => InstallError(InstallError.Reason.Io)
         case NameError(_, _, _)     => InstallError(InstallError.Reason.Io)
@@ -130,15 +130,13 @@ object Installer:
           if safely(scriptPath.decode[Path on Linux]) == service.script && !force
           then Result.AlreadyOnPath(command, service.script.encode)
           else
-            val payloadSize: Memory = Memory(Properties.ethereal.payloadSize[Int]())
-            val jarSize: Memory = Memory(Properties.ethereal.jarSize[Int]())
+            val payloadSize: Memory = Memory(System.properties.ethereal.payloadSize[Int]())
+            val jarSize: Memory = Memory(System.properties.ethereal.jarSize[Int]())
             val scriptFile: Path on Linux = service.script
             val fileSize = scriptFile.size()
             val prefixSize = fileSize - payloadSize - jarSize
             val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
               abort(InstallError(InstallError.Reason.Environment))
-
-            summon[Linux is System]
 
             val file: Path on Linux = installDirectory/command
             val installFile: Optional[Path on Linux] = file.make[File]()

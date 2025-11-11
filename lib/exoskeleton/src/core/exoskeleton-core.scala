@@ -32,6 +32,10 @@
                                                                                                   */
 package exoskeleton
 
+import java.lang as jl
+
+import sun.misc as sm
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -47,8 +51,6 @@ import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
-
-import sun.misc as sm
 
 package backstops:
   given silent: Backstop:
@@ -105,8 +107,8 @@ package executives:
 
         Invocation
          (Cli.arguments(arguments, Unset, Unset, Unset),
-          environments.jre,
-          workingDirectories.jre,
+          environments.java,
+          workingDirectories.java,
           stdio,
           signals,
           arguments.size == 0 || arguments.head != t"{admin}",
@@ -141,11 +143,11 @@ def application(using executive: Executive, interpreter: Interpreter)
   val cli =
     executive.invocation
      (arguments,
-      environments.jre,
-      workingDirectories.jre,
+      environments.java,
+      workingDirectories.java,
       stdioSources.virtualMachine.ansi,
       spool,
       context,
       Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset))
 
-  System.exit(executive.process(cli)(block)())
+  jl.System.exit(executive.process(cli)(block)())

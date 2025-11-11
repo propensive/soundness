@@ -32,6 +32,7 @@
                                                                                                   */
 package eucalyptus
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import guillotine.*
@@ -45,7 +46,7 @@ case class Syslog(tag: Optional[Text] = Unset)
 
 object Syslog:
   given appendable: Monitor => Syslog is Writable by Text = (syslog, stream) =>
-    import workingDirectories.systemProperties
+    import workingDirectories.system
 
     recover:
       case StreamError(_)     => ()

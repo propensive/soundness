@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anticipation.{Abstractable, Instantiable}
+export anticipation.{Abstractable, Instantiable, Representative}

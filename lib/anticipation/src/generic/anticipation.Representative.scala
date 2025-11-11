@@ -30,34 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ambience
+package anticipation
 
-import language.dynamics
-
-import scala.compiletime.ops.string.*
+import java.io as ji
+import java.nio.file as jnf
 
 import anticipation.*
-import contingency.*
 import prepositional.*
-import proscenium.*
-import vacuous.*
 
-case class PropertyAccess[name <: String](property: String) extends Dynamic:
-  def selectDynamic(key: String): PropertyAccess[name+"."+key.type] =
-    PropertyAccess[name+"."+key.type](property+"."+key)
-
-
-  def applyDynamic[property](key: String)()
-    (using properties: SystemProperties, reader: (name+"."+key.type) is SystemProperty of property)
-  : property =
-
-      val name = property+"."+key
-      reader.read(properties(name.tt), name.tt)
-
-
-  inline def apply[property]()
-              (using properties: SystemProperties, reader: name is SystemProperty of property)
-  : property =
-
-      val name = valueOf[name]
-      reader.read(properties(name.tt), name.tt)
+erased trait Representative extends Typeclass, Topical

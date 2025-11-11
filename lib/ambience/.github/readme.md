@@ -165,11 +165,11 @@ Support for system properties is provided in much the same way as for
 environment variables:
 - access is provided through the `Properties` object, by `Text` value or
   dynamic member access
-- `systemProperties.jvm` provides the standard system properties from the JVM
-- alternative instances of `SystemProperties` can be defined to provide
+- `systems.jvm` provides the standard system properties from the JVM
+- alternative instances of `System` can be defined to provide
   substitute values
-- `SystemProperty` provides the same functionality as `EnvironmentVariable`
-- a `SystemPropertyError` will be raised instead of an `EnvironmentError`
+- `Property` provides the same functionality as `EnvironmentVariable`
+- a `PropertyError` will be raised instead of an `EnvironmentError`
 
 There is no need to rename system properties, since they already follow the
 familiar Scala identifier style. Access through the `Properties` object is
@@ -177,13 +177,13 @@ slightly different from `Environment`, though: since property names use a
 "dotted" format, they can be accessed as dynamic members of the `Properties`
 object, for example,
 ```scala
-import systemProperties.jvm
+import systems.jvm
 
-val home = Properties.user.home()
+val home = System.properties.user.home()
 ```
 or,
 ```scala
-val dir = Properties.db.user.cache.dir()
+val dir = System.properties.db.user.cache.dir()
 ```
 where the empty parentheses are necessary to signal that the path representing
 the property name has been specified, and its value should be retrieved. The
@@ -217,7 +217,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Ambience?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Ambience's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -234,7 +234,7 @@ answer to the question, "how can I try Ambience?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -294,4 +294,3 @@ The logo depicts the upper atmosphere of an imagined planet, alluding to the syn
 
 Ambience is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-
