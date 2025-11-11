@@ -39,14 +39,14 @@ import serpentine.*
 import spectacular.*
 
 object FilesystemAttribute:
-  class Readable[plane: System](path: Path on plane):
+  class Readable[plane: Filesystem](path: Path on plane):
     def apply(): Boolean = jnf.Files.isReadable(jnf.Path.of(path.show.s))
     def update(value: Boolean): Unit = path.javaFile.setReadable(value)
 
-  class Writable[plane: System](path: Path on plane):
+  class Writable[plane: Filesystem](path: Path on plane):
     def apply(): Boolean = jnf.Files.isWritable(jnf.Path.of(path.show.s))
     def update(value: Boolean): Unit = path.javaFile.setWritable(value)
 
-  class Executable[plane <: Posix: System](path: Path on plane):
+  class Executable[plane <: Posix: Filesystem](path: Path on plane):
     def apply(): Boolean = jnf.Files.isExecutable(jnf.Path.of(path.show.s))
     def update(value: Boolean): Unit = path.javaFile.setExecutable(value)

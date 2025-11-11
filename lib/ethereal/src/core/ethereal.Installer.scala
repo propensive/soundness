@@ -138,8 +138,6 @@ object Installer:
             val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
               abort(InstallError(InstallError.Reason.Environment))
 
-            summon[Linux is System]
-
             val file: Path on Linux = installDirectory/command
             val installFile: Optional[Path on Linux] = file.make[File]()
 

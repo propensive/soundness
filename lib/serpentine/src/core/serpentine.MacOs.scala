@@ -47,7 +47,7 @@ object MacOs:
 
   erased given MacOs is Nominative under Rules = !!
 
-  given system: MacOs is System:
+  given filesystem: MacOs is Filesystem:
     type UniqueRoot = true
 
     val separator: Text = t"/"

@@ -36,7 +36,7 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 
-trait System extends Typeclass:
+trait Filesystem extends Typeclass:
   type UniqueRoot <: Boolean
 
   val separator: Text

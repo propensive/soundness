@@ -61,11 +61,11 @@ object Relative:
         type Limit = limit
 
 
-  def apply[system, topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
-  : Relative of topic on system under limit =
+  def apply[filesystem, topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
+  : Relative of topic on filesystem under limit =
 
       new Relative(ascent, descent.to(List)):
-        type Plane = system
+        type Plane = filesystem
         type Topic = topic
         type Limit = limit
 
@@ -74,48 +74,48 @@ object Relative:
     new Conversion[from, to]:
       def apply(from: from): to = fn(from)
 
-  given decodable: [system: System]
-        =>  (Relative on system) is Decodable in Text = text =>
-    if text == system.self then ? else
-      text.cut(system.separator).pipe: parts =>
+  given decodable: [filesystem: Filesystem]
+        =>  (Relative on filesystem) is Decodable in Text = text =>
+    if text == filesystem.self then ? else
+      text.cut(filesystem.separator).pipe: parts =>
         (if parts.last == t"" then parts.init else parts).pipe: parts =>
           if parts.isEmpty then Relative(0) else
-            (if parts.head == system.self then parts.tail else parts).pipe: parts =>
-              val ascent = parts.takeWhile(_ == system.parent).length
+            (if parts.head == filesystem.self then parts.tail else parts).pipe: parts =>
+              val ascent = parts.takeWhile(_ == filesystem.parent).length
               val descent = parts.drop(ascent).reverse
 
               Relative(ascent, descent*)
 
 
-  inline given conversion: [topic, ascent <: Int, system]
+  inline given conversion: [topic, ascent <: Int, filesystem]
                =>  Conversion[Relative of topic under ascent,
-                              Relative of topic under ascent on system] =
+                              Relative of topic under ascent on filesystem] =
 
-      conversion(_.on[system])
+      conversion(_.on[filesystem])
 
 
-  given encodable: [system: System] => Relative on system is Encodable in Text =
+  given encodable: [filesystem: Filesystem] => Relative on filesystem is Encodable in Text =
     relative =>
       if relative.descent.isEmpty then
-        if relative.ascent == 0 then system.self
-        else List.fill(relative.ascent)(system.parent).join(system.separator)
+        if relative.ascent == 0 then filesystem.self
+        else List.fill(relative.ascent)(filesystem.parent).join(filesystem.separator)
       else
-        val ascender = system.parent+system.separator
+        val ascender = filesystem.parent+filesystem.separator
         relative
         . descent
         . reverse
-        . join(ascender*relative.ascent, system.separator, t"")
+        . join(ascender*relative.ascent, filesystem.separator, t"")
 
-  given showable: [system: System, relative <: Relative on system]
+  given showable: [filesystem: Filesystem, relative <: Relative on filesystem]
   => relative is Showable =
        _.encode
 
-  transparent inline given quotient: [system, relative <: (Relative on system) | Text]
+  transparent inline given quotient: [filesystem, relative <: (Relative on filesystem) | Text]
                            => relative is Quotient =
     relative0 =>
       relative0 match
         case _: Relative =>
-          val relative = relative0.asInstanceOf[Relative on system]
+          val relative = relative0.asInstanceOf[Relative on filesystem]
 
           relative.descent match
             case Nil | _ :: Nil => None
@@ -126,7 +126,7 @@ object Relative:
 
         case _ => None
 
-  : relative is Quotient of Text over (Relative on system) | Text
+  : relative is Quotient of Text over (Relative on filesystem) | Text
 
 
 case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topical, Limited:
@@ -140,25 +140,25 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
   transparent inline def rename(lambda: (prior: Text) ?=> Text): Optional[Relative] =
     descent.prim.let(parent / lambda(using _))
 
-  private inline def check[topic, system](path: List[Text]): Unit =
+  private inline def check[topic, filesystem](path: List[Text]): Unit =
     inline !![topic] match
       case _: (head *: tail) =>
-        infer[head is Admissible on system].check(path.head)
-        check[tail, system](path.tail).unit
+        infer[head is Admissible on filesystem].check(path.head)
+        check[tail, filesystem](path.tail).unit
 
       case EmptyTuple =>
         ()
 
       case _ =>
-        path.each(infer[Text is Admissible on system].check(_))
+        path.each(infer[Text is Admissible on filesystem].check(_))
 
-  inline def on[system]: Relative of Topic under Limit on system =
+  inline def on[filesystem]: Relative of Topic under Limit on filesystem =
     summonFrom:
-      case compliant: (Plane is Compliant on `system`) =>
-        this.asInstanceOf[Relative of Topic under Limit on system]
+      case compliant: (Plane is Compliant on `filesystem`) =>
+        this.asInstanceOf[Relative of Topic under Limit on filesystem]
       case _ =>
-        check[Topic, system](descent.to(List))
-        this.asInstanceOf[Relative of Topic under Limit on system]
+        check[Topic, filesystem](descent.to(List))
+        this.asInstanceOf[Relative of Topic under Limit on filesystem]
 
   transparent inline def parent = inline !![Topic] match
     case head *: tail => Relative[Plane, tail.type, Limit](ascent, descent.tail*)

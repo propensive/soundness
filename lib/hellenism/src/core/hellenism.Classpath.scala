@@ -72,7 +72,7 @@ object Classpath extends Root(t""):
     def apply[path: Abstractable across Paths to Text](path: path): ClasspathEntry.Jar =
       ClasspathEntry.Jar(path.generic)
 
-  given system: Classpath is System:
+  given filesystem: Classpath is Filesystem:
     type UniqueRoot = true
     val separator: Text = t"/"
     val self: Text = t"."

@@ -41,26 +41,26 @@ import proscenium.*
 import rudiments.*
 
 object Admissible:
-  def unchecked[child, system]: child is Admissible on system = new Admissible:
+  def unchecked[child, filesystem]: child is Admissible on filesystem = new Admissible:
     type Self = child
-    type Plane = system
+    type Plane = filesystem
     def check(name: Text): Unit = ()
 
-  inline def apply[self, system](fn: Text => Unit): self is Admissible on system = fn(_)
+  inline def apply[self, filesystem](fn: Text => Unit): self is Admissible on filesystem = fn(_)
 
-  transparent inline given text: [text <: Text, system] => text is Admissible on system =
+  transparent inline given text: [text <: Text, filesystem] => text is Admissible on filesystem =
     inline !![text] match
-      case _: Name[`system`] => unchecked[text, system]
+      case _: Name[`filesystem`] => unchecked[text, filesystem]
 
-      case _ => provide[Tactic[NameError]](Name[system](_))
+      case _ => provide[Tactic[NameError]](Name[filesystem](_))
 
-  inline given admissible: [string <: Label, system] => (nominative: system is Nominative)
-         =>  string is Admissible on system =
-    Admissible[string, system]({ void => Name.verify[string, system] })
+  inline given admissible: [string <: Label, filesystem] => (nominative: filesystem is Nominative)
+         =>  string is Admissible on filesystem =
+    Admissible[string, filesystem]({ void => Name.verify[string, filesystem] })
 
 
-  given uuid: [uuid <: Uuid, system <: Filesystem] => uuid is Admissible on system =
-    unchecked[uuid, system]
+  given uuid: [uuid <: Uuid, filesystem <: Posix | Windows] => uuid is Admissible on filesystem =
+    unchecked[uuid, filesystem]
 
 trait Admissible extends Typeclass, Planar:
   def check(name: Text): Unit

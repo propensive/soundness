@@ -173,11 +173,11 @@ object Attribute:
   given href2: [url: Abstractable across Urls to Text] => ("href" is Attribute of url) =
     _.generic
 
-  inline given href3: [topic, path <: Path of topic under %.type] => Www is System
+  inline given href3: [topic, path <: Path of topic under %.type] => Www is Filesystem
          => ("href" is Attribute of path) =
     _.on[Www].encode
 
-  inline given href4: [topic, path <: Path of topic] => Www is System
+  inline given href4: [topic, path <: Path of topic] => Www is Filesystem
          => ("href" is Attribute of path) =
     _.on[Www].encode
 
@@ -267,12 +267,12 @@ object Attribute:
 
   given src3: [url: Abstractable across Urls to Text] => ("src" is Attribute of url) = _.generic
 
-  inline given src4: [topic, path <: Path of topic under %.type] => Www is System
+  inline given src4: [topic, path <: Path of topic under %.type] => Www is Filesystem
          => ("src" is Attribute):
     type Topic = path
     def convert(value: path): Text = value.on[Www].encode
 
-  inline given src5: [topic, path <: Path of topic] => Www is System
+  inline given src5: [topic, path <: Path of topic] => Www is Filesystem
          => ("src" is Attribute of path) =
     _.on[Www].encode
 

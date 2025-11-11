@@ -53,7 +53,7 @@ object Www:
     def encode(root: %.type): Text = "/"
     def decode(text: Text): %.type = %
 
-  given system: Www is System:
+  given filesystem: Www is Filesystem:
     type UniqueRoot = false
     val separator: Text = t"/"
     val self: Text = t"."

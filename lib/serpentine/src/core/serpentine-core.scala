@@ -36,7 +36,6 @@ export Path.`%`
 export Relative.{`^`, `?`}
 
 type Posix = MacOs | Linux
-type Filesystem = Posix | Windows
 
 extension (inline context: StringContext)
   transparent inline def p(): Path = ${Serpentine.path('context)}
