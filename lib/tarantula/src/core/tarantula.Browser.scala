@@ -32,6 +32,7 @@
                                                                                                   */
 package tarantula
 
+import ambience.*
 import anticipation.*
 import guillotine.*
 import parasite.*

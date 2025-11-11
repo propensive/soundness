@@ -40,4 +40,4 @@ package daemonConfig:
   export ethereal.daemonConfig.{doNotSupportStderr, supportStderr}
 
 package workingDirectories:
-  export rudiments.workingDirectories.daemonClient
+  export ambience.workingDirectories.daemonClient

@@ -32,6 +32,7 @@
                                                                                                   */
 package sedentary
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import eucalyptus.*

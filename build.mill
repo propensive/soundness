@@ -375,7 +375,7 @@ object adversaria extends SoundnessModule {
 
 object ambience extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(guillotine.core)
+    def moduleDeps = Seq(gossamer.core)
   }
 
   object test extends ProbablyTestModule {
@@ -913,7 +913,7 @@ object gossamer extends SoundnessModule {
 
 object guillotine extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(contextual.core, anticipation.log, contingency.core, turbulence.core, gossamer.core)
+    def moduleDeps = Seq(contextual.core, anticipation.log, contingency.core, turbulence.core, gossamer.core, ambience.core)
   }
 
   object test extends ProbablyTestModule {
@@ -1007,7 +1007,7 @@ object hypotenuse extends SoundnessModule {
 
 object imperial extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(anticipation.path, digression.core, ambience.core)
+    def moduleDeps = Seq(anticipation.path, digression.core, guillotine.core)
   }
 
   object test extends ProbablyTestModule {

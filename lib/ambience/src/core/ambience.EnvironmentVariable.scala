@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import gossamer.*
-import guillotine.*
 import prepositional.*
 import proscenium.*
 import vacuous.*
@@ -116,9 +115,6 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given pager: [path: Instantiable across Paths from Text]
         =>  EnvironmentVariable["pager", path] =
     path(_)
-
-  given sshAgentPid: Tactic[NumberError] => EnvironmentVariable["sshAgentPid", Pid] =
-    text => Pid(text.decode[Int])
 
   given sshAuthSock: [path: Instantiable across Paths from Text]
         =>  EnvironmentVariable["sshAuthSock", path] =

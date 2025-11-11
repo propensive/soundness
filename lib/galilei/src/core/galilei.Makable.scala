@@ -32,6 +32,7 @@
                                                                                                   */
 package galilei
 
+import ambience.*
 import anticipation.*
 import contextual.*
 import contingency.*

@@ -32,6 +32,7 @@
                                                                                                   */
 package eucalyptus
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import guillotine.*

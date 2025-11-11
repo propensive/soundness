@@ -39,6 +39,7 @@ import java.io as ji
 import scala.annotation.targetName
 import scala.compiletime.*
 
+import ambience.*
 import anticipation.*
 import contextual.*
 import contingency.*

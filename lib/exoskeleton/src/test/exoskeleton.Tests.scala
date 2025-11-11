@@ -39,7 +39,7 @@ import classloaders.system
 import environments.jre
 import systemProperties.jre
 import temporaryDirectories.systemProperties
-import workingDirectories.jre
+import workingDirectories.default
 import supervisors.global
 import logging.silent
 import embeddings.automatic

@@ -30,12 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package ambience
 
 import anticipation.*
 import prepositional.*
 
-trait HomeDirectory:
-  def directory(): Text
+  def apply[path: Abstractable across Paths to Text](path: path): WorkingDirectory =
+    () => path.generic
 
-  def path[path: Instantiable across Paths from Text]: path = path(directory())
+trait WorkingDirectory:
+  def directory(): Text

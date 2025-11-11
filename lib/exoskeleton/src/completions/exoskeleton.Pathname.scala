@@ -32,6 +32,7 @@
                                                                                                   */
 package exoskeleton
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import denominative.*

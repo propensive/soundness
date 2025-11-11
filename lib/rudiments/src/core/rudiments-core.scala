@@ -355,38 +355,6 @@ extension (bytes: Bytes)
   def memory: Memory = Memory(bytes.size)
 
 
-inline def workingDirectory[path: Representative of Paths](using work: WorkingDirectory): path =
-  compiletime.summonFrom:
-    case given (`path` is Instantiable across Paths from Paths.Trusted) =>
-      Paths.Trusted(work.directory()).instantiate
-
-    case given (`path` is Instantiable across Paths from Text) =>
-      work.directory().instantiate
-
-def homeDirectory[path: Instantiable across Paths from Text](using directory: HomeDirectory)
-: path =
-
-    directory.path[path]
-
-
-package workingDirectories:
-  given systemProperties: WorkingDirectory = () =>
-    Optional(System.getProperty("user.dir")).let(_.tt).or:
-      panic(m"the `user.dir` system property is not set")
-
-  given default: WorkingDirectory = () => java.nio.file.Paths.get("").nn.toAbsolutePath.toString
-
-package homeDirectories:
-  given systemProperties: HomeDirectory = () =>
-    Optional(System.getProperty("user.home")).let(_.tt).or:
-      panic(m"the `user.home` system property is not set")
-
-  given environment: HomeDirectory = () =>
-    List("HOME", "USERPROFILE", "HOMEPATH").map(System.getenv(_)).map(Optional(_)).compact.prim
-    . let(_.tt)
-    . or:
-        panic(m"none of `HOME`, `USERPROFILE` or `HOMEPATH` environment variables is set")
-
 extension [countable: Countable](inline value: countable)
   inline def limit: Ordinal = countable.size(value).z
 
