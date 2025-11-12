@@ -256,7 +256,7 @@ extension [textual: Textual](text: textual)
   def snip(pred: Char => Boolean, index: Ordinal = Prim): Optional[(textual, textual)] =
     text.where(pred, index).let(_.n0).let(text.snip(_))
 
-  def mapChars(lambda: Char => Char): textual = textual.map(text)(lambda)
+  def translate(lambda: Char => Char): textual = textual.map(text)(lambda)
 
   def erase(chars: Char*): textual =
     val set = chars.to(Set)

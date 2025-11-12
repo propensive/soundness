@@ -36,7 +36,7 @@ export gossamer
 . { Bidi, Builder, Cuttable, Decimalizer, Interpolation, Joinable, Numerous, Pue, RangeError,
     TextBuilder, Textual, append, construct, fill, txt, t, utf8, utf16, ascii, text, pue, cut,
     pascal, camel, snake, kebab, length, lower, upper, plain, skip, keep, capitalize, uncapitalize,
-    tail, init, chars, snip, reverse, contains, trim, where, upto, dropWhile, mapChars, count, pad,
+    tail, init, chars, snip, reverse, contains, trim, where, upto, dropWhile, translate, count, pad,
     center, fit, uncamel, unkebab, unsnake, starts, ends, tr, subscripts, superscripts, sub,
     urlEncode, urlDecode, punycode, bytes, sysBytes, proximity, join, add, words, lines, appendln,
     spaced, slices, seek, search, Ascii, AsciiBuilder, Ltr, Rtl, erase, before, after, from,
