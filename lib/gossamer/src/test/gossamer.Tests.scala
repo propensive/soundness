@@ -312,7 +312,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"A.B.C.")
 
       test(m"Map over a text's characters"):
-        t"ABC".mapChars { char => char.toLower }
+        t"ABC".translate { char => char.toLower }
       . assert(_ == t"abc")
 
       test(m"Check an empty Text is empty"):

@@ -253,7 +253,7 @@ object Quantitative extends Quantitative2:
       units.to(List).map: (unit, power) =>
         if power == 1 then unit else
           val exponent: Text =
-            power.show.mapChars:
+            power.show.translate:
               case '0' => '⁰'
               case '1' => '¹'
               case '2' => '²'
