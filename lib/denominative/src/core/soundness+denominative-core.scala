@@ -34,3 +34,8 @@ package soundness
 
 export denominative
 . { Countable, Prim, Sec, Ter, Quat, Quin, Sen, Sept, full, Ordinal, Interval, Zerary, z, empty }
+
+package ordinalShowables:
+  export denominative.ordinalShowables
+         . { nominal, uniary, zerary, unmarkedUniary, unmarkedZerary, intermediate, english,
+             englishSuperscript, french, spanish, italian, russian }
