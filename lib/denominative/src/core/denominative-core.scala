@@ -34,6 +34,7 @@ package denominative
 
 import scala.annotation.targetName
 
+import anticipation.*
 import symbolism.*
 
 final val Prim: Ordinal = Ordinal.zerary(0)
@@ -56,3 +57,20 @@ extension [countable: Countable](value: countable)
   inline def empty: Boolean = countable.empty(value)
 
 export Denominative.{Ordinal, Interval}
+
+package ordinalShowables:
+  given nominal: Ordinal is Textualizable =
+    case Prim    => "prim".tt
+    case Sec     => "sec".tt
+    case Ter     => "ter".tt
+    case Quat    => "quat".tt
+    case Quin    => "quin".tt
+    case Sen     => "sen".tt
+    case Sept    => "sept".tt
+    case ordinal => (""+ordinal+".z").tt
+
+  given uniary: Ordinal is Textualizable = ordinal => ""+ordinal.n1+"♭"
+  given zerary: Ordinal is Textualizable = ordinal => ""+ordinal.n0+"♯"
+  given unmarkedUniary: Ordinal is Textualizable = ordinal => ""+ordinal.n1
+  given unmarkedZerary: Ordinal is Textualizable = ordinal => ""+ordinal.n0
+  given intermediate: Ordinal is Textualizable = ordinal => "⌞"+ordinal.n0+"⌟|⌞"+ordinal.n1+"⌟"

@@ -70,16 +70,6 @@ object Denominative:
     given subtractable: Ordinal is Subtractable by Ordinal to Int = _ - _
     given subtractable2: Ordinal is Subtractable by Int to Ordinal = _ - _
 
-    given textualizable: Ordinal is Textualizable =
-      case Prim    => "prim".tt
-      case Sec     => "sec".tt
-      case Ter     => "ter".tt
-      case Quat    => "quat".tt
-      case Quin    => "quin".tt
-      case Sen     => "sen".tt
-      case Sept    => "sept".tt
-      case ordinal => (""+ordinal+".u").tt
-
   extension (interval: Interval)
     inline def start: Ordinal = ((interval >> 32) & 0xffffffff).toInt
     inline def end: Ordinal = (interval & 0xffffffff).toInt
