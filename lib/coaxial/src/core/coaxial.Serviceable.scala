@@ -118,6 +118,6 @@ object Serviceable:
         out.write(bytes.mutable(using Unsafe))
         out.flush()
 
-trait Serviceable extends Addressable:
+trait Serviceable extends Routable:
   def receive(connection: Connection): Stream[Bytes]
   def close(connection: Connection): Unit

@@ -48,7 +48,7 @@ Endpoint types include,
  - remote ports, e.g. `host"example.com" on tcp"8844"` or
    `ip"192.168.1.24" on udp"1280"`
  - UNIX domain sockets
- - any type for which an `Addressable` or `Connectable` typeclass instance
+ - any type for which a `Routable` or `Connectable` typeclass instance
    exists
 
 For example, a simple message could be sent to a local UDP port with,
@@ -63,10 +63,10 @@ a `Transmissible` typeclass instance exists, which includes `Text`, `Bytes` and
 anything that has a [Spectacular](https://github.com/propensive/spectacular/)
 `Encoder`.
 
-All `Addressable` endpoints can have data transmitted to them, but some, such
+All `Routable` endpoints can have data transmitted to them, but some, such
 as TCP ports, can initiate a bidirectional connection. These are those
 endpoints for which a `Connectable` typeclass instance exists. `Connectable` is
-a subtype of `Addressable`.
+a subtype of `Routable`.
 
 Starting a stateful connection, with the `connect` method, requires a bit more
 work. Its state is user-defined, and can be represented by any type. So a
@@ -198,7 +198,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Coaxial?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Coaxial's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -215,7 +215,7 @@ answer to the question, "how can I try Coaxial?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -277,4 +277,3 @@ The logo shows a cross-section of a coaxial connector.
 
 Coaxial is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-
