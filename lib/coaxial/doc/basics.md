@@ -16,7 +16,7 @@ Endpoint types include,
  - remote ports, e.g. `host"example.com" on tcp"8844"` or
    `ip"192.168.1.24" on udp"1280"`
  - UNIX domain sockets
- - any type for which an `Addressable` or `Connectable` typeclass instance
+ - any type for which an `Routable` or `Connectable` typeclass instance
    exists
 
 For example, a simple message could be sent to a local UDP port with,
@@ -31,10 +31,10 @@ a `Transmissible` typeclass instance exists, which includes `Text`, `Bytes` and
 anything that has a [Spectacular](https://github.com/propensive/spectacular/)
 `Encoder`.
 
-All `Addressable` endpoints can have data transmitted to them, but some, such
+All `Routable` endpoints can have data transmitted to them, but some, such
 as TCP ports, can initiate a bidirectional connection. These are those
 endpoints for which a `Connectable` typeclass instance exists. `Connectable` is
-a subtype of `Addressable`.
+a subtype of `Routable`.
 
 Starting a stateful connection, with the `connect` method, requires a bit more
 work. Its state is user-defined, and can be represented by any type. So a
@@ -134,6 +134,3 @@ bound. It may be stopped at any time by calling its `stop` method, like so:
 ```scala
 server.stop()
 ```
-
-
-

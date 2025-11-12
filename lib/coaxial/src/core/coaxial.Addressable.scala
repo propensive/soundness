@@ -43,8 +43,8 @@ import java.net as jn
 
 import Control.*
 
-object Addressable:
-  given udpEndpoint: Endpoint[UdpPort] is Addressable:
+object Routable:
+  given udpEndpoint: Endpoint[UdpPort] is Routable:
     case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
     def connect(endpoint: Endpoint[UdpPort]): Connection =
@@ -59,7 +59,7 @@ object Addressable:
 
         connection.socket.send(packet)
 
-  given udpPort: UdpPort is Addressable:
+  given udpPort: UdpPort is Routable:
     case class Connection(port: Int, socket: jn.DatagramSocket)
 
     def connect(port: UdpPort): Connection =
@@ -75,7 +75,7 @@ object Addressable:
 
         connection.socket.send(packet)
 
-trait Addressable extends Typeclass:
+trait Routable extends Typeclass:
   type Connection
 
   def connect(endpoint: Self): Connection
