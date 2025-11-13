@@ -44,7 +44,6 @@ object Cursor:
   opaque type Mark = Long
 
   object Mark:
-    final val Finished: Mark = Long.MaxValue
     final val Initial: Mark = -1
     
     def apply(block: Ordinal, position: Ordinal): Mark =
@@ -56,26 +55,42 @@ object Cursor:
     inline def block: Ordinal = (mark >> 32 & 0xffffffff).toInt.z
     inline def index: Ordinal = mark.toInt.z
     inline def increment: Mark = mark + 1
-    inline def valid: Boolean = mark != Mark.Finished
+    inline def decrement: Mark = mark - 1
 
 case class Cursor[data: Addressable](private val iterator: Iterator[data]):
   private val buffer: scm.ArrayDeque[data] = scm.ArrayDeque()
   private var first: Ordinal = (-1).z
   private var current: data = iterator.next()
   private var focus: Cursor.Mark = Cursor.Mark.Initial
-  private var finished: Boolean = false
+  private var finished0: Boolean = false
+  private var keep: Boolean = false
 
   inline def mark: Cursor.Mark = focus
+  
+  inline def last: Cursor.Mark =
+    if focus.index != Prim then mark.decrement
+    else
+      val index = focus.index.previous
+      val block = get(index)
+      Cursor.Mark(index, (data.length(block) - 1).z)
+    
+  inline def finished: Boolean = finished0
 
   protected inline def cue(): Unit =
     val offset: Int = focus.block - first
-    if buffer.length > offset then current = buffer(offset)
+    if buffer.length > offset then
+      current = buffer(offset)
+      if !keep then
+        buffer.remove(0)
+        first = (first.n0 + 1).z
     else
       if iterator.hasNext then
         current = iterator.next()
-        if first != (-1).z then buffer.append(current)
-      else finished = true
+        if keep then buffer.append(current)
+      else finished0 = true
       current
+
+  protected inline def get(block: Ordinal): data = buffer(block - first)
 
   protected inline def proceed(): Unit =
     while
@@ -85,9 +100,9 @@ case class Cursor[data: Addressable](private val iterator: Iterator[data]):
     do ()
     
   inline def next(): Boolean =
-    val index = focus.index.next
-    if index.n0 >= data.length(current) then proceed()
-    else focus = focus.increment
+    val previous = focus
+    if focus.index.next.n0 >= data.length(current) then proceed()
+    else focus = if finished then previous else focus.increment
     !finished
 
   inline def step(inline update: Cursor.Mark => Unit): Boolean =
@@ -101,12 +116,12 @@ case class Cursor[data: Addressable](private val iterator: Iterator[data]):
     
   inline def datum: data.Operand = data.address(current, focus.index)
 
-  inline def hold[result](inline action: Cursor.Mark => result): result =
-    val first0: Ordinal = first
-    if first == (-1).z then
-      first = focus.block
-      buffer.append(current)
-    action(focus)
+  inline def retain[result](inline action: => result): result =
+    keep = true
+    first = focus.block
+    buffer.append(current)
+    action.also:
+      keep = false
 
   inline def goto(mark0: Cursor.Mark): Unit =
     focus = mark0
