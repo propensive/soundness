@@ -36,6 +36,8 @@ import soundness.*
 
 import randomization.unseeded
 
+import autopsies.contrastExpectations
+
 object Tests extends Suite(m"Zephyrine tests"):
   val bytes = Bytes.fill(1000)(_.toByte)
   def run(): Unit = stochastic:
@@ -162,3 +164,55 @@ object Tests extends Suite(m"Zephyrine tests"):
         conduit.ordinal
 
       . assert(_ == Quat)
+
+
+    suite(m"Cursor tests"):
+      test(m"Iterate over elements"):
+        val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
+        val builder = StringBuilder()
+        while cursor.next()
+        do builder.append(cursor.datum)
+        builder.toString
+      . assert(_ == "Hello world!")
+      
+      test(m"Capture part of first block"):
+        val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
+        val builder = StringBuilder()
+        cursor.next() // H
+        cursor.next() // e
+        cursor.hold: mark =>
+          cursor.next() // l
+          cursor.next() // l
+          cursor.extract(mark, cursor.mark)(builder.append(_))
+        builder.toString
+      . assert(_ == "ell")
+
+      test(m"Capture spanning block"):
+        val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
+        val builder = StringBuilder()
+        cursor.next() // H
+        cursor.next() // e
+        cursor.next() // l
+        cursor.hold: mark =>
+          cursor.next() // l
+          cursor.next() // o
+          cursor.next() // ' '
+          cursor.extract(mark, cursor.mark)(builder.append(_))
+        builder.toString
+      . assert(_ == "llo ")
+
+      test(m"Capture multiply-spanning block"):
+        val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
+        val builder = StringBuilder()
+        cursor.next() // 'H'
+        cursor.next() // 'e'
+        cursor.next() // 'l'
+        cursor.next() // 'l'
+        cursor.hold: mark =>
+          cursor.next() // 'o'
+          cursor.next() // ' '
+          cursor.next() // 'w'
+          cursor.next() // 'o'
+          cursor.extract(mark, cursor.mark)(builder.append(_))
+        builder.toString
+      . assert(_ == "lo wo")
