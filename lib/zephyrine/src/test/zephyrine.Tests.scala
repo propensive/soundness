@@ -306,7 +306,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         var mark2: Cursor.Mark = Cursor.Mark.Initial
         if cursor.next()
         then cursor.hold: mark =>
-          while cursor.next(mark2 = _) do ()
+          while cursor.step(mark2 = _) do ()
           cursor.extract(mark, mark2)(builder.append(_))
         builder.toString
       . assert(_ == "Hello world!")

@@ -40,26 +40,91 @@ import fulminate.*
 import prepositional.*
 import rudiments.*
 
-object Addressable:
-  inline given Bytes is Addressable:
-    type Operand = Byte
+object Cursor:
+  opaque type Mark = Long
 
-    inline def length(bytes: Bytes): Int = bytes.length
-    inline def address(bytes: Bytes, index: Ordinal): Byte = bytes(index.n0)
+  object Mark:
+    final val Finished: Mark = Long.MaxValue
+    final val Initial: Mark = -1
+    
+    def apply(block: Ordinal, position: Ordinal): Mark =
+      (block.n0.toLong << 32) | (position.n0.toLong & 0xffffffffL)
+      
+    given ordered: Ordering[Mark] = Ordering.Long
+  
+  extension (mark: Mark)
+    inline def block: Ordinal = (mark >> 32 & 0xffffffff).toInt.z
+    inline def index: Ordinal = mark.toInt.z
+    inline def increment: Mark = mark + 1
+    inline def valid: Boolean = mark != Mark.Finished
 
-    inline def fragment(bytes: Bytes, start: Ordinal, end: Ordinal): Bytes =
-      bytes.slice(start.n0, end.n1)
+case class Cursor[data: Addressable](private val iterator: Iterator[data]):
+  private val buffer: scm.ArrayDeque[data] = scm.ArrayDeque()
+  private var first: Ordinal = (-1).z
+  private var current: data = iterator.next()
+  private var focus: Cursor.Mark = Cursor.Mark.Initial
+  private var finished: Boolean = false
 
-  inline given Text is Addressable:
-    type Operand = Char
+  inline def mark: Cursor.Mark = focus
 
-    inline def length(text: Text): Int = text.s.length
-    inline def address(text: Text, index: Ordinal): Operand = text.s.charAt(index.n0)
+  protected inline def cue(): Unit =
+    val offset: Int = focus.block - first
+    if buffer.length > offset then current = buffer(offset)
+    else
+      if iterator.hasNext then
+        current = iterator.next()
+        if first != (-1).z then buffer.append(current)
+      else finished = true
+      current
 
-    inline def fragment(text: Text, start: Ordinal, end: Ordinal): Text =
-      text.s.substring(start.n0, end.n1).nn.tt
+  protected inline def proceed(): Unit =
+    while
+      focus = Cursor.Mark(focus.block.next, Prim)
+      cue()
+      data.length(current) == 0
+    do ()
+    
+  inline def next(): Boolean =
+    val index = focus.index.next
+    if index.n0 >= data.length(current) then proceed()
+    else focus = focus.increment
+    !finished
 
-trait Addressable extends Typeclass, Operable:
-  inline def length(block: Self): Int
-  inline def address(block: Self, index: Ordinal): Operand
-  inline def fragment(block: Self, start: Ordinal, end: Ordinal): Self
+  inline def step(inline update: Cursor.Mark => Unit): Boolean =
+    val index = focus.index.next
+    if index.n0 >= data.length(current) then proceed()
+    else focus = focus.increment
+    if finished then false else
+      update(focus)
+      focus
+      true
+    
+  inline def datum: data.Operand = data.address(current, focus.index)
+
+  inline def hold[result](inline action: Cursor.Mark => result): result =
+    val first0: Ordinal = first
+    if first == (-1).z then
+      first = focus.block
+      buffer.append(current)
+    action(focus)
+
+  inline def goto(mark0: Cursor.Mark): Unit =
+    focus = mark0
+    cue()
+  
+  inline def extract(start: Cursor.Mark, end: Cursor.Mark)(action: data => Unit): Unit =
+    var offset = start.block - first
+    if start.block == end.block then action(data.fragment(buffer(offset), start.index, end.index))
+    else
+      var focus = buffer(offset)
+      action(data.fragment(focus, start.index, data.length(focus).u))
+      val last = end.block - first
+      
+      while
+        offset += 1
+        offset < last
+      do
+        focus = buffer(offset)
+        action(data.fragment(focus, Prim, data.length(focus).u))
+      
+      action(data.fragment(buffer(offset), Prim, end.index))
