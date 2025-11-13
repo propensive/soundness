@@ -178,11 +178,10 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"Capture part of first block"):
         val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
         val builder = StringBuilder()
-        cursor.next() // H
-        cursor.next() // e
-        cursor.hold: mark =>
-          cursor.next() // l
-          cursor.next() // l
+        for i <- 1 to 2 do cursor.next()
+        cursor.retain:
+          val mark = cursor.mark
+          for i <- 1 to 2 do cursor.next()
           cursor.extract(mark, cursor.mark)(builder.append(_))
         builder.toString
       . assert(_ == "ell")
@@ -190,13 +189,10 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"Capture spanning block"):
         val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
         val builder = StringBuilder()
-        cursor.next() // H
-        cursor.next() // e
-        cursor.next() // l
-        cursor.hold: mark =>
-          cursor.next() // l
-          cursor.next() // o
-          cursor.next() // ' '
+        for i <- 1 to 3 do cursor.next()
+        cursor.retain:
+          val mark = cursor.mark
+          for i <- 1 to 3 do cursor.next()
           cursor.extract(mark, cursor.mark)(builder.append(_))
         builder.toString
       . assert(_ == "llo ")
@@ -204,15 +200,10 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"Capture multiply-spanning block"):
         val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
         val builder = StringBuilder()
-        cursor.next() // 'H'
-        cursor.next() // 'e'
-        cursor.next() // 'l'
-        cursor.next() // 'l'
-        cursor.hold: mark =>
-          cursor.next() // 'o'
-          cursor.next() // ' '
-          cursor.next() // 'w'
-          cursor.next() // 'o'
+        for i <- 1 to 4 do cursor.next()
+        cursor.retain:
+          val mark = cursor.mark
+          for i <- 1 to 4 do cursor.next()
           cursor.extract(mark, cursor.mark)(builder.append(_))
         builder.toString
       . assert(_ == "lo wo")
@@ -220,34 +211,26 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"Capture multiply-spanning block with nesting"):
         val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
         val builder = StringBuilder()
-        cursor.next() // 'H'
-        cursor.next() // 'e'
-        cursor.next() // 'l'
-        cursor.next() // 'l'
-        cursor.hold: mark1 =>
-          cursor.next() // 'o'
-          cursor.next() // ' '
-          cursor.hold: mark2 =>
-            cursor.extract(mark1, mark2)(builder.append(_))
-            cursor.next() // 'w'
-            cursor.next() // 'o'
+        for i <- 1 to 4 do cursor.next()
+        cursor.retain:
+          val mark1 = cursor.mark
+          for i <- 1 to 2 do cursor.next()
+          val mark2 = cursor.mark
+          cursor.extract(mark1, mark2)(builder.append(_))
+          for i <- 1 to 2 do cursor.next()
         builder.toString
       . assert(_ == "lo ")
       
       test(m"Capture multiply-spanning block with nesting 2"):
         val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
         val builder = StringBuilder()
-        cursor.next() // 'H'
-        cursor.next() // 'e'
-        cursor.next() // 'l'
-        cursor.next() // 'l'
-        cursor.hold: mark1 =>
-          cursor.next() // 'o'
-          cursor.next() // ' '
-          cursor.hold: mark2 =>
-            cursor.extract(mark1, mark2)(builder.append(_))
-            cursor.next() // 'w'
-            cursor.next() // 'o'
+        for i <- 1 to 4 do cursor.next()
+        cursor.retain:
+          val mark1 = cursor.mark
+          for i <- 1 to 2 do cursor.next()
+          val mark2 = cursor.mark
+          cursor.extract(mark1, mark2)(builder.append(_))
+          for i <- 1 to 2 do cursor.next()
           cursor.extract(mark1, cursor.mark)(builder.append(_))
         builder.toString
       . assert(_ == "lo lo wo")
@@ -255,14 +238,10 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"Rewinding"):
         val cursor = Cursor(Iterator[Text]("01234", "5", "6789a", "bc"))
         val builder = StringBuilder()
-        cursor.next() // '0'
-        cursor.next() // '1'
-        cursor.next() // '2'
-        cursor.next() // '3'
-        cursor.hold: mark =>
-          cursor.next() // '4'
-          cursor.next() // '5'
-          cursor.next() // '6'
+        for i <- 1 to 4 do cursor.next()
+        cursor.retain:
+          val mark = cursor.mark
+          for i <- 1 to 3 do cursor.next()
           cursor.goto(mark)
         cursor.datum
       . assert(_ == '3')
@@ -270,14 +249,10 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"Rewinding and continuing"):
         val cursor = Cursor(Iterator[Text]("01234", "5", "6789a", "bc"))
         val builder = StringBuilder()
-        cursor.next() // '0'
-        cursor.next() // '1'
-        cursor.next() // '2'
-        cursor.next() // '3'
-        cursor.hold: mark =>
-          cursor.next() // '4'
-          cursor.next() // '5'
-          cursor.next() // '6'
+        for i <- 1 to 4 do cursor.next()
+        cursor.retain:
+          val mark = cursor.mark
+          for i <- 1 to 3 do cursor.next()
           cursor.goto(mark)
         cursor.next()
         cursor.datum
@@ -286,17 +261,12 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"Rewinding and continuing to next block"):
         val cursor = Cursor(Iterator[Text]("01234", "5", "6789a", "bc"))
         val builder = StringBuilder()
-        cursor.next() // '0'
-        cursor.next() // '1'
-        cursor.next() // '2'
-        cursor.next() // '3'
-        cursor.hold: mark =>
-          cursor.next() // '4'
-          cursor.next() // '5'
-          cursor.next() // '6'
+        for i <- 1 to 4 do cursor.next()
+        cursor.retain:
+          val mark = cursor.mark
+          for i <- 1 to 3 do cursor.next()
           cursor.goto(mark)
-        cursor.next()
-        cursor.next()
+        for i <- 1 to 2 do cursor.next()
         cursor.datum
       . assert(_ == '5')
 
@@ -305,7 +275,8 @@ object Tests extends Suite(m"Zephyrine tests"):
         val builder = StringBuilder()
         var mark2: Cursor.Mark = Cursor.Mark.Initial
         if cursor.next()
-        then cursor.hold: mark =>
+        then cursor.retain:
+          val mark = cursor.mark
           while cursor.step(mark2 = _) do ()
           cursor.extract(mark, mark2)(builder.append(_))
         builder.toString
