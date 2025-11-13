@@ -62,10 +62,10 @@ object Complex:
 
         case _ =>
           if complex.imaginary == zero[value] then complex.real.show
-          else if complex.real == zero[value] then t"${complex.imaginary.show}𝕚"
+          else if complex.real == zero[value] then t"${complex.imaginary.show}ℐ"
           else if complex.imaginary < zero[value]
-          then t"${complex.real.show} - ${(-complex.imaginary).show}𝕚"
-          else t"${complex.real.show} + ${complex.imaginary.show}𝕚"
+          then t"${complex.real.show} - ${(-complex.imaginary).show}ℐ"
+          else t"${complex.real.show} + ${complex.imaginary.show}ℐ"
 
   given addable: [result, component2, component: Addable by component2 to result as addable]
                =>  Complex[component] is Addable by Complex[component2] to Complex[result] =
