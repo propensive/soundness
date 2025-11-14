@@ -123,20 +123,20 @@ case class Cursor[data: Addressable](private val iterator: Iterator[data]):
     store(focusBlock, current)
     action(using !![Cursor.Held]).also { keep = false }
 
-  inline def grab(start: Mark, end: Mark)(action: data => Unit): Unit =
+  inline def grab(start: Mark, end: Mark)(target: data.Target): Unit =
     val last = end.block - first
     var offset = start.block - first
     
-    if start.block == end.block then action(data.fragment(buffer(offset), start.index, end.index))
+    if start.block == end.block then data.grab(buffer(offset), start.index, end.index)(target)
     else
       var focus = buffer(offset)
-      action(data.fragment(focus, start.index, data.length(focus).u))
+      data.grab(focus, start.index, data.length(focus).u)(target)
       
       while
         offset += 1
         offset < last
       do
         focus = buffer(offset)
-        action(data.fragment(focus, Prim, data.length(focus).u))
+        data.grab(focus, Prim, data.length(focus).u)(target)
       
-      action(data.fragment(buffer(offset), Prim, end.index))
+      data.grab(buffer(offset), Prim, end.index)(target)
