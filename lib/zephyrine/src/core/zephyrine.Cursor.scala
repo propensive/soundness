@@ -87,10 +87,12 @@ case class Cursor[data: Addressable](private val iterator: Iterator[data]):
         focusIndex = Prim
         buffer(offset)
       else if iterator.hasNext then
-        iterator.next().tap: next =>
-          if keep then store(block, next)
-          focusBlock = block
-          focusIndex = Prim
+        var next = iterator.next()
+        while data.length(next) == 0 do next = iterator.next()
+        if keep then store(block, next)
+        focusBlock = block
+        focusIndex = Prim
+        next
       else current.also:
         length = position.n1
     
