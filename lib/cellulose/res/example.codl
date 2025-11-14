@@ -1,0 +1,126 @@
+domain java
+base dissonance
+
+info  an implementation of Myers' _diff_ algorithm
+
+detail
+    ### Basic usage
+
+    _Dissonance_ provides the `.dissanance.diff` method for comparing ordered sequences of the same
+    type. It uses [Eugene Myers' algorithm](https://en.wikipedia.org/wiki/Diff) to find a minimal
+    sequence of changes necessary to transform one sequence into the other.
+
+    ```amok
+    version
+        import dissonance.*
+
+        val left: IArray[Char] = IArray('C', 'B', 'A' 'B', 'A', 'C')
+        val right: IArray[Char] = IArray('A', 'B', 'C', 'A', 'B', 'B', 'A')
+
+        val edits: Diff[Char] = diff(left, right)
+    version
+        import dissonance.*
+
+        val left: IArray[Char] = IArray('C', 'B', 'A' 'B', 'A', 'C')
+        val right: IArray[Char] = IArray('A', 'B', 'C', 'A', 'B', 'B', 'A')
+
+        val result: Diff[Char] = diff(left, right)
+
+        result.edits == List
+                         (Del(0, 'C'), Ins(0, 'A'), Par(1, 1, 'B'), Ins(2, 'C'), Par(2, 3, 'A'),
+                          Par(3, 4, 'B'), Ins(5, 'B'), Par(4, 6, 'A'), Del(5, 'C'))
+    ```
+
+    The result takes the form of a sequence of edits: `#dissonance.Del`, deleting an element from
+    the left sequence, `#dissonance.Ins`, inserting an element into the right sequence, and
+    `#dissonance.Par` (parity), which retains an element from the left into the right sequence. Each
+    edit also holds the index of the element as it appears in the left and or right sequences.
+
+    See also `#chiaroscuro.Contrastable` for _structural_ diffs.
+
+entry .Diff  the representation of a set of edits between two different sequences
+  entry .parse  reads content in the `ed` diff format
+  entry #edits  the sequence of edits required to transform the _left_ sequence into the _right_ sequence
+  entry #size   the number of insertions and deletions require to transform the _left_ sequence into the _right_ sequence
+  entry #flip   create a new `.dissonance.Diff` representing the transformation from the _right_ sequence into the _left_ sequence
+  entry #map    apply a transformation to each element in the _left_ and _right_ sequences
+
+
+  entry #rdiff  performs a second-level _diff_ using a similarity function to pair `#dissonance.Ins`s with `#dissonance.Del`s into `#dissonance.Sub`s
+      A `#dissonance.Diff` sequence, without loss of generality, can be broken down into subsequences of contiguous `#dissonance.Par`
+      elements, interspersed by contiguous subsequences consisting of only `#dissonance.Ins` and `#dissonance.Del` elements.
+
+      Within each subsequence of insertions and deletions, the order of insertions relative to the deletions does
+      not matter, provided the insertions appear in the correct order amongst themselves, and the deletions
+      appear in the correct order amongst themselves too.
+
+      This provides an opportunity to provide more useful _diff_ output by identifying certain insertion/deletion pairs
+      that represent "like-for-like" substitutions; that is, establishing a correspondence between a deletion from
+      the _left_ sequence with an insertion into the _right_ sequence, and replacing the `#dissonance.Ins` and
+      `#dissonance.Del` elements with a single `#dissonance.Sub` element.
+
+      A potential correspondence between an element from the _left_ sequence and an element from the _right_ is determined
+      by the `.Diff#rdiff.similarity` function, which takes a pair of elements and returns a `#Boolean`. If it returns
+      `.true` for a particular pair of elements, they _may_ be converted into a `#dissonance.Sub` edit.
+
+      The `rdiff` algorithm works by treating each contiguous subsequence of insertions and deletions as a new _diff_
+      invocation between the sequence of insertions and the sequence of deletions, but using the similarity function
+      for comparison, instead of equality. Since the initial `#dissonance.Diff` already established that the elements
+      in these subsequences were *not* equal, the standard for comparison is lowered to mere _similarity_. This lower
+      standard is reflected in the output nodes for _similar_ elements, which are `#dissonance.Sub`s instead of
+      `#dissonance.Par`s.
+
+      The original `#dissonance.Par` nodes are left unchanged by the `rdiff` algorithm.
+
+      Hence, the resultant edit sequence from calling `.Diff#rdiff` may include `#dissonance.Ins`s, `#dissonance.Del`s,
+      `#dissonance.Par`s and `#dissonance.Sub`s.
+
+      Furthermore, the `rdiff` algorithm will treat two equal-length insertion and deletion subsequences as `Sub`s if
+      their length is less than or equal to the `.dissonance.Diff#rdiff.subSize` parameter, which defaults to `1`.
+
+      For example, an edit sequence of `[Par('X'), Par('Y'), Del('W'), Ins('Z'), Par('Q'), Par('J')]` contains the
+      deletion subsequence `[Del('W')]` and the insertion subsequence `[Ins('Z')]`, whose lengths are equal and
+      less than or equal to `1`. The sequence would therefore be rewritten
+      `List(Par('X'), Par('Y'), Sub('W', 'Z'), Par('Q'), Par('J'))`, without even applying the similarity function.
+
+      A call to `.dissonance#Diff.rdiff` produces an instance of `.dissonance.Rdiff`.
+
+
+entry .diff  computes the edit sequence (diff) between two sequences
+
+entry .Change  an edit which may also be a _substitution_
+    Like an `#dissonance.Edit`, a `#dissonance.Change` may be an `#dissonance.Ins`, a `#dissonance.Del` or a
+    `#dissonance.Par`. But unlike an `#dissonance.Edit`, it may also be a `#dissonance.Sub`.
+
+entry .Ins     an insertion of an element into the _right_ sequence
+
+entry .Del     the deletion of an element from the _left_ sequence
+    An instance of `.dissonance.Del` represents the deletion of an element which appears at
+    `.dissonance.Del.index` in the _left_ sequence, and does not appear in the
+    right sequence.
+
+entry .Sub     a substitution of one element in the _left_ sequence for a different element in the _right_ sequence
+    An instance of `.dissonance.Sub` Represents the replacement of an element
+    in the _left_ sequence with a different element in the _right_ sequence.
+
+    A `.dissonance.Sub` arises
+
+entry .Par     the retention of an element from the _left_ sequence into the _right_ sequence
+
+entry .Region  a contiguous subsequence of nodes that are all unchanged, or all modifications
+    A `Diff` sequence, without loss of generality, can be broken down into subsequences of contiguous `#dissonance.Par`
+    elements, interspersed by contiguous subsequences consisting of only `#dissonance.Ins` and `#dissonance.Del` elements.
+
+    Within each subsequence of insertions and deletions, the order of insertions relative to the deletions does
+    not matter, provided the insertions appear in the correct order amongst themselves, and the deletions
+    appear in the correct order amongst themselves too.
+
+    These subsequences can be represented as `#dissonance.Region`s, which are either `Changed` or `dissonance.Region.Unchanged`.
+
+  entry .Unchanged  a contiguous subsequence of elements retained from the _left_ sequence in the _right_ sequence
+  entry .Changed    a contiguous subsequence of deletions from the _left_ sequence and inserctions into the _right_ sequence
+
+entry .evolve     generates an `#dissonance.Evolution` from a sequence of sequences, by diffing each adjacent pair of sequences
+entry .Evolution  the aggregation of a series of changes as a sequence evolves through several versions
+entry .RDiff      the result of `.dissonance.rdiff`, representing a sequence of insertion, deletion, parity and substitution nodes
+entry .Edit       a node representing an inserted, deleted or unchanged element
