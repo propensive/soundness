@@ -42,6 +42,7 @@ import rudiments.*
 
 object Cursor:
   opaque type Mark = Long
+  erased trait Held
 
   object Mark:
     final val Initial: Mark = -1
@@ -54,86 +55,82 @@ object Cursor:
   extension (mark: Mark)
     inline def block: Ordinal = (mark >> 32 & 0xffffffff).toInt.z
     inline def index: Ordinal = mark.toInt.z
-    inline def increment: Mark = mark + 1
-    inline def decrement: Mark = mark - 1
+    private[zephyrine] inline def increment: Mark = mark + 1
+    private[zephyrine] inline def decrement: Mark = mark - 1
+
+export Cursor.Mark
 
 case class Cursor[data: Addressable](private val iterator: Iterator[data]):
   private val buffer: scm.ArrayDeque[data] = scm.ArrayDeque()
   private var first: Ordinal = (-1).z
   private var current: data = iterator.next()
-  private var focus: Cursor.Mark = Cursor.Mark.Initial
-  private var finished0: Boolean = false
+  private var focusBlock: Ordinal = Prim
+  private var focusIndex: Ordinal = (-1).z
+  private var length: Int = Int.MaxValue
   private var keep: Boolean = false
-
-  inline def mark: Cursor.Mark = focus
+  private var done: Int = 0
   
-  inline def last: Cursor.Mark =
-    if focus.index != Prim then mark.decrement
-    else
-      val index = focus.index.previous
-      val block = get(index)
-      Cursor.Mark(index, (data.length(block) - 1).z)
+  inline def finished: Boolean = position.n0 == length - 1
+
+  protected inline def store(ordinal: Ordinal, value: data): Unit =
+    val index = ordinal - first
+    if buffer.length <= index then buffer.append(value) else buffer(index) = value
+
+  protected inline def forward(): Unit =
+    val block: Ordinal = focusBlock.next
+    val offset: Int = block - first
+    done += data.length(current)
     
-  inline def finished: Boolean = finished0
+    current =
+      if buffer.length > offset then
+        focusBlock = block
+        focusIndex = Prim
+        buffer(offset)
+      else if iterator.hasNext then
+        iterator.next().tap: next =>
+          if keep then store(block, next)
+          focusBlock = block
+          focusIndex = Prim
+      else current.also:
+        length = position.n1
+    
+  protected inline def backward(): Unit =
+    val block = focusBlock.previous
+    val offset = block - first
+    current = buffer(offset)
+    done -= data.length(current)
+    focusBlock = block
+    focusIndex = Prim
 
-  protected inline def cue(): Unit =
-    val offset: Int = focus.block - first
-    if buffer.length > offset then
-      current = buffer(offset)
-      if !keep then
-        buffer.remove(0)
-        first = (first.n0 + 1).z
-    else
-      if iterator.hasNext then
-        current = iterator.next()
-        if keep then buffer.append(current)
-      else finished0 = true
-      current
-
-  protected inline def get(block: Ordinal): data = buffer(block - first)
-
-  protected inline def proceed(): Unit =
-    while
-      focus = Cursor.Mark(focus.block.next, Prim)
-      cue()
-      data.length(current) == 0
-    do ()
+  inline def cue(mark: Mark): Unit =
+    while mark.block.n0 < focusBlock.n0 do backward()
+    while mark.block.n0 > focusBlock.n0 do forward()
+    focusIndex = mark.index
     
   inline def next(): Boolean =
-    val previous = focus
-    if focus.index.next.n0 >= data.length(current) then proceed()
-    else focus = if finished then previous else focus.increment
+    if focusIndex.next.n0 >= data.length(current) then forward()
+    else focusIndex = focusIndex.next
     !finished
-
-  inline def step(inline update: Cursor.Mark => Unit): Boolean =
-    val index = focus.index.next
-    if index.n0 >= data.length(current) then proceed()
-    else focus = focus.increment
-    if finished then false else
-      update(focus)
-      focus
-      true
-    
-  inline def datum: data.Operand = data.address(current, focus.index)
-
-  inline def retain[result](inline action: => result): result =
-    keep = true
-    first = focus.block
-    buffer.append(current)
-    action.also:
-      keep = false
-
-  inline def goto(mark0: Cursor.Mark): Unit =
-    focus = mark0
-    cue()
   
-  inline def extract(start: Cursor.Mark, end: Cursor.Mark)(action: data => Unit): Unit =
+  inline def more: Boolean = !finished
+  inline def mark(using erased Cursor.Held): Mark = Mark(focusBlock, focusIndex)
+  inline def datum: data.Operand = data.address(current, focusIndex)
+  inline def position: Ordinal = (done + focusIndex.n0).z
+  
+  inline def hold[result](inline action: (erased Cursor.Held) ?=> result): result =
+    keep = true
+    first = focusBlock
+    store(focusBlock, current)
+    action(using !![Cursor.Held]).also { keep = false }
+
+  inline def grab(start: Mark, end: Mark)(action: data => Unit): Unit =
+    val last = end.block - first
     var offset = start.block - first
+    
     if start.block == end.block then action(data.fragment(buffer(offset), start.index, end.index))
     else
       var focus = buffer(offset)
       action(data.fragment(focus, start.index, data.length(focus).u))
-      val last = end.block - first
       
       while
         offset += 1

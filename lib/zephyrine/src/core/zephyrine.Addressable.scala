@@ -39,27 +39,39 @@ import denominative.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
+import vacuous.*
 
 object Addressable:
   inline given Bytes is Addressable:
     type Operand = Byte
+    type Target = Array[Byte]
+    type Result = Int => Unit
 
     inline def length(bytes: Bytes): Int = bytes.length
     inline def address(bytes: Bytes, index: Ordinal): Byte = bytes(index.n0)
 
     inline def fragment(bytes: Bytes, start: Ordinal, end: Ordinal): Bytes =
       bytes.slice(start.n0, end.n1)
+      
+    inline def grab(source: Bytes, start: Ordinal, end: Ordinal)(target: Array[Byte]): Int => Unit =
+      System.arraycopy(source.mutable(using Unsafe), start.n0, target, _, end - start)
 
   inline given Text is Addressable:
     type Operand = Char
+    type Target = StringBuilder
+    type Result = Unit
 
     inline def length(text: Text): Int = text.s.length
     inline def address(text: Text, index: Ordinal): Operand = text.s.charAt(index.n0)
 
     inline def fragment(text: Text, start: Ordinal, end: Ordinal): Text =
       text.s.substring(start.n0, end.n1).nn.tt
+      
+    inline def grab(source: Text, start: Ordinal, end: Ordinal)(target: StringBuilder): Unit =
+      target.append(source.s, start.n0, end - start)
 
-trait Addressable extends Typeclass, Operable:
+trait Addressable extends Typeclass, Operable, Targetable, Resultant:
   inline def length(block: Self): Int
   inline def address(block: Self, index: Ordinal): Operand
   inline def fragment(block: Self, start: Ordinal, end: Ordinal): Self
+  inline def grab(source: Self, start: Ordinal, end: Ordinal)(target: Target): Result
