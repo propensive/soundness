@@ -14,97 +14,60 @@ import vacuous.*
 import zephyrine.*
 
 enum Blocks extends Markdown.Node:
+  case BlockQuote(children: Blocks*)
+  case List(ordered: Boolean, start: Text, tight: Boolean, period: Boolean, items: Blocks*)
+  case CodeBlock(content: Text)
+  case Paragraph(children: Prose*)
+  case Heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Blocks*)
   case ThematicBreak
-  case Paragraph(children: Phrases*)
-  case Heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Phrases*)
-  case FencedCode(lang: Optional[Text], meta: Optional[Text], value: Text)
-  case IndentedCode(code: Text)
-  case Blockquote(children: Blocks*)
-  case Reference(id: Text, location: Text)
+  case HtmlBlock(html: Text)
+  //case CustomBlock
 
-enum Phrases extends Markdown.Node:
-  case Prose(text: Text)
+enum Prose extends Markdown.Node:
+  case Textual(text: Text)
+  case Softbreak
+  case Linebreak
+  case Code(code: Text)
+  case Emph(prose: Prose*)
+  case Strong(prose: Prose*)
+  case Link(destination: Text, title: Text, prose: Prose*)
+  case Image(destination: Text, title: Text, prose: Prose*)
+  case HtmlInline(html: Text)
 
 
 object Markdown:
   trait Node
 
-  given decodable: (Markdown of Blocks) is Aggregable:
+  given decodable: Markdown of Blocks is Aggregable:
     type Operand = Text
 
-    enum Break:
-      case Newline, Code, Paragraph
+    enum Kind:
+      case Unknown, Paragraph, Code
 
     def aggregate(stream: Stream[Text]): Markdown of Blocks =
       val cursor = Cursor(stream.iterator)
       var blocks: List[Blocks] = Nil
-      val buffer = StringBuilder()
-
-      def break(continue: Boolean, newlines: Int = 0, spaces: Int = 0): Break =
-        if continue then cursor.datum match
-          case '\n'  => break(cursor.next(), newlines + 1, 0)
-          case ' '   => if spaces == 3 then Break.Code
-                        else break(cursor.next(), newlines, spaces + 1)
-          case other => if newlines == 0 then Break.Newline else Break.Paragraph
-            
-        else Break.Paragraph
+      val buffer = java.lang.StringBuilder()
       
-      def code(): Unit = cursor.retain:
-        def recur(start: Cursor.Mark, spaces: Int, continue: Boolean): Unit =
-          if continue then cursor.datum match
+      
+      def line(): Unit = cursor.hold:
+        var continue: Boolean = true
+        var started: Boolean = false
+        var begin: Mark = Mark.Initial
+        while continue do
+          cursor.datum match
+            case ' '  =>
             case '\n' =>
-              cursor.extract(start, cursor.last)(buffer.append(_))
-              buffer.append("\n")
-              recur(cursor.mark, 0, cursor.next())
-            
-            case ' ' =>
-              if spaces == -1 then recur(start, -1, cursor.next())
-              else if spaces == 4 then recur(cursor.mark, -1, cursor.next())
-              else recur(start, spaces + 1, cursor.next())
-            
-            case other =>
-              if spaces == 4 then recur(cursor.mark, -1, cursor.next())
-              else if spaces == -1 then recur(start, -1, cursor.next())
-              else
-                blocks ::= Blocks.IndentedCode(buffer.toString.tt)
-                buffer.clear()
-              
-        recur(cursor.mark, 4, !cursor.finished)
+              continue = false
+            case char =>
+              if !started then
+                begin = cursor.mark
+          
+          continue &&= cursor.next()
         
-      def block(): Unit = cursor.retain:
-        def recur(start: Cursor.Mark, spaces: Int, continue: Boolean): Unit =
-          if continue then cursor.datum match
-            case ' ' => recur(start, spaces + 1, cursor.next())
-            
-            case '\n' =>
-              val last = cursor.last
-              cursor.extract(start, last)(buffer.append(_))
-              
-              break(cursor.next()) match
-                case Break.Newline   =>
-                  buffer.append("\n")
-                  recur(cursor.mark, 0, cursor.next())
-                  
-                case Break.Paragraph =>
-                  blocks ::= Blocks.Paragraph(Phrases.Prose(buffer.toString))
-                  buffer.clear()
-                  recur(cursor.mark, 0, cursor.next())
-                  
-                case Break.Code      =>
-                  blocks ::= Blocks.Paragraph(Phrases.Prose(buffer.toString.tt))
-                  buffer.clear()
-                  recur(cursor.mark, 0, cursor.next())
-                
-            case other =>
-              if spaces != 0 then recur(cursor.mark, 0, cursor.next())
-              else recur(start, 0, cursor.next())
         
-        recur(cursor.mark, 0, !cursor.finished)
-              
-      break(cursor.next(), 1) match
-        case Break.Code => code()
-        case _          => block()
-
+      while cursor.next() do line()
+        
       Markdown(blocks.reverse*)
 
 
@@ -115,9 +78,13 @@ object Markdown:
 
     markdown.children.map:
       case Blocks.Paragraph(children*) =>
-        P(children.map { case Phrases.Prose(text) => text }.join)
+        val nodes =
+          children.map:
+            case Prose.Textual(text) => text
+            case Prose.Softbreak     => Br
+        P(nodes*)
 
-      case Blocks.IndentedCode(code) =>
+      case Blocks.CodeBlock(code) =>
         Pre(Code(code))
         
       case _ =>
@@ -128,10 +95,10 @@ object Markdown:
     type Topic = Blocks
     val children: Seq[Blocks] = blocks
 
-  @targetName("applyPhrases")
-  def apply(phrases: Phrases*): Markdown of Phrases = new Markdown:
-    type Topic = Phrases
-    val children: Seq[Phrases] = phrases
+  @targetName("applyProse")
+  def apply(prose: Prose*): Markdown of Prose = new Markdown:
+    type Topic = Prose
+    val children: Seq[Prose] = prose
 
 abstract class Markdown:
   type Topic <: Markdown.Node
