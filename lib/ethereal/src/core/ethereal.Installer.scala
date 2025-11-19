@@ -124,16 +124,15 @@ object Installer:
         case StreamError(_)         => InstallError(InstallError.Reason.Io)
 
       . within:
-          val command: Text = service.scriptName
+          val command: Text = service.script
           val scriptPath = mute[ExecEvent](sh"sh -c 'command -v $command'".exec[Text]())
 
-          if safely(scriptPath.decode[Path on Linux]) == service.script && !force
-          then Result.AlreadyOnPath(command, service.script.encode)
+          if safely(scriptPath.decode[Path on Linux]) == service.executable && !force
+          then Result.AlreadyOnPath(command, service.executable.encode)
           else
             val payloadSize: Memory = Memory(System.properties.ethereal.payloadSize[Int]())
             val jarSize: Memory = Memory(System.properties.ethereal.jarSize[Int]())
-            val scriptFile: Path on Linux = service.script
-            val fileSize = scriptFile.size()
+            val fileSize = service.executable.size()
             val prefixSize = fileSize - payloadSize - jarSize
             val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
               abort(InstallError(InstallError.Reason.Environment))
@@ -145,7 +144,7 @@ object Installer:
               val filename: Text = file.inspect
               Log.info(DaemonLogEvent.WriteExecutable(filename))
 
-              scriptFile.open: file =>
+              service.executable.open: file =>
                 val stream = file.stream[Bytes]
 
                 if prefixSize > 0.b

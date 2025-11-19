@@ -116,13 +116,13 @@ object Completions:
         case Installed(_, path)        => path
         case AlreadyInstalled(_, path) => path
 
-  def ensure(force: Boolean = false)(using ShellContext, WorkingDirectory, Diagnostics)
+  def ensure(force: Boolean = false)(using Entrypoint, WorkingDirectory, Diagnostics)
   : List[Text] logs CliEvent =
 
       safely(effectful(install(force))).let(_.paths).or(Nil)
 
 
-  def install(force: Boolean = false)(using service: ShellContext)
+  def install(force: Boolean = false)(using entrypoint: Entrypoint)
        (using WorkingDirectory, Effectful, Diagnostics)
   : Installation raises InstallError logs CliEvent =
 
@@ -131,11 +131,11 @@ object Completions:
         case NameError(_, _, _) => InstallError(InstallError.Reason.Environment)
         case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
       . within:
-          val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
-          val command: Text = service.scriptName
+          val scriptPath = sh"sh -c 'command -v ${entrypoint.script}'".exec[Text]()
+          val command: Text = entrypoint.script
 
-          if !force && safely(scriptPath.decode[Path on Linux]) != service.script
-          then Installation.CommandNotOnPath(service.scriptName)
+          if !force && safely(scriptPath.decode[Path on Linux]) != entrypoint.executable
+          then Installation.CommandNotOnPath(entrypoint.script)
           else
             val zsh: Installation.InstallResult =
               if sh"sh -c 'command -v zsh'".exec[Exit]() != Exit.Ok

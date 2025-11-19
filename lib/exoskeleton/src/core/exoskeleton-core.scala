@@ -45,6 +45,7 @@ import escapade.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
+import nomenclature.*
 import prepositional.*
 import profanity.*
 import rudiments.*
@@ -100,7 +101,7 @@ package executives:
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
           signals:          Spool[Signal],
-          service:          ShellContext,
+          entrypoint:       Entrypoint,
           login:            Login)
          (using interpreter: Interpreter)
     : Invocation =
@@ -131,12 +132,12 @@ def application(using executive: Executive, interpreter: Interpreter)
   signals.each: signal =>
     sm.Signal.handle(sm.Signal(signal.shortName.s), event => spool.put(signal))
 
-  val context = new ShellContext:
-    def script: Path on Linux =
+  val entrypoint = new Entrypoint:
+    def executable: Path on Linux =
       safely(ProcessHandle.current.nn.info.nn.command.nn.get.nn.tt.decode[Path on Linux])
       . or(panic(m"cannot determine java invocation"))
 
-    def scriptName: Text = script.name
+    def script: Text = executable.name
 
   // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment
   // variables
@@ -147,7 +148,7 @@ def application(using executive: Executive, interpreter: Interpreter)
       workingDirectories.java,
       stdioSources.virtualMachine.ansi,
       spool,
-      context,
+      entrypoint,
       Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset))
 
   jl.System.exit(executive.process(cli)(block)())

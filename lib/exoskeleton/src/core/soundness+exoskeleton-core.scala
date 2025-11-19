@@ -33,8 +33,8 @@
 package soundness
 
 export exoskeleton
-. { application, Application, Invocation, Effectful, Executive, InstallError, ShellContext,
-    Backstop, effectful }
+. { application, Application, Invocation, Effectful, Executive, InstallError, Entrypoint, Backstop,
+    effectful }
 
 package backstops:
   export exoskeleton.backstops.{silent, genericErrorMessage, exceptionMessage, stackTrace}

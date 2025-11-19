@@ -43,16 +43,49 @@ private given realm: Realm = realm"exoskeleton"
 
 package interpreters:
   given simple: Interpreter:
-    type Topic = Arguments
-    def interpret(arguments: List[Argument]): Arguments = Arguments(arguments*)
+    type Topic = List[Argument]
+    
+    def interpret(arguments: List[Argument]): List[Argument] = arguments
+    def focus(arguments: List[Argument]): Optional[Argument] = Unset
+    def find(arguments: List[Argument], flag: Flag): List[Argument] = Nil
+
+    
+    def read[operand: Interpretable](arguments: List[Argument], flag: Flag)
+         (using cli: Cli, discoverable: (? <: operand) is Discoverable)
+    : Optional[operand] =
+    
+        Unset
+
 
   given posixClustering: Interpreter:
     type Topic = Commandline
+    
     def interpret(arguments: List[Argument]): Commandline = interpreter(arguments, true)
+    def focus(commandline: Commandline): Optional[Argument] = commandline.focus
+    def find(commandline: Commandline, flag: Flag): List[Argument] = commandline.at(flag)
+
+    
+    def read[operand: Interpretable](commandline: Commandline, flag: Flag)
+         (using cli: Cli, discoverable: (? <: operand) is Discoverable)
+    : Optional[operand] =
+  
+        commandline.read(flag)
+
 
   given posix: Interpreter:
     type Topic = Commandline
+    
     def interpret(arguments: List[Argument]): Commandline = interpreter(arguments, false)
+    def focus(commandline: Commandline): Optional[Argument] = commandline.focus
+    def find(commandline: Commandline, flag: Flag): List[Argument] = commandline.at(flag)
+   
+    
+    def read[operand: Interpretable](commandline: Commandline, flag: Flag)
+         (using cli: Cli, discoverable: (? <: operand) is Discoverable)
+    : Optional[operand] =
+    
+        commandline.read(flag)
+
 
   private def interpreter(arguments: List[Argument], clustering: Boolean): Commandline =
     def recur
