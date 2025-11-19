@@ -39,5 +39,5 @@ import prepositional.*
 import serpentine.*
 
 trait Entrypoint:
-  def scriptName: Text
+  def script: Text
   def executable: Path on Linux

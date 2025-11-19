@@ -124,7 +124,7 @@ object Installer:
         case StreamError(_)         => InstallError(InstallError.Reason.Io)
 
       . within:
-          val command: Text = service.scriptName
+          val command: Text = service.script
           val scriptPath = mute[ExecEvent](sh"sh -c 'command -v $command'".exec[Text]())
 
           if safely(scriptPath.decode[Path on Linux]) == service.executable && !force

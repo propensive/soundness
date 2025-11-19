@@ -50,7 +50,7 @@ case class DaemonService[bus <: Matchable]
     executable: Path on Linux,
     deliver:    bus => Unit,
     bus:        Stream[bus],
-    scriptName: Text)
+    script:     Text)
 extends Entrypoint:
 
   def broadcast(message: bus): Unit = deliver(message)

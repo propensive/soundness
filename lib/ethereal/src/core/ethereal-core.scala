@@ -253,9 +253,7 @@ def cli[bus <: Matchable](using executive: Executive)
             Log.fine(DaemonLogEvent.StderrRequest(pid))
             client(pid).stderr.offer(socket.getOutputStream.nn)
 
-          case DaemonEvent.Init
-                (pid, login, directory, scriptName, shellInput, textArguments, env) =>
-
+          case DaemonEvent.Init(pid, login, directory, script, shellInput, textArguments, env) =>
             Log.fine(DaemonLogEvent.Init(pid))
             val connection = client(pid)
             connection.socket.fulfill(socket)
@@ -295,7 +293,7 @@ def cli[bus <: Matchable](using executive: Executive)
                (pid,
                 () => shutdown(pid),
                 shellInput,
-                scriptName.decode[Path on Linux],
+                script.decode[Path on Linux],
                 deliver(pid, _),
                 connection.bus.stream,
                 name)

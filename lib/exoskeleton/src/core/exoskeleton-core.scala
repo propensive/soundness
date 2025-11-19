@@ -137,7 +137,7 @@ def application(using executive: Executive, interpreter: Interpreter)
       safely(ProcessHandle.current.nn.info.nn.command.nn.get.nn.tt.decode[Path on Linux])
       . or(panic(m"cannot determine java invocation"))
 
-    def scriptName: Text = executable.name
+    def script: Text = executable.name
 
   // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment
   // variables

@@ -131,11 +131,11 @@ object Completions:
         case NameError(_, _, _) => InstallError(InstallError.Reason.Environment)
         case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
       . within:
-          val scriptPath = sh"sh -c 'command -v ${entrypoint.scriptName}'".exec[Text]()
-          val command: Text = entrypoint.scriptName
+          val scriptPath = sh"sh -c 'command -v ${entrypoint.script}'".exec[Text]()
+          val command: Text = entrypoint.script
 
           if !force && safely(scriptPath.decode[Path on Linux]) != entrypoint.executable
-          then Installation.CommandNotOnPath(entrypoint.scriptName)
+          then Installation.CommandNotOnPath(entrypoint.script)
           else
             val zsh: Installation.InstallResult =
               if sh"sh -c 'command -v zsh'".exec[Exit]() != Exit.Ok
