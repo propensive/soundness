@@ -78,7 +78,7 @@ extends Cli:
   : Optional[operand] =
 
       given cli: Cli = this
-      parameters.read(flag)
+      interpreter.read(parameters, flag)
 
 
   def focused(argument: Argument): Boolean =
@@ -90,9 +90,9 @@ extends Cli:
       case Argument.Format.FlagSuffix        => focusPosition.let(_.z > Sec).or(true)
 
   override def register(flag: Flag, discoverable: Discoverable): Unit =
-    val operands = parameters.at(flag)
+    val operands = interpreter.find(parameters, flag)
 
-    parameters.focus.let: argument =>
+    interpreter.focus(parameters).let: argument =>
       if operands.contains(argument) then
         val allSuggestions = discoverable.discover(tab).to(List)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
@@ -143,7 +143,7 @@ extends Cli:
       else cursorSuggestions
 
 
-    val items = parameters.focus.lay(items0) { focus => items0.map(focus.wrap(_)) }
+    val items = interpreter.focus(parameters).lay(items0) { focus => items0.map(focus.wrap(_)) }
 
     shell match
       case Shell.Zsh =>
