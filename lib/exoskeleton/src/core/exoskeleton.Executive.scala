@@ -49,7 +49,7 @@ trait Executive:
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
         signals:          Spool[Signal],
-        service:          ShellContext,
+        entrypoint:       Entrypoint,
         login:            Login)
        (using interpreter: Interpreter)
   : Interface

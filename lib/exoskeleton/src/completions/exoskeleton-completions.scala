@@ -69,7 +69,7 @@ package executives:
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
           signals:          Spool[Signal],
-          service:          ShellContext,
+          entrypoint:       Entrypoint,
           login:            Login)
          (using interpreter: Interpreter)
     : Cli =
@@ -129,7 +129,7 @@ package executives:
                 Exit.Ok
 
               case t"install" =>
-                given ShellContext = service
+                given Entrypoint = entrypoint
                 given WorkingDirectory = workingDirectory
                 import errorDiagnostics.stackTraces
                 import logging.silent

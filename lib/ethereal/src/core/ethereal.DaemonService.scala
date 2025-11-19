@@ -36,6 +36,7 @@ import anticipation.*
 import exoskeleton.*
 import galilei.*
 import guillotine.*
+import nomenclature.*
 import prepositional.*
 import proscenium.*
 import serpentine.*
@@ -46,10 +47,10 @@ case class DaemonService[bus <: Matchable]
    (pid:        Pid,
     shutdown:   () => Unit,
     cliInput:   Stdin,
-    script:     Path on Linux,
+    executable: Path on Linux,
     deliver:    bus => Unit,
     bus:        Stream[bus],
     scriptName: Text)
-extends ShellContext:
+extends Entrypoint:
 
   def broadcast(message: bus): Unit = deliver(message)
