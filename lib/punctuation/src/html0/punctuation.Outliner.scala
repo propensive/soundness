@@ -30,116 +30,64 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package zephyrine
-
-import scala.collection.mutable as scm
+package punctuation
 
 import anticipation.*
-import denominative.*
 import fulminate.*
-import prepositional.*
-import rudiments.*
+import gossamer.*
+import honeycomb.*, html5.*
+import proscenium.*
+import vacuous.*
 
-object Cursor:
-  opaque type Mark = Long
-  erased trait Held
+object Outliner extends HtmlTranslator():
+  case class Entry(label: Text, children: List[Entry])
 
-  object Mark:
-    final val Initial: Mark = -1
-    
-    def apply(block: Ordinal, position: Ordinal): Mark =
-      (block.n0.toLong << 32) | (position.n0.toLong & 0xffffffffL)
-      
-    given ordered: Ordering[Mark] = Ordering.Long
-  
-  extension (mark: Mark)
-    inline def block: Ordinal = (mark >> 32 & 0xffffffff).toInt.z
-    inline def index: Ordinal = mark.toInt.z
-    private[zephyrine] inline def increment: Mark = mark + 1
-    private[zephyrine] inline def decrement: Mark = mark - 1
+  override def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
+    def recur(entries: List[Entry]): Seq[Html[Ul.Content]] = entries.map: entry =>
+      val link = A(href = t"#${slug(entry.label)}")(entry.label)
+      if entry.children.isEmpty then Li(link) else Li(link, Ul(recur(entry.children)))
 
-export Cursor.Mark
+    List(Ul(recur(structure(Unset, nodes.to(List), Nil))*))
 
-case class Cursor[data: Addressable](private val iterator: Iterator[data]):
-  private val buffer: scm.ArrayDeque[data] = scm.ArrayDeque()
-  private var first: Ordinal = (-1).z
-  private var current: data = iterator.next()
-  private var focusBlock: Ordinal = Prim
-  private var focusIndex: Ordinal = (-1).z
-  private var length: Int = Int.MaxValue
-  // FIXME: This should be an ordinal of the first block to keep
-  private var keep: Boolean = false
-  private var done: Int = 0
-  
-  inline def finished: Boolean = position.n0 == length - 1
 
-  protected inline def store(ordinal: Ordinal, value: data): Unit =
-    val index = ordinal - first
-    if buffer.length <= index then buffer.append(value) else buffer(index) = value
+  @tailrec
+  def structure(minimum: Optional[Int], nodes: List[Markdown.Ast.Node], stack: List[List[Entry]])
+  : List[Entry] =
 
-  protected inline def forward(): Unit =
-    val block: Ordinal = focusBlock.next
-    val offset: Int = block - first
-    done += data.length(current)
-    
-    current =
-      if buffer.length > offset then
-        focusBlock = block
-        focusIndex = Prim
-        buffer(offset)
-      else if iterator.hasNext then
-        var next = iterator.next()
-        while data.length(next) == 0 do next = iterator.next()
-        if keep then store(block, next)
-        focusBlock = block
-        focusIndex = Prim
-        next
-      else current.also:
-        length = position.n1
-    
-  protected inline def backward(): Unit =
-    val block = focusBlock.previous
-    val offset = block - first
-    current = buffer(offset)
-    done -= data.length(current)
-    focusBlock = block
-    focusIndex = Prim
+      nodes match
+        case Nil => stack match
+          case Nil         => Nil
+          case last :: Nil => last.reverse
 
-  inline def cue(mark: Mark): Unit =
-    while mark.block.n0 < focusBlock.n0 do backward()
-    while mark.block.n0 > focusBlock.n0 do forward()
-    focusIndex = mark.index
-    
-  inline def next(): Boolean =
-    if focusIndex.next.n0 >= data.length(current) then forward()
-    else focusIndex = focusIndex.next
-    !finished
-  
-  inline def more: Boolean = !finished
-  inline def mark(using erased Cursor.Held): Mark = Mark(focusBlock, focusIndex)
-  inline def datum: data.Operand = data.address(current, focusIndex)
-  inline def position: Ordinal = (done + focusIndex.n0).z
-  
-  inline def hold[result](inline action: (erased Cursor.Held) ?=> result): result =
-    keep = true
-    first = focusBlock
-    store(focusBlock, current)
-    action(using !![Cursor.Held]).also { keep = false }
+          case head :: (Entry(label, something) :: tail) :: more =>
+            structure(minimum, Nil, (Entry(label, head.reverse) :: tail) :: more)
 
-  inline def grab(start: Mark, end: Mark)(target: data.Target): Unit =
-    val last = end.block - first
-    var offset = start.block - first
-    
-    if start.block == end.block then data.grab(buffer(offset), start.index, end.index)(target)
-    else
-      var focus = buffer(offset)
-      data.grab(focus, start.index, data.length(focus).u)(target)
-      
-      while
-        offset += 1
-        offset < last
-      do
-        focus = buffer(offset)
-        data.grab(focus, Prim, data.length(focus).u)(target)
-      
-      data.grab(buffer(offset), Prim, end.index)(target)
+          case head :: Nil :: tail =>
+            structure(minimum, Nil, List(Entry(t"", head.reverse)) :: tail)
+
+        case Markdown.Ast.Block.Heading(level, children*) :: more
+             if minimum.lay(true)(level >= _) =>
+
+          val minimum2 = minimum.or(level)
+          val depth = stack.length + minimum2 - 1
+
+          if level > depth then structure(minimum2, nodes, Nil :: stack) else stack match
+            case Nil =>
+              panic(m"Stack should always be non-empty")
+
+            case head :: next :: stack2 =>
+              if level < depth then next match
+                case Entry(label, Nil) :: tail =>
+                  structure(minimum2, nodes, (Entry(label, head.reverse) :: tail) :: stack2)
+
+                case _ =>
+                  structure(minimum2, nodes, (Entry(t"", head.reverse) :: Nil) :: stack2)
+
+              else
+                structure(minimum2, more, (Entry(text(children), Nil) :: head) :: stack.tail)
+
+            case other :: Nil =>
+              structure(minimum2, more, (Entry(text(children), Nil) :: other) :: Nil)
+
+        case _ :: more =>
+          structure(minimum, more, stack)

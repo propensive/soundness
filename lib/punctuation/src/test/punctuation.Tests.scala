@@ -42,9 +42,12 @@ import charDecoders.utf8
 import charEncoders.utf8
 import textSanitizers.skip
 import logging.silent
+import classloaders.system
+import environments.java
+import systems.java
+import temporaryDirectories.system
 
 object Tests extends Suite(m"Punctuation tests"):
-
   def run(): Unit =
     case class Testcase
                 (markdown:   Text,
@@ -58,7 +61,7 @@ object Tests extends Suite(m"Punctuation tests"):
     . fetch()
     . read[Json].as[List[Testcase]]
     . groupBy(_.section)
-    //. filter(_(0) == t"Paragraphs")
+    . filter { case (group, _) => group == t"Paragraphs" || group == t"Indented code blocks" }
     . each: (section, cases) =>
         suite(section.communicate):
           cases.each: testcase =>
