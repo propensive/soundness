@@ -29,18 +29,21 @@ Bundles of modules for the six domains above are also provided.
 
 Releases are published on Maven Central, and can be specified as follows:
 
- - For a bundle of modules, use `dev.soundness:soundness-<bundle>:<version>`
-   where _`<bundle>`_ is `cli`, `data`, `sci`, `test`, `tool` or `web`, for
-   example, `dev.soundness:soundness-sci:0.48.0`.
+ - To include a bundle of modules, use
+   `dev.soundness:soundness-𝒷𝓊𝓃𝒹𝓁ℯ:𝓋ℯ𝓇𝓈𝒾ℴ𝓃` where _`𝒷𝓊𝓃𝒹𝓁ℯ`_ is `cli`,
+   `data`, `sci`, `test`, `tool` or `web`, for example,
+   `dev.soundness:soundness-sci:0.48.0`.
    
- - For one specific module, use `dev.soundness:<module>-<component>:<version>`,
-   where _`<module>`_ is one of the modules from the
+ - To include one specific module, use
+   `dev.soundness:𝓂ℴ𝒹𝓊𝓁ℯ-𝒸ℴ𝓂𝓅ℴ𝓃ℯ𝓃𝓉:𝓋ℯ𝓇𝓈𝒾ℴ𝓃`, where _`𝓂ℴ𝒹𝓊𝓁ℯ`_ is one of
+   the modules from the
    [lib](https://github.com/propensive/soundness/tree/main/lib) directory, and
-   _`<component>`_ is typically `core`, but may be something else for modules
+   _`𝒸ℴ𝓂𝓅ℴ𝓃ℯ𝓃𝓉`_ is typically `core`, but may be something else for modules
    with optional components, for example `dev.soundness:rudiments-core:0.48.0`
    or `dev.soundness:punctuation-html:0.48.0`.
    
- - For _everything_, use `dev.soundness:soundness-all:<version>`.
+ - To include _everything in Soundness_, use
+   `dev.soundness:soundness-all:𝓋ℯ𝓇𝓈𝒾ℴ𝓃`.
 
 Version numbers are synchronized across all modules, and the latest release
 version is shown at the top of this page. Binary compatibility is not guaranteed
@@ -58,7 +61,7 @@ Soundness is currently built using [Mill](https://mill-build.org/), with
 [GNU Make](https://www.gnu.org/software/make/) providing some convenient shortcuts.
 
 - `make test` will compile everything and run the full test suite
-- `make test.<module>` will compile and run the tests for the module _`<module>`_
+- `make test.𝓂ℴ𝒹𝓊𝓁ℯ` will compile and run the tests for the module _`𝓂ℴ𝒹𝓊𝓁ℯ`_
 - `make dev` will compile all source files continuously, watching for changes
 - `make publishLocal` will publish a version of Soundness locally
 
