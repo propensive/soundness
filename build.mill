@@ -1305,7 +1305,7 @@ object punctuation extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core, html, ansi)
+    def moduleDeps = Seq(probably.cli, core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
   }
 }
 

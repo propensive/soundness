@@ -30,69 +30,47 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package zephyrine
+
+import scala.collection.mutable as scm
 
 import anticipation.*
-import contingency.*
-import parasite.*
-import proscenium.*
+import denominative.*
+import fulminate.*
+import prepositional.*
 import rudiments.*
-import turbulence.*
 import vacuous.*
 
-import Control.*
+object Addressable:
+  inline given Bytes is Addressable:
+    type Operand = Byte
+    type Target = scm.ArrayBuffer[Byte]
 
-extension [bindable: Bindable](socket: bindable)
-  def listen[input](using Monitor, Codicil)[result](lambda: bindable.Input => bindable.Output)
-  : SocketService raises BindError =
-
-      val binding = bindable.bind(socket)
-
-      val bindLoop = loop:
-        val connection = bindable.connect(binding)
-        bindable.transmit(binding, connection, lambda(connection))
-
-      val task = async(bindLoop.run())
-
-      new SocketService:
-        def stop(): Unit =
-          bindLoop.stop()
-          bindable.stop(binding)
-          safely(task.await())
+    inline def length(bytes: Bytes): Int = bytes.length
+    inline def address(bytes: Bytes, index: Ordinal): Byte = bytes(index.n0)
 
 
-extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
-  def transmit[message: Transmissible](input: message): Stream[Bytes] =
-    val connection = serviceable.connect(endpoint)
-
-    serviceable.transmit(connection, message.serialize(input))
-    serviceable.receive(connection)
+    inline def grab(source: Bytes, start: Ordinal, end: Ordinal)(target: scm.ArrayBuffer[Byte])
+    : Unit =
+    
+        target ++= source.view.slice(start.n0, end.n1)
 
 
-  def exchange[state](initialState: state)[message: Ingressive](initialMessage: message = Bytes())
-       (handle: (state: state) ?=> message => Control[state])
-  : state =
+  inline given Text is Addressable:
+    type Operand = Char
+    type Target = java.lang.StringBuilder
 
-      val connection = serviceable.connect(endpoint)
-
-      def recur(input: Stream[Bytes], state: state): state = input.flow(state):
-        handle(using state)(message.deserialize(head)) match
-          case Continue(state2) => recur(tail, state2.or(state))
-          case Terminate        => state
-
-          case Reply(message, state2) =>
-            serviceable.transmit(connection, Stream(message))
-            recur(tail, state2.or(state))
-
-          case Conclude(message, state2) =>
-            serviceable.transmit(connection, Stream(message))
-            state2.or(state)
-
-      recur(serviceable.receive(connection), initialState).also(serviceable.close(connection))
+    inline def length(text: Text): Int = text.s.length
+    inline def address(text: Text, index: Ordinal): Operand = text.s.charAt(index.n0)
 
 
-extension [endpoint: Routable as routable](endpoint: endpoint)
-  def transmit[transmissible: Transmissible](message: transmissible)(using Monitor)
-  : Unit raises StreamError =
+    inline def grab(source: Text, start: Ordinal, end: Ordinal)(target: java.lang.StringBuilder)
+    : Unit =
+    
+        target.append(source.s, start.n0, end.n1)
 
-      routable.transmit(routable.connect(endpoint), transmissible.serialize(message))
+
+trait Addressable extends Typeclass, Operable, Targetable:
+  inline def length(block: Self): Int
+  inline def address(block: Self, index: Ordinal): Operand
+  inline def grab(source: Self, start: Ordinal, end: Ordinal)(target: Target): Unit

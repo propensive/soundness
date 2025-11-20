@@ -33,66 +33,50 @@
 package coaxial
 
 import anticipation.*
-import contingency.*
-import parasite.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
-import turbulence.*
+import urticose.*
 import vacuous.*
+
+import java.net as jn
 
 import Control.*
 
-extension [bindable: Bindable](socket: bindable)
-  def listen[input](using Monitor, Codicil)[result](lambda: bindable.Input => bindable.Output)
-  : SocketService raises BindError =
+object Routable:
+  given udpEndpoint: Endpoint[UdpPort] is Routable:
+    case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
-      val binding = bindable.bind(socket)
+    def connect(endpoint: Endpoint[UdpPort]): Connection =
+      val address = jn.InetAddress.getByName(endpoint.remote.s).nn
+      Connection(address, endpoint.port.number, jn.DatagramSocket())
 
-      val bindLoop = loop:
-        val connection = bindable.connect(binding)
-        bindable.transmit(binding, connection, lambda(connection))
+    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
+      input.each: bytes =>
+        val packet =
+          jn.DatagramPacket
+           (bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port)
 
-      val task = async(bindLoop.run())
+        connection.socket.send(packet)
 
-      new SocketService:
-        def stop(): Unit =
-          bindLoop.stop()
-          bindable.stop(binding)
-          safely(task.await())
+  given udpPort: UdpPort is Routable:
+    case class Connection(port: Int, socket: jn.DatagramSocket)
 
+    def connect(port: UdpPort): Connection =
+      Connection(port.number, jn.DatagramSocket())
 
-extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
-  def transmit[message: Transmissible](input: message): Stream[Bytes] =
-    val connection = serviceable.connect(endpoint)
+    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
+      input.each: bytes =>
+        val packet = jn.DatagramPacket
+                      (bytes.mutable(using Unsafe),
+                       input.length,
+                       jn.InetAddress.getLocalHost.nn,
+                       connection.port)
 
-    serviceable.transmit(connection, message.serialize(input))
-    serviceable.receive(connection)
+        connection.socket.send(packet)
 
+trait Routable extends Typeclass:
+  type Connection
 
-  def exchange[state](initialState: state)[message: Ingressive](initialMessage: message = Bytes())
-       (handle: (state: state) ?=> message => Control[state])
-  : state =
-
-      val connection = serviceable.connect(endpoint)
-
-      def recur(input: Stream[Bytes], state: state): state = input.flow(state):
-        handle(using state)(message.deserialize(head)) match
-          case Continue(state2) => recur(tail, state2.or(state))
-          case Terminate        => state
-
-          case Reply(message, state2) =>
-            serviceable.transmit(connection, Stream(message))
-            recur(tail, state2.or(state))
-
-          case Conclude(message, state2) =>
-            serviceable.transmit(connection, Stream(message))
-            state2.or(state)
-
-      recur(serviceable.receive(connection), initialState).also(serviceable.close(connection))
-
-
-extension [endpoint: Routable as routable](endpoint: endpoint)
-  def transmit[transmissible: Transmissible](message: transmissible)(using Monitor)
-  : Unit raises StreamError =
-
-      routable.transmit(routable.connect(endpoint), transmissible.serialize(message))
+  def connect(endpoint: Self): Connection
+  def transmit(connection: Connection, input: Stream[Bytes]): Unit
