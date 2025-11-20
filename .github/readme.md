@@ -2,8 +2,8 @@
 
 # Soundness
 
-![Soundness](./logo.svg#gh-dark-mode-only)
-![Soundness](./logo2.svg#gh-light-mode-only)
+![Soundness](/doc/logo.svg#gh-dark-mode-only)
+![Soundness](/doc/logo2.svg#gh-light-mode-only)
 
 Soundness is an ecosystem of libraries for writing direct-style code with Scala
 3, in a number of broad domains:
@@ -32,15 +32,15 @@ Bundles of modules for the six domains above are also provided.
 Releases are published on Maven Central, and can be specified as follows:
 
  - For a bundle of modules, use `dev.soundness:soundness-<bundle>:<version>`
-   where `<bundle> is `cli`, `data`, `sci`, `test`, `tool` or `web`, for
+   where _`<bundle>`_ is `cli`, `data`, `sci`, `test`, `tool` or `web`, for
    example, `dev.soundness:soundness-sci:0.48.0`.
    
  - For one specific module, use `dev.soundness:<module>-<component>:<version>`,
-   where `<module>` is one of the modules from the
+   where _`<module>`_ is one of the modules from the
    [lib](https://github.com/propensive/soundness/tree/main/lib) directory, and
-   `<component>` is typically `core`, but may be something else for modules with
-   optional components, for example `dev.soundness:rudiments-core:0.48.0` or
-   `dev.soundness:punctuation-html:0.48.0`.
+   _`<component>`_ is typically `core`, but may be something else for modules
+   with optional components, for example `dev.soundness:rudiments-core:0.48.0`
+   or `dev.soundness:punctuation-html:0.48.0`.
    
  - For _everything_, use `dev.soundness:soundness-all:<version>`.
 
@@ -60,7 +60,7 @@ Soundness is currently built using [Mill](https://mill-build.org/), with
 [GNU Make](https://www.gnu.org/software/make/) providing some convenient shortcuts.
 
 - `make test` will compile everything and run the full test suite
-- `make test.<module>` will compile and run the tests for the module *`<module>`*
+- `make test.<module>` will compile and run the tests for the module _`<module>`_
 - `make dev` will compile all source files continuously, watching for changes
 - `make publishLocal` will publish a version of Soundness locally
 
