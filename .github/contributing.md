@@ -1,4 +1,4 @@
-# Contributing to Soundness
+# Contributing
 
 Firstly, thank you for taking an interesting in contributing! Soundness is an
 open-source project, and welcomes contributions in the form of feature code,
