@@ -1,4 +1,4 @@
-![Latest version](https://img.shields.io/github/v/tag/propensive/soundness?label=VERSION&style=for-the-badge&labelColor=444444&color=ea8433)
+![Latest version](https://img.shields.io/github/v/tag/propensive/soundness?label=LATEST+VERSION&style=for-the-badge&labelColor=444444&color=ea8433)
 
 ![Soundness](/doc/logo.svg#gh-dark-mode-only)
 ![Soundness](/doc/logo2.svg#gh-light-mode-only)
