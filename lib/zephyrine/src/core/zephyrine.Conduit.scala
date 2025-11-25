@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import language.experimental.captureChecking
+
 import scala.reflect.*
 
 import anticipation.*
