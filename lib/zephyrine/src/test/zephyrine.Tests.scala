@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import language.experimental.captureChecking
+
 import soundness.*
 
 import randomization.unseeded
@@ -167,95 +169,94 @@ object Tests extends Suite(m"Zephyrine tests"):
 
 
     suite(m"Cursor tests"):
+      def hello = Cursor(t"Hello world!".chars.to(List).map(_.show).iterator)
+      def numbers = Cursor(t"0123456789abc".chars.to(List).map(_.show).iterator)
+      
       test(m"Iterate over elements"):
-        val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
+        val cursor = hello
         val builder = java.lang.StringBuilder()
-        while cursor.next()
-        do builder.append(cursor.datum)
+        while 
+          builder.append(cursor.datum)
+          cursor.next()
+        do ()
+        
         builder.toString
       . assert(_ == "Hello world!")
       
       test(m"Capture part of first block"):
-        val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
+        val cursor = hello
+        val builder = java.lang.StringBuilder()
+        cursor.next()
+        
+        cursor.hold:
+          val mark = cursor.mark
+          for i <- 1 to 2 do cursor.next()
+          cursor.clone(mark, cursor.mark)(builder)
+          
+        builder.toString
+      . assert(_ == "el")
+
+      test(m"Capture spanning block"):
+        val cursor = hello
         val builder = java.lang.StringBuilder()
         for i <- 1 to 2 do cursor.next()
         
         cursor.hold:
           val mark = cursor.mark
-          for i <- 1 to 2 do cursor.next()
-          cursor.grab(mark, cursor.mark)(builder)
+          for i <- 1 to 3 do cursor.next()
+          cursor.clone(mark, cursor.mark)(builder)
           
         builder.toString
-      . assert(_ == "ell")
+      . assert(_ == "llo")
 
-      test(m"Capture spanning block"):
-        val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
+      test(m"Capture multiply-spanning block"):
+        val cursor = hello
         val builder = java.lang.StringBuilder()
         for i <- 1 to 3 do cursor.next()
         
         cursor.hold:
           val mark = cursor.mark
-          for i <- 1 to 3 do cursor.next()
-          cursor.grab(mark, cursor.mark)(builder)
-          
-        builder.toString
-      . assert(_ == "llo ")
-
-      test(m"Capture multiply-spanning block"):
-        val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
-        val builder = java.lang.StringBuilder()
-        println("LOOP1")
-        for i <- 1 to 4 do cursor.next()
-        
-        println("HOLD")
-        cursor.hold:
-          println("MARK")
-          val mark = cursor.mark
-          println("LOOP 2")
           for i <- 1 to 4 do cursor.next()
-          println(s"DONE: ${mark.block}/${mark.index}")
-          println(s"END: ${cursor.mark.block}/${cursor.mark.index}")
-          cursor.grab(mark, cursor.mark)(builder)
-          println("GRABBED")
+          cursor.clone(mark, cursor.mark)(builder)
           
         builder.toString
-      . assert(_ == "lo wo")
+      . assert(_ == "lo w")
       
       test(m"Capture multiply-spanning block with nesting"):
-        val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
+        val cursor = hello
         val builder = java.lang.StringBuilder()
-        for i <- 1 to 4 do cursor.next()
+        for i <- 1 to 3 do cursor.next()
         
         cursor.hold:
           val mark1 = cursor.mark
           for i <- 1 to 2 do cursor.next()
           val mark2 = cursor.mark
-          cursor.grab(mark1, mark2)(builder)
+          cursor.clone(mark1, mark2)(builder)
           for i <- 1 to 2 do cursor.next()
           
         builder.toString
-      . assert(_ == "lo ")
+      . assert(_ == "lo")
       
       test(m"Capture multiply-spanning block with nesting 2"):
-        val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
+        val cursor = hello
         val builder = java.lang.StringBuilder()
-        for i <- 1 to 4 do cursor.next()
+        for i <- 1 to 3 do cursor.next()
         
         cursor.hold:
           val mark1 = cursor.mark
           for i <- 1 to 2 do cursor.next()
           val mark2 = cursor.mark
-          cursor.grab(mark1, mark2)(builder)
-          for i <- 1 to 2 do cursor.next()
-          cursor.grab(mark1, cursor.mark)(builder)
+          cursor.clone(mark1, mark2)(builder)
+          for i <- 1 to 3 do cursor.next()
+          cursor.clone(mark1, cursor.mark)(builder)
           
         builder.toString
-      . assert(_ == "lo lo wo")
+      . assert(_ == "lolo wo")
       
       test(m"Rewinding"):
-        val cursor = Cursor(Iterator[Text]("01234", "5", "6789a", "bc"))
+        val cursor = numbers
         val builder = java.lang.StringBuilder()
-        for i <- 1 to 4 do cursor.next()
+        for i <- 1 to 3 do cursor.next()
         
         cursor.hold:
           val mark = cursor.mark
@@ -266,9 +267,9 @@ object Tests extends Suite(m"Zephyrine tests"):
       . assert(_ == '3')
 
       test(m"Rewinding and continuing"):
-        val cursor = Cursor(Iterator[Text]("01234", "5", "6789a", "bc"))
+        val cursor = numbers
         val builder = java.lang.StringBuilder()
-        for i <- 1 to 4 do cursor.next()
+        for i <- 1 to 3 do cursor.next()
         
         cursor.hold:
           val mark = cursor.mark
@@ -280,9 +281,9 @@ object Tests extends Suite(m"Zephyrine tests"):
       . assert(_ == '4')
       
       test(m"Rewinding and continuing to next block"):
-        val cursor = Cursor(Iterator[Text]("01234", "5", "6789a", "bc"))
+        val cursor = numbers
         val builder = java.lang.StringBuilder()
-        for i <- 1 to 4 do cursor.next()
+        for i <- 1 to 3 do cursor.next()
         
         cursor.hold:
           val mark = cursor.mark
@@ -294,14 +295,26 @@ object Tests extends Suite(m"Zephyrine tests"):
       . assert(_ == '5')
 
       test(m"Capture from start to end"):
-        val cursor = Cursor(Iterator[Text]("Hello", " ", "world", "!"))
+        val cursor = hello
         val builder = java.lang.StringBuilder()
-        var mark2: Cursor.Mark = Cursor.Mark.Initial
-        if cursor.next()
-        then cursor.hold:
+        
+        cursor.hold:
           val mark = cursor.mark
           while cursor.next() do ()
-          cursor.grab(mark, cursor.mark)(builder)
+          cursor.clone(mark, cursor.mark)(builder)
           
         builder.toString
       . assert(_ == "Hello world!")
+      
+      for offset <- 0 to 8 do
+        for length <- 1 to 4 do
+          test(m"Spans, offset $offset, length $length"):
+            val cursor = hello
+            
+            for j <- 0 until offset do cursor.next()
+            cursor.hold:
+              val start = cursor.mark
+              for i <- 0 until length do cursor.next()
+              cursor.grab(start, cursor.mark)
+              
+          . assert(_ == "Hello world!".substring(offset, offset + length).nn)
