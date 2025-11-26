@@ -854,50 +854,126 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == t"0.0")
 
+    val words: List[Text] = List("ba", "baa", "baal", "baar", "baba", "babe", "babu",
+      "baby", "bac", "bach", "back", "bad", "bade", "bae", "baff", "baft",
+      "bag", "baga", "bago", "bah", "baho", "baht", "bail", "bain", "bait",
+      "baka", "bake", "baku", "bal", "bald", "bale", "bali", "balk", "ball",
+      "balm", "balu", "bam", "ban", "banc", "band", "bane", "bang", "bani",
+      "bank", "bant", "bap", "bar", "bara", "barb", "bard", "bare", "bari",
+      "bark", "barm", "barn", "baru", "bas", "base", "bash", "bask", "bass",
+      "bast", "bat", "bate", "bath", "bats", "batt", "batz", "baud", "baul",
+      "baun", "baw", "bawd", "bawl", "bawn", "bay", "baya", "baze", "be",
+      "bead", "beak", "beal", "beam", "bean", "bear", "beat", "beau", "beck",
+      "bed", "bee", "beef", "beek", "been", "beer", "bees", "beet", "beg",
+      "bego", "behn", "bel", "bela", "beld", "bell", "belt", "bely", "bema",
+      "ben", "bena", "bend", "bene", "beng", "beni", "benj", "benn", "beno",
+      "bent", "ber", "bere", "berg", "berm", "bes", "besa", "best", "bet",
+      "beta", "beth", "bevy", "bey", "bhat", "bhoy", "bhut", "bias", "bib",
+      "bibb", "bibi", "bice", "bick", "bid", "bide", "bien", "bier", "biff",
+      "big", "biga", "bigg", "bija", "bike", "bikh", "bile", "bilk", "bill",
+      "bilo", "bin", "bind", "bine", "bing", "binh", "bink", "bino", "bint",
+      "biod", "bion", "bios", "bird", "biri", "birk", "birl", "birn", "birr",
+      "bis", "bit", "bite", "biti", "bito", "bitt", "biwa", "biz", "bizz",
+      "blab", "blad", "blae", "blah", "blan", "blas", "blat", "blaw", "blay",
+      "bleb", "bled", "blee", "bleo", "blet", "blip", "blo", "blob", "bloc",
+      "blot", "blow", "blub", "blue", "blup", "blur", "bo", "boa", "boar",
+      "boat", "bob", "boba", "bobo", "boce", "bock", "bod", "bode", "body",
+      "bog", "boga", "bogo", "bogy", "boho", "boid", "boil", "bojo", "boke",
+      "bola", "bold", "bole", "bolk", "boll", "bolo", "bolt", "bom", "boma",
+      "bomb", "bon", "bond", "bone", "bong", "bonk", "bony", "boo", "boob",
+      "bood", "boof", "book", "bool", "boom", "boon", "boor", "boot", "bop",
+      "bor", "bora", "bord", "bore", "borg", "borh", "born", "boro", "bort",
+      "bose", "bosh", "bosk", "bosn", "boss", "bot", "bota", "bote", "both",
+      "bott", "boud", "bouk", "boun", "bout", "bouw", "bow", "bowk", "bowl",
+      "boxy", "boy", "boza", "bozo", "bra", "brab", "brad", "brae", "brag",
+      "bran", "brat", "braw", "bray", "bred", "bree", "brei", "bret", "brew",
+      "brey", "brig", "brim", "brin", "brit", "brob", "brod", "brog", "broo",
+      "brot", "brow", "brut", "bu", "bual", "bub", "buba", "bubo", "buck",
+      "bud", "buda", "buff", "bufo", "bug", "buhl", "buhr", "bukh", "bulb",
+      "bulk", "bull", "bult", "bum", "bump", "bun", "buna", "bund", "bung",
+      "bunk", "bunt", "buoy", "bur", "burd", "bure", "burg", "buri", "burl",
+      "burn", "buro", "burp", "burr", "burt", "bury", "bus", "bush", "busk",
+      "buss", "bust", "busy", "but", "butt", "buy", "buzz", "by", "bye", "byee",
+      "bygo", "byon", "byre", "byth")
+
+    val words2: List[Text] =
+      List
+       ("a", "aa", "aal", "aalii", "aam", "aardvark", "aardwolf", "aba", "abac", "abaca",
+        "abacate", "abacay", "abacinate", "abacination", "abaciscus", "abacist", "aback",
+        "abactinal", "abactinally", "abaction", "abactor", "abaculus", "abacus", "abaff", "abaft",
+        "abaisance", "abaiser", "abaissed", "abalienate", "abalienation", "abalone", "abampere",
+        "abandon", "abandonable", "abandoned", "abandonedly", "abandonee", "abandoner",
+        "abandonment", "abaptiston", "abarthrosis", "abarticular", "abarticulation", "abas",
+        "abase", "abased", "abasedly", "abasedness", "abasement", "abaser", "abash", "abashed",
+        "abashedly", "abashedness", "abashless", "abashlessly", "abashment", "abasia", "abasic",
+        "abask", "abastardize", "abatable", "abate", "abatement", "abater", "abatis", "abatised",
+        "abaton", "abator", "abattoir", "abature", "abave", "abaxial", "abaxile", "abaze", "abb",
+        "abbacomes", "abbacy", "abbas", "abbasi", "abbassi", "abbatial", "abbatical", "abbess",
+        "abbey", "abbeystede", "abbot", "abbotcy", "abbotnullius", "abbotship", "abbreviate",
+        "abbreviately", "abbreviation", "abbreviator", "abbreviatory", "abbreviature", "abcoulomb",
+        "abdal", "abdat", "abdest", "abdicable", "abdicant", "abdicate", "abdication", "abdicative",
+        "abdicator", "abditive", "abditory", "abdomen", "abdominal", "abdominalian", "abdominally",
+        "abdominoanterior", "abdominocardiac", "abdominocentesis", "abdominocystic",
+        "abdominogenital", "abdominohysterectomy", "abdominohysterotomy", "abdominoposterior",
+        "abdominoscope", "abdominoscopy", "abdominothoracic", "abdominous", "abdominovaginal",
+        "abdominovesical", "abduce", "abducens", "abducent", "abduct", "abduction", "abductor",
+        "abeam", "abear", "abearance", "abecedarian", "abecedarium", "abecedary", "abed", "abeigh",
+        "abele", "abelite", "abelmosk", "abeltree", "abenteric", "abepithymia", "aberdevine",
+        "aberrance", "aberrancy", "aberrant", "aberrate", "aberration", "aberrational", "aberrator",
+        "aberrometer", "aberroscope", "aberuncator", "abet", "abetment", "abettal", "abettor",
+        "abevacuation", "abey", "abeyance", "abeyancy", "abeyant", "abfarad", "abhenry", "abhiseka",
+        "abhominable", "abhor", "abhorrence", "abhorrency", "abhorrent", "abhorrently", "abhorrer",
+        "abhorrible", "abhorring", "abidal", "abidance", "abide", "abider", "abidi", "abiding",
+        "abidingly", "abidingness", "abietate", "abietene", "abietic", "abietin", "abietineous",
+        "abietinic", "abigail", "abigailship", "abigeat", "abigeus", "abilao", "ability", "abilla",
+        "abilo", "abintestate", "abiogenesis", "abiogenesist", "abiogenetic", "abiogenetical",
+        "abiogenetically", "abiogenist", "abiogenous", "abiogeny", "abiological", "abiologically",
+        "abiology", "abiosis", "abiotic", "abiotrophic", "abiotrophy", "abir", "abirritant",
+        "abirritate", "abirritation", "abirritative", "abiston", "abiuret", "abject",
+        "abjectedness", "abjection", "abjective", "abjectly", "abjectness", "abjoint", "abjudge",
+        "abjudicate", "abjudication", "abjunction", "abjunctive", "abjuration", "abjuratory",
+        "abjure", "abjurement", "abjurer", "abkar", "abkari", "ablach", "ablactate", "ablactation",
+        "ablare", "ablastemic", "ablastous", "ablate", "ablation", "ablatitious", "ablatival",
+        "ablative", "ablator", "ablaut", "ablaze", "able", "ableeze", "ablegate", "ableness",
+        "ablepharia", "ablepharon", "ablepharous", "ablepsia", "ableptical", "ableptically",
+        "abler", "ablest", "ablewhackets", "ablins", "abloom", "ablow", "ablude", "abluent",
+        "ablush", "ablution", "ablutionary", "abluvion", "ably", "abmho", "abnegate", "abnegation",
+        "abnegative", "abnegator", "abnerval", "abnet", "abneural", "abnormal", "abnormalism",
+        "abnormalist", "abnormality", "abnormalize", "abnormally", "abnormalness", "abnormity",
+        "abnormous", "abnumerable", "aboard", "abode", "abodement", "abody", "abohm", "aboil",
+        "abolish", "abolisher", "abolishment", "abolition", "abolitionary", "abolitionism",
+        "abolitionist", "abolitionize", "abolla", "aboma", "abomasum", "abomasus", "abominable",
+        "abominableness", "abominably", "abominate", "abomination", "abominator", "abomine",
+        "aboon", "aborad", "aboral", "aborally", "abord", "aboriginal", "aboriginality",
+        "aboriginally", "aboriginary", "aborigine", "abort", "aborted", "aborticide", "abortient",
+        "abortifacient", "abortin", "abortion", "abortional", "abortionist", "abortive",
+        "abortively", "abortiveness", "abortus", "abouchement", "abound", "abounder", "abounding",
+        "aboundingly", "about", "abouts", "above", "aboveboard", "abovedeck", "aboveground",
+        "aboveproof", "abovestairs", "abox", "abracadabra", "abrachia", "abradant", "abrade",
+        "abrader", "abraid", "abranchial", "abranchialism", "abranchian", "abranchiate",
+        "abranchious", "abrasax", "abrase", "abrash", "abrasiometer", "abrasion", "abrasive",
+        "abrastol", "abraum", "abraxas", "abreact", "abreaction", "abreast", "abrenounce", "abret",
+        "abrico", "abridge", "abridgeable", "abridged", "abridgedly", "abridger", "abridgment",
+        "abrim", "abrin", "abristle", "abroach", "abroad", "abrocome", "abrogable", "abrogate",
+        "abrogation", "abrogative", "abrogator", "abrook", "abrotanum", "abrotine", "abrupt",
+        "abruptedly", "abruption", "abruptly", "abruptness", "absampere", "absarokite", "abscess",
+        "abscessed", "abscession", "abscessroot", "abscind", "abscise", "abscision", "absciss",
+        "abscissa", "abscissae", "abscisse", "abscission", "absconce", "abscond", "absconded",
+        "abscondedly", "abscondence", "absconder", "absconsa", "abscoulomb", "absence", "absent",
+        "absentation", "absentee", "absenteeism", "absenteeship", "absenter", "absently",
+        "absentment", "absentmindedly", "absentness", "absfarad", "abshenry", "absinthe",
+        "absinthial", "absinthian", "absinthiate", "absinthic", "absinthin", "absinthine",
+        "absinthism", "absinthismic", "absinthium", "absinthol", "absit", "absmho", "absohm",
+        "absolute", "absolutely", "absoluteness", "absolution", "absolutism", "absolutist",
+        "absolutistic", "absolutistically", "absolutive", "absolutization", "absolutize",
+        "absolutory", "absolvable", "absolvatory", "absolve", "absolvent", "absolver", "absolvitor",
+        "absolvitory", "absonant", "absonous", "absorb", "absorbability", "absorbable", "absorbed",
+        "absorbedly", "absorbedness", "absorbefacient", "absorbency", "absorbent", "absorber",
+        "absorbing", "absorbingly", "absorbition", "absorpt", "absorptance", "absorptiometer",
+        "absorptiometric", "absorption", "absorptive", "absorptively")
+
     suite(m"BK-Tree tests"):
       import proximities.levenshteinDistance
-
-      val words: List[Text] = List("ba", "baa", "baal", "baar", "baba", "babe", "babu",
-        "baby", "bac", "bach", "back", "bad", "bade", "bae", "baff", "baft",
-        "bag", "baga", "bago", "bah", "baho", "baht", "bail", "bain", "bait",
-        "baka", "bake", "baku", "bal", "bald", "bale", "bali", "balk", "ball",
-        "balm", "balu", "bam", "ban", "banc", "band", "bane", "bang", "bani",
-        "bank", "bant", "bap", "bar", "bara", "barb", "bard", "bare", "bari",
-        "bark", "barm", "barn", "baru", "bas", "base", "bash", "bask", "bass",
-        "bast", "bat", "bate", "bath", "bats", "batt", "batz", "baud", "baul",
-        "baun", "baw", "bawd", "bawl", "bawn", "bay", "baya", "baze", "be",
-        "bead", "beak", "beal", "beam", "bean", "bear", "beat", "beau", "beck",
-        "bed", "bee", "beef", "beek", "been", "beer", "bees", "beet", "beg",
-        "bego", "behn", "bel", "bela", "beld", "bell", "belt", "bely", "bema",
-        "ben", "bena", "bend", "bene", "beng", "beni", "benj", "benn", "beno",
-        "bent", "ber", "bere", "berg", "berm", "bes", "besa", "best", "bet",
-        "beta", "beth", "bevy", "bey", "bhat", "bhoy", "bhut", "bias", "bib",
-        "bibb", "bibi", "bice", "bick", "bid", "bide", "bien", "bier", "biff",
-        "big", "biga", "bigg", "bija", "bike", "bikh", "bile", "bilk", "bill",
-        "bilo", "bin", "bind", "bine", "bing", "binh", "bink", "bino", "bint",
-        "biod", "bion", "bios", "bird", "biri", "birk", "birl", "birn", "birr",
-        "bis", "bit", "bite", "biti", "bito", "bitt", "biwa", "biz", "bizz",
-        "blab", "blad", "blae", "blah", "blan", "blas", "blat", "blaw", "blay",
-        "bleb", "bled", "blee", "bleo", "blet", "blip", "blo", "blob", "bloc",
-        "blot", "blow", "blub", "blue", "blup", "blur", "bo", "boa", "boar",
-        "boat", "bob", "boba", "bobo", "boce", "bock", "bod", "bode", "body",
-        "bog", "boga", "bogo", "bogy", "boho", "boid", "boil", "bojo", "boke",
-        "bola", "bold", "bole", "bolk", "boll", "bolo", "bolt", "bom", "boma",
-        "bomb", "bon", "bond", "bone", "bong", "bonk", "bony", "boo", "boob",
-        "bood", "boof", "book", "bool", "boom", "boon", "boor", "boot", "bop",
-        "bor", "bora", "bord", "bore", "borg", "borh", "born", "boro", "bort",
-        "bose", "bosh", "bosk", "bosn", "boss", "bot", "bota", "bote", "both",
-        "bott", "boud", "bouk", "boun", "bout", "bouw", "bow", "bowk", "bowl",
-        "boxy", "boy", "boza", "bozo", "bra", "brab", "brad", "brae", "brag",
-        "bran", "brat", "braw", "bray", "bred", "bree", "brei", "bret", "brew",
-        "brey", "brig", "brim", "brin", "brit", "brob", "brod", "brog", "broo",
-        "brot", "brow", "brut", "bu", "bual", "bub", "buba", "bubo", "buck",
-        "bud", "buda", "buff", "bufo", "bug", "buhl", "buhr", "bukh", "bulb",
-        "bulk", "bull", "bult", "bum", "bump", "bun", "buna", "bund", "bung",
-        "bunk", "bunt", "buoy", "bur", "burd", "bure", "burg", "buri", "burl",
-        "burn", "buro", "burp", "burr", "burt", "bury", "bus", "bush", "busk",
-        "buss", "bust", "busy", "but", "butt", "buy", "buzz", "by", "bye", "byee",
-        "bygo", "byon", "byre", "byth")
 
       val lexicon = Lexicon(words)
 
@@ -921,3 +997,60 @@ object Tests extends Suite(m"Gossamer Tests"):
       test(m"All the matches are found at distance 3"):
         lexicon.search("book", 3).size
       . assert(_ == words.size)
+
+    suite(m"Dictionary tests"):
+      test(m"One-entry dictionary size"):
+        val dictionary = Dictionary(t"color" -> 0)
+        dictionary.size
+      .assert(_ == 1)
+
+      test(m"One-entry dictionary lookup"):
+        val dictionary = Dictionary(t"color" -> 0)
+        dictionary(t"color")
+      .assert(_ == 0)
+
+      test(m"One-entry dictionary absent lookup"):
+        val dictionary = Dictionary(t"color" -> 0)
+        dictionary(t"colo")
+      .assert(_ == Unset)
+
+      test(m"One-entry dictionary absent lookup 2"):
+        val dictionary = Dictionary(t"color" -> 0)
+        dictionary(t"colors")
+      .assert(_ == Unset)
+
+      test(m"Two-entry dictionary lookups"):
+        val dictionary = Dictionary(t"color" -> "COLOR", t"size" -> "SIZE")
+        (dictionary(t"color"), dictionary(t"size"))
+      .assert(_ == ("COLOR", "SIZE"))
+
+      test(m"Two-entry dictionary lookups with overlap"):
+        val dictionary = Dictionary(t"color" -> "COLOR", t"change" -> "CHANGE")
+        (dictionary(t"color"), dictionary(t"change"))
+      .assert(_ == ("COLOR", "CHANGE"))
+
+      test(m"Two-entry dictionary lookups with more overlap"):
+        val dictionary = Dictionary(t"color" -> "COLOR", t"colors" -> "COLORS")
+        (dictionary(t"color"), dictionary(t"colors"))
+      .assert(_ == ("COLOR", "COLORS"))
+
+      test(m"Two-entry dictionary lookups with more overlap, reverse order"):
+        val dictionary = Dictionary(t"colors" -> "COLORS", t"color" -> "COLOR")
+        (dictionary(t"color"), dictionary(t"colors"))
+      .assert(_ == ("COLOR", "COLORS"))
+
+      test(m"Two-entry dictionary lookups with more overlap, reverse order"):
+        val dictionary = Dictionary(t"colors" -> "COLORS", t"color" -> "COLOR")
+        (dictionary(t"color"), dictionary(t"colors"))
+      .assert(_ == ("COLOR", "COLORS"))
+
+      test(m"Large dictionary size"):
+        val dictionary = Dictionary(words.map { word => (word, word.upper) }*)
+        dictionary.size
+      . assert(_ == words.size)
+
+      test(m"Large dictionary"):
+        Dictionary(words2.map { word => (word, word.upper) }*)
+      . assert: dictionary =>
+          words2.all: word =>
+            dictionary(word) == word.upper
