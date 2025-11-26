@@ -58,20 +58,18 @@ enum Dictionary[+element]:
       case Empty =>
         Just(entry, value)
 
-      case Just(tail, value0) =>
-        if entry.length == tail.length + offset && entry.s.drop(offset).tt == tail
-        then Just(tail, value)
-        else
+      case just@Just(tail, value0) =>
+        if matches(tail, entry, offset) then Just(tail, value) else
           if entry.length == offset
-          then Branch(value, Map(tail.s.head -> Just(tail.s.drop(1).tt, value0)))
+          then Branch(value, Map(tail.s.head -> child(just)))
           else
             val next: Char = entry.s.charAt(offset)
             val rest: Text = entry.s.drop(offset + 1).tt
 
             if tail.length == 0 then Branch(value0, Map(next -> Just(rest, value)))
             else if tail.s.head == next
-            then Branch(Unset, Map(next -> Just(tail.s.drop(1).tt, value0).add(entry, value, offset + 1)))
-            else Branch(Unset, Map(next -> Just(rest, value), tail.s.head -> Just(tail.s.drop(1).tt, value0)))
+            then Branch(Unset, Map(next -> child(just).add(entry, value, offset + 1)))
+            else Branch(Unset, Map(next -> Just(rest, value), tail.s.head -> child(just)))
 
       case Branch(value0, map) =>
         if entry.length == offset then Branch(value, map) else
@@ -83,11 +81,20 @@ enum Dictionary[+element]:
 
           Branch(value0, map.updated(next, child))
 
+  private def child(just: Just[element]): Just[element] = Just(just.tail.s.drop(1).tt, just.value)
+
   private def matches(tail: Text, entry: Text, offset: Int): Boolean =
     tail.length + offset == entry.length && that:
-      tail.s.indices.all { i => tail.s.charAt(i) == entry.s.charAt(i + offset) }
+      var matches = true
+      var i = 0
 
-  def lookup(entry: Text, offset: Int): Optional[element] = this match
+      while matches && i < tail.length do
+        matches &&= tail.s.charAt(i) == entry.s.charAt(i + offset)
+        i += 1
+
+      matches
+
+  protected def lookup(entry: Text, offset: Int): Optional[element] = this match
     case Empty             => Unset
     case Just(tail, value) => if matches(tail, entry, offset) then value else Unset
 
