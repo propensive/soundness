@@ -30,33 +30,76 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package gossamer
 
-export gossamer
-. { Bidi, Builder, Cuttable, Decimalizer, Interpolation, Joinable, Numerous, Pue, RangeError,
-    TextBuilder, Textual, append, construct, fill, txt, t, utf8, utf16, ascii, text, pue, cut,
-    pascal, camel, snake, kebab, length, lower, upper, plain, skip, keep, capitalize, uncapitalize,
-    tail, init, chars, snip, reverse, contains, trim, where, upto, dropWhile, translate, count, pad,
-    center, fit, uncamel, unkebab, unsnake, starts, ends, tr, subscripts, superscripts, sub,
-    urlEncode, urlDecode, punycode, bytes, sysBytes, proximity, join, add, words, lines, appendln,
-    spaced, slices, seek, search, Ascii, AsciiBuilder, Ltr, Rtl, erase, before, after, from,
-    Lexicon, Dictionary }
+import anticipation.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
 
-package decimalFormatters:
-  export gossamer.decimalFormatters.java
+object Dictionary:
+  def apply[element](pairs: (Text, element)*): Dictionary[element] =
+    pairs.foldLeft(Dictionary.Empty): (dictionary, next) =>
+      dictionary.add(next(0), next(1), 0)
 
-package enumIdentification:
-  export gossamer.enumIdentification.kebabCase
-  export gossamer.enumIdentification.pascalCase
-  export gossamer.enumIdentification.snakeCase
-  export gossamer.enumIdentification.camelCase
+enum Dictionary[+element]:
+  case Empty
+  case Just(tail: Text, value: element)
+  case Branch(value: Optional[element], map: Map[Char, Dictionary[element]])
 
-package proximities:
-  export gossamer.proximities.jaroDistance
-  export gossamer.proximities.jaroWinklerDistance
-  export gossamer.proximities.prefixMatch
-  export gossamer.proximities.levenshteinDistance
-  export gossamer.proximities.normalizedLevenshteinDistance
+  def size: Int = this match
+    case Empty              => 0
+    case Just(_, _)         => 1
+    case Branch(Unset, map) => map.sumBy(_(1).size)
+    case Branch(_, map)     => map.sumBy(_(1).size) + 1
 
-package caseSensitivity:
-  export gossamer.caseSensitivity.{sensitive, insensitive, smart}
+  def add[element2 >: element](entry: Text, value: element2, offset: Int): Dictionary[element2] =
+    this match
+      case Empty =>
+        Just(entry, value)
+
+      case Just(tail, value0) =>
+        if entry.length == tail.length + offset && entry.s.drop(offset).tt == tail
+        then Just(tail, value)
+        else
+          if entry.length == offset
+          then Branch(value, Map(tail.s.head -> Just(tail.s.drop(1).tt, value0)))
+          else
+            val next: Char = entry.s.charAt(offset)
+            val rest: Text = entry.s.drop(offset + 1).tt
+
+            if tail.length == 0 then Branch(value0, Map(next -> Just(rest, value)))
+            else if tail.s.head == next
+            then Branch(Unset, Map(next -> Just(tail.s.drop(1).tt, value0).add(entry, value, offset + 1)))
+            else Branch(Unset, Map(next -> Just(rest, value), tail.s.head -> Just(tail.s.drop(1).tt, value0)))
+
+      case Branch(value0, map) =>
+        if entry.length == offset then Branch(value, map) else
+          val next = entry.s.charAt(offset)
+
+          val child =
+            if map.contains(next) then map(next).add(entry, value, offset + 1)
+            else Just(entry.s.drop(offset + 1).tt, value)
+
+          Branch(value0, map.updated(next, child))
+
+  private def matches(tail: Text, entry: Text, offset: Int): Boolean =
+    tail.length + offset == entry.length && that:
+      tail.s.indices.all { i => tail.s.charAt(i) == entry.s.charAt(i + offset) }
+
+  def lookup(entry: Text, offset: Int): Optional[element] = this match
+    case Empty             => Unset
+    case Just(tail, value) => if matches(tail, entry, offset) then value else Unset
+
+    case Branch(value, map) =>
+      if entry.length > offset then map.at(entry.s.charAt(offset)).let(_.lookup(entry, offset + 1))
+      else if entry.length == offset then value
+      else Unset
+
+  inline def apply(entry: Text): Optional[element] = lookup(entry, 0)
+
+  def apply(char: Char): Dictionary[element] = this match
+    case Empty             => Empty
+    case Branch(_, map)    => map.at(char).or(Empty)
+    case Just(word, value) =>
+      if word.length > 0 && word.s.head == char then Just(word.s.drop(1).tt, value) else Empty
