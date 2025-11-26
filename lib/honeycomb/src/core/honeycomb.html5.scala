@@ -153,6 +153,7 @@ object html5:
 
   // complicated
   val Canvas = ClearTag["canvas", Noninteractive, Global | "width" | "height"]("canvas")
+  
   val Caption = Tag["caption", Flow, Global]("caption") // no tables
   val Cite = Tag["cite", Phrasing, Global]("cite")
   val Code = Tag["code", Phrasing, Global]("code")
@@ -175,6 +176,7 @@ object html5:
 
   // first or last element may be figcaption, but not both
   val Figure = Tag["figure", "figcaption" | Flow, Global]("figure")
+  
   val Footer = Tag["footer", Flow, Global]("footer")
 
   val Form = Tag["form", Flow, Global | "acceptCharset" | "action" | "autocomplete" | "enctype" |
