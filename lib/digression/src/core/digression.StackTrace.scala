@@ -60,8 +60,7 @@ object StackTrace:
       "⋮⋮".tt -> "package file".tt,
       "ⲛ".tt  -> "class initializer".tt,
       "ℓ".tt  -> "lazy initializer".tt,
-      "Σ".tt  -> "specialized method".tt,
-      "Ξ".tt  -> "object".tt)
+      "Σ".tt  -> "specialized method".tt)
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()
