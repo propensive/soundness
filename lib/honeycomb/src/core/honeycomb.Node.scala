@@ -44,6 +44,18 @@ object Node:
     case node: Node[?] => node.show
     case Unset         => t""
 
+  def escape(text: Text): Text =
+    val buffer = new StringBuilder
+    
+    text.s.foreach:
+      case '"'  => buffer.append("&quot;")
+      case '<'  => buffer.append("&lt;")
+      case '>'  => buffer.append("&gt;")
+      case '&'  => buffer.append("&amp;")
+      case char => buffer.append(char)
+    
+    buffer.toString.tt
+
   given seq: Seq[Html[?]] is Showable = _.map(_.show).join
 
   given node: [node <: Node[?]] => node is Showable = item =>
@@ -51,7 +63,7 @@ object Node:
       item.attributes.map: keyValue =>
         keyValue.absolve match
           case (key, Unset)       => t" $key"
-          case (key, value: Text) => t""" $key="$value""""
+          case (key, value: Text) => t""" $key="${escape(value)}""""
 
       . join
 

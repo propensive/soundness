@@ -82,3 +82,12 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"deeper-nested elements"):
         Table(Tbody(Tr(Td(t"A")))).show
       .check(_ == t"<table><tbody><tr><td>A</td></tr></tbody></table>")
+
+    suite(m"HTML parsing tests"):
+      test(m"Parse simple tag"):
+        println(Dom.parse(Iterator(t"""<div foo=bar><yes/>Hello &amp; world<script>script content</script></div>""")))
+      .assert()
+
+      // test(m"Parse simple tag with text content"):
+      //   println(Dom.parse(Iterator(t"<div>hello</div>")))
+      // .assert()

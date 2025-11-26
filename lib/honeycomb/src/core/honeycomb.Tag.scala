@@ -44,7 +44,7 @@ object Tag:
   given generic: Tag[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
 open case class Tag[+name <: Label, child <: Label, attribute <: Label]
-   (labelString: name)
+                 (labelString: name)
 extends Node[name], Dynamic:
 
   def attributes: Attributes = Map()
