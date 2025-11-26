@@ -60,6 +60,12 @@ inline def probe[target]: Nothing = ${Rudiments.probe[target]}
 inline def typeName[target]: Text = ${Rudiments.name[target]}
 inline def reflectClass[target]: Class[target] = ${Rudiments.reflectClass}
 
+inline def repeat(count: Int)(inline action: => Unit): Unit =
+  var i = 0
+  while i < count do
+    action
+    i += 1
+
 extension [value](value: value)
   def unit: Unit = ()
   def waive: Any => value = _ => value
@@ -104,6 +110,8 @@ extension (inline statement: => Unit)
     block
 
 def loop(block: => Unit): Loop = Loop({ () => block })
+
+inline def that[result](inline block: => result): result = block
 
 export Rudiments.&
 
