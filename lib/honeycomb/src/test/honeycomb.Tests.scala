@@ -85,7 +85,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
     suite(m"HTML parsing tests"):
       test(m"Parse simple tag"):
-        println(Dom.parse(Iterator(t"""<div foo=bar><yes/>Hello &amp; world<script>script content</script></div>""")))
+        println(Dom.parse(Iterator(t"""<div foo=bar><yes/>Hello &amp; <!-- comment! -- --> world<script>script content</script></div>""")))
       .assert()
 
       // test(m"Parse simple tag with text content"):
