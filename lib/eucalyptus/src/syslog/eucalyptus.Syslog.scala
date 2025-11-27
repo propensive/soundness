@@ -45,7 +45,7 @@ import vacuous.*
 case class Syslog(tag: Optional[Text] = Unset)
 
 object Syslog:
-  given appendable: Monitor => Syslog is Writable by Text = (syslog, stream) =>
+  given writable: Monitor => Syslog is Writable by Text = (syslog, stream) =>
     import workingDirectories.system
 
     recover:
