@@ -68,6 +68,30 @@ object settings:
     "-language:implicitConversions"
   )
 
+  val scalaOptionsCC = Seq(
+    "-experimental",
+    "-new-syntax",
+    "-feature",
+    //"-explain",
+    "-deprecation",
+    //"-Wunused:imports",
+    "-Wimplausible-patterns",
+    "-Wsafe-init",
+    "-Xmax-inlines", "100",
+    "-Ycc-new",
+    "-Yno-flexible-types",
+    "-Yexplicit-nulls",
+    "-Ycheck-all-patmat",
+    "-explain-cyclic",
+    "-language:experimental.modularity",
+    "-language:experimental.genericNumberLiterals",
+    "-language:experimental.into",
+    "-language:experimental.erasedDefinitions",
+    "-language:experimental.saferExceptions",
+    "-language:experimental.namedTypeArguments",
+    "-language:implicitConversions"
+  )
+
 trait BaseScalaModule extends ScalaModule:
   override def scalaVersion = settings.scalaVersion
   override def scalacOptions = settings.scalaOptions
@@ -768,7 +792,7 @@ object hellenism extends SoundnessModule:
 
 object honeycomb extends SoundnessModule:
   object core extends SoundnessSubModule:
-    def moduleDeps = Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url)
+    def moduleDeps = Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core)
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core)
@@ -1012,6 +1036,7 @@ object punctuation extends SoundnessModule:
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
+    def mvnDeps = Agg(ivy"org.commonmark:commonmark:0.27.0")
 
 object quantitative extends SoundnessModule:
   object core extends SoundnessSubModule:
@@ -1223,9 +1248,11 @@ object yossarian extends SoundnessModule:
 object zephyrine extends SoundnessModule:
   object core extends SoundnessSubModule:
     def moduleDeps = Seq(hieroglyph.core, hypotenuse.core)
+    override def scalacOptions = settings.scalaOptionsCC
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core)
+    override def scalacOptions = settings.scalaOptionsCC
 
 object zeppelin extends SoundnessModule:
   object core extends SoundnessSubModule:
