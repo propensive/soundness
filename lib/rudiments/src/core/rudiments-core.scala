@@ -356,6 +356,11 @@ extension [indexable: Indexable](inline value: indexable)
     optimizable[indexable.Result]: default =>
       if indexable.contains(value, index) then indexable.access(value, index) else default
 
+extension [indexable: Indexable by Ordinal](inline value: indexable)
+  inline def prim: Optional[indexable.Result] = value.at(Prim)
+  inline def sec: Optional[indexable.Result] = value.at(Sec)
+  inline def ter: Optional[indexable.Result] = value.at(Ter)
+
 extension [value: Segmentable as segmentable](inline value: value)
   inline def segment(interval: Interval): value = segmentable.segment(value, interval)
 
