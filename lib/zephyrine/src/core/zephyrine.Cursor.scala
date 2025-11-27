@@ -104,12 +104,12 @@ class Cursor[data](initial:                 data,
   protected inline def forward(): Unit =
     val block: Ordinal = focusBlock.next
     val offset: Int = block - first
-    done += addressable.length(current)
 
     current =
       if buffer.length > offset then
         focusBlock = block
         focus = Prim
+        done += addressable.length(current)
         buffer(offset)
       else if iterator.hasNext then
         var next = load()
@@ -119,6 +119,7 @@ class Cursor[data](initial:                 data,
         if keep then store(block, next)
         focusBlock = block
         focus = Prim
+        done += addressable.length(current)
         next
 
       else current.also:
@@ -158,7 +159,7 @@ class Cursor[data](initial:                 data,
     if !finished then lambda(addressable.address(current, focus))
 
   inline def position: Ordinal = (done + focus.n0).z
-  inline def finished: Boolean = position.n0 == length - 1
+  inline def finished: Boolean = position.n0 >= length - 1
   inline def available = extent - position.n0
 
   inline def hold[result](inline action: Cursor.Held ?=> result): result =
