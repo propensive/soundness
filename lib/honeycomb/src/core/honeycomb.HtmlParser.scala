@@ -65,6 +65,7 @@ object HtmlNode:
 enum HtmlNode:
   type Topic
   case Document(nodes: HtmlNode*)
+  case Comment(text: Text)
   case Textual(text: Text)
   case Node(name: Text, attributes: HtmlNode.Attributes, children: Seq[HtmlNode])
 
@@ -117,6 +118,7 @@ object Dom:
 
   enum Token:
     case Close(name: Text)
+    case Comment(text: Text)
     case SelfClosing(name: Text, attributes: ListMap[Text, Optional[Text]])
     case Open(name: Text, attributes: ListMap[Text, Optional[Text]])
 
@@ -167,6 +169,7 @@ object Dom:
 
     def equality(): Unit =
       whitespace()
+
       cursor.lay(fail()):
         case '='  => next() yet whitespace()
         case char => panic(m"expected = at ${cursor.position.n0}")
@@ -232,8 +235,20 @@ object Dom:
         case char =>  if cursor.next() then rawText(tag, mark)
                       else HtmlNode.Textual(cursor.grab(mark, cursor.mark))
 
+    def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail()):
+      case '-'  =>  val end = cursor.mark
+                    next()
+                    cursor.lay(fail()):
+                      case '-' => expect('>') yet cursor.grab(mark, end)
+                      case _   => comment(mark)
+      case char =>  next() yet comment(mark)
+
     def tag(): Token =
       cursor.lay(fail()):
+        case '!'  =>  expect('-')
+                      expect('-')
+                      next()
+                      Token.Comment(cursor.hold(comment(cursor.mark)))
         case '/'  =>  next()
                       val name = cursor.hold(tagname(cursor.mark))
                       Token.Close(name)
@@ -261,6 +276,9 @@ object Dom:
 
           case Token.Close(name) =>
             HtmlNode.Node(name, parent.attributes, children.reverse)
+
+          case Token.Comment(text) =>
+            read(parent, HtmlNode.Comment(text) :: children)
 
           case Token.SelfClosing(name, attributes) =>
             read(parent, HtmlNode.Node(name, attributes, Nil) :: children)
