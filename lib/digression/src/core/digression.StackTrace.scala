@@ -57,7 +57,7 @@ object StackTrace:
       "⊢".tt  -> "extension method".tt,
       "∂".tt  -> "direct".tt,
       "δ".tt  -> "default".tt,
-      "⋮⋮".tt -> "package file".tt,
+      "⁅⁆".tt -> "package file".tt,
       "ⲛ".tt  -> "class initializer".tt,
       "ℓ".tt  -> "lazy initializer".tt,
       "Σ".tt  -> "specialized method".tt)
@@ -186,7 +186,7 @@ object StackTrace:
             case 'i' => token(idx,         "$minus",               "-")
             case _   => skip()
           case 'p' => char(idx + 2) match
-            case 'a' => token(idx,         "$package",             "⋮")
+            case 'a' => token(idx,         "$package",             "⁆")
             case 'e' => token(idx,         "$percent",             "%")
             case 'l' => token(idx,         "$plus",                "+")
             case _   => skip()
@@ -227,7 +227,7 @@ object StackTrace:
 
     else if rewritten.s.endsWith("#") then
       val pivot = rewritten.s.lastIndexOf(".")
-      val sub = if rewritten.s.endsWith("⋮#") then "⋮" else "Ξ"
+      val sub = if rewritten.s.endsWith("⁆#") then "⁅" else "Ξ"
 
       (rewritten.s.substring(0, pivot).nn+"."+sub+rewritten.s.substring(pivot + 1).nn.dropRight(1))
       . tt
