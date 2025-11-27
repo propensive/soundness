@@ -53,6 +53,11 @@ enum Dictionary[+element]:
     case Branch(Unset, map) => map.sumBy(_(1).size)
     case Branch(_, map)     => map.sumBy(_(1).size) + 1
 
+  def branches: Set[Char] = this match
+    case Empty          => Set()
+    case Just(tail, _)  => tail.prim.let(Set(_)).or(Set())
+    case Branch(_, map) => map.keySet
+
   def add[element2 >: element](entry: Text, value: element2, offset: Int): Dictionary[element2] =
     this match
       case Empty =>
