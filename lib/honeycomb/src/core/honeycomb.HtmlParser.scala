@@ -69,16 +69,21 @@ object HtmlNode extends Format:
 
   enum Issue extends Format.Issue:
     case ExpectedMore
+    case UnknownTag(name: Text)
     case OnlyWhitespace(char: Char)
     case Unexpected(char: Char)
+    case UnknownEntity(name: Text)
     case ForbiddenUnquoted(char: Char)
+    case MismatchedTag(open: Text, close: Text)
 
     def describe: Message = this match
-      case ExpectedMore             =>  m"the content ended prematurely"
-      case OnlyWhitespace(char)     =>  m"the character $char was found where only whitespace is permitted"
-      case Unexpected(char)         =>  m"the character $char was not expected"
-      case ForbiddenUnquoted(char)  =>  m"the character $char is forbidden in an unquoted attribute"
-
+      case ExpectedMore               =>  m"the content ended prematurely"
+      case UnknownTag(name)           =>  m"the tag <$name> is not valid HTML5"
+      case OnlyWhitespace(char)       =>  m"the character $char was found where only whitespace is permitted"
+      case Unexpected(char)           =>  m"the character $char was not expected"
+      case UnknownEntity(name)        =>  m"the entity &$name is not defined"
+      case ForbiddenUnquoted(char)    =>  m"the character $char is forbidden in an unquoted attribute"
+      case MismatchedTag(open, close) =>  m"the tag </$close> did not match the opening tag <$open>"
 
   case class Position(ordinal: Ordinal) extends Format.Position:
     def describe: Text = t"character ${ordinal.n1}"
@@ -99,75 +104,118 @@ object HtmlNode extends Format:
 
       t"<$name$tagContent>${children.map(_.toString.tt).join}</$name>".s
 
+  enum Content:
+    case Raw, Rcdata, Whitespace, Normal
+
 sealed trait HtmlNode extends Topical:
   type Topic
 
-erased trait Childless extends Transportive
+erased trait Vacant extends Transportive
+
+object data extends Dynamic:
+  def applyDynamic(name: String)(value: Text): (String, Text) = (name, value)
+  def updateDynamic(name: String)(value: Text): (String, Text) = (name, value)
 
 object Pair:
   given conversion: [key <: String: Precise, tag <: String: Precise]
-        => Conversion[(key, Text), Pair of tag] =
+        => Conversion[(key, Text), Optional[Pair of tag]] =
     pair => Pair(pair(0), pair(1)).asInstanceOf[Pair of tag]
 
   given conversion2: [key <: String: Precise, tag <: String: Precise]
-        => Conversion[(key, String), Pair of tag] =
+        => Conversion[(key, String), Optional[Pair of tag]] =
     pair => Pair(pair(0), pair(1).tt).asInstanceOf[Pair of tag]
+
+  given conversion3: [key <: String: Precise, tag <: String: Precise]
+        => Conversion[(key, Boolean), Optional[Pair of tag]] =
+    pair => Pair(pair(0), pair(0).tt).asInstanceOf[Pair of tag].unless(!pair(1))
 
 case class Pair(key: Text, value: Text) extends Topical
 
-extension (node: HtmlNode.Node & Childless)
+extension (node: HtmlNode.Node & Vacant)
   def apply(children: into[HtmlNode of node.Transport]*): HtmlNode.Node =
     HtmlNode.Node(node.name, node.attributes, children)
+
+
 
 object Dom:
   import HtmlNode.Issue.*
 
-  object Tag
+  object Tag:
+    def apply[label <: Label: {Precise, ValueOf}, children <: Label]
+         (void:      Boolean          = false,
+          autoclose: Boolean          = false,
+          content:   HtmlNode.Content = HtmlNode.Content.Normal,
+          presets:   List[Pair]       = Nil)
+    : Tag of label over children =
 
-  class Tag[label <: Label, children <: Label](name0: Text, void: Boolean = false)
+        new Tag(valueOf[label].tt, void, autoclose, content, presets):
+          type Topic = label
+          type Transport = children
+
+
+  class Tag
+         (    name0:     Text,
+          val void:      Boolean          = false,
+          val autoclose: Boolean          = false,
+          val content:   HtmlNode.Content = HtmlNode.Content.Normal,
+          val presets:   List[Pair]       = Nil)
   extends HtmlNode.Node(name0, Nil, Nil), Dynamic:
-    type Topic = label
-    type Transport = children
+    type Topic
+    type Transport
 
-    def applyDynamic(method: "apply")(children: into[HtmlNode of children]*)
-    : HtmlNode.Node of label =
+    def applyDynamic(method: "apply")(children: into[HtmlNode of Transport]*)
+    : HtmlNode.Node of Topic =
 
-        HtmlNode.Node(name, Nil, children).asInstanceOf[HtmlNode.Node of label]
-
-
-    def applyDynamicNamed(method: "apply")(attributes: into[Pair of label]*)
-    : HtmlNode.Node & Childless over children =
-
-        HtmlNode.Node(name, attributes.to(List), Nil)
-        . asInstanceOf[HtmlNode.Node & Childless over children]
+        HtmlNode.Node(name, Nil, children).asInstanceOf[HtmlNode.Node of Topic]
 
 
-  val entitiesList = cp"/honeycomb/entities.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
-    case List(key, value) => (key, value)
+    def applyDynamicNamed(method: "apply")(attributes: into[Optional[Pair of Topic]]*)
+    : HtmlNode.Node & Vacant over Transport =
 
-  object Area extends Tag["area", Label]("area", void = true)
-  object Base extends Tag["base", Label]("base", void = true)
-  object Br extends Tag["br", Label]("br", void = true)
-  object Col extends Tag["col", Label]("col", void = true)
-  object Command extends Tag["command", Label]("command", void = true)
-  object Embed extends Tag["embed", Label]("embed", void = true)
-  object Hr extends Tag["hr", Label]("hr", void = true)
-  object Img extends Tag["img", Label]("img", void = true)
-  object Input extends Tag["input", Label]("input", void = true)
-  object Link extends Tag["link", Label]("link", void = true)
-  object Meta extends Tag["meta", Label]("meta", void = true)
-  object Param extends Tag["param", Label]("param", void = true)
-  object Source extends Tag["source", Label]("source", void = true)
-  object Track extends Tag["track", Label]("track", void = true)
-  object Wbr extends Tag["wbr", Label]("wbr", void = true)
+        HtmlNode.Node(name, attributes.to(List).compact, Nil)
+        . asInstanceOf[HtmlNode.Node & Vacant over Transport]
 
-  object Head extends Tag["head", "meta" | "style"]("head")
-  object Body extends Tag["body", "div"]("body")
-  object Div extends Tag["div", "p" | "ul" | "ol" | "#text"]("div")
-  object Li extends Tag["li", "p" | "#text"]("li")
-  object Ol extends Tag["ol", "li"]("ol")
-  object P extends Tag["p", "i" | "em" | "strong" | "#text"]("p")
-  object Ul extends Tag["ul", "li"]("ul")
+  val Area = Tag["area", Label](void = true)
+  val Base = Tag["base", Label](void = true)
+  val Br = Tag["br", Label](void = true)
+  val Col = Tag["col", Label](void = true)
+  val Command = Tag["command", Label](void = true)
+  val Embed = Tag["embed", Label](void = true)
+  val Em = Tag["em", Label]()
+  val Hr = Tag["hr", Label](void = true)
+  val Img = Tag["img", Label](void = true)
+
+  object Input extends Tag("input", void = true, autoclose = false):
+    type Topic = "input"
+    type Transport = Label
+
+    val Button = Tag["input", Label](void = true, presets = List(Pair(t"type", t"button")))
+
+  val Link = Tag["link", Label](void = true)
+  val Meta = Tag["meta", Label](void = true)
+  val Param = Tag["param", Label](void = true)
+  val Source = Tag["source", Label](void = true)
+  val Script = Tag["script", Label](content = HtmlNode.Content.Raw)
+  val Style = Tag["style", Label](content = HtmlNode.Content.Raw)
+  val Track = Tag["track", Label](void = true)
+  val Wbr = Tag["wbr", Label](void = true)
+
+  val Head = Tag["head", "meta" | "style"](autoclose = true)
+  val Body = Tag["body", "div"](autoclose = true)
+  val Div = Tag["div", "p" | "ul" | "ol" | "#text"]()
+  val Li = Tag["li", "p" | "#text"](autoclose = true)
+  val Ol = Tag["ol", "li"]()
+  val P = Tag["p", "i" | "em" | "strong" | "#text"](autoclose = true)
+  val B = Tag["b", "i" | "em" | "strong" | "#text"]()
+  val Ul = Tag["ul", "li"]()
+
+  val elements: Dictionary[Tag] =
+    val list =
+      List
+       (Area, Base, Br, Col, Command, Embed, Hr, Img, Input, Link, Meta, Param,
+        Source, Track, Wbr, Head, Body, Div, Li, Ol, P, Ul, Em, B, Script, Style)
+
+    Dictionary(list.bi.map(_.name -> _)*)
 
   // val elements: Set[Tag] =
   //   Set
@@ -181,28 +229,24 @@ object Dom:
   //     Tbody, Td, Template, Textarea, Tfoot, Th, Thead, Time, Title, Tr, Track, U, Ul, Var, Video,
   //     Wbr)
 
-  val void: Set[Text] =
-    Set("area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
-        "meta", "param", "source", "track", "wbr")
-
   val rawElements: Set[Text] = Set("script", "style")
 
   val rcdataElements: Set[Text] = Set("textarea", "title")
 
-  val textless: Set[Text] =
-    Set("html", "head", "table", "colgroup", "thead", "tbody", "tfoot", "tr", "ul", "ol", "menu",
-        "dl", "select", "optgroup", "datalist", "picture", "template")
+  // val textless: Set[Text] =
+  //   Set("html", "head", "table", "colgroup", "thead", "tbody", "tfoot", "tr", "ul", "ol", "menu",
+  //       "dl", "select", "optgroup", "datalist", "picture", "template")
 
-  val optionalEndTag: Set[Text] =
-    Set("html", "head", "body", "p", "li", "dt", "dd", "rt", "rp", "optgroup", "option", "colgroup",
-        "thead", "tbody", "tfoot", "tr", "td", "th")
+  val entities: Dictionary[Text] =
+    val list = cp"/honeycomb/entities.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
+      case List(key, value) => (key, value)
 
-  val entities: Dictionary[Text] = Dictionary(entitiesList*)
+    Dictionary(list*)
 
   enum Token:
     case Close(name: Text)
     case Comment(text: Text)
-    case SelfClosing(name: Text, attributes: List[Pair])
+    case Empty(name: Text, attributes: List[Pair])
     case Open(name: Text, attributes: List[Pair])
 
   def parse(input: Iterator[Text]): HtmlNode raises ParseError =
@@ -245,8 +289,8 @@ object Dom:
       case '-'                             =>  next() yet key(mark)
       case char if char.isLetter           =>  next() yet key(mark)
       case ' ' | '\f' | '\n' | '\r' | '\t' =>  cursor.grab(mark, cursor.mark)
-      case '='                             =>  cursor.grab(mark, cursor.mark)
-      case char                            =>  panic(m"Did not expect $char at ${cursor.position.n0}")
+      case '=' | '>'                       =>  cursor.grab(mark, cursor.mark)
+      case char                            =>  fail(Unexpected(char))
 
 
     @tailrec
@@ -265,25 +309,28 @@ object Dom:
       case char@('"' | '\'' | '<' | '=' | '`')   =>  fail(ForbiddenUnquoted(char))
       case char                                  =>  next() yet unquotedValue(mark)
 
-    def equality(): Unit =
+    def equality(): Boolean =
       whitespace()
 
       cursor.lay(fail(ExpectedMore)):
-        case '='  => next() yet whitespace()
-        case char => panic(m"expected = at ${cursor.position.n0}")
+        case '='                             =>  next() yet whitespace() yet true
+        case '>'                             =>  false
+        case ' ' | '\f' | '\n' | '\r' | '\t' =>  false
+        case char                            =>  fail(Unexpected(char))
 
 
     @tailrec
     def attributes(entries0: List[Pair] = Nil)(using Cursor.Held): List[Pair] =
       val name = key(cursor.mark)
-      equality()
 
-      val assignment = cursor.lay(fail(ExpectedMore)):
-        case '"'  =>  next() yet value(cursor.mark)
-        case '\'' =>  next() yet singleQuotedValue(cursor.mark)
-        case _    =>  unquotedValue(cursor.mark)
+      val entries = if equality() then
+        val assignment = cursor.lay(fail(ExpectedMore)):
+          case '"'  =>  next() yet value(cursor.mark)
+          case '\'' =>  next() yet singleQuotedValue(cursor.mark)
+          case _    =>  unquotedValue(cursor.mark)
 
-      val entries = Pair(name, assignment) :: entries0
+        Pair(name, assignment) :: entries0
+      else Pair(name, name) :: entries0
 
       whitespace()
 
@@ -294,11 +341,12 @@ object Dom:
 
     def entity(mark: Mark)(using Cursor.Held): Optional[HtmlNode.Textual] = cursor.lay(fail(ExpectedMore)):
       case char if char.isLetter | char.isDigit =>  next() yet entity(mark)
-      case '='                                  => Unset
+      case '='                                  =>  Unset
 
       case ';' =>
         next()
-        HtmlNode.Textual(entities(cursor.grab(mark, cursor.mark)).or(panic(m"Unknown entity")))
+        val name = cursor.grab(mark, cursor.mark)
+        HtmlNode.Textual(entities(name).or(fail(UnknownEntity(name))))
 
       case char =>
         entities(cursor.grab(mark, cursor.mark)).let(HtmlNode.Textual(_))
@@ -345,7 +393,8 @@ object Dom:
         case '!'  =>  expect('-')
                       expect('-')
                       next()
-                      Token.Comment(cursor.hold(comment(cursor.mark)))
+                      val content = cursor.hold(comment(cursor.mark))
+                      cursor.next() yet Token.Comment(content)
         case '/'  =>  next()
                       val name = cursor.hold(tagname(cursor.mark))
                       Token.Close(name)
@@ -354,17 +403,18 @@ object Dom:
                       whitespace()
 
                       cursor.lay(fail(ExpectedMore)):
-                        case '/' =>  expect('>') yet Token.SelfClosing(name, Nil)
+                        case '/' =>  expect('>') yet cursor.next() yet Token.Empty(name, Nil)
                         case '>' =>  cursor.next() yet Token.Open(name, Nil)
                         case _   =>  Token.Open(name, cursor.hold(attributes()))
 
-    def descend(parent: Token.Open, children: List[HtmlNode]): HtmlNode = read(parent, children)
+    def descend(parent: Tag, children: List[HtmlNode]): HtmlNode = read(parent, children)
 
     @tailrec
-    def read(parent: Token.Open, children: List[HtmlNode]): HtmlNode =
+    def read(parent: Tag, children: List[HtmlNode]): HtmlNode =
       cursor.lay(children.head):
-        case '&'  =>
-          if textless(parent.name) then fail(OnlyWhitespace('&')) else
+        case '&'  => parent.content match
+          case HtmlNode.Content.Whitespace => fail(OnlyWhitespace('&'))
+          case _ =>
             val child = cursor.hold:
               val start = cursor.mark
               next()
@@ -372,34 +422,52 @@ object Dom:
 
             read(parent, child :: children)
 
-        case '<'  =>  next() yet tag() match
-          case tag@Token.Open(name, attributes) =>
-            if Dom.void(name)
-            then read(parent, HtmlNode.Node(name, attributes, Nil) :: children)
-            else read(parent, descend(tag, Nil) :: children)
+        case '<'  =>
+          var ascend: Boolean = false
+          val node: HtmlNode = cursor.hold:
+            val mark = cursor.mark
+            next() yet tag() match
+              case Token.Empty(name, attributes) => HtmlNode.Node(name, attributes, Nil)
+              case Token.Comment(text)           => HtmlNode.Comment(text)
 
-          case Token.Close(name) =>
-            cursor.next()
-            HtmlNode.Node(name, parent.attributes, children.reverse)
+              case token@Token.Open(name, attributes) =>
+                val tag = elements(name).or:
+                  cursor.cue(mark)
+                  fail(UnknownTag(name))
+                if tag.void then HtmlNode.Node(name, attributes, Nil) else descend(tag, Nil)
 
-          case Token.Comment(text) =>
-            read(parent, HtmlNode.Comment(text) :: children)
+              case Token.Close(name) =>
+                if name != parent.name then
+                  if parent.autoclose then
+                    cursor.cue(mark)
+                    ascend = true
+                    HtmlNode.Node(name, parent.attributes, children.reverse)
+                  else fail(MismatchedTag(parent.name, name))
+                else
+                  cursor.next()
+                  ascend = true
+                  HtmlNode.Node(name, parent.attributes, children.reverse)
 
-          case Token.SelfClosing(name, attributes) =>
-            read(parent, HtmlNode.Node(name, attributes, Nil) :: children)
 
-        case char =>
-          if textless(parent.name) then onlyWhitespace() yet read(parent, children) else
-            if rawElements(parent.name)
-            then cursor.hold:
+
+          if ascend then node else read(parent, node :: children)
+
+        case char => parent.content match
+          case HtmlNode.Content.Whitespace =>
+            onlyWhitespace() yet read(parent, children)
+
+          case HtmlNode.Content.Raw =>
+            cursor.hold:
               HtmlNode.Node(parent.name, parent.attributes, List(rawText(parent.name, cursor.mark)))
-            else if rcdataElements(parent.name)
-            then cursor.hold:
-              HtmlNode.Node(parent.name, parent.attributes, List(rawText(parent.name, cursor.mark))) // FIXME
-            else
-              val child = cursor.hold(textual(cursor.mark))
-              if child != HtmlNode.Textual("") then read(parent, child :: children)
-              else read(parent, children)
+
+          case HtmlNode.Content.Rcdata =>
+            cursor.hold:
+              HtmlNode.Node(parent.name, parent.attributes, List(rawText(parent.name, cursor.mark)))
+
+          case HtmlNode.Content.Normal =>
+            val child = cursor.hold(textual(cursor.mark))
+            if child != HtmlNode.Textual("") then read(parent, child :: children)
+            else read(parent, children)
 
     whitespace()
-    read(Token.Open("", Nil), Nil)
+    read(Div, Nil)

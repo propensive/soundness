@@ -35,6 +35,8 @@ package honeycomb
 import soundness.{Table as _, *}
 
 import autopsies.contrastExpectations
+import errorDiagnostics.stackTraces
+import strategies.throwUnsafely
 
 object Tests extends Suite(m"Honeycomb Tests"):
   def run(): Unit =
@@ -86,7 +88,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
       .check(_ == t"<table><tbody><tr><td>A</td></tr></tbody></table>")
 
     suite(m"HTML parsing tests"):
-      import Dom.{Div, P, Li, Area, Br, Ul}
+      import Dom.{Div, P, Li, Area, Br, Ul, Input}
       def parse(text: Text): HtmlNode = unsafely(Dom.parse(Iterator(text)))
 
       test(m"simple empty tag"):
@@ -121,10 +123,32 @@ object Tests extends Suite(m"Honeycomb Tests"):
         parse(t"""<area foo=bar>""")
       .assert(_ == Area(foo = "bar"))
 
+      test(m"void tag with a boolean attribute"):
+        parse(t"""<input disabled>""")
+      .assert(_ == Input(disabled = true))
+
       test(m"void tag with a single-quoted attribute"):
         parse(t"""<area foo='bar baz'>""")
       .assert(_ == Area(foo = "bar baz"))
 
       test(m"simple nested tag"):
         parse(t"""<div><area></div>""")
+      .assert(_ == Div(Area))
+
+      test(m"just text"):
+        parse(t"""hello world""")
+      .assert(_ == HtmlNode.Textual("hello world"))
+
+      test(m"mismatched tag"):
+        try parse(t"""<em><b></em></b>""")
+        catch case exception: Exception => exception
+      .assert(_ == ParseError(HtmlNode, HtmlNode.Position(12.u), HtmlNode.Issue.MismatchedTag("b", "em")))
+
+      test(m"unknown tag"):
+        try parse(t"""<xyz>""")
+        catch case exception: Exception => exception
+      .assert(_ == ParseError(HtmlNode, HtmlNode.Position(1.u), HtmlNode.Issue.UnknownTag("xyz")))
+
+      test(m"autoclosing tag"):
+        parse(t"""<ul><li>First item\n<li>Second item</ul>""")
       .assert()
