@@ -33,7 +33,7 @@
 package soundness
 
 export denominative
-. { Countable, Prim, Sec, Ter, Quat, Quin, Sen, Sept, full, Ordinal, Interval, Zerary, z, empty }
+. { Countable, Prim, Sec, Ter, Quat, Quin, Sen, Sept, full, Ordinal, Interval, Zerary, z, u, empty }
 
 package ordinalShowables:
   export denominative.ordinalShowables
