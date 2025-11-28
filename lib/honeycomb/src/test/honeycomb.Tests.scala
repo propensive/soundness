@@ -34,11 +34,13 @@ package honeycomb
 
 import soundness.{Table as _, *}
 
-import html5.*
+import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Honeycomb Tests"):
   def run(): Unit =
     suite(m"Showing HTML"):
+      import html5.*
+
       test(m"empty normal tag"):
         Div.show
       .check(_ == t"<div/>")
@@ -84,10 +86,45 @@ object Tests extends Suite(m"Honeycomb Tests"):
       .check(_ == t"<table><tbody><tr><td>A</td></tr></tbody></table>")
 
     suite(m"HTML parsing tests"):
-      test(m"Parse simple tag"):
-        println(Dom.parse(Iterator(t"""<div foo=bar><yes/>Hello &amp; <!-- comment! -- --> world<script>script content</script></div>""")))
-      .assert()
+      import Dom.{Div, P, Li, Area, Br, Ul}
+      def parse(text: Text): HtmlNode = unsafely(Dom.parse(Iterator(text)))
 
-      // test(m"Parse simple tag with text content"):
-      //   println(Dom.parse(Iterator(t"<div>hello</div>")))
-      // .assert()
+      test(m"simple empty tag"):
+        parse(t"""<div></div>""")
+      .assert(_ == Div)
+
+      test(m"List"):
+        parse(t"""<ul><li>item</li></ul>""")
+      .assert(_ == Ul(Li("item")))
+
+      test(m"simple tag with text"):
+        parse(t"""<div>content</div>""")
+      .assert(_ == Div("content"))
+
+      test(m"simple self-closing tag"):
+        parse(t"""<div/>""")
+      .assert(_ == Div)
+
+      test(m"simple comment tag"):
+        parse(t"""<!--This is a comment-->""")
+      .assert(_ == HtmlNode.Comment("This is a comment"))
+
+      test(m"simple void tag"):
+        parse(t"""<br>""")
+      .assert(_ == Br)
+
+      test(m"void tag with an attribute"):
+        parse(t"""<area foo="bar">""")
+      .assert(_ == Area(foo = t"bar"))
+
+      test(m"void tag with an unquoted attribute"):
+        parse(t"""<area foo=bar>""")
+      .assert(_ == Area(foo = "bar"))
+
+      test(m"void tag with a single-quoted attribute"):
+        parse(t"""<area foo='bar baz'>""")
+      .assert(_ == Area(foo = "bar baz"))
+
+      test(m"simple nested tag"):
+        parse(t"""<div><area></div>""")
+      .assert()
