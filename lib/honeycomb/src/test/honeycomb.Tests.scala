@@ -88,7 +88,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
       .check(_ == t"<table><tbody><tr><td>A</td></tr></tbody></table>")
 
     suite(m"HTML parsing tests"):
-      import Dom.{Div, P, Li, Area, Br, Ul, Input}
+      import Dom.{Div, P, Li, Area, Br, Ul, Input, Head, Script}
       def parse(text: Text): HtmlNode = unsafely(Dom.parse(Iterator(text)))
 
       test(m"simple empty tag"):
@@ -156,6 +156,30 @@ object Tests extends Suite(m"Honeycomb Tests"):
         try parse(t"""<xyz>""")
         catch case exception: Exception => exception
       .assert(_ == ParseError(HtmlNode, HtmlNode.Position(1.u), HtmlNode.Issue.InvalidTag("xyz")))
+
+      test(m"raw text"):
+        parse(t"<head><script>some content</script></head>")
+      . assert(_ == Head(Script("some content")))
+
+      test(m"raw text, with partial closing tag"):
+        parse(t"<head><script>some content</scr</script></head>")
+      . assert(_ == Head(Script("some content</scr")))
+
+      test(m"raw text, with shorter partial closing tag"):
+        parse(t"<head><script>some content</</script></head>")
+      . assert(_ == Head(Script("some content</")))
+
+      test(m"raw text, with even shorter partial closing tag"):
+        parse(t"<head><script>some content<</script></head>")
+      . assert(_ == Head(Script("some content<")))
+
+      test(m"raw text, with non-entity"):
+        parse(t"<head><script>some &amp; content</script></head>")
+      . assert(_ == Head(Script("some &amp; content")))
+
+      test(m"raw text, with tag literal"):
+        parse(t"<head><script>some <foo> content</script></head>")
+      . assert(_ == Head(Script("some <foo> content")))
 
       test(m"autoclosing tag"):
         parse(t"""<ul><li>First item\n<li>Second item</ul>""")
