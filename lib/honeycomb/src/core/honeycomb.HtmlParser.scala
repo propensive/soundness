@@ -46,6 +46,7 @@ import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
@@ -69,7 +70,7 @@ object HtmlNode extends Format:
 
   enum Issue extends Format.Issue:
     case ExpectedMore
-    case UnknownTag(name: Text)
+    case InvalidTag(name: Text)
     case OnlyWhitespace(char: Char)
     case Unexpected(char: Char)
     case UnknownEntity(name: Text)
@@ -78,7 +79,7 @@ object HtmlNode extends Format:
 
     def describe: Message = this match
       case ExpectedMore               =>  m"the content ended prematurely"
-      case UnknownTag(name)           =>  m"the tag <$name> is not valid HTML5"
+      case InvalidTag(name)           =>  m"the tag <$name> is not valid HTML5"
       case OnlyWhitespace(char)       =>  m"the character $char was found where only whitespace is permitted"
       case Unexpected(char)           =>  m"the character $char was not expected"
       case UnknownEntity(name)        =>  m"the entity &$name is not defined"
@@ -217,26 +218,6 @@ object Dom:
 
     Dictionary(list.bi.map(_.name -> _)*)
 
-  // val elements: Set[Tag] =
-  //   Set
-  //    (A, Abbr, Address, Area, Article, Aside, Audio, B, Base, Bdi, Bdo, Blockquote, Body, Br,
-  //     Button, Canvas, Caption, Cite, Code, Col, Colgroup, Data, Datalist, Dd, Del, Details, Dfn,
-  //     Dialog, Div, Dl, Dt, Em, Embed, Fencedframe, Fieldset, Figcaption, Figure, Footer, Form, H1,
-  //     H2, H3, H4, H5, H6, Head, Header, Hgroup, Hr, Html, I, Iframe, Img, Input, Ins, Kbd, Label,
-  //     Legend, Li, Link, Main, Map, Mark, Menu, Meta, Meter, Nav, Noscript, Object, Ol, Optgroup,
-  //     Option, Output, P, Picture, Pre, Progress, Q, Rp, Rt, Ruby, S, Samp, Script, Search, Section,
-  //     Select, Selectedcontent, Slot, Small, Source, Span, Strong, Style, Sub, Summary, Sup, Table,
-  //     Tbody, Td, Template, Textarea, Tfoot, Th, Thead, Time, Title, Tr, Track, U, Ul, Var, Video,
-  //     Wbr)
-
-  val rawElements: Set[Text] = Set("script", "style")
-
-  val rcdataElements: Set[Text] = Set("textarea", "title")
-
-  // val textless: Set[Text] =
-  //   Set("html", "head", "table", "colgroup", "thead", "tbody", "tfoot", "tr", "ul", "ol", "menu",
-  //       "dl", "select", "optgroup", "datalist", "picture", "template")
-
   val entities: Dictionary[Text] =
     val list = cp"/honeycomb/entities.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
       case List(key, value) => (key, value)
@@ -244,10 +225,7 @@ object Dom:
     Dictionary(list*)
 
   enum Token:
-    case Close(name: Text)
-    case Comment(text: Text)
-    case Empty(name: Text, attributes: List[Pair])
-    case Open(name: Text, attributes: List[Pair])
+    case Close, Comment, Empty, Open
 
   def parse(input: Iterator[Text]): HtmlNode raises ParseError =
     val cursor = Cursor(input)
@@ -259,20 +237,19 @@ object Dom:
     inline def expect(char: Char): Unit =
       cursor.next()
       cursor.lay(fail(ExpectedMore)): datum =>
-        if datum != char
-        then panic(m"expected $char but found $datum at ${cursor.position.n0}")
+        if datum != char then fail(Unexpected(datum))
 
     def fail(issue: HtmlNode.Issue): Nothing =
       abort(ParseError(HtmlNode, HtmlNode.Position(cursor.position), issue))
 
     @tailrec
-    def whitespace(): Unit = cursor.lay(fail(ExpectedMore)):
-      case ' ' | '\f' | '\n' | '\r' | '\t' => next() yet whitespace()
+    def skip(): Unit = cursor.lay(fail(ExpectedMore)):
+      case ' ' | '\f' | '\n' | '\r' | '\t' => next() yet skip()
       case _                               => ()
 
     @tailrec
-    def onlyWhitespace(): Unit = cursor.lay(fail(ExpectedMore)):
-      case ' ' | '\f' | '\n' | '\r' | '\t' =>  next() yet onlyWhitespace()
+    def whitespace(): Unit = cursor.lay(fail(ExpectedMore)):
+      case ' ' | '\f' | '\n' | '\r' | '\t' =>  next() yet whitespace()
       case '<'                             =>  ()
       case char                            =>  fail(OnlyWhitespace(char))
 
@@ -299,21 +276,21 @@ object Dom:
       case char => next() yet value(mark)
 
     @tailrec
-    def singleQuotedValue(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+    def singleQuoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '\'' => cursor.grab(mark, cursor.mark).also(next())
-      case char => next() yet singleQuotedValue(mark)
+      case char => next() yet singleQuoted(mark)
 
     @tailrec
-    def unquotedValue(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+    def unquoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '>' | ' ' | '\f' | '\n' | '\r' | '\t' =>  cursor.grab(mark, cursor.mark)
       case char@('"' | '\'' | '<' | '=' | '`')   =>  fail(ForbiddenUnquoted(char))
-      case char                                  =>  next() yet unquotedValue(mark)
+      case char                                  =>  next() yet unquoted(mark)
 
     def equality(): Boolean =
-      whitespace()
+      skip()
 
       cursor.lay(fail(ExpectedMore)):
-        case '='                             =>  next() yet whitespace() yet true
+        case '='                             =>  next() yet skip() yet true
         case '>'                             =>  false
         case ' ' | '\f' | '\n' | '\r' | '\t' =>  false
         case char                            =>  fail(Unexpected(char))
@@ -326,40 +303,45 @@ object Dom:
       val entries = if equality() then
         val assignment = cursor.lay(fail(ExpectedMore)):
           case '"'  =>  next() yet value(cursor.mark)
-          case '\'' =>  next() yet singleQuotedValue(cursor.mark)
-          case _    =>  unquotedValue(cursor.mark)
+          case '\'' =>  next() yet singleQuoted(cursor.mark)
+          case _    =>  unquoted(cursor.mark)
 
         Pair(name, assignment) :: entries0
       else Pair(name, name) :: entries0
 
-      whitespace()
+      skip()
 
       cursor.lay(fail(ExpectedMore)):
         case '>' =>  cursor.next() yet entries
         case '/' =>  expect('>') yet cursor.next() yet entries
         case _   =>  attributes(entries)
 
-    def entity(mark: Mark)(using Cursor.Held): Optional[HtmlNode.Textual] = cursor.lay(fail(ExpectedMore)):
-      case char if char.isLetter | char.isDigit =>  next() yet entity(mark)
-      case '='                                  =>  Unset
+    @tailrec
+    def entity(mark: Mark)(using Cursor.Held): Optional[Text] =
+      cursor.lay(fail(ExpectedMore)):
+        case char if char.isLetter | char.isDigit =>  next() yet entity(mark)
+        case '='                                  =>  Unset
 
-      case ';' =>
-        next()
-        val name = cursor.grab(mark, cursor.mark)
-        HtmlNode.Textual(entities(name).or(fail(UnknownEntity(name))))
+        case ';' =>
+          cursor.next()
+          val name = cursor.grab(mark, cursor.mark)
+          entities(name).or(fail(UnknownEntity(name)))
 
-      case char =>
-        entities(cursor.grab(mark, cursor.mark)).let(HtmlNode.Textual(_))
+        case char =>
+          entities(cursor.grab(mark, cursor.mark))
 
 
-    def textual(mark: Mark)(using Cursor.Held): HtmlNode =
-      cursor.lay(HtmlNode.Textual(cursor.grab(mark, cursor.mark))):
-        case '<' | '&'                        =>  HtmlNode.Textual(cursor.grab(mark, cursor.mark))
+    @tailrec
+    def textual(mark: Mark)(using Cursor.Held): Text =
+      cursor.lay(cursor.grab(mark, cursor.mark)):
+        case '<' | '&'                        =>  cursor.grab(mark, cursor.mark)
         case ' ' | '\f' | '\n' | '\r' | '\t'  =>  next() yet textual(mark)
-        case char                             =>  if cursor.next() then textual(mark)
-                                                  else HtmlNode.Textual(cursor.grab(mark, cursor.mark))
 
-    def rawText(tag: Text, mark: Mark)(using Cursor.Held): HtmlNode =
+        case char =>
+          if cursor.next() then textual(mark) else cursor.grab(mark, cursor.mark)
+
+    @tailrec
+    def raw(tag: Text, mark: Mark)(using Cursor.Held): HtmlNode =
       cursor.lay(HtmlNode.Textual(cursor.grab(mark, cursor.mark))):
         case '<'  =>  val end = cursor.mark
                       cursor.next()
@@ -373,12 +355,16 @@ object Dom:
                         if cursor.more && candidate == tag then
                           if cursor.lay(false)(_ == '>')
                           then HtmlNode.Textual(cursor.grab(mark, end))
-                          else cursor.cue(resume) yet rawText(tag, mark)
-                        else rawText(tag, mark)
-                      else rawText(tag, mark)
+                          else cursor.cue(resume) yet raw(tag, mark)
+                        else raw(tag, mark)
+                      else raw(tag, mark)
 
-        case char =>  if cursor.next() then rawText(tag, mark)
+        case char =>  if cursor.next() then raw(tag, mark)
                       else HtmlNode.Textual(cursor.grab(mark, cursor.mark))
+
+    // mutable state
+    var content: Text = t""
+    var tokenAttributes: List[Pair] = Nil
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '-'  =>  val end = cursor.mark
@@ -393,21 +379,35 @@ object Dom:
         case '!'  =>  expect('-')
                       expect('-')
                       next()
-                      val content = cursor.hold(comment(cursor.mark))
-                      cursor.next() yet Token.Comment(content)
+                      content = cursor.hold(comment(cursor.mark))
+                      cursor.next()
+                      Token.Comment
         case '/'  =>  next()
-                      val name = cursor.hold(tagname(cursor.mark))
-                      Token.Close(name)
+                      content = cursor.hold(tagname(cursor.mark))
+                      Token.Close
 
         case char =>  val name = cursor.hold(tagname(cursor.mark))
-                      whitespace()
+                      skip()
 
                       cursor.lay(fail(ExpectedMore)):
-                        case '/' =>  expect('>') yet cursor.next() yet Token.Empty(name, Nil)
-                        case '>' =>  cursor.next() yet Token.Open(name, Nil)
-                        case _   =>  Token.Open(name, cursor.hold(attributes()))
+                        case '/' =>  expect('>')
+                                     cursor.next()
+                                     content = name
+                                     tokenAttributes = Nil
+                                     Token.Empty
+                        case '>' =>  cursor.next()
+                                     content = name
+                                     tokenAttributes = Nil
+                                     Token.Open
+                        case _   =>  content = name
+                                     tokenAttributes = cursor.hold(attributes())
+                                     Token.Open
 
     def descend(parent: Tag, children: List[HtmlNode]): HtmlNode = read(parent, children)
+
+    def append(text: Text, children: List[HtmlNode]): List[HtmlNode] = children match
+      case HtmlNode.Textual(text0) :: more => HtmlNode.Textual(text0+text) :: more
+      case _                              => HtmlNode.Textual(text) :: children
 
     @tailrec
     def read(parent: Tag, children: List[HtmlNode]): HtmlNode =
@@ -420,54 +420,53 @@ object Dom:
               next()
               entity(cursor.mark).or(textual(start))
 
-            read(parent, child :: children)
+            read(parent, append(child, children))
 
         case '<'  =>
           var ascend: Boolean = false
           val node: HtmlNode = cursor.hold:
             val mark = cursor.mark
-            next() yet tag() match
-              case Token.Empty(name, attributes) => HtmlNode.Node(name, attributes, Nil)
-              case Token.Comment(text)           => HtmlNode.Comment(text)
 
-              case token@Token.Open(name, attributes) =>
-                val tag = elements(name).or:
-                  cursor.cue(mark)
-                  fail(UnknownTag(name))
-                if tag.void then HtmlNode.Node(name, attributes, Nil) else descend(tag, Nil)
+            next()
+            tag() match
+              case Token.Empty   =>  HtmlNode.Node(content, tokenAttributes, Nil)
+              case Token.Comment =>  HtmlNode.Comment(content)
 
-              case Token.Close(name) =>
-                if name != parent.name then
+              case Token.Open =>
+                val tag = elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
+                if tag.void then HtmlNode.Node(content, tokenAttributes, Nil)
+                else descend(tag, Nil)
+
+              case Token.Close =>
+                if content != parent.name then
                   if parent.autoclose then
                     cursor.cue(mark)
                     ascend = true
-                    HtmlNode.Node(name, parent.attributes, children.reverse)
-                  else fail(MismatchedTag(parent.name, name))
+                    HtmlNode.Node(content, parent.attributes, children.reverse)
+                  else fail(MismatchedTag(parent.name, content))
                 else
                   cursor.next()
                   ascend = true
-                  HtmlNode.Node(name, parent.attributes, children.reverse)
-
-
+                  HtmlNode.Node(content, parent.attributes, children.reverse)
 
           if ascend then node else read(parent, node :: children)
 
         case char => parent.content match
           case HtmlNode.Content.Whitespace =>
-            onlyWhitespace() yet read(parent, children)
+            whitespace() yet read(parent, children)
 
           case HtmlNode.Content.Raw =>
             cursor.hold:
-              HtmlNode.Node(parent.name, parent.attributes, List(rawText(parent.name, cursor.mark)))
+              HtmlNode.Node(parent.name, parent.attributes, List(raw(parent.name, cursor.mark)))
 
           case HtmlNode.Content.Rcdata =>
             cursor.hold:
-              HtmlNode.Node(parent.name, parent.attributes, List(rawText(parent.name, cursor.mark)))
+              HtmlNode.Node(parent.name, parent.attributes, List(raw(parent.name, cursor.mark)))
 
           case HtmlNode.Content.Normal =>
-            val child = cursor.hold(textual(cursor.mark))
-            if child != HtmlNode.Textual("") then read(parent, child :: children)
-            else read(parent, children)
+            val text = cursor.hold(textual(cursor.mark))
 
-    whitespace()
+            if text == "" then read(parent, children) else read(parent, append(text, children))
+
+    skip()
     read(Div, Nil)
