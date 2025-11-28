@@ -139,7 +139,15 @@ object Tests extends Suite(m"Honeycomb Tests"):
         parse(t"""hello world""")
       .assert(_ == HtmlNode.Textual("hello world"))
 
-      test(m"mismatched tag"):
+      test(m"just text with entity"):
+        parse(t"""to &amp; fro""")
+      .assert(_ == HtmlNode.Textual("to & fro"))
+
+      test(m"just an entity"):
+        parse(t"""&amp;""")
+      .assert(_ == HtmlNode.Textual("&"))
+
+      test(m"mismatched closing tag"):
         try parse(t"""<em><b></em></b>""")
         catch case exception: Exception => exception
       .assert(_ == ParseError(HtmlNode, HtmlNode.Position(12.u), HtmlNode.Issue.MismatchedTag("b", "em")))
@@ -147,7 +155,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"unknown tag"):
         try parse(t"""<xyz>""")
         catch case exception: Exception => exception
-      .assert(_ == ParseError(HtmlNode, HtmlNode.Position(1.u), HtmlNode.Issue.UnknownTag("xyz")))
+      .assert(_ == ParseError(HtmlNode, HtmlNode.Position(1.u), HtmlNode.Issue.InvalidTag("xyz")))
 
       test(m"autoclosing tag"):
         parse(t"""<ul><li>First item\n<li>Second item</ul>""")
