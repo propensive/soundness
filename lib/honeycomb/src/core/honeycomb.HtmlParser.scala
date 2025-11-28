@@ -59,10 +59,10 @@ object HtmlNode extends Format:
   def name: Text = t"HTML"
 
   given conversion: [label >: "#text" <: Label] => Conversion[Text, HtmlNode of label] =
-    HtmlNode.Textual(_).asInstanceOf[HtmlNode.Textual { type Topic = label }]
+    HtmlNode.Textual(_).asInstanceOf[HtmlNode.Textual of label]
 
   given conversion2: [label >: "#text" <: Label] => Conversion[String, HtmlNode of label] =
-    string => HtmlNode.Textual(string.tt).asInstanceOf[HtmlNode.Textual { type Topic = label }]
+    string => HtmlNode.Textual(string.tt).asInstanceOf[HtmlNode.Textual of label]
 
   given conversion3: [label <: Label, content >: label]
         =>  Conversion[HtmlNode.Node over content, HtmlNode of label] =
@@ -90,11 +90,35 @@ object HtmlNode extends Format:
     def describe: Text = t"character ${ordinal.n1}"
 
   case class Document(nodes: HtmlNode*) extends HtmlNode
+
+  case class Fragment(nodes: HtmlNode*) extends HtmlNode:
+    override def hashCode: Int = nodes.hashCode
+
+    override def equals(that: Any): Boolean = that match
+      case Fragment(nodes0*) => nodes0 == nodes
+      case node: HtmlNode    => nodes.length == 1 && nodes(0) == node
+      case _                 => false
+
   case class Comment(text: Text) extends HtmlNode:
+    override def hashCode: Int = List(this).hashCode
+
+    override def equals(that: Any): Boolean = that match
+      case Comment(text0)           => text0 == text
+      case Fragment(Comment(text0)) => text0 == text
+      case _                        => false
+
     override def toString(): String = t"<!--$text-->".s
 
   case class Textual(text: Text) extends HtmlNode:
+    type Topic = "#text"
     override def toString(): String = text.s
+
+    override def hashCode: Int = List(this).hashCode
+
+    override def equals(that: Any): Boolean = that match
+      case Textual(text0)           => text0 == text
+      case Fragment(Textual(text0)) => text0 == text
+      case _                        => false
 
   case class Node(name: Text, attributes: List[Pair], children: Seq[HtmlNode])
   extends HtmlNode, Topical, Transportive:
@@ -196,12 +220,12 @@ object Dom:
   val Meta = Tag["meta", Label](void = true)
   val Param = Tag["param", Label](void = true)
   val Source = Tag["source", Label](void = true)
-  val Script = Tag["script", Label](content = HtmlNode.Content.Raw)
+  val Script = Tag["script", "#text"](content = HtmlNode.Content.Raw)
   val Style = Tag["style", Label](content = HtmlNode.Content.Raw)
   val Track = Tag["track", Label](void = true)
   val Wbr = Tag["wbr", Label](void = true)
 
-  val Head = Tag["head", "meta" | "style"](autoclose = true)
+  val Head = Tag["head", "script"](autoclose = true)
   val Body = Tag["body", "div"](autoclose = true)
   val Div = Tag["div", "p" | "ul" | "ol" | "#text"]()
   val Li = Tag["li", "p" | "#text"](autoclose = true)
@@ -341,8 +365,8 @@ object Dom:
           if cursor.next() then textual(mark) else cursor.grab(mark, cursor.mark)
 
     @tailrec
-    def raw(tag: Text, mark: Mark)(using Cursor.Held): HtmlNode =
-      cursor.lay(HtmlNode.Textual(cursor.grab(mark, cursor.mark))):
+    def raw(tag: Text, mark: Mark)(using Cursor.Held): Text =
+      cursor.lay(cursor.grab(mark, cursor.mark)):
         case '<'  =>  val end = cursor.mark
                       cursor.next()
                       val resume = cursor.mark
@@ -350,17 +374,17 @@ object Dom:
                       if cursor.lay(false)(_ == '/') then
                         next()
                         val tagStart = cursor.mark
-                        repeat(tag.length)(next())
+                        repeat(tag.length)(cursor.next())
                         val candidate = cursor.grab(tagStart, cursor.mark)
+                        println(s"candidate: $candidate")
                         if cursor.more && candidate == tag then
                           if cursor.lay(false)(_ == '>')
-                          then HtmlNode.Textual(cursor.grab(mark, end))
+                          then cursor.grab(mark, end).also(cursor.next())
                           else cursor.cue(resume) yet raw(tag, mark)
-                        else raw(tag, mark)
-                      else raw(tag, mark)
+                        else cursor.cue(resume) yet raw(tag, mark)
+                      else cursor.cue(resume) yet raw(tag, mark)
 
-        case char =>  if cursor.next() then raw(tag, mark)
-                      else HtmlNode.Textual(cursor.grab(mark, cursor.mark))
+        case char =>  if cursor.next() then raw(tag, mark) else cursor.grab(mark, cursor.mark)
 
     // mutable state
     var content: Text = t""
@@ -405,13 +429,17 @@ object Dom:
 
     def descend(parent: Tag, children: List[HtmlNode]): HtmlNode = read(parent, children)
 
-    def append(text: Text, children: List[HtmlNode]): List[HtmlNode] = children match
-      case HtmlNode.Textual(text0) :: more => HtmlNode.Textual(text0+text) :: more
-      case _                              => HtmlNode.Textual(text) :: children
+    def append(text: Text, children: List[HtmlNode]): List[HtmlNode] =
+      if text == "" then children else children match
+        case HtmlNode.Textual(text0) :: more => HtmlNode.Textual(text0+text) :: more
+        case _                              => HtmlNode.Textual(text) :: children
+
+    def fragment(children: List[HtmlNode]): HtmlNode =
+      if children.length > 1 then HtmlNode.Fragment(children.reverse*) else children(0)
 
     @tailrec
     def read(parent: Tag, children: List[HtmlNode]): HtmlNode =
-      cursor.lay(children.head):
+      cursor.lay(fragment(children)):
         case '&'  => parent.content match
           case HtmlNode.Content.Whitespace => fail(OnlyWhitespace('&'))
           case _ =>
@@ -456,17 +484,15 @@ object Dom:
             whitespace() yet read(parent, children)
 
           case HtmlNode.Content.Raw =>
-            cursor.hold:
-              HtmlNode.Node(parent.name, parent.attributes, List(raw(parent.name, cursor.mark)))
+            val content = cursor.hold(raw(parent.name, cursor.mark))
+            HtmlNode.Node(parent.name, parent.attributes, List(HtmlNode.Textual(content)))
 
-          case HtmlNode.Content.Rcdata =>
-            cursor.hold:
-              HtmlNode.Node(parent.name, parent.attributes, List(raw(parent.name, cursor.mark)))
+          case HtmlNode.Content.Rcdata => // FIXME
+            val content = cursor.hold(raw(parent.name, cursor.mark))
+            HtmlNode.Node(parent.name, parent.attributes, List(HtmlNode.Textual(content)))
 
           case HtmlNode.Content.Normal =>
-            val text = cursor.hold(textual(cursor.mark))
-
-            if text == "" then read(parent, children) else read(parent, append(text, children))
+            read(parent, append(cursor.hold(textual(cursor.mark)), children))
 
     skip()
     read(Div, Nil)
