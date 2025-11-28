@@ -388,7 +388,7 @@ object Dom:
 
     // mutable state
     var content: Text = t""
-    var tokenAttributes: List[Pair] = Nil
+    var extra: List[Pair] = Nil
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '-'  =>  val end = cursor.mark
@@ -410,22 +410,23 @@ object Dom:
                       content = cursor.hold(tagname(cursor.mark))
                       Token.Close
 
-        case char =>  val name = cursor.hold(tagname(cursor.mark))
-                      skip()
+        case char =>
+          val name = cursor.hold(tagname(cursor.mark))
+          skip()
 
-                      cursor.lay(fail(ExpectedMore)):
-                        case '/' =>  expect('>')
-                                     cursor.next()
-                                     content = name
-                                     tokenAttributes = Nil
-                                     Token.Empty
-                        case '>' =>  cursor.next()
-                                     content = name
-                                     tokenAttributes = Nil
-                                     Token.Open
-                        case _   =>  content = name
-                                     tokenAttributes = cursor.hold(attributes())
-                                     Token.Open
+          cursor.lay(fail(ExpectedMore)):
+            case '/' =>  expect('>')
+                          cursor.next()
+                          content = name
+                          extra = Nil
+                          Token.Empty
+            case '>' =>  cursor.next()
+                          content = name
+                          extra = Nil
+                          Token.Open
+            case _   =>  content = name
+                          extra = cursor.hold(attributes())
+                          Token.Open
 
     def descend(parent: Tag, children: List[HtmlNode]): HtmlNode = read(parent, children)
 
@@ -457,12 +458,12 @@ object Dom:
 
             next()
             tag() match
-              case Token.Empty   =>  HtmlNode.Node(content, tokenAttributes, Nil)
+              case Token.Empty   =>  HtmlNode.Node(content, extra, Nil)
               case Token.Comment =>  HtmlNode.Comment(content)
 
               case Token.Open =>
                 val tag = elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
-                if tag.void then HtmlNode.Node(content, tokenAttributes, Nil)
+                if tag.void then HtmlNode.Node(content, extra, Nil)
                 else descend(tag, Nil)
 
               case Token.Close =>
