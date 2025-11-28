@@ -170,7 +170,8 @@ class Cursor[data](initial:                 data,
     action(using new Cursor.Held()).also { keep = keep0 }
 
   inline def grab(start: Mark, end: Mark): data =
-    val buffer = addressable.blank(0) // FIXME: calculate length
+    // FIXME: calculate length across different blocks
+    val buffer = addressable.blank(if start.block == end.block then end.index - start.index else 0)
     clone(start, end)(buffer)
     addressable.build(buffer)
 
@@ -180,7 +181,7 @@ class Cursor[data](initial:                 data,
 
     if start.block == end.block
     then
-      if end.index.previous.n0 > start.index.n0
+      if end.index.previous.n0 >= start.index.n0
       then addressable.clone(buffer(offset), start.index, end.index.previous)(target)
     else
       var focus = buffer(offset)
@@ -194,4 +195,4 @@ class Cursor[data](initial:                 data,
         addressable.clone(focus, Prim, addressable.length(focus).u)(target)
 
       if end.index != Prim
-      then addressable.clone (buffer(offset), Prim, end.index.previous)(target)
+      then addressable.clone(buffer(offset), Prim, end.index.previous)(target)
