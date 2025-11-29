@@ -40,10 +40,10 @@ import scala.quoted.*
 
 import language.dynamics
 
-object Tag:
-  given generic: Tag[?, ?, ?] is GenericCssSelection = _.labelString.tt
+object OldTag:
+  given generic: OldTag[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
-open case class Tag[+name <: Label, child <: Label, attribute <: Label]
+open case class OldTag[+name <: Label, child <: Label, attribute <: Label]
                  (labelString: name)
 extends Node[name], Dynamic:
 
@@ -51,8 +51,8 @@ extends Node[name], Dynamic:
   def children: Seq[Node[?] | Text | Unset.type | HtmlXml] = Nil
   def label: Text = labelString.tt
 
-  def preset(presetAttributes: (String, Text)*): Tag[name, child, attribute] =
-    new Tag[name, child, attribute](labelString):
+  def preset(presetAttributes: (String, Text)*): OldTag[name, child, attribute] =
+    new OldTag[name, child, attribute](labelString):
       override def attributes: Attributes = presetAttributes.to(Map)
 
   type Content = child
