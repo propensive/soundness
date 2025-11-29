@@ -39,7 +39,7 @@ import vacuous.*
 
 import language.dynamics
 
-object Html extends Node["html"]:
+object OldHtml extends Node["html"]:
   def label: Text = t"html"
   def attributes: Attributes = Map()
   def children: Seq[Node[?] | Text | Unset.type | HtmlXml] = Nil

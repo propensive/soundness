@@ -89,7 +89,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
     suite(m"HTML parsing tests"):
       import Dom.{Div, P, Li, Area, Br, Ul, Input, Head, Script}
-      def parse(text: Text): HtmlNode = unsafely(Dom.parse(Iterator(text)))
+      def parse(text: Text): Html = unsafely(Dom.parse(Iterator(text)))
 
       test(m"simple empty tag"):
         parse(t"""<div></div>""")
@@ -109,7 +109,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"simple comment tag"):
         parse(t"""<!--This is a comment-->""")
-      .assert(_ == HtmlNode.Comment("This is a comment"))
+      .assert(_ == Html.Comment("This is a comment"))
 
       test(m"simple void tag"):
         parse(t"""<br>""")
@@ -137,25 +137,25 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"just text"):
         parse(t"""hello world""")
-      .assert(_ == HtmlNode.Textual("hello world"))
+      .assert(_ == Html.Textual("hello world"))
 
       test(m"just text with entity"):
         parse(t"""to &amp; fro""")
-      .assert(_ == HtmlNode.Textual("to & fro"))
+      .assert(_ == Html.Textual("to & fro"))
 
       test(m"just an entity"):
         parse(t"""&amp;""")
-      .assert(_ == HtmlNode.Textual("&"))
+      .assert(_ == Html.Textual("&"))
 
       test(m"mismatched closing tag"):
         try parse(t"""<em><b></em></b>""")
         catch case exception: Exception => exception
-      .assert(_ == ParseError(HtmlNode, HtmlNode.Position(12.u), HtmlNode.Issue.MismatchedTag("b", "em")))
+      .assert(_ == ParseError(Html, Html.Position(8.u), Html.Issue.MismatchedTag("b", "em")))
 
       test(m"unknown tag"):
         try parse(t"""<xyz>""")
         catch case exception: Exception => exception
-      .assert(_ == ParseError(HtmlNode, HtmlNode.Position(1.u), HtmlNode.Issue.InvalidTag("xyz")))
+      .assert(_ == ParseError(Html, Html.Position(1.u), Html.Issue.InvalidTag("xyz")))
 
       test(m"raw text"):
         parse(t"<head><script>some content</script></head>")
@@ -182,5 +182,19 @@ object Tests extends Suite(m"Honeycomb Tests"):
       . assert(_ == Head(Script("some <foo> content")))
 
       test(m"autoclosing tag"):
-        parse(t"""<ul><li>First item\n<li>Second item</ul>""")
-      .assert()
+        parse(t"""<ul><li>First item</ul>""")
+      .assert(_ == Ul(Li("First item")))
+
+      test(m"autoclosing adjacent tags"):
+        parse(t"""<ul><li>First item<li>Second item</ul>""")
+      .assert(_ == Ul(Li("First item"), Li("Second item")))
+
+      test(m"unclosed tag 1"):
+        try parse(t"""<ul><li>First item</li>""")
+        catch case exception: Exception => exception
+      .assert(_ == ParseError(Html, Html.Position(24.u), Html.Issue.Incomplete("ul")))
+
+      test(m"unclosed tag 2"):
+        try parse(t"""<ul><li>First item""")
+        catch case exception: Exception => exception
+      .assert(_ == ParseError(Html, Html.Position(19.u), Html.Issue.Incomplete("li")))

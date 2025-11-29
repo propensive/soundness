@@ -64,7 +64,7 @@ extends Node[name], Dynamic:
       ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
 
 
-  def applyDynamic(method: String)(children: (Optional[Html[child]] | Seq[Html[child]])*)
+  def applyDynamic(method: String)(children: (Optional[OldHtml[child]] | Seq[OldHtml[child]])*)
   : Element[name] =
 
       method match

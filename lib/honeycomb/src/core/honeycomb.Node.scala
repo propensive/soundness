@@ -39,24 +39,24 @@ import spectacular.*
 import vacuous.*
 
 object Node:
-  given html: [html <: Html[?]] => html is Showable = html => html.absolve match
+  given html: [html <: OldHtml[?]] => html is Showable = html => html.absolve match
     case text: Text    => text
     case node: Node[?] => node.show
     case Unset         => t""
 
   def escape(text: Text): Text =
     val buffer = new StringBuilder
-    
+
     text.s.foreach:
       case '"'  => buffer.append("&quot;")
       case '<'  => buffer.append("&lt;")
       case '>'  => buffer.append("&gt;")
       case '&'  => buffer.append("&amp;")
       case char => buffer.append(char)
-    
+
     buffer.toString.tt
 
-  given seq: Seq[Html[?]] is Showable = _.map(_.show).join
+  given seq: Seq[OldHtml[?]] is Showable = _.map(_.show).join
 
   given node: [node <: Node[?]] => node is Showable = item =>
     val filling =
@@ -76,7 +76,7 @@ object Node:
        (label0:      Text,
         attributes0: Attributes,
         children0:   Seq[Node[?] | Text | Unset.type | HtmlXml])
-  : Html[?] =
+  : OldHtml[?] =
 
       new Node:
         def label = label0
@@ -87,11 +87,11 @@ object Node:
 trait Node[+name <: Label]:
   def label: Text
   def attributes: Attributes
-  def children: Seq[Html[?]]
+  def children: Seq[OldHtml[?]]
 
-  def verbatim: Boolean = Html.verbatimElements(label)
-  def unclosed: Boolean = Html.unclosedElements(label)
+  def verbatim: Boolean = OldHtml.verbatimElements(label)
+  def unclosed: Boolean = OldHtml.unclosedElements(label)
 
-  lazy val block: Boolean = !Html.inlineElements(label) || children.exists:
+  lazy val block: Boolean = !OldHtml.inlineElements(label) || children.exists:
     case node: Node[?] => node.block
     case _             => false

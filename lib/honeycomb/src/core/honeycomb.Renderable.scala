@@ -56,9 +56,9 @@ object Renderable:
     type Self = value
     type Result = Label
 
-    def html(value: value): Seq[Html[Result]] = value.generic.map(convert)
+    def html(value: value): Seq[OldHtml[Result]] = value.generic.map(convert)
 
-    private def convert(html: Sgml): Html[?] = html match
+    private def convert(html: Sgml): OldHtml[?] = html match
       case Sgml.Textual(text)               => text
       case Sgml.Comment(_)                  => "".tt
       case Sgml.ProcessingInstruction(_, _) => "".tt
@@ -83,4 +83,4 @@ object Renderable:
 
 trait Renderable extends Typeclass:
   type Result <: Label
-  def html(value: Self): Seq[Html[Result]]
+  def html(value: Self): Seq[OldHtml[Result]]

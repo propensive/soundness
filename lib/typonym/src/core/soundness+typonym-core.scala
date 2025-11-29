@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export typonym.{TypeElement, TypeList, TypeMap, TypeSet, reify}
+export typonym.{TypeElement, TypeList, TypeMap, TypeSet, reify, Reifiable, reifyAs}

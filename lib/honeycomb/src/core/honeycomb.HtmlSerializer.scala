@@ -70,7 +70,7 @@ object HtmlSerializer:
       linebreak = false
       emptyLine = true
 
-    def next(node: Html[?], verbatim: Boolean): Unit = node.absolve match
+    def next(node: OldHtml[?], verbatim: Boolean): Unit = node.absolve match
       case HtmlXml(xml) =>
         append(Xml.print(xml))
 

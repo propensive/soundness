@@ -48,6 +48,7 @@ import proscenium.*
 import rudiments.*
 import symbolism.*
 import turbulence.*
+import typonym.*
 import vacuous.*
 import zephyrine.*
 
@@ -55,18 +56,18 @@ import classloaders.threadContext
 import charDecoders.utf8
 import textSanitizers.skip
 
-object HtmlNode extends Format:
+object Html extends Format:
   def name: Text = t"HTML"
 
-  given conversion: [label >: "#text" <: Label] => Conversion[Text, HtmlNode of label] =
-    HtmlNode.Textual(_).asInstanceOf[HtmlNode.Textual of label]
+  given conversion: [label >: "#text" <: Label] => Conversion[Text, Html of label] =
+    Html.Textual(_).asInstanceOf[Html.Textual of label]
 
-  given conversion2: [label >: "#text" <: Label] => Conversion[String, HtmlNode of label] =
-    string => HtmlNode.Textual(string.tt).asInstanceOf[HtmlNode.Textual of label]
+  given conversion2: [label >: "#text" <: Label] => Conversion[String, Html of label] =
+    string => Html.Textual(string.tt).asInstanceOf[Html.Textual of label]
 
   given conversion3: [label <: Label, content >: label]
-        =>  Conversion[HtmlNode.Node over content, HtmlNode of label] =
-    _.asInstanceOf[HtmlNode.Node { type Topic = label }]
+        =>  Conversion[Html.Node of label, Html of content] =
+    _.asInstanceOf[Html.Node of content]
 
   enum Issue extends Format.Issue:
     case ExpectedMore
@@ -76,6 +77,7 @@ object HtmlNode extends Format:
     case UnknownEntity(name: Text)
     case ForbiddenUnquoted(char: Char)
     case MismatchedTag(open: Text, close: Text)
+    case Incomplete(tag: Text)
 
     def describe: Message = this match
       case ExpectedMore               =>  m"the content ended prematurely"
@@ -85,21 +87,22 @@ object HtmlNode extends Format:
       case UnknownEntity(name)        =>  m"the entity &$name is not defined"
       case ForbiddenUnquoted(char)    =>  m"the character $char is forbidden in an unquoted attribute"
       case MismatchedTag(open, close) =>  m"the tag </$close> did not match the opening tag <$open>"
+      case Incomplete(tag)            =>  m"the content ended while the tag <$tag> was left open"
 
   case class Position(ordinal: Ordinal) extends Format.Position:
     def describe: Text = t"character ${ordinal.n1}"
 
-  case class Document(nodes: HtmlNode*) extends HtmlNode
+  case class Document(nodes: Html*) extends Html
 
-  case class Fragment(nodes: HtmlNode*) extends HtmlNode:
+  case class Fragment(nodes: Html*) extends Html:
     override def hashCode: Int = nodes.hashCode
 
     override def equals(that: Any): Boolean = that match
       case Fragment(nodes0*) => nodes0 == nodes
-      case node: HtmlNode    => nodes.length == 1 && nodes(0) == node
+      case node: Html    => nodes.length == 1 && nodes(0) == node
       case _                 => false
 
-  case class Comment(text: Text) extends HtmlNode:
+  case class Comment(text: Text) extends Html:
     override def hashCode: Int = List(this).hashCode
 
     override def equals(that: Any): Boolean = that match
@@ -109,7 +112,7 @@ object HtmlNode extends Format:
 
     override def toString(): String = t"<!--$text-->".s
 
-  case class Textual(text: Text) extends HtmlNode:
+  case class Textual(text: Text) extends Html:
     type Topic = "#text"
     override def toString(): String = text.s
 
@@ -120,8 +123,8 @@ object HtmlNode extends Format:
       case Fragment(Textual(text0)) => text0 == text
       case _                        => false
 
-  case class Node(name: Text, attributes: List[Pair], children: Seq[HtmlNode])
-  extends HtmlNode, Topical, Transportive:
+  case class Node(name: Text, attributes: List[Pair], children: Seq[Html])
+  extends Html, Topical, Transportive, Domainal:
 
     override def toString(): String =
       val tagContent = if attributes == Nil then t"" else
@@ -132,7 +135,7 @@ object HtmlNode extends Format:
   enum Content:
     case Raw, Rcdata, Whitespace, Normal
 
-sealed trait HtmlNode extends Topical:
+sealed trait Html extends Topical:
   type Topic
 
 erased trait Vacant extends Transportive
@@ -156,83 +159,164 @@ object Pair:
 
 case class Pair(key: Text, value: Text) extends Topical
 
-extension (node: HtmlNode.Node & Vacant)
-  def apply(children: into[HtmlNode of node.Transport]*): HtmlNode.Node =
-    HtmlNode.Node(node.name, node.attributes, children)
+extension (node: Html.Node & Vacant)
+  def apply(children: into[Html of node.Transport]*): Html.Node =
+    Html.Node(node.name, node.attributes, children)
 
 
 
 object Dom:
-  import HtmlNode.Issue.*
+  import Html.Issue.*
+
+  private type InteractivePhrasing =
+    "a" | "audio" | "button" | "embed" | "iframe" | "img" | "input" | "label" | "select"
+    | "textarea" | "video"
+
+  type Interactive = InteractivePhrasing | "details"
+
+  type Flow =
+    Heading | Phrasing | Sectioning | "address" | "blockquote" | "details" | "dialog" | "div" | "dl"
+    | "fieldset" | "figure" | "footer" | "form" | "header" | "hr" | "main" | "menu" | "ol" | "p"
+    | "pre" | "table" | "ul" | "search"
+
+  type Phrasing =
+    Embedded | InteractivePhrasing | "abbr" | "area" | "b" | "bdi" | "bdo" | "br" | "button"
+    | "cite" | "code" | "data" | "datalist" | "del" | "dfn" | "em" | "i" | "input" | "ins" | "kbd"
+    | "label" | "link" | "map" | "mark" | "meta" | "meter" | "noscript" | "output" | "progress"
+    | "q" | "ruby" | "s" | "samp" | "script" | "select" | "slot" | "small" | "span" | "strong"
+    | "sub" | "sup" | "template" | "textarea" | "time" | "u" | "var" | "wbr" | "selectedcontent"
+
+  type Embedded =
+    "audio" | "canvas" | "embed" | "iframe" | "img" | "object" | "picture" | "video" | "math"
+    | "svg"
+
+  type Sectioning = "article" | "aside" | "nav" | "section"
+  type ScriptSupporting = "script" | "template"
+  type Metadata = "base" | "link" | "meta" | "noscript" | "script" | "style" | "template" | "title"
+  type Heading = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "hgroup"
 
   object Tag:
-    def apply[label <: Label: {Precise, ValueOf}, children <: Label]
-         (void:      Boolean          = false,
-          autoclose: Boolean          = false,
-          content:   HtmlNode.Content = HtmlNode.Content.Normal,
+    def apply
+         [label      <: Label: ValueOf,
+          children   <: Label: Reifiable to List[String],
+          insertable <: Label: Reifiable to List[String]]
+         (autoclose: Boolean          = false,
+          content:   Html.Content     = Html.Content.Normal,
           presets:   List[Pair]       = Nil)
     : Tag of label over children =
 
-        new Tag(valueOf[label].tt, void, autoclose, content, presets):
+        val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
+        val implicitTags: Set[Text] = insertable.reification().map(_.tt).to(Set)
+
+        new Tag(valueOf[label].tt, autoclose, content, presets, admissible):
           type Topic = label
           type Transport = children
-
+          type Domain = insertable
 
   class Tag
-         (    name0:     Text,
-          val void:      Boolean          = false,
-          val autoclose: Boolean          = false,
-          val content:   HtmlNode.Content = HtmlNode.Content.Normal,
-          val presets:   List[Pair]       = Nil)
-  extends HtmlNode.Node(name0, Nil, Nil), Dynamic:
-    type Topic
-    type Transport
+         (    name:       Text,
+          val autoclose:  Boolean      = false,
+          val content:    Html.Content = Html.Content.Normal,
+          val presets:    List[Pair]   = Nil,
+          val admissible: Set[Text]    = Set())
+  extends Html.Node(name, Nil, Nil), Dynamic:
 
-    def applyDynamic(method: "apply")(children: into[HtmlNode of Transport]*)
-    : HtmlNode.Node of Topic =
-
-        HtmlNode.Node(name, Nil, children).asInstanceOf[HtmlNode.Node of Topic]
-
+    def void: Boolean = true
 
     def applyDynamicNamed(method: "apply")(attributes: into[Optional[Pair of Topic]]*)
-    : HtmlNode.Node & Vacant over Transport =
+    : Html.Node & Vacant over Transport =
 
-        HtmlNode.Node(name, attributes.to(List).compact, Nil)
-        . asInstanceOf[HtmlNode.Node & Vacant over Transport]
+        Html.Node(name, attributes.to(List).compact, Nil)
+        . asInstanceOf[Html.Node & Vacant over Transport]
 
-  val Area = Tag["area", Label](void = true)
-  val Base = Tag["base", Label](void = true)
-  val Br = Tag["br", Label](void = true)
-  val Col = Tag["col", Label](void = true)
-  val Command = Tag["command", Label](void = true)
-  val Embed = Tag["embed", Label](void = true)
-  val Em = Tag["em", Label]()
-  val Hr = Tag["hr", Label](void = true)
-  val Img = Tag["img", Label](void = true)
+  object ParentTag:
+    def apply
+         [label      <: Label: ValueOf,
+          children   <: Label: Reifiable to List[String],
+          insertable <: Label: Reifiable to List[String]]
+         (autoclose: Boolean      = false,
+          content:   Html.Content = Html.Content.Normal,
+          presets:   List[Pair]   = Nil)
+    : ParentTag of label over children =
 
-  object Input extends Tag("input", void = true, autoclose = false):
+        val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
+        val implicitTags: Set[Text] = insertable.reification().map(_.tt).to(Set)
+
+        new ParentTag(valueOf[label].tt, autoclose, content, presets, admissible):
+          type Topic = label
+          type Transport = children
+          type Domain = insertable
+
+  class ParentTag
+         (name:      Text,
+          autoclose:  Boolean          = false,
+          content:    Html.Content = Html.Content.Normal,
+          presets:    List[Pair]       = Nil,
+          admissible: Set[Text]        = Set())
+  extends Tag(name, autoclose, content, presets, admissible):
+    override def void = false
+
+    def applyDynamic(method: "apply")(children: into[Html of Transport]*)
+    : Html.Node of Topic =
+
+        Html.Node(name, Nil, children).asInstanceOf[Html.Node of Topic]
+
+
+
+  // - should be transparent
+  val A = ParentTag["a", Flow, ""]()
+  val Abbr = ParentTag["abbr", Phrasing, ""]()
+
+  val Address =
+    ParentTag
+     ["address",
+      "a" | "abbr" | "area" | "audio" | "b" | "bdi" | "bdo" | "blockquote" | "br" | "button"
+      | "canvas" | "cite" | "code" | "data" | "datalist" | "del" | "details" | "dfn" | "dialog"
+      | "div" | "dl" | "em" | "embed" | "fieldset" | "figure" | "form" | "hr" | "i" | "iframe"
+      | "img" | "input" | "ins" | "kbd" | "label" | "link" | "main" | "map" | "mark" | "menu"
+      | "meta" | "meter" | "noscript" | "object" | "ol" | "output" | "p" | "picture" | "pre"
+      | "progress" | "q" | "ruby" | "s" | "samp" | "script" | "select" | "slot" | "small" | "span"
+      | "strong" | "sub" | "sup" | "table" | "template" | "textarea" | "time" | "u" | "ul" | "var"
+      | "video" | "wbr",
+      ""]
+     ()
+
+  val Area = Tag["area", "", ""]()
+  val Article = ParentTag["article", Flow, ""]()
+
+  val Base = Tag["base", "", ""]()
+  val Br = Tag["br", "", ""]()
+  val Col = Tag["col", "", ""]()
+  val Command = Tag["command", "", ""]()
+  val Embed = Tag["embed", "", ""]()
+  val Em = ParentTag["em", "", ""]()
+  val Hr = Tag["hr", "", ""]()
+  val Img = Tag["img", "", ""]()
+
+  object Input extends Tag("input", autoclose = false):
     type Topic = "input"
-    type Transport = Label
+    type Transport = ""
 
-    val Button = Tag["input", Label](void = true, presets = List(Pair(t"type", t"button")))
+    val Button = Tag["input", "", ""](autoclose = autoclose, presets = List(Pair(t"type", t"button")))
 
-  val Link = Tag["link", Label](void = true)
-  val Meta = Tag["meta", Label](void = true)
-  val Param = Tag["param", Label](void = true)
-  val Source = Tag["source", Label](void = true)
-  val Script = Tag["script", "#text"](content = HtmlNode.Content.Raw)
-  val Style = Tag["style", Label](content = HtmlNode.Content.Raw)
-  val Track = Tag["track", Label](void = true)
-  val Wbr = Tag["wbr", Label](void = true)
+  val Link = Tag["link", "", ""]()
+  val Meta = Tag["meta", "", ""]()
+  val Param = Tag["param", "", ""]()
+  val Source = Tag["source", "", ""]()
+  val Script = ParentTag["script", "#text", ""](content = Html.Content.Raw)
+  val Style = ParentTag["style", "", ""](content = Html.Content.Raw)
+  val Track = Tag["track", "", ""]()
+  val Wbr = Tag["wbr", "", ""]()
 
-  val Head = Tag["head", "script"](autoclose = true)
-  val Body = Tag["body", "div"](autoclose = true)
-  val Div = Tag["div", "p" | "ul" | "ol" | "#text"]()
-  val Li = Tag["li", "p" | "#text"](autoclose = true)
-  val Ol = Tag["ol", "li"]()
-  val P = Tag["p", "i" | "em" | "strong" | "#text"](autoclose = true)
-  val B = Tag["b", "i" | "em" | "strong" | "#text"]()
-  val Ul = Tag["ul", "li"]()
+  val Root = ParentTag["#root", "html" | "head" | "body" | "div" | "em" | "p" | "ul" | "li", ""]()
+  val Head = ParentTag["head", "script", ""](autoclose = true)
+  val Body = ParentTag["body", "div", ""](autoclose = true)
+  val Div = ParentTag["div", "p" | "ul" | "ol" | "area" | "#text", ""]()
+  val Li = ParentTag["li", "p" | "#text", ""](autoclose = true)
+  val Ol = ParentTag["ol", "li", ""]()
+  val P = ParentTag["p", "i" | "em" | "strong" | "#text", ""](autoclose = true)
+  val B = ParentTag["b", "i" | "em" | "strong" | "#text", ""]()
+  val Ul = ParentTag["ul", "li", ""]()
 
   val elements: Dictionary[Tag] =
     val list =
@@ -251,20 +335,20 @@ object Dom:
   enum Token:
     case Close, Comment, Empty, Open
 
-  def parse(input: Iterator[Text]): HtmlNode raises ParseError =
+  def parse(input: Iterator[Text]): Html raises ParseError =
     val cursor = Cursor(input)
 
     def next(): Unit =
       if !cursor.next()
-      then raise(ParseError(HtmlNode, HtmlNode.Position(cursor.position), ExpectedMore))
+      then raise(ParseError(Html, Html.Position(cursor.position), ExpectedMore))
 
     inline def expect(char: Char): Unit =
       cursor.next()
       cursor.lay(fail(ExpectedMore)): datum =>
         if datum != char then fail(Unexpected(datum))
 
-    def fail(issue: HtmlNode.Issue): Nothing =
-      abort(ParseError(HtmlNode, HtmlNode.Position(cursor.position), issue))
+    def fail(issue: Html.Issue): Nothing =
+      abort(ParseError(Html, Html.Position(cursor.position), issue))
 
     @tailrec
     def skip(): Unit = cursor.lay(fail(ExpectedMore)):
@@ -376,7 +460,6 @@ object Dom:
                         val tagStart = cursor.mark
                         repeat(tag.length)(cursor.next())
                         val candidate = cursor.grab(tagStart, cursor.mark)
-                        println(s"candidate: $candidate")
                         if cursor.more && candidate == tag then
                           if cursor.lay(false)(_ == '>')
                           then cursor.grab(mark, end).also(cursor.next())
@@ -412,37 +495,36 @@ object Dom:
 
         case char =>
           val name = cursor.hold(tagname(cursor.mark))
-          skip()
-
-          cursor.lay(fail(ExpectedMore)):
-            case '/' =>  expect('>')
+          skip() yet cursor.lay(fail(ExpectedMore)):
+            case '/'  =>  expect('>')
                           cursor.next()
                           content = name
                           extra = Nil
                           Token.Empty
-            case '>' =>  cursor.next()
+            case '>'  =>  cursor.next()
                           content = name
                           extra = Nil
                           Token.Open
-            case _   =>  content = name
+            case _    =>  content = name
                           extra = cursor.hold(attributes())
                           Token.Open
 
-    def descend(parent: Tag, children: List[HtmlNode]): HtmlNode = read(parent, children)
+    def descend(parent: Tag, children: List[Html]): Html = read(parent, children)
 
-    def append(text: Text, children: List[HtmlNode]): List[HtmlNode] =
+    def append(text: Text, children: List[Html]): List[Html] =
       if text == "" then children else children match
-        case HtmlNode.Textual(text0) :: more => HtmlNode.Textual(text0+text) :: more
-        case _                              => HtmlNode.Textual(text) :: children
+        case Html.Textual(text0) :: more => Html.Textual(text0+text) :: more
+        case _                           => Html.Textual(text) :: children
 
-    def fragment(children: List[HtmlNode]): HtmlNode =
-      if children.length > 1 then HtmlNode.Fragment(children.reverse*) else children(0)
+    def finish(parent: Tag, children: List[Html]): Html =
+      if parent != Root then fail(Incomplete(parent.name))
+      else if children.length > 1 then Html.Fragment(children.reverse*) else children(0)
 
     @tailrec
-    def read(parent: Tag, children: List[HtmlNode]): HtmlNode =
-      cursor.lay(fragment(children)):
+    def read(parent: Tag, children: List[Html]): Html =
+      cursor.lay(finish(parent, children)):
         case '&'  => parent.content match
-          case HtmlNode.Content.Whitespace => fail(OnlyWhitespace('&'))
+          case Html.Content.Whitespace => fail(OnlyWhitespace('&'))
           case _ =>
             val child = cursor.hold:
               val start = cursor.mark
@@ -453,47 +535,53 @@ object Dom:
 
         case '<'  =>
           var ascend: Boolean = false
-          val node: HtmlNode = cursor.hold:
+          val node: Html = cursor.hold:
             val mark = cursor.mark
 
             next()
             tag() match
-              case Token.Empty   =>  HtmlNode.Node(content, extra, Nil)
-              case Token.Comment =>  HtmlNode.Comment(content)
+              case Token.Empty   =>  Html.Node(content, extra, Nil)
+              case Token.Comment =>  Html.Comment(content)
 
               case Token.Open =>
                 val tag = elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
-                if tag.void then HtmlNode.Node(content, extra, Nil)
-                else descend(tag, Nil)
+                if tag.void then Html.Node(content, extra, Nil)
+                else
+                  if parent.admissible(tag.name) then descend(tag, Nil)
+                  else if parent.autoclose then
+                    cursor.cue(mark)
+                    ascend = true
+                    Html.Node(parent.name, parent.attributes, children.reverse)
+                  else fail(MismatchedTag(content, parent.name))
 
               case Token.Close =>
                 if content != parent.name then
                   if parent.autoclose then
                     cursor.cue(mark)
                     ascend = true
-                    HtmlNode.Node(content, parent.attributes, children.reverse)
+                    Html.Node(parent.name, parent.attributes, children.reverse)
                   else fail(MismatchedTag(parent.name, content))
                 else
                   cursor.next()
                   ascend = true
-                  HtmlNode.Node(content, parent.attributes, children.reverse)
+                  Html.Node(content, parent.attributes, children.reverse)
 
           if ascend then node else read(parent, node :: children)
 
         case char => parent.content match
-          case HtmlNode.Content.Whitespace =>
+          case Html.Content.Whitespace =>
             whitespace() yet read(parent, children)
 
-          case HtmlNode.Content.Raw =>
+          case Html.Content.Raw =>
             val content = cursor.hold(raw(parent.name, cursor.mark))
-            HtmlNode.Node(parent.name, parent.attributes, List(HtmlNode.Textual(content)))
+            Html.Node(parent.name, parent.attributes, List(Html.Textual(content)))
 
-          case HtmlNode.Content.Rcdata => // FIXME
+          case Html.Content.Rcdata => // FIXME
             val content = cursor.hold(raw(parent.name, cursor.mark))
-            HtmlNode.Node(parent.name, parent.attributes, List(HtmlNode.Textual(content)))
+            Html.Node(parent.name, parent.attributes, List(Html.Textual(content)))
 
-          case HtmlNode.Content.Normal =>
+          case Html.Content.Normal =>
             read(parent, append(cursor.hold(textual(cursor.mark)), children))
 
     skip()
-    read(Div, Nil)
+    read(Root, Nil)

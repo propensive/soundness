@@ -55,5 +55,5 @@ extends Node[name]:
   def children = Nil
   def label: Text = labelString.tt
 
-  def apply(children: (Optional[Html[child]] | Seq[Html[child]])*): Element[name] =
+  def apply(children: (Optional[OldHtml[child]] | Seq[OldHtml[child]])*): Element[name] =
     Element(labelString, attributes, children)

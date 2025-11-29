@@ -59,7 +59,7 @@ object HtmlDoc:
 
 
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
-       (content: (Optional[Html[html5.Flow]] | Seq[Html[html5.Flow]])*)
+       (content: (Optional[OldHtml[html5.Flow]] | Seq[OldHtml[html5.Flow]])*)
        (using att: "href" is Attribute of Stylesheet)
   : HtmlDoc =
 
@@ -67,4 +67,4 @@ object HtmlDoc:
         case Unset      => Nil
         case text: Text => Seq(html5.Link.Stylesheet(href = text))
 
-      HtmlDoc(Html(html5.Head(html5.Title(title), link), html5.Body(content*)))
+      HtmlDoc(OldHtml(html5.Head(html5.Title(title), link), html5.Body(content*)))

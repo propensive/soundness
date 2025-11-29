@@ -59,7 +59,7 @@ extends Node[name], Dynamic:
 
 
   def applyDynamic[Return <: Label](method: "apply")
-       (children: (Optional[Html[Return]] | Seq[Html[Return]])*)
+       (children: (Optional[OldHtml[Return]] | Seq[OldHtml[Return]])*)
   : Element[Return] =
 
       Element(labelString, Map(), children)

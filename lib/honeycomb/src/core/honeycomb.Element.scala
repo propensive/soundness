@@ -44,23 +44,23 @@ object Element:
   def apply[node <: Label, child <: Label]
        (labelString: String,
         attributes:  Attributes,
-        children:    Seq[Optional[Html[child]] | Seq[Html[child]]] = Nil)
+        children:    Seq[Optional[OldHtml[child]] | Seq[OldHtml[child]]] = Nil)
   : Element[node] =
 
       new Element(labelString, attributes, flatten(children))
 
 
-  private def flatten[child <: Label](nodes: Seq[Optional[Html[child]] | Seq[Html[child]]])
-  : Seq[Html[child]] =
+  private def flatten[child <: Label](nodes: Seq[Optional[OldHtml[child]] | Seq[OldHtml[child]]])
+  : Seq[OldHtml[child]] =
 
       nodes.flatMap:
         case Unset                              => Seq()
-        case seq: Seq[Html[`child`] @unchecked] => seq
-        case node: Html[`child`] @unchecked     => Seq(node)
+        case seq: Seq[OldHtml[`child`] @unchecked] => seq
+        case node: OldHtml[`child`] @unchecked     => Seq(node)
 
 
 case class Element[+name <: Label]
-   (labelString: String, attributes: Map[String, Optional[Text]], children: Seq[Html[?]])
+   (labelString: String, attributes: Map[String, Optional[Text]], children: Seq[OldHtml[?]])
 extends Node[name]:
 
   def label: Text = labelString.show

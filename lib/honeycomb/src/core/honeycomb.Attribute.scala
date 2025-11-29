@@ -282,7 +282,7 @@ object Attribute:
     type Topic = relative
     def convert(value: relative): Text = value.on[Www].encode
 
-  given srcdoc: ("srcdoc" is Attribute of Html[?]) = _.show
+  given srcdoc: ("srcdoc" is Attribute of OldHtml[?]) = _.show
   given srclang: ("srclang" is Attribute of Text) = identity(_)
 
   // This should be provided by Cataclysm

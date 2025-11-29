@@ -39,12 +39,12 @@ import vacuous.*
 import language.dynamics
 
 extension [renderable: Renderable](value: renderable)
-  def html: Seq[Html[renderable.Result]] = renderable.html(value)
+  def html: Seq[OldHtml[renderable.Result]] = renderable.html(value)
 
 extension (context: StringContext)
   def cls(): CssClass = CssClass(context.parts.head.tt)
   def id(): DomId = DomId(context.parts.head.tt)
 
-type Html[+child <: Label] = Node[child] | Text | Unset.type | HtmlXml
+type OldHtml[+child <: Label] = Node[child] | Text | Unset.type | HtmlXml
 
 type Attributes = Map[String, Unset.type | Text]
