@@ -47,3 +47,13 @@ object Tests extends Suite(m"Typonym tests"):
     test(m"Get a multimap of strings"):
       reify[TypeMap[((1, TypeList[("one", "un", "ein")]), (2, TypeList[("two", "zwei", "deux")]))]]
     .assert(_ == Map(1 -> List("one", "un", "ein"), 2 -> List("two", "zwei", "deux")))
+
+    test(m"Reify a set of strings"):
+      reify[TypeSet["one" | "two" | "three" | "four"]]
+    . assert(_ == List("one", "two", "three", "four"))
+
+    test(m"use Reifiable typeclass"):
+      def foo[T](using reifiable: T is Reifiable to List[String]): List[String] =
+        reifiable.reification()
+      foo["yes" | "no" | "maybe"]
+    . assert(_ == List("yes", "no", "maybe"))
