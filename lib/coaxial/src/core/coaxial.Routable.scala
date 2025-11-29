@@ -30,43 +30,53 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package coaxial
 
 import anticipation.*
+import prepositional.*
 import proscenium.*
+import rudiments.*
+import urticose.*
 import vacuous.*
 
-import scala.quoted.*
+import java.net as jn
 
-import language.dynamics
+import Control.*
 
-object Tag:
-  given generic: Tag[?, ?, ?] is GenericCssSelection = _.labelString.tt
+object Routable:
+  given udpEndpoint: Endpoint[UdpPort] is Routable:
+    case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
-open case class Tag[+name <: Label, child <: Label, attribute <: Label]
-                 (labelString: name)
-extends Node[name], Dynamic:
+    def connect(endpoint: Endpoint[UdpPort]): Connection =
+      val address = jn.InetAddress.getByName(endpoint.remote.s).nn
+      Connection(address, endpoint.port.number, jn.DatagramSocket())
 
-  def attributes: Attributes = Map()
-  def children: Seq[Node[?] | Text | Unset.type | HtmlXml] = Nil
-  def label: Text = labelString.tt
+    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
+      input.each: bytes =>
+        val packet =
+          jn.DatagramPacket
+           (bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port)
 
-  def preset(presetAttributes: (String, Text)*): Tag[name, child, attribute] =
-    new Tag[name, child, attribute](labelString):
-      override def attributes: Attributes = presetAttributes.to(Map)
+        connection.socket.send(packet)
 
-  type Content = child
+  given udpPort: UdpPort is Routable:
+    case class Connection(port: Int, socket: jn.DatagramSocket)
 
+    def connect(port: UdpPort): Connection =
+      Connection(port.number, jn.DatagramSocket())
 
-  inline def applyDynamicNamed(method: String)(inline attributes: ("" | attribute, Any)*)
-  : StartTag[name, child] =
+    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
+      input.each: bytes =>
+        val packet = jn.DatagramPacket
+                      (bytes.mutable(using Unsafe),
+                       input.length,
+                       jn.InetAddress.getLocalHost.nn,
+                       connection.port)
 
-      ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
+        connection.socket.send(packet)
 
+trait Routable extends Typeclass:
+  type Connection
 
-  def applyDynamic(method: String)(children: (Optional[Html[child]] | Seq[Html[child]])*)
-  : Element[name] =
-
-      method match
-        case "apply"   => Element(labelString, attributes, children)
-        case className => Element(labelString, attributes.updated("class", className.tt), children)
+  def connect(endpoint: Self): Connection
+  def transmit(connection: Connection, input: Stream[Bytes]): Unit

@@ -91,8 +91,8 @@ extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
       recur(serviceable.receive(connection), initialState).also(serviceable.close(connection))
 
 
-extension [endpoint: Addressable as addressable](endpoint: endpoint)
+extension [endpoint: Routable as routable](endpoint: endpoint)
   def transmit[transmissible: Transmissible](message: transmissible)(using Monitor)
   : Unit raises StreamError =
 
-      addressable.transmit(addressable.connect(endpoint), transmissible.serialize(message))
+      routable.transmit(routable.connect(endpoint), transmissible.serialize(message))

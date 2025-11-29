@@ -122,6 +122,7 @@ object Teletypeable:
     val root = stack.frames.foldLeft(init):
       case (msg, frame) =>
         val obj = frame.method.cls.starts(t"Ξ")
+        val methodCls = if obj then frame.method.cls.skip(1) else frame.method.cls
         val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(fileWidth, Rtl)})"
         val dot = if obj then t" . " else t" ⌗ "
 
@@ -134,10 +135,10 @@ object Teletypeable:
           val color = packages(frame.method.prefix)
           if sameClass
           then
-            e"${Fg(0x222222)}(${frame.method.prefix}.${frame.method.cls})"
+            e"${Fg(0x222222)}(${frame.method.prefix}.$methodCls)"
             . fit(classWidth, Rtl)
           else
-            e"${Fg(color/2)}(${frame.method.prefix}.$Bold(${Fg(color)}(${frame.method.cls})))"
+            e"${Fg(color/2)}(${frame.method.prefix}.$Bold(${Fg(color)}($methodCls)))"
             . fit(classWidth, Rtl)
 
         val method = e"${Fg(0xabcfdf)}(${frame.method.method.fit(methodWidth)})"

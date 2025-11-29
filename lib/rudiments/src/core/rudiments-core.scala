@@ -60,6 +60,12 @@ inline def probe[target]: Nothing = ${Rudiments.probe[target]}
 inline def typeName[target]: Text = ${Rudiments.name[target]}
 inline def reflectClass[target]: Class[target] = ${Rudiments.reflectClass}
 
+inline def repeat(count: Int)(inline action: => Unit): Unit =
+  var i = 0
+  while i < count do
+    action
+    i += 1
+
 extension [value](value: value)
   def unit: Unit = ()
   def waive: Any => value = _ => value
@@ -104,6 +110,8 @@ extension (inline statement: => Unit)
     block
 
 def loop(block: => Unit): Loop = Loop({ () => block })
+
+inline def that[result](inline block: => result): result = block
 
 export Rudiments.&
 
@@ -347,6 +355,11 @@ extension [indexable: Indexable](inline value: indexable)
   inline def at(index: indexable.Operand): Optional[indexable.Result] =
     optimizable[indexable.Result]: default =>
       if indexable.contains(value, index) then indexable.access(value, index) else default
+
+extension [indexable: Indexable by Ordinal](inline value: indexable)
+  inline def prim: Optional[indexable.Result] = value.at(Prim)
+  inline def sec: Optional[indexable.Result] = value.at(Sec)
+  inline def ter: Optional[indexable.Result] = value.at(Ter)
 
 extension [value: Segmentable as segmentable](inline value: value)
   inline def segment(interval: Interval): value = segmentable.segment(value, interval)

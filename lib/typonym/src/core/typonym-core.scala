@@ -38,6 +38,7 @@ import proscenium.*
 //transparent inline def erase(inline value: Any): Any = ${Typonym.erase(value)}
 
 transparent inline def reify[phantom]: Any = ${Typonym.reify[phantom]}
+inline def reifyAs[phantom, result]: result = ${Typonym.reifyAs[phantom, result]}
 
 def reify[phantom](phantomType: Type[phantom]): Macro[Any] =
   Typonym.reify[phantom](using phantomType)

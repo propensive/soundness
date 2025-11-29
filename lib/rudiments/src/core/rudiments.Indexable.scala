@@ -41,64 +41,58 @@ import denominative.*
 import prepositional.*
 
 object Indexable:
-  given iarray: [element] => IArray[element] is Indexable by Ordinal to element =
-    new Indexable:
-      type Self = IArray[element]
-      type Operand = Ordinal
-      type Result = element
+  given iarray: [element] => IArray[element] is Indexable:
+    type Self = IArray[element]
+    type Operand = Ordinal
+    type Result = element
 
-      def contains(array: IArray[element], index: Ordinal): Boolean =
-        index.n0 >= 0 && index.n0 < array.length
+    def contains(array: IArray[element], index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < array.length
 
-      def access(array: IArray[element], index: Ordinal): Result = array(index.n0)
+    def access(array: IArray[element], index: Ordinal): Result = array(index.n0)
 
-  given seq: [element] => IndexedSeq[element] is Indexable by Ordinal to element =
-    new Indexable:
-      type Self = IndexedSeq[element]
-      type Operand = Ordinal
-      type Result = element
+  given seq: [element] => IndexedSeq[element] is Indexable:
+    type Self = IndexedSeq[element]
+    type Operand = Ordinal
+    type Result = element
 
-      def contains(seq: IndexedSeq[element], index: Ordinal): Boolean =
-        index.n0 >= 0 && index.n0 < seq.length
+    def contains(seq: IndexedSeq[element], index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < seq.length
 
-      def access(seq: IndexedSeq[element], index: Ordinal): Result = seq(index.n0)
+    def access(seq: IndexedSeq[element], index: Ordinal): Result = seq(index.n0)
 
-  given text: [element] => Text is Indexable by Ordinal to Char = new Indexable:
+  given text: [element] => Text is Indexable:
     type Self = Text
     type Operand = Ordinal
     type Result = Char
 
-    def contains(text: Text, index: Ordinal): Boolean =
-      index.n0 >= 0 && index.n0 < text.s.length
+    def contains(text: Text, index: Ordinal): Boolean = index.n0 >= 0 && index.n0 < text.s.length
 
     def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
 
-  given map: [key, value] => Map[key, value] is Indexable by key to value =
-    new Indexable:
-      type Self = Map[key, value]
-      type Operand = key
-      type Result = value
+  given map: [key, value] => Map[key, value] is Indexable:
+    type Self = Map[key, value]
+    type Operand = key
+    type Result = value
 
-      def contains(value: Self, index: key): Boolean = value.contains(index)
-      def access(value: Self, index: key): value = value(index)
+    def contains(value: Self, index: key): Boolean = value.contains(index)
+    def access(value: Self, index: key): value = value(index)
 
-  given bijection: [key, value] => Bijection[key, value] is Indexable by key to value =
-    new Indexable:
-      type Self = Bijection[key, value]
-      type Operand = key
-      type Result = value
+  given bijection: [key, value] => Bijection[key, value] is Indexable:
+    type Self = Bijection[key, value]
+    type Operand = key
+    type Result = value
 
-      def contains(value: Self, index: key): Boolean = value.map.contains(index)
-      def access(value: Self, index: key): value = value.map(index)
+    def contains(value: Self, index: key): Boolean = value.map.contains(index)
+    def access(value: Self, index: key): value = value.map(index)
 
-  given hashMap: [key, value] => scm.HashMap[key, value] is Indexable by key to value =
-    new Indexable:
-      type Self = scm.HashMap[key, value]
-      type Operand = key
-      type Result = value
+  given hashMap: [key, value] => scm.HashMap[key, value] is Indexable:
+    type Self = scm.HashMap[key, value]
+    type Operand = key
+    type Result = value
 
-      def contains(value: Self, index: key): Boolean = value.contains(index)
-      def access(value: Self, index: key): value = value(index)
+    def contains(value: Self, index: key): Boolean = value.contains(index)
+    def access(value: Self, index: key): value = value(index)
 
 
 trait Indexable extends Typeclass, Operable, Resultant:

@@ -34,11 +34,15 @@ package honeycomb
 
 import soundness.{Table as _, *}
 
-import html5.*
+import autopsies.contrastExpectations
+import errorDiagnostics.stackTraces
+import strategies.throwUnsafely
 
 object Tests extends Suite(m"Honeycomb Tests"):
   def run(): Unit =
     suite(m"Showing HTML"):
+      import html5.*
+
       test(m"empty normal tag"):
         Div.show
       .check(_ == t"<div/>")
@@ -82,3 +86,101 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"deeper-nested elements"):
         Table(Tbody(Tr(Td(t"A")))).show
       .check(_ == t"<table><tbody><tr><td>A</td></tr></tbody></table>")
+
+    suite(m"HTML parsing tests"):
+      import Dom.{Div, P, Li, Area, Br, Ul, Input, Head, Script}
+      def parse(text: Text): HtmlNode = unsafely(Dom.parse(Iterator(text)))
+
+      test(m"simple empty tag"):
+        parse(t"""<div></div>""")
+      .assert(_ == Div)
+
+      test(m"List"):
+        parse(t"""<ul><li>item</li></ul>""")
+      .assert(_ == Ul(Li("item")))
+
+      test(m"simple tag with text"):
+        parse(t"""<div>content</div>""")
+      .assert(_ == Div("content"))
+
+      test(m"simple self-closing tag"):
+        parse(t"""<div/>""")
+      .assert(_ == Div)
+
+      test(m"simple comment tag"):
+        parse(t"""<!--This is a comment-->""")
+      .assert(_ == HtmlNode.Comment("This is a comment"))
+
+      test(m"simple void tag"):
+        parse(t"""<br>""")
+      .assert(_ == Br)
+
+      test(m"void tag with an attribute"):
+        parse(t"""<area foo="bar">""")
+      .assert(_ == Area(foo = t"bar"))
+
+      test(m"void tag with an unquoted attribute"):
+        parse(t"""<area foo=bar>""")
+      .assert(_ == Area(foo = "bar"))
+
+      test(m"void tag with a boolean attribute"):
+        parse(t"""<input disabled>""")
+      .assert(_ == Input(disabled = true))
+
+      test(m"void tag with a single-quoted attribute"):
+        parse(t"""<area foo='bar baz'>""")
+      .assert(_ == Area(foo = "bar baz"))
+
+      test(m"simple nested tag"):
+        parse(t"""<div><area></div>""")
+      .assert(_ == Div(Area))
+
+      test(m"just text"):
+        parse(t"""hello world""")
+      .assert(_ == HtmlNode.Textual("hello world"))
+
+      test(m"just text with entity"):
+        parse(t"""to &amp; fro""")
+      .assert(_ == HtmlNode.Textual("to & fro"))
+
+      test(m"just an entity"):
+        parse(t"""&amp;""")
+      .assert(_ == HtmlNode.Textual("&"))
+
+      test(m"mismatched closing tag"):
+        try parse(t"""<em><b></em></b>""")
+        catch case exception: Exception => exception
+      .assert(_ == ParseError(HtmlNode, HtmlNode.Position(12.u), HtmlNode.Issue.MismatchedTag("b", "em")))
+
+      test(m"unknown tag"):
+        try parse(t"""<xyz>""")
+        catch case exception: Exception => exception
+      .assert(_ == ParseError(HtmlNode, HtmlNode.Position(1.u), HtmlNode.Issue.InvalidTag("xyz")))
+
+      test(m"raw text"):
+        parse(t"<head><script>some content</script></head>")
+      . assert(_ == Head(Script("some content")))
+
+      test(m"raw text, with partial closing tag"):
+        parse(t"<head><script>some content</scr</script></head>")
+      . assert(_ == Head(Script("some content</scr")))
+
+      test(m"raw text, with shorter partial closing tag"):
+        parse(t"<head><script>some content</</script></head>")
+      . assert(_ == Head(Script("some content</")))
+
+      test(m"raw text, with even shorter partial closing tag"):
+        parse(t"<head><script>some content<</script></head>")
+      . assert(_ == Head(Script("some content<")))
+
+      test(m"raw text, with non-entity"):
+        parse(t"<head><script>some &amp; content</script></head>")
+      . assert(_ == Head(Script("some &amp; content")))
+
+      test(m"raw text, with tag literal"):
+        parse(t"<head><script>some <foo> content</script></head>")
+      . assert(_ == Head(Script("some <foo> content")))
+
+      test(m"autoclosing tag"):
+        parse(t"""<ul><li>First item\n<li>Second item</ul>""")
+      .assert()

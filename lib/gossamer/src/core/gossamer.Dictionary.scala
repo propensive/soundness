@@ -30,43 +30,88 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package gossamer
 
 import anticipation.*
-import proscenium.*
+import prepositional.*
+import rudiments.*
 import vacuous.*
 
-import scala.quoted.*
+object Dictionary:
+  def apply[element](pairs: (Text, element)*): Dictionary[element] =
+    pairs.foldLeft(Dictionary.Empty): (dictionary, next) =>
+      dictionary.add(next(0), next(1), 0)
 
-import language.dynamics
+enum Dictionary[+element]:
+  case Empty
+  case Just(tail: Text, value: element)
+  case Branch(value: Optional[element], map: Map[Char, Dictionary[element]])
 
-object Tag:
-  given generic: Tag[?, ?, ?] is GenericCssSelection = _.labelString.tt
+  def size: Int = this match
+    case Empty              => 0
+    case Just(_, _)         => 1
+    case Branch(Unset, map) => map.sumBy(_(1).size)
+    case Branch(_, map)     => map.sumBy(_(1).size) + 1
 
-open case class Tag[+name <: Label, child <: Label, attribute <: Label]
-                 (labelString: name)
-extends Node[name], Dynamic:
+  def branches: Set[Char] = this match
+    case Empty          => Set()
+    case Just(tail, _)  => tail.prim.let(Set(_)).or(Set())
+    case Branch(_, map) => map.keySet
 
-  def attributes: Attributes = Map()
-  def children: Seq[Node[?] | Text | Unset.type | HtmlXml] = Nil
-  def label: Text = labelString.tt
+  def add[element2 >: element](entry: Text, value: element2, offset: Int): Dictionary[element2] =
+    this match
+      case Empty =>
+        Just(entry, value)
 
-  def preset(presetAttributes: (String, Text)*): Tag[name, child, attribute] =
-    new Tag[name, child, attribute](labelString):
-      override def attributes: Attributes = presetAttributes.to(Map)
+      case just@Just(tail, value0) =>
+        if matches(tail, entry, offset) then Just(tail, value) else
+          if entry.length == offset
+          then Branch(value, Map(tail.s.head -> child(just)))
+          else
+            val next: Char = entry.s.charAt(offset)
+            val rest: Text = entry.s.drop(offset + 1).tt
 
-  type Content = child
+            if tail.length == 0 then Branch(value0, Map(next -> Just(rest, value)))
+            else if tail.s.head == next
+            then Branch(Unset, Map(next -> child(just).add(entry, value, offset + 1)))
+            else Branch(Unset, Map(next -> Just(rest, value), tail.s.head -> child(just)))
 
+      case Branch(value0, map) =>
+        if entry.length == offset then Branch(value, map) else
+          val next = entry.s.charAt(offset)
 
-  inline def applyDynamicNamed(method: String)(inline attributes: ("" | attribute, Any)*)
-  : StartTag[name, child] =
+          val child =
+            if map.contains(next) then map(next).add(entry, value, offset + 1)
+            else Just(entry.s.drop(offset + 1).tt, value)
 
-      ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
+          Branch(value0, map.updated(next, child))
 
+  private def child(just: Just[element]): Just[element] = Just(just.tail.s.drop(1).tt, just.value)
 
-  def applyDynamic(method: String)(children: (Optional[Html[child]] | Seq[Html[child]])*)
-  : Element[name] =
+  private def matches(tail: Text, entry: Text, offset: Int): Boolean =
+    tail.length + offset == entry.length && that:
+      var matches = true
+      var i = 0
 
-      method match
-        case "apply"   => Element(labelString, attributes, children)
-        case className => Element(labelString, attributes.updated("class", className.tt), children)
+      while matches && i < tail.length do
+        matches &&= tail.s.charAt(i) == entry.s.charAt(i + offset)
+        i += 1
+
+      matches
+
+  protected def lookup(entry: Text, offset: Int): Optional[element] = this match
+    case Empty             => Unset
+    case Just(tail, value) => if matches(tail, entry, offset) then value else Unset
+
+    case Branch(value, map) =>
+      if entry.length > offset then map.at(entry.s.charAt(offset)).let(_.lookup(entry, offset + 1))
+      else if entry.length == offset then value
+      else Unset
+
+  inline def apply(entry: Text): Optional[element] = lookup(entry, 0)
+
+  def apply(char: Char): Dictionary[element] = this match
+    case Empty             => Empty
+    case Branch(_, map)    => map.at(char).or(Empty)
+    case Just(word, value) =>
+      if word.length > 0 && word.s.head == char then Just(word.s.drop(1).tt, value) else Empty

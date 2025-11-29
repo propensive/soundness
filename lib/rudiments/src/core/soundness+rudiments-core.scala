@@ -36,7 +36,7 @@ export rudiments
 . { Memory, b, kib, mib, gib, tib, memory, sift, has, weave, each, all, sumBy, bi, tri, indexBy,
     longestTrain, mutable, immutable, snapshot, place, upsert, collate, establish, plus, runs,
     runsBy, create, javaInputStream, DecimalConverter, !!, Exit, unit, waive, twin, triple, typed,
-    matchable, give, pipe, fuse, tap, also, Counter, loop, Loop, &, tuple, to,
+    matchable, give, pipe, fuse, tap, also, Counter, loop, Loop, &, tuple, to, that,
     prim, sec, ter, unwind, at, Indexable, yet, Bijection, bijection, segment,
     Segmentable, Digit, total, product, mean, variance, std,
-    annex, intercalate, Defaulting, occupied, when }
+    annex, intercalate, Defaulting, occupied, when, repeat }

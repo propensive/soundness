@@ -1,333 +1,170 @@
-                                                                                                  /*
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃                                                                                                  ┃
-┃                                                   ╭───╮                                          ┃
-┃                                                   │   │                                          ┃
-┃                                                   │   │                                          ┃
-┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
-┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
-┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
-┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
-┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
-┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
-┃                                                                                                  ┃
-┃    Soundness, version 0.46.0.                                                                    ┃
-┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
-┃                                                                                                  ┃
-┃    The primary distribution site is:                                                             ┃
-┃                                                                                                  ┃
-┃        https://soundness.dev/                                                                    ┃
-┃                                                                                                  ┃
-┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
-┃    except in compliance with the License. You may obtain a copy of the License at                ┃
-┃                                                                                                  ┃
-┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
-┃                                                                                                  ┃
-┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
-┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
-┃    either express or implied. See the License for the specific language governing permissions    ┃
-┃    and limitations under the License.                                                            ┃
-┃                                                                                                  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-                                                                                                  */
 package punctuation
 
-import scala.annotation.tailrec
+import scala.collection.mutable as scm
 
 import anticipation.*
-import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import honeycomb.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
-import com.vladsch.flexmark as cvf
-import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.tables, cvf.util.ast as cvfua
+enum Layout extends Markdown.Node:
+  case BlockQuote(line: Ordinal, layout: Layout*)
+  
+  case OrderedList
+        (line:      Ordinal,
+         tight:     Boolean,
+         start:     Int,
+         delimiter: Optional['.' | ')'],
+         items: List[Layout]*)
+         
+  case BulletList(line: Ordinal, tight: Boolean, items: List[Layout]*)
+  case CodeBlock(line: Ordinal, info: List[Text], content: Text)
+  case Paragraph(line: Ordinal, prose: Prose*)
+  case Heading(line: Ordinal, level: 1 | 2 | 3 | 4 | 5 | 6, prose: Prose*)
+  case ThematicBreak(line: Ordinal)
+  case HtmlBlock(line: Ordinal, html: Text)
 
-import Markdown.Ast.Inline.*
-import Markdown.Ast.Block.*
-import Markdown.Ast.TablePart
-import Markdown.Ast.ListItem
+  def line: Ordinal
+  def children: Seq[Prose] = this match
+    case Paragraph(_, children*)  => children
+    case BlockQuote(_, children*) => children.flatMap(_.children)
+    case Heading(_, _, children*) => children
+    case _                        => Nil
 
-case class Markdown[+markdown <: Markdown.Ast.Node](nodes: markdown*):
-  def serialize: Text =
-    val buf = StringBuilder()
 
-    nodes.each: value =>
-      value.absolve match
-        case node: Markdown.Ast.Inline => node.serialize(buf)
-        case node: Markdown.Ast.Block  => node.serialize(buf)
+enum Prose extends Markdown.Node:
+  case Textual(text: Text)
+  case Softbreak
+  case Linebreak
+  case Code(code: Text)
+  case Emphasis(prose: Prose*)
+  case Strong(prose: Prose*)
+  case Link(destination: Text, title: Optional[Text], prose: Prose*)
+  case Image(destination: Text, title: Optional[Text], prose: Prose*)
+  case HtmlInline(html: Text)
 
-    buf.text
 
 object Markdown:
-  given encodable: InlineMd is Encodable in Text = _.serialize
-  given showable: InlineMd is Showable = _.serialize
+  trait Node
+  case class LinkRef(label: Text, title: Optional[Text], destination: Text)
+
+  given decodable: Markdown of Layout is Aggregable:
+    type Operand = Text
+
+    enum Kind:
+      case Unknown, Paragraph, Code
+
+    def aggregate(stream: Stream[Text]): Markdown of Layout =
+      val cursor = Cursor(stream.iterator)
+      var linkRefs: List[Markdown.LinkRef] = Nil
+      var layout: List[Layout] = Nil
+      val buffer = java.lang.StringBuilder()
+      
+      
+      def line(): Unit = cursor.hold:
+        var continue: Boolean = true
+        var started: Boolean = false
+        var begin: Mark = Mark.Initial
+        while continue do
+          cursor.datum(using Unsafe) match
+            case ' '  =>
+            case '\n' =>
+              continue = false
+            case char =>
+              if !started then begin = cursor.mark
+          
+          continue &&= cursor.next()
+        
+        
+      while cursor.next() do line()
+        
+      Markdown(linkRefs.reverse, layout.reverse*)
+
+
+  given renderable: (Markdown of Layout) is Renderable to html5.Flow = markdown =>
+    import Markdown.*
+    import html5.*
+
+    def prose(node: Prose): List[Html[Phrasing]] = node match
+      case Prose.Textual(text)       => List(text)
+      case Prose.Emphasis(children*) => List(Em(children.flatMap(prose(_))))
+      case Prose.Code(code)          => List(Code(code))
+      case Prose.Strong(children*)   => List(Strong(children.flatMap(prose(_))))
+      case Prose.Softbreak           => List(t"\n")
+      case Prose.Linebreak           => List(Br)
+      case Prose.HtmlInline(content) => List(content)
+      
+      case Prose.Link(destination, title, content*) =>
+        val base = title.lay(A(href = destination)): title =>
+          A(href = destination, title = title)
+          
+        List(base(content.flatMap(prose(_).asInstanceOf[List[Html[Noninteractive]]])))
+        
+      case Prose.Image(destination, title, content*) =>
+        List:
+          title.lay(Img(src = destination)): title =>
+            Img(src = destination, alt = title)
+          
+    def layout(node: Layout): List[Html[Flow]] = node match
+      case Layout.BlockQuote(line, children*) =>
+        List(Blockquote(children.flatMap(layout(_))))
+        
+      case Layout.Paragraph(line, children*) =>
+        List(P(children.flatMap(prose(_))))
+        
+      case Layout.BulletList(line, tight, items*) =>
+        List(Ul(items.flatMap: item =>
+          List(if tight then Li(item.flatMap(_.children).flatMap(prose(_))) else Li(item.flatMap(layout(_))))))
+          
+      case Layout.OrderedList(line, tight, start, delimiter, items*) =>
+        List(Ol(items.flatMap: item =>
+          List(if tight then Li(item.flatMap(_.children).flatMap(prose(_))) else Li(item.flatMap(layout(_))))))
+          
+      case Layout.ThematicBreak(line) =>
+        List(Hr)
+      
+      case Layout.HtmlBlock(line, content) => List(content)
+      
+      case Layout.Heading(line, level, content*) => level match
+        case 1 => List(H1(content.map(prose(_))*))
+        case 2 => List(H2(content.map(prose(_))*))
+        case 3 => List(H3(content.map(prose(_))*))
+        case 4 => List(H4(content.map(prose(_))*))
+        case 5 => List(H5(content.map(prose(_))*))
+        case 6 => List(H6(content.map(prose(_))*))
+        
+      case Layout.CodeBlock(line, info, code) =>
+        List(Pre(info.prim.lay(Code(code)) { info => Code.applyDynamic(s"language-$info")(code) }))
+          
+    markdown.children.flatMap(layout(_))
+        
+
+  def apply(linkRefs0: List[Markdown.LinkRef], layout: Layout*): Markdown of Layout = new Markdown:
+    type Topic = Layout
+    val linkRefs: List[Markdown.LinkRef] = linkRefs0
+    val children: Seq[Layout] = layout
+
+  @targetName("applyProse")
+  def apply(prose: Prose*): Markdown of Prose = new Markdown:
+    type Topic = Prose
+    val linkRefs: List[Markdown.LinkRef] = Nil
+    val children: Seq[Prose] = prose
 
-  given renderable: [markdown <: Markdown[Markdown.Ast.Node]] => (translator: Translator)
-        => markdown is Renderable to html5.Flow =
-    content => translator.translate(content.nodes)
+abstract class Markdown:
+  type Topic <: Markdown.Node
 
-  given renderable2: [markdown <: Markdown.Ast.Inline] => (translator: Translator)
-        => markdown is Renderable to html5.Phrasing =
-    translator.phrasing(_)
+  val linkRefs: List[Markdown.LinkRef]
+  val children: Seq[Topic]
 
-  object Ast:
-    type Node = Block | Inline
+  override def equals(that: Any): Boolean = that match
+    case that: Markdown => that.children == children
+    case _              => false
 
-    enum Block:
-      case ThematicBreak()
-      case Paragraph(children: Inline*)
-      case Heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Inline*)
-      case FencedCode(lang: Optional[Text], meta: Optional[Text], value: Text)
-      case BulletList(numbered: Optional[Int], loose: Boolean, children: ListItem*)
-      case Blockquote(children: Block*)
-      case Reference(id: Text, location: Text)
-      case Table(children: TablePart*)
-      case Row(cells: Cell*)
-      case Cell(children: Inline*)
-
-      def serialize(buf: StringBuilder): Unit =
-        buf.add(t"Serialization of block elements is not currently supported!")
-
-    case class ListItem(children: Block*)
-
-    enum TablePart:
-      case Head(rows: Row*)
-      case Body(rows: Row*)
-
-    enum Inline:
-      case LineBreak
-      case Emphasis(children: Inline*)
-      case HtmlNode(value: Text)
-      case Image(alt: Text, src: Text)
-      case SourceCode(value: Text)
-      case Strong(children: Inline*)
-      case Prose(string: Text)
-      case Weblink(location: Text, children: Inline*)
-
-      def serialize(buf: StringBuilder): Unit = this match
-        case LineBreak =>
-          buf.add('\n')
-
-        case Emphasis(children*) =>
-          buf.add('_')
-          children.each(_.serialize(buf))
-          buf.add('_')
-
-        case HtmlNode(value) =>
-          buf.add(value)
-
-        case Image(alt, src) =>
-          buf.add(t"![")
-          buf.add(alt)
-          buf.add(t"](")
-          buf.add(src)
-          buf.add(t")")
-
-        case SourceCode(value) =>
-          buf.add('`')
-          buf.add(value)
-          buf.add('`')
-
-        case Strong(children*) =>
-          buf.add('*')
-          children.each(_.serialize(buf))
-          buf.add('*')
-
-        case Prose(text) =>
-          buf.add(text)
-
-        case Weblink(location, children*) =>
-          buf.add('[')
-          children.each(_.serialize(buf))
-          buf.add(t"](")
-          buf.add(location)
-          buf.add(')')
-
-  private val options = MutableDataSet()
-  //options.set[ju.Collection[com.vladsch.flexmark.util.misc.Extension]](Parser.EXTENSIONS,
-  //    ju.Arrays.asList(TablesExtension.create()))
-
-  private val parser = Parser.builder(options).nn.build().nn
-
-
-  given aggregable: Tactic[MarkdownError] => Md is Aggregable by Text =
-    chunks =>
-      val text = chunks.read[Text]
-      val root = parser.parse(text.s).nn
-      val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _))
-
-      Markdown(nodes.collect { case child: Markdown.Ast.Block => child }*)
-
-  given aggregable2: Tactic[MarkdownError] => InlineMd is Aggregable by Text =
-    chunks =>
-      chunks.read[Md] match
-        case Markdown(Paragraph(xs*)) =>
-          Markdown[Markdown.Ast.Inline](xs*)
-
-        case other =>
-          raise(MarkdownError(MarkdownError.Reason.BlockInsideInline))
-          Markdown[Markdown.Ast.Inline]()
-
-  given decoder: Tactic[MarkdownError] => InlineMd is Decodable in Text = _.read[InlineMd]
-
-  @tailrec
-  private def coalesce[markdown >: Prose <: Markdown.Ast.Inline]
-               (elements: List[markdown], done: List[markdown] = Nil)
-  : List[markdown] =
-
-      elements match
-        case Nil                               => done.reverse
-        case Prose(str) :: Prose(str2) :: tail => coalesce(Prose(t"$str$str2") :: tail, done)
-        case Prose(str) :: tail                => coalesce(tail, Prose(format(str)) :: done)
-        case head :: tail                      => coalesce(tail, head :: done)
-
-
-  def format(str: Text): Text =
-    str.s
-    . replaceAll("--", "—").nn
-    . replaceAll(" \"", " “").nn
-    . replaceAll("\"", "”").nn
-    . replaceAll(" '", " ‘").nn
-    . replaceAll("'", "’").nn
-    . tt
-
-
-  private def resolveReference(root: cvfua.Document, node: cvfa.ImageRef | cvfa.LinkRef)
-  : Text raises MarkdownError =
-
-      Optional(node.getReferenceNode(root)).let(_.nn.getUrl.toString.show).or:
-        raise(MarkdownError(MarkdownError.Reason.BrokenImageRef)) yet t"https://example.com/"
-
-
-  type PhrasingInput =
-    cvfa.Emphasis | cvfa.StrongEmphasis | cvfa.Code | cvfa.HardLineBreak | cvfa.Image
-    | cvfa.ImageRef | cvfa.Link | cvfa.LinkRef | cvfa.MailLink | cvfa.Text | cvfa.SoftLineBreak
-
-
-  def phraseChildren(root: cvfua.Document, node: cvfua.Node)
-  : Seq[Markdown.Ast.Inline] raises MarkdownError =
-
-      coalesce:
-        node.getChildren.nn.iterator.nn.asScala.to(List).collect:
-          case node: PhrasingInput => phrasing(root, node)
-
-
-  def flowChildren(root: cvfua.Document, node: cvfua.Node)
-  : Seq[Markdown.Ast.Block] raises MarkdownError =
-
-      node.getChildren.nn.iterator.nn.asScala.to(List).collect:
-        case node: FlowInput => flow(root, node)
-
-
-  def listItems(root: cvfua.Document, node: cvfa.BulletList | cvfa.OrderedList)
-  : Seq[ListItem] raises MarkdownError =
-
-      node.getChildren.nn.iterator.nn.asScala.to(List).collect:
-        case node: (cvfa.BulletListItem | cvfa.OrderedListItem) =>
-          ListItem(flowChildren(root, node)*)
-
-
-  def phrasing(root: cvfua.Document, node: PhrasingInput)
-  : Markdown.Ast.Inline raises MarkdownError =
-
-      node match
-        case node: cvfa.Emphasis       => Emphasis(phraseChildren(root, node)*)
-        case node: cvfa.SoftLineBreak  => Prose(t"\n")
-        case node: cvfa.StrongEmphasis => Strong(phraseChildren(root, node)*)
-        case node: cvfa.Code           => SourceCode(node.getText.toString.show)
-        case node: cvfa.HardLineBreak  => LineBreak
-        case node: cvfa.Image          => Image
-                                           (node.getText.toString.show, node.getUrl.toString.show)
-        case node: cvfa.ImageRef       => Image
-                                           (node.getText.toString.show,
-                                            resolveReference(root, node))
-        case node: cvfa.Link           => Weblink
-                                           (node.getUrl.toString.show,
-                                            phraseChildren(root, node)*)
-        case node: cvfa.LinkRef        => Weblink
-                                           (resolveReference(root, node),
-                                            phraseChildren(root, node)*)
-        case node: cvfa.MailLink       => Weblink
-                                           (node.getText.toString.show,
-                                            Prose(s"mailto:${node.getText.nn}".tt))
-        case node: cvfa.Text           => Prose(format(node.getChars.toString.show))
-
-
-  type FlowInput =
-    cvfa.BlockQuote | cvfa.BulletList | cvfa.CodeBlock | cvfa.FencedCodeBlock | cvfa.ThematicBreak
-    | cvfa.Paragraph | cvfa.IndentedCodeBlock | cvfa.Heading | cvfa.OrderedList
-
-  def flow(root: cvfua.Document, node: FlowInput): Markdown.Ast.Block raises MarkdownError =
-    node match
-      case node: cvfa.BlockQuote        => Blockquote(flowChildren(root, node)*)
-
-      case node: cvfa.BulletList        => BulletList(numbered = Unset, loose = node.isLoose,
-                                              listItems(root, node)*)
-
-      case node: cvfa.CodeBlock         => FencedCode
-                                            (Unset, Unset, node.getContentChars.toString.show)
-      case node: cvfa.IndentedCodeBlock => FencedCode
-                                            (Unset, Unset, node.getContentChars.toString.show)
-      case node: cvfa.Paragraph         => Paragraph(phraseChildren(root, node)*)
-      case node: cvfa.OrderedList       => BulletList
-                                            (numbered = 1,
-                                             loose    = node.isLoose,
-                                             listItems(root, node)*)
-      case node: cvfa.ThematicBreak     => ThematicBreak()
-
-      case node: cvfa.FencedCodeBlock =>
-        FencedCode
-          (if node.getInfo.toString.show == t"" then Unset else node.getInfo.toString.show, Unset,
-           node.getContentChars.toString.show)
-
-      case node: cvfa.Heading => node.getLevel match
-        case lvl@(1 | 2 | 3 | 4 | 5 | 6) => Heading(lvl, phraseChildren(root, node)*)
-
-        case _ =>
-          raise(MarkdownError(MarkdownError.Reason.BadHeadingLevel))
-          Heading(6, phraseChildren(root, node)*)
-
-  def convert(root: cvfua.Document, node: cvfua.Node, noFormat: Boolean = false)
-  : Markdown.Ast.Node raises MarkdownError =
-
-      node match
-        case node: cvfa.HardLineBreak => LineBreak
-        case node: cvfa.SoftLineBreak => Prose(t"\n")
-        case node: cvfa.ThematicBreak => ThematicBreak()
-        case node: tables.TableBlock  => Table(table(root, node)*)
-        case node: FlowInput          => flow(root, node)
-        case node: PhrasingInput      => phrasing(root, node)
-
-        case node: cvfa.Reference =>
-          Reference(node.getReference.toString.show, node.getUrl.toString.show)
-
-        case node: cvfua.Node =>
-          raise(MarkdownError(MarkdownError.Reason.UnexpectedNode)) yet Prose(t"?")
-
-
-  def table(root: cvfua.Document, node: tables.TableBlock)
-  : List[Markdown.Ast.TablePart] raises MarkdownError =
-
-      node.getChildren.nn.iterator.nn.asScala.to(List).collect:
-        case node: (tables.TableHead | tables.TableBody) =>
-          val rows: Seq[Row] = node.getChildren.nn.iterator.nn.asScala.to(List).collect:
-            case row: tables.TableRow =>
-              val cells = node.getChildren.nn.iterator.nn.asScala.to(List).collect:
-                case cell: tables.TableCell => tableCell(root, cell)
-
-              Row(cells*)
-
-          node match
-            case node: tables.TableHead => TablePart.Head(rows*)
-            case node: tables.TableBody => TablePart.Body(rows*)
-
-
-  def tableCell(root: cvfua.Document, node: tables.TableCell): Cell raises MarkdownError =
-    Cell(phraseChildren(root, node)*)
+  override def hashCode: Int = children.hashCode
