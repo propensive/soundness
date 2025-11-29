@@ -792,7 +792,8 @@ object hellenism extends SoundnessModule:
 
 object honeycomb extends SoundnessModule:
   object core extends SoundnessSubModule:
-    def moduleDeps = Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core)
+    def moduleDeps =
+      Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core, typonym.core)
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core)
@@ -1184,7 +1185,7 @@ object turbulence extends SoundnessModule:
 
 object typonym extends SoundnessModule:
   object core extends SoundnessSubModule:
-    def moduleDeps = Seq(proscenium.core)
+    def moduleDeps = Seq(proscenium.core, prepositional.core)
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core)
