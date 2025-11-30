@@ -58,6 +58,11 @@ enum Dictionary[+element]:
     case Just(tail, _)  => tail.prim.let(Set(_)).or(Set())
     case Branch(_, map) => map.keySet
 
+  def iterator: Iterable[element] = this match
+    case Empty          => Nil
+    case Just(_, value) => List(value)
+    case Branch(_, map) => map.values.flatMap(_.iterator)
+
   def add[element2 >: element](entry: Text, value: element2, offset: Int): Dictionary[element2] =
     this match
       case Empty =>

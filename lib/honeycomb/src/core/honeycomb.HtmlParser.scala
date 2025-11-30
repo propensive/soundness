@@ -38,6 +38,7 @@ import java.lang as jl
 
 import scala.collection.mutable as scm
 
+import adversaria.*
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -64,8 +65,8 @@ object Tag:
         children   <: Label: Reifiable to List[String],
         insertable <: Label: Reifiable to List[String]]
        (autoclose: Boolean          = false,
-        content:   Html.Content     = Html.Content.Normal,
-        presets:   List[Attribute]       = Nil)
+        content:   Html.TextContent = Html.TextContent.Normal,
+        presets:   List[Attribute]  = Nil)
   : Tag of label over children =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
@@ -81,9 +82,9 @@ object Tag:
          [label      <: Label: ValueOf,
           children   <: Label: Reifiable to List[String],
           insertable <: Label: Reifiable to List[String]]
-         (autoclose: Boolean      = false,
-          content:   Html.Content = Html.Content.Normal,
-          presets:   List[Attribute]   = Nil)
+         (autoclose: Boolean          = false,
+          content:   Html.TextContent = Html.TextContent.Normal,
+          presets:   List[Attribute]  = Nil)
     : Container of label over children =
 
         val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
@@ -96,38 +97,36 @@ object Tag:
 
   class Container
          (name:      Text,
-          autoclose:  Boolean         = false,
-          content:    Html.Content    = Html.Content.Normal,
-          presets:    List[Attribute] = Nil,
-          admissible: Set[Text]       = Set(),
-          insertable: Set[Text]       = Set())
+          autoclose:  Boolean          = false,
+          content:    Html.TextContent = Html.TextContent.Normal,
+          presets:    List[Attribute]  = Nil,
+          admissible: Set[Text]        = Set(),
+          insertable: Set[Text]        = Set())
   extends Tag(name, autoclose, content, presets, admissible, insertable):
     override def void = false
 
-    def applyDynamic(method: "apply")(children: into[Html of Transport]*)
+    def applyDynamic(method: "apply")(children: Html of Transport*)
     : Html.Node of Topic =
 
         Html.Node(name, Nil, children).asInstanceOf[Html.Node of Topic]
 
 class Tag
        (    tagname:    Text,
-        val autoclose:  Boolean         = false,
-        val content:    Html.Content    = Html.Content.Normal,
-        val presets:    List[Attribute] = Nil,
-        val admissible: Set[Text]       = Set(),
-        val insertable: Set[Text]       = Set())
+        val autoclose:  Boolean          = false,
+        val content:    Html.TextContent = Html.TextContent.Normal,
+        val presets:    List[Attribute]  = Nil,
+        val admissible: Set[Text]        = Set(),
+        val insertable: Set[Text]        = Set())
 extends Html.Node(tagname, Nil, Nil), Dynamic:
 
   def void: Boolean = true
 
-  def applyDynamicNamed(method: "apply")(attributes: into[Optional[Attribute of Topic]]*)
-  : Html.Node & Vacant over Transport =
+  def applyDynamicNamed(method: "apply")(attributes: Optional[Attribute of Topic]*)
+  : Html.Node & Html.Vacant of Topic over Transport =
 
       Html.Node(tagname, attributes.to(List).compact, Nil)
-      . asInstanceOf[Html.Node & Vacant over Transport]
+      . asInstanceOf[Html.Node & Html.Vacant of Topic over Transport]
 
-
-erased trait Vacant extends Transportive
 
 object data extends Dynamic:
   def applyDynamic(name: String)(value: Text): (String, Text) = (name, value)
@@ -146,10 +145,10 @@ object Attribute:
         => Conversion[(key, Boolean), Optional[Attribute of tag]] =
     attribute => Attribute(attribute(0), attribute(0).tt).asInstanceOf[Attribute of tag].unless(!attribute(1))
 
-case class Attribute(key: Text, value: Text) extends Topical
+into case class Attribute(key: Text, value: Optional[Text]) extends Topical
 
-extension (node: Html.Node & Vacant)
-  def apply(children: into[Html of node.Transport]*): Html.Node =
+extension (node: Html.Node & Html.Vacant)
+  def apply(children: Html of node.Transport*): Html.Node =
     Html.Node(node.tagname, node.attributes, children)
 
 trait Dom:
@@ -187,11 +186,11 @@ given html5Dom: Dom:
     | "pre" | "table" | "ul" | "search"
 
   type Phrasing =
-    Embedded | InteractivePhrasing | "abbr" | "area" | "b" | "bdi" | "bdo" | "br" | "button"
-    | "cite" | "code" | "data" | "datalist" | "del" | "dfn" | "em" | "i" | "input" | "ins" | "kbd"
-    | "label" | "link" | "map" | "mark" | "meta" | "meter" | "noscript" | "output" | "progress"
-    | "q" | "ruby" | "s" | "samp" | "script" | "select" | "slot" | "small" | "span" | "strong"
-    | "sub" | "sup" | "template" | "textarea" | "time" | "u" | "var" | "wbr" | "selectedcontent"
+    Embedded | InteractivePhrasing | "abbr" | "area" | "b" | "bdi" | "bdo" | "br" | "cite" | "code"
+    | "data" | "datalist" | "del" | "dfn" | "em" | "i" | "ins" | "kbd" | "link" | "map" | "mark"
+    | "meta" | "meter" | "noscript" | "output" | "progress" | "q" | "ruby" | "s" | "samp" | "script"
+    | "slot" | "small" | "span" | "strong" | "sub" | "sup" | "template" | "time" | "u" | "var"
+    | "wbr" | "selectedcontent"
 
   type Embedded =
     "audio" | "canvas" | "embed" | "iframe" | "img" | "object" | "picture" | "video" | "math"
@@ -202,10 +201,8 @@ given html5Dom: Dom:
   type Metadata = "base" | "link" | "meta" | "noscript" | "script" | "style" | "template" | "title"
   type Heading = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "hgroup"
 
-
-
   // - should be transparent
-  val A = Tag.Container["a", Flow, ""]()
+  val A = Tag.Container["a", Flow | "#transparent", ""]()
   val Abbr = Tag.Container["abbr", Phrasing, ""]()
 
   val Address =
@@ -224,8 +221,18 @@ given html5Dom: Dom:
 
   val Area = Tag["area", "", ""]()
   val Article = Tag.Container["article", Flow, ""]()
+  val Aside = Tag.Container["aside", Flow, ""]()
 
+  // - transparent content
+  // - audio and video are prohibited in transparent content
+  // - conditions based on presence or absence of `src` attribute
+  val Audio = Tag.Container["audio", "source" | "track" | "#transparent", ""]
+
+  val B = Tag.Container["b", Phrasing, ""]()
+
+  // - `href` or `target` attributes are required
   val Base = Tag["base", "", ""]()
+
   val Br = Tag["br", "", ""]()
   val Col = Tag["col", "", ""]()
   val Command = Tag["command", "", ""]()
@@ -244,29 +251,25 @@ given html5Dom: Dom:
   val Meta = Tag["meta", "", ""]()
   val Param = Tag["param", "", ""]()
   val Source = Tag["source", "", ""]()
-  val Script = Tag.Container["script", "#text", ""](content = Html.Content.Raw)
-  val Style = Tag.Container["style", "", ""](content = Html.Content.Raw)
+  val Script = Tag.Container["script", "#text", ""](content = Html.TextContent.Raw)
+  val Style = Tag.Container["style", "", ""](content = Html.TextContent.Raw)
   val Track = Tag["track", "", ""]()
   val Wbr = Tag["wbr", "", ""]()
 
   val Root = Tag.Container["#root", "html", "html"]()
   val Head = Tag.Container["head", Metadata, ""](autoclose = true)
-  val Title = Tag.Container["title", "#text", ""]()
+  val Title = Tag.Container["title", "#text", ""](content = Html.TextContent.Rcdata)
+  val Textarea = Tag.Container["textarea", "#text", ""](content = Html.TextContent.Rcdata)
   val Body = Tag.Container["body", Flow, ""](autoclose = true)
   val Div = Tag.Container["div", "p" | "ul" | "ol" | "area" | "#text", ""]()
   val Li = Tag.Container["li", "p" | "#text", ""](autoclose = true)
   val Ol = Tag.Container["ol", "li", ""]()
   val P = Tag.Container["p", "i" | "em" | "strong" | "#text", ""](autoclose = true)
-  val B = Tag.Container["b", "i" | "em" | "strong" | "#text", ""]()
   val Ul = Tag.Container["ul", "li", ""]()
+  val Html = honeycomb.Html
 
   val elements: Dictionary[Tag] =
-    val list =
-      List
-       (Root, Html, Area, Base, Br, Col, Command, Embed, Hr, Img, Input, Link, Meta, Param,
-        Source, Track, Wbr, Head, Body, Div, Li, Ol, P, Ul, Em, B, Script, Style)
-
-    Dictionary(list.bi.map(_.tagname -> _)*)
+    Dictionary(this.membersOfType[Tag].to(List).bi.map(_.tagname -> _)*)
 
   val entities: Dictionary[Text] =
     val list = cp"/honeycomb/entities.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
@@ -277,8 +280,14 @@ given html5Dom: Dom:
 object Html
 extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", "body"), insertable = Set("head", "body")), Format:
   type Topic = "html"
-  type Domain = "head" | "body"
   type Transport = "head" | "body"
+  type Domain = "head" | "body"
+
+  erased trait Vacant extends Transportive { this: Html => }
+  erased trait Transparent extends Transportive { this: Html => }
+
+  private enum Token:
+    case Close, Comment, Empty, Open
 
   import Issue.*
   def name: Text = t"HTML"
@@ -351,17 +360,22 @@ extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", 
 
   case class Node(tagname: Text, attributes: List[Attribute], children: Seq[Html])
   extends Html, Topical, Transportive, Domainal:
+    type Foo = this.Transport
 
     override def toString(): String =
       val tagContent = if attributes == Nil then t"" else
-        attributes.map { case Attribute(key, value) => t"""$key="$value"""" }.join(t" ", t" ", t"")
+        attributes.map:
+          case Attribute(key, value) =>
+            value.lay(key): value =>
+              t"""$key="$value""""
+        . join(t" ", t" ", t"")
 
       t"<$tagname$tagContent>${children.map(_.toString.tt).join}</$tagname>".s
 
-  enum Content:
+  enum TextContent:
     case Raw, Rcdata, Whitespace, Normal
 
-  def parse(input: Iterator[Text])(using dom: Dom): Html raises ParseError =
+  def parse[dom <: Dom](input: Iterator[Text])(using dom: Dom): Html raises ParseError =
     val cursor = Cursor(input)
 
     def next(): Unit =
@@ -552,7 +566,7 @@ extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", 
     def read(parent: Tag, children: List[Html]): Html =
       cursor.lay(finish(parent, children)):
         case '&'  => parent.content match
-          case Html.Content.Whitespace => fail(OnlyWhitespace('&'))
+          case Html.TextContent.Whitespace => fail(OnlyWhitespace('&'))
           case _ =>
             val child = cursor.hold:
               val start = cursor.mark
@@ -563,72 +577,64 @@ extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", 
 
         case '<'  =>
           var level: Int = 0
-          var descent: Tag = dom.root
+          var ascend: Boolean = false
           val node: Html = cursor.hold:
             val mark = cursor.mark
+
+            def node(): Html.Node = Html.Node(content, extra, children.reverse)
+            def close(): Html.Node = Html.Node(parent.tagname, parent.attributes, children.reverse)
+
+            def infer(tag: Tag) =
+              cursor.cue(mark)
+              dom.infer(parent.tagname, tag.tagname).let(descend(_)).or:
+                if parent.autoclose then close().also { ascend = true }
+                else fail(InadmissibleTag(content, parent.tagname))
 
             next()
             tag() match
               case Token.Comment =>  Html.Comment(content)
               case Token.Empty   =>
                 val tag = dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
-                if parent.admissible(content) then Html.Node(content, extra, Nil)
-                else fail(InadmissibleTag(content, parent.tagname))
+                if parent.admissible(content) then node() else infer(tag)
 
 
               case Token.Open =>
                 val tag = dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
-                if tag.void then Html.Node(content, extra, Nil)
+
+                if tag.void then
+                  if parent.admissible(content) then node() else infer(tag)
                 else
-                  if parent.admissible(tag.tagname) then descend(tag)
-                  else dom.infer(parent.tagname, tag.tagname).let: child =>
-                    cursor.cue(mark)
-                    level = 1
-                    descent = child
-                    Html.Textual("")
-                  . or:
-                      if parent.autoclose then
-                        cursor.cue(mark)
-                        level = -1
-                        Html.Node(parent.tagname, parent.attributes, children.reverse)
-                      else fail(InadmissibleTag(content, parent.tagname))
+                  if parent.admissible(content) then descend(tag) else infer(tag)
 
               case Token.Close =>
                 if content != parent.tagname then
                   cursor.cue(mark)
-                  if parent.autoclose then
-                    level = -1
-                    Html.Node(parent.tagname, parent.attributes, children.reverse)
+                  if parent.autoclose then close().also { ascend = true }
                   else fail(MismatchedTag(parent.tagname, content))
                 else
                   cursor.next()
-                  level = -1
+                  ascend = true
                   Html.Node(content, parent.attributes, children.reverse)
 
-          level match
-            case -1 => node
-            case  0 => read(parent, node :: children)
-            case  1 => read(parent, descend(descent) :: children)
+          if ascend then node else read(parent, node :: children)
 
         case char => parent.content match
-          case Html.Content.Whitespace =>
+          case Html.TextContent.Whitespace =>
             whitespace() yet read(parent, children)
 
-          case Html.Content.Raw =>
+          case Html.TextContent.Raw =>
             val content = cursor.hold(raw(parent.tagname, cursor.mark))
             Html.Node(parent.tagname, parent.attributes, List(Html.Textual(content)))
 
-          case Html.Content.Rcdata => // FIXME
+          case Html.TextContent.Rcdata => // FIXME
             val content = cursor.hold(raw(parent.tagname, cursor.mark))
             Html.Node(parent.tagname, parent.attributes, List(Html.Textual(content)))
 
-          case Html.Content.Normal =>
+          case Html.TextContent.Normal =>
             read(parent, append(cursor.hold(textual(cursor.mark)), children))
 
     skip()
     read(dom.root, Nil)
 
-sealed trait Html extends Topical:
+sealed into trait Html extends Topical:
   type Topic
-  enum Token:
-    case Close, Comment, Empty, Open

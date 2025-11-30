@@ -89,7 +89,8 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
     suite(m"HTML parsing tests"):
       import html5Dom.{Div, P, Li, Area, Br, Ul, Input, Head, Body, Script}
-      def parse(text: Text): Html = unsafely(Html.parse(Iterator(text)))
+      def parse(text: Text): Html =
+        unsafely(Html.parse(Iterator(text)))
 
       test(m"simple empty tag"):
         parse(t"""<div></div>""")
@@ -113,23 +114,23 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"simple void tag"):
         parse(t"""<br>""")
-      .assert(_ == Br)
+      .assert(_ == Html(Body(Br)))
 
       test(m"void tag with an attribute"):
         parse(t"""<area foo="bar">""")
-      .assert(_ == Area(foo = t"bar"))
+      .assert(_ == Html(Body(Area(foo = t"bar"))))
 
       test(m"void tag with an unquoted attribute"):
         parse(t"""<area foo=bar>""")
-      .assert(_ == Area(foo = "bar"))
+      .assert(_ == Html(Body(Area(foo = "bar"))))
 
       test(m"void tag with a boolean attribute"):
         parse(t"""<input disabled>""")
-      .assert(_ == Input(disabled = true))
+      .assert(_ == Html(Body(Input(disabled = true))))
 
       test(m"void tag with a single-quoted attribute"):
-        parse(t"""<area foo='bar baz'>""")
-      .assert(_ == Area(foo = "bar baz"))
+        parse(t"""<br foo='bar baz'>""")
+      .assert(_ == Html(Body(Br(foo = "bar baz"))))
 
       test(m"simple nested tag"):
         parse(t"""<div><area></div>""")
