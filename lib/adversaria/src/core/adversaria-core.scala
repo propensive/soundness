@@ -39,5 +39,5 @@ import prepositional.*
 import proscenium.*
 
 extension [entity](entity: entity)
-  def membersOfType[value](using deref: entity is Dereferenceable to value): Set[value] =
+  def membersOfType[value](using deref: entity is Dereferenceable to value): Iterable[value] =
     deref.values(entity)

@@ -45,7 +45,7 @@ object Dereferenceable:
 trait Dereferenceable extends Typeclass, Resultant:
   def names(entity: Self): List[Text]
   def select(entity: Self, name: Text): Result
-  def values(entity: Self): Set[Result] = members(entity).values.to(Set)
+  def values(entity: Self): Iterable[Result] = members(entity).values
 
   def members(entity: Self): Map[Text, Result] =
     names(entity).map { member => member -> select(entity, member) }.to(Map)

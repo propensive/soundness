@@ -382,7 +382,7 @@ given html5Dom: Dom:
   val Wbr = Tag.void["wbr"]()
 
   val elements: Dictionary[Tag] =
-    Dictionary(this.membersOfType[Tag].to(List).bi.map(_.tagname -> _)*)
+    Dictionary(this.membersOfType[Tag].to(Seq).bi.map(_.tagname -> _)*)
 
   val entities: Dictionary[Text] =
     val list = cp"/honeycomb/entities.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
