@@ -251,3 +251,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
         try t"""<ul><li>hello</li>\n and <li>world</li></ul>""".read[Html of "html"]
         catch case exception: Exception => exception
       . assert(_ == ParseError(Html, Html.Position(21.u), Html.Issue.OnlyWhitespace('a')))
+
+      test(m"Foreign SVG tag"):
+        t"""<div><svg><circle r="1"></svg></div>""".read[Html of Flow]
+      .assert(_ == Div(Html.Foreign("svg", Nil, IArray(Html.Foreign("circle", List(Attribute("r", "1")), IArray.empty)))))

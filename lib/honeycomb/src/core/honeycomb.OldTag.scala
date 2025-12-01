@@ -32,103 +32,41 @@
                                                                                                   */
 package honeycomb
 
+import anticipation.*
+import proscenium.*
+import vacuous.*
+
+import scala.quoted.*
+
 import language.dynamics
 
-import java.lang as jl
+object OldTag:
+  given generic: OldTag[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
-import scala.collection.mutable as scm
+open case class OldTag[+name <: Label, child <: Label, attribute <: Label]
+                 (labelString: name)
+extends Node[name], Dynamic:
 
-import adversaria.*
-import anticipation.*
-import contingency.*
-import denominative.*
-import fulminate.*
-import gossamer.*
-import hellenism.*
-import hieroglyph.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import symbolism.*
-import turbulence.*
-import typonym.*
-import vacuous.*
-import zephyrine.*
+  def attributes: Attributes = Map()
+  def children: Seq[Node[?] | Text | Unset.type | HtmlXml] = Nil
+  def label: Text = labelString.tt
 
-import classloaders.threadContext
-import charDecoders.utf8
-import textSanitizers.skip
+  def preset(presetAttributes: (String, Text)*): OldTag[name, child, attribute] =
+    new OldTag[name, child, attribute](labelString):
+      override def attributes: Attributes = presetAttributes.to(Map)
 
-object Tag:
-  def root(children: Set[Text]): Tag =
-    new Tag("#root", false, Html.TextContent.Normal, Nil, children, false, false)
+  type Content = child
 
-  def void
-       [label      <: Label: ValueOf]
-       (autoclose:  Boolean          = false,
-        content:    Html.TextContent = Html.TextContent.Normal,
-        presets:    List[Attribute]  = Nil)
-  : Tag of label over "" =
 
-      new Tag(valueOf[label].tt, autoclose, content, presets, Set(), false, false):
-        type Topic = label
-        type Transport = ""
+  inline def applyDynamicNamed(method: String)(inline attributes: ("" | attribute, Any)*)
+  : StartTag[name, child] =
 
-  def foreign(name: Text): Tag =
-    new Tag(name, false, Html.TextContent.Normal, Nil, Set(), false, true):
-      override def void = false
+      ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
 
-  def foreign[label <: Label: ValueOf](presets: List[Attribute] = Nil): Tag of label over "" =
-    new Tag(valueOf[label].tt, false, Html.TextContent.Normal, presets, Set(), false, true):
-      type Topic = label
-      type Transport = ""
 
-      override def void = false
+  def applyDynamic(method: String)(children: (Optional[OldHtml[child]] | Seq[OldHtml[child]])*)
+  : Element[name] =
 
-  def container
-       [label      <: Label: ValueOf,
-        children   <: Label: Reifiable to List[String]]
-       (autoclose:  Boolean          = false,
-        content:    Html.TextContent = Html.TextContent.Normal,
-        presets:    List[Attribute]  = Nil,
-        insertable: Boolean          = false)
-  : Container of label over children =
-
-      val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
-
-      new Container(valueOf[label].tt, autoclose, content, presets, admissible, insertable):
-        type Topic = label
-        type Transport = children
-
-  class Container
-         (name:      Text,
-          autoclose:  Boolean          = false,
-          content:    Html.TextContent = Html.TextContent.Normal,
-          presets:    List[Attribute]  = Nil,
-          admissible: Set[Text]        = Set(),
-          insertable: Boolean          = false)
-  extends Tag(name, autoclose, content, presets, admissible, insertable, false):
-    override def void = false
-
-    def applyDynamic(method: "apply")(children: Html of Transport*)
-    : Html.Node of Topic =
-
-        Html.Node(name, Nil, IArray.from(children)).asInstanceOf[Html.Node of Topic]
-
-class Tag
-       (    tagname:    Text,
-        val autoclose:  Boolean          = false,
-        val content:    Html.TextContent = Html.TextContent.Normal,
-        val presets:    List[Attribute]  = Nil,
-        val admissible: Set[Text]        = Set(),
-        val insertable: Boolean          = false,
-        val foreign:    Boolean          = false)
-extends Html.Node(tagname, Nil, IArray()), Dynamic:
-
-  def void: Boolean = true
-
-  def applyDynamicNamed(method: "apply")(attributes: Optional[Attribute of Topic]*)
-  : Html.Node & Html.Vacant of Topic over Transport =
-
-      Html.Node(tagname, attributes.to(List).compact, IArray())
-      . asInstanceOf[Html.Node & Html.Vacant of Topic over Transport]
+      method match
+        case "apply"   => Element(labelString, attributes, children)
+        case className => Element(labelString, attributes.updated("class", className.tt), children)
