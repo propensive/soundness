@@ -172,8 +172,6 @@ given html5Dom: Dom:
       elements(parent).let: parent =>
         parent.insertable.find(recur(_, target)).optional.let(elements(_))
 
-  def root = Root
-
   private type InteractivePhrasing =
     "a" | "audio" | "button" | "embed" | "iframe" | "img" | "input" | "label" | "select"
     | "textarea" | "video"
@@ -190,7 +188,7 @@ given html5Dom: Dom:
     | "data" | "datalist" | "del" | "dfn" | "em" | "i" | "ins" | "kbd" | "link" | "map" | "mark"
     | "meta" | "meter" | "noscript" | "output" | "progress" | "q" | "ruby" | "s" | "samp" | "script"
     | "slot" | "small" | "span" | "strong" | "sub" | "sup" | "template" | "time" | "u" | "var"
-    | "wbr" | "selectedcontent"
+    | "wbr" | "selectedcontent" | "#text"
 
   type Embedded =
     "audio" | "canvas" | "embed" | "iframe" | "img" | "object" | "picture" | "video" | "math"
@@ -233,40 +231,131 @@ given html5Dom: Dom:
   // - `href` or `target` attributes are required
   val Base = Tag["base", "", ""]()
 
+  val Bdi = Tag.Container["bdi", Phrasing, ""]()
+  val Bdo = Tag.Container["bdo", Phrasing, ""]()
+  val Blockquote = Tag.Container["blockquote", Flow, ""]()
+  val Body = Tag.Container["body", Flow, ""](autoclose = true)
   val Br = Tag["br", "", ""]()
+
+  // - constraints on content
+  val Button = Tag.Container["button", Phrasing, ""]()
+
+  // - transparent, but non-interactive
+  val Canvas = Tag.Container["canvas", "#transparent", ""]()
+
+  val Caption = Tag.Container["caption", Flow, ""]()
+  val Cite = Tag.Container["cite", Phrasing, ""]()
+  val Code = Tag.Container["code", Phrasing, ""]()
   val Col = Tag["col", "", ""]()
-  val Command = Tag["command", "", ""]()
-  val Embed = Tag["embed", "", ""]()
+  val Colgroup = Tag.Container["colgroup", "col", ""]()
+  val Data = Tag.Container["data", Phrasing, ""]()
+  val Datalist = Tag.Container["datalist", Phrasing | "option", ""]()
+  val Dd = Tag.Container["dd", Flow, ""](autoclose = true)
+  val Del = Tag.Container["del", "#transparent", ""]()
+  val Details = Tag.Container["details", "summary" | Flow, ""]()
+  val Dfn = Tag.Container["dfn", Phrasing, ""]()
+  val Dialog = Tag.Container["dialog", Flow, ""]()
+  val Div = Tag.Container["div", Flow, ""]()
+  val Dl = Tag.Container["dl", "div" | "dt" | ScriptSupporting, ""](autoclose = true)
+  val Dt = Tag.Container["dl", Flow, ""](autoclose = true)
   val Em = Tag.Container["em", Phrasing, ""]()
+  val Embed = Tag["embed", "", ""]()
+  val Fieldset = Tag.Container["fieldset", "legend" | Flow, ""]()
+  val Figcaption = Tag.Container["figcaption", Flow, ""]()
+  val Figure = Tag.Container["figure", "figcaption" | Flow, ""]()
+  val Footer = Tag.Container["footer", Flow, ""]()
+  val Form = Tag.Container["form", Flow, ""]()
+  val H1 = Tag.Container["h1", Phrasing, ""]()
+  val H2 = Tag.Container["h2", Phrasing, ""]()
+  val H3 = Tag.Container["h3", Phrasing, ""]()
+  val H4 = Tag.Container["h4", Phrasing, ""]()
+  val H5 = Tag.Container["h5", Phrasing, ""]()
+  val H6 = Tag.Container["h6", Phrasing, ""]()
+  val Head = Tag.Container["head", Metadata, ""](autoclose = true)
+  val Header = Tag.Container["header", Flow, ""](autoclose = true)
+  val Hgroup = Tag.Container["hgroup", "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6", ""]()
   val Hr = Tag["hr", "", ""]()
+  val Html = honeycomb.Html
+  val I = Tag.Container["i", Phrasing, ""]()
+  val Iframe = Tag["iframe", "", ""]()
   val Img = Tag["img", "", ""]()
 
-  object Input extends Tag("input", autoclose = false):
+  object Input extends Tag("input"):
     type Topic = "input"
     type Transport = ""
 
-    val Button = Tag["input", "", ""](autoclose = autoclose, presets = List(Attribute(t"type", t"button")))
+    val Button = Tag["input", "", ""]
+                  (autoclose = autoclose, presets = List(Attribute(t"type", t"button")))
+    // FIXME: More Input types
 
+  val Ins = Tag.Container["ins", "#transparent", ""]()
+  val Kbd = Tag.Container["kbd", Phrasing, ""]()
+  val Label = Tag.Container["label", Phrasing, ""]()
+  val Legend = Tag.Container["label", Phrasing | "h1" | "h2" | "h3" | "h4" | "h5" | "h6", ""]()
+  val Li = Tag.Container["li", Flow, ""](autoclose = true)
   val Link = Tag["link", "", ""]()
+  val Main = Tag.Container["main", Flow, ""]()
+  val Map = Tag.Container["map", "#transparent", ""]
+  val Mark = Tag.Container["mark", Phrasing, ""]
+  val Menu = Tag.Container["menu", "li" | ScriptSupporting, ""]
   val Meta = Tag["meta", "", ""]()
-  val Param = Tag["param", "", ""]()
-  val Source = Tag["source", "", ""]()
+  val Meter = Tag.Container["meter", Phrasing, ""]()
+  val Nav = Tag.Container["nav", Flow, ""]()
+  val Noscript = Tag.Container["noscript", "link" | "style" | "meta", ""]()
+  val Object = Tag.Container["object", "#transparent", ""]()
+  val Ol = Tag.Container["ol", "li" | ScriptSupporting, ""]()
+  val Optgroup = Tag.Container["optgroup", "option" | "legend", ""](autoclose = true)
+  val Option = Tag.Container["option", "#text", ""](autoclose = true)
+  val Output = Tag.Container["output", Phrasing, ""]()
+  val P = Tag.Container["p", Phrasing, ""](autoclose = true)
+  val Picture = Tag.Container["picture", "source" | "img" | ScriptSupporting, ""]()
+  val Pre = Tag.Container["pre", Phrasing, ""]()
+  val Progress = Tag.Container["progress", Phrasing, ""]()
+  val Q = Tag.Container["q", Phrasing, ""]()
+  val Rp = Tag.Container["rp", "#text", ""](autoclose = true)
+  val Rt = Tag.Container["rt", Phrasing, ""](autoclose = true)
+  val Ruby = Tag.Container["ruby", Phrasing | "rt" | "rp", ""]()
+  val S = Tag.Container["s", Phrasing, ""]()
+  val Samp = Tag.Container["samp", Phrasing, ""]()
   val Script = Tag.Container["script", "#text", ""](content = Html.TextContent.Raw)
-  val Style = Tag.Container["style", "", ""](content = Html.TextContent.Raw)
+  val Search = Tag.Container["search", Flow, ""]()
+  val Section = Tag.Container["section", Flow, ""]()
+
+  val Select =
+    Tag.Container
+     ["select", "option" | "optgroup" | "hr" | "button" | "noscript" | ScriptSupporting, ""]()
+
+  val Slot = Tag.Container["slot", "#transparent", ""]()
+  val Small = Tag.Container["small", Phrasing, ""]()
+  val Source = Tag["source", "", ""]()
+  val Span = Tag.Container["span", Phrasing, ""]()
+  val Strong = Tag.Container["strong", Phrasing, ""]()
+  val Style = Tag.Container["style", "#text", ""](content = Html.TextContent.Raw)
+  val Sub = Tag.Container["sub", Phrasing, ""]()
+  val Summary = Tag.Container["summary", Phrasing | Heading, ""]()
+  val Sup = Tag.Container["sup", Phrasing, ""]()
+
+  val Table =
+    Tag.Container["table", "caption" | "colgroup" | "thead" | "tbody" | "tfoot", "tbody"]()
+
+  val Tbody = Tag.Container["tbody", "tr", ""](autoclose = true)
+  val Td = Tag.Container["td", Flow, ""](autoclose = true)
+  val Template = Tag["template", "", ""]()
+  val Textarea = Tag.Container["textarea", "#text", ""](content = Html.TextContent.Rcdata)
+  val Tfoot = Tag.Container["tfoot", "tr", ""](autoclose = true)
+  val Th = Tag.Container["th", Flow, ""](autoclose = true)
+  val Thead = Tag.Container["thead", "tr", ""](autoclose = true)
+  val Time = Tag.Container["time", Phrasing, ""]()
+  val Title = Tag.Container["title", "#text", ""](content = Html.TextContent.Rcdata)
+  val Tr = Tag.Container["tr", "td" | "th" | ScriptSupporting, ""](autoclose = true)
   val Track = Tag["track", "", ""]()
+  val U = Tag.Container["u", Phrasing, ""]()
+  val Ul = Tag.Container["ul", "li" | ScriptSupporting, ""]()
+  val Var = Tag.Container["var", Phrasing, ""]()
+  val Video = Tag.Container["video", "track" | "#transparent" | "source", ""]()
   val Wbr = Tag["wbr", "", ""]()
 
   val Root = Tag.Container["#root", "html", "html"]()
-  val Head = Tag.Container["head", Metadata, ""](autoclose = true)
-  val Title = Tag.Container["title", "#text", ""](content = Html.TextContent.Rcdata)
-  val Textarea = Tag.Container["textarea", "#text", ""](content = Html.TextContent.Rcdata)
-  val Body = Tag.Container["body", Flow, ""](autoclose = true)
-  val Div = Tag.Container["div", "p" | "ul" | "ol" | "area" | "#text", ""]()
-  val Li = Tag.Container["li", "p" | "#text", ""](autoclose = true)
-  val Ol = Tag.Container["ol", "li", ""]()
-  val P = Tag.Container["p", "i" | "em" | "strong" | "#text", ""](autoclose = true)
-  val Ul = Tag.Container["ul", "li", ""]()
-  val Html = honeycomb.Html
 
   val elements: Dictionary[Tag] =
     Dictionary(this.membersOfType[Tag].to(List).bi.map(_.tagname -> _)*)
@@ -276,6 +365,8 @@ given html5Dom: Dom:
       case List(key, value) => (key, value)
 
     Dictionary(list*)
+
+  def root: Root.type = Root
 
 object Html
 extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", "body"), insertable = Set("head", "body")), Format:
@@ -315,7 +406,7 @@ extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", 
 
     def describe: Message = this match
       case ExpectedMore                  =>  m"the content ended prematurely"
-      case InvalidTag(name)              =>  m"<$name> is not a valid HTML5 tag"
+      case InvalidTag(name)              =>  m"<$name> is not a valid tag"
       case InadmissibleTag(name, parent) =>  m"<$name> cannot be a child of <$parent>"
       case OnlyWhitespace(char)          =>  m"the character $char was found where only whitespace is permitted"
       case Unexpected(char)              =>  m"the character $char was not expected"
