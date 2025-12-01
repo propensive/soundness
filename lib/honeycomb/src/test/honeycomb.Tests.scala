@@ -90,117 +90,164 @@ object Tests extends Suite(m"Honeycomb Tests"):
     suite(m"HTML parsing tests"):
       import html5Dom.*
 
-      def parse(text: Text): Html =
-        unsafely(Html.parse(Iterator(text)))
-
       test(m"simple empty tag"):
-        parse(t"""<div></div>""")
+        t"""<div></div>""".read[Html of "html"]
       .assert(_ == Html(Body(Div)))
 
       test(m"List"):
-        parse(t"""<ul><li>item</li></ul>""")
-      .assert(_ == Html(Body(Ul(Li("item")))))
+        t"""<ul><li>item</li></ul>""".read[Html of Flow]
+      .assert(_ == Ul(Li("item")))
 
       test(m"simple tag with text"):
-        parse(t"""<div>content</div>""")
-      .assert(_ == Html(Body(Div("content"))))
+        t"""<div>content</div>""".read[Html of "div"]
+      .assert(_ == Div("content"))
+
+      test(m"more than one node"):
+        t"""<div>content</div><div>more content</div>""".read[Html of "div"]
+      .assert(_ == Html.Fragment(Div("content"), Div("more content")))
+
+      test(m"more than one node with comment"):
+        t"""<div>content</div><!-- comment --><div>more content</div>""".read[Html of "div"]
+      .assert(_ == Html.Fragment(Div("content"), Html.Comment(" comment "), Div("more content")))
 
       test(m"simple self-closing tag"):
-        parse(t"""<div/>""")
-      .assert(_ == Html(Body(Div)))
+        t"""<div/>""".read[Html of "div"]
+      .assert(_ == Div)
 
       test(m"simple comment tag"):
-        parse(t"""<!--This is a comment-->""")
+        t"""<!--This is a comment-->""".read[Html of Flow]
       .assert(_ == Html.Comment("This is a comment"))
 
       test(m"simple void tag"):
-        parse(t"""<br>""")
-      .assert(_ == Html(Body(Br)))
+        t"""<br>""".read[Html of Flow]
+      .assert(_ == Br)
 
       test(m"void tag with an attribute"):
-        parse(t"""<area foo="bar">""")
-      .assert(_ == Html(Body(Area(foo = t"bar"))))
+        t"""<area foo="bar">""".read[Html of "area"]
+      .assert(_ == Area(foo = t"bar"))
 
       test(m"void tag with an unquoted attribute"):
-        parse(t"""<area foo=bar>""")
-      .assert(_ == Html(Body(Area(foo = "bar"))))
+        t"""<area foo=bar>""".read[Html of Flow]
+      .assert(_ == Area(foo = "bar"))
 
       test(m"void tag with a boolean attribute"):
-        parse(t"""<input disabled>""")
-      .assert(_ == Html(Body(Input(disabled = true))))
+        t"""<input disabled>""".read[Html of "input"]
+      .assert(_ == Input(disabled = true))
 
       test(m"void tag with a single-quoted attribute"):
-        parse(t"""<br foo='bar baz'>""")
-      .assert(_ == Html(Body(Br(foo = "bar baz"))))
+        t"""<br foo='bar baz'>""".read[Html of Flow]
+      .assert(_ == Br(foo = "bar baz"))
 
       test(m"simple nested tag"):
-        parse(t"""<div><area></div>""")
-      .assert(_ == Html(Body(Div(Area))))
+        t"""<div><area></div>""".read[Html of Flow]
+      .assert(_ == Div(Area))
 
       test(m"just text"):
-        parse(t"""hello world""")
+        t"""hello world""".read[Html of Flow]
       .assert(_ == Html.Textual("hello world"))
 
       test(m"just text with entity"):
-        parse(t"""to &amp; fro""")
+        t"""to &amp; fro""".read[Html of Flow]
       .assert(_ == Html.Textual("to & fro"))
 
       test(m"just an entity"):
-        parse(t"""&amp;""")
+        t"""&amp;""".read[Html of Flow]
       .assert(_ == Html.Textual("&"))
 
       test(m"mismatched closing tag"):
-        try parse(t"""<em><b></em></b>""")
+        try t"""<em><b></em></b>""".read[Html of Phrasing]
         catch case exception: Exception => exception
       .assert(_ == ParseError(Html, Html.Position(8.u), Html.Issue.MismatchedTag("b", "em")))
 
       test(m"unknown tag"):
-        try parse(t"""<xyz>""")
+        try t"""<xyz>""".read[Html of Phrasing]
         catch case exception: Exception => exception
       .assert(_ == ParseError(Html, Html.Position(1.u), Html.Issue.InvalidTag("xyz")))
 
       test(m"raw text"):
-        parse(t"<head><script>some content</script></head>")
-      . assert(_ == Html(Head(Script("some content"))))
+        t"<head><script>some content</script></head>".read[Html of "head"]
+      . assert(_ == Head(Script("some content")))
 
       test(m"raw text, with partial closing tag"):
-        parse(t"<head><script>some content</scr</script></head>")
-      . assert(_ == Html(Head(Script("some content</scr"))))
+        t"<head><script>some content</scr</script></head>".read[Html of "head"]
+      . assert(_ == Head(Script("some content</scr")))
 
       test(m"raw text, with shorter partial closing tag"):
-        parse(t"<head><script>some content</</script></head>")
-      . assert(_ == Html(Head(Script("some content</"))))
+        t"<head><script>some content</</script></head>".read[Html of "head"]
+      . assert(_ == Head(Script("some content</")))
 
       test(m"raw text, with even shorter partial closing tag"):
-        parse(t"<head><script>some content<</script></head>")
-      . assert(_ == Html(Head(Script("some content<"))))
+        t"<head><script>some content<</script></head>".read[Html of "head"]
+      . assert(_ == Head(Script("some content<")))
 
       test(m"raw text, with non-entity"):
-        parse(t"<head><script>some &amp; content</script></head>")
-      . assert(_ == Html(Head(Script("some &amp; content"))))
+        t"<head><script>some &amp; content</script></head>".read[Html of "head"]
+      . assert(_ == Head(Script("some &amp; content")))
 
       test(m"raw text, with tag literal"):
-        parse(t"<head><script>some <foo> content</script></head>")
-      . assert(_ == Html(Head(Script("some <foo> content"))))
+        t"<head><script>some <foo> content</script></head>".read[Html of "head"]
+      . assert(_ == Head(Script("some <foo> content")))
 
       test(m"autoclosing tag"):
-        parse(t"""<ul><li>First item</ul>""")
-      .assert(_ == Html(Body(Ul(Li("First item")))))
+        t"""<ul><li>First item</ul>""".read[Html of Flow]
+      .assert(_ == Ul(Li("First item")))
 
       test(m"autoclosing adjacent tags"):
-        parse(t"""<ul><li>First item<li>Second item</ul>""")
-      .assert(_ == Html(Body(Ul(Li("First item"), Li("Second item")))))
+        t"""<ul><li>First item<li>Second item</ul>""".read[Html of Flow]
+      .assert(_ == Ul(Li("First item"), Li("Second item")))
 
       test(m"unclosed tag 1"):
-        try parse(t"""<ul><li>First item</li>""")
+        try t"""<ul><li>First item</li>""".read[Html of Flow]
         catch case exception: Exception => exception
       .assert(_ == ParseError(Html, Html.Position(24.u), Html.Issue.Incomplete("ul")))
 
       test(m"unclosed tag 2"):
-        try parse(t"""<ul><li>First item""")
+        try t"""<ul><li>First item""".read[Html of Flow]
         catch case exception: Exception => exception
       .assert(_ == ParseError(Html, Html.Position(19.u), Html.Issue.Incomplete("ul")))
 
       test(m"infer both <head> and <body>"):
-        parse(t"""<title>Page title</title><p>A paragraph</p>""")
+        t"""<title>Page title</title><p>A paragraph</p>""".read[Html of "html"]
       .assert(_ == Html(Head(Title("Page title")), Body(P("A paragraph"))))
+
+      suite(m"Table tests"):
+        test(m"Simple table"):
+          t"""<table><tbody><tr><th>First</th><td>Second</td><td>Third</td></tr></tbody></table>""".read[Html of "table"]
+        . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
+
+        test(m"<tbody> is inferred"):
+          t"""<table><tr><th>First</th><td>Second</td><td>Third</td></tr></table>""".read[Html of Flow]
+        . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
+
+        test(m"<tbody> autocloses"):
+          t"""<table><tbody><tr><th>First</th><td>Second</td><td>Third</td></tr></table>""".read[Html of Flow]
+        . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
+
+        test(m"<tr> autocloses"):
+          t"""<table><tbody><tr><th>First</th><td>Second</td><td>Third</td></tbody></table>""".read[Html of Flow]
+        . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
+
+        test(m"<tbody> and <tr> autoclose"):
+          t"""<table><tbody><tr><th>First</th><td>Second</td><td>Third</td></table>""".read[Html of Flow]
+        . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
+
+        test(m"<tbody>, <tr>, <th> and <td> autoclose"):
+          t"""<table><tbody><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
+        . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
+
+        test(m"<thead> works like <tbody>"):
+          t"""<table><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
+        . assert(_ == Table(Thead(Tr(Th("First"), Td("Second"), Td("Third")))))
+
+        test(m"<tfoot> closes inferred <tbody>"):
+          t"""<table><tr><th>First<td>Second<td>Third<tfoot><tr><td>Footer</table>""".read[Html of Flow]
+        . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third"))), Tfoot(Tr(Td("Footer")))))
+
+      test(m"Whitespace permitted and ignored between list items"):
+        t"""<ul><li>hello</li>\n  <li>world</li></ul>""".read[Html of "html"]
+      . assert(_ == Html(Body(Ul(Li("hello"), Li("world")))))
+
+      test(m"Non-whitespace text not permitted between list items"):
+        try t"""<ul><li>hello</li>\n and <li>world</li></ul>""".read[Html of "html"]
+        catch case exception: Exception => exception
+      . assert(_ == ParseError(Html, Html.Position(21.u), Html.Issue.OnlyWhitespace('a')))

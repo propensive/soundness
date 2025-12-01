@@ -64,8 +64,7 @@ object settings:
     "-language:experimental.into",
     "-language:experimental.erasedDefinitions",
     "-language:experimental.saferExceptions",
-    "-language:experimental.namedTypeArguments",
-    "-language:implicitConversions"
+    "-language:experimental.namedTypeArguments"
   )
 
   val scalaOptionsCC = Seq(
@@ -88,8 +87,7 @@ object settings:
     "-language:experimental.into",
     "-language:experimental.erasedDefinitions",
     "-language:experimental.saferExceptions",
-    "-language:experimental.namedTypeArguments",
-    "-language:implicitConversions"
+    "-language:experimental.namedTypeArguments"
   )
 
 trait BaseScalaModule extends ScalaModule:
@@ -793,7 +791,7 @@ object hellenism extends SoundnessModule:
 object honeycomb extends SoundnessModule:
   object core extends SoundnessSubModule:
     def moduleDeps =
-      Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core, typonym.core)
+      Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core, typonym.core, adversaria.core)
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core)

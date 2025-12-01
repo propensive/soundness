@@ -60,40 +60,35 @@ import charDecoders.utf8
 import textSanitizers.skip
 
 object Tag:
-  def apply
+
+  def root(children: Set[Text]): Tag =
+    new Tag("#root", false, Html.TextContent.Normal, Nil, children, false)
+
+  def void
+       [label      <: Label: ValueOf]
+       (autoclose:  Boolean          = false,
+        content:    Html.TextContent = Html.TextContent.Normal,
+        presets:    List[Attribute]  = Nil)
+  : Tag of label over "" =
+
+      new Tag(valueOf[label].tt, autoclose, content, presets, Set(), false):
+        type Topic = label
+        type Transport = ""
+
+  def container
        [label      <: Label: ValueOf,
-        children   <: Label: Reifiable to List[String],
-        insertable <: Label: Reifiable to List[String]]
-       (autoclose: Boolean          = false,
-        content:   Html.TextContent = Html.TextContent.Normal,
-        presets:   List[Attribute]  = Nil)
-  : Tag of label over children =
+        children   <: Label: Reifiable to List[String]]
+       (autoclose:  Boolean          = false,
+        content:    Html.TextContent = Html.TextContent.Normal,
+        presets:    List[Attribute]  = Nil,
+        insertable: Boolean          = false)
+  : Container of label over children =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
-      val implicitTags: Set[Text] = insertable.reification().map(_.tt).to(Set)
 
-      new Tag(valueOf[label].tt, autoclose, content, presets, admissible, implicitTags):
+      new Container(valueOf[label].tt, autoclose, content, presets, admissible, insertable):
         type Topic = label
         type Transport = children
-        type Domain = insertable
-
-  object Container:
-    def apply
-         [label      <: Label: ValueOf,
-          children   <: Label: Reifiable to List[String],
-          insertable <: Label: Reifiable to List[String]]
-         (autoclose: Boolean          = false,
-          content:   Html.TextContent = Html.TextContent.Normal,
-          presets:   List[Attribute]  = Nil)
-    : Container of label over children =
-
-        val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
-        val implicitTags: Set[Text] = insertable.reification().map(_.tt).to(Set)
-
-        new Container(valueOf[label].tt, autoclose, content, presets, admissible, implicitTags):
-          type Topic = label
-          type Transport = children
-          type Domain = insertable
 
   class Container
          (name:      Text,
@@ -101,7 +96,7 @@ object Tag:
           content:    Html.TextContent = Html.TextContent.Normal,
           presets:    List[Attribute]  = Nil,
           admissible: Set[Text]        = Set(),
-          insertable: Set[Text]        = Set())
+          insertable: Boolean          = false)
   extends Tag(name, autoclose, content, presets, admissible, insertable):
     override def void = false
 
@@ -116,7 +111,7 @@ class Tag
         val content:    Html.TextContent = Html.TextContent.Normal,
         val presets:    List[Attribute]  = Nil,
         val admissible: Set[Text]        = Set(),
-        val insertable: Set[Text]        = Set())
+        val insertable: Boolean          = false)
 extends Html.Node(tagname, Nil, Nil), Dynamic:
 
   def void: Boolean = true
@@ -152,11 +147,10 @@ extension (node: Html.Node & Html.Vacant)
     Html.Node(node.tagname, node.attributes, children)
 
 trait Dom:
-  def root: Tag
   val elements: Dictionary[Tag]
   val entities: Dictionary[Text]
 
-  def infer(parent: Text, tag: Text): Optional[Tag]
+  def infer(parent: Tag, child: Tag): Optional[Tag]
 
 given html5Dom: Dom:
   import Html.Issue.*
@@ -165,12 +159,7 @@ given html5Dom: Dom:
 
   private def recur(tagname: Text, target: Text): Boolean =
     elements(tagname).lay(false): tag =>
-      tag.admissible(target) || tag.insertable.exists(recur(_, target))
-
-  def infer(parent: Text, target: Text): Optional[Tag] =
-    inferences.establish(parent)(new scm.HashMap()).establish(target):
-      elements(parent).let: parent =>
-        parent.insertable.find(recur(_, target)).optional.let(elements(_))
+      tag.admissible(target) || tag.insertable
 
   private type InteractivePhrasing =
     "a" | "audio" | "button" | "embed" | "iframe" | "img" | "input" | "label" | "select"
@@ -199,12 +188,22 @@ given html5Dom: Dom:
   type Metadata = "base" | "link" | "meta" | "noscript" | "script" | "style" | "template" | "title"
   type Heading = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "hgroup"
 
+  def insertable(tag: Tag): Set[Tag] =
+    tag.admissible.map(elements(_)).compact.filter(_.insertable)
+
+  def infer(parent: Tag, child: Tag): Optional[Tag] =
+    def recur(parent: Tag): Boolean =
+      parent.admissible.contains(child.tagname) || insertable(parent).exists(recur(_))
+
+    insertable(parent).find(recur(_)).optional
+
+
   // - should be transparent
-  val A = Tag.Container["a", Flow | "#transparent", ""]()
-  val Abbr = Tag.Container["abbr", Phrasing, ""]()
+  val A = Tag.container["a", Flow | "#transparent"]()
+  val Abbr = Tag.container["abbr", Phrasing]()
 
   val Address =
-    Tag.Container
+    Tag.container
      ["address",
       "a" | "abbr" | "area" | "audio" | "b" | "bdi" | "bdo" | "blockquote" | "br" | "button"
       | "canvas" | "cite" | "code" | "data" | "datalist" | "del" | "details" | "dfn" | "dialog"
@@ -213,149 +212,174 @@ given html5Dom: Dom:
       | "meta" | "meter" | "noscript" | "object" | "ol" | "output" | "p" | "picture" | "pre"
       | "progress" | "q" | "ruby" | "s" | "samp" | "script" | "select" | "slot" | "small" | "span"
       | "strong" | "sub" | "sup" | "table" | "template" | "textarea" | "time" | "u" | "ul" | "var"
-      | "video" | "wbr",
-      ""]
+      | "video" | "wbr"]
      ()
 
-  val Area = Tag["area", "", ""]()
-  val Article = Tag.Container["article", Flow, ""]()
-  val Aside = Tag.Container["aside", Flow, ""]()
+  val Area = Tag.void["area"]()
+  val Article = Tag.container["article", Flow]()
+  val Aside = Tag.container["aside", Flow]()
 
   // - transparent content
   // - audio and video are prohibited in transparent content
   // - conditions based on presence or absence of `src` attribute
-  val Audio = Tag.Container["audio", "source" | "track" | "#transparent", ""]
+  val Audio = Tag.container["audio", "source" | "track" | "#transparent"]
 
-  val B = Tag.Container["b", Phrasing, ""]()
+  val B = Tag.container["b", Phrasing]()
 
   // - `href` or `target` attributes are required
-  val Base = Tag["base", "", ""]()
+  val Base = Tag.void["base"]()
 
-  val Bdi = Tag.Container["bdi", Phrasing, ""]()
-  val Bdo = Tag.Container["bdo", Phrasing, ""]()
-  val Blockquote = Tag.Container["blockquote", Flow, ""]()
-  val Body = Tag.Container["body", Flow, ""](autoclose = true)
-  val Br = Tag["br", "", ""]()
+  val Bdi = Tag.container["bdi", Phrasing]()
+  val Bdo = Tag.container["bdo", Phrasing]()
+  val Blockquote = Tag.container["blockquote", Flow]()
+  val Body = Tag.container["body", Flow](autoclose = true, insertable = true)
+  val Br = Tag.void["br"]()
 
   // - constraints on content
-  val Button = Tag.Container["button", Phrasing, ""]()
+  val Button = Tag.container["button", Phrasing]()
 
   // - transparent, but non-interactive
-  val Canvas = Tag.Container["canvas", "#transparent", ""]()
+  val Canvas = Tag.container["canvas", "#transparent"]()
 
-  val Caption = Tag.Container["caption", Flow, ""]()
-  val Cite = Tag.Container["cite", Phrasing, ""]()
-  val Code = Tag.Container["code", Phrasing, ""]()
-  val Col = Tag["col", "", ""]()
-  val Colgroup = Tag.Container["colgroup", "col", ""]()
-  val Data = Tag.Container["data", Phrasing, ""]()
-  val Datalist = Tag.Container["datalist", Phrasing | "option", ""]()
-  val Dd = Tag.Container["dd", Flow, ""](autoclose = true)
-  val Del = Tag.Container["del", "#transparent", ""]()
-  val Details = Tag.Container["details", "summary" | Flow, ""]()
-  val Dfn = Tag.Container["dfn", Phrasing, ""]()
-  val Dialog = Tag.Container["dialog", Flow, ""]()
-  val Div = Tag.Container["div", Flow, ""]()
-  val Dl = Tag.Container["dl", "div" | "dt" | ScriptSupporting, ""](autoclose = true)
-  val Dt = Tag.Container["dl", Flow, ""](autoclose = true)
-  val Em = Tag.Container["em", Phrasing, ""]()
-  val Embed = Tag["embed", "", ""]()
-  val Fieldset = Tag.Container["fieldset", "legend" | Flow, ""]()
-  val Figcaption = Tag.Container["figcaption", Flow, ""]()
-  val Figure = Tag.Container["figure", "figcaption" | Flow, ""]()
-  val Footer = Tag.Container["footer", Flow, ""]()
-  val Form = Tag.Container["form", Flow, ""]()
-  val H1 = Tag.Container["h1", Phrasing, ""]()
-  val H2 = Tag.Container["h2", Phrasing, ""]()
-  val H3 = Tag.Container["h3", Phrasing, ""]()
-  val H4 = Tag.Container["h4", Phrasing, ""]()
-  val H5 = Tag.Container["h5", Phrasing, ""]()
-  val H6 = Tag.Container["h6", Phrasing, ""]()
-  val Head = Tag.Container["head", Metadata, ""](autoclose = true)
-  val Header = Tag.Container["header", Flow, ""](autoclose = true)
-  val Hgroup = Tag.Container["hgroup", "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6", ""]()
-  val Hr = Tag["hr", "", ""]()
+  val Caption = Tag.container["caption", Flow]()
+  val Cite = Tag.container["cite", Phrasing]()
+  val Code = Tag.container["code", Phrasing]()
+  val Col = Tag.void["col"]()
+
+  val Colgroup = Tag.container["colgroup", "col"]
+                  (content = Html.TextContent.Whitespace, insertable = true)
+
+  val Data = Tag.container["data", Phrasing]()
+  val Datalist = Tag.container["datalist", Phrasing | "option"]()
+  val Dd = Tag.container["dd", Flow](autoclose = true)
+  val Del = Tag.container["del", "#transparent"]()
+  val Details = Tag.container["details", "summary" | Flow]()
+  val Dfn = Tag.container["dfn", Phrasing]()
+  val Dialog = Tag.container["dialog", Flow]()
+  val Div = Tag.container["div", Flow]()
+
+  val Dl = Tag.container["dl", "div" | "dt" | ScriptSupporting]
+            (autoclose = true, content = Html.TextContent.Whitespace)
+
+  val Dt = Tag.container["dl", Flow](autoclose = true)
+  val Em = Tag.container["em", Phrasing]()
+  val Embed = Tag.void["embed"]()
+  val Fieldset = Tag.container["fieldset", "legend" | Flow]()
+  val Figcaption = Tag.container["figcaption", Flow]()
+  val Figure = Tag.container["figure", "figcaption" | Flow]()
+  val Footer = Tag.container["footer", Flow]()
+  val Form = Tag.container["form", Flow]()
+  val H1 = Tag.container["h1", Phrasing]()
+  val H2 = Tag.container["h2", Phrasing]()
+  val H3 = Tag.container["h3", Phrasing]()
+  val H4 = Tag.container["h4", Phrasing]()
+  val H5 = Tag.container["h5", Phrasing]()
+  val H6 = Tag.container["h6", Phrasing]()
+
+  val Head = Tag.container["head", Metadata]
+              (autoclose = true, content = Html.TextContent.Whitespace, insertable = true)
+
+  val Header = Tag.container["header", Flow](autoclose = true)
+  val Hgroup = Tag.container["hgroup", "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"]()
+  val Hr = Tag.void["hr"]()
   val Html = honeycomb.Html
-  val I = Tag.Container["i", Phrasing, ""]()
-  val Iframe = Tag["iframe", "", ""]()
-  val Img = Tag["img", "", ""]()
+  val I = Tag.container["i", Phrasing]()
+  val Iframe = Tag.void["iframe"]()
+  val Img = Tag.void["img"]()
 
   object Input extends Tag("input"):
     type Topic = "input"
     type Transport = ""
 
-    val Button = Tag["input", "", ""]
+    val Button = Tag.void["input"]
                   (autoclose = autoclose, presets = List(Attribute(t"type", t"button")))
     // FIXME: More Input types
 
-  val Ins = Tag.Container["ins", "#transparent", ""]()
-  val Kbd = Tag.Container["kbd", Phrasing, ""]()
-  val Label = Tag.Container["label", Phrasing, ""]()
-  val Legend = Tag.Container["label", Phrasing | "h1" | "h2" | "h3" | "h4" | "h5" | "h6", ""]()
-  val Li = Tag.Container["li", Flow, ""](autoclose = true)
-  val Link = Tag["link", "", ""]()
-  val Main = Tag.Container["main", Flow, ""]()
-  val Map = Tag.Container["map", "#transparent", ""]
-  val Mark = Tag.Container["mark", Phrasing, ""]
-  val Menu = Tag.Container["menu", "li" | ScriptSupporting, ""]
-  val Meta = Tag["meta", "", ""]()
-  val Meter = Tag.Container["meter", Phrasing, ""]()
-  val Nav = Tag.Container["nav", Flow, ""]()
-  val Noscript = Tag.Container["noscript", "link" | "style" | "meta", ""]()
-  val Object = Tag.Container["object", "#transparent", ""]()
-  val Ol = Tag.Container["ol", "li" | ScriptSupporting, ""]()
-  val Optgroup = Tag.Container["optgroup", "option" | "legend", ""](autoclose = true)
-  val Option = Tag.Container["option", "#text", ""](autoclose = true)
-  val Output = Tag.Container["output", Phrasing, ""]()
-  val P = Tag.Container["p", Phrasing, ""](autoclose = true)
-  val Picture = Tag.Container["picture", "source" | "img" | ScriptSupporting, ""]()
-  val Pre = Tag.Container["pre", Phrasing, ""]()
-  val Progress = Tag.Container["progress", Phrasing, ""]()
-  val Q = Tag.Container["q", Phrasing, ""]()
-  val Rp = Tag.Container["rp", "#text", ""](autoclose = true)
-  val Rt = Tag.Container["rt", Phrasing, ""](autoclose = true)
-  val Ruby = Tag.Container["ruby", Phrasing | "rt" | "rp", ""]()
-  val S = Tag.Container["s", Phrasing, ""]()
-  val Samp = Tag.Container["samp", Phrasing, ""]()
-  val Script = Tag.Container["script", "#text", ""](content = Html.TextContent.Raw)
-  val Search = Tag.Container["search", Flow, ""]()
-  val Section = Tag.Container["section", Flow, ""]()
+  val Ins = Tag.container["ins", "#transparent"]()
+  val Kbd = Tag.container["kbd", Phrasing]()
+  val Label = Tag.container["label", Phrasing]()
+  val Legend = Tag.container["label", Phrasing | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"]()
+  val Li = Tag.container["li", Flow](autoclose = true)
+  val Link = Tag.void["link"]()
+  val Main = Tag.container["main", Flow]()
+  val Map = Tag.container["map", "#transparent"]
+  val Mark = Tag.container["mark", Phrasing]
+  val Menu = Tag.container["menu", "li" | ScriptSupporting](content = Html.TextContent.Whitespace)
+  val Meta = Tag.void["meta"]()
+  val Meter = Tag.container["meter", Phrasing]()
+  val Nav = Tag.container["nav", Flow]()
+  val Noscript = Tag.container["noscript", "link" | "style" | "meta"]()
+  val Object = Tag.container["object", "#transparent"]()
+  val Ol = Tag.container["ol", "li" | ScriptSupporting](content = Html.TextContent.Whitespace)
+
+  val Optgroup = Tag.container["optgroup", "option" | "legend"]
+                  (autoclose = true, content = Html.TextContent.Whitespace)
+
+  val Option = Tag.container["option", "#text"](autoclose = true)
+  val Output = Tag.container["output", Phrasing]()
+  val P = Tag.container["p", Phrasing](autoclose = true)
+
+  val Picture = Tag.container["picture", "source" | "img" | ScriptSupporting]
+                 (content = Html.TextContent.Whitespace)
+
+  val Pre = Tag.container["pre", Phrasing]()
+  val Progress = Tag.container["progress", Phrasing]()
+  val Q = Tag.container["q", Phrasing]()
+  val Rp = Tag.container["rp", "#text"](autoclose = true)
+  val Rt = Tag.container["rt", Phrasing](autoclose = true)
+  val Ruby = Tag.container["ruby", Phrasing | "rt" | "rp"]()
+  val S = Tag.container["s", Phrasing]()
+  val Samp = Tag.container["samp", Phrasing]()
+  val Script = Tag.container["script", "#text"](content = Html.TextContent.Raw)
+  val Search = Tag.container["search", Flow]()
+  val Section = Tag.container["section", Flow]()
 
   val Select =
-    Tag.Container
-     ["select", "option" | "optgroup" | "hr" | "button" | "noscript" | ScriptSupporting, ""]()
+    Tag.container
+     ["select", "option" | "optgroup" | "hr" | "button" | "noscript" | ScriptSupporting]
+     (content = Html.TextContent.Whitespace)
 
-  val Slot = Tag.Container["slot", "#transparent", ""]()
-  val Small = Tag.Container["small", Phrasing, ""]()
-  val Source = Tag["source", "", ""]()
-  val Span = Tag.Container["span", Phrasing, ""]()
-  val Strong = Tag.Container["strong", Phrasing, ""]()
-  val Style = Tag.Container["style", "#text", ""](content = Html.TextContent.Raw)
-  val Sub = Tag.Container["sub", Phrasing, ""]()
-  val Summary = Tag.Container["summary", Phrasing | Heading, ""]()
-  val Sup = Tag.Container["sup", Phrasing, ""]()
+  val Slot = Tag.container["slot", "#transparent"]()
+  val Small = Tag.container["small", Phrasing]()
+  val Source = Tag.void["source"]()
+  val Span = Tag.container["span", Phrasing]()
+  val Strong = Tag.container["strong", Phrasing]()
+  val Style = Tag.container["style", "#text"](content = Html.TextContent.Raw)
+  val Sub = Tag.container["sub", Phrasing]()
+  val Summary = Tag.container["summary", Phrasing | Heading]()
+  val Sup = Tag.container["sup", Phrasing]()
 
   val Table =
-    Tag.Container["table", "caption" | "colgroup" | "thead" | "tbody" | "tfoot", "tbody"]()
+    Tag.container["table", "caption" | "colgroup" | "thead" | "tbody" | "tfoot"]
+     (content = Html.TextContent.Whitespace)
 
-  val Tbody = Tag.Container["tbody", "tr", ""](autoclose = true)
-  val Td = Tag.Container["td", Flow, ""](autoclose = true)
-  val Template = Tag["template", "", ""]()
-  val Textarea = Tag.Container["textarea", "#text", ""](content = Html.TextContent.Rcdata)
-  val Tfoot = Tag.Container["tfoot", "tr", ""](autoclose = true)
-  val Th = Tag.Container["th", Flow, ""](autoclose = true)
-  val Thead = Tag.Container["thead", "tr", ""](autoclose = true)
-  val Time = Tag.Container["time", Phrasing, ""]()
-  val Title = Tag.Container["title", "#text", ""](content = Html.TextContent.Rcdata)
-  val Tr = Tag.Container["tr", "td" | "th" | ScriptSupporting, ""](autoclose = true)
-  val Track = Tag["track", "", ""]()
-  val U = Tag.Container["u", Phrasing, ""]()
-  val Ul = Tag.Container["ul", "li" | ScriptSupporting, ""]()
-  val Var = Tag.Container["var", Phrasing, ""]()
-  val Video = Tag.Container["video", "track" | "#transparent" | "source", ""]()
-  val Wbr = Tag["wbr", "", ""]()
+  val Tbody = Tag.container["tbody", "tr"]
+               (autoclose = true, content = Html.TextContent.Whitespace, insertable = true)
 
-  val Root = Tag.Container["#root", "html", "html"]()
+  val Td = Tag.container["td", Flow](autoclose = true)
+  val Template = Tag.void["template"]()
+  val Textarea = Tag.container["textarea", "#text"](content = Html.TextContent.Rcdata)
+
+  val Tfoot = Tag.container["tfoot", "tr"]
+               (autoclose = true, content = Html.TextContent.Whitespace)
+
+  val Th = Tag.container["th", Flow](autoclose = true)
+
+  val Thead = Tag.container["thead", "tr" | ScriptSupporting]
+               (autoclose = true, content = Html.TextContent.Whitespace)
+
+  val Time = Tag.container["time", Phrasing]()
+  val Title = Tag.container["title", "#text"](content = Html.TextContent.Rcdata)
+
+  val Tr = Tag.container["tr", "td" | "th" | ScriptSupporting]
+            (autoclose = true, content = Html.TextContent.Whitespace, insertable = true)
+
+  val Track = Tag.void["track"]()
+  val U = Tag.container["u", Phrasing]()
+  val Ul = Tag.container["ul", "li" | ScriptSupporting](content = Html.TextContent.Whitespace)
+  val Var = Tag.container["var", Phrasing]()
+  val Video = Tag.container["video", "track" | "#transparent" | "source"]()
+  val Wbr = Tag.void["wbr"]()
 
   val elements: Dictionary[Tag] =
     Dictionary(this.membersOfType[Tag].to(List).bi.map(_.tagname -> _)*)
@@ -366,13 +390,23 @@ given html5Dom: Dom:
 
     Dictionary(list*)
 
-  def root: Root.type = Root
-
-object Html
-extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", "body"), insertable = Set("head", "body")), Format:
+object Html extends Tag.Container
+         (name       = "html",
+          autoclose  = true,
+          admissible = Set("head", "body"),
+          content    = Html.TextContent.Whitespace,
+          insertable = true), Format:
   type Topic = "html"
   type Transport = "head" | "body"
-  type Domain = "head" | "body"
+
+  given aggregable: [content <: Label: Reifiable to List[String]]
+        =>  Tactic[ParseError]
+        => (Html of content) is Aggregable by Text =
+
+    input =>
+      val root = Tag.root(content.reification().map(_.tt).to(Set))
+      parse(input.iterator, root).asInstanceOf[Html of content]
+
 
   erased trait Vacant extends Transportive { this: Html => }
   erased trait Transparent extends Transportive { this: Html => }
@@ -450,7 +484,7 @@ extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", 
       case _                        => false
 
   case class Node(tagname: Text, attributes: List[Attribute], children: Seq[Html])
-  extends Html, Topical, Transportive, Domainal:
+  extends Html, Topical, Transportive:
     type Foo = this.Transport
 
     override def toString(): String =
@@ -466,7 +500,7 @@ extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", 
   enum TextContent:
     case Raw, Rcdata, Whitespace, Normal
 
-  def parse[dom <: Dom](input: Iterator[Text])(using dom: Dom): Html raises ParseError =
+  def parse[dom <: Dom](input: Iterator[Text], root: Tag)(using dom: Dom): Html raises ParseError =
     val cursor = Cursor(input)
 
     def next(): Unit =
@@ -529,10 +563,9 @@ extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", 
       skip()
 
       cursor.lay(fail(ExpectedMore)):
-        case '='                             =>  next() yet skip() yet true
-        case '>'                             =>  false
-        case ' ' | '\f' | '\n' | '\r' | '\t' =>  false
-        case char                            =>  fail(Unexpected(char))
+        case '='                                   =>  next() yet skip() yet true
+        case '>' | ' ' | '\f' | '\n' | '\r' | '\t' =>  false
+        case char                                  =>  fail(Unexpected(char))
 
 
     @tailrec
@@ -648,7 +681,7 @@ extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", 
         case _                           => Html.Textual(text) :: children
 
     def finish(parent: Tag, children: List[Html]): Html =
-      if parent != dom.root then
+      if parent != root then
         if parent.autoclose then Html.Node(parent.tagname, parent.attributes, children.reverse)
         else fail(Incomplete(parent.tagname))
       else if children.length > 1 then Html.Fragment(children.reverse*) else children(0)
@@ -677,7 +710,7 @@ extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", 
 
             def infer(tag: Tag) =
               cursor.cue(mark)
-              dom.infer(parent.tagname, tag.tagname).let(descend(_)).or:
+              dom.infer(parent, tag).let(descend(_)).or:
                 if parent.autoclose then close().also { ascend = true }
                 else fail(InadmissibleTag(content, parent.tagname))
 
@@ -725,7 +758,7 @@ extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", 
             read(parent, append(cursor.hold(textual(cursor.mark)), children))
 
     skip()
-    read(dom.root, Nil)
+    read(root, Nil)
 
 sealed into trait Html extends Topical:
   type Topic
