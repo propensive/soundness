@@ -88,7 +88,8 @@ object Tests extends Suite(m"Honeycomb Tests"):
       .check(_ == t"<table><tbody><tr><td>A</td></tr></tbody></table>")
 
     suite(m"HTML parsing tests"):
-      import html5Dom.{Div, P, Li, Area, Br, Ul, Input, Head, Body, Script}
+      import html5Dom.*
+
       def parse(text: Text): Html =
         unsafely(Html.parse(Iterator(text)))
 
@@ -199,3 +200,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
         try parse(t"""<ul><li>First item""")
         catch case exception: Exception => exception
       .assert(_ == ParseError(Html, Html.Position(19.u), Html.Issue.Incomplete("ul")))
+
+      test(m"infer both <head> and <body>"):
+        parse(t"""<title>Page title</title><p>A paragraph</p>""")
+      .assert(_ == Html(Head(Title("Page title")), Body(P("A paragraph"))))

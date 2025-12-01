@@ -649,7 +649,7 @@ extends Tag.Container(name = "html", autoclose = true, admissible = Set("head", 
 
     def finish(parent: Tag, children: List[Html]): Html =
       if parent != dom.root then
-        if parent.autoclose then Html.Node(parent.tagname, parent.attributes, children)
+        if parent.autoclose then Html.Node(parent.tagname, parent.attributes, children.reverse)
         else fail(Incomplete(parent.tagname))
       else if children.length > 1 then Html.Fragment(children.reverse*) else children(0)
 
