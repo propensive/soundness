@@ -92,8 +92,8 @@ object Tests extends Suite(m"Honeycomb Tests"):
       import html5.*
 
       test(m"simple empty tag"):
-        t"""<div></div>""".read[Html of "html"]
-      .assert(_ == Html(Body(Div)))
+        t"""<div></div>""".read[Html]
+      .assert(_ == Div)
 
       test(m"List"):
         t"""<ul><li>item</li></ul>""".read[Html of Flow]

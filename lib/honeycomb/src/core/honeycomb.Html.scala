@@ -50,6 +50,7 @@ import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
 import symbolism.*
 import turbulence.*
 import typonym.*
@@ -77,11 +78,30 @@ object Html extends Tag.Container
       val root = Tag.root(content.reification().map(_.tt).to(Set))
       parse(input.iterator, root).asInstanceOf[Html of content]
 
-  given aggregable2: [content <: Label: Reifiable to List[String]] => (dom: Dom)
-        =>  Tactic[ParseError]
-        =>  Html is Aggregable by Text =
+  inline given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
+    input => parse(input.iterator, dom.generic)
 
-    input => ???
+  given showable: Html is Showable =
+    case Fragment(nodes*) => nodes.map(_.show).join
+    case Textual(text)    => text
+    case Comment(text) => t"<!--$text-->"
+
+    case Foreign(tag, attributes, children) =>
+      val tagContent = if attributes == Nil then t"" else
+        attributes.map:
+          case Attribute(key, value) => value.lay(key) { value => t"""$key="$value"""" }
+        . join(t" ", t" ", t"")
+
+      t"<$tagname$tagContent>${children.map(_.toString.tt).join}</$tagname>"
+
+    case Node(tag, attributes, children) =>
+      val tagContent = if attributes == Nil then t"" else
+        attributes.map:
+          case Attribute(key, value) => value.lay(key) { value => t"""$key="$value"""" }
+        . join(t" ", t" ", t"")
+
+      t"<$tagname$tagContent>${children.map(_.toString.tt).join}</$tagname>"
+
 
   erased trait Vacant extends Transportive { this: Html => }
   erased trait Transparent extends Transportive { this: Html => }
@@ -131,8 +151,6 @@ object Html extends Tag.Container
   case class Position(ordinal: Ordinal) extends Format.Position:
     def describe: Text = t"character ${ordinal.n1}"
 
-  case class Document(nodes: Html*) extends Html
-
   case class Fragment(nodes: Html*) extends Html:
     override def hashCode: Int = nodes.hashCode
 
@@ -154,16 +172,6 @@ object Html extends Tag.Container
       case _ =>
         false
 
-    override def toString(): String =
-      val tagContent = if attributes == Nil then t"" else
-        attributes.map:
-          case Attribute(key, value) =>
-            value.lay(key): value =>
-              t"""$key="$value""""
-        . join(t" ", t" ", t"")
-
-      t"<$tagname$tagContent>${children.map(_.toString.tt).join}</$tagname>".s
-
 
   case class Comment(text: Text) extends Html:
     override def hashCode: Int = List(this).hashCode
@@ -173,11 +181,8 @@ object Html extends Tag.Container
       case Fragment(Comment(text0)) => text0 == text
       case _                        => false
 
-    override def toString(): String = t"<!--$text-->".s
-
   case class Textual(text: Text) extends Html:
     type Topic = "#text"
-    override def toString(): String = text.s
 
     override def hashCode: Int = List(this).hashCode
 
@@ -203,16 +208,6 @@ object Html extends Tag.Container
     override def hashCode: Int =
       ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ tagname.hashCode
 
-
-    override def toString(): String =
-      val tagContent = if attributes == Nil then t"" else
-        attributes.map:
-          case Attribute(key, value) =>
-            value.lay(key): value =>
-              t"""$key="$value""""
-        . join(t" ", t" ", t"")
-
-      t"<$tagname$tagContent>${children.map(_.toString.tt).join}</$tagname>".s
 
   enum TextContent:
     case Raw, Rcdata, Whitespace, Normal
@@ -374,13 +369,14 @@ object Html extends Tag.Container
         case char =>
           content = cursor.hold(tagname(cursor.mark))
           extra = cursor.hold(attributes())
+
           cursor.lay(fail(ExpectedMore)):
             case '/'  =>  expect('>')
                           cursor.next()
                           Token.Empty
             case '>'  =>  cursor.next()
                           Token.Open
-            case char =>  panic(m"NOT EXPECTED: $char")
+            case char =>  fail(Unexpected(char))
 
     def descend(parent: Tag): Html = read(parent, Nil, 0)
 
@@ -504,4 +500,4 @@ object Html extends Tag.Container
     read(root, Nil, 0)
 
 sealed into trait Html extends Topical:
-  type Topic
+  type Topic <: Label
