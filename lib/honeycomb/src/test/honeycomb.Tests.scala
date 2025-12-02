@@ -259,4 +259,4 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
-      .assert(_ == Div(Html.Foreign("svg", Nil, IArray(Html.Foreign("circle", List(Attribute("r", "1")), IArray.empty)))))
+      .assert(_ == Div(Html.foreign["svg"](Nil, Html.foreign["circle"](List(Attribute("r", "1"))))))

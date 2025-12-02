@@ -81,30 +81,31 @@ object Html extends Tag.Container
   inline given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
     input => parse(input.iterator, dom.generic)
 
+
+  def foreign[label <: Label: ValueOf](attributes: List[Attribute], children: (Node & Foreign)*)
+  : (Node & Foreign) of label =
+
+      Node(valueOf[label], attributes, IArray.from(children), true)
+      . asInstanceOf[Node & Foreign of label]
+
+
   given showable: Html is Showable =
     case Fragment(nodes*) => nodes.map(_.show).join
     case Textual(text)    => text
     case Comment(text) => t"<!--$text-->"
 
-    case Foreign(tag, attributes, children) =>
+    case Node(tag, attributes, children, _) =>
       val tagContent = if attributes == Nil then t"" else
         attributes.map:
           case Attribute(key, value) => value.lay(key) { value => t"""$key="$value"""" }
         . join(t" ", t" ", t"")
 
-      t"<$tagname$tagContent>${children.map(_.toString.tt).join}</$tagname>"
-
-    case Node(tag, attributes, children) =>
-      val tagContent = if attributes == Nil then t"" else
-        attributes.map:
-          case Attribute(key, value) => value.lay(key) { value => t"""$key="$value"""" }
-        . join(t" ", t" ", t"")
-
-      t"<$tagname$tagContent>${children.map(_.toString.tt).join}</$tagname>"
+      t"<$label$tagContent>${children.map(_.toString.tt).join}</$label>"
 
 
   erased trait Vacant extends Transportive { this: Html => }
-  erased trait Transparent extends Transportive { this: Html => }
+  erased trait Transparent { this: Html => }
+  erased trait Foreign { this: Html => }
 
   private enum Token:
     case Close, Comment, Empty, Open
@@ -121,10 +122,6 @@ object Html extends Tag.Container
   given conversion3: [label <: Label, content >: label]
         =>  Conversion[Html.Node of label, Html of content] =
     _.asInstanceOf[Html.Node of content]
-
-  given conversion4: [label <: Label, content >: label]
-        =>  Conversion[Html.Foreign, Html of content] =
-    _.asInstanceOf[Html.Foreign of content]
 
   enum Issue extends Format.Issue:
     case ExpectedMore
@@ -159,20 +156,6 @@ object Html extends Tag.Container
       case node: Html        => nodes.length == 1 && nodes(0) == node
       case _                 => false
 
-  case class Foreign(tagname: Text, attributes: List[Attribute], children: IArray[Html]) extends Html:
-    override def hashCode: Int = content.hashCode
-
-    override def equals(that: Any): Boolean = that match
-      case Fragment(foreign: Foreign) => foreign == this
-
-      case Foreign(tagname0, attributes0, children0) =>
-        tagname0 == tagname && attributes0 == attributes
-        && ju.Arrays.equals(children0.mutable(using Unsafe), children.mutable(using Unsafe))
-
-      case _ =>
-        false
-
-
   case class Comment(text: Text) extends Html:
     override def hashCode: Int = List(this).hashCode
 
@@ -191,22 +174,23 @@ object Html extends Tag.Container
       case Textual(text0)             => text0 == text
       case _                          => false
 
-  case class Node(tagname: Text, attributes: List[Attribute], children: IArray[Html])
+  case class Node
+              (label: Text, attributes: List[Attribute], children: IArray[Html], foreign: Boolean)
   extends Html, Topical, Transportive:
     type Foo = this.Transport
 
     override def equals(that: Any): Boolean = that match
       case Fragment(node: Node) => this == node
 
-      case Node(tagname0, attributes0, children0) =>
-        tagname0 == tagname && attributes0 == attributes
-        && ju.Arrays.equals(children0.mutable(using Unsafe), children.mutable(using Unsafe))
+      case Node(label, attributes, children, foreign) =>
+        label == this.label && attributes == this.attributes && foreign == this.foreign
+        && ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
 
       case _ =>
         false
 
     override def hashCode: Int =
-      ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ tagname.hashCode
+      ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
 
 
   enum TextContent:
@@ -395,8 +379,8 @@ object Html extends Tag.Container
     def finish(parent: Tag, children: List[Html], count: Int): Html =
       if parent != root then
         if parent.autoclose
-        then Html.Node(parent.tagname, parent.attributes, array(children, count))
-        else fail(Incomplete(parent.tagname))
+        then Html.Node(parent.label, parent.attributes, array(children, count), false)
+        else fail(Incomplete(parent.label))
       else if count > 1 then Html.Fragment(children.reverse*) else children(0)
 
     def array(list: List[Html], count: Int): IArray[Html] =
@@ -430,21 +414,16 @@ object Html extends Tag.Container
           val node: Html = cursor.hold:
             val mark = cursor.mark
 
-            def node(): Html =
-              if parent.foreign
-              then Html.Foreign(content, extra, array(children, count))
-              else Html.Node(content, extra, array(children, count))
+            def node(): Html = Html.Node(content, extra, array(children, count), parent.foreign)
 
             def close(): Html =
-              if parent.foreign
-              then Html.Foreign(parent.tagname, parent.attributes, array(children, count))
-              else Html.Node(parent.tagname, parent.attributes, array(children, count))
+              Html.Node(parent.label, parent.attributes, array(children, count), parent.foreign)
 
             def infer(tag: Tag) =
               cursor.cue(mark)
               dom.infer(parent, tag).let(descend(_)).or:
                 if parent.autoclose then close().also { ascend = true }
-                else fail(InadmissibleTag(content, parent.tagname))
+                else fail(InadmissibleTag(content, parent.label))
 
             next()
 
@@ -468,16 +447,14 @@ object Html extends Tag.Container
                 else if parent.foreign || parent.admissible(content) then descend(tag) else infer(tag)
 
               case Token.Close =>
-                if content != parent.tagname then
+                if content != parent.label then
                   cursor.cue(mark)
                   if parent.autoclose then close().also { ascend = true }
-                  else fail(MismatchedTag(parent.tagname, content))
+                  else fail(MismatchedTag(parent.label, content))
                 else
                   cursor.next()
                   ascend = true
-                  if parent.foreign
-                  then Html.Foreign(content, parent.attributes, array(children, count))
-                  else Html.Node(content, parent.attributes, array(children, count))
+                  Html.Node(content, parent.attributes, array(children, count), parent.foreign)
 
           if ascend then node else read(parent, node :: children, count + 1)
 
@@ -486,12 +463,12 @@ object Html extends Tag.Container
             whitespace() yet read(parent, children, count)
 
           case Html.TextContent.Raw =>
-            val content = cursor.hold(raw(parent.tagname, cursor.mark))
-            Html.Node(parent.tagname, parent.attributes, IArray(Html.Textual(content)))
+            val content = Html.Textual(cursor.hold(raw(parent.label, cursor.mark)))
+            Html.Node(parent.label, parent.attributes, IArray(content), parent.foreign)
 
           case Html.TextContent.Rcdata => // FIXME
-            val content = cursor.hold(raw(parent.tagname, cursor.mark))
-            Html.Node(parent.tagname, parent.attributes, IArray(Html.Textual(content)))
+            val content = Html.Textual(cursor.hold(raw(parent.label, cursor.mark)))
+            Html.Node(parent.label, parent.attributes, IArray(content), parent.foreign)
 
           case Html.TextContent.Normal =>
             append(parent, cursor.hold(textual(cursor.mark)), children, count)

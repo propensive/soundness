@@ -64,7 +64,7 @@ trait Dom:
   val entities: Dictionary[Text]
 
   def infer(parent: Tag, child: Tag): Optional[Tag]
-  def generic: Tag = Tag.root(elements.iterator.map(_.tagname).to(Set))
+  def generic: Tag = Tag.root(elements.iterator.map(_.label).to(Set))
 
 object Html5 extends Dom:
   import Html.Issue.*
@@ -105,7 +105,7 @@ object Html5 extends Dom:
 
   def infer(parent: Tag, child: Tag): Optional[Tag] =
     def recur(parent: Tag): Boolean =
-      parent.admissible.contains(child.tagname) || insertable(parent).exists(recur(_))
+      parent.admissible.contains(child.label) || insertable(parent).exists(recur(_))
 
     insertable(parent).find(recur(_)).optional
 
@@ -296,7 +296,7 @@ object Html5 extends Dom:
   val Wbr = Tag.void["wbr"]()
 
   val elements: Dictionary[Tag] =
-    Dictionary(this.membersOfType[Tag].to(Seq).bi.map(_.tagname -> _)*)
+    Dictionary(this.membersOfType[Tag].to(Seq).bi.map(_.label -> _)*)
 
   val entities: Dictionary[Text] =
     val list = cp"/honeycomb/entities.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:

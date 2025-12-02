@@ -115,7 +115,7 @@ object Tag:
     def applyDynamic(method: "apply")(children: Html of Transport*)
     : Html.Node of Topic =
 
-        Html.Node(name, Nil, IArray.from(children)).asInstanceOf[Html.Node of Topic]
+        Html.Node(name, Nil, IArray.from(children), false).asInstanceOf[Html.Node of Topic]
 
 class Tag
        (    tagname:    Text,
@@ -124,13 +124,13 @@ class Tag
         val presets:    List[Attribute]  = Nil,
         val admissible: Set[Text]        = Set(),
         val insertable: Boolean          = false,
-        val foreign:    Boolean          = false)
-extends Html.Node(tagname, Nil, IArray()), Dynamic:
+            foreign:    Boolean          = false)
+extends Html.Node(tagname, Nil, IArray(), foreign), Dynamic:
 
   def void: Boolean = true
 
   def applyDynamicNamed(method: "apply")(attributes: Optional[Attribute of Topic]*)
   : Html.Node & Html.Vacant of Topic over Transport =
 
-      Html.Node(tagname, attributes.to(List).compact, IArray())
+      Html.Node(tagname, attributes.to(List).compact, IArray(), false)
       . asInstanceOf[Html.Node & Html.Vacant of Topic over Transport]
