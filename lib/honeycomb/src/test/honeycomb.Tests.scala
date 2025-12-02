@@ -111,8 +111,12 @@ object Tests extends Suite(m"Honeycomb Tests"):
       .assert(_ == Html.Fragment(Div("content"), Html.Comment(" comment "), Div("more content")))
 
       test(m"simple self-closing tag"):
-        t"""<div/>""".read[Html of "div"]
+        t"""<div />""".read[Html of "div"]
       .assert(_ == Div)
+
+      test(m"self-closing tag with attributes"):
+        t"""<div foo="bar"/>""".read[Html of "div"]
+      .assert(_ == Div(foo = "bar"))
 
       test(m"simple comment tag"):
         t"""<!--This is a comment-->""".read[Html of Flow]
@@ -253,5 +257,5 @@ object Tests extends Suite(m"Honeycomb Tests"):
       . assert(_ == ParseError(Html, Html.Position(21.u), Html.Issue.OnlyWhitespace('a')))
 
       test(m"Foreign SVG tag"):
-        t"""<div><svg><circle r="1"></svg></div>""".read[Html of Flow]
+        t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
       .assert(_ == Div(Html.Foreign("svg", Nil, IArray(Html.Foreign("circle", List(Attribute("r", "1")), IArray.empty)))))

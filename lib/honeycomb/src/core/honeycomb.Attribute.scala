@@ -70,6 +70,6 @@ object Attribute:
 
   given conversion3: [key <: String: Precise, tag <: String: Precise]
         => Conversion[(key, Boolean), Optional[Attribute of tag]] =
-    attribute => Attribute(attribute(0), attribute(0).tt).asInstanceOf[Attribute of tag].unless(!attribute(1))
+    attribute => Attribute(attribute(0), Unset).asInstanceOf[Attribute of tag].unless(!attribute(1))
 
 into case class Attribute(key: Text, value: Optional[Text]) extends Topical

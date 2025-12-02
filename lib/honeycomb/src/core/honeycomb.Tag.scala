@@ -74,9 +74,11 @@ object Tag:
         type Topic = label
         type Transport = ""
 
-  def foreign(name: Text): Tag =
+  def foreign(name: Text, attributes0: List[Attribute]): Tag =
+
     new Tag(name, false, Html.TextContent.Normal, Nil, Set(), false, true):
       override def void = false
+      override val attributes: List[Attribute] = attributes0
 
   def foreign[label <: Label: ValueOf](presets: List[Attribute] = Nil): Tag of label over "" =
     new Tag(valueOf[label].tt, false, Html.TextContent.Normal, presets, Set(), false, true):

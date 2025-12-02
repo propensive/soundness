@@ -141,8 +141,23 @@ object Html extends Tag.Container
 
     override def equals(that: Any): Boolean = that match
       case Fragment(foreign: Foreign) => foreign == this
-      case foreign: Foreign           => foreign == this
-      case _                          => false
+
+      case Foreign(tagname0, attributes0, children0) =>
+        tagname0 == tagname && attributes0 == attributes
+        && ju.Arrays.equals(children0.mutable(using Unsafe), children.mutable(using Unsafe))
+
+      case _ =>
+        false
+
+    override def toString(): String =
+      val tagContent = if attributes == Nil then t"" else
+        attributes.map:
+          case Attribute(key, value) =>
+            value.lay(key): value =>
+              t"""$key="$value""""
+        . join(t" ", t" ", t"")
+
+      t"<$tagname$tagContent>${children.map(_.toString.tt).join}</$tagname>".s
 
 
   case class Comment(text: Text) extends Html:
@@ -266,24 +281,21 @@ object Html extends Tag.Container
 
 
     @tailrec
-    def attributes(entries0: List[Attribute] = Nil)(using Cursor.Held): List[Attribute] =
-      val name = key(cursor.mark)
-
-      val entries = if equality() then
-        val assignment = cursor.lay(fail(ExpectedMore)):
-          case '"'  =>  next() yet value(cursor.mark)
-          case '\'' =>  next() yet singleQuoted(cursor.mark)
-          case _    =>  unquoted(cursor.mark)
-
-        Attribute(name, assignment) :: entries0
-      else Attribute(name, name) :: entries0
-
+    def attributes(entries: List[Attribute] = Nil)(using Cursor.Held): List[Attribute] =
       skip()
-
       cursor.lay(fail(ExpectedMore)):
-        case '>' =>  cursor.next() yet entries
-        case '/' =>  expect('>') yet cursor.next() yet entries
-        case _   =>  attributes(entries)
+        case '>' | '/' => entries
+        case _         =>
+          val name = key(cursor.mark)
+
+          if equality() then
+            val assignment = cursor.lay(fail(ExpectedMore)):
+              case '"'  =>  next() yet value(cursor.mark)
+              case '\'' =>  next() yet singleQuoted(cursor.mark)
+              case _    =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
+
+            attributes(Attribute(name, assignment) :: entries)
+          else attributes(Attribute(name, Unset) :: entries)
 
     @tailrec
     def entity(mark: Mark)(using Cursor.Held): Optional[Text] =
@@ -355,20 +367,15 @@ object Html extends Tag.Container
                       Token.Close
 
         case char =>
-          val name = cursor.hold(tagname(cursor.mark))
-          skip() yet cursor.lay(fail(ExpectedMore)):
+          content = cursor.hold(tagname(cursor.mark))
+          extra = cursor.hold(attributes())
+          cursor.lay(fail(ExpectedMore)):
             case '/'  =>  expect('>')
                           cursor.next()
-                          content = name
-                          extra = Nil
                           Token.Empty
             case '>'  =>  cursor.next()
-                          content = name
-                          extra = Nil
                           Token.Open
-            case _    =>  content = name
-                          extra = cursor.hold(attributes())
-                          Token.Open
+            case char =>  panic(m"NOT EXPECTED: $char")
 
     def descend(parent: Tag): Html = read(parent, Nil, 0)
 
@@ -386,7 +393,8 @@ object Html extends Tag.Container
 
     def finish(parent: Tag, children: List[Html], count: Int): Html =
       if parent != root then
-        if parent.autoclose then Html.Node(parent.tagname, parent.attributes, array(children, count))
+        if parent.autoclose
+        then Html.Node(parent.tagname, parent.attributes, array(children, count))
         else fail(Incomplete(parent.tagname))
       else if count > 1 then Html.Fragment(children.reverse*) else children(0)
 
@@ -404,7 +412,6 @@ object Html extends Tag.Container
 
     @tailrec
     def read(parent: Tag, children: List[Html], count: Int): Html =
-      println(s"read($parent, $children, $count)")
       cursor.lay(finish(parent, children, count)):
         case '&'  => parent.content match
           case Html.TextContent.Whitespace => fail(OnlyWhitespace('&'))
@@ -423,11 +430,13 @@ object Html extends Tag.Container
             val mark = cursor.mark
 
             def node(): Html =
-              if parent.foreign then Html.Foreign(content, extra, array(children, count))
+              if parent.foreign
+              then Html.Foreign(content, extra, array(children, count))
               else Html.Node(content, extra, array(children, count))
 
             def close(): Html =
-              if parent.foreign then Html.Foreign(parent.tagname, parent.attributes, array(children, count))
+              if parent.foreign
+              then Html.Foreign(parent.tagname, parent.attributes, array(children, count))
               else Html.Node(parent.tagname, parent.attributes, array(children, count))
 
             def infer(tag: Tag) =
@@ -439,10 +448,11 @@ object Html extends Tag.Container
             next()
 
             tag() match
-              case Token.Comment =>  Html.Comment(content)
+              case Token.Comment => Html.Comment(content)
+
               case Token.Empty   =>
                 val tag =
-                  if parent.foreign then Tag.foreign(content)
+                  if parent.foreign then Tag.foreign(content, extra)
                   else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
                 if parent.foreign || parent.admissible(content) then node() else infer(tag)
@@ -450,10 +460,10 @@ object Html extends Tag.Container
 
               case Token.Open =>
                 val tag =
-                  if parent.foreign then Tag.foreign(content)
+                  if parent.foreign then Tag.foreign(content, extra)
                   else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
-                if tag.void then if parent.foreign || parent.admissible(content) then node() else infer(tag)
+                if tag.void then if parent.admissible(content) then node() else infer(tag)
                 else if parent.foreign || parent.admissible(content) then descend(tag) else infer(tag)
 
               case Token.Close =>
@@ -464,7 +474,9 @@ object Html extends Tag.Container
                 else
                   cursor.next()
                   ascend = true
-                  Html.Node(content, parent.attributes, array(children, count))
+                  if parent.foreign
+                  then Html.Foreign(content, parent.attributes, array(children, count))
+                  else Html.Node(content, parent.attributes, array(children, count))
 
           if ascend then node else read(parent, node :: children, count + 1)
 
