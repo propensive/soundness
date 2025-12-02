@@ -78,7 +78,7 @@ object Html extends Tag.Container
       val root = Tag.root(content.reification().map(_.tt).to(Set))
       parse(input.iterator, root).asInstanceOf[Html of content]
 
-  inline given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
+  given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
     input => parse(input.iterator, dom.generic)
 
 
