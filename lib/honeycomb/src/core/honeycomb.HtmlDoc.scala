@@ -59,12 +59,12 @@ object HtmlDoc:
 
 
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
-       (content: (Optional[OldHtml[html5.Flow]] | Seq[OldHtml[html5.Flow]])*)
+       (content: (Optional[OldHtml[oldHtml5.Flow]] | Seq[OldHtml[oldHtml5.Flow]])*)
        (using att: "href" is Attributive of Stylesheet)
   : HtmlDoc =
 
       val link = att.convert(stylesheet).absolve match
         case Unset      => Nil
-        case text: Text => Seq(html5.Link.Stylesheet(href = text))
+        case text: Text => Seq(oldHtml5.Link.Stylesheet(href = text))
 
-      HtmlDoc(OldHtml(html5.Head(html5.Title(title), link), html5.Body(content*)))
+      HtmlDoc(OldHtml(oldHtml5.Head(oldHtml5.Title(title), link), oldHtml5.Body(content*)))

@@ -69,14 +69,19 @@ object Html extends Tag.Container
   type Topic = "html"
   type Transport = "head" | "body"
 
-  given aggregable: [content <: Label: Reifiable to List[String]]
+  given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
         =>  Tactic[ParseError]
-        => (Html of content) is Aggregable by Text =
+        =>  (Html of content) is Aggregable by Text =
 
     input =>
       val root = Tag.root(content.reification().map(_.tt).to(Set))
       parse(input.iterator, root).asInstanceOf[Html of content]
 
+  given aggregable2: [content <: Label: Reifiable to List[String]] => (dom: Dom)
+        =>  Tactic[ParseError]
+        =>  Html is Aggregable by Text =
+
+    input => ???
 
   erased trait Vacant extends Transportive { this: Html => }
   erased trait Transparent extends Transportive { this: Html => }

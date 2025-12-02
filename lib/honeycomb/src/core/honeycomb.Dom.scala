@@ -65,7 +65,7 @@ trait Dom:
 
   def infer(parent: Tag, child: Tag): Optional[Tag]
 
-given html5Dom: Dom:
+object Html5 extends Dom:
   import Html.Issue.*
 
   private def recur(tagname: Text, target: Text): Boolean =

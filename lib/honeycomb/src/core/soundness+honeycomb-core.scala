@@ -34,6 +34,6 @@ package soundness
 
 export honeycomb
 . { cls, id, Autocomplete, Capture, ClearTag, Crossorigin, CssClass, DomId, Element, HDir,
-    html5, Attributive, HtmlDoc, HtmlSerializer, HtmlXml, HttpEquiv, Kind, Method, Node,
+    Html5, Attributive, HtmlDoc, HtmlSerializer, HtmlXml, HttpEquiv, Kind, Method, Node,
     Preload, Rel, Rev, Sandbox, Scope, Shape, StartTag, Tag, Target, Wrap, html, html4, Attributes,
     Renderable }

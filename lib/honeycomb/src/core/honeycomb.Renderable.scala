@@ -42,7 +42,7 @@ import spectacular.*
 import vacuous.*
 
 object Renderable:
-  import html5.Phrasing
+  import oldHtml5.Phrasing
   given showable: [value: Showable] => value is Renderable to Phrasing = value => List(value.show)
 
   given message: Message is Renderable to Phrasing = _.segments.flatMap:
@@ -66,8 +66,8 @@ object Renderable:
       case Sgml.Element(label, attributes, children) =>
         Node(label, attributes.map(_.s -> _), children.map(convert(_)))
 
-  given StackTrace is Renderable to html5.Flow = stackTrace =>
-    import html5.*
+  given StackTrace is Renderable to oldHtml5.Flow = stackTrace =>
+    import oldHtml5.*
 
     List:
       Div.stack(H2(stackTrace.component),

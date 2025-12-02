@@ -39,7 +39,7 @@ import vacuous.*
 
 import language.dynamics
 
-object html5:
+object oldHtml5:
   type Interactive =
     "a" | "audio" | "button" | "details" | "embed" | "iframe" | "img" | "input" | "label" | "select"
     | "textarea" | "video"
