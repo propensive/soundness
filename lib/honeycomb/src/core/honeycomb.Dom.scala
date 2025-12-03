@@ -111,7 +111,7 @@ object Html5 extends Dom:
 
 
   // - should be transparent
-  val A = Tag.container["a", Flow | "#transparent"]()
+  val A = Tag.transparent["a"]()
   val Abbr = Tag.container["abbr", Phrasing]()
 
   val Address =

@@ -265,3 +265,11 @@ object Tests extends Suite(m"Honeycomb Tests"):
         t"""<div>The equation is <math display="inline"><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""
         . read[Html of Flow]
       . assert(_ == Div("The equation is ", Math(display = "inline")(Html.Node.foreign("mfrac", Nil, Html.Node.foreign("msup", Nil, Html.Node.foreign("mi", Nil, "π"), Html.Node.foreign("mn", Nil, "2")), Html.Node.foreign("mn", Nil, "6"))), "."))
+
+      test(m"transparent tag with text"):
+        t"""<p>Go <a href="home">home</a>.</p>""".read[Html of "p"]
+      . assert(_ == P("Go ", A(href = "home")("home"), "."))
+
+      test(m"transparent tag with element"):
+        t"""<p>Go <a href="home"><em>home</em></a>.</p>""".read[Html of "p"]
+      . assert(_ == P("Go ", A(href = "home")(Em("home")), "."))

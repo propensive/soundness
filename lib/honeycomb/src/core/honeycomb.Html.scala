@@ -81,32 +81,18 @@ object Html extends Tag.Container
   given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
     input => parse(input.iterator, dom.generic)
 
-
   given showable: [html <: Html] => html is Showable =
     case Fragment(nodes*) => nodes.map(_.show).join
     case Textual(text)    => text
     case Comment(text) => t"<!--$text-->"
 
-    case Node(tagname, attributes, children, foreign) =>
+    case Node(tagname, attributes, children, _) =>
       val tagContent = if attributes == Nil then t"" else
         attributes.map:
           case Attribute(key, value) => value.lay(key) { value => t"""$key="$value"""" }
         . join(t" ", t" ", t"")
 
-      t"Node($tagname, $tagContent, ${children.map(_.show).join}, ${if foreign then "foreign" else "native"})"
-
-  // given showable: [html <: Html] => html is Showable =
-  //   case Fragment(nodes*) => nodes.map(_.show).join
-  //   case Textual(text)    => text
-  //   case Comment(text) => t"<!--$text-->"
-
-  //   case Node(tagname, attributes, children, _) =>
-  //     val tagContent = if attributes == Nil then t"" else
-  //       attributes.map:
-  //         case Attribute(key, value) => value.lay(key) { value => t"""$key="$value"""" }
-  //       . join(t" ", t" ", t"")
-
-  //     t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
+      t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
 
 
   private enum Token:
@@ -114,13 +100,17 @@ object Html extends Tag.Container
 
 
   trait Populable:
-    populable: Node =>
-      type Transport
-      type Topic
+    node: Html.Node =>
+      def apply(children: Html of node.Transport*): Html.Node of node.Topic =
+        new Html.Node(node.label, node.attributes, IArray.from(children), node.foreign):
+          type Topic = node.Topic
 
-      def apply(children: Html of Transport*): Node of populable.Topic =
-        new Node(label, populable.attributes, IArray.from(children), populable.foreign):
-          type Topic = populable.Topic
+  trait Transparent:
+    node: Html.Node =>
+      def apply[labels <: Label](children: Html of labels*): Html.Node of labels =
+        new Html.Node(node.label, node.attributes, IArray.from(children), node.foreign):
+          type Topic = labels
+
 
   import Issue.*
   def name: Text = t"HTML"
@@ -215,6 +205,12 @@ object Html extends Tag.Container
 
     override def hashCode: Int =
       ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
+
+    private[honeycomb] def of[topic <: Label]: this.type of topic =
+      asInstanceOf[this.type of topic]
+
+    private[honeycomb] def over[transport <: Label]: this.type over transport =
+      asInstanceOf[this.type over transport]
 
   enum TextContent:
     case Raw, Rcdata, Whitespace, Normal

@@ -84,6 +84,18 @@ object Tag:
         type Topic = label
         type Transport = children
 
+  def transparent[label <: Label: ValueOf]
+       (autoclose:  Boolean          = false,
+        content:    Html.TextContent = Html.TextContent.Normal,
+        presets:    List[Attribute]  = Nil,
+        insertable: Boolean          = false)
+  : Transparent of label =
+
+      val admissible: Set[Text] = Set("#transparent")
+
+      new Transparent(valueOf[label].tt, autoclose, content, presets, insertable):
+        type Topic = label
+
   def foreign[label <: Label: ValueOf](): Container of label over "#foreign" =
     new Container(valueOf[label], foreign = true):
       type Topic = label
@@ -98,45 +110,46 @@ object Tag:
           insertable: Boolean          = false,
           foreign:    Boolean          = false)
   extends Tag(name, autoclose, content, presets, admissible, insertable, foreign = foreign):
-    container =>
-      def applyDynamic(method: "apply")(children: Html of Transport*)
-      : Html.Node of Topic =
-
-          Html.Node(name, Nil, IArray.from(children), foreign).asInstanceOf[Html.Node of Topic]
+    tag =>
+      def applyDynamic(method: "apply")(children: Html of Transport*): Html.Node of Topic =
+        Html.Node(name, Nil, IArray.from(children), foreign).of[Topic]
 
       def applyDynamicNamed(method: "apply")(attributes: Optional[Attribute of Topic]*)
       : Html.Node & Html.Populable of Topic over Transport =
 
-          new Html.Node(label, attributes.to(List).compact, IArray(), foreign = foreign) with Html.Populable:
-            type Topic = container.Topic
-            type Transport = container.Transport
+          new Html.Node(label, attributes.to(List).compact, IArray(), tag.foreign)
+          with Html.Populable:
+            type Topic = tag.Topic
+            type Transport = tag.Transport
 
-  class Foreign(name: Text) extends Tag(name):
-    container =>
-      type Transport = "#foreign"
-
-      def applyDynamic(method: "apply")(children: Html of "#foreign"*): Html.Node of "#foreign" =
-
-          Html.Node.foreign(name, Nil, children*)
+  class Transparent
+         (name:      Text,
+          autoclose:  Boolean          = false,
+          content:    Html.TextContent = Html.TextContent.Normal,
+          presets:    List[Attribute]  = Nil,
+          insertable: Boolean          = false,
+          foreign:    Boolean          = false)
+  extends Tag(name, autoclose, content, presets, Set("#transparent"), insertable, foreign = foreign):
+    tag =>
+      def applyDynamic(method: "apply")(children: Html of Transport*): Html.Node of Topic =
+        Html.Node(name, Nil, IArray.from(children), foreign).of[Topic]
 
       def applyDynamicNamed(method: "apply")(attributes: Optional[Attribute of Topic]*)
-      : Html.Node & Html.Populable of "#foreign" over "#foreign" =
+      : Html.Node & Html.Transparent of Topic over Transport =
 
-          new Html.Node(label, attributes.to(List).compact, IArray(), container.foreign) with Html.Populable:
-            type Topic = "#foreign"
-            type Transport = "#foreign"
-
+          new Html.Node(label, attributes.to(List).compact, IArray(), tag.foreign)
+          with Html.Transparent:
+            type Topic = tag.Topic
+            type Transport = tag.Transport
 
   class Void(name: Text, presets: List[Attribute])
   extends Tag(name, presets = presets, void = true):
-    type Transport = ""
+    tag =>
+      def applyDynamicNamed(method: "apply")(attributes: Optional[Attribute of Topic]*)
+      : Html.Node of Topic =
 
-    def applyDynamicNamed(method: "apply")(attributes: Optional[Attribute of Topic]*)
-    : Html.Node of Topic =
-
-        Html.Node(label, attributes.to(List).compact, IArray(), false)
-        . asInstanceOf[Html.Node of Topic]
-
+          new Html.Node(label, attributes.to(List).compact, IArray(), tag.foreign):
+            type Topic = tag.Topic
 
 class Tag
        (    label:      Text,
