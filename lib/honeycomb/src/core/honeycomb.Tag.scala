@@ -67,8 +67,8 @@ object Tag:
     new Void(valueOf[label].tt, presets):
       type Topic = label
 
-  def foreign(tagname: Text, attributes0: List[Attribute]): Tag of "#foreign" =
-    new Tag.Container(tagname, false, Html.TextContent.Normal, attributes0, Set(), false, foreign = true):
+  def foreign(label: Text, attributes0: List[Attribute]): Tag of "#foreign" =
+    new Tag.Container(label, false, Html.TextContent.Normal, attributes0, Set(), false, foreign = true):
       type Topic = "#foreign"
 
   def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
@@ -80,39 +80,34 @@ object Tag:
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
 
-      new Container(valueOf[label].tt, autoclose, content, presets, admissible, insertable):
-        type Topic = label
-        type Transport = children
+      Container(valueOf[label].tt, autoclose, content, presets, admissible, insertable)
+      . of[label]
+      . over[children]
 
-  def transparent[label <: Label: ValueOf]
-       (autoclose:  Boolean          = false,
-        content:    Html.TextContent = Html.TextContent.Normal,
-        presets:    List[Attribute]  = Nil,
-        insertable: Boolean          = false)
-  : Transparent of label =
 
-      val admissible: Set[Text] = Set("#transparent")
+  def transparent[label <: Label: ValueOf](presets: List[Attribute] = Nil): Transparent of label =
+    transparent(valueOf[label].tt, presets).of[label]
 
-      new Transparent(valueOf[label].tt, autoclose, content, presets, insertable):
-        type Topic = label
+
+  def transparent(label: Text, presets: List[Attribute]): Transparent =
+    Transparent(label, presets)
 
   def foreign[label <: Label: ValueOf](): Container of label over "#foreign" =
-    new Container(valueOf[label], foreign = true):
-      type Topic = label
-      type Transport = "#foreign"
+    Container(valueOf[label], foreign = true).of[label].over["#foreign"]
+
 
   class Container
-         (name:      Text,
+         (label:      Text,
           autoclose:  Boolean          = false,
           content:    Html.TextContent = Html.TextContent.Normal,
           presets:    List[Attribute]  = Nil,
           admissible: Set[Text]        = Set(),
           insertable: Boolean          = false,
           foreign:    Boolean          = false)
-  extends Tag(name, autoclose, content, presets, admissible, insertable, foreign = foreign):
+  extends Tag(label, autoclose, content, presets, admissible, insertable, foreign = foreign):
     tag =>
       def applyDynamic(method: "apply")(children: Html of Transport*): Html.Node of Topic =
-        Html.Node(name, Nil, IArray.from(children), foreign).of[Topic]
+        Html.Node(label, Nil, IArray.from(children), foreign).of[Topic]
 
       def applyDynamicNamed(method: "apply")(attributes: Optional[Attribute of Topic]*)
       : Html.Node & Html.Populable of Topic over Transport =
@@ -122,17 +117,19 @@ object Tag:
             type Topic = tag.Topic
             type Transport = tag.Transport
 
-  class Transparent
-         (name:      Text,
-          autoclose:  Boolean          = false,
-          content:    Html.TextContent = Html.TextContent.Normal,
-          presets:    List[Attribute]  = Nil,
-          insertable: Boolean          = false,
-          foreign:    Boolean          = false)
-  extends Tag(name, autoclose, content, presets, Set("#transparent"), insertable, foreign = foreign):
+  class Transparent(label: Text, presets: List[Attribute] = Nil, foreign: Boolean = false)
+  extends Tag
+           (label       = label,
+            autoclose   = false,
+            content     = Html.TextContent.Normal,
+            presets     = presets,
+            admissible  = Set("#transparent"),
+            insertable  = false,
+            foreign     = foreign,
+            transparent = true):
     tag =>
       def applyDynamic(method: "apply")(children: Html of Transport*): Html.Node of Topic =
-        Html.Node(name, Nil, IArray.from(children), foreign).of[Topic]
+        Html.Node(label, Nil, IArray.from(children), foreign).of[Topic]
 
       def applyDynamicNamed(method: "apply")(attributes: Optional[Attribute of Topic]*)
       : Html.Node & Html.Transparent of Topic over Transport =
@@ -142,8 +139,8 @@ object Tag:
             type Topic = tag.Topic
             type Transport = tag.Transport
 
-  class Void(name: Text, presets: List[Attribute])
-  extends Tag(name, presets = presets, void = true):
+  class Void(label: Text, presets: List[Attribute])
+  extends Tag(label, presets = presets, void = true):
     tag =>
       def applyDynamicNamed(method: "apply")(attributes: Optional[Attribute of Topic]*)
       : Html.Node of Topic =
@@ -152,12 +149,13 @@ object Tag:
             type Topic = tag.Topic
 
 class Tag
-       (    label:      Text,
-        val autoclose:  Boolean          = false,
-        val content:    Html.TextContent = Html.TextContent.Normal,
-        val presets:    List[Attribute]  = Nil,
-        val admissible: Set[Text]        = Set(),
-        val insertable: Boolean          = false,
-            foreign:    Boolean          = false,
-        val void:       Boolean          = false)
+       (    label:       Text,
+        val autoclose:   Boolean          = false,
+        val content:     Html.TextContent = Html.TextContent.Normal,
+        val presets:     List[Attribute]  = Nil,
+        val admissible:  Set[Text]        = Set(),
+        val insertable:  Boolean          = false,
+            foreign:     Boolean          = false,
+        val void:        Boolean          = false,
+        val transparent: Boolean          = false)
 extends Html.Node(label, Nil, IArray(), foreign), Dynamic

@@ -62,11 +62,12 @@ import charDecoders.utf8
 import textSanitizers.skip
 
 object Html extends Tag.Container
-         (name       = "html",
-          autoclose  = true,
-          admissible = Set("head", "body"),
-          content    = Html.TextContent.Whitespace,
-          insertable = true), Format:
+         (label       = "html",
+          autoclose   = true,
+          admissible  = Set("head", "body"),
+          content     = Html.TextContent.Whitespace,
+          insertable  = true,
+          foreign     = false), Format:
   type Topic = "html"
   type Transport = "head" | "body"
 
@@ -76,7 +77,7 @@ object Html extends Tag.Container
 
     input =>
       val root = Tag.root(content.reification().map(_.tt).to(Set))
-      parse(input.iterator, root).asInstanceOf[Html of content]
+      parse(input.iterator, root).of[content]
 
   given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
     input => parse(input.iterator, dom.generic)
@@ -116,19 +117,19 @@ object Html extends Tag.Container
   def name: Text = t"HTML"
 
   given conversion: [label >: "#text" <: Label] => Conversion[Text, Html of label] =
-    Textual(_).asInstanceOf[Textual of label]
+    Textual(_).of[label]
 
   given conversion2: [label >: "#text" <: Label] => Conversion[String, Html of label] =
-    string => Textual(string.tt).asInstanceOf[Textual of label]
+    string => Textual(string.tt).of[label]
 
-  given conversion3: [label <: Label, content >: label]
+  given conversion3: [label <: Label, content >: label <: Label]
         =>  Conversion[Node of label, Html of content] =
-    _.asInstanceOf[Node of content]
+    _.of[content]
 
   given conversion5: Conversion[String, Html of "#foreign"] =
-    string => Textual(string.tt).asInstanceOf[Textual of "#foreign"]
+    string => Textual(string.tt).of["#foreign"]
 
-  given conversion6: Conversion[Comment, Html of "#foreign"] = _.asInstanceOf[Comment of "#foreign"]
+  given conversion6: Conversion[Comment, Html of "#foreign"] = _.of["#foreign"]
 
   enum Issue extends Format.Issue:
     case ExpectedMore
@@ -186,7 +187,7 @@ object Html extends Tag.Container
     def foreign(label: Text, attributes: List[Attribute], children: Html of "#foreign"*)
     : Node of "#foreign" =
 
-        Node(label, attributes, IArray.from(children), true).asInstanceOf[Node of "#foreign"]
+        Node(label, attributes, IArray.from(children), true).of["#foreign"]
 
 
   case class Node
@@ -205,12 +206,6 @@ object Html extends Tag.Container
 
     override def hashCode: Int =
       ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
-
-    private[honeycomb] def of[topic <: Label]: this.type of topic =
-      asInstanceOf[this.type of topic]
-
-    private[honeycomb] def over[transport <: Label]: this.type over transport =
-      asInstanceOf[this.type over transport]
 
   enum TextContent:
     case Raw, Rcdata, Whitespace, Normal
@@ -455,7 +450,8 @@ object Html extends Tag.Container
                   if parent.foreign then Tag.foreign(content, extra)
                   else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
-                if parent.foreign || parent.admissible(content) then node() else infer(tag)
+                if parent.foreign || parent.transparent || parent.admissible(content) then node()
+                else infer(tag)
 
 
               case Token.Open =>
@@ -463,8 +459,9 @@ object Html extends Tag.Container
                   if parent.foreign then Tag.foreign(content, extra)
                   else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
-                if tag.void then if parent.admissible(content) then node() else infer(tag)
-                else if parent.foreign || parent.admissible(content) then descend(tag) else infer(tag)
+                if tag.void
+                then if parent.transparent || parent.admissible(content) then node() else infer(tag)
+                else if parent.foreign || parent.transparent || parent.admissible(content) then descend(tag) else infer(tag)
 
               case Token.Close =>
                 if content != parent.label then
@@ -498,3 +495,10 @@ object Html extends Tag.Container
 
 sealed into trait Html extends Topical:
   type Topic <: Label
+  type Transport
+
+  private[honeycomb] def of[topic <: Label]: this.type of topic =
+    asInstanceOf[this.type of topic]
+
+  private[honeycomb] def over[transport <: Label]: this.type over transport =
+    asInstanceOf[this.type over transport]
