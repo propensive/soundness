@@ -199,12 +199,11 @@ object Html5 extends Dom:
   val Iframe = Tag.void["iframe"]()
   val Img = Tag.void["img"]()
 
-  object Input extends Tag("input"):
+  object Input extends Tag.Void("input", Nil):
     type Topic = "input"
     type Transport = ""
 
-    val Button = Tag.void["input"]
-                  (autoclose = autoclose, presets = List(Attribute(t"type", t"button")))
+    val Button = Tag.void["input"](presets = List(Attribute(t"type", t"button")))
     // FIXME: More Input types
 
   val Ins = Tag.container["ins", "#transparent"]()
@@ -216,7 +215,7 @@ object Html5 extends Dom:
   val Main = Tag.container["main", Flow]()
   val Map = Tag.container["map", "#transparent"]
   val Mark = Tag.container["mark", Phrasing]
-  val Math = Tag.foreign["math"]
+  val Math = Tag.foreign["math"]()
   val Menu = Tag.container["menu", "li" | ScriptSupporting](content = Html.TextContent.Whitespace)
   val Meta = Tag.void["meta"]()
   val Meter = Tag.container["meter", Phrasing]()

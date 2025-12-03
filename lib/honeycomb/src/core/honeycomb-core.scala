@@ -50,9 +50,5 @@ type OldHtml[+child <: Label] = Node[child] | Text | Unset.type | HtmlXml
 
 type Attributes = Map[String, Unset.type | Text]
 
-extension (node: Html.Node & Html.Vacant)
-  def apply(children: Html of node.Transport*): Html.Node =
-    Html.Node(node.label, node.attributes, IArray.from(children), false)
-
 package doms:
   given html5: Html5.type = Html5

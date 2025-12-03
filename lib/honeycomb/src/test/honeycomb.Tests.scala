@@ -229,8 +229,8 @@ object Tests extends Suite(m"Honeycomb Tests"):
         . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
         test(m"<tr> autocloses"):
-          t"""<table><tbody><tr><th>First</th><td>Second</td><td>Third</td></tbody></table>""".read[Html of Flow]
-        . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
+          t"""<table foo="bar"><tbody><tr><th>First</th><td>Second</td><td>Third</td></tbody></table>""".read[Html of Flow]
+        . assert(_ == Table(foo = "bar")(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
         test(m"<tbody> and <tr> autoclose"):
           t"""<table><tbody><tr><th>First</th><td>Second</td><td>Third</td></table>""".read[Html of Flow]
@@ -259,4 +259,9 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
-      .assert(_ == Div(Html.foreign["svg"](Nil, Html.foreign["circle"](List(Attribute("r", "1"))))))
+      .assert(_ == Div(Svg(Html.Node.foreign("circle", List(Attribute("r", "1"))))))
+
+      test(m"Nontrivial MathML example"):
+        t"""<div>The equation is <math display="inline"><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""
+        . read[Html of Flow]
+      . assert(_ == Div("The equation is ", Math(display = "inline")(Html.Node.foreign("mfrac", Nil, Html.Node.foreign("msup", Nil, Html.Node.foreign("mi", Nil, "π"), Html.Node.foreign("mn", Nil, "2")), Html.Node.foreign("mn", Nil, "6"))), "."))

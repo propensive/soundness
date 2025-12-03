@@ -82,46 +82,63 @@ object Html extends Tag.Container
     input => parse(input.iterator, dom.generic)
 
 
-  def foreign[label <: Label: ValueOf](attributes: List[Attribute], children: (Node & Foreign)*)
-  : (Node & Foreign) of label =
-
-      Node(valueOf[label], attributes, IArray.from(children), true)
-      . asInstanceOf[Node & Foreign of label]
-
-
-  given showable: Html is Showable =
+  given showable: [html <: Html] => html is Showable =
     case Fragment(nodes*) => nodes.map(_.show).join
     case Textual(text)    => text
     case Comment(text) => t"<!--$text-->"
 
-    case Node(tag, attributes, children, _) =>
+    case Node(tagname, attributes, children, foreign) =>
       val tagContent = if attributes == Nil then t"" else
         attributes.map:
           case Attribute(key, value) => value.lay(key) { value => t"""$key="$value"""" }
         . join(t" ", t" ", t"")
 
-      t"<$label$tagContent>${children.map(_.toString.tt).join}</$label>"
+      t"Node($tagname, $tagContent, ${children.map(_.show).join}, ${if foreign then "foreign" else "native"})"
 
+  // given showable: [html <: Html] => html is Showable =
+  //   case Fragment(nodes*) => nodes.map(_.show).join
+  //   case Textual(text)    => text
+  //   case Comment(text) => t"<!--$text-->"
 
-  erased trait Vacant extends Transportive { this: Html => }
-  erased trait Transparent { this: Html => }
-  erased trait Foreign { this: Html => }
+  //   case Node(tagname, attributes, children, _) =>
+  //     val tagContent = if attributes == Nil then t"" else
+  //       attributes.map:
+  //         case Attribute(key, value) => value.lay(key) { value => t"""$key="$value"""" }
+  //       . join(t" ", t" ", t"")
+
+  //     t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
+
 
   private enum Token:
     case Close, Comment, Empty, Open
+
+
+  trait Populable:
+    populable: Node =>
+      type Transport
+      type Topic
+
+      def apply(children: Html of Transport*): Node of populable.Topic =
+        new Node(label, populable.attributes, IArray.from(children), populable.foreign):
+          type Topic = populable.Topic
 
   import Issue.*
   def name: Text = t"HTML"
 
   given conversion: [label >: "#text" <: Label] => Conversion[Text, Html of label] =
-    Html.Textual(_).asInstanceOf[Html.Textual of label]
+    Textual(_).asInstanceOf[Textual of label]
 
   given conversion2: [label >: "#text" <: Label] => Conversion[String, Html of label] =
-    string => Html.Textual(string.tt).asInstanceOf[Html.Textual of label]
+    string => Textual(string.tt).asInstanceOf[Textual of label]
 
   given conversion3: [label <: Label, content >: label]
-        =>  Conversion[Html.Node of label, Html of content] =
-    _.asInstanceOf[Html.Node of content]
+        =>  Conversion[Node of label, Html of content] =
+    _.asInstanceOf[Node of content]
+
+  given conversion5: Conversion[String, Html of "#foreign"] =
+    string => Textual(string.tt).asInstanceOf[Textual of "#foreign"]
+
+  given conversion6: Conversion[Comment, Html of "#foreign"] = _.asInstanceOf[Comment of "#foreign"]
 
   enum Issue extends Format.Issue:
     case ExpectedMore
@@ -174,10 +191,17 @@ object Html extends Tag.Container
       case Textual(text0)             => text0 == text
       case _                          => false
 
+
+  object Node:
+    def foreign(label: Text, attributes: List[Attribute], children: Html of "#foreign"*)
+    : Node of "#foreign" =
+
+        Node(label, attributes, IArray.from(children), true).asInstanceOf[Node of "#foreign"]
+
+
   case class Node
               (label: Text, attributes: List[Attribute], children: IArray[Html], foreign: Boolean)
   extends Html, Topical, Transportive:
-    type Foo = this.Transport
 
     override def equals(that: Any): Boolean = that match
       case Fragment(node: Node) => this == node
@@ -192,7 +216,6 @@ object Html extends Tag.Container
     override def hashCode: Int =
       ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
 
-
   enum TextContent:
     case Raw, Rcdata, Whitespace, Normal
 
@@ -201,15 +224,15 @@ object Html extends Tag.Container
 
     def next(): Unit =
       if !cursor.next()
-      then raise(ParseError(Html, Html.Position(cursor.position), ExpectedMore))
+      then raise(ParseError(Html, Position(cursor.position), ExpectedMore))
 
     inline def expect(char: Char): Unit =
       cursor.next()
       cursor.lay(fail(ExpectedMore)): datum =>
         if datum != char then fail(Unexpected(datum))
 
-    def fail(issue: Html.Issue): Nothing =
-      abort(ParseError(Html, Html.Position(cursor.position), issue))
+    def fail(issue: Issue): Nothing =
+      abort(ParseError(Html, Position(cursor.position), issue))
 
     @tailrec
     def skip(): Unit = cursor.lay(fail(ExpectedMore)):
@@ -362,26 +385,26 @@ object Html extends Tag.Container
                           Token.Open
             case char =>  fail(Unexpected(char))
 
-    def descend(parent: Tag): Html = read(parent, Nil, 0)
+    def descend(parent: Tag): Html = read(parent, extra, Nil, 0)
 
-    inline def append(parent: Tag, text: Text, children: List[Html], count0: Int): Html =
+    def append(parent: Tag, atts: List[Attribute], text: Text, children: List[Html], count0: Int): Html =
       var count = count0
 
       val children2 =
         if text == "" then children else children match
-          case Html.Textual(text0) :: more => Html.Textual(text0+text) :: more
+          case Textual(text0) :: more => Textual(text0+text) :: more
           case _ =>
             count += 1
-            Html.Textual(text) :: children
+            Textual(text) :: children
 
-      read(parent, children2, count)
+      read(parent, atts, children2, count)
 
     def finish(parent: Tag, children: List[Html], count: Int): Html =
       if parent != root then
         if parent.autoclose
-        then Html.Node(parent.label, parent.attributes, array(children, count), false)
+        then Node(parent.label, parent.attributes, array(children, count), false)
         else fail(Incomplete(parent.label))
-      else if count > 1 then Html.Fragment(children.reverse*) else children(0)
+      else if count > 1 then Fragment(children.reverse*) else children(0)
 
     def array(list: List[Html], count: Int): IArray[Html] =
       var todo = list
@@ -396,17 +419,17 @@ object Html extends Tag.Container
       array.immutable(using Unsafe)
 
     @tailrec
-    def read(parent: Tag, children: List[Html], count: Int): Html =
+    def read(parent: Tag, atts: List[Attribute], children: List[Html], count: Int): Html =
       cursor.lay(finish(parent, children, count)):
         case '&'  => parent.content match
-          case Html.TextContent.Whitespace => fail(OnlyWhitespace('&'))
+          case TextContent.Whitespace => fail(OnlyWhitespace('&'))
           case _ =>
             val child = cursor.hold:
               val start = cursor.mark
               next()
               entity(cursor.mark).or(textual(start))
 
-            append(parent, child, children, count)
+            append(parent, atts, child, children, count)
 
         case '<'  =>
           var level: Int = 0
@@ -414,10 +437,11 @@ object Html extends Tag.Container
           val node: Html = cursor.hold:
             val mark = cursor.mark
 
-            def node(): Html = Html.Node(content, extra, array(children, count), parent.foreign)
+            def node(): Html =
+              Node(content, extra, array(children, count), parent.foreign)
 
             def close(): Html =
-              Html.Node(parent.label, parent.attributes, array(children, count), parent.foreign)
+              Node(parent.label, parent.attributes, array(children, count), parent.foreign)
 
             def infer(tag: Tag) =
               cursor.cue(mark)
@@ -428,7 +452,7 @@ object Html extends Tag.Container
             next()
 
             tag() match
-              case Token.Comment => Html.Comment(content)
+              case Token.Comment => Comment(content)
 
               case Token.Empty   =>
                 val tag =
@@ -454,27 +478,27 @@ object Html extends Tag.Container
                 else
                   cursor.next()
                   ascend = true
-                  Html.Node(content, parent.attributes, array(children, count), parent.foreign)
+                  Node(content, atts, array(children, count), parent.foreign)
 
-          if ascend then node else read(parent, node :: children, count + 1)
+          if ascend then node else read(parent, atts, node :: children, count + 1)
 
         case char => parent.content match
-          case Html.TextContent.Whitespace =>
-            whitespace() yet read(parent, children, count)
+          case TextContent.Whitespace =>
+            whitespace() yet read(parent, atts, children, count)
 
-          case Html.TextContent.Raw =>
-            val content = Html.Textual(cursor.hold(raw(parent.label, cursor.mark)))
-            Html.Node(parent.label, parent.attributes, IArray(content), parent.foreign)
+          case TextContent.Raw =>
+            val content = Textual(cursor.hold(raw(parent.label, cursor.mark)))
+            Node(parent.label, parent.attributes, IArray(content), parent.foreign)
 
-          case Html.TextContent.Rcdata => // FIXME
-            val content = Html.Textual(cursor.hold(raw(parent.label, cursor.mark)))
-            Html.Node(parent.label, parent.attributes, IArray(content), parent.foreign)
+          case TextContent.Rcdata => // FIXME
+            val content = Textual(cursor.hold(raw(parent.label, cursor.mark)))
+            Node(parent.label, parent.attributes, IArray(content), parent.foreign)
 
-          case Html.TextContent.Normal =>
-            append(parent, cursor.hold(textual(cursor.mark)), children, count)
+          case TextContent.Normal =>
+            append(parent, atts, cursor.hold(textual(cursor.mark)), children, count)
 
     skip()
-    read(root, Nil, 0)
+    read(root, Nil, Nil, 0)
 
 sealed into trait Html extends Topical:
   type Topic <: Label
