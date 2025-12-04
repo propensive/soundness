@@ -61,8 +61,8 @@ object Honeycomb:
                   case Literal(StringConstant(key)) =>
                     ConstantType(StringConstant(key)).asType match
                       case '[type key <: Label; key] =>
-                        Expr.summon[key is Attribute in Html5.type on (? >: topic)]
-                        . orElse(Expr.summon[key is Attribute in Html5.type]) match
+                        Expr.summon[key is Attribute in Whatwg on (? >: topic)]
+                        . orElse(Expr.summon[key is Attribute in Whatwg]) match
                           case Some('{ type result;
                                        $expr: Attribute { type Topic = result } }) =>
                             Expr.summon[value is Attributive to result] match

@@ -88,8 +88,8 @@ object Tests extends Suite(m"Honeycomb Tests"):
     //   .check(_ == t"<table><tbody><tr><td>A</td></tr></tbody></table>")
 
     suite(m"HTML parsing tests"):
-      import doms.html5
-      import html5.*
+      import doms.whatwg
+      import whatwg.*
 
       test(m"simple empty tag"):
         t"""<div></div>""".read[Html]

@@ -66,12 +66,212 @@ trait Dom:
   def infer(parent: Tag, child: Tag): Optional[Tag]
   def generic: Tag = Tag.root(elements.iterator.map(_.label).to(Set))
 
-object Html5 extends Dom:
-  import Html.Issue.*
+object Whatwg:
+  // Attributes
+  type Attribute = honeycomb.Attribute in Whatwg
 
-  private def recur(tagname: Text, target: Text): Boolean =
-    elements(tagname).lay(false): tag =>
-      tag.admissible(target) || tag.insertable
+  private type HeightTags =
+    "canvas" | "embed" | "iframe" | "img" | "input" | "object" | "video" | "svg"
+
+  private type CrossoriginTags = "audio" | "img" | "link" | "script" | "video"
+  private type MediaTags = "a" | "area" | "link" | "source" | "style"
+  private type ReferrerpolicyTags = "a" | "area" | "iframe" | "img" | "link" | "script"
+  private type RequiredTags = "input" | "select" | "textarea"
+
+  private type FormTags =
+    "button" | "fieldset" | "input" | "object" | "output" | "select" | "textarea"
+
+  private type NameTags =
+    "button" | "form" | "fieldset" | "iframe" | "input" | "object" | "output" | "select"
+    | "textarea" | "map" | "meta" | "param"
+
+  private type SrcTags =
+    "audio" | "embed" | "iframe" | "img" | "input" | "script" | "source" | "track" | "video"
+
+  private type TypeTags =
+    "button" | "input" | "embed" | "object" | "ol" | "script" | "source" | "style" | "menu" | "link"
+
+  private type ValueTags =
+    "button" | "data" | "input" | "li" | "meter" | "option" | "progress" | "param"
+
+  private type WidthTags =
+    "canvas" | "embed" | "iframe" | "img" | "input" | "object" | "video" | "svg"
+
+  erased given abbr: ("abbr" is Attribute on "th" of Attributive.Textual) = !!
+  erased given accept: ("accept" is Attribute on "input" of Attributive.MimeList) = !!
+  erased given acceptCharset: ("acceptCharset" is Attribute on "form" of Attributive.Utf8) = !!
+  erased given accesskey: ("accesskey" is Attribute of Attributive.AccessKeys) = !!
+  erased given action: ("action" is Attribute on "form" of Attributive.Url) = !!
+  erased given allow: ("allow" is Attribute on "iframe" of Attributive.PermissionsPolicy) = !!
+  erased given allowfullscreen: ("allowfullscreen" is Attribute on "iframe" of Attributive.Presence) = !!
+  erased given alpha: ("alpha" is Attribute on "input" of Attributive.Presence) = !!
+  erased given alt: ("alt" is Attribute on "area" | "img" | "input" of Attributive.Textual) = !!
+  erased given as: ("as" is Attribute on "link" of Attributive.Textual) = !!
+  erased given async: ("async" is Attribute on "script" of Attributive.Presence) = !!
+  erased given autocapitalize: ("autocapitalize" is Attribute of Attributive.Autocapitalization) = !!
+  erased given autocomplete: ("autocomplete" is Attribute on "form" of Attributive.Switch) = !!
+  erased given autocomplete2: ("autocomplete" is Attribute on "input" | "select" | "textarea" of Attributive.Switch) = !!
+  erased given autocorrect: ("autocorrect" is Attribute of Attributive.Textual) = !!
+  erased given autofocus: ("autofocus" is Attribute of Attributive.Presence) = !!
+  erased given autoplay: ("autoplay" is Attribute on "audio" | "video" of Attributive.Presence) = !!
+  erased given blocking: ("blocking" is Attribute on "link" | "script" | "style" of Attributive.Tokens) = !!
+  erased given charset: ("charset" is Attribute on "meta" of Attributive.Utf8) = !!
+  erased given checked: ("checked" is Attribute on "input" of Attributive.Presence) = !!
+  erased given cite: ("cite" is Attribute on "blockquote" | "del" | "ins" | "q" of Attributive.Url) = !!
+  erased given `class`: ("class" is Attribute of Attributive.CssClasses) = !!
+  erased given closedby: ("closedby" is Attribute on "dialog" of Attributive.Closedby) = !!
+  erased given color: ("color" is Attribute on "link" of Attributive.Color) = !!
+  erased given colorspace: ("colorspace" is Attribute on "input" of Attributive.Colorspace) = !!
+  erased given cols: ("cols" is Attribute on "textarea" of Attributive.PositiveInt) = !!
+  erased given colspan: ("colspan" is Attribute on "td" | "th" of Attributive.PositiveInt) = !!
+  erased given command: ("command" is Attribute on "button" of Attributive.Command) = !!
+  erased given commandfor: ("commandfor" is Attribute on "button" of Attributive.Id) = !!
+  erased given content: ("content" is Attribute on "meta" of Attributive.Textual) = !!
+  erased given contenteditable: ("contenteditable" is Attribute of Attributive.ContentEditable) = !!
+  erased given controls: ("controls" is Attribute on "audio" | "video" of Attributive.Presence) = !!
+  erased given coords: ("coords" is Attribute on "area" of Attributive.Coords) = !!
+  erased given crossorigin: ("crossorigin" is Attribute on CrossoriginTags of Attributive.Crossorigin) = !!
+  erased given data: ("data" is Attribute on "object" of Attributive.Url) = !!
+  erased given datetime: ("datetime" is Attribute on "del" | "ins" of Attributive.Datetime) = !!
+  erased given datetime2: ("datetime" is Attribute on "time" of Attributive.Temporal) = !!
+  erased given decoding: ("decoding" is Attribute on "img" of Attributive.Decoding) = !!
+  erased given default: ("default" is Attribute on "track" of Attributive.Presence) = !!
+  erased given defer: ("defer" is Attribute on "script" of Attributive.Presence) = !!
+  erased given dir: ("dir" is Attribute of Attributive.Dir) = !!
+  erased given dirname: ("dirname" is Attribute on "input" | "textarea" of Attributive.Textual) = !!
+  erased given disabled: ("disabled" is Attribute on "button" | "input" | "optgroup" | "option" | "select" | "textarea" of Attributive.Presence) = !!
+  erased given disabled2: ("disabled" is Attribute on "fieldset" of Attributive.Presence) = !!
+  erased given disabled3: ("disabled" is Attribute on "link" of Attributive.Presence) = !!
+  erased given download4: ("download" is Attribute on "a" | "area" of Attributive.Textual) = !!
+  erased given draggable: ("draggable" is Attribute of Attributive.Truth) = !!
+  erased given enctype: ("enctype" is Attribute on "form" of Attributive.Enctype) = !!
+  erased given enterkeyhint: ("enterkeyhint" is Attribute of Attributive.EnterKeyHint) = !!
+  erased given fetchpriority: ("fetchpriority" is Attribute on "img" | "link" | "script" of Attributive.FetchPriority) = !!
+  erased given `for`: ("for" is Attribute on "label" of Attributive.Id) = !!
+  erased given for2: ("for" is Attribute on "output" of Attributive.Tokens) = !!
+  erased given form: ("form" is Attribute on FormTags of Attributive.Id) = !!
+  erased given formaction: ("formaction" is Attribute on "input" | "button" of Attributive.Url) = !!
+  erased given formenctype: ("formenctype" is Attribute on "input" | "button" of Attributive.Enctype) = !!
+  erased given formmethod: ("formmethod" is Attribute on "input" | "button" of Attributive.Method) = !!
+  erased given formnovalidate: ("formnovalidate" is Attribute on "input" | "button" of Attributive.Presence) = !!
+  erased given formtarget: ("formtarget" is Attribute on "input" | "button" of Attributive.Target) = !!
+  erased given headers: ("headers" is Attribute on "td" | "th" of Attributive.Tokens) = !!
+  erased given headingoffset: ("headingoffset" is Attribute of Attributive.Upto8) = !!
+  erased given headingreset: ("headingoffset" is Attribute of Attributive.Presence) = !!
+  erased given height: ("height" is Attribute on HeightTags of Attributive.PositiveInt) = !!
+  erased given hidden: ("hidden" is Attribute of Attributive.Hidden) = !!
+  erased given high: ("high" is Attribute on "meter" of Attributive.Decimal) = !!
+  erased given href: ("href" is Attribute on "a" | "area" of Attributive.Url) = !!
+  erased given href2: ("href" is Attribute on "base" of Attributive.Url) = !!
+  erased given href3: ("href" is Attribute on "link" of Attributive.Url) = !!
+  erased given hreflang: ("hreflang" is Attribute on "a" | "link" of Attributive.Language) = !!
+  erased given httpEquiv: ("http-equiv" is Attribute on "meta" of Attributive.HttpEquiv) = !!
+  erased given id: ("id" is Attribute of Attributive.Id) = !!
+  erased given imagesizes: ("imagesizes" is Attribute on "link" of Attributive.ImageSizes) = !!
+  erased given imagesrcset: ("imagesrcset" is Attribute on "link" of Attributive.ImageSrcSet) = !!
+  erased given inert: ("inert" is Attribute of Attributive.Presence) = !!
+  erased given inputmode: ("inputmode" is Attribute of Attributive.InputMode) = !!
+  erased given integrity: ("integrity" is Attribute on "link" | "script" of Attributive.Textual) = !!
+  erased given is: ("is" is Attribute of Attributive.CustomElementName) = !!
+  erased given ismap: ("ismap" is Attribute on "img" of Attributive.Presence) = !!
+  erased given itemid: ("itemid" is Attribute of Attributive.Url) = !!
+  erased given itemprop: ("itemprop" is Attribute of Attributive.ItemProp) = !!
+  erased given itemref: ("itemref" is Attribute of Attributive.Ids) = !!
+  erased given itemscope: ("itemscope" is Attribute of Attributive.Presence) = !!
+  erased given itemtype: ("itemtype" is Attribute of Attributive.Urls) = !!
+  erased given kind: ("kind" is Attribute on "track" of Attributive.Kind) = !!
+  erased given label: ("label" is Attribute on "optgroup" | "option" | "track" of Attributive.Textual) = !!
+  erased given lang: ("lang" is Attribute of Attributive.Language) = !!
+  erased given list: ("list" is Attribute on "input" of Attributive.Id) = !!
+  erased given loading: ("loading" is Attribute on "img" | "iframe" of Attributive.Laziness) = !!
+  erased given loop: ("loop" is Attribute on "audio" | "video" of Attributive.Presence) = !!
+  erased given low: ("low" is Attribute on "meter" of Attributive.Decimal) = !!
+  erased given max: ("max" is Attribute on "input" of Attributive.Minmax) = !!
+  erased given max2: ("max" is Attribute on "meter" | "progress" of Attributive.Decimal) = !!
+  erased given maxlength: ("maxlength" is Attribute on "input" | "textarea" of Attributive.PositiveInt) = !!
+  erased given media: ("media" is Attribute on MediaTags of Attributive.MediaQueryList) = !!
+  erased given method: ("method" is Attribute on "form" of Attributive.Method) = !!
+  erased given min: ("min" is Attribute on "input" of Attributive.Minmax) = !!
+  erased given min2: ("min" is Attribute on "meter" of Attributive.Decimal) = !!
+  // min
+  erased given minlength: ("minlength" is Attribute on "input" | "textarea" of Attributive.PositiveInt) = !!
+  erased given multiple: ("multiple" is Attribute on "input" | "select" of Attributive.Presence) = !!
+  erased given muted: ("muted" is Attribute on "audio" | "video" of Attributive.Presence) = !!
+  erased given name: ("name" is Attribute on "button" | "fieldset" | "input" | "output" | "select" | "textarea" of Attributive.Name) = !!
+  erased given name2: ("name" is Attribute on "details" of Attributive.Name) = !!
+  erased given name3: ("name" is Attribute on "form" of Attributive.Name) = !!
+  erased given name4: ("name" is Attribute on "iframe" | "object" of Attributive.Target) = !!
+  erased given name5: ("name" is Attribute on "map" of Attributive.Name) = !!
+  erased given name6: ("name" is Attribute on "meta" of Attributive.Name) = !!
+  erased given name7: ("name" is Attribute on "slot" of Attributive.Name) = !!
+  erased given nomodule: ("nomodule" is Attribute on "script" of Attributive.Presence) = !!
+  erased given nonce: ("nonce" is Attribute of Attributive.Textual) = !!
+  erased given novalidate: ("novalidate" is Attribute on "form" of Attributive.Presence) = !!
+  erased given open: ("open" is Attribute on "details" | "dialog" of Attributive.Presence) = !!
+  erased given optimum: ("optimum" is Attribute on "meter" of Attributive.Decimal) = !!
+  erased given pattern: ("pattern" is Attribute on "input" of Attributive.Regex) = !!
+  erased given ping: ("ping" is Attribute on "a" | "area" of Attributive.Urls) = !!
+  erased given placeholder: ("placeholder" is Attribute on "input" | "textarea" of Attributive.Textual) = !!
+  erased given playsinline: ("playsinline" is Attribute on "video" of Attributive.Presence) = !!
+  erased given popover: ("popover" is Attribute of Attributive.Popover) = !!
+  erased given popovertarget: ("popovertarget" is Attribute on "button" | "input" of Attributive.Id) = !!
+  erased given popovertargetaction: ("popovertargetaction" is Attribute on "button" | "input" of Attributive.PopoverAction) = !!
+  erased given poster: ("poster" is Attribute on "video" of Attributive.Url) = !!
+  erased given preload: ("preload" is Attribute on "audio" | "video" of Attributive.Preload) = !!
+  erased given readonly: ("readonly" is Attribute on "input" | "textarea" of Attributive.Presence) = !!
+  erased given referrerpolicy: ("referrerpolicy" is Attribute on ReferrerpolicyTags of Attributive.ReferrerPolicy) = !!
+  erased given rel: ("rel" is Attribute on "a" | "area" of Attributive.Tokens) = !!
+  erased given rel2: ("rel" is Attribute on "link" of Attributive.Tokens) = !!
+  erased given required: ("required" is Attribute on RequiredTags of Attributive.Presence) = !!
+  erased given reversed: ("reversed" is Attribute on "ol" of Attributive.Presence) = !!
+  erased given rows: ("rows" is Attribute on "textarea" of Attributive.PositiveInt) = !!
+  erased given rowspan: ("rowspan" is Attribute on "td" | "th" of Attributive.PositiveInt) = !!
+  erased given sandbox: ("sandbox" is Attribute on "iframe" of Attributive.Sandbox) = !!
+  erased given scope: ("scope" is Attribute on "th" of Attributive.ThScope) = !!
+  erased given selected: ("selected" is Attribute on "option" of Attributive.Presence) = !!
+  erased given shadowrootclonable: ("shadowrootclonable" is Attribute on "template" of Attributive.Presence) = !!
+  erased given shadowrootcustomelementregistry: ("shadowrootcustomelementregistry" is Attribute on "template" of Attributive.Presence) = !!
+  erased given shadowrootdelegatesfocus: ("shadowrootdelegatesfocus" is Attribute on "template" of Attributive.Presence) = !!
+  erased given shadowrootmode: ("shadowrootmode" is Attribute on "template" of Attributive.Openness) = !!
+  erased given shadowrootserializable: ("shadowrootserializable" is Attribute on "template" of Attributive.Presence) = !!
+  erased given shape: ("shape" is Attribute on "area" of Attributive.Shape) = !!
+  erased given size: ("size" is Attribute on "input" | "select" of Attributive.PositiveInt) = !!
+  erased given sizes: ("sizes" is Attribute on "img" | "source" of Attributive.SourceSizeList) = !!
+  erased given sizes2: ("sizes" is Attribute on "link" of Attributive.Sizes) = !!
+  erased given slot: ("slot" is Attribute of Attributive.Textual) = !!
+  erased given span: ("span" is Attribute on "col" | "colgroup" of Attributive.PositiveInt) = !!
+  erased given spellcheck: ("spellcheck" is Attribute of Attributive.Truth) = !!
+  erased given src: ("src" is Attribute on SrcTags of Attributive.Url) = !!
+  erased given srcdoc: ("srcdoc" is Attribute on "iframe" of Attributive.Srcdoc) = !!
+  erased given srclang: ("srclang" is Attribute on "track" of Attributive.Language) = !!
+  erased given srcset: ("srcset" is Attribute on "img" | "source" of Attributive.SrcSet) = !!
+  erased given start: ("start" is Attribute on "ol" of Attributive.Integral) = !!
+  erased given step: ("step" is Attribute on "input" of Attributive.Decimal) = !!
+  erased given style: ("style" is Attribute of Attributive.Css) = !!
+  erased given tabindex: ("tabindex" is Attribute of Attributive.Integral) = !!
+  erased given target: ("target" is Attribute on "a" | "area" of Attributive.Target) = !!
+  erased given target2: ("target" is Attribute on "base" of Attributive.Target) = !!
+  erased given target3: ("target" is Attribute on "form" of Attributive.Target) = !!
+  erased given title: ("title" is Attribute of Attributive.Textual) = !!
+  erased given translate: ("translate" is Attribute of Attributive.Affirmation) = !!
+  erased given `type`: ("type" is Attribute on "a" | "link" of Attributive.Mime) = !!
+  erased given type2: ("type" is Attribute on "button" of Attributive.ButtonType) = !!
+  erased given type3: ("type" is Attribute on "embed" | "object" | "source" of Attributive.Mime) = !!
+  erased given type4: ("type" is Attribute on "input" of Attributive.InputType) = !!
+  erased given type5: ("type" is Attribute on "ol" of Attributive.OlType) = !!
+  erased given type6: ("type" is Attribute on "script" of Attributive.ScriptType) = !!
+  erased given usemap: ("usemaptype" is Attribute on "img" | "input" | "object" of Attributive.HashName) = !!
+  erased given value: ("value" is Attribute on "button" | "option" of Attributive.Textual) = !!
+  erased given value2: ("value" is Attribute on "data" of Attributive.Textual) = !!
+  erased given value3: ("value" is Attribute on "input" of Attributive.InputValue) = !!
+  erased given value4: ("value" is Attribute on "li" of Attributive.Integral) = !!
+  erased given value5: ("value" is Attribute on "meter" | "progress" of Attributive.Decimal) = !!
+  erased given width: ("width" is Attribute on WidthTags of Attributive.PositiveInt) = !!
+  erased given wrap: ("wrap" is Attribute on "textarea" of Attributive.Softness) = !!
+  erased given writingsuggestions: ("writingsuggestions" is Attribute of Attributive.Truth) = !!
+
+class Whatwg() extends Dom:
+  import Html.Issue.*
 
   private type InteractivePhrasing =
     "a" | "audio" | "button" | "embed" | "iframe" | "img" | "input" | "label" | "select"
@@ -108,7 +308,6 @@ object Html5 extends Dom:
       parent.admissible.contains(child.label) || insertable(parent).exists(recur(_))
 
     insertable(parent).find(recur(_)).optional
-
 
 
   // Elements
@@ -298,231 +497,6 @@ object Html5 extends Dom:
   // FIXME: Transparent + source + track
   val Video = Tag.container["video", "track" | "#transparent" | "source"]()
   val Wbr = Tag.void["wbr"]()
-
-
-  // Attributes
-  type Attribute = honeycomb.Attribute in this.type
-
-  private type HeightTags =
-    "canvas" | "embed" | "iframe" | "img" | "input" | "object" | "video" | "svg"
-
-  private type CrossoriginTags = "audio" | "img" | "link" | "script" | "video"
-
-  private type DisabledTags =
-    "button" | "fieldset" | "input" | "optgroup" | "option" | "select" | "textarea"
-
-  private type FormTags =
-    "button" | "fieldset" | "input" | "object" | "output" | "select" | "textarea"
-
-  private type MediaTags = "a" | "area" | "link" | "source" | "style"
-
-  private type NameTags =
-    "button" | "form" | "fieldset" | "iframe" | "input" | "object" | "output" | "select"
-    | "textarea" | "map" | "meta" | "param"
-
-  private type ReferrerpolicyTags = "a" | "area" | "iframe" | "img" | "link" | "script"
-
-  private type RequiredTags = "input" | "select" | "textarea"
-
-  private type SrcTags =
-    "audio" | "embed" | "iframe" | "img" | "input" | "script" | "source" | "track" | "video"
-
-  private type TypeTags =
-    "button" | "input" | "embed" | "object" | "ol" | "script" | "source" | "style" | "menu" | "link"
-
-  private type ValueTags =
-    "button" | "data" | "input" | "li" | "meter" | "option" | "progress" | "param"
-
-  private type WidthTags =
-    "canvas" | "embed" | "iframe" | "img" | "input" | "object" | "video" | "svg"
-
-  // abbr
-  erased given accept: ("accept" is Attribute on "form" | "input" of Text) = !!
-  erased given acceptCharset: ("acceptCharset" is Attribute on "form" of Text) = !!
-  erased given accesskey: ("accesskey" is Attribute of Text) = !!
-  erased given action: ("action" is Attribute on "form" of Text) = !!
-  erased given allow: ("allow" is Attribute on "iframe" of Text) = !!
-  // allowfullscreen
-  erased given alpha: ("alpha" is Attribute on "input" of Text) = !!
-  erased given alt: ("alt" is Attribute on "area" | "img" | "input" of Text) = !!
-  // erased given anchor: ("anchor" is Attribute of Text) = !!
-  erased given as: ("as" is Attribute on "link" of Text) = !!
-  erased given async: ("async" is Attribute on "script" of Text) = !!
-  erased given autocapitalize: ("autocapitalize" is Attribute of Text) = !!
-  // autocomplete
-  // autocomplete
-  erased given autocorrect: ("autocorrect" is Attribute of Text) = !!
-  erased given autofocus: ("autofocus" is Attribute of Text) = !!
-  erased given autoplay: ("autoplay" is Attribute on "audio" | "video" of Text) = !!
-  // blocking
-  //erased given capture: ("capture" is Attribute on "input" of Text) = !!
-  erased given charset: ("charset" is Attribute on "meta" of Text) = !!
-  erased given checked: ("checked" is Attribute on "input" of Text) = !!
-  erased given cite: ("cite" is Attribute on "blockquote" | "del" | "ins" | "q" of Text) = !!
-  erased given `class`: ("class" is Attribute of Text) = !!
-  // closedby
-  // color
-  erased given colorspace: ("colorspace" is Attribute on "input" of Text) = !!
-  erased given cols: ("cols" is Attribute on "textarea" of Text) = !!
-  erased given colspan: ("colspan" is Attribute on "td" | "th" of Text) = !!
-  // command
-  // commandfor
-  // content
-  erased given contenteditable: ("contenteditable" is Attribute of Text) = !!
-  erased given controls: ("controls" is Attribute on "audio" | "video" of Text) = !!
-  erased given coords: ("coords" is Attribute on "area" of Text) = !!
-  erased given crossorigin: ("crossorigin" is Attribute on CrossoriginTags of Text) = !!
-  //erased given csp: ("csp" is Attribute on "iframe" of Text) = !!
-  erased given data: ("data" is Attribute on "object" of Text) = !!
-  erased given datetime: ("datetime" is Attribute on "del" | "ins" | "time" of Text) = !!
-  // datetime
-  erased given decoding: ("decoding" is Attribute on "img" of Text) = !!
-  erased given default: ("default" is Attribute on "track" of Text) = !!
-  erased given defer: ("defer" is Attribute on "script" of Text) = !!
-  erased given dir: ("dir" is Attribute of Text) = !!
-  // dir
-  erased given dirname: ("dirname" is Attribute on "input" | "textarea" of Text) = !!
-  erased given disabled: ("disabled" is Attribute on DisabledTags of Boolean) = !!
-  // disabled
-  // disabled
-  //erased given display: ("display" is Attribute on "math" of Text) = !!
-  erased given download: ("download" is Attribute on "a" | "area" of Text) = !!
-  erased given draggable: ("draggable" is Attribute of Text) = !!
-  //erased given elementtiming: ("elementtiming" is Attribute on "img" | "video" of Text) = !!
-  erased given enctype: ("enctype" is Attribute on "form" of Text) = !!
-  erased given enterkeyhint: ("enterkeyhint" is Attribute of Text) = !!
-  //erased given exportparts: ("exportparts" is Attribute of Text) = !!
-  erased given fetchpriority: ("fetchpriority" is Attribute on "img" | "link" | "script" of Text) = !!
-  erased given `for`: ("for" is Attribute on "label" | "output" of Text) = !!
-  // for
-  erased given form: ("form" is Attribute on FormTags of Text) = !!
-  erased given formaction: ("formaction" is Attribute on "input" | "button" of Text) = !!
-  erased given formenctype: ("formenctype" is Attribute on "input" | "button" of Text) = !!
-  erased given formmethod: ("formmethod" is Attribute on "input" | "button" of Text) = !!
-  erased given formnovalidate: ("formnovalidate" is Attribute on "input" | "button" of Text) = !!
-  erased given formtarget: ("formtarget" is Attribute on "input" | "button" of Text) = !!
-  erased given headers: ("headers" is Attribute on "td" | "th" of Text) = !!
-  // headingoffset
-  // headingreset
-  erased given height: ("height" is Attribute on HeightTags of Text) = !!
-  erased given hidden: ("hidden" is Attribute of Text) = !!
-  erased given high: ("high" is Attribute on "meter" of Text) = !!
-  erased given href: ("href" is Attribute on "a" | "area" | "base" | "link" of Text) = !!
-  // href
-  // href
-  erased given hreflang: ("hreflang" is Attribute on "a" | "link" of Text) = !!
-  erased given httpEquiv: ("http-equiv" is Attribute on "meta" of Text) = !!
-  erased given id: ("id" is Attribute of Text) = !!
-  // imagesizes
-  // imagesrcset
-  erased given inert: ("inert" is Attribute of Text) = !!
-  erased given inputmode: ("inputmode" is Attribute of Text) = !!
-  erased given integrity: ("integrity" is Attribute on "link" | "script" of Text) = !!
-  erased given is: ("is" is Attribute of Text) = !!
-  erased given ismap: ("ismap" is Attribute on "img" of Text) = !!
-  erased given itemid: ("itemid" is Attribute of Text) = !!
-  erased given itemprop: ("itemprop" is Attribute of Text) = !!
-  erased given itemref: ("itemref" is Attribute of Text) = !!
-  erased given itemscope: ("itemscope" is Attribute of Text) = !!
-  erased given itemtype: ("itemtype" is Attribute of Text) = !!
-  erased given kind: ("kind" is Attribute on "track" of Text) = !!
-  erased given label: ("label" is Attribute on "optgroup" | "option" | "track" of Text) = !!
-  erased given lang: ("lang" is Attribute of Text) = !!
-  erased given list: ("list" is Attribute on "input" of Text) = !!
-  erased given loading: ("loading" is Attribute on "img" | "iframe" of Text) = !!
-  erased given loop: ("loop" is Attribute on "audio" | "video" of Text) = !!
-  erased given low: ("low" is Attribute on "meter" of Text) = !!
-  erased given max: ("max" is Attribute on "input" | "meter" | "progress" of Text) = !!
-  // max
-  erased given maxlength: ("maxlength" is Attribute on "input" | "textarea" of Text) = !!
-  erased given media: ("media" is Attribute on MediaTags of Text) = !!
-  erased given method: ("method" is Attribute on "form" of Text) = !!
-  erased given min: ("min" is Attribute on "input" | "meter" of Text) = !!
-  // min
-  erased given minlength: ("minlength" is Attribute on "input" | "textarea" of Text) = !!
-  erased given multiple: ("multiple" is Attribute on "input" | "select" of Text) = !!
-  erased given muted: ("muted" is Attribute on "audio" | "video" of Text) = !!
-  erased given name: ("name" is Attribute on NameTags of Text) = !!
-  // name
-  // name
-  // name
-  // name
-  // name
-  // name
-  // nomodule
-  erased given nonce: ("nonce" is Attribute of Text) = !!
-  erased given novalidate: ("novalidate" is Attribute on "form" of Text) = !!
-  erased given open: ("open" is Attribute on "details" | "dialog" of Text) = !!
-  erased given optimum: ("optimum" is Attribute on "meter" of Text) = !!
-  //erased given part: ("part" is Attribute of Text) = !!
-  erased given pattern: ("pattern" is Attribute on "input" of Text) = !!
-  erased given ping: ("ping" is Attribute on "a" | "area" of Text) = !!
-  erased given placeholder: ("placeholder" is Attribute on "input" | "textarea" of Text) = !!
-  erased given playsinline: ("playsinline" is Attribute on "video" of Text) = !!
-  erased given popover: ("popover" is Attribute of Text) = !!
-  // popovertarget
-  // popovertargetaction
-  erased given poster: ("poster" is Attribute on "video" of Text) = !!
-  erased given preload: ("preload" is Attribute on "audio" | "video" of Text) = !!
-  erased given readonly: ("readonly" is Attribute on "input" | "textarea" of Text) = !!
-  // readonly
-  erased given referrerpolicy: ("referrerpolicy" is Attribute on ReferrerpolicyTags of Text) = !!
-  erased given rel: ("rel" is Attribute on "a" | "area" | "link" of Text) = !!
-  // rel
-  erased given required: ("required" is Attribute on RequiredTags of Text) = !!
-  erased given reversed: ("reversed" is Attribute on "ol" of Text) = !!
-  //erased given role: ("role" is Attribute of Text) = !!
-  erased given rows: ("rows" is Attribute on "textarea" of Text) = !!
-  erased given rowspan: ("rowspan" is Attribute on "td" | "th" of Text) = !!
-  erased given sandbox: ("sandbox" is Attribute on "iframe" of Text) = !!
-  erased given scope: ("scope" is Attribute on "th" of Text) = !!
-  erased given selected: ("selected" is Attribute on "option" of Text) = !!
-  // shadowrootclonable
-  // shadowrootcustomelementregistry
-  // shadowrootdelegatesfocus
-  // shadowrootmode
-  // shadowrootserializable
-  erased given shape: ("shape" is Attribute on "a" | "area" of Text) = !!
-  erased given size: ("size" is Attribute on "input" | "select" of Text) = !!
-  erased given sizes: ("sizes" is Attribute on "link" | "img" | "source" of Text) = !!
-  // sizes
-  erased given slot: ("slot" is Attribute of Text) = !!
-  erased given span: ("span" is Attribute on "col" | "colgroup" of Text) = !!
-  erased given spellcheck: ("spellcheck" is Attribute of Text) = !!
-  erased given src: ("src" is Attribute on SrcTags of Text) = !!
-  erased given srcdoc: ("srcdoc" is Attribute on "iframe" of Text) = !!
-  erased given srclang: ("srclang" is Attribute on "track" of Text) = !!
-  erased given srcset: ("srcset" is Attribute on "img" | "source" of Text) = !!
-  erased given start: ("start" is Attribute on "ol" of Text) = !!
-  erased given step: ("step" is Attribute on "input" of Text) = !!
-  erased given style: ("style" is Attribute of Text) = !!
-  //erased given summary: ("summary" is Attribute on "table" of Text) = !!
-  erased given tabindex: ("tabindex" is Attribute of Text) = !!
-  erased given target: ("target" is Attribute on "a" | "area" | "base" | "form" of Text) = !!
-  // target
-  // target
-  erased given title: ("title" is Attribute of Text) = !!
-  // title
-  // title
-  // title
-  // title
-  erased given translate: ("translate" is Attribute of Text) = !!
-  erased given `type`: ("type" is Attribute on TypeTags of Text) = !!
-  // type
-  // type
-  // type
-  // type
-  // type
-  erased given usemap: ("usemaptype" is Attribute on "img" | "input" | "object" of Text) = !!
-  erased given value: ("value" is Attribute on ValueTags of Text) = !!
-  // value
-  // value
-  // value
-  // value
-  //erased given vkp: ("virtualkeyboardpolicy" is Attribute of Text) = !!
-  erased given width: ("width" is Attribute on WidthTags of Text) = !!
-  erased given wrap: ("wrap" is Attribute on "textarea" of Text) = !!
-  erased given writingsuggestions: ("writingsuggestions" is Attribute of Text) = !!
 
 
   val elements: Dictionary[Tag] =

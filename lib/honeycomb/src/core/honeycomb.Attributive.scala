@@ -46,14 +46,89 @@ import urticose.*
 import vacuous.*
 
 object Attributive:
-  given textTtextual: Text is Attributive to Text =
-    (key, value) => (key, value)
+  erased trait AccessKeys
+  erased trait Affirmation
+  erased trait Autocapitalization
+  erased trait ButtonType
+  erased trait Closedby
+  erased trait Color
+  erased trait Colorspace
+  erased trait Command
+  erased trait ContentEditable
+  erased trait Coords
+  erased trait Crossorigin
+  erased trait CustomElementName
+  erased trait Css
+  erased trait CssClasses
+  erased trait Datetime
+  erased trait Decimal
+  erased trait Decoding
+  erased trait Dir
+  erased trait Enctype
+  erased trait EnterKeyHint
+  erased trait FetchPriority
+  erased trait HashName
+  erased trait Hidden
+  erased trait HttpEquiv
+  erased trait Id
+  erased trait Ids
+  erased trait ImageSizes
+  erased trait ImageSrcSet
+  erased trait InputMode
+  erased trait InputType
+  erased trait InputValue
+  erased trait Integral
+  erased trait ItemProp
+  erased trait Kind
+  erased trait Language
+  erased trait Laziness
+  erased trait MediaQueryList
+  erased trait Method
+  erased trait Minmax
+  erased trait MimeList
+  erased trait Mime
+  erased trait Name
+  erased trait OlType
+  erased trait Openness
+  erased trait PermissionsPolicy
+  erased trait Popover
+  erased trait PopoverAction
+  erased trait PositiveInt
+  erased trait Presence
+  erased trait Preload
+  erased trait ReferrerPolicy
+  erased trait Regex
+  erased trait Sandbox
+  erased trait ScriptType
+  erased trait Shape
+  erased trait Sizes
+  erased trait Softness
+  erased trait SourceSizeList
+  erased trait Srcdoc
+  erased trait SrcSet
+  erased trait Switch
+  erased trait Target
+  erased trait Temporal
+  erased trait Textual
+  erased trait ThScope
+  erased trait Tokens
+  erased trait Truth
+  erased trait Upto8
+  erased trait Url
+  erased trait Urls
+  erased trait Utf8
 
-  given stringTextual: String is Attributive to Text =
-    (key, value) => (key, value.tt)
+  given textTextual: Text is Attributive to Textual = (key, value) => (key, value)
+  given stringTextual: String is Attributive to Textual = (key, value) => (key, value.tt)
 
-  given boolean: Boolean is Attributive to Boolean = (key, value) =>
+  given boolean: Boolean is Attributive to Presence = (key, value) =>
     if value then (key, Unset) else Unset
+
+  given switch: Boolean is Attributive to Switch = (key, value) =>
+    (key, if value then t"on" else t"off")
+
+  given truth: Boolean is Attributive to Truth = (key, value) =>
+    (key, if value then t"true" else t"false")
 
 trait Attributive extends Typeclass, Resultant:
   def attribute(key: Text, value: Self): Optional[(Text, Optional[Text])]

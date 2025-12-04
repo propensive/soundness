@@ -51,4 +51,4 @@ import language.dynamics
 // type Attributes = Map[String, Unset.type | Text]
 
 package doms:
-  given html5: Html5.type = Html5
+  given whatwg: Whatwg = Whatwg()
