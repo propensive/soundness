@@ -45,15 +45,14 @@ import scala.quoted.*
 object Honeycomb:
   private given realm: Realm = realm"honeycomb"
 
-
-  def attributes[thisType <: Tag: Type]
+  def attributes[result: Type, thisType <: Tag to result: Type]
        (tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]])
-  : Macro[Any] =
+  : Macro[result] =
       import quotes.reflect.*
 
       val Varargs(args) = attributes0
 
-      val attributes: Seq[Expr[Optional[Attribute]]] =
+      val attributes: Seq[Expr[Optional[(Text, Optional[Text])]]] =
         Type.of[thisType] match
           case '[ type topic <: Label; Tag { type Topic = topic } ] => args.map:
             case '{ ($key, $value: value) } =>
@@ -62,14 +61,17 @@ object Honeycomb:
                   case Literal(StringConstant(key)) =>
                     ConstantType(StringConstant(key)).asType match
                       case '[type key <: Label; key] =>
-                        Expr.summon[key is Attributable on (? >: topic)] match
+                        Expr.summon[key is Attribute in Html5.type on (? >: topic)]
+                        . orElse(Expr.summon[key is Attribute in Html5.type]) match
                           case Some('{ type result;
-                                       $expr: Attributable { type Operand = result } }) =>
-                            Expr.summon[value is AttributeConversion to result] match
-                              case Some('{ $converter: AttributeConversion }) =>
+                                       $expr: Attribute { type Topic = result } }) =>
+                            Expr.summon[value is Attributive to result] match
+                              case Some('{ $converter: Attributive }) =>
                                 '{$converter.attribute(${Expr(key)}, $value)}
+
                               case None =>
                                 halt(m"there is not converter for ${TypeRepr.of[result].show} attributes")
+
                           case _ =>
                             halt(m"attribute $key cannot be used on tag <$topic>")
 
@@ -78,65 +80,4 @@ object Honeycomb:
               . or(halt(m"unexpected type"))
 
 
-      '{$tag.node(${Expr.ofList(attributes)})}
-
-  def read[name <: Label: Type, child <: Label: Type, result <: Label: Type]
-       (node:       Expr[Node[name]],
-        className:  Expr[String],
-        name:       Expr[name],
-        attributes: Expr[Seq[(Label, Any)]])
-  : Macro[StartTag[name, result]] =
-
-      import quotes.reflect.*
-
-      def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[Optional[(String, Optional[Text])]]] =
-        exprs match
-          case '{("", $value: valueType)} +: tail =>
-            val expr: Expr[Attributive of (? >: valueType)] =
-              Expr.summon[Attributive of (? >: valueType) onto name]
-              . orElse(Expr.summon[Attributive of ? >: valueType])
-              . getOrElse:
-                  val typeName = TypeRepr.of[valueType]
-                  halt(m"""the attribute name cannot be uniquely determined from its type,
-                           ${typeName.show}""")
-
-            val key: Text = expr.absolve match
-              case '{ type keyType <: Label
-                      $attribute: (Attributive { type Topic = valueType; type Self = keyType}) } =>
-                TypeRepr.of[keyType].absolve match
-                  case ConstantType(StringConstant(key)) => key.tt
-
-
-            '{  $expr.convert($value) match
-                  case Attributive.NotShown => Unset
-                  case Unset              => ($expr.rename.or(${Expr(key)}).s, Unset)
-                  case attribute: Text    => ($expr.rename.or(${Expr(key)}).s, attribute)
-            } :: recur(tail)
-
-          case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
-            val attribute: String = key.value.get
-
-            val expr: Expr[keyType is Attributive of valueType] =
-              Expr.summon[keyType is Attributive of valueType onto name]
-              . orElse(Expr.summon[keyType is Attributive of valueType])
-              . getOrElse:
-                  val typeName = TypeRepr.of[valueType]
-                  halt(m"the attribute $attribute cannot take a value of type ${typeName.show}")
-
-            '{  $expr.convert($value) match
-                  case Attributive.NotShown => Unset
-                  case attribute: Text    => ($expr.rename.or($key.tt).s, attribute)
-                  case _                  => ($expr.rename.or($key.tt).s, Unset)
-            } :: recur(tail)
-
-          case _ =>
-            if className.value == Some("apply") then Nil else List('{("class", $className.tt)})
-
-      attributes.absolve match
-        case Varargs(exprs) =>
-          '{
-              StartTag
-               ($name,
-                $node.attributes ++ ${Expr.ofSeq(recur(exprs))}.compact.collect:
-                  case (key, value: Text) => (key, value)
-                  case (key, Unset)       => (key, Unset))  }
+      '{$tag.node(${Expr.ofList(attributes)})}.asExprOf[result]

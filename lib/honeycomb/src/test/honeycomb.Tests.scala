@@ -259,7 +259,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
-      .assert(_ == Div(Svg(Html.Node.foreign("circle", List(Attribute("r", "1"))))))
+      .assert(_ == Div(Svg(Html.Node.foreign("circle", List((t"r", t"1"))))))
 
       test(m"Nontrivial MathML example"):
         t"""<div>The equation is <math display="inline"><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""

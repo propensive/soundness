@@ -41,46 +41,46 @@ import proscenium.*
 import spectacular.*
 import vacuous.*
 
-object Renderable:
-  import oldHtml5.Phrasing
-  given showable: [value: Showable] => value is Renderable to Phrasing = value => List(value.show)
+// object Renderable:
+//   import oldHtml5.Phrasing
+//   given showable: [value: Showable] => value is Renderable to Phrasing = value => List(value.show)
 
-  given message: Message is Renderable to Phrasing = _.segments.flatMap:
-    case message: Message => message.html
-    case text: Text       => List(text)
-    case _                => Nil
+//   given message: Message is Renderable to Phrasing = _.segments.flatMap:
+//     case message: Message => message.html
+//     case text: Text       => List(text)
+//     case _                => Nil
 
 
-  given abstractable: [value: Abstractable across HtmlContent to List[Sgml]]
-        => value is Renderable:
-    type Self = value
-    type Result = Label
+//   given abstractable: [value: Abstractable across HtmlContent to List[Sgml]]
+//         => value is Renderable:
+//     type Self = value
+//     type Result = Label
 
-    def html(value: value): Seq[OldHtml[Result]] = value.generic.map(convert)
+//     def html(value: value): Seq[OldHtml[Result]] = value.generic.map(convert)
 
-    private def convert(html: Sgml): OldHtml[?] = html match
-      case Sgml.Textual(text)               => text
-      case Sgml.Comment(_)                  => "".tt
-      case Sgml.ProcessingInstruction(_, _) => "".tt
+//     private def convert(html: Sgml): OldHtml[?] = html match
+//       case Sgml.Textual(text)               => text
+//       case Sgml.Comment(_)                  => "".tt
+//       case Sgml.ProcessingInstruction(_, _) => "".tt
 
-      case Sgml.Element(label, attributes, children) =>
-        Node(label, attributes.map(_.s -> _), children.map(convert(_)))
+//       case Sgml.Element(label, attributes, children) =>
+//         Node(label, attributes.map(_.s -> _), children.map(convert(_)))
 
-  given StackTrace is Renderable to oldHtml5.Flow = stackTrace =>
-    import oldHtml5.*
+//   given StackTrace is Renderable to oldHtml5.Flow = stackTrace =>
+//     import oldHtml5.*
 
-    List:
-      Div.stack(H2(stackTrace.component),
-                H3(stackTrace.className),
-                H4(stackTrace.message.html),
-                Table(stackTrace.frames.map: frame =>
-                      Tr(Td.at(Code(t"at")),
-                      Td.`class`(Code(frame.method.className)),
-                      Td.method(Code(frame.method.method)),
-                      Td.file(Code(frame.file)),
-                      Td(Code(t":")),
-                      Td.line(Code(frame.line.let(_.show).or(t""))))))
+//     List:
+//       Div.stack(H2(stackTrace.component),
+//                 H3(stackTrace.className),
+//                 H4(stackTrace.message.html),
+//                 Table(stackTrace.frames.map: frame =>
+//                       Tr(Td.at(Code(t"at")),
+//                       Td.`class`(Code(frame.method.className)),
+//                       Td.method(Code(frame.method.method)),
+//                       Td.file(Code(frame.file)),
+//                       Td(Code(t":")),
+//                       Td.line(Code(frame.line.let(_.show).or(t""))))))
 
-trait Renderable extends Typeclass:
-  type Result <: Label
-  def html(value: Self): Seq[OldHtml[Result]]
+// trait Renderable extends Typeclass:
+//   type Result <: Label
+//   def html(value: Self): Seq[OldHtml[Result]]

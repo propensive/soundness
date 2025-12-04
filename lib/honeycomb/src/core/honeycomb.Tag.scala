@@ -64,21 +64,21 @@ object Tag:
     new Tag("#root", false, Html.TextContent.Normal, Nil, children, false, foreign = false, void = false):
       type Result = this.type
 
-      def node(attributes: List[Optional[Attribute]]): Result = this
+      def node(attributes: List[Optional[(Text, Optional[Text])]]): Result = this
 
 
-  def void[label <: Label: ValueOf](presets: List[Attribute] = Nil): Tag.Void of label =
+  def void[label <: Label: ValueOf](presets: List[(Text, Optional[Text])] = Nil): Tag.Void of label =
     new Void(valueOf[label].tt, presets):
       type Topic = label
 
-  def foreign(label: Text, attributes0: List[Attribute]): Tag of "#foreign" =
+  def foreign(label: Text, attributes0: List[(Text, Optional[Text])]): Tag of "#foreign" =
     new Tag.Container(label, false, Html.TextContent.Normal, attributes0, Set(), false, foreign = true):
       type Topic = "#foreign"
 
   def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
        (autoclose:  Boolean          = false,
         content:    Html.TextContent = Html.TextContent.Normal,
-        presets:    List[Attribute]  = Nil,
+        presets:    List[(Text, Optional[Text])]  = Nil,
         insertable: Boolean          = false)
   : Container of label over children =
 
@@ -89,11 +89,11 @@ object Tag:
       . over[children]
 
 
-  def transparent[label <: Label: ValueOf](presets: List[Attribute] = Nil): Transparent of label =
+  def transparent[label <: Label: ValueOf](presets: List[(Text, Optional[Text])] = Nil): Transparent of label =
     transparent(valueOf[label].tt, presets).of[label]
 
 
-  def transparent(label: Text, presets: List[Attribute]): Transparent =
+  def transparent(label: Text, presets: List[(Text, Optional[Text])]): Transparent =
     Transparent(label, presets)
 
   def foreign[label <: Label: ValueOf](): Container of label over "#foreign" =
@@ -104,7 +104,7 @@ object Tag:
          (label:      Text,
           autoclose:  Boolean          = false,
           content:    Html.TextContent = Html.TextContent.Normal,
-          presets:    List[Attribute]  = Nil,
+          presets:    List[(Text, Optional[Text])]  = Nil,
           admissible: Set[Text]        = Set(),
           insertable: Boolean          = false,
           foreign:    Boolean          = false)
@@ -115,13 +115,13 @@ object Tag:
       def applyDynamic(method: "apply")(children: Html of Transport*): Html.Node of Topic =
         Html.Node(label, Nil, IArray.from(children), foreign).of[Topic]
 
-      def node(attributes: List[Optional[Attribute]]): Result =
+      def node(attributes: List[Optional[(Text, Optional[Text])]]): Result =
         new Html.Node(label, attributes.compact, IArray(), foreign) with Html.Populable:
           type Topic = tag.Topic
           type Transport = tag.Transport
 
 
-  class Transparent(label: Text, presets: List[Attribute] = Nil, foreign: Boolean = false)
+  class Transparent(label: Text, presets: List[(Text, Optional[Text])] = Nil, foreign: Boolean = false)
   extends Tag
            (label       = label,
             autoclose   = false,
@@ -137,19 +137,19 @@ object Tag:
       def applyDynamic(method: "apply")(children: Html of Transport*): Html.Node of Topic =
         Html.Node(label, Nil, IArray.from(children), foreign).of[Topic]
 
-      def node(attributes: List[Optional[Attribute]]): Result =
+      def node(attributes: List[Optional[(Text, Optional[Text])]]): Result =
         new Html.Node(label, attributes.compact, IArray(), foreign) with Html.Transparent:
           type Topic = tag.Topic
           type Transport = tag.Transport
 
 
-  class Void(label: Text, presets: List[Attribute])
+  class Void(label: Text, presets: List[(Text, Optional[Text])])
   extends Tag(label, presets = presets, void = true):
     tag =>
       type Result = Html.Node of Topic
 
 
-      def node(attributes: List[Optional[Attribute]]): Result =
+      def node(attributes: List[Optional[(Text, Optional[Text])]]): Result =
         new Html.Node(label, attributes.compact, IArray(), tag.foreign):
           type Topic = tag.Topic
 
@@ -157,7 +157,7 @@ abstract class Tag
        (    label:       Text,
         val autoclose:   Boolean          = false,
         val content:     Html.TextContent = Html.TextContent.Normal,
-        val presets:     List[Attribute]  = Nil,
+        val presets:     List[(Text, Optional[Text])]  = Nil,
         val admissible:  Set[Text]        = Set(),
         val insertable:  Boolean          = false,
             foreign:     Boolean          = false,
@@ -168,8 +168,8 @@ extends Html.Node(label, Nil, IArray(), foreign), Dynamic:
   type Result <: Html.Node
 
 
-  transparent inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Any =
-    ${Honeycomb.attributes[this.type]('this, 'attributes)}
+  inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Result =
+    ${Honeycomb.attributes[Result, this.type]('this, 'attributes)}
 
 
-  def node(attributes: List[Optional[Attribute]]): Result
+  def node(attributes: List[Optional[(Text, Optional[Text])]]): Result

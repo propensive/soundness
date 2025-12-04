@@ -71,6 +71,10 @@ object Html extends Tag.Container
   type Topic = "html"
   type Transport = "head" | "body"
 
+  erased trait Integral
+  erased trait Decimal
+  erased trait Id
+
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
         =>  Tactic[ParseError]
         =>  (Html of content) is Aggregable by Text =
@@ -90,7 +94,7 @@ object Html extends Tag.Container
     case Node(tagname, attributes, children, _) =>
       val tagContent = if attributes == Nil then t"" else
         attributes.map:
-          case Attribute(key, value) => value.lay(key) { value => t"""$key="$value"""" }
+          case (key, value) => value.lay(key) { value => t"""$key="$value"""" }
         . join(t" ", t" ", t"")
 
       t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
@@ -184,14 +188,14 @@ object Html extends Tag.Container
 
 
   object Node:
-    def foreign(label: Text, attributes: List[Attribute], children: Html of "#foreign"*)
+    def foreign(label: Text, attributes: List[(Text, Optional[Text])], children: Html of "#foreign"*)
     : Node of "#foreign" =
 
         Node(label, attributes, IArray.from(children), true).of["#foreign"]
 
 
   case class Node
-              (label: Text, attributes: List[Attribute], children: IArray[Html], foreign: Boolean)
+              (label: Text, attributes: List[(Text, Optional[Text])], children: IArray[Html], foreign: Boolean)
   extends Html, Topical, Transportive:
 
     override def equals(that: Any): Boolean = that match
@@ -279,21 +283,22 @@ object Html extends Tag.Container
 
 
     @tailrec
-    def attributes(entries: List[Attribute] = Nil)(using Cursor.Held): List[Attribute] =
-      skip()
-      cursor.lay(fail(ExpectedMore)):
-        case '>' | '/' => entries
-        case _         =>
-          val name = key(cursor.mark)
+    def attributes(entries: List[(Text, Optional[Text])] = Nil)(using Cursor.Held)
+    : List[(Text, Optional[Text])] =
+        skip()
+        cursor.lay(fail(ExpectedMore)):
+          case '>' | '/' => entries
+          case _         =>
+            val name = key(cursor.mark)
 
-          if equality() then
-            val assignment = cursor.lay(fail(ExpectedMore)):
-              case '"'  =>  next() yet value(cursor.mark)
-              case '\'' =>  next() yet singleQuoted(cursor.mark)
-              case _    =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
+            if equality() then
+              val assignment = cursor.lay(fail(ExpectedMore)):
+                case '"'  =>  next() yet value(cursor.mark)
+                case '\'' =>  next() yet singleQuoted(cursor.mark)
+                case _    =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
 
-            attributes(Attribute(name, assignment) :: entries)
-          else attributes(Attribute(name, Unset) :: entries)
+              attributes((name, assignment) :: entries)
+            else attributes((name, Unset) :: entries)
 
     @tailrec
     def entity(mark: Mark)(using Cursor.Held): Optional[Text] =
@@ -342,7 +347,7 @@ object Html extends Tag.Container
 
     // mutable state
     var content: Text = t""
-    var extra: List[Attribute] = Nil
+    var extra: List[(Text, Optional[Text])] = Nil
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '-'  =>  val end = cursor.mark
@@ -378,7 +383,7 @@ object Html extends Tag.Container
 
     def descend(parent: Tag): Html = read(parent, extra, Nil, 0)
 
-    def append(parent: Tag, atts: List[Attribute], text: Text, children: List[Html], count0: Int): Html =
+    def append(parent: Tag, atts: List[(Text, Optional[Text])], text: Text, children: List[Html], count0: Int): Html =
       var count = count0
 
       val children2 =
@@ -410,7 +415,7 @@ object Html extends Tag.Container
       array.immutable(using Unsafe)
 
     @tailrec
-    def read(parent: Tag, atts: List[Attribute], children: List[Html], count: Int): Html =
+    def read(parent: Tag, atts: List[(Text, Optional[Text])], children: List[Html], count: Int): Html =
       cursor.lay(finish(parent, children, count)):
         case '&'  => parent.content match
           case TextContent.Whitespace => fail(OnlyWhitespace('&'))
