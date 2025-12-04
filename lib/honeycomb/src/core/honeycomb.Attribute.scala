@@ -60,16 +60,10 @@ import charDecoders.utf8
 import textSanitizers.skip
 
 object Attribute:
-  given conversion: [key <: String: Precise, tag <: String: Precise]
-        => Conversion[(key, Text), Optional[Attribute of tag]] =
-    attribute => Attribute(attribute(0), attribute(1)).asInstanceOf[Attribute of tag]
+  erased trait Integral
+  erased trait Decimal
+  erased trait Textual
+  erased trait Link
+  erased trait Id
 
-  given conversion2: [key <: String: Precise, tag <: String: Precise]
-        => Conversion[(key, String), Optional[Attribute of tag]] =
-    attribute => Attribute(attribute(0), attribute(1).tt).asInstanceOf[Attribute of tag]
-
-  given conversion3: [key <: String: Precise, tag <: String: Precise]
-        => Conversion[(key, Boolean), Optional[Attribute of tag]] =
-    attribute => Attribute(attribute(0), Unset).asInstanceOf[Attribute of tag].unless(!attribute(1))
-
-into case class Attribute(key: Text, value: Optional[Text]) extends Topical
+case class Attribute(key: Text, value: Optional[Text]) extends Planar

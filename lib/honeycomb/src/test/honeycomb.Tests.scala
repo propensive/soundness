@@ -116,8 +116,8 @@ object Tests extends Suite(m"Honeycomb Tests"):
       .assert(_ == Div)
 
       test(m"self-closing tag with attributes"):
-        t"""<div foo="bar"/>""".read[Html of "div"]
-      .assert(_ == Div(foo = "bar"))
+        t"""<div style="bar"/>""".read[Html of "div"]
+      .assert(_ == Div(style = "bar"))
 
       test(m"simple comment tag"):
         t"""<!--This is a comment-->""".read[Html of Flow]
@@ -128,20 +128,20 @@ object Tests extends Suite(m"Honeycomb Tests"):
       .assert(_ == Br)
 
       test(m"void tag with an attribute"):
-        t"""<area foo="bar">""".read[Html of "area"]
-      .assert(_ == Area(foo = t"bar"))
+        t"""<area style="bar">""".read[Html of "area"]
+      .assert(_ == Area(style = t"bar"))
 
       test(m"void tag with an unquoted attribute"):
-        t"""<area foo=bar>""".read[Html of Flow]
-      .assert(_ == Area(foo = "bar"))
+        t"""<area style=bar>""".read[Html of Flow]
+      .assert(_ == Area(style = "bar"))
 
       test(m"void tag with a boolean attribute"):
         t"""<input disabled>""".read[Html of "input"]
       .assert(_ == Input(disabled = true))
 
       test(m"void tag with a single-quoted attribute"):
-        t"""<br foo='bar baz'>""".read[Html of Flow]
-      .assert(_ == Br(foo = "bar baz"))
+        t"""<br style='bar baz'>""".read[Html of Flow]
+      .assert(_ == Br(style = "bar baz"))
 
       test(m"simple nested tag"):
         t"""<div><area></div>""".read[Html of Flow]
@@ -229,8 +229,8 @@ object Tests extends Suite(m"Honeycomb Tests"):
         . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
         test(m"<tr> autocloses"):
-          t"""<table foo="bar"><tbody><tr><th>First</th><td>Second</td><td>Third</td></tbody></table>""".read[Html of Flow]
-        . assert(_ == Table(foo = "bar")(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
+          t"""<table style="bar"><tbody><tr><th>First</th><td>Second</td><td>Third</td></tbody></table>""".read[Html of Flow]
+        . assert(_ == Table(style = "bar")(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
         test(m"<tbody> and <tr> autoclose"):
           t"""<table><tbody><tr><th>First</th><td>Second</td><td>Third</td></table>""".read[Html of Flow]

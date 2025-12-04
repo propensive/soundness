@@ -134,7 +134,7 @@ object Html5 extends Dom:
   // - transparent content
   // - audio and video are prohibited in transparent content
   // - conditions based on presence or absence of `src` attribute
-  val Audio = Tag.container["audio", "source" | "track" | "#transparent"]
+  val Audio = Tag.container["audio", "source" | "track" | "#transparent"]()
 
   val B = Tag.container["b", Phrasing]()
 
@@ -151,7 +151,7 @@ object Html5 extends Dom:
   val Button = Tag.container["button", Phrasing]()
 
   // - transparent, but non-interactive
-  val Canvas = Tag.container["canvas", "#transparent"]()
+  val Canvas = Tag.transparent["canvas"]()
 
   val Caption = Tag.container["caption", Flow]()
   val Cite = Tag.container["cite", Phrasing]()
@@ -164,7 +164,7 @@ object Html5 extends Dom:
   val Data = Tag.container["data", Phrasing]()
   val Datalist = Tag.container["datalist", Phrasing | "option"]()
   val Dd = Tag.container["dd", Flow](autoclose = true)
-  val Del = Tag.container["del", "#transparent"]()
+  val Del = Tag.transparent["del"]()
   val Details = Tag.container["details", "summary" | Flow]()
   val Dfn = Tag.container["dfn", Phrasing]()
   val Dialog = Tag.container["dialog", Flow]()
@@ -206,22 +206,22 @@ object Html5 extends Dom:
     val Button = Tag.void["input"](presets = List(Attribute(t"type", t"button")))
     // FIXME: More Input types
 
-  val Ins = Tag.container["ins", "#transparent"]()
+  val Ins = Tag.transparent["ins"]()
   val Kbd = Tag.container["kbd", Phrasing]()
   val Label = Tag.container["label", Phrasing]()
   val Legend = Tag.container["label", Phrasing | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"]()
   val Li = Tag.container["li", Flow](autoclose = true)
   val Link = Tag.void["link"]()
   val Main = Tag.container["main", Flow]()
-  val Map = Tag.container["map", "#transparent"]
-  val Mark = Tag.container["mark", Phrasing]
+  val Map = Tag.transparent["map"]()
+  val Mark = Tag.container["mark", Phrasing]()
   val Math = Tag.foreign["math"]()
   val Menu = Tag.container["menu", "li" | ScriptSupporting](content = Html.TextContent.Whitespace)
   val Meta = Tag.void["meta"]()
   val Meter = Tag.container["meter", Phrasing]()
   val Nav = Tag.container["nav", Flow]()
   val Noscript = Tag.container["noscript", "link" | "style" | "meta"]()
-  val Object = Tag.container["object", "#transparent"]()
+  val Object = Tag.transparent["object"]()
   val Ol = Tag.container["ol", "li" | ScriptSupporting](content = Html.TextContent.Whitespace)
 
   val Optgroup = Tag.container["optgroup", "option" | "legend"]
@@ -251,7 +251,7 @@ object Html5 extends Dom:
      ["select", "option" | "optgroup" | "hr" | "button" | "noscript" | ScriptSupporting]
      (content = Html.TextContent.Whitespace)
 
-  val Slot = Tag.container["slot", "#transparent"]()
+  val Slot = Tag.transparent["slot"]()
   val Small = Tag.container["small", Phrasing]()
   val Source = Tag.void["source"]()
   val Span = Tag.container["span", Phrasing]()
@@ -291,6 +291,7 @@ object Html5 extends Dom:
   val U = Tag.container["u", Phrasing]()
   val Ul = Tag.container["ul", "li" | ScriptSupporting](content = Html.TextContent.Whitespace)
   val Var = Tag.container["var", Phrasing]()
+  // FIXME: Transparent + source + track
   val Video = Tag.container["video", "track" | "#transparent" | "source"]()
   val Wbr = Tag.void["wbr"]()
 

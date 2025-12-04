@@ -36,6 +36,8 @@ import anticipation.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
+import stenography.*
 import vacuous.*
 
 import scala.quoted.*
@@ -43,6 +45,40 @@ import scala.quoted.*
 object Honeycomb:
   private given realm: Realm = realm"honeycomb"
 
+
+  def attributes[thisType <: Tag: Type]
+       (tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]])
+  : Macro[Any] =
+      import quotes.reflect.*
+
+      val Varargs(args) = attributes0
+
+      val attributes: Seq[Expr[Optional[Attribute]]] =
+        Type.of[thisType] match
+          case '[ type topic <: Label; Tag { type Topic = topic } ] => args.map:
+            case '{ ($key, $value: value) } =>
+              TypeRepr.of[topic].literal[String].let: topic =>
+                key.asTerm match
+                  case Literal(StringConstant(key)) =>
+                    ConstantType(StringConstant(key)).asType match
+                      case '[type key <: Label; key] =>
+                        Expr.summon[key is Attributable on (? >: topic)] match
+                          case Some('{ type result;
+                                       $expr: Attributable { type Operand = result } }) =>
+                            Expr.summon[value is AttributeConversion to result] match
+                              case Some('{ $converter: AttributeConversion }) =>
+                                '{$converter.attribute(${Expr(key)}, $value)}
+                              case None =>
+                                halt(m"there is not converter for ${TypeRepr.of[result].show} attributes")
+                          case _ =>
+                            halt(m"attribute $key cannot be used on tag <$topic>")
+
+                  case _ =>
+                    halt(m"unexpectedly unable to determine attribute key")
+              . or(halt(m"unexpected type"))
+
+
+      '{$tag.node(${Expr.ofList(attributes)})}
 
   def read[name <: Label: Type, child <: Label: Type, result <: Label: Type]
        (node:       Expr[Node[name]],

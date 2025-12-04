@@ -39,10 +39,218 @@ import hieroglyph.*
 import kaleidoscope.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import serpentine.*
 import spectacular.*
 import urticose.*
 import vacuous.*
+
+object AttributeConversion:
+  given textTtextual: Text is AttributeConversion to Attribute.Textual = (key, value) => Attribute(key, value)
+  given stringTextual: String is AttributeConversion to Attribute.Textual = (key, value) => Attribute(key, value)
+
+  given boolean: Boolean is AttributeConversion to Attribute.Textual = (key, value) =>
+    if value then Attribute(key, Unset) else Unset
+
+trait AttributeConversion extends Typeclass, Resultant:
+  def attribute(key: Text, value: Self): Optional[Attribute]
+
+erased trait Attributable:
+  type Self <: Label
+  type Operand
+  type Plane <: Label
+
+object Attributable:
+  import Attribute.*
+
+  erased given accesskey: ("accesskey" is Attributable on Label by Textual) = !!
+  erased given anchor: ("anchor" is Attributable on Label by Textual) = !!
+  erased given autocapitalize: ("autocapitalize" is Attributable on Label by Textual) = !!
+  erased given autocorrect: ("autocorrect" is Attributable on Label by Textual) = !!
+  erased given autofocus: ("autofocus" is Attributable on Label by Textual) = !!
+  erased given `class`: ("class" is Attributable on Label by Textual) = !!
+  erased given contenteditable: ("contenteditable" is Attributable on Label by Textual) = !!
+  erased given dir: ("dir" is Attributable on Label by Textual) = !!
+  erased given draggable: ("draggable" is Attributable on Label by Textual) = !!
+  erased given enterkeyhint: ("enterkeyhint" is Attributable on Label by Textual) = !!
+  erased given exportparts: ("exportparts" is Attributable on Label by Textual) = !!
+
+  private type HeightTags =
+    "canvas" | "embed" | "iframe" | "img" | "input" | "object" | "video" | "svg"
+
+  erased given height: ("height" is Attributable on HeightTags by Textual) = !!
+
+  erased given hidden: ("hidden" is Attributable on Label by Textual) = !!
+  erased given id: ("id" is Attributable on Label by Textual) = !!
+  erased given inert: ("inert" is Attributable on Label by Textual) = !!
+  erased given inputmode: ("inputmode" is Attributable on Label by Textual) = !!
+  erased given is: ("is" is Attributable on Label by Textual) = !!
+  erased given itemid: ("itemid" is Attributable on Label by Textual) = !!
+  erased given itemprop: ("itemprop" is Attributable on Label by Textual) = !!
+  erased given itemref: ("itemref" is Attributable on Label by Textual) = !!
+  erased given itemscope: ("itemscope" is Attributable on Label by Textual) = !!
+  erased given itemtype: ("itemtype" is Attributable on Label by Textual) = !!
+  erased given lang: ("lang" is Attributable on Label by Textual) = !!
+  erased given nonce: ("nonce" is Attributable on Label by Textual) = !!
+  erased given part: ("part" is Attributable on Label by Textual) = !!
+  erased given popover: ("popover" is Attributable on Label by Textual) = !!
+  erased given role: ("role" is Attributable on Label by Textual) = !!
+  erased given slot: ("slot" is Attributable on Label by Textual) = !!
+  erased given spellcheck: ("spellcheck" is Attributable on Label by Textual) = !!
+  erased given style: ("style" is Attributable on Label by Textual) = !!
+  erased given tabindex: ("tabindex" is Attributable on Label by Textual) = !!
+  erased given title: ("title" is Attributable on Label by Textual) = !!
+  erased given translate: ("translate" is Attributable on Label by Textual) = !!
+  erased given vkp: ("virtualkeyboardpolicy" is Attributable on Label by Textual) = !!
+  erased given writingsuggestions: ("writingsuggestions" is Attributable on Label by Textual) = !!
+  erased given accept: ("accept" is Attributable on "form" | "input" by Textual) = !!
+  erased given acceptCharset: ("acceptCharset" is Attributable on "form" by Textual) = !!
+  erased given action: ("action" is Attributable on "form" by Textual) = !!
+  erased given allow: ("allow" is Attributable on "iframe" by Textual) = !!
+  erased given alpha: ("alpha" is Attributable on "input" by Textual) = !!
+  erased given alt: ("alt" is Attributable on "area" | "img" | "input" by Textual) = !!
+  erased given as: ("as" is Attributable on "link" by Textual) = !!
+  erased given async: ("async" is Attributable on "script" by Textual) = !!
+  erased given autoplay: ("autoplay" is Attributable on "audio" | "video" by Textual) = !!
+  erased given capture: ("capture" is Attributable on "input" by Textual) = !!
+  erased given charset: ("charset" is Attributable on "meta" by Textual) = !!
+  erased given checked: ("checked" is Attributable on "input" by Textual) = !!
+  erased given cite: ("cite" is Attributable on "blockquote" | "del" | "ins" | "q" by Textual) = !!
+  erased given colorspace: ("colorspace" is Attributable on "input" by Textual) = !!
+  erased given cols: ("cols" is Attributable on "textarea" by Textual) = !!
+  erased given colspan: ("colspan" is Attributable on "td" | "th" by Textual) = !!
+  erased given controls: ("controls" is Attributable on "audio" | "video" by Textual) = !!
+  erased given coords: ("coords" is Attributable on "area" by Textual) = !!
+
+  private type CrossoriginTags = "audio" | "img" | "link" | "script" | "video"
+  erased given crossorigin: ("crossorigin" is Attributable on CrossoriginTags by Textual) = !!
+
+  erased given csp: ("csp" is Attributable on "iframe" by Textual) = !!
+  erased given data: ("data" is Attributable on "object" by Textual) = !!
+  erased given datetime: ("datetime" is Attributable on "del" | "ins" | "time" by Textual) = !!
+  erased given decoding: ("decoding" is Attributable on "img" by Textual) = !!
+  erased given default: ("default" is Attributable on "track" by Textual) = !!
+  erased given defer: ("defer" is Attributable on "script" by Textual) = !!
+  erased given dirname: ("dirname" is Attributable on "input" | "textarea" by Textual) = !!
+
+  private type DisabledTags =
+    "button" | "fieldset" | "input" | "optgroup" | "option" | "select" | "textarea"
+
+  erased given disabled: ("disabled" is Attributable on DisabledTags by Textual) = !!
+  erased given display: ("display" is Attributable on "math" by Textual) = !!
+  erased given download: ("download" is Attributable on "a" | "area" by Textual) = !!
+  erased given enctype: ("enctype" is Attributable on "form" by Textual) = !!
+  erased given elementtiming: ("elementtiming" is Attributable on "img" | "video" by Textual) = !!
+
+  private type FetchpriorityTags = "img" | "link" | "script"
+  erased given fetchpriority: ("fetchpriority" is Attributable on FetchpriorityTags by Textual) = !!
+
+  erased given `for`: ("for" is Attributable on "label" | "output" by Textual) = !!
+
+  private type FormTags =
+    "button" | "fieldset" | "input" | "object" | "output" | "select" | "textarea"
+
+  erased given form: ("form" is Attributable on FormTags by Textual) = !!
+  erased given formaction: ("formaction" is Attributable on "input" | "button" by Textual) = !!
+  erased given formenctype: ("formenctype" is Attributable on "input" | "button" by Textual) = !!
+  erased given formmethod: ("formmethod" is Attributable on "input" | "button" by Textual) = !!
+
+  erased given formnovalidate: ("formnovalidate" is Attributable on "input" | "button" by Textual) =
+    !!
+
+  erased given formtarget: ("formtarget" is Attributable on "input" | "button" by Textual) = !!
+  erased given headers: ("headers" is Attributable on "td" | "th" by Textual) = !!
+  erased given high: ("high" is Attributable on "meter" by Textual) = !!
+  erased given href: ("href" is Attributable on "a" | "area" | "base" | "link" by Textual) = !!
+  erased given hreflang: ("hreflang" is Attributable on "a" | "link" by Textual) = !!
+  erased given httpEquiv: ("httpEquiv" is Attributable on "meta" by Textual) = !!
+  erased given integrity: ("integrity" is Attributable on "link" | "script" by Textual) = !!
+  erased given ismap: ("ismap" is Attributable on "img" by Textual) = !!
+  erased given kind: ("kind" is Attributable on "track" by Textual) = !!
+  erased given label: ("label" is Attributable on "optgroup" | "option" | "track" by Textual) = !!
+  erased given loading: ("loading" is Attributable on "img" | "iframe" by Textual) = !!
+  erased given list: ("list" is Attributable on "input" by Textual) = !!
+  erased given loop: ("loop" is Attributable on "audio" | "video" by Textual) = !!
+  erased given low: ("low" is Attributable on "meter" by Textual) = !!
+  erased given max: ("max" is Attributable on "input" | "meter" | "progress" by Textual) = !!
+  erased given maxlength: ("maxlength" is Attributable on "input" | "textarea" by Textual) = !!
+  erased given minlength: ("minlength" is Attributable on "input" | "textarea" by Textual) = !!
+
+  private type MediaTags = "a" | "area" | "link" | "source" | "style"
+  erased given media: ("media" is Attributable on MediaTags by Textual) = !!
+
+  erased given method: ("method" is Attributable on "form" by Textual) = !!
+  erased given min: ("min" is Attributable on "input" | "meter" by Textual) = !!
+  erased given multiple: ("multiple" is Attributable on "input" | "select" by Textual) = !!
+  erased given muted: ("muted" is Attributable on "audio" | "video" by Textual) = !!
+
+  private type NameTags =
+    "button" | "form" | "fieldset" | "iframe" | "input" | "object" | "output" | "select"
+    | "textarea" | "map" | "meta" | "param"
+
+  erased given name: ("name" is Attributable on NameTags by Textual) = !!
+  erased given novalidate: ("novalidate" is Attributable on "form" by Textual) = !!
+  erased given open: ("open" is Attributable on "details" | "dialog" by Textual) = !!
+  erased given optimum: ("optimum" is Attributable on "meter" by Textual) = !!
+  erased given pattern: ("pattern" is Attributable on "input" by Textual) = !!
+  erased given ping: ("ping" is Attributable on "a" | "area" by Textual) = !!
+  erased given placeholder: ("placeholder" is Attributable on "input" | "textarea" by Textual) = !!
+  erased given playsinline: ("playsinline" is Attributable on "video" by Textual) = !!
+  erased given poster: ("poster" is Attributable on "video" by Textual) = !!
+  erased given preload: ("preload" is Attributable on "audio" | "video" by Textual) = !!
+  erased given readonly: ("readonly" is Attributable on "input" | "textarea" by Textual) = !!
+
+  private type ReferrerpolicyTags = "a" | "area" | "iframe" | "img" | "link" | "script"
+  erased given referrerpolicy: ("referrerpolicy" is Attributable on ReferrerpolicyTags by Textual) =
+    !!
+
+  erased given rel: ("rel" is Attributable on "a" | "area" | "link" by Textual) = !!
+
+  private type RequiredTags = "input" | "select" | "textarea"
+  erased given required: ("required" is Attributable on RequiredTags by Textual) = !!
+
+  erased given reversed: ("reversed" is Attributable on "ol" by Textual) = !!
+  erased given rows: ("rows" is Attributable on "textarea" by Textual) = !!
+  erased given rowspan: ("rowspan" is Attributable on "td" | "th" by Textual) = !!
+  erased given sandbox: ("sandbox" is Attributable on "iframe" by Textual) = !!
+  erased given scope: ("scope" is Attributable on "th" by Textual) = !!
+  erased given selected: ("selected" is Attributable on "option" by Textual) = !!
+  erased given shape: ("shape" is Attributable on "a" | "area" by Textual) = !!
+  erased given size: ("size" is Attributable on "input" | "select" by Textual) = !!
+  erased given sizes: ("sizes" is Attributable on "link" | "img" | "source" by Textual) = !!
+  erased given span: ("span" is Attributable on "col" | "colgroup" by Textual) = !!
+
+  private type SrcTags =
+    "audio" | "embed" | "iframe" | "img" | "input" | "script" | "source" | "track" | "video"
+
+  erased given src: ("src" is Attributable on SrcTags by Textual) = !!
+
+  erased given srcdoc: ("srcdoc" is Attributable on "iframe" by Textual) = !!
+  erased given srclang: ("srclang" is Attributable on "track" by Textual) = !!
+  erased given srcset: ("srcset" is Attributable on "img" | "source" by Textual) = !!
+  erased given start: ("start" is Attributable on "ol" by Textual) = !!
+  erased given step: ("step" is Attributable on "input" by Textual) = !!
+  erased given summary: ("summary" is Attributable on "table" by Textual) = !!
+  erased given target: ("target" is Attributable on "a" | "area" | "base" | "form" by Textual) = !!
+
+  private type TypeTags =
+    "button" | "input" | "embed" | "object" | "ol" | "script" | "source" | "style" | "menu" | "link"
+
+  erased given `type`: ("type" is Attributable on TypeTags by Textual) = !!
+  erased given usemap: ("usemaptype" is Attributable on "img" | "input" | "object" by Textual) = !!
+
+  private type ValueTags =
+    "button" | "data" | "input" | "li" | "meter" | "option" | "progress" | "param"
+
+  erased given value: ("value" is Attributable on ValueTags by Textual) = !!
+
+  private type WidthTags =
+    "canvas" | "embed" | "iframe" | "img" | "input" | "object" | "video" | "svg"
+
+  erased given width: ("width" is Attributable on WidthTags by Textual) = !!
+
+  erased given wrap: ("wrap" is Attributable on "textarea" by Textual) = !!
+
 
 trait Attributive extends Targetable:
   type Self <: Label
