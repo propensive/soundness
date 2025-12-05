@@ -421,7 +421,6 @@ extension (erased tuple: Tuple)
       case _: (element *: tail) => index
       case _: (other *: tail)   => recurIndex[tail, element](index + 1)
 
-
 extension (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
   inline def literal
               [primitive <: Boolean | Byte | Short | Int | Long | Float | Double | Char | String

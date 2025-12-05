@@ -130,5 +130,9 @@ object Attributive:
   given truth: Boolean is Attributive to Truth = (key, value) =>
     (key, if value then t"true" else t"false")
 
+  given url: HttpUrl is Attributive to Url = (key, value) => (key, value.encode)
+
+  given style: Text is Attributive to Css = (key, value) => (key, value)
+
 trait Attributive extends Typeclass, Resultant:
   def attribute(key: Text, value: Self): Optional[(Text, Optional[Text])]

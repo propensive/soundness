@@ -381,9 +381,11 @@ object Html extends Tag.Container
                           Token.Open
             case char =>  fail(Unexpected(char))
 
-    def descend(parent: Tag): Html = read(parent, extra, Nil, 0)
+    def descend(parent: Tag, admissible: Set[Text]): Html =
+      val admissible2 = if parent.transparent then admissible else parent.admissible
+      read(parent, admissible2, extra, Nil, 0)
 
-    def append(parent: Tag, atts: List[(Text, Optional[Text])], text: Text, children: List[Html], count0: Int): Html =
+    def append(parent: Tag, admissible: Set[Text], atts: List[(Text, Optional[Text])], text: Text, children: List[Html], count0: Int): Html =
       var count = count0
 
       val children2 =
@@ -393,7 +395,7 @@ object Html extends Tag.Container
             count += 1
             Textual(text) :: children
 
-      read(parent, atts, children2, count)
+      read(parent, admissible, atts, children2, count)
 
     def finish(parent: Tag, children: List[Html], count: Int): Html =
       if parent != root then
@@ -415,88 +417,90 @@ object Html extends Tag.Container
       array.immutable(using Unsafe)
 
     @tailrec
-    def read(parent: Tag, atts: List[(Text, Optional[Text])], children: List[Html], count: Int): Html =
-      cursor.lay(finish(parent, children, count)):
-        case '&'  => parent.content match
-          case TextContent.Whitespace => fail(OnlyWhitespace('&'))
-          case _ =>
-            val child = cursor.hold:
-              val start = cursor.mark
-              next()
-              entity(cursor.mark).or(textual(start))
+    def read(parent: Tag, admissible: Set[Text], atts: List[(Text, Optional[Text])], children: List[Html], count: Int)
+    : Html =
+        cursor.lay(finish(parent, children, count)):
+          case '&'  => parent.content match
+            case TextContent.Whitespace => fail(OnlyWhitespace('&'))
+            case _ =>
+              val child = cursor.hold:
+                val start = cursor.mark
+                next()
+                entity(cursor.mark).or(textual(start))
 
-            append(parent, atts, child, children, count)
+              append(parent, admissible, atts, child, children, count)
 
-        case '<'  =>
-          var level: Int = 0
-          var ascend: Boolean = false
-          val node: Html = cursor.hold:
-            val mark = cursor.mark
+          case '<'  =>
+            var level: Int = 0
+            var ascend: Boolean = false
+            val node: Html = cursor.hold:
+              val mark = cursor.mark
 
-            def node(): Html =
-              Node(content, extra, array(children, count), parent.foreign)
+              def node(): Html =
+                Node(content, extra, array(children, count), parent.foreign)
 
-            def close(): Html =
-              Node(parent.label, parent.attributes, array(children, count), parent.foreign)
+              def close(): Html =
+                Node(parent.label, parent.attributes, array(children, count), parent.foreign)
 
-            def infer(tag: Tag) =
-              cursor.cue(mark)
-              dom.infer(parent, tag).let(descend(_)).or:
-                if parent.autoclose then close().also { ascend = true }
-                else fail(InadmissibleTag(content, parent.label))
-
-            next()
-
-            tag() match
-              case Token.Comment => Comment(content)
-
-              case Token.Empty   =>
-                val tag =
-                  if parent.foreign then Tag.foreign(content, extra)
-                  else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
-
-                if parent.foreign || parent.transparent || parent.admissible(content) then node()
-                else infer(tag)
-
-
-              case Token.Open =>
-                val tag =
-                  if parent.foreign then Tag.foreign(content, extra)
-                  else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
-
-                if tag.void
-                then if parent.transparent || parent.admissible(content) then node() else infer(tag)
-                else if parent.foreign || parent.transparent || parent.admissible(content) then descend(tag) else infer(tag)
-
-              case Token.Close =>
-                if content != parent.label then
-                  cursor.cue(mark)
+              def infer(tag: Tag) =
+                cursor.cue(mark)
+                dom.infer(parent, tag).let(descend(_, admissible)).or:
                   if parent.autoclose then close().also { ascend = true }
-                  else fail(MismatchedTag(parent.label, content))
-                else
-                  cursor.next()
-                  ascend = true
-                  Node(content, atts, array(children, count), parent.foreign)
+                  else fail(InadmissibleTag(content, parent.label))
 
-          if ascend then node else read(parent, atts, node :: children, count + 1)
+              next()
 
-        case char => parent.content match
-          case TextContent.Whitespace =>
-            whitespace() yet read(parent, atts, children, count)
+              tag() match
+                case Token.Comment => Comment(content)
 
-          case TextContent.Raw =>
-            val content = Textual(cursor.hold(raw(parent.label, cursor.mark)))
-            Node(parent.label, parent.attributes, IArray(content), parent.foreign)
+                case Token.Empty   =>
+                  val tag =
+                    if parent.foreign then Tag.foreign(content, extra)
+                    else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
-          case TextContent.Rcdata => // FIXME
-            val content = Textual(cursor.hold(raw(parent.label, cursor.mark)))
-            Node(parent.label, parent.attributes, IArray(content), parent.foreign)
+                  if parent.foreign || admissible(content) then node()
+                  else infer(tag)
 
-          case TextContent.Normal =>
-            append(parent, atts, cursor.hold(textual(cursor.mark)), children, count)
+
+                case Token.Open =>
+                  val tag =
+                    if parent.foreign then Tag.foreign(content, extra)
+                    else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
+
+                  if tag.void
+                  then
+                    if admissible(content) then node() else infer(tag)
+                  else if parent.foreign || admissible(content) then descend(tag, admissible) else infer(tag)
+
+                case Token.Close =>
+                  if content != parent.label then
+                    cursor.cue(mark)
+                    if parent.autoclose then close().also { ascend = true }
+                    else fail(MismatchedTag(parent.label, content))
+                  else
+                    cursor.next()
+                    ascend = true
+                    Node(content, atts, array(children, count), parent.foreign)
+
+            if ascend then node else read(parent, admissible, atts, node :: children, count + 1)
+
+          case char => parent.content match
+            case TextContent.Whitespace =>
+              whitespace() yet read(parent, admissible, atts, children, count)
+
+            case TextContent.Raw =>
+              val content = Textual(cursor.hold(raw(parent.label, cursor.mark)))
+              Node(parent.label, parent.attributes, IArray(content), parent.foreign)
+
+            case TextContent.Rcdata => // FIXME
+              val content = Textual(cursor.hold(raw(parent.label, cursor.mark)))
+              Node(parent.label, parent.attributes, IArray(content), parent.foreign)
+
+            case TextContent.Normal =>
+              append(parent, admissible, atts, cursor.hold(textual(cursor.mark)), children, count)
 
     skip()
-    read(root, Nil, Nil, 0)
+    read(root, root.admissible, Nil, Nil, 0)
 
 sealed into trait Html extends Topical:
   type Topic <: Label

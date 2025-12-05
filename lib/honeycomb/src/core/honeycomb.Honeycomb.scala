@@ -63,9 +63,8 @@ object Honeycomb:
                       case '[type key <: Label; key] =>
                         Expr.summon[key is Attribute in Whatwg on (? >: topic)]
                         . orElse(Expr.summon[key is Attribute in Whatwg]) match
-                          case Some('{ type result;
-                                       $expr: Attribute { type Topic = result } }) =>
-                            Expr.summon[value is Attributive to result] match
+                          case Some('{ type result; $expr: Attribute { type Topic = result } }) =>
+                            Expr.summon[(? >: value) is Attributive to result] match
                               case Some('{ $converter: Attributive }) =>
                                 '{$converter.attribute(${Expr(key)}, $value)}
 

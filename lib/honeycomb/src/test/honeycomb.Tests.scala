@@ -117,7 +117,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"self-closing tag with attributes"):
         t"""<div style="bar"/>""".read[Html of "div"]
-      .assert(_ == Div(style = "bar"))
+      .assert(_ == Div(style = t"bar"))
 
       test(m"simple comment tag"):
         t"""<!--This is a comment-->""".read[Html of Flow]
@@ -133,7 +133,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"void tag with an unquoted attribute"):
         t"""<area style=bar>""".read[Html of Flow]
-      .assert(_ == Area(style = "bar"))
+      .assert(_ == Area(style = t"bar"))
 
       test(m"void tag with a boolean attribute"):
         t"""<input disabled>""".read[Html of "input"]
@@ -141,7 +141,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"void tag with a single-quoted attribute"):
         t"""<br style='bar baz'>""".read[Html of Flow]
-      .assert(_ == Br(style = "bar baz"))
+      .assert(_ == Br(style = t"bar baz"))
 
       test(m"simple nested tag"):
         t"""<div><area></div>""".read[Html of Flow]
@@ -230,7 +230,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
         test(m"<tr> autocloses"):
           t"""<table style="bar"><tbody><tr><th>First</th><td>Second</td><td>Third</td></tbody></table>""".read[Html of Flow]
-        . assert(_ == Table(style = "bar")(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
+        . assert(_ == Table(style = t"bar")(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
         test(m"<tbody> and <tr> autoclose"):
           t"""<table><tbody><tr><th>First</th><td>Second</td><td>Third</td></table>""".read[Html of Flow]
@@ -262,14 +262,19 @@ object Tests extends Suite(m"Honeycomb Tests"):
       .assert(_ == Div(Svg(Html.Node.foreign("circle", List((t"r", t"1"))))))
 
       test(m"Nontrivial MathML example"):
-        t"""<div>The equation is <math display="inline"><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""
+        t"""<div>The equation is <math><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""
         . read[Html of Flow]
-      . assert(_ == Div("The equation is ", Math(display = "inline")(Html.Node.foreign("mfrac", Nil, Html.Node.foreign("msup", Nil, Html.Node.foreign("mi", Nil, "π"), Html.Node.foreign("mn", Nil, "2")), Html.Node.foreign("mn", Nil, "6"))), "."))
+      . assert(_ == Div("The equation is ", Math(Html.Node.foreign("mfrac", Nil, Html.Node.foreign("msup", Nil, Html.Node.foreign("mi", Nil, "π"), Html.Node.foreign("mn", Nil, "2")), Html.Node.foreign("mn", Nil, "6"))), "."))
 
       test(m"transparent tag with text"):
-        t"""<p>Go <a href="home">home</a>.</p>""".read[Html of "p"]
-      . assert(_ == P("Go ", A(href = "home")("home"), "."))
+        t"""<p>Go <a href="https://example.com">home</a>.</p>""".read[Html of "p"]
+      . assert(_ == P("Go ", A(href = url"https://example.com")("home"), "."))
+
+      test(m"transparent tag only allows the right children"):
+        try t"""<div><a href="#"><li>list item</li></a></div>""".read[Html of Flow]
+        catch case exception: Exception => exception
+      .assert(_ == ParseError(Html, Html.Position(18.u), Html.Issue.InadmissibleTag("li", "a")))
 
       test(m"transparent tag with element"):
-        t"""<p>Go <a href="home"><em>home</em></a>.</p>""".read[Html of "p"]
-      . assert(_ == P("Go ", A(href = "home")(Em("home")), "."))
+        t"""<p>Go <a href="https://example.com"><em>home</em></a>.</p>""".read[Html of "p"]
+      . assert(_ == P("Go ", A(href = url"https://example.com")(Em("home")), "."))
