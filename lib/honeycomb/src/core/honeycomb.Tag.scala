@@ -89,12 +89,18 @@ object Tag:
       . over[children]
 
 
-  def transparent[label <: Label: ValueOf](presets: List[(Text, Optional[Text])] = Nil): Transparent of label =
-    transparent(valueOf[label].tt, presets).of[label]
+  def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
+       (presets: List[(Text, Optional[Text])] = Nil)
+  : Transparent of label over children =
+
+      val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
+      transparent(valueOf[label].tt, admissible, presets).of[label].over[children]
 
 
-  def transparent(label: Text, presets: List[(Text, Optional[Text])]): Transparent =
-    Transparent(label, presets)
+  def transparent(label: Text, children: Set[Text], presets: List[(Text, Optional[Text])])
+  : Transparent =
+
+      Transparent(label, children, presets)
 
   def foreign[label <: Label: ValueOf](): Container of label over "#foreign" =
     Container(valueOf[label], foreign = true).of[label].over["#foreign"]
@@ -121,13 +127,17 @@ object Tag:
           type Transport = tag.Transport
 
 
-  class Transparent(label: Text, presets: List[(Text, Optional[Text])] = Nil, foreign: Boolean = false)
+  class Transparent
+         (label:      Text,
+          admissible: Set[Text],
+          presets:    List[(Text, Optional[Text])] = Nil,
+          foreign:    Boolean = false)
   extends Tag
            (label       = label,
             autoclose   = false,
             content     = Html.TextContent.Normal,
             presets     = presets,
-            admissible  = Set("#transparent"),
+            admissible  = admissible,
             insertable  = false,
             foreign     = foreign,
             transparent = true):

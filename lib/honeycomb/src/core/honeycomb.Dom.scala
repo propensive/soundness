@@ -193,7 +193,6 @@ object Whatwg:
   erased given method: ("method" is Attribute on "form" of Attributive.Method) = !!
   erased given min: ("min" is Attribute on "input" of Attributive.Minmax) = !!
   erased given min2: ("min" is Attribute on "meter" of Attributive.Decimal) = !!
-  // min
   erased given minlength: ("minlength" is Attribute on "input" | "textarea" of Attributive.PositiveInt) = !!
   erased given multiple: ("multiple" is Attribute on "input" | "select" of Attributive.Presence) = !!
   erased given muted: ("muted" is Attribute on "audio" | "video" of Attributive.Presence) = !!
@@ -312,7 +311,7 @@ class Whatwg() extends Dom:
 
   // Elements
 
-  val A = Tag.transparent["a"]()
+  val A = Tag.transparent["a", ""]()
   val Abbr = Tag.container["abbr", Phrasing]()
 
   val Address =
@@ -332,10 +331,9 @@ class Whatwg() extends Dom:
   val Article = Tag.container["article", Flow]()
   val Aside = Tag.container["aside", Flow]()
 
-  // - transparent content
   // - audio and video are prohibited in transparent content
   // - conditions based on presence or absence of `src` attribute
-  val Audio = Tag.container["audio", "source" | "track" | "#transparent"]()
+  val Audio = Tag.transparent["audio", "source" | "track"]()
 
   val B = Tag.container["b", Phrasing]()
 
@@ -352,7 +350,7 @@ class Whatwg() extends Dom:
   val Button = Tag.container["button", Phrasing]()
 
   // - transparent, but non-interactive
-  val Canvas = Tag.transparent["canvas"]()
+  val Canvas = Tag.transparent["canvas", ""]()
 
   val Caption = Tag.container["caption", Flow]()
   val Cite = Tag.container["cite", Phrasing]()
@@ -365,7 +363,7 @@ class Whatwg() extends Dom:
   val Data = Tag.container["data", Phrasing]()
   val Datalist = Tag.container["datalist", Phrasing | "option"]()
   val Dd = Tag.container["dd", Flow](autoclose = true)
-  val Del = Tag.transparent["del"]()
+  val Del = Tag.transparent["del", ""]()
   val Details = Tag.container["details", "summary" | Flow]()
   val Dfn = Tag.container["dfn", Phrasing]()
   val Dialog = Tag.container["dialog", Flow]()
@@ -407,14 +405,14 @@ class Whatwg() extends Dom:
     val Button = Tag.void["input"](presets = List((t"type", t"button")))
     // FIXME: More Input types
 
-  val Ins = Tag.transparent["ins"]()
+  val Ins = Tag.transparent["ins", ""]()
   val Kbd = Tag.container["kbd", Phrasing]()
   val Label = Tag.container["label", Phrasing]()
   val Legend = Tag.container["label", Phrasing | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"]()
   val Li = Tag.container["li", Flow](autoclose = true)
   val Link = Tag.void["link"]()
   val Main = Tag.container["main", Flow]()
-  val Map = Tag.transparent["map"]()
+  val Map = Tag.transparent["map", "area"]()
   val Mark = Tag.container["mark", Phrasing]()
   val Math = Tag.foreign["math"]()
   val Menu = Tag.container["menu", "li" | ScriptSupporting](content = Html.TextContent.Whitespace)
@@ -422,7 +420,7 @@ class Whatwg() extends Dom:
   val Meter = Tag.container["meter", Phrasing]()
   val Nav = Tag.container["nav", Flow]()
   val Noscript = Tag.container["noscript", "link" | "style" | "meta"]()
-  val Object = Tag.transparent["object"]()
+  val Object = Tag.transparent["object", ""]()
   val Ol = Tag.container["ol", "li" | ScriptSupporting](content = Html.TextContent.Whitespace)
 
   val Optgroup = Tag.container["optgroup", "option" | "legend"]
@@ -453,7 +451,7 @@ class Whatwg() extends Dom:
      (content = Html.TextContent.Whitespace)
 
   val Selectedcontent = Tag.void["selectedcontent"]()
-  val Slot = Tag.transparent["slot"]()
+  val Slot = Tag.transparent["slot", ""]()
   val Small = Tag.container["small", Phrasing]()
   val Source = Tag.void["source"]()
   val Span = Tag.container["span", Phrasing]()
@@ -493,9 +491,7 @@ class Whatwg() extends Dom:
   val U = Tag.container["u", Phrasing]()
   val Ul = Tag.container["ul", "li" | ScriptSupporting](content = Html.TextContent.Whitespace)
   val Var = Tag.container["var", Phrasing]()
-
-  // FIXME: Transparent + source + track
-  val Video = Tag.container["video", "track" | "#transparent" | "source"]()
+  val Video = Tag.transparent["video", "track" | "source"]()
   val Wbr = Tag.void["wbr"]()
 
 

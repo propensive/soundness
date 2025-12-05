@@ -112,7 +112,7 @@ object Html extends Tag.Container
 
   trait Transparent:
     node: Html.Node =>
-      def apply[labels <: Label](children: Html of labels*): Html.Node of labels =
+      def apply[labels <: Label](children: Html of labels | node.Transport*): Html.Node of labels =
         new Html.Node(node.label, node.attributes, IArray.from(children), node.foreign):
           type Topic = labels
 
@@ -419,6 +419,10 @@ object Html extends Tag.Container
     @tailrec
     def read(parent: Tag, admissible: Set[Text], atts: List[(Text, Optional[Text])], children: List[Html], count: Int)
     : Html =
+
+        def admit(child: Text): Boolean =
+          parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
+
         cursor.lay(finish(parent, children, count)):
           case '&'  => parent.content match
             case TextContent.Whitespace => fail(OnlyWhitespace('&'))
@@ -458,8 +462,7 @@ object Html extends Tag.Container
                     if parent.foreign then Tag.foreign(content, extra)
                     else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
-                  if parent.foreign || admissible(content) then node()
-                  else infer(tag)
+                  if admit(content) then node() else infer(tag)
 
 
                 case Token.Open =>
@@ -467,10 +470,8 @@ object Html extends Tag.Container
                     if parent.foreign then Tag.foreign(content, extra)
                     else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
-                  if tag.void
-                  then
-                    if admissible(content) then node() else infer(tag)
-                  else if parent.foreign || admissible(content) then descend(tag, admissible) else infer(tag)
+                  if !admit(content) then infer(tag)
+                  else if tag.void then node() else descend(tag, admissible)
 
                 case Token.Close =>
                   if content != parent.label then

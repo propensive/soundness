@@ -278,3 +278,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"transparent tag with element"):
         t"""<p>Go <a href="https://example.com"><em>home</em></a>.</p>""".read[Html of "p"]
       . assert(_ == P("Go ", A(href = url"https://example.com")(Em("home")), "."))
+
+      test(m"transparent tag with additions"):
+        t"""<div><video controls><source src="https://example.com/movie.mp4"></video></div>""".read[Html of "div"]
+      . assert(_ == Div(Video(controls = true)(Source(src = url"https://example.com/movie.mp4"))))
