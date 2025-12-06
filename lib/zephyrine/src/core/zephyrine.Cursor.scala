@@ -91,7 +91,7 @@ class Cursor[data](initial:                 data,
 
   protected inline def store(ordinal: Ordinal, value: data): Unit =
     val index = ordinal - first
-    if buffer.length <= index then buffer.append(value) else buffer(index) = value
+    if buffer.length <= index then buffer.append(value)
 
   protected inline def load(): data = iterator.next().tap: value =>
     extent += addressable.length(value)
@@ -105,26 +105,23 @@ class Cursor[data](initial:                 data,
     val block: Ordinal = focusBlock.next
     val offset: Int = block - first
 
-    current =
-      if buffer.length > offset then
-        focusBlock = block
-        focus = Prim
-        done += addressable.length(current)
-        buffer(offset)
-      else if iterator.hasNext then
-        var next = load()
-        while addressable.length(next) == 0 do
-          next = load()
+    if offset < buffer.length then
+      focusBlock = block
+      focus = Prim
+      done += addressable.length(current)
+      current = buffer(offset)
+    else if iterator.hasNext then
+      var next = load()
+      while addressable.length(next) == 0 do next = load()
+      if keep then store(block, next)
+      focusBlock = block
+      focus = Prim
+      done += addressable.length(current)
+      current = next
 
-        if keep then store(block, next)
-        focusBlock = block
-        focus = Prim
-        done += addressable.length(current)
-        next
-
-      else current.also:
-        focus = focus.next
-        length = position.n1
+    else
+      focus = focus.next
+      length = position.n1
 
   protected inline def backward(): Unit =
     val block = focusBlock.previous
@@ -140,8 +137,7 @@ class Cursor[data](initial:                 data,
     focus = mark.index
 
   inline def next(): Boolean =
-    if focus.next.n0 >= addressable.length(current) then forward()
-    else focus = focus.next
+    if focus.next.n0 >= addressable.length(current) then forward() else focus = focus.next
     !finished
 
   inline def more: Boolean = !finished
@@ -164,10 +160,15 @@ class Cursor[data](initial:                 data,
 
   inline def hold[result](inline action: Cursor.Held ?=> result): result =
     val keep0 = keep
-    keep = true
-    first = focusBlock
-    store(focusBlock, current)
-    action(using new Cursor.Held()).also { keep = keep0 }
+
+    if !keep0 then
+      keep = true
+      first = focusBlock
+      buffer.clear()
+      store(focusBlock, current)
+
+    action(using new Cursor.Held()).also:
+      keep = keep0
 
   inline def grab(start: Mark, end: Mark): data =
     // FIXME: calculate length across different blocks

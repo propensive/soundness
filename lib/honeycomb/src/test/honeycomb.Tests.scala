@@ -104,8 +104,8 @@ object Tests extends Suite(m"Honeycomb Tests"):
       .assert(_ == Div("content"))
 
       test(m"more than one node"):
-        t"""<div>content</div><div>more content</div>""".read[Html of "div"]
-      .assert(_ == Html.Fragment(Div("content"), Div("more content")))
+        t"""<div>content</div><p>more content</p>""".read[Html of Flow]
+      .assert(_ == Html.Fragment(Div("content"), P("more content")))
 
       test(m"more than one node with comment"):
         t"""<div>content</div><!-- comment --><div>more content</div>""".read[Html of "div"]

@@ -103,6 +103,8 @@ object Html extends Tag.Container
   private enum Token:
     case Close, Comment, Empty, Open
 
+  private enum Next:
+    case Ascend, Descend, Peer
 
   trait Populable:
     node: Html.Node =>
@@ -436,7 +438,7 @@ object Html extends Tag.Container
 
           case '<'  =>
             var level: Int = 0
-            var ascend: Boolean = false
+            var move: Next = Next.Peer
             val node: Html = cursor.hold:
               val mark = cursor.mark
 
@@ -449,7 +451,7 @@ object Html extends Tag.Container
               def infer(tag: Tag) =
                 cursor.cue(mark)
                 dom.infer(parent, tag).let(descend(_, admissible)).or:
-                  if parent.autoclose then close().also { ascend = true }
+                  if parent.autoclose then close().also { move = Next.Ascend }
                   else fail(InadmissibleTag(content, parent.label))
 
               next()
@@ -476,14 +478,16 @@ object Html extends Tag.Container
                 case Token.Close =>
                   if content != parent.label then
                     cursor.cue(mark)
-                    if parent.autoclose then close().also { ascend = true }
+                    if parent.autoclose then close().also { move = Next.Ascend }
                     else fail(MismatchedTag(parent.label, content))
                   else
                     cursor.next()
-                    ascend = true
+                    move = Next.Ascend
                     Node(content, atts, array(children, count), parent.foreign)
 
-            if ascend then node else read(parent, admissible, atts, node :: children, count + 1)
+            move match
+              case Next.Ascend => node
+              case Next.Peer   => read(parent, admissible, atts, node :: children, count + 1)
 
           case char => parent.content match
             case TextContent.Whitespace =>
