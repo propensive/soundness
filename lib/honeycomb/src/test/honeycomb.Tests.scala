@@ -215,6 +215,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
         t"""<title>Page title</title><p>A paragraph</p>""".read[Html of "html"]
       .assert(_ == Html(Head(Title("Page title")), Body(P("A paragraph"))))
 
+
       suite(m"Table tests"):
         test(m"Simple table"):
           t"""<table><tbody><tr><th>First</th><td>Second</td><td>Third</td></tr></tbody></table>""".read[Html of "table"]
@@ -240,9 +241,11 @@ object Tests extends Suite(m"Honeycomb Tests"):
           t"""<table><tbody><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
         . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
+        given (CssClass of "test") = CssClass["test"]()
+
         test(m"<thead> works like <tbody>"):
-          t"""<table><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
-        . assert(_ == Table(Thead(Tr(Th("First"), Td("Second"), Td("Third")))))
+          t"""<table class="test"><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
+        . assert(_ == Table.test(Thead(Tr(Th("First"), Td("Second"), Td("Third")))))
 
         test(m"<tfoot> closes inferred <tbody>"):
           t"""<table><tr><th>First<td>Second<td>Third<tfoot><tr><td>Footer</table>""".read[Html of Flow]

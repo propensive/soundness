@@ -34,9 +34,24 @@ package honeycomb
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
+import proscenium.*
 import spectacular.*
+import vacuous.*
 
 object CssClass:
-  given generic: CssClass is GenericCssSelection = cls => t".${cls.name}"
+  given generic: CssClass is GenericCssSelection = cls => t".${cls.name.or(t"<unset>")}"
+  given noClass: (CssClass of "apply") = CssClass["apply"](Unset)
 
-case class CssClass(name: Text)
+  def apply[name <: Label](name0: Optional[Text]): CssClass of name = new CssClass():
+    type Topic = name
+    val name: Optional[Text] = name0
+
+  def apply[name <: Label: ValueOf](): CssClass of name =
+    new CssClass():
+      type Topic = name
+      val name: Optional[Text] = valueOf[name]
+
+trait CssClass():
+  type Topic <: Label
+  val name: Optional[Text]

@@ -118,8 +118,14 @@ object Tag:
     tag =>
       type Result = Html.Node & Html.Populable of Topic over Transport
 
-      def applyDynamic(method: "apply")(children: Html of Transport*): Html.Node of Topic =
-        Html.Node(label, Nil, IArray.from(children), foreign).of[Topic]
+
+      def applyDynamic[className <: Label](method: className)(children: Html of Transport*)
+           (using css: CssClass of className)
+      : Html.Node of Topic =
+
+          val cls = css.name.let((t"class", _) :: Nil).or(Nil)
+          Html.Node(label, cls, IArray.from(children), foreign).of[Topic]
+
 
       def node(attributes: List[Optional[(Text, Optional[Text])]]): Result =
         new Html.Node(label, attributes.compact, IArray(), foreign) with Html.Populable:
@@ -144,8 +150,14 @@ object Tag:
     tag =>
       type Result = Html.Node & Html.Transparent of Topic over Transport
 
-      def applyDynamic(method: "apply")(children: Html of Transport*): Html.Node of Topic =
-        Html.Node(label, Nil, IArray.from(children), foreign).of[Topic]
+
+      def applyDynamic[className <: Label](method: className)(children: Html of Transport*)
+           (using css: CssClass of className)
+      : Html.Node of Topic =
+
+          val cls = css.name.let((t"class", _) :: Nil).or(Nil)
+          Html.Node(label, cls, IArray.from(children), foreign).of[Topic]
+
 
       def node(attributes: List[Optional[(Text, Optional[Text])]]): Result =
         new Html.Node(label, attributes.compact, IArray(), foreign) with Html.Transparent:
