@@ -447,13 +447,14 @@ object Html extends Tag.Container
 
               def close(): Unit =
                 current = Node(parent.label, parent.attributes, array(children, count), parent.foreign)
+                level = Level.Ascend
 
               def infer(tag: Html): Unit =
                 cursor.cue(mark)
                 dom.infer(parent, tag.asInstanceOf[Tag]).let: tag =>
                   current = descend(tag.asInstanceOf[Tag], admissible)
                 . or:
-                    if parent.autoclose then close().also { level = Level.Ascend }
+                    if parent.autoclose then close()
                     else fail(InadmissibleTag(content, parent.label))
 
               next()
@@ -482,7 +483,7 @@ object Html extends Tag.Container
                 case Token.Close =>
                   if content != parent.label then
                     cursor.cue(mark)
-                    if parent.autoclose then close().also { level = Level.Ascend }
+                    if parent.autoclose then close()
                     else fail(MismatchedTag(parent.label, content))
                   else
                     cursor.next()
