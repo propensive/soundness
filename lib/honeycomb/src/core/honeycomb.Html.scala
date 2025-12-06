@@ -103,7 +103,7 @@ object Html extends Tag.Container
   private enum Token:
     case Close, Comment, Empty, Open
 
-  private enum Next:
+  private enum Level:
     case Ascend, Descend, Peer
 
   trait Populable:
@@ -437,8 +437,7 @@ object Html extends Tag.Container
               append(parent, admissible, atts, child, children, count)
 
           case '<'  =>
-            var level: Int = 0
-            var move: Next = Next.Peer
+            var level: Level = Level.Peer
             val node: Html = cursor.hold:
               val mark = cursor.mark
 
@@ -451,7 +450,7 @@ object Html extends Tag.Container
               def infer(tag: Tag) =
                 cursor.cue(mark)
                 dom.infer(parent, tag).let(descend(_, admissible)).or:
-                  if parent.autoclose then close().also { move = Next.Ascend }
+                  if parent.autoclose then close().also { level = Level.Ascend }
                   else fail(InadmissibleTag(content, parent.label))
 
               next()
@@ -478,16 +477,16 @@ object Html extends Tag.Container
                 case Token.Close =>
                   if content != parent.label then
                     cursor.cue(mark)
-                    if parent.autoclose then close().also { move = Next.Ascend }
+                    if parent.autoclose then close().also { level = Level.Ascend }
                     else fail(MismatchedTag(parent.label, content))
                   else
                     cursor.next()
-                    move = Next.Ascend
+                    level = Level.Ascend
                     Node(content, atts, array(children, count), parent.foreign)
 
-            move match
-              case Next.Ascend => node
-              case Next.Peer   => read(parent, admissible, atts, node :: children, count + 1)
+            level match
+              case Level.Ascend => node
+              case Level.Peer   => read(parent, admissible, atts, node :: children, count + 1)
 
           case char => parent.content match
             case TextContent.Whitespace =>
