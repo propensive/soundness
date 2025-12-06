@@ -45,7 +45,7 @@ import spectacular.*
 import urticose.*
 import vacuous.*
 
-erased trait Attribute:
+case class Attribute(name: Text, targets: Set[Text]):
   type Self <: Label
   type Topic
   type Plane <: Label
