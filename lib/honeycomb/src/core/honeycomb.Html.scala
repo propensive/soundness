@@ -220,8 +220,7 @@ object Html extends Tag.Container
     val cursor = Cursor(input)
 
     def next(): Unit =
-      if !cursor.next()
-      then raise(ParseError(Html, Position(cursor.position), ExpectedMore))
+      if !cursor.next() then raise(ParseError(Html, Position(cursor.position), ExpectedMore))
 
     inline def expect(char: Char): Unit =
       cursor.next()
@@ -438,25 +437,29 @@ object Html extends Tag.Container
 
           case '<'  =>
             var level: Level = Level.Peer
-            val node: Html = cursor.hold:
+            var current: Html = parent
+
+            cursor.hold:
               val mark = cursor.mark
 
-              def node(): Html =
-                Node(content, extra, array(children, count), parent.foreign)
+              def node(): Unit =
+                current = Node(content, extra, array(children, count), parent.foreign)
 
-              def close(): Html =
-                Node(parent.label, parent.attributes, array(children, count), parent.foreign)
+              def close(): Unit =
+                current = Node(parent.label, parent.attributes, array(children, count), parent.foreign)
 
-              def infer(tag: Tag) =
+              def infer(tag: Html): Unit =
                 cursor.cue(mark)
-                dom.infer(parent, tag).let(descend(_, admissible)).or:
-                  if parent.autoclose then close().also { level = Level.Ascend }
-                  else fail(InadmissibleTag(content, parent.label))
+                dom.infer(parent, tag.asInstanceOf[Tag]).let: tag =>
+                  current = descend(tag.asInstanceOf[Tag], admissible)
+                . or:
+                    if parent.autoclose then close().also { level = Level.Ascend }
+                    else fail(InadmissibleTag(content, parent.label))
 
               next()
 
               tag() match
-                case Token.Comment => Comment(content)
+                case Token.Comment => current = Comment(content)
 
                 case Token.Empty   =>
                   val tag =
@@ -467,12 +470,14 @@ object Html extends Tag.Container
 
 
                 case Token.Open =>
-                  val tag =
-                    if parent.foreign then Tag.foreign(content, extra)
-                    else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
+                  if parent.foreign then current = Tag.foreign(content, extra) else
+                    current = dom.elements(content).or:
+                      cursor.cue(mark)
+                      fail(InvalidTag(content))
 
-                  if !admit(content) then infer(tag)
-                  else if tag.void then node() else descend(tag, admissible)
+                  if !admit(content) then infer(current)
+                  else if current.asInstanceOf[Tag].void then node()
+                  else current = descend(current.asInstanceOf[Tag], admissible)
 
                 case Token.Close =>
                   if content != parent.label then
@@ -482,11 +487,11 @@ object Html extends Tag.Container
                   else
                     cursor.next()
                     level = Level.Ascend
-                    Node(content, atts, array(children, count), parent.foreign)
+                    current = Node(content, atts, array(children, count), parent.foreign)
 
             level match
-              case Level.Ascend => node
-              case Level.Peer   => read(parent, admissible, atts, node :: children, count + 1)
+              case Level.Ascend => current
+              case Level.Peer   => read(parent, admissible, atts, current :: children, count + 1)
 
           case char => parent.content match
             case TextContent.Whitespace =>
