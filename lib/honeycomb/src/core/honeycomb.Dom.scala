@@ -61,6 +61,7 @@ import textSanitizers.skip
 
 trait Dom:
   val elements: Dictionary[Tag]
+  val attributes: Dictionary[Attribute]
   val entities: Dictionary[Text]
 
   def infer(parent: Tag, child: Tag): Optional[Tag]
@@ -99,18 +100,19 @@ object Whatwg:
 
 
   def attribute[self  <: Label: ValueOf, plane <: Label: Reifiable to List[String], topic]()
-  : self is Attribute on plane of topic =
+  : self is Attribute on plane of topic in Whatwg =
 
-      new Attribute(valueOf[self].tt, plane.reification().map(_.tt).to(Set)):
+      new Attribute(valueOf[self].tt, plane.reification().map(_.tt).to(Set), false):
         type Plane = plane
         type Topic = topic
         type Self = self
+        type Form = Whatwg
 
-  def globalAttribute[self  <: Label: ValueOf, topic](): self is Attribute of topic =
-    new Attribute(valueOf[self].tt, Set()):
+  def globalAttribute[self  <: Label: ValueOf, topic](): self is Attribute of topic in Whatwg =
+    new Attribute(valueOf[self].tt, Set(), true):
       type Topic = topic
       type Self = self
-
+      type Form = Whatwg
 
   given abbr: ("abbr" is Attribute on "th" of Attributive.Textual) = attribute()
   given accept: ("accept" is Attribute on "input" of Attributive.MimeList) = attribute()
@@ -516,5 +518,14 @@ class Whatwg() extends Dom:
   val entities: Dictionary[Text] =
     val list = cp"/honeycomb/entities.tsv".read[Text].cut(t"\n").map(_.cut(t"\t")).collect:
       case List(key, value) => (key, value)
+
+    Dictionary(list*)
+
+  val attributes: Dictionary[Attribute] =
+    val list: List[(Text, Attribute)] =
+      Whatwg.membersOfType[honeycomb.Attribute]
+      . foldLeft(collection.immutable.Map[Text, Attribute]()): (map, next) =>
+          map.updated(next.label, map.at(next.label).let(_.merge(next)).or(next))
+      . to(List)
 
     Dictionary(list*)

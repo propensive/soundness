@@ -147,17 +147,21 @@ object Html extends Tag.Container
     case ForbiddenUnquoted(char: Char)
     case MismatchedTag(open: Text, close: Text)
     case Incomplete(tag: Text)
+    case UnknownAttribute(name: Text)
+    case InvalidAttributeUse(attribute: Text, element: Text)
 
     def describe: Message = this match
-      case ExpectedMore                  =>  m"the content ended prematurely"
-      case InvalidTag(name)              =>  m"<$name> is not a valid tag"
-      case InadmissibleTag(name, parent) =>  m"<$name> cannot be a child of <$parent>"
-      case OnlyWhitespace(char)          =>  m"the character $char was found where only whitespace is permitted"
-      case Unexpected(char)              =>  m"the character $char was not expected"
-      case UnknownEntity(name)           =>  m"the entity &$name is not defined"
-      case ForbiddenUnquoted(char)       =>  m"the character $char is forbidden in an unquoted attribute"
-      case MismatchedTag(open, close)    =>  m"the tag </$close> did not match the opening tag <$open>"
-      case Incomplete(tag)               =>  m"the content ended while the tag <$tag> was left open"
+      case ExpectedMore                   =>  m"the content ended prematurely"
+      case InvalidTag(name)               =>  m"<$name> is not a valid tag"
+      case InadmissibleTag(name, parent)  =>  m"<$name> cannot be a child of <$parent>"
+      case OnlyWhitespace(char)           =>  m"the character $char was found where only whitespace is permitted"
+      case Unexpected(char)               =>  m"the character $char was not expected"
+      case UnknownEntity(name)            =>  m"the entity &$name is not defined"
+      case ForbiddenUnquoted(char)        =>  m"the character $char is forbidden in an unquoted attribute"
+      case MismatchedTag(open, close)     =>  m"the tag </$close> did not match the opening tag <$open>"
+      case Incomplete(tag)                =>  m"the content ended while the tag <$tag> was left open"
+      case UnknownAttribute(name)         =>  m"$name is not a recognized attribute"
+      case InvalidAttributeUse(name, tag) =>  m"the attribute $name cannot be used on the tag <$tag>"
 
   case class Position(ordinal: Ordinal) extends Format.Position:
     def describe: Text = t"character ${ordinal.n1}"
@@ -284,8 +288,10 @@ object Html extends Tag.Container
 
 
     @tailrec
-    def attributes(entries: List[(Text, Optional[Text])] = Nil)(using Cursor.Held)
+    def attributes(tag: Text, foreign: Boolean, entries: List[(Text, Optional[Text])] = Nil)
+         (using Cursor.Held)
     : List[(Text, Optional[Text])] =
+
         skip()
         cursor.lay(fail(ExpectedMore)):
           case '>' | '/' => entries
@@ -298,8 +304,10 @@ object Html extends Tag.Container
                 case '\'' =>  next() yet singleQuoted(cursor.mark)
                 case _    =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
 
-              attributes((name, assignment) :: entries)
-            else attributes((name, Unset) :: entries)
+              if foreign || dom.attributes(name).or(fail(UnknownAttribute(name))).targets(tag)
+              then attributes(tag, foreign, (name, assignment) :: entries)
+              else fail(InvalidAttributeUse(name, tag))
+            else attributes(tag, foreign, (name, Unset) :: entries)
 
     @tailrec
     def entity(mark: Mark)(using Cursor.Held): Optional[Text] =
@@ -358,7 +366,7 @@ object Html extends Tag.Container
                       case _   => comment(mark)
       case char =>  next() yet comment(mark)
 
-    def tag(): Token =
+    def tag(foreign: Boolean): Token =
       cursor.lay(fail(ExpectedMore)):
         case '!'  =>  expect('-')
                       expect('-')
@@ -372,14 +380,11 @@ object Html extends Tag.Container
 
         case char =>
           content = cursor.hold(tagname(cursor.mark))
-          extra = cursor.hold(attributes())
+          extra = cursor.hold(attributes(content, foreign))
 
           cursor.lay(fail(ExpectedMore)):
-            case '/'  =>  expect('>')
-                          cursor.next()
-                          Token.Empty
-            case '>'  =>  cursor.next()
-                          Token.Open
+            case '/'  =>  expect('>') yet cursor.next() yet Token.Empty
+            case '>'  =>  cursor.next() yet Token.Open
             case char =>  fail(Unexpected(char))
 
     def descend(parent: Tag, admissible: Set[Text]): Html =
@@ -461,7 +466,7 @@ object Html extends Tag.Container
 
               next()
 
-              tag() match
+              tag(parent.foreign) match
                 case Token.Comment => current = Comment(content)
 
                 case Token.Empty   =>
