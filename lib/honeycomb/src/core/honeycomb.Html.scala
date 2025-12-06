@@ -438,6 +438,7 @@ object Html extends Tag.Container
           case '<'  =>
             var level: Level = Level.Peer
             var current: Html = parent
+            var currentTag: Tag = parent
 
             cursor.hold:
               val mark = cursor.mark
@@ -449,10 +450,11 @@ object Html extends Tag.Container
                 current = Node(parent.label, parent.attributes, array(children, count), parent.foreign)
                 level = Level.Ascend
 
-              def infer(tag: Html): Unit =
+              def infer(tag: Tag): Unit =
                 cursor.cue(mark)
-                dom.infer(parent, tag.asInstanceOf[Tag]).let: tag =>
-                  current = descend(tag.asInstanceOf[Tag], admissible)
+                dom.infer(parent, tag).let: tag =>
+                  currentTag = tag
+                  level = Level.Descend
                 . or:
                     if parent.autoclose then close()
                     else fail(InadmissibleTag(content, parent.label))
@@ -463,36 +465,34 @@ object Html extends Tag.Container
                 case Token.Comment => current = Comment(content)
 
                 case Token.Empty   =>
-                  val tag =
+                  if admit(content) then node() else infer:
                     if parent.foreign then Tag.foreign(content, extra)
                     else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
-                  if admit(content) then node() else infer(tag)
-
-
                 case Token.Open =>
-                  if parent.foreign then current = Tag.foreign(content, extra) else
-                    current = dom.elements(content).or:
+                  currentTag =
+                    if parent.foreign then Tag.foreign(content, extra)
+                    else dom.elements(content).or:
                       cursor.cue(mark)
                       fail(InvalidTag(content))
 
-                  if !admit(content) then infer(current)
-                  else if current.asInstanceOf[Tag].void then node()
-                  else current = descend(current.asInstanceOf[Tag], admissible)
+                  if !admit(content) then infer(currentTag) else if currentTag.void then node()
+                  else level = Level.Descend
 
                 case Token.Close =>
                   if content != parent.label then
                     cursor.cue(mark)
-                    if parent.autoclose then close()
-                    else fail(MismatchedTag(parent.label, content))
+                    if parent.autoclose then close() else fail(MismatchedTag(parent.label, content))
                   else
                     cursor.next()
                     level = Level.Ascend
                     current = Node(content, atts, array(children, count), parent.foreign)
 
             level match
-              case Level.Ascend => current
-              case Level.Peer   => read(parent, admissible, atts, current :: children, count + 1)
+              case Level.Ascend  =>  current
+              case Level.Peer    =>  read(parent, admissible, atts, current :: children, count + 1)
+              case Level.Descend =>  val child = descend(currentTag, admissible)
+                                     read(parent, admissible, atts, child :: children, count + 1)
 
           case char => parent.content match
             case TextContent.Whitespace =>
