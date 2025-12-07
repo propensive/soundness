@@ -164,11 +164,11 @@ class Cursor[data](initial:                 data,
     if !keep0 then
       keep = true
       first = focusBlock
-      buffer.clear()
       store(focusBlock, current)
 
     action(using new Cursor.Held()).also:
       keep = keep0
+      if !keep then buffer.clear()
 
   inline def grab(start: Mark, end: Mark): data =
     // FIXME: calculate length across different blocks
