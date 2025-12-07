@@ -336,3 +336,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"Parse RCDATA with incomplete entity"):
         t"""<title>&a</title>""".read[Html of Metadata]
       . assert(_ == Title("&a"))
+
+      test(m"Attribute with character entity"):
+        t"""<img alt="To &amp; fro">""".read[Html of Flow]
+      . assert(_ == Img(alt = "To & fro"))

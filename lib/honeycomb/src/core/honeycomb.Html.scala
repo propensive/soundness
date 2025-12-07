@@ -282,8 +282,16 @@ object Html extends Tag.Container
 
     @tailrec
     def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '"'  => cursor.grab(mark, cursor.mark).also(next())
-      case char => next() yet value(mark)
+      case '&'  =>  val start = cursor.mark
+                    next()
+                    val mark2 = entity(cursor.mark, dom.entities).lay(mark): text =>
+                      cursor.clone(mark, start)(buffer)
+                      buffer.append(text)
+                      cursor.mark
+                    value(mark2)
+      case '"'  =>  cursor.clone(mark, cursor.mark)(buffer)
+                    next() yet result()
+      case char =>  next() yet value(mark)
 
     @tailrec
     def singleQuoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
