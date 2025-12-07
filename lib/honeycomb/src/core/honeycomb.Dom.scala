@@ -415,11 +415,11 @@ class Whatwg() extends Dom:
   val Iframe = Tag.void["iframe"]()
   val Img = Tag.void["img"]()
 
-  object Input extends Tag.Void("input", Nil):
+  object Input extends Tag.Void("input", collection.immutable.Map()):
     type Topic = "input"
     type Transport = ""
 
-    val Button = Tag.void["input"](presets = List((t"type", t"button")))
+    val Button = Tag.void["input"](presets = collection.immutable.Map(t"type" -> t"button"))
     // FIXME: More Input types
 
   val Ins = Tag.transparent["ins", ""]()

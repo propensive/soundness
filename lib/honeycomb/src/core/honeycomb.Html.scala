@@ -92,7 +92,7 @@ object Html extends Tag.Container
     case Comment(text) => t"<!--$text-->"
 
     case Node(tagname, attributes, children, _) =>
-      val tagContent = if attributes == Nil then t"" else
+      val tagContent = if attributes.isEmpty then t"" else
         attributes.map:
           case (key, value) => value.lay(key) { value => t"""$key="$value"""" }
         . join(t" ", t" ", t"")
@@ -194,14 +194,14 @@ object Html extends Tag.Container
 
 
   object Node:
-    def foreign(label: Text, attributes: List[(Text, Optional[Text])], children: Html of "#foreign"*)
+    def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
     : Node of "#foreign" =
 
         Node(label, attributes, IArray.from(children), true).of["#foreign"]
 
 
   case class Node
-              (label: Text, attributes: List[(Text, Optional[Text])], children: IArray[Html], foreign: Boolean)
+              (label: Text, attributes: Map[Text, Optional[Text]], children: IArray[Html], foreign: Boolean)
   extends Html, Topical, Transportive:
 
     override def equals(that: Any): Boolean = that match
@@ -288,9 +288,9 @@ object Html extends Tag.Container
 
 
     @tailrec
-    def attributes(tag: Text, foreign: Boolean, entries: List[(Text, Optional[Text])] = Nil)
+    def attributes(tag: Text, foreign: Boolean, entries: Map[Text, Optional[Text]] = Map())
          (using Cursor.Held)
-    : List[(Text, Optional[Text])] =
+    : Map[Text, Optional[Text]] =
 
         skip()
         cursor.lay(fail(ExpectedMore)):
@@ -305,9 +305,9 @@ object Html extends Tag.Container
                 case _    =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
 
               if foreign || dom.attributes(name).or(fail(UnknownAttribute(name))).targets(tag)
-              then attributes(tag, foreign, (name, assignment) :: entries)
+              then attributes(tag, foreign, entries.updated(name, assignment))
               else fail(InvalidAttributeUse(name, tag))
-            else attributes(tag, foreign, (name, Unset) :: entries)
+            else attributes(tag, foreign, entries.updated(name, Unset))
 
     @tailrec
     def entity(mark: Mark)(using Cursor.Held): Optional[Text] =
@@ -356,7 +356,7 @@ object Html extends Tag.Container
 
     // mutable state
     var content: Text = t""
-    var extra: List[(Text, Optional[Text])] = Nil
+    var extra: Map[Text, Optional[Text]] = Map()
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '-'  =>  val end = cursor.mark
@@ -391,7 +391,7 @@ object Html extends Tag.Container
       val admissible2 = if parent.transparent then admissible else parent.admissible
       read(parent, admissible2, extra, Nil, 0)
 
-    def append(parent: Tag, admissible: Set[Text], atts: List[(Text, Optional[Text])], text: Text, children: List[Html], count0: Int): Html =
+    def append(parent: Tag, admissible: Set[Text], atts: Map[Text, Optional[Text]], text: Text, children: List[Html], count0: Int): Html =
       var count = count0
 
       val children2 =
@@ -423,7 +423,7 @@ object Html extends Tag.Container
       array.immutable(using Unsafe)
 
     @tailrec
-    def read(parent: Tag, admissible: Set[Text], atts: List[(Text, Optional[Text])], children: List[Html], count: Int)
+    def read(parent: Tag, admissible: Set[Text], atts: Map[Text, Optional[Text]], children: List[Html], count: Int)
     : Html =
 
         def admit(child: Text): Boolean =
@@ -440,7 +440,8 @@ object Html extends Tag.Container
 
               append(parent, admissible, atts, child, children, count)
 
-          case '<'  =>
+          case '<' if parent.content == TextContent.Normal
+                      || parent.content == TextContent.Whitespace =>
             var level: Level = Level.Peer
             var current: Html = parent
             var currentTag: Tag = parent
@@ -507,7 +508,7 @@ object Html extends Tag.Container
               val content = Textual(cursor.hold(raw(parent.label, cursor.mark)))
               Node(parent.label, parent.attributes, IArray(content), parent.foreign)
 
-            case TextContent.Rcdata => // FIXME
+            case TextContent.Rcdata =>
               val content = Textual(cursor.hold(raw(parent.label, cursor.mark)))
               Node(parent.label, parent.attributes, IArray(content), parent.foreign)
 
@@ -515,7 +516,7 @@ object Html extends Tag.Container
               append(parent, admissible, atts, cursor.hold(textual(cursor.mark)), children, count)
 
     skip()
-    read(root, root.admissible, Nil, Nil, 0)
+    read(root, root.admissible, Map(), Nil, 0)
 
 sealed into trait Html extends Topical:
   type Topic <: Label

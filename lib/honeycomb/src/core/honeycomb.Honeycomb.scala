@@ -68,8 +68,8 @@ object Honeycomb:
                               case Some('{ $converter: Attributive }) =>
                                 '{$converter.attribute(${Expr(key)}, $value)}
 
-                              case None =>
-                                halt(m"there is not converter for ${TypeRepr.of[result].show} attributes")
+                              case _ =>
+                                halt(m"there is no converter for ${TypeRepr.of[result].show} attributes")
 
                           case _ =>
                             halt(m"attribute $key cannot be used on tag <$topic>")
@@ -79,4 +79,4 @@ object Honeycomb:
               . or(halt(m"unexpected type"))
 
 
-      '{$tag.node(${Expr.ofList(attributes)})}.asExprOf[result]
+      '{$tag.node(${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]

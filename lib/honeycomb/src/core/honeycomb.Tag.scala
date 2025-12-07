@@ -61,25 +61,25 @@ import textSanitizers.skip
 
 object Tag:
   def root(children: Set[Text]): Tag =
-    new Tag("#root", false, Html.TextContent.Normal, Nil, children, false, foreign = false, void = false):
+    new Tag("#root", false, Html.TextContent.Normal, Map(), children, false, foreign = false, void = false):
       type Result = this.type
 
-      def node(attributes: List[Optional[(Text, Optional[Text])]]): Result = this
+      def node(attributes: Map[Text, Optional[Text]]): Result = this
 
 
-  def void[label <: Label: ValueOf](presets: List[(Text, Optional[Text])] = Nil): Tag.Void of label =
+  def void[label <: Label: ValueOf](presets: Map[Text, Optional[Text]] = Map()): Tag.Void of label =
     new Void(valueOf[label].tt, presets):
       type Topic = label
 
-  def foreign(label: Text, attributes0: List[(Text, Optional[Text])]): Tag of "#foreign" =
+  def foreign(label: Text, attributes0: Map[Text, Optional[Text]]): Tag of "#foreign" =
     new Tag.Container(label, false, Html.TextContent.Normal, attributes0, Set(), false, foreign = true):
       type Topic = "#foreign"
 
   def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
-       (autoclose:  Boolean          = false,
-        content:    Html.TextContent = Html.TextContent.Normal,
-        presets:    List[(Text, Optional[Text])]  = Nil,
-        insertable: Boolean          = false)
+       (autoclose:  Boolean                   = false,
+        content:    Html.TextContent          = Html.TextContent.Normal,
+        presets:    Map[Text, Optional[Text]] = Map(),
+        insertable: Boolean                   = false)
   : Container of label over children =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
@@ -90,14 +90,14 @@ object Tag:
 
 
   def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
-       (presets: List[(Text, Optional[Text])] = Nil)
+       (presets: Map[Text, Optional[Text]] = Map())
   : Transparent of label over children =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
       transparent(valueOf[label].tt, admissible, presets).of[label].over[children]
 
 
-  def transparent(label: Text, children: Set[Text], presets: List[(Text, Optional[Text])])
+  def transparent(label: Text, children: Set[Text], presets: Map[Text, Optional[Text]])
   : Transparent =
 
       Transparent(label, children, presets)
@@ -108,12 +108,12 @@ object Tag:
 
   class Container
          (label:      Text,
-          autoclose:  Boolean          = false,
-          content:    Html.TextContent = Html.TextContent.Normal,
-          presets:    List[(Text, Optional[Text])]  = Nil,
-          admissible: Set[Text]        = Set(),
-          insertable: Boolean          = false,
-          foreign:    Boolean          = false)
+          autoclose:  Boolean                   = false,
+          content:    Html.TextContent          = Html.TextContent.Normal,
+          presets:    Map[Text, Optional[Text]] = Map(),
+          admissible: Set[Text]                 = Set(),
+          insertable: Boolean                   = false,
+          foreign:    Boolean                   = false)
   extends Tag(label, autoclose, content, presets, admissible, insertable, foreign = foreign):
     tag =>
       type Result = Html.Node & Html.Populable of Topic over Transport
@@ -123,12 +123,12 @@ object Tag:
            (using css: CssClass of className)
       : Html.Node of Topic =
 
-          val cls = css.name.let((t"class", _) :: Nil).or(Nil)
+          val cls = css.name.lay(Map()) { name => Map(t"class" -> name) }
           Html.Node(label, cls, IArray.from(children), foreign).of[Topic]
 
 
-      def node(attributes: List[Optional[(Text, Optional[Text])]]): Result =
-        new Html.Node(label, attributes.compact, IArray(), foreign) with Html.Populable:
+      def node(attributes: Map[Text, Optional[Text]]): Result =
+        new Html.Node(label, presets ++ attributes, IArray(), foreign) with Html.Populable:
           type Topic = tag.Topic
           type Transport = tag.Transport
 
@@ -136,8 +136,8 @@ object Tag:
   class Transparent
          (label:      Text,
           admissible: Set[Text],
-          presets:    List[(Text, Optional[Text])] = Nil,
-          foreign:    Boolean = false)
+          presets:    Map[Text, Optional[Text]] = Map(),
+          foreign:    Boolean                   = false)
   extends Tag
            (label       = label,
             autoclose   = false,
@@ -155,37 +155,37 @@ object Tag:
            (using css: CssClass of className)
       : Html.Node of Topic =
 
-          val cls = css.name.let((t"class", _) :: Nil).or(Nil)
+          val cls = css.name.lay(Map()) { name => Map(t"class" -> name) }
           Html.Node(label, cls, IArray.from(children), foreign).of[Topic]
 
 
-      def node(attributes: List[Optional[(Text, Optional[Text])]]): Result =
-        new Html.Node(label, attributes.compact, IArray(), foreign) with Html.Transparent:
+      def node(attributes: Map[Text, Optional[Text]]): Result =
+        new Html.Node(label, presets ++ attributes, IArray(), foreign) with Html.Transparent:
           type Topic = tag.Topic
           type Transport = tag.Transport
 
 
-  class Void(label: Text, presets: List[(Text, Optional[Text])])
+  class Void(label: Text, presets: Map[Text, Optional[Text]])
   extends Tag(label, presets = presets, void = true):
     tag =>
       type Result = Html.Node of Topic
 
 
-      def node(attributes: List[Optional[(Text, Optional[Text])]]): Result =
-        new Html.Node(label, attributes.compact, IArray(), tag.foreign):
+      def node(attributes: Map[Text, Optional[Text]]): Result =
+        new Html.Node(label, presets ++ attributes, IArray(), tag.foreign):
           type Topic = tag.Topic
 
 abstract class Tag
        (    label:       Text,
-        val autoclose:   Boolean          = false,
-        val content:     Html.TextContent = Html.TextContent.Normal,
-        val presets:     List[(Text, Optional[Text])]  = Nil,
-        val admissible:  Set[Text]        = Set(),
-        val insertable:  Boolean          = false,
-            foreign:     Boolean          = false,
-        val void:        Boolean          = false,
-        val transparent: Boolean          = false)
-extends Html.Node(label, Nil, IArray(), foreign), Dynamic:
+        val autoclose:   Boolean                   = false,
+        val content:     Html.TextContent          = Html.TextContent.Normal,
+        val presets:     Map[Text, Optional[Text]] = Map(),
+        val admissible:  Set[Text]                 = Set(),
+        val insertable:  Boolean                   = false,
+            foreign:     Boolean                   = false,
+        val void:        Boolean                   = false,
+        val transparent: Boolean                   = false)
+extends Html.Node(label, presets, IArray(), foreign), Dynamic:
 
   type Result <: Html.Node
 
@@ -194,4 +194,4 @@ extends Html.Node(label, Nil, IArray(), foreign), Dynamic:
     ${Honeycomb.attributes[Result, this.type]('this, 'attributes)}
 
 
-  def node(attributes: List[Optional[(Text, Optional[Text])]]): Result
+  def node(attributes: Map[Text, Optional[Text]]): Result

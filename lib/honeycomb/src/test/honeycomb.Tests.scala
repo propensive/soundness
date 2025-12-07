@@ -32,6 +32,8 @@
                                                                                                   */
 package honeycomb
 
+import scala.collection.immutable as sci
+
 import soundness.{Table as _, *}
 
 import autopsies.contrastExpectations
@@ -262,12 +264,12 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
-      .assert(_ == Div(Svg(Html.Node.foreign("circle", List((t"r", t"1"))))))
+      .assert(_ == Div(Svg(Html.Node.foreign("circle", sci.Map(t"r" -> t"1")))))
 
       test(m"Nontrivial MathML example"):
         t"""<div>The equation is <math><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""
         . read[Html of Flow]
-      . assert(_ == Div("The equation is ", Math(Html.Node.foreign("mfrac", Nil, Html.Node.foreign("msup", Nil, Html.Node.foreign("mi", Nil, "π"), Html.Node.foreign("mn", Nil, "2")), Html.Node.foreign("mn", Nil, "6"))), "."))
+      . assert(_ == Div("The equation is ", Math(Html.Node.foreign("mfrac", sci.Map(), Html.Node.foreign("msup", sci.Map(), Html.Node.foreign("mi", sci.Map(), "π"), Html.Node.foreign("mn", sci.Map(), "2")), Html.Node.foreign("mn", sci.Map(), "6"))), "."))
 
       test(m"transparent tag with text"):
         t"""<p>Go <a href="https://example.com">home</a>.</p>""".read[Html of "p"]
@@ -285,3 +287,24 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"transparent tag with additions"):
         t"""<div><video controls><source src="https://example.com/movie.mp4"></video></div>""".read[Html of "div"]
       . assert(_ == Div(Video(controls = true)(Source(src = url"https://example.com/movie.mp4"))))
+
+      test(m"Tag subtype"):
+        t"""<input type="button">""".read[Html of "input"]
+      . assert(_ == Input.Button)
+
+      test(m"Tag subtype with extra attributes"):
+        t"""<input alt="whatever" type="button">""".read[Html of "input"]
+      . assert(_ == Input.Button(alt = "whatever"))
+
+
+      test(m"Parse RCDATA with no entities"):
+        t"""<title>Push then Pull</title>""".read[Html of Metadata]
+      . assert(_ == Title("Push then Pull"))
+
+      test(m"Parse RCDATA"):
+        t"""<title>Push &amp; Pull</title>""".read[Html of Metadata]
+      . assert(_ == Title("Push & Pull"))
+
+      test(m"Parse RCDATA with fake tag"):
+        t"""<title><push> &amp; <pull></title>""".read[Html of Metadata]
+      . assert(_ == Title("<push> & <pull>"))
