@@ -440,8 +440,7 @@ object Html extends Tag.Container
 
               append(parent, admissible, atts, child, children, count)
 
-          case '<' if parent.content == TextContent.Normal
-                      || parent.content == TextContent.Whitespace =>
+          case '<'  =>
             var level: Level = Level.Peer
             var current: Html = parent
             var currentTag: Tag = parent
