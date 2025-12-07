@@ -314,16 +314,21 @@ object Html extends Tag.Container
             else attributes(tag, foreign, entries.updated(name, Unset))
 
     @tailrec
-    def entity(mark: Mark)(using Cursor.Held): Optional[Text] =
+    def entity(mark: Mark, dictionary: Dictionary[Text])(using Cursor.Held): Optional[Text] =
       cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter | char.isDigit =>  cursor.next() yet entity(mark)
+        case char if char.isLetter | char.isDigit => dictionary(char) match
+          case Dictionary.Empty => Unset
+          case dictionary       => cursor.next() yet entity(mark, dictionary)
+
         case '='                                  =>  Unset
 
-        case ';' =>
-          cursor.next() yet dom.entities(cursor.grab(mark, cursor.mark)).or(Unset)
+        case ';' => cursor.next() yet dictionary(';') match
+          case Dictionary.Just(_, text) => text
+          case _                        => Unset
 
-        case char =>
-          dom.entities(cursor.grab(mark, cursor.mark))
+        case char => dictionary match
+          case Dictionary.Just(_, text) => text
+          case _                        => Unset
 
 
     @tailrec
@@ -332,7 +337,7 @@ object Html extends Tag.Container
         case '&' if entities =>
           val start = cursor.mark
           next()
-          val mark2 = entity(cursor.mark).lay(mark): text =>
+          val mark2 = entity(cursor.mark, dom.entities).lay(mark): text =>
             cursor.clone(mark, start)(buffer)
             buffer.append(text)
             cursor.mark
