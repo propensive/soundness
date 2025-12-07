@@ -121,6 +121,10 @@ object Tests extends Suite(m"Honeycomb Tests"):
         t"""<div style="bar"/>""".read[Html of "div"]
       .assert(_ == Div(style = t"bar"))
 
+      test(m"case-insensitive element"):
+        t"""<DIV style="bar">hello world</DIV>""".read[Html of "div"]
+      .assert(_ == Div(style = t"bar")("hello world"))
+
       test(m"simple comment tag"):
         t"""<!--This is a comment-->""".read[Html of Flow]
       .assert(_ == Html.Comment("This is a comment"))
@@ -167,9 +171,9 @@ object Tests extends Suite(m"Honeycomb Tests"):
       .assert(_ == ParseError(Html, Html.Position(8.u), Html.Issue.MismatchedTag("b", "em")))
 
       test(m"unknown tag"):
-        try t"""<xyz>""".read[Html of Phrasing]
+        try t"""<scrip>""".read[Html of Phrasing]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(1.u), Html.Issue.InvalidTag("xyz")))
+      .assert(_ == ParseError(Html, Html.Position(2.u), Html.Issue.InvalidTag("scrip")))
 
       test(m"raw text"):
         t"<head><script>some content</script></head>".read[Html of "head"]

@@ -140,6 +140,7 @@ object Html extends Tag.Container
   enum Issue extends Format.Issue:
     case ExpectedMore
     case InvalidTag(name: Text)
+    case InvalidTagStart(prefix: Text)
     case InadmissibleTag(name: Text, parent: Text)
     case OnlyWhitespace(char: Char)
     case Unexpected(char: Char)
@@ -153,6 +154,7 @@ object Html extends Tag.Container
     def describe: Message = this match
       case ExpectedMore                   =>  m"the content ended prematurely"
       case InvalidTag(name)               =>  m"<$name> is not a valid tag"
+      case InvalidTagStart(prefix)        =>  m"there is no valid tag whose name starts $prefix"
       case InadmissibleTag(name, parent)  =>  m"<$name> cannot be a child of <$parent>"
       case OnlyWhitespace(char)           =>  m"the character $char was found where only whitespace is permitted"
       case Unexpected(char)               =>  m"the character $char was not expected"
@@ -250,20 +252,32 @@ object Html extends Tag.Container
       case char                            =>  fail(OnlyWhitespace(char))
 
     @tailrec
-    def tagname(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case char if char.isLetter           =>  next() yet tagname(mark)
-      case ' ' | '\f' | '\n' | '\r' | '\t' =>  cursor.grab(mark, cursor.mark)
-      case '/'                             =>  cursor.grab(mark, cursor.mark)
-      case '>'                             =>  cursor.grab(mark, cursor.mark)
-      case char                            =>  fail(Unexpected(char))
+    def tagname(mark: Mark, dictionary: Dictionary[Tag])(using Cursor.Held): Tag =
+      cursor.lay(fail(ExpectedMore)):
+        case char if char.isLetter => dictionary(char.minuscule) match
+          case Dictionary.Empty => val name = cursor.grab(mark, cursor.mark)
+                                   cursor.cue(mark) yet fail(InvalidTagStart(name))
+          case other            => next() yet tagname(mark, other)
+        case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
+          case Dictionary.Just("", tag)       =>  tag
+          case Dictionary.Branch(tag: Tag, _) =>  tag
+          case other                          =>  val name = cursor.grab(mark, cursor.mark)
+                                                  cursor.cue(mark) yet fail(InvalidTag(name))
+        case char =>
+          fail(Unexpected(char))
+
+    @tailrec
+    def foreignTag(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+      case char if char.isLetter                       =>  next() yet foreignTag(mark)
+      case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' =>  cursor.grab(mark, cursor.mark).lower
+      case char                                        =>  fail(Unexpected(char))
 
     @tailrec
     def key(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '-'                             =>  next() yet key(mark)
-      case char if char.isLetter           =>  next() yet key(mark)
-      case ' ' | '\f' | '\n' | '\r' | '\t' =>  cursor.grab(mark, cursor.mark)
-      case '=' | '>'                       =>  cursor.grab(mark, cursor.mark)
-      case char                            =>  fail(Unexpected(char))
+      case '-'                                         =>  next() yet key(mark)
+      case char if char.isLetter                       =>  next() yet key(mark)
+      case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>  cursor.grab(mark, cursor.mark)
+      case char                                        =>  fail(Unexpected(char))
 
 
     @tailrec
@@ -323,17 +337,19 @@ object Html extends Tag.Container
         case '='                                  =>  Unset
 
         case ';' => cursor.next() yet dictionary(';') match
-          case Dictionary.Just(_, text) => text
+          case Dictionary.Just("", text)        => text
+          case Dictionary.Branch(text: Text, _) => text
           case _                        => Unset
 
         case char => dictionary match
-          case Dictionary.Just(_, text) => text
-          case _                        => Unset
+          case Dictionary.Just("", text)        => text
+          case Dictionary.Branch(text: Text, _) => text
+          case _                                => Unset
 
 
     @tailrec
     def textual(mark: Mark, close: Optional[Text], entities: Boolean)(using Cursor.Held): Text =
-      cursor.lay(buffer.append(cursor.grab(mark, cursor.mark)) yet result()):
+      cursor.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()):
         case '&' if entities =>
           val start = cursor.mark
           next()
@@ -373,26 +389,25 @@ object Html extends Tag.Container
                       case _   => comment(mark)
       case char =>  next() yet comment(mark)
 
-    def tag(foreign: Boolean): Token =
-      cursor.lay(fail(ExpectedMore)):
-        case '!'  =>  expect('-')
-                      expect('-')
-                      next()
-                      content = cursor.hold(comment(cursor.mark))
-                      cursor.next()
-                      Token.Comment
-        case '/'  =>  next()
-                      content = cursor.hold(tagname(cursor.mark))
-                      Token.Close
+    def tag(foreign: Boolean): Token = cursor.lay(fail(ExpectedMore)):
+      case '!'  =>  expect('-')
+                    expect('-')
+                    next()
+                    content = cursor.hold(comment(cursor.mark))
+                    cursor.next()
+                    Token.Comment
+      case '/'  =>  next()
+                    content = cursor.hold(if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label)
+                    Token.Close
 
-        case char =>
-          content = cursor.hold(tagname(cursor.mark))
-          extra = cursor.hold(attributes(content, foreign))
+      case char =>
+        content = cursor.hold(if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label)
+        extra = cursor.hold(attributes(content, foreign))
 
-          cursor.lay(fail(ExpectedMore)):
-            case '/'  =>  expect('>') yet cursor.next() yet Token.Empty
-            case '>'  =>  cursor.next() yet Token.Open
-            case char =>  fail(Unexpected(char))
+        cursor.lay(fail(ExpectedMore)):
+          case '/'  =>  expect('>') yet cursor.next() yet Token.Empty
+          case '>'  =>  cursor.next() yet Token.Open
+          case char =>  fail(Unexpected(char))
 
     def descend(parent: Tag, admissible: Set[Text]): Html =
       val admissible2 = if parent.transparent then admissible else parent.admissible
