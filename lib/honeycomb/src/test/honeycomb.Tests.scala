@@ -298,36 +298,37 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
 
       test(m"Parse RCDATA with no entities"):
-        println("RCDATA 1")
         t"""<title>Push then Pull</title>""".read[Html of Metadata]
       . assert(_ == Title("Push then Pull"))
 
-      test(m"Parse RCDATA"):
-        println("RCDATA 2")
+      test(m"Parse RCDATA with an entity"):
         t"""<title>Push &amp; Pull</title>""".read[Html of Metadata]
       . assert(_ == Title("Push & Pull"))
 
-      test(m"Parse RCDATA with fake tag"):
-        println("RCDATA 3")
-        t"""<title><push> &amp; <pull></title>""".read[Html of Metadata]
-      . assert(_ == Title("<push> & <pull>"))
-
       test(m"Parse empty RCDATA"):
-        println("RCDATA 4")
         t"""<title></title>""".read[Html of Metadata]
       . assert(_ == Title)
 
       test(m"Parse RCDATA starting with entity"):
-        println("RCDATA 5")
         t"""<title>&amp; ampersand</title>""".read[Html of Metadata]
       . assert(_ == Title("& ampersand"))
 
+      test(m"Parse RCDATA with fake tag"):
+        t"""<title><push> &amp; <pull></title>""".read[Html of Metadata]
+      . assert(_ == Title("<push> & <pull>"))
+
       test(m"Parse RCDATA ending with entity"):
-        println("RCDATA 6")
         t"""<title>ampersand:&amp;</title>""".read[Html of Metadata]
       . assert(_ == Title("ampersand:&"))
 
       test(m"Parse RCDATA with only entity"):
-        println("RCDATA 6")
         t"""<title>&amp;</title>""".read[Html of Metadata]
       . assert(_ == Title("&"))
+
+      test(m"Parse RCDATA with invalid entity"):
+        t"""<title>&ampersand;</title>""".read[Html of Metadata]
+      . assert(_ == Title("&ampersand;"))
+
+      test(m"Parse RCDATA with incomplete entity"):
+        t"""<title>&a</title>""".read[Html of Metadata]
+      . assert(_ == Title("&a"))

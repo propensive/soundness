@@ -222,6 +222,10 @@ object Html extends Tag.Container
 
   def parse[dom <: Dom](input: Iterator[Text], root: Tag)(using dom: Dom): Html raises ParseError =
     val cursor = Cursor(input)
+    val buffer: jl.StringBuilder = jl.StringBuilder()
+    def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
+    var content: Text = t""
+    var extra: Map[Text, Optional[Text]] = Map()
 
     def next(): Unit =
       if !cursor.next() then raise(ParseError(Html, Position(cursor.position), ExpectedMore))
@@ -312,51 +316,49 @@ object Html extends Tag.Container
     @tailrec
     def entity(mark: Mark)(using Cursor.Held): Optional[Text] =
       cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter | char.isDigit =>  next() yet entity(mark)
+        case char if char.isLetter | char.isDigit =>  cursor.next() yet entity(mark)
         case '='                                  =>  Unset
 
         case ';' =>
-          cursor.next()
-          val name = cursor.grab(mark, cursor.mark)
-          dom.entities(name).or(fail(UnknownEntity(name)))
+          cursor.next() yet dom.entities(cursor.grab(mark, cursor.mark)).or(Unset)
 
         case char =>
           dom.entities(cursor.grab(mark, cursor.mark))
 
 
     @tailrec
-    def textual(mark: Mark)(using Cursor.Held): Text =
-      cursor.lay(cursor.grab(mark, cursor.mark)):
-        case '<' | '&'                        =>  cursor.grab(mark, cursor.mark)
-        case ' ' | '\f' | '\n' | '\r' | '\t'  =>  next() yet textual(mark)
+    def textual(mark: Mark, close: Optional[Text], entities: Boolean)(using Cursor.Held): Text =
+      cursor.lay(buffer.append(cursor.grab(mark, cursor.mark)) yet result()):
+        case '&' if entities =>
+          val start = cursor.mark
+          next()
+          val mark2 = entity(cursor.mark).lay(mark): text =>
+            cursor.clone(mark, start)(buffer)
+            buffer.append(text)
+            cursor.mark
+          textual(mark2, close, entities)
+
+        case '<'  =>
+          close.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()): tag =>
+            val end = cursor.mark
+            cursor.next()
+            val resume = cursor.mark
+
+            if cursor.lay(false)(_ == '/') then
+              next()
+              val tagStart = cursor.mark
+              repeat(tag.length)(cursor.next())
+              val candidate = cursor.grab(tagStart, cursor.mark)
+              if cursor.more && candidate == tag then
+                if cursor.lay(false)(_ == '>')
+                then
+                  cursor.clone(mark, end)(buffer) yet result().also(cursor.next())
+                else cursor.cue(resume) yet textual(mark, tag, entities)
+              else cursor.cue(resume) yet textual(mark, tag, entities)
+            else cursor.cue(resume) yet textual(mark, tag, entities)
 
         case char =>
-          if cursor.next() then textual(mark) else cursor.grab(mark, cursor.mark)
-
-    @tailrec
-    def raw(tag: Text, mark: Mark)(using Cursor.Held): Text =
-      cursor.lay(cursor.grab(mark, cursor.mark)):
-        case '<'  =>  val end = cursor.mark
-                      cursor.next()
-                      val resume = cursor.mark
-
-                      if cursor.lay(false)(_ == '/') then
-                        next()
-                        val tagStart = cursor.mark
-                        repeat(tag.length)(cursor.next())
-                        val candidate = cursor.grab(tagStart, cursor.mark)
-                        if cursor.more && candidate == tag then
-                          if cursor.lay(false)(_ == '>')
-                          then cursor.grab(mark, end).also(cursor.next())
-                          else cursor.cue(resume) yet raw(tag, mark)
-                        else cursor.cue(resume) yet raw(tag, mark)
-                      else cursor.cue(resume) yet raw(tag, mark)
-
-        case char =>  if cursor.next() then raw(tag, mark) else cursor.grab(mark, cursor.mark)
-
-    // mutable state
-    var content: Text = t""
-    var extra: Map[Text, Optional[Text]] = Map()
+          cursor.next() yet textual(mark, close, entities)
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '-'  =>  val end = cursor.mark
@@ -391,18 +393,6 @@ object Html extends Tag.Container
       val admissible2 = if parent.transparent then admissible else parent.admissible
       read(parent, admissible2, extra, Nil, 0)
 
-    def append(parent: Tag, admissible: Set[Text], atts: Map[Text, Optional[Text]], text: Text, children: List[Html], count0: Int): Html =
-      var count = count0
-
-      val children2 =
-        if text == "" then children else children match
-          case Textual(text0) :: more => Textual(text0+text) :: more
-          case _ =>
-            count += 1
-            Textual(text) :: children
-
-      read(parent, admissible, atts, children2, count)
-
     def finish(parent: Tag, children: List[Html], count: Int): Html =
       if parent != root then
         if parent.autoclose
@@ -430,17 +420,7 @@ object Html extends Tag.Container
           parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
 
         cursor.lay(finish(parent, children, count)):
-          case '&'  => parent.content match
-            case TextContent.Whitespace => fail(OnlyWhitespace('&'))
-            case _ =>
-              val child = cursor.hold:
-                val start = cursor.mark
-                next()
-                entity(cursor.mark).or(textual(start))
-
-              append(parent, admissible, atts, child, children, count)
-
-          case '<'  =>
+          case '<' if parent.content != TextContent.Raw && parent.content != TextContent.Rcdata =>
             var level: Level = Level.Peer
             var current: Html = parent
             var currentTag: Tag = parent
@@ -504,15 +484,19 @@ object Html extends Tag.Container
               whitespace() yet read(parent, admissible, atts, children, count)
 
             case TextContent.Raw =>
-              val content = Textual(cursor.hold(raw(parent.label, cursor.mark)))
-              Node(parent.label, parent.attributes, IArray(content), parent.foreign)
+              val text = cursor.hold(textual(cursor.mark, parent.label, false))
+              if text.s.isEmpty then Node(parent.label, parent.attributes, IArray(), parent.foreign)
+              else Node(parent.label, parent.attributes, IArray(text), parent.foreign)
 
             case TextContent.Rcdata =>
-              val content = Textual(cursor.hold(raw(parent.label, cursor.mark)))
-              Node(parent.label, parent.attributes, IArray(content), parent.foreign)
+              val text = cursor.hold(textual(cursor.mark, parent.label, true))
+              if text.s.isEmpty then Node(parent.label, parent.attributes, IArray(), parent.foreign)
+              else Node(parent.label, parent.attributes, IArray(Textual(text)), parent.foreign)
 
             case TextContent.Normal =>
-              append(parent, admissible, atts, cursor.hold(textual(cursor.mark)), children, count)
+              val text = cursor.hold(textual(cursor.mark, Unset, true))
+              if text.length == 0 then read(parent, admissible, atts, children, count + 1)
+              else read(parent, admissible, atts, Textual(text) :: children, count + 1)
 
     skip()
     read(root, root.admissible, Map(), Nil, 0)

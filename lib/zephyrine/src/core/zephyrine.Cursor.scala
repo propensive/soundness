@@ -176,7 +176,7 @@ class Cursor[data](initial:                 data,
     clone(start, end)(buffer)
     addressable.build(buffer)
 
-  inline def clone(start: Mark, end: Mark)(target: addressable.Target): Unit =
+  inline def clone(start: Mark, end: Mark)(target: addressable.Target): Unit = if start != end then
     val last = end.block - first
     var offset = start.block - first
 
