@@ -54,15 +54,18 @@ object Honeycomb:
 
       val attributes: Seq[Expr[Optional[(Text, Optional[Text])]]] =
         Type.of[thisType] match
-          case '[ type topic <: Label; Tag { type Topic = topic } ] => args.map:
+          case '[ type topic <: Label;
+                  type form;
+                  Tag { type Topic = topic; type Form = form } ] => args.map:
             case '{ ($key, $value: value) } =>
               TypeRepr.of[topic].literal[String].let: topic =>
                 key.asTerm match
                   case Literal(StringConstant(key)) =>
-                    ConstantType(StringConstant(key)).asType match
+                    if key == "" then halt(m"Empty key")
+                    else ConstantType(StringConstant(key)).asType match
                       case '[type key <: Label; key] =>
-                        Expr.summon[key is Attribute in Whatwg on (? >: topic)]
-                        . orElse(Expr.summon[key is Attribute in Whatwg]) match
+                        Expr.summon[key is Attribute in form on (? >: topic)]
+                        . orElse(Expr.summon[key is Attribute in form]) match
                           case Some('{ type result; $expr: Attribute { type Topic = result } }) =>
                             Expr.summon[(? >: value) is Attributive to result] match
                               case Some('{ $converter: Attributive }) =>
@@ -75,8 +78,7 @@ object Honeycomb:
                             halt(m"attribute $key cannot be used on tag <$topic>")
 
                   case _ =>
-                    halt(m"unexpectedly unable to determine attribute key")
+                    halt(m"unable to determine attribute key type")
               . or(halt(m"unexpected type"))
-
 
       '{$tag.node(${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]
