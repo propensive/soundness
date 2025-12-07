@@ -36,6 +36,7 @@ import language.dynamics
 
 import java.lang as jl
 
+import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 
 import adversaria.*
@@ -336,7 +337,16 @@ class Whatwg() extends Dom:
       | "video" | "wbr"]
      ().in[Whatwg]
 
-  val Area = Tag.void["area"]().in[Whatwg]
+  object Area extends Tag.Void("area", sci.Map()):
+    type Topic = "area"
+    type Transport = ""
+    type Form = Whatwg
+
+    val Default = Tag.void["input"](presets = sci.Map(t"shape" -> t"default")).in[Whatwg]
+    val Rect = Tag.void["input"](presets = sci.Map(t"shape" -> t"rect")).in[Whatwg]
+    val Circle = Tag.void["input"](presets = sci.Map(t"shape" -> t"circle")).in[Whatwg]
+    val Poly = Tag.void["input"](presets = sci.Map(t"shape" -> t"poly")).in[Whatwg]
+
   val Article = Tag.container["article", Flow]().in[Whatwg]
   val Aside = Tag.container["aside", Flow]().in[Whatwg]
 
@@ -396,8 +406,10 @@ class Whatwg() extends Dom:
   val H5 = Tag.container["h5", Phrasing]().in[Whatwg]
   val H6 = Tag.container["h6", Phrasing]().in[Whatwg]
 
-  val Head = Tag.container["head", Metadata]
-              (autoclose = true, content = Html.TextContent.Whitespace, insertable = true).in[Whatwg]
+  val Head =
+    Tag.container["head", Metadata]
+     (autoclose = true, content = Html.TextContent.Whitespace, insertable = true)
+    .in[Whatwg]
 
   val Header = Tag.container["header", Flow](autoclose = true).in[Whatwg]
   val Hgroup = Tag.container["hgroup", "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"]().in[Whatwg]
@@ -407,20 +419,73 @@ class Whatwg() extends Dom:
   val Iframe = Tag.void["iframe"]().in[Whatwg]
   val Img = Tag.void["img"]().in[Whatwg]
 
-  object Input extends Tag.Void("input", collection.immutable.Map()):
+  object Input extends Tag.Void("input", sci.Map()):
     type Topic = "input"
     type Transport = ""
     type Form = Whatwg
 
-    val Button = Tag.void["input"](presets = collection.immutable.Map(t"type" -> t"button")).in[Whatwg]
-    // FIXME: More Input types
+    val Hidden = Tag.void["input"](presets = sci.Map(t"type" -> t"hidden")).in[Whatwg]
+    val Text = Tag.void["input"](presets = sci.Map(t"type" -> t"text")).in[Whatwg]
+    val Search = Tag.void["input"](presets = sci.Map(t"type" -> t"search")).in[Whatwg]
+    val Tel = Tag.void["input"](presets = sci.Map(t"type" -> t"tel")).in[Whatwg]
+    val Url = Tag.void["input"](presets = sci.Map(t"type" -> t"url")).in[Whatwg]
+    val Email = Tag.void["input"](presets = sci.Map(t"type" -> t"email")).in[Whatwg]
+    val Password = Tag.void["input"](presets = sci.Map(t"type" -> t"password")).in[Whatwg]
+    val Date = Tag.void["input"](presets = sci.Map(t"type" -> t"date")).in[Whatwg]
+    val Month = Tag.void["input"](presets = sci.Map(t"type" -> t"month")).in[Whatwg]
+    val Week = Tag.void["input"](presets = sci.Map(t"type" -> t"week")).in[Whatwg]
+    val Time = Tag.void["input"](presets = sci.Map(t"type" -> t"time")).in[Whatwg]
+
+    val DatetimeLocal =
+      Tag.void["input"](presets = sci.Map(t"type" -> t"datetime-local")).in[Whatwg]
+
+    val Number = Tag.void["input"](presets = sci.Map(t"type" -> t"number")).in[Whatwg]
+    val Range = Tag.void["input"](presets = sci.Map(t"type" -> t"range")).in[Whatwg]
+    val Color = Tag.void["input"](presets = sci.Map(t"type" -> t"color")).in[Whatwg]
+    val Checkbox = Tag.void["input"](presets = sci.Map(t"type" -> t"checkbox")).in[Whatwg]
+    val Radio = Tag.void["input"](presets = sci.Map(t"type" -> t"radio")).in[Whatwg]
+    val Submit = Tag.void["input"](presets = sci.Map(t"type" -> t"submit")).in[Whatwg]
+    val Image = Tag.void["input"](presets = sci.Map(t"type" -> t"image")).in[Whatwg]
+    val Reset = Tag.void["input"](presets = sci.Map(t"type" -> t"reset")).in[Whatwg]
+    val Button = Tag.void["input"](presets = sci.Map(t"type" -> t"button")).in[Whatwg]
 
   val Ins = Tag.transparent["ins", ""]().in[Whatwg]
   val Kbd = Tag.container["kbd", Phrasing]().in[Whatwg]
   val Label = Tag.container["label", Phrasing]().in[Whatwg]
-  val Legend = Tag.container["label", Phrasing | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"]().in[Whatwg]
+
+  val Legend =
+    Tag.container["label", Phrasing | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"]().in[Whatwg]
+
   val Li = Tag.container["li", Flow](autoclose = true).in[Whatwg]
-  val Link = Tag.void["link"]().in[Whatwg]
+
+  object Link extends Tag.Void("link", sci.Map()):
+    type Topic = "link"
+    type Transport = ""
+    type Form = Whatwg
+
+    val Alternate = Tag.void["input"](presets = sci.Map(t"rel" -> t"alternate")).in[Whatwg]
+    val Canonical = Tag.void["input"](presets = sci.Map(t"rel" -> t"canonical")).in[Whatwg]
+    val Author = Tag.void["input"](presets = sci.Map(t"rel" -> t"author")).in[Whatwg]
+    val DnsPrefetch = Tag.void["input"](presets = sci.Map(t"rel" -> t"dns-prefetch")).in[Whatwg]
+    val Expect = Tag.void["input"](presets = sci.Map(t"rel" -> t"expect")).in[Whatwg]
+    val Help = Tag.void["input"](presets = sci.Map(t"rel" -> t"help")).in[Whatwg]
+    val Icon = Tag.void["input"](presets = sci.Map(t"rel" -> t"icon")).in[Whatwg]
+    val Manifest = Tag.void["input"](presets = sci.Map(t"rel" -> t"manifest")).in[Whatwg]
+    val Modulepreload = Tag.void["input"](presets = sci.Map(t"rel" -> t"modulepreload")).in[Whatwg]
+    val License = Tag.void["input"](presets = sci.Map(t"rel" -> t"license")).in[Whatwg]
+    val Next = Tag.void["input"](presets = sci.Map(t"rel" -> t"next")).in[Whatwg]
+    val Pingback = Tag.void["input"](presets = sci.Map(t"rel" -> t"pingback")).in[Whatwg]
+    val Preconnect = Tag.void["input"](presets = sci.Map(t"rel" -> t"preconnect")).in[Whatwg]
+    val Prefetch = Tag.void["input"](presets = sci.Map(t"rel" -> t"prefetch")).in[Whatwg]
+    val Preload = Tag.void["input"](presets = sci.Map(t"rel" -> t"preload")).in[Whatwg]
+    val Prev = Tag.void["input"](presets = sci.Map(t"rel" -> t"prev")).in[Whatwg]
+    val PrivacyPolicy = Tag.void["input"](presets = sci.Map(t"rel" -> t"privacy-policy")).in[Whatwg]
+    val Search = Tag.void["input"](presets = sci.Map(t"rel" -> t"search")).in[Whatwg]
+    val Stylesheet = Tag.void["input"](presets = sci.Map(t"rel" -> t"stylesheet")).in[Whatwg]
+
+    val TermsOfService =
+      Tag.void["input"](presets = sci.Map(t"rel" -> t"terms-of-service")).in[Whatwg]
+
   val Main = Tag.container["main", Flow]().in[Whatwg]
   val Map = Tag.transparent["map", "area"]().in[Whatwg]
   val Mark = Tag.container["mark", Phrasing]().in[Whatwg]
@@ -497,7 +562,17 @@ class Whatwg() extends Dom:
   val Tr = Tag.container["tr", "td" | "th" | ScriptSupporting]
             (autoclose = true, content = Html.TextContent.Whitespace, insertable = true).in[Whatwg]
 
-  val Track = Tag.void["track"]().in[Whatwg]
+  object Track extends Tag.Void("track", sci.Map()):
+    type Topic = "track"
+    type Transport = ""
+    type Form = Whatwg
+
+    val Captions = Tag.void["track"](presets = sci.Map(t"kind" -> "captions"))
+    val Chapters = Tag.void["track"](presets = sci.Map(t"kind" -> "chapters"))
+    val Descriptions = Tag.void["track"](presets = sci.Map(t"kind" -> "descriptions"))
+    val Metadata = Tag.void["track"](presets = sci.Map(t"kind" -> "metadata"))
+    val Subtitles = Tag.void["track"](presets = sci.Map(t"kind" -> "subtitles"))
+
   val U = Tag.container["u", Phrasing]().in[Whatwg]
   val Ul = Tag.container["ul", "li" | ScriptSupporting](content = Html.TextContent.Whitespace).in[Whatwg]
   val Var = Tag.container["var", Phrasing]().in[Whatwg]
@@ -517,7 +592,7 @@ class Whatwg() extends Dom:
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =
       Whatwg.membersOfType[honeycomb.Attribute]
-      . foldLeft(collection.immutable.Map[Text, Attribute]()): (map, next) =>
+      . foldLeft(sci.Map[Text, Attribute]()): (map, next) =>
           map.updated(next.label, map.at(next.label).let(_.merge(next)).or(next))
       . to(List)
 
