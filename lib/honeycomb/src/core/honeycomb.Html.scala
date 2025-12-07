@@ -149,6 +149,7 @@ object Html extends Tag.Container
     case MismatchedTag(open: Text, close: Text)
     case Incomplete(tag: Text)
     case UnknownAttribute(name: Text)
+    case UnknownAttributeStart(name: Text)
     case InvalidAttributeUse(attribute: Text, element: Text)
 
     def describe: Message = this match
@@ -163,6 +164,7 @@ object Html extends Tag.Container
       case MismatchedTag(open, close)     =>  m"the tag </$close> did not match the opening tag <$open>"
       case Incomplete(tag)                =>  m"the content ended while the tag <$tag> was left open"
       case UnknownAttribute(name)         =>  m"$name is not a recognized attribute"
+      case UnknownAttributeStart(name)    =>  m"there is no valid attribute whose name starts $name"
       case InvalidAttributeUse(name, tag) =>  m"the attribute $name cannot be used on the tag <$tag>"
 
   case class Position(ordinal: Ordinal) extends Format.Position:
@@ -273,9 +275,25 @@ object Html extends Tag.Container
       case char                                        =>  fail(Unexpected(char))
 
     @tailrec
-    def key(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '-'                                         =>  next() yet key(mark)
-      case char if char.isLetter                       =>  next() yet key(mark)
+    def key(mark: Mark, dictionary: Dictionary[Attribute])(using Cursor.Held): Attribute =
+      cursor.lay(fail(ExpectedMore)):
+        case char if char.isLetter || char == '-' => dictionary(char) match
+          case Dictionary.Empty =>  fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
+          case dictionary       =>  next() yet key(mark, dictionary)
+        case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' => dictionary match
+          case Dictionary.Just("", attribute) => attribute
+          case Dictionary.Branch(attribute: Attribute, _) => attribute
+          case other =>
+            val name = cursor.grab(mark, cursor.mark)
+            cursor.cue(mark)
+            fail(UnknownAttribute(name))
+
+        case char =>
+          fail(Unexpected(char))
+
+    @tailrec
+    def foreignKey(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+      case char if char.isLetter || char == '-'        =>  next() yet foreignKey(mark)
       case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>  cursor.grab(mark, cursor.mark)
       case char                                        =>  fail(Unexpected(char))
 
@@ -322,18 +340,17 @@ object Html extends Tag.Container
         cursor.lay(fail(ExpectedMore)):
           case '>' | '/' => entries
           case _         =>
-            val name = key(cursor.mark)
+            val key2 = if foreign then foreignKey(cursor.mark) else
+              key(cursor.mark, dom.attributes).tap: key =>
+                if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
+              . label
 
-            if equality() then
-              val assignment = cursor.lay(fail(ExpectedMore)):
-                case '"'  =>  next() yet value(cursor.mark)
-                case '\'' =>  next() yet singleQuoted(cursor.mark)
-                case _    =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
+            val assignment = if !equality() then Unset else cursor.lay(fail(ExpectedMore)):
+              case '"'  =>  next() yet value(cursor.mark)
+              case '\'' =>  next() yet singleQuoted(cursor.mark)
+              case _    =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
 
-              if foreign || dom.attributes(name).or(fail(UnknownAttribute(name))).targets(tag)
-              then attributes(tag, foreign, entries.updated(name, assignment))
-              else fail(InvalidAttributeUse(name, tag))
-            else attributes(tag, foreign, entries.updated(name, Unset))
+            attributes(tag, foreign, entries.updated(key2, assignment))
 
     @tailrec
     def entity(mark: Mark, dictionary: Dictionary[Text])(using Cursor.Held): Optional[Text] =
