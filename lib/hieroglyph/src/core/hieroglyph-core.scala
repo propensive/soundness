@@ -101,4 +101,7 @@ extension (char: Char)
   def minuscule: Char = char.toLower
   def majuscule: Char = char.toUpper
 
+extension (int: Int)
+  def unicode: Text = String(Character.toChars(int)).tt
+
 extension [measurable: Measurable](element: measurable) def metrics: Int = measurable.width(element)
