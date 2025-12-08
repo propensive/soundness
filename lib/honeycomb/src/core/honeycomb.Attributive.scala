@@ -130,8 +130,9 @@ object Attributive:
   given truth: Boolean is Attributive to Truth = (key, value) =>
     (key, if value then t"true" else t"false")
 
+  given int: Int is Attributive to Integral = _ -> _.show
+  given double: Double is Attributive to Decimal = _ -> _.toString.tt
   given url: HttpUrl is Attributive to Url = (key, value) => (key, value.encode)
-
   given style: Text is Attributive to Css = (key, value) => (key, value)
 
 trait Attributive extends Typeclass, Resultant:

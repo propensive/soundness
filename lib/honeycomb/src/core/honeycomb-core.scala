@@ -51,7 +51,7 @@ import language.dynamics
 // type Attributes = Map[String, Unset.type | Text]
 
 extension (inline context: StringContext)
-  transparent inline def h(parts: Any*): Html =
+  transparent inline def h(inline parts: Any*): Html =
     ${Honeycomb.interpolator('context, 'parts)}
 
 package doms:

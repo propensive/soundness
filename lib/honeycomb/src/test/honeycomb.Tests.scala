@@ -361,6 +361,6 @@ object Tests extends Suite(m"Honeycomb Tests"):
         test(m"simple interpolator"):
           val comment = "comment"
           val attribute = "attribute"
-          val more = "more"
-          h"""<p title=$attribute><!-- $comment -->This some $more HTML.</p>"""
-        . assert(_ == P("This is some HTML"))
+          def more: Int = 42
+          h"""<p title=$attribute><!-- inner:$comment:outer -->This is some $more HTML.</p>"""
+        . assert(_ == Html(Body(P(title = "attribute")(Html.Comment(" inner:comment:outer ").of[Phrasing], "This is some ", "42", " HTML."))))

@@ -341,14 +341,11 @@ object Html extends Tag.Container
       case '\u0000'                              =>  fail(BadInsertion)
       case char                                  =>  next() yet unquoted(mark)
 
-    def equality(): Boolean =
-      skip()
-
-      cursor.lay(fail(ExpectedMore)):
-        case '='                                   =>  next() yet skip() yet true
-        case '>' | ' ' | '\f' | '\n' | '\r' | '\t' =>  false
-        case '\u0000'                              =>  fail(BadInsertion)
-        case char                                  =>  fail(Unexpected(char))
+    def equality(): Boolean = skip() yet cursor.lay(fail(ExpectedMore)):
+      case '='                                   =>  next() yet skip() yet true
+      case '>' | ' ' | '\f' | '\n' | '\r' | '\t' =>  false
+      case '\u0000'                              =>  fail(BadInsertion)
+      case char                                  =>  fail(Unexpected(char))
 
 
     @tailrec
@@ -361,7 +358,7 @@ object Html extends Tag.Container
           case '\u0000'  => insert.let(_(cursor.position, Hole.Tagbody))
                             next()
                             skip()
-                            attributes(tag, foreign, entries)
+                            attributes(tag, foreign, entries.updated(t"\u0000", Unset))
           case _         =>
             val key2 = if foreign then foreignKey(cursor.mark) else
               key(cursor.mark, dom.attributes).tap: key =>
@@ -370,7 +367,7 @@ object Html extends Tag.Container
 
             val assignment = if !equality() then Unset else cursor.lay(fail(ExpectedMore)):
               case '\u0000' =>  insert.let(_(cursor.position, Hole.Attribute(tag, key2)))
-                                next() yet t""
+                                next() yet t"\u0000"
               case '"'      =>  next() yet value(cursor.mark)
               case '\''     =>  next() yet singleQuoted(cursor.mark)
               case _        =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
@@ -416,7 +413,7 @@ object Html extends Tag.Container
     @tailrec
     def textual(mark: Mark, close: Optional[Text], entities: Boolean)(using Cursor.Held): Text =
       cursor.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()):
-        case '<'  =>
+        case '<' | '\u0000' =>
           close.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()): tag =>
             val end = cursor.mark
             cursor.next()
@@ -443,10 +440,6 @@ object Html extends Tag.Container
             buffer.append(text)
             cursor.mark
           textual(mark2, close, entities)
-
-        case '\u0000' =>
-          insert.let(_(cursor.position, Hole.Text)) yet next() yet textual(mark, close, entities)
-
 
         case char =>
           cursor.next() yet textual(mark, close, entities)
@@ -518,7 +511,7 @@ object Html extends Tag.Container
         cursor.lay(finish(parent, children, count)):
           case '\u0000' => insert.let(_(cursor.position, Hole.Node(parent.label)))
                            next()
-                           read(parent, admissible, atts, Textual("") :: children, count + 1)
+                           read(parent, admissible, atts, Textual("\u0000") :: children, count + 1)
           case '<' if parent.content != TextContent.Raw && parent.content != TextContent.Rcdata =>
             var level: Level = Level.Peer
             var current: Html = parent

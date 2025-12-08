@@ -39,6 +39,7 @@ import fulminate.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
 import stenography.*
 import vacuous.*
 
@@ -47,16 +48,129 @@ import scala.quoted.*
 object Honeycomb:
   private given realm: Realm = realm"honeycomb"
 
-  def interpolator(context: Expr[StringContext], insertions: Expr[Seq[Any]]): Macro[Html] =
+  def interpolator(context: Expr[StringContext], insertions0: Expr[Seq[Any]]): Macro[Html] =
     import quotes.reflect.*
     import doms.whatwg
+    import Html.Hole
+
     val StringContext(parts*) = context.valueOrAbort
+
+    val insertions: Seq[Expr[Any]] = insertions0.absolve match
+      case Varargs(insertions) => insertions
 
     abortive:
       var holes: Map[Ordinal, Html.Hole] = Map()
-      Html.parse(Iterator(parts.mkString("\u0000")), whatwg.generic, (ordinal, hole) => holes = holes.updated(ordinal, hole))
-      println(holes)
-      '{???}
+
+      println(whatwg.generic)
+
+      val html: Html =
+        Html.parse(Iterator(parts.mkString("\u0000")), whatwg.generic, (ordinal, hole) => holes = holes.updated(ordinal, hole))
+
+      val iterator: Iterator[Expr[Any]] =
+        holes.to(List).sortBy(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
+          expr match
+            case '{ $expr: value } => hole match
+              case Hole.Attribute(tag, attribute) => ConstantType(StringConstant(tag.s)).asType match
+                case '[tag] => ConstantType(StringConstant(attribute.s)).asType match
+                  case '[attribute] =>
+                    Expr.summon[attribute is Attribute in Whatwg on (? >: tag)]
+                    . orElse(Expr.summon[attribute is Attribute in Whatwg]) match
+                      case Some('{ type result; $typeclass: Attribute { type Topic = result } }) =>
+
+                        Expr.summon[(? >: value) is Attributive to result] match
+                          case Some('{$attributive}) =>
+                            '{$attributive.attribute(${Expr(attribute)}, $expr).let(_(1))}
+
+                          case None =>
+                            halt(m"${TypeRepr.of[value].show} cannot be attributed to an attribute of ${TypeRepr.of[result].show}")
+
+                      case None =>
+                        halt(m"the attribute $attribute cannot be used on the element <$tag>")
+
+              case Hole.Node(tag) =>
+                ConstantType(StringConstant(tag.s)).asType match
+                  case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
+                    case Some('{$renderable: Renderable}) =>
+                      '{$renderable.render($expr)}
+
+                    case None =>
+                      Expr.summon[(? >: value) is Showable] match
+                        case Some('{$showable: Showable}) =>
+                          '{Html.Textual($showable.text($expr))}
+
+                        case None =>
+                          halt(m"""a value of ${TypeRepr.of[value].show} is not renderable
+                                  or showable inside a <$tag> element""")
+
+              case Hole.Comment => Expr.summon[(? >: value) is Showable] match
+                case Some(showable) =>
+                  '{$showable.text($expr)}
+
+                case None =>
+                  halt(m"a ${TypeRepr.of[value is Showable].show} is required")
+
+              case Hole.Text => Expr.summon[(? >: value) is Showable] match
+                case Some(showable) =>
+                  '{$showable.text($expr)}
+
+                case None =>
+                  halt(m"a ${TypeRepr.of[value is Showable].show} is required")
+
+              case Hole.Tagbody => Type.of[value] match
+                case '[Map[Text, Optional[Text]]] =>
+                  expr
+                case _ =>
+                  halt(m"only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a tag body")
+        . iterator
+
+      def serialize(html: Html): Seq[Expr[Html]] = html match
+        case Html.Fragment(children*) => children.flatMap(serialize(_))
+        case Html.Node(label, attributes, children, foreign) =>
+          val exprs = attributes.to(List).map: (key, value) =>
+            '{  (${Expr(key)},
+                 ${  if value == "\u0000".tt then iterator.next().asExprOf[Optional[Text]]
+                     else if value == Unset then '{Unset}
+                     else Expr[Text](value.asInstanceOf[Text])  })  }
+            . asExprOf[(Text, Optional[Text])]
+
+          val map = '{Map(${Expr.ofList(exprs)}*)}
+
+          val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
+
+          List('{Html.Node(${Expr(label)}, $map, $elements, ${Expr(foreign)})})
+
+        case Html.Comment(text) =>
+          val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
+
+          def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
+            case Nil => expr
+            case head :: tail =>
+              recur(tail, '{$expr+${iterator.next().asExprOf[Text]}+${Expr(head)}})
+
+          val content = recur(parts.tail, Expr(parts.head))
+
+          List('{Html.Comment($content.tt)})
+
+        case Html.Textual("\u0000") =>
+          List(iterator.next().asExprOf[Html])
+
+        case Html.Textual(text) =>
+          val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
+
+          def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
+            case Nil => expr
+            case head :: tail =>
+              recur(tail, '{$expr+${iterator.next().asExprOf[Text]}+${Expr(head)}})
+
+          val content = recur(parts.tail, Expr(parts.head))
+
+          List('{Html.Textual($content.tt)})
+
+      serialize(html) match
+        case List(one: Expr[Html]) => one
+        case many                  => '{Html.Fragment(${Expr.ofList(many)}*)}
+
+
 
   def attributes[result: Type, thisType <: Tag to result: Type]
        (tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]])
@@ -88,7 +202,7 @@ object Honeycomb:
                                 halt(m"there is no converter for ${TypeRepr.of[result].show} attributes")
 
                           case _ =>
-                            halt(m"attribute $key cannot be used on tag <$topic>")
+                            halt(m"the attribute $key cannot be used on the element <$topic>")
 
                   case _ =>
                     halt(m"unable to determine attribute key type")

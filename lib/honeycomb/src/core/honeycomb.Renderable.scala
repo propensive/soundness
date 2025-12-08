@@ -41,6 +41,10 @@ import proscenium.*
 import spectacular.*
 import vacuous.*
 
+trait Renderable extends Typeclass, Formal:
+  def render(value: Self): Html of Form
+
+
 // object Renderable:
 //   given showable: [value: Showable] => value is Renderable to doms.whatwg.Phrasing =
 //     value => List(value.show)
