@@ -69,6 +69,7 @@ object Denominative:
     given addable: Ordinal is Addable by Int to Ordinal = _ + _
     given subtractable: Ordinal is Subtractable by Ordinal to Int = _ - _
     given subtractable2: Ordinal is Subtractable by Int to Ordinal = _ - _
+    given ordering: Ordering[Ordinal] = Ordering[Int]
 
   extension (interval: Interval)
     inline def start: Ordinal = ((interval >> 32) & 0xffffffff).toInt
