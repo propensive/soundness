@@ -567,11 +567,11 @@ class Whatwg() extends Dom:
     type Transport = ""
     type Form = Whatwg
 
-    val Captions = Tag.void["track"](presets = sci.Map(t"kind" -> "captions"))
-    val Chapters = Tag.void["track"](presets = sci.Map(t"kind" -> "chapters"))
-    val Descriptions = Tag.void["track"](presets = sci.Map(t"kind" -> "descriptions"))
-    val Metadata = Tag.void["track"](presets = sci.Map(t"kind" -> "metadata"))
-    val Subtitles = Tag.void["track"](presets = sci.Map(t"kind" -> "subtitles"))
+    val Captions = Tag.void["track"](presets = sci.Map(t"kind" -> t"captions"))
+    val Chapters = Tag.void["track"](presets = sci.Map(t"kind" -> t"chapters"))
+    val Descriptions = Tag.void["track"](presets = sci.Map(t"kind" -> t"descriptions"))
+    val Metadata = Tag.void["track"](presets = sci.Map(t"kind" -> t"metadata"))
+    val Subtitles = Tag.void["track"](presets = sci.Map(t"kind" -> t"subtitles"))
 
   val U = Tag.container["u", Phrasing]().in[Whatwg]
   val Ul = Tag.container["ul", "li" | ScriptSupporting](content = Html.TextContent.Whitespace).in[Whatwg]

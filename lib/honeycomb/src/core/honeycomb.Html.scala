@@ -47,6 +47,7 @@ import fulminate.*
 import gossamer.*
 import hellenism.*
 import hieroglyph.*
+import hypotenuse.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -60,6 +61,7 @@ import zephyrine.*
 import classloaders.threadContext
 import charDecoders.utf8
 import textSanitizers.skip
+import scala.annotation.tailrec
 
 object Html extends Tag.Container
          (label       = "html",
@@ -138,6 +140,7 @@ object Html extends Tag.Container
   given conversion6: Conversion[Comment, Html of "#foreign"] = _.of["#foreign"]
 
   enum Issue extends Format.Issue:
+    case BadInsertion
     case ExpectedMore
     case InvalidTag(name: Text)
     case InvalidTagStart(prefix: Text)
@@ -153,6 +156,7 @@ object Html extends Tag.Container
     case InvalidAttributeUse(attribute: Text, element: Text)
 
     def describe: Message = this match
+      case BadInsertion                   =>  m"a value cannot be inserted into HTML at this point"
       case ExpectedMore                   =>  m"the content ended prematurely"
       case InvalidTag(name)               =>  m"<$name> is not a valid tag"
       case InvalidTagStart(prefix)        =>  m"there is no valid tag whose name starts $prefix"
@@ -224,7 +228,16 @@ object Html extends Tag.Container
   enum TextContent:
     case Raw, Rcdata, Whitespace, Normal
 
-  def parse[dom <: Dom](input: Iterator[Text], root: Tag)(using dom: Dom): Html raises ParseError =
+  enum Hole:
+    case Text, Tagbody, Comment
+    case Attribute(tag: Text, attribute: Text)
+    case Node(parent: Text)
+
+  def parse[dom <: Dom]
+       (input:  Iterator[Text],
+        root:   Tag,
+        insert: Optional[(Ordinal, Hole) => Unit] = Unset)
+       (using dom: Dom): Html raises ParseError =
     val cursor = Cursor(input)
     val buffer: jl.StringBuilder = jl.StringBuilder()
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
@@ -265,6 +278,9 @@ object Html extends Tag.Container
           case Dictionary.Branch(tag: Tag, _) =>  tag
           case other                          =>  val name = cursor.grab(mark, cursor.mark)
                                                   cursor.cue(mark) yet fail(InvalidTag(name))
+        case '\u0000' =>
+          fail(BadInsertion)
+
         case char =>
           fail(Unexpected(char))
 
@@ -272,6 +288,7 @@ object Html extends Tag.Container
     def foreignTag(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case char if char.isLetter                       =>  next() yet foreignTag(mark)
       case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' =>  cursor.grab(mark, cursor.mark).lower
+      case '\u0000'                                    =>  fail(BadInsertion)
       case char                                        =>  fail(Unexpected(char))
 
     @tailrec
@@ -280,10 +297,9 @@ object Html extends Tag.Container
         case char if char.isLetter || char == '-' => dictionary(char) match
           case Dictionary.Empty =>  fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
           case dictionary       =>  next() yet key(mark, dictionary)
-        case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' => dictionary match
-          case Dictionary.Just("", attribute) => attribute
-          case Dictionary.Branch(attribute: Attribute, _) => attribute
-          case other =>
+
+        case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
+          dictionary.element.or:
             val name = cursor.grab(mark, cursor.mark)
             cursor.cue(mark)
             fail(UnknownAttribute(name))
@@ -295,21 +311,23 @@ object Html extends Tag.Container
     def foreignKey(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case char if char.isLetter || char == '-'        =>  next() yet foreignKey(mark)
       case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>  cursor.grab(mark, cursor.mark)
+      case '\u0000'                                    =>  fail(BadInsertion)
       case char                                        =>  fail(Unexpected(char))
 
 
     @tailrec
     def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '&'  =>  val start = cursor.mark
-                    next()
-                    val mark2 = entity(cursor.mark, dom.entities).lay(mark): text =>
-                      cursor.clone(mark, start)(buffer)
-                      buffer.append(text)
-                      cursor.mark
-                    value(mark2)
-      case '"'  =>  cursor.clone(mark, cursor.mark)(buffer)
-                    next() yet result()
-      case char =>  next() yet value(mark)
+      case '&'      =>  val start = cursor.mark
+                        next()
+                        val mark2 = entity(cursor.mark).lay(mark): text =>
+                          cursor.clone(mark, start)(buffer)
+                          buffer.append(text)
+                          cursor.mark
+                        value(mark2)
+      case '"'      =>  cursor.clone(mark, cursor.mark)(buffer)
+                        next() yet result()
+      case '\u0000' =>  insert.let(_(cursor.position, Hole.Text)) yet next() yet value(mark)
+      case char     =>  next() yet value(mark)
 
     @tailrec
     def singleQuoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
@@ -320,6 +338,7 @@ object Html extends Tag.Container
     def unquoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '>' | ' ' | '\f' | '\n' | '\r' | '\t' =>  cursor.grab(mark, cursor.mark)
       case char@('"' | '\'' | '<' | '=' | '`')   =>  fail(ForbiddenUnquoted(char))
+      case '\u0000'                              =>  fail(BadInsertion)
       case char                                  =>  next() yet unquoted(mark)
 
     def equality(): Boolean =
@@ -328,6 +347,7 @@ object Html extends Tag.Container
       cursor.lay(fail(ExpectedMore)):
         case '='                                   =>  next() yet skip() yet true
         case '>' | ' ' | '\f' | '\n' | '\r' | '\t' =>  false
+        case '\u0000'                              =>  fail(BadInsertion)
         case char                                  =>  fail(Unexpected(char))
 
 
@@ -336,9 +356,12 @@ object Html extends Tag.Container
          (using Cursor.Held)
     : Map[Text, Optional[Text]] =
 
-        skip()
-        cursor.lay(fail(ExpectedMore)):
+        skip() yet cursor.lay(fail(ExpectedMore)):
           case '>' | '/' => entries
+          case '\u0000'  => insert.let(_(cursor.position, Hole.Tagbody))
+                            next()
+                            skip()
+                            attributes(tag, foreign, entries)
           case _         =>
             val key2 = if foreign then foreignKey(cursor.mark) else
               key(cursor.mark, dom.attributes).tap: key =>
@@ -346,44 +369,53 @@ object Html extends Tag.Container
               . label
 
             val assignment = if !equality() then Unset else cursor.lay(fail(ExpectedMore)):
-              case '"'  =>  next() yet value(cursor.mark)
-              case '\'' =>  next() yet singleQuoted(cursor.mark)
-              case _    =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
+              case '\u0000' =>  insert.let(_(cursor.position, Hole.Attribute(tag, key2)))
+                                next() yet t""
+              case '"'      =>  next() yet value(cursor.mark)
+              case '\''     =>  next() yet singleQuoted(cursor.mark)
+              case _        =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
 
             attributes(tag, foreign, entries.updated(key2, assignment))
 
+
+    def entity(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail(ExpectedMore)):
+      case '#'   => next() yet numericEntity(mark)
+      case other => textEntity(mark, dom.entities)
+
+    def numericEntity(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail(ExpectedMore)):
+      case 'x' => next() yet hexEntity(mark, 0)
+      case _   => decimalEntity(mark, 0)
+
     @tailrec
-    def entity(mark: Mark, dictionary: Dictionary[Text])(using Cursor.Held): Optional[Text] =
+    def hexEntity(mark: Mark, value: Int)(using Cursor.Held): Optional[Text] =
       cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter | char.isDigit => dictionary(char) match
-          case Dictionary.Empty => Unset
-          case dictionary       => cursor.next() yet entity(mark, dictionary)
+        case digit if digit.isDigit         => cursor.next() yet hexEntity(mark, 16*value + (digit - '0'))
+        case letter if 'a' <= letter <= 'f' => cursor.next() yet hexEntity(mark, 16*value + (letter - 87))
+        case letter if 'A' <= letter <= 'F' => cursor.next() yet hexEntity(mark, 16*value + (letter - 55))
+        case ';'                            => cursor.next() yet value.unicode
+        case char                           => Unset
 
+    @tailrec
+    def decimalEntity(mark: Mark, value: Int): Optional[Text] = cursor.lay(fail(ExpectedMore)):
+      case digit if digit.isDigit => next() yet decimalEntity(mark, 10*value + (digit - '0'))
+      case ';'                    => next() yet t"${value.toChar}"
+      case char                   => Unset
+
+    @tailrec
+    def textEntity(mark: Mark, dictionary: Dictionary[Text])(using Cursor.Held): Optional[Text] =
+      cursor.lay(fail(ExpectedMore)):
+        case char if char.isLetter | char.isDigit =>  dictionary(char) match
+          case Dictionary.Empty                   =>  Unset
+          case dictionary                         =>  cursor.next() yet textEntity(mark, dictionary)
+        case ';'                                  =>  cursor.next() yet dictionary(';').element
         case '='                                  =>  Unset
-
-        case ';' => cursor.next() yet dictionary(';') match
-          case Dictionary.Just("", text)        => text
-          case Dictionary.Branch(text: Text, _) => text
-          case _                        => Unset
-
-        case char => dictionary match
-          case Dictionary.Just("", text)        => text
-          case Dictionary.Branch(text: Text, _) => text
-          case _                                => Unset
+        case '\u0000'                             =>  fail(BadInsertion)
+        case char                                 =>  dictionary.element
 
 
     @tailrec
     def textual(mark: Mark, close: Optional[Text], entities: Boolean)(using Cursor.Held): Text =
       cursor.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()):
-        case '&' if entities =>
-          val start = cursor.mark
-          next()
-          val mark2 = entity(cursor.mark, dom.entities).lay(mark): text =>
-            cursor.clone(mark, start)(buffer)
-            buffer.append(text)
-            cursor.mark
-          textual(mark2, close, entities)
-
         case '<'  =>
           close.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()): tag =>
             val end = cursor.mark
@@ -403,16 +435,31 @@ object Html extends Tag.Container
               else cursor.cue(resume) yet textual(mark, tag, entities)
             else cursor.cue(resume) yet textual(mark, tag, entities)
 
+        case '&' if entities =>
+          val start = cursor.mark
+          next()
+          val mark2 = entity(cursor.mark).lay(mark): text =>
+            cursor.clone(mark, start)(buffer)
+            buffer.append(text)
+            cursor.mark
+          textual(mark2, close, entities)
+
+        case '\u0000' =>
+          insert.let(_(cursor.position, Hole.Text)) yet next() yet textual(mark, close, entities)
+
+
         case char =>
           cursor.next() yet textual(mark, close, entities)
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '-'  =>  val end = cursor.mark
-                    next()
-                    cursor.lay(fail(ExpectedMore)):
-                      case '-' => expect('>') yet cursor.grab(mark, end)
-                      case _   => comment(mark)
-      case char =>  next() yet comment(mark)
+      case '-'      =>  val end = cursor.mark
+                        next()
+                        cursor.lay(fail(ExpectedMore)):
+                          case '-' => expect('>') yet cursor.grab(mark, end)
+                          case _   => comment(mark)
+      case '\u0000' =>  insert.let(_(cursor.position, Hole.Comment))
+                        next() yet comment(mark)
+      case char     =>  next() yet comment(mark)
 
     def tag(foreign: Boolean): Token = cursor.lay(fail(ExpectedMore)):
       case '!'  =>  expect('-')
@@ -422,17 +469,21 @@ object Html extends Tag.Container
                     cursor.next()
                     Token.Comment
       case '/'  =>  next()
-                    content = cursor.hold(if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label)
+                    content = cursor.hold:
+                      if foreign then foreignTag(cursor.mark)
+                      else tagname(cursor.mark, dom.elements).label
                     Token.Close
 
+      case '\u0000' => fail(BadInsertion)
       case char =>
         content = cursor.hold(if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label)
         extra = cursor.hold(attributes(content, foreign))
 
         cursor.lay(fail(ExpectedMore)):
-          case '/'  =>  expect('>') yet cursor.next() yet Token.Empty
-          case '>'  =>  cursor.next() yet Token.Open
-          case char =>  fail(Unexpected(char))
+          case '/'       =>  expect('>') yet cursor.next() yet Token.Empty
+          case '>'       =>  cursor.next() yet Token.Open
+          case '\u0000'  =>  fail(BadInsertion)
+          case char      =>  fail(Unexpected(char))
 
     def descend(parent: Tag, admissible: Set[Text]): Html =
       val admissible2 = if parent.transparent then admissible else parent.admissible
@@ -465,6 +516,9 @@ object Html extends Tag.Container
           parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
 
         cursor.lay(finish(parent, children, count)):
+          case '\u0000' => insert.let(_(cursor.position, Hole.Node(parent.label)))
+                           next()
+                           read(parent, admissible, atts, Textual("") :: children, count + 1)
           case '<' if parent.content != TextContent.Raw && parent.content != TextContent.Rcdata =>
             var level: Level = Level.Peer
             var current: Html = parent

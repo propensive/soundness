@@ -33,6 +33,8 @@
 package honeycomb
 
 import anticipation.*
+import contingency.*
+import denominative.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
@@ -44,6 +46,17 @@ import scala.quoted.*
 
 object Honeycomb:
   private given realm: Realm = realm"honeycomb"
+
+  def interpolator(context: Expr[StringContext], insertions: Expr[Seq[Any]]): Macro[Html] =
+    import quotes.reflect.*
+    import doms.whatwg
+    val StringContext(parts*) = context.valueOrAbort
+
+    abortive:
+      var holes: Map[Ordinal, Html.Hole] = Map()
+      Html.parse(Iterator(parts.mkString("\u0000")), whatwg.generic, (ordinal, hole) => holes = holes.updated(ordinal, hole))
+      println(holes)
+      '{???}
 
   def attributes[result: Type, thisType <: Tag to result: Type]
        (tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]])

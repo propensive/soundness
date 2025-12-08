@@ -203,6 +203,10 @@ object Tests extends Suite(m"Honeycomb Tests"):
         t"""<ul><li>First item</ul>""".read[Html of Flow]
       .assert(_ == Ul(Li("First item")))
 
+      test(m"unclosed paragraph"):
+        t"""<p>para""".read[Html of Flow]
+      .assert(_ == P("para"))
+
       test(m"autoclosing adjacent tags"):
         t"""<ul><li>First item<li>Second item</ul>""".read[Html of Flow]
       .assert(_ == Ul(Li("First item"), Li("Second item")))
@@ -340,3 +344,23 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"Attribute with character entity"):
         t"""<img alt="To &amp; fro">""".read[Html of Flow]
       . assert(_ == Img(alt = "To & fro"))
+
+      test(m"Attribute with numeric character entity"):
+        t"""<img alt="Schlo&#223;">""".read[Html of Flow]
+      . assert(_ == Img(alt = "Schloß"))
+
+      test(m"Text with hex character entity"):
+        t"""<p>value: &#x6A;</p>""".read[Html of Flow]
+      . assert(_ == P("value: j"))
+
+      test(m"Text with emoji character entity"):
+        t"""<p>value: &#x1f600;""".read[Html of Flow]
+      . assert(_ == P("value: 😀"))
+
+      suite(m"Interpolator tests"):
+        test(m"simple interpolator"):
+          val comment = "comment"
+          val attribute = "attribute"
+          val more = "more"
+          h"""<p title=$attribute><!-- $comment -->This some $more HTML.</p>"""
+        . assert(_ == P("This is some HTML"))

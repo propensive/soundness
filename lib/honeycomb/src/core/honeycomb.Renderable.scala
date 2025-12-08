@@ -42,10 +42,10 @@ import spectacular.*
 import vacuous.*
 
 // object Renderable:
-//   import oldHtml5.Phrasing
-//   given showable: [value: Showable] => value is Renderable to Phrasing = value => List(value.show)
+//   given showable: [value: Showable] => value is Renderable to doms.whatwg.Phrasing =
+//     value => List(value.show)
 
-//   given message: Message is Renderable to Phrasing = _.segments.flatMap:
+//   given message: Message is Renderable to doms.whatwg.Phrasing = _.segments.flatMap:
 //     case message: Message => message.html
 //     case text: Text       => List(text)
 //     case _                => Nil
@@ -69,18 +69,17 @@ import vacuous.*
 //   given StackTrace is Renderable to oldHtml5.Flow = stackTrace =>
 //     import oldHtml5.*
 
-//     List:
-//       Div.stack(H2(stackTrace.component),
-//                 H3(stackTrace.className),
-//                 H4(stackTrace.message.html),
-//                 Table(stackTrace.frames.map: frame =>
-//                       Tr(Td.at(Code(t"at")),
-//                       Td.`class`(Code(frame.method.className)),
-//                       Td.method(Code(frame.method.method)),
-//                       Td.file(Code(frame.file)),
-//                       Td(Code(t":")),
-//                       Td.line(Code(frame.line.let(_.show).or(t""))))))
+//     Div.stack(H2(stackTrace.component),
+//               H3(stackTrace.className),
+//               H4(stackTrace.message.html),
+//               Table(stackTrace.frames.map: frame =>
+//                     Tr(Td.at(Code(t"at")),
+//                     Td.`class`(Code(frame.method.className)),
+//                     Td.method(Code(frame.method.method)),
+//                     Td.file(Code(frame.file)),
+//                     Td(Code(t":")),
+//                     Td.line(Code(frame.line.let(_.show).or(t""))))))
 
 // trait Renderable extends Typeclass:
 //   type Result <: Label
-//   def html(value: Self): Seq[OldHtml[Result]]
+//   def html(value: Self): Html of Result
