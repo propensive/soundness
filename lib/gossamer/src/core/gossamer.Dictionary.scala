@@ -63,6 +63,11 @@ enum Dictionary[+element]:
     case Just(_, value) => List(value)
     case Branch(_, map) => map.values.flatMap(_.iterator)
 
+  def element: Optional[element] = this match
+    case Empty            => Unset
+    case Just("", value)  => value
+    case Branch(value, _) => value
+
   def add[element2 >: element](entry: Text, value: element2, offset: Int): Dictionary[element2] =
     this match
       case Empty =>
