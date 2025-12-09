@@ -134,10 +134,15 @@ object Html extends Tag.Container
         =>  Conversion[Node of label, Html of content] =
     _.of[content]
 
+  given conversion4: [content <: Label] =>  Conversion[Comment, Html of content] = _.of[content]
+
   given conversion5: Conversion[String, Html of "#foreign"] =
     string => Textual(string.tt).of["#foreign"]
 
-  given conversion6: Conversion[Comment, Html of "#foreign"] = _.of["#foreign"]
+  given conversion6: [content <: Label, value: Renderable in content]
+        => Conversion[value, Html of content] =
+    value.render(_)
+
 
   enum Issue extends Format.Issue:
     case BadInsertion
@@ -209,7 +214,10 @@ object Html extends Tag.Container
 
 
   case class Node
-              (label: Text, attributes: Map[Text, Optional[Text]], children: IArray[Html], foreign: Boolean)
+         (label:      Text,
+          attributes: Map[Text, Optional[Text]],
+          children:   IArray[Html],
+          foreign:    Boolean)
   extends Html, Topical, Transportive:
 
     override def equals(that: Any): Boolean = that match

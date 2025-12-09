@@ -357,13 +357,14 @@ object Tests extends Suite(m"Honeycomb Tests"):
         t"""<p>value: &#x1f600;""".read[Html of Flow]
       . assert(_ == P("value: 😀"))
 
+
       suite(m"Interpolator tests"):
         test(m"simple interpolator"):
           val comment = "comment"
           val attribute = "attribute"
           def more: Int = 42
           h"""<p title=$attribute><!-- inner:$comment:outer -->This is some $more HTML.</p>"""
-        . assert(_ == P(title = "attribute")(Html.Comment(" inner:comment:outer ").of[Phrasing], "This is some ", "42", " HTML."))
+        . assert(_ == P(title = "attribute")(Html.Comment(" inner:comment:outer "), "This is some ", "42", " HTML."))
 
         test(m"interpolate multiple attributes"):
           val dirname = "dirname"

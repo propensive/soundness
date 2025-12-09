@@ -89,7 +89,7 @@ object Honeycomb:
                           halt(m"the attribute $attribute cannot be used on the element <$tag>")
 
               case Hole.Node(tag) =>
-                ConstantType(StringConstant(tag.s)).asType match
+                ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
                     case Some('{$renderable: Renderable}) =>
                       '{$renderable.render($expr)}
@@ -167,23 +167,22 @@ object Honeycomb:
           List('{Html.Textual($content.tt)})
 
       def resultType(html: Html): Set[String] = html match
-        case Html.Textual(_)         => Set("#text")
+        case Html.Textual(_)          => Set("#text")
         case Html.Node(tag, _, _, _) => Set(tag.s)
-        case Html.Fragment(values*)  => values.to(Set).flatMap(resultType(_))
-        case Html.Comment(_)         => Set()
+        case Html.Fragment(values*)   => values.to(Set).flatMap(resultType(_))
+        case Html.Comment(_)          => Set()
 
       resultType(html)
       . map { label => ConstantType(StringConstant(label)) }
       . foldLeft(TypeRepr.of[Nothing]) { (left, right) => OrType(left, right) }
-      . asType match
+      . asType
+      . absolve match
           case '[type topic <: Label; topic] =>
             '{
                 ${  serialize(html) match
                       case List(one: Expr[Html]) => one
                       case many                  => '{Html.Fragment(${Expr.ofList(many)}*)}  }
                 . of[topic]  }
-
-
 
 
   def attributes[result: Type, thisType <: Tag to result: Type]
