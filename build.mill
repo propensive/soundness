@@ -1035,7 +1035,7 @@ object punctuation extends SoundnessModule:
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
-    def mvnDeps = Agg(ivy"org.commonmark:commonmark:0.27.0")
+    def mvnDeps = Seq(mvn"org.commonmark:commonmark:0.27.0")
 
 object quantitative extends SoundnessModule:
   object core extends SoundnessSubModule:
