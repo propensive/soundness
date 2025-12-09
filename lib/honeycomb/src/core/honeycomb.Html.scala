@@ -149,6 +149,7 @@ object Html extends Tag.Container
     case ExpectedMore
     case InvalidTag(name: Text)
     case InvalidTagStart(prefix: Text)
+    case DuplicateAttribute(name: Text)
     case InadmissibleTag(name: Text, parent: Text)
     case OnlyWhitespace(char: Char)
     case Unexpected(char: Char)
@@ -165,6 +166,7 @@ object Html extends Tag.Container
       case ExpectedMore                   =>  m"the content ended prematurely"
       case InvalidTag(name)               =>  m"<$name> is not a valid tag"
       case InvalidTagStart(prefix)        =>  m"there is no valid tag whose name starts $prefix"
+      case DuplicateAttribute(name)       =>  m"the attribute $name already exists on this tag"
       case InadmissibleTag(name, parent)  =>  m"<$name> cannot be a child of <$parent>"
       case OnlyWhitespace(char)           =>  m"the character $char was found where only whitespace is permitted"
       case Unexpected(char)               =>  m"the character $char was not expected"
@@ -372,6 +374,8 @@ object Html extends Tag.Container
               key(cursor.mark, dom.attributes).tap: key =>
                 if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
               . label
+
+            if entries.has(key2) then fail(DuplicateAttribute(key2))
 
             val assignment = if !equality() then Unset else cursor.lay(fail(ExpectedMore)):
               case '\u0000' =>  insert.let(_(cursor.position, Hole.Attribute(tag, key2)))
@@ -586,7 +590,7 @@ object Html extends Tag.Container
             case TextContent.Raw =>
               val text = cursor.hold(textual(cursor.mark, parent.label, false))
               if text.s.isEmpty then Node(parent.label, parent.attributes, IArray(), parent.foreign)
-              else Node(parent.label, parent.attributes, IArray(text), parent.foreign)
+              else Node(parent.label, parent.attributes, IArray(Textual(text)), parent.foreign)
 
             case TextContent.Rcdata =>
               val text = cursor.hold(textual(cursor.mark, parent.label, true))

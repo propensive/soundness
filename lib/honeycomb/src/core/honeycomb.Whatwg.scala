@@ -280,8 +280,6 @@ object Whatwg:
   given writingsuggestions: ("writingsuggestions" is Attribute of Attributive.Truth) = globalAttribute()
 
 class Whatwg() extends Dom:
-  import Html.Issue.*
-
   private type InteractivePhrasing =
     "a" | "audio" | "button" | "embed" | "iframe" | "img" | "input" | "label" | "select"
     | "textarea" | "video"
@@ -414,7 +412,7 @@ class Whatwg() extends Dom:
   val Header = Tag.container["header", Flow](autoclose = true).in[Whatwg]
   val Hgroup = Tag.container["hgroup", "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"]().in[Whatwg]
   val Hr = Tag.void["hr"]().in[Whatwg]
-  val Html = honeycomb.Html.in[Whatwg]
+  lazy val Html = honeycomb.Html.in[Whatwg]
   val I = Tag.container["i", Phrasing]().in[Whatwg]
   val Iframe = Tag.void["iframe"]().in[Whatwg]
   val Img = Tag.void["img"]().in[Whatwg]

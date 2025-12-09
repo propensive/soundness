@@ -59,6 +59,11 @@ import classloaders.threadContext
 import charDecoders.utf8
 import textSanitizers.skip
 
+object Dom:
+  private[honeycomb] val elements: scm.HashMap[Dom, Dictionary[Tag]] = scm.HashMap()
+  private[honeycomb] val attributes: scm.HashMap[Dom, Dictionary[Attribute]] = scm.HashMap()
+  private[honeycomb] val entities: scm.HashMap[Dom, Dictionary[Text]] = scm.HashMap()
+
 trait Dom:
   val elements: Dictionary[Tag]
   val attributes: Dictionary[Attribute]

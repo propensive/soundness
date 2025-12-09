@@ -67,11 +67,11 @@ object Honeycomb:
 
       val iterator: Iterator[Expr[Any]] =
         holes.to(List).sortBy(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
-          expr match
+          expr.absolve match
             case '{ $expr: value } => hole match
               case Hole.Attribute(tag, attribute) =>
-                ConstantType(StringConstant(tag.s)).asType match
-                  case '[tag] => ConstantType(StringConstant(attribute.s)).asType match
+                ConstantType(StringConstant(tag.s)).asType.absolve match
+                  case '[tag] => ConstantType(StringConstant(attribute.s)).asType.absolve match
                     case '[attribute] =>
                       Expr.summon[attribute is Attribute in Whatwg on (? >: tag)]
                       . orElse(Expr.summon[attribute is Attribute in Whatwg]) match
@@ -82,7 +82,7 @@ object Honeycomb:
                             case Some('{$attributive}) =>
                               '{$attributive.attribute(${Expr(attribute)}, $expr).let(_(1))}
 
-                            case None =>
+                            case _ =>
                               halt(m"""${TypeRepr.of[value].show} cannot be attributed to an attribute of ${Syntax(TypeRepr.of[result]).show}""")
 
                         case None =>
@@ -99,7 +99,7 @@ object Honeycomb:
                         case Some('{$showable: Showable}) =>
                           '{Html.Textual($showable.text($expr))}
 
-                        case None =>
+                        case _ =>
                           halt(m"""a value of ${TypeRepr.of[value].show} is not renderable
                                   or showable inside a <$tag> element""")
 
@@ -180,7 +180,7 @@ object Honeycomb:
           case '[type topic <: Label; topic] =>
             '{
                 ${  serialize(html) match
-                      case List(one: Expr[Html]) => one
+                      case List(one: Expr[Html]) => one.asExprOf[Html]
                       case many                  => '{Html.Fragment(${Expr.ofList(many)}*)}  }
                 . of[topic]  }
 
@@ -190,7 +190,8 @@ object Honeycomb:
   : Macro[result] =
       import quotes.reflect.*
 
-      val Varargs(args) = attributes0
+      val args = attributes0 match
+        case Varargs(args) => args
 
       val attributes: Seq[Expr[Optional[(Text, Optional[Text])]]] =
         Type.of[thisType] match
@@ -202,7 +203,7 @@ object Honeycomb:
                 key.asTerm match
                   case Literal(StringConstant(key)) =>
                     if key == "" then halt(m"Empty key")
-                    else ConstantType(StringConstant(key)).asType match
+                    else ConstantType(StringConstant(key)).asType.absolve match
                       case '[type key <: Label; key] =>
                         Expr.summon[key is Attribute in form on (? >: topic)]
                         . orElse(Expr.summon[key is Attribute in form]) match
