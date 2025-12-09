@@ -253,6 +253,33 @@ object Tests extends Suite(m"Zephyrine tests"):
         builder.toString
       . assert(_ == "lolo wo")
 
+      test(m"Rewind, release and resume"):
+        val iterator = Iterator[Text]("one", "two", "three", "four")
+        val cursor = Cursor(iterator)
+        val builder = new StringBuilder()
+        builder.append(cursor.datum(using Unsafe))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.hold:
+          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+          val mark = cursor.mark
+          cursor.next()
+          cursor.next()
+          cursor.next()
+          cursor.next()
+          cursor.cue(mark)
+          cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        cursor.next().also(builder.append(cursor.datum(using Unsafe)))
+        builder.toString
+      . assert(_ == "onetwothreef")
+
       test(m"Rewinding"):
         val cursor = numbers
         val builder = java.lang.StringBuilder()

@@ -110,6 +110,9 @@ class Cursor[data](initial:                 data,
       focus = Prim
       done += addressable.length(current)
       current = buffer(offset)
+      if !keep then
+        buffer.dropInPlace(1)
+        first = first.next
     else if iterator.hasNext then
       var next = load()
       while addressable.length(next) == 0 do next = load()
@@ -168,7 +171,9 @@ class Cursor[data](initial:                 data,
 
     action(using new Cursor.Held()).also:
       keep = keep0
-      if !keep then buffer.clear()
+      if !keep then
+        buffer.dropInPlace(focusBlock - first)
+        first = focusBlock
 
   inline def grab(start: Mark, end: Mark): data =
     // FIXME: calculate length across different blocks
