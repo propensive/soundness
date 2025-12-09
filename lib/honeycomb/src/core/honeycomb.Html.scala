@@ -242,7 +242,7 @@ object Html extends Tag.Container
     val buffer: jl.StringBuilder = jl.StringBuilder()
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
-    var extra: Map[Text, Optional[Text]] = Map()
+    var extra: Map[Text, Optional[Text]] = ListMap()
 
     def next(): Unit =
       if !cursor.next() then raise(ParseError(Html, Position(cursor.position), ExpectedMore))
@@ -349,7 +349,7 @@ object Html extends Tag.Container
 
 
     @tailrec
-    def attributes(tag: Text, foreign: Boolean, entries: Map[Text, Optional[Text]] = Map())
+    def attributes(tag: Text, foreign: Boolean, entries: Map[Text, Optional[Text]] = ListMap())
          (using Cursor.Held)
     : Map[Text, Optional[Text]] =
 
@@ -591,7 +591,7 @@ object Html extends Tag.Container
               else read(parent, admissible, atts, Textual(text) :: children, count + 1)
 
     skip()
-    read(root, root.admissible, Map(), Nil, 0)
+    read(root, root.admissible, ListMap(), Nil, 0)
 
 sealed into trait Html extends Topical:
   type Topic <: Label

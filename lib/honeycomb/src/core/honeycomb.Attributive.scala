@@ -131,6 +131,7 @@ object Attributive:
     (key, if value then t"true" else t"false")
 
   given int: Int is Attributive to Integral = _ -> _.show
+  given posInt: Int is Attributive to PositiveInt = _ -> _.show
   given double: Double is Attributive to Decimal = _ -> _.toString.tt
   given url: HttpUrl is Attributive to Url = (key, value) => (key, value.encode)
   given style: Text is Attributive to Css = (key, value) => (key, value)

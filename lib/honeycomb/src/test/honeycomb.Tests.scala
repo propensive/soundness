@@ -364,3 +364,12 @@ object Tests extends Suite(m"Honeycomb Tests"):
           def more: Int = 42
           h"""<p title=$attribute><!-- inner:$comment:outer -->This is some $more HTML.</p>"""
         . assert(_ == P(title = "attribute")(Html.Comment(" inner:comment:outer ").of[Phrasing], "This is some ", "42", " HTML."))
+
+        test(m"interpolate multiple attributes"):
+          val dirname = "dirname"
+          val alt = "alt"
+          val maxlength = 10
+          val title = "title"
+          val placeholder = "placeholder"
+          h"""<input alt="$alt" dirname="$dirname" title="$title" placeholder="$placeholder" maxlength="$maxlength">"""
+        . assert(_ == Input(title = "title", dirname = "dirname", alt = "alt", maxlength = 10, placeholder = "placeholder"))
