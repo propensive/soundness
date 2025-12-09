@@ -60,30 +60,33 @@ object Honeycomb:
 
     abortive:
       var holes: Map[Ordinal, Html.Hole] = Map()
+      def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
       val html: Html =
-        Html.parse(Iterator(parts.mkString("\u0000")), whatwg.generic, (ordinal, hole) => holes = holes.updated(ordinal, hole))
+        Html.parse(Iterator(parts.mkString("\u0000")), whatwg.generic, capture(_, _))
 
       val iterator: Iterator[Expr[Any]] =
         holes.to(List).sortBy(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
           expr match
             case '{ $expr: value } => hole match
-              case Hole.Attribute(tag, attribute) => ConstantType(StringConstant(tag.s)).asType match
-                case '[tag] => ConstantType(StringConstant(attribute.s)).asType match
-                  case '[attribute] =>
-                    Expr.summon[attribute is Attribute in Whatwg on (? >: tag)]
-                    . orElse(Expr.summon[attribute is Attribute in Whatwg]) match
-                      case Some('{ type result; $typeclass: Attribute { type Topic = result } }) =>
+              case Hole.Attribute(tag, attribute) =>
+                ConstantType(StringConstant(tag.s)).asType match
+                  case '[tag] => ConstantType(StringConstant(attribute.s)).asType match
+                    case '[attribute] =>
+                      Expr.summon[attribute is Attribute in Whatwg on (? >: tag)]
+                      . orElse(Expr.summon[attribute is Attribute in Whatwg]) match
+                        case Some('{ type result;
+                                     $typeclass: Attribute { type Topic = result } }) =>
 
-                        Expr.summon[(? >: value) is Attributive to result] match
-                          case Some('{$attributive}) =>
-                            '{$attributive.attribute(${Expr(attribute)}, $expr).let(_(1))}
+                          Expr.summon[(? >: value) is Attributive to result] match
+                            case Some('{$attributive}) =>
+                              '{$attributive.attribute(${Expr(attribute)}, $expr).let(_(1))}
 
-                          case None =>
-                            halt(m"${TypeRepr.of[value].show} cannot be attributed to an attribute of ${TypeRepr.of[result].show}")
+                            case None =>
+                              halt(m"""${TypeRepr.of[value].show} cannot be attributed to an attribute of ${Syntax(TypeRepr.of[result]).show}""")
 
-                      case None =>
-                        halt(m"the attribute $attribute cannot be used on the element <$tag>")
+                        case None =>
+                          halt(m"the attribute $attribute cannot be used on the element <$tag>")
 
               case Hole.Node(tag) =>
                 ConstantType(StringConstant(tag.s)).asType match

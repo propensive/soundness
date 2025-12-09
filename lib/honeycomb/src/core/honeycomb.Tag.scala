@@ -61,19 +61,23 @@ import textSanitizers.skip
 
 object Tag:
   def root(children: Set[Text]): Tag =
-    new Tag("#root", false, Html.TextContent.Normal, Map(), children, false, foreign = false, void = false):
+    new Tag("#root", false, Html.TextContent.Normal, Map(), children, false, false, false):
       type Result = this.type
 
       def node(attributes: Map[Text, Optional[Text]]): Result = this
 
 
   def void[label <: Label: ValueOf](presets: Map[Text, Optional[Text]] = Map()): Tag.Void of label =
-    new Void(valueOf[label].tt, presets):
-      type Topic = label
+    new Void(valueOf[label].tt, presets).of[label]
 
-  def foreign(label: Text, attributes0: Map[Text, Optional[Text]]): Tag of "#foreign" =
-    new Tag.Container(label, false, Html.TextContent.Normal, attributes0, Set(), false, true):
-      type Topic = "#foreign"
+
+  def foreign(label: Text, attributes0: Map[Text, Optional[Text]])
+  : Tag of "#foreign" over "#foreign" =
+
+      new Tag.Container(label, false, Html.TextContent.Normal, attributes0, Set(), false, true)
+      . of["#foreign"]
+      . over["#foreign"]
+
 
   def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
        (autoclose:  Boolean                   = false,
@@ -115,23 +119,22 @@ object Tag:
           insertable: Boolean                   = false,
           foreign:    Boolean                   = false)
   extends Tag(label, autoclose, content, presets, admissible, insertable, foreign = foreign):
-    tag =>
-      type Result = Html.Node & Html.Populable of Topic over Transport in Form
+    type Result = Html.Node & Html.Populable of Topic over Transport in Form
 
 
-      def applyDynamic[className <: Label](method: className)(children: Html of Transport*)
-           (using css: CssClass of className)
-      : Html.Node of Topic =
+    def applyDynamic[className <: Label](method: className)(children: Html of Transport*)
+          (using css: CssClass of className)
+    : Html.Node of Topic =
 
-          val cls = css.name.lay(Map()) { name => Map(t"class" -> name) }
-          Html.Node(label, cls, IArray.from(children), foreign).of[Topic]
+        val cls = css.name.lay(Map()) { name => Map(t"class" -> name) }
+        Html.Node(label, cls, IArray.from(children), foreign).of[Topic]
 
 
-      def node(attributes: Map[Text, Optional[Text]]): Result =
-        new Html.Node(label, presets ++ attributes, IArray(), foreign) with Html.Populable:
-          type Topic = tag.Topic
-          type Transport = tag.Transport
-          type Form = tag.Form
+    def node(attributes: Map[Text, Optional[Text]]): Result =
+      new Html.Node(label, presets ++ attributes, IArray(), foreign) with Html.Populable()
+      . of[Topic]
+      . over[Transport]
+      . in[Form]
 
 
   class Transparent
@@ -148,35 +151,33 @@ object Tag:
             insertable  = false,
             foreign     = foreign,
             transparent = true):
-    tag =>
-      type Result = Html.Node & Html.Transparent of Topic over Transport in Form
+
+    type Result = Html.Node & Html.Transparent of Topic over Transport in Form
 
 
-      def applyDynamic[className <: Label](method: className)(children: Html of Transport*)
-           (using css: CssClass of className)
-      : Html.Node of Topic =
+    def applyDynamic[className <: Label](method: className)(children: Html of Transport*)
+          (using css: CssClass of className)
+    : Html.Node of Topic =
 
-          val cls = css.name.lay(Map()) { name => Map(t"class" -> name) }
-          Html.Node(label, cls, IArray.from(children), foreign).of[Topic]
+        val cls = css.name.lay(Map()) { name => Map(t"class" -> name) }
+        Html.Node(label, cls, IArray.from(children), foreign).of[Topic]
 
 
-      def node(attributes: Map[Text, Optional[Text]]): Result =
-        new Html.Node(label, presets ++ attributes, IArray(), foreign) with Html.Transparent:
-          type Topic = tag.Topic
-          type Transport = tag.Transport
-          type Form = tag.Form
+    def node(attributes: Map[Text, Optional[Text]]): Result =
+      new Html.Node(label, presets ++ attributes, IArray(), foreign) with Html.Transparent()
+      . of[Topic]
+      . over[Transport]
+      . in[Form]
 
 
   class Void(label: Text, presets: Map[Text, Optional[Text]])
   extends Tag(label, presets = presets, void = true):
-    tag =>
-      type Result = Html.Node of Topic in Form
+    type Result = Html.Node of Topic in Form
 
-
-      def node(attributes: Map[Text, Optional[Text]]): Result =
-        new Html.Node(label, presets ++ attributes, IArray(), tag.foreign):
-          type Topic = tag.Topic
-          type Form = tag.Form
+    def node(attributes: Map[Text, Optional[Text]]): Result =
+      new Html.Node(label, presets ++ attributes, IArray(), this.foreign)
+      . of[Topic]
+      . in[Form]
 
 abstract class Tag
        (    label:       Text,
@@ -197,4 +198,3 @@ extends Html.Node(label, presets, IArray(), foreign), Formal, Dynamic:
     ${Honeycomb.attributes[Result, this.type]('this, 'attributes)}
 
   def node(attributes: Map[Text, Optional[Text]]): Result
-  def in[form]: this.type { type Form = form } = this.asInstanceOf[this.type { type Form = form }]

@@ -595,10 +595,12 @@ object Html extends Tag.Container
 
 sealed into trait Html extends Topical:
   type Topic <: Label
-  type Transport
+  type Transport <: Label
 
   private[honeycomb] def of[topic <: Label]: this.type of topic =
     asInstanceOf[this.type of topic]
 
   private[honeycomb] def over[transport <: Label]: this.type over transport =
     asInstanceOf[this.type over transport]
+
+  private[honeycomb] def in[form]: this.type in form = asInstanceOf[this.type in form]
