@@ -1,24 +1,24 @@
 publishLocal:
-	mill publishing.local
+	./mill publishing.local
 
 test:
-	mill test.assembly
+	./mill test.assembly
 	java -cp out/test/assembly.dest/out.jar soundness.Tests
 
 test.%:
-	mill clean $*.test
-	mill $*.test.assembly
+	./mill clean $*.test
+	./mill $*.test.assembly
 	java -cp out/$*/test/assembly.dest/out.jar $*.Tests
 
 failing:
-	mill test.assembly
+	./mill test.assembly
 	java -cp out/test/assembly.dest/out.jar soundness.FailingTests
 
 build:
-	mill soundness.all
+	./mill soundness.all
 
 dev:
-	mill -w soundness.all
+	./mill -w soundness.all
 
 ci:
 	java -cp out/test/assembly.dest/out.jar soundness.Tests
