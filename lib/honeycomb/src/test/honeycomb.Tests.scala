@@ -363,4 +363,4 @@ object Tests extends Suite(m"Honeycomb Tests"):
           val attribute = "attribute"
           def more: Int = 42
           h"""<p title=$attribute><!-- inner:$comment:outer -->This is some $more HTML.</p>"""
-        . assert(_ == Html(Body(P(title = "attribute")(Html.Comment(" inner:comment:outer ").of[Phrasing], "This is some ", "42", " HTML."))))
+        . assert(_ == P(title = "attribute")(Html.Comment(" inner:comment:outer ").of[Phrasing], "This is some ", "42", " HTML."))

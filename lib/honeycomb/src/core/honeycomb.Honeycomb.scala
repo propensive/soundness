@@ -61,8 +61,6 @@ object Honeycomb:
     abortive:
       var holes: Map[Ordinal, Html.Hole] = Map()
 
-      println(whatwg.generic)
-
       val html: Html =
         Html.parse(Iterator(parts.mkString("\u0000")), whatwg.generic, (ordinal, hole) => holes = holes.updated(ordinal, hole))
 
@@ -134,7 +132,6 @@ object Honeycomb:
             . asExprOf[(Text, Optional[Text])]
 
           val map = '{Map(${Expr.ofList(exprs)}*)}
-
           val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
 
           List('{Html.Node(${Expr(label)}, $map, $elements, ${Expr(foreign)})})
@@ -166,9 +163,23 @@ object Honeycomb:
 
           List('{Html.Textual($content.tt)})
 
-      serialize(html) match
-        case List(one: Expr[Html]) => one
-        case many                  => '{Html.Fragment(${Expr.ofList(many)}*)}
+      def resultType(html: Html): Set[String] = html match
+        case Html.Textual(_)         => Set("#text")
+        case Html.Node(tag, _, _, _) => Set(tag.s)
+        case Html.Fragment(values*)  => values.to(Set).flatMap(resultType(_))
+        case Html.Comment(_)         => Set()
+
+      resultType(html)
+      . map { label => ConstantType(StringConstant(label)) }
+      . foldLeft(TypeRepr.of[Nothing]) { (left, right) => OrType(left, right) }
+      . asType match
+          case '[type topic <: Label; topic] =>
+            '{
+                ${  serialize(html) match
+                      case List(one: Expr[Html]) => one
+                      case many                  => '{Html.Fragment(${Expr.ofList(many)}*)}  }
+                . of[topic]  }
+
 
 
 
