@@ -377,8 +377,38 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
 
 
+        test(m"single extraction"):
+          P("whole text").absolve match
+            case h"""<p>$whole</p>""" => whole
+        . assert(_ == Html.Textual(t"whole text"))
+
         test(m"pattern matcher"):
-          Div(title = "text")(Ul(Li("hello")), P("more")) match
+          Div(title = "text")(Ul(Li("hello")), P("more")).absolve match
             case h"""<div title=$att><ul>${value2}</ul>${value1}</div>""" =>
               (att, value2, value1)
         . assert(_ == ("text", Li("hello"), P("more")))
+
+        test(m"extractor on tag body"):
+          Form(Input(title = "text", disabled = true, style = t"testing"), "text").absolve match
+            case h"""<form><input $atts>$more</form>""" => atts
+        . assert(_ == ListMap(t"style" -> t"testing", t"disabled" -> Unset, t"title" -> t"text"))
+
+        test(m"extractor on tag body with removals"):
+          Form(Input(title = "text", disabled = true, style = t"testing"), "text").absolve match
+            case h"""<form><input style=$style $atts>$more</form>""" => atts
+        . assert(_ == ListMap(t"disabled" -> Unset, t"title" -> t"text"))
+
+        test(m"extractor on attribute"):
+          Form(Input(title = "text", disabled = true, style = t"testing"), "text").absolve match
+            case h"""<form><input style=$style>$more</form>""" => style
+        . assert(_ == t"testing")
+
+        test(m"extractor of text"):
+          P("whole text").absolve match
+            case h"""<p $atts>$whole</p>""" => whole
+        . assert(_ == Html.Textual(t"whole text"))
+
+        test(m"extractor of comment"):
+          P(Html.Comment("this is the comment")).absolve match
+            case h"""<p $atts><!--$comment--></p>""" => comment
+        . assert(_ == t"this is the comment")

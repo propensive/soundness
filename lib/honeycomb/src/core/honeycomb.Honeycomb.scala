@@ -72,7 +72,7 @@ object Honeycomb:
     recur(context.valueOrAbort.parts.to(List)).asType.absolve match
       case '[type tuple <: Tuple; tuple] => '{  new Interpolator() { type Topic = tuple }  }
 
-  def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Option[Tuple]] =
+  def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Option[Any]] =
     import quotes.reflect.*
     import doms.whatwg
 
@@ -101,7 +101,6 @@ object Honeycomb:
 
       def checkText(array: Expr[Array[Any]], pattern: Html.Textual, scrutinee: Expr[Html.Textual])
       : Expr[Boolean] =
-
           '{  ${Expr(pattern.text)} == $scrutinee.text  }
 
       def checkComment(array: Expr[Array[Any]], pattern: Html.Comment, scrutinee: Expr[Html.Comment])
@@ -130,9 +129,16 @@ object Honeycomb:
 
           def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
             case Nil => expr
+            case "\u0000" :: tail =>
+              idx += 1
+              types ::= TypeRepr.of[Map[Text, Optional[Text]]]
+              iterator.next()
+              val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
+              '{ $expr && { $array(${Expr(idx)}) = ${scrutinee}.attributes -- $others; true } }
+
             case head :: tail =>
               attributes(tail):
-                val boolean: Expr[Boolean] = pattern.attributes(head).let(_.s) match
+                val boolean: Expr[Boolean] = pattern.attributes(head).let(_.s).absolve match
                   case Unset      => '{$scrutinee.attributes(${Expr(head)}) == Unset}
                   case "\u0000"   =>
                     idx += 1
@@ -166,13 +172,26 @@ object Honeycomb:
       : Expr[Boolean] =
 
           pattern match
+            case Html.Comment("\u0000") =>
+              idx += 1
+              iterator.next()
+              types ::= TypeRepr.of[Text]
+
+              '{  $expr
+                  && $scrutinee.isInstanceOf[Html.Comment]
+                  && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Html.Comment].text; true }  }
+
             case Html.Textual("\u0000") =>
               idx += 1
               iterator.next() match
                 case Html.Hole.Node(label) =>
                   types ::= whatwg.elements(label).lay(TypeRepr.of[Html]): tag =>
-                    intersect(tag.admissible.map(_.s).to(List)).asType match
+                    intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
                       case '[type children <: Label; children] => TypeRepr.of[Html of children]
+
+                case _ =>
+                  panic(m"unexpected hole type")
+
               '{  $expr && { $array(${Expr(idx)}) = $scrutinee; true }  }
 
             case textual@Html.Textual(text) =>
@@ -180,6 +199,9 @@ object Honeycomb:
               '{  $expr && $scrutinee.isInstanceOf[Html.Textual] && $checked  }
 
             case comment@Html.Comment(text) =>
+              if text.contains("\u0000")
+              then halt(m"""only the entire comment text can be matched; write the extractor as
+                            ${t"<!--$$text-->"}""")
               val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Html.Comment]})
               '{  $expr && $scrutinee.isInstanceOf[Html.Comment] && $checked  }
 
@@ -198,17 +220,18 @@ object Honeycomb:
               '{  $expr && $scrutinee.isInstanceOf[Html.Fragment] && $checked  }
 
 
-      val tuple: Expr[Option[Tuple]] =
+      val tuple: Expr[Option[Any]] =
         '{  val extracts = new Array[Any](${Expr(holes.size)})
             val matches: Boolean = ${descend('extracts, html, scrutinee, '{true})}
-            if matches then Some(Tuple.fromArray(extracts)) else None  }
+            if !matches then None else Some:
+              ${ if holes.size == 1 then '{extracts(0)} else '{Tuple.fromArray(extracts)} }  }
 
       val tupleType: TypeRepr =
-        if types.length == 1 then types.last
+        if types.length == 1 then types.head
         else AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
 
       tupleType.asType.absolve match
-        case '[type result <: Tuple; result] => '{$tuple.asInstanceOf[Option[result]]}
+        case '[result] => '{$tuple.asInstanceOf[Option[result]]}
 
 
 
