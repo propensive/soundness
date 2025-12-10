@@ -412,3 +412,14 @@ object Tests extends Suite(m"Honeycomb Tests"):
           P(Html.Comment("this is the comment")).absolve match
             case h"""<p $atts><!--$comment--></p>""" => comment
         . assert(_ == t"this is the comment")
+
+        test(m"zero-hole extractor of comment"):
+          P(Html.Comment("this is the comment")).absolve match
+            case h"""<p><!--this is the comment--></p>""" => 1
+        . assert(_ == 1)
+
+        test(m"zero-hole non-matching extractor"):
+          P(Html.Comment("this is the comment")).absolve match
+            case h"""<p><!--this is not the comment--></p>""" => 1
+            case _ => 2
+        . assert(_ == 2)

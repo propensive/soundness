@@ -72,7 +72,7 @@ object Honeycomb:
     recur(context.valueOrAbort.parts.to(List)).asType.absolve match
       case '[type tuple <: Tuple; tuple] => '{  new Interpolator() { type Topic = tuple }  }
 
-  def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Option[Any]] =
+  def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Boolean | Option[Any]] =
     import quotes.reflect.*
     import doms.whatwg
 
@@ -220,18 +220,22 @@ object Honeycomb:
               '{  $expr && $scrutinee.isInstanceOf[Html.Fragment] && $checked  }
 
 
-      val tuple: Expr[Option[Any]] =
+      val result: Expr[Boolean | Option[Any]] =
         '{  val extracts = new Array[Any](${Expr(holes.size)})
             val matches: Boolean = ${descend('extracts, html, scrutinee, '{true})}
-            if !matches then None else Some:
-              ${ if holes.size == 1 then '{extracts(0)} else '{Tuple.fromArray(extracts)} }  }
+            ${  if holes.size == 0 then '{matches}
+                else if holes.size == 1 then '{if !matches then None else Some(extracts(0))}
+                else '{if !matches then None else Some(Tuple.fromArray(extracts))} }  }
 
-      val tupleType: TypeRepr =
-        if types.length == 1 then types.head
-        else AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
-
-      tupleType.asType.absolve match
-        case '[result] => '{$tuple.asInstanceOf[Option[result]]}
+      types.length match
+        case 0 => '{$result.asInstanceOf[Boolean]}
+        case 1 => types.head.asType.absolve match
+          case '[result] => '{$result.asInstanceOf[Option[result]]}
+        case _ =>
+          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
+          . asType
+          . absolve match
+              case '[result] => '{$result.asInstanceOf[Option[result]]}
 
 
 
