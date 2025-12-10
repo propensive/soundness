@@ -93,7 +93,7 @@ object Html extends Tag.Container
     case Textual(text)    => text
     case Comment(text) => t"<!--$text-->"
 
-    case Node(tagname, attributes, children, _) =>
+    case Element(tagname, attributes, children, _) =>
       val tagContent = if attributes.isEmpty then t"" else
         attributes.map:
           case (key, value) => value.lay(key) { value => t"""$key="$value"""" }
@@ -109,15 +109,15 @@ object Html extends Tag.Container
     case Ascend, Descend, Peer
 
   trait Populable:
-    node: Html.Node =>
-      def apply(children: Html of node.Transport*): Html.Node of node.Topic =
-        new Html.Node(node.label, node.attributes, IArray.from(children), node.foreign):
+    node: Html.Element =>
+      def apply(children: Html of node.Transport*): Html.Element of node.Topic =
+        new Html.Element(node.label, node.attributes, children.nodes, node.foreign):
           type Topic = node.Topic
 
   trait Transparent:
-    node: Html.Node =>
-      def apply[labels <: Label](children: Html of labels | node.Transport*): Html.Node of labels =
-        new Html.Node(node.label, node.attributes, IArray.from(children), node.foreign):
+    node: Html.Element =>
+      def apply[labels <: Label](children: Html of labels | node.Transport*): Html.Element of labels =
+        new Html.Element(node.label, node.attributes, children.nodes, node.foreign):
           type Topic = labels
 
 
@@ -131,7 +131,7 @@ object Html extends Tag.Container
     string => Textual(string.tt).of[label]
 
   given conversion3: [label <: Label, content >: label <: Label]
-        =>  Conversion[Node of label, Html of content] =
+        =>  Conversion[Element of label, Html of content] =
     _.of[content]
 
   given conversion4: [content <: Label] =>  Conversion[Comment, Html of content] = _.of[content]
@@ -181,15 +181,15 @@ object Html extends Tag.Container
   case class Position(ordinal: Ordinal) extends Format.Position:
     def describe: Text = t"character ${ordinal.n1}"
 
-  case class Fragment(nodes: Html*) extends Html:
-    override def hashCode: Int = nodes.hashCode
+  case class Fragment(nodes: Node*) extends Html:
+    override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode
 
     override def equals(that: Any): Boolean = that match
       case Fragment(nodes0*) => nodes0 == nodes
       case node: Html        => nodes.length == 1 && nodes(0) == node
       case _                 => false
 
-  case class Comment(text: Text) extends Html:
+  case class Comment(text: Text) extends Node:
     override def hashCode: Int = List(this).hashCode
 
     override def equals(that: Any): Boolean = that match
@@ -197,7 +197,7 @@ object Html extends Tag.Container
       case Fragment(Comment(text0)) => text0 == text
       case _                        => false
 
-  case class Textual(text: Text) extends Html:
+  case class Textual(text: Text) extends Node:
     type Topic = "#text"
 
     override def hashCode: Int = List(this).hashCode
@@ -208,24 +208,24 @@ object Html extends Tag.Container
       case _                          => false
 
 
-  object Node:
+  object Element:
     def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
-    : Node of "#foreign" =
+    : Element of "#foreign" =
 
-        Node(label, attributes, IArray.from(children), true).of["#foreign"]
+        Element(label, attributes, children.nodes, true).of["#foreign"]
 
 
-  case class Node
-         (label:      Text,
-          attributes: Map[Text, Optional[Text]],
-          children:   IArray[Html],
-          foreign:    Boolean)
-  extends Html, Topical, Transportive:
+  case class Element
+              (label:      Text,
+               attributes: Map[Text, Optional[Text]],
+               children:   IArray[Node],
+               foreign:    Boolean)
+  extends Node, Topical, Transportive:
 
     override def equals(that: Any): Boolean = that match
-      case Fragment(node: Node) => this == node
+      case Fragment(node: Element) => this == node
 
-      case Node(label, attributes, children, foreign) =>
+      case Element(label, attributes, children, foreign) =>
         label == this.label && attributes == this.attributes && foreign == this.foreign
         && ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
 
@@ -253,6 +253,7 @@ object Html extends Tag.Container
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
     var extra: Map[Text, Optional[Text]] = ListMap()
+    var followers: List[Node] = Nil
 
     def next(): Unit =
       if !cursor.next() then raise(ParseError(Html, Position(cursor.position), ExpectedMore))
@@ -490,21 +491,23 @@ object Html extends Tag.Container
           case '\u0000'  =>  fail(BadInsertion)
           case char      =>  fail(Unexpected(char))
 
-    def descend(parent: Tag, admissible: Set[Text]): Html =
+    def descend(parent: Tag, admissible: Set[Text]): Node =
       val admissible2 = if parent.transparent then admissible else parent.admissible
       read(parent, admissible2, extra, Nil, 0)
 
-    def finish(parent: Tag, children: List[Html], count: Int): Html =
+    def finish(parent: Tag, children: List[Node], count: Int): Node =
       if parent != root then
         if parent.autoclose
-        then Node(parent.label, parent.attributes, array(children, count), false)
+        then Element(parent.label, parent.attributes, array(children, count), false)
         else fail(Incomplete(parent.label))
-      else if count > 1 then Fragment(children.reverse*) else children(0)
+      else
+        if children.length > 1 then followers = children.init.reverse
+        children.last
 
-    def array(list: List[Html], count: Int): IArray[Html] =
+    def array(list: List[Node], count: Int): IArray[Node] =
       var todo = list
       var i = count
-      val array = new Array[Html](count)
+      val array = new Array[Node](count)
 
       while i > 0 do
         i -= 1
@@ -514,8 +517,8 @@ object Html extends Tag.Container
       array.immutable(using Unsafe)
 
     @tailrec
-    def read(parent: Tag, admissible: Set[Text], atts: Map[Text, Optional[Text]], children: List[Html], count: Int)
-    : Html =
+    def read(parent: Tag, admissible: Set[Text], atts: Map[Text, Optional[Text]], children: List[Node], count: Int)
+    : Node =
 
         def admit(child: Text): Boolean =
           parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
@@ -526,17 +529,17 @@ object Html extends Tag.Container
                            read(parent, admissible, atts, Textual("\u0000") :: children, count + 1)
           case '<' if parent.content != TextContent.Raw && parent.content != TextContent.Rcdata =>
             var level: Level = Level.Peer
-            var current: Html = parent
+            var current: Node = parent
             var currentTag: Tag = parent
 
             cursor.hold:
               val mark = cursor.mark
 
               def node(): Unit =
-                current = Node(content, extra, array(children, count), parent.foreign)
+                current = Element(content, extra, array(children, count), parent.foreign)
 
               def close(): Unit =
-                current = Node(parent.label, parent.attributes, array(children, count), parent.foreign)
+                current = Element(parent.label, parent.attributes, array(children, count), parent.foreign)
                 level = Level.Ascend
 
               def infer(tag: Tag): Unit =
@@ -575,7 +578,7 @@ object Html extends Tag.Container
                   else
                     cursor.next()
                     level = Level.Ascend
-                    current = Node(content, atts, array(children, count), parent.foreign)
+                    current = Element(content, atts, array(children, count), parent.foreign)
 
             level match
               case Level.Ascend  =>  current
@@ -589,13 +592,13 @@ object Html extends Tag.Container
 
             case TextContent.Raw =>
               val text = cursor.hold(textual(cursor.mark, parent.label, false))
-              if text.s.isEmpty then Node(parent.label, parent.attributes, IArray(), parent.foreign)
-              else Node(parent.label, parent.attributes, IArray(Textual(text)), parent.foreign)
+              if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+              else Element(parent.label, parent.attributes, IArray(Textual(text)), parent.foreign)
 
             case TextContent.Rcdata =>
               val text = cursor.hold(textual(cursor.mark, parent.label, true))
-              if text.s.isEmpty then Node(parent.label, parent.attributes, IArray(), parent.foreign)
-              else Node(parent.label, parent.attributes, IArray(Textual(text)), parent.foreign)
+              if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+              else Element(parent.label, parent.attributes, IArray(Textual(text)), parent.foreign)
 
             case TextContent.Normal =>
               val text = cursor.hold(textual(cursor.mark, Unset, true))
@@ -603,7 +606,8 @@ object Html extends Tag.Container
               else read(parent, admissible, atts, Textual(text) :: children, count + 1)
 
     skip()
-    read(root, root.admissible, ListMap(), Nil, 0)
+    val head = read(root, root.admissible, ListMap(), Nil, 0)
+    if followers.isEmpty then head else Fragment(head :: followers*)
 
 sealed into trait Html extends Topical:
   type Topic <: Label
@@ -616,3 +620,5 @@ sealed into trait Html extends Topical:
     asInstanceOf[this.type over transport]
 
   private[honeycomb] def in[form]: this.type in form = asInstanceOf[this.type in form]
+
+sealed trait Node extends Html

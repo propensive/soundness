@@ -35,12 +35,13 @@ package honeycomb
 import anticipation.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import vacuous.*
 
 import language.dynamics
 
-// extension [renderable: Renderable](value: renderable)
-//   def html: Seq[OldHtml[renderable.Result]] = renderable.html(value)
+extension [renderable: Renderable](value: renderable)
+  def html: Html of renderable.Form = renderable.render(value)
 
 // extension (context: StringContext)
 //   def cls(): CssClass = CssClass(context.parts.head.tt)
@@ -51,8 +52,30 @@ import language.dynamics
 // type Attributes = Map[String, Unset.type | Text]
 
 extension (inline context: StringContext)
-  transparent inline def h(inline parts: Any*): Html =
-    ${Honeycomb.interpolator('context, 'parts)}
+  transparent inline def h: Honeycomb.Interpolator = ${Honeycomb.h('context)}
+
+extension (html: Seq[Html])
+  def nodes: IArray[Node] =
+    var count = 0
+
+    for item <- html do item match
+      case Html.Fragment(nodes*) => count += nodes.length
+      case _                => count += 1
+
+    val array = new Array[Node](count)
+
+    var index = 0
+    for item <- html do item match
+      case Html.Fragment(nodes*) => for node <- nodes do
+        array(index) = node
+        index += 1
+
+      case node: Node =>
+        array(index) = node
+        index += 1
+
+    array.immutable(using Unsafe)
+
 
 package doms:
   given whatwg: Whatwg = Whatwg()

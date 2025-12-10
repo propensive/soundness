@@ -48,12 +48,66 @@ import scala.quoted.*
 object Honeycomb:
   private given realm: Realm = realm"honeycomb"
 
-  def interpolator(context: Expr[StringContext], insertions0: Expr[Seq[Any]]): Macro[Html] =
+  class Interpolator():
+    type Topic <: Tuple
+    inline def apply(inline insertions: Any*): Html = ${interpolator[Topic]('insertions)}
+
+    transparent inline def unapply(node: Html): Any = ${extractor[Topic]('node)}
+
+  def h(context: Expr[StringContext]): Macro[Interpolator] =
+    import quotes.reflect.*
+
+    def recur(parts: List[String], repr: TypeRepr = TypeRepr.of[EmptyTuple.type]): TypeRepr =
+      parts match
+        case head :: tail =>
+          ConstantType(StringConstant(head)).asType match
+            case '[label] => repr.asType.absolve match
+              case '[type tuple <: Tuple; tuple] =>  recur(tail, TypeRepr.of[label *: tuple])
+        case Nil =>
+          repr
+
+    recur(context.valueOrAbort.parts.to(List)).asType match
+      case '[type tuple <: Tuple; tuple] => '{  new Interpolator() { type Topic = tuple }  }
+
+  def extractor[parts <: Tuple: Type](value: Expr[Html]): Macro[Any] =
+    import quotes.reflect.*
+    import doms.whatwg
+
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
+
+    val parts = recur[parts](Nil)
+
+    abortive:
+      var holes: Map[Ordinal, Html.Hole] = Map()
+      def capture(ordinal: Ordinal, hole: Html.Hole) = holes = holes.updated(ordinal, hole)
+
+      val html: Html =
+        Html.parse(Iterator(parts.mkString("\u0000")), whatwg.generic, capture(_, _))
+
+      println(html)
+
+      Type.of[(Int, String)].absolve match
+        case '[result] =>
+          '{  var matches: Boolean = true
+              val extracts = new Array[Any](${Expr(holes.size)})
+              extracts(0) = 5
+              extracts(1) = "test"
+              if matches then Some(Tuple.fromArray(extracts).asInstanceOf[result]) else None  }
+
+
+
+  def interpolator[parts <: Tuple: Type](insertions0: Expr[Seq[Any]]): Macro[Html] =
     import quotes.reflect.*
     import doms.whatwg
     import Html.Hole
 
-    val StringContext(parts*) = context.valueOrAbort
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
+
+    val parts = recur[parts](Nil)
 
     val insertions: Seq[Expr[Any]] = insertions0.absolve match
       case Varargs(insertions) => insertions
@@ -124,9 +178,9 @@ object Honeycomb:
                   halt(m"only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a tag body")
         . iterator
 
-      def serialize(html: Html): Seq[Expr[Html]] = html match
+      def serialize(html: Html): Seq[Expr[Node]] = html match
         case Html.Fragment(children*) => children.flatMap(serialize(_))
-        case Html.Node(label, attributes, children, foreign) =>
+        case Html.Element(label, attributes, children, foreign) =>
           val exprs = attributes.to(List).map: (key, value) =>
             '{  (${Expr(key)},
                  ${  if value == "\u0000".tt then iterator.next().asExprOf[Optional[Text]]
@@ -137,7 +191,7 @@ object Honeycomb:
           val map = '{Map(${Expr.ofList(exprs)}*)}
           val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
 
-          List('{Html.Node(${Expr(label)}, $map, $elements, ${Expr(foreign)})})
+          List('{Html.Element(${Expr(label)}, $map, $elements, ${Expr(foreign)})})
 
         case Html.Comment(text) =>
           val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
@@ -152,7 +206,7 @@ object Honeycomb:
           List('{Html.Comment($content.tt)})
 
         case Html.Textual("\u0000") =>
-          List(iterator.next().asExprOf[Html])
+          List(iterator.next().asExprOf[Node])
 
         case Html.Textual(text) =>
           val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
@@ -168,7 +222,7 @@ object Honeycomb:
 
       def resultType(html: Html): Set[String] = html match
         case Html.Textual(_)          => Set("#text")
-        case Html.Node(tag, _, _, _) => Set(tag.s)
+        case Html.Element(tag, _, _, _) => Set(tag.s)
         case Html.Fragment(values*)   => values.to(Set).flatMap(resultType(_))
         case Html.Comment(_)          => Set()
 
@@ -179,7 +233,7 @@ object Honeycomb:
       . absolve match
           case '[type topic <: Label; topic] =>
             '{
-                ${  serialize(html) match
+                ${  serialize(html).absolve match
                       case List(one: Expr[Html]) => one.asExprOf[Html]
                       case many                  => '{Html.Fragment(${Expr.ofList(many)}*)}  }
                 . of[topic]  }
@@ -190,7 +244,7 @@ object Honeycomb:
   : Macro[result] =
       import quotes.reflect.*
 
-      val args = attributes0 match
+      val args = attributes0.absolve match
         case Varargs(args) => args
 
       val attributes: Seq[Expr[Optional[(Text, Optional[Text])]]] =

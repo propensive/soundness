@@ -272,12 +272,12 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
-      .assert(_ == Div(Svg(Html.Node.foreign("circle", sci.Map(t"r" -> t"1")))))
+      .assert(_ == Div(Svg(Html.Element.foreign("circle", sci.Map(t"r" -> t"1")))))
 
       test(m"Nontrivial MathML example"):
         t"""<div>The equation is <math><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""
         . read[Html of Flow]
-      . assert(_ == Div("The equation is ", Math(Html.Node.foreign("mfrac", sci.Map(), Html.Node.foreign("msup", sci.Map(), Html.Node.foreign("mi", sci.Map(), "π"), Html.Node.foreign("mn", sci.Map(), "2")), Html.Node.foreign("mn", sci.Map(), "6"))), "."))
+      . assert(_ == Div("The equation is ", Math(Html.Element.foreign("mfrac", sci.Map(), Html.Element.foreign("msup", sci.Map(), Html.Element.foreign("mi", sci.Map(), "π"), Html.Element.foreign("mn", sci.Map(), "2")), Html.Element.foreign("mn", sci.Map(), "6"))), "."))
 
       test(m"transparent tag with text"):
         t"""<p>Go <a href="https://example.com">home</a>.</p>""".read[Html of "p"]
@@ -374,3 +374,8 @@ object Tests extends Suite(m"Honeycomb Tests"):
           val placeholder = "placeholder"
           h"""<input alt="$alt" dirname="$dirname" title="$title" placeholder="$placeholder" maxlength="$maxlength">"""
         . assert(_ == Input(title = "title", dirname = "dirname", alt = "alt", maxlength = 10, placeholder = "placeholder"))
+
+        test(m"pattern matcher"):
+          Div(title = "text")("hello world") match
+            case h"<div title=$value0>${value1}</div>" => (value0, value1)
+        . assert(_ == (0, "hello"))
