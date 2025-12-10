@@ -38,6 +38,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import fulminate.*
+import gossamer.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -71,7 +72,7 @@ object Honeycomb:
     recur(context.valueOrAbort.parts.to(List)).asType.absolve match
       case '[type tuple <: Tuple; tuple] => '{  new Interpolator() { type Topic = tuple }  }
 
-  def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Any] =
+  def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Option[Tuple]] =
     import quotes.reflect.*
     import doms.whatwg
 
@@ -81,15 +82,22 @@ object Honeycomb:
 
     val parts = recur[parts](Nil)
 
+    def intersect(parts: List[String], repr: TypeRepr = TypeRepr.of[Nothing]): TypeRepr =
+      parts match
+        case head :: tail =>  intersect(tail, OrType(repr, ConstantType(StringConstant(head))))
+        case Nil          =>  repr
+
     abortive:
       var holes: Map[Ordinal, Html.Hole] = Map()
       def capture(ordinal: Ordinal, hole: Html.Hole) = holes = holes.updated(ordinal, hole)
 
       val html: Html = Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
-      println(html)
-      val iterator = holes.to(List).sortBy(_(0)).map(_(1)).to(Iterator)
+      val holes2 = holes.to(List).sortBy(_(0)).map(_(1))
+      val iterator = holes2.to(Iterator)
       var idx: Int = -1
+
+      var types: List[TypeRepr] = Nil
 
       def checkText(array: Expr[Array[Any]], pattern: Html.Textual, scrutinee: Expr[Html.Textual])
       : Expr[Boolean] =
@@ -109,7 +117,7 @@ object Honeycomb:
           def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
             if index == pattern.nodes.length then expr else
               val expr2 =
-                recur(array, pattern.nodes(index), '{$children(${Expr(index)})}, '{true})
+                descend(array, pattern.nodes(index), '{$children(${Expr(index)})}, '{true})
 
               elements(index + 1)('{$expr && $expr2})
 
@@ -120,63 +128,87 @@ object Honeycomb:
       def checkElement(array: Expr[Array[Any]], pattern: Html.Element, scrutinee: Expr[Html.Element])
       : Expr[Boolean] =
 
+          def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
+            case Nil => expr
+            case head :: tail =>
+              attributes(tail):
+                val boolean: Expr[Boolean] = pattern.attributes(head).let(_.s) match
+                  case Unset      => '{$scrutinee.attributes(${Expr(head)}) == Unset}
+                  case "\u0000"   =>
+                    idx += 1
+                    types ::= TypeRepr.of[Text]
+                    iterator.next()
+                    '{ $array(${Expr(idx)}) = $scrutinee.attributes(${Expr(head)}); true }
+
+                  case text: Text =>
+                    '{ $scrutinee.attributes(${Expr(head)}) == ${Expr(text)} }
+
+                '{ $expr && $boolean }
+
+          val attributesChecked = attributes(pattern.attributes.to(List).map(_(0)))('{true})
+
           val children = '{$scrutinee.children}
 
           def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
             if index == pattern.children.length then expr else
               val expr2 =
-                recur(array, pattern.children(index), '{$children(${Expr(index)})}, '{true})
+                descend(array, pattern.children(index), '{$children(${Expr(index)})}, '{true})
 
               elements(index + 1)('{$expr && $expr2})
 
-          elements(0):
+          val elementsChecked = elements(0):
             '{  ${Expr(pattern.label)} == $scrutinee.label
                 && $scrutinee.children.length == ${Expr(pattern.children.length)} }
 
-      def recur(array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean])
+          '{ $attributesChecked && $elementsChecked }
+
+      def descend(array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean])
       : Expr[Boolean] =
 
-          println(s"pattern: $pattern")
           pattern match
             case Html.Textual("\u0000") =>
-              println(s"textual extraction: $pattern")
-              println("extraction of "+iterator.next())
               idx += 1
+              iterator.next() match
+                case Html.Hole.Node(label) =>
+                  types ::= whatwg.elements(label).lay(TypeRepr.of[Html]): tag =>
+                    intersect(tag.admissible.map(_.s).to(List)).asType match
+                      case '[type children <: Label; children] => TypeRepr.of[Html of children]
               '{  $expr && { $array(${Expr(idx)}) = $scrutinee; true }  }
 
             case textual@Html.Textual(text) =>
-              println(s"textual: $pattern")
               val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[Html.Textual]})
               '{  $expr && $scrutinee.isInstanceOf[Html.Textual] && $checked  }
 
             case comment@Html.Comment(text) =>
-              println(s"comment: $pattern")
               val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Html.Comment]})
               '{  $expr && $scrutinee.isInstanceOf[Html.Comment] && $checked  }
 
             case Html.Element("\u0000", _, _, _) =>
-              println("extraction of "+iterator.next())
               idx += 1
+              types ::= TypeRepr.of[Html]
+              iterator.next()
               '{  $expr && { $array(${Expr(idx)}) = $scrutinee; true }  }
 
             case element: Html.Element =>
-              println(s"element: $pattern")
               def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Html.Element]})
               '{  $expr && $scrutinee.isInstanceOf[Html.Element] && $checked  }
 
             case fragment@Html.Fragment(nodes*) =>
-              println(s"fragment: $pattern")
               val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Html.Fragment]})
               '{  $expr && $scrutinee.isInstanceOf[Html.Fragment] && $checked  }
 
-      Type.of[(Html, Html)].absolve match
-        case '[result] =>
-          '{
-              val extracts = new Array[Any](${Expr(holes.size)})
-              extracts(0) = Html.Textual("zero")
-              extracts(1) = Html.Textual("one")
-              val matches: Boolean = ${recur('extracts, html, scrutinee, '{true})}
-              if matches then Some(Tuple.fromArray(extracts).asInstanceOf[result]) else None  }
+
+      val tuple: Expr[Option[Tuple]] =
+        '{  val extracts = new Array[Any](${Expr(holes.size)})
+            val matches: Boolean = ${descend('extracts, html, scrutinee, '{true})}
+            if matches then Some(Tuple.fromArray(extracts)) else None  }
+
+      val tupleType: TypeRepr =
+        if types.length == 1 then types.last
+        else AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
+
+      tupleType.asType.absolve match
+        case '[type result <: Tuple; result] => '{$tuple.asInstanceOf[Option[result]]}
 
 
 

@@ -378,6 +378,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
 
         test(m"pattern matcher"):
-          Div(title = "text")(P("hello world"), P("more")) match
-            case h"<div><p>${value1}</p>${value2}</div>" => (value1, value2)
-        . assert(_ == (Html.Textual("hello world"), P("more")))
+          Div(title = "text")(Ul(Li("hello")), P("more")) match
+            case h"""<div title=$att><ul>${value2}</ul>${value1}</div>""" =>
+              (att, value2, value1)
+        . assert(_ == ("text", Li("hello"), P("more")))
