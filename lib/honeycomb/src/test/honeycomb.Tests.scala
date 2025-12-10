@@ -375,7 +375,9 @@ object Tests extends Suite(m"Honeycomb Tests"):
           h"""<input alt="$alt" dirname="$dirname" title="$title" placeholder="$placeholder" maxlength="$maxlength">"""
         . assert(_ == Input(title = "title", dirname = "dirname", alt = "alt", maxlength = 10, placeholder = "placeholder"))
 
+
+
         test(m"pattern matcher"):
-          Div(title = "text")("hello world") match
-            case h"<div title=$value0>${value1}</div>" => (value0, value1)
-        . assert(_ == (0, "hello"))
+          Div(title = "text")(P("hello world"), P("more")) match
+            case h"<div><p>${value1}</p>${value2}</div>" => (value1, value2)
+        . assert(_ == (Html.Textual("hello world"), P("more")))

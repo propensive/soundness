@@ -246,7 +246,7 @@ object Html extends Tag.Container
   def parse[dom <: Dom]
        (input:  Iterator[Text],
         root:   Tag,
-        insert: Optional[(Ordinal, Hole) => Unit] = Unset)
+        callback: Optional[(Ordinal, Hole) => Unit] = Unset)
        (using dom: Dom): Html raises ParseError =
     val cursor = Cursor(input)
     val buffer: jl.StringBuilder = jl.StringBuilder()
@@ -337,7 +337,7 @@ object Html extends Tag.Container
                         value(mark2)
       case '"'      =>  cursor.clone(mark, cursor.mark)(buffer)
                         next() yet result()
-      case '\u0000' =>  insert.let(_(cursor.position, Hole.Text)) yet next() yet value(mark)
+      case '\u0000' =>  callback.let(_(cursor.position, Hole.Text)) yet next() yet value(mark)
       case char     =>  next() yet value(mark)
 
     @tailrec
@@ -366,7 +366,7 @@ object Html extends Tag.Container
 
         skip() yet cursor.lay(fail(ExpectedMore)):
           case '>' | '/' => entries
-          case '\u0000'  => insert.let(_(cursor.position, Hole.Tagbody))
+          case '\u0000'  => callback.let(_(cursor.position, Hole.Tagbody))
                             next()
                             skip()
                             attributes(tag, foreign, entries.updated(t"\u0000", Unset))
@@ -379,7 +379,7 @@ object Html extends Tag.Container
             if entries.has(key2) then fail(DuplicateAttribute(key2))
 
             val assignment = if !equality() then Unset else cursor.lay(fail(ExpectedMore)):
-              case '\u0000' =>  insert.let(_(cursor.position, Hole.Attribute(tag, key2)))
+              case '\u0000' =>  callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
                                 next() yet t"\u0000"
               case '"'      =>  next() yet value(cursor.mark)
               case '\''     =>  next() yet singleQuoted(cursor.mark)
@@ -463,7 +463,7 @@ object Html extends Tag.Container
                         cursor.lay(fail(ExpectedMore)):
                           case '-' => expect('>') yet cursor.grab(mark, end)
                           case _   => comment(mark)
-      case '\u0000' =>  insert.let(_(cursor.position, Hole.Comment))
+      case '\u0000' =>  callback.let(_(cursor.position, Hole.Comment))
                         next() yet comment(mark)
       case char     =>  next() yet comment(mark)
 
@@ -524,7 +524,7 @@ object Html extends Tag.Container
           parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
 
         cursor.lay(finish(parent, children, count)):
-          case '\u0000' => insert.let(_(cursor.position, Hole.Node(parent.label)))
+          case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
                            next()
                            read(parent, admissible, atts, Textual("\u0000") :: children, count + 1)
           case '<' if parent.content != TextContent.Raw && parent.content != TextContent.Rcdata =>
