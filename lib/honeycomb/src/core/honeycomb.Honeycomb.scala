@@ -185,9 +185,9 @@ object Honeycomb:
               idx += 1
               iterator.next() match
                 case Html.Hole.Node(label) =>
-                  types ::= whatwg.elements(label).lay(TypeRepr.of[Html]): tag =>
+                  types ::= whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
                     intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
-                      case '[type children <: Label; children] => TypeRepr.of[Html of children]
+                      case '[type children <: Label; children] => TypeRepr.of[Node of children]
 
                 case _ =>
                   panic(m"unexpected hole type")
@@ -207,8 +207,14 @@ object Honeycomb:
 
             case Html.Element("\u0000", _, _, _) =>
               idx += 1
-              types ::= TypeRepr.of[Html]
-              iterator.next()
+              iterator.next() match
+                case Html.Hole.Element(label) =>
+                  types ::= whatwg.elements(label).lay(TypeRepr.of[Html.Element]): tag =>
+                    intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
+                      case '[type children <: Label; children] => TypeRepr.of[Html.Element of children]
+                case _ =>
+                  halt(m"unexpected hole type")
+
               '{  $expr && { $array(${Expr(idx)}) = $scrutinee; true }  }
 
             case element: Html.Element =>
@@ -282,6 +288,16 @@ object Honeycomb:
 
                         case _ =>
                           halt(m"the attribute $attribute cannot be used on the element <$tag>")
+
+              case Hole.Element(tag) =>
+                ConstantType(StringConstant(tag.s)).asType.absolve match
+                  case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
+                    case Some('{$renderable: Renderable}) =>
+                      '{$renderable.render($expr)}
+
+                    case _ =>
+                      halt(m"""a value of ${TypeRepr.of[value].show} is not renderable inside a
+                               <$tag> element""")
 
               case Hole.Node(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match

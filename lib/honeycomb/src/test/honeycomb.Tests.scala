@@ -357,6 +357,9 @@ object Tests extends Suite(m"Honeycomb Tests"):
         t"""<p>value: &#x1f600;""".read[Html of Flow]
       . assert(_ == P("value: 😀"))
 
+      test(m"attribute access"):
+        Input.Button.`type`
+      . assert(_ == t"button")
 
       suite(m"Interpolator tests"):
         test(m"simple interpolator"):
@@ -421,3 +424,13 @@ object Tests extends Suite(m"Honeycomb Tests"):
             case h"""<p><!--this is not the comment--></p>""" => 1
             case _ => 2
         . assert(_ == 2)
+
+        test(m"extractor of an element"):
+          P(Input.Button).absolve match
+            case h"""<p $atts><$element></p>""" => element
+        . assert(_ == Input.Button)
+
+        test(m"extractor of an element and its attribute"):
+          P(Img(alt = "titletext")).absolve match
+            case h"""<p><$img></p>""" => img.alt
+        . assert(_ == t"titletext")

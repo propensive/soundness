@@ -220,7 +220,7 @@ object Html extends Tag.Container
                attributes: Map[Text, Optional[Text]],
                children:   IArray[Node],
                foreign:    Boolean)
-  extends Node, Topical, Transportive:
+  extends Node, Topical, Transportive, Dynamic:
 
     override def equals(that: Any): Boolean = that match
       case Fragment(node: Element) => this == node
@@ -235,11 +235,14 @@ object Html extends Tag.Container
     override def hashCode: Int =
       ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
 
+    def selectDynamic(name: String): Optional[Text] = attributes.at(name.tt)
+
   enum TextContent:
     case Raw, Rcdata, Whitespace, Normal
 
   enum Hole:
     case Text, Tagbody, Comment
+    case Element(tag: Text)
     case Attribute(tag: Text, attribute: Text)
     case Node(parent: Text)
 
@@ -553,8 +556,14 @@ object Html extends Tag.Container
                     else fail(InadmissibleTag(content, parent.label))
 
               next()
-
-              tag(parent.foreign) match
+              if cursor.lay(false)(_ == '\u0000')
+              then
+                callback.let(_(cursor.position, Hole.Element(parent.label)))
+                content = t"\u0000"
+                node()
+                expect('>')
+                next()
+              else tag(parent.foreign) match
                 case Token.Comment => current = Comment(content)
 
                 case Token.Empty   =>
@@ -575,7 +584,8 @@ object Html extends Tag.Container
                 case Token.Close =>
                   if content != parent.label then
                     cursor.cue(mark)
-                    if parent.autoclose then close() else fail(MismatchedTag(parent.label, content))
+                    if parent.autoclose then close()
+                    else fail(MismatchedTag(parent.label, content))
                   else
                     cursor.next()
                     level = Level.Ascend
