@@ -168,12 +168,12 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"mismatched closing tag"):
         try t"""<em><b></em></b>""".read[Html of Phrasing]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(8.u), Html.Issue.MismatchedTag("b", "em")))
+      .assert(_ == ParseError(Html, Html.Position(1.u, 8.u), Html.Issue.MismatchedTag("b", "em")))
 
       test(m"unknown tag"):
         try t"""<scrip>""".read[Html of Phrasing]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(2.u), Html.Issue.InvalidTag("scrip")))
+      .assert(_ == ParseError(Html, Html.Position(1.u, 2.u), Html.Issue.InvalidTag("scrip")))
 
       test(m"raw text"):
         t"<head><script>some content</script></head>".read[Html of "head"]
@@ -214,12 +214,12 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"unclosed tag 1"):
         try t"""<ul><li>First item</li>""".read[Html of Flow]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(24.u), Html.Issue.Incomplete("ul")))
+      .assert(_ == ParseError(Html, Html.Position(1.u, 24.u), Html.Issue.Incomplete("ul")))
 
       test(m"unclosed tag 2"):
         try t"""<ul><li>First item""".read[Html of Flow]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(19.u), Html.Issue.Incomplete("ul")))
+      .assert(_ == ParseError(Html, Html.Position(1.u, 19.u), Html.Issue.Incomplete("ul")))
 
       test(m"infer both <head> and <body>"):
         t"""<title>Page title</title><p>A paragraph</p>""".read[Html of "html"]
@@ -268,7 +268,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"Non-whitespace text not permitted between list items"):
         try t"""<ul><li>hello</li>\n and <li>world</li></ul>""".read[Html of "html"]
         catch case exception: Exception => exception
-      . assert(_ == ParseError(Html, Html.Position(21.u), Html.Issue.OnlyWhitespace('a')))
+      . assert(_ == ParseError(Html, Html.Position(2.u, 2.u), Html.Issue.OnlyWhitespace('a')))
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
@@ -286,7 +286,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"transparent tag only allows the right children"):
         try t"""<div><a href="#"><li>list item</li></a></div>""".read[Html of Flow]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(18.u), Html.Issue.InadmissibleTag("li", "a")))
+      .assert(_ == ParseError(Html, Html.Position(1.u, 18.u), Html.Issue.InadmissibleTag("li", "a")))
 
       test(m"transparent tag with element"):
         t"""<p>Go <a href="https://example.com"><em>home</em></a>.</p>""".read[Html of "p"]
@@ -374,8 +374,6 @@ object Tests extends Suite(m"Honeycomb Tests"):
           val placeholder = "placeholder"
           h"""<input alt="$alt" dirname="$dirname" title="$title" placeholder="$placeholder" maxlength="$maxlength">"""
         . assert(_ == Input(title = "title", dirname = "dirname", alt = "alt", maxlength = 10, placeholder = "placeholder"))
-
-
 
         test(m"single extraction"):
           P("whole text").absolve match

@@ -178,8 +178,8 @@ object Html extends Tag.Container
       case UnknownAttributeStart(name)    =>  m"there is no valid attribute whose name starts $name"
       case InvalidAttributeUse(name, tag) =>  m"the attribute $name cannot be used on the tag <$tag>"
 
-  case class Position(ordinal: Ordinal) extends Format.Position:
-    def describe: Text = t"character ${ordinal.n1}"
+  case class Position(line: Ordinal, column: Ordinal) extends Format.Position:
+    def describe: Text = t"line ${line.n1}, column ${column.n1}"
 
   case class Fragment(nodes: Node*) extends Html:
     override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode
@@ -248,7 +248,7 @@ object Html extends Tag.Container
         root:   Tag,
         callback: Optional[(Ordinal, Hole) => Unit] = Unset)
        (using dom: Dom): Html raises ParseError =
-    val cursor = Cursor(input)
+    val cursor = Cursor(input, linebreaks = true)
     val buffer: jl.StringBuilder = jl.StringBuilder()
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
@@ -256,7 +256,8 @@ object Html extends Tag.Container
     var followers: List[Node] = Nil
 
     def next(): Unit =
-      if !cursor.next() then raise(ParseError(Html, Position(cursor.position), ExpectedMore))
+      if !cursor.next()
+      then raise(ParseError(Html, Position(cursor.line, cursor.column), ExpectedMore))
 
     inline def expect(char: Char): Unit =
       cursor.next()
@@ -264,7 +265,7 @@ object Html extends Tag.Container
         if datum != char then fail(Unexpected(datum))
 
     def fail(issue: Issue): Nothing =
-      abort(ParseError(Html, Position(cursor.position), issue))
+      abort(ParseError(Html, Position(cursor.line, cursor.column), issue))
 
     @tailrec
     def skip(): Unit = cursor.lay(fail(ExpectedMore)):

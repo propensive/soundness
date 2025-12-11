@@ -34,67 +34,34 @@ package zephyrine
 
 import language.experimental.captureChecking
 
-import java.io as ji
-import java.lang as jl
-
-import scala.collection.mutable as scm
+import java.util.concurrent as juc
 
 import anticipation.*
 import denominative.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
-import vacuous.*
 
-object Addressable:
-  inline given Bytes is Addressable:
-    type Operand = Byte
-    type Target = ji.ByteArrayOutputStream
+// class Scribe[data, addressable: Addressable by data](blocksize: Memory = 4.kib):
+//   type Transport
+//   private object Terminal
 
-    val empty: Bytes = IArray.from(Nil)
-    inline def blank(size: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(size)
+//   private val queue: juc.ArrayBlockingQueue[addressable | Terminal.type] =
+//     new juc.ArrayBlockingQueue(2)
 
-    inline def build(target: ji.ByteArrayOutputStream): Bytes =
-      target.toByteArray.nn.immutable(using Unsafe)
+//   var current: Array[data] = allocate()
+//   var used: Int = 0
 
-    inline def length(bytes: Bytes): Int = bytes.length
-    inline def address(bytes: Bytes, index: Ordinal): Byte = bytes(index.n0)
+//   inline def allocate(): Array[data] = new Array[data](blocksize.long.toInt)
 
-    inline def grab(bytes: Bytes, start: Ordinal, end: Ordinal): Bytes =
-      bytes.slice(start.n0, end.n0)
+//   def iterator: Iterator[addressable] = new Iterator[addressable]:
+//     private var ready: addressable | Terminal.type = Terminal
 
-    inline def clone(source: Bytes, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
-    : Unit =
+//     def hasNext(): Boolean =
+//       ready = queue.take().nn
+//       ready != Terminal
 
-        target.write(source.mutable(using Unsafe), start.n0, end.n0 - start.n0 - 1)
+//     def next(): addressable = current.asInstanceOf[addressable]
 
-
-  inline given Text is Addressable:
-    type Operand = Char
-    type Target = jl.StringBuilder
-
-    val empty: Text = ""
-
-    inline def build(target: jl.StringBuilder): Text = target.toString.tt
-    inline def blank(size: Int): jl.StringBuilder = jl.StringBuilder(size)
-    inline def length(text: Text): Int = text.s.length
-    inline def address(text: Text, index: Ordinal): Operand = text.s.charAt(index.n0)
-
-    inline def grab(text: Text, start: Ordinal, end: Ordinal): Text =
-      text.s.substring(start.n0, end.n1).nn.tt
-
-
-    inline def clone(source: Text, start: Ordinal, end: Ordinal)(target: java.lang.StringBuilder)
-    : Unit =
-
-        target.append(source.s, start.n0, end.n1)
-
-
-trait Addressable extends Typeclass, Operable, Targetable:
-  def empty: Self
-  inline def blank(size: Int): Target
-  inline def build(target: Target): Self
-  inline def length(block: Self): Int
-  inline def address(block: Self, index: Ordinal): Operand
-  inline def clone(source: Self, start: Ordinal, end: Ordinal)(target: Target): Unit
-  inline def grab(text: Self, start: Ordinal, end: Ordinal): Self
+//   def put(block: addressable): Unit = queue.put(block)
+//   def finish(): Unit = queue.put(Terminal)
