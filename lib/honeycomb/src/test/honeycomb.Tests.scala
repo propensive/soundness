@@ -309,6 +309,18 @@ object Tests extends Suite(m"Honeycomb Tests"):
         t"""<title>Push then Pull</title>""".read[Html of Metadata]
       . assert(_ == Title("Push then Pull"))
 
+      val example = Html(Head(Title("Heading")), Body(P("body")))
+      test(m"Parse Document without doctype"):
+        t"""<title>Heading</title>
+            <p>body""".load[Html]
+      . assert(_ == Document(example, Html.Doctype))
+
+      test(m"Parse Document with doctype"):
+        t"""<!doctype html>
+            <title>Heading</title>
+            <p>body""".load[Html]
+      . assert(_ == Document(example, Html.Doctype))
+
       test(m"Parse RCDATA with an entity"):
         t"""<title>Push &amp; Pull</title>""".read[Html of Metadata]
       . assert(_ == Title("Push & Pull"))

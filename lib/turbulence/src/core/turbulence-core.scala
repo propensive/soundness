@@ -61,6 +61,9 @@ extension [value](value: value)
 
       writable.write(target, streamable.stream(value))
 
+extension [value: Streamable by Text](value: value)
+  def load[result <: Documentary: Loadable by Text]: Document[result] =
+    result.load(value.stream[Text])
 
 package stdioSources:
   given mute: Stdio = Stdio(null, null, null, termcapDefinitions.basic)

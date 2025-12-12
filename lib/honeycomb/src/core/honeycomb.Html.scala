@@ -86,12 +86,20 @@ object Html extends Tag.Container
       parse(input.iterator, root).of[content]
 
   given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
-    input => parse(input.iterator, dom.generic)
+    input => parse(input.iterator, dom.generic, doctypes = false)
+
+  given loadable: (dom: Dom) => Tactic[ParseError] => Html is Loadable by Text =
+    stream =>
+      val root = Tag.root(Set(t"html"))
+      parse(stream.iterator, root, doctypes = true) match
+        case Fragment(Doctype(doctype), content) => Document(content, Doctype(doctype))
+        case html@Element("html", _, _, _)       => Document(html, Html.Doctype)
 
   given showable: [html <: Html] => html is Showable =
     case Fragment(nodes*) => nodes.map(_.show).join
     case Textual(text)    => text
     case Comment(text) => t"<!--$text-->"
+    case Doctype(text) => t"<!$text>"
 
     case Element(tagname, attributes, children, _) =>
       val tagContent = if attributes.isEmpty then t"" else
@@ -103,7 +111,7 @@ object Html extends Tag.Container
 
 
   private enum Token:
-    case Close, Comment, Empty, Open
+    case Close, Comment, Empty, Open, Doctype
 
   private enum Level:
     case Ascend, Descend, Peer
@@ -147,6 +155,7 @@ object Html extends Tag.Container
   enum Issue extends Format.Issue:
     case BadInsertion
     case ExpectedMore
+    case UnexpectedDoctype
     case InvalidTag(name: Text)
     case InvalidTagStart(prefix: Text)
     case DuplicateAttribute(name: Text)
@@ -164,6 +173,7 @@ object Html extends Tag.Container
     def describe: Message = this match
       case BadInsertion                   =>  m"a value cannot be inserted into HTML at this point"
       case ExpectedMore                   =>  m"the content ended prematurely"
+      case UnexpectedDoctype              =>  m"the document type declaration was not expected here"
       case InvalidTag(name)               =>  m"<$name> is not a valid tag"
       case InvalidTagStart(prefix)        =>  m"there is no valid tag whose name starts $prefix"
       case DuplicateAttribute(name)       =>  m"the attribute $name already exists on this tag"
@@ -195,6 +205,16 @@ object Html extends Tag.Container
     override def equals(that: Any): Boolean = that match
       case Comment(text0)           => text0 == text
       case Fragment(Comment(text0)) => text0 == text
+      case _                        => false
+
+  object Doctype extends Doctype(t"html")
+
+  case class Doctype(text: Text) extends Node:
+    override def hashCode: Int = List(this).hashCode
+
+    override def equals(that: Any): Boolean = that match
+      case Doctype(text0)           => text0 == text
+      case Fragment(Doctype(text0)) => text0 == text
       case _                        => false
 
   case class Textual(text: Text) extends Node:
@@ -246,10 +266,12 @@ object Html extends Tag.Container
     case Attribute(tag: Text, attribute: Text)
     case Node(parent: Text)
 
-  def parse[dom <: Dom]
-       (input:  Iterator[Text],
-        root:   Tag,
-        callback: Optional[(Ordinal, Hole) => Unit] = Unset)
+  private[honeycomb] def parse[dom <: Dom]
+       (input:       Iterator[Text],
+        root:        Tag,
+        callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
+        fastforward: Int                               = 0,
+        doctypes:    Boolean = false)
        (using dom: Dom): Html raises ParseError =
 
     import lineation.linefeedChars
@@ -269,6 +291,11 @@ object Html extends Tag.Container
       cursor.next()
       cursor.lay(fail(ExpectedMore)): datum =>
         if datum != char then fail(Unexpected(datum))
+
+    inline def expectInsensitive(char: Char): Unit =
+      cursor.next()
+      cursor.lay(fail(ExpectedMore)): datum =>
+        if datum.minuscule != char.minuscule then fail(Unexpected(datum))
 
     def fail(issue: Issue): Nothing =
       abort(ParseError(Html, Position(cursor.line, cursor.column), issue))
@@ -474,13 +501,35 @@ object Html extends Tag.Container
                         next() yet comment(mark)
       case char     =>  next() yet comment(mark)
 
-    def tag(foreign: Boolean): Token = cursor.lay(fail(ExpectedMore)):
-      case '!'  =>  expect('-')
-                    expect('-')
-                    next()
-                    content = cursor.hold(comment(cursor.mark))
-                    cursor.next()
-                    Token.Comment
+    def doctype(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+      case '>'   => cursor.grab(mark, cursor.mark).also(next())
+      case other => next() yet doctype(mark)
+
+    def tag(doctypes: Boolean, foreign: Boolean): Token = cursor.lay(fail(ExpectedMore)):
+      case '!'  =>  next()
+                    cursor.lay(fail(ExpectedMore)):
+                      case '-' =>
+                        expect('-')
+                        next()
+                        content = cursor.hold(comment(cursor.mark))
+                        cursor.next()
+                        Token.Comment
+
+                      case 'D' | 'd' if doctypes =>
+                        expectInsensitive('o')
+                        expectInsensitive('c')
+                        expectInsensitive('t')
+                        expectInsensitive('y')
+                        expectInsensitive('p')
+                        expectInsensitive('e')
+                        next()
+                        skip()
+                        content = cursor.hold(doctype(cursor.mark))
+                        skip()
+                        Token.Doctype
+
+                      case char =>
+                        fail(Unexpected(char))
       case '/'  =>  next()
                     content = cursor.hold:
                       if foreign then foreignTag(cursor.mark)
@@ -559,15 +608,15 @@ object Html extends Tag.Container
                     else fail(InadmissibleTag(content, parent.label))
 
               next()
-              if cursor.lay(false)(_ == '\u0000')
-              then
+              if cursor.lay(false)(_ == '\u0000') then
                 callback.let(_(cursor.position, Hole.Element(parent.label)))
                 content = t"\u0000"
                 node()
                 expect('>')
                 next()
-              else tag(parent.foreign) match
+              else tag(doctypes && parent == root, parent.foreign) match
                 case Token.Comment => current = Comment(content)
+                case Token.Doctype => current = Doctype(content)
 
                 case Token.Empty   =>
                   if admit(content) then node() else infer:
@@ -623,9 +672,13 @@ object Html extends Tag.Container
     val head = read(root, root.admissible, ListMap(), Nil, 0)
     if followers.isEmpty then head else Fragment(head :: followers*)
 
-sealed into trait Html extends Topical:
+sealed into trait Html extends Topical, Documentary:
   type Topic <: Label
   type Transport <: Label
+  type Metadata = Html.Doctype
+  type Chunks = Text
+
+  def load(input: Stream[Text]): Document[Html] = ???
 
   private[honeycomb] def of[topic <: Label]: this.type of topic =
     asInstanceOf[this.type of topic]

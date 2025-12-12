@@ -205,6 +205,9 @@ object Honeycomb:
               val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Html.Comment]})
               '{  $expr && $scrutinee.isInstanceOf[Html.Comment] && $checked  }
 
+            case Html.Doctype(_) =>
+              halt(m"cannot match against a document type declaration")
+
             case Html.Element("\u0000", _, _, _) =>
               idx += 1
               iterator.next() match
@@ -350,6 +353,11 @@ object Honeycomb:
 
           List('{Html.Element(${Expr(label)}, $map, $elements, ${Expr(foreign)})})
 
+        case Html.Doctype(text) =>
+          if text.contains(t"\u0000")
+          then halt(m"cannot substitute into a document type declaration")
+          else List('{Html.Doctype(${Expr(text)})})
+
         case Html.Comment(text) =>
           val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
 
@@ -378,10 +386,11 @@ object Honeycomb:
           List('{Html.Textual($content.tt)})
 
       def resultType(html: Html): Set[String] = html match
-        case Html.Textual(_)          => Set("#text")
-        case Html.Element(tag, _, _, _) => Set(tag.s)
-        case Html.Fragment(values*)   => values.to(Set).flatMap(resultType(_))
-        case Html.Comment(_)          => Set()
+        case Html.Textual(_)             =>  Set("#text")
+        case Html.Element(tag, _, _, _)  =>  Set(tag.s)
+        case Html.Fragment(values*)      =>  values.to(Set).flatMap(resultType(_))
+        case Html.Comment(_)             =>  Set()
+        case Html.Doctype(_)             =>  Set()
 
       resultType(html)
       . map { label => ConstantType(StringConstant(label)) }

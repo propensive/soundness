@@ -32,6 +32,9 @@
                                                                                                   */
 package zephyrine
 
+import anticipation.*
+import prepositional.*
+
 package lineation:
   inline given linefeedChars: Lineation:
     type Operand = Char

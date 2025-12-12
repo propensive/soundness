@@ -96,6 +96,7 @@ class Cursor[data](initial:    data,
                    iterator:   Iterator[data],
                    tracked val addressable: data is Addressable,
                    tracked val lineation:   Lineation by addressable.Operand):
+
   private val buffer: scm.ArrayDeque[data] = scm.ArrayDeque()
   private val marks: scm.ArrayDeque[Mark] = scm.ArrayDeque()
   private val offsets: scm.ArrayDeque[Offset] = scm.ArrayDeque()

@@ -30,22 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package turbulence
 
-export turbulence
-. { Aggregable, Compression, CompressionAlgorithm, Eof, Err, Spool, Gzip, In, Io, Line,
-    LineSeparation, Multiplexer, Out, Pistol, Pulsar, Streamable, Stdio, StreamError, Tap, Writable,
-    Zlib, stream, read, writeTo, deduplicate, rate, multiplex, regulate, cluster, parallelMap,
-    multiplexer, defer, metronome, gzip, gunzip, discard, compress, decompress, shred,
-    chunked, take, spool, strict, inputStream, StreamOutputStream, load, Document, Loadable,
-    Documentary }
+import language.experimental.captureChecking
 
-package stdioSources:
-  export turbulence.stdioSources.mute
-  package virtualMachine:
-    export turbulence.stdioSources.virtualMachine.{ansi, textOnly}
+import java.util.concurrent as juc
 
-package lineSeparation:
-  export turbulence.lineSeparation
-  . { carriageReturn, strictCarriageReturn, linefeed, strictLinefeeds, carriageReturnLinefeed,
-      adaptiveLinefeed, virtualMachine }
+import anticipation.*
+import denominative.*
+import fulminate.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+
+trait Documentary:
+  type Self <: Documentary
+  type Metadata
