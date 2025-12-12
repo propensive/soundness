@@ -102,8 +102,11 @@ object Html extends Tag.Container
   private val indentation: Text =
     "\n                                                                "
 
+  given streamable: (Dom, Monitor, Codicil) => Document[Html] is Streamable by Text =
+    emit(_).to(Stream)
+
   def emit(document: Document[Html])(using dom: Dom)(using Monitor, Codicil): Iterator[Text] =
-    val emitter = Emitter[Text](30)
+    val emitter = Emitter[Text](4096)
     async:
       def recur(node: Html, indent: Int, block: Boolean, content: TextContent): Unit =
         node match
