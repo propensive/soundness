@@ -16,14 +16,14 @@ import zephyrine.*
 
 enum Layout extends Markdown.Node:
   case BlockQuote(line: Ordinal, layout: Layout*)
-  
+
   case OrderedList
         (line:      Ordinal,
          tight:     Boolean,
          start:     Int,
          delimiter: Optional['.' | ')'],
          items: List[Layout]*)
-         
+
   case BulletList(line: Ordinal, tight: Boolean, items: List[Layout]*)
   case CodeBlock(line: Ordinal, info: List[Text], content: Text)
   case Paragraph(line: Ordinal, prose: Prose*)
@@ -66,8 +66,8 @@ object Markdown:
       var linkRefs: List[Markdown.LinkRef] = Nil
       var layout: List[Layout] = Nil
       val buffer = java.lang.StringBuilder()
-      
-      
+
+
       def line(): Unit = cursor.hold:
         var continue: Boolean = true
         var started: Boolean = false
@@ -79,72 +79,71 @@ object Markdown:
               continue = false
             case char =>
               if !started then begin = cursor.mark
-          
+
           continue &&= cursor.next()
-        
-        
+
+
       while cursor.next() do line()
-        
+
       Markdown(linkRefs.reverse, layout.reverse*)
 
 
-  given renderable: (Markdown of Layout) is Renderable to html5.Flow = markdown =>
+  given renderable: (Markdown of Layout) is Renderable to doms.whatwg.Flow = markdown =>
     import Markdown.*
-    import html5.*
+    import doms.whatwg.*
 
-    def prose(node: Prose): List[Html[Phrasing]] = node match
-      case Prose.Textual(text)       => List(text)
-      case Prose.Emphasis(children*) => List(Em(children.flatMap(prose(_))))
-      case Prose.Code(code)          => List(Code(code))
-      case Prose.Strong(children*)   => List(Strong(children.flatMap(prose(_))))
-      case Prose.Softbreak           => List(t"\n")
-      case Prose.Linebreak           => List(Br)
-      case Prose.HtmlInline(content) => List(content)
-      
+    def prose(node: Prose): Html of Phrasing = node match
+      case Prose.Textual(text)       => Html.Textual(text)
+      case Prose.Emphasis(children*) => Em(children.map(prose(_))*)
+      case Prose.Code(code)          => Code(code)
+      case Prose.Strong(children*)   => Strong(children.flatMap(prose(_))*)
+      case Prose.Softbreak           => Html.Textual(t"\n")
+      case Prose.Linebreak           => Br
+      case Prose.HtmlInline(content) => content.read[Html of Phrasing]
+
       case Prose.Link(destination, title, content*) =>
         val base = title.lay(A(href = destination)): title =>
           A(href = destination, title = title)
-          
-        List(base(content.flatMap(prose(_).asInstanceOf[List[Html[Noninteractive]]])))
-        
+
+        base(content.map(prose(_))*)
+
       case Prose.Image(destination, title, content*) =>
-        List:
-          title.lay(Img(src = destination)): title =>
-            Img(src = destination, alt = title)
-          
-    def layout(node: Layout): List[Html[Flow]] = node match
+        title.lay(Img(src = destination)): title =>
+          Img(src = destination, alt = title)
+
+    def layout(node: Layout): Html of Flow = node match
       case Layout.BlockQuote(line, children*) =>
-        List(Blockquote(children.flatMap(layout(_))))
-        
+        Blockquote(children.map(layout(_))*)
+
       case Layout.Paragraph(line, children*) =>
-        List(P(children.flatMap(prose(_))))
-        
+        P(children.map(prose(_))*)
+
       case Layout.BulletList(line, tight, items*) =>
-        List(Ul(items.flatMap: item =>
-          List(if tight then Li(item.flatMap(_.children).flatMap(prose(_))) else Li(item.flatMap(layout(_))))))
-          
+        Ul(items.map: item =>
+          if tight then Li(item.flatMap(_.children.map(prose(_)))*) else Li(item.map(layout(_))*))
+
       case Layout.OrderedList(line, tight, start, delimiter, items*) =>
-        List(Ol(items.flatMap: item =>
-          List(if tight then Li(item.flatMap(_.children).flatMap(prose(_))) else Li(item.flatMap(layout(_))))))
-          
+        Ol(items.map: item =>
+          if tight then Li(item.flatMap(_.children.map(prose(_)))*) else Li(item.map(layout(_))*))
+
       case Layout.ThematicBreak(line) =>
-        List(Hr)
-      
-      case Layout.HtmlBlock(line, content) => List(content)
-      
+        Hr
+
+      case Layout.HtmlBlock(line, content) => content
+
       case Layout.Heading(line, level, content*) => level match
-        case 1 => List(H1(content.map(prose(_))*))
-        case 2 => List(H2(content.map(prose(_))*))
-        case 3 => List(H3(content.map(prose(_))*))
-        case 4 => List(H4(content.map(prose(_))*))
-        case 5 => List(H5(content.map(prose(_))*))
-        case 6 => List(H6(content.map(prose(_))*))
-        
+        case 1 => H1(content.map(prose(_))*)
+        case 2 => H2(content.map(prose(_))*)
+        case 3 => H3(content.map(prose(_))*)
+        case 4 => H4(content.map(prose(_))*)
+        case 5 => H5(content.map(prose(_))*)
+        case 6 => H6(content.map(prose(_))*)
+
       case Layout.CodeBlock(line, info, code) =>
-        List(Pre(info.prim.lay(Code(code)) { info => Code.applyDynamic(s"language-$info")(code) }))
-          
-    markdown.children.flatMap(layout(_))
-        
+        Pre(info.prim.lay(Code(code)) { info => Code.applyDynamic(s"language-$info")(code) })
+
+    Html.Fragment(markdown.children.map(layout(_)))
+
 
   def apply(linkRefs0: List[Markdown.LinkRef], layout: Layout*): Markdown of Layout = new Markdown:
     type Topic = Layout
