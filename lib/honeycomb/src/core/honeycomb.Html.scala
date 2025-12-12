@@ -94,6 +94,8 @@ object Html extends Tag.Container
       parse(stream.iterator, root, doctypes = true) match
         case Fragment(Doctype(doctype), content) => Document(content, Doctype(doctype))
         case html@Element("html", _, _, _)       => Document(html, Html.Doctype)
+        case _                                   =>
+          abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
 
   given showable: [html <: Html] => html is Showable =
     case Fragment(nodes*) => nodes.map(_.show).join
@@ -156,6 +158,7 @@ object Html extends Tag.Container
     case BadInsertion
     case ExpectedMore
     case UnexpectedDoctype
+    case BadDocument
     case InvalidTag(name: Text)
     case InvalidTagStart(prefix: Text)
     case DuplicateAttribute(name: Text)
@@ -174,6 +177,7 @@ object Html extends Tag.Container
       case BadInsertion                   =>  m"a value cannot be inserted into HTML at this point"
       case ExpectedMore                   =>  m"the content ended prematurely"
       case UnexpectedDoctype              =>  m"the document type declaration was not expected here"
+      case BadDocument                    =>  m"the document did not contain a single root tag"
       case InvalidTag(name)               =>  m"<$name> is not a valid tag"
       case InvalidTagStart(prefix)        =>  m"there is no valid tag whose name starts $prefix"
       case DuplicateAttribute(name)       =>  m"the attribute $name already exists on this tag"
