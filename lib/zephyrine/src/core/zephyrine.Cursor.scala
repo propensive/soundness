@@ -76,23 +76,26 @@ object Cursor:
     inline def column: Ordinal = offset.toInt.z
 
 
-  inline def apply[data](iterator: Iterator[data], linebreaks: Boolean = true)
-              (using addressable0: data is Addressable)
-  : Cursor[data] { val addressable: addressable0.type } =
+  transparent inline def apply[data](iterator: Iterator[data])
+              (using addressable0: data is Addressable,
+                     lineation0:   Lineation by addressable0.Operand)
+  : Cursor[data] =
 
       if iterator.hasNext then
         val initial = iterator.next()
+
         new Cursor[data]
-             (initial, addressable0.length(initial), iterator, linebreaks, addressable0)
-      else new Cursor[data](addressable0.empty, 0, Iterator.empty, linebreaks, addressable0)
+             (initial, addressable0.length(initial), iterator, addressable0, lineation0)
+
+      else new Cursor[data](addressable0.empty, 0, Iterator.empty, addressable0, lineation0)
 
 export Cursor.{Mark, Offset}
 
-class Cursor[data](initial:         data,
-                   extent0:         Int,
-                   iterator:        Iterator[data],
-                   linebreaks:      Boolean,
-                   val addressable: data is Addressable):
+class Cursor[data](initial:    data,
+                   extent0:    Int,
+                   iterator:   Iterator[data],
+                   tracked val addressable: data is Addressable,
+                   tracked val lineation:   Lineation by addressable.Operand):
   private val buffer: scm.ArrayDeque[data] = scm.ArrayDeque()
   private val marks: scm.ArrayDeque[Mark] = scm.ArrayDeque()
   private val offsets: scm.ArrayDeque[Offset] = scm.ArrayDeque()
@@ -101,7 +104,6 @@ class Cursor[data](initial:         data,
   private var focusBlock: Ordinal = Prim
   private var focus: Ordinal = Prim
   private var length: Int = Int.MaxValue
-  // FIXME: This should be an ordinal of the first block to keep
   private var keep: Boolean = false
   private var extent: Int = extent0
   private var lineNo: Ordinal = Prim
@@ -158,13 +160,13 @@ class Cursor[data](initial:         data,
     while mark.block.n0 > focusBlock.n0 do forward()
     focus = mark.index
 
-    if linebreaks then
+    inline if lineation.active then
       val offset2 = offset(mark)
       lineNo = offset2.line
       columnNo = offset2.column
 
   inline def next(): Boolean =
-    if linebreaks then
+    inline if lineation.active then
       if addressable.address(current, focus) != '\n' then columnNo = columnNo.next else
         lineNo = lineNo.next
         columnNo = Prim
@@ -179,7 +181,7 @@ class Cursor[data](initial:         data,
   inline def column: Ordinal = columnNo
 
   inline def mark(using held: Cursor.Held): Mark = Mark(focusBlock, focus).tap: mark =>
-    if linebreaks then
+    inline if lineation.active then
       marks.append(mark)
       offsets.append(Offset(lineNo, columnNo))
 

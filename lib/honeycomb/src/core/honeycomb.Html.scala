@@ -251,7 +251,8 @@ object Html extends Tag.Container
         root:   Tag,
         callback: Optional[(Ordinal, Hole) => Unit] = Unset)
        (using dom: Dom): Html raises ParseError =
-    val cursor = Cursor(input, linebreaks = true)
+    import lineation.linefeedChars
+    val cursor = Cursor(input)
     val buffer: jl.StringBuilder = jl.StringBuilder()
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""

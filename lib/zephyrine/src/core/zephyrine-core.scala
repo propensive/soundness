@@ -32,69 +32,23 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.captureChecking
-
-import java.io as ji
-import java.lang as jl
-
-import scala.collection.mutable as scm
-
-import anticipation.*
-import denominative.*
-import fulminate.*
-import prepositional.*
-import rudiments.*
-import vacuous.*
-
-object Addressable:
-  inline given bytes: Bytes is Addressable:
-    type Operand = Byte
-    type Target = ji.ByteArrayOutputStream
-
-    val empty: Bytes = IArray.from(Nil)
-    inline def blank(size: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(size)
-
-    inline def build(target: ji.ByteArrayOutputStream): Bytes =
-      target.toByteArray.nn.immutable(using Unsafe)
-
-    inline def length(bytes: Bytes): Int = bytes.length
-    inline def address(bytes: Bytes, index: Ordinal): Byte = bytes(index.n0)
-
-    inline def grab(bytes: Bytes, start: Ordinal, end: Ordinal): Bytes =
-      bytes.slice(start.n0, end.n0)
-
-    inline def clone(source: Bytes, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
-    : Unit =
-
-        target.write(source.mutable(using Unsafe), start.n0, end.n0 - start.n0 - 1)
-
-
-  inline given text: Text is Addressable:
+package lineation:
+  inline given linefeedChars: Lineation:
     type Operand = Char
-    type Target = jl.StringBuilder
+    inline def active: Boolean = true
+    inline def track(datum: Char): Boolean = datum == '\n'
 
-    val empty: Text = ""
+  inline given carriageReturnChar: Lineation:
+    type Operand = Char
+    inline def active: Boolean = true
+    inline def track(datum: Char): Boolean = datum == '\r'
 
-    inline def build(target: jl.StringBuilder): Text = target.toString.tt
-    inline def blank(size: Int): jl.StringBuilder = jl.StringBuilder(size)
-    inline def length(text: Text): Int = text.s.length
-    inline def address(text: Text, index: Ordinal): Operand = text.s.charAt(index.n0)
+  inline given linefeedByte: Lineation:
+    type Operand = Byte
+    inline def active: Boolean = true
+    inline def track(datum: Byte): Boolean = datum == 10
 
-    inline def grab(text: Text, start: Ordinal, end: Ordinal): Text =
-      text.s.substring(start.n0, end.n1).nn.tt
-
-
-    inline def clone(source: Text, start: Ordinal, end: Ordinal)(target: java.lang.StringBuilder)
-    : Unit =
-
-        target.append(source.s, start.n0, end.n1)
-
-
-trait Addressable extends Typeclass, Operable, Targetable:
-  def empty: Self
-  inline def blank(size: Int): Target
-  inline def build(target: Target): Self
-  inline def length(block: Self): Int
-  inline def address(block: Self, index: Ordinal): Operand
-  inline def clone(source: Self, start: Ordinal, end: Ordinal)(target: Target): Unit
-  inline def grab(text: Self, start: Ordinal, end: Ordinal): Self
+  inline given carriageReturnByte: Lineation:
+    type Operand = Byte
+    inline def active: Boolean = true
+    inline def track(datum: Byte): Boolean = datum == 13
