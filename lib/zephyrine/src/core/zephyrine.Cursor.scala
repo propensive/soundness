@@ -167,9 +167,9 @@ class Cursor[data](initial:    data,
 
   inline def next(): Boolean =
     inline if lineation.active then
-      if addressable.address(current, focus) != '\n' then columnNo = columnNo.next else
+      columnNo = if !lineation.track(addressable.address(current, focus)) then columnNo.next else
         lineNo = lineNo.next
-        columnNo = Prim
+        Prim
 
     if focus.next.n0 >= addressable.length(current) then forward() else focus = focus.next
 
