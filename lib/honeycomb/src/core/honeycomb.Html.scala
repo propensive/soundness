@@ -48,6 +48,7 @@ import gossamer.*
 import hellenism.*
 import hieroglyph.*
 import hypotenuse.*
+import parasite.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -96,6 +97,96 @@ object Html extends Tag.Container
         case html@Element("html", _, _, _)       => Document(html, Html.Doctype)
         case _                                   =>
           abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
+
+  // Up to 32 levels of two-space indentation
+  private val indentation: Text =
+    "\n                                                                "
+
+  def emit(document: Document[Html])(using dom: Dom)(using Monitor, Codicil): Iterator[Text] =
+    val emitter = Emitter[Text](30)
+    async:
+      def recur(node: Html, indent: Int, block: Boolean, content: TextContent): Unit =
+        node match
+          case Fragment(nodes*) => nodes.each(recur(_, indent, block, content))
+          case Comment(comment) => emitter.put("<!--")
+                                   emitter.put(comment)
+                                   emitter.put("-->")
+          case Doctype(text)    => emitter.put("<!DOCTYPE ")
+                                   emitter.put(text) // FIXME: entities
+                                   emitter.put(">")
+
+          case Textual(text) =>
+            content match
+              case TextContent.Raw =>
+                emitter.put(text)
+              case _ =>
+                var pos: Int = 0
+                while pos < text.length do
+                  val amp = text.s.indexOf('&', pos)
+                  val lt = text.s.indexOf('<', pos)
+                  val next = if amp < 0 then lt else if lt < 0 then amp else amp.min(lt)
+
+                  if next >= 0 then
+                    emitter.put(text, pos.z, next - pos)
+                    if next == lt then emitter.put("&lt;")
+                    if next == amp then emitter.put("&amp;")
+                    pos = next + 1
+                  else
+                    emitter.put(text, pos.z, text.length - pos)
+                    pos = text.length
+
+          case Element(label, attributes, nodes, _) =>
+            if block then emitter.put(indentation, Prim, indent*2 + 1)
+            emitter.put("<")
+            emitter.put(label)
+
+            if !attributes.isEmpty then
+              attributes.each: (key, value) =>
+                emitter.put(" ")
+                emitter.put(key)
+                value.let: value =>
+                  emitter.put("=\"")
+                  var pos: Int = 0
+
+                  while pos < value.length do
+                    val amp = value.s.indexOf('&', pos)
+                    val quot = value.s.indexOf('\"', pos)
+                    val next = if amp < 0 then quot else if quot < 0 then amp else amp.min(quot)
+
+                    if next >= 0 then
+                      emitter.put(value, pos.z, next - pos)
+                      if next == quot then emitter.put("&quot;")
+                      if next == amp then emitter.put("&amp;")
+                      pos = next + 1
+                    else
+                      emitter.put(value, pos.z, value.length - pos)
+                      pos = value.length
+
+                  emitter.put("\"")
+            emitter.put(">")
+
+            val content = dom.elements(label).lay(TextContent.Normal)(_.content)
+
+            val whitespace =
+              (content == TextContent.Whitespace || !nodes.exists(_.isInstanceOf[Textual]))
+              && block
+
+            if !dom.elements(label).lay(false)(_.void) then
+              nodes.each(recur(_, indent + 1, whitespace, content))
+
+              if block && whitespace
+              then emitter.put(indentation, Prim, (indent*2 + 1).min(indentation.length))
+
+              emitter.put("</")
+              emitter.put(label)
+              emitter.put(">")
+
+      recur(document.metadata, 0, true, TextContent.Whitespace)
+      recur(document.root, 0, true, TextContent.Whitespace)
+      emitter.finish()
+
+    emitter.iterator
+
 
   given showable: [html <: Html] => html is Showable =
     case Fragment(nodes*) => nodes.map(_.show).join
