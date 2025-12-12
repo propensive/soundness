@@ -39,6 +39,9 @@ import soundness.*
 import randomization.unseeded
 
 import autopsies.contrastExpectations
+import threading.virtual
+import supervisors.global
+import codicils.panic
 
 object Tests extends Suite(m"Zephyrine tests"):
   val bytes = Bytes.fill(1000)(_.toByte)
@@ -166,6 +169,113 @@ object Tests extends Suite(m"Zephyrine tests"):
         conduit.ordinal
 
       . assert(_ == Quat)
+
+    suite(m"Emitter tests"):
+      test(m"mismatched block size"):
+        val emitter = Emitter[Text](4, 20)
+        emitter.put("one")
+        emitter.put("two")
+        emitter.finish()
+        val it = async(emitter.iterator.to(List))
+
+        unsafely(it.await())
+      . assert(_ == List("onet", "wo"))
+
+      test(m"One block, exact size, ready immediately"):
+        val emitter = Emitter[Text](4, 3)
+        emitter.put("zero")
+        emitter.iterator
+        if emitter.iterator.hasNext then emitter.iterator.next() else ""
+      . assert(_ == "zero")
+
+      test(m"Two blocks, exact size, ready immediately"):
+        val emitter = Emitter[Text](4, 2)
+        emitter.put("zerofour")
+        emitter.iterator
+        var out = ""
+        if emitter.iterator.hasNext then out += emitter.iterator.next()
+        if emitter.iterator.hasNext then out += emitter.iterator.next()
+        out
+      . assert(_ == "zerofour")
+
+      test(m"More than two blocks, ready immediately"):
+        val emitter = Emitter[Text](4, 2)
+        emitter.put("zerofoursix")
+        emitter.iterator
+        var out = ""
+        if emitter.iterator.hasNext then out += emitter.iterator.next()
+        if emitter.iterator.hasNext then out += emitter.iterator.next()
+        out
+      . assert(_ == "zerofour")
+
+      test(m"More than two blocks, fragmented, ready immediately"):
+        val emitter = Emitter[Text](4, 2)
+        emitter.put("12")
+        emitter.put("3")
+        emitter.put("4")
+        emitter.put("5")
+        emitter.put("6")
+        emitter.put("7")
+        emitter.put("8")
+        emitter.iterator
+        var out = ""
+        if emitter.iterator.hasNext then out += emitter.iterator.next()
+        if emitter.iterator.hasNext then out += emitter.iterator.next()
+        out
+      . assert(_ == "12345678")
+
+      test(m"Single long message, with blocking"):
+        val emitter = Emitter[Text](4, 2)
+        val out = async(emitter.iterator.to(List))
+        emitter.put("12345678901234567890")
+        emitter.finish()
+        unsafely(out.await())
+      . assert(_ == List("1234", "5678", "9012", "3456", "7890"))
+
+      test(m"Single long message, with blocking; incomplete final block"):
+        val emitter = Emitter[Text](4, 2)
+        val out = async(emitter.iterator.to(List))
+        emitter.put("123456789012345678")
+        emitter.finish()
+        unsafely(out.await())
+      . assert(_ == List("1234", "5678", "9012", "3456", "78"))
+
+      for i <- 0 to 30 do
+        val string = (0 to i).map(_.toString).foldLeft("")(_ + _)
+        test(m"String length $i, sent whole, async puts"):
+          val emitter = Emitter[Text](5, 2)
+          val producer = async:
+            emitter.put(string)
+            emitter.finish()
+          emitter.iterator.foldLeft("")(_ + _)
+        . assert(_ == string)
+
+        test(m"String length $i, sent unitarily, async puts"):
+          val emitter = Emitter[Text](5, 2)
+          val producer = async:
+            string.tt.chars.foreach: char =>
+              emitter.put(char.toString)
+            emitter.finish()
+          emitter.iterator.foldLeft("")(_ + _)
+        . assert(_ == string)
+
+        test(m"String length $i, sent whole, async reads"):
+          val emitter = Emitter[Text](5, 2)
+          val output = async(emitter.iterator.foldLeft("")(_ + _))
+          emitter.put(string)
+          emitter.finish()
+          unsafely(output.await())
+        . assert(_ == string)
+
+        test(m"String length $i, sent unitarily, async reads"):
+          val emitter = Emitter[Text](5, 2)
+          val output = async(emitter.iterator.foldLeft("")(_ + _))
+          string.tt.chars.each: char =>
+            emitter.put(char.toString)
+          emitter.finish()
+          unsafely(output.await())
+        . assert(_ == string)
+
 
 
     suite(m"Cursor tests"):

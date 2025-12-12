@@ -41,27 +41,94 @@ import denominative.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
+import vacuous.*
 
-// class Scribe[data, addressable: Addressable by data](blocksize: Memory = 4.kib):
-//   type Transport
-//   private object Terminal
+object Emittable:
+  inline given text: Emittable:
+    type Self = Text
+    type Source = Text
+    type Transport = Array[Char]
 
-//   private val queue: juc.ArrayBlockingQueue[addressable | Terminal.type] =
-//     new juc.ArrayBlockingQueue(2)
+    def length(text: Text): Int = text.s.length
+    def produce(block: Array[Char], size: Int): Text = new String(block, 0, size).tt
+    def allocate(size: Int): Array[Char] = new Array[Char](size)
 
-//   var current: Array[data] = allocate()
-//   var used: Int = 0
+    inline def copy(source: Text, start: Ordinal, target: Array[Char], index: Ordinal, size: Int)
+    : Unit =
 
-//   inline def allocate(): Array[data] = new Array[data](blocksize.long.toInt)
+        source.s.getChars(start.n0, start.n0 + size, target, index.n0)
 
-//   def iterator: Iterator[addressable] = new Iterator[addressable]:
-//     private var ready: addressable | Terminal.type = Terminal
+  inline given bytes: Emittable:
+    type Self = Bytes
+    type Source = Bytes
+    type Transport = Array[Byte]
 
-//     def hasNext(): Boolean =
-//       ready = queue.take().nn
-//       ready != Terminal
+    def produce(block: Array[Byte], size: Int): Bytes =
+      java.util.Arrays.copyOfRange(block, 0, size).nn.immutable(using Unsafe)
 
-//     def next(): addressable = current.asInstanceOf[addressable]
+    def length(bytes: Bytes): Int = bytes.length
+    def allocate(size: Int): Array[Byte] = new Array[Byte](size)
 
-//   def put(block: addressable): Unit = queue.put(block)
-//   def finish(): Unit = queue.put(Terminal)
+    inline def copy(source: Bytes, start: Ordinal, target: Array[Byte], index: Ordinal, size: Int)
+    : Unit =
+
+        System.arraycopy(source.mutable(using Unsafe), start.n0, target, index.n0, index.n0 + size)
+
+
+trait Emittable:
+  type Self
+  type Source
+  type Transport
+
+  def allocate(size: Int): Transport
+  def length(input: Source): Int
+  def produce(block: Transport, size: Int): Self
+
+  inline def copy
+                        (source: Source,
+                         start:  Ordinal,
+                         target: Transport,
+                         index:  Ordinal,
+                         size:   Int)
+  : Unit
+
+
+class Emitter[data: Emittable](block: Int = 4096, window: Int = 2):
+  private object Done
+  private val queue: juc.ArrayBlockingQueue[data | Done.type] = juc.ArrayBlockingQueue(window)
+  private var current: data.Transport = data.allocate(block)
+  private var index: Ordinal = Prim
+
+  inline def free: Int = block - index.n0
+  inline def finish(): Unit =
+    publish()
+    queue.put(Done)
+
+  inline def put(input: data.Source): Unit = put(input, Prim, data.length(input))
+
+  inline def publish(): Unit =
+    if index != Prim then
+      queue.put(data.produce(current, index.n0))
+      index = Prim
+
+  inline def put(source: data.Source, offset: Ordinal, size: Int): Unit =
+    var done = 0
+
+    while size - done > free do
+      data.copy(source, (offset.n0 + done).z, current, index, free)
+      done += free
+      index = (index.n0 + free).z
+      publish()
+
+    data.copy(source, (offset.n0 + done).z, current, index, size - done)
+    index = (index.n0 + size - done).z
+
+    if free == 0 then publish()
+
+  lazy val iterator: Iterator[data] = new Iterator[data]:
+    private var ready: data | Done.type = Done
+    def hasNext: Boolean =
+      ready = queue.take().nn
+      ready != Done
+
+    def next(): data = ready.asInstanceOf[data]
