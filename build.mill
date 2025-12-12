@@ -63,6 +63,7 @@ object settings:
     "-language:experimental.genericNumberLiterals",
     "-language:experimental.into",
     "-language:experimental.erasedDefinitions",
+    "-language:implicitConversions",
     "-language:experimental.saferExceptions",
     "-language:experimental.namedTypeArguments"
   )
@@ -86,6 +87,7 @@ object settings:
     "-language:experimental.genericNumberLiterals",
     "-language:experimental.into",
     "-language:experimental.erasedDefinitions",
+    "-language:implicitConversions",
     "-language:experimental.saferExceptions",
     "-language:experimental.namedTypeArguments"
   )
