@@ -449,5 +449,5 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
         test(m"extractor of an element and its attribute"):
           P(Img(alt = "titletext")).absolve match
-            case h"""<p><$img></p>""" => img.alt
-        . assert(_ == t"titletext")
+            case h"""<p><$img></p>""" => img
+        . assert(_ == Img(alt = t"titletext"))

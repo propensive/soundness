@@ -771,10 +771,14 @@ extends Node, Topical, Transportive, Dynamic:
   override def hashCode: Int =
     ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
 
-  def selectDynamic(name: String): Optional[Text] = attributes.at(name.tt)
+
+  def selectDynamic(name: Label)(using attribute: name.type is Attribute on Topic in Whatwg)
+  : Optional[Text] =
+
+      attributes.at(name.tt)
 
 
-  def updateDynamic[value](name: String)(using attribute: name.type is Attribute in Whatwg)
+  def updateDynamic[value](name: Label)(using attribute: name.type is Attribute in Whatwg)
        (using Topic <:< attribute.Plane)
        (value: value)
        (using attributive: value is Attributive to attribute.Topic)
