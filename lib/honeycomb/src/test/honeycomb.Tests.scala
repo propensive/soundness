@@ -107,11 +107,11 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"more than one node"):
         t"""<div>content</div><p>more content</p>""".read[Html of Flow]
-      .assert(_ == Html.Fragment(Div("content"), P("more content")))
+      .assert(_ == Fragment(Div("content"), P("more content")))
 
       test(m"more than one node with comment"):
         t"""<div>content</div><!-- comment --><div>more content</div>""".read[Html of "div"]
-      .assert(_ == Html.Fragment(Div("content"), Html.Comment(" comment "), Div("more content")))
+      .assert(_ == Fragment(Div("content"), Comment(" comment "), Div("more content")))
 
       test(m"simple self-closing tag"):
         t"""<div />""".read[Html of "div"]
@@ -127,7 +127,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"simple comment tag"):
         t"""<!--This is a comment-->""".read[Html of Flow]
-      .assert(_ == Html.Comment("This is a comment"))
+      .assert(_ == Comment("This is a comment"))
 
       test(m"simple void tag"):
         t"""<br>""".read[Html of Flow]
@@ -155,15 +155,15 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"just text"):
         t"""hello world""".read[Html of Flow]
-      .assert(_ == Html.Textual("hello world"))
+      .assert(_ == TextNode("hello world"))
 
       test(m"just text with entity"):
         t"""to &amp; fro""".read[Html of Flow]
-      .assert(_ == Html.Textual("to & fro"))
+      .assert(_ == TextNode("to & fro"))
 
       test(m"just an entity"):
         t"""&amp;""".read[Html of Flow]
-      .assert(_ == Html.Textual("&"))
+      .assert(_ == TextNode("&"))
 
       test(m"mismatched closing tag"):
         try t"""<em><b></em></b>""".read[Html of Phrasing]
@@ -272,12 +272,12 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
-      .assert(_ == Div(Svg(Html.Element.foreign("circle", sci.Map(t"r" -> t"1")))))
+      .assert(_ == Div(Svg(Element.foreign("circle", sci.Map(t"r" -> t"1")))))
 
       test(m"Nontrivial MathML example"):
         t"""<div>The equation is <math><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""
         . read[Html of Flow]
-      . assert(_ == Div("The equation is ", Math(Html.Element.foreign("mfrac", sci.Map(), Html.Element.foreign("msup", sci.Map(), Html.Element.foreign("mi", sci.Map(), "π"), Html.Element.foreign("mn", sci.Map(), "2")), Html.Element.foreign("mn", sci.Map(), "6"))), "."))
+      . assert(_ == Div("The equation is ", Math(Element.foreign("mfrac", sci.Map(), Element.foreign("msup", sci.Map(), Element.foreign("mi", sci.Map(), "π"), Element.foreign("mn", sci.Map(), "2")), Element.foreign("mn", sci.Map(), "6"))), "."))
 
       test(m"transparent tag with text"):
         t"""<p>Go <a href="https://example.com">home</a>.</p>""".read[Html of "p"]
@@ -313,13 +313,13 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"Parse Document without doctype"):
         t"""<title>Heading</title>
             <p>body""".load[Html]
-      . assert(_ == Document(example, Html.Doctype))
+      . assert(_ == Document(example, Html.doctype))
 
       test(m"Parse Document with doctype"):
         t"""<!doctype html>
             <title>Heading</title>
             <p>body""".load[Html]
-      . assert(_ == Document(example, Html.Doctype))
+      . assert(_ == Document(example, Html.doctype))
 
       test(m"Parse RCDATA with an entity"):
         t"""<title>Push &amp; Pull</title>""".read[Html of Metadata]
@@ -379,7 +379,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
           val attribute = "attribute"
           def more: Int = 42
           h"""<p title=$attribute><!-- inner:$comment:outer -->This is some $more HTML.</p>"""
-        . assert(_ == P(title = "attribute")(Html.Comment(" inner:comment:outer "), "This is some ", "42", " HTML."))
+        . assert(_ == P(title = "attribute")(Comment(" inner:comment:outer "), "This is some ", "42", " HTML."))
 
         test(m"interpolate multiple attributes"):
           val dirname = "dirname"
@@ -393,7 +393,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
         test(m"single extraction"):
           P("whole text").absolve match
             case h"""<p>$whole</p>""" => whole
-        . assert(_ == Html.Textual(t"whole text"))
+        . assert(_ == TextNode(t"whole text"))
 
         test(m"pattern matcher"):
           Div(title = "text")(Ul(Li("hello")), P("more")).absolve match
@@ -419,20 +419,20 @@ object Tests extends Suite(m"Honeycomb Tests"):
         test(m"extractor of text"):
           P("whole text").absolve match
             case h"""<p $atts>$whole</p>""" => whole
-        . assert(_ == Html.Textual(t"whole text"))
+        . assert(_ == TextNode(t"whole text"))
 
         test(m"extractor of comment"):
-          P(Html.Comment("this is the comment")).absolve match
+          P(Comment("this is the comment")).absolve match
             case h"""<p $atts><!--$comment--></p>""" => comment
         . assert(_ == t"this is the comment")
 
         test(m"zero-hole extractor of comment"):
-          P(Html.Comment("this is the comment")).absolve match
+          P(Comment("this is the comment")).absolve match
             case h"""<p><!--this is the comment--></p>""" => 1
         . assert(_ == 1)
 
         test(m"zero-hole non-matching extractor"):
-          P(Html.Comment("this is the comment")).absolve match
+          P(Comment("this is the comment")).absolve match
             case h"""<p><!--this is not the comment--></p>""" => 1
             case _ => 2
         . assert(_ == 2)

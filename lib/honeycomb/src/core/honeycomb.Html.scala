@@ -78,6 +78,8 @@ object Html extends Tag.Container
   erased trait Decimal
   erased trait Id
 
+  def doctype: Doctype = Doctype(t"html")
+
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
         =>  Tactic[ParseError]
         =>  (Html of content) is Aggregable by Text =
@@ -94,7 +96,7 @@ object Html extends Tag.Container
       val root = Tag.root(Set(t"html"))
       parse(stream.iterator, root, doctypes = true) match
         case Fragment(Doctype(doctype), content) => Document(content, Doctype(doctype))
-        case html@Element("html", _, _, _)       => Document(html, Html.Doctype)
+        case html@Element("html", _, _, _)       => Document(html, doctype)
         case _                                   =>
           abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
 
@@ -114,13 +116,13 @@ object Html extends Tag.Container
           node match
             case Fragment(nodes*) => nodes.each(recur(_, indent, block, content))
             case Comment(comment) => emitter.put("<!--")
-                                    emitter.put(comment)
-                                    emitter.put("-->")
+                                     emitter.put(comment)
+                                     emitter.put("-->")
             case Doctype(text)    => emitter.put("<!DOCTYPE ")
-                                    emitter.put(text) // FIXME: entities
-                                    emitter.put(">")
+                                     emitter.put(text) // FIXME: entities
+                                     emitter.put(">")
 
-            case Textual(text) =>
+            case TextNode(text) =>
               content match
                 case TextContent.Raw =>
                   emitter.put(text)
@@ -173,7 +175,7 @@ object Html extends Tag.Container
               val content = dom.elements(label).lay(TextContent.Normal)(_.content)
 
               val whitespace =
-                (content == TextContent.Whitespace || !nodes.exists(_.isInstanceOf[Textual]))
+                (content == TextContent.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
                 && block
 
               if !dom.elements(label).lay(false)(_.void) then
@@ -195,7 +197,7 @@ object Html extends Tag.Container
 
   given showable: [html <: Html] => html is Showable =
     case Fragment(nodes*) => nodes.map(_.show).join
-    case Textual(text)    => text
+    case TextNode(text)    => text
     case Comment(text) => t"<!--$text-->"
     case Doctype(text) => t"<!$text>"
 
@@ -215,15 +217,15 @@ object Html extends Tag.Container
     case Ascend, Descend, Peer
 
   trait Populable:
-    node: Html.Element =>
-      def apply(children: Html of node.Transport*): Html.Element of node.Topic =
-        new Html.Element(node.label, node.attributes, children.nodes, node.foreign):
+    node: Element =>
+      def apply(children: Html of node.Transport*): Element of node.Topic =
+        new Element(node.label, node.attributes, children.nodes, node.foreign):
           type Topic = node.Topic
 
   trait Transparent:
-    node: Html.Element =>
-      def apply[labels <: Label](children: Html of labels | node.Transport*): Html.Element of labels =
-        new Html.Element(node.label, node.attributes, children.nodes, node.foreign):
+    node: Element =>
+      def apply[labels <: Label](children: Html of labels | node.Transport*): Element of labels =
+        new Element(node.label, node.attributes, children.nodes, node.foreign):
           type Topic = labels
 
 
@@ -231,10 +233,10 @@ object Html extends Tag.Container
   def name: Text = t"HTML"
 
   given conversion: [label >: "#text" <: Label] => Conversion[Text, Html of label] =
-    Textual(_).of[label]
+    TextNode(_).of[label]
 
   given conversion2: [label >: "#text" <: Label] => Conversion[String, Html of label] =
-    string => Textual(string.tt).of[label]
+    string => TextNode(string.tt).of[label]
 
   given conversion3: [label <: Label, content >: label <: Label]
         =>  Conversion[Element of label, Html of content] =
@@ -243,7 +245,7 @@ object Html extends Tag.Container
   given conversion4: [content <: Label] =>  Conversion[Comment, Html of content] = _.of[content]
 
   given conversion5: Conversion[String, Html of "#foreign"] =
-    string => Textual(string.tt).of["#foreign"]
+    string => TextNode(string.tt).of["#foreign"]
 
   given conversion6: [content <: Label, value: Renderable in content]
         => Conversion[value, Html of content] =
@@ -291,71 +293,7 @@ object Html extends Tag.Container
   case class Position(line: Ordinal, column: Ordinal) extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
 
-  case class Fragment(nodes: Node*) extends Html:
-    override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode
 
-    override def equals(that: Any): Boolean = that match
-      case Fragment(nodes0*) => nodes0 == nodes
-      case node: Html        => nodes.length == 1 && nodes(0) == node
-      case _                 => false
-
-  case class Comment(text: Text) extends Node:
-    override def hashCode: Int = List(this).hashCode
-
-    override def equals(that: Any): Boolean = that match
-      case Comment(text0)           => text0 == text
-      case Fragment(Comment(text0)) => text0 == text
-      case _                        => false
-
-  object Doctype extends Doctype(t"html")
-
-  case class Doctype(text: Text) extends Node:
-    override def hashCode: Int = List(this).hashCode
-
-    override def equals(that: Any): Boolean = that match
-      case Doctype(text0)           => text0 == text
-      case Fragment(Doctype(text0)) => text0 == text
-      case _                        => false
-
-  case class Textual(text: Text) extends Node:
-    type Topic = "#text"
-
-    override def hashCode: Int = List(this).hashCode
-
-    override def equals(that: Any): Boolean = that match
-      case Fragment(textual: Textual) => this == textual
-      case Textual(text0)             => text0 == text
-      case _                          => false
-
-
-  object Element:
-    def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
-    : Element of "#foreign" =
-
-        Element(label, attributes, children.nodes, true).of["#foreign"]
-
-
-  case class Element
-              (label:      Text,
-               attributes: Map[Text, Optional[Text]],
-               children:   IArray[Node],
-               foreign:    Boolean)
-  extends Node, Topical, Transportive, Dynamic:
-
-    override def equals(that: Any): Boolean = that match
-      case Fragment(node: Element) => this == node
-
-      case Element(label, attributes, children, foreign) =>
-        label == this.label && attributes == this.attributes && foreign == this.foreign
-        && ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
-
-      case _ =>
-        false
-
-    override def hashCode: Int =
-      ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
-
-    def selectDynamic(name: String): Optional[Text] = attributes.at(name.tt)
 
   enum TextContent:
     case Raw, Rcdata, Whitespace, Normal
@@ -682,7 +620,7 @@ object Html extends Tag.Container
         cursor.lay(finish(parent, children, count)):
           case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
                            next()
-                           read(parent, admissible, atts, Textual("\u0000") :: children, count + 1)
+                           read(parent, admissible, atts, TextNode("\u0000") :: children, count + 1)
           case '<' if parent.content != TextContent.Raw && parent.content != TextContent.Rcdata =>
             var level: Level = Level.Peer
             var current: Node = parent
@@ -756,17 +694,17 @@ object Html extends Tag.Container
             case TextContent.Raw =>
               val text = cursor.hold(textual(cursor.mark, parent.label, false))
               if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
-              else Element(parent.label, parent.attributes, IArray(Textual(text)), parent.foreign)
+              else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
             case TextContent.Rcdata =>
               val text = cursor.hold(textual(cursor.mark, parent.label, true))
               if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
-              else Element(parent.label, parent.attributes, IArray(Textual(text)), parent.foreign)
+              else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
             case TextContent.Normal =>
               val text = cursor.hold(textual(cursor.mark, Unset, true))
               if text.length == 0 then read(parent, admissible, atts, children, count + 1)
-              else read(parent, admissible, atts, Textual(text) :: children, count + 1)
+              else read(parent, admissible, atts, TextNode(text) :: children, count + 1)
 
     skip()
     val head = read(root, root.admissible, ListMap(), Nil, 0)
@@ -775,7 +713,7 @@ object Html extends Tag.Container
 sealed into trait Html extends Topical, Documentary:
   type Topic <: Label
   type Transport <: Label
-  type Metadata = Html.Doctype
+  type Metadata = Doctype
   type Chunks = Text
 
   def load(input: Stream[Text]): Document[Html] = ???
@@ -789,3 +727,65 @@ sealed into trait Html extends Topical, Documentary:
   private[honeycomb] def in[form]: this.type in form = asInstanceOf[this.type in form]
 
 sealed trait Node extends Html
+
+case class Comment(text: Text) extends Node:
+  override def hashCode: Int = List(this).hashCode
+
+  override def equals(that: Any): Boolean = that match
+    case Comment(text0)                => text0 == text
+    case Fragment(Comment(text0)) => text0 == text
+    case _                             => false
+
+case class TextNode(text: Text) extends Node:
+  type Topic = "#text"
+
+  override def hashCode: Int = List(this).hashCode
+
+  override def equals(that: Any): Boolean = that match
+    case Fragment(textual: TextNode) => this == textual
+    case TextNode(text0)                  => text0 == text
+    case _                                => false
+
+object Element:
+  def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
+  : Element of "#foreign" =
+
+      Element(label, attributes, children.nodes, true).of["#foreign"]
+
+case class Element
+            (label:      Text,
+             attributes: Map[Text, Optional[Text]],
+             children:   IArray[Node],
+             foreign:    Boolean)
+extends Node, Topical, Transportive, Dynamic:
+
+  override def equals(that: Any): Boolean = that match
+    case Fragment(node: Element) => this == node
+
+    case Element(label, attributes, children, foreign) =>
+      label == this.label && attributes == this.attributes && foreign == this.foreign
+      && ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
+
+    case _ =>
+      false
+
+  override def hashCode: Int =
+    ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
+
+  def selectDynamic(name: String): Optional[Text] = attributes.at(name.tt)
+
+case class Fragment(nodes: Node*) extends Html:
+  override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode
+
+  override def equals(that: Any): Boolean = that match
+    case Fragment(nodes0*) => nodes0 == nodes
+    case node: Html        => nodes.length == 1 && nodes(0) == node
+    case _                 => false
+
+case class Doctype(text: Text) extends Node:
+  override def hashCode: Int = List(this).hashCode
+
+  override def equals(that: Any): Boolean = that match
+    case Doctype(text0)           => text0 == text
+    case Fragment(Doctype(text0)) => text0 == text
+    case _                        => false

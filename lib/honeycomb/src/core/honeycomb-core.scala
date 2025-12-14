@@ -59,14 +59,14 @@ extension (html: Seq[Html])
     var count = 0
 
     for item <- html do item match
-      case Html.Fragment(nodes*) => count += nodes.length
+      case Fragment(nodes*) => count += nodes.length
       case _                => count += 1
 
     val array = new Array[Node](count)
 
     var index = 0
     for item <- html do item match
-      case Html.Fragment(nodes*) => for node <- nodes do
+      case Fragment(nodes*) => for node <- nodes do
         array(index) = node
         index += 1
 

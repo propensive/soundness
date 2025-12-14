@@ -99,16 +99,16 @@ object Honeycomb:
 
       var types: List[TypeRepr] = Nil
 
-      def checkText(array: Expr[Array[Any]], pattern: Html.Textual, scrutinee: Expr[Html.Textual])
+      def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
       : Expr[Boolean] =
           '{  ${Expr(pattern.text)} == $scrutinee.text  }
 
-      def checkComment(array: Expr[Array[Any]], pattern: Html.Comment, scrutinee: Expr[Html.Comment])
+      def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
       : Expr[Boolean] =
 
           '{  ${Expr(pattern.text)} == $scrutinee.text  }
 
-      def checkFragment(array: Expr[Array[Any]], pattern: Html.Fragment, scrutinee: Expr[Html.Fragment])
+      def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       : Expr[Boolean] =
 
           val children = '{$scrutinee.nodes}
@@ -124,7 +124,7 @@ object Honeycomb:
           elements(0):
             '{  $scrutinee.nodes.length == ${Expr(pattern.nodes.length)} }
 
-      def checkElement(array: Expr[Array[Any]], pattern: Html.Element, scrutinee: Expr[Html.Element])
+      def checkElement(array: Expr[Array[Any]], pattern: Element, scrutinee: Expr[Element])
       : Expr[Boolean] =
 
           def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
@@ -172,16 +172,16 @@ object Honeycomb:
       : Expr[Boolean] =
 
           pattern match
-            case Html.Comment("\u0000") =>
+            case Comment("\u0000") =>
               idx += 1
               iterator.next()
               types ::= TypeRepr.of[Text]
 
               '{  $expr
-                  && $scrutinee.isInstanceOf[Html.Comment]
-                  && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Html.Comment].text; true }  }
+                  && $scrutinee.isInstanceOf[Comment]
+                  && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Comment].text; true }  }
 
-            case Html.Textual("\u0000") =>
+            case TextNode("\u0000") =>
               idx += 1
               iterator.next() match
                 case Html.Hole.Node(label) =>
@@ -194,39 +194,39 @@ object Honeycomb:
 
               '{  $expr && { $array(${Expr(idx)}) = $scrutinee; true }  }
 
-            case textual@Html.Textual(text) =>
-              val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[Html.Textual]})
-              '{  $expr && $scrutinee.isInstanceOf[Html.Textual] && $checked  }
+            case textual@TextNode(text) =>
+              val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[TextNode]})
+              '{  $expr && $scrutinee.isInstanceOf[TextNode] && $checked  }
 
-            case comment@Html.Comment(text) =>
+            case comment@Comment(text) =>
               if text.contains("\u0000")
               then halt(m"""only the entire comment text can be matched; write the extractor as
                             ${t"<!--$$text-->"}""")
-              val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Html.Comment]})
-              '{  $expr && $scrutinee.isInstanceOf[Html.Comment] && $checked  }
+              val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Comment]})
+              '{  $expr && $scrutinee.isInstanceOf[Comment] && $checked  }
 
-            case Html.Doctype(_) =>
+            case Doctype(_) =>
               halt(m"cannot match against a document type declaration")
 
-            case Html.Element("\u0000", _, _, _) =>
+            case Element("\u0000", _, _, _) =>
               idx += 1
               iterator.next() match
                 case Html.Hole.Element(label) =>
-                  types ::= whatwg.elements(label).lay(TypeRepr.of[Html.Element]): tag =>
+                  types ::= whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
                     intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
-                      case '[type children <: Label; children] => TypeRepr.of[Html.Element of children]
+                      case '[type children <: Label; children] => TypeRepr.of[Element of children]
                 case _ =>
                   halt(m"unexpected hole type")
 
               '{  $expr && { $array(${Expr(idx)}) = $scrutinee; true }  }
 
-            case element: Html.Element =>
-              def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Html.Element]})
-              '{  $expr && $scrutinee.isInstanceOf[Html.Element] && $checked  }
+            case element: Element =>
+              def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Element]})
+              '{  $expr && $scrutinee.isInstanceOf[Element] && $checked  }
 
-            case fragment@Html.Fragment(nodes*) =>
-              val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Html.Fragment]})
-              '{  $expr && $scrutinee.isInstanceOf[Html.Fragment] && $checked  }
+            case fragment@Fragment(nodes*) =>
+              val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Fragment]})
+              '{  $expr && $scrutinee.isInstanceOf[Fragment] && $checked  }
 
 
       val result: Expr[Boolean | Option[Any]] =
@@ -311,7 +311,7 @@ object Honeycomb:
                     case _ =>
                       Expr.summon[(? >: value) is Showable] match
                         case Some('{$showable: Showable}) =>
-                          '{Html.Textual($showable.text($expr))}
+                          '{TextNode($showable.text($expr))}
 
                         case _ =>
                           halt(m"""a value of ${TypeRepr.of[value].show} is not renderable
@@ -339,8 +339,8 @@ object Honeycomb:
         . iterator
 
       def serialize(html: Html): Seq[Expr[Node]] = html match
-        case Html.Fragment(children*) => children.flatMap(serialize(_))
-        case Html.Element(label, attributes, children, foreign) =>
+        case Fragment(children*) => children.flatMap(serialize(_))
+        case Element(label, attributes, children, foreign) =>
           val exprs = attributes.to(List).map: (key, value) =>
             '{  (${Expr(key)},
                  ${  if value == "\u0000".tt then iterator.next().asExprOf[Optional[Text]]
@@ -351,14 +351,14 @@ object Honeycomb:
           val map = '{Map(${Expr.ofList(exprs)}*)}
           val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
 
-          List('{Html.Element(${Expr(label)}, $map, $elements, ${Expr(foreign)})})
+          List('{Element(${Expr(label)}, $map, $elements, ${Expr(foreign)})})
 
-        case Html.Doctype(text) =>
+        case Doctype(text) =>
           if text.contains(t"\u0000")
           then halt(m"cannot substitute into a document type declaration")
-          else List('{Html.Doctype(${Expr(text)})})
+          else List('{Doctype(${Expr(text)})})
 
-        case Html.Comment(text) =>
+        case Comment(text) =>
           val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
@@ -368,12 +368,12 @@ object Honeycomb:
 
           val content = recur(parts.tail, Expr(parts.head))
 
-          List('{Html.Comment($content.tt)})
+          List('{Comment($content.tt)})
 
-        case Html.Textual("\u0000") =>
+        case TextNode("\u0000") =>
           List(iterator.next().asExprOf[Node])
 
-        case Html.Textual(text) =>
+        case TextNode(text) =>
           val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
@@ -383,14 +383,14 @@ object Honeycomb:
 
           val content = recur(parts.tail, Expr(parts.head))
 
-          List('{Html.Textual($content.tt)})
+          List('{TextNode($content.tt)})
 
       def resultType(html: Html): Set[String] = html match
-        case Html.Textual(_)             =>  Set("#text")
-        case Html.Element(tag, _, _, _)  =>  Set(tag.s)
-        case Html.Fragment(values*)      =>  values.to(Set).flatMap(resultType(_))
-        case Html.Comment(_)             =>  Set()
-        case Html.Doctype(_)             =>  Set()
+        case TextNode(_)           =>  Set("#text")
+        case Element(tag, _, _, _) =>  Set(tag.s)
+        case Fragment(values*)     =>  values.to(Set).flatMap(resultType(_))
+        case Comment(_)            =>  Set()
+        case Doctype(_)            =>  Set()
 
       resultType(html)
       . map { label => ConstantType(StringConstant(label)) }
@@ -401,7 +401,7 @@ object Honeycomb:
             '{
                 ${  serialize(html).absolve match
                       case List(one: Expr[?]) => one.asExprOf[Html]
-                      case many               => '{Html.Fragment(${Expr.ofList(many)}*)}  }
+                      case many               => '{Fragment(${Expr.ofList(many)}*)}  }
                 . of[topic]  }
 
 
