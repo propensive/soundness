@@ -91,14 +91,13 @@ object Html extends Tag.Container
   given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
     input => parse(input.iterator, dom.generic, doctypes = false)
 
-  given loadable: (dom: Dom) => Tactic[ParseError] => Html is Loadable by Text =
-    stream =>
-      val root = Tag.root(Set(t"html"))
-      parse(stream.iterator, root, doctypes = true) match
-        case Fragment(Doctype(doctype), content) => Document(content, Doctype(doctype))
-        case html@Element("html", _, _, _)       => Document(html, doctype)
-        case _                                   =>
-          abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
+  given loadable: (dom: Dom) => Tactic[ParseError] => Html is Loadable by Text = stream =>
+    val root = Tag.root(Set(t"html"))
+    parse(stream.iterator, root, doctypes = true) match
+      case Fragment(Doctype(doctype), content) => Document(content, Doctype(doctype))
+      case html@Element("html", _, _, _)       => Document(html, doctype)
+      case _                                   =>
+        abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
 
   // Up to 32 levels of two-space indentation
   private val indentation: Text =
@@ -773,6 +772,24 @@ extends Node, Topical, Transportive, Dynamic:
     ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
 
   def selectDynamic(name: String): Optional[Text] = attributes.at(name.tt)
+
+
+  def updateDynamic[value](name: String)(using attribute: name.type is Attribute in Whatwg)
+       (using Topic <:< attribute.Plane)
+       (value: value)
+       (using attributive: value is Attributive to attribute.Topic)
+  : Element of Topic over Transport in Whatwg =
+
+      attributive.attribute(name, value) match
+        case Unset =>
+          Element(label, attributes - name, children, foreign)
+        case (key, value) =>
+          Element(label, attributes.updated(key, value), children, foreign)
+
+    . of[Topic]
+    . over[Transport]
+    . in[Whatwg]
+
 
 case class Fragment(nodes: Node*) extends Html:
   override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode

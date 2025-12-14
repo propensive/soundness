@@ -357,6 +357,11 @@ object Tests extends Suite(m"Honeycomb Tests"):
         t"""<img alt="To &amp; fro">""".read[Html of Flow]
       . assert(_ == Img(alt = "To & fro"))
 
+      test(m"Modify attribute"):
+        val img: Element of "img" in Whatwg = Img(alt = "alternative")
+        img.alt = t"different"
+      . assert(_ == Img(alt = "different"))
+
       test(m"Attribute with numeric character entity"):
         t"""<img alt="Schlo&#223;">""".read[Html of Flow]
       . assert(_ == Img(alt = "Schloß"))
