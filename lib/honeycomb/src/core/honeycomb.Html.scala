@@ -68,7 +68,7 @@ object Html extends Tag.Container
          (label       = "html",
           autoclose   = true,
           admissible  = Set("head", "body"),
-          mode        = Html.ParsingMode.Whitespace,
+          mode        = Html.Mode.Whitespace,
           insertable  = true,
           foreign     = false), Format:
   type Topic = "html"
@@ -111,9 +111,9 @@ object Html extends Tag.Container
 
       val emitter = Emitter[Text](4096)
       async:
-        def recur(node: Html, indent: Int, block: Boolean, content: ParsingMode): Unit =
+        def recur(node: Html, indent: Int, block: Boolean, mode: Mode): Unit =
           node match
-            case Fragment(nodes*) => nodes.each(recur(_, indent, block, content))
+            case Fragment(nodes*) => nodes.each(recur(_, indent, block, mode))
             case Comment(comment) => emitter.put("<!--")
                                      emitter.put(comment)
                                      emitter.put("-->")
@@ -122,8 +122,8 @@ object Html extends Tag.Container
                                      emitter.put(">")
 
             case TextNode(text) =>
-              content match
-                case ParsingMode.Raw =>
+              mode match
+                case Mode.Raw =>
                   emitter.put(text)
                 case _ =>
                   var pos: Int = 0
@@ -169,12 +169,13 @@ object Html extends Tag.Container
                         pos = value.length
 
                     emitter.put("\"")
+
               emitter.put(">")
 
-              val mode = dom.elements(label).lay(ParsingMode.Normal)(_.mode)
+              val mode = dom.elements(label).lay(Mode.Normal)(_.mode)
 
               val whitespace =
-                (mode == ParsingMode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
+                (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
                 && block
 
               if !dom.elements(label).lay(false)(_.void) then
@@ -187,8 +188,8 @@ object Html extends Tag.Container
                 emitter.put(label)
                 emitter.put(">")
 
-        recur(document.metadata, 0, true, ParsingMode.Whitespace)
-        recur(document.root, 0, true, ParsingMode.Whitespace)
+        recur(document.metadata, 0, true, Mode.Whitespace)
+        recur(document.root, 0, true, Mode.Whitespace)
         emitter.finish()
 
       emitter.iterator
@@ -294,7 +295,7 @@ object Html extends Tag.Container
 
 
 
-  enum ParsingMode:
+  enum Mode:
     case Raw, Rcdata, Whitespace, Normal
 
   enum Hole:
@@ -318,7 +319,8 @@ object Html extends Tag.Container
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
     var extra: Map[Text, Optional[Text]] = ListMap()
-    var followers: List[Node] = Nil
+    val nodes: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
+    var fragment: IArray[Node] = IArray()
 
     def next(): Unit =
       if !cursor.next()
@@ -586,41 +588,42 @@ object Html extends Tag.Container
 
     def descend(parent: Tag, admissible: Set[Text]): Node =
       val admissible2 = if parent.transparent then admissible else parent.admissible
-      read(parent, admissible2, extra, Nil, 0)
+      read(parent, admissible2, extra, 0)
 
-    def finish(parent: Tag, children: List[Node], count: Int): Node =
+    def finish(parent: Tag, count: Int): Node =
       if parent != root then
-        if parent.autoclose
-        then Element(parent.label, parent.attributes, array(children, count), false)
+        if parent.autoclose then Element(parent.label, parent.attributes, array(count), false)
         else fail(Incomplete(parent.label))
       else
-        if children.length > 1 then followers = children.init.reverse
-        children.last
+        if count > 1 then fragment = array(count)
+        nodes.last
 
-    def array(list: List[Node], count: Int): IArray[Node] =
-      var todo = list
-      var i = count
-      val array = new Array[Node](count)
+    def array(count: Int): IArray[Node] =
+      val j = nodes.length - count
+      var i = 0
+      val result = new Array[Node](count)
 
-      while i > 0 do
-        i -= 1
-        array(i) = todo.head
-        todo = todo.tail
+      while i < count do
+        result(i) = nodes(j + i)
+        i += 1
 
-      array.immutable(using Unsafe)
+      nodes.dropRightInPlace(count)
+      result.immutable(using Unsafe)
 
     @tailrec
-    def read(parent: Tag, admissible: Set[Text], atts: Map[Text, Optional[Text]], children: List[Node], count: Int)
+    def read(parent: Tag, admissible: Set[Text], map: Map[Text, Optional[Text]], count: Int)
     : Node =
 
         def admit(child: Text): Boolean =
           parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
 
-        cursor.lay(finish(parent, children, count)):
+        cursor.lay(finish(parent, count)):
           case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
                            next()
-                           read(parent, admissible, atts, TextNode("\u0000") :: children, count + 1)
-          case '<' if parent.mode != ParsingMode.Raw && parent.mode != ParsingMode.Rcdata =>
+                           nodes.append(TextNode("\u0000"))
+                           read(parent, admissible, map, count + 1)
+
+          case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
             var level: Level = Level.Peer
             var current: Node = parent
             var currentTag: Tag = parent
@@ -629,10 +632,10 @@ object Html extends Tag.Container
               val mark = cursor.mark
 
               def node(): Unit =
-                current = Element(content, extra, array(children, count), parent.foreign)
+                current = Element(content, extra, array(count), parent.foreign)
 
               def close(): Unit =
-                current = Element(parent.label, parent.attributes, array(children, count), parent.foreign)
+                current = Element(parent.label, parent.attributes, array(count), parent.foreign)
                 level = Level.Ascend
 
               def infer(tag: Tag): Unit =
@@ -678,36 +681,41 @@ object Html extends Tag.Container
                   else
                     cursor.next()
                     level = Level.Ascend
-                    current = Element(content, atts, array(children, count), parent.foreign)
+                    current = Element(content, map, array(count), parent.foreign)
 
             level match
               case Level.Ascend  =>  current
-              case Level.Peer    =>  read(parent, admissible, atts, current :: children, count + 1)
+              case Level.Peer    =>  nodes.append(current)
+                                     read(parent, admissible, map, count + 1)
               case Level.Descend =>  val child = descend(currentTag, admissible)
-                                     read(parent, admissible, atts, child :: children, count + 1)
+                                     nodes.append(child)
+                                     read(parent, admissible, map, count + 1)
 
           case char => parent.mode match
-            case ParsingMode.Whitespace =>
-              whitespace() yet read(parent, admissible, atts, children, count)
+            case Mode.Whitespace =>
+              whitespace() yet read(parent, admissible, map, count)
 
-            case ParsingMode.Raw =>
+            case Mode.Raw =>
               val text = cursor.hold(textual(cursor.mark, parent.label, false))
               if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
               else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
-            case ParsingMode.Rcdata =>
+            case Mode.Rcdata =>
               val text = cursor.hold(textual(cursor.mark, parent.label, true))
               if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
               else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
-            case ParsingMode.Normal =>
+            case Mode.Normal =>
               val text = cursor.hold(textual(cursor.mark, Unset, true))
-              if text.length == 0 then read(parent, admissible, atts, children, count + 1)
-              else read(parent, admissible, atts, TextNode(text) :: children, count + 1)
+              if text.length == 0 then read(parent, admissible, map, count + 1)
+              else
+                nodes.append(TextNode(text))
+                read(parent, admissible, map, count + 1)
 
     skip()
-    val head = read(root, root.admissible, ListMap(), Nil, 0)
-    if followers.isEmpty then head else Fragment(head :: followers*)
+    nodes.append(root)
+    val head = read(root, root.admissible, ListMap(), 0)
+    if fragment.isEmpty then head else Fragment(fragment*)
 
 sealed into trait Html extends Topical, Documentary:
   type Topic <: Label

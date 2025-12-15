@@ -375,7 +375,7 @@ class Whatwg() extends Dom:
   val Col = Tag.void["col"]().in[Whatwg]
 
   val Colgroup = Tag.container["colgroup", "col"]
-                  (mode = Html.ParsingMode.Whitespace, insertable = true).in[Whatwg]
+                  (mode = Html.Mode.Whitespace, insertable = true).in[Whatwg]
 
   val Data = Tag.container["data", Phrasing]().in[Whatwg]
   val Datalist = Tag.container["datalist", Phrasing | "option"]().in[Whatwg]
@@ -387,7 +387,7 @@ class Whatwg() extends Dom:
   val Div = Tag.container["div", Flow]().in[Whatwg]
 
   val Dl = Tag.container["dl", "div" | "dt" | ScriptSupporting]
-            (autoclose = true, mode = Html.ParsingMode.Whitespace).in[Whatwg]
+            (autoclose = true, mode = Html.Mode.Whitespace).in[Whatwg]
 
   val Dt = Tag.container["dl", Flow](autoclose = true).in[Whatwg]
   val Em = Tag.container["em", Phrasing]().in[Whatwg]
@@ -406,7 +406,7 @@ class Whatwg() extends Dom:
 
   val Head =
     Tag.container["head", Metadata]
-     (autoclose = true, mode = Html.ParsingMode.Whitespace, insertable = true)
+     (autoclose = true, mode = Html.Mode.Whitespace, insertable = true)
     .in[Whatwg]
 
   val Header = Tag.container["header", Flow](autoclose = true).in[Whatwg]
@@ -488,23 +488,23 @@ class Whatwg() extends Dom:
   val Map = Tag.transparent["map", "area"]().in[Whatwg]
   val Mark = Tag.container["mark", Phrasing]().in[Whatwg]
   val Math = Tag.foreign["math"]().in[Whatwg]
-  val Menu = Tag.container["menu", "li" | ScriptSupporting](mode = Html.ParsingMode.Whitespace).in[Whatwg]
+  val Menu = Tag.container["menu", "li" | ScriptSupporting](mode = Html.Mode.Whitespace).in[Whatwg]
   val Meta = Tag.void["meta"]().in[Whatwg]
   val Meter = Tag.container["meter", Phrasing]().in[Whatwg]
   val Nav = Tag.container["nav", Flow]().in[Whatwg]
   val Noscript = Tag.container["noscript", "link" | "style" | "meta"]().in[Whatwg]
   val Object = Tag.transparent["object", ""]().in[Whatwg]
-  val Ol = Tag.container["ol", "li" | ScriptSupporting](mode = Html.ParsingMode.Whitespace).in[Whatwg]
+  val Ol = Tag.container["ol", "li" | ScriptSupporting](mode = Html.Mode.Whitespace).in[Whatwg]
 
   val Optgroup = Tag.container["optgroup", "option" | "legend"]
-                  (autoclose = true, mode = Html.ParsingMode.Whitespace).in[Whatwg]
+                  (autoclose = true, mode = Html.Mode.Whitespace).in[Whatwg]
 
   val Option = Tag.container["option", "#text"](autoclose = true).in[Whatwg]
   val Output = Tag.container["output", Phrasing]().in[Whatwg]
   val P = Tag.container["p", Phrasing](autoclose = true).in[Whatwg]
 
   val Picture = Tag.container["picture", "source" | "img" | ScriptSupporting]
-                 (mode = Html.ParsingMode.Whitespace).in[Whatwg]
+                 (mode = Html.Mode.Whitespace).in[Whatwg]
 
   val Pre = Tag.container["pre", Phrasing]().in[Whatwg]
   val Progress = Tag.container["progress", Phrasing]().in[Whatwg]
@@ -514,14 +514,14 @@ class Whatwg() extends Dom:
   val Ruby = Tag.container["ruby", Phrasing | "rt" | "rp"]().in[Whatwg]
   val S = Tag.container["s", Phrasing]().in[Whatwg]
   val Samp = Tag.container["samp", Phrasing]().in[Whatwg]
-  val Script = Tag.container["script", "#text"](mode = Html.ParsingMode.Raw).in[Whatwg]
+  val Script = Tag.container["script", "#text"](mode = Html.Mode.Raw).in[Whatwg]
   val Search = Tag.container["search", Flow]().in[Whatwg]
   val Section = Tag.container["section", Flow]().in[Whatwg]
 
   val Select =
     Tag.container
      ["select", "option" | "optgroup" | "hr" | "button" | "noscript" | ScriptSupporting]
-     (mode = Html.ParsingMode.Whitespace).in[Whatwg]
+     (mode = Html.Mode.Whitespace).in[Whatwg]
 
   val Selectedcontent = Tag.void["selectedcontent"]().in[Whatwg]
   val Slot = Tag.transparent["slot", ""]().in[Whatwg]
@@ -529,7 +529,7 @@ class Whatwg() extends Dom:
   val Source = Tag.void["source"]().in[Whatwg]
   val Span = Tag.container["span", Phrasing]().in[Whatwg]
   val Strong = Tag.container["strong", Phrasing]().in[Whatwg]
-  val Style = Tag.container["style", "#text"](mode = Html.ParsingMode.Raw).in[Whatwg]
+  val Style = Tag.container["style", "#text"](mode = Html.Mode.Raw).in[Whatwg]
   val Sub = Tag.container["sub", Phrasing]().in[Whatwg]
   val Summary = Tag.container["summary", Phrasing | Heading]().in[Whatwg]
   val Sup = Tag.container["sup", Phrasing]().in[Whatwg]
@@ -537,28 +537,28 @@ class Whatwg() extends Dom:
 
   val Table =
     Tag.container["table", "caption" | "colgroup" | "thead" | "tbody" | "tfoot"]
-     (mode = Html.ParsingMode.Whitespace).in[Whatwg]
+     (mode = Html.Mode.Whitespace).in[Whatwg]
 
   val Tbody = Tag.container["tbody", "tr"]
-               (autoclose = true, mode = Html.ParsingMode.Whitespace, insertable = true).in[Whatwg]
+               (autoclose = true, mode = Html.Mode.Whitespace, insertable = true).in[Whatwg]
 
   val Td = Tag.container["td", Flow](autoclose = true).in[Whatwg]
   val Template = Tag.void["template"]().in[Whatwg]
-  val Textarea = Tag.container["textarea", "#text"](mode = Html.ParsingMode.Rcdata).in[Whatwg]
+  val Textarea = Tag.container["textarea", "#text"](mode = Html.Mode.Rcdata).in[Whatwg]
 
   val Tfoot = Tag.container["tfoot", "tr"]
-               (autoclose = true, mode = Html.ParsingMode.Whitespace).in[Whatwg]
+               (autoclose = true, mode = Html.Mode.Whitespace).in[Whatwg]
 
   val Th = Tag.container["th", Flow](autoclose = true).in[Whatwg]
 
   val Thead = Tag.container["thead", "tr" | ScriptSupporting]
-               (autoclose = true, mode = Html.ParsingMode.Whitespace).in[Whatwg]
+               (autoclose = true, mode = Html.Mode.Whitespace).in[Whatwg]
 
   val Time = Tag.container["time", Phrasing]().in[Whatwg]
-  val Title = Tag.container["title", "#text"](mode = Html.ParsingMode.Rcdata).in[Whatwg]
+  val Title = Tag.container["title", "#text"](mode = Html.Mode.Rcdata).in[Whatwg]
 
   val Tr = Tag.container["tr", "td" | "th" | ScriptSupporting]
-            (autoclose = true, mode = Html.ParsingMode.Whitespace, insertable = true).in[Whatwg]
+            (autoclose = true, mode = Html.Mode.Whitespace, insertable = true).in[Whatwg]
 
   object Track extends Tag.Void("track", sci.Map()):
     type Topic = "track"
@@ -572,7 +572,7 @@ class Whatwg() extends Dom:
     val Subtitles = Tag.void["track"](presets = sci.Map(t"kind" -> t"subtitles"))
 
   val U = Tag.container["u", Phrasing]().in[Whatwg]
-  val Ul = Tag.container["ul", "li" | ScriptSupporting](mode = Html.ParsingMode.Whitespace).in[Whatwg]
+  val Ul = Tag.container["ul", "li" | ScriptSupporting](mode = Html.Mode.Whitespace).in[Whatwg]
   val Var = Tag.container["var", Phrasing]().in[Whatwg]
   val Video = Tag.transparent["video", "track" | "source"]().in[Whatwg]
   val Wbr = Tag.void["wbr"]().in[Whatwg]

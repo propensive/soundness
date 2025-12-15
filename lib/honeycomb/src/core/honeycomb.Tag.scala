@@ -61,7 +61,7 @@ import textSanitizers.skip
 
 object Tag:
   def root(children: Set[Text]): Tag =
-    new Tag("#root", false, Html.ParsingMode.Normal, Map(), children, false, false, false):
+    new Tag("#root", false, Html.Mode.Normal, Map(), children, false, false, false):
       type Result = this.type
 
       def node(attributes: Map[Text, Optional[Text]]): Result = this
@@ -74,14 +74,14 @@ object Tag:
   def foreign(label: Text, attributes0: Map[Text, Optional[Text]])
   : Tag of "#foreign" over "#foreign" =
 
-      new Tag.Container(label, false, Html.ParsingMode.Normal, attributes0, Set(), false, true)
+      new Tag.Container(label, false, Html.Mode.Normal, attributes0, Set(), false, true)
       . of["#foreign"]
       . over["#foreign"]
 
 
   def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
        (autoclose:  Boolean                   = false,
-        mode:       Html.ParsingMode          = Html.ParsingMode.Normal,
+        mode:       Html.Mode                 = Html.Mode.Normal,
         presets:    Map[Text, Optional[Text]] = Map(),
         insertable: Boolean                   = false)
   : Container of label over children =
@@ -113,7 +113,7 @@ object Tag:
   class Container
          (label:      Text,
           autoclose:  Boolean                   = false,
-          mode:       Html.ParsingMode          = Html.ParsingMode.Normal,
+          mode:       Html.Mode                 = Html.Mode.Normal,
           presets:    Map[Text, Optional[Text]] = Map(),
           admissible: Set[Text]                 = Set(),
           insertable: Boolean                   = false,
@@ -145,7 +145,7 @@ object Tag:
   extends Tag
            (label       = label,
             autoclose   = false,
-            mode        = Html.ParsingMode.Normal,
+            mode        = Html.Mode.Normal,
             presets     = presets,
             admissible  = admissible,
             insertable  = false,
@@ -182,7 +182,7 @@ object Tag:
 abstract class Tag
        (    label:       Text,
         val autoclose:   Boolean                   = false,
-        val mode:        Html.ParsingMode          = Html.ParsingMode.Normal,
+        val mode:        Html.Mode                 = Html.Mode.Normal,
         val presets:     Map[Text, Optional[Text]] = Map(),
         val admissible:  Set[Text]                 = Set(),
         val insertable:  Boolean                   = false,
