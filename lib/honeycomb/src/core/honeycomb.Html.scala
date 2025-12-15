@@ -319,7 +319,13 @@ object Html extends Tag.Container
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
     var extra: Map[Text, Optional[Text]] = ListMap()
-    val nodes: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
+    var nodes: Array[Node] = new Array(100)
+    var nodeIndex: Int = 0
+
+    inline def append(node: Node): Unit =
+      nodes(nodeIndex) = node
+      nodeIndex += 1
+
     var fragment: IArray[Node] = IArray()
 
     def next(): Unit =
@@ -596,124 +602,115 @@ object Html extends Tag.Container
         else fail(Incomplete(parent.label))
       else
         if count > 1 then fragment = array(count)
-        nodes.last
+        nodes(nodeIndex - 1)
 
     def array(count: Int): IArray[Node] =
-      val j = nodes.length - count
-      var i = 0
       val result = new Array[Node](count)
-
-      while i < count do
-        result(i) = nodes(j + i)
-        i += 1
-
-      nodes.dropRightInPlace(count)
+      System.arraycopy(nodes, nodeIndex - count, result, 0, count)
+      nodeIndex -= count
       result.immutable(using Unsafe)
 
     @tailrec
-    def read(parent: Tag, admissible: Set[Text], map: Map[Text, Optional[Text]], count: Int)
-    : Node =
+    def read(parent: Tag, admissible: Set[Text], map: Map[Text, Optional[Text]], count: Int): Node =
 
-        def admit(child: Text): Boolean =
-          parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
+      def admit(child: Text): Boolean =
+        parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
 
-        cursor.lay(finish(parent, count)):
-          case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
-                           next()
-                           nodes.append(TextNode("\u0000"))
-                           read(parent, admissible, map, count + 1)
+      cursor.lay(finish(parent, count)):
+        case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
+                         next()
+                         append(TextNode("\u0000"))
+                         read(parent, admissible, map, count + 1)
 
-          case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
-            var level: Level = Level.Peer
-            var current: Node = parent
-            var currentTag: Tag = parent
+        case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
+          var level: Level = Level.Peer
+          var current: Node = parent
+          var currentTag: Tag = parent
 
-            cursor.hold:
-              val mark = cursor.mark
+          cursor.hold:
+            val mark = cursor.mark
 
-              def node(): Unit =
-                current = Element(content, extra, array(count), parent.foreign)
+            def node(): Unit =
+              current = Element(content, extra, array(count), parent.foreign)
 
-              def close(): Unit =
-                current = Element(parent.label, parent.attributes, array(count), parent.foreign)
-                level = Level.Ascend
+            def close(): Unit =
+              current = Element(parent.label, parent.attributes, array(count), parent.foreign)
+              level = Level.Ascend
 
-              def infer(tag: Tag): Unit =
-                cursor.cue(mark)
-                dom.infer(parent, tag).let: tag =>
-                  currentTag = tag
-                  level = Level.Descend
-                . or:
-                    if parent.autoclose then close()
-                    else fail(InadmissibleTag(content, parent.label))
+            def infer(tag: Tag): Unit =
+              cursor.cue(mark)
+              dom.infer(parent, tag).let: tag =>
+                currentTag = tag
+                level = Level.Descend
+              . or:
+                  if parent.autoclose then close()
+                  else fail(InadmissibleTag(content, parent.label))
 
+            next()
+            if cursor.lay(false)(_ == '\u0000') then
+              callback.let(_(cursor.position, Hole.Element(parent.label)))
+              content = t"\u0000"
+              node()
+              expect('>')
               next()
-              if cursor.lay(false)(_ == '\u0000') then
-                callback.let(_(cursor.position, Hole.Element(parent.label)))
-                content = t"\u0000"
-                node()
-                expect('>')
-                next()
-              else tag(doctypes && parent == root, parent.foreign) match
-                case Token.Comment => current = Comment(content)
-                case Token.Doctype => current = Doctype(content)
+            else tag(doctypes && parent == root, parent.foreign) match
+              case Token.Comment => current = Comment(content)
+              case Token.Doctype => current = Doctype(content)
 
-                case Token.Empty   =>
-                  if admit(content) then node() else infer:
-                    if parent.foreign then Tag.foreign(content, extra)
-                    else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
+              case Token.Empty   =>
+                if admit(content) then node() else infer:
+                  if parent.foreign then Tag.foreign(content, extra)
+                  else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
-                case Token.Open =>
-                  currentTag =
-                    if parent.foreign then Tag.foreign(content, extra)
-                    else dom.elements(content).or:
-                      cursor.cue(mark)
-                      fail(InvalidTag(content))
-
-                  if !admit(content) then infer(currentTag) else if currentTag.void then node()
-                  else level = Level.Descend
-
-                case Token.Close =>
-                  if content != parent.label then
+              case Token.Open =>
+                currentTag =
+                  if parent.foreign then Tag.foreign(content, extra)
+                  else dom.elements(content).or:
                     cursor.cue(mark)
-                    if parent.autoclose then close()
-                    else fail(MismatchedTag(parent.label, content))
-                  else
-                    cursor.next()
-                    level = Level.Ascend
-                    current = Element(content, map, array(count), parent.foreign)
+                    fail(InvalidTag(content))
 
-            level match
-              case Level.Ascend  =>  current
-              case Level.Peer    =>  nodes.append(current)
-                                     read(parent, admissible, map, count + 1)
-              case Level.Descend =>  val child = descend(currentTag, admissible)
-                                     nodes.append(child)
-                                     read(parent, admissible, map, count + 1)
+                if !admit(content) then infer(currentTag) else if currentTag.void then node()
+                else level = Level.Descend
 
-          case char => parent.mode match
-            case Mode.Whitespace =>
-              whitespace() yet read(parent, admissible, map, count)
+              case Token.Close =>
+                if content != parent.label then
+                  cursor.cue(mark)
+                  if parent.autoclose then close()
+                  else fail(MismatchedTag(parent.label, content))
+                else
+                  cursor.next()
+                  level = Level.Ascend
+                  current = Element(content, map, array(count), parent.foreign)
 
-            case Mode.Raw =>
-              val text = cursor.hold(textual(cursor.mark, parent.label, false))
-              if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
-              else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
+          level match
+            case Level.Ascend  =>  current
+            case Level.Peer    =>  append(current)
+                                   read(parent, admissible, map, count + 1)
+            case Level.Descend =>  val child = descend(currentTag, admissible)
+                                   append(child)
+                                   read(parent, admissible, map, count + 1)
 
-            case Mode.Rcdata =>
-              val text = cursor.hold(textual(cursor.mark, parent.label, true))
-              if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
-              else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
+        case char => parent.mode match
+          case Mode.Whitespace =>
+            whitespace() yet read(parent, admissible, map, count)
 
-            case Mode.Normal =>
-              val text = cursor.hold(textual(cursor.mark, Unset, true))
-              if text.length == 0 then read(parent, admissible, map, count + 1)
-              else
-                nodes.append(TextNode(text))
-                read(parent, admissible, map, count + 1)
+          case Mode.Raw =>
+            val text = cursor.hold(textual(cursor.mark, parent.label, false))
+            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+            else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
+
+          case Mode.Rcdata =>
+            val text = cursor.hold(textual(cursor.mark, parent.label, true))
+            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+            else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
+
+          case Mode.Normal =>
+            val text = cursor.hold(textual(cursor.mark, Unset, true))
+            if text.length == 0 then read(parent, admissible, map, count + 1)
+            else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
 
     skip()
-    nodes.append(root)
+    append(root)
     val head = read(root, root.admissible, ListMap(), 0)
     if fragment.isEmpty then head else Fragment(fragment*)
 
@@ -725,13 +722,11 @@ sealed into trait Html extends Topical, Documentary:
 
   def load(input: Stream[Text]): Document[Html] = ???
 
-  private[honeycomb] def of[topic <: Label]: this.type of topic =
-    asInstanceOf[this.type of topic]
+  private[honeycomb] def of[topic <: Label]: this.type of topic = asInstanceOf[this.type of topic]
+  private[honeycomb] def in[form]: this.type in form = asInstanceOf[this.type in form]
 
   private[honeycomb] def over[transport <: Label]: this.type over transport =
     asInstanceOf[this.type over transport]
-
-  private[honeycomb] def in[form]: this.type in form = asInstanceOf[this.type in form]
 
 sealed trait Node extends Html
 
@@ -739,9 +734,9 @@ case class Comment(text: Text) extends Node:
   override def hashCode: Int = List(this).hashCode
 
   override def equals(that: Any): Boolean = that match
-    case Comment(text0)                => text0 == text
+    case Comment(text0)           => text0 == text
     case Fragment(Comment(text0)) => text0 == text
-    case _                             => false
+    case _                        => false
 
 case class TextNode(text: Text) extends Node:
   type Topic = "#text"
@@ -750,8 +745,8 @@ case class TextNode(text: Text) extends Node:
 
   override def equals(that: Any): Boolean = that match
     case Fragment(textual: TextNode) => this == textual
-    case TextNode(text0)                  => text0 == text
-    case _                                => false
+    case TextNode(text0)             => text0 == text
+    case _                           => false
 
 object Element:
   def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
@@ -792,15 +787,13 @@ extends Node, Topical, Transportive, Dynamic:
        (using attributive: value is Attributive to attribute.Topic)
   : Element of Topic over Transport in Whatwg =
 
-      attributive.attribute(name, value) match
-        case Unset =>
-          Element(label, attributes - name, children, foreign)
-        case (key, value) =>
-          Element(label, attributes.updated(key, value), children, foreign)
+      attributive.attribute(name, value).match
+        case Unset        => Element(label, attributes - name, children, foreign)
+        case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
 
-    . of[Topic]
-    . over[Transport]
-    . in[Whatwg]
+      . of[Topic]
+      . over[Transport]
+      . in[Whatwg]
 
 
 case class Fragment(nodes: Node*) extends Html:
