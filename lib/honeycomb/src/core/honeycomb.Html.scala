@@ -319,12 +319,17 @@ object Html extends Tag.Container
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
     var extra: Map[Text, Optional[Text]] = ListMap()
-    var nodes: Array[Node] = new Array(100)
-    var nodeIndex: Int = 0
+    var nodes: Array[Node] = new Array(2)
+    var index: Int = 0
 
     inline def append(node: Node): Unit =
-      nodes(nodeIndex) = node
-      nodeIndex += 1
+      if index >= nodes.length then
+        val nodes2 = new Array[Node](nodes.length*2)
+        System.arraycopy(nodes, 0, nodes2, 0, nodes.length)
+        nodes = nodes2
+
+      nodes(index) = node
+      index += 1
 
     var fragment: IArray[Node] = IArray()
 
@@ -602,12 +607,12 @@ object Html extends Tag.Container
         else fail(Incomplete(parent.label))
       else
         if count > 1 then fragment = array(count)
-        nodes(nodeIndex - 1)
+        nodes(index - 1)
 
     def array(count: Int): IArray[Node] =
       val result = new Array[Node](count)
-      System.arraycopy(nodes, nodeIndex - count, result, 0, count)
-      nodeIndex -= count
+      System.arraycopy(nodes, index - count, result, 0, count)
+      index -= count
       result.immutable(using Unsafe)
 
     @tailrec
