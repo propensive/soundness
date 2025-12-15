@@ -68,7 +68,7 @@ object Html extends Tag.Container
          (label       = "html",
           autoclose   = true,
           admissible  = Set("head", "body"),
-          content     = Html.TextContent.Whitespace,
+          mode        = Html.ParsingMode.Whitespace,
           insertable  = true,
           foreign     = false), Format:
   type Topic = "html"
@@ -111,7 +111,7 @@ object Html extends Tag.Container
 
       val emitter = Emitter[Text](4096)
       async:
-        def recur(node: Html, indent: Int, block: Boolean, content: TextContent): Unit =
+        def recur(node: Html, indent: Int, block: Boolean, content: ParsingMode): Unit =
           node match
             case Fragment(nodes*) => nodes.each(recur(_, indent, block, content))
             case Comment(comment) => emitter.put("<!--")
@@ -123,7 +123,7 @@ object Html extends Tag.Container
 
             case TextNode(text) =>
               content match
-                case TextContent.Raw =>
+                case ParsingMode.Raw =>
                   emitter.put(text)
                 case _ =>
                   var pos: Int = 0
@@ -171,14 +171,14 @@ object Html extends Tag.Container
                     emitter.put("\"")
               emitter.put(">")
 
-              val content = dom.elements(label).lay(TextContent.Normal)(_.content)
+              val mode = dom.elements(label).lay(ParsingMode.Normal)(_.mode)
 
               val whitespace =
-                (content == TextContent.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
+                (mode == ParsingMode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
                 && block
 
               if !dom.elements(label).lay(false)(_.void) then
-                nodes.each(recur(_, indent + 1, whitespace, content))
+                nodes.each(recur(_, indent + 1, whitespace, mode))
 
                 if block && whitespace
                 then emitter.put(indentation, Prim, (indent*2 + 1).min(indentation.length))
@@ -187,8 +187,8 @@ object Html extends Tag.Container
                 emitter.put(label)
                 emitter.put(">")
 
-        recur(document.metadata, 0, true, TextContent.Whitespace)
-        recur(document.root, 0, true, TextContent.Whitespace)
+        recur(document.metadata, 0, true, ParsingMode.Whitespace)
+        recur(document.root, 0, true, ParsingMode.Whitespace)
         emitter.finish()
 
       emitter.iterator
@@ -294,7 +294,7 @@ object Html extends Tag.Container
 
 
 
-  enum TextContent:
+  enum ParsingMode:
     case Raw, Rcdata, Whitespace, Normal
 
   enum Hole:
@@ -620,7 +620,7 @@ object Html extends Tag.Container
           case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
                            next()
                            read(parent, admissible, atts, TextNode("\u0000") :: children, count + 1)
-          case '<' if parent.content != TextContent.Raw && parent.content != TextContent.Rcdata =>
+          case '<' if parent.mode != ParsingMode.Raw && parent.mode != ParsingMode.Rcdata =>
             var level: Level = Level.Peer
             var current: Node = parent
             var currentTag: Tag = parent
@@ -686,21 +686,21 @@ object Html extends Tag.Container
               case Level.Descend =>  val child = descend(currentTag, admissible)
                                      read(parent, admissible, atts, child :: children, count + 1)
 
-          case char => parent.content match
-            case TextContent.Whitespace =>
+          case char => parent.mode match
+            case ParsingMode.Whitespace =>
               whitespace() yet read(parent, admissible, atts, children, count)
 
-            case TextContent.Raw =>
+            case ParsingMode.Raw =>
               val text = cursor.hold(textual(cursor.mark, parent.label, false))
               if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
               else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
-            case TextContent.Rcdata =>
+            case ParsingMode.Rcdata =>
               val text = cursor.hold(textual(cursor.mark, parent.label, true))
               if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
               else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
-            case TextContent.Normal =>
+            case ParsingMode.Normal =>
               val text = cursor.hold(textual(cursor.mark, Unset, true))
               if text.length == 0 then read(parent, admissible, atts, children, count + 1)
               else read(parent, admissible, atts, TextNode(text) :: children, count + 1)

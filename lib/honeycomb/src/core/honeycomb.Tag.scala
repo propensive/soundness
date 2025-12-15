@@ -61,7 +61,7 @@ import textSanitizers.skip
 
 object Tag:
   def root(children: Set[Text]): Tag =
-    new Tag("#root", false, Html.TextContent.Normal, Map(), children, false, false, false):
+    new Tag("#root", false, Html.ParsingMode.Normal, Map(), children, false, false, false):
       type Result = this.type
 
       def node(attributes: Map[Text, Optional[Text]]): Result = this
@@ -74,21 +74,21 @@ object Tag:
   def foreign(label: Text, attributes0: Map[Text, Optional[Text]])
   : Tag of "#foreign" over "#foreign" =
 
-      new Tag.Container(label, false, Html.TextContent.Normal, attributes0, Set(), false, true)
+      new Tag.Container(label, false, Html.ParsingMode.Normal, attributes0, Set(), false, true)
       . of["#foreign"]
       . over["#foreign"]
 
 
   def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
        (autoclose:  Boolean                   = false,
-        content:    Html.TextContent          = Html.TextContent.Normal,
+        mode:       Html.ParsingMode          = Html.ParsingMode.Normal,
         presets:    Map[Text, Optional[Text]] = Map(),
         insertable: Boolean                   = false)
   : Container of label over children =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
 
-      Container(valueOf[label].tt, autoclose, content, presets, admissible, insertable)
+      Container(valueOf[label].tt, autoclose, mode, presets, admissible, insertable)
       . of[label]
       . over[children]
 
@@ -113,12 +113,12 @@ object Tag:
   class Container
          (label:      Text,
           autoclose:  Boolean                   = false,
-          content:    Html.TextContent          = Html.TextContent.Normal,
+          mode:       Html.ParsingMode          = Html.ParsingMode.Normal,
           presets:    Map[Text, Optional[Text]] = Map(),
           admissible: Set[Text]                 = Set(),
           insertable: Boolean                   = false,
           foreign:    Boolean                   = false)
-  extends Tag(label, autoclose, content, presets, admissible, insertable, foreign = foreign):
+  extends Tag(label, autoclose, mode, presets, admissible, insertable, foreign = foreign):
     type Result = Element & Html.Populable of Topic over Transport in Form
 
 
@@ -145,7 +145,7 @@ object Tag:
   extends Tag
            (label       = label,
             autoclose   = false,
-            content     = Html.TextContent.Normal,
+            mode        = Html.ParsingMode.Normal,
             presets     = presets,
             admissible  = admissible,
             insertable  = false,
@@ -182,7 +182,7 @@ object Tag:
 abstract class Tag
        (    label:       Text,
         val autoclose:   Boolean                   = false,
-        val content:     Html.TextContent          = Html.TextContent.Normal,
+        val mode:        Html.ParsingMode          = Html.ParsingMode.Normal,
         val presets:     Map[Text, Optional[Text]] = Map(),
         val admissible:  Set[Text]                 = Set(),
         val insertable:  Boolean                   = false,
