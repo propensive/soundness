@@ -39,10 +39,12 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import html5.*
+import doms.whatwg
+import whatwg.*
+import attributives.attributiveText
 
 object Checkbox:
-  given renderable: Checkbox is Renderable to Phrasing = checkbox =>
-    List(Input.Checkbox(name = checkbox.name, checked = (checkbox.value != t"")))
+  given renderable: Checkbox is Renderable in Phrasing = checkbox =>
+    Input.Checkbox(name = checkbox.name, checked = (checkbox.value != t""))
 
 case class Checkbox(name: Text, value: Text) extends Widget

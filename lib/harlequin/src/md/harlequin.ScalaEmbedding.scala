@@ -35,9 +35,10 @@ package harlequin
 import anticipation.*
 import gossamer.*
 import honeycomb.*
+import prepositional.*
 import punctuation.*
 import vacuous.*
 
 object ScalaEmbedding extends Embedding(t"scala"), CommonEmbedding:
-  def render(meta: Optional[Text], content: Text): Seq[Html[html5.Flow]] =
+  def render(meta: Optional[Text], content: Text): Seq[Html of Flow] =
     postprocess(Scala.highlight(content))

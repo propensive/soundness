@@ -43,13 +43,9 @@ import language.dynamics
 extension [renderable: Renderable](value: renderable)
   def html: Html of renderable.Form = renderable.render(value)
 
-// extension (context: StringContext)
-//   def cls(): CssClass = CssClass(context.parts.head.tt)
-//   def id(): DomId = DomId(context.parts.head.tt)
-
-// type OldHtml[+child <: Label] = Node[child] | Text | Unset.type | HtmlXml
-
-// type Attributes = Map[String, Unset.type | Text]
+package attributives:
+  given attributiveText: [target] => Text is Attributive to target =
+    (key, value) => (key, value)
 
 extension (inline context: StringContext)
   transparent inline def h: Honeycomb.Interpolator = ${Honeycomb.h('context)}
@@ -59,8 +55,8 @@ extension (html: Seq[Html])
     var count = 0
 
     for item <- html do item match
-      case Fragment(nodes*) => count += nodes.length
-      case _                => count += 1
+      case fragment: Fragment => count += fragment.nodes.length
+      case _                  => count += 1
 
     val array = new Array[Node](count)
 
@@ -75,7 +71,6 @@ extension (html: Seq[Html])
         index += 1
 
     array.immutable(using Unsafe)
-
 
 package doms:
   given whatwg: Whatwg = Whatwg()

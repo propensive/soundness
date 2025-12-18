@@ -32,8 +32,11 @@
                                                                                                   */
 package soundness
 
-// export honeycomb
-// . { cls, id, Autocomplete, Capture, ClearTag, Crossorigin, CssClass, DomId, Element, HDir,
-//     Html5, Attributive, HtmlDoc, HtmlSerializer, HtmlXml, HttpEquiv, Kind, Method, Node,
-//     Preload, Rel, Rev, Sandbox, Scope, Shape, StartTag, Tag, Target, Wrap, html, html4, Attributes,
-//     Renderable }
+export honeycomb
+. { Autocomplete, Attribute, Capture, Crossorigin, CssClass, DomId, Element,
+    HDir, Attributive, HttpEquiv, Kind, Method, Node, h, CssClasses, Html,
+    Preload, Rel, Rev, Sandbox, Scope, Shape, Tag, Target, Wrap, html,
+    Renderable }
+
+package doms:
+  export honeycomb.doms.whatwg

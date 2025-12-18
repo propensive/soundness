@@ -38,12 +38,15 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import html5.*
+import doms.whatwg, whatwg.*
+import attributives.attributiveText
 
 object RadioGroup:
-  given renderable: RadioGroup is Renderable to Phrasing = group =>
-    group.options.map: option =>
+  given renderable: RadioGroup is Renderable in Phrasing = group =>
+    val items = group.options.map: option =>
       Label(Input.Radio(name = group.name, value = option(1)), option(2))
+
+    Fragment(items*)
 
 case class RadioGroup(name: Text, options: List[(key: Text, value: Text, label: Text)], value: Text)
 extends Widget

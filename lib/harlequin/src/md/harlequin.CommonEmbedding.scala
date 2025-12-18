@@ -35,17 +35,21 @@ package harlequin
 import anticipation.*
 import gossamer.*
 import harlequin.*
-import honeycomb.*, html5.*
+import honeycomb.*
+import prepositional.*
 import spectacular.*
 import vacuous.*
 
+import doms.whatwg, whatwg.*
+
 trait CommonEmbedding:
-  def className(accent: Accent): List[CssClass] = List(CssClass(accent.show.lower))
+  def className(accent: Accent): CssClasses =
+    CssClasses(Set(accent.show.lower))
 
-  def element(accent: Accent, text: Text): Element["code"] =
-    html5.Code(`class` = className(accent))(text)
+  def element(accent: Accent, text: Text): Element of "code" =
+    whatwg.Code(`class` = className(accent))(text)
 
-  protected def postprocess(source: SourceCode): Seq[Html[Flow]] =
+  protected def postprocess(source: SourceCode): Seq[Html of Flow] =
     val code = source.lines.map: line =>
       Span.line:
         line.map { case SourceToken(text, accent) => element(accent, text) }

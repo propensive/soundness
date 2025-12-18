@@ -35,14 +35,17 @@ package legerdemain
 import anticipation.*
 import fulminate.*
 import honeycomb.*
+import prepositional.*
 import vacuous.*
 
+import doms.whatwg, whatwg.*
+
 trait Formulation:
-  def form(content: Seq[Html[html5.Flow]], submit: Optional[Text]): Html[html5.Flow]
+  def form(content: Seq[Html of Flow], submit: Optional[Text]): Html of Flow
 
   def element
-       (widget:     Seq[Html[html5.Phrasing]],
+       (widget:     Html of Phrasing,
         legend:     Text,
         validation: Optional[Message],
         required:   Boolean)
-  : Html[html5.Flow]
+  : Html of Flow

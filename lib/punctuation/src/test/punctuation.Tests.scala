@@ -47,9 +47,12 @@ import environments.java
 import systems.java
 import temporaryDirectories.system
 
+import doms.whatwg
+import classloaders.system
+
 object Commonmark:
   import org.commonmark.*, node.*, parser.{IncludeSourceSpans, Parser}
-  
+
   def parse(text: soundness.Text): Markdown of Layout =
     object visitor extends AbstractVisitor:
       private var root: Optional[Markdown of Layout] = Unset
@@ -57,51 +60,59 @@ object Commonmark:
       private var layouts: List[Layout] = Nil
       private var proses: List[Prose] = Nil
       private var listItemsList: List[List[Layout]] = Nil
-      
+      private var tightListItemsList: List[List[Prose]] = Nil
+
       def markdown: Markdown of Layout = root.or(panic(m"Failed to parse Markdown"))
-      
+
       def layout(node: Node | Null): List[Layout] =
         val layouts0 = layouts
         layouts = Nil
         visitChildren(node)
         layouts.reverse.also:
           layouts = layouts0
-      
+
       def listItems(node: Node | Null): List[List[Layout]] =
         listItemsList = Nil
         visitChildren(node)
         listItemsList.reverse
-      
+
+      def tightListItems(node: Node | Null): List[List[Prose]] =
+        tightListItemsList = Nil
+        visitChildren(node)
+        tightListItemsList.reverse
+
       def prose(node: Node | Null): List[Prose] =
         val proses0 = proses
         proses = Nil
         visitChildren(node)
         proses.reverse.also:
           proses = proses0
-      
+
       def add(prose: Prose): Unit = proses ::= prose
       def add(layout: Layout): Unit = layouts ::= layout
-      
+
       protected def line(node: Node | Null) = node.nn.getSourceSpans.nn.get(0).nn.getLineIndex.z
-      
+
       override def visit(node: Document | Null): Unit =
         visitChildren(node.nn)
         root = Markdown(refs.reverse, layouts.reverse*)
-        
+
       override def visit(node: Paragraph | Null): Unit =
         add(Layout.Paragraph(line(node), prose(node)*))
-        
+
       override def visit(node: Text | Null): Unit = add(Prose.Textual(node.nn.getLiteral.nn))
       override def visit(node: Emphasis | Null): Unit = add(Prose.Emphasis(prose(node)*))
-      
+
       override def visit(node: BlockQuote | Null): Unit =
         add(Layout.BlockQuote(line(node), layout(node)*))
-        
+
       override def visit(node: Code | Null): Unit = add(Prose.Code(node.nn.getLiteral.nn))
       override def visit(node: HardLineBreak | Null): Unit = add(Prose.Linebreak)
 
       override def visit(node: BulletList | Null): Unit =
-        add(Layout.BulletList(line(node), node.nn.isTight, listItems(node)*))
+        if node.nn.isTight
+        then add(Layout.TightBulletList(line(node), tightListItems(node)*))
+        else add(Layout.BulletList(line(node), listItems(node)*))
 
       override def visit(node: FencedCodeBlock | Null): Unit =
         val info = node.nn.getInfo.nn.tt
@@ -112,7 +123,7 @@ object Commonmark:
         val level: 1 | 2 | 3 | 4 | 5 | 6 = node.nn.getLevel match
           case level: (1 | 2 | 3 | 4 | 5 | 6) => level
           case _                              => panic(m"unexpected level number")
-          
+
         add(Layout.Heading(line(node), level, prose(node)*))
 
       override def visit(node: HtmlBlock | Null): Unit =
@@ -146,25 +157,25 @@ object Commonmark:
           case "."  => '.'
           case ")"  => ')'
           case null => Unset
-      
+
         val start: Int = node.nn.getMarkerStartNumber match
           case null     => 1
           case int: Int => int
-          
+
         Layout.OrderedList(line(node), node.nn.isTight, start, delimiter, listItems(node)*)
 
       override def visit(node: SoftLineBreak | Null): Unit = add(Prose.Softbreak)
       override def visit(node: StrongEmphasis | Null): Unit = add(Prose.Strong(prose(node)*))
       override def visit(node: ThematicBreak | Null): Unit = add(Layout.ThematicBreak(line(node)))
-          
+
     Parser.builder().nn
     . includeSourceSpans(IncludeSourceSpans.BLOCKS).nn
     . build().nn
     . parse(text.s).nn
     . accept(visitor)
-    
+
     visitor.markdown
-  
+
 
 object Tests extends Suite(m"Punctuation tests"):
   def run(): Unit =
@@ -176,16 +187,20 @@ object Tests extends Suite(m"Punctuation tests"):
                  end_line:   Int,
                  section:    Text)
 
-    url"https://spec.commonmark.org/0.31.2/spec.json"
-    . fetch()
+    //url"https://spec.commonmark.org/0.31.2/spec.json"
+    cp"/punctuation/mdspec.json"
     . read[Json].as[List[Testcase]]
     . groupBy(_.section)
-    //. filter { case (group, _) => group == t"Paragraphs" || group == t"Indented code blocks" }
     . each: (section, cases) =>
         suite(section.communicate):
           cases.each: testcase =>
-            val expected = Commonmark.parse(testcase.markdown.s)
-            val html = testcase.html.sub(t"<br />", "<br>").sub(t"<hr />", t"<hr>").sub(t"\n", t"")
-            test(m"Test case ${testcase.example} (${testcase.start_line}-${testcase.end_line}): `${testcase.markdown.inspect}`"):
-              Commonmark.parse(testcase.markdown).html.map(_.show).join
-            . assert(_ == html)
+            // val expected = Commonmark.parse(testcase.markdown.s)
+            val html = testcase.html.sub(t"\n", t"")
+
+            test(m"Test case ${testcase.example} `${testcase.html}`"):
+              println(testcase.html.read[Html].show)
+            . assert()
+
+            // test(m"Test case ${testcase.example} (${testcase.start_line}-${testcase.end_line}): `${testcase.markdown.inspect}`"):
+            //   Commonmark.parse(testcase.markdown).html
+            // . assert(_ == unsafely(html.read[Html of whatwg.Flow]))

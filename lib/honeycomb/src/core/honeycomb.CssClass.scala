@@ -40,18 +40,11 @@ import spectacular.*
 import vacuous.*
 
 object CssClass:
-  given generic: CssClass is GenericCssSelection = cls => t".${cls.name.or(t"<unset>")}"
-  given noClass: (CssClass of "apply") = CssClass["apply"](Unset)
+  given generic: CssClass is GenericCssSelection = cls => t".${cls.name}"
 
-  def apply[name <: Label](name0: Optional[Text]): CssClass of name = new CssClass():
-    type Topic = name
-    val name: Optional[Text] = name0
+  def apply[label <: Label: ValueOf](): CssClass of label =
+    new CssClass(valueOf[label]):
+      type Topic = label
 
-  def apply[name <: Label: ValueOf](): CssClass of name =
-    new CssClass():
-      type Topic = name
-      val name: Optional[Text] = valueOf[name]
-
-trait CssClass():
+class CssClass(val name: Text) extends CssClasses(Set(name)):
   type Topic <: Label
-  val name: Optional[Text]

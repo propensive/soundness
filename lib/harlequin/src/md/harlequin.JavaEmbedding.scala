@@ -35,9 +35,12 @@ package harlequin
 import anticipation.*
 import gossamer.*
 import honeycomb.*
+import prepositional.*
 import punctuation.*
 import vacuous.*
 
+import doms.whatwg, whatwg.*
+
 object JavaEmbedding extends Embedding(t"java"), CommonEmbedding:
-  def render(meta: Optional[Text], content: Text): Seq[Html[html5.Flow]] =
+  def render(meta: Optional[Text], content: Text): Seq[Html of Flow] =
     postprocess(Java.highlight(content))

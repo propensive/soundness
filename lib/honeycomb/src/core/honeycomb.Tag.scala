@@ -121,21 +121,25 @@ object Tag:
   extends Tag(label, autoclose, mode, presets, admissible, insertable, foreign = foreign):
     type Result = Element & Html.Populable of Topic over Transport in Form
 
-
-    def applyDynamic[className <: Label](method: className)(children: Html of Transport*)
-          (using css: CssClass of className)
+    def applyDynamic[className <: Label](method: className)
+         (children: Optional[Html of (? <: Transport)]*)
+         (using css: CssClasses of className)
     : Element of Topic =
 
-        val cls = css.name.lay(Map()) { name => Map(t"class" -> name) }
-        Element(label, cls, children.nodes, foreign).of[Topic]
+        val nodes = children.compact.nodes
 
+        val presets2 = if css.names.isEmpty then presets else
+          val cls = css.names.join(t" ")
+          val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
+          presets.updated("class", value)
+
+        Element(label, presets2, nodes, foreign).of[Topic]
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
       new Element(label, presets ++ attributes, IArray(), foreign) with Html.Populable()
       . of[Topic]
       . over[Transport]
       . in[Form]
-
 
   class Transparent
          (label:      Text,
@@ -155,12 +159,18 @@ object Tag:
     type Result = Element & Html.Transparent of Topic over Transport in Form
 
 
-    def applyDynamic[className <: Label](method: className)(children: Html of Transport*)
-          (using css: CssClass of className)
+    def applyDynamic[className <: Label](method: className)
+         (children: Optional[Html of (? <: Transport)]*)
+         (using css: CssClasses of className)
     : Element of Topic =
 
-        val cls = css.name.lay(Map()) { name => Map(t"class" -> name) }
-        Element(label, cls, children.nodes, foreign).of[Topic]
+        val presets2 = if css.names.isEmpty then presets else
+          val cls = css.names.join(t" ")
+          val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
+          presets.updated("class", value)
+
+        val nodes: IArray[Node] = children.compact.nodes
+        Element(label, presets2, nodes, foreign).of[Topic]
 
 
     def node(attributes: Map[Text, Optional[Text]]): Result =

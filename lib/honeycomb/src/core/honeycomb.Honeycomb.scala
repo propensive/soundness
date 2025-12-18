@@ -434,7 +434,11 @@ object Honeycomb:
                                   '{$converter.attribute(${Expr(key.tt)}, $value)}
 
                                 case _ =>
-                                  halt(m"there is no converter for ${TypeRepr.of[result].show} attributes")
+                                  halt(m"""$key has attribute type ${TypeRepr.of[result].show},
+                                           but ${TypeRepr.of[value].show} cannot be attributed as
+                                           a ${TypeRepr.of[result].show} without a contextual
+                                           instance of
+                                           ${TypeRepr.of[value is Attributive to result].show}""")
 
                             case _ =>
                               halt(m"the attribute $key cannot be used on the element <$topic>")

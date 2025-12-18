@@ -133,7 +133,13 @@ object Attributive:
   given int: Int is Attributive to Integral = _ -> _.show
   given posInt: Int is Attributive to PositiveInt = _ -> _.show
   given double: Double is Attributive to Decimal = _ -> _.toString.tt
-  given url: HttpUrl is Attributive to Url = (key, value) => (key, value.encode)
+  given domId: DomId is Attributive to Id = _ -> _.toString.tt
+
+  given url: [url: Abstractable across Urls to Text] => url is Attributive to Url =
+    (key, value) => (key, value.generic)
+
+  given url: HttpUrl is Attributive to Url = (key, value) => (key, value.show)
+
   given style: Text is Attributive to Css = (key, value) => (key, value)
 
 trait Attributive extends Typeclass, Resultant:

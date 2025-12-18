@@ -30,23 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package legerdemain
+package honeycomb
 
 import anticipation.*
-import fulminate.*
-import honeycomb.*
+import gossamer.*
 import prepositional.*
+import proscenium.*
+import spectacular.*
+import symbolism.*
 import vacuous.*
 
-import doms.whatwg, whatwg.*
-import attributives.attributiveText
+object CssClasses:
+  given addable: CssClasses is Addable by CssClass to CssClasses =
+    (classes, addition) => CssClasses(classes.names + addition.name)
 
-object Dropdown:
-  given renderable: Dropdown is Renderable in Phrasing = selection =>
-    val items = selection.options.map: option =>
-      whatwg.Option(value = option(0), label = option(1)).asInstanceOf[Element of Select.Transport]
+  given addable2: CssClasses is Addable by CssClasses to CssClasses =
+    (classes, additions) => CssClasses(classes.names ++ additions.names)
 
-    Select(name = selection.name)(items*)
+  given addable3: CssClass is Addable by CssClasses to CssClasses =
+    (cssClass, additions) => CssClasses(additions.names + cssClass.name)
 
-case class Dropdown(name: Text, options: List[(key: Text, value: Text)], value: Text)
-extends Widget
+  given subtractable: CssClasses is Subtractable by CssClass to CssClasses =
+    (classes, subtraction) => CssClasses(classes.names - subtraction.name)
+
+  given subtractable2: CssClasses is Subtractable by CssClasses to CssClasses =
+    (classes, subtractions) => CssClasses(classes.names -- subtractions.names)
+
+  given empty: CssClasses(Set()):
+    type Topic = "apply"
+
+case class CssClasses(names: Set[Text]) extends Topical

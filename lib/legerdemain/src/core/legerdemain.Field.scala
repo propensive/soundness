@@ -38,10 +38,11 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import html5.*
+import doms.whatwg, whatwg.*
+import attributives.attributiveText
 
 object Field:
-  given renderable: Field is Renderable to Phrasing = field =>
-    List(Input.Text(name = field.name, value = field.value))
+  given renderable: Field is Renderable in Phrasing = field =>
+    Input.Text(name = field.name, value = field.value)
 
 case class Field(label: Text, name: Text, value: Text) extends Widget

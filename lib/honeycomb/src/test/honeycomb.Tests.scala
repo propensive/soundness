@@ -42,52 +42,9 @@ import strategies.throwUnsafely
 
 object Tests extends Suite(m"Honeycomb Tests"):
   def run(): Unit =
-    // suite(m"Showing HTML"):
-    //   import html5.*
-
-    //   test(m"empty normal tag"):
-    //     Div.show
-    //   .check(_ == t"<div/>")
-
-    //   test(m"empty unclosed tag"):
-    //     Br.show
-    //   .check(_ == t"<br>")
-
-    //   test(m"tag with one attribute"):
-    //     P(id = id"abc").show
-    //   .check(_ == t"""<p id="abc"/>""")
-
-    //   test(m"tag with two attributes"):
-    //     P(id = id"abc", style = t"def").show
-    //   .check(_ == t"""<p id="abc" style="def"/>""")
-
-    //   test(m"unclosed tag with one attribute"):
-    //     Hr(id = id"foo").show
-    //   .check(_ == t"""<hr id="foo">""")
-
-    //   test(m"unclosed tag with two attributes"):
-    //     Hr(id = id"foo", style = t"bar").show
-    //   .check(_ == t"""<hr id="foo" style="bar">""")
-
-    //   test(m"non-self-closing tag"):
-    //     Script.show
-    //   .check(_ == t"""<script></script>""")
-
-    //   test(m"tag with no attributes and children"):
-    //     Div(Hr, Br).show
-    //   .check(_ == t"""<div><hr><br></div>""")
-
-    //   test(m"tag with text child"):
-    //     P(t"hello world").show
-    //   .check(_ == t"<p>hello world</p>")
-
-    //   test(m"tag with mixed children"):
-    //     P(t"hello ", Em(t"world"), t"!").show
-    //   .check(_ == t"<p>hello <em>world</em>!</p>")
-
-    //   test(m"deeper-nested elements"):
-    //     Table(Tbody(Tr(Td(t"A")))).show
-    //   .check(_ == t"<table><tbody><tr><td>A</td></tr></tbody></table>")
+    test(m"show comment"):
+      Comment("hello world").show
+    . assert(_ == t"<!--hello world-->")
 
     suite(m"HTML parsing tests"):
       import doms.whatwg
@@ -207,6 +164,18 @@ object Tests extends Suite(m"Honeycomb Tests"):
         t"""<p>para""".read[Html of Flow]
       .assert(_ == P("para"))
 
+      test(m"follow-on whitespace"):
+        t"""<p>para</p>\n""".read[Html of Flow]
+      .assert(_ == Fragment(P("para"), t"\n"))
+
+      test(m"empty content"):
+        t"".read[Html of Flow]
+      .assert(_ == Fragment())
+
+      test(m"failing example"):
+        t"""<p>x<img></p>\n""".read[Html of Flow]
+      .assert(_ == Fragment(P("x", Img), t"\n"))
+
       test(m"autoclosing adjacent tags"):
         t"""<ul><li>First item<li>Second item</ul>""".read[Html of Flow]
       .assert(_ == Ul(Li("First item"), Li("Second item")))
@@ -214,12 +183,12 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"unclosed tag 1"):
         try t"""<ul><li>First item</li>""".read[Html of Flow]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(1.u, 24.u), Html.Issue.Incomplete("ul")))
+      .assert(_ == ParseError(Html, Html.Position(1.u, 23.u), Html.Issue.Incomplete("ul")))
 
       test(m"unclosed tag 2"):
         try t"""<ul><li>First item""".read[Html of Flow]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(1.u, 19.u), Html.Issue.Incomplete("ul")))
+      .assert(_ == ParseError(Html, Html.Position(1.u, 18.u), Html.Issue.Incomplete("ul")))
 
       test(m"infer both <head> and <body>"):
         t"""<title>Page title</title><p>A paragraph</p>""".read[Html of "html"]

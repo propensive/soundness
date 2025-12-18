@@ -40,10 +40,12 @@ import strategies.throwUnsafely
 import httpServers.stdlib
 import codicils.cancel
 import logging.silent
-import html5.*
+import doms.whatwg, whatwg.*
 import charEncoders.utf8
 import threading.platform
 import errorDiagnostics.stackTraces
+
+import doms.whatwg, whatwg.*
 
 case class Group(org: Organization)
 case class Organization(leader: Person, name: Name[Person])
@@ -59,12 +61,12 @@ object Tests extends Suite(m"Legerdemain tests"):
     // test(m"Create a simple form"):
     //   val person = Person(t"John", t"A generic person", true)
     //   elicit[Person](t"Sample form", Query(person))
-    // .assert(_ == html5.Form)
+    // .assert(_ == whatwge.Form)
 
     // test(m"Create a form from nested fields"):
     //   val organization = Organization(Person(t"Paul", t"Generic", false), t"My org")
     //   elicit[Organization](t"Sample", Query(organization))
-    // .assert(_ == html5.Form)
+    // .assert(_ == whatwge.Form)
 
     summon[Boolean is Decodable in Query]
 

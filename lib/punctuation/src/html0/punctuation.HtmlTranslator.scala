@@ -66,10 +66,10 @@ open class HtmlTranslator(embeddings: Embedding*) extends Translator:
 
     acc(1).reverse
 
-  def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
+  def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html of Flow] =
     blockify(nodes).fuse(Seq[Html[Flow]]())(state ++ node(next))
 
-  def node(node: Markdown.Ast.Block): Seq[Html[Flow]] = node match
+  def node(node: Markdown.Ast.Block): Seq[Html of Flow] = node match
     case Markdown.Ast.Block.Paragraph(children*)      => Seq(P(children.flatMap(phrasing)*))
     case Markdown.Ast.Block.Heading(level, children*) => Seq(heading(level, children))
     case Markdown.Ast.Block.Blockquote(children*)     => Seq(Blockquote(translate(children)*))
@@ -87,19 +87,19 @@ open class HtmlTranslator(embeddings: Embedding*) extends Translator:
     case other =>
       Seq()
 
-  def tableParts(node: Markdown.Ast.TablePart): Seq[Node["thead" | "tbody"]] = node match
+  def tableParts(node: Markdown.Ast.TablePart): Seq[Node of "thead" | "tbody"] = node match
     case Markdown.Ast.TablePart.Head(rows*) => List(Thead(tableRows(true, rows)))
     case Markdown.Ast.TablePart.Body(rows*) => List(Tbody(tableRows(false, rows)))
 
-  def tableRows(heading: Boolean, rows: Seq[Markdown.Ast.Block.Row]): Seq[Node["tr"]] = rows.map:
+  def tableRows(heading: Boolean, rows: Seq[Markdown.Ast.Block.Row]): Seq[Node of "tr"] = rows.map:
     case Markdown.Ast.Block.Row(cells*) => Tr(tableCells(heading, cells))
 
-  def tableCells(heading: Boolean, cells: Seq[Markdown.Ast.Block.Cell]): Seq[Node["th" | "td"]] =
+  def tableCells(heading: Boolean, cells: Seq[Markdown.Ast.Block.Cell]): Seq[Node of "th" | "td"] =
     cells.map:
       case Markdown.Ast.Block.Cell(content*) =>
         (if heading then Th else Td)(content.flatMap(phrasing))
 
-  def listItem(node: Markdown.Ast.ListItem): Seq[Node["li"]] = node match
+  def listItem(node: Markdown.Ast.ListItem): Seq[Node of "li"] = node match
     case Markdown.Ast.ListItem(children*) => List(Li(translate(children)*))
 
   def text(node: Seq[Markdown.Ast.Node]): Text = node.map(textNode(_)).join
@@ -126,7 +126,7 @@ open class HtmlTranslator(embeddings: Embedding*) extends Translator:
     case _ =>
       t""
 
-  def nonInteractive(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
+  def nonInteractive(node: Markdown.Ast.Inline): Seq[Html of Phrasing] = node match
     case Markdown.Ast.Inline.Image(altText, location) => List(Img(src = location, alt = altText))
     case Markdown.Ast.Inline.LineBreak                => List(Br)
     case Markdown.Ast.Inline.Emphasis(children*)      => List(Em(children.flatMap(phrasing)))
@@ -139,10 +139,10 @@ open class HtmlTranslator(embeddings: Embedding*) extends Translator:
     case _ =>
       Nil
 
-  def phrasing(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
+  def phrasing(node: Markdown.Ast.Inline): Seq[Html of Phrasing] = node match
     case Markdown.Ast.Inline.Weblink(location, content) =>
 
-      def interactive(node: Html[Phrasing]): Html[Noninteractive] = node.absolve match
+      def interactive(node: Html of Phrasing): Html of Noninteractive = node.absolve match
         case node: Node[Noninteractive @unchecked] => node
         case text: Text                            => text
         case Unset                                 => t""

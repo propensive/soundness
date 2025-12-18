@@ -211,52 +211,58 @@ object Html extends Tag.Container
 
 
   private enum Token:
-    case Close, Comment, Empty, Open, Doctype
+    case Close, Comment, Empty, Open, Doctype, Cdata
 
   private enum Level:
     case Ascend, Descend, Peer
 
   trait Populable:
     node: Element =>
-      def apply(children: Html of node.Transport*): Element of node.Topic =
-        new Element(node.label, node.attributes, children.nodes, node.foreign):
+      def apply(children: Optional[Html of (? <: node.Transport)]*): Element of node.Topic =
+        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
           type Topic = node.Topic
 
   trait Transparent:
     node: Element =>
-      def apply[labels <: Label](children: Html of labels | node.Transport*): Element of labels =
-        new Element(node.label, node.attributes, children.nodes, node.foreign):
+      def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*): Element of labels =
+        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
           type Topic = labels
 
 
   import Issue.*
   def name: Text = t"HTML"
 
-  given conversion: [label >: "#text" <: Label] => Conversion[Text, Html of label] =
+  given text: [label >: "#text" <: Label] => Conversion[Text, Html of label] =
     TextNode(_).of[label]
 
-  given conversion2: [label >: "#text" <: Label] => Conversion[String, Html of label] =
+  given string: [label >: "#text" <: Label] => Conversion[String, Html of label] =
     string => TextNode(string.tt).of[label]
 
   given conversion3: [label <: Label, content >: label <: Label]
-        =>  Conversion[Element of label, Html of content] =
+        =>  Conversion[Html of label, Html of content] =
     _.of[content]
 
-  given conversion4: [content <: Label] =>  Conversion[Comment, Html of content] = _.of[content]
+  given comment: [content <: Label] =>  Conversion[Comment, Html of content] =
+    _.of[content]
 
-  given conversion5: Conversion[String, Html of "#foreign"] =
+  given string2: Conversion[String, Html of "#foreign"] =
     string => TextNode(string.tt).of["#foreign"]
 
-  given conversion6: [content <: Label, value: Renderable in content]
+  given renderable: [content <: Label, value: Renderable in content]
         => Conversion[value, Html of content] =
     value.render(_)
 
+  given sequences: [nodal, html <: Html] => (conversion: Conversion[nodal, html])
+        =>  Conversion[Seq[nodal], Seq[html]] =
+    (seq: Seq[nodal]) =>
+      seq.map(conversion(_))
 
   enum Issue extends Format.Issue:
     case BadInsertion
     case ExpectedMore
     case UnexpectedDoctype
     case BadDocument
+    case InvalidCdata
     case InvalidTag(name: Text)
     case InvalidTagStart(prefix: Text)
     case DuplicateAttribute(name: Text)
@@ -266,6 +272,7 @@ object Html extends Tag.Container
     case UnknownEntity(name: Text)
     case ForbiddenUnquoted(char: Char)
     case MismatchedTag(open: Text, close: Text)
+    case UnopenedTag(close: Text)
     case Incomplete(tag: Text)
     case UnknownAttribute(name: Text)
     case UnknownAttributeStart(name: Text)
@@ -276,6 +283,7 @@ object Html extends Tag.Container
       case ExpectedMore                   =>  m"the content ended prematurely"
       case UnexpectedDoctype              =>  m"the document type declaration was not expected here"
       case BadDocument                    =>  m"the document did not contain a single root tag"
+      case InvalidCdata                   =>  m"CDATA content is only permitted in foreign namespaces"
       case InvalidTag(name)               =>  m"<$name> is not a valid tag"
       case InvalidTagStart(prefix)        =>  m"there is no valid tag whose name starts $prefix"
       case DuplicateAttribute(name)       =>  m"the attribute $name already exists on this tag"
@@ -285,6 +293,7 @@ object Html extends Tag.Container
       case UnknownEntity(name)            =>  m"the entity &$name is not defined"
       case ForbiddenUnquoted(char)        =>  m"the character $char is forbidden in an unquoted attribute"
       case MismatchedTag(open, close)     =>  m"the tag </$close> did not match the opening tag <$open>"
+      case UnopenedTag(close)             =>  m"the tag </$close> has no corresponding opening tag"
       case Incomplete(tag)                =>  m"the content ended while the tag <$tag> was left open"
       case UnknownAttribute(name)         =>  m"$name is not a recognized attribute"
       case UnknownAttributeStart(name)    =>  m"there is no valid attribute whose name starts $name"
@@ -319,8 +328,9 @@ object Html extends Tag.Container
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
     var extra: Map[Text, Optional[Text]] = ListMap()
-    var nodes: Array[Node] = new Array(2)
+    var nodes: Array[Node] = new Array(4)
     var index: Int = 0
+    var fragment: IArray[Node] = IArray()
 
     inline def append(node: Node): Unit =
       if index >= nodes.length then
@@ -331,7 +341,6 @@ object Html extends Tag.Container
       nodes(index) = node
       index += 1
 
-    var fragment: IArray[Node] = IArray()
 
     def next(): Unit =
       if !cursor.next()
@@ -351,22 +360,23 @@ object Html extends Tag.Container
       abort(ParseError(Html, Position(cursor.line, cursor.column), issue))
 
     @tailrec
-    def skip(): Unit = cursor.lay(fail(ExpectedMore)):
-      case ' ' | '\f' | '\n' | '\r' | '\t' => next() yet skip()
+    def skip(): Unit = cursor.let:
+      case ' ' | '\f' | '\n' | '\r' | '\t' => cursor.next() yet skip()
       case _                               => ()
 
     @tailrec
-    def whitespace(): Unit = cursor.lay(fail(ExpectedMore)):
-      case ' ' | '\f' | '\n' | '\r' | '\t' =>  next() yet whitespace()
+    def whitespace(): Unit = cursor.lay(()):
+      case ' ' | '\f' | '\n' | '\r' | '\t' =>  cursor.next() yet whitespace()
       case '<'                             =>  ()
       case char                            =>  fail(OnlyWhitespace(char))
 
     @tailrec
     def tagname(mark: Mark, dictionary: Dictionary[Tag])(using Cursor.Held): Tag =
       cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter => dictionary(char.minuscule) match
-          case Dictionary.Empty => val name = cursor.grab(mark, cursor.mark)
-                                   cursor.cue(mark) yet fail(InvalidTagStart(name))
+        case char if char.isLetter || char.isDigit => dictionary(char.minuscule) match
+          case Dictionary.Empty => cursor.next()
+                                   val name = cursor.grab(mark, cursor.mark)
+                                   cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
           case other            => next() yet tagname(mark, other)
         case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
           case Dictionary.Just("", tag)       =>  tag
@@ -389,7 +399,7 @@ object Html extends Tag.Container
     @tailrec
     def key(mark: Mark, dictionary: Dictionary[Attribute])(using Cursor.Held): Attribute =
       cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter || char == '-' => dictionary(char) match
+        case char if char.isLetter || char == '-' => dictionary(char.minuscule) match
           case Dictionary.Empty =>  fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
           case dictionary       =>  next() yet key(mark, dictionary)
 
@@ -551,6 +561,14 @@ object Html extends Tag.Container
                         next() yet comment(mark)
       case char     =>  next() yet comment(mark)
 
+    def cdata(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+      case ']'      =>  val end = cursor.mark
+                        next()
+                        cursor.lay(fail(ExpectedMore)):
+                          case ']' => expect('>') yet cursor.grab(mark, end)
+                          case _   => cdata(mark)
+      case char     =>  next() yet cdata(mark)
+
     def doctype(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case '>'   => cursor.grab(mark, cursor.mark).also(next())
       case other => next() yet doctype(mark)
@@ -564,6 +582,17 @@ object Html extends Tag.Container
                         content = cursor.hold(comment(cursor.mark))
                         cursor.next()
                         Token.Comment
+
+                      case '[' =>
+                        expectInsensitive('c')
+                        expectInsensitive('d')
+                        expectInsensitive('a')
+                        expectInsensitive('t')
+                        expectInsensitive('a')
+                        expect('[')
+                        next()
+                        content = cursor.hold(cdata(cursor.mark))
+                        Token.Cdata
 
                       case 'D' | 'd' if doctypes =>
                         expectInsensitive('o')
@@ -611,7 +640,7 @@ object Html extends Tag.Container
 
     def array(count: Int): IArray[Node] =
       val result = new Array[Node](count)
-      System.arraycopy(nodes, index - count, result, 0, count)
+      System.arraycopy(nodes, 0.max(index - count), result, 0, count)
       index -= count
       result.immutable(using Unsafe)
 
@@ -630,7 +659,7 @@ object Html extends Tag.Container
         case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
           var level: Level = Level.Peer
           var current: Node = parent
-          var currentTag: Tag = parent
+          var focus: Tag = parent
 
           cursor.hold:
             val mark = cursor.mark
@@ -638,15 +667,20 @@ object Html extends Tag.Container
             def node(): Unit =
               current = Element(content, extra, array(count), parent.foreign)
 
+            def empty(): Unit =
+              current = Element(content, extra, IArray(), parent.foreign)
+
             def close(): Unit =
               current = Element(parent.label, parent.attributes, array(count), parent.foreign)
               level = Level.Ascend
 
             def infer(tag: Tag): Unit =
               cursor.cue(mark)
+
               dom.infer(parent, tag).let: tag =>
-                currentTag = tag
+                focus = tag
                 level = Level.Descend
+
               . or:
                   if parent.autoclose then close()
                   else fail(InadmissibleTag(content, parent.label))
@@ -661,26 +695,31 @@ object Html extends Tag.Container
             else tag(doctypes && parent == root, parent.foreign) match
               case Token.Comment => current = Comment(content)
               case Token.Doctype => current = Doctype(content)
+              case Token.Cdata   => current =
+                if parent.foreign then TextNode(content) else
+                  fail(InvalidCdata)
+                  Comment(t"[CDATA[${content}]]")
 
               case Token.Empty   =>
-                if admit(content) then node() else infer:
+                if admit(content) then empty() else infer:
                   if parent.foreign then Tag.foreign(content, extra)
                   else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
               case Token.Open =>
-                currentTag =
+                focus =
                   if parent.foreign then Tag.foreign(content, extra)
                   else dom.elements(content).or:
                     cursor.cue(mark)
                     fail(InvalidTag(content))
 
-                if !admit(content) then infer(currentTag) else if currentTag.void then node()
+                if !admit(content) then infer(focus) else if focus.void then empty()
                 else level = Level.Descend
 
               case Token.Close =>
                 if content != parent.label then
                   cursor.cue(mark)
                   if parent.autoclose then close()
+                  else if parent == root then fail(UnopenedTag(content))
                   else fail(MismatchedTag(parent.label, content))
                 else
                   cursor.next()
@@ -691,7 +730,7 @@ object Html extends Tag.Container
             case Level.Ascend  =>  current
             case Level.Peer    =>  append(current)
                                    read(parent, admissible, map, count + 1)
-            case Level.Descend =>  val child = descend(currentTag, admissible)
+            case Level.Descend =>  val child = descend(focus, admissible)
                                    append(child)
                                    read(parent, admissible, map, count + 1)
 
@@ -714,18 +753,17 @@ object Html extends Tag.Container
             if text.length == 0 then read(parent, admissible, map, count + 1)
             else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
 
-    skip()
-    append(root)
-    val head = read(root, root.admissible, ListMap(), 0)
-    if fragment.isEmpty then head else Fragment(fragment*)
+    if cursor.finished then Fragment() else
+      skip()
+      append(root)
+      val head = read(root, root.admissible, ListMap(), 0)
+      if fragment.isEmpty then head else Fragment(fragment*)
 
 sealed into trait Html extends Topical, Documentary:
   type Topic <: Label
   type Transport <: Label
   type Metadata = Doctype
   type Chunks = Text
-
-  def load(input: Stream[Text]): Document[Html] = ???
 
   private[honeycomb] def of[topic <: Label]: this.type of topic = asInstanceOf[this.type of topic]
   private[honeycomb] def in[form]: this.type in form = asInstanceOf[this.type in form]
@@ -766,6 +804,9 @@ case class Element
              foreign:    Boolean)
 extends Node, Topical, Transportive, Dynamic:
 
+  override def toString(): String =
+    s"<$label>${children.mkString}</$label>"
+
   override def equals(that: Any): Boolean = that match
     case Fragment(node: Element) => this == node
 
@@ -800,6 +841,10 @@ extends Node, Topical, Transportive, Dynamic:
       . over[Transport]
       . in[Whatwg]
 
+object Fragment:
+  @targetName("make")
+  def apply[topic <: Label](nodes: Html of (? <: topic)*): Fragment of topic =
+    new Fragment(nodes.nodes*).of[topic]
 
 case class Fragment(nodes: Node*) extends Html:
   override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode

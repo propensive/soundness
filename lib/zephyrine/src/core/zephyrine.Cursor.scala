@@ -87,7 +87,8 @@ object Cursor:
         new Cursor[data]
              (initial, addressable0.length(initial), iterator, addressable0, lineation0)
 
-      else new Cursor[data](addressable0.empty, 0, Iterator.empty, addressable0, lineation0)
+      else
+        new Cursor[data](addressable0.empty, 0, Iterator.empty, addressable0, lineation0)
 
 export Cursor.{Mark, Offset}
 
@@ -104,7 +105,7 @@ class Cursor[data](initial:    data,
   private var current: data = initial
   private var focusBlock: Ordinal = Prim
   private var focus: Ordinal = Prim
-  private var length: Int = Int.MaxValue
+  private var length: Int = if extent0 == 0 then 0 else Int.MaxValue
   private var keep: Boolean = false
   private var extent: Int = extent0
   private var lineNo: Ordinal = Prim
@@ -167,14 +168,17 @@ class Cursor[data](initial:    data,
       columnNo = offset2.column
 
   inline def next(): Boolean =
-    inline if lineation.active then
-      columnNo = if !lineation.track(addressable.address(current, focus)) then columnNo.next else
-        lineNo = lineNo.next
-        Prim
+    val current2 = current
+    val focus2 = focus
 
     if focus.next.n0 >= addressable.length(current) then forward() else focus = focus.next
 
-    !finished
+    if finished then false else
+      inline if lineation.active then
+        columnNo = if !lineation.track(addressable.address(current2, focus2)) then columnNo.next else
+          lineNo = lineNo.next
+          Prim
+      true
 
   inline def more: Boolean = !finished
   inline def offset(mark: Mark): Offset = offsets(marks.lastIndexOf(mark))
@@ -192,6 +196,9 @@ class Cursor[data](initial:    data,
   : result =
 
       if !finished then lambda(addressable.address(current, focus)) else otherwise
+
+  inline def let(inline lambda: addressable.Operand => Unit): Unit =
+    if !finished then lambda(addressable.address(current, focus))
 
 
   inline def process[result](inline lambda: addressable.Operand => result): Unit =
