@@ -123,23 +123,22 @@ object Markdown:
         case node                          => Fragment("\n", layout(node))
 
       @tailrec
-      def merge(block: Boolean, any: Boolean, nodes: List[Layout], done: List[Html of Flow], tight: Boolean)
+      def merge(block: Boolean, nodes: List[Layout], done: List[Html of Flow], tight: Boolean)
       : List[Html of Flow] =
           nodes match
             case Nil =>
-              if any then ((TextNode("\n"): Html of Flow) :: done).reverse else done.reverse
+              if block then ((TextNode("\n"): Html of Flow) :: done).reverse else done.reverse
 
             case Layout.Paragraph(_, contents*) :: tail if tight =>
               val content = Fragment(contents.map(prose(_))*)
               merge
                (false,
-                any,
                 tail,
                 (if block then Fragment("\n", content) else content) :: done,
                 tight)
 
             case head :: tail =>
-              merge(true, true, tail, Fragment("\n", layout(head)) :: done, tight)
+              merge(true, tail, Fragment("\n", layout(head)) :: done, tight)
 
       def block(node: Layout): Boolean = node match
         case Layout.Paragraph(_, content*) => false
@@ -156,14 +155,14 @@ object Markdown:
         case Layout.BulletList(line, tight, items*) =>
           val items2 = items.map: item =>
             if item.isEmpty then Li
-            else Li(merge(false, false, item, Nil, tight)*)
+            else Li(merge(false, item, Nil, tight)*)
 
           Ul(items2*)
 
         case Layout.OrderedList(line, start, tight, delimiter, items*) =>
           val items2 = items.map: item =>
             if item.isEmpty then Li
-            else Li(merge(false, false, item, Nil, tight)*)
+            else Li(merge(false, item, Nil, tight)*)
 
           val start2 = start.puncture(1)
 

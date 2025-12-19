@@ -1022,12 +1022,7 @@ object profanity extends SoundnessModule:
 object punctuation extends SoundnessModule:
   object core extends SoundnessSubModule:
     def moduleDeps = Seq(gossamer.core, turbulence.core, honeycomb.core)
-    def mvnDeps = Seq(
-      mvn"com.vladsch.flexmark:flexmark:0.42.12",
-      mvn"com.vladsch.flexmark:flexmark-ext-tables:0.42.12",
-      mvn"com.vladsch.flexmark:flexmark-util:0.42.12",
-      mvn"com.vladsch.flexmark:flexmark-formatter:0.42.12"
-    )
+    def mvnDeps = Seq(mvn"org.commonmark:commonmark:0.27.0")
 
   object html extends SoundnessSubModule:
     def moduleDeps = Seq(core, honeycomb.core)
@@ -1037,7 +1032,6 @@ object punctuation extends SoundnessModule:
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
-    def mvnDeps = Seq(mvn"org.commonmark:commonmark:0.27.0")
 
 object quantitative extends SoundnessModule:
   object core extends SoundnessSubModule:
