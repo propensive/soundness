@@ -21,15 +21,10 @@ import attributives.attributiveText
 enum Layout extends Markdown.Node:
   case BlockQuote(line: Ordinal, layout: Layout*)
 
-  case OrderedList[tight <: Boolean]
-        (line:      Ordinal,
-         tight:     tight,
-         start:     Int,
-         delimiter: Optional['.' | ')'],
-         items: List[Layout]*)
+  case OrderedList
+        (line: Ordinal, start: Int, tight: Boolean, delimiter: Optional['.' | ')'], items: List[Layout]*)
 
-  case BulletList(line: Ordinal, items: List[Layout]*)
-  case TightBulletList(line: Ordinal, items: List[Prose]*)
+  case BulletList(line: Ordinal, tight: Boolean, items: List[Layout]*)
   case CodeBlock(line: Ordinal, info: List[Text], content: Text)
   case Paragraph(line: Ordinal, prose: Prose*)
   case Heading(line: Ordinal, level: 1 | 2 | 3 | 4 | 5 | 6, prose: Prose*)
@@ -65,95 +60,120 @@ object Markdown:
   trait Node
   case class LinkRef(label: Text, title: Optional[Text], destination: Text)
 
-  given decodable: Markdown of Layout is Aggregable:
-    type Operand = Text
-
-    enum Kind:
-      case Unknown, Paragraph, Code
-
-    def aggregate(stream: Stream[Text]): Markdown of Layout =
-      val cursor = Cursor(stream.iterator)
-      var linkRefs: List[Markdown.LinkRef] = Nil
-      var layout: List[Layout] = Nil
-      val buffer = java.lang.StringBuilder()
-
-
-      def line(): Unit = cursor.hold:
-        var continue: Boolean = true
-        var started: Boolean = false
-        var begin: Mark = Mark.Initial
-        while continue do
-          cursor.datum(using Unsafe) match
-            case ' '  =>
-            case '\n' =>
-              continue = false
-            case char =>
-              if !started then begin = cursor.mark
-
-          continue &&= cursor.next()
-
-
-      while cursor.next() do line()
-
-      Markdown(linkRefs.reverse, layout.reverse*)
-
-
   given renderable: (Markdown of Layout) is Renderable:
     type Form = doms.whatwg.Flow
     def render(markdown: Markdown of Layout): Html of doms.whatwg.Flow =
       import Markdown.*
       import doms.whatwg.*
 
+      def url(text: Text): Text =
+        val builder = StringBuilder()
+        text.chars.each:
+          case char if char >= 128          => builder.append(char.toString.urlEncode)
+          case char if char.isLetterOrDigit => builder.append(char)
+          case ' '                          => builder.append("%20")
+          case '\\'                         => builder.append("%5C")
+
+          case char@('-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '=' | ':' | '?') =>
+            builder.append(char)
+
+          case char =>
+            builder.append(char.toString.urlEncode)
+
+        builder.toString.tt
+
+      def text(node: Prose): Text = node match
+        case Prose.Textual(text)       => text
+        case Prose.Emphasis(children*) => children.map(text(_)).join
+        case Prose.Code(code)          => code
+        case Prose.Strong(children*)   => children.map(text(_)).join
+        case Prose.Softbreak           => "\n"
+        case Prose.Linebreak           => "\n"
+        case Prose.HtmlInline(content) => ""
+
+        case Prose.Link(destination, title, content*) =>
+          content.map(text(_)).join
+
+        case Prose.Image(destination, title, content*) =>
+          content.map(text(_)).join
+
       def prose(node: Prose): Html of Phrasing = node match
-        case Prose.Textual(text)       => text: Html of Phrasing
+        case Prose.Textual(text)       => text
         case Prose.Emphasis(children*) => Em(children.map(prose(_))*)
         case Prose.Code(code)          => Code(code)
         case Prose.Strong(children*)   => Strong(children.map(prose(_))*)
-        case Prose.Softbreak           => t"\n": Html of Phrasing
-        case Prose.Linebreak           => Br
-        case Prose.HtmlInline(content) => Comment(t"[CDATA[$content]]")
+        case Prose.Softbreak           => "\n"
+        case Prose.Linebreak           => Fragment(Br, "\n")
+        case Prose.HtmlInline(content) => Comment(s"[CDATA[$content]]")
 
         case Prose.Link(destination, title, content*) =>
-          val base = title.lay(A(href = destination)): title =>
-            A(href = destination, title = title)
-
-          base(content.map(prose(_))*)
+          val destination2 = url(destination)
+          title.lay(A(href = destination2)(content.map(prose(_))*)): title =>
+            A(href = destination2, title = title)(content.map(prose(_))*)
 
         case Prose.Image(destination, title, content*) =>
-          val img: Element of "img" = Img(src = destination)
-          title.lay(img)(img.alt = _)
-          Img(src = destination).per(title)(_.alt = _)
+          val alt: Text = content.map(text(_)).join
+          val base = Img(src = destination, alt = alt)
+
+          title.lay(base): title =>
+            base.title = title
+
+      def tightItem(node: Layout): Html of Flow = node match
+        case Layout.Paragraph(_, content*) => Fragment(content.map(prose(_))*)
+        case node                          => Fragment("\n", layout(node))
+
+      @tailrec
+      def merge(block: Boolean, any: Boolean, nodes: List[Layout], done: List[Html of Flow], tight: Boolean)
+      : List[Html of Flow] =
+          nodes match
+            case Nil =>
+              if any then ((TextNode("\n"): Html of Flow) :: done).reverse else done.reverse
+
+            case Layout.Paragraph(_, contents*) :: tail if tight =>
+              val content = Fragment(contents.map(prose(_))*)
+              merge
+               (false,
+                any,
+                tail,
+                (if block then Fragment("\n", content) else content) :: done,
+                tight)
+
+            case head :: tail =>
+              merge(true, true, tail, Fragment("\n", layout(head)) :: done, tight)
+
+      def block(node: Layout): Boolean = node match
+        case Layout.Paragraph(_, content*) => false
+        case node                          => true
 
       def layout(node: Layout): Html of Flow = node match
         case Layout.BlockQuote(line, children*) =>
-          Blockquote(children.map(layout(_))*)
+          val fragment = Fragment(children.map { node => Fragment(TextNode("\n"), layout(node)) }*)
+          Blockquote(fragment, "\n")
 
         case Layout.Paragraph(line, children*) =>
           P(children.map(prose(_))*)
 
-        case Layout.BulletList(line, items*) =>
+        case Layout.BulletList(line, tight, items*) =>
           val items2 = items.map: item =>
-            Li(item.map(layout(_))*)
+            if item.isEmpty then Li
+            else Li(merge(false, false, item, Nil, tight)*)
 
           Ul(items2*)
 
-        case Layout.TightBulletList(line, items*) =>
+        case Layout.OrderedList(line, start, tight, delimiter, items*) =>
           val items2 = items.map: item =>
-            Li(item.flatMap(_.children.map(prose(_)))*)
+            if item.isEmpty then Li
+            else Li(merge(false, false, item, Nil, tight)*)
 
-          Ul(items2*)
+          val start2 = start.puncture(1)
 
-        case Layout.OrderedList(line, tight, start, delimiter, items*) =>
-          val items2 = items.map: item =>
-            if tight then Li(item.flatMap(_.children.map(prose(_)))*)
-            else Li(item.map(layout(_))*)
+          Ol(items2*).per(start2)(_.start = _)
 
-          Ol(items2*)
 
         case Layout.ThematicBreak(line) =>
           Hr
 
-        case Layout.HtmlBlock(line, content) => content
+        case Layout.HtmlBlock(line, content) => Comment(s"[CDATA[$content]]")
 
         case Layout.Heading(line, level, content*) => level match
           case 1 => H1(content.map(prose(_))*)
@@ -166,7 +186,7 @@ object Markdown:
         case Layout.CodeBlock(line, info, code) =>
           Pre(info.prim.lay(Code(code)) { info => Code(`class` = t"language-$info")(code) })
 
-      Fragment(markdown.children.map(layout(_))*)
+      Fragment(markdown.children.map { node => Fragment(layout(node), "\n") }*)
 
 
   def apply(linkRefs0: List[Markdown.LinkRef], layout: Layout*): Markdown of Layout = new Markdown:

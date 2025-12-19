@@ -828,7 +828,7 @@ extends Node, Topical, Transportive, Dynamic:
 
 
   def updateDynamic[value](name: Label)(using attribute: name.type is Attribute in Whatwg)
-       (using Topic <:< attribute.Plane)
+       //(using Topic <:< attribute.Plane) - disabled to allow global attributes
        (value: value)
        (using attributive: value is Attributive to attribute.Topic)
   : Element of Topic over Transport in Whatwg =
