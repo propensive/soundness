@@ -332,7 +332,7 @@ object Html extends Tag.Container
     var index: Int = 0
     var fragment: IArray[Node] = IArray()
 
-    inline def append(node: Node): Unit =
+    def push(node: Node): Unit =
       if index >= nodes.length then
         val nodes2 = new Array[Node](nodes.length*2)
         System.arraycopy(nodes, 0, nodes2, 0, nodes.length)
@@ -341,6 +341,7 @@ object Html extends Tag.Container
       nodes(index) = node
       index += 1
 
+    def pop(): Unit = index -= 1
 
     def next(): Unit =
       if !cursor.next()
@@ -378,6 +379,7 @@ object Html extends Tag.Container
                                    val name = cursor.grab(mark, cursor.mark)
                                    cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
           case other            => next() yet tagname(mark, other)
+
         case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
           case Dictionary.Just("", tag)       =>  tag
           case Dictionary.Branch(tag: Tag, _) =>  tag
@@ -626,10 +628,6 @@ object Html extends Tag.Container
           case '\u0000'  =>  fail(BadInsertion)
           case char      =>  fail(Unexpected(char))
 
-    def descend(parent: Tag, admissible: Set[Text]): Node =
-      val admissible2 = if parent.transparent then admissible else parent.admissible
-      read(parent, admissible2, extra, 0)
-
     def finish(parent: Tag, count: Int): Node =
       if parent != root then
         if parent.autoclose then Element(parent.label, parent.attributes, array(count), false)
@@ -644,6 +642,11 @@ object Html extends Tag.Container
       index -= count
       result.immutable(using Unsafe)
 
+    def descend(parent: Tag, admissible: Set[Text]): Node =
+      val admissible2 = if parent.transparent then admissible else parent.admissible
+      push(parent)
+      read(parent, admissible2, extra, 0)
+
     @tailrec
     def read(parent: Tag, admissible: Set[Text], map: Map[Text, Optional[Text]], count: Int): Node =
 
@@ -653,7 +656,7 @@ object Html extends Tag.Container
       cursor.lay(finish(parent, count)):
         case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
                          next()
-                         append(TextNode("\u0000"))
+                         push(TextNode("\u0000"))
                          read(parent, admissible, map, count + 1)
 
         case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
@@ -728,10 +731,11 @@ object Html extends Tag.Container
 
           level match
             case Level.Ascend  =>  current
-            case Level.Peer    =>  append(current)
+            case Level.Peer    =>  push(current)
                                    read(parent, admissible, map, count + 1)
             case Level.Descend =>  val child = descend(focus, admissible)
-                                   append(child)
+                                   pop()
+                                   push(child)
                                    read(parent, admissible, map, count + 1)
 
         case char => parent.mode match
@@ -751,11 +755,11 @@ object Html extends Tag.Container
           case Mode.Normal =>
             val text = cursor.hold(textual(cursor.mark, Unset, true))
             if text.length == 0 then read(parent, admissible, map, count + 1)
-            else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
+            else push(TextNode(text)) yet read(parent, admissible, map, count + 1)
 
     if cursor.finished then Fragment() else
       skip()
-      append(root)
+      push(root)
       val head = read(root, root.admissible, ListMap(), 0)
       if fragment.isEmpty then head else Fragment(fragment*)
 
