@@ -644,7 +644,6 @@ object Html extends Tag.Container
 
     def descend(parent: Tag, admissible: Set[Text]): Node =
       val admissible2 = if parent.transparent then admissible else parent.admissible
-      push(parent)
       read(parent, admissible2, extra, 0)
 
     @tailrec
@@ -734,7 +733,6 @@ object Html extends Tag.Container
             case Level.Peer    =>  push(current)
                                    read(parent, admissible, map, count + 1)
             case Level.Descend =>  val child = descend(focus, admissible)
-                                   pop()
                                    push(child)
                                    read(parent, admissible, map, count + 1)
 
