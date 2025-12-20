@@ -330,9 +330,11 @@ object Html extends Tag.Container
     var extra: Map[Text, Optional[Text]] = ListMap()
     var nodes: Array[Node] = new Array(4)
     var index: Int = 0
+    var stack: Array[Tag] = new Array(4)
+    var depth: Int = 0
     var fragment: IArray[Node] = IArray()
 
-    def push(node: Node): Unit =
+    def append(node: Node): Unit =
       if index >= nodes.length then
         val nodes2 = new Array[Node](nodes.length*2)
         System.arraycopy(nodes, 0, nodes2, 0, nodes.length)
@@ -341,7 +343,16 @@ object Html extends Tag.Container
       nodes(index) = node
       index += 1
 
-    def pop(): Unit = index -= 1
+    def push(tag: Tag): Unit =
+      if depth >= stack.length then
+        val stack2 = new Array[Tag](stack.length*2)
+        System.arraycopy(stack, 0, stack2, 0, stack.length)
+        stack = stack2
+
+      stack(depth) = tag
+      depth += 1
+
+    def pop(): Unit = depth -= 1
 
     def next(): Unit =
       if !cursor.next()
@@ -655,7 +666,7 @@ object Html extends Tag.Container
       cursor.lay(finish(parent, count)):
         case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
                          next()
-                         push(TextNode("\u0000"))
+                         append(TextNode("\u0000"))
                          read(parent, admissible, map, count + 1)
 
         case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
@@ -730,10 +741,12 @@ object Html extends Tag.Container
 
           level match
             case Level.Ascend  =>  current
-            case Level.Peer    =>  push(current)
+            case Level.Peer    =>  append(current)
                                    read(parent, admissible, map, count + 1)
-            case Level.Descend =>  val child = descend(focus, admissible)
-                                   push(child)
+            case Level.Descend =>  push(focus)
+                                   val child = descend(focus, admissible)
+                                   pop()
+                                   append(child)
                                    read(parent, admissible, map, count + 1)
 
         case char => parent.mode match
@@ -753,11 +766,11 @@ object Html extends Tag.Container
           case Mode.Normal =>
             val text = cursor.hold(textual(cursor.mark, Unset, true))
             if text.length == 0 then read(parent, admissible, map, count + 1)
-            else push(TextNode(text)) yet read(parent, admissible, map, count + 1)
+            else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
 
     if cursor.finished then Fragment() else
       skip()
-      push(root)
+      append(root)
       val head = read(root, root.admissible, ListMap(), 0)
       if fragment.isEmpty then head else Fragment(fragment*)
 
