@@ -123,15 +123,17 @@ trait SoundnessModule extends Module:
   def moduleDir = super.moduleDir / ".." / "lib" / super.moduleDir.last / "src"
 
 trait SoundnessSubModule extends BaseScalaModule with SonatypeCentralPublishModule:
-  def resources = Task.Sources(moduleDir / ".." / ".." / "res")
-  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res")
+  def moduleId: String = moduleDir.last
+  def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def sources = Task.Sources(moduleDir)
 
 trait ProbablyTestModule extends BaseScalaModule:
+  def moduleId: String = moduleDir.last
   def finalMainClass = (moduleDir / ".." / "..").last + ".Tests"
   def moduleDeps: Seq[ScalaModule] = Seq(probably.cli)
-  def resources = Task.Sources(moduleDir / ".." / ".." / "res")
-  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res")
+  def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
 
   def sources = Task.Sources(moduleDir)
 
@@ -916,6 +918,7 @@ object mosquito extends SoundnessModule:
 object urticose extends SoundnessModule:
   object core extends SoundnessSubModule:
     def moduleDeps = Seq(gossamer.core, hypotenuse.core)
+
   object url extends SoundnessSubModule:
     def moduleDeps = Seq(escapade.core, serpentine.core, anticipation.html, core)
 

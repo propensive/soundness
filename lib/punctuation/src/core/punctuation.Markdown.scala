@@ -62,13 +62,14 @@ object Markdown:
 
   given renderable: (Markdown of Layout) is Renderable:
     type Form = doms.whatwg.Flow
+
     def render(markdown: Markdown of Layout): Html of doms.whatwg.Flow =
       import Markdown.*
       import doms.whatwg.*
 
       def url(text: Text): Text =
         val builder = StringBuilder()
-        text.chars.each:
+        text.urlDecode.chars.each:
           case char if char >= 128          => builder.append(char.toString.urlEncode)
           case char if char.isLetterOrDigit => builder.append(char)
           case ' '                          => builder.append("%20")
