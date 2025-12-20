@@ -15,112 +15,80 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-import doms.whatwg
+import doms.html.whatwg, whatwg.*
 import attributives.attributiveText
-
-enum Layout extends Markdown.Node:
-  case BlockQuote(line: Ordinal, layout: Layout*)
-
-  case OrderedList
-        (line: Ordinal, start: Int, tight: Boolean, delimiter: Optional['.' | ')'], items: List[Layout]*)
-
-  case BulletList(line: Ordinal, tight: Boolean, items: List[Layout]*)
-  case CodeBlock(line: Ordinal, info: List[Text], content: Text)
-  case Paragraph(line: Ordinal, prose: Prose*)
-  case Heading(line: Ordinal, level: 1 | 2 | 3 | 4 | 5 | 6, prose: Prose*)
-  case ThematicBreak(line: Ordinal)
-  case HtmlBlock(line: Ordinal, html: Text)
-
-  def line: Ordinal
-
-  def children: Seq[Prose] = this match
-    case Paragraph(_, children*)  => children
-    case BlockQuote(_, children*) => children.flatMap(_.children)
-    case Heading(_, _, children*) => children
-    case _                        => Nil
-
-
-enum Prose extends Markdown.Node:
-  case Textual(text: Text)
-  case Softbreak
-  case Linebreak
-  case Code(code: Text)
-  case Emphasis(prose: Prose*)
-  case Strong(prose: Prose*)
-  case Link(destination: Text, title: Optional[Text], prose: Prose*)
-  case Image(destination: Text, title: Optional[Text], prose: Prose*)
-  case HtmlInline(html: Text)
-
-  def children: Seq[Prose] = this match
-    case Link(_, _, prose*)  => prose
-    case Image(_, _, prose*) => prose
-    case _                   => Nil
 
 object Markdown:
   trait Node
   case class LinkRef(label: Text, title: Optional[Text], destination: Text)
 
-  given renderable: (Markdown of Layout) is Renderable:
-    type Form = doms.whatwg.Flow
+  private def url(text: Text): Text =
+    val builder = StringBuilder()
+    text.urlDecode.chars.each:
+      case char if char >= 128          => builder.append(char.toString.urlEncode)
+      case char if char.isLetterOrDigit => builder.append(char)
+      case ' '                          => builder.append("%20")
+      case '\\'                         => builder.append("%5C")
 
-    def render(markdown: Markdown of Layout): Html of doms.whatwg.Flow =
+      case char@('-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '=' | ':' | '?') =>
+        builder.append(char)
+
+      case char =>
+        builder.append(char.toString.urlEncode)
+
+    builder.toString.tt
+
+  private def text(node: Prose): Text = node match
+    case Prose.Textual(text)       => text
+    case Prose.Emphasis(children*) => children.map(text(_)).join
+    case Prose.Code(code)          => code
+    case Prose.Strong(children*)   => children.map(text(_)).join
+    case Prose.Softbreak           => "\n"
+    case Prose.Linebreak           => "\n"
+    case Prose.HtmlInline(content) => ""
+
+    case Prose.Link(destination, title, content*) =>
+      content.map(text(_)).join
+
+    case Prose.Image(destination, title, content*) =>
+      content.map(text(_)).join
+
+  private def phrasing(node: Prose): Html of Phrasing = node match
+    case Prose.Textual(text)       => text
+    case Prose.Emphasis(children*) => Em(children.map(phrasing(_))*)
+    case Prose.Code(code)          => Code(code)
+    case Prose.Strong(children*)   => Strong(children.map(phrasing(_))*)
+    case Prose.Softbreak           => "\n"
+    case Prose.Linebreak           => Fragment(Br, "\n")
+    case Prose.HtmlInline(content) => Comment(s"[CDATA[$content]]")
+
+    case Prose.Link(destination, title, content*) =>
+      val destination2 = url(destination)
+      title.lay(A(href = destination2)(content.map(phrasing(_))*)): title =>
+        A(href = destination2, title = title)(content.map(phrasing(_))*)
+
+    case Prose.Image(destination, title, content*) =>
+      val alt: Text = content.map(text(_)).join
+      val base = Img(src = destination, alt = alt)
+
+      title.lay(base): title =>
+        base.title = title
+
+  given prose: (Markdown of Prose) is Renderable:
+    type Form = Phrasing
+
+    def render(markdown: Markdown of Prose): Html of Phrasing =
+      Fragment(markdown.children.map(phrasing(_))*)
+
+  given layout: (Markdown of Layout) is Renderable:
+    type Form = doms.html.whatwg.Flow
+
+    def render(markdown: Markdown of Layout): Html of whatwg.Flow =
       import Markdown.*
-      import doms.whatwg.*
-
-      def url(text: Text): Text =
-        val builder = StringBuilder()
-        text.urlDecode.chars.each:
-          case char if char >= 128          => builder.append(char.toString.urlEncode)
-          case char if char.isLetterOrDigit => builder.append(char)
-          case ' '                          => builder.append("%20")
-          case '\\'                         => builder.append("%5C")
-
-          case char@('-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '=' | ':' | '?') =>
-            builder.append(char)
-
-          case char =>
-            builder.append(char.toString.urlEncode)
-
-        builder.toString.tt
-
-      def text(node: Prose): Text = node match
-        case Prose.Textual(text)       => text
-        case Prose.Emphasis(children*) => children.map(text(_)).join
-        case Prose.Code(code)          => code
-        case Prose.Strong(children*)   => children.map(text(_)).join
-        case Prose.Softbreak           => "\n"
-        case Prose.Linebreak           => "\n"
-        case Prose.HtmlInline(content) => ""
-
-        case Prose.Link(destination, title, content*) =>
-          content.map(text(_)).join
-
-        case Prose.Image(destination, title, content*) =>
-          content.map(text(_)).join
-
-      def prose(node: Prose): Html of Phrasing = node match
-        case Prose.Textual(text)       => text
-        case Prose.Emphasis(children*) => Em(children.map(prose(_))*)
-        case Prose.Code(code)          => Code(code)
-        case Prose.Strong(children*)   => Strong(children.map(prose(_))*)
-        case Prose.Softbreak           => "\n"
-        case Prose.Linebreak           => Fragment(Br, "\n")
-        case Prose.HtmlInline(content) => Comment(s"[CDATA[$content]]")
-
-        case Prose.Link(destination, title, content*) =>
-          val destination2 = url(destination)
-          title.lay(A(href = destination2)(content.map(prose(_))*)): title =>
-            A(href = destination2, title = title)(content.map(prose(_))*)
-
-        case Prose.Image(destination, title, content*) =>
-          val alt: Text = content.map(text(_)).join
-          val base = Img(src = destination, alt = alt)
-
-          title.lay(base): title =>
-            base.title = title
+      import doms.html.whatwg.*
 
       def tightItem(node: Layout): Html of Flow = node match
-        case Layout.Paragraph(_, content*) => Fragment(content.map(prose(_))*)
+        case Layout.Paragraph(_, content*) => Fragment(content.map(phrasing(_))*)
         case node                          => Fragment("\n", layout(node))
 
       @tailrec
@@ -131,7 +99,7 @@ object Markdown:
               if block then ((TextNode("\n"): Html of Flow) :: done).reverse else done.reverse
 
             case Layout.Paragraph(_, contents*) :: tail if tight =>
-              val content = Fragment(contents.map(prose(_))*)
+              val content = Fragment(contents.map(phrasing(_))*)
               merge
                (false,
                 tail,
@@ -151,7 +119,7 @@ object Markdown:
           Blockquote(fragment, "\n")
 
         case Layout.Paragraph(line, children*) =>
-          P(children.map(prose(_))*)
+          P(children.map(phrasing(_))*)
 
         case Layout.BulletList(line, tight, items*) =>
           val items2 = items.map: item =>
@@ -176,12 +144,12 @@ object Markdown:
         case Layout.HtmlBlock(line, content) => Comment(s"[CDATA[$content]]")
 
         case Layout.Heading(line, level, content*) => level match
-          case 1 => H1(content.map(prose(_))*)
-          case 2 => H2(content.map(prose(_))*)
-          case 3 => H3(content.map(prose(_))*)
-          case 4 => H4(content.map(prose(_))*)
-          case 5 => H5(content.map(prose(_))*)
-          case 6 => H6(content.map(prose(_))*)
+          case 1 => H1(content.map(phrasing(_))*)
+          case 2 => H2(content.map(phrasing(_))*)
+          case 3 => H3(content.map(phrasing(_))*)
+          case 4 => H4(content.map(phrasing(_))*)
+          case 5 => H5(content.map(phrasing(_))*)
+          case 6 => H6(content.map(phrasing(_))*)
 
         case Layout.CodeBlock(line, info, code) =>
           Pre(info.prim.lay(Code(code)) { info => Code(`class` = t"language-$info")(code) })

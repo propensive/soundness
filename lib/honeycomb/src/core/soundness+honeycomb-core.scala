@@ -38,5 +38,5 @@ export honeycomb
     Preload, Rel, Rev, Sandbox, Scope, Shape, Tag, Target, Wrap, html,
     Renderable }
 
-package doms:
-  export honeycomb.doms.whatwg
+package doms.html:
+  export honeycomb.doms.html.whatwg

@@ -39,7 +39,7 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import doms.whatwg
+import doms.html.whatwg
 import whatwg.*
 import attributives.attributiveText
 

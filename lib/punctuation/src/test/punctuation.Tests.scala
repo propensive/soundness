@@ -47,7 +47,7 @@ import environments.java
 import systems.java
 import temporaryDirectories.system
 
-import doms.whatwg
+import doms.html.whatwg
 import classloaders.system
 
 object Tests extends Suite(m"Punctuation tests"):

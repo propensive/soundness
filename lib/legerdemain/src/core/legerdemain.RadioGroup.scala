@@ -38,7 +38,7 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import doms.whatwg, whatwg.*
+import doms.html.whatwg, whatwg.*
 import attributives.attributiveText
 
 object RadioGroup:

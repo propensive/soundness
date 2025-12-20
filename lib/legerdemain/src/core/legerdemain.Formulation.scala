@@ -38,7 +38,7 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import doms.whatwg, whatwg.*
+import doms.html.whatwg, whatwg.*
 
 trait Formulation:
   def form(content: Seq[Html of Flow], submit: Optional[Text]): Html of Flow

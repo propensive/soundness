@@ -33,21 +33,11 @@
 package punctuation
 
 import anticipation.*
-import fulminate.*
+import honeycomb.*
+import prepositional.*
+import vacuous.*
 
-object MarkdownError:
-  enum Reason:
-    case BlockInsideInline
-    case BrokenImageRef
-    case BadHeadingLevel
-    case UnexpectedNode
+import doms.html.whatwg, whatwg.*
 
-  object Reason:
-    given communicable: Reason is Communicable =
-      case BlockInsideInline => m"the markdown contains block-level elements"
-      case BrokenImageRef    => m"the image reference could not be resolved"
-      case BadHeadingLevel   => m"the heading level is not in the range 1-6"
-      case UnexpectedNode    => m"a node with an unexpected type was found"
-
-case class MarkdownError(reason: MarkdownError.Reason)(using Diagnostics)
-extends Error(m"the markdown could not be read because $reason")
+abstract class Embedding(val language: Optional[Text]):
+  def render(meta: Optional[Text], content: Text): Seq[Html of Flow]

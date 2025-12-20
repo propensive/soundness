@@ -72,5 +72,5 @@ extension (html: Seq[Html])
 
     array.immutable(using Unsafe)
 
-package doms:
+package doms.html:
   given whatwg: Whatwg = Whatwg()

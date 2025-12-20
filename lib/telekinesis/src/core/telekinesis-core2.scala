@@ -45,7 +45,7 @@ import vacuous.*
 import language.dynamics
 import errorDiagnostics.stackTraces
 
-import doms.whatwg, whatwg.*
+import doms.html.whatwg, whatwg.*
 
 class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = Unset)
        (process: (Text => Html of Flow) => Optional[value] => result):

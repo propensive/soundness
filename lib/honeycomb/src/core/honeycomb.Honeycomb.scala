@@ -74,7 +74,7 @@ object Honeycomb:
 
   def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Boolean | Option[Any]] =
     import quotes.reflect.*
-    import doms.whatwg
+    import doms.html.whatwg
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
       case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
@@ -250,7 +250,7 @@ object Honeycomb:
 
   def interpolator[parts <: Tuple: Type](insertions0: Expr[Seq[Any]]): Macro[Html] =
     import quotes.reflect.*
-    import doms.whatwg
+    import doms.html.whatwg
     import Html.Hole
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match

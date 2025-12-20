@@ -47,7 +47,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
     . assert(_ == t"<!--hello world-->")
 
     suite(m"HTML parsing tests"):
-      import doms.whatwg
+      import doms.html.whatwg
       import whatwg.*
 
       test(m"simple empty tag"):

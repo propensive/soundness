@@ -42,12 +42,9 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import doms.whatwg.*
+import doms.html.whatwg.*
 
 object Renderable:
-  // given showable: [showable: Showable] => showable is Renderable in doms.whatwg.Phrasing =
-  //   value => TextNode(value.show)
-
   given message: Message is Renderable:
     type Form = Phrasing
       def render(message: Message): Html of Phrasing =

@@ -40,7 +40,7 @@ import prepositional.*
 import spectacular.*
 import vacuous.*
 
-import doms.whatwg, whatwg.*
+import doms.html.whatwg, whatwg.*
 
 trait CommonEmbedding:
   def className(accent: Accent): CssClasses =

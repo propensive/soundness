@@ -39,7 +39,7 @@ import prepositional.*
 import punctuation.*
 import vacuous.*
 
-import doms.whatwg, whatwg.*
+import doms.html.whatwg, whatwg.*
 
 object JavaEmbedding extends Embedding(t"java"), CommonEmbedding:
   def render(meta: Optional[Text], content: Text): Seq[Html of Flow] =

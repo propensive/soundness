@@ -40,12 +40,12 @@ import strategies.throwUnsafely
 import httpServers.stdlib
 import codicils.cancel
 import logging.silent
-import doms.whatwg, whatwg.*
+import doms.html.whatwg, whatwg.*
 import charEncoders.utf8
 import threading.platform
 import errorDiagnostics.stackTraces
 
-import doms.whatwg, whatwg.*
+import doms.html.whatwg, whatwg.*
 
 case class Group(org: Organization)
 case class Organization(leader: Person, name: Name[Person])

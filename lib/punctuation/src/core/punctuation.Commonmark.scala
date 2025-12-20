@@ -54,7 +54,7 @@ import textSanitizers.skip
 import environments.java
 import temporaryDirectories.system
 
-import doms.whatwg
+import doms.html.whatwg
 
 object Commonmark:
   import org.commonmark.*, node.*, parser.{IncludeSourceSpans, Parser}

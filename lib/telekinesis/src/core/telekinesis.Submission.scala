@@ -42,7 +42,7 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-import doms.whatwg, whatwg.*
+import doms.html.whatwg, whatwg.*
 
 case class Submission[value](query: Optional[Query]):
   def fresh: Boolean = query.absent
