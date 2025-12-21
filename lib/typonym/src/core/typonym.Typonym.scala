@@ -47,8 +47,18 @@ object Typonym:
       case _ =>
         Nil
 
+  def reifyAs[phantom: Type, result: Type]: Macro[result] =
+    import quotes.reflect.*
+    reify[phantom].asExprOf[result]
+
   def reify[phantom: Type]: Macro[Any] =
     import quotes.reflect.*
+
+    def constant(repr: TypeRepr): Expr[Any] = repr match
+      case ConstantType(BooleanConstant(boolean)) => Expr(boolean)
+      case ConstantType(IntConstant(int))         => Expr(int)
+      case ConstantType(DoubleConstant(double))   => Expr(double)
+      case ConstantType(StringConstant(string))   => Expr(string)
 
     Type.of[phantom] match
       case '[type list <: Tuple; TypeList[list]] =>
@@ -75,11 +85,14 @@ object Typonym:
 
         '{$entries.to(Map)}
 
-      case other => TypeRepr.of[phantom].runtimeChecked match
-        case ConstantType(BooleanConstant(boolean)) => Expr(boolean)
-        case ConstantType(IntConstant(int))         => Expr(int)
-        case ConstantType(DoubleConstant(double))   => Expr(double)
-        case ConstantType(StringConstant(string))   => Expr(string)
+      case '[type set; TypeSet[set]] =>
+        def recur(repr: TypeRepr): List[Expr[set]] = repr.dealias match
+          case OrType(left, right) => recur(left) ++ recur(right)
+          case other               => List(constant(other).asExprOf[set])
+
+        '{List[set](${Varargs(recur(TypeRepr.of[set]))}*)}
+
+      case other => constant(TypeRepr.of[phantom])
 
   def reflect(value: Any)(using Quotes): quotes.reflect.TypeRepr =
     import quotes.reflect.*

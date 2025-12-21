@@ -30,36 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package harlequin
 
 import anticipation.*
-import proscenium.*
+import gossamer.*
+import harlequin.*
+import honeycomb.*
+import prepositional.*
+import punctuation.*
+import spectacular.*
 import vacuous.*
 
-import scala.quoted.*
+import doms.html.whatwg, whatwg.*
 
-import language.dynamics
+trait CommonFormattable extends Formattable:
+  given lineClass: (CssClass of "line") = CssClass()
+  given amokClass: (CssClass of "amok") = CssClass() // FIXME
+  def classes(accent: Accent): Classes = Classes(Set(accent.show.lower))
 
-object ClearTag:
-  given generic: ClearTag[?, ?, ?] is GenericCssSelection = _.labelString.tt
+  def element(accent: Accent, text: Text): Element of "code" =
+    whatwg.Code(`class` = classes(accent))(text)
 
-case class ClearTag[+name <: Label, child <: Label, attribute <: Label]
-   (labelString: name)
-extends Node[name], Dynamic:
+  protected def postprocess(source: SourceCode): Html of Flow =
+    val code = source.lines.map: line =>
+      Span.line(line.map { case SourceToken(text, accent) => element(accent, text) }*)
 
-  def attributes: Attributes = Map()
-  def children: Seq[Node[?] | Text | Unset.type | HtmlXml] = Nil
-  def label: Text = labelString.tt
-
-
-  inline def applyDynamicNamed(method: String)(inline attributes: (attribute, Any)*)
-  : StartTag[name, child] =
-
-      ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
-
-
-  def applyDynamic[Return <: Label](method: "apply")
-       (children: (Optional[Html[Return]] | Seq[Html[Return]])*)
-  : Element[Return] =
-
-      Element(labelString, Map(), children)
+    Fragment(Div.amok(Pre(code*)))

@@ -88,7 +88,7 @@ package communication:
 
 extension (inline context: StringContext)
   transparent inline def enc(): Encoding = ${Hieroglyph.encoding('context)}
-  transparent inline def u(): Char | Text = ${Hieroglyph.char('context)}
+  transparent inline def ucs(): Char | Text = ${Hieroglyph.char('context)}
 
 package textMetrics:
   given uniform: Char is Measurable = _ => 1
@@ -100,5 +100,8 @@ extension (char: Char)
   def description: Optional[Text] = Unicode.name(char)
   def minuscule: Char = char.toLower
   def majuscule: Char = char.toUpper
+
+extension (int: Int)
+  def unicode: Text = String(Character.toChars(int)).tt
 
 extension [measurable: Measurable](element: measurable) def metrics: Int = measurable.width(element)

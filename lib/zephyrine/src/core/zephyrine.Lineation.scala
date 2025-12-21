@@ -30,30 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package zephyrine
+
+import language.experimental.captureChecking
 
 import anticipation.*
-import gossamer.*
-import proscenium.*
-import spectacular.*
-import vacuous.*
+import fulminate.*
+import prepositional.*
 
-object StartTag:
-  given generic: StartTag[?, ?] is GenericCssSelection = elem =>
-    val tail = elem.attributes.map: (key, value) =>
-      (key, value).absolve match
-        case (key, value: Text) => t"[$key=$value]"
-        case (key, Unset)       => t"[$key]"
+object Lineation:
+  inline given untrackedChars: Lineation:
+    type Operand = Char
+    inline def active: false = false
+    inline def track(datum: Char): false = false
 
-    . join
+  inline given untrackedBytes: Lineation:
+    type Operand = Byte
+    inline def active: false = false
+    inline def track(datum: Byte): false = false
 
-    t"${elem.label}$tail"
-
-case class StartTag[+name <: Label, child <: Label]
-   (labelString: name, attributes: Attributes)
-extends Node[name]:
-  def children = Nil
-  def label: Text = labelString.tt
-
-  def apply(children: (Optional[Html[child]] | Seq[Html[child]])*): Element[name] =
-    Element(labelString, attributes, children)
+trait Lineation extends Operable:
+  inline def active: Boolean
+  inline def track(datum: Operand): Boolean

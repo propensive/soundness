@@ -38,243 +38,243 @@ import proscenium.*
 
 import language.dynamics
 
-object html4:
-  type EventHandlers =
-    "onclick" | "ondblclick" | "onmousedown" | "onmouseup" | "onmouseover" | "onmousemove"
-    | "onmouseout" | "onkeypress" | "onkeydown" | "onkeyup" | "onfocus" | "onblur" | "onchange"
-    | "onselect" | "onsubmit" | "onreset" | "onload" | "onunload" | "onabort" | "onerror"
-    | "onresize" | "onscroll"
+// object html4:
+//   type EventHandlers =
+//     "onclick" | "ondblclick" | "onmousedown" | "onmouseup" | "onmouseover" | "onmousemove"
+//     | "onmouseout" | "onkeypress" | "onkeydown" | "onkeyup" | "onfocus" | "onblur" | "onchange"
+//     | "onselect" | "onsubmit" | "onreset" | "onload" | "onunload" | "onabort" | "onerror"
+//     | "onresize" | "onscroll"
 
-  type Global = "id" | "class" | "title" | "style" | "lang" | "dir" | EventHandlers
+//   type Global = "id" | "class" | "title" | "style" | "lang" | "dir" | EventHandlers
 
-  type Phrasing =
-    "a" | "abbr" | "acronym" | "applet" | "b" | "basefont" | "bdo" | "big" | "br" | "button"
-    | "cite" | "code" | "del" | "dfn" | "em" | "font" | "i" | "iframe" | "img" | "input" | "ins"
-    | "kbd" | "label" | "map" | "object" | "q" | "s" | "samp" | "script" | "select" | "small"
-    | "span" | "strike" | "strong" | "sub" | "sup" | "textarea" | "tt" | "u" | "var"
+//   type Phrasing =
+//     "a" | "abbr" | "acronym" | "applet" | "b" | "basefont" | "bdo" | "big" | "br" | "button"
+//     | "cite" | "code" | "del" | "dfn" | "em" | "font" | "i" | "iframe" | "img" | "input" | "ins"
+//     | "kbd" | "label" | "map" | "object" | "q" | "s" | "samp" | "script" | "select" | "small"
+//     | "span" | "strike" | "strong" | "sub" | "sup" | "textarea" | "tt" | "u" | "var"
 
-  type Flow =
-    Phrasing | "address" | "blockquote" | "center" | "dd" | "dir" | "div" | "dl" | "dt" | "fieldset"
-    | "form" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "hr" | "isindex" | "li" | "menu"
-    | "noframes" | "noscript" | "ol" | "p" | "pre" | "table" | "ul"
+//   type Flow =
+//     Phrasing | "address" | "blockquote" | "center" | "dd" | "dir" | "div" | "dl" | "dt" | "fieldset"
+//     | "form" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "hr" | "isindex" | "li" | "menu"
+//     | "noframes" | "noscript" | "ol" | "p" | "pre" | "table" | "ul"
 
-  val Head = Tag
-              ["head", "title" | "base" | "meta" | "script" | "style" | "link", Global | "profile"]
-              ("head")
-  val Title = Tag["title", Nothing, Global]("title")
-  val Base = Tag["base", Nothing, Global | "href" | "target"]("base")
+//   val Head = OldTag
+//               ["head", "title" | "base" | "meta" | "script" | "style" | "link", Global | "profile"]
+//               ("head")
+//   val Title = OldTag["title", Nothing, Global]("title")
+//   val Base = OldTag["base", Nothing, Global | "href" | "target"]("base")
 
-  val Link = Tag
-              ["link",
-               Nothing,
-               Global | "href" | "rel" | "rev" | "type" | "media" | "hreflang" | "charset"
-               | "target"]
-              ("link")
+//   val Link = OldTag
+//               ["link",
+//                Nothing,
+//                Global | "href" | "rel" | "rev" | "type" | "media" | "hreflang" | "charset"
+//                | "target"]
+//               ("link")
 
-  val Meta = Tag["meta", Nothing, Global | "http-equiv" | "name" | "content" | "scheme"]("meta")
-  val Style = Tag["style", Nothing, Global | "type" | "media" | "title"]("style")
+//   val Meta = OldTag["meta", Nothing, Global | "http-equiv" | "name" | "content" | "scheme"]("meta")
+//   val Style = OldTag["style", Nothing, Global | "type" | "media" | "title"]("style")
 
-  val Script = Tag["script", Nothing, Global | "src" | "type" | "charset" | "language" | "defer"]
-                ("script")
+//   val Script = OldTag["script", Nothing, Global | "src" | "type" | "charset" | "language" | "defer"]
+//                 ("script")
 
-  val Noscript = Tag["noscript", Flow, Global]("noscript")
+//   val Noscript = OldTag["noscript", Flow, Global]("noscript")
 
-  val Body = Tag
-              ["body",
-               Flow,
-               Global | "background" | "bgcolor" | "text" | "link" | "vlink" | "alink" | "onload"
-               | "onunload"]
-              ("body")
+//   val Body = OldTag
+//               ["body",
+//                Flow,
+//                Global | "background" | "bgcolor" | "text" | "link" | "vlink" | "alink" | "onload"
+//                | "onunload"]
+//               ("body")
 
-  val Div = Tag["div", Flow, Global | "align"]("div")
-  val Center = Tag["center", Flow, Global]("center")
-  val P = Tag["p", Phrasing, Global | "align"]("p")
-  val Address = Tag["address", Flow, Global]("address")
-  val Blockquote = Tag["blockquote", Flow, Global | "cite"]("blockquote")
-  val Pre = Tag["pre", Phrasing, Global | "width"]("pre")
-  val Hr = Tag["hr", Nothing, Global | "align" | "noshade" | "size" | "width"]("hr")
-  val Br = Tag["br", Nothing, Global | "clear"]("br")
-  val Ins = Tag["ins", Flow, Global | "cite" | "datetime"]("ins")
-  val Del = Tag["del", Flow, Global | "cite" | "datetime"]("del")
+//   val Div = OldTag["div", Flow, Global | "align"]("div")
+//   val Center = OldTag["center", Flow, Global]("center")
+//   val P = OldTag["p", Phrasing, Global | "align"]("p")
+//   val Address = OldTag["address", Flow, Global]("address")
+//   val Blockquote = OldTag["blockquote", Flow, Global | "cite"]("blockquote")
+//   val Pre = OldTag["pre", Phrasing, Global | "width"]("pre")
+//   val Hr = OldTag["hr", Nothing, Global | "align" | "noshade" | "size" | "width"]("hr")
+//   val Br = OldTag["br", Nothing, Global | "clear"]("br")
+//   val Ins = OldTag["ins", Flow, Global | "cite" | "datetime"]("ins")
+//   val Del = OldTag["del", Flow, Global | "cite" | "datetime"]("del")
 
-  val H1 = Tag["h1", Phrasing, Global | "align"]("h1")
-  val H2 = Tag["h2", Phrasing, Global | "align"]("h2")
-  val H3 = Tag["h3", Phrasing, Global | "align"]("h3")
-  val H4 = Tag["h4", Phrasing, Global | "align"]("h4")
-  val H5 = Tag["h5", Phrasing, Global | "align"]("h5")
-  val H6 = Tag["h6", Phrasing, Global | "align"]("h6")
+//   val H1 = OldTag["h1", Phrasing, Global | "align"]("h1")
+//   val H2 = OldTag["h2", Phrasing, Global | "align"]("h2")
+//   val H3 = OldTag["h3", Phrasing, Global | "align"]("h3")
+//   val H4 = OldTag["h4", Phrasing, Global | "align"]("h4")
+//   val H5 = OldTag["h5", Phrasing, Global | "align"]("h5")
+//   val H6 = OldTag["h6", Phrasing, Global | "align"]("h6")
 
-  val Ul = Tag["ul", Flow, Global | "type" | "compact"]("ul")
-  val Ol = Tag["ol", Flow, Global | "type" | "start" | "compact"]("ol")
-  val Li = Tag["li", Flow, Global | "type" | "value"]("li")
-  val Dl = Tag["dl", Flow, Global | "compact"]("dl")
-  val Dt = Tag["dt", Phrasing, Global]("dt")
-  val Dd = Tag["dd", Flow, Global]("dd")
-  val Dir = Tag["dir", Flow, Global | "compact"]("dir")
-  val Menu = Tag["menu", Flow, Global | "compact"]("menu")
+//   val Ul = OldTag["ul", Flow, Global | "type" | "compact"]("ul")
+//   val Ol = OldTag["ol", Flow, Global | "type" | "start" | "compact"]("ol")
+//   val Li = OldTag["li", Flow, Global | "type" | "value"]("li")
+//   val Dl = OldTag["dl", Flow, Global | "compact"]("dl")
+//   val Dt = OldTag["dt", Phrasing, Global]("dt")
+//   val Dd = OldTag["dd", Flow, Global]("dd")
+//   val Dir = OldTag["dir", Flow, Global | "compact"]("dir")
+//   val Menu = OldTag["menu", Flow, Global | "compact"]("menu")
 
-  val A = Tag
-           ["a",
-            Phrasing,
-            Global | "href" | "target" | "name" | "rel" | "rev" | "shape" | "coords" | "hreflang"
-            | "type" | "charset" | "tabindex" | "accesskey"]
-           ("a")
+//   val A = OldTag
+//            ["a",
+//             Phrasing,
+//             Global | "href" | "target" | "name" | "rel" | "rev" | "shape" | "coords" | "hreflang"
+//             | "type" | "charset" | "tabindex" | "accesskey"]
+//            ("a")
 
-  val Abbr = Tag["abbr", Phrasing, Global]("abbr")
-  val Acronym = Tag["acronym", Phrasing, Global]("acronym")
-  val Bdo = Tag["bdo", Phrasing, Global | "dir"]("bdo")
-  val Span = Tag["span", Phrasing, Global]("span")
-  val Big = Tag["big", Phrasing, Global]("big")
-  val Small = Tag["small", Phrasing, Global]("small")
-  val B = Tag["b", Phrasing, Global]("b")
-  val I = Tag["i", Phrasing, Global]("i")
-  val U = Tag["u", Phrasing, Global]("u")
-  val S = Tag["s", Phrasing, Global]("s")
-  val Strike = Tag["strike", Phrasing, Global]("strike")
-  val Em = Tag["em", Phrasing, Global]("em")
-  val Strong = Tag["strong", Phrasing, Global]("strong")
-  val Dfn = Tag["dfn", Phrasing, Global]("dfn")
-  val Code = Tag["code", Phrasing, Global]("code")
-  val Samp = Tag["samp", Phrasing, Global]("samp")
-  val Kbd = Tag["kbd", Phrasing, Global]("kbd")
-  val VarT = Tag["var", Phrasing, Global]("var")
-  val Cite = Tag["cite", Phrasing, Global]("cite")
-  val Sub = Tag["sub", Phrasing, Global]("sub")
-  val Sup = Tag["sup", Phrasing, Global]("sup")
-  val Q = Tag["q", Phrasing, Global | "cite"]("q")
-  val Font = Tag["font", Phrasing, Global | "size" | "color" | "face"]("font")
-  val Basefont = Tag["basefont", Nothing, Global | "size" | "color" | "face"]("basefont")
+//   val Abbr = OldTag["abbr", Phrasing, Global]("abbr")
+//   val Acronym = OldTag["acronym", Phrasing, Global]("acronym")
+//   val Bdo = OldTag["bdo", Phrasing, Global | "dir"]("bdo")
+//   val Span = OldTag["span", Phrasing, Global]("span")
+//   val Big = OldTag["big", Phrasing, Global]("big")
+//   val Small = OldTag["small", Phrasing, Global]("small")
+//   val B = OldTag["b", Phrasing, Global]("b")
+//   val I = OldTag["i", Phrasing, Global]("i")
+//   val U = OldTag["u", Phrasing, Global]("u")
+//   val S = OldTag["s", Phrasing, Global]("s")
+//   val Strike = OldTag["strike", Phrasing, Global]("strike")
+//   val Em = OldTag["em", Phrasing, Global]("em")
+//   val Strong = OldTag["strong", Phrasing, Global]("strong")
+//   val Dfn = OldTag["dfn", Phrasing, Global]("dfn")
+//   val Code = OldTag["code", Phrasing, Global]("code")
+//   val Samp = OldTag["samp", Phrasing, Global]("samp")
+//   val Kbd = OldTag["kbd", Phrasing, Global]("kbd")
+//   val VarT = OldTag["var", Phrasing, Global]("var")
+//   val Cite = OldTag["cite", Phrasing, Global]("cite")
+//   val Sub = OldTag["sub", Phrasing, Global]("sub")
+//   val Sup = OldTag["sup", Phrasing, Global]("sup")
+//   val Q = OldTag["q", Phrasing, Global | "cite"]("q")
+//   val Font = OldTag["font", Phrasing, Global | "size" | "color" | "face"]("font")
+//   val Basefont = OldTag["basefont", Nothing, Global | "size" | "color" | "face"]("basefont")
 
-  val Img = Tag
-             ["img",
-              Nothing,
-              Global | "src" | "alt" | "longdesc" | "height" | "width" | "usemap"
-              | "ismap" | "border" | "align" | "hspace" | "vspace" | "name"]
-             ("img")
+//   val Img = OldTag
+//              ["img",
+//               Nothing,
+//               Global | "src" | "alt" | "longdesc" | "height" | "width" | "usemap"
+//               | "ismap" | "border" | "align" | "hspace" | "vspace" | "name"]
+//              ("img")
 
-  val Map = Tag["map", Flow, Global | "name"]("map")
-  val Area = Tag
-              ["area",
-               Nothing,
-               Global | "shape" | "coords" | "href" | "nohref" | "alt" | "target" | "tabindex"
-               | "accesskey"]("area")
+//   val Map = OldTag["map", Flow, Global | "name"]("map")
+//   val Area = OldTag
+//               ["area",
+//                Nothing,
+//                Global | "shape" | "coords" | "href" | "nohref" | "alt" | "target" | "tabindex"
+//                | "accesskey"]("area")
 
-  val Object = Tag
-                ["object",
-                 Flow,
-                 Global | "data" | "type" | "classid" | "codebase" | "codetype" | "archive"
-                 | "standby" | "height" | "width" | "usemap" | "name" | "tabindex"]
-                ("object")
+//   val Object = OldTag
+//                 ["object",
+//                  Flow,
+//                  Global | "data" | "type" | "classid" | "codebase" | "codetype" | "archive"
+//                  | "standby" | "height" | "width" | "usemap" | "name" | "tabindex"]
+//                 ("object")
 
-  val Param = Tag["param", Nothing, Global | "name" | "value" | "valuetype" | "type"]("param")
+//   val Param = OldTag["param", Nothing, Global | "name" | "value" | "valuetype" | "type"]("param")
 
-  val Applet = Tag
-                ["applet",
-                 Phrasing,
-                 Global | "code" | "codebase" | "archive" | "object" | "alt" | "name" | "width"
-                 | "height" | "align" | "hspace" | "vspace"]
-                ("applet")
+//   val Applet = OldTag
+//                 ["applet",
+//                  Phrasing,
+//                  Global | "code" | "codebase" | "archive" | "object" | "alt" | "name" | "width"
+//                  | "height" | "align" | "hspace" | "vspace"]
+//                 ("applet")
 
-  val Table = Tag
-               ["table",
-                "caption" | "col" | "colgroup" | "thead" | "tfoot" | "tbody" | "tr",
-                Global | "summary" | "width" | "border" | "frame" | "rules" | "cellspacing"
-                | "cellpadding" | "align" | "bgcolor"]
-               ("table")
+//   val Table = OldTag
+//                ["table",
+//                 "caption" | "col" | "colgroup" | "thead" | "tfoot" | "tbody" | "tr",
+//                 Global | "summary" | "width" | "border" | "frame" | "rules" | "cellspacing"
+//                 | "cellpadding" | "align" | "bgcolor"]
+//                ("table")
 
-  val Caption = Tag["caption", Flow, Global | "align"]("caption")
+//   val Caption = OldTag["caption", Flow, Global | "align"]("caption")
 
-  val Colgroup = Tag
-                  ["colgroup",
-                   Nothing,
-                   Global | "span" | "width" | "align" | "char" | "charoff" | "valign"]
-                  ("colgroup")
+//   val Colgroup = OldTag
+//                   ["colgroup",
+//                    Nothing,
+//                    Global | "span" | "width" | "align" | "char" | "charoff" | "valign"]
+//                   ("colgroup")
 
-  val Col = Tag["col", Nothing, Global | "span" | "width" | "align" | "char" | "charoff" | "valign"]
-             ("col")
+//   val Col = OldTag["col", Nothing, Global | "span" | "width" | "align" | "char" | "charoff" | "valign"]
+//              ("col")
 
-  val Thead = Tag["thead", Nothing, Global | "align" | "char" | "charoff" | "valign"]("thead")
-  val Tbody = Tag["tbody", Nothing, Global | "align" | "char" | "charoff" | "valign"]("tbody")
-  val Tfoot = Tag["tfoot", Nothing, Global | "align" | "char" | "charoff" | "valign"]("tfoot")
+//   val Thead = OldTag["thead", Nothing, Global | "align" | "char" | "charoff" | "valign"]("thead")
+//   val Tbody = OldTag["tbody", Nothing, Global | "align" | "char" | "charoff" | "valign"]("tbody")
+//   val Tfoot = OldTag["tfoot", Nothing, Global | "align" | "char" | "charoff" | "valign"]("tfoot")
 
-  val Tr = Tag["tr", "td" | "th", Global | "align" | "bgcolor" | "char" | "charoff" | "valign"]
-            ("tr")
+//   val Tr = OldTag["tr", "td" | "th", Global | "align" | "bgcolor" | "char" | "charoff" | "valign"]
+//             ("tr")
 
-  val Th = Tag
-            ["th",
-             Flow,
-             Global | "abbr" | "axis" | "headers" | "scope" | "rowspan" | "colspan" | "nowrap"
-             | "bgcolor" | "width" | "height" | "align" | "char" | "charoff" | "valign"]
-            ("th")
+//   val Th = OldTag
+//             ["th",
+//              Flow,
+//              Global | "abbr" | "axis" | "headers" | "scope" | "rowspan" | "colspan" | "nowrap"
+//              | "bgcolor" | "width" | "height" | "align" | "char" | "charoff" | "valign"]
+//             ("th")
 
-  val Td = Tag
-            ["td",
-             Flow,
-             Global | "abbr" | "axis" | "headers" | "scope" | "rowspan" | "colspan" | "nowrap"
-             | "bgcolor" | "width" | "height" | "align" | "char" | "charoff" | "valign"]
-            ("td")
+//   val Td = OldTag
+//             ["td",
+//              Flow,
+//              Global | "abbr" | "axis" | "headers" | "scope" | "rowspan" | "colspan" | "nowrap"
+//              | "bgcolor" | "width" | "height" | "align" | "char" | "charoff" | "valign"]
+//             ("td")
 
-  val Form = Tag
-              ["form",
-               Flow,
-               Global | "action" | "method" | "enctype" | "accept" | "accept-charset" | "name"
-               | "target" | "onsubmit" | "onreset"]
-              ("form")
+//   val Form = OldTag
+//               ["form",
+//                Flow,
+//                Global | "action" | "method" | "enctype" | "accept" | "accept-charset" | "name"
+//                | "target" | "onsubmit" | "onreset"]
+//               ("form")
 
-  val Fieldset = Tag["fieldset", Flow, Global]("fieldset")
-  val Legend = Tag["legend", Phrasing, Global | "accesskey" | "align"]("legend")
-  val Label = Tag["label", Phrasing, Global | "for" | "accesskey" | "onblur" | "onfocus"]("label")
+//   val Fieldset = OldTag["fieldset", Flow, Global]("fieldset")
+//   val Legend = OldTag["legend", Phrasing, Global | "accesskey" | "align"]("legend")
+//   val Label = OldTag["label", Phrasing, Global | "for" | "accesskey" | "onblur" | "onfocus"]("label")
 
-  val Input = Tag
-               ["input",
-                Nothing,
-                Global | "type" | "name" | "value" | "checked" | "disabled" | "readonly" | "size"
-                | "maxlength" | "src" | "alt" | "usemap" | "ismap" | "tabindex" | "accesskey"
-                | "accept" | "align" | "onselect" | "onchange"]
-               ("input")
+//   val Input = OldTag
+//                ["input",
+//                 Nothing,
+//                 Global | "type" | "name" | "value" | "checked" | "disabled" | "readonly" | "size"
+//                 | "maxlength" | "src" | "alt" | "usemap" | "ismap" | "tabindex" | "accesskey"
+//                 | "accept" | "align" | "onselect" | "onchange"]
+//                ("input")
 
-  val Select = Tag
-                ["select",
-                 Nothing,
-                 Global | "name" | "size" | "multiple" | "disabled" | "tabindex" | "accesskey"
-                 | "onchange"]
-                ("select")
+//   val Select = OldTag
+//                 ["select",
+//                  Nothing,
+//                  Global | "name" | "size" | "multiple" | "disabled" | "tabindex" | "accesskey"
+//                  | "onchange"]
+//                 ("select")
 
-  val Optgroup = Tag["optgroup", Nothing, Global | "disabled" | "label"]("optgroup")
+//   val Optgroup = OldTag["optgroup", Nothing, Global | "disabled" | "label"]("optgroup")
 
-  val Option = Tag["option", Nothing, Global | "selected" | "disabled" | "label" | "value"]
-                ("option")
+//   val Option = OldTag["option", Nothing, Global | "selected" | "disabled" | "label" | "value"]
+//                 ("option")
 
-  val Textarea = Tag
-                  ["textarea",
-                   Nothing,
-                   Global | "name" | "rows" | "cols" | "disabled" | "readonly" | "tabindex"
-                   | "accesskey" | "onselect" | "onchange"]
-                  ("textarea")
+//   val Textarea = OldTag
+//                   ["textarea",
+//                    Nothing,
+//                    Global | "name" | "rows" | "cols" | "disabled" | "readonly" | "tabindex"
+//                    | "accesskey" | "onselect" | "onchange"]
+//                   ("textarea")
 
-  val Button = Tag
-                ["button",
-                 Phrasing,
-                 Global | "name" | "value" | "type" | "disabled" | "tabindex" | "accesskey"]
-                ("button")
+//   val Button = OldTag
+//                 ["button",
+//                  Phrasing,
+//                  Global | "name" | "value" | "type" | "disabled" | "tabindex" | "accesskey"]
+//                 ("button")
 
-  val Isindex = Tag["isindex", Nothing, Global | "prompt"]("isindex")
+//   val Isindex = OldTag["isindex", Nothing, Global | "prompt"]("isindex")
 
-  val Frameset = Tag["frameset", Nothing, Global | "rows" | "cols" | "onload" | "onunload"]
-                  ("frameset")
+//   val Frameset = OldTag["frameset", Nothing, Global | "rows" | "cols" | "onload" | "onunload"]
+//                   ("frameset")
 
-  val Frame = Tag
-               ["frame",
-                Nothing,
-                Global | "src" | "name" | "longdesc" | "frameborder" | "marginwidth"
-                | "marginheight" | "noresize" | "scrolling" | "title"]
-               ("frame")
+//   val Frame = OldTag
+//                ["frame",
+//                 Nothing,
+//                 Global | "src" | "name" | "longdesc" | "frameborder" | "marginwidth"
+//                 | "marginheight" | "noresize" | "scrolling" | "title"]
+//                ("frame")
 
-  val Iframe = Tag
-                ["iframe",
-                 Nothing,
-                 Global | "src" | "name" | "longdesc" | "frameborder" | "marginwidth"
-                 | "marginheight" | "scrolling" | "title" | "height" | "width"]
-                ("iframe")
+//   val Iframe = OldTag
+//                 ["iframe",
+//                  Nothing,
+//                  Global | "src" | "name" | "longdesc" | "frameborder" | "marginwidth"
+//                  | "marginheight" | "scrolling" | "title" | "height" | "width"]
+//                 ("iframe")
 
-  val Noframes = Tag["noframes", Flow, Global]("noframes")
+//   val Noframes = OldTag["noframes", Flow, Global]("noframes")

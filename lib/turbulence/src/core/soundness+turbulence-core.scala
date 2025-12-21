@@ -37,7 +37,8 @@ export turbulence
     LineSeparation, Multiplexer, Out, Pistol, Pulsar, Streamable, Stdio, StreamError, Tap, Writable,
     Zlib, stream, read, writeTo, deduplicate, rate, multiplex, regulate, cluster, parallelMap,
     multiplexer, defer, metronome, gzip, gunzip, discard, compress, decompress, shred,
-    chunked, take, spool, strict, inputStream, StreamOutputStream }
+    chunked, take, spool, strict, inputStream, StreamOutputStream, load, Document, Loadable,
+    Documentary }
 
 package stdioSources:
   export turbulence.stdioSources.mute

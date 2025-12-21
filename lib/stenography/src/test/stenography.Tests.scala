@@ -34,6 +34,7 @@ package stenography
 
 import language.experimental.pureFunctions
 
+import anticipation.*
 import distillate.*
 import fulminate.*
 import gossamer.*

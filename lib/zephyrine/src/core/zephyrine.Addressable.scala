@@ -30,56 +30,71 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package zephyrine
+
+import language.experimental.captureChecking
+
+import java.io as ji
+import java.lang as jl
+
+import scala.collection.mutable as scm
 
 import anticipation.*
-import gossamer.*
-import proscenium.*
-import spectacular.*
+import denominative.*
+import fulminate.*
+import prepositional.*
+import rudiments.*
 import vacuous.*
 
-object Node:
-  given html: [html <: Html[?]] => html is Showable = html => html.absolve match
-    case text: Text    => text
-    case node: Node[?] => node.show
-    case Unset         => t""
+object Addressable:
+  inline given bytes: Bytes is Addressable:
+    type Operand = Byte
+    type Target = ji.ByteArrayOutputStream
 
-  given seq: Seq[Html[?]] is Showable = _.map(_.show).join
+    val empty: Bytes = IArray.from(Nil)
+    inline def blank(size: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(size)
 
-  given node: [node <: Node[?]] => node is Showable = item =>
-    val filling =
-      item.attributes.map: keyValue =>
-        keyValue.absolve match
-          case (key, Unset)       => t" $key"
-          case (key, value: Text) => t""" $key="$value""""
+    inline def build(target: ji.ByteArrayOutputStream): Bytes =
+      target.toByteArray.nn.immutable(using Unsafe)
 
-      . join
+    inline def length(bytes: Bytes): Int = bytes.length
+    inline def address(bytes: Bytes, index: Ordinal): Byte = bytes(index.n0)
 
-    if item.children.isEmpty && !item.verbatim
-    then t"<${item.label}$filling${if item.unclosed then t"" else t"/"}>"
-    else t"<${item.label}$filling>${item.children.map(_.show).join}</${item.label}>"
+    inline def grab(bytes: Bytes, start: Ordinal, end: Ordinal): Bytes =
+      bytes.slice(start.n0, end.n0)
 
+    inline def clone(source: Bytes, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
+    : Unit =
 
-  def apply
-       (label0:      Text,
-        attributes0: Attributes,
-        children0:   Seq[Node[?] | Text | Unset.type | HtmlXml])
-  : Html[?] =
-
-      new Node:
-        def label = label0
-        def attributes = attributes0
-        def children: Seq[Node[?] | Text | Unset.type | HtmlXml] = children0
+        target.write(source.mutable(using Unsafe), start.n0, end.n0 - start.n0 - 1)
 
 
-trait Node[+name <: Label]:
-  def label: Text
-  def attributes: Attributes
-  def children: Seq[Html[?]]
+  inline given text: Text is Addressable:
+    type Operand = Char
+    type Target = jl.StringBuilder
 
-  def verbatim: Boolean = Html.verbatimElements(label)
-  def unclosed: Boolean = Html.unclosedElements(label)
+    val empty: Text = ""
 
-  lazy val block: Boolean = !Html.inlineElements(label) || children.exists:
-    case node: Node[?] => node.block
-    case _             => false
+    inline def build(target: jl.StringBuilder): Text = target.toString.tt
+    inline def blank(size: Int): jl.StringBuilder = jl.StringBuilder(size)
+    inline def length(text: Text): Int = text.s.length
+    inline def address(text: Text, index: Ordinal): Operand = text.s.charAt(index.n0)
+
+    inline def grab(text: Text, start: Ordinal, end: Ordinal): Text =
+      text.s.substring(start.n0, end.n1).nn.tt
+
+
+    inline def clone(source: Text, start: Ordinal, end: Ordinal)(target: java.lang.StringBuilder)
+    : Unit =
+
+        target.append(source.s, start.n0, end.n1)
+
+
+trait Addressable extends Typeclass, Operable, Targetable:
+  def empty: Self
+  inline def blank(size: Int): Target
+  inline def build(target: Target): Self
+  inline def length(block: Self): Int
+  inline def address(block: Self, index: Ordinal): Operand
+  inline def clone(source: Self, start: Ordinal, end: Ordinal)(target: Target): Unit
+  inline def grab(text: Self, start: Ordinal, end: Ordinal): Self

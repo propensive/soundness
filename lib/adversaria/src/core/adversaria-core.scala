@@ -30,14 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package harlequin
+package adversaria
+
+import scala.quoted.*
 
 import anticipation.*
-import gossamer.*
-import honeycomb.*
-import punctuation.*
-import vacuous.*
+import prepositional.*
+import proscenium.*
 
-object ScalaEmbedding extends Embedding(t"scala"), CommonEmbedding:
-  def render(meta: Optional[Text], content: Text): Seq[Html[html5.Flow]] =
-    postprocess(Scala.highlight(content))
+extension [entity](entity: entity)
+  def membersOfType[value](using deref: entity is Dereferenceable to value): Iterable[value] =
+    deref.values(entity)

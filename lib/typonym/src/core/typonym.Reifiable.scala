@@ -30,11 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package punctuation
+package typonym
 
-import anticipation.*
-import honeycomb.*
-import vacuous.*
+import scala.quoted.*
 
-abstract class Embedding(val language: Optional[Text]):
-  def render(meta: Optional[Text], content: Text): Seq[Html[html5.Flow]]
+import prepositional.*
+import proscenium.*
+
+object Reifiable:
+  transparent inline given setUnion: [phantom, value] => phantom is Reifiable to List[value] =
+    val result: List[value] = reifyAs[TypeSet[phantom], List[value]]
+
+    () => result
+
+trait Reifiable extends Typeclass, Resultant:
+  def reification(): Result

@@ -33,7 +33,10 @@
 package punctuation
 
 import honeycomb.*
+import prepositional.*
+
+import doms.html.whatwg, whatwg.*
 
 trait Translator:
-  def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[html5.Flow]]
-  def phrasing(node: Markdown.Ast.Inline): Seq[Html[html5.Phrasing]]
+  def translate(nodes: Seq[Markdown]): Seq[Html of Flow]
+  def phrasing(node: Markdown of Prose): Seq[Html of Phrasing]

@@ -30,14 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package harlequin
+package adversaria
+
+import scala.quoted.*
 
 import anticipation.*
-import gossamer.*
-import honeycomb.*
-import punctuation.*
-import vacuous.*
+import prepositional.*
+import proscenium.*
 
-object JavaEmbedding extends Embedding(t"java"), CommonEmbedding:
-  def render(meta: Optional[Text], content: Text): Seq[Html[html5.Flow]] =
-    postprocess(Java.highlight(content))
+object Dereferenceable:
+  inline given [entity, value] => entity is Dereferenceable to value =
+    ${Adversaria.dereferenceable[entity, value]}
+
+trait Dereferenceable extends Typeclass, Resultant:
+  def names(entity: Self): List[Text]
+  def select(entity: Self, name: Text): Result
+  def values(entity: Self): Iterable[Result] = members(entity).values
+
+  def members(entity: Self): Map[Text, Result] =
+    names(entity).map { member => member -> select(entity, member) }.to(Map)

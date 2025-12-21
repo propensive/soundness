@@ -40,7 +40,9 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import html5.*
+import doms.html.whatwg
+import whatwg.*
+import attributives.attributiveText
 
 private given realm: Realm = realm"legerdemain"
 
@@ -48,7 +50,7 @@ private given realm: Realm = realm"legerdemain"
 def elicit[value: Formulaic]
    (query: Optional[Query] = Unset, validation: Validation, submit: Optional[Text])
    (using formulation: Formulation)
-: Html[Flow] =
+: Html of Flow =
 
     formulation.form
      (value.fields(Pointer.Self, t"", query.or(Query.empty), validation, formulation), submit)
@@ -56,7 +58,7 @@ def elicit[value: Formulaic]
 
 extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
   def edit(validation: Validation, submit: Optional[Text])(using formulation: Formulation)
-  : Html[Flow] =
+  : Html of Flow =
 
       formulation.form
        (formulaic.fields(Pointer.Self, t"", formulaic.encoded(value), validation, formulation),
@@ -65,18 +67,20 @@ extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
 
 package formulations:
   given default: Formulation:
-    def form(content: Seq[Html[Flow]], submit: Optional[Text]): Html[Flow] =
-      Form(action = t".", method = Method.Post)(content, Input.Submit(value = submit.or(t"Submit")))
-
+    def form(content: Seq[Html of Flow], submit: Optional[Text]): Html of Flow =
+      Form(action = t".", method = t"post")(Fragment(content*), Input.Submit(value = submit.or(t"Submit")))
 
     def element
-         (widget:     Seq[Html[Phrasing]],
+         (widget:     Html of Phrasing,
           legend:     Text,
           validation: Optional[Message],
           required:   Boolean)
-    : Html[Flow] =
+    : Html of Flow =
+        given alertClass: (CssClass of "alert") = CssClass()
+        given requiredClass: (CssClass of "required") = CssClass()
+        Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required(t"*"))
 
-        Div
-         (validation.let(_.html).let(P.alert(_)),
-          Label(legend, widget),
-          Span.required(t"*").unless(!required))
+        // Div
+        //  (validation.let(_.html).let(P.alert(_)),
+        //   Label(legend, widget),
+        //   Span.required(t"*").unless(!required))

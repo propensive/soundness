@@ -30,53 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package honeycomb
 
 import anticipation.*
+import gossamer.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
-import urticose.*
+import spectacular.*
+import symbolism.*
 import vacuous.*
 
-import java.net as jn
+object Classes:
+  given addable: Classes is Addable by CssClass to Classes =
+    (classes, addition) => Classes(classes.names + addition.name)
 
-import Control.*
+  given addable2: Classes is Addable by Classes to Classes =
+    (classes, additions) => Classes(classes.names ++ additions.names)
 
-object Addressable:
-  given udpEndpoint: Endpoint[UdpPort] is Addressable:
-    case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
+  given addable3: CssClass is Addable by Classes to Classes =
+    (cssClass, additions) => Classes(additions.names + cssClass.name)
 
-    def connect(endpoint: Endpoint[UdpPort]): Connection =
-      val address = jn.InetAddress.getByName(endpoint.remote.s).nn
-      Connection(address, endpoint.port.number, jn.DatagramSocket())
+  given subtractable: Classes is Subtractable by CssClass to Classes =
+    (classes, subtraction) => Classes(classes.names - subtraction.name)
 
-    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
-      input.each: bytes =>
-        val packet =
-          jn.DatagramPacket
-           (bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port)
+  given subtractable2: Classes is Subtractable by Classes to Classes =
+    (classes, subtractions) => Classes(classes.names -- subtractions.names)
 
-        connection.socket.send(packet)
+  given empty: Classes(Set()):
+    type Topic = "apply"
 
-  given udpPort: UdpPort is Addressable:
-    case class Connection(port: Int, socket: jn.DatagramSocket)
-
-    def connect(port: UdpPort): Connection =
-      Connection(port.number, jn.DatagramSocket())
-
-    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
-      input.each: bytes =>
-        val packet = jn.DatagramPacket
-                      (bytes.mutable(using Unsafe),
-                       input.length,
-                       jn.InetAddress.getLocalHost.nn,
-                       connection.port)
-
-        connection.socket.send(packet)
-
-trait Addressable extends Typeclass:
-  type Connection
-
-  def connect(endpoint: Self): Connection
-  def transmit(connection: Connection, input: Stream[Bytes]): Unit
+case class Classes(names: Set[Text]) extends Topical

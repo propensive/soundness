@@ -30,41 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package turbulence
+
+import language.experimental.captureChecking
+
+import java.util.concurrent as juc
 
 import anticipation.*
-import distillate.*
-import gossamer.*
-import hieroglyph.*
+import denominative.*
+import fulminate.*
 import prepositional.*
 import proscenium.*
-import spectacular.*
-import vacuous.*
+import rudiments.*
 
-case class HtmlDoc(root: Node["html"])
-
-object HtmlDoc:
-  given generic: (encoder: CharEncoder) => HtmlDoc is Abstractable:
-    type Self = HtmlDoc
-    type Domain = HttpStreams
-    type Result = HttpStreams.Content
-
-    def genericize(doc: HtmlDoc): HttpStreams.Content =
-      (t"text/html; charset=${encoder.encoding.name}", Stream(HtmlDoc.serialize(doc).bytes))
-
-  given HtmlDoc is Encodable in Text = HtmlDoc.serialize(_)
-
-  def serialize[output: HtmlSerializer](doc: HtmlDoc, maxWidth: Optional[Int] = Unset): output =
-    output.serialize(doc, maxWidth)
-
-
-  def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
-       (content: (Optional[Html[html5.Flow]] | Seq[Html[html5.Flow]])*)
-       (using att: "href" is Attribute of Stylesheet)
-  : HtmlDoc =
-
-      val link = att.convert(stylesheet).absolve match
-        case Unset      => Nil
-        case text: Text => Seq(html5.Link.Stylesheet(href = text))
-
-      HtmlDoc(Html(html5.Head(html5.Title(title), link), html5.Body(content*)))
+trait Documentary:
+  type Self <: Documentary
+  type Metadata

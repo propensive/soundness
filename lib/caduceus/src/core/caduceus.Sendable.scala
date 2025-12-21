@@ -38,6 +38,7 @@ import fulminate.*
 import gesticulate.*
 import hieroglyph.*
 import honeycomb.*
+import parasite.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -51,8 +52,9 @@ object Sendable:
   given text: Text is Sendable =
     text => Email(Map(), Email.Message(Email.Content(Email.Body(text))))
 
-  given htmlDoc: HtmlDoc is Sendable =
-    html => Email(Map(), Email.Message(Email.Content(Email.Body.HtmlOnly(html.encode))))
+  given htmlDoc: (Dom, Monitor, Codicil) => Document[Html] is Sendable =
+    html =>
+      Email(Map(), Email.Message(Email.Content(Email.Body.HtmlOnly(html.read[Text]))))
 
   given email: Email is Sendable = identity(_)
 

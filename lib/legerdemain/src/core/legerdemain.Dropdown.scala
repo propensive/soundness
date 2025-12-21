@@ -38,14 +38,15 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import html5.*
+import doms.html.whatwg, whatwg.*
+import attributives.attributiveText
 
 object Dropdown:
-  given renderable: Dropdown is Renderable to Phrasing = selection =>
-    List
-     (Select(name = selection.name):
-        selection.options.map: option =>
-          html5.Option(value = option(0), label = option(1)))
+  given renderable: Dropdown is Renderable in Phrasing = selection =>
+    val items = selection.options.map: option =>
+      whatwg.Option(value = option(0), label = option(1)).asInstanceOf[Element of Select.Transport]
+
+    Select(name = selection.name)(items*)
 
 case class Dropdown(name: Text, options: List[(key: Text, value: Text)], value: Text)
 extends Widget

@@ -34,7 +34,7 @@ package soundness
 
 export cataclysm
 . { AnimationFillMode, BackgroundRepeat, BorderStyle, Cataclysm, Css, CssProperty, CssRule,
-    CssStyle, CssStylesheet, Cursor, Dir, Display, Float, Font, FontFace, FontStyle, FontWeight,
+    CssStyle, CssStylesheet, Dir, Display, Float, Font, FontFace, FontStyle, FontWeight,
     From, Import, Inherit, Initial, Keyframe, Keyframes, Length, MediaRule, MixBlendMode, Overflow,
     PointerEvents, Position, PropertyDef, PropertyValue, Selectable, Selector, ShowProperty,
     TextAlign, TextDecorationLine, TextDecorationStyle, To, Transparent, UserSelect, VerticalAlign,

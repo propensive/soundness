@@ -72,8 +72,6 @@ object Elicitable extends Elicitable2:
       val items = every[entity].map { item => item.encode -> item().show }.to(List)
       Dropdown(id, items, value)
 
-
-
 trait Elicitable extends Typeclass, Operable:
   def input(value: Self): Text
   def widget(id: Text, label: Text, value: Text): Operand

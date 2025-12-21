@@ -30,64 +30,105 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package punctuation
+package zephyrine
+
+import language.experimental.captureChecking
+
+import java.util.concurrent as juc
 
 import anticipation.*
+import denominative.*
 import fulminate.*
-import gossamer.*
-import honeycomb.*, html5.*
-import proscenium.*
+import prepositional.*
+import rudiments.*
 import vacuous.*
 
-object Outliner extends HtmlTranslator():
-  case class Entry(label: Text, children: List[Entry])
+object Emittable:
+  inline given text: Emittable:
+    type Self = Text
+    type Source = Text
+    type Transport = Array[Char]
 
-  override def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
-    def recur(entries: List[Entry]): Seq[Html[Ul.Content]] = entries.map: entry =>
-      val link = A(href = t"#${slug(entry.label)}")(entry.label)
-      if entry.children.isEmpty then Li(link) else Li(link, Ul(recur(entry.children)))
+    def length(text: Text): Int = text.s.length
+    def produce(block: Array[Char], size: Int): Text = new String(block, 0, size).tt
+    def allocate(size: Int): Array[Char] = new Array[Char](size)
 
-    List(Ul(recur(structure(Unset, nodes.to(List), Nil))*))
+    inline def copy(source: Text, start: Ordinal, target: Array[Char], index: Ordinal, size: Int)
+    : Unit =
+
+        source.s.getChars(start.n0, start.n0 + size, target, index.n0)
+
+  inline given bytes: Emittable:
+    type Self = Bytes
+    type Source = Bytes
+    type Transport = Array[Byte]
+
+    def produce(block: Array[Byte], size: Int): Bytes =
+      java.util.Arrays.copyOfRange(block, 0, size).nn.immutable(using Unsafe)
+
+    def length(bytes: Bytes): Int = bytes.length
+    def allocate(size: Int): Array[Byte] = new Array[Byte](size)
+
+    inline def copy(source: Bytes, start: Ordinal, target: Array[Byte], index: Ordinal, size: Int)
+    : Unit =
+
+        System.arraycopy(source.mutable(using Unsafe), start.n0, target, index.n0, index.n0 + size)
 
 
-  @tailrec
-  def structure(minimum: Optional[Int], nodes: List[Markdown.Ast.Node], stack: List[List[Entry]])
-  : List[Entry] =
+trait Emittable:
+  type Self
+  type Source
+  type Transport
 
-      nodes match
-        case Nil => stack match
-          case Nil         => Nil
-          case last :: Nil => last.reverse
+  def allocate(size: Int): Transport
+  def length(input: Source): Int
+  def produce(block: Transport, size: Int): Self
 
-          case head :: (Entry(label, something) :: tail) :: more =>
-            structure(minimum, Nil, (Entry(label, head.reverse) :: tail) :: more)
+  inline def copy
+                        (source: Source,
+                         start:  Ordinal,
+                         target: Transport,
+                         index:  Ordinal,
+                         size:   Int)
+  : Unit
 
-          case head :: Nil :: tail =>
-            structure(minimum, Nil, List(Entry(t"", head.reverse)) :: tail)
 
-        case Markdown.Ast.Block.Heading(level, children*) :: more
-             if minimum.lay(true)(level >= _) =>
+class Emitter[data: Emittable](block: Int = 4096, window: Int = 2):
+  private object Done
+  private val queue: juc.ArrayBlockingQueue[data | Done.type] = juc.ArrayBlockingQueue(window)
+  private var current: data.Transport = data.allocate(block)
+  private var index: Ordinal = Prim
 
-          val minimum2 = minimum.or(level)
-          val depth = stack.length + minimum2 - 1
+  inline def free: Int = block - index.n0
+  inline def finish(): Unit =
+    publish()
+    queue.put(Done)
 
-          if level > depth then structure(minimum2, nodes, Nil :: stack) else stack match
-            case Nil =>
-              panic(m"Stack should always be non-empty")
+  inline def put(input: data.Source): Unit = put(input, Prim, data.length(input))
 
-            case head :: next :: stack2 =>
-              if level < depth then next match
-                case Entry(label, Nil) :: tail =>
-                  structure(minimum2, nodes, (Entry(label, head.reverse) :: tail) :: stack2)
+  inline def publish(): Unit =
+    if index != Prim then
+      queue.put(data.produce(current, index.n0))
+      index = Prim
 
-                case _ =>
-                  structure(minimum2, nodes, (Entry(t"", head.reverse) :: Nil) :: stack2)
+  inline def put(source: data.Source, offset: Ordinal, size: Int): Unit =
+    var done = 0
 
-              else
-                structure(minimum2, more, (Entry(text(children), Nil) :: head) :: stack.tail)
+    while size - done > free do
+      data.copy(source, (offset.n0 + done).z, current, index, free)
+      done += free
+      index = (index.n0 + free).z
+      publish()
 
-            case other :: Nil =>
-              structure(minimum2, more, (Entry(text(children), Nil) :: other) :: Nil)
+    data.copy(source, (offset.n0 + done).z, current, index, size - done)
+    index = (index.n0 + size - done).z
 
-        case _ :: more =>
-          structure(minimum, more, stack)
+    if free == 0 then publish()
+
+  lazy val iterator: Iterator[data] = new Iterator[data]:
+    private var ready: data | Done.type = Done
+    def hasNext: Boolean =
+      ready = queue.take().nn
+      ready != Done
+
+    def next(): data = ready.asInstanceOf[data]

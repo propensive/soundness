@@ -40,7 +40,7 @@ export gossamer
     center, fit, uncamel, unkebab, unsnake, starts, ends, tr, subscripts, superscripts, sub,
     urlEncode, urlDecode, punycode, bytes, sysBytes, proximity, join, add, words, lines, appendln,
     spaced, slices, seek, search, Ascii, AsciiBuilder, Ltr, Rtl, erase, before, after, from,
-    Lexicon }
+    Lexicon, Dictionary }
 
 package decimalFormatters:
   export gossamer.decimalFormatters.java

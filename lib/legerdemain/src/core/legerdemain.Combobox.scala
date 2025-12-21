@@ -38,13 +38,17 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import html5.*
+import doms.html.whatwg
+import whatwg.*
+import attributives.attributiveText
 
 object Combobox:
-  given renderable: Combobox is Renderable to Phrasing = combobox => Seq[Html[Phrasing]]
-   (Input(name = combobox.name, list = DomId(combobox.name), value = combobox.value),
-    Datalist(id = DomId(combobox.name)):
-      combobox.options.map: option =>
-        html5.Option(value = option))
+  given renderable: Combobox is Renderable in Phrasing = combobox =>
+    val items = combobox.options.map: option =>
+      whatwg.Option(value = option)
+
+    Fragment
+     (Input(name = combobox.name, list = DomId(combobox.name), value = combobox.value),
+      Datalist(id = DomId(combobox.name))(items*))
 
 case class Combobox(name: Text, options: List[Text], value: Text) extends Widget

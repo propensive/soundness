@@ -32,41 +32,179 @@
                                                                                                   */
 package honeycomb
 
-import anticipation.*
-import proscenium.*
-import vacuous.*
-
-import scala.quoted.*
-
 import language.dynamics
 
+import java.lang as jl
+
+import scala.collection.mutable as scm
+
+import adversaria.*
+import anticipation.*
+import contingency.*
+import denominative.*
+import fulminate.*
+import gossamer.*
+import hellenism.*
+import hieroglyph.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import symbolism.*
+import turbulence.*
+import typonym.*
+import vacuous.*
+import zephyrine.*
+
+import classloaders.threadContext
+import charDecoders.utf8
+import textSanitizers.skip
+
 object Tag:
-  given generic: Tag[?, ?, ?] is GenericCssSelection = _.labelString.tt
+  def root(children: Set[Text]): Tag =
+    new Tag("#root", false, Html.Mode.Normal, Map(), children, false, false, false):
+      type Result = this.type
 
-open case class Tag[+name <: Label, child <: Label, attribute <: Label]
-   (labelString: name)
-extends Node[name], Dynamic:
-
-  def attributes: Attributes = Map()
-  def children: Seq[Node[?] | Text | Unset.type | HtmlXml] = Nil
-  def label: Text = labelString.tt
-
-  def preset(presetAttributes: (String, Text)*): Tag[name, child, attribute] =
-    new Tag[name, child, attribute](labelString):
-      override def attributes: Attributes = presetAttributes.to(Map)
-
-  type Content = child
+      def node(attributes: Map[Text, Optional[Text]]): Result = this
 
 
-  inline def applyDynamicNamed(method: String)(inline attributes: ("" | attribute, Any)*)
-  : StartTag[name, child] =
-
-      ${  Honeycomb.read[name, child, child]('this, 'method, 'labelString, 'attributes)  }
+  def void[label <: Label: ValueOf](presets: Map[Text, Optional[Text]] = Map()): Tag.Void of label =
+    new Void(valueOf[label].tt, presets).of[label]
 
 
-  def applyDynamic(method: String)(children: (Optional[Html[child]] | Seq[Html[child]])*)
-  : Element[name] =
+  def foreign(label: Text, attributes0: Map[Text, Optional[Text]])
+  : Tag of "#foreign" over "#foreign" =
 
-      method match
-        case "apply"   => Element(labelString, attributes, children)
-        case className => Element(labelString, attributes.updated("class", className.tt), children)
+      new Tag.Container(label, false, Html.Mode.Normal, attributes0, Set(), false, true)
+      . of["#foreign"]
+      . over["#foreign"]
+
+
+  def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
+       (autoclose:  Boolean                   = false,
+        mode:       Html.Mode                 = Html.Mode.Normal,
+        presets:    Map[Text, Optional[Text]] = Map(),
+        insertable: Boolean                   = false)
+  : Container of label over children =
+
+      val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
+
+      Container(valueOf[label].tt, autoclose, mode, presets, admissible, insertable)
+      . of[label]
+      . over[children]
+
+
+  def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
+       (presets: Map[Text, Optional[Text]] = Map())
+  : Transparent of label over children =
+
+      val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
+      transparent(valueOf[label].tt, admissible, presets).of[label].over[children]
+
+
+  def transparent(label: Text, children: Set[Text], presets: Map[Text, Optional[Text]])
+  : Transparent =
+
+      Transparent(label, children, presets)
+
+  def foreign[label <: Label: ValueOf](): Container of label over "#foreign" =
+    Container(valueOf[label], foreign = true).of[label].over["#foreign"]
+
+
+  class Container
+         (label:      Text,
+          autoclose:  Boolean                   = false,
+          mode:       Html.Mode                 = Html.Mode.Normal,
+          presets:    Map[Text, Optional[Text]] = Map(),
+          admissible: Set[Text]                 = Set(),
+          insertable: Boolean                   = false,
+          foreign:    Boolean                   = false)
+  extends Tag(label, autoclose, mode, presets, admissible, insertable, foreign = foreign):
+    type Result = Element & Html.Populable of Topic over Transport in Form
+
+    def applyDynamic[className <: Label](method: className)
+         (children: Optional[Html of (? <: Transport)]*)
+         (using css: Classes of className)
+    : Element of Topic =
+
+        val nodes = children.compact.nodes
+
+        val presets2 = if css.names.isEmpty then presets else
+          val cls = css.names.join(t" ")
+          val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
+          presets.updated("class", value)
+
+        Element(label, presets2, nodes, foreign).of[Topic]
+
+    def node(attributes: Map[Text, Optional[Text]]): Result =
+      new Element(label, presets ++ attributes, IArray(), foreign) with Html.Populable()
+      . of[Topic]
+      . over[Transport]
+      . in[Form]
+
+  class Transparent
+         (label:      Text,
+          admissible: Set[Text],
+          presets:    Map[Text, Optional[Text]] = Map(),
+          foreign:    Boolean                   = false)
+  extends Tag
+           (label       = label,
+            autoclose   = false,
+            mode        = Html.Mode.Normal,
+            presets     = presets,
+            admissible  = admissible,
+            insertable  = false,
+            foreign     = foreign,
+            transparent = true):
+
+    type Result = Element & Html.Transparent of Topic over Transport in Form
+
+
+    def applyDynamic[className <: Label](method: className)
+         (children: Optional[Html of (? <: Transport)]*)
+         (using css: Classes of className)
+    : Element of Topic =
+
+        val presets2 = if css.names.isEmpty then presets else
+          val cls = css.names.join(t" ")
+          val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
+          presets.updated("class", value)
+
+        val nodes: IArray[Node] = children.compact.nodes
+        Element(label, presets2, nodes, foreign).of[Topic]
+
+
+    def node(attributes: Map[Text, Optional[Text]]): Result =
+      new Element(label, presets ++ attributes, IArray(), foreign) with Html.Transparent()
+      . of[Topic]
+      . over[Transport]
+      . in[Form]
+
+
+  class Void(label: Text, presets: Map[Text, Optional[Text]])
+  extends Tag(label, presets = presets, void = true):
+    type Result = Element of Topic in Form
+
+    def node(attributes: Map[Text, Optional[Text]]): Result =
+      new Element(label, presets ++ attributes, IArray(), this.foreign)
+      . of[Topic]
+      . in[Form]
+
+abstract class Tag
+       (    label:       Text,
+        val autoclose:   Boolean                   = false,
+        val mode:        Html.Mode                 = Html.Mode.Normal,
+        val presets:     Map[Text, Optional[Text]] = Map(),
+        val admissible:  Set[Text]                 = Set(),
+        val insertable:  Boolean                   = false,
+            foreign:     Boolean                   = false,
+        val void:        Boolean                   = false,
+        val transparent: Boolean                   = false)
+extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
+
+  type Result <: Element
+
+
+  inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Result =
+    ${Honeycomb.attributes[Result, this.type]('this, 'attributes)}
+
+  def node(attributes: Map[Text, Optional[Text]]): Result

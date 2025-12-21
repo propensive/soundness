@@ -32,7 +32,23 @@
                                                                                                   */
 package punctuation
 
+import anticipation.*
+import gossamer.*
 import harlequin.*
+import honeycomb.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
 
-package htmlEmbeddings:
-  given scalaSyntax: HtmlTranslator = HtmlTranslator(ScalaEmbedding, JavaEmbedding)
+import doms.html.whatwg, whatwg.*
+
+package formattables:
+  given scala: ("scala" is Formattable) = new CommonFormattable:
+    type Self = "scala"
+    def format(meta: List[Text], content: Text): Optional[Html of Flow] =
+      postprocess(Scala.highlight(content)).unless(meta.prim != t"scala")
+
+  given java: ("java" is Formattable) = new CommonFormattable:
+    type Self = "java"
+    def format(meta: List[Text], content: Text): Optional[Html of Flow] =
+      postprocess(Java.highlight(content)).unless(meta.prim != t"java")

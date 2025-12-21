@@ -45,6 +45,10 @@ inline def default[value]: value = infer[Default[value]]()
 inline def optimizable[value](lambda: Optional[value] => Optional[value]): Optional[value] =
   lambda(Unset)
 
+transparent inline def invite[entity]: Optional[entity] = summonFrom:
+  case value: `entity` => value
+  case _               => Unset
+
 extension [value](iterable: Iterable[Optional[value]])
   transparent inline def compact: Iterable[value] =
     iterable.filter(!_.absent).map(_.vouch)

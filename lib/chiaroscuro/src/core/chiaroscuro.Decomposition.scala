@@ -86,7 +86,7 @@ enum Decomposition:
           append(t"\n")
           append(space*indent)
 
-        append(t"$name╱")
+        append(t"$name.")
         value.multiline(indent, false)
 
       case Sequence(name, values, _) =>

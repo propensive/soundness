@@ -48,11 +48,11 @@ object Tests extends Suite(m"Baroque tests"):
   def run(): Unit =
     test(m"Show a complex number"):
       Complex(1, 3).show
-    .assert(_ == t"1 + 3𝕚")
+    .assert(_ == t"1 + 3ℐ")
 
     test(m"Show a complex number with negative imaginary"):
       Complex(1, -3).show
-    .assert(_ == t"1 - 3𝕚")
+    .assert(_ == t"1 - 3ℐ")
 
     test(m"Show a complex number with no imaginary part"):
       Complex(1, 0).show
@@ -60,13 +60,13 @@ object Tests extends Suite(m"Baroque tests"):
 
     test(m"Show a complex number with no real part"):
       Complex(0, 3).show
-    .assert(_ == t"3𝕚")
+    .assert(_ == t"3ℐ")
 
     test(m"Show a quantity complex number"):
       val re = 1.0*Metre/Second
       val im = Metre*9.0/Second
       Complex[Quantity[Metres[1] & Seconds[-1]]](1.0*Metre/Second, Metre*9.0/Second).show
-    .assert(_ == t"(1.00 + 9.00𝕚) m·s¯¹")
+    .assert(_ == t"(1.00 + 9.00ℐ) m·s¯¹")
 
     test(m"Show a quantity complex number with only a real part"):
       val re = 1.0*Metre/Second
@@ -79,7 +79,7 @@ object Tests extends Suite(m"Baroque tests"):
       val re: Distance = Quanta(1, 2, 0)
       val im: Distance = Quanta(2, 0, 6)
       Complex[Distance](re, im).show
-    .assert(_ == t"(1 + 2𝕚) yd, 2 ft, (6𝕚) in")
+    .assert(_ == t"(1 + 2ℐ) yd, 2 ft, (6ℐ) in")
 
     test(m"Add two int-complex numbers"):
       Complex(1, 2) + Complex(8, 2)

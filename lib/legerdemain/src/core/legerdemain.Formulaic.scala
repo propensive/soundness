@@ -42,14 +42,13 @@ import prepositional.*
 import vacuous.*
 import wisteria.*
 
-import html5.*
+import doms.html.whatwg, whatwg.*
 
 object Formulaic extends ProductDerivable[Formulaic]:
   given elicitable: [value]
         => (elicitable: value is Elicitable)
-        => (renderable: elicitable.Operand is Renderable to Phrasing)
+        => (renderable: elicitable.Operand is Renderable in Phrasing)
         =>  value is Formulaic:
-
 
     def fields
          (pointer:     Pointer,
@@ -57,10 +56,10 @@ object Formulaic extends ProductDerivable[Formulaic]:
           query:       Query,
           validation:  Validation,
           formulation: Formulation)
-    : Seq[Html[Flow]] =
+    : Seq[Html of Flow] =
 
         val message: Optional[Message] = validation(pointer)
-        val widget = renderable.html(elicitable.widget(pointer.text, legend, query().or(t"")))
+        val widget = renderable.render(elicitable.widget(pointer.text, legend, query().or(t"")))
         val required = false//safely(decodable.decoded(t"")).absent
 
         List(formulation.element(widget, legend, message, required))
@@ -68,16 +67,15 @@ object Formulaic extends ProductDerivable[Formulaic]:
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Formulaic =
     (pointer, legend, query, errors, formulation) =>
-      val content: IArray[Html[Flow]] =
+      val content: Seq[Html of Flow] =
         contexts:
           [field] => context =>
             val label2 = if pointer == Pointer.Self then Pointer(label) else pointer(label)
             val legend = label.uncamel.map(_.lower.capitalize).spaced
             context.fields(label2, legend, query(label), errors, formulation)
-
         . flatten
 
-      List(Fieldset(Legend(legend), content))
+      List(Fieldset(Legend(legend): Html of Flow, Fragment(content*): Html of Flow))
 
 
 trait Formulaic extends Typeclass:
@@ -87,4 +85,4 @@ trait Formulaic extends Typeclass:
         query:       Query,
         validation:  Validation,
         formulation: Formulation)
-  : Seq[Html[Flow]]
+  : Seq[Html of Flow]

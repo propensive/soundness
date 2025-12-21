@@ -30,43 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package turbulence
+
+import language.experimental.captureChecking
+
+import java.util.concurrent as juc
 
 import anticipation.*
-import proscenium.*
-import spectacular.*
-import vacuous.*
+import denominative.*
+import fulminate.*
+import prepositional.*
+import rudiments.*
 
-import language.dynamics
-
-object Element:
-  @targetName("make")
-  def apply[node <: Label, child <: Label]
-       (labelString: String,
-        attributes:  Attributes,
-        children:    Seq[Optional[Html[child]] | Seq[Html[child]]] = Nil)
-  : Element[node] =
-
-      new Element(labelString, attributes, flatten(children))
-
-
-  private def flatten[child <: Label](nodes: Seq[Optional[Html[child]] | Seq[Html[child]]])
-  : Seq[Html[child]] =
-
-      nodes.flatMap:
-        case Unset                              => Seq()
-        case seq: Seq[Html[`child`] @unchecked] => seq
-        case node: Html[`child`] @unchecked     => Seq(node)
-
-
-case class Element[+name <: Label]
-   (labelString: String, attributes: Map[String, Optional[Text]], children: Seq[Html[?]])
-extends Node[name]:
-
-  def label: Text = labelString.show
-
-  // val block: Boolean = tagBlock || children.exists: child =>
-  //   child.absolve match
-  //     case node: Node[?] => node.block
-  //     case _: Text       => false
-  //     case _: Int        => false
+case class Document[content <: Documentary](root: content, metadata: root.Metadata):
+  def apply(): content = root

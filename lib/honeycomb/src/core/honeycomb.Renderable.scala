@@ -38,49 +38,46 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
+import doms.html.whatwg.*
+
 object Renderable:
-  import html5.Phrasing
-  given showable: [value: Showable] => value is Renderable to Phrasing = value => List(value.show)
+  given message: Message is Renderable:
+    type Form = Phrasing
+      def render(message: Message): Html of Phrasing =
+        val elements: List[Html of Phrasing] = message.segments.flatMap:
+          case message: Message => List(render(message))
+          case text: Text       => List(text)
+          case _                => Nil
 
-  given message: Message is Renderable to Phrasing = _.segments.flatMap:
-    case message: Message => message.html
-    case text: Text       => List(text)
-    case _                => Nil
+        Fragment(elements*)
+
+  given stackTrace: StackTrace is Renderable in Flow = stackTrace =>
+    given atClass: (CssClass of "at") = CssClass()
+    given classClass: (CssClass of "class") = CssClass()
+    given stackClass: (CssClass of "stack") = CssClass()
+    given methodClass: (CssClass of "method") = CssClass()
+    given fileClass: (CssClass of "file") = CssClass()
+    given lineClass: (CssClass of "line") = CssClass()
+
+    val rows = stackTrace.frames.map: frame =>
+      Tr
+       (Td.at(Code(t"at")),
+        Td.`class`(Code(frame.method.className)),
+        Td.method(Code(frame.method.method)),
+        Td.file(Code(frame.file)),
+        Td(Code(t":")),
+        Td.line(Code(frame.line.let(_.show).or(t""))))
+
+    Div.stack
+     (H2(stackTrace.component),
+      H3(stackTrace.className),
+      H4(stackTrace.message.html),
+      Table(Tbody(rows*)))
 
 
-  given abstractable: [value: Abstractable across HtmlContent to List[Sgml]]
-        => value is Renderable:
-    type Self = value
-    type Result = Label
-
-    def html(value: value): Seq[Html[Result]] = value.generic.map(convert)
-
-    private def convert(html: Sgml): Html[?] = html match
-      case Sgml.Textual(text)               => text
-      case Sgml.Comment(_)                  => "".tt
-      case Sgml.ProcessingInstruction(_, _) => "".tt
-
-      case Sgml.Element(label, attributes, children) =>
-        Node(label, attributes.map(_.s -> _), children.map(convert(_)))
-
-  given StackTrace is Renderable to html5.Flow = stackTrace =>
-    import html5.*
-
-    List:
-      Div.stack(H2(stackTrace.component),
-                H3(stackTrace.className),
-                H4(stackTrace.message.html),
-                Table(stackTrace.frames.map: frame =>
-                      Tr(Td.at(Code(t"at")),
-                      Td.`class`(Code(frame.method.className)),
-                      Td.method(Code(frame.method.method)),
-                      Td.file(Code(frame.file)),
-                      Td(Code(t":")),
-                      Td.line(Code(frame.line.let(_.show).or(t""))))))
-
-trait Renderable extends Typeclass:
-  type Result <: Label
-  def html(value: Self): Seq[Html[Result]]
+trait Renderable extends Typeclass, Formal:
+  def render(value: Self): Html of Form

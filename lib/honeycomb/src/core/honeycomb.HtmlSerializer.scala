@@ -40,86 +40,86 @@ import spectacular.*
 import vacuous.*
 import xylophone.*
 
-trait HtmlSerializer[result]:
-  def serialize(doc: HtmlDoc, maxWidth: Optional[Int] = Unset): result
+// trait HtmlSerializer[result]:
+//   def serialize(doc: HtmlDoc, maxWidth: Optional[Int] = Unset): result
 
-object HtmlSerializer:
-  given text: HtmlSerializer[Text] = (doc, maxWidth) =>
-    var indent: Int = 0
-    var linebreak: Boolean = false
-    val buf: StringBuilder = StringBuilder()
-    var emptyLine: Boolean = true
-    var pos: Int = 0
+// object HtmlSerializer:
+//   given text: HtmlSerializer[Text] = (doc, maxWidth) =>
+//     var indent: Int = 0
+//     var linebreak: Boolean = false
+//     val buf: StringBuilder = StringBuilder()
+//     var emptyLine: Boolean = true
+//     var pos: Int = 0
 
-    def newline(n: Int = 0): Unit =
-      indent += n
-      linebreak = true
+//     def newline(n: Int = 0): Unit =
+//       indent += n
+//       linebreak = true
 
-    def append(strings: Text*): Unit =
-      for str <- strings do
-        buf.add(str)
-        pos += str.length
+//     def append(strings: Text*): Unit =
+//       for str <- strings do
+//         buf.add(str)
+//         pos += str.length
 
-      emptyLine = false
+//       emptyLine = false
 
-    def whitespace(): Unit =
-      if linebreak then
-        buf.add(t"\n")
-        for i <- 1 to indent do buf.add(t"  ")
-        pos = indent*2
-      linebreak = false
-      emptyLine = true
+//     def whitespace(): Unit =
+//       if linebreak then
+//         buf.add(t"\n")
+//         for i <- 1 to indent do buf.add(t"  ")
+//         pos = indent*2
+//       linebreak = false
+//       emptyLine = true
 
-    def next(node: Html[?], verbatim: Boolean): Unit = node.absolve match
-      case HtmlXml(xml) =>
-        append(Xml.print(xml))
+//     def next(node: OldHtml[?], verbatim: Boolean): Unit = node.absolve match
+//       case HtmlXml(xml) =>
+//         append(Xml.print(xml))
 
-      case node: Node[?] =>
-        whitespace()
-        append(t"<", node.label)
+//       case node: Node[?] =>
+//         whitespace()
+//         append(t"<", node.label)
 
-        for attribute <- node.attributes do attribute.absolve match
-          case (key: Text, value: Text) => append(t" ", key, t"=\"", value, t"\"")
-          case (key: Text, Unset)       => append(t" ", key)
+//         for attribute <- node.attributes do attribute.absolve match
+//           case (key: Text, value: Text) => append(t" ", key, t"=\"", value, t"\"")
+//           case (key: Text, Unset)       => append(t" ", key)
 
-        append(t">")
-        if node.block then newline(1)
+//         append(t">")
+//         if node.block then newline(1)
 
-        for child <- node.children do
-          val splitLine = child match
-            case element: Element[?] => element.block
-            case _                   => false
-          if splitLine then newline()
-          next(child, node.verbatim)
-          if splitLine then newline()
+//         for child <- node.children do
+//           val splitLine = child match
+//             case element: Element[?] => element.block
+//             case _                   => false
+//           if splitLine then newline()
+//           next(child, node.verbatim)
+//           if splitLine then newline()
 
-        if node.block then newline(-1)
+//         if node.block then newline(-1)
 
-        if !node.unclosed then
-          whitespace()
-          append(t"</", node.label, t">")
-          if node.block then newline(0)
+//         if !node.unclosed then
+//           whitespace()
+//           append(t"</", node.label, t">")
+//           if node.block then newline(0)
 
-      case text: Text =>
-        whitespace()
-        if maxWidth.absent then append(text) else
-          if verbatim || pos + text.length <= maxWidth.or(0) then append(text)
-          else
-            text.cut(t"\\s+").nn.each: word =>
-              if !(pos + 1 + word.nn.length < maxWidth.or(0) || emptyLine) then
-                linebreak = true
-                whitespace()
-                append(t" ")
+//       case text: Text =>
+//         whitespace()
+//         if maxWidth.absent then append(text) else
+//           if verbatim || pos + text.length <= maxWidth.or(0) then append(text)
+//           else
+//             text.cut(t"\\s+").nn.each: word =>
+//               if !(pos + 1 + word.nn.length < maxWidth.or(0) || emptyLine) then
+//                 linebreak = true
+//                 whitespace()
+//                 append(t" ")
 
-              append(if !emptyLine then t" " else t"", word.nn)
+//               append(if !emptyLine then t" " else t"", word.nn)
 
-            if text.chars.last.isWhitespace then append(t" ")
+//             if text.chars.last.isWhitespace then append(t" ")
 
-      case Unset =>
-        ()
+//       case Unset =>
+//         ()
 
 
-    append(t"<!DOCTYPE html>\n")
-    next(doc.root, false)
+//     append(t"<!DOCTYPE html>\n")
+//     next(doc.root, false)
 
-    buf.text
+//     buf.text

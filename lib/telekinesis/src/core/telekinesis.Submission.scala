@@ -42,6 +42,8 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
+import doms.html.whatwg, whatwg.*
+
 case class Submission[value](query: Optional[Query]):
   def fresh: Boolean = query.absent
 
@@ -58,7 +60,7 @@ case class Submission[value](query: Optional[Query]):
         value:      Optional[value]      = Unset,
         validation: Optional[Validation] = Unset)
        (using value is Formulaic, value is Encodable in Query, Formulation)
-  : Html[html5.Flow] =
+  : Html of Flow =
 
       // FIXME: Check why `data` isn't used
       val data: Optional[Query] = query.or(value.let(_.encode))

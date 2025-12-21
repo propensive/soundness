@@ -30,24 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package harlequin
+package punctuation
 
 import anticipation.*
-import gossamer.*
-import harlequin.*
-import honeycomb.*, html5.*
-import spectacular.*
+import honeycomb.*
+import prepositional.*
+import proscenium.*
 import vacuous.*
+import wisteria.*
 
-trait CommonEmbedding:
-  def className(accent: Accent): List[CssClass] = List(CssClass(accent.show.lower))
+import doms.html.whatwg, whatwg.*
 
-  def element(accent: Accent, text: Text): Element["code"] =
-    html5.Code(`class` = className(accent))(text)
+object Formattable extends ProductDerivable[Formattable]:
+  inline def join[derivation <: Product: ProductReflection]: derivation is Formattable =
+    (language, content) =>
+      contexts:
+        [field] => (context: field is Formattable) => context
 
-  protected def postprocess(source: SourceCode): Seq[Html[Flow]] =
-    val code = source.lines.map: line =>
-      Span.line:
-        line.map { case SourceToken(text, accent) => element(accent, text) }
+      . foldLeft(Unset: Optional[Html of Flow]): (acc, next) =>
+        acc.or(next.format(language, content))
 
-    List(Div.amok(Pre(code)))
+trait Formattable:
+  type Self
+  def format(language: List[Text], content: Text): Optional[Html of Flow]

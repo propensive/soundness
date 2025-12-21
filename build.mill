@@ -52,20 +52,44 @@ object settings:
     "-deprecation",
     //"-Wunused:imports",
     "-Wimplausible-patterns",
-    "-Wsafe-init",
+    // "-Wsafe-init",
     "-Xmax-inlines", "100",
     //"-Ycc-new",
     "-Yno-flexible-types",
     "-Yexplicit-nulls",
     "-Ycheck-all-patmat",
-    "-explain-cyclic",
+    // "-explain-cyclic",
     "-language:experimental.modularity",
     "-language:experimental.genericNumberLiterals",
     "-language:experimental.into",
     "-language:experimental.erasedDefinitions",
+    "-language:implicitConversions",
     "-language:experimental.saferExceptions",
-    "-language:experimental.namedTypeArguments",
-    "-language:implicitConversions"
+    "-language:experimental.namedTypeArguments"
+  )
+
+  val scalaOptionsCC = Seq(
+    "-experimental",
+    "-new-syntax",
+    "-feature",
+    //"-explain",
+    "-deprecation",
+    //"-Wunused:imports",
+    "-Wimplausible-patterns",
+    //"-Wsafe-init",
+    "-Xmax-inlines", "100",
+    "-Ycc-new",
+    "-Yno-flexible-types",
+    "-Yexplicit-nulls",
+    "-Ycheck-all-patmat",
+    //"-explain-cyclic",
+    "-language:experimental.modularity",
+    "-language:experimental.genericNumberLiterals",
+    "-language:experimental.into",
+    "-language:experimental.erasedDefinitions",
+    "-language:implicitConversions",
+    "-language:experimental.saferExceptions",
+    "-language:experimental.namedTypeArguments"
   )
 
 trait BaseScalaModule extends ScalaModule:
@@ -99,15 +123,17 @@ trait SoundnessModule extends Module:
   def moduleDir = super.moduleDir / ".." / "lib" / super.moduleDir.last / "src"
 
 trait SoundnessSubModule extends BaseScalaModule with SonatypeCentralPublishModule:
-  def resources = Task.Sources(moduleDir / ".." / ".." / "res")
-  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res")
+  def moduleId: String = moduleDir.last
+  def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def sources = Task.Sources(moduleDir)
 
 trait ProbablyTestModule extends BaseScalaModule:
+  def moduleId: String = moduleDir.last
   def finalMainClass = (moduleDir / ".." / "..").last + ".Tests"
   def moduleDeps: Seq[ScalaModule] = Seq(probably.cli)
-  def resources = Task.Sources(moduleDir / ".." / ".." / "res")
-  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res")
+  def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
 
   def sources = Task.Sources(moduleDir)
 
@@ -768,7 +794,8 @@ object hellenism extends SoundnessModule:
 
 object honeycomb extends SoundnessModule:
   object core extends SoundnessSubModule:
-    def moduleDeps = Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url)
+    def moduleDeps =
+      Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core, typonym.core, adversaria.core)
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core)
@@ -891,6 +918,7 @@ object mosquito extends SoundnessModule:
 object urticose extends SoundnessModule:
   object core extends SoundnessSubModule:
     def moduleDeps = Seq(gossamer.core, hypotenuse.core)
+
   object url extends SoundnessSubModule:
     def moduleDeps = Seq(escapade.core, serpentine.core, anticipation.html, core)
 
@@ -997,12 +1025,7 @@ object profanity extends SoundnessModule:
 object punctuation extends SoundnessModule:
   object core extends SoundnessSubModule:
     def moduleDeps = Seq(gossamer.core, turbulence.core, honeycomb.core)
-    def mvnDeps = Seq(
-      mvn"com.vladsch.flexmark:flexmark:0.42.12",
-      mvn"com.vladsch.flexmark:flexmark-ext-tables:0.42.12",
-      mvn"com.vladsch.flexmark:flexmark-util:0.42.12",
-      mvn"com.vladsch.flexmark:flexmark-formatter:0.42.12"
-    )
+    def mvnDeps = Seq(mvn"org.commonmark:commonmark:0.27.0")
 
   object html extends SoundnessSubModule:
     def moduleDeps = Seq(core, honeycomb.core)
@@ -1011,7 +1034,7 @@ object punctuation extends SoundnessModule:
     def moduleDeps = Seq(core, escapade.core, harlequin.core)
 
   object test extends ProbablyTestModule:
-    def moduleDeps = Seq(probably.cli, core, html, ansi)
+    def moduleDeps = Seq(probably.cli, core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
 
 object quantitative extends SoundnessModule:
   object core extends SoundnessSubModule:
@@ -1159,7 +1182,7 @@ object turbulence extends SoundnessModule:
 
 object typonym extends SoundnessModule:
   object core extends SoundnessSubModule:
-    def moduleDeps = Seq(proscenium.core)
+    def moduleDeps = Seq(proscenium.core, prepositional.core)
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core)
@@ -1223,9 +1246,11 @@ object yossarian extends SoundnessModule:
 object zephyrine extends SoundnessModule:
   object core extends SoundnessSubModule:
     def moduleDeps = Seq(hieroglyph.core, hypotenuse.core)
+    override def scalacOptions = settings.scalaOptionsCC
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core)
+    override def scalacOptions = settings.scalaOptionsCC
 
 object zeppelin extends SoundnessModule:
   object core extends SoundnessSubModule:
