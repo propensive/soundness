@@ -46,5 +46,5 @@ object CssClass:
     new CssClass(valueOf[label]):
       type Topic = label
 
-class CssClass(val name: Text) extends CssClasses(Set(name)):
+class CssClass(val name: Text) extends Classes(Set(name)):
   type Topic <: Label

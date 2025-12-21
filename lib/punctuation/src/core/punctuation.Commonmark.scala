@@ -96,7 +96,7 @@ object Commonmark:
       protected def line(node: Node | Null) = node.nn.getSourceSpans.nn.get(0).nn.getLineIndex.z
 
       override def visit(node: Document | Null): Unit =
-        visitChildren(node.nn)
+        visitChildren(node)
         root = Markdown(refs.reverse, layouts.reverse*)
 
       override def visit(node: Paragraph | Null): Unit =

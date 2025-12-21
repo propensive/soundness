@@ -32,7 +32,5 @@
                                                                                                   */
 package soundness
 
-export harlequin.{CommonEmbedding, JavaEmbedding, ScalaEmbedding}
-
-package htmlEmbeddings:
-  export punctuation.htmlEmbeddings.scalaSyntax
+package formattables:
+  export punctuation.formattables.{java, scala}

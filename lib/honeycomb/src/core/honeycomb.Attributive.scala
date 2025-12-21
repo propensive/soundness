@@ -59,7 +59,7 @@ object Attributive:
   erased trait Crossorigin
   erased trait CustomElementName
   erased trait Css
-  erased trait CssClasses
+  erased trait CssClassList
   erased trait Datetime
   erased trait Decimal
   erased trait Decoding
@@ -134,6 +134,7 @@ object Attributive:
   given posInt: Int is Attributive to PositiveInt = _ -> _.show
   given double: Double is Attributive to Decimal = _ -> _.toString.tt
   given domId: DomId is Attributive to Id = _ -> _.toString.tt
+  given classes: Classes is Attributive to CssClassList = _ -> _.names.join(t" ")
 
   given url: [url: Abstractable across Urls to Text] => url is Attributive to Url =
     (key, value) => (key, value.generic)

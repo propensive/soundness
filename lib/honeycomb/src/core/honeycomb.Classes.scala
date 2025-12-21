@@ -30,14 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package punctuation
+package honeycomb
 
 import anticipation.*
-import honeycomb.*
+import gossamer.*
 import prepositional.*
+import proscenium.*
+import spectacular.*
+import symbolism.*
 import vacuous.*
 
-import doms.html.whatwg, whatwg.*
+object Classes:
+  given addable: Classes is Addable by CssClass to Classes =
+    (classes, addition) => Classes(classes.names + addition.name)
 
-abstract class Embedding(val language: Optional[Text]):
-  def render(meta: Optional[Text], content: Text): Seq[Html of Flow]
+  given addable2: Classes is Addable by Classes to Classes =
+    (classes, additions) => Classes(classes.names ++ additions.names)
+
+  given addable3: CssClass is Addable by Classes to Classes =
+    (cssClass, additions) => Classes(additions.names + cssClass.name)
+
+  given subtractable: Classes is Subtractable by CssClass to Classes =
+    (classes, subtraction) => Classes(classes.names - subtraction.name)
+
+  given subtractable2: Classes is Subtractable by Classes to Classes =
+    (classes, subtractions) => Classes(classes.names -- subtractions.names)
+
+  given empty: Classes(Set()):
+    type Topic = "apply"
+
+case class Classes(names: Set[Text]) extends Topical

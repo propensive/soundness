@@ -123,7 +123,7 @@ object Tag:
 
     def applyDynamic[className <: Label](method: className)
          (children: Optional[Html of (? <: Transport)]*)
-         (using css: CssClasses of className)
+         (using css: Classes of className)
     : Element of Topic =
 
         val nodes = children.compact.nodes
@@ -161,7 +161,7 @@ object Tag:
 
     def applyDynamic[className <: Label](method: className)
          (children: Optional[Html of (? <: Transport)]*)
-         (using css: CssClasses of className)
+         (using css: Classes of className)
     : Element of Topic =
 
         val presets2 = if css.names.isEmpty then presets else

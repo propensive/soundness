@@ -22,6 +22,7 @@ object Markdown:
   trait Node
   case class LinkRef(label: Text, title: Optional[Text], destination: Text)
 
+  // FIXME: This implementation needs to be cleaned up
   private def url(text: Text): Text =
     val builder = StringBuilder()
     text.urlDecode.chars.each:
@@ -80,10 +81,13 @@ object Markdown:
     def render(markdown: Markdown of Prose): Html of Phrasing =
       Fragment(markdown.children.map(phrasing(_))*)
 
-  given layout: (Markdown of Layout) is Renderable:
+  given layout: (Markdown of Layout) is Renderable = markdown =>
+    layout2[EmptyTuple].render(markdown.asInstanceOf[Markdown of Layout across EmptyTuple])
+
+  given layout2: [domains: Formattable] => (Markdown of Layout across domains) is Renderable:
     type Form = doms.html.whatwg.Flow
 
-    def render(markdown: Markdown of Layout): Html of whatwg.Flow =
+    def render(markdown: Markdown of Layout across domains): Html of whatwg.Flow =
       import Markdown.*
       import doms.html.whatwg.*
 
@@ -152,7 +156,8 @@ object Markdown:
           case 6 => H6(content.map(phrasing(_))*)
 
         case Layout.CodeBlock(line, info, code) =>
-          Pre(info.prim.lay(Code(code)) { info => Code(`class` = t"language-$info")(code) })
+          domains.format(info, code).or:
+            Pre(info.prim.lay(Code(code)) { info => Code(`class` = t"language-$info")(code) })
 
       Fragment(markdown.children.map { node => Fragment(layout(node), "\n") }*)
 
@@ -168,8 +173,9 @@ object Markdown:
     val linkRefs: List[Markdown.LinkRef] = Nil
     val children: Seq[Prose] = prose
 
-abstract class Markdown:
+trait Markdown:
   type Topic <: Markdown.Node
+  type Domain <: Label
 
   val linkRefs: List[Markdown.LinkRef]
   val children: Seq[Topic]

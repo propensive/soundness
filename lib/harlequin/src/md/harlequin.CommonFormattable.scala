@@ -30,33 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package harlequin
 
 import anticipation.*
 import gossamer.*
+import harlequin.*
+import honeycomb.*
 import prepositional.*
-import proscenium.*
+import punctuation.*
 import spectacular.*
-import symbolism.*
 import vacuous.*
 
-object CssClasses:
-  given addable: CssClasses is Addable by CssClass to CssClasses =
-    (classes, addition) => CssClasses(classes.names + addition.name)
+import doms.html.whatwg, whatwg.*
 
-  given addable2: CssClasses is Addable by CssClasses to CssClasses =
-    (classes, additions) => CssClasses(classes.names ++ additions.names)
+trait CommonFormattable extends Formattable:
+  given lineClass: (CssClass of "line") = CssClass()
+  given amokClass: (CssClass of "amok") = CssClass() // FIXME
+  def classes(accent: Accent): Classes = Classes(Set(accent.show.lower))
 
-  given addable3: CssClass is Addable by CssClasses to CssClasses =
-    (cssClass, additions) => CssClasses(additions.names + cssClass.name)
+  def element(accent: Accent, text: Text): Element of "code" =
+    whatwg.Code(`class` = classes(accent))(text)
 
-  given subtractable: CssClasses is Subtractable by CssClass to CssClasses =
-    (classes, subtraction) => CssClasses(classes.names - subtraction.name)
+  protected def postprocess(source: SourceCode): Html of Flow =
+    val code = source.lines.map: line =>
+      Span.line(line.map { case SourceToken(text, accent) => element(accent, text) }*)
 
-  given subtractable2: CssClasses is Subtractable by CssClasses to CssClasses =
-    (classes, subtractions) => CssClasses(classes.names -- subtractions.names)
-
-  given empty: CssClasses(Set()):
-    type Topic = "apply"
-
-case class CssClasses(names: Set[Text]) extends Topical
+    Fragment(Div.amok(Pre(code*)))

@@ -30,17 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package harlequin
+package punctuation
 
 import anticipation.*
-import gossamer.*
 import honeycomb.*
 import prepositional.*
-import punctuation.*
+import proscenium.*
 import vacuous.*
+import wisteria.*
 
 import doms.html.whatwg, whatwg.*
 
-object JavaEmbedding extends Embedding(t"java"), CommonEmbedding:
-  def render(meta: Optional[Text], content: Text): Seq[Html of Flow] =
-    postprocess(Java.highlight(content))
+object Formattable extends ProductDerivable[Formattable]:
+  inline def join[derivation <: Product: ProductReflection]: derivation is Formattable =
+    (language, content) =>
+      contexts:
+        [field] => (context: field is Formattable) => context
+
+      . foldLeft(Unset: Optional[Html of Flow]): (acc, next) =>
+        acc.or(next.format(language, content))
+
+trait Formattable:
+  type Self
+  def format(language: List[Text], content: Text): Optional[Html of Flow]

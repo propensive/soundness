@@ -128,7 +128,7 @@ object Whatwg:
   given charset: ("charset" is Attribute on "meta" of Attributive.Utf8) = attribute()
   given checked: ("checked" is Attribute on "input" of Attributive.Presence) = attribute()
   given cite: ("cite" is Attribute on "blockquote" | "del" | "ins" | "q" of Attributive.Url) = attribute()
-  given `class`: ("class" is Attribute of Attributive.CssClasses) = globalAttribute()
+  given `class`: ("class" is Attribute of Attributive.CssClassList) = globalAttribute()
   given closedby: ("closedby" is Attribute on "dialog" of Attributive.Closedby) = attribute()
   given color: ("color" is Attribute on "link" of Attributive.Color) = attribute()
   given colorspace: ("colorspace" is Attribute on "input" of Attributive.Colorspace) = attribute()
