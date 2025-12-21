@@ -36,6 +36,8 @@ import scala.annotation.StaticAnnotation
 
 import soundness.*
 
+import autopsies.contrastExpectations
+
 final case class id() extends StaticAnnotation
 final case class unique() extends StaticAnnotation
 final case class count(number: Int) extends StaticAnnotation
@@ -116,5 +118,5 @@ object Tests extends Suite(m"Adversaria tests"):
     . assert(_ == Map(t"foo" -> 42, t"baz" -> 12))
 
     test(m"Get all members of a particular type"):
-      Example1.membersOfType[Int]
+      Example1.membersOfType[Int].to(Set)
     . assert(_ == Set(12, 42))
