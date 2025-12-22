@@ -220,7 +220,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
           t"""<table><tbody><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
         . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
-        given (CssClass of "test") = CssClass["test"]()
+        given (Classes of "test") = Classes()
 
         test(m"<thead> works like <tbody>"):
           t"""<table class="test"><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]

@@ -44,8 +44,8 @@ import vacuous.*
 import doms.html.whatwg, whatwg.*
 
 trait CommonFormattable extends Formattable:
-  given lineClass: (CssClass of "line") = CssClass()
-  given amokClass: (CssClass of "amok") = CssClass() // FIXME
+  given lineClass: (Classes of "line") = Classes()
+  given amokClass: (Classes of "amok") = Classes() // FIXME
   def classes(accent: Accent): Classes = Classes(Set(accent.show.lower))
 
   def element(accent: Accent, text: Text): Element of "code" =
