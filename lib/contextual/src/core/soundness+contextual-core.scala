@@ -32,4 +32,6 @@
                                                                                                   */
 package soundness
 
-export contextual.{Insertion, InterpolationError, Interpolator, Verifier, Substitution, Embeddable}
+export contextual
+. { Insertion, InterpolationError, Interpolator, Verifier, Substitution, Embeddable, Interpolable,
+    Extrapolable }

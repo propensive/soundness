@@ -76,8 +76,8 @@ package formulations:
           validation: Optional[Message],
           required:   Boolean)
     : Html of Flow =
-        given alertClass: (CssClass of "alert") = CssClass()
-        given requiredClass: (CssClass of "required") = CssClass()
+        given alertClass: (Classes of "alert") = Classes()
+        given requiredClass: (Classes of "required") = Classes()
         Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required(t"*"))
 
         // Div

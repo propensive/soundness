@@ -35,6 +35,7 @@ package honeycomb
 import language.dynamics
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import denominative.*
 import fulminate.*
@@ -48,31 +49,10 @@ import vacuous.*
 
 import scala.quoted.*
 
+private given realm: Realm = realm"honeycomb"
+
 object Honeycomb:
-  private given realm: Realm = realm"honeycomb"
-
-  class Interpolator():
-    type Topic <: Tuple
-    inline def apply(inline insertions: Any*): Html = ${interpolator[Topic]('insertions)}
-
-    transparent inline def unapply(node: Html): Any = ${extractor[Topic]('node)}
-
-  def h(context: Expr[StringContext]): Macro[Interpolator] =
-    import quotes.reflect.*
-
-    def recur(parts: List[String], repr: TypeRepr = TypeRepr.of[EmptyTuple.type]): TypeRepr =
-      parts match
-        case head :: tail =>
-          ConstantType(StringConstant(head)).asType.absolve match
-            case '[label] => repr.asType.absolve match
-              case '[type tuple <: Tuple; tuple] =>  recur(tail, TypeRepr.of[label *: tuple])
-        case Nil =>
-          repr
-
-    recur(context.valueOrAbort.parts.to(List)).asType.absolve match
-      case '[type tuple <: Tuple; tuple] => '{  new Interpolator() { type Topic = tuple }  }
-
-  def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Boolean | Option[Any]] =
+  def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Extrapolation[Html]] =
     import quotes.reflect.*
     import doms.html.whatwg
 
@@ -229,22 +209,28 @@ object Honeycomb:
               '{  $expr && $scrutinee.isInstanceOf[Fragment] && $checked  }
 
 
-      val result: Expr[Boolean | Option[Any]] =
+      val result: Expr[Extrapolation[Html]] =
         '{  val extracts = new Array[Any](${Expr(holes.size)})
             val matches: Boolean = ${descend('extracts, html, scrutinee, '{true})}
             ${  if holes.size == 0 then '{matches}
-                else if holes.size == 1 then '{if !matches then None else Some(extracts(0))}
+                else if holes.size == 1
+                then '{if !matches then None else Some(extracts(0).asInstanceOf[Html])}
                 else '{if !matches then None else Some(Tuple.fromArray(extracts))} }  }
 
       types.length match
-        case 0 => '{$result.asInstanceOf[Boolean]}
+        case 0 =>
+          '{$result.asInstanceOf[Boolean]}
+
         case 1 => types.head.asType.absolve match
-          case '[result] => '{$result.asInstanceOf[Option[result]]}
+          case '[type result <: Html; result] =>
+            '{$result.asInstanceOf[Option[result]]}
+
         case _ =>
           AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
           . asType
           . absolve match
-              case '[result] => '{$result.asInstanceOf[Option[result]]}
+              case '[type result <: Tuple; result] =>
+                '{$result.asInstanceOf[Option[result]]}
 
 
 
@@ -404,7 +390,6 @@ object Honeycomb:
                       case many               => '{Fragment(${Expr.ofList(many)}*)}  }
                 . of[topic]  }
 
-
   def attributes[result: Type, thisType <: Tag to result: Type]
        (tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]])
   : Macro[result] =
@@ -423,7 +408,7 @@ object Honeycomb:
                 TypeRepr.of[topic].literal[String].let: topic =>
                   key.asTerm match
                     case Literal(StringConstant(key)) =>
-                      if key == "" then halt(m"Empty key")
+                      if key == "" then panic(m"Empty key")
                       else ConstantType(StringConstant(key)).asType.absolve match
                         case '[type key <: Label; key] =>
                           Expr.summon[key is Attribute in form on (? >: topic)]

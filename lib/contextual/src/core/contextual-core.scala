@@ -30,8 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package contextual
 
-import xylophone.*
-
-case class HtmlXml(xml: XmlDoc)
+type Extrapolation[result] = Boolean | Option[Tuple | result]

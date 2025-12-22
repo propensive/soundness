@@ -30,3 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
+package contextual
+
+import language.dynamics
+
+import prepositional.*
+import proscenium.*
+
+import scala.quoted.*
+
+trait Interpolable extends Typeclass:
+  type Self
+  inline def interpolate[parts <: Tuple](inline insertions: Any*): Self

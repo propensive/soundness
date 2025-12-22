@@ -30,49 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package gossamer
+package contextual
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import language.dynamics
 
-import scala.reflect.*
+import scala.quoted.*
 
-import fulminate.*
-import anticipation.*
-import spectacular.*
-import contextual.*
+import prepositional.*
+import prepositional.*
+import proscenium.*
 
-import errorDiagnostics.empty
+trait Extrapolable extends Typeclass:
+  type Self
 
-object Interpolation:
-  case class Input(txt: Text)
-
-  given showable: [value: Showable] => Insertion[Input, value] = value => Input(value.show)
-  given input: Insertion[Input, Nothing] = value => Input("".tt)
-
-  object T extends Interpolator[Input, Text, Text]:
-    def initial: Text = anticipation.Text("")
-
-    def parse(state: Text, next: Text): Text =
-      try anticipation.Text(state.s+TextEscapes.escape(next).s)
-      catch case error: EscapeError => error match
-        case EscapeError(message) => throw InterpolationError(message)
-
-    def skip(state: Text): Text = state
-    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
-    def complete(state: Text): Text = state
-
-  object Text extends Interpolator[Input, Text, Text]:
-    def initial: Text = anticipation.Text("")
-
-    def parse(state: Text, next: Text): Text =
-      try anticipation.Text(state.s+TextEscapes.escape(next).s)
-      catch case error: EscapeError => error match
-        case EscapeError(message) => throw InterpolationError(message)
-
-    def skip(state: Text): Text = state
-    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
-
-    def complete(state: Text): Text =
-      val array = state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
-      anticipation.Text(String.join("\n", array*).nn)
+  inline def extrapolate[parts <: Tuple](scrutinee: Self): Extrapolation[Self]
