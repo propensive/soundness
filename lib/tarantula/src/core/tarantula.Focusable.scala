@@ -54,4 +54,6 @@ object Focusable:
   given selector: Selector is Focusable = Focusable(t"css selector", _.normalize.value)
   given tag: Tag is Focusable = Focusable(t"tag name", _.label)
   given domId: DomId is Focusable = Focusable(t"css selector", v => t"#${v.name}")
-  given cssClass: CssClass is Focusable = Focusable(t"css selector", v => t".${v.name}")
+
+  given cssClass: Classes is Focusable =
+    Focusable(t"css selector", _.names.join(t".", t".", t""))

@@ -41,19 +41,15 @@ import symbolism.*
 import vacuous.*
 
 object Classes:
-  given addable: Classes is Addable by CssClass to Classes =
-    (classes, addition) => Classes(classes.names + addition.name)
+  given generic: Classes is GenericCssSelection = _.names.join(t".", t".", t"")
 
-  given addable2: Classes is Addable by Classes to Classes =
+  def apply[name <: Label: ValueOf](): Classes of name =
+    new Classes(Set(valueOf[name])) { type Topic = name }
+
+  given addable: Classes is Addable by Classes to Classes =
     (classes, additions) => Classes(classes.names ++ additions.names)
 
-  given addable3: CssClass is Addable by Classes to Classes =
-    (cssClass, additions) => Classes(additions.names + cssClass.name)
-
-  given subtractable: Classes is Subtractable by CssClass to Classes =
-    (classes, subtraction) => Classes(classes.names - subtraction.name)
-
-  given subtractable2: Classes is Subtractable by Classes to Classes =
+  given subtractable: Classes is Subtractable by Classes to Classes =
     (classes, subtractions) => Classes(classes.names -- subtractions.names)
 
   given empty: Classes(Set()):

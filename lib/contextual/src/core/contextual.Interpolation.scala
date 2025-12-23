@@ -30,48 +30,40 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
-
-import anticipation.*
-import contextual.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import vacuous.*
+package contextual
 
 import language.dynamics
 
-extension [renderable: Renderable](value: renderable)
-  def html: Html of renderable.Form = renderable.render(value)
+import prepositional.*
+import proscenium.*
 
-package attributives:
-  given attributiveText: [target] => Text is Attributive to target =
-    (key, value) => (key, value)
+import scala.quoted.*
 
-extension (inline context: StringContext)
-  transparent inline def h: Interpolation = interpolation[Html](context)
+object Interpolation:
+  def apply[topic: Type](context: Expr[StringContext]): Macro[Interpolation of topic] =
+    import quotes.reflect.*
 
-extension (html: Seq[Html])
-  def nodes: IArray[Node] =
-    var count = 0
+    def recur(parts: List[String], repr: TypeRepr = TypeRepr.of[EmptyTuple.type]): TypeRepr =
+      parts match
+        case head :: tail =>
+          ConstantType(StringConstant(head)).asType.absolve match
+            case '[label] => repr.asType.absolve match
+              case '[type tuple <: Tuple; tuple] =>  recur(tail, TypeRepr.of[label *: tuple])
 
-    for item <- html do item match
-      case fragment: Fragment => count += fragment.nodes.length
-      case _                  => count += 1
+        case Nil =>
+          repr
 
-    val array = new Array[Node](count)
+    recur(context.valueOrAbort.parts.to(List)).asType.absolve match
+      case '[type transport <: Tuple; transport] =>
+        '{  new Interpolation() { type Topic = topic; type Transport = transport }  }
 
-    var index = 0
-    for item <- html do item match
-      case Fragment(nodes*) => for node <- nodes do
-        array(index) = node
-        index += 1
 
-      case node: Node =>
-        array(index) = node
-        index += 1
+trait Interpolation:
+  type Topic
+  type Transport <: Tuple
 
-    array.immutable(using Unsafe)
+  transparent inline def apply(inline insertions: Any*)(using Topic is Interpolable): Topic =
+    summon[Topic is Interpolable].interpolate[Transport](insertions*)
 
-package doms.html:
-  given whatwg: Whatwg = Whatwg()
+  transparent inline def unapply(using extrapolable: Topic is Extrapolable)(scrutinee: Topic): Any =
+    extrapolable.extrapolate[Transport](scrutinee)

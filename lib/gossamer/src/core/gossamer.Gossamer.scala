@@ -32,7 +32,10 @@
                                                                                                   */
 package gossamer
 
+import scala.quoted.*
+
 import anticipation.*
+import contextual.*
 import denominative.*
 import fulminate.*
 import proscenium.*
@@ -41,10 +44,42 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import scala.quoted.*
+import errorDiagnostics.empty
 
 object Gossamer:
   private given realm: Realm = realm"gossamer"
+
+  case class Input(txt: Text)
+
+  given showable: [value: Showable] => Insertion[Input, value] = value => Input(value.show)
+  given input: Insertion[Input, Nothing] = value => Input("".tt)
+
+  object T extends Interpolator[Input, Text, Text]:
+    def initial: Text = anticipation.Text("")
+
+    def parse(state: Text, next: Text): Text =
+      try anticipation.Text(state.s+TextEscapes.escape(next).s)
+      catch case error: EscapeError => error match
+        case EscapeError(message) => throw InterpolationError(message)
+
+    def skip(state: Text): Text = state
+    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
+    def complete(state: Text): Text = state
+
+  object Text extends Interpolator[Input, Text, Text]:
+    def initial: Text = anticipation.Text("")
+
+    def parse(state: Text, next: Text): Text =
+      try anticipation.Text(state.s+TextEscapes.escape(next).s)
+      catch case error: EscapeError => error match
+        case EscapeError(message) => throw InterpolationError(message)
+
+    def skip(state: Text): Text = state
+    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
+
+    def complete(state: Text): Text =
+      val array = state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
+      anticipation.Text(String.join("\n", array*).nn)
 
   object opaques:
     opaque type Ascii = anticipation.Bytes

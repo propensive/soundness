@@ -32,19 +32,14 @@
                                                                                                   */
 package honeycomb
 
+import scala.quoted.*
+
 import anticipation.*
-import gossamer.*
+import contextual.*
 import prepositional.*
 import proscenium.*
-import spectacular.*
+import rudiments.*
 import vacuous.*
 
-object CssClass:
-  given generic: CssClass is GenericCssSelection = cls => t".${cls.name}"
-
-  def apply[label <: Label: ValueOf](): CssClass of label =
-    new CssClass(valueOf[label]):
-      type Topic = label
-
-class CssClass(val name: Text) extends Classes(Set(name)):
-  type Topic <: Label
+transparent inline def interpolation[topic](inline context: StringContext): Interpolation =
+  ${Interpolation[topic]('context)}
