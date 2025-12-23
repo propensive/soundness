@@ -40,9 +40,7 @@ import prepositional.*
 import prepositional.*
 import proscenium.*
 
-trait Extrapolable extends Typeclass, Resultant:
+trait Extrapolable extends Typeclass:
   type Self
-  type Result
-  inline def extrapolate[parts <: Tuple](scrutinee: Self): Boolean | Option[Any]
 
-  def extrapolate[parts <: Tuple: Type](scrutinee: Expr[Self]): Macro[Boolean | Option[Any]]
+  inline def extrapolate[parts <: Tuple](scrutinee: Self): Extrapolation[Self]

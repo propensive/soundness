@@ -82,19 +82,19 @@ object Html extends Tag.Container
 
   def doctype: Doctype = Doctype(t"html")
 
-  given htmlInterpolator: Html is Interpolable:
+  inline given interpolator: Html is Interpolable:
     type Result = Html
 
     transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Html =
-      ${HoneycombInterpolator.interpolator[parts]('insertions)}
+      ${Honeycomb.interpolator[parts]('insertions)}
 
+  inline given extrapolator: Html is Extrapolable:
 
-  given htmlExtrapolator: Html is Extrapolable:
-    transparent inline def extrapolate[parts <: Tuple](scrutinee: Html): Boolean | Option[Any] =
-      ${HoneycombInterpolator.extractor[parts]('scrutinee)}
+    transparent inline def extrapolate[parts <: Tuple](scrutinee: Html)
+    : Boolean | Option[Tuple | Html] =
 
-    def extrapolate[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Boolean | Option[Any]] =
-      HoneycombInterpolator.extractor[parts](scrutinee)
+        ${Honeycomb.extractor[parts]('scrutinee)}
+
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
         =>  Tactic[ParseError]

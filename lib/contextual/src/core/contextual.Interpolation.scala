@@ -65,5 +65,5 @@ trait Interpolation:
   transparent inline def apply(inline insertions: Any*)(using Topic is Interpolable): Topic =
     summon[Topic is Interpolable].interpolate[Transport](insertions*)
 
-  transparent inline def unapply(using Topic is Extrapolable)(scrutinee: Topic): Any =
-    summon[Topic is Extrapolable].extrapolate[Transport](scrutinee)
+  transparent inline def unapply(using extrapolable: Topic is Extrapolable)(scrutinee: Topic): Any =
+    extrapolable.extrapolate[Transport](scrutinee)
