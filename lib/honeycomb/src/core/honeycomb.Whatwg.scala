@@ -335,7 +335,7 @@ class Whatwg() extends Dom:
       | "video" | "wbr"]
      ().in[Whatwg]
 
-  object Area extends Tag.Void("area", sci.Map()):
+  object Area extends Tag.Void("area", sci.Map(), false):
     type Topic = "area"
     type Transport = ""
     type Form = Whatwg
@@ -364,12 +364,12 @@ class Whatwg() extends Dom:
   val Br = Tag.void["br"]().in[Whatwg]
 
   // - constraints on content
-  val Button = Tag.container["button", Phrasing]().in[Whatwg]
+  val Button = Tag.container["button", Phrasing](boundary = true).in[Whatwg]
 
   // - transparent, but non-interactive
   val Canvas = Tag.transparent["canvas", ""]().in[Whatwg]
 
-  val Caption = Tag.container["caption", Flow]().in[Whatwg]
+  val Caption = Tag.container["caption", Flow](boundary = true).in[Whatwg]
   val Cite = Tag.container["cite", Phrasing]().in[Whatwg]
   val Code = Tag.container["code", Phrasing]().in[Whatwg]
   val Col = Tag.void["col"]().in[Whatwg]
@@ -417,7 +417,7 @@ class Whatwg() extends Dom:
   val Iframe = Tag.void["iframe"]().in[Whatwg]
   val Img = Tag.void["img"]().in[Whatwg]
 
-  object Input extends Tag.Void("input", sci.Map()):
+  object Input extends Tag.Void("input", sci.Map(), false):
     type Topic = "input"
     type Transport = ""
     type Form = Whatwg
@@ -456,7 +456,7 @@ class Whatwg() extends Dom:
 
   val Li = Tag.container["li", Flow](autoclose = true).in[Whatwg]
 
-  object Link extends Tag.Void("link", sci.Map()):
+  object Link extends Tag.Void("link", sci.Map(), false):
     type Topic = "link"
     type Transport = ""
     type Form = Whatwg
@@ -493,7 +493,7 @@ class Whatwg() extends Dom:
   val Meter = Tag.container["meter", Phrasing]().in[Whatwg]
   val Nav = Tag.container["nav", Flow]().in[Whatwg]
   val Noscript = Tag.container["noscript", "link" | "style" | "meta"]().in[Whatwg]
-  val Object = Tag.transparent["object", ""]().in[Whatwg]
+  val Object = Tag.transparent["object", ""](boundary = true).in[Whatwg]
   val Ol = Tag.container["ol", "li" | ScriptSupporting](mode = Html.Mode.Whitespace).in[Whatwg]
 
   val Optgroup = Tag.container["optgroup", "option" | "legend"]
@@ -537,19 +537,19 @@ class Whatwg() extends Dom:
 
   val Table =
     Tag.container["table", "caption" | "colgroup" | "thead" | "tbody" | "tfoot"]
-     (mode = Html.Mode.Whitespace).in[Whatwg]
+     (mode = Html.Mode.Whitespace, boundary = true).in[Whatwg]
 
   val Tbody = Tag.container["tbody", "tr"]
                (autoclose = true, mode = Html.Mode.Whitespace, insertable = true).in[Whatwg]
 
-  val Td = Tag.container["td", Flow](autoclose = true).in[Whatwg]
-  val Template = Tag.void["template"]().in[Whatwg]
+  val Td = Tag.container["td", Flow](autoclose = true, boundary = true).in[Whatwg]
+  val Template = Tag.void["template"](boundary = true).in[Whatwg]
   val Textarea = Tag.container["textarea", "#text"](mode = Html.Mode.Rcdata).in[Whatwg]
 
   val Tfoot = Tag.container["tfoot", "tr"]
                (autoclose = true, mode = Html.Mode.Whitespace).in[Whatwg]
 
-  val Th = Tag.container["th", Flow](autoclose = true).in[Whatwg]
+  val Th = Tag.container["th", Flow](autoclose = true, boundary = true).in[Whatwg]
 
   val Thead = Tag.container["thead", "tr" | ScriptSupporting]
                (autoclose = true, mode = Html.Mode.Whitespace).in[Whatwg]
@@ -560,7 +560,7 @@ class Whatwg() extends Dom:
   val Tr = Tag.container["tr", "td" | "th" | ScriptSupporting]
             (autoclose = true, mode = Html.Mode.Whitespace, insertable = true).in[Whatwg]
 
-  object Track extends Tag.Void("track", sci.Map()):
+  object Track extends Tag.Void("track", sci.Map(), false):
     type Topic = "track"
     type Transport = ""
     type Form = Whatwg
