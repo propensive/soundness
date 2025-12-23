@@ -48,16 +48,10 @@ import vacuous.*
 
 import scala.quoted.*
 
-object Honeycomb:
-  private given realm: Realm = realm"honeycomb"
+private given realm: Realm = realm"honeycomb"
 
-  class Interpolator():
-    type Topic <: Tuple
-    inline def apply(inline insertions: Any*): Html = ${interpolator[Topic]('insertions)}
-
-    transparent inline def unapply(node: Html): Any = ${extractor[Topic]('node)}
-
-  def h(context: Expr[StringContext]): Macro[Interpolator] =
+object HoneycombInterpolator:
+  def general[topic: Type](context: Expr[StringContext]): Macro[Interpolator of topic] =
     import quotes.reflect.*
 
     def recur(parts: List[String], repr: TypeRepr = TypeRepr.of[EmptyTuple.type]): TypeRepr =
@@ -70,7 +64,8 @@ object Honeycomb:
           repr
 
     recur(context.valueOrAbort.parts.to(List)).asType.absolve match
-      case '[type tuple <: Tuple; tuple] => '{  new Interpolator() { type Topic = tuple }  }
+      case '[type transport <: Tuple; transport] =>
+        '{  new Interpolator() { type Topic = topic; type Transport = transport }  }
 
   def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Boolean | Option[Any]] =
     import quotes.reflect.*
@@ -404,7 +399,7 @@ object Honeycomb:
                       case many               => '{Fragment(${Expr.ofList(many)}*)}  }
                 . of[topic]  }
 
-
+object Honeycomb:
   def attributes[result: Type, thisType <: Tag to result: Type]
        (tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]])
   : Macro[result] =
@@ -423,7 +418,7 @@ object Honeycomb:
                 TypeRepr.of[topic].literal[String].let: topic =>
                   key.asTerm match
                     case Literal(StringConstant(key)) =>
-                      if key == "" then halt(m"Empty key")
+                      if key == "" then panic(m"Empty key")
                       else ConstantType(StringConstant(key)).asType.absolve match
                         case '[type key <: Label; key] =>
                           Expr.summon[key is Attribute in form on (? >: topic)]

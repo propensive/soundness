@@ -38,6 +38,7 @@ import java.lang as jl
 import java.util as ju
 
 import scala.collection.mutable as scm
+import scala.quoted.*
 
 import adversaria.*
 import anticipation.*
@@ -79,6 +80,20 @@ object Html extends Tag.Container
   erased trait Id
 
   def doctype: Doctype = Doctype(t"html")
+
+  given htmlInterpolator: (Html is Interpolable):
+    type Result = Html
+
+    transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Html =
+      ${HoneycombInterpolator.interpolator[parts]('insertions)}
+
+
+  given htmlExtrapolator: Html is Extrapolable:
+    transparent inline def extrapolate[parts <: Tuple](scrutinee: Html): Boolean | Option[Any] =
+      ${HoneycombInterpolator.extractor[parts]('scrutinee)}
+
+    def extrapolate[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Boolean | Option[Any]] =
+      HoneycombInterpolator.extractor[parts](scrutinee)
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
         =>  Tactic[ParseError]

@@ -32,45 +32,31 @@
                                                                                                   */
 package honeycomb
 
+import language.dynamics
+
 import anticipation.*
+import contextual.*
+import contingency.*
+import denominative.*
+import fulminate.*
+import gossamer.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
+import stenography.*
 import vacuous.*
 
-import language.dynamics
+import scala.quoted.*
 
-extension [renderable: Renderable](value: renderable)
-  def html: Html of renderable.Form = renderable.render(value)
+trait Interpolator:
+  type Topic
+  type Transport <: Tuple
 
-package attributives:
-  given attributiveText: [target] => Text is Attributive to target =
-    (key, value) => (key, value)
+  transparent inline def apply(inline insertions: Any*)(using interpolable: Topic is Interpolable)
+  : Topic =
 
-extension (inline context: StringContext)
-  transparent inline def h: Interpolator = interpolator[Html](context) //${Honeycomb.h('context)}
+      interpolable.interpolate[Transport](insertions*)
 
-extension (html: Seq[Html])
-  def nodes: IArray[Node] =
-    var count = 0
-
-    for item <- html do item match
-      case fragment: Fragment => count += fragment.nodes.length
-      case _                  => count += 1
-
-    val array = new Array[Node](count)
-
-    var index = 0
-    for item <- html do item match
-      case Fragment(nodes*) => for node <- nodes do
-        array(index) = node
-        index += 1
-
-      case node: Node =>
-        array(index) = node
-        index += 1
-
-    array.immutable(using Unsafe)
-
-package doms.html:
-  given whatwg: Whatwg = Whatwg()
+  transparent inline def unapply(using extrapolable: Topic is Extrapolable)(scrutinee: Topic): Any =
+    extrapolable.extrapolate[Transport](scrutinee)
