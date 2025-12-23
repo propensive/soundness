@@ -42,6 +42,7 @@ import scala.quoted.*
 
 import adversaria.*
 import anticipation.*
+import contextual.*
 import contingency.*
 import denominative.*
 import fulminate.*
@@ -81,7 +82,7 @@ object Html extends Tag.Container
 
   def doctype: Doctype = Doctype(t"html")
 
-  given htmlInterpolator: (Html is Interpolable):
+  given htmlInterpolator: Html is Interpolable:
     type Result = Html
 
     transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Html =

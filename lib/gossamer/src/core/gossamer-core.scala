@@ -83,8 +83,8 @@ extension (textObject: Text.type)
     String(array).tt
 
 extension (inline ctx: StringContext)
-  transparent inline def txt(inline parts: Any*): Text = ${Interpolation.Text.expand('ctx, 'parts)}
-  transparent inline def t(inline parts: Any*): Text = ${Interpolation.T.expand('ctx, 'parts)}
+  transparent inline def txt(inline parts: Any*): Text = ${Gossamer.Text.expand('ctx, 'parts)}
+  transparent inline def t(inline parts: Any*): Text = ${Gossamer.T.expand('ctx, 'parts)}
 
 extension (ctx: StringContext)
   def t = SimpleTExtractor(ctx.parts.head.tt)

@@ -33,6 +33,7 @@
 package honeycomb
 
 import anticipation.*
+import contextual.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -48,7 +49,7 @@ package attributives:
     (key, value) => (key, value)
 
 extension (inline context: StringContext)
-  transparent inline def h: Interpolator = interpolator[Html](context) //${Honeycomb.h('context)}
+  transparent inline def h: Interpolation = interpolation[Html](context)
 
 extension (html: Seq[Html])
   def nodes: IArray[Node] =

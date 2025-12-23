@@ -30,33 +30,40 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package contextual
 
 import language.dynamics
 
-import anticipation.*
-import contextual.*
-import contingency.*
-import denominative.*
-import fulminate.*
-import gossamer.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
-import spectacular.*
-import stenography.*
-import vacuous.*
 
 import scala.quoted.*
 
-trait Interpolator:
+object Interpolation:
+  def apply[topic: Type](context: Expr[StringContext]): Macro[Interpolation of topic] =
+    import quotes.reflect.*
+
+    def recur(parts: List[String], repr: TypeRepr = TypeRepr.of[EmptyTuple.type]): TypeRepr =
+      parts match
+        case head :: tail =>
+          ConstantType(StringConstant(head)).asType.absolve match
+            case '[label] => repr.asType.absolve match
+              case '[type tuple <: Tuple; tuple] =>  recur(tail, TypeRepr.of[label *: tuple])
+
+        case Nil =>
+          repr
+
+    recur(context.valueOrAbort.parts.to(List)).asType.absolve match
+      case '[type transport <: Tuple; transport] =>
+        '{  new Interpolation() { type Topic = topic; type Transport = transport }  }
+
+
+trait Interpolation:
   type Topic
   type Transport <: Tuple
 
-  transparent inline def apply(inline insertions: Any*)(using interpolable: Topic is Interpolable)
-  : Topic =
+  transparent inline def apply(inline insertions: Any*)(using Topic is Interpolable): Topic =
+    summon[Topic is Interpolable].interpolate[Transport](insertions*)
 
-      interpolable.interpolate[Transport](insertions*)
-
-  transparent inline def unapply(using extrapolable: Topic is Extrapolable)(scrutinee: Topic): Any =
-    extrapolable.extrapolate[Transport](scrutinee)
+  transparent inline def unapply(using Topic is Extrapolable)(scrutinee: Topic): Any =
+    summon[Topic is Extrapolable].extrapolate[Transport](scrutinee)

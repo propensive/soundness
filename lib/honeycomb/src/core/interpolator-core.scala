@@ -35,10 +35,11 @@ package honeycomb
 import scala.quoted.*
 
 import anticipation.*
+import contextual.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
 
-transparent inline def interpolator[topic](inline context: StringContext): Interpolator =
-  ${HoneycombInterpolator.general[topic]('context)}
+transparent inline def interpolation[topic](inline context: StringContext): Interpolation =
+  ${Interpolation[topic]('context)}

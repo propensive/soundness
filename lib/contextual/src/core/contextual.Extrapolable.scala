@@ -30,25 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package contextual
 
 import language.dynamics
 
-import anticipation.*
-import contextual.*
-import contingency.*
-import denominative.*
-import fulminate.*
-import gossamer.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import spectacular.*
-import stenography.*
-import vacuous.*
-
 import scala.quoted.*
 
-trait Interpolable extends Typeclass:
+import prepositional.*
+import prepositional.*
+import proscenium.*
+
+trait Extrapolable extends Typeclass, Resultant:
   type Self
-  inline def interpolate[parts <: Tuple](inline insertions: Any*): Self
+  type Result
+  inline def extrapolate[parts <: Tuple](scrutinee: Self): Boolean | Option[Any]
+
+  def extrapolate[parts <: Tuple: Type](scrutinee: Expr[Self]): Macro[Boolean | Option[Any]]

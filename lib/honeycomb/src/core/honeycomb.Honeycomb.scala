@@ -51,22 +51,6 @@ import scala.quoted.*
 private given realm: Realm = realm"honeycomb"
 
 object HoneycombInterpolator:
-  def general[topic: Type](context: Expr[StringContext]): Macro[Interpolator of topic] =
-    import quotes.reflect.*
-
-    def recur(parts: List[String], repr: TypeRepr = TypeRepr.of[EmptyTuple.type]): TypeRepr =
-      parts match
-        case head :: tail =>
-          ConstantType(StringConstant(head)).asType.absolve match
-            case '[label] => repr.asType.absolve match
-              case '[type tuple <: Tuple; tuple] =>  recur(tail, TypeRepr.of[label *: tuple])
-        case Nil =>
-          repr
-
-    recur(context.valueOrAbort.parts.to(List)).asType.absolve match
-      case '[type transport <: Tuple; transport] =>
-        '{  new Interpolator() { type Topic = topic; type Transport = transport }  }
-
   def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Boolean | Option[Any]] =
     import quotes.reflect.*
     import doms.html.whatwg
