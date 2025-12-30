@@ -67,47 +67,51 @@ object Tag:
       def node(attributes: Map[Text, Optional[Text]]): Result = this
 
 
-  def void[label <: Label: ValueOf](presets: Map[Text, Optional[Text]] = Map()): Tag.Void of label =
-    new Void(valueOf[label].tt, presets).of[label]
+  def void[label <: Label: ValueOf, dom <: Dom](presets: Map[Text, Optional[Text]] = Map())
+  : Tag.Void of label in dom =
+
+      new Void(valueOf[label].tt, presets).of[label].in[dom]
 
 
-  def foreign(label: Text, attributes0: Map[Text, Optional[Text]])
-  : Tag of "#foreign" over "#foreign" =
+  def foreign[dom <: Dom](label: Text, attributes0: Map[Text, Optional[Text]])
+  : Tag of "#foreign" over "#foreign" in dom =
 
       new Tag.Container(label, false, Html.Mode.Normal, attributes0, Set(), false, true)
       . of["#foreign"]
       . over["#foreign"]
+      . in[dom]
 
 
-  def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
+  def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String], dom <: Dom]
        (autoclose:  Boolean                   = false,
         mode:       Html.Mode                 = Html.Mode.Normal,
         presets:    Map[Text, Optional[Text]] = Map(),
         insertable: Boolean                   = false)
-  : Container of label over children =
+  : Container of label over children in dom =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
 
       Container(valueOf[label].tt, autoclose, mode, presets, admissible, insertable)
       . of[label]
       . over[children]
+      . in[dom]
 
 
-  def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
+  def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String], dom <: Dom]
        (presets: Map[Text, Optional[Text]] = Map())
-  : Transparent of label over children =
+  : Transparent of label over children in dom =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
-      transparent(valueOf[label].tt, admissible, presets).of[label].over[children]
+      transparent(valueOf[label].tt, admissible, presets).of[label].over[children].in[dom]
 
 
-  def transparent(label: Text, children: Set[Text], presets: Map[Text, Optional[Text]])
-  : Transparent =
+  def transparent[dom <: Dom](label: Text, children: Set[Text], presets: Map[Text, Optional[Text]])
+  : Transparent in dom =
 
-      Transparent(label, children, presets)
+      Transparent(label, children, presets).in[dom]
 
-  def foreign[label <: Label: ValueOf](): Container of label over "#foreign" =
-    Container(valueOf[label], foreign = true).of[label].over["#foreign"]
+  def foreign[label <: Label: ValueOf, dom <: Dom](): Container of label over "#foreign" =
+    Container(valueOf[label], foreign = true).of[label].over["#foreign"].in[dom]
 
 
   class Container

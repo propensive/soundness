@@ -790,11 +790,12 @@ object Html extends Tag.Container
       val head = read(root, root.admissible, ListMap(), 0)
       if fragment.isEmpty then head else Fragment(fragment*)
 
-sealed into trait Html extends Topical, Documentary:
+sealed into trait Html extends Topical, Documentary, Formal:
   type Topic <: Label
   type Transport <: Label
   type Metadata = Doctype
   type Chunks = Text
+  type Form <: Dom
 
   private[honeycomb] def of[topic <: Label]: this.type of topic = asInstanceOf[this.type of topic]
   private[honeycomb] def in[form]: this.type in form = asInstanceOf[this.type in form]
