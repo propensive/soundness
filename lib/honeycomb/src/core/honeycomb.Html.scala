@@ -853,17 +853,17 @@ extends Node, Topical, Transportive, Dynamic:
     ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
 
 
-  def selectDynamic(name: Label)(using attribute: name.type is Attribute on Topic in Whatwg)
+  def selectDynamic(name: Label)(using attribute: name.type is Attribute on Topic in Form)
   : Optional[Text] =
 
       attributes.at(name.tt)
 
 
-  def updateDynamic[value](name: Label)(using attribute: name.type is Attribute in Whatwg)
+  def updateDynamic[value](name: Label)(using attribute: name.type is Attribute in Form)
        //(using Topic <:< attribute.Plane) - disabled to allow global attributes
        (value: value)
        (using attributive: value is Attributive to attribute.Topic)
-  : Element of Topic over Transport in Whatwg =
+  : Element of Topic over Transport in Form =
 
       attributive.attribute(name, value).match
         case Unset        => Element(label, attributes - name, children, foreign)
@@ -871,7 +871,7 @@ extends Node, Topical, Transportive, Dynamic:
 
       . of[Topic]
       . over[Transport]
-      . in[Whatwg]
+      . in[Form]
 
 object Fragment:
   @targetName("make")
