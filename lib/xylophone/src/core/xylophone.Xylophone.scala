@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package xylophone
 
 import language.dynamics
 
@@ -49,10 +49,10 @@ import vacuous.*
 
 import scala.quoted.*
 
-private given realm: Realm = realm"honeycomb"
+private given realm: Realm = realm"xylophone"
 
-object Honeycomb:
-  def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Extrapolation[Html]] =
+object Xylophone:
+  def extractor[parts <: Tuple: Type](scrutinee: Expr[Xml]): Macro[Extrapolation[Xml]] =
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
@@ -67,12 +67,12 @@ object Honeycomb:
         case Nil          =>  repr
 
     abortive:
-      var holes: Map[Ordinal, Html.Hole] = Map()
-      def capture(ordinal: Ordinal, hole: Html.Hole) = holes = holes.updated(ordinal, hole)
+      var holes: Map[Ordinal, Xml.Hole] = Map()
+      def capture(ordinal: Ordinal, hole: Xml.Hole) = holes = holes.updated(ordinal, hole)
 
 
       val generic: Tag = Tag.root(Set())
-      val html: Html = Html.parse(Iterator(parts.mkString("\u0000").tt), generic, capture(_, _))(using Dom.Freeform)
+      val xml: Xml = Xml.parse(Iterator(parts.mkString("\u0000").tt), generic, capture(_, _))(using XmlSchema.Freeform)
 
       val holes2 = holes.to(List).sortBy(_(0)).map(_(1))
       val iterator = holes2.to(Iterator)
@@ -149,7 +149,7 @@ object Honeycomb:
 
           '{ $attributesChecked && $elementsChecked }
 
-      def descend(array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean])
+      def descend(array: Expr[Array[Any]], pattern: Xml, scrutinee: Expr[Xml], expr: Expr[Boolean])
       : Expr[Boolean] =
 
           pattern match
@@ -165,7 +165,7 @@ object Honeycomb:
             case TextNode("\u0000") =>
               idx += 1
               iterator.next() match
-                case Html.Hole.Node(label) =>
+                case Xml.Hole.Node(label) =>
                   types ::= TypeRepr.of[Node]
 
                 case _ =>
@@ -190,7 +190,7 @@ object Honeycomb:
             case Element("\u0000", _, _, _) =>
               idx += 1
               iterator.next() match
-                case Html.Hole.Element(label) =>
+                case Xml.Hole.Element(label) =>
                   types ::= TypeRepr.of[Element]
                 case _ =>
                   halt(m"unexpected hole type")
@@ -206,12 +206,12 @@ object Honeycomb:
               '{  $expr && $scrutinee.isInstanceOf[Fragment] && $checked  }
 
 
-      val result: Expr[Extrapolation[Html]] =
+      val result: Expr[Extrapolation[Xml]] =
         '{  val extracts = new Array[Any](${Expr(holes.size)})
-            val matches: Boolean = ${descend('extracts, html, scrutinee, '{true})}
+            val matches: Boolean = ${descend('extracts, xml, scrutinee, '{true})}
             ${  if holes.size == 0 then '{matches}
                 else if holes.size == 1
-                then '{if !matches then None else Some(extracts(0).asInstanceOf[Html])}
+                then '{if !matches then None else Some(extracts(0).asInstanceOf[Xml])}
                 else '{if !matches then None else Some(Tuple.fromArray(extracts))} }  }
 
       types.length match
@@ -219,7 +219,7 @@ object Honeycomb:
           '{$result.asInstanceOf[Boolean]}
 
         case 1 => types.head.asType.absolve match
-          case '[type result <: Html; result] =>
+          case '[type result <: Xml; result] =>
             '{$result.asInstanceOf[Option[result]]}
 
         case _ =>
@@ -231,9 +231,9 @@ object Honeycomb:
 
 
 
-  def interpolator[parts <: Tuple: Type](insertions0: Expr[Seq[Any]]): Macro[Html] =
+  def interpolator[parts <: Tuple: Type](insertions0: Expr[Seq[Any]]): Macro[Xml] =
     import quotes.reflect.*
-    import Html.Hole
+    import Xml.Hole
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
       case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
@@ -245,11 +245,11 @@ object Honeycomb:
       case Varargs(insertions) => insertions
 
     abortive:
-      var holes: Map[Ordinal, Html.Hole] = Map()
+      var holes: Map[Ordinal, Xml.Hole] = Map()
       def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
-      val html: Html =
-        Html.parse(Iterator(parts.mkString("\u0000").tt), Dom.generic, capture(_, _))(using Dom.Freeform)
+      val xml: Xml =
+        Xml.parse(Iterator(parts.mkString("\u0000").tt), XmlSchema.generic, capture(_, _))(using XmlSchema.Freeform)
 
       val iterator: Iterator[Expr[Any]] =
         holes.to(List).sortBy(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
@@ -319,7 +319,7 @@ object Honeycomb:
                   halt(m"only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a tag body")
         . iterator
 
-      def serialize(html: Html): Seq[Expr[Node]] = html match
+      def serialize(xml: Xml): Seq[Expr[Node]] = xml match
         case Fragment(children*) => children.flatMap(serialize(_))
         case Element(label, attributes, children, foreign) =>
           val exprs = attributes.to(List).map: (key, value) =>
@@ -366,22 +366,22 @@ object Honeycomb:
 
           List('{TextNode($content.tt)})
 
-      def resultType(html: Html): Set[String] = html match
+      def resultType(xml: Xml): Set[String] = xml match
         case TextNode(_)           =>  Set("#text")
         case Element(tag, _, _, _) =>  Set(tag.s)
         case Fragment(values*)     =>  values.to(Set).flatMap(resultType(_))
         case Comment(_)            =>  Set()
         case Doctype(_)            =>  Set()
 
-      resultType(html)
+      resultType(xml)
       . map { label => ConstantType(StringConstant(label)) }
       . foldLeft(TypeRepr.of[Nothing]) { (left, right) => OrType(left, right) }
       . asType
       . absolve match
           case '[type topic <: Label; topic] =>
             '{
-                ${  serialize(html).absolve match
-                      case List(one: Expr[?]) => one.asExprOf[Html]
+                ${  serialize(xml).absolve match
+                      case List(one: Expr[?]) => one.asExprOf[Xml]
                       case many               => '{Fragment(${Expr.ofList(many)}*)}  }
                 . of[topic]  }
 

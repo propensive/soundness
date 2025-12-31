@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package xylophone
 
 import language.dynamics
 
@@ -66,68 +66,68 @@ import charDecoders.utf8
 import textSanitizers.skip
 import scala.annotation.tailrec
 
-object Html extends Tag.Container
-         (label       = "html",
+object Xml extends Tag.Container
+         (label       = "xml",
           autoclose   = true,
           admissible  = Set("head", "body"),
-          mode        = Html.Mode.Whitespace,
+          mode        = Xml.Mode.Whitespace,
           insertable  = true,
           foreign     = false), Format:
-  type Topic = "html"
+  type Topic = "xml"
   type Transport = "head" | "body"
 
   erased trait Integral
   erased trait Decimal
   erased trait Id
 
-  def doctype: Doctype = Doctype(t"html")
+  def doctype: Doctype = Doctype(t"xml")
 
-  inline given interpolator: Html is Interpolable:
-    type Result = Html
+  inline given interpolator: Xml is Interpolable:
+    type Result = Xml
 
-    transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Html =
-      ${Honeycomb.interpolator[parts]('insertions)}
+    transparent inline def interpolate[parts <: Tuple](inline insertions: Any*): Xml =
+      ${Xylophone.interpolator[parts]('insertions)}
 
-  inline given extrapolator: Html is Extrapolable:
+  inline given extrapolator: Xml is Extrapolable:
 
-    transparent inline def extrapolate[parts <: Tuple](scrutinee: Html)
-    : Boolean | Option[Tuple | Html] =
+    transparent inline def extrapolate[parts <: Tuple](scrutinee: Xml)
+    : Boolean | Option[Tuple | Xml] =
 
-        ${Honeycomb.extractor[parts]('scrutinee)}
+        ${Xylophone.extractor[parts]('scrutinee)}
 
 
-  given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
+  given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
         =>  Tactic[ParseError]
-        =>  (Html of content) is Aggregable by Text =
+        =>  (Xml of content) is Aggregable by Text =
 
     input =>
       val root = Tag.root(content.reification().map(_.tt).to(Set))
       parse(input.iterator, root).of[content]
 
-  given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
-    input => parse(input.iterator, dom.generic, doctypes = false)
+  given aggregable2: (schema: XmlSchema) => Tactic[ParseError] => Xml is Aggregable by Text =
+    input => parse(input.iterator, schema.generic, doctypes = false)
 
-  given loadable: (dom: Dom) => Tactic[ParseError] => Html is Loadable by Text = stream =>
-    val root = Tag.root(Set(t"html"))
+  given loadable: (schema: XmlSchema) => Tactic[ParseError] => Xml is Loadable by Text = stream =>
+    val root = Tag.root(Set(t"xml"))
     parse(stream.iterator, root, doctypes = true) match
       case Fragment(Doctype(doctype), content) => Document(content, Doctype(doctype))
-      case html@Element("html", _, _, _)       => Document(html, doctype)
+      case xml@Element("xml", _, _, _)       => Document(xml, doctype)
       case _                                   =>
-        abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
+        abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
 
   // Up to 32 levels of two-space indentation
   private val indentation: Text =
     "\n                                                                "
 
-  given streamable: (Dom, Monitor, Codicil) => Document[Html] is Streamable by Text =
+  given streamable: (XmlSchema, Monitor, Codicil) => Document[Xml] is Streamable by Text =
     emit(_).to(Stream)
 
-  def emit(document: Document[Html], flat: Boolean = false)(using dom: Dom)(using Monitor, Codicil)
+  def emit(document: Document[Xml], flat: Boolean = false)(using schema: XmlSchema)(using Monitor, Codicil)
   : Iterator[Text] =
 
       val emitter = Emitter[Text](4096)
       async:
-        def recur(node: Html, indent: Int, block: Boolean, mode: Mode): Unit =
+        def recur(node: Xml, indent: Int, block: Boolean, mode: Mode): Unit =
           node match
             case Fragment(nodes*) => nodes.each(recur(_, indent, block, mode))
             case Comment(comment) => emitter.put("<!--")
@@ -188,13 +188,13 @@ object Html extends Tag.Container
 
               emitter.put(">")
 
-              val mode = dom.elements(label).lay(Mode.Normal)(_.mode)
+              val mode = schema.elements(label).lay(Mode.Normal)(_.mode)
 
               val whitespace =
                 (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
                 && block
 
-              if !dom.elements(label).lay(false)(_.void) then
+              if !schema.elements(label).lay(false)(_.void) then
                 nodes.each(recur(_, indent + 1, whitespace, mode))
 
                 if block && whitespace
@@ -211,7 +211,7 @@ object Html extends Tag.Container
       emitter.iterator
 
 
-  given showable: [html <: Html] => html is Showable =
+  given showable: [xml <: Xml] => xml is Showable =
     case Fragment(nodes*) => nodes.map(_.show).join
     case TextNode(text)    => text
     case Comment(text) => t"<!--$text-->"
@@ -234,13 +234,13 @@ object Html extends Tag.Container
 
   trait Populable:
     node: Element =>
-      def apply(children: Optional[Html of (? <: node.Transport)]*): Element of node.Topic =
+      def apply(children: Optional[Xml of (? <: node.Transport)]*): Element of node.Topic =
         new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
           type Topic = node.Topic
 
   trait Transparent:
     node: Element =>
-      def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*): Element of labels =
+      def apply[labels <: Label](children: Optional[Xml of (? <: (labels | node.Transport))]*): Element of labels =
         new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
           type Topic = labels
 
@@ -248,28 +248,28 @@ object Html extends Tag.Container
   import Issue.*
   def name: Text = t"HTML"
 
-  given text: [label >: "#text" <: Label] => Conversion[Text, Html of label] =
+  given text: [label >: "#text" <: Label] => Conversion[Text, Xml of label] =
     TextNode(_).of[label]
 
-  given string: [label >: "#text" <: Label] => Conversion[String, Html of label] =
+  given string: [label >: "#text" <: Label] => Conversion[String, Xml of label] =
     string => TextNode(string.tt).of[label]
 
   given conversion3: [label <: Label, content >: label <: Label]
-        =>  Conversion[Html of label, Html of content] =
+        =>  Conversion[Xml of label, Xml of content] =
     _.of[content]
 
-  given comment: [content <: Label] =>  Conversion[Comment, Html of content] =
+  given comment: [content <: Label] =>  Conversion[Comment, Xml of content] =
     _.of[content]
 
-  given string2: Conversion[String, Html of "#foreign"] =
+  given string2: Conversion[String, Xml of "#foreign"] =
     string => TextNode(string.tt).of["#foreign"]
 
   given renderable: [content <: Label, value: Renderable in content]
-        => Conversion[value, Html of content] =
+        => Conversion[value, Xml of content] =
     value.render(_)
 
-  given sequences: [nodal, html <: Html] => (conversion: Conversion[nodal, html])
-        =>  Conversion[Seq[nodal], Seq[html]] =
+  given sequences: [nodal, xml <: Xml] => (conversion: Conversion[nodal, xml])
+        =>  Conversion[Seq[nodal], Seq[xml]] =
     (seq: Seq[nodal]) =>
       seq.map(conversion(_))
 
@@ -329,13 +329,13 @@ object Html extends Tag.Container
     case Attribute(tag: Text, attribute: Text)
     case Node(parent: Text)
 
-  private[honeycomb] def parse[dom <: Dom]
+  private[xylophone] def parse[schema <: XmlSchema]
        (input:       Iterator[Text],
         root:        Tag,
         callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
         fastforward: Int                               = 0,
         doctypes:    Boolean = false)
-       (using dom: Dom): Html raises ParseError =
+       (using schema: XmlSchema): Xml raises ParseError =
 
     import lineation.linefeedChars
 
@@ -372,7 +372,7 @@ object Html extends Tag.Container
 
     def next(): Unit =
       if !cursor.next()
-      then raise(ParseError(Html, Position(cursor.line, cursor.column), ExpectedMore))
+      then raise(ParseError(Xml, Position(cursor.line, cursor.column), ExpectedMore))
 
     inline def expect(char: Char): Unit =
       cursor.next()
@@ -385,7 +385,7 @@ object Html extends Tag.Container
         if datum.minuscule != char.minuscule then fail(Unexpected(datum))
 
     def fail(issue: Issue): Nothing =
-      abort(ParseError(Html, Position(cursor.line, cursor.column), issue))
+      abort(ParseError(Xml, Position(cursor.line, cursor.column), issue))
 
     @tailrec
     def skip(): Unit = cursor.let:
@@ -495,7 +495,7 @@ object Html extends Tag.Container
                             attributes(tag, foreign, entries.updated(t"\u0000", Unset))
           case _         =>
             val key2 = if foreign then foreignKey(cursor.mark) else
-              key(cursor.mark, dom.attributes).tap: key =>
+              key(cursor.mark, schema.attributes).tap: key =>
                 if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
               . label
 
@@ -513,7 +513,7 @@ object Html extends Tag.Container
 
     def entity(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail(ExpectedMore)):
       case '#'   => next() yet numericEntity(mark)
-      case other => textEntity(mark, dom.entities)
+      case other => textEntity(mark, schema.entities)
 
     def numericEntity(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail(ExpectedMore)):
       case 'x' => next() yet hexEntity(mark, 0)
@@ -641,12 +641,12 @@ object Html extends Tag.Container
       case '/'  =>  next()
                     content = cursor.hold:
                       if foreign then foreignTag(cursor.mark)
-                      else tagname(cursor.mark, dom.elements).label
+                      else tagname(cursor.mark, schema.elements).label
                     Token.Close
 
       case '\u0000' => fail(BadInsertion)
       case char =>
-        content = cursor.hold(if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label)
+        content = cursor.hold(if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, schema.elements).label)
         extra = cursor.hold(attributes(content, foreign))
 
         cursor.lay(fail(ExpectedMore)):
@@ -706,7 +706,7 @@ object Html extends Tag.Container
             def infer(tag: Tag): Unit =
               cursor.cue(mark)
 
-              dom.infer(parent, tag).let: tag =>
+              schema.infer(parent, tag).let: tag =>
                 focus = tag
                 level = Level.Descend
 
@@ -732,12 +732,12 @@ object Html extends Tag.Container
               case Token.Empty   =>
                 if admit(content) then empty() else infer:
                   if parent.foreign then Tag.foreign(content, extra)
-                  else dom.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
+                  else schema.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
               case Token.Open =>
                 focus =
                   if parent.foreign then Tag.foreign(content, extra)
-                  else dom.elements(content).or:
+                  else schema.elements(content).or:
                     cursor.cue(mark)
                     fail(InvalidTag(content))
 
@@ -790,20 +790,20 @@ object Html extends Tag.Container
       val head = read(root, root.admissible, ListMap(), 0)
       if fragment.isEmpty then head else Fragment(fragment*)
 
-sealed into trait Html extends Topical, Documentary, Formal:
+sealed into trait Xml extends Topical, Documentary, Formal:
   type Topic <: Label
   type Transport <: Label
   type Metadata = Doctype
   type Chunks = Text
-  type Form <: Dom
+  type Form <: XmlSchema
 
-  private[honeycomb] def of[topic <: Label]: this.type of topic = asInstanceOf[this.type of topic]
-  private[honeycomb] def in[form]: this.type in form = asInstanceOf[this.type in form]
+  private[xylophone] def of[topic <: Label]: this.type of topic = asInstanceOf[this.type of topic]
+  private[xylophone] def in[form]: this.type in form = asInstanceOf[this.type in form]
 
-  private[honeycomb] def over[transport <: Label]: this.type over transport =
+  private[xylophone] def over[transport <: Label]: this.type over transport =
     asInstanceOf[this.type over transport]
 
-sealed trait Node extends Html
+sealed trait Node extends Xml
 
 case class Comment(text: Text) extends Node:
   override def hashCode: Int = List(this).hashCode
@@ -824,7 +824,7 @@ case class TextNode(text: Text) extends Node:
     case _                           => false
 
 object Element:
-  def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
+  def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Xml of "#foreign"*)
   : Element of "#foreign" =
 
       Element(label, attributes, children.nodes, true).of["#foreign"]
@@ -869,15 +869,15 @@ extends Node, Topical, Transportive, Dynamic:
 
 object Fragment:
   @targetName("make")
-  def apply[topic <: Label](nodes: Html of (? <: topic)*): Fragment of topic =
+  def apply[topic <: Label](nodes: Xml of (? <: topic)*): Fragment of topic =
     new Fragment(nodes.nodes*).of[topic]
 
-case class Fragment(nodes: Node*) extends Html:
+case class Fragment(nodes: Node*) extends Xml:
   override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode
 
   override def equals(that: Any): Boolean = that match
     case Fragment(nodes0*) => nodes0 == nodes
-    case node: Html        => nodes.length == 1 && nodes(0) == node
+    case node: Xml        => nodes.length == 1 && nodes(0) == node
     case _                 => false
 
 case class Doctype(text: Text) extends Node:

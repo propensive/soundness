@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package xylophone
 
 import language.dynamics
 
@@ -59,13 +59,13 @@ import classloaders.threadContext
 import charDecoders.utf8
 import textSanitizers.skip
 
-object Dom:
-  private[honeycomb] val elements: scm.HashMap[Dom, Dictionary[Tag]] = scm.HashMap()
-  private[honeycomb] val attributes: scm.HashMap[Dom, Dictionary[Attribute]] = scm.HashMap()
-  private[honeycomb] val entities: scm.HashMap[Dom, Dictionary[Text]] = scm.HashMap()
+object XmlSchema:
+  private[xylophone] val elements: scm.HashMap[XmlSchema, Dictionary[Tag]] = scm.HashMap()
+  private[xylophone] val attributes: scm.HashMap[XmlSchema, Dictionary[Attribute]] = scm.HashMap()
+  private[xylophone] val entities: scm.HashMap[XmlSchema, Dictionary[Text]] = scm.HashMap()
 
   val generic = Tag.root(Set())
-  object Freeform extends Dom:
+  object Freeform extends XmlSchema:
     def freeform = true
     val elements = Dictionary()
     val attributes = Dictionary()
@@ -73,7 +73,7 @@ object Dom:
     def infer(parent: Tag, child: Tag) = Unset
 
 
-trait Dom:
+trait XmlSchema:
   def freeform: Boolean
   val elements: Dictionary[Tag]
   val attributes: Dictionary[Attribute]

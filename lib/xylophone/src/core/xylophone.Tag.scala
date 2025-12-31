@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package xylophone
 
 import language.dynamics
 
@@ -61,72 +61,72 @@ import textSanitizers.skip
 
 object Tag:
   def root(children: Set[Text]): Tag =
-    new Tag("#root", false, Html.Mode.Normal, Map(), children, false, false, false):
+    new Tag("#root", false, Xml.Mode.Normal, Map(), children, false, false, false):
       type Result = this.type
 
       def node(attributes: Map[Text, Optional[Text]]): Result = this
 
 
-  def void[label <: Label: ValueOf, dom <: Dom](presets: Map[Text, Optional[Text]] = Map())
-  : Tag.Void of label in dom =
+  def void[label <: Label: ValueOf, schema <: XmlSchema](presets: Map[Text, Optional[Text]] = Map())
+  : Tag.Void of label in schema =
 
-      new Void(valueOf[label].tt, presets).of[label].in[dom]
+      new Void(valueOf[label].tt, presets).of[label].in[schema]
 
 
-  def foreign[dom <: Dom](label: Text, attributes0: Map[Text, Optional[Text]])
-  : Tag of "#foreign" over "#foreign" in dom =
+  def foreign[schema <: XmlSchema](label: Text, attributes0: Map[Text, Optional[Text]])
+  : Tag of "#foreign" over "#foreign" in schema =
 
-      new Tag.Container(label, false, Html.Mode.Normal, attributes0, Set(), false, true)
+      new Tag.Container(label, false, Xml.Mode.Normal, attributes0, Set(), false, true)
       . of["#foreign"]
       . over["#foreign"]
-      . in[dom]
+      . in[schema]
 
 
-  def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String], dom <: Dom]
+  def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String], schema <: XmlSchema]
        (autoclose:  Boolean                   = false,
-        mode:       Html.Mode                 = Html.Mode.Normal,
+        mode:       Xml.Mode                 = Xml.Mode.Normal,
         presets:    Map[Text, Optional[Text]] = Map(),
         insertable: Boolean                   = false)
-  : Container of label over children in dom =
+  : Container of label over children in schema =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
 
       Container(valueOf[label].tt, autoclose, mode, presets, admissible, insertable)
       . of[label]
       . over[children]
-      . in[dom]
+      . in[schema]
 
 
-  def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String], dom <: Dom]
+  def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String], schema <: XmlSchema]
        (presets: Map[Text, Optional[Text]] = Map())
-  : Transparent of label over children in dom =
+  : Transparent of label over children in schema =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
-      transparent(valueOf[label].tt, admissible, presets).of[label].over[children].in[dom]
+      transparent(valueOf[label].tt, admissible, presets).of[label].over[children].in[schema]
 
 
-  def transparent[dom <: Dom](label: Text, children: Set[Text], presets: Map[Text, Optional[Text]])
-  : Transparent in dom =
+  def transparent[schema <: XmlSchema](label: Text, children: Set[Text], presets: Map[Text, Optional[Text]])
+  : Transparent in schema =
 
-      Transparent(label, children, presets).in[dom]
+      Transparent(label, children, presets).in[schema]
 
-  def foreign[label <: Label: ValueOf, dom <: Dom](): Container of label over "#foreign" =
-    Container(valueOf[label], foreign = true).of[label].over["#foreign"].in[dom]
+  def foreign[label <: Label: ValueOf, schema <: XmlSchema](): Container of label over "#foreign" =
+    Container(valueOf[label], foreign = true).of[label].over["#foreign"].in[schema]
 
 
   class Container
          (label:      Text,
           autoclose:  Boolean                   = false,
-          mode:       Html.Mode                 = Html.Mode.Normal,
+          mode:       Xml.Mode                 = Xml.Mode.Normal,
           presets:    Map[Text, Optional[Text]] = Map(),
           admissible: Set[Text]                 = Set(),
           insertable: Boolean                   = false,
           foreign:    Boolean                   = false)
   extends Tag(label, autoclose, mode, presets, admissible, insertable, foreign = foreign):
-    type Result = Element & Html.Populable of Topic over Transport in Form
+    type Result = Element & Xml.Populable of Topic over Transport in Form
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
-      new Element(label, presets ++ attributes, IArray(), foreign) with Html.Populable()
+      new Element(label, presets ++ attributes, IArray(), foreign) with Xml.Populable()
       . of[Topic]
       . over[Transport]
       . in[Form]
@@ -139,18 +139,18 @@ object Tag:
   extends Tag
            (label       = label,
             autoclose   = false,
-            mode        = Html.Mode.Normal,
+            mode        = Xml.Mode.Normal,
             presets     = presets,
             admissible  = admissible,
             insertable  = false,
             foreign     = foreign,
             transparent = true):
 
-    type Result = Element & Html.Transparent of Topic over Transport in Form
+    type Result = Element & Xml.Transparent of Topic over Transport in Form
 
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
-      new Element(label, presets ++ attributes, IArray(), foreign) with Html.Transparent()
+      new Element(label, presets ++ attributes, IArray(), foreign) with Xml.Transparent()
       . of[Topic]
       . over[Transport]
       . in[Form]
@@ -168,7 +168,7 @@ object Tag:
 abstract class Tag
        (    label:       Text,
         val autoclose:   Boolean                   = false,
-        val mode:        Html.Mode                 = Html.Mode.Normal,
+        val mode:        Xml.Mode                 = Xml.Mode.Normal,
         val presets:     Map[Text, Optional[Text]] = Map(),
         val admissible:  Set[Text]                 = Set(),
         val insertable:  Boolean                   = false,
@@ -181,6 +181,6 @@ extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
 
 
   inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Result =
-    ${Honeycomb.attributes[Result, this.type]('this, 'attributes)}
+    ${Xylophone.attributes[Result, this.type]('this, 'attributes)}
 
   def node(attributes: Map[Text, Optional[Text]]): Result

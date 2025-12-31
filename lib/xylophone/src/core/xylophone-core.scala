@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package xylophone
 
 import anticipation.*
 import contextual.*
@@ -42,23 +42,23 @@ import vacuous.*
 import language.dynamics
 
 extension [renderable: Renderable](value: renderable)
-  def html: Html of renderable.Form = renderable.render(value)
+  def xml: Xml of renderable.Form = renderable.render(value)
 
 extension (inline context: StringContext)
-  transparent inline def h: Interpolation = interpolation[Html](context)
+  transparent inline def x: Interpolation = interpolation[Xml](context)
 
-extension (html: Seq[Html])
+extension (xml: Seq[Xml])
   def nodes: IArray[Node] =
     var count = 0
 
-    for item <- html do item match
+    for item <- xml do item match
       case fragment: Fragment => count += fragment.nodes.length
       case _                  => count += 1
 
     val array = new Array[Node](count)
 
     var index = 0
-    for item <- html do item match
+    for item <- xml do item match
       case Fragment(nodes*) => for node <- nodes do
         array(index) = node
         index += 1
