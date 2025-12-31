@@ -67,21 +67,6 @@ object Tag:
       def node(attributes: Map[Text, Optional[Text]]): Result = this
 
 
-  def void[label <: Label: ValueOf, schema <: XmlSchema](presets: Map[Text, Optional[Text]] = Map())
-  : Tag.Void of label in schema =
-
-      new Void(valueOf[label].tt, presets).of[label].in[schema]
-
-
-  def foreign[schema <: XmlSchema](label: Text, attributes0: Map[Text, Optional[Text]])
-  : Tag of "#foreign" over "#foreign" in schema =
-
-      new Tag.Container(label, false, Xml.Mode.Normal, attributes0, Set(), false, true)
-      . of["#foreign"]
-      . over["#foreign"]
-      . in[schema]
-
-
   def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String], schema <: XmlSchema]
        (autoclose:  Boolean                   = false,
         mode:       Xml.Mode                 = Xml.Mode.Normal,
@@ -110,23 +95,18 @@ object Tag:
 
       Transparent(label, children, presets).in[schema]
 
-  def foreign[label <: Label: ValueOf, schema <: XmlSchema](): Container of label over "#foreign" =
-    Container(valueOf[label], foreign = true).of[label].over["#foreign"].in[schema]
-
-
   class Container
          (label:      Text,
           autoclose:  Boolean                   = false,
           mode:       Xml.Mode                 = Xml.Mode.Normal,
           presets:    Map[Text, Optional[Text]] = Map(),
           admissible: Set[Text]                 = Set(),
-          insertable: Boolean                   = false,
-          foreign:    Boolean                   = false)
-  extends Tag(label, autoclose, mode, presets, admissible, insertable, foreign = foreign):
+          insertable: Boolean                   = false)
+  extends Tag(label, autoclose, mode, presets, admissible, insertable):
     type Result = Element & Xml.Populable of Topic over Transport in Form
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
-      new Element(label, presets ++ attributes, IArray(), foreign) with Xml.Populable()
+      new Element(label, presets ++ attributes, IArray()) with Xml.Populable()
       . of[Topic]
       . over[Transport]
       . in[Form]
@@ -134,8 +114,7 @@ object Tag:
   class Transparent
          (label:      Text,
           admissible: Set[Text],
-          presets:    Map[Text, Optional[Text]] = Map(),
-          foreign:    Boolean                   = false)
+          presets:    Map[Text, Optional[Text]] = Map())
   extends Tag
            (label       = label,
             autoclose   = false,
@@ -143,27 +122,17 @@ object Tag:
             presets     = presets,
             admissible  = admissible,
             insertable  = false,
-            foreign     = foreign,
             transparent = true):
 
     type Result = Element & Xml.Transparent of Topic over Transport in Form
 
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
-      new Element(label, presets ++ attributes, IArray(), foreign) with Xml.Transparent()
+      new Element(label, presets ++ attributes, IArray()) with Xml.Transparent()
       . of[Topic]
       . over[Transport]
       . in[Form]
 
-
-  class Void(label: Text, presets: Map[Text, Optional[Text]])
-  extends Tag(label, presets = presets, void = true):
-    type Result = Element of Topic in Form
-
-    def node(attributes: Map[Text, Optional[Text]]): Result =
-      new Element(label, presets ++ attributes, IArray(), this.foreign)
-      . of[Topic]
-      . in[Form]
 
 abstract class Tag
        (    label:       Text,
@@ -172,10 +141,9 @@ abstract class Tag
         val presets:     Map[Text, Optional[Text]] = Map(),
         val admissible:  Set[Text]                 = Set(),
         val insertable:  Boolean                   = false,
-            foreign:     Boolean                   = false,
         val void:        Boolean                   = false,
         val transparent: Boolean                   = false)
-extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
+extends Element(label, presets, IArray()), Formal, Dynamic:
 
   type Result <: Element
 

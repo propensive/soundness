@@ -72,8 +72,7 @@ object Xml extends Tag.Container
           autoclose   = true,
           admissible  = Set("head", "body"),
           mode        = Xml.Mode.Whitespace,
-          insertable  = true,
-          foreign     = false), Format, Xml2:
+          insertable  = true), Format, Xml2:
   type Topic = "xml"
   type Transport = "head" | "body"
 
@@ -114,7 +113,7 @@ object Xml extends Tag.Container
     val root = Tag.root(Set(t"xml"))
     parse(stream.iterator, root, doctypes = true) match
       case Fragment(Doctype(doctype), content) => Document(content, Doctype(doctype))
-      case xml@Element("xml", _, _, _)       => Document(xml, doctype)
+      case xml@Element("xml", _, _)       => Document(xml, doctype)
       case _                                   =>
         abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
 
@@ -160,7 +159,7 @@ object Xml extends Tag.Container
                       emitter.put(text, pos.z, text.length - pos)
                       pos = text.length
 
-            case Element(label, attributes, nodes, _) =>
+            case Element(label, attributes, nodes) =>
               if block then emitter.put(indentation, Prim, indent*2 + 1)
               emitter.put("<")
               emitter.put(label)
@@ -220,7 +219,7 @@ object Xml extends Tag.Container
     case Comment(text) => t"<!--$text-->"
     case Doctype(text) => t"<!$text>"
 
-    case Element(tagname, attributes, children, _) =>
+    case Element(tagname, attributes, children) =>
       val tagContent = if attributes.isEmpty then t"" else
         attributes.map:
           case (key, value) => value.lay(key) { value => t"""$key="$value"""" }
@@ -238,13 +237,13 @@ object Xml extends Tag.Container
   trait Populable:
     node: Element =>
       def apply(children: Optional[Xml of (? <: node.Transport)]*): Element of node.Topic =
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+        new Element(node.label, node.attributes, children.compact.nodes):
           type Topic = node.Topic
 
   trait Transparent:
     node: Element =>
       def apply[labels <: Label](children: Optional[Xml of (? <: (labels | node.Transport))]*): Element of labels =
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+        new Element(node.label, node.attributes, children.compact.nodes):
           type Topic = labels
 
 
@@ -263,9 +262,6 @@ object Xml extends Tag.Container
 
   given comment: [content <: Label] =>  Conversion[Comment, Xml of content] =
     _.of[content]
-
-  given string2: Conversion[String, Xml of "#foreign"] =
-    string => TextNode(string.tt).of["#foreign"]
 
   given renderable: [content <: Label, value: Renderable in content]
         => Conversion[value, Xml of content] =
@@ -486,7 +482,7 @@ object Xml extends Tag.Container
 
 
     @tailrec
-    def attributes(tag: Text, foreign: Boolean, entries: Map[Text, Optional[Text]] = ListMap())
+    def attributes(tag: Text, entries: Map[Text, Optional[Text]] = ListMap())
          (using Cursor.Held)
     : Map[Text, Optional[Text]] =
 
@@ -495,9 +491,9 @@ object Xml extends Tag.Container
           case '\u0000'  => callback.let(_(cursor.position, Hole.Tagbody))
                             next()
                             skip()
-                            attributes(tag, foreign, entries.updated(t"\u0000", Unset))
+                            attributes(tag, entries.updated(t"\u0000", Unset))
           case _         =>
-            val key2 = if foreign then foreignKey(cursor.mark) else
+            val key2 =
               key(cursor.mark, schema.attributes).tap: key =>
                 if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
               . label
@@ -511,7 +507,7 @@ object Xml extends Tag.Container
               case '\''     =>  next() yet singleQuoted(cursor.mark)
               case _        =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
 
-            attributes(tag, foreign, entries.updated(key2, assignment))
+            attributes(tag, entries.updated(key2, assignment))
 
 
     def entity(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail(ExpectedMore)):
@@ -605,7 +601,7 @@ object Xml extends Tag.Container
       case '>'   => cursor.grab(mark, cursor.mark).also(next())
       case other => next() yet doctype(mark)
 
-    def tag(doctypes: Boolean, foreign: Boolean): Token = cursor.lay(fail(ExpectedMore)):
+    def tag(doctypes: Boolean): Token = cursor.lay(fail(ExpectedMore)):
       case '!'  =>  next()
                     cursor.lay(fail(ExpectedMore)):
                       case '-' =>
@@ -642,15 +638,13 @@ object Xml extends Tag.Container
                       case char =>
                         fail(Unexpected(char))
       case '/'  =>  next()
-                    content = cursor.hold:
-                      if foreign then foreignTag(cursor.mark)
-                      else tagname(cursor.mark, schema.elements).label
+                    content = cursor.hold(tagname(cursor.mark, schema.elements).label)
                     Token.Close
 
       case '\u0000' => fail(BadInsertion)
       case char =>
-        content = cursor.hold(if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, schema.elements).label)
-        extra = cursor.hold(attributes(content, foreign))
+        content = cursor.hold(tagname(cursor.mark, schema.elements).label)
+        extra = cursor.hold(attributes(content))
 
         cursor.lay(fail(ExpectedMore)):
           case '/'       =>  expect('>') yet cursor.next() yet Token.Empty
@@ -660,7 +654,7 @@ object Xml extends Tag.Container
 
     def finish(parent: Tag, count: Int): Node =
       if parent != root then
-        if parent.autoclose then Element(parent.label, parent.attributes, array(count), false)
+        if parent.autoclose then Element(parent.label, parent.attributes, array(count))
         else fail(Incomplete(parent.label))
       else
         if count > 1 then fragment = array(count)
@@ -680,7 +674,7 @@ object Xml extends Tag.Container
     def read(parent: Tag, admissible: Set[Text], map: Map[Text, Optional[Text]], count: Int): Node =
 
       def admit(child: Text): Boolean =
-        parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
+        parent.admissible(child) || parent.transparent && admissible(child)
 
       cursor.lay(finish(parent, count)):
         case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
@@ -697,13 +691,13 @@ object Xml extends Tag.Container
             val mark = cursor.mark
 
             def node(): Unit =
-              current = Element(content, extra, array(count), parent.foreign)
+              current = Element(content, extra, array(count))
 
             def empty(): Unit =
-              current = Element(content, extra, IArray(), parent.foreign)
+              current = Element(content, extra, IArray())
 
             def close(): Unit =
-              current = Element(parent.label, parent.attributes, array(count), parent.foreign)
+              current = Element(parent.label, parent.attributes, array(count))
               level = Level.Ascend
 
             def infer(tag: Tag): Unit =
@@ -724,23 +718,21 @@ object Xml extends Tag.Container
               node()
               expect('>')
               next()
-            else tag(doctypes && parent == root, parent.foreign) match
+            else tag(doctypes && parent == root) match
               case Token.Comment => current = Comment(content)
               case Token.Doctype => current = Doctype(content)
-              case Token.Cdata   => current =
-                if parent.foreign then TextNode(content) else
+              case Token.Cdata   =>
+                current =
                   fail(InvalidCdata)
                   Comment(t"[CDATA[${content}]]")
 
               case Token.Empty   =>
                 if admit(content) then empty() else infer:
-                  if parent.foreign then Tag.foreign(content, extra)
-                  else schema.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
+                  schema.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
 
               case Token.Open =>
                 focus =
-                  if parent.foreign then Tag.foreign(content, extra)
-                  else schema.elements(content).or:
+                  schema.elements(content).or:
                     cursor.cue(mark)
                     fail(InvalidTag(content))
 
@@ -756,7 +748,7 @@ object Xml extends Tag.Container
                 else
                   cursor.next()
                   level = Level.Ascend
-                  current = Element(content, map, array(count), parent.foreign)
+                  current = Element(content, map, array(count))
 
           level match
             case Level.Ascend  =>  current
@@ -774,13 +766,13 @@ object Xml extends Tag.Container
 
           case Mode.Raw =>
             val text = cursor.hold(textual(cursor.mark, parent.label, false))
-            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
-            else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
+            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray())
+            else Element(parent.label, parent.attributes, IArray(TextNode(text)))
 
           case Mode.Rcdata =>
             val text = cursor.hold(textual(cursor.mark, parent.label, true))
-            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
-            else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
+            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray())
+            else Element(parent.label, parent.attributes, IArray(TextNode(text)))
 
           case Mode.Normal =>
             val text = cursor.hold(textual(cursor.mark, Unset, true))
@@ -830,17 +822,10 @@ case class TextNode(text: Text) extends Node:
     case TextNode(text0)             => text0 == text
     case _                           => false
 
-object Element:
-  def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Xml of "#foreign"*)
-  : Element of "#foreign" =
-
-      Element(label, attributes, children.nodes, true).of["#foreign"]
-
 case class Element
             (label:      Text,
              attributes: Map[Text, Optional[Text]],
-             children:   IArray[Node],
-             foreign:    Boolean)
+             children:   IArray[Node])
 extends Node, Topical, Transportive:
 
   override def toString(): String =
@@ -849,8 +834,8 @@ extends Node, Topical, Transportive:
   override def equals(that: Any): Boolean = that match
     case Fragment(node: Element) => this == node
 
-    case Element(label, attributes, children, foreign) =>
-      label == this.label && attributes == this.attributes && foreign == this.foreign
+    case Element(label, attributes, children) =>
+      label == this.label && attributes == this.attributes
       && ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
 
     case _ =>
@@ -869,7 +854,7 @@ extends Node, Topical, Transportive:
   def updateDynamic(name: Label)(using attribute: name.type is Xml.Attribute in Form)(value: Text)
   : Element of Topic over Transport in Form =
 
-      Element(label, attributes.updated(name, value), children, foreign)
+      Element(label, attributes.updated(name, value), children)
       . of[Topic]
       . over[Transport]
       . in[Form]

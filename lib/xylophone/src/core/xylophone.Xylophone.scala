@@ -188,7 +188,7 @@ object Xylophone:
             case Doctype(_) =>
               halt(m"cannot match against a document type declaration")
 
-            case Element("\u0000", _, _, _) =>
+            case Element("\u0000", _, _) =>
               idx += 1
               iterator.next() match
                 case Xml.Hole.Element(label) =>
@@ -323,7 +323,7 @@ object Xylophone:
 
       def serialize(xml: Xml): Seq[Expr[Node]] = xml match
         case Fragment(children*) => children.flatMap(serialize(_))
-        case Element(label, attributes, children, foreign) =>
+        case Element(label, attributes, children) =>
           val exprs = attributes.to(List).map: (key, value) =>
             '{  (${Expr(key)},
                  ${  if value == "\u0000".tt then iterator.next().asExprOf[Optional[Text]]
@@ -334,7 +334,7 @@ object Xylophone:
           val map = '{Map(${Expr.ofList(exprs)}*)}
           val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
 
-          List('{Element(${Expr(label)}, $map, $elements, ${Expr(foreign)})})
+          List('{Element(${Expr(label)}, $map, $elements)})
 
         case Doctype(text) =>
           if text.contains(t"\u0000")
@@ -369,11 +369,11 @@ object Xylophone:
           List('{TextNode($content.tt)})
 
       def resultType(xml: Xml): Set[String] = xml match
-        case TextNode(_)           =>  Set("#text")
-        case Element(tag, _, _, _) =>  Set(tag.s)
-        case Fragment(values*)     =>  values.to(Set).flatMap(resultType(_))
-        case Comment(_)            =>  Set()
-        case Doctype(_)            =>  Set()
+        case TextNode(_)        =>  Set("#text")
+        case Element(tag, _, _) =>  Set(tag.s)
+        case Fragment(values*)  =>  values.to(Set).flatMap(resultType(_))
+        case Comment(_)         =>  Set()
+        case Doctype(_)         =>  Set()
 
       resultType(xml)
       . map { label => ConstantType(StringConstant(label)) }
