@@ -180,12 +180,11 @@ object Xml extends Tag.Container
 
               emitter.put(">")
 
-              if !schema.elements(label).lay(false)(_.void) then
-                nodes.each(recur(_, indent + 1))
+              nodes.each(recur(_, indent + 1))
 
-                emitter.put("</")
-                emitter.put(label)
-                emitter.put(">")
+              emitter.put("</")
+              emitter.put(label)
+              emitter.put(">")
 
         recur(document.metadata, 0)
         recur(document.root, 0)
@@ -656,17 +655,6 @@ object Xml extends Tag.Container
               current = Element(parent.label, parent.attributes, array(count))
               level = Level.Ascend
 
-            def infer(tag: Tag): Unit =
-              cursor.cue(mark)
-
-              schema.infer(parent, tag).let: tag =>
-                focus = tag
-                level = Level.Descend
-
-              . or:
-                  if parent.autoclose then close()
-                  else fail(InadmissibleTag(content, parent.label))
-
             next()
             if cursor.lay(false)(_ == '\u0000') then
               callback.let(_(cursor.position, Hole.Element(parent.label)))
@@ -680,8 +668,7 @@ object Xml extends Tag.Container
               case Token.Cdata   => current = Cdata(content)
 
               case Token.Empty   =>
-                if admit(content) then empty() else infer:
-                  schema.elements(content).or(cursor.cue(mark) yet fail(InvalidTag(content)))
+                if admit(content) then empty() else fail(InvalidTag(content))
 
               case Token.Open =>
                 focus =
@@ -689,8 +676,7 @@ object Xml extends Tag.Container
                     cursor.cue(mark)
                     fail(InvalidTag(content))
 
-                if !admit(content) then infer(focus) else if focus.void then empty()
-                else level = Level.Descend
+                if !admit(content) then fail(InvalidTag(content)) else level = Level.Descend
 
               case Token.Close =>
                 if content != parent.label then
