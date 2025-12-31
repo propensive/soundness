@@ -32,6 +32,10 @@
                                                                                                   */
 package xylophone
 
+import language.dynamics
+
+import scala.annotation.*
+
 import anticipation.*
 import contextual.*
 import prepositional.*
@@ -39,7 +43,7 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-import language.dynamics
+export Xml.attribute
 
 extension [renderable: Renderable](value: renderable)
   def xml: Xml of renderable.Form = renderable.render(value)

@@ -70,9 +70,10 @@ object Xylophone:
       var holes: Map[Ordinal, Xml.Hole] = Map()
       def capture(ordinal: Ordinal, hole: Xml.Hole) = holes = holes.updated(ordinal, hole)
 
+      given XmlSchema = XmlSchema.Freeform
 
       val generic: Tag = Tag.root(Set())
-      val xml: Xml = Xml.parse(Iterator(parts.mkString("\u0000").tt), generic, capture(_, _))(using XmlSchema.Freeform)
+      val xml: Xml = Xml.parse(Iterator(parts.mkString("\u0000").tt), generic, capture(_, _))
 
       val holes2 = holes.to(List).sortBy(_(0)).map(_(1))
       val iterator = holes2.to(Iterator)
@@ -248,8 +249,10 @@ object Xylophone:
       var holes: Map[Ordinal, Xml.Hole] = Map()
       def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
+      given XmlSchema = XmlSchema.Freeform
+
       val xml: Xml =
-        Xml.parse(Iterator(parts.mkString("\u0000").tt), XmlSchema.generic, capture(_, _))(using XmlSchema.Freeform)
+        Xml.parse(Iterator(parts.mkString("\u0000").tt), XmlSchema.generic, capture(_, _))
 
       val iterator: Iterator[Expr[Any]] =
         holes.to(List).sortBy(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
@@ -275,12 +278,12 @@ object Xylophone:
 
               case Hole.Element(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match
-                  case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
-                    case Some('{$renderable: Renderable}) =>
-                      '{$renderable.render($expr)}
+                  case '[tag] => Expr.summon[(? >: value) is Encodable in Xml] match
+                    case Some('{$encodable: Encodable}) =>
+                      '{$encodable.encode($expr)}
 
                     case _ =>
-                      halt(m"""a value of ${TypeRepr.of[value].show} is not renderable inside a
+                      halt(m"""a value of ${TypeRepr.of[value].show} is not encodable inside a
                                <$tag> element""")
 
               case Hole.Node(tag) =>

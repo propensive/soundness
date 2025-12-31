@@ -45,6 +45,7 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import denominative.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import hellenism.*
@@ -79,6 +80,8 @@ object Xml extends Tag.Container
   erased trait Integral
   erased trait Decimal
   erased trait Id
+
+  case class attribute() extends StaticAnnotation
 
   def doctype: Doctype = Doctype(t"xml")
 
@@ -246,7 +249,7 @@ object Xml extends Tag.Container
 
 
   import Issue.*
-  def name: Text = t"HTML"
+  def name: Text = t"XML"
 
   given text: [label >: "#text" <: Label] => Conversion[Text, Xml of label] =
     TextNode(_).of[label]
@@ -295,7 +298,7 @@ object Xml extends Tag.Container
     case InvalidAttributeUse(attribute: Text, element: Text)
 
     def describe: Message = this match
-      case BadInsertion                   =>  m"a value cannot be inserted into HTML at this point"
+      case BadInsertion                   =>  m"a value cannot be inserted into XML at this point"
       case ExpectedMore                   =>  m"the content ended prematurely"
       case UnexpectedDoctype              =>  m"the document type declaration was not expected here"
       case BadDocument                    =>  m"the document did not contain a single root tag"
@@ -802,6 +805,10 @@ sealed into trait Xml extends Topical, Documentary, Formal:
 
   private[xylophone] def over[transport <: Label]: this.type over transport =
     asInstanceOf[this.type over transport]
+
+  def as[result: Decodable in Xml]: result = this match
+    case Fragment(value) => result.decoded(value)
+    case xml: Xml        => result.decoded(xml)
 
 sealed trait Node extends Xml
 

@@ -34,11 +34,13 @@ package xylophone
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import probably.*
 import rudiments.*
 import spectacular.*
+import turbulence.*
 
 import xmlPrinters.compact
 import unsafeExceptions.canThrowAny
@@ -60,20 +62,20 @@ case class Pixel(x: Int, y: Int, color: ColorVal)
 object Tests extends Suite(m"Xylophone tests"):
   def run(): Unit =
     test(m"extract integer"):
-      Xml.parse(t"""<message>1</message>""").as[Int]
-    .assert(_ == 1)
+      t"""<message>1</message>""".read[Xml].as[Int]
+    . assert(_ == 1)
 
     test(m"extract string"):
-      Xml.parse(t"""<message>Hello world</message>""").as[Text]
+      t"""<message>Hello world</message>""".read[Xml].as[Text]
     .assert(_ == t"Hello world")
 
     test(m"extract string from fragment"):
-      val xml = Xml.parse(t"""<message><info>Hello world</info></message>""")
+      val xml = t"""<message><info>Hello world</info></message>""".read[Xml]
       xml.info.as[Text]
     .assert(_ == t"Hello world")
 
     test(m"extract string from node"):
-      val xml = Xml.parse(t"""<message><info>Hello world</info></message>""")
+      val xml = t"""<message><info>Hello world</info></message>""".read[Xml]
       xml.info().as[Text]
     .assert(_ == t"Hello world")
 
@@ -89,19 +91,19 @@ object Tests extends Suite(m"Xylophone tests"):
     .assert(_ == t"<Firm><name>Acme Inc</name><ceo><name>Jack</name><age>50</age></ceo></Firm>")
 
     test(m"access second element"):
-      val xml = Xml.parse(t"""<events><eventId>1</eventId><eventId>2</eventId></events>""")
+      val xml = t"""<events><eventId>1</eventId><eventId>2</eventId></events>""".read[Xml]
       xml.eventId(1).as[Int]
     .assert(_ == 2)
 
     test(m"extract to simple case class"):
       val string = t"<jack><name>Jack</name><age>50</age></jack>"
-      val xml = Xml.parse(string)
+      val xml = string.read[Xml]
       xml.as[Worker]
     .assert(_ == Worker(t"Jack", 50))
 
     test(m"extract to nested case class"):
       val string = t"<Firm><name>Acme Inc</name><ceo><name>Jack</name><age>50</age></ceo></Firm>"
-      val xml = Xml.parse(string)
+      val xml = string.read[Xml]
       xml.as[Firm]
     .assert(_ == Firm(t"Acme Inc", Worker(t"Jack", 50)))
 
@@ -129,25 +131,25 @@ object Tests extends Suite(m"Xylophone tests"):
 
     test(m"read coproduct"):
       val string = t"""<ColorVal type="Cmyk"><cyan>1</cyan><magenta>2</magenta><yellow>3</yellow><key>4</key></ColorVal>"""
-      val xml = Xml.parse(string)
+      val xml = string.read[Xml]
       xml.as[ColorVal]
     .assert(_ == ColorVal.Cmyk(1, 2, 3, 4))
 
     test(m"read nested coproduct"):
       val string = t"""<Pixel><x>100</x><y>200</y><color type="Cmyk"><cyan>1</cyan><magenta>2</magenta><yellow>3</yellow><key>4</key></color></Pixel>"""
-      val xml = Xml.parse(string)
+      val xml = string.read[Xml]
       xml.as[Pixel]
     .assert(_ == Pixel(100, 200, ColorVal.Cmyk(1, 2, 3, 4)))
 
     test(m"read attribute value from fragment"):
       val string = t"""<node><content key="value"/></node>"""
-      val xml = Xml.parse(string)
+      val xml = string.read[Xml]
       xml.content.attribute(t"key").as[Text]
     .assert(_ == t"value")
 
     test(m"read attribute value from node"):
       val string = t"""<node><content key="value"/></node>"""
-      val xml = Xml.parse(string)
+      val xml = string.read[Xml]
       xml.content().attribute(t"key").as[Text]
     .assert(_ == t"value")
 
@@ -162,7 +164,7 @@ object Tests extends Suite(m"Xylophone tests"):
                         |</h:table>
                         |</root>""".s.stripMargin
 
-      val xml = Xml.parse(string.tt)
+      val xml = string.tt.read[Xml]
       xml.table.tr.td().as[Text]
     .assert(_ == t"Apples")
 
@@ -188,30 +190,30 @@ object Tests extends Suite(m"Xylophone tests"):
     .assert(_ == t"<Foo/>")
 
     test(m"parse error: unclosed tag"):
-      capture(Xml.parse(t"""<foo key="value"><bar></foo>"""))
+      capture(t"""<foo key="value"><bar></foo>""".read[Xml])
     .assert(_ == XmlParseError(0, 24))
 
     test(m"parse error: unclosed string"):
-      capture(Xml.parse(t"""<foo key="value><bar/></foo>"""))
+      capture(t"""<foo key="value><bar/></foo>""".read[Xml])
     .assert(_ == XmlParseError(0, 16))
 
     test(m"read error: not an integer"):
-      val xml = Xml.parse(t"""<foo>not an integer</foo>""")
+      val xml = t"""<foo>not an integer</foo>""".read[Xml]
       capture(xml.as[Int])
     .assert(NumberError(t"not an integer", Int) == _)
 
     test(m"access error; proactively resolving head nodes"):
-      val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
+      val xml = t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""".read[Xml]
       capture(xml.company().staff().cto().name().as[Text])
     .assert(_ == XmlError(0, List(t"company", 0, t"staff", 0, t"cto")))
 
     test(m"access error; taking all children"):
-      val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
+      val xml = t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""".read[Xml]
       capture(xml.company.staff.cto.name().as[Text])
     .assert(_ == XmlError(0, List(t"company", t"staff", t"cto", t"name")))
 
     test(m"access non-zero node"):
-      val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
+      val xml = t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""".read[Xml]
       capture(xml.company(1).staff().cto.name().as[Text])
     .assert(_ == XmlError(1, List(t"company")))
 
