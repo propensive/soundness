@@ -45,8 +45,8 @@ import vacuous.*
 
 export Xml.attribute
 
-extension [renderable: Renderable](value: renderable)
-  def xml: Xml of renderable.Form = renderable.render(value)
+extension [encodable: Encodable in Xml](value: encodable)
+  def xml: Xml = encodable.encoded(value)
 
 extension (inline context: StringContext)
   transparent inline def x: Interpolation = interpolation[Xml](context)

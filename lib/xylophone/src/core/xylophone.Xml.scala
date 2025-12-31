@@ -73,7 +73,7 @@ object Xml extends Tag.Container
           admissible  = Set("head", "body"),
           mode        = Xml.Mode.Whitespace,
           insertable  = true,
-          foreign     = false), Format:
+          foreign     = false), Format, Xml2:
   type Topic = "xml"
   type Transport = "head" | "body"
 
@@ -429,7 +429,7 @@ object Xml extends Tag.Container
       case char                                        =>  fail(Unexpected(char))
 
     @tailrec
-    def key(mark: Mark, dictionary: Dictionary[Attribute])(using Cursor.Held): Attribute =
+    def key(mark: Mark, dictionary: Dictionary[Xml.Attribute])(using Cursor.Held): Xml.Attribute =
       cursor.lay(fail(ExpectedMore)):
         case char if char.isLetter || char == '-' => dictionary(char.minuscule) match
           case Dictionary.Empty =>  fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
@@ -793,7 +793,7 @@ object Xml extends Tag.Container
       val head = read(root, root.admissible, ListMap(), 0)
       if fragment.isEmpty then head else Fragment(fragment*)
 
-sealed into trait Xml extends Topical, Documentary, Formal:
+sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   type Topic <: Label
   type Transport <: Label
   type Metadata = Doctype
@@ -841,7 +841,7 @@ case class Element
              attributes: Map[Text, Optional[Text]],
              children:   IArray[Node],
              foreign:    Boolean)
-extends Node, Topical, Transportive, Dynamic:
+extends Node, Topical, Transportive:
 
   override def toString(): String =
     s"<$label>${children.mkString}</$label>"
@@ -860,13 +860,13 @@ extends Node, Topical, Transportive, Dynamic:
     ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
 
 
-  def selectDynamic(name: Label)(using attribute: name.type is Attribute on Topic in Form)
+  def selectDynamic(name: Label)(using attribute: name.type is Xml.Attribute on Topic in Form)
   : Optional[Text] =
 
       attributes.at(name.tt)
 
 
-  def updateDynamic(name: Label)(using attribute: name.type is Attribute in Form)(value: Text)
+  def updateDynamic(name: Label)(using attribute: name.type is Xml.Attribute in Form)(value: Text)
   : Element of Topic over Transport in Form =
 
       Element(label, attributes.updated(name, value), children, foreign)

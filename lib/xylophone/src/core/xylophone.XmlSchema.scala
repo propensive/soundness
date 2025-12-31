@@ -61,12 +61,12 @@ import textSanitizers.skip
 
 object XmlSchema:
   private[xylophone] val elements: scm.HashMap[XmlSchema, Dictionary[Tag]] = scm.HashMap()
-  private[xylophone] val attributes: scm.HashMap[XmlSchema, Dictionary[Attribute]] = scm.HashMap()
+  private[xylophone] val attributes: scm.HashMap[XmlSchema, Dictionary[Xml.Attribute]] = scm.HashMap()
   private[xylophone] val entities: scm.HashMap[XmlSchema, Dictionary[Text]] = scm.HashMap()
 
   val generic = Tag.root(Set())
   object Freeform extends XmlSchema:
-    def freeform = true
+    override def freeform = true
     val elements = Dictionary()
     val attributes = Dictionary()
     val entities = Dictionary()
@@ -74,9 +74,9 @@ object XmlSchema:
 
 
 trait XmlSchema:
-  def freeform: Boolean
+  def freeform: Boolean = false
   val elements: Dictionary[Tag]
-  val attributes: Dictionary[Attribute]
+  val attributes: Dictionary[Xml.Attribute]
   val entities: Dictionary[Text]
 
   def infer(parent: Tag, child: Tag): Optional[Tag]

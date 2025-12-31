@@ -44,12 +44,13 @@ import spectacular.*
 import urticose.*
 import vacuous.*
 
-case class Attribute(label: Text, elements: Set[Text], global: Boolean):
-  type Self <: Label
-  type Topic
-  type Plane <: Label
+trait Xml2:
+  case class Attribute(label: Text, elements: Set[Text], global: Boolean):
+    type Self <: Label
+    type Topic
+    type Plane <: Label
 
-  def targets(tag: Text): Boolean = global || elements(tag)
+    def targets(tag: Text): Boolean = global || elements(tag)
 
-  def merge(that: Attribute): Attribute =
-    Attribute(label, elements ++ that.elements, global || that.global)
+    def merge(that: Attribute): Attribute =
+      Attribute(label, elements ++ that.elements, global || that.global)
