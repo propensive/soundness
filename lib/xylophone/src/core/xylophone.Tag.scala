@@ -66,6 +66,8 @@ object Tag:
 
       def node(attributes: Map[Text, Optional[Text]]): Result = this
 
+  def freeform(label: Text): Container = Container(label, Map(), Set())
+
 
   def container
        [label    <: Label: ValueOf,

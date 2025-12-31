@@ -272,7 +272,6 @@ object Xml extends Tag.Container
     case UnexpectedDoctype
     case BadDocument
     case UnquotedAttribute
-    case InvalidCdata
     case InvalidTag(name: Text)
     case InvalidTagStart(prefix: Text)
     case DuplicateAttribute(name: Text)
@@ -294,7 +293,6 @@ object Xml extends Tag.Container
       case UnexpectedDoctype              =>  m"the document type declaration was not expected here"
       case BadDocument                    =>  m"the document did not contain a single root tag"
       case UnquotedAttribute              =>  m"the attribute value must be single- or double-quoted"
-      case InvalidCdata                   =>  m"CDATA content is only permitted in foreign namespaces"
       case InvalidTag(name)               =>  m"<$name> is not a valid tag"
       case InvalidTagStart(prefix)        =>  m"there is no valid tag whose name starts $prefix"
       case DuplicateAttribute(name)       =>  m"the attribute $name already exists on this tag"
@@ -383,19 +381,20 @@ object Xml extends Tag.Container
       case _                               => ()
 
     @tailrec
-    def tagname(mark: Mark, dictionary: Dictionary[Tag])(using Cursor.Held): Tag =
+    def tagname(mark: Mark, dictionary: Optional[Dictionary[Tag]])(using Cursor.Held): Tag =
       cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter || char.isDigit => dictionary(char.minuscule) match
-          case Dictionary.Empty => cursor.next()
-                                   val name = cursor.grab(mark, cursor.mark)
-                                   cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
-          case other            => next() yet tagname(mark, other)
+        case char if char.isLetter || char.isDigit =>
+          dictionary.lay(next() yet tagname(mark, Unset)): dictionary =>
+            dictionary(char.minuscule) match
+              case Dictionary.Empty => cursor.next()
+                                       val name = cursor.grab(mark, cursor.mark)
+                                       cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
+              case other            => next() yet tagname(mark, other)
 
         case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
           case Dictionary.Just("", tag)       =>  tag
           case Dictionary.Branch(tag: Tag, _) =>  tag
-          case other                          =>  val name = cursor.grab(mark, cursor.mark)
-                                                  cursor.cue(mark) yet fail(InvalidTag(name))
+          case other                          =>  Tag.freeform(cursor.grab(mark, cursor.mark))
         case '\u0000' =>
           fail(BadInsertion)
 
@@ -582,11 +581,11 @@ object Xml extends Tag.Container
                         Token.Comment
 
                       case '[' =>
-                        expectInsensitive('c')
-                        expectInsensitive('d')
-                        expectInsensitive('a')
-                        expectInsensitive('t')
-                        expectInsensitive('a')
+                        expect('C')
+                        expect('D')
+                        expect('A')
+                        expect('T')
+                        expect('A')
                         expect('[')
                         next()
                         content = cursor.hold(cdata(cursor.mark))
@@ -608,12 +607,12 @@ object Xml extends Tag.Container
                       case char =>
                         fail(Unexpected(char))
       case '/'  =>  next()
-                    content = cursor.hold(tagname(cursor.mark, schema.elements).label)
+                    content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
                     Token.Close
 
       case '\u0000' => fail(BadInsertion)
       case char =>
-        content = cursor.hold(tagname(cursor.mark, schema.elements).label)
+        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
         extra = cursor.hold(attributes(content))
 
         cursor.lay(fail(ExpectedMore)):
@@ -640,7 +639,7 @@ object Xml extends Tag.Container
     @tailrec
     def read(parent: Tag, map: Map[Text, Optional[Text]], count: Int): Node =
 
-      def admit(child: Text): Boolean = parent.admissible(child)
+      def admit(child: Text): Boolean = schema.freeform || parent.admissible(child)
 
       cursor.lay(finish(parent, count)):
         case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
@@ -683,7 +682,7 @@ object Xml extends Tag.Container
 
               case Token.Open =>
                 focus =
-                  schema.elements(content).or:
+                  if schema.freeform then Tag.freeform(content) else schema.elements(content).or:
                     cursor.cue(mark)
                     fail(InvalidTag(content))
 

@@ -95,6 +95,11 @@ object Xylophone:
 
           '{  ${Expr(pattern.text)} == $scrutinee.text  }
 
+      def checkHeader(array: Expr[Array[Any]], pattern: Header, scrutinee: Expr[Header])
+      : Expr[Boolean] =
+
+          '{  ${Expr(pattern.version)} == $scrutinee.version  } // FIXME: Check encoding and standalone too
+
       def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       : Expr[Boolean] =
 
@@ -220,6 +225,10 @@ object Xylophone:
               def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Element]})
               '{  $expr && $scrutinee.isInstanceOf[Element] && $checked  }
 
+            case header: Header =>
+              def checked = checkHeader(array, header, '{$scrutinee.asInstanceOf[Header]})
+              '{  $expr && $scrutinee.isInstanceOf[Header] && $checked  }
+
             case fragment@Fragment(nodes*) =>
               val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Fragment]})
               '{  $expr && $scrutinee.isInstanceOf[Fragment] && $checked  }
@@ -341,6 +350,14 @@ object Xylophone:
 
       def serialize(xml: Xml): Seq[Expr[Node]] = xml match
         case Fragment(children*) => children.flatMap(serialize(_))
+        case Header(version, encoding, standalone) =>
+          val encoding2: Expr[Optional[Text]] =
+            if encoding == Unset then '{Unset} else Expr(encoding.asInstanceOf[Text])
+
+          val standalone2: Expr[Optional[Boolean]] =
+            if standalone == Unset then '{Unset} else Expr(encoding.asInstanceOf[Boolean])
+
+          List('{Header(${Expr(version)}, $encoding2, $standalone2)})
         case Element(label, attributes, children) =>
           val exprs = attributes.to(List).map: (key, value) =>
             '{  (${Expr(key)},
@@ -398,6 +415,7 @@ object Xylophone:
         case Element(tag, _, _) =>  Set(tag.s)
         case Fragment(values*)  =>  values.to(Set).flatMap(resultType(_))
         case Comment(_)         =>  Set()
+        case Header(_, _, _)    =>  Set()
         case Cdata(_)           =>  Set()
 
       resultType(xml)
