@@ -61,7 +61,7 @@ import textSanitizers.skip
 
 object Tag:
   def root(children: Set[Text]): Tag =
-    new Tag("#root", false, Map(), children, false, false, false):
+    new Tag("#root", false, Map(), children, false, false):
       type Result = this.type
 
       def node(attributes: Map[Text, Optional[Text]]): Result = this
@@ -81,19 +81,6 @@ object Tag:
       . in[schema]
 
 
-  def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String], schema <: XmlSchema]
-       (presets: Map[Text, Optional[Text]] = Map())
-  : Transparent of label over children in schema =
-
-      val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
-      transparent(valueOf[label].tt, admissible, presets).of[label].over[children].in[schema]
-
-
-  def transparent[schema <: XmlSchema](label: Text, children: Set[Text], presets: Map[Text, Optional[Text]])
-  : Transparent in schema =
-
-      Transparent(label, children, presets).in[schema]
-
   class Container
          (label:      Text,
           autoclose:  Boolean                   = false,
@@ -109,36 +96,13 @@ object Tag:
       . over[Transport]
       . in[Form]
 
-  class Transparent
-         (label:      Text,
-          admissible: Set[Text],
-          presets:    Map[Text, Optional[Text]] = Map())
-  extends Tag
-           (label       = label,
-            autoclose   = false,
-            presets     = presets,
-            admissible  = admissible,
-            insertable  = false,
-            transparent = true):
-
-    type Result = Element & Xml.Transparent of Topic over Transport in Form
-
-
-    def node(attributes: Map[Text, Optional[Text]]): Result =
-      new Element(label, presets ++ attributes, IArray()) with Xml.Transparent()
-      . of[Topic]
-      . over[Transport]
-      . in[Form]
-
-
 abstract class Tag
        (    label:       Text,
         val autoclose:   Boolean                   = false,
         val presets:     Map[Text, Optional[Text]] = Map(),
         val admissible:  Set[Text]                 = Set(),
         val insertable:  Boolean                   = false,
-        val void:        Boolean                   = false,
-        val transparent: Boolean                   = false)
+        val void:        Boolean                   = false)
 extends Element(label, presets, IArray()), Formal, Dynamic:
 
   type Result <: Element

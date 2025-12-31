@@ -220,13 +220,6 @@ object Xml extends Tag.Container
         new Element(node.label, node.attributes, children.compact.nodes):
           type Topic = node.Topic
 
-  trait Transparent:
-    node: Element =>
-      def apply[labels <: Label](children: Optional[Xml of (? <: (labels | node.Transport))]*): Element of labels =
-        new Element(node.label, node.attributes, children.compact.nodes):
-          type Topic = labels
-
-
   import Issue.*
   def name: Text = t"XML"
 
@@ -622,20 +615,18 @@ object Xml extends Tag.Container
       result.immutable(using Unsafe)
 
     def descend(parent: Tag, admissible: Set[Text]): Node =
-      val admissible2 = if parent.transparent then admissible else parent.admissible
-      read(parent, admissible2, extra, 0)
+      read(parent, extra, 0)
 
     @tailrec
-    def read(parent: Tag, admissible: Set[Text], map: Map[Text, Optional[Text]], count: Int): Node =
+    def read(parent: Tag, map: Map[Text, Optional[Text]], count: Int): Node =
 
-      def admit(child: Text): Boolean =
-        parent.admissible(child) || parent.transparent && admissible(child)
+      def admit(child: Text): Boolean = parent.admissible(child)
 
       cursor.lay(finish(parent, count)):
         case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
                          next()
                          append(TextNode("\u0000"))
-                         read(parent, admissible, map, count + 1)
+                         read(parent, map, count + 1)
 
         case '<' =>
           var level: Level = Level.Peer
@@ -692,22 +683,22 @@ object Xml extends Tag.Container
           level match
             case Level.Ascend  =>  current
             case Level.Peer    =>  append(current)
-                                   read(parent, admissible, map, count + 1)
+                                   read(parent, map, count + 1)
             case Level.Descend =>  push(focus)
                                    val child = descend(focus, admissible)
                                    pop()
                                    append(child)
-                                   read(parent, admissible, map, count + 1)
+                                   read(parent, map, count + 1)
 
         case char =>
           val text = cursor.hold(textual(cursor.mark, Unset, true))
-          if text.length == 0 then read(parent, admissible, map, count + 1)
-          else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
+          if text.length == 0 then read(parent, map, count + 1)
+          else append(TextNode(text)) yet read(parent, map, count + 1)
 
     if cursor.finished then Fragment() else
       skip()
       append(root)
-      val head = read(root, root.admissible, ListMap(), 0)
+      val head = read(root, ListMap(), 0)
       if fragment.isEmpty then head else Fragment(fragment*)
 
 sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
