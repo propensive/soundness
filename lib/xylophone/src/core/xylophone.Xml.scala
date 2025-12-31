@@ -263,9 +263,8 @@ object Xml extends Tag.Container
   given comment: [content <: Label] =>  Conversion[Comment, Xml of content] =
     _.of[content]
 
-  given renderable: [content <: Label, value: Renderable in content]
-        => Conversion[value, Xml of content] =
-    value.render(_)
+  given encodable: [value: Encodable in Xml] => Conversion[value, Xml] =
+    value.encoded(_)
 
   given sequences: [nodal, xml <: Xml] => (conversion: Conversion[nodal, xml])
         =>  Conversion[Seq[nodal], Seq[xml]] =
@@ -418,13 +417,6 @@ object Xml extends Tag.Container
           fail(Unexpected(char))
 
     @tailrec
-    def foreignTag(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case char if char.isLetter                       =>  next() yet foreignTag(mark)
-      case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' =>  cursor.grab(mark, cursor.mark).lower
-      case '\u0000'                                    =>  fail(BadInsertion)
-      case char                                        =>  fail(Unexpected(char))
-
-    @tailrec
     def key(mark: Mark, dictionary: Dictionary[Xml.Attribute])(using Cursor.Held): Xml.Attribute =
       cursor.lay(fail(ExpectedMore)):
         case char if char.isLetter || char == '-' => dictionary(char.minuscule) match
@@ -439,14 +431,6 @@ object Xml extends Tag.Container
 
         case char =>
           fail(Unexpected(char))
-
-    @tailrec
-    def foreignKey(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case char if char.isLetter || char == '-'        =>  next() yet foreignKey(mark)
-      case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>  cursor.grab(mark, cursor.mark)
-      case '\u0000'                                    =>  fail(BadInsertion)
-      case char                                        =>  fail(Unexpected(char))
-
 
     @tailrec
     def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
