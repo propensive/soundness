@@ -30,19 +30,54 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package xylophone
+package honeycomb
 
+import language.dynamics
+
+import java.lang as jl
+
+import scala.collection.mutable as scm
+
+import adversaria.*
 import anticipation.*
 import contingency.*
+import denominative.*
+import fulminate.*
 import gossamer.*
+import hellenism.*
+import hieroglyph.*
+import prepositional.*
+import proscenium.*
 import rudiments.*
+import symbolism.*
+import turbulence.*
+import typonym.*
 import vacuous.*
+import zephyrine.*
 
-case class XmlAttribute(node: XmlNode, attribute: Text):
-  def as[value: XmlDecoder]: value raises XmlError =
-    val attributes = Xml.normalize(node).prim match
-      case XmlAst.Element(_, _, attributes, _) => attributes
-      case _                                   => abort(XmlError(XmlError.Reason.Read))
+import classloaders.threadContext
+import charDecoders.utf8
+import textSanitizers.skip
 
-    value.read
-     (List(XmlAst.Element(XmlName(t"empty"), List(XmlAst.Textual(attributes(XmlName(attribute)))))))
+object Dom:
+  private[honeycomb] val elements: scm.HashMap[Dom, Dictionary[Tag]] = scm.HashMap()
+  private[honeycomb] val attributes: scm.HashMap[Dom, Dictionary[Attribute]] = scm.HashMap()
+  private[honeycomb] val entities: scm.HashMap[Dom, Dictionary[Text]] = scm.HashMap()
+
+  val generic = Tag.root(Set())
+  object Freeform extends Dom:
+    def freeform = true
+    val elements = Dictionary()
+    val attributes = Dictionary()
+    val entities = Dictionary()
+    def infer(parent: Tag, child: Tag) = Unset
+
+
+trait Dom:
+  def freeform: Boolean
+  val elements: Dictionary[Tag]
+  val attributes: Dictionary[Attribute]
+  val entities: Dictionary[Text]
+
+  def infer(parent: Tag, child: Tag): Optional[Tag]
+  def generic: Tag = Tag.root(elements.iterator.map(_.label).to(Set))

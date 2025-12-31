@@ -30,12 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package xylophone
+package honeycomb
+
+import scala.quoted.*
 
 import anticipation.*
+import contextual.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import vacuous.*
 
-trait XmlPrinter[output]:
-  def print(doc: Xml): output
-
-object XmlPrinter:
-  given text: XmlPrinter[Text] = StandardXmlPrinter(false)
+transparent inline def interpolation[topic](inline context: StringContext): Interpolation =
+  ${Interpolation[topic]('context)}

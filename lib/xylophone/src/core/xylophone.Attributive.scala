@@ -30,8 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package xylophone
+package honeycomb
 
+import anticipation.*
+import gossamer.*
+import hieroglyph.*
+import kaleidoscope.*
+import prepositional.*
 import proscenium.*
+import rudiments.*
+import serpentine.*
+import spectacular.*
+import urticose.*
+import vacuous.*
 
-case class label(name: String) extends StaticAnnotation
+object Attributive:
+  erased trait Textual
+
+  given textTextual: Text is Attributive to Textual = (key, value) => (key, value)
+  given stringTextual: String is Attributive to Textual = (key, value) => (key, value.tt)
+
+trait Attributive extends Typeclass, Resultant:
+  def attribute(key: Text, value: Self): Optional[(Text, Optional[Text])]
