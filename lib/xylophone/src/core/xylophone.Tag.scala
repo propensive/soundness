@@ -61,33 +61,31 @@ import textSanitizers.skip
 
 object Tag:
   def root(children: Set[Text]): Tag =
-    new Tag("#root", false, Map(), children, false):
+    new Tag("#root", Map(), children):
       type Result = this.type
 
       def node(attributes: Map[Text, Optional[Text]]): Result = this
 
 
-  def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String], schema <: XmlSchema]
-       (autoclose:  Boolean                   = false,
-        presets:    Map[Text, Optional[Text]] = Map(),
-        insertable: Boolean                   = false)
+  def container
+       [label    <: Label: ValueOf,
+        children <: Label: Reifiable to List[String],
+        schema   <: XmlSchema]
+       (presets: Map[Text, Optional[Text]] = Map())
   : Container of label over children in schema =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
 
-      Container(valueOf[label].tt, autoclose, presets, admissible, insertable)
+      Container(valueOf[label].tt, presets, admissible)
       . of[label]
       . over[children]
       . in[schema]
 
 
   class Container
-         (label:      Text,
-          autoclose:  Boolean                   = false,
-          presets:    Map[Text, Optional[Text]] = Map(),
-          admissible: Set[Text]                 = Set(),
-          insertable: Boolean                   = false)
-  extends Tag(label, autoclose, presets, admissible, insertable):
+         (label: Text, presets: Map[Text, Optional[Text]] = Map(), admissible: Set[Text] = Set())
+  extends Tag(label, presets, admissible):
+
     type Result = Element & Xml.Populable of Topic over Transport in Form
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
@@ -97,15 +95,10 @@ object Tag:
       . in[Form]
 
 abstract class Tag
-       (    label:       Text,
-        val autoclose:   Boolean                   = false,
-        val presets:     Map[Text, Optional[Text]] = Map(),
-        val admissible:  Set[Text]                 = Set(),
-        val insertable:  Boolean                   = false)
+       (label: Text, val presets: Map[Text, Optional[Text]] = Map(), val admissible:  Set[Text] = Set())
 extends Element(label, presets, IArray()), Formal, Dynamic:
 
   type Result <: Element
-
 
   inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Result =
     ${Xylophone.attributes[Result, this.type]('this, 'attributes)}

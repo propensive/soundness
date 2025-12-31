@@ -90,6 +90,11 @@ object Xylophone:
 
           '{  ${Expr(pattern.text)} == $scrutinee.text  }
 
+      def checkCdata(array: Expr[Array[Any]], pattern: Cdata, scrutinee: Expr[Cdata])
+      : Expr[Boolean] =
+
+          '{  ${Expr(pattern.text)} == $scrutinee.text  }
+
       def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       : Expr[Boolean] =
 
@@ -163,6 +168,15 @@ object Xylophone:
                   && $scrutinee.isInstanceOf[Comment]
                   && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Comment].text; true }  }
 
+            case Cdata("\u0000") =>
+              idx += 1
+              iterator.next()
+              types ::= TypeRepr.of[Cdata]
+
+              '{  $expr
+                  && $scrutinee.isInstanceOf[Cdata]
+                  && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Cdata].text; true }  }
+
             case TextNode("\u0000") =>
               idx += 1
               iterator.next() match
@@ -185,8 +199,12 @@ object Xylophone:
               val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Comment]})
               '{  $expr && $scrutinee.isInstanceOf[Comment] && $checked  }
 
-            case Doctype(_) =>
-              halt(m"cannot match against a document type declaration")
+            case cdata@Cdata(content) =>
+              if content.contains("\u0000")
+              then halt(m"""only the entire CDATA content can be matched; write the extractor as
+                            ${t"<![CDATA[$$text]]>"}""")
+              val checked = checkCdata(array, cdata, '{$scrutinee.asInstanceOf[Cdata]})
+              '{  $expr && $scrutinee.isInstanceOf[Cdata] && $checked  }
 
             case Element("\u0000", _, _) =>
               idx += 1
@@ -336,11 +354,6 @@ object Xylophone:
 
           List('{Element(${Expr(label)}, $map, $elements)})
 
-        case Doctype(text) =>
-          if text.contains(t"\u0000")
-          then halt(m"cannot substitute into a document type declaration")
-          else List('{Doctype(${Expr(text)})})
-
         case Comment(text) =>
           val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
 
@@ -352,6 +365,18 @@ object Xylophone:
           val content = recur(parts.tail, Expr(parts.head))
 
           List('{Comment($content.tt)})
+
+        case Cdata(text) =>
+          val parts = text.s.split("\u0000").nn.map(_.nn).to(List)
+
+          def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
+            case Nil => expr
+            case head :: tail =>
+              recur(tail, '{$expr+${iterator.next().asExprOf[Text]}+${Expr(head)}})
+
+          val content = recur(parts.tail, Expr(parts.head))
+
+          List('{Cdata($content.tt)})
 
         case TextNode("\u0000") =>
           List(iterator.next().asExprOf[Node])
@@ -373,7 +398,7 @@ object Xylophone:
         case Element(tag, _, _) =>  Set(tag.s)
         case Fragment(values*)  =>  values.to(Set).flatMap(resultType(_))
         case Comment(_)         =>  Set()
-        case Doctype(_)         =>  Set()
+        case Cdata(_)           =>  Set()
 
       resultType(xml)
       . map { label => ConstantType(StringConstant(label)) }

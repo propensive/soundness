@@ -68,10 +68,7 @@ import textSanitizers.skip
 import scala.annotation.tailrec
 
 object Xml extends Tag.Container
-         (label       = "xml",
-          autoclose   = true,
-          admissible  = Set("head", "body"),
-          insertable  = true), Format, Xml2:
+         (label = "xml", admissible = Set("head", "body")), Format, Xml2:
   type Topic = "xml"
   type Transport = "head" | "body"
 
@@ -81,7 +78,7 @@ object Xml extends Tag.Container
 
   case class attribute() extends StaticAnnotation
 
-  def doctype: Doctype = Doctype(t"xml")
+  def header: Header = Header("1.0", Unset, Unset)
 
   inline given interpolator: Xml is Interpolable:
     type Result = Xml
@@ -106,14 +103,15 @@ object Xml extends Tag.Container
       parse(input.iterator, root).of[content]
 
   given aggregable2: (schema: XmlSchema) => Tactic[ParseError] => Xml is Aggregable by Text =
-    input => parse(input.iterator, schema.generic, doctypes = false)
+    input => parse(input.iterator, schema.generic, headers = false)
 
   given loadable: (schema: XmlSchema) => Tactic[ParseError] => Xml is Loadable by Text = stream =>
     val root = Tag.root(Set(t"xml"))
-    parse(stream.iterator, root, doctypes = true) match
-      case Fragment(Doctype(doctype), content) => Document(content, Doctype(doctype))
-      case xml@Element("xml", _, _)       => Document(xml, doctype)
-      case _                                   =>
+    parse(stream.iterator, root, headers = true) match
+      case Fragment(Header(version, encoding, standalone), content) =>
+        Document(content, Header(version, encoding, standalone))
+      case xml@Element("xml", _, _)       => Document(xml, header)
+      case _                              =>
         abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
 
   given streamable: (XmlSchema, Monitor, Codicil) => Document[Xml] is Streamable by Text =
@@ -130,9 +128,24 @@ object Xml extends Tag.Container
             case Comment(comment) => emitter.put("<!--")
                                      emitter.put(comment)
                                      emitter.put("-->")
-            case Doctype(text)    => emitter.put("<!DOCTYPE ")
-                                     emitter.put(text) // FIXME: entities
-                                     emitter.put(">")
+            case Cdata(text)      => emitter.put("<![CDATA[")
+                                     emitter.put(text)
+                                     emitter.put("]]>")
+
+            case Header(version, encoding, standalone) =>
+              emitter.put("""<?xml version="""")
+              emitter.put(version)
+              emitter.put("\"")
+
+              encoding.let: encoding =>
+                emitter.put(""" encoding="""")
+                emitter.put(encoding)
+                emitter.put("\"")
+
+              standalone.let: standalone =>
+                emitter.put(if standalone then """ standalone="yes"""" else """ standalone="no"""")
+
+              emitter.put("?>")
 
             case TextNode(text) =>
               var pos: Int = 0
@@ -195,9 +208,18 @@ object Xml extends Tag.Container
 
   given showable: [xml <: Xml] => xml is Showable =
     case Fragment(nodes*) => nodes.map(_.show).join
-    case TextNode(text)    => text
-    case Comment(text) => t"<!--$text-->"
-    case Doctype(text) => t"<!$text>"
+    case TextNode(text)   => text
+    case Comment(text)    => t"<!--$text-->"
+    case Cdata(text)      => t"<![CDATA[$text]]>"
+
+    case Header(version, encoding, standalone) =>
+      val encodingText = encoding.lay(t""): encoding =>
+        t" encoding=\"$encoding\""
+
+      val standaloneText = standalone.lay(t""): standalone =>
+        if standalone then t" standalone=\"yes\"" else t" standalone=\"no\""
+
+      t"<?xml version=\"$version\"$encodingText$standaloneText>"
 
     case Element(tagname, attributes, children) =>
       val tagContent = if attributes.isEmpty then t"" else
@@ -209,7 +231,7 @@ object Xml extends Tag.Container
 
 
   private enum Token:
-    case Close, Comment, Empty, Open, Doctype, Cdata
+    case Close, Comment, Empty, Open, Header, Cdata
 
   private enum Level:
     case Ascend, Descend, Peer
@@ -302,7 +324,7 @@ object Xml extends Tag.Container
         root:        Tag,
         callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
         fastforward: Int                               = 0,
-        doctypes:    Boolean = false)
+        headers:     Boolean = false)
        (using schema: XmlSchema): Xml raises ParseError =
 
     import lineation.linefeedChars
@@ -549,7 +571,7 @@ object Xml extends Tag.Container
       case '>'   => cursor.grab(mark, cursor.mark).also(next())
       case other => next() yet doctype(mark)
 
-    def tag(doctypes: Boolean): Token = cursor.lay(fail(ExpectedMore)):
+    def tag(headers: Boolean): Token = cursor.lay(fail(ExpectedMore)):
       case '!'  =>  next()
                     cursor.lay(fail(ExpectedMore)):
                       case '-' =>
@@ -570,7 +592,7 @@ object Xml extends Tag.Container
                         content = cursor.hold(cdata(cursor.mark))
                         Token.Cdata
 
-                      case 'D' | 'd' if doctypes =>
+                      case 'D' | 'd' if headers =>
                         expectInsensitive('o')
                         expectInsensitive('c')
                         expectInsensitive('t')
@@ -581,7 +603,7 @@ object Xml extends Tag.Container
                         skip()
                         content = cursor.hold(doctype(cursor.mark))
                         skip()
-                        Token.Doctype
+                        Token.Header
 
                       case char =>
                         fail(Unexpected(char))
@@ -601,9 +623,7 @@ object Xml extends Tag.Container
           case char      =>  fail(Unexpected(char))
 
     def finish(parent: Tag, count: Int): Node =
-      if parent != root then
-        if parent.autoclose then Element(parent.label, parent.attributes, array(count))
-        else fail(Incomplete(parent.label))
+      if parent != root then fail(Incomplete(parent.label))
       else
         if count > 1 then fragment = array(count)
         nodes(index - 1)
@@ -653,9 +673,9 @@ object Xml extends Tag.Container
               node()
               expect('>')
               next()
-            else tag(doctypes && parent == root) match
+            else tag(headers && parent == root) match
               case Token.Comment => current = Comment(content)
-              case Token.Doctype => current = Doctype(content)
+              case Token.Header  => current = Header(content, Unset, Unset)
               case Token.Cdata   => current = Cdata(content)
 
               case Token.Empty   =>
@@ -672,8 +692,7 @@ object Xml extends Tag.Container
               case Token.Close =>
                 if content != parent.label then
                   cursor.cue(mark)
-                  if parent.autoclose then close()
-                  else if parent == root then fail(UnopenedTag(content))
+                  if parent == root then fail(UnopenedTag(content))
                   else fail(MismatchedTag(parent.label, content))
                 else
                   cursor.next()
@@ -704,7 +723,7 @@ object Xml extends Tag.Container
 sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   type Topic <: Label
   type Transport <: Label
-  type Metadata = Doctype
+  type Metadata = Header
   type Chunks = Text
   type Form <: XmlSchema
 
@@ -793,13 +812,19 @@ case class Fragment(nodes: Node*) extends Xml:
 
   override def equals(that: Any): Boolean = that match
     case Fragment(nodes0*) => nodes0 == nodes
-    case node: Xml        => nodes.length == 1 && nodes(0) == node
+    case node: Xml         => nodes.length == 1 && nodes(0) == node
     case _                 => false
 
-case class Doctype(text: Text) extends Node:
+case class Header(version: Text, encoding: Optional[Text], standalone: Optional[Boolean])
+extends Node:
+
   override def hashCode: Int = List(this).hashCode
 
   override def equals(that: Any): Boolean = that match
-    case Doctype(text0)           => text0 == text
-    case Fragment(Doctype(text0)) => text0 == text
-    case _                        => false
+    case Fragment(header: Header) => equals(header)
+
+    case Header(version0, encoding0, standalone0) =>
+      version0 == version && encoding0 == encoding && standalone0 == standalone
+
+    case _ =>
+      false
