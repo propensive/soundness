@@ -123,15 +123,14 @@ object Xylophone:
             case Nil => expr
             case "\u0000" :: tail =>
               idx += 1
-              types ::= TypeRepr.of[Map[Text, Optional[Text]]]
+              types ::= TypeRepr.of[Map[Text, Text]]
               iterator.next()
               val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
               '{ $expr && { $array(${Expr(idx)}) = ${scrutinee}.attributes -- $others; true } }
 
             case head :: tail =>
               attributes(tail):
-                val boolean: Expr[Boolean] = pattern.attributes(head).let(_.s).absolve match
-                  case Unset      => '{$scrutinee.attributes(${Expr(head)}) == Unset}
+                val boolean: Expr[Boolean] = pattern.attributes(head).s.absolve match
                   case "\u0000"   =>
                     idx += 1
                     types ::= TypeRepr.of[Text]
@@ -342,10 +341,10 @@ object Xylophone:
                   halt(m"a ${TypeRepr.of[value is Showable].show} is required")
 
               case Hole.Tagbody => Type.of[value] match
-                case '[Map[Text, Optional[Text]]] =>
+                case '[Map[Text, Text]] =>
                   expr
                 case _ =>
-                  halt(m"only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a tag body")
+                  halt(m"only a ${TypeRepr.of[Map[Text, Text]].show} can be applied in a tag body")
         . iterator
 
       def serialize(xml: Xml): Seq[Expr[Node]] = xml match
@@ -361,10 +360,9 @@ object Xylophone:
         case Element(label, attributes, children) =>
           val exprs = attributes.to(List).map: (key, value) =>
             '{  (${Expr(key)},
-                 ${  if value == "\u0000".tt then iterator.next().asExprOf[Optional[Text]]
-                     else if value == Unset then '{Unset}
-                     else Expr[Text](value.asInstanceOf[Text])  })  }
-            . asExprOf[(Text, Optional[Text])]
+                 ${  if value == "\u0000".tt then iterator.next().asExprOf[Text]
+                     else Expr[Text](value)  })  }
+            . asExprOf[(Text, Text)]
 
           val map = '{Map(${Expr.ofList(exprs)}*)}
           val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
@@ -439,7 +437,7 @@ object Xylophone:
       val args = attributes0.absolve match
         case Varargs(args) => args
 
-      val attributes: Seq[Expr[Optional[(Text, Optional[Text])]]] =
+      val attributes: Seq[Expr[Optional[(Text, Text)]]] =
         Type.of[thisType].absolve match
           case '[ type topic <: Label;
                   type form;

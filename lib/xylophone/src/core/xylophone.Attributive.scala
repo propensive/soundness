@@ -51,4 +51,4 @@ object Attributive:
   given stringTextual: String is Attributive to Textual = (key, value) => (key, value.tt)
 
 trait Attributive extends Typeclass, Resultant:
-  def attribute(key: Text, value: Self): Optional[(Text, Optional[Text])]
+  def attribute(key: Text, value: Self): Optional[(Text, Text)]

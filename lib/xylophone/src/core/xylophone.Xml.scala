@@ -171,25 +171,24 @@ object Xml extends Tag.Container
                 attributes.each: (key, value) =>
                   emitter.put(" ")
                   emitter.put(key)
-                  value.let: value =>
-                    emitter.put("=\"")
-                    var pos: Int = 0
+                  emitter.put("=\"")
+                  var pos: Int = 0
 
-                    while pos < value.length do
-                      val amp = value.s.indexOf('&', pos)
-                      val quot = value.s.indexOf('\"', pos)
-                      val next = if amp < 0 then quot else if quot < 0 then amp else amp.min(quot)
+                  while pos < value.length do
+                    val amp = value.s.indexOf('&', pos)
+                    val quot = value.s.indexOf('\"', pos)
+                    val next = if amp < 0 then quot else if quot < 0 then amp else amp.min(quot)
 
-                      if next >= 0 then
-                        emitter.put(value, pos.z, next - pos)
-                        if next == quot then emitter.put("&quot;")
-                        if next == amp then emitter.put("&amp;")
-                        pos = next + 1
-                      else
-                        emitter.put(value, pos.z, value.length - pos)
-                        pos = value.length
+                    if next >= 0 then
+                      emitter.put(value, pos.z, next - pos)
+                      if next == quot then emitter.put("&quot;")
+                      if next == amp then emitter.put("&amp;")
+                      pos = next + 1
+                    else
+                      emitter.put(value, pos.z, value.length - pos)
+                      pos = value.length
 
-                    emitter.put("\"")
+                  emitter.put("\"")
 
               emitter.put(">")
 
@@ -224,7 +223,7 @@ object Xml extends Tag.Container
     case Element(tagname, attributes, children) =>
       val tagContent = if attributes.isEmpty then t"" else
         attributes.map:
-          case (key, value) => value.lay(key) { value => t"""$key="$value"""" }
+          case (key, value) => t"""$key="$value""""
         . join(t" ", t" ", t"")
 
       t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
@@ -331,7 +330,7 @@ object Xml extends Tag.Container
     val buffer: jl.StringBuilder = jl.StringBuilder()
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
-    var extra: Map[Text, Optional[Text]] = ListMap()
+    var extra: Map[Text, Text] = ListMap()
     var nodes: Array[Node] = new Array(4)
     var index: Int = 0
     var stack: Array[Tag] = new Array(4)
@@ -443,24 +442,23 @@ object Xml extends Tag.Container
       case '\u0000'                              =>  fail(BadInsertion)
       case char                                  =>  next() yet unquoted(mark)
 
-    def equality(): Boolean = skip() yet cursor.lay(fail(ExpectedMore)):
+    def equality(): Unit = skip() yet cursor.lay(fail(ExpectedMore)):
       case '='                                   =>  next() yet skip() yet true
-      case '>' | ' ' | '\f' | '\n' | '\r' | '\t' =>  false
       case '\u0000'                              =>  fail(BadInsertion)
       case char                                  =>  fail(Unexpected(char))
 
 
     @tailrec
-    def attributes(tag: Text, entries: Map[Text, Optional[Text]] = ListMap())
+    def attributes(tag: Text, entries: Map[Text, Text] = ListMap())
          (using Cursor.Held)
-    : Map[Text, Optional[Text]] =
+    : Map[Text, Text] =
 
         skip() yet cursor.lay(fail(ExpectedMore)):
           case '>' | '/' => entries
           case '\u0000'  => callback.let(_(cursor.position, Hole.Tagbody))
                             next()
                             skip()
-                            attributes(tag, entries.updated(t"\u0000", Unset))
+                            attributes(tag, entries.updated(t"\u0000", t""))
           case _         =>
             val key2 =
               key(cursor.mark, schema.attributes).tap: key =>
@@ -469,7 +467,9 @@ object Xml extends Tag.Container
 
             if entries.has(key2) then fail(DuplicateAttribute(key2))
 
-            val assignment = if !equality() then Unset else cursor.lay(fail(ExpectedMore)):
+            equality()
+
+            val assignment: Text = cursor.lay(fail(ExpectedMore)):
               case '\u0000' =>  callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
                                 next() yet t"\u0000"
               case '"'      =>  next() yet value(cursor.mark)
@@ -637,7 +637,7 @@ object Xml extends Tag.Container
       read(parent, extra, 0)
 
     @tailrec
-    def read(parent: Tag, map: Map[Text, Optional[Text]], count: Int): Node =
+    def read(parent: Tag, map: Map[Text, Text], count: Int): Node =
 
       def admit(child: Text): Boolean = schema.freeform || parent.admissible(child)
 
@@ -766,7 +766,7 @@ case class TextNode(text: Text) extends Node:
 
 case class Element
             (label:      Text,
-             attributes: Map[Text, Optional[Text]],
+             attributes: Map[Text, Text],
              children:   IArray[Node])
 extends Node, Topical, Transportive:
 
