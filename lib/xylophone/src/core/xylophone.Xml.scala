@@ -257,6 +257,7 @@ object Xml extends Tag.Container
     case ExpectedMore
     case UnexpectedDoctype
     case BadDocument
+    case UnquotedAttribute
     case InvalidCdata
     case InvalidTag(name: Text)
     case InvalidTagStart(prefix: Text)
@@ -278,6 +279,7 @@ object Xml extends Tag.Container
       case ExpectedMore                   =>  m"the content ended prematurely"
       case UnexpectedDoctype              =>  m"the document type declaration was not expected here"
       case BadDocument                    =>  m"the document did not contain a single root tag"
+      case UnquotedAttribute              =>  m"the attribute value must be single- or double-quoted"
       case InvalidCdata                   =>  m"CDATA content is only permitted in foreign namespaces"
       case InvalidTag(name)               =>  m"<$name> is not a valid tag"
       case InvalidTagStart(prefix)        =>  m"there is no valid tag whose name starts $prefix"
@@ -459,7 +461,7 @@ object Xml extends Tag.Container
                                 next() yet t"\u0000"
               case '"'      =>  next() yet value(cursor.mark)
               case '\''     =>  next() yet singleQuoted(cursor.mark)
-              case _        =>  unquoted(cursor.mark) // FIXME: Only alphanumeric characters
+              case _        =>  fail(UnquotedAttribute)
 
             attributes(tag, entries.updated(key2, assignment))
 
