@@ -61,7 +61,7 @@ import textSanitizers.skip
 
 object Tag:
   def root(children: Set[Text]): Tag =
-    new Tag("#root", false, Map(), children, false, false):
+    new Tag("#root", false, Map(), children, false):
       type Result = this.type
 
       def node(attributes: Map[Text, Optional[Text]]): Result = this
@@ -101,8 +101,7 @@ abstract class Tag
         val autoclose:   Boolean                   = false,
         val presets:     Map[Text, Optional[Text]] = Map(),
         val admissible:  Set[Text]                 = Set(),
-        val insertable:  Boolean                   = false,
-        val void:        Boolean                   = false)
+        val insertable:  Boolean                   = false)
 extends Element(label, presets, IArray()), Formal, Dynamic:
 
   type Result <: Element
