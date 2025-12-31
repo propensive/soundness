@@ -71,7 +71,6 @@ object Xml extends Tag.Container
          (label       = "xml",
           autoclose   = true,
           admissible  = Set("head", "body"),
-          mode        = Xml.Mode.Whitespace,
           insertable  = true), Format, Xml2:
   type Topic = "xml"
   type Transport = "head" | "body"
@@ -117,10 +116,6 @@ object Xml extends Tag.Container
       case _                                   =>
         abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
 
-  // Up to 32 levels of two-space indentation
-  private val indentation: Text =
-    "\n                                                                "
-
   given streamable: (XmlSchema, Monitor, Codicil) => Document[Xml] is Streamable by Text =
     emit(_).to(Stream)
 
@@ -129,9 +124,9 @@ object Xml extends Tag.Container
 
       val emitter = Emitter[Text](4096)
       async:
-        def recur(node: Xml, indent: Int, block: Boolean, mode: Mode): Unit =
+        def recur(node: Xml, indent: Int): Unit =
           node match
-            case Fragment(nodes*) => nodes.each(recur(_, indent, block, mode))
+            case Fragment(nodes*) => nodes.each(recur(_, indent))
             case Comment(comment) => emitter.put("<!--")
                                      emitter.put(comment)
                                      emitter.put("-->")
@@ -140,27 +135,22 @@ object Xml extends Tag.Container
                                      emitter.put(">")
 
             case TextNode(text) =>
-              mode match
-                case Mode.Raw =>
-                  emitter.put(text)
-                case _ =>
-                  var pos: Int = 0
-                  while pos < text.length do
-                    val amp = text.s.indexOf('&', pos)
-                    val lt = text.s.indexOf('<', pos)
-                    val next = if amp < 0 then lt else if lt < 0 then amp else amp.min(lt)
+              var pos: Int = 0
+              while pos < text.length do
+                val amp = text.s.indexOf('&', pos)
+                val lt = text.s.indexOf('<', pos)
+                val next = if amp < 0 then lt else if lt < 0 then amp else amp.min(lt)
 
-                    if next >= 0 then
-                      emitter.put(text, pos.z, next - pos)
-                      if next == lt then emitter.put("&lt;")
-                      if next == amp then emitter.put("&amp;")
-                      pos = next + 1
-                    else
-                      emitter.put(text, pos.z, text.length - pos)
-                      pos = text.length
+                if next >= 0 then
+                  emitter.put(text, pos.z, next - pos)
+                  if next == lt then emitter.put("&lt;")
+                  if next == amp then emitter.put("&amp;")
+                  pos = next + 1
+                else
+                  emitter.put(text, pos.z, text.length - pos)
+                  pos = text.length
 
             case Element(label, attributes, nodes) =>
-              if block then emitter.put(indentation, Prim, indent*2 + 1)
               emitter.put("<")
               emitter.put(label)
 
@@ -190,24 +180,15 @@ object Xml extends Tag.Container
 
               emitter.put(">")
 
-              val mode = schema.elements(label).lay(Mode.Normal)(_.mode)
-
-              val whitespace =
-                (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
-                && block
-
               if !schema.elements(label).lay(false)(_.void) then
-                nodes.each(recur(_, indent + 1, whitespace, mode))
-
-                if block && whitespace
-                then emitter.put(indentation, Prim, (indent*2 + 1).min(indentation.length))
+                nodes.each(recur(_, indent + 1))
 
                 emitter.put("</")
                 emitter.put(label)
                 emitter.put(">")
 
-        recur(document.metadata, 0, true, Mode.Whitespace)
-        recur(document.root, 0, true, Mode.Whitespace)
+        recur(document.metadata, 0)
+        recur(document.root, 0)
         emitter.finish()
 
       emitter.iterator
@@ -316,11 +297,6 @@ object Xml extends Tag.Container
   case class Position(line: Ordinal, column: Ordinal) extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
 
-
-
-  enum Mode:
-    case Raw, Rcdata, Whitespace, Normal
-
   enum Hole:
     case Text, Tagbody, Comment
     case Element(tag: Text)
@@ -389,12 +365,6 @@ object Xml extends Tag.Container
     def skip(): Unit = cursor.let:
       case ' ' | '\f' | '\n' | '\r' | '\t' => cursor.next() yet skip()
       case _                               => ()
-
-    @tailrec
-    def whitespace(): Unit = cursor.lay(()):
-      case ' ' | '\f' | '\n' | '\r' | '\t' =>  cursor.next() yet whitespace()
-      case '<'                             =>  ()
-      case char                            =>  fail(OnlyWhitespace(char))
 
     @tailrec
     def tagname(mark: Mark, dictionary: Dictionary[Tag])(using Cursor.Held): Tag =
@@ -666,7 +636,7 @@ object Xml extends Tag.Container
                          append(TextNode("\u0000"))
                          read(parent, admissible, map, count + 1)
 
-        case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
+        case '<' =>
           var level: Level = Level.Peer
           var current: Node = parent
           var focus: Tag = parent
@@ -744,24 +714,10 @@ object Xml extends Tag.Container
                                    append(child)
                                    read(parent, admissible, map, count + 1)
 
-        case char => parent.mode match
-          case Mode.Whitespace =>
-            whitespace() yet read(parent, admissible, map, count)
-
-          case Mode.Raw =>
-            val text = cursor.hold(textual(cursor.mark, parent.label, false))
-            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray())
-            else Element(parent.label, parent.attributes, IArray(TextNode(text)))
-
-          case Mode.Rcdata =>
-            val text = cursor.hold(textual(cursor.mark, parent.label, true))
-            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray())
-            else Element(parent.label, parent.attributes, IArray(TextNode(text)))
-
-          case Mode.Normal =>
-            val text = cursor.hold(textual(cursor.mark, Unset, true))
-            if text.length == 0 then read(parent, admissible, map, count + 1)
-            else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
+        case char =>
+          val text = cursor.hold(textual(cursor.mark, Unset, true))
+          if text.length == 0 then read(parent, admissible, map, count + 1)
+          else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
 
     if cursor.finished then Fragment() else
       skip()

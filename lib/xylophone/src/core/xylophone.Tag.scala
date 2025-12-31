@@ -61,7 +61,7 @@ import textSanitizers.skip
 
 object Tag:
   def root(children: Set[Text]): Tag =
-    new Tag("#root", false, Xml.Mode.Normal, Map(), children, false, false, false):
+    new Tag("#root", false, Map(), children, false, false, false):
       type Result = this.type
 
       def node(attributes: Map[Text, Optional[Text]]): Result = this
@@ -69,14 +69,13 @@ object Tag:
 
   def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String], schema <: XmlSchema]
        (autoclose:  Boolean                   = false,
-        mode:       Xml.Mode                 = Xml.Mode.Normal,
         presets:    Map[Text, Optional[Text]] = Map(),
         insertable: Boolean                   = false)
   : Container of label over children in schema =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
 
-      Container(valueOf[label].tt, autoclose, mode, presets, admissible, insertable)
+      Container(valueOf[label].tt, autoclose, presets, admissible, insertable)
       . of[label]
       . over[children]
       . in[schema]
@@ -98,11 +97,10 @@ object Tag:
   class Container
          (label:      Text,
           autoclose:  Boolean                   = false,
-          mode:       Xml.Mode                 = Xml.Mode.Normal,
           presets:    Map[Text, Optional[Text]] = Map(),
           admissible: Set[Text]                 = Set(),
           insertable: Boolean                   = false)
-  extends Tag(label, autoclose, mode, presets, admissible, insertable):
+  extends Tag(label, autoclose, presets, admissible, insertable):
     type Result = Element & Xml.Populable of Topic over Transport in Form
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
@@ -118,7 +116,6 @@ object Tag:
   extends Tag
            (label       = label,
             autoclose   = false,
-            mode        = Xml.Mode.Normal,
             presets     = presets,
             admissible  = admissible,
             insertable  = false,
@@ -137,7 +134,6 @@ object Tag:
 abstract class Tag
        (    label:       Text,
         val autoclose:   Boolean                   = false,
-        val mode:        Xml.Mode                 = Xml.Mode.Normal,
         val presets:     Map[Text, Optional[Text]] = Map(),
         val admissible:  Set[Text]                 = Set(),
         val insertable:  Boolean                   = false,
