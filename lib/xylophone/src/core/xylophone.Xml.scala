@@ -675,10 +675,7 @@ object Xml extends Tag.Container
             else tag(doctypes && parent == root) match
               case Token.Comment => current = Comment(content)
               case Token.Doctype => current = Doctype(content)
-              case Token.Cdata   =>
-                current =
-                  fail(InvalidCdata)
-                  Comment(t"[CDATA[${content}]]")
+              case Token.Cdata   => current = Cdata(content)
 
               case Token.Empty   =>
                 if admit(content) then empty() else infer:
@@ -751,6 +748,14 @@ case class Comment(text: Text) extends Node:
     case Comment(text0)           => text0 == text
     case Fragment(Comment(text0)) => text0 == text
     case _                        => false
+
+case class Cdata(text: Text) extends Node:
+  override def hashCode: Int = List(this).hashCode
+
+  override def equals(that: Any): Boolean = that match
+    case Cdata(text0)           => text0 == text
+    case Fragment(Cdata(text0)) => text0 == text
+    case _                      => false
 
 case class TextNode(text: Text) extends Node:
   type Topic = "#text"
