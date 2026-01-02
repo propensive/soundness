@@ -32,19 +32,14 @@
                                                                                                   */
 package xylophone
 
-import anticipation.*
-import contingency.*
-import distillate.*
-import fulminate.*
-import gossamer.*
-import probably.*
-import rudiments.*
-import spectacular.*
-import turbulence.*
+import soundness.*
 
 import unsafeExceptions.canThrowAny
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
+import autopsies.contrastExpectations
+import threading.virtual
+import codicils.cancel
 
 case class Worker(name: Text, age: Int)
 case class Firm(name: Text, ceo: Worker)
@@ -65,6 +60,15 @@ object Tests extends Suite(m"Xylophone tests"):
       test(m"Simple interpolator"):
         x"<message>1</message>"
       . assert(_ == t"<message>1</message>".read[Xml])
+
+      test(m"Serialize content"):
+        x"<message>hello world</message>".show
+      . assert(_ == t"<message>hello world</message>")
+
+      test(m"Serialize document"):
+        supervise:
+          unsafely(t"""<?xml  version="1.0"?><message>hello world</message>""".load[Xml].read[Text])
+      . assert(_ == t"""<?xml version="1.0"?><message>hello world</message>""")
 
     // test(m"extract integer"):
     //   t"""<message>1</message>""".read[Xml].as[Int]

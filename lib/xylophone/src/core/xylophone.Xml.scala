@@ -108,17 +108,16 @@ object Xml extends Tag.Container
   given loadable: (schema: XmlSchema) => Tactic[ParseError] => Xml is Loadable by Text = stream =>
     val root = Tag.root(Set(t"xml"))
     parse(stream.iterator, root, headers = true) match
-      case Fragment(Header(version, encoding, standalone), content) =>
-        Document(content, Header(version, encoding, standalone))
-      case xml@Element("xml", _, _)       => Document(xml, header)
-      case _                              =>
+      case Fragment(header: Header, content) => Document(content, header)
+
+      case other =>
+        println(other.show)
         abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
 
-  given streamable: (XmlSchema, Monitor, Codicil) => Document[Xml] is Streamable by Text =
+  given streamable: (Monitor, Codicil) => Document[Xml] is Streamable by Text =
     emit(_).to(Stream)
 
-  def emit(document: Document[Xml], flat: Boolean = false)(using schema: XmlSchema)(using Monitor, Codicil)
-  : Iterator[Text] =
+  def emit(document: Document[Xml], flat: Boolean = false)(using Monitor, Codicil): Iterator[Text] =
 
       val emitter = Emitter[Text](4096)
       async:
@@ -268,7 +267,6 @@ object Xml extends Tag.Container
   enum Issue extends Format.Issue:
     case BadInsertion
     case ExpectedMore
-    case UnexpectedDoctype
     case BadDocument
     case UnquotedAttribute
     case InvalidTag(name: Text)
@@ -289,7 +287,6 @@ object Xml extends Tag.Container
     def describe: Message = this match
       case BadInsertion                   =>  m"a value cannot be inserted into XML at this point"
       case ExpectedMore                   =>  m"the content ended prematurely"
-      case UnexpectedDoctype              =>  m"the document type declaration was not expected here"
       case BadDocument                    =>  m"the document did not contain a single root tag"
       case UnquotedAttribute              =>  m"the attribute value must be single- or double-quoted"
       case InvalidTag(name)               =>  m"<$name> is not a valid tag"
@@ -361,15 +358,14 @@ object Xml extends Tag.Container
       if !cursor.next()
       then raise(ParseError(Xml, Position(cursor.line, cursor.column), ExpectedMore))
 
+    inline def ensure(char: Char): Unit =
+      cursor.let: datum =>
+        if datum != char then fail(Unexpected(datum))
+
     inline def expect(char: Char): Unit =
       cursor.next()
       cursor.lay(fail(ExpectedMore)): datum =>
         if datum != char then fail(Unexpected(datum))
-
-    inline def expectInsensitive(char: Char): Unit =
-      cursor.next()
-      cursor.lay(fail(ExpectedMore)): datum =>
-        if datum.minuscule != char.minuscule then fail(Unexpected(datum))
 
     def fail(issue: Issue): Nothing =
       abort(ParseError(Xml, Position(cursor.line, cursor.column), issue))
@@ -394,6 +390,7 @@ object Xml extends Tag.Container
           case Dictionary.Just("", tag)       =>  tag
           case Dictionary.Branch(tag: Tag, _) =>  tag
           case other                          =>  Tag.freeform(cursor.grab(mark, cursor.mark))
+
         case '\u0000' =>
           fail(BadInsertion)
 
@@ -449,8 +446,7 @@ object Xml extends Tag.Container
 
 
     @tailrec
-    def attributes(tag: Text, entries: Map[Text, Text] = ListMap())
-         (using Cursor.Held)
+    def attributes(tag: Text, entries: Map[Text, Text] = ListMap())(using Cursor.Held)
     : Map[Text, Text] =
 
         skip() yet cursor.lay(fail(ExpectedMore)):
@@ -566,46 +562,49 @@ object Xml extends Tag.Container
                           case _   => cdata(mark)
       case char     =>  next() yet cdata(mark)
 
-    def doctype(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '>'   => cursor.grab(mark, cursor.mark).also(next())
-      case other => next() yet doctype(mark)
-
     def tag(headers: Boolean): Token = cursor.lay(fail(ExpectedMore)):
-      case '!'  =>  next()
-                    cursor.lay(fail(ExpectedMore)):
-                      case '-' =>
-                        expect('-')
-                        next()
-                        content = cursor.hold(comment(cursor.mark))
-                        cursor.next()
-                        Token.Comment
+      case '?' if headers =>
+        cursor.consume(fail(ExpectedMore))("xml")
+        next()
+        skip()
+        cursor.lay(fail(ExpectedMore)):
+          case 'v'  => ()
+          case char => fail(Unexpected(char))
 
-                      case '[' =>
-                        expect('C')
-                        expect('D')
-                        expect('A')
-                        expect('T')
-                        expect('A')
-                        expect('[')
-                        next()
-                        content = cursor.hold(cdata(cursor.mark))
-                        Token.Cdata
+        cursor.consume(fail(ExpectedMore))("ersion")
+        next()
+        equality()
+        content = cursor.hold:
+          cursor.lay(fail(ExpectedMore)):
+            case '"'      =>  next() yet value(cursor.mark)
+            case '\''     =>  next() yet singleQuoted(cursor.mark)
+            case _        =>  fail(UnquotedAttribute)
 
-                      case 'D' | 'd' if headers =>
-                        expectInsensitive('o')
-                        expectInsensitive('c')
-                        expectInsensitive('t')
-                        expectInsensitive('y')
-                        expectInsensitive('p')
-                        expectInsensitive('e')
-                        next()
-                        skip()
-                        content = cursor.hold(doctype(cursor.mark))
-                        skip()
-                        Token.Header
+        ensure('?')
+        expect('>')
+        next()
+        skip()
+        Token.Header
 
-                      case char =>
-                        fail(Unexpected(char))
+      case '!'  =>
+        next()
+        cursor.lay(fail(ExpectedMore)):
+          case '-' =>
+            expect('-')
+            next()
+            content = cursor.hold(comment(cursor.mark))
+            cursor.next()
+            Token.Comment
+
+          case '[' =>
+            cursor.consume(fail(ExpectedMore))("CDATA[")
+            next()
+            content = cursor.hold(cdata(cursor.mark))
+            Token.Cdata
+
+          case char =>
+            fail(Unexpected(char))
+
       case '/'  =>  next()
                     content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
                     Token.Close
@@ -622,8 +621,7 @@ object Xml extends Tag.Container
           case char      =>  fail(Unexpected(char))
 
     def finish(parent: Tag, count: Int): Node =
-      if parent != root then fail(Incomplete(parent.label))
-      else
+      if parent != root then fail(Incomplete(parent.label)) else
         if count > 1 then fragment = array(count)
         nodes(index - 1)
 
