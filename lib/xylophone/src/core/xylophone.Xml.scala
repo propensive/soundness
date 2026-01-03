@@ -76,6 +76,11 @@ object Xml extends Tag.Container
   erased trait Decimal
   erased trait Id
 
+  given textDecodable: [value: Decodable in Text] => Tactic[XmlError] => value is Decodable in Xml =
+    case TextNode(text)                        =>  value.decoded(text)
+    case Element(_, _, IArray(TextNode(text))) =>  value.decoded(text)
+    case _                                     =>  abort(XmlError())
+
   case class attribute() extends StaticAnnotation
 
   def header: Header = Header("1.0", Unset, Unset)
@@ -631,8 +636,7 @@ object Xml extends Tag.Container
       index -= count
       result.immutable(using Unsafe)
 
-    def descend(parent: Tag, admissible: Set[Text]): Node =
-      read(parent, extra, 0)
+    def descend(parent: Tag, admissible: Set[Text]): Node = read(parent, extra, 0)
 
     @tailrec
     def read(parent: Tag, map: Map[Text, Text], count: Int): Node =

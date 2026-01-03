@@ -30,128 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package xylophone
 
-import ambience.*
+import language.dynamics
+
+import java.lang as jl
+
+import scala.collection.mutable as scm
+
+import adversaria.*
 import anticipation.*
 import contingency.*
-import distillate.*
-import eucalyptus.*
-import exoskeleton.*
+import denominative.*
 import fulminate.*
-import galilei.*
 import gossamer.*
-import guillotine.*
-import hypotenuse.*
-import nomenclature.*
+import hellenism.*
+import hieroglyph.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
-import serpentine.*
-import spectacular.*
 import symbolism.*
 import turbulence.*
+import typonym.*
 import vacuous.*
+import zephyrine.*
 
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.createNonexistent.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
+import classloaders.threadContext
+import charDecoders.utf8
+import textSanitizers.skip
 
-object Installer:
-  private given realm: Realm = realm"ethereal"
-
-  object Result:
-    given communicable: Result is Communicable =
-      case AlreadyOnPath(script, path) => m"The $script command is already installed at $path."
-      case Installed(script, path)     => m"The $script command was installed to $path."
-
-      case PathNotWritable =>
-        m"No directory on the PATH environment variable was writable"
-
-  enum Result:
-    case AlreadyOnPath(script: Text, path: Text)
-    case Installed(script: Text, path: Text)
-    case PathNotWritable
-
-
-  def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
-       (using Environment, HomeDirectory, System)
-  : List[Path on Linux] logs DaemonLogEvent raises InstallError =
-
-      mitigate:
-        case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
-        case EnvironmentError(_) => InstallError(InstallError.Reason.Environment)
-        case IoError(_, _, _)    => InstallError(InstallError.Reason.Io)
-        case NameError(_, _, _)  => InstallError(InstallError.Reason.Io)
-
-      . within:
-          val paths: List[Path on Linux] = Environment.path
-
-          val preferences: List[Path on Linux] =
-            List
-             (Xdg.bin[Path on Linux],
-              % / "usr" / "local" / "bin",
-              % / "usr" / "bin",
-              % / "usr" / "local" / "sbin",
-              % / "opt" / "bin",
-              % / "bin",
-              % / "bin")
-
-          paths.filter(_.exists()).filter(_.writable()).sortBy: directory =>
-            preferences.indexOf(directory) match
-              case -1    => Int.MaxValue
-              case index => index
-
-
-  def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
-       (using service: DaemonService[?], environment: Environment, home: HomeDirectory)
-       (using Effectful, Diagnostics)
-  : Result logs DaemonLogEvent raises InstallError =
-
-      import workingDirectories.java
-      import systems.java
-
-      mitigate:
-        case PathError(_, _)        => InstallError(InstallError.Reason.Environment)
-        case PropertyError(_)       => InstallError(InstallError.Reason.Environment)
-        case NumberError(_, _)      => InstallError(InstallError.Reason.Environment)
-        case IoError(_, _, _)       => InstallError(InstallError.Reason.Io)
-        case NameError(_, _, _)     => InstallError(InstallError.Reason.Io)
-        case ExecError(_, _, _)     => InstallError(InstallError.Reason.Io)
-        case StreamError(_)         => InstallError(InstallError.Reason.Io)
-
-      . within:
-          val command: Text = service.script
-          val scriptPath = mute[ExecEvent](sh"sh -c 'command -v $command'".exec[Text]())
-
-          if safely(scriptPath.decode[Path on Linux]) == service.executable && !force
-          then Result.AlreadyOnPath(command, service.executable.encode)
-          else
-            val payloadSize: Memory = Memory(System.properties.ethereal.payloadSize[Int]())
-            val jarSize: Memory = Memory(System.properties.ethereal.jarSize[Int]())
-            val fileSize = service.executable.size()
-            val prefixSize = fileSize - payloadSize - jarSize
-            val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
-              abort(InstallError(InstallError.Reason.Environment))
-
-            val file: Path on Linux = installDirectory/command
-            val installFile: Optional[Path on Linux] = file.make[File]()
-
-            installFile.let: file =>
-              val filename: Text = file.inspect
-              Log.info(DaemonLogEvent.WriteExecutable(filename))
-
-              service.executable.open: file =>
-                val stream = file.stream[Bytes]
-
-                if prefixSize > 0.b
-                then (stream.take(prefixSize) ++ stream.discard(fileSize - jarSize)).writeTo(file)
-                else stream.writeTo(file)
-
-              file.executable() = true
-              Result.Installed(command, file.encode)
-
-            . or(Result.PathNotWritable)
+case class XmlError()(using Diagnostics) extends Error(m"there was an XML error")

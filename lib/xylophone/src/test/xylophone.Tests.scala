@@ -70,9 +70,17 @@ object Tests extends Suite(m"Xylophone tests"):
           unsafely(t"""<?xml  version="1.0"?><message>hello world</message>""".load[Xml].read[Text])
       . assert(_ == t"""<?xml version="1.0"?><message>hello world</message>""")
 
-    // test(m"extract integer"):
-    //   t"""<message>1</message>""".read[Xml].as[Int]
-    // . assert(_ == 1)
+    test(m"extract integer"):
+      x"""<message>1</message>""".as[Int]
+    . assert(_ == 1)
+
+    test(m"fail to extract bad integer"):
+      capture[NumberError](x"""<message>ABC</message>""".as[Int])
+    . assert(_ == NumberError("ABC", Int))
+
+    test(m"extract email address"):
+      x"""<email>test@example.com</email>""".as[EmailAddress]
+    . assert(_ == t"test@example.com".decode[EmailAddress])
 
     // test(m"extract string"):
     //   t"""<message>Hello world</message>""".read[Xml].as[Text]
