@@ -234,15 +234,22 @@ object Html extends Tag.Container
 
   trait Populable:
     node: Element =>
-      def apply(children: Optional[Html of (? <: node.Transport)]*): Element of node.Topic =
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
-          type Topic = node.Topic
+      def apply(children: Optional[Html of (? <: node.Transport)]*)
+      : Element of node.Topic in node.Form =
+
+          new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+            type Topic = node.Topic
+            type Form = node.Form
+
 
   trait Transparent:
     node: Element =>
-      def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*): Element of labels =
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
-          type Topic = labels
+      def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*)
+      : Element of labels in node.Form =
+
+          new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+            type Topic = labels
+            type Form = node.Form
 
 
   import Issue.*

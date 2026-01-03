@@ -128,7 +128,7 @@ object Tag:
     def applyDynamic[className <: Label](method: className)
          (children: Optional[Html of (? <: Transport)]*)
          (using css: Classes of className)
-    : Element of Topic =
+    : Element of Topic in Form =
 
         val nodes = children.compact.nodes
 
@@ -137,7 +137,7 @@ object Tag:
           val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
           presets.updated("class", value)
 
-        Element(label, presets2, nodes, foreign).of[Topic]
+        Element(label, presets2, nodes, foreign).of[Topic].in[Form]
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
       new Element(label, presets ++ attributes, IArray(), foreign) with Html.Populable()
@@ -166,7 +166,7 @@ object Tag:
     def applyDynamic[className <: Label](method: className)
          (children: Optional[Html of (? <: Transport)]*)
          (using css: Classes of className)
-    : Element of Topic =
+    : Element of Topic in Form =
 
         val presets2 = if css.names.isEmpty then presets else
           val cls = css.names.join(t" ")
@@ -174,7 +174,7 @@ object Tag:
           presets.updated("class", value)
 
         val nodes: IArray[Node] = children.compact.nodes
-        Element(label, presets2, nodes, foreign).of[Topic]
+        Element(label, presets2, nodes, foreign).of[Topic].in[Form]
 
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
