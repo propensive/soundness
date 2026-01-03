@@ -316,12 +316,12 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"abc")
 
       test(m"Check an empty Text is empty"):
-        t"".empty
+        t"".nil
 
       . assert(_ == true)
 
       test(m"Check a non-empty Text is not empty"):
-        t"abc".empty
+        t"abc".nil
 
       . assert(_ == false)
 

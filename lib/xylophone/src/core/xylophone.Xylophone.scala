@@ -95,6 +95,15 @@ object Xylophone:
 
           '{  ${Expr(pattern.text)} == $scrutinee.text  }
 
+      def checkPi
+           (array:     Expr[Array[Any]],
+            pattern:   ProcessingInstruction,
+            scrutinee: Expr[ProcessingInstruction])
+      : Expr[Boolean] =
+
+          '{  ${Expr(pattern.target)} == $scrutinee.target
+              && ${Expr(pattern.data)} == $scrutinee.data  }
+
       def checkHeader(array: Expr[Array[Any]], pattern: Header, scrutinee: Expr[Header])
       : Expr[Boolean] =
 
@@ -172,6 +181,16 @@ object Xylophone:
                   && $scrutinee.isInstanceOf[Comment]
                   && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Comment].text; true }  }
 
+            case ProcessingInstruction("\u0000", t"") =>
+              idx += 1
+              iterator.next()
+              types ::= TypeRepr.of[ProcessingInstruction]
+
+              '{  $expr
+                  && $scrutinee.isInstanceOf[ProcessingInstruction]
+                  && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[ProcessingInstruction].data
+                       true }  }
+
             case Cdata("\u0000") =>
               idx += 1
               iterator.next()
@@ -209,6 +228,12 @@ object Xylophone:
                             ${t"<![CDATA[$$text]]>"}""")
               val checked = checkCdata(array, cdata, '{$scrutinee.asInstanceOf[Cdata]})
               '{  $expr && $scrutinee.isInstanceOf[Cdata] && $checked  }
+
+            case pi@ProcessingInstruction(target, data) =>
+              if data.contains("\u0000") || target.contains("\u0000")
+              then halt(m"""only the entire data part of a processing instruction can be matched""")
+              val checked = checkPi(array, pi, '{$scrutinee.asInstanceOf[ProcessingInstruction]})
+              '{  $expr && $scrutinee.isInstanceOf[ProcessingInstruction] && $checked  }
 
             case Element("\u0000", _, _) =>
               idx += 1
@@ -393,6 +418,18 @@ object Xylophone:
 
           List('{Cdata($content.tt)})
 
+        case ProcessingInstruction(target, data0) =>
+          val parts = data0.s.split("\u0000").nn.map(_.nn).to(List)
+
+          def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
+            case Nil => expr
+            case head :: tail =>
+              recur(tail, '{$expr+${iterator.next().asExprOf[Text]}+${Expr(head)}})
+
+          val data = recur(parts.tail, Expr(parts.head))
+
+          List('{ProcessingInstruction(${Expr(target)}, $data.tt)})
+
         case TextNode("\u0000") =>
           List(iterator.next().asExprOf[Node])
 
@@ -412,9 +449,7 @@ object Xylophone:
         case TextNode(_)        =>  Set("#text")
         case Element(tag, _, _) =>  Set(tag.s)
         case Fragment(values*)  =>  values.to(Set).flatMap(resultType(_))
-        case Comment(_)         =>  Set()
-        case Header(_, _, _)    =>  Set()
-        case Cdata(_)           =>  Set()
+        case _                  =>  Set()
 
       resultType(xml)
       . map { label => ConstantType(StringConstant(label)) }

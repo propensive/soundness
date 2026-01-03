@@ -532,7 +532,7 @@ object Hyperbole:
         e"${node.text} $param",
       Column(e"Type"): node =>
         val name = StackTrace.rewrite(node.typeName.s, false)
-        if node.typeName.empty then e"" else e"${webColors.Gray}(: $Italic(${name}))",
+        if node.typeName.nil then e"" else e"${webColors.Gray}(: $Italic(${name}))",
       Column(e"Source")(_.source))
 
     . tabulate(seq)

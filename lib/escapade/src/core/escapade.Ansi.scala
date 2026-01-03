@@ -40,6 +40,7 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
+import hieroglyph.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -108,7 +109,7 @@ object Ansi extends Ansi2:
     def parse(state: State, text: Text): State =
       state.last.fold(closures(state, text)): transform =>
         text.at(Prim) match
-          case '\\' =>
+          case Bsl =>
             closures(state.copy(last = None), text.skip(1))
           case '[' | '(' | '<' | '«' | '{' =>
             val frame = Frame(complement(text.s.head), state.text.length, transform)

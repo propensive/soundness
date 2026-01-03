@@ -136,6 +136,16 @@ object Xml extends Tag.Container
                                      emitter.put(text)
                                      emitter.put("]]>")
 
+            case ProcessingInstruction(target, data) =>
+              emitter.put("<?")
+              emitter.put(target)
+
+              if !data.nil then
+                emitter.put(" ")
+                emitter.put(data)
+
+              emitter.put("?>")
+
             case Header(version, encoding, standalone) =>
               emitter.put("""<?xml version="""")
               emitter.put(version)
@@ -180,7 +190,7 @@ object Xml extends Tag.Container
 
                   while pos < value.length do
                     val amp = value.s.indexOf('&', pos)
-                    val quot = value.s.indexOf('\"', pos)
+                    val quot = value.s.indexOf(Sqt, pos)
                     val next = if amp < 0 then quot else if quot < 0 then amp else amp.min(quot)
 
                     if next >= 0 then
@@ -215,6 +225,9 @@ object Xml extends Tag.Container
     case Comment(text)    => t"<!--$text-->"
     case Cdata(text)      => t"<![CDATA[$text]]>"
 
+    case ProcessingInstruction(target, data) =>
+      t"<?$target $data?>"
+
     case Header(version, encoding, standalone) =>
       val encodingText = encoding.lay(t""): encoding =>
         t" encoding=\"$encoding\""
@@ -234,7 +247,7 @@ object Xml extends Tag.Container
 
 
   private enum Token:
-    case Close, Comment, Empty, Open, Header, Cdata
+    case Close, Comment, Empty, Open, Header, Cdata, Pi
 
   private enum Level:
     case Ascend, Descend, Peer
@@ -332,6 +345,7 @@ object Xml extends Tag.Container
     val buffer: jl.StringBuilder = jl.StringBuilder()
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
+    var body: Text = t""
     var extra: Map[Text, Text] = ListMap()
     var nodes: Array[Node] = new Array(4)
     var index: Int = 0
@@ -363,91 +377,91 @@ object Xml extends Tag.Container
       if !cursor.next()
       then raise(ParseError(Xml, Position(cursor.line, cursor.column), ExpectedMore))
 
-    inline def ensure(char: Char): Unit =
+    inline def ensure(chr: Char): Unit =
       cursor.let: datum =>
-        if datum != char then fail(Unexpected(datum))
+        if datum != chr then fail(Unexpected(datum))
 
-    inline def expect(char: Char): Unit =
+    inline def expect(chr: Char): Unit =
       cursor.next()
       cursor.lay(fail(ExpectedMore)): datum =>
-        if datum != char then fail(Unexpected(datum))
+        if datum != chr then fail(Unexpected(datum))
 
     def fail(issue: Issue): Nothing =
       abort(ParseError(Xml, Position(cursor.line, cursor.column), issue))
 
     @tailrec
     def skip(): Unit = cursor.let:
-      case ' ' | '\f' | '\n' | '\r' | '\t' => cursor.next() yet skip()
-      case _                               => ()
+      case ' ' | Ff | Lf | Cr | Ht => cursor.next() yet skip()
+      case _                       => ()
 
     @tailrec
     def tagname(mark: Mark, dictionary: Optional[Dictionary[Tag]])(using Cursor.Held): Tag =
       cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter || char.isDigit =>
+        case chr if chr.isLetter || chr.isDigit =>
           dictionary.lay(next() yet tagname(mark, Unset)): dictionary =>
-            dictionary(char.minuscule) match
+            dictionary(chr.minuscule) match
               case Dictionary.Empty => cursor.next()
                                        val name = cursor.grab(mark, cursor.mark)
                                        cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
               case other            => next() yet tagname(mark, other)
 
-        case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
-          case Dictionary.Just("", tag)       =>  tag
-          case Dictionary.Branch(tag: Tag, _) =>  tag
-          case other                          =>  Tag.freeform(cursor.grab(mark, cursor.mark))
+        case ' ' | Ff | Lf | Cr | Ht | '/' | '>' => dictionary match
+          case Dictionary.Just("", tag)            =>  tag
+          case Dictionary.Branch(tag: Tag, _)      =>  tag
+          case _                                   =>  Tag.freeform(cursor.grab(mark, cursor.mark))
 
-        case '\u0000' =>
+        case Nul =>
           fail(BadInsertion)
 
-        case char =>
-          fail(Unexpected(char))
+        case chr =>
+          fail(Unexpected(chr))
 
     @tailrec
     def key(mark: Mark, dictionary: Dictionary[Xml.Attribute])(using Cursor.Held): Xml.Attribute =
       cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter || char == '-' => dictionary(char.minuscule) match
+        case chr if chr.isLetter || chr == '-' => dictionary(chr.minuscule) match
           case Dictionary.Empty =>  fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
           case dictionary       =>  next() yet key(mark, dictionary)
 
-        case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
+        case ' ' | Ff | Lf | Cr | Ht | '=' | '>' =>
           dictionary.element.or:
             val name = cursor.grab(mark, cursor.mark)
             cursor.cue(mark)
             fail(UnknownAttribute(name))
 
-        case char =>
-          fail(Unexpected(char))
+        case chr =>
+          fail(Unexpected(chr))
 
     @tailrec
     def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '&'      =>  val start = cursor.mark
-                        next()
-                        val mark2 = entity(cursor.mark).lay(mark): text =>
-                          cursor.clone(mark, start)(buffer)
-                          buffer.append(text)
-                          cursor.mark
-                        value(mark2)
-      case '"'      =>  cursor.clone(mark, cursor.mark)(buffer)
-                        next() yet result()
-      case '\u0000' =>  callback.let(_(cursor.position, Hole.Text)) yet next() yet value(mark)
-      case char     =>  next() yet value(mark)
+      case '&' =>  val start = cursor.mark
+                   next()
+                   val mark2 = entity(cursor.mark).lay(mark): text =>
+                     cursor.clone(mark, start)(buffer)
+                     buffer.append(text)
+                     cursor.mark
+                   value(mark2)
+      case '"' =>  cursor.clone(mark, cursor.mark)(buffer)
+                   next() yet result()
+      case Nul =>  callback.let(_(cursor.position, Hole.Text)) yet next() yet value(mark)
+      case chr =>  next() yet value(mark)
 
     @tailrec
     def singleQuoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '\'' => cursor.grab(mark, cursor.mark).also(next())
-      case char => next() yet singleQuoted(mark)
+      case Sqt => cursor.grab(mark, cursor.mark).also(next())
+      case chr => next() yet singleQuoted(mark)
 
     @tailrec
     def unquoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '>' | ' ' | '\f' | '\n' | '\r' | '\t' =>  cursor.grab(mark, cursor.mark)
-      case char@('"' | '\'' | '<' | '=' | '`')   =>  fail(ForbiddenUnquoted(char))
-      case '\u0000'                              =>  fail(BadInsertion)
-      case char                                  =>  next() yet unquoted(mark)
+      case '>' | ' ' | Ff | Lf | Cr | Ht     =>  cursor.grab(mark, cursor.mark)
+      case chr@('"' | Sqt | '<' | '=' | '`') =>  fail(ForbiddenUnquoted(chr))
+      case Nul                               =>  fail(BadInsertion)
+      case chr                               =>  next() yet unquoted(mark)
 
     def equality(): Unit = skip() yet cursor.lay(fail(ExpectedMore)):
-      case '='                                   =>  next() yet skip() yet true
-      case '\u0000'                              =>  fail(BadInsertion)
-      case char                                  =>  fail(Unexpected(char))
+      case '=' =>  next() yet skip() yet true
+      case Nul =>  fail(BadInsertion)
+      case chr =>  fail(Unexpected(chr))
 
 
     @tailrec
@@ -456,7 +470,7 @@ object Xml extends Tag.Container
 
         skip() yet cursor.lay(fail(ExpectedMore)):
           case '>' | '/' => entries
-          case '\u0000'  => callback.let(_(cursor.position, Hole.Tagbody))
+          case Nul       => callback.let(_(cursor.position, Hole.Tagbody))
                             next()
                             skip()
                             attributes(tag, entries.updated(t"\u0000", t""))
@@ -471,11 +485,11 @@ object Xml extends Tag.Container
             equality()
 
             val assignment: Text = cursor.lay(fail(ExpectedMore)):
-              case '\u0000' =>  callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
-                                next() yet t"\u0000"
-              case '"'      =>  next() yet value(cursor.mark)
-              case '\''     =>  next() yet singleQuoted(cursor.mark)
-              case _        =>  fail(UnquotedAttribute)
+              case Nul =>  callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
+                           next() yet t"\u0000"
+              case Dqt =>  next() yet value(cursor.mark)
+              case Sqt =>  next() yet singleQuoted(cursor.mark)
+              case _   =>  fail(UnquotedAttribute)
 
             attributes(tag, entries.updated(key2, assignment))
 
@@ -495,30 +509,30 @@ object Xml extends Tag.Container
         case letter if 'a' <= letter <= 'f' => cursor.next() yet hexEntity(mark, 16*value + (letter - 87))
         case letter if 'A' <= letter <= 'F' => cursor.next() yet hexEntity(mark, 16*value + (letter - 55))
         case ';'                            => cursor.next() yet value.unicode
-        case char                           => Unset
+        case chr                            => Unset
 
     @tailrec
     def decimalEntity(mark: Mark, value: Int): Optional[Text] = cursor.lay(fail(ExpectedMore)):
       case digit if digit.isDigit => next() yet decimalEntity(mark, 10*value + (digit - '0'))
       case ';'                    => next() yet t"${value.toChar}"
-      case char                   => Unset
+      case chr                    => Unset
 
     @tailrec
     def textEntity(mark: Mark, dictionary: Dictionary[Text])(using Cursor.Held): Optional[Text] =
       cursor.lay(fail(ExpectedMore)):
-        case char if char.isLetter | char.isDigit =>  dictionary(char) match
-          case Dictionary.Empty                   =>  Unset
-          case dictionary                         =>  cursor.next() yet textEntity(mark, dictionary)
-        case ';'                                  =>  cursor.next() yet dictionary(';').element
-        case '='                                  =>  Unset
-        case '\u0000'                             =>  fail(BadInsertion)
-        case char                                 =>  dictionary.element
+        case chr if chr.isLetter | chr.isDigit =>  dictionary(chr) match
+          case Dictionary.Empty                  =>  Unset
+          case dictionary                        =>  cursor.next() yet textEntity(mark, dictionary)
+        case ';'                               =>  cursor.next() yet dictionary(';').element
+        case '='                               =>  Unset
+        case Nul                               =>  fail(BadInsertion)
+        case chr                               =>  dictionary.element
 
 
     @tailrec
     def textual(mark: Mark, close: Optional[Text], entities: Boolean)(using Cursor.Held): Text =
       cursor.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()):
-        case '<' | '\u0000' =>
+        case '<' | Nul =>
           close.lay(cursor.clone(mark, cursor.mark)(buffer) yet result()): tag =>
             val end = cursor.mark
             cursor.next()
@@ -546,44 +560,45 @@ object Xml extends Tag.Container
             cursor.mark
           textual(mark2, close, entities)
 
-        case char =>
+        case chr =>
           cursor.next() yet textual(mark, close, entities)
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '-'      =>  val end = cursor.mark
-                        next()
-                        cursor.lay(fail(ExpectedMore)):
-                          case '-' => expect('>') yet cursor.grab(mark, end)
-                          case _   => comment(mark)
-      case '\u0000' =>  callback.let(_(cursor.position, Hole.Comment))
-                        next() yet comment(mark)
-      case char     =>  next() yet comment(mark)
+      case '-' =>  val end = cursor.mark
+                   next()
+                   cursor.lay(fail(ExpectedMore)):
+                     case '-' => expect('>') yet cursor.grab(mark, end)
+                     case _   => comment(mark)
+      case Nul =>  callback.let(_(cursor.position, Hole.Comment))
+                   next() yet comment(mark)
+      case chr =>  next() yet comment(mark)
 
     def cdata(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case ']'      =>  val end = cursor.mark
-                        next()
-                        cursor.lay(fail(ExpectedMore)):
-                          case ']' => expect('>') yet cursor.grab(mark, end)
-                          case _   => cdata(mark)
-      case char     =>  next() yet cdata(mark)
+      case ']' =>  val end = cursor.mark
+                   next()
+                   cursor.lay(fail(ExpectedMore)):
+                     case ']' => expect('>') yet cursor.grab(mark, end)
+                     case _   => cdata(mark)
+      case chr =>  next() yet cdata(mark)
 
     def tag(headers: Boolean): Token = cursor.lay(fail(ExpectedMore)):
+      // FIXME: Processing Instructions
       case '?' if headers =>
         cursor.consume(fail(ExpectedMore))("xml")
         next()
         skip()
         cursor.lay(fail(ExpectedMore)):
           case 'v'  => ()
-          case char => fail(Unexpected(char))
+          case chr => fail(Unexpected(chr))
 
         cursor.consume(fail(ExpectedMore))("ersion")
         next()
         equality()
         content = cursor.hold:
           cursor.lay(fail(ExpectedMore)):
-            case '"'      =>  next() yet value(cursor.mark)
-            case '\''     =>  next() yet singleQuoted(cursor.mark)
-            case _        =>  fail(UnquotedAttribute)
+            case Dqt =>  next() yet value(cursor.mark)
+            case Sqt =>  next() yet singleQuoted(cursor.mark)
+            case _   =>  fail(UnquotedAttribute)
 
         ensure('?')
         expect('>')
@@ -607,23 +622,23 @@ object Xml extends Tag.Container
             content = cursor.hold(cdata(cursor.mark))
             Token.Cdata
 
-          case char =>
-            fail(Unexpected(char))
+          case chr =>
+            fail(Unexpected(chr))
 
       case '/'  =>  next()
                     content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
                     Token.Close
 
-      case '\u0000' => fail(BadInsertion)
-      case char =>
+      case Nul => fail(BadInsertion)
+      case chr =>
         content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
         extra = cursor.hold(attributes(content))
 
         cursor.lay(fail(ExpectedMore)):
-          case '/'       =>  expect('>') yet cursor.next() yet Token.Empty
-          case '>'       =>  cursor.next() yet Token.Open
-          case '\u0000'  =>  fail(BadInsertion)
-          case char      =>  fail(Unexpected(char))
+          case '/' =>  expect('>') yet cursor.next() yet Token.Empty
+          case '>' =>  cursor.next() yet Token.Open
+          case Nul =>  fail(BadInsertion)
+          case chr =>  fail(Unexpected(chr))
 
     def finish(parent: Tag, count: Int): Node =
       if parent != root then fail(Incomplete(parent.label)) else
@@ -644,10 +659,10 @@ object Xml extends Tag.Container
       def admit(child: Text): Boolean = schema.freeform || parent.admissible(child)
 
       cursor.lay(finish(parent, count)):
-        case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
-                         next()
-                         append(TextNode("\u0000"))
-                         read(parent, map, count + 1)
+        case Nul => callback.let(_(cursor.position, Hole.Node(parent.label)))
+                    next()
+                    append(TextNode("\u0000"))
+                    read(parent, map, count + 1)
 
         case '<' =>
           var level: Level = Level.Peer
@@ -668,7 +683,7 @@ object Xml extends Tag.Container
               level = Level.Ascend
 
             next()
-            if cursor.lay(false)(_ == '\u0000') then
+            if cursor.lay(false)(_ == Nul) then
               callback.let(_(cursor.position, Hole.Element(parent.label)))
               content = t"\u0000"
               node()
@@ -678,6 +693,7 @@ object Xml extends Tag.Container
               case Token.Comment => current = Comment(content)
               case Token.Header  => current = Header(content, Unset, Unset)
               case Token.Cdata   => current = Cdata(content)
+              case Token.Pi      => current = ProcessingInstruction(content, body)
 
               case Token.Empty   =>
                 if admit(content) then empty() else fail(InvalidTag(content))
@@ -710,7 +726,7 @@ object Xml extends Tag.Container
                                    append(child)
                                    read(parent, map, count + 1)
 
-        case char =>
+        case chr =>
           val text = cursor.hold(textual(cursor.mark, Unset, true))
           if text.length == 0 then read(parent, map, count + 1)
           else append(TextNode(text)) yet read(parent, map, count + 1)
@@ -749,17 +765,25 @@ case class Comment(text: Text) extends Node:
     case _                        => false
 
 case class Cdata(text: Text) extends Node:
-  override def hashCode: Int = List(this).hashCode
+  override def hashCode: Int = List(this).hashCode // FIXME: infinite recursion
 
   override def equals(that: Any): Boolean = that match
     case Cdata(text0)           => text0 == text
     case Fragment(Cdata(text0)) => text0 == text
     case _                      => false
 
+case class ProcessingInstruction(target: Text, data: Text) extends Node:
+  override def hashCode: Int = List(this).hashCode // FIXME
+
+  override def equals(that: Any): Boolean = that match
+    case ProcessingInstruction(target0, data0)           => target0 == target && data0 == data
+    case Fragment(ProcessingInstruction(target0, data0)) => target0 == target && data0 == data
+    case _                                               => false
+
 case class TextNode(text: Text) extends Node:
   type Topic = "#text"
 
-  override def hashCode: Int = List(this).hashCode
+  override def hashCode: Int = List(this).hashCode // FIXME: infinite recursion
 
   override def equals(that: Any): Boolean = that match
     case Fragment(textual: TextNode) => this == textual

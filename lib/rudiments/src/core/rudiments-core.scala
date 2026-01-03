@@ -86,7 +86,7 @@ extension [value](value: value)
   def give[result](block: value ?=> result): result = block(using value)
 
 extension [value: Countable](value: value)
-  inline def occupied: Optional[value] = if value.empty then Unset else value
+  inline def occupied: Optional[value] = if value.nil then Unset else value
 
 extension [input, result](inline lambda: (=> input) => result)
   inline def upon(inline value: => input): result = lambda(value)

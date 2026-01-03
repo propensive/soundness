@@ -173,8 +173,8 @@ object Juxtaposition:
         . join(e"\n")
 
     case Different(left, right, difference) =>
-      val ws = if right.contains('\n') then e"\n" else e" "
-      val ws2 = if left.contains('\n') then e"\n" else e" "
+      val ws = if right.contains(Lf) then e"\n" else e" "
+      val ws2 = if left.contains(Lf) then e"\n" else e" "
 
       import webColors.*
 

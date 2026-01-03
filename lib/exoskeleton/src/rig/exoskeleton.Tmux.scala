@@ -72,7 +72,7 @@ object Tmux:
       enter(tool.command)
       enter(' ')
       enter(text)
-      attend(enter('\t'))
+      attend(enter(Ht))
       screenshot().screen.filter(!_.starts(t"> ")).join(t"\n").trim
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
@@ -83,7 +83,7 @@ object Tmux:
       enter(tool.command)
       enter(' ')
       enter(text)
-      attend(enter('\t'))
+      attend(enter(Ht))
       screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")
 
 case class TmuxError()(using Diagnostics) extends Error(m"can't execute tmux")

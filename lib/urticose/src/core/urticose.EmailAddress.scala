@@ -76,7 +76,7 @@ object EmailAddress:
 
   def parse(text: Text): EmailAddress raises EmailAddressError =
     val buffer: StringBuilder = StringBuilder()
-    if text.empty then abort(EmailAddressError(Empty))
+    if text.nil then abort(EmailAddressError(Empty))
 
     def quoted(index: Ordinal, escape: Boolean): (LocalPart, Ordinal) = text.at(index) match
       case '\"' =>

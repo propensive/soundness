@@ -293,6 +293,7 @@ object test extends ScalaModule:
     vexillology.test,
     vicarious.test,
     wisteria.test,
+    xylophone.test,
     yossarian.test,
     zephyrine.test,
 
@@ -321,7 +322,6 @@ object test extends ScalaModule:
     // superlunary
     // surveillance
     // tarantula
-    // xylophone
     // yossarian
     // zeppelin
   )
