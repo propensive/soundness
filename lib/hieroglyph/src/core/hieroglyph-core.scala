@@ -105,3 +105,13 @@ extension (int: Int)
   def unicode: Text = String(Character.toChars(int)).tt
 
 extension [measurable: Measurable](element: measurable) def metrics: Int = measurable.width(element)
+
+final val Nul: '\u0000' = '\u0000'
+final val Bel: '\u0007' = '\u0007'
+final val Tab: '\u0009' = '\u0009'
+final val Lnf: '\u000a' = '\u000a'
+final val Ffd: '\u000c' = '\u000c'
+final val Rtn: '\u000d' = '\u000d'
+final val Esc: '\u001b' = '\u001b'
+final val Sqt: '\'' = '\''
+final val Dqt: '"' = '"'

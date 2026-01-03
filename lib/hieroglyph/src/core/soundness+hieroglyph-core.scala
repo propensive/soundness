@@ -35,7 +35,7 @@ package soundness
 export hieroglyph
 . { Encoding, encoder, CharDecoder, CharEncoder, TextSanitizer, CharDecodeError, CharEncodeError,
     enc, Unicode, metrics, Measurable, Chars, superscript, subscript, ucs, description, majuscule,
-    minuscule }
+    minuscule, Nul, Bel, Tab, Lnf, Ffd, Rtn, Esc, Sqt, Dqt }
 
 package textSanitizers:
   export hieroglyph.textSanitizers.{strict, skip, substitute}
