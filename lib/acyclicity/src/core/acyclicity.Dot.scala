@@ -36,6 +36,7 @@ import language.dynamics
 
 import anticipation.*
 import contextual.*
+import denominative.*
 import gossamer.*
 import proscenium.*
 import rudiments.*
@@ -130,7 +131,7 @@ object Dot:
       op #:: tokenize(dest) #::: link.to(Stream).flatMap(tokenize(_)) #::: Stream(t";")
 
     case Statement.Node(id, attrs*) =>
-      t"\"${id.key}\"" #:: (if attrs.isEmpty then Stream() else (Stream(t"[") #:::
+      t"\"${id.key}\"" #:: (if attrs.nil then Stream() else (Stream(t"[") #:::
           attrs.to(Stream).flatMap(tokenize(_) :+ t",").init #::: Stream(t"]"))) #:::
           Stream(t";")
 

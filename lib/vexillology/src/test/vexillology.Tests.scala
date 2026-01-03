@@ -46,7 +46,7 @@ object Tests extends Suite(m"Vexillology tests"):
       val flags = Flags[Color]()
       flags.set
 
-    . assert(_.isEmpty)
+    . assert(_.nil)
 
     test(m"Value is initially unset"):
       val flags = Flags[Color]()

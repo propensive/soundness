@@ -301,7 +301,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
 
     recur(start.n0)
 
-  def matches(text: Text)(using Scanner): Boolean = !matchGroups(text).isEmpty
+  def matches(text: Text)(using Scanner): Boolean = !matchGroups(text).nil
 
 
   def matchGroups(text: Text)(using scanner: Scanner)

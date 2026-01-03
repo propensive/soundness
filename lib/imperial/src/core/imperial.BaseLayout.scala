@@ -35,6 +35,7 @@ package imperial
 import ambience.*
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
@@ -46,7 +47,7 @@ object BaseLayout:
     infix def / (name: Text): Dir = Dir(home, name :: path)
 
     def render(homeDir: Text): Text =
-      val slash = if path.isEmpty then t"" else t"/"
+      val slash = if path.nil then t"" else t"/"
       t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
 
 case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly: Boolean = false)

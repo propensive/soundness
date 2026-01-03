@@ -162,7 +162,7 @@ object Html extends Tag.Container
               emitter.put("<")
               emitter.put(label)
 
-              if !attributes.isEmpty then
+              if !attributes.nil then
                 attributes.each: (key, value) =>
                   emitter.put(" ")
                   emitter.put(key)
@@ -218,7 +218,7 @@ object Html extends Tag.Container
     case Doctype(text) => t"<!$text>"
 
     case Element(tagname, attributes, children, _) =>
-      val tagContent = if attributes.isEmpty then t"" else
+      val tagContent = if attributes.nil then t"" else
         attributes.map:
           case (key, value) => value.lay(key) { value => t"""$key="$value"""" }
         . join(t" ", t" ", t"")
@@ -778,12 +778,12 @@ object Html extends Tag.Container
 
           case Mode.Raw =>
             val text = cursor.hold(textual(cursor.mark, parent.label, false))
-            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+            if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
             else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
           case Mode.Rcdata =>
             val text = cursor.hold(textual(cursor.mark, parent.label, true))
-            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+            if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
             else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
           case Mode.Normal =>
@@ -795,7 +795,7 @@ object Html extends Tag.Container
       skip()
       append(root)
       val head = read(root, root.admissible, ListMap(), 0)
-      if fragment.isEmpty then head else Fragment(fragment*)
+      if fragment.nil then head else Fragment(fragment*)
 
 sealed into trait Html extends Topical, Documentary, Formal:
   type Topic <: Label

@@ -60,7 +60,7 @@ class PositionReader(private var in: Stream[Text]):
   def charStream(): Stream[Char] = Stream.continually(read()).takeWhile(_ != -1).map(_.toChar)
 
   private var text: Text =
-    if in.isEmpty then t""
+    if in.nil then t""
     else
       val result = in.head
       in = in.tail
@@ -71,7 +71,7 @@ class PositionReader(private var in: Stream[Text]):
     current += 1
 
     text.at(current).let(_.toInt).or:
-      if in.isEmpty then -1 else
+      if in.nil then -1 else
         text = in.head
         in = in.tail
         current = Prim - 1
@@ -136,7 +136,7 @@ class PositionReader(private var in: Stream[Text]):
   def get(): Text = buf.toString.show.also(buf.clear())
 
   def put(char: Character): Unit =
-    if buf.isEmpty then
+    if buf.nil then
       startLine = char.line
       startCol = char.column
 

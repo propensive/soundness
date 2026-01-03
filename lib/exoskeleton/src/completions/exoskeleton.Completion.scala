@@ -138,7 +138,7 @@ extends Cli:
 
   def serialize: List[Text] =
     val items0 =
-      if cursorSuggestions.isEmpty
+      if cursorSuggestions.nil
       then flagSuggestions(focusText.starts(t"--"))
       else cursorSuggestions
 

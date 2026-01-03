@@ -41,6 +41,7 @@ import java.util.zip as juz
 import anticipation.*
 import capricious.*
 import contingency.*
+import denominative.*
 import hieroglyph.*
 import hypotenuse.*
 import parasite.*, codicils.await
@@ -142,7 +143,7 @@ extension [element](stream: Stream[element])
     : Stream[element] =
 
         if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
-        else if stream.isEmpty then Stream()
+        else if stream.nil then Stream()
         else stream.head match
           case Tap.Regulation.Start =>
             recur(true, stream.tail, buffer)
@@ -164,7 +165,7 @@ extension [element](stream: Stream[element])
 
       def recur(stream: Stream[element], list: List[element], count: Int): Stream[List[element]] =
         count match
-          case 0 => safely(async(stream.isEmpty).await()) match
+          case 0 => safely(async(stream.nil).await()) match
             case Unset => recur(stream, Nil, 0)
             case false => recur(stream.tail, stream.head :: list, count + 1)
             case true  => Stream()
@@ -172,7 +173,7 @@ extension [element](stream: Stream[element])
           case Limit =>
             list.reverse #:: recur(stream, Nil, 0)
 
-          case _ => safely(async(stream.isEmpty).await(duration)) match
+          case _ => safely(async(stream.nil).await(duration)) match
             case Unset => list.reverse #:: recur(stream, Nil, 0)
             case false => recur(stream.tail, stream.head :: list, count + 1)
             case true  => Stream(list.reverse)
@@ -342,7 +343,7 @@ extension (stream: Stream[Bytes])
     override def available(): Int =
       val diff = focus.length - offset
       if diff > 0 then diff
-      else if current.isEmpty then 0
+      else if current.nil then 0
       else
         focus = current.head
         current = current.tail

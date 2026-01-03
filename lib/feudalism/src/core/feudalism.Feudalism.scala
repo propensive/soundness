@@ -32,6 +32,7 @@
                                                                                                   */
 package feudalism
 
+import denominative.*
 import fulminate.*
 import proscenium.*
 import rudiments.*
@@ -51,14 +52,14 @@ object Feudalism:
       case Inactive(value) => Inactive(value)
 
       case Reading(value, writers, readers) =>
-        if writers.isEmpty then
-          if readers.isEmpty then Inactive(value)
+        if writers.nil then
+          if readers.nil then Inactive(value)
           else jucl.LockSupport.unpark(readers.head) yet Reading(value, writers, readers.tail)
         else jucl.LockSupport.unpark(writers.head) yet Reading(value, writers.tail, readers)
 
       case Writing(value, writers, readers) =>
-        if writers.isEmpty then
-          if readers.isEmpty then Inactive(value)
+        if writers.nil then
+          if readers.nil then Inactive(value)
           else jucl.LockSupport.unpark(readers.head) yet Writing(value, writers, readers.tail)
         else jucl.LockSupport.unpark(writers.head) yet Writing(value, writers.tail, readers)
 

@@ -49,7 +49,7 @@ object Aggregable:
     var source = source0
     Bytes.construct(size): array =>
       var index = Prim
-      while !source.isEmpty do
+      while !source.nil do
         val bytes = source.head
         array.place(bytes, index)
         index += bytes.length
@@ -62,7 +62,7 @@ object Aggregable:
     var source = source0
     val builder = new StringBuilder()
 
-    while !source.isEmpty do
+    while !source.nil do
       builder.append(source.head.s)
       source = source.tail
 

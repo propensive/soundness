@@ -127,14 +127,14 @@ object Markdown:
 
         case Layout.BulletList(line, tight, items*) =>
           val items2 = items.map: item =>
-            if item.isEmpty then Li
+            if item.nil then Li
             else Li(merge(false, item, Nil, tight)*)
 
           Ul(items2*)
 
         case Layout.OrderedList(line, start, tight, delimiter, items*) =>
           val items2 = items.map: item =>
-            if item.isEmpty then Li
+            if item.nil then Li
             else Li(merge(false, item, Nil, tight)*)
 
           val start2 = start.puncture(1)

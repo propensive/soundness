@@ -34,6 +34,7 @@ package aviation
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import kaleidoscope.*
@@ -142,7 +143,7 @@ object Tzdb:
           case value :: Nil           => value
           case before :: after :: Nil => before+str+after
 
-        ZoneInfo(s, rules, f, if until.isEmpty then None else Some(until.join(t" ")))
+        ZoneInfo(s, rules, f, if until.nil then None else Some(until.join(t" ")))
 
       case other =>
         abort(TzdbError(TzdbError.Reason.BadZoneInfo(other), lineNo))
@@ -183,8 +184,7 @@ object Tzdb:
           zone:    Option[Tzdb.Entry.Zone] = None)
     : List[Tzdb.Entry] =
 
-        if lines.isEmpty then entries ++ zone
-        else
+        if lines.nil then entries ++ zone else
           val line: Text = lines.head.upto(_ == '#')
           line.cut(unsafely(r"\s+")).to(List) match
             case t"Rule" :: tail =>

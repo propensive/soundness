@@ -33,6 +33,7 @@
 package hieroglyph
 
 import anticipation.*
+import denominative.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
@@ -69,11 +70,11 @@ class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer):
     def recur(todo: Stream[Array[Byte]], offset: Int = 0, total: Int = 0): Stream[Text] =
       val count = in.remaining
 
-      if !todo.isEmpty then in.put(todo.head, offset, in.remaining.min(todo.head.length - offset))
+      if !todo.nil then in.put(todo.head, offset, in.remaining.min(todo.head.length - offset))
       in.flip()
 
       def decode(): jnc.CoderResult =
-        val result = decoder.decode(in, out, todo.isEmpty).nn
+        val result = decoder.decode(in, out, todo.nil).nn
 
         if !result.isMalformed then result else
           sanitizer.sanitize(total + in.position, encoding).let(out.put(_))
@@ -86,11 +87,11 @@ class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer):
       out.clear()
 
       def continue =
-        if todo.isEmpty && !status.isOverflow then Stream()
-        else if !todo.isEmpty && count >= todo.head.length - offset
+        if todo.nil && !status.isOverflow then Stream()
+        else if !todo.nil && count >= todo.head.length - offset
         then recur(todo.tail, 0, total + todo.head.length - offset)
         else recur(todo, offset + count, total + count)
 
-      if text.s.isEmpty then continue else text #:: continue
+      if text.nil then continue else text #:: continue
 
     recur(stream.map(_.mutable(using Unsafe)))

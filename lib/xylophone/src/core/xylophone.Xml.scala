@@ -181,7 +181,7 @@ object Xml extends Tag.Container
               emitter.put("<")
               emitter.put(label)
 
-              if !attributes.isEmpty then
+              if !attributes.nil then
                 attributes.each: (key, value) =>
                   emitter.put(" ")
                   emitter.put(key)
@@ -238,7 +238,7 @@ object Xml extends Tag.Container
       t"<?xml version=\"$version\"$encodingText$standaloneText>"
 
     case Element(tagname, attributes, children) =>
-      val tagContent = if attributes.isEmpty then t"" else
+      val tagContent = if attributes.nil then t"" else
         attributes.map:
           case (key, value) => t"""$key="$value""""
         . join(t" ", t" ", t"")
@@ -735,7 +735,7 @@ object Xml extends Tag.Container
       skip()
       append(root)
       val head = read(root, ListMap(), 0)
-      if fragment.isEmpty then head else Fragment(fragment*)
+      if fragment.nil then head else Fragment(fragment*)
 
 sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   type Topic <: Label

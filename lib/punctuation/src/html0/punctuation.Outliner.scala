@@ -45,7 +45,7 @@ object Outliner extends HtmlTranslator():
   override def translate(nodes: Seq[Markdown.Ast.Node]): Seq[Html of Flow] =
     def recur(entries: List[Entry]): Seq[Html of Ul.Topic] = entries.map: entry =>
       val link = A(href = t"#${slug(entry.label)}")(entry.label)
-      if entry.children.isEmpty then Li(link) else Li(link, Ul(recur(entry.children)))
+      if entry.children.nil then Li(link) else Li(link, Ul(recur(entry.children)))
 
     List(Ul(recur(structure(Unset, nodes.to(List), Nil))*))
 

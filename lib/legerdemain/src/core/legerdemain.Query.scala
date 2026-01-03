@@ -38,6 +38,7 @@ import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import prepositional.*
@@ -122,7 +123,7 @@ object Query extends Dynamic:
 case class Query private (values: List[(Text, Text)]) extends Dynamic:
   private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))
   def append(more: Query): Query = new Query(values ++ more.values)
-  def isEmpty: Boolean = values.isEmpty
+  def nil: Boolean = values.nil
 
   @targetName("appendAll")
   infix def ++ (query: Query) = Query(values ++ query.values)

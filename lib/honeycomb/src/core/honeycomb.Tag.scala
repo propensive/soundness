@@ -132,7 +132,7 @@ object Tag:
 
         val nodes = children.compact.nodes
 
-        val presets2 = if css.names.isEmpty then presets else
+        val presets2 = if css.names.nil then presets else
           val cls = css.names.join(t" ")
           val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
           presets.updated("class", value)
@@ -168,7 +168,7 @@ object Tag:
          (using css: Classes of className)
     : Element of Topic in Form =
 
-        val presets2 = if css.names.isEmpty then presets else
+        val presets2 = if css.names.nil then presets else
           val cls = css.names.join(t" ")
           val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
           presets.updated("class", value)

@@ -40,6 +40,7 @@ import scala.jdk.StreamConverters.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import nomenclature.*
 import prepositional.*
@@ -334,7 +335,7 @@ package filesystemOptions:
 
       def conditionally[result](path: Path on Plane)(operation: => result): result =
         import filesystemOptions.dereferenceSymlinks.disabled
-        if !path.children.isEmpty
+        if !path.children.nil
         then abort(IoError(path, IoError.Operation.Delete, Reason.DirectoryNotEmpty))
         else operation
 

@@ -33,6 +33,7 @@
 package adversaria
 
 import anticipation.*
+import denominative.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
@@ -139,8 +140,7 @@ object Adversaria:
       val annotations = targetType.typeSymbol.annotations.map(_.asExpr).collect:
         case '{$annotation: `annotation`} => annotation
 
-      if annotations.isEmpty
-      then
+      if annotations.nil then
         val typeName = TypeRepr.of[annotation].show
         panic(m"the type ${targetType.show} did not have the annotation $typeName")
       else '{Annotations[annotation, target](${Expr.ofList(annotations)}*)}

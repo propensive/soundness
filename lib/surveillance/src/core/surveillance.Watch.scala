@@ -38,6 +38,7 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import feudalism.*
 import parasite.*, threading.platform
 import prepositional.*
@@ -141,11 +142,11 @@ class Watch():
       watches.each: watch =>
         map(watch.key) = map.at(watch.key).or(Set()) - watch
 
-        if map(watch.key).isEmpty then
+        if map(watch.key).nil then
           watch.key.cancel()
           map.remove(watch.key)
 
-        if map.isEmpty then synchronized:
+        if map.nil then synchronized:
           Watch.serviceValue.let: service =>
             service.stop()
             Watch.serviceValue = Unset

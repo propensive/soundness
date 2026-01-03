@@ -34,6 +34,7 @@ package acyclicity
 
 import scala.collection.mutable as scm
 
+import denominative.*
 import proscenium.*
 import rudiments.*
 
@@ -46,7 +47,7 @@ object Dag:
     @tailrec
     def recur(map: Map[node, Set[node]], todo: Set[node], done: Set[node]): Dag[node] =
 
-      if todo.isEmpty then new Dag(map) else
+      if todo.nil then new Dag(map) else
         val key = todo.head
         dependencies(key).pipe: children =>
           recur(map.updated(key, children), (todo ++ children.filter(!done(_))) - key, done + key)
@@ -76,7 +77,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   @targetName("removeKey")
   infix def -(key: node): Dag[node] = Dag(edgeMap - key)
 
-  def sources: Set[node] = edgeMap.collect { case (k, v) if v.isEmpty => k }.to(Set)
+  def sources: Set[node] = edgeMap.collect { case (k, v) if v.nil => k }.to(Set)
   def edges: Set[(node, node)] = edgeMap.to(Set).flatMap { (k, vs) => vs.map(k -> _) }
   def closure: Dag[node] = Dag(keys.map { k => k -> (reachable(k) - k) }.to(Map))
   def sorted: List[node] = sort(edgeMap, Nil).reverse
@@ -128,9 +129,9 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
     . to(Map)
 
   private def sort(todo: Map[node, Set[node]], done: List[node]): List[node] =
-    if todo.isEmpty then done
+    if todo.nil then done
     else
-      val (node, _) = todo.find { (k, vs) => (vs -- done).isEmpty }.get
+      val (node, _) = todo.find { (k, vs) => (vs -- done).nil }.get
       sort((todo - node).view.mapValues(_.filter(_ != node)).to(Map), node :: done)
 
   def filter(pred: node => Boolean): Dag[node] =

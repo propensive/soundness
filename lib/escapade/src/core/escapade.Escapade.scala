@@ -53,7 +53,7 @@ object Escapade:
   extension (span: CharSpan)
     def start: Int = (span >> 32).toInt
     def end: Int = Int.MaxValue - span.toInt
-    def isEmpty: Boolean = start == end
+    def nil: Boolean = start == end
 
     def trimLeft(n: Int): CharSpan =
       if n >= end then CharSpan.Nowhere else if n <= start then CharSpan(start - n, end - n)

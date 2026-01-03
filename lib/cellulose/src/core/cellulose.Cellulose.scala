@@ -35,6 +35,7 @@ package cellulose
 import anticipation.*
 import contextual.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -124,11 +125,11 @@ object Cellulose extends Cellulose2:
     given optionalDecodable: [value >: Unset.type: Mandatable]
           => (decoder: => value.Result is Decodable in Codl)
           =>  value is Decodable in Codl =
-      codl => if codl.list.isEmpty then Unset else decoder.decoded(codl)
+      codl => if codl.list.nil then Unset else decoder.decoded(codl)
 
     given optionDecodable: [decodable] => (decoder: => decodable is Decodable in Codl)
           => Option[decodable] is Decodable in Codl =
-      codl => if codl.list.isEmpty then None else Some(decoder.decoded(codl))
+      codl => if codl.list.nil then None else Some(decoder.decoded(codl))
 
     given listDecodable: [element]
           => (decodable: => element is Decodable in Codl, schematic: => element is CodlSchematic)
@@ -452,7 +453,7 @@ object Cellulose extends Cellulose2:
                 case _ =>
                   go(Stream(CodlToken.Outdent(stack.length + 1)))
 
-        if stream.isEmpty
+        if stream.nil
         then CodlDoc() else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, Stream(), Nil)
 
 

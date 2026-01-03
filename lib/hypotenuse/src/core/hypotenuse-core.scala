@@ -41,6 +41,7 @@ import scala.annotation.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
@@ -55,7 +56,7 @@ extension (inline context: StringContext)
 
 extension [value](iterable: Iterable[value])
   inline def minimum(using commensurable: value is Commensurable against value): Optional[value] =
-    if iterable.isEmpty then Unset else
+    if iterable.nil then Unset else
       var current = iterable.head
       iterable.tail.each: element =>
         if element < current then current = element
@@ -63,7 +64,7 @@ extension [value](iterable: Iterable[value])
       current
 
   inline def maximum(using commensurable: value is Commensurable against value): Optional[value] =
-    if iterable.isEmpty then Unset else
+    if iterable.nil then Unset else
       var current = iterable.head
       iterable.tail.each: element =>
         if element > current then current = element

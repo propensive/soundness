@@ -35,6 +35,7 @@ package serpentine
 import scala.compiletime.*, ops.int.*
 
 import anticipation.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import prepositional.*
@@ -79,7 +80,7 @@ object Relative:
     if text == filesystem.self then ? else
       text.cut(filesystem.separator).pipe: parts =>
         (if parts.last == t"" then parts.init else parts).pipe: parts =>
-          if parts.isEmpty then Relative(0) else
+          if parts.nil then Relative(0) else
             (if parts.head == filesystem.self then parts.tail else parts).pipe: parts =>
               val ascent = parts.takeWhile(_ == filesystem.parent).length
               val descent = parts.drop(ascent).reverse
@@ -96,7 +97,7 @@ object Relative:
 
   given encodable: [filesystem: Filesystem] => Relative on filesystem is Encodable in Text =
     relative =>
-      if relative.descent.isEmpty then
+      if relative.descent.nil then
         if relative.ascent == 0 then filesystem.self
         else List.fill(relative.ascent)(filesystem.parent).join(filesystem.separator)
       else
@@ -165,7 +166,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
     case EmptyTuple   => Relative[Plane, Zero, S[Limit]](ascent)
 
     case _ =>
-      if descent.isEmpty then Relative[Plane, Topic, S[Limit]](ascent + 1)
+      if descent.nil then Relative[Plane, Topic, S[Limit]](ascent + 1)
       else Relative[Plane, Topic, Limit](ascent, descent.tail*)
 
 
@@ -192,7 +193,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
 //     (left, right) =>
 //       def recur(ascent: Int, descent: List[Text], ascent2: Int): Relative by ElementType =
 //         if ascent2 > 0 then
-//           if descent.isEmpty then recur(ascent + 1, Nil, ascent - 1)
+//           if descent.nil then recur(ascent + 1, Nil, ascent - 1)
 //           else recur(ascent, descent.tail, ascent - 1)
 //         else Relative.from(ascent, right.textDescent ++ descent, left.separator)
 

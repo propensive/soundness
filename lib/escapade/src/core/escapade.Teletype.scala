@@ -154,7 +154,7 @@ case class Teletype
             val charSpan: CharSpan = span.trimLeft(n)
             charSpan -> transform
 
-        . view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
+        . view.filterKeys { k => k.nil || k != CharSpan.Nowhere }.to(TreeMap)
 
       Teletype(plain.skip(n), newSpans)
 
@@ -169,7 +169,7 @@ case class Teletype
             val charSpan: CharSpan = span.takeLeft(n)
             charSpan -> tf
 
-        . view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
+        . view.filterKeys { k => k.nil || k != CharSpan.Nowhere }.to(TreeMap)
 
       Teletype(plain.keep(n), newSpans)
 
@@ -190,12 +190,12 @@ case class Teletype
           val newInsertions = addText(pos, spans.head(0).start, insertions)
           val newStyle = spans.head(1)(style)
           style.addChanges(buf, newStyle, termcap.color)
-          val newStack = if spans.head(0).isEmpty then stack else (spans.head(0) -> style) :: stack
+          val newStack = if spans.head(0).nil then stack else (spans.head(0) -> style) :: stack
           recur(spans.tail, spans.head(0).start, newStyle, newStack, newInsertions)
 
         @tailrec
         def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
-          if insertions.isEmpty then
+          if insertions.nil then
             buf.add(plain.segment(from.max(0).z thru to.max(0).u))
             insertions
           else if insertions.head(0) < to then
@@ -206,14 +206,14 @@ case class Teletype
             buf.add(plain.segment(from.z thru to.u))
             insertions
 
-        if stack.isEmpty then
-          if spans.isEmpty then
+        if stack.nil then
+          if spans.nil then
             val remaining = addText(pos, plain.length, insertions)
             remaining.values.each(buf.add(_))
             buf.text
           else addSpan()
         else
-          if spans.isEmpty || stack.head(0).end <= spans.head(0).start then
+          if spans.nil || stack.head(0).end <= spans.head(0).start then
             val newInsertions = addText(pos, stack.head(0).end, insertions)
             val newStyle = stack.head(1)
             style.addChanges(buf, newStyle, termcap.color)

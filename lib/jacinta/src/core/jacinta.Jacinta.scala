@@ -61,4 +61,4 @@ object Jacinta:
     @targetName("child")
     infix def / (child: Text | Ordinal): JsonPointer = child :: path
 
-    def parent: Optional[JsonPointer] = if path.isEmpty then Unset else JsonPointer(path.tail)
+    def parent: Optional[JsonPointer] = if path.nil then Unset else JsonPointer(path.tail)

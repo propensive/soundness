@@ -129,7 +129,7 @@ extension [result](tasks: Iterable[Task[result]])
 
 extension [result](stream: Stream[result])
   def concurrent(using Monitor, Codicil): Stream[result] raises AsyncError =
-    if async(stream.isEmpty).await() then Stream() else stream.head #:: stream.tail.concurrent
+    if async(stream.nil).await() then Stream() else stream.head #:: stream.tail.concurrent
 
 
 def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)

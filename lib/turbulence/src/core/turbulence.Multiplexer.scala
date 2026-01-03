@@ -37,9 +37,12 @@ import language.experimental.pureFunctions
 import java.util.concurrent as juc
 
 import anticipation.*
-import parasite.*, codicils.await
+import denominative.*
+import parasite.*
 import proscenium.*
 import rudiments.*
+
+import codicils.await
 
 case class Multiplexer[key, element]()(using Monitor):
   private case class Removal(key: key)
@@ -50,18 +53,18 @@ case class Multiplexer[key, element]()(using Monitor):
 
   @tailrec
   private def pump(key: key, stream: Stream[element])(using Worker): Unit =
-    if stream.isEmpty then remove(key) else
+    if stream.nil then remove(key) else
       relent()
       queue.put(stream.head)
       pump(key, stream.tail)
 
   def add(key: key, stream: Stream[element]): Unit = active(key) = async(pump(key, stream))
-  private def remove(key: key): Unit = if !active.isEmpty then queue.put(Removal(key))
+  private def remove(key: key): Unit = if !active.nil then queue.put(Removal(key))
 
   def stream: Stream[element] = queue.take().nn match
     case Removal(key) =>
       active -= key
-      if active.isEmpty then Stream() else stream
+      if active.nil then Stream() else stream
 
     case value: `element` =>
       value #:: stream
