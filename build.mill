@@ -122,85 +122,74 @@ trait BaseScalaModule extends ScalaModule:
 trait Library extends Module:
   def moduleDir = super.moduleDir / ".." / "lib" / super.moduleDir.last / "src"
 
-trait Component extends BaseScalaModule with SonatypeCentralPublishModule:
+trait Component(dependencies: PublishModule*)
+extends BaseScalaModule, SonatypeCentralPublishModule:
   def moduleId: String = moduleDir.last
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def sources = Task.Sources(moduleDir)
+  override def moduleDeps = dependencies
 
-trait Tests extends BaseScalaModule:
+trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
   def moduleId: String = moduleDir.last
   def finalMainClass = (moduleDir / ".." / "..").last + ".Tests"
-  def moduleDeps: Seq[ScalaModule] = Seq(probably.cli)
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
-
+  def moduleDeps: Seq[PublishModule] = probably.cli +: dependencies
   def sources = Task.Sources(moduleDir)
+  def consoleScalacOptions = scalacOptions()
 
   def compile = Task:
     larceny.plugin.assembly()
     super.compile()
 
-  def scalacOptions = settings.scalaOptions ++ Seq(
-    "-Xplugin",
-    (larceny.plugin.assembly().path).toString()
-  )
+  def scalacOptions =
+    settings.scalaOptions ++ Seq("-Xplugin", (larceny.plugin.assembly().path).toString())
 
-  def consoleScalacOptions = scalacOptions()
-
-trait Bundle extends BaseScalaModule with PublishModule:
+trait Bundle(dependencies: PublishModule*) extends BaseScalaModule with PublishModule:
   def sources = Task.Sources()
+  def moduleDeps = dependencies
 
 // ------------------------ GROUPS ------------------------
 object soundness extends ScalaModule:
   def scalaVersion = settings.scalaVersion
   def moduleDeps = Seq()
 
-  object base extends Bundle:
-    def moduleDeps = Seq(ambience.core, aviation.core, contextual.core,
-        contingency.core, denominative.core, digression.core, diuretic.core, feudalism.core,
-        fulminate.core, hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core,
-        gossamer.core, inimitable.core, iridescence.core, kaleidoscope.core, mercator.core,
-        nomenclature.core, parasite.core, rudiments.core, spectacular.core, symbolism.core,
-        prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
-        typonym.core, zephyrine.core)
+  object base extends Bundle(ambience.core, aviation.core, contextual.core, contingency.core,
+    denominative.core, digression.core, diuretic.core, feudalism.core, fulminate.core,
+    hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
+    inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
+    parasite.core, rudiments.core, spectacular.core, symbolism.core, prepositional.core,
+    vacuous.core, wisteria.core, vicarious.core, serpentine.core, typonym.core, zephyrine.core)
 
-  object cli extends Bundle:
-    def moduleDeps = Seq(burdock.boot, burdock.core, dendrology.tree, dendrology.dag, exoskeleton.completions,
-        escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi, eucalyptus.syslog,
-        guillotine.core, escapade.core, imperial.core, profanity.core, surveillance.core,
-        punctuation.ansi, hallucination.ansi)
+  object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
+    exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi,
+    eucalyptus.syslog, guillotine.core, escapade.core, imperial.core, profanity.core,
+    surveillance.core, punctuation.ansi, hallucination.ansi)
 
-  object data extends Bundle:
-    def moduleDeps = Seq(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
-        gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core,
-        panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core,
-        zeppelin.core, xylophone.core, anamnesis.core)
+  object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
+    gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core, panopticon.core,
+    camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core, xylophone.core,
+    anamnesis.core)
 
-  object sci extends Bundle:
-    def moduleDeps = Seq(abacist.core, acyclicity.core, baroque.core, cardinality.core,
-        charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
-        quantitative.core)
+  object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
+    charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
+    quantitative.core)
 
-  object test extends Bundle:
-    def moduleDeps = Seq(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
-        superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm,
-        mandible.core)
+  object test extends Bundle(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
+    superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm, mandible.core)
 
-  object tool extends Bundle:
-    def moduleDeps = Seq(anthology.core, harlequin.core, hellenism.core, hyperbole.core,
-        octogenarian.core, revolution.core, umbrageous.plugin, anthology.java, harlequin.md,
-        harlequin.ansi, austronesian.core)
+  object tool extends Bundle(anthology.core, harlequin.core, hellenism.core, hyperbole.core,
+    octogenarian.core, revolution.core, umbrageous.plugin, anthology.java, harlequin.md,
+    harlequin.ansi, austronesian.core)
 
-  object web extends Bundle:
-    def moduleDeps = Seq(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
-        honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
-        punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
-        telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
-        legerdemain.core, caduceus.core, caduceus.resend)
+  object web extends Bundle(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
+    honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
+    punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
+    telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
+    legerdemain.core, caduceus.core, caduceus.resend)
 
-  object all extends Bundle:
-    def moduleDeps = Seq(base, cli, data, sci, test, tool, web)
+  object all extends Bundle(base, cli, data, sci, test, tool, web)
 
 object test extends ScalaModule:
   def scalaVersion = settings.scalaVersion
@@ -345,716 +334,403 @@ object test extends ScalaModule:
 // ------------------------ MODULES ------------------------
 
 object abacist extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(quantitative.units)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(quantitative.units)
+  object test extends Tests(probably.cli, core)
 
 object acyclicity extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core)
+  object test extends Tests(probably.cli, core)
 
 object adversaria extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core)
+  object test extends Tests(probably.cli, core)
 
 object ambience extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core)
+  object test extends Tests(probably.cli, core)
 
 object anamnesis extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core, contingency.core, distillate.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core, contingency.core, distillate.core)
+  object test extends Tests(probably.cli, core)
 
 object anthology extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(hellenism.core)
+  object core extends Component(hellenism.core)
 
-  object `scala` extends Component:
-    def moduleDeps = Seq(core, anticipation.log, ambience.core, galilei.core)
+  object `scala` extends Component(core, anticipation.log, ambience.core, galilei.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object `java` extends Component:
-    def moduleDeps = Seq(galilei.core, ambience.core, core, anticipation.log)
-
-  object bundle extends Component:
-    def moduleDeps = Seq(core, zeppelin.core, hellenism.core, galilei.core, revolution.core, eucalyptus.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, `scala`, `java`, core)
+  object `java` extends Component(galilei.core, ambience.core, core, anticipation.log)
+  object bundle extends Component(core, zeppelin.core, hellenism.core, galilei.core, revolution.core, eucalyptus.core)
+  object test extends Tests(probably.cli, `scala`, `java`, core)
 
 object anticipation extends Library:
-  object generic extends Component:
-    def moduleDeps = Seq(prepositional.core)
-
-  object text extends Component:
-    def moduleDeps = Seq(symbolism.core)
-
-  object opaque extends Component:
-    def moduleDeps = Seq(text)
-
-  object gfx extends Component:
-    def moduleDeps = Seq(prepositional.core)
-
-  object css extends Component:
-    def moduleDeps = Seq(text, generic)
-
-  object url extends Component:
-    def moduleDeps = Seq(text, generic)
-
-  object html extends Component:
-    def moduleDeps = Seq(text, generic)
-
-  object print extends Component:
-    def moduleDeps = Seq(text)
-
-  object http extends Component:
-    def moduleDeps = Seq(text, codec, generic)
-
-  object codec extends Component:
-    def moduleDeps = Seq(text)
-
-  object color extends Component:
-    def moduleDeps = Seq(prepositional.core)
-
-  object log extends Component:
-    def moduleDeps = Seq(text)
-
-  object path extends Component:
-    def moduleDeps = Seq(text, generic)
-
-  object time extends Component:
-    def moduleDeps = Seq(generic)
-
+  object generic extends Component(prepositional.core)
+  object text extends Component(symbolism.core)
+  object opaque extends Component(text)
+  object gfx extends Component(prepositional.core)
+  object css extends Component(text, generic)
+  object url extends Component(text, generic)
+  object html extends Component(text, generic)
+  object print extends Component(text)
+  object http extends Component(text, codec, generic)
+  object codec extends Component(text)
+  object color extends Component(prepositional.core)
+  object log extends Component(text)
+  object path extends Component(text, generic)
+  object time extends Component(generic)
   object test extends Tests
 
 object austronesian extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(wisteria.core, distillate.core, probably.core, hellenism.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(wisteria.core, distillate.core, probably.core, hellenism.core)
+  object test extends Tests(probably.cli, core)
 
 object aviation extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(abacist.core, quantitative.units)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(abacist.core, quantitative.units)
+  object test extends Tests(probably.cli, core)
 
 object baroque extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core, quantitative.core, geodesy.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, abacist.core, quantitative.units, mosquito.core)
+  object core extends Component(gossamer.core, quantitative.core, geodesy.core)
+  object test extends Tests(probably.cli, core, abacist.core, quantitative.units, mosquito.core)
 
 // object bitumen extends Library:
-//   object core extends Component:
-//     def moduleDeps = Seq(polaris.core, serpentine.core, gossamer.core, turbulence.core)
-//
-//   object test extends Tests:
-//     def moduleDeps = Seq(probably.cli, core)
+//   object core extends Component(polaris.core, serpentine.core, gossamer.core, turbulence.core)
+//   object test extends Tests(probably.cli, core)
 
 object burdock extends Library:
   object boot extends Component
-
-  object core extends Component:
-    def moduleDeps = Seq(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core, hellenism.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core, hellenism.core)
+  object test extends Tests(probably.cli, core)
 
 object caduceus extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(urticose.core, gesticulate.core, honeycomb.core)
-
-  object resend extends Component:
-    def moduleDeps = Seq(core, honeycomb.core, telekinesis.core, jacinta.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(urticose.core, gesticulate.core, honeycomb.core)
+  object resend extends Component(core, honeycomb.core, telekinesis.core, jacinta.core)
+  object test extends Tests(probably.cli, core)
 
 object caesura extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(turbulence.core, escritoire.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(turbulence.core, escritoire.core)
+  object test extends Tests(probably.cli, core)
 
 object camouflage extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(parasite.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(parasite.core)
+  object test extends Tests(probably.cli, core)
 
 object capricious extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(wisteria.core, hypotenuse.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(wisteria.core, hypotenuse.core)
+  object test extends Tests(probably.cli, core)
 
 object cardinality extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(fulminate.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(fulminate.core)
+  object test extends Tests(probably.cli, core)
 
 object cataclysm extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core, anticipation.css, anticipation.html, serpentine.core, anticipation.color, hypotenuse.core, quantitative.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core, anticipation.css, anticipation.html, serpentine.core, anticipation.color, hypotenuse.core, quantitative.core)
+  object test extends Tests(probably.cli, core)
 
 object cellulose extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(eucalyptus.core, chiaroscuro.core, kaleidoscope.core, polyvinyl.core, zephyrine.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(eucalyptus.core, chiaroscuro.core, kaleidoscope.core, polyvinyl.core, zephyrine.core)
+  object test extends Tests(probably.cli, core)
 
 object charisma extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core, hieroglyph.core, hypotenuse.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core, hieroglyph.core, hypotenuse.core)
+  object test extends Tests(probably.cli, core)
 
 object chiaroscuro extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(escapade.core, dendrology.tree, escritoire.core, dissonance.core, larceny.plugin)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(escapade.core, dendrology.tree, escritoire.core, dissonance.core, larceny.plugin)
+  object test extends Tests(probably.cli, core)
 
 object coaxial extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(galilei.core, urticose.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, jacinta.core, superlunary.core)
+  object core extends Component(galilei.core, urticose.core)
+  object test extends Tests(probably.cli, core, jacinta.core, superlunary.core)
 
 object contextual extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core)
+  object test extends Tests(probably.cli, core)
 
 object contingency extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core)
+  object test extends Tests(probably.cli, core)
 
 object cosmopolite extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core)
+  object test extends Tests(probably.cli, core)
 
 object dendrology extends Library:
-  object tree extends Component:
-    def moduleDeps = Seq(gossamer.core)
-
-  object dag extends Component:
-    def moduleDeps = Seq(gossamer.core, acyclicity.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, tree, dag)
+  object tree extends Component(gossamer.core)
+  object dag extends Component(gossamer.core, acyclicity.core)
+  object test extends Tests(probably.cli, tree, dag)
 
 object denominative extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(anticipation.text)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(anticipation.text)
+  object test extends Tests(probably.cli, core)
 
 object digression extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core, contingency.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core, contingency.core)
+  object test extends Tests(probably.cli, core)
 
 object dissonance extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core, contingency.core, turbulence.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core, contingency.core, turbulence.core)
+  object test extends Tests(probably.cli, core)
 
 object distillate extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(contingency.core, digression.core, inimitable.core, wisteria.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, urticose.url)
+  object core extends Component(contingency.core, digression.core, inimitable.core, wisteria.core)
+  object test extends Tests(probably.cli, core, urticose.url)
 
 object diuretic extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(anticipation.path, anticipation.url, anticipation.time)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(anticipation.path, anticipation.url, anticipation.time)
+  object test extends Tests(probably.cli, core)
 
 // object embarcadero extends Library:
-//   object core extends Component:
-//     def moduleDeps = Seq(jacinta.core, telekinesis.core, eucalyptus.core)
-//
-//   object test extends Tests:
-//     def moduleDeps = Seq(probably.cli, core)
+//   object core extends Component(jacinta.core, telekinesis.core, eucalyptus.core)
+//   object test extends Tests(probably.cli, core)
 
 object enigmatic extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gastronomy.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gastronomy.core)
+  object test extends Tests(probably.cli, core)
 
 object escapade extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, hypotenuse.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, hypotenuse.core)
+  object test extends Tests(probably.cli, core)
 
 object escritoire extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core)
+  object test extends Tests(probably.cli, core)
 
 object ethereal extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core)
+  object core extends Component(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core)
 
-  object example extends Component:
-    def moduleDeps = Seq(core, exoskeleton.completions)
+  object example extends Component(core, exoskeleton.completions):
     override def finalMainClass: Task.Simple[String] = "ethereal.run"
 
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object test extends Tests(probably.cli, core)
 
 object eucalyptus extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(turbulence.core, gossamer.core)
-
-  object syslog extends Component:
-    def moduleDeps = Seq(guillotine.core, core)
-
-  object gcp extends Component:
-    def moduleDeps = Seq(jacinta.core, core)
-
-  object ansi extends Component:
-    def moduleDeps = Seq(escapade.core, core, iridescence.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, ansi, core, syslog)
+  object core extends Component(turbulence.core, gossamer.core)
+  object syslog extends Component(guillotine.core, core)
+  object gcp extends Component(jacinta.core, core)
+  object ansi extends Component(escapade.core, core, iridescence.core)
+  object test extends Tests(probably.cli, ansi, core, syslog)
 
 object exoskeleton extends Library:
-  object args extends Component:
-    def moduleDeps = Seq(escapade.core, profanity.core, ambience.core)
+  object args extends Component(escapade.core, profanity.core, ambience.core)
+  object core extends Component(args, galilei.core)
+  object completions extends Component(core)
 
-  object core extends Component:
-    def moduleDeps = Seq(args, galilei.core)
+  object rig extends Component(completions, superlunary.core, ethereal.core, jacinta.core, zeppelin.core, revolution.core, anthology.bundle):
+    def mvnDeps =
+      Seq
+       (mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+        mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object completions extends Component:
-    def moduleDeps = Seq(core)
-
-  object rig extends Tests:
-    def moduleDeps = Seq(completions, superlunary.core, ethereal.core, jacinta.core, zeppelin.core, revolution.core, anthology.bundle)
-    def mvnDeps = Seq(
-      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
-      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
-    )
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, rig)
-    /*def mvnDeps = Seq(
-      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
-      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
-    )*/
+  object test extends Tests(probably.cli, rig)
 
 object feudalism extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core)
+  object test extends Tests(probably.cli, core)
 
 object fulminate extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(
-      anticipation.css,
-      anticipation.http,
-      symbolism.core,
-      anticipation.print,
-      anticipation.http,
-      anticipation.log,
-      proscenium.core
-    )
-
+  object core extends Component(anticipation.css, anticipation.http, symbolism.core, anticipation.print, anticipation.http, anticipation.log, proscenium.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object test extends Tests(probably.cli, core)
 
 object galilei extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(serpentine.core, guillotine.core, nomenclature.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(serpentine.core, guillotine.core, nomenclature.core)
+  object test extends Tests(probably.cli, core)
 
 object gastronomy extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(monotonous.core, turbulence.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(monotonous.core, turbulence.core)
+  object test extends Tests(probably.cli, core)
 
 object geodesy extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core)
+  object test extends Tests(probably.cli, core)
 
 object gesticulate extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core, anticipation.html, turbulence.core, zephyrine.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core, anticipation.html, turbulence.core, zephyrine.core)
+  object test extends Tests(probably.cli, core)
 
 object gossamer extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(mercator.core, hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core, distillate.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, serpentine.core)
+  object core extends Component(mercator.core, hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core, distillate.core)
+  object test extends Tests(probably.cli, core, serpentine.core)
 
 object guillotine extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(contextual.core, anticipation.log, contingency.core, turbulence.core, gossamer.core, ambience.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, galilei.core)
+  object core extends Component(contextual.core, anticipation.log, contingency.core, turbulence.core, gossamer.core, ambience.core)
+  object test extends Tests(probably.cli, core, galilei.core)
 
 object hallucination extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(anticipation.gfx, iridescence.core, gesticulate.core)
-
-  object ansi extends Component:
-    def moduleDeps = Seq(escapade.core, core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, ansi)
+  object core extends Component(anticipation.gfx, iridescence.core, gesticulate.core)
+  object ansi extends Component(escapade.core, core)
+  object test extends Tests(probably.cli, ansi)
 
 object harlequin extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(anthology.scala, gossamer.core)
+  object core extends Component(anthology.scala, gossamer.core):
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object ansi extends Component:
-    def moduleDeps = Seq(core, escapade.core)
-
-  object md extends Component:
-    def moduleDeps = Seq(core, punctuation.html, honeycomb.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, ansi, md)
+  object ansi extends Component(core, escapade.core)
+  object md extends Component(core, punctuation.html, honeycomb.core)
+  object test extends Tests(probably.cli, ansi, md)
 
 object hellenism extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(anticipation.url, ambience.core, galilei.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, turbulence.core)
+  object core extends Component(anticipation.url, ambience.core, galilei.core)
+  object test extends Tests(probably.cli, core, turbulence.core)
 
 object honeycomb extends Library:
-  object core extends Component:
-    def moduleDeps =
-      Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core, typonym.core, adversaria.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core, typonym.core, adversaria.core)
+  object test extends Tests(probably.cli, core)
 
 object hieroglyph extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(kaleidoscope.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(kaleidoscope.core)
+  object test extends Tests(probably.cli, core)
 
 object hyperbole extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(harlequin.ansi, escapade.core, escritoire.core, dendrology.tree, hieroglyph.core)
+  object core extends Component(harlequin.ansi, escapade.core, escritoire.core, dendrology.tree, hieroglyph.core):
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, quantitative.units, mandible.core)
+  object test extends Tests(probably.cli, core, quantitative.units, mandible.core)
 
 object hypotenuse extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(cardinality.core, anticipation.opaque, contingency.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, quantitative.units, abacist.core)
+  object core extends Component(cardinality.core, anticipation.opaque, contingency.core)
+  object test extends Tests(probably.cli, core, quantitative.units, abacist.core)
 
 object imperial extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(anticipation.path, digression.core, guillotine.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(anticipation.path, digression.core, guillotine.core)
+  object test extends Tests(probably.cli, core)
 
 object inimitable extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core, contingency.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core, contingency.core)
+  object test extends Tests(probably.cli, core)
 
 object iridescence extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(contextual.core, anticipation.color, hypotenuse.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(contextual.core, anticipation.color, hypotenuse.core)
+  object test extends Tests(probably.cli, core)
 
 object jacinta extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(merino.core, gossamer.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(merino.core, gossamer.core)
+  object test extends Tests(probably.cli, core)
 
 object kaleidoscope extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core, contingency.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core, contingency.core)
+  object test extends Tests(probably.cli, core)
 
 object larceny extends Library:
-  object plugin extends Component:
-    def moduleDeps = Seq()
+  object plugin extends Component():
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object test extends Tests:
     override def finalMainClass: Task.Simple[String] = "run"
 
 object legerdemain extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(honeycomb.core, anamnesis.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, scintillate.server)
+  object core extends Component(honeycomb.core, anamnesis.core)
+  object test extends Tests(probably.cli, core, scintillate.server)
 
 object mandible extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(hellenism.core, hyperbole.core, escritoire.core)
+  object core extends Component(hellenism.core, hyperbole.core, escritoire.core):
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, revolution.core, quantitative.units)
+  object test extends Tests(probably.cli, core, revolution.core, quantitative.units)
 
 object mercator extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(fulminate.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(fulminate.core)
+  object test extends Tests(probably.cli, core)
 
 object merino extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(turbulence.core, zephyrine.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, sedentary.core, diuretic.core)
+  object core extends Component(turbulence.core, zephyrine.core)
+  object test extends Tests(probably.cli, core, sedentary.core, diuretic.core)
 
 object metamorphose extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(contingency.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(contingency.core)
+  object test extends Tests(probably.cli, core)
 
 object monotonous extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core, hypotenuse.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core, hypotenuse.core)
+  object test extends Tests(probably.cli, core)
 
 object mosquito extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, quantitative.units, core, baroque.core)
+  object core extends Component(gossamer.core)
+  object test extends Tests(probably.cli, quantitative.units, core, baroque.core)
 
 object urticose extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core, hypotenuse.core)
-
-  object url extends Component:
-    def moduleDeps = Seq(escapade.core, serpentine.core, anticipation.html, core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, url)
+  object core extends Component(gossamer.core, hypotenuse.core)
+  object url extends Component(escapade.core, serpentine.core, anticipation.html, core)
+  object test extends Tests(probably.cli, core, url)
 
 object nomenclature extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core)
+  object test extends Tests(probably.cli, core)
 
 object octogenarian extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(guillotine.core, galilei.core, ambience.core, gastronomy.core, urticose.core, enigmatic.core, anticipation.url)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(guillotine.core, galilei.core, ambience.core, gastronomy.core, urticose.core, enigmatic.core, anticipation.url)
+  object test extends Tests(probably.cli, core)
 
 object panopticon extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core)
+  object test extends Tests(probably.cli, core)
 
 object parasite extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(digression.core, mercator.core, anticipation.time, feudalism.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, quantitative.units)
+  object core extends Component(digression.core, mercator.core, anticipation.time, feudalism.core)
+  object test extends Tests(probably.cli, core, quantitative.units)
 
 /*object perihelion extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(telekinesis.core, scintillate.server, gastronomy.core, eucalyptus.core)
+  object core extends Component(telekinesis.core, scintillate.server, gastronomy.core, eucalyptus.core)
 
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object test extends Tests(probably.cli, core)
 }*/
 
 object phoenicia extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(hypotenuse.core, turbulence.core, quantitative.core, polaris.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(hypotenuse.core, turbulence.core, quantitative.core, polaris.core)
+  object test extends Tests(probably.cli, core)
 
 object plutocrat extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(anticipation.opaque, hypotenuse.core, gossamer.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(anticipation.opaque, hypotenuse.core, gossamer.core)
+  object test extends Tests(probably.cli, core)
 
 object polaris extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(hypotenuse.core, wisteria.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(hypotenuse.core, wisteria.core)
+  object test extends Tests(probably.cli, core)
 
 object polyvinyl extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core)
+  object test extends Tests(probably.cli, core)
 
 object prepositional extends Library:
   object core extends Component
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object test extends Tests(probably.cli, core)
 
 object proscenium extends Library:
   object core extends Component
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object test extends Tests(probably.cli, core)
 
 object probably extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core, chiaroscuro.core, ambience.core, turbulence.core, eucalyptus.core, coverage)
+  object core extends Component(gossamer.core, chiaroscuro.core, ambience.core, turbulence.core, eucalyptus.core, coverage):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object cli extends Component:
-    def moduleDeps = Seq(core, escritoire.core, larceny.plugin)
-
-  object coverage extends Component:
-    def moduleDeps = Seq(gossamer.core, dendrology.tree, digression.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(cli)
+  object cli extends Component(core, escritoire.core, larceny.plugin)
+  object coverage extends Component(gossamer.core, dendrology.tree, digression.core)
+  object test extends Tests(cli)
 
 object profanity extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(eucalyptus.core, diuretic.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(eucalyptus.core, diuretic.core)
+  object test extends Tests(probably.cli, core)
 
 object punctuation extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core, turbulence.core, honeycomb.core)
+  object core extends Component(gossamer.core, turbulence.core, honeycomb.core):
     def mvnDeps = Seq(mvn"org.commonmark:commonmark:0.27.0")
 
-  object html extends Component:
-    def moduleDeps = Seq(core, honeycomb.core)
-
-  object ansi extends Component:
-    def moduleDeps = Seq(core, escapade.core, harlequin.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
+  object html extends Component(core, honeycomb.core)
+  object ansi extends Component(core, escapade.core, harlequin.core)
+  object test extends Tests(probably.cli, core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
 
 object quantitative extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time, probably.core)
-  object units extends Component:
-    def moduleDeps = Seq(core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, units)
+  object core extends Component(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time, probably.core)
+  object units extends Component(core)
+  object test extends Tests(probably.cli, core, units)
 
 object revolution extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(serpentine.core, turbulence.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(serpentine.core, turbulence.core)
+  object test extends Tests(probably.cli, core)
 
 object rudiments extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(
+  object core extends Component(
       anticipation.css,
       anticipation.http,
       anticipation.text,
@@ -1068,196 +744,126 @@ object rudiments extends Library:
       proscenium.core
     )
 
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, abacist.core, quantitative.units)
+  object test extends Tests(probably.cli, core, abacist.core, quantitative.units)
 
 object satirical extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core, turbulence.core, zephyrine.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core, turbulence.core, zephyrine.core)
+  object test extends Tests(probably.cli, core)
 
 object savagery extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(cataclysm.core, xylophone.core, quantitative.core, iridescence.core, geodesy.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(cataclysm.core, xylophone.core, quantitative.core, iridescence.core, geodesy.core)
+  object test extends Tests(probably.cli, core)
 
 object scintillate extends Library:
-  object server extends Component:
-    def moduleDeps = Seq(telekinesis.core, hellenism.core)
+  object server extends Component(telekinesis.core, hellenism.core)
 
-  object servlet extends Component:
-    def moduleDeps = Seq(server)
+  object servlet extends Component(server):
     def mvnDeps = Seq(mvn"jakarta.servlet:jakarta.servlet-api:6.0.0")
 
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, server, servlet)
+  object test extends Tests(probably.cli, server, servlet)
 
 object sedentary extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(probably.core, superlunary.jvm, anthology.bundle, urticose.url, diuretic.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, quantitative.units)
+  object core extends Component(probably.core, superlunary.jvm, anthology.bundle, urticose.url, diuretic.core)
+  object test extends Tests(probably.cli, core, quantitative.units)
 
 object serpentine extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gossamer.core, nomenclature.core, ambience.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gossamer.core, nomenclature.core, ambience.core)
+  object test extends Tests(probably.cli, core)
 
 object spectacular extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core, stenography.core, inimitable.core, contingency.core, wisteria.core, digression.core)
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core, stenography.core, inimitable.core, contingency.core, wisteria.core, digression.core)
+  object test extends Tests(probably.cli, core)
 
 object stenography extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core)
-    def mvnDeps = Seq(
-      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
-    )
+  object core extends Component(rudiments.core):
+    def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object test extends Tests(probably.cli, core)
 
 object superlunary extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(anticipation.css, symbolism.core, anticipation.text, anticipation.http, jacinta.core, inimitable.core, gastronomy.core, ambience.core, hellenism.core, anthology.scala, austronesian.core)
+  object core extends Component(anticipation.css, symbolism.core, anticipation.text, anticipation.http, jacinta.core, inimitable.core, gastronomy.core, ambience.core, hellenism.core, anthology.scala, austronesian.core):
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
 
-  object jvm extends Component:
-    def moduleDeps = Seq(core, eucalyptus.core)
+  object jvm extends Component(core, eucalyptus.core):
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
 
-  object test extends Component:
-    def moduleDeps = Seq(probably.cli, jvm)
+  object test extends Component(probably.cli, jvm):
     override def finalMainClass: Task.Simple[String] = "superlunary.run"
 
 object surveillance extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(anticipation.path, eucalyptus.core, feudalism.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(anticipation.path, eucalyptus.core, feudalism.core)
+  object test extends Tests(probably.cli, core)
 
 object symbolism extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(prepositional.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(prepositional.core)
+  object test extends Tests(probably.cli, core)
 
 object tarantula extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(jacinta.core, telekinesis.core, guillotine.core, cataclysm.core, honeycomb.core, hallucination.core, diuretic.core, eucalyptus.core, gastronomy.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(jacinta.core, telekinesis.core, guillotine.core, cataclysm.core, honeycomb.core, hallucination.core, diuretic.core, eucalyptus.core, gastronomy.core)
+  object test extends Tests(probably.cli, core)
 
 object telekinesis extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(monotonous.core, gesticulate.core, urticose.url, coaxial.core, legerdemain.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(monotonous.core, gesticulate.core, urticose.url, coaxial.core, legerdemain.core)
+  object test extends Tests(probably.cli, core)
 
 object turbulence extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(hieroglyph.core, parasite.core, capricious.core, stenography.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(hieroglyph.core, parasite.core, capricious.core, stenography.core)
+  object test extends Tests(probably.cli, core)
 
 object typonym extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(proscenium.core, prepositional.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(proscenium.core, prepositional.core)
+  object test extends Tests(probably.cli, core)
 
 object ulysses extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(gastronomy.core, cardinality.core, hypotenuse.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(gastronomy.core, cardinality.core, hypotenuse.core)
+  object test extends Tests(probably.cli, core)
 
 object umbrageous extends Library:
-  object plugin extends Component:
-    def moduleDeps = Seq()
+  object plugin extends Component():
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, plugin)
+  object test extends Tests(probably.cli, plugin)
 
 object vacuous extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(fulminate.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(fulminate.core)
+  object test extends Tests(probably.cli, core)
 
 object vexillology extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(hypotenuse.core, distillate.core)
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(hypotenuse.core, distillate.core)
+  object test extends Tests(probably.cli, core)
 
 object vicarious extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(rudiments.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(rudiments.core)
+  object test extends Tests(probably.cli, core)
 
 object wisteria extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(contingency.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(contingency.core)
+  object test extends Tests(probably.cli, core)
 
 object xylophone extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(wisteria.core, gossamer.core, turbulence.core, zephyrine.core, adversaria.core, typonym.core, hellenism.core, serpentine.core, urticose.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(wisteria.core, gossamer.core, turbulence.core, zephyrine.core, adversaria.core, typonym.core, hellenism.core, serpentine.core, urticose.core)
+  object test extends Tests(probably.cli, core)
 
 object yossarian extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(iridescence.core, contingency.core, kaleidoscope.core, gossamer.core, turbulence.core, denominative.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object core extends Component(iridescence.core, contingency.core, kaleidoscope.core, gossamer.core, turbulence.core, denominative.core)
+  object test extends Tests(probably.cli, core)
 
 object zephyrine extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(hieroglyph.core, hypotenuse.core)
+  object core extends Component(hieroglyph.core, hypotenuse.core):
     override def scalacOptions = settings.scalaOptionsCC
 
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core)
+  object test extends Tests(probably.cli, core):
     override def scalacOptions = settings.scalaOptionsCC
 
 object zeppelin extends Library:
-  object core extends Component:
-    def moduleDeps = Seq(galilei.core, zephyrine.core)
-
-  object test extends Tests:
-    def moduleDeps = Seq(probably.cli, core, imperial.core, diuretic.core)
+  object core extends Component(galilei.core, zephyrine.core)
+  object test extends Tests(probably.cli, core, imperial.core, diuretic.core)
 
 object publishing extends Module:
   def local(localIvyRepo: String = null): Command[Unit] = Task.Command:
