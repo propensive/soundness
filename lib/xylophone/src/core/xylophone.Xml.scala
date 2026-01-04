@@ -68,7 +68,7 @@ import textSanitizers.skip
 import scala.annotation.tailrec
 
 object Xml extends Tag.Container
-         (label = "xml", admissible = Set("head", "body")), Format, Xml2:
+         (label = "xml", admissible = Set("head", "body")), Format:
   type Topic = "xml"
   type Transport = "head" | "body"
 
@@ -82,6 +82,16 @@ object Xml extends Tag.Container
     case _                                     =>  abort(XmlError())
 
   case class attribute() extends StaticAnnotation
+
+  case class Attribute(label: Text, elements: Set[Text], global: Boolean):
+    type Self <: Label
+    type Topic
+    type Plane <: Label
+
+    def targets(tag: Text): Boolean = global || elements(tag)
+
+    def merge(that: Attribute): Attribute =
+      Attribute(label, elements ++ that.elements, global || that.global)
 
   def header: Header = Header("1.0", Unset, Unset)
 
