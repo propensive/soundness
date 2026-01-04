@@ -42,7 +42,7 @@ jobs:
 
       - name: Publish to Maven Central
         id: publish
-        run: ./mill mill.contrib.sonatypecentral.SonatypeCentralPublishModule/publishAll --publishArtifacts __.publishArtifacts --shouldRelease true --bundleName "dev.soundness-soundness:${{ github.ref_name }}"
+        run: ./mill mill.javalib.SonatypeCentralPublishModule/publishAll --publishArtifacts __.publishArtifacts --shouldRelease true --bundleName "dev.soundness-soundness:${{ github.ref_name }}"
         env:
           MILL_SONATYPE_USERNAME: ${{ secrets.MILL_SONATYPE_USERNAME }}
           MILL_SONATYPE_PASSWORD: ${{ secrets.MILL_SONATYPE_PASSWORD }}
