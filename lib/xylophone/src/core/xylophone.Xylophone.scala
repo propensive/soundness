@@ -312,9 +312,9 @@ object Xylophone:
                 ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => ConstantType(StringConstant(attribute.s)).asType.absolve match
                     case '[attribute] =>
-                      Expr.summon[attribute is Xml.Attribute] match
+                      Expr.summon[attribute is Xml.XmlAttribute] match
                         case Some('{ type result;
-                                     $typeclass: Xml.Attribute { type Topic = result } }) =>
+                                     $typeclass: Xml.XmlAttribute { type Topic = result } }) =>
 
                           Expr.summon[(? >: value) is Attributive to result] match
                             case Some('{$attributive}) =>
@@ -324,7 +324,12 @@ object Xylophone:
                               halt(m"""${TypeRepr.of[value].show} cannot be attributed to an attribute of ${Syntax(TypeRepr.of[result]).show}""")
 
                         case _ =>
-                          halt(m"the attribute $attribute cannot be used on the element <$tag>")
+                          expr match
+                            case '{$expr: Text} =>
+                              expr
+
+                            case _ =>
+                              halt(m"the attribute $attribute cannot be used on the element <$tag>")
 
               case Hole.Element(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match
@@ -485,9 +490,9 @@ object Xylophone:
                       if key == "" then panic(m"Empty key")
                       else ConstantType(StringConstant(key)).asType.absolve match
                         case '[type key <: Label; key] =>
-                          Expr.summon[key is Xml.Attribute in form on (? >: topic)]
-                          . orElse(Expr.summon[key is Xml.Attribute in form]) match
-                            case Some('{ type result; $expr: Xml.Attribute { type Topic = result } }) =>
+                          Expr.summon[key is Xml.XmlAttribute in form on (? >: topic)]
+                          . orElse(Expr.summon[key is Xml.XmlAttribute in form]) match
+                            case Some('{ type result; $expr: Xml.XmlAttribute { type Topic = result } }) =>
                               Expr.summon[(? >: value) is Attributive to result] match
                                 case Some('{ $converter: Attributive }) =>
                                   '{$converter.attribute(${Expr(key.tt)}, $value)}

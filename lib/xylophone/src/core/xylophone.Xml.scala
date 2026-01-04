@@ -83,15 +83,15 @@ object Xml extends Tag.Container
 
   case class attribute() extends StaticAnnotation
 
-  case class Attribute(label: Text, elements: Set[Text], global: Boolean):
+  case class XmlAttribute(label: Text, elements: Set[Text], global: Boolean):
     type Self <: Label
     type Topic
     type Plane <: Label
 
     def targets(tag: Text): Boolean = global || elements(tag)
 
-    def merge(that: Attribute): Attribute =
-      Attribute(label, elements ++ that.elements, global || that.global)
+    def merge(that: XmlAttribute): XmlAttribute =
+      XmlAttribute(label, elements ++ that.elements, global || that.global)
 
   def header: Header = Header("1.0", Unset, Unset)
 
@@ -253,7 +253,8 @@ object Xml extends Tag.Container
           case (key, value) => t"""$key="$value""""
         . join(t" ", t" ", t"")
 
-      t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
+      if children.nil then t"<$tagname$tagContent/>"
+      else t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
 
 
   private enum Token:
@@ -426,20 +427,25 @@ object Xml extends Tag.Container
           fail(Unexpected(chr))
 
     @tailrec
-    def key(mark: Mark, dictionary: Dictionary[Xml.Attribute])(using Cursor.Held): Xml.Attribute =
-      cursor.lay(fail(ExpectedMore)):
-        case chr if chr.isLetter || chr == '-' => dictionary(chr.minuscule) match
-          case Dictionary.Empty =>  fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
-          case dictionary       =>  next() yet key(mark, dictionary)
+    def key(mark: Mark, dictionary: Optional[Dictionary[XmlAttribute]])(using Cursor.Held)
+    : XmlAttribute =
+        cursor.lay(fail(ExpectedMore)):
+          case chr if chr.isLetter || chr == '-' => dictionary.let(_(chr.minuscule)) match
+            case Unset            =>  next() yet key(mark, Unset)
+            case Dictionary.Empty =>  fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
+            case dictionary       =>  next() yet key(mark, dictionary)
 
-        case ' ' | Ff | Lf | Cr | Ht | '=' | '>' =>
-          dictionary.element.or:
-            val name = cursor.grab(mark, cursor.mark)
-            cursor.cue(mark)
-            fail(UnknownAttribute(name))
+          case ' ' | Ff | Lf | Cr | Ht | '=' | '>' =>
+            dictionary.let: dictionary =>
+              dictionary.element.or:
+                val name = cursor.grab(mark, cursor.mark)
+                cursor.cue(mark)
+                fail(UnknownAttribute(name))
+            . or:
+                XmlAttribute(cursor.grab(mark, cursor.mark), Set(), true)
 
-        case chr =>
-          fail(Unexpected(chr))
+          case chr =>
+            fail(Unexpected(chr))
 
     @tailrec
     def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
@@ -483,10 +489,11 @@ object Xml extends Tag.Container
                             next()
                             skip()
                             attributes(tag, entries.updated(t"\u0000", t""))
-          case _         =>
+          case _ =>
             val key2 =
-              key(cursor.mark, schema.attributes).tap: key =>
-                if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
+              key(cursor.mark, schema.attributes.unless(schema.freeform)).tap: key =>
+                if !schema.freeform && !key.targets(tag)
+                then fail(InvalidAttributeUse(key.label, tag))
               . label
 
             if entries.has(key2) then fail(DuplicateAttribute(key2))
@@ -507,9 +514,10 @@ object Xml extends Tag.Container
       case '#'   => next() yet numericEntity(mark)
       case other => textEntity(mark, schema.entities)
 
-    def numericEntity(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail(ExpectedMore)):
-      case 'x' => next() yet hexEntity(mark, 0)
-      case _   => decimalEntity(mark, 0)
+    def numericEntity(mark: Mark)(using Cursor.Held): Optional[Text] =
+      cursor.lay(fail(ExpectedMore)):
+        case 'x' => next() yet hexEntity(mark, 0)
+        case _   => decimalEntity(mark, 0)
 
     @tailrec
     def hexEntity(mark: Mark, value: Int)(using Cursor.Held): Optional[Text] =
@@ -651,11 +659,14 @@ object Xml extends Tag.Container
           case chr =>
             fail(Unexpected(chr))
 
-      case '/'  =>  next()
-                    content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
-                    Token.Close
+      case '/'  =>
+        next()
+        content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
+        Token.Close
 
-      case Nul => fail(BadInsertion)
+      case Nul =>
+        fail(BadInsertion)
+
       case chr =>
         content = cursor.hold(tagname(cursor.mark, schema.elements.unless(schema.freeform)).label)
         extra = cursor.hold(attributes(content))
@@ -840,13 +851,14 @@ extends Node, Topical, Transportive:
     ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
 
 
-  def selectDynamic(name: Label)(using attribute: name.type is Xml.Attribute on Topic in Form)
+  def selectDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute on Topic in Form)
   : Optional[Text] =
 
       attributes.at(name.tt)
 
 
-  def updateDynamic(name: Label)(using attribute: name.type is Xml.Attribute in Form)(value: Text)
+  def updateDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute in Form)
+       (value: Text)
   : Element of Topic over Transport in Form =
 
       Element(label, attributes.updated(name, value), children)
