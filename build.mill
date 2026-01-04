@@ -119,16 +119,16 @@ trait BaseScalaModule extends ScalaModule:
     developers = Seq(Developer("propensive", "Jon Pretty", "https://github.com/propensive"))
   ))
 
-trait SoundnessModule extends Module:
+trait Library extends Module:
   def moduleDir = super.moduleDir / ".." / "lib" / super.moduleDir.last / "src"
 
-trait SoundnessSubModule extends BaseScalaModule with SonatypeCentralPublishModule:
+trait Component extends BaseScalaModule with SonatypeCentralPublishModule:
   def moduleId: String = moduleDir.last
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def sources = Task.Sources(moduleDir)
 
-trait ProbablyTestModule extends BaseScalaModule:
+trait Tests extends BaseScalaModule:
   def moduleId: String = moduleDir.last
   def finalMainClass = (moduleDir / ".." / "..").last + ".Tests"
   def moduleDeps: Seq[ScalaModule] = Seq(probably.cli)
@@ -148,7 +148,7 @@ trait ProbablyTestModule extends BaseScalaModule:
 
   def consoleScalacOptions = scalacOptions()
 
-trait SoundnessGroupModule extends BaseScalaModule with PublishModule:
+trait Bundle extends BaseScalaModule with PublishModule:
   def sources = Task.Sources()
 
 // ------------------------ GROUPS ------------------------
@@ -156,7 +156,7 @@ object soundness extends ScalaModule:
   def scalaVersion = settings.scalaVersion
   def moduleDeps = Seq()
 
-  object base extends SoundnessGroupModule:
+  object base extends Bundle:
     def moduleDeps = Seq(ambience.core, aviation.core, contextual.core,
         contingency.core, denominative.core, digression.core, diuretic.core, feudalism.core,
         fulminate.core, hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core,
@@ -165,41 +165,41 @@ object soundness extends ScalaModule:
         prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
         typonym.core, zephyrine.core)
 
-  object cli extends SoundnessGroupModule:
+  object cli extends Bundle:
     def moduleDeps = Seq(burdock.boot, burdock.core, dendrology.tree, dendrology.dag, exoskeleton.completions,
         escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi, eucalyptus.syslog,
         guillotine.core, escapade.core, imperial.core, profanity.core, surveillance.core,
         punctuation.ansi, hallucination.ansi)
 
-  object data extends SoundnessGroupModule:
+  object data extends Bundle:
     def moduleDeps = Seq(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
         gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core,
         panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core,
         zeppelin.core, xylophone.core, anamnesis.core)
 
-  object sci extends SoundnessGroupModule:
+  object sci extends Bundle:
     def moduleDeps = Seq(abacist.core, acyclicity.core, baroque.core, cardinality.core,
         charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
         quantitative.core)
 
-  object test extends SoundnessGroupModule:
+  object test extends Bundle:
     def moduleDeps = Seq(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
         superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm,
         mandible.core)
 
-  object tool extends SoundnessGroupModule:
+  object tool extends Bundle:
     def moduleDeps = Seq(anthology.core, harlequin.core, hellenism.core, hyperbole.core,
         octogenarian.core, revolution.core, umbrageous.plugin, anthology.java, harlequin.md,
         harlequin.ansi, austronesian.core)
 
-  object web extends SoundnessGroupModule:
+  object web extends Bundle:
     def moduleDeps = Seq(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
         honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
         punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
         telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
         legerdemain.core, caduceus.core, caduceus.resend)
 
-  object all extends SoundnessGroupModule:
+  object all extends Bundle:
     def moduleDeps = Seq(base, cli, data, sci, test, tool, web)
 
 object test extends ScalaModule:
@@ -344,366 +344,366 @@ object test extends ScalaModule:
 
 // ------------------------ MODULES ------------------------
 
-object abacist extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object abacist extends Library:
+  object core extends Component:
     def moduleDeps = Seq(quantitative.units)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object acyclicity extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object acyclicity extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object adversaria extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object adversaria extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object ambience extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object ambience extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object anamnesis extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object anamnesis extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core, contingency.core, distillate.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object anthology extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object anthology extends Library:
+  object core extends Component:
     def moduleDeps = Seq(hellenism.core)
 
-  object `scala` extends SoundnessSubModule:
+  object `scala` extends Component:
     def moduleDeps = Seq(core, anticipation.log, ambience.core, galilei.core)
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object `java` extends SoundnessSubModule:
+  object `java` extends Component:
     def moduleDeps = Seq(galilei.core, ambience.core, core, anticipation.log)
 
-  object bundle extends SoundnessSubModule:
+  object bundle extends Component:
     def moduleDeps = Seq(core, zeppelin.core, hellenism.core, galilei.core, revolution.core, eucalyptus.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, `scala`, `java`, core)
 
-object anticipation extends SoundnessModule:
-  object generic extends SoundnessSubModule:
+object anticipation extends Library:
+  object generic extends Component:
     def moduleDeps = Seq(prepositional.core)
 
-  object text extends SoundnessSubModule:
+  object text extends Component:
     def moduleDeps = Seq(symbolism.core)
 
-  object opaque extends SoundnessSubModule:
+  object opaque extends Component:
     def moduleDeps = Seq(text)
 
-  object gfx extends SoundnessSubModule:
+  object gfx extends Component:
     def moduleDeps = Seq(prepositional.core)
 
-  object css extends SoundnessSubModule:
+  object css extends Component:
     def moduleDeps = Seq(text, generic)
 
-  object url extends SoundnessSubModule:
+  object url extends Component:
     def moduleDeps = Seq(text, generic)
 
-  object html extends SoundnessSubModule:
+  object html extends Component:
     def moduleDeps = Seq(text, generic)
 
-  object print extends SoundnessSubModule:
+  object print extends Component:
     def moduleDeps = Seq(text)
 
-  object http extends SoundnessSubModule:
+  object http extends Component:
     def moduleDeps = Seq(text, codec, generic)
 
-  object codec extends SoundnessSubModule:
+  object codec extends Component:
     def moduleDeps = Seq(text)
 
-  object color extends SoundnessSubModule:
+  object color extends Component:
     def moduleDeps = Seq(prepositional.core)
 
-  object log extends SoundnessSubModule:
+  object log extends Component:
     def moduleDeps = Seq(text)
 
-  object path extends SoundnessSubModule:
+  object path extends Component:
     def moduleDeps = Seq(text, generic)
 
-  object time extends SoundnessSubModule:
+  object time extends Component:
     def moduleDeps = Seq(generic)
 
-  object test extends ProbablyTestModule
+  object test extends Tests
 
-object austronesian extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object austronesian extends Library:
+  object core extends Component:
     def moduleDeps = Seq(wisteria.core, distillate.core, probably.core, hellenism.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object aviation extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object aviation extends Library:
+  object core extends Component:
     def moduleDeps = Seq(abacist.core, quantitative.units)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object baroque extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object baroque extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core, quantitative.core, geodesy.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, abacist.core, quantitative.units, mosquito.core)
 
-// object bitumen extends SoundnessModule:
-//   object core extends SoundnessSubModule:
+// object bitumen extends Library:
+//   object core extends Component:
 //     def moduleDeps = Seq(polaris.core, serpentine.core, gossamer.core, turbulence.core)
 //
-//   object test extends ProbablyTestModule:
+//   object test extends Tests:
 //     def moduleDeps = Seq(probably.cli, core)
 
-object burdock extends SoundnessModule:
-  object boot extends SoundnessSubModule
+object burdock extends Library:
+  object boot extends Component
 
-  object core extends SoundnessSubModule:
+  object core extends Component:
     def moduleDeps = Seq(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core, hellenism.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object caduceus extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object caduceus extends Library:
+  object core extends Component:
     def moduleDeps = Seq(urticose.core, gesticulate.core, honeycomb.core)
 
-  object resend extends SoundnessSubModule:
+  object resend extends Component:
     def moduleDeps = Seq(core, honeycomb.core, telekinesis.core, jacinta.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object caesura extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object caesura extends Library:
+  object core extends Component:
     def moduleDeps = Seq(turbulence.core, escritoire.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object camouflage extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object camouflage extends Library:
+  object core extends Component:
     def moduleDeps = Seq(parasite.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object capricious extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object capricious extends Library:
+  object core extends Component:
     def moduleDeps = Seq(wisteria.core, hypotenuse.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object cardinality extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object cardinality extends Library:
+  object core extends Component:
     def moduleDeps = Seq(fulminate.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object cataclysm extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object cataclysm extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core, anticipation.css, anticipation.html, serpentine.core, anticipation.color, hypotenuse.core, quantitative.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object cellulose extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object cellulose extends Library:
+  object core extends Component:
     def moduleDeps = Seq(eucalyptus.core, chiaroscuro.core, kaleidoscope.core, polyvinyl.core, zephyrine.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object charisma extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object charisma extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core, hieroglyph.core, hypotenuse.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object chiaroscuro extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object chiaroscuro extends Library:
+  object core extends Component:
     def moduleDeps = Seq(escapade.core, dendrology.tree, escritoire.core, dissonance.core, larceny.plugin)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object coaxial extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object coaxial extends Library:
+  object core extends Component:
     def moduleDeps = Seq(galilei.core, urticose.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, jacinta.core, superlunary.core)
 
-object contextual extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object contextual extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object contingency extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object contingency extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object cosmopolite extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object cosmopolite extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object dendrology extends SoundnessModule:
-  object tree extends SoundnessSubModule:
+object dendrology extends Library:
+  object tree extends Component:
     def moduleDeps = Seq(gossamer.core)
 
-  object dag extends SoundnessSubModule:
+  object dag extends Component:
     def moduleDeps = Seq(gossamer.core, acyclicity.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, tree, dag)
 
-object denominative extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object denominative extends Library:
+  object core extends Component:
     def moduleDeps = Seq(anticipation.text)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object digression extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object digression extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core, contingency.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object dissonance extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object dissonance extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core, contingency.core, turbulence.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object distillate extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object distillate extends Library:
+  object core extends Component:
     def moduleDeps = Seq(contingency.core, digression.core, inimitable.core, wisteria.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, urticose.url)
 
-object diuretic extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object diuretic extends Library:
+  object core extends Component:
     def moduleDeps = Seq(anticipation.path, anticipation.url, anticipation.time)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-// object embarcadero extends SoundnessModule:
-//   object core extends SoundnessSubModule:
+// object embarcadero extends Library:
+//   object core extends Component:
 //     def moduleDeps = Seq(jacinta.core, telekinesis.core, eucalyptus.core)
 //
-//   object test extends ProbablyTestModule:
+//   object test extends Tests:
 //     def moduleDeps = Seq(probably.cli, core)
 
-object enigmatic extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object enigmatic extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gastronomy.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object escapade extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object escapade extends Library:
+  object core extends Component:
     def moduleDeps = Seq(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, hypotenuse.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object escritoire extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object escritoire extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object ethereal extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object ethereal extends Library:
+  object core extends Component:
     def moduleDeps = Seq(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core)
 
-  object example extends SoundnessSubModule:
+  object example extends Component:
     def moduleDeps = Seq(core, exoskeleton.completions)
     override def finalMainClass: Task.Simple[String] = "ethereal.run"
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object eucalyptus extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object eucalyptus extends Library:
+  object core extends Component:
     def moduleDeps = Seq(turbulence.core, gossamer.core)
 
-  object syslog extends SoundnessSubModule:
+  object syslog extends Component:
     def moduleDeps = Seq(guillotine.core, core)
 
-  object gcp extends SoundnessSubModule:
+  object gcp extends Component:
     def moduleDeps = Seq(jacinta.core, core)
 
-  object ansi extends SoundnessSubModule:
+  object ansi extends Component:
     def moduleDeps = Seq(escapade.core, core, iridescence.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, ansi, core, syslog)
 
-object exoskeleton extends SoundnessModule:
-  object args extends SoundnessSubModule:
+object exoskeleton extends Library:
+  object args extends Component:
     def moduleDeps = Seq(escapade.core, profanity.core, ambience.core)
 
-  object core extends SoundnessSubModule:
+  object core extends Component:
     def moduleDeps = Seq(args, galilei.core)
 
-  object completions extends SoundnessSubModule:
+  object completions extends Component:
     def moduleDeps = Seq(core)
 
-  object rig extends ProbablyTestModule:
+  object rig extends Tests:
     def moduleDeps = Seq(completions, superlunary.core, ethereal.core, jacinta.core, zeppelin.core, revolution.core, anthology.bundle)
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, rig)
     /*def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )*/
 
-object feudalism extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object feudalism extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object fulminate extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object fulminate extends Library:
+  object core extends Component:
     def moduleDeps = Seq(
       anticipation.css,
       anticipation.http,
@@ -716,344 +716,344 @@ object fulminate extends SoundnessModule:
 
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object galilei extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object galilei extends Library:
+  object core extends Component:
     def moduleDeps = Seq(serpentine.core, guillotine.core, nomenclature.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object gastronomy extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object gastronomy extends Library:
+  object core extends Component:
     def moduleDeps = Seq(monotonous.core, turbulence.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object geodesy extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object geodesy extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object gesticulate extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object gesticulate extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core, anticipation.html, turbulence.core, zephyrine.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object gossamer extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object gossamer extends Library:
+  object core extends Component:
     def moduleDeps = Seq(mercator.core, hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core, distillate.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, serpentine.core)
 
-object guillotine extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object guillotine extends Library:
+  object core extends Component:
     def moduleDeps = Seq(contextual.core, anticipation.log, contingency.core, turbulence.core, gossamer.core, ambience.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, galilei.core)
 
-object hallucination extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object hallucination extends Library:
+  object core extends Component:
     def moduleDeps = Seq(anticipation.gfx, iridescence.core, gesticulate.core)
 
-  object ansi extends SoundnessSubModule:
+  object ansi extends Component:
     def moduleDeps = Seq(escapade.core, core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, ansi)
 
-object harlequin extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object harlequin extends Library:
+  object core extends Component:
     def moduleDeps = Seq(anthology.scala, gossamer.core)
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object ansi extends SoundnessSubModule:
+  object ansi extends Component:
     def moduleDeps = Seq(core, escapade.core)
 
-  object md extends SoundnessSubModule:
+  object md extends Component:
     def moduleDeps = Seq(core, punctuation.html, honeycomb.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, ansi, md)
 
-object hellenism extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object hellenism extends Library:
+  object core extends Component:
     def moduleDeps = Seq(anticipation.url, ambience.core, galilei.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, turbulence.core)
 
-object honeycomb extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object honeycomb extends Library:
+  object core extends Component:
     def moduleDeps =
       Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core, typonym.core, adversaria.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object hieroglyph extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object hieroglyph extends Library:
+  object core extends Component:
     def moduleDeps = Seq(kaleidoscope.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object hyperbole extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object hyperbole extends Library:
+  object core extends Component:
     def moduleDeps = Seq(harlequin.ansi, escapade.core, escritoire.core, dendrology.tree, hieroglyph.core)
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, quantitative.units, mandible.core)
 
-object hypotenuse extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object hypotenuse extends Library:
+  object core extends Component:
     def moduleDeps = Seq(cardinality.core, anticipation.opaque, contingency.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, quantitative.units, abacist.core)
 
-object imperial extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object imperial extends Library:
+  object core extends Component:
     def moduleDeps = Seq(anticipation.path, digression.core, guillotine.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object inimitable extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object inimitable extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core, contingency.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object iridescence extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object iridescence extends Library:
+  object core extends Component:
     def moduleDeps = Seq(contextual.core, anticipation.color, hypotenuse.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object jacinta extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object jacinta extends Library:
+  object core extends Component:
     def moduleDeps = Seq(merino.core, gossamer.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object kaleidoscope extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object kaleidoscope extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core, contingency.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object larceny extends SoundnessModule:
-  object plugin extends SoundnessSubModule:
+object larceny extends Library:
+  object plugin extends Component:
     def moduleDeps = Seq()
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     override def finalMainClass: Task.Simple[String] = "run"
 
-object legerdemain extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object legerdemain extends Library:
+  object core extends Component:
     def moduleDeps = Seq(honeycomb.core, anamnesis.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, scintillate.server)
 
-object mandible extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object mandible extends Library:
+  object core extends Component:
     def moduleDeps = Seq(hellenism.core, hyperbole.core, escritoire.core)
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, revolution.core, quantitative.units)
 
-object mercator extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object mercator extends Library:
+  object core extends Component:
     def moduleDeps = Seq(fulminate.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object merino extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object merino extends Library:
+  object core extends Component:
     def moduleDeps = Seq(turbulence.core, zephyrine.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, sedentary.core, diuretic.core)
 
-object metamorphose extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object metamorphose extends Library:
+  object core extends Component:
     def moduleDeps = Seq(contingency.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object monotonous extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object monotonous extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core, hypotenuse.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object mosquito extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object mosquito extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, quantitative.units, core, baroque.core)
 
-object urticose extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object urticose extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core, hypotenuse.core)
 
-  object url extends SoundnessSubModule:
+  object url extends Component:
     def moduleDeps = Seq(escapade.core, serpentine.core, anticipation.html, core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, url)
 
-object nomenclature extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object nomenclature extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object octogenarian extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object octogenarian extends Library:
+  object core extends Component:
     def moduleDeps = Seq(guillotine.core, galilei.core, ambience.core, gastronomy.core, urticose.core, enigmatic.core, anticipation.url)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object panopticon extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object panopticon extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object parasite extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object parasite extends Library:
+  object core extends Component:
     def moduleDeps = Seq(digression.core, mercator.core, anticipation.time, feudalism.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, quantitative.units)
 
-/*object perihelion extends SoundnessModule:
-  object core extends SoundnessSubModule:
+/*object perihelion extends Library:
+  object core extends Component:
     def moduleDeps = Seq(telekinesis.core, scintillate.server, gastronomy.core, eucalyptus.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 }*/
 
-object phoenicia extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object phoenicia extends Library:
+  object core extends Component:
     def moduleDeps = Seq(hypotenuse.core, turbulence.core, quantitative.core, polaris.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object plutocrat extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object plutocrat extends Library:
+  object core extends Component:
     def moduleDeps = Seq(anticipation.opaque, hypotenuse.core, gossamer.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object polaris extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object polaris extends Library:
+  object core extends Component:
     def moduleDeps = Seq(hypotenuse.core, wisteria.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object polyvinyl extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object polyvinyl extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object prepositional extends SoundnessModule:
-  object core extends SoundnessSubModule
+object prepositional extends Library:
+  object core extends Component
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object proscenium extends SoundnessModule:
-  object core extends SoundnessSubModule
+object proscenium extends Library:
+  object core extends Component
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object probably extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object probably extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core, chiaroscuro.core, ambience.core, turbulence.core, eucalyptus.core, coverage)
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object cli extends SoundnessSubModule:
+  object cli extends Component:
     def moduleDeps = Seq(core, escritoire.core, larceny.plugin)
 
-  object coverage extends SoundnessSubModule:
+  object coverage extends Component:
     def moduleDeps = Seq(gossamer.core, dendrology.tree, digression.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(cli)
 
-object profanity extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object profanity extends Library:
+  object core extends Component:
     def moduleDeps = Seq(eucalyptus.core, diuretic.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object punctuation extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object punctuation extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core, turbulence.core, honeycomb.core)
     def mvnDeps = Seq(mvn"org.commonmark:commonmark:0.27.0")
 
-  object html extends SoundnessSubModule:
+  object html extends Component:
     def moduleDeps = Seq(core, honeycomb.core)
 
-  object ansi extends SoundnessSubModule:
+  object ansi extends Component:
     def moduleDeps = Seq(core, escapade.core, harlequin.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
 
-object quantitative extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object quantitative extends Library:
+  object core extends Component:
     def moduleDeps = Seq(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time, probably.core)
-  object units extends SoundnessSubModule:
+  object units extends Component:
     def moduleDeps = Seq(core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, units)
 
-object revolution extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object revolution extends Library:
+  object core extends Component:
     def moduleDeps = Seq(serpentine.core, turbulence.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object rudiments extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object rudiments extends Library:
+  object core extends Component:
     def moduleDeps = Seq(
       anticipation.css,
       anticipation.http,
@@ -1068,195 +1068,195 @@ object rudiments extends SoundnessModule:
       proscenium.core
     )
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, abacist.core, quantitative.units)
 
-object satirical extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object satirical extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core, turbulence.core, zephyrine.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object savagery extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object savagery extends Library:
+  object core extends Component:
     def moduleDeps = Seq(cataclysm.core, xylophone.core, quantitative.core, iridescence.core, geodesy.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object scintillate extends SoundnessModule:
-  object server extends SoundnessSubModule:
+object scintillate extends Library:
+  object server extends Component:
     def moduleDeps = Seq(telekinesis.core, hellenism.core)
 
-  object servlet extends SoundnessSubModule:
+  object servlet extends Component:
     def moduleDeps = Seq(server)
     def mvnDeps = Seq(mvn"jakarta.servlet:jakarta.servlet-api:6.0.0")
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, server, servlet)
 
-object sedentary extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object sedentary extends Library:
+  object core extends Component:
     def moduleDeps = Seq(probably.core, superlunary.jvm, anthology.bundle, urticose.url, diuretic.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, quantitative.units)
 
-object serpentine extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object serpentine extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gossamer.core, nomenclature.core, ambience.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object spectacular extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object spectacular extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core, stenography.core, inimitable.core, contingency.core, wisteria.core, digression.core)
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object stenography extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object stenography extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core)
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
     )
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object superlunary extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object superlunary extends Library:
+  object core extends Component:
     def moduleDeps = Seq(anticipation.css, symbolism.core, anticipation.text, anticipation.http, jacinta.core, inimitable.core, gastronomy.core, ambience.core, hellenism.core, anthology.scala, austronesian.core)
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
 
-  object jvm extends SoundnessSubModule:
+  object jvm extends Component:
     def moduleDeps = Seq(core, eucalyptus.core)
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
 
-  object test extends SoundnessSubModule:
+  object test extends Component:
     def moduleDeps = Seq(probably.cli, jvm)
     override def finalMainClass: Task.Simple[String] = "superlunary.run"
 
-object surveillance extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object surveillance extends Library:
+  object core extends Component:
     def moduleDeps = Seq(anticipation.path, eucalyptus.core, feudalism.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object symbolism extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object symbolism extends Library:
+  object core extends Component:
     def moduleDeps = Seq(prepositional.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object tarantula extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object tarantula extends Library:
+  object core extends Component:
     def moduleDeps = Seq(jacinta.core, telekinesis.core, guillotine.core, cataclysm.core, honeycomb.core, hallucination.core, diuretic.core, eucalyptus.core, gastronomy.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object telekinesis extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object telekinesis extends Library:
+  object core extends Component:
     def moduleDeps = Seq(monotonous.core, gesticulate.core, urticose.url, coaxial.core, legerdemain.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object turbulence extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object turbulence extends Library:
+  object core extends Component:
     def moduleDeps = Seq(hieroglyph.core, parasite.core, capricious.core, stenography.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object typonym extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object typonym extends Library:
+  object core extends Component:
     def moduleDeps = Seq(proscenium.core, prepositional.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object ulysses extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object ulysses extends Library:
+  object core extends Component:
     def moduleDeps = Seq(gastronomy.core, cardinality.core, hypotenuse.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object umbrageous extends SoundnessModule:
-  object plugin extends SoundnessSubModule:
+object umbrageous extends Library:
+  object plugin extends Component:
     def moduleDeps = Seq()
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, plugin)
 
-object vacuous extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object vacuous extends Library:
+  object core extends Component:
     def moduleDeps = Seq(fulminate.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object vexillology extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object vexillology extends Library:
+  object core extends Component:
     def moduleDeps = Seq(hypotenuse.core, distillate.core)
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object vicarious extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object vicarious extends Library:
+  object core extends Component:
     def moduleDeps = Seq(rudiments.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object wisteria extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object wisteria extends Library:
+  object core extends Component:
     def moduleDeps = Seq(contingency.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object xylophone extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object xylophone extends Library:
+  object core extends Component:
     def moduleDeps = Seq(wisteria.core, gossamer.core, turbulence.core, zephyrine.core, adversaria.core, typonym.core, hellenism.core, serpentine.core, urticose.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object yossarian extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object yossarian extends Library:
+  object core extends Component:
     def moduleDeps = Seq(iridescence.core, contingency.core, kaleidoscope.core, gossamer.core, turbulence.core, denominative.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
 
-object zephyrine extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object zephyrine extends Library:
+  object core extends Component:
     def moduleDeps = Seq(hieroglyph.core, hypotenuse.core)
     override def scalacOptions = settings.scalaOptionsCC
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core)
     override def scalacOptions = settings.scalaOptionsCC
 
-object zeppelin extends SoundnessModule:
-  object core extends SoundnessSubModule:
+object zeppelin extends Library:
+  object core extends Component:
     def moduleDeps = Seq(galilei.core, zephyrine.core)
 
-  object test extends ProbablyTestModule:
+  object test extends Tests:
     def moduleDeps = Seq(probably.cli, core, imperial.core, diuretic.core)
 
 object publishing extends Module:
