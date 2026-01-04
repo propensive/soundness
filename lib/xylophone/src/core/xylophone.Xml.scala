@@ -345,7 +345,6 @@ object Xml extends Tag.Container
     val buffer: jl.StringBuilder = jl.StringBuilder()
     def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
     var content: Text = t""
-    var body: Text = t""
     var extra: Map[Text, Text] = ListMap()
     var nodes: Array[Node] = new Array(4)
     var index: Int = 0
@@ -581,8 +580,19 @@ object Xml extends Tag.Container
                      case _   => cdata(mark)
       case chr =>  next() yet cdata(mark)
 
+    def piData(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+      case '?' =>  val end = cursor.mark
+                   next()
+                   cursor.lay(fail(ExpectedMore)):
+                     case '>' => cursor.grab(mark, end)
+                     case _   => piData(mark)
+      case chr =>  next() yet piData(mark)
+
+    def piTarget(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
+      case ' ' | Lf | Cr | Ff | Ht => cursor.grab(mark, cursor.mark)
+      case chr                     =>  next() yet piTarget(mark)
+
     def tag(headers: Boolean): Token = cursor.lay(fail(ExpectedMore)):
-      // FIXME: Processing Instructions
       case '?' if headers =>
         cursor.consume(fail(ExpectedMore))("xml")
         next()
@@ -606,7 +616,13 @@ object Xml extends Tag.Container
         skip()
         Token.Header
 
-      case '!'  =>
+      case '?' =>
+        next()
+        content = cursor.hold(piTarget(cursor.mark))
+        skip()
+        Token.Pi
+
+      case '!' =>
         next()
         cursor.lay(fail(ExpectedMore)):
           case '-' =>
@@ -693,7 +709,8 @@ object Xml extends Tag.Container
               case Token.Comment => current = Comment(content)
               case Token.Header  => current = Header(content, Unset, Unset)
               case Token.Cdata   => current = Cdata(content)
-              case Token.Pi      => current = ProcessingInstruction(content, body)
+              case Token.Pi      =>
+                current = ProcessingInstruction(content, cursor.hold(piData(cursor.mark)))
 
               case Token.Empty   =>
                 if admit(content) then empty() else fail(InvalidTag(content))

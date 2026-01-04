@@ -61,6 +61,10 @@ object Tests extends Suite(m"Xylophone tests"):
         x"<message>1</message>"
       . assert(_ == t"<message>1</message>".read[Xml])
 
+      test(m"Processing instruction"):
+        x"<?foo bar baz?>"
+      . assert(_ == t"<?foo bar baz?>".read[Xml])
+
       test(m"Serialize content"):
         x"<message>hello world</message>".show
       . assert(_ == t"<message>hello world</message>")
