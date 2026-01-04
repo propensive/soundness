@@ -226,6 +226,7 @@ object test extends ScalaModule:
     cataclysm.test,
     cellulose.test,
     charisma.test,
+    chiaroscuro.test,
     contextual.test,
     contingency.test,
     dendrology.test,
@@ -234,6 +235,7 @@ object test extends ScalaModule:
     dissonance.test,
     distillate.test,
     diuretic.test,
+    enigmatic.test,
     ethereal.test,
     exoskeleton.test,
     feudalism.test,
@@ -293,12 +295,11 @@ object test extends ScalaModule:
     vexillology.test,
     vicarious.test,
     wisteria.test,
+    xylophone.test,
     yossarian.test,
     zephyrine.test,
 
     // Compiling, not passing
-    chiaroscuro.test, // failing
-    enigmatic.test,  // failing
     mandible.test,  // failing
     parasite.test,  // failing
     satirical.test,  // crashing
@@ -321,7 +322,6 @@ object test extends ScalaModule:
     // superlunary
     // surveillance
     // tarantula
-    // xylophone
     // yossarian
     // zeppelin
   )
@@ -1231,7 +1231,7 @@ object wisteria extends SoundnessModule:
 
 object xylophone extends SoundnessModule:
   object core extends SoundnessSubModule:
-    def moduleDeps = Seq(wisteria.core, gossamer.core, turbulence.core, zephyrine.core)
+    def moduleDeps = Seq(wisteria.core, gossamer.core, turbulence.core, zephyrine.core, adversaria.core, typonym.core, hellenism.core, serpentine.core, urticose.core)
 
   object test extends ProbablyTestModule:
     def moduleDeps = Seq(probably.cli, core)

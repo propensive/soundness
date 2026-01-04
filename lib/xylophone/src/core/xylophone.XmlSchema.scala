@@ -32,10 +32,52 @@
                                                                                                   */
 package xylophone
 
+import language.dynamics
+
+import java.lang as jl
+
+import scala.collection.mutable as scm
+
+import adversaria.*
 import anticipation.*
+import contingency.*
+import denominative.*
+import fulminate.*
+import gossamer.*
+import hellenism.*
+import hieroglyph.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import symbolism.*
+import turbulence.*
+import typonym.*
+import vacuous.*
+import zephyrine.*
 
-trait XmlPrinter[output]:
-  def print(doc: Xml): output
+import classloaders.threadContext
+import charDecoders.utf8
+import textSanitizers.skip
 
-object XmlPrinter:
-  given text: XmlPrinter[Text] = StandardXmlPrinter(false)
+object XmlSchema:
+  private[xylophone] val elements: scm.HashMap[XmlSchema, Dictionary[Tag]] = scm.HashMap()
+  private[xylophone] val attributes: scm.HashMap[XmlSchema, Dictionary[Xml.Attribute]] = scm.HashMap()
+  private[xylophone] val entities: scm.HashMap[XmlSchema, Dictionary[Text]] = scm.HashMap()
+
+  val generic = Tag.root(Set())
+  object Freeform extends XmlSchema:
+    override def freeform = true
+    val elements = Dictionary()
+    val attributes = Dictionary()
+    val entities = Dictionary()
+    def infer(parent: Tag, child: Tag) = Unset
+
+
+trait XmlSchema:
+  def freeform: Boolean = false
+  val elements: Dictionary[Tag]
+  val attributes: Dictionary[Xml.Attribute]
+  val entities: Dictionary[Text]
+
+  def infer(parent: Tag, child: Tag): Optional[Tag]
+  def generic: Tag = Tag.root(elements.iterator.map(_.label).to(Set))

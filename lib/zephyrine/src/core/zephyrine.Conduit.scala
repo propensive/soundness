@@ -53,8 +53,8 @@ object Conduit:
 
 class Conduit(input0: Stream[Bytes]):
   private val input: Stream[Bytes] = input0.filter(_.nonEmpty)
-  private var stream: Stream[Bytes] = if input.isEmpty then Stream() else input.tail
-  private var current: Bytes = if input.isEmpty then Bytes() else input.head
+  private var stream: Stream[Bytes] = if input.nil then Stream() else input.tail
+  private var current: Bytes = if input.nil then Bytes() else input.head
   private var index: Ordinal = Prim
   private var done: Int = 0
   private var clutch: Boolean = false
@@ -72,7 +72,7 @@ class Conduit(input0: Stream[Bytes]):
   def remainder: Stream[Bytes] = stream
 
   def next(): Boolean = step() match
-    case Conduit.State.Clutch => if stream.isEmpty then false else (cue() yet next())
+    case Conduit.State.Clutch => if stream.nil then false else (cue() yet next())
     case state                => state != Conduit.State.Clutch
 
   def expect(chars: Char*): Boolean =
@@ -131,7 +131,7 @@ class Conduit(input0: Stream[Bytes]):
   @tailrec
   final def step(): Conduit.State =
     if clutch then
-      if stream.isEmpty then Conduit.State.End else
+      if stream.nil then Conduit.State.End else
         clutch = false
         step()
     else
@@ -141,7 +141,7 @@ class Conduit(input0: Stream[Bytes]):
         Conduit.State.Clutch
       else Conduit.State.Data
 
-  final def cue(): Unit = if !stream.isEmpty then
+  final def cue(): Unit = if !stream.nil then
     done += current.length
     current = stream.head
     val tail = stream.tail
@@ -165,7 +165,7 @@ class Conduit(input0: Stream[Bytes]):
 
   def search(chars: Char*): Boolean =
     def recur(chars: Char*): Boolean =
-      !chars.isEmpty && seek(chars.head.toByte)
+      !chars.nil && seek(chars.head.toByte)
       && { mark()
            if expect(chars*) then revert() yet true else revert() yet recur(chars*) }
 

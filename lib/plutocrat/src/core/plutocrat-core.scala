@@ -32,6 +32,7 @@
                                                                                                   */
 package plutocrat
 
+import denominative.*
 import gossamer.*
 import symbolism.*
 
@@ -156,7 +157,7 @@ export Plutocrat.Money
 extension [currency <: Currency & Singleton: ValueOf](seq: Iterable[Money[currency]])
   def total: Money[currency] =
     def recur(seq: Iterable[Money[currency]], total: Money[currency]): Money[currency] =
-      if seq.isEmpty then total else recur(seq.tail, total + seq.head)
+      if seq.nil then total else recur(seq.tail, total + seq.head)
 
     val currency: currency = summon[ValueOf[currency]].value
     recur(seq, currency.zero)

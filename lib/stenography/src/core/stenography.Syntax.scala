@@ -37,6 +37,7 @@ import scala.collection.mutable as scm
 import scala.collection.immutable.ListMap
 
 import anticipation.*
+import denominative.*
 import proscenium.*
 import rudiments.*
 import symbolism.*
@@ -387,7 +388,7 @@ object Syntax:
         val unnamed = args0.forall(_.startsWith("x$"))
 
         val args =
-          if args0.isEmpty then Sequence('(', Nil)
+          if args0.nil then Sequence('(', Nil)
           else if unnamed then Sequence('(', types.map(apply(_)))
           else Sequence
                 ('(',

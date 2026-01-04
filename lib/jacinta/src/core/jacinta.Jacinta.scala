@@ -48,7 +48,7 @@ object Jacinta:
     given showable: JsonPointer is Showable = pointer =>
       def recur(elements: List[Ordinal | Text], result: Text): Text =
         elements.asMatchable.absolve match
-          case Nil         => if result.empty then t"." else result
+          case Nil         => if result.nil then t"." else result
           case key :: tail => key.asMatchable.absolve match
             case index: Ordinal => recur(tail, t"[${index.n0}]$result")
             case key: Text      => recur(tail, t".$key$result")
@@ -61,4 +61,4 @@ object Jacinta:
     @targetName("child")
     infix def / (child: Text | Ordinal): JsonPointer = child :: path
 
-    def parent: Optional[JsonPointer] = if path.isEmpty then Unset else JsonPointer(path.tail)
+    def parent: Optional[JsonPointer] = if path.nil then Unset else JsonPointer(path.tail)

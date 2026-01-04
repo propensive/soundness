@@ -71,7 +71,7 @@ object Pathname:
           val directory = safely(path.entry() == galilei.Directory).or(false)
           suggest(if directory then path.name+t"/" else path.name)
 
-      else if argument().empty then argument.suggest:
+      else if argument().nil then argument.suggest:
         val children0 = workingDirectory.children.to(List)
         val showAll = argument.tab.or(Prim) > Prim
         val children = if !showAll then children0.filter(!_.name.starts(t".")) else children0

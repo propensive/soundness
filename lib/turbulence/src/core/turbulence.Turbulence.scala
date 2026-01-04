@@ -35,6 +35,7 @@ package turbulence
 import scala.quoted.*
 
 import anticipation.*
+import denominative.*
 import fulminate.*
 import hieroglyph.*
 import prepositional.*
@@ -91,7 +92,7 @@ object Turbulence:
     . or:
 
         val reason =
-          if streamables.isEmpty && aggregables.isEmpty
+          if streamables.nil && aggregables.nil
           then m"""no ${name[source is Streamable]} or ${name[result is Aggregable]} instance exists
                    in context"""
           else if streamableBytes.present && aggregableText.present

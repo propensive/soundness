@@ -37,6 +37,7 @@ import scala.annotation.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import proscenium.*
 import rudiments.*
 
@@ -102,7 +103,7 @@ case class Permutation(factoradic: Factoradic):
     val prefix = sequence.length - lehmer.length
     sequence.take(prefix) ::: recur(lehmer, Nil, sequence.drop(prefix), 0, Nil)
 
-  def inverse: Permutation = if lehmer.isEmpty then this else
+  def inverse: Permutation = if lehmer.nil then this else
     val length = lehmer.length
     val array: Array[Int] = new Array(lehmer.length)
 

@@ -30,11 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xylophone
 
-export xylophone
-. { XmlAttribute, Namespace, StandardXmlPrinter, Xml, XmlError, XmlAst, attribute, XmlDecoder,
-    XmlEncoder, XmlInterpolation, label, XmlName, XmlPrinter, x, XmlPath }
+import anticipation.*
+import digression.*
+import fulminate.*
+import gossamer.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
-package xmlPrinters:
-  export xylophone.xmlPrinters.compact
+trait Renderable extends Typeclass, Formal:
+  def render(value: Self): Xml of Form

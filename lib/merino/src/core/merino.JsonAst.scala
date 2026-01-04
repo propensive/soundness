@@ -37,6 +37,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import hypotenuse.*
 import prepositional.*
@@ -166,8 +167,7 @@ object JsonAst extends Format:
     var colStart: Int = 0
 
     try
-      if stream.isEmpty
-      then abort(ParseError(this, Position(0, 0), Issue.EmptyInput))
+      if stream.nil then abort(ParseError(this, Position(0, 0), Issue.EmptyInput))
 
       val block: Bytes = stream.head
       val penultimate = block.length - 1
@@ -295,7 +295,7 @@ object JsonAst extends Format:
                     case ch  => error(Issue.UnexpectedChar(ch.toChar))
                 case ch => error(Issue.ExpectedColon(ch.toChar))
             case CloseBrace =>
-              if !keys.isEmpty then error(Issue.ExpectedSomeValue('}'))
+              if !keys.nil then error(Issue.ExpectedSomeValue('}'))
               next()
               continue = false
             case ch => error(Issue.ExpectedString(ch.toChar))
@@ -314,7 +314,7 @@ object JsonAst extends Format:
           skip()
           current match
             case CloseBracket =>
-              if !arrayItems.isEmpty then error(Issue.ExpectedSomeValue(']'))
+              if !arrayItems.nil then error(Issue.ExpectedSomeValue(']'))
               continue = false
             case ch =>
               val value = parseValue()

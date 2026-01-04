@@ -35,6 +35,7 @@ package gesticulate
 import anticipation.*
 import contextual.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
@@ -124,7 +125,7 @@ object Media:
 
       parsed.subtype match
         case Subtype.Standard(_) =>
-          if !systemMediaTypes.isEmpty then
+          if !systemMediaTypes.nil then
             if !systemMediaTypes.contains(parsed.basic) then
               val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
               throw InterpolationError(m"""

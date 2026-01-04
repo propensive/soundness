@@ -53,8 +53,8 @@ extension (inline cardinal: Int)
   inline def upto(ordinal: Ordinal): Interval = (ordinal - cardinal) till ordinal
 
 extension [countable: Countable](value: countable)
-  inline def full: Interval = Interval(Prim, (countable.size(value) - 1).z)
-  inline def empty: Boolean = countable.empty(value)
+  inline def gamut: Interval = Interval(Prim, (countable.size(value) - 1).z)
+  inline def nil: Boolean = countable.empty(value)
 
 export Denominative.{Ordinal, Interval}
 

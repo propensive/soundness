@@ -259,7 +259,7 @@ object Tests extends Suite(m"Wisteria tests"):
     val successfulParse = parserForTest.parse("120,false")
     println(successfulParse.exists(_.intValue == 120))
     println(successfulParse.exists(_.booleanValue == false))
-    println(parserForTest.parse("error").isEmpty)
+    println(parserForTest.parse("error").nil)
 
     println("isSimpleSum")
     val showForSimple = summon[Show[Simple]]

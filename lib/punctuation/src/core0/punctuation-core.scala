@@ -43,7 +43,7 @@ extension (markdown: Md)
     def recur(todo: List[Block], current: List[Block], done: List[Md]): List[Md] =
       todo match
         case Nil =>
-          if current.isEmpty then done.reverse
+          if current.nil then done.reverse
           else recur(Nil, Nil, Markdown(current.reverse*) :: done)
 
         case Markdown.Ast.Block.ThematicBreak() :: more =>

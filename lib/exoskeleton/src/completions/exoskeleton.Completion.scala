@@ -138,7 +138,7 @@ extends Cli:
 
   def serialize: List[Text] =
     val items0 =
-      if cursorSuggestions.isEmpty
+      if cursorSuggestions.nil
       then flagSuggestions(focusText.starts(t"--"))
       else cursorSuggestions
 
@@ -158,13 +158,13 @@ extends Cli:
             val hiddenParam = if hidden then sh"-n" else sh""
             val shortFlag = focusText.starts(t"-") && !focusText.starts(t"--")
             val aliasText = if shortFlag then core0 else aliases.join(t" ").fit(aliasesWidth)
-            val prefix2 = if prefix.empty then sh"" else sh"-p $prefix"
-            val suffix2 = if suffix.empty then sh"" else sh"-s $suffix"
+            val prefix2 = if prefix.nil then sh"" else sh"-p $prefix"
+            val suffix2 = if suffix.nil then sh"" else sh"-s $suffix"
             val core = if shortFlag then aliases.headOption.getOrElse(core0) else core0
 
             val mainLine = description.absolve match
               case Unset =>
-                if prefix.empty then sh"'' $hiddenParam -- $core"
+                if prefix.nil then sh"'' $hiddenParam -- $core"
                 else sh"'' $hiddenParam $prefix2 $suffix2 -- $core"
 
               case description: Text =>

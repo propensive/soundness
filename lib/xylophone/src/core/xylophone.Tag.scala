@@ -32,17 +32,76 @@
                                                                                                   */
 package xylophone
 
+import language.dynamics
+
+import java.lang as jl
+
+import scala.collection.mutable as scm
+
+import adversaria.*
 import anticipation.*
 import contingency.*
+import denominative.*
+import fulminate.*
 import gossamer.*
+import hellenism.*
+import hieroglyph.*
+import prepositional.*
+import proscenium.*
 import rudiments.*
+import symbolism.*
+import turbulence.*
+import typonym.*
 import vacuous.*
+import zephyrine.*
 
-case class XmlAttribute(node: XmlNode, attribute: Text):
-  def as[value: XmlDecoder]: value raises XmlError =
-    val attributes = Xml.normalize(node).prim match
-      case XmlAst.Element(_, _, attributes, _) => attributes
-      case _                                   => abort(XmlError(XmlError.Reason.Read))
+import classloaders.threadContext
+import charDecoders.utf8
+import textSanitizers.skip
 
-    value.read
-     (List(XmlAst.Element(XmlName(t"empty"), List(XmlAst.Textual(attributes(XmlName(attribute)))))))
+object Tag:
+  def root(children: Set[Text]): Tag =
+    new Tag("#root", Map(), children):
+      type Result = this.type
+
+      def node(attributes: Map[Text, Text]): Result = this
+
+  def freeform(label: Text): Container = Container(label, Map(), Set())
+
+
+  def container
+       [label    <: Label: ValueOf,
+        children <: Label: Reifiable to List[String],
+        schema   <: XmlSchema]
+       (presets: Map[Text, Text] = Map())
+  : Container of label over children in schema =
+
+      val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
+
+      Container(valueOf[label].tt, presets, admissible)
+      . of[label]
+      . over[children]
+      . in[schema]
+
+
+  class Container(label: Text, presets: Map[Text, Text] = Map(), admissible: Set[Text] = Set())
+  extends Tag(label, presets, admissible):
+
+    type Result = Element & Xml.Populable of Topic over Transport in Form
+
+    def node(attributes: Map[Text, Text]): Result =
+      new Element(label, presets ++ attributes, IArray()) with Xml.Populable()
+      . of[Topic]
+      . over[Transport]
+      . in[Form]
+
+abstract class Tag
+       (label: Text, val presets: Map[Text, Text] = Map(), val admissible:  Set[Text] = Set())
+extends Element(label, presets, IArray()), Formal, Dynamic:
+
+  type Result <: Element
+
+  inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Result =
+    ${Xylophone.attributes[Result, this.type]('this, 'attributes)}
+
+  def node(attributes: Map[Text, Text]): Result

@@ -35,6 +35,7 @@ package spectacular
 import scala.collection.mutable as scm
 
 import anticipation.*
+import denominative.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -135,7 +136,7 @@ object Inspectable extends Inspectable2:
     def recur(stream: Stream[element], todo: Int): Text =
       if todo <= 0 then "..?".tt
       else if stream.toString == "Stream(<not computed>)" then "∿∿∿".tt
-      else if stream.isEmpty then "⯁ ".tt
+      else if stream.nil then "⯁ ".tt
       else (stream.head.inspect.s+" ⋰ "+recur(stream.tail, todo - 1)).tt
 
     recur(stream, 3)

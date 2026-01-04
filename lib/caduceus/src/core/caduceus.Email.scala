@@ -34,6 +34,7 @@ package caduceus
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gesticulate.*
 import hieroglyph.*
@@ -76,11 +77,11 @@ object Email:
 
   case class Content(body: Body, inlines: Inline*):
     def contentType: MediaType =
-      if !inlines.isEmpty then media"multipart/related" else body.contentType
+      if !inlines.nil then media"multipart/related" else body.contentType
 
   case class Message(content: Content, attachments: List[Asset] = Nil):
     def contentType: MediaType =
-      if !attachments.isEmpty then media"multipart/mixed" else content.contentType
+      if !attachments.nil then media"multipart/mixed" else content.contentType
 
 case class Email(headers: Map[Text, Text], message: Email.Message):
   def html: Optional[Text] = message.content.body.html

@@ -67,28 +67,29 @@ object Tag:
       def node(attributes: Map[Text, Optional[Text]]): Result = this
 
 
-  def void[label <: Label: ValueOf]
+  def void[label <: Label: ValueOf, dom <: Dom]
        (presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false)
-  : Tag.Void of label =
+  : Tag.Void of label in dom =
 
-      new Void(valueOf[label].tt, presets, boundary).of[label]
+      new Void(valueOf[label].tt, presets, boundary).of[label].in[dom]
 
 
-  def foreign(label: Text, attributes0: Map[Text, Optional[Text]])
-  : Tag of "#foreign" over "#foreign" =
+  def foreign[dom <: Dom](label: Text, attributes0: Map[Text, Optional[Text]])
+  : Tag of "#foreign" over "#foreign" in dom =
 
       new Tag.Container(label, false, Html.Mode.Normal, attributes0, Set(), false, true)
       . of["#foreign"]
       . over["#foreign"]
+      . in[dom]
 
 
-  def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
+  def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String], dom <: Dom]
        (autoclose:  Boolean                   = false,
         mode:       Html.Mode                 = Html.Mode.Normal,
         presets:    Map[Text, Optional[Text]] = Map(),
         insertable: Boolean                   = false,
         boundary:   Boolean                   = false)
-  : Container of label over children =
+  : Container of label over children in dom =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
 
@@ -96,11 +97,12 @@ object Tag:
        (valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary)
       . of[label]
       . over[children]
+      . in[dom]
 
 
-  def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String]]
+  def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String], dom <: Dom]
        (presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false)
-  : Transparent of label over children =
+  : Transparent of label over children in dom =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
 
@@ -109,17 +111,17 @@ object Tag:
       . over[children]
 
 
-  def transparent
+  def transparent[dom <: Dom]
        (label:    Text,
         children: Set[Text],
         presets:  Map[Text, Optional[Text]],
         boundary: Boolean)
-  : Transparent =
+  : Transparent in dom =
 
-      Transparent(label, children, presets, boundary = boundary)
+      Transparent(label, children, presets, boundary = boundary).in[dom]
 
-  def foreign[label <: Label: ValueOf](): Container of label over "#foreign" =
-    Container(valueOf[label], foreign = true).of[label].over["#foreign"]
+  def foreign[label <: Label: ValueOf, dom <: Dom](): Container of label over "#foreign" =
+    Container(valueOf[label], foreign = true).of[label].over["#foreign"].in[dom]
 
 
   class Container
@@ -138,16 +140,16 @@ object Tag:
     def applyDynamic[className <: Label](method: className)
          (children: Optional[Html of (? <: Transport)]*)
          (using css: Classes of className)
-    : Element of Topic =
+    : Element of Topic in Form =
 
         val nodes = children.compact.nodes
 
-        val presets2 = if css.names.isEmpty then presets else
+        val presets2 = if css.names.nil then presets else
           val cls = css.names.join(t" ")
           val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
           presets.updated("class", value)
 
-        Element(label, presets2, nodes, foreign).of[Topic]
+        Element(label, presets2, nodes, foreign).of[Topic].in[Form]
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
       new Element(label, presets ++ attributes, IArray(), foreign) with Html.Populable()
@@ -178,15 +180,15 @@ object Tag:
     def applyDynamic[className <: Label](method: className)
          (children: Optional[Html of (? <: Transport)]*)
          (using css: Classes of className)
-    : Element of Topic =
+    : Element of Topic in Form =
 
-        val presets2 = if css.names.isEmpty then presets else
+        val presets2 = if css.names.nil then presets else
           val cls = css.names.join(t" ")
           val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
           presets.updated("class", value)
 
         val nodes: IArray[Node] = children.compact.nodes
-        Element(label, presets2, nodes, foreign).of[Topic]
+        Element(label, presets2, nodes, foreign).of[Topic].in[Form]
 
 
     def node(attributes: Map[Text, Optional[Text]]): Result =

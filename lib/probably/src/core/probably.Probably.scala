@@ -155,7 +155,7 @@ object Probably:
         val verdict = run match
           case Trial.Throws(err, duration, map) =>
             val exception: Exception = try err() catch case exc: Exception => exc
-            if !map.isEmpty then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
+            if !map.nil then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
             Verdict.Throws(exception, duration)
 
           case Trial.Returns(value, duration, map) =>
@@ -173,7 +173,7 @@ object Probably:
                   // inc2.include(runner.report, test.id, Verdict.Detail.Compare
                   //  (summon[Any is Contrastable].compare(value, 1)))
 
-              if !map.isEmpty
+              if !map.nil
               then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
 
               Verdict.Fail(duration)

@@ -32,19 +32,31 @@
                                                                                                   */
 package xylophone
 
+import language.dynamics
+
+import java.lang as jl
+
+import scala.collection.mutable as scm
+
+import adversaria.*
+import anticipation.*
+import contingency.*
+import denominative.*
 import fulminate.*
 import gossamer.*
+import hellenism.*
+import hieroglyph.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import symbolism.*
+import turbulence.*
+import typonym.*
+import vacuous.*
+import zephyrine.*
 
-object XmlError:
-  enum Reason:
-    case Read
-    case Access(index: Int, path: XmlPath)
+import classloaders.threadContext
+import charDecoders.utf8
+import textSanitizers.skip
 
-  given Reason is Communicable =
-    case Reason.Read                => m"the value could not be read"
-    case Reason.Access(index, path) =>
-      val node = if index ==0 then t"any nodes" else t"node $index"
-      m"could not access ${node} at path ${Xml.pathString(path)}"
-
-case class XmlError(reason: XmlError.Reason)(using Diagnostics)
-extends Error(m"XML access failed because $reason")
+case class XmlError()(using Diagnostics) extends Error(m"there was an XML error")

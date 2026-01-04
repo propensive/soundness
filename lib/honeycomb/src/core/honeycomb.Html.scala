@@ -161,7 +161,7 @@ object Html extends Tag.Container
               emitter.put("<")
               emitter.put(label)
 
-              if !attributes.isEmpty then
+              if !attributes.nil then
                 attributes.each: (key, value) =>
                   emitter.put(" ")
                   emitter.put(key)
@@ -217,7 +217,7 @@ object Html extends Tag.Container
     case Doctype(text) => t"<!$text>"
 
     case Element(tagname, attributes, children, _) =>
-      val tagContent = if attributes.isEmpty then t"" else
+      val tagContent = if attributes.nil then t"" else
         attributes.map:
           case (key, value) => value.lay(key) { value => t"""$key="$value"""" }
         . join(t" ", t" ", t"")
@@ -233,15 +233,22 @@ object Html extends Tag.Container
 
   trait Populable:
     node: Element =>
-      def apply(children: Optional[Html of (? <: node.Transport)]*): Element of node.Topic =
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
-          type Topic = node.Topic
+      def apply(children: Optional[Html of (? <: node.Transport)]*)
+      : Element of node.Topic in node.Form =
+
+          new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+            type Topic = node.Topic
+            type Form = node.Form
+
 
   trait Transparent:
     node: Element =>
-      def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*): Element of labels =
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
-          type Topic = labels
+      def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*)
+      : Element of labels in node.Form =
+
+          new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+            type Topic = labels
+            type Form = node.Form
 
 
   import Issue.*
@@ -773,12 +780,12 @@ object Html extends Tag.Container
 
           case Mode.Raw =>
             val text = cursor.hold(textual(cursor.mark, parent.label, false))
-            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+            if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
             else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
           case Mode.Rcdata =>
             val text = cursor.hold(textual(cursor.mark, parent.label, true))
-            if text.s.isEmpty then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+            if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
             else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
 
           case Mode.Normal =>
@@ -790,13 +797,14 @@ object Html extends Tag.Container
       skip()
       append(root)
       val head = read(root, root.admissible, ListMap(), 0)
-      if fragment.isEmpty then head else Fragment(fragment*)
+      if fragment.nil then head else Fragment(fragment*)
 
-sealed into trait Html extends Topical, Documentary:
+sealed into trait Html extends Topical, Documentary, Formal:
   type Topic <: Label
   type Transport <: Label
   type Metadata = Doctype
   type Chunks = Text
+  type Form <: Dom
 
   private[honeycomb] def of[topic <: Label]: this.type of topic = asInstanceOf[this.type of topic]
   private[honeycomb] def in[form]: this.type in form = asInstanceOf[this.type in form]
@@ -854,17 +862,17 @@ extends Node, Topical, Transportive, Dynamic:
     ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
 
 
-  def selectDynamic(name: Label)(using attribute: name.type is Attribute on Topic in Whatwg)
+  def selectDynamic(name: Label)(using attribute: name.type is Attribute on Topic in Form)
   : Optional[Text] =
 
       attributes.at(name.tt)
 
 
-  def updateDynamic[value](name: Label)(using attribute: name.type is Attribute in Whatwg)
+  def updateDynamic[value](name: Label)(using attribute: name.type is Attribute in Form)
        //(using Topic <:< attribute.Plane) - disabled to allow global attributes
        (value: value)
        (using attributive: value is Attributive to attribute.Topic)
-  : Element of Topic over Transport in Whatwg =
+  : Element of Topic over Transport in Form =
 
       attributive.attribute(name, value).match
         case Unset        => Element(label, attributes - name, children, foreign)
@@ -872,7 +880,7 @@ extends Node, Topical, Transportive, Dynamic:
 
       . of[Topic]
       . over[Transport]
-      . in[Whatwg]
+      . in[Form]
 
 object Fragment:
   @targetName("make")

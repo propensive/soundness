@@ -36,6 +36,7 @@ import scala.collection as sc
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -55,10 +56,10 @@ object Semver:
         case text: Text => text
         case long: Long => long.show
 
-      val prerelease = if semver.prerelease.isEmpty then t""
+      val prerelease = if semver.prerelease.nil then t""
                        else t"-"+semver.prerelease.map(_.text).join(t".")
 
-      val build = if semver.build.isEmpty then t"" else t"+"+semver.build.map(_.text).join(t".")
+      val build = if semver.build.nil then t"" else t"+"+semver.build.map(_.text).join(t".")
 
       t"${semver.major}.${semver.minor}.${semver.patch}$prerelease$build"
 
@@ -117,7 +118,7 @@ object Semver:
     if left.major == right.major then
       if left.minor == right.minor then
         if left.patch == right.patch then
-          right.prerelease.isEmpty || compare(left.prerelease, right.prerelease)
+          right.prerelease.nil || compare(left.prerelease, right.prerelease)
         else left.patch < right.patch
       else left.minor < right.minor
     else left.major < right.major
@@ -146,7 +147,7 @@ case class Semver
   override def hashCode: Int = (major, minor, patch, prerelease).hashCode
 
   def compatibility(right: Semver): Compatibility =
-    if !prerelease.isEmpty || !right.prerelease.isEmpty then Compatibility.Breaking
+    if !prerelease.nil || !right.prerelease.nil then Compatibility.Breaking
     else if major == 0 || right.major == 0 || major != right.major then Compatibility.Breaking
     else if minor < right.minor then Compatibility.Additions
     else if minor > right.minor then Compatibility.Breaking

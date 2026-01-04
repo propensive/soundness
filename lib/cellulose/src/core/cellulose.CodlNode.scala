@@ -36,6 +36,7 @@ import anticipation.*
 import chiaroscuro.*
 import contextual.*
 import contingency.*
+import denominative.*
 import dissonance.*
 import gossamer.{where as _, *}
 import rudiments.*
@@ -74,14 +75,14 @@ object CodlNode:
 
 case class CodlNode(data: Optional[Data] = Unset, extra: Optional[Extra] = Unset) extends Dynamic:
   def key: Optional[Text] = data.let(_.key)
-  def empty: Boolean = unsafely(data.absent || data.assume.children.isEmpty)
+  def empty: Boolean = unsafely(data.absent || data.assume.children.nil)
   def blank: Boolean = data.absent && extra.absent
   def schema: Optional[CodlSchema] = data.let(_.schema)
   def layout: Optional[Layout] = data.let(_.layout)
   def id: Optional[Text] = data.let(_.id)
   def uniqueId: Optional[Text] = data.let(_.uniqueId)
   def children: IArray[CodlNode] = data.let(_.children).or(IArray[CodlNode]())
-  def paramValue: Optional[Text] = if children.isEmpty then key else Unset
+  def paramValue: Optional[Text] = if children.nil then key else Unset
   def structValue: Optional[Text] = if children.size == 1 then children.head.paramValue else Unset
   def fieldValue: Optional[Text] = paramValue.or(structValue)
   def promote(n: Int) = copy(data = data.let(_.promote(n)))

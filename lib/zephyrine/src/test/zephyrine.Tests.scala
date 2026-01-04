@@ -47,7 +47,7 @@ object Tests extends Suite(m"Zephyrine tests"):
   val bytes = Bytes.fill(1000)(_.toByte)
   def run(): Unit = stochastic:
     for i <- 1 to 10 do
-      val stream = Stream(bytes).shred(10.0, 10.0)//.filter(!_.isEmpty)
+      val stream = Stream(bytes).shred(10.0, 10.0)
       test(m"Conduit always starts at first byte"):
         val conduit = Conduit(stream)
         conduit.datum

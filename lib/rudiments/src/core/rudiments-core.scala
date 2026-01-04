@@ -86,7 +86,7 @@ extension [value](value: value)
   def give[result](block: value ?=> result): result = block(using value)
 
 extension [value: Countable](value: value)
-  inline def occupied: Optional[value] = if value.empty then Unset else value
+  inline def occupied: Optional[value] = if value.nil then Unset else value
 
 extension [input, result](inline lambda: (=> input) => result)
   inline def upon(inline value: => input): result = lambda(value)
@@ -141,7 +141,7 @@ extension [value](iterator: Iterator[value])
 
 extension [value](iterables: Iterable[Iterable[value]])
   def intercalate(between: Iterable[value] = Iterable()): Iterable[value] =
-    if iterables.isEmpty then Iterable() else iterables.reduceLeft(_ ++ between ++ _)
+    if iterables.nil then Iterable() else iterables.reduceLeft(_ ++ between ++ _)
 
 extension [value](iterable: Iterable[value])
   transparent inline def total
@@ -154,7 +154,7 @@ extension [value](iterable: Iterable[value])
           iterable.foldLeft(zeroic.zero)(addable.add)
 
         case _ =>
-          if iterable.isEmpty then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
+          if iterable.nil then Unset else iterable.tail.foldLeft(iterable.head)(addable.add)
 
 
   transparent inline def mean
@@ -175,7 +175,7 @@ extension [value](iterable: Iterable[value])
                      equality3:    addable2.Result =:= value)
   : Optional[value] =
 
-      if iterable.isEmpty then Unset else
+      if iterable.nil then Unset else
         val arbitrary = iterable.head
         iterable.map(_ - arbitrary).total.let: total =>
           arbitrary + total/iterable.size.toDouble
@@ -273,7 +273,7 @@ extension [value](iterable: Iterable[value])
     def recur(index: Int, iterable: Iterable[value], bestStart: Int, bestLength: Int, length: Int)
     :       (Int, Int) =
 
-      if iterable.isEmpty then (bestStart, bestLength) else
+      if iterable.nil then (bestStart, bestLength) else
         if predicate(iterable.head) then
           if length >= bestLength
           then recur(index + 1, iterable.tail, index - length, length + 1, length + 1)
@@ -320,7 +320,7 @@ extension [value](list: List[value])
 extension [element](seq: Seq[element])
   def runs: List[List[element]] = runsBy(identity)
 
-  inline def prim: Optional[element] = if seq.isEmpty then Unset else seq.head
+  inline def prim: Optional[element] = if seq.nil then Unset else seq.head
   inline def sec: Optional[element] = if seq.length < 2 then Unset else seq(1)
   inline def ter: Optional[element] = if seq.length < 3 then Unset else seq(2)
   inline def unique: Optional[element] = if seq.length == 1 then seq.head else Unset
@@ -329,13 +329,13 @@ extension [element](seq: Seq[element])
     @tailrec
     def recur(current: Any, todo: Seq[element], run: List[element], done: List[List[element]])
     :       List[List[element]] =
-      if todo.isEmpty then (run.reverse :: done).reverse
+      if todo.nil then (run.reverse :: done).reverse
       else
         val focus = lambda(todo.head)
         if current == focus then recur(current, todo.tail, todo.head :: run, done)
         else recur(focus, todo.tail, List(todo.head), run.reverse :: done)
 
-    if seq.isEmpty then Nil else recur(lambda(seq.head), seq.tail, List(seq.head), Nil)
+    if seq.nil then Nil else recur(lambda(seq.head), seq.tail, List(seq.head), Nil)
 
 extension [element](seq: IndexedSeq[element])
   transparent inline def has(index: Int): Boolean = index >= 0 && index < seq.length

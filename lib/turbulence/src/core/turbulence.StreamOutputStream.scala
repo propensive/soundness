@@ -37,6 +37,7 @@ import java.io as ji
 import scala.collection.mutable as scm
 
 import anticipation.*
+import denominative.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
@@ -58,6 +59,6 @@ class StreamOutputStream() extends ji.OutputStream:
     flush()
     if bytes != null then chunks.put(bytes.slice(offset, offset + length).immutable(using Unsafe))
 
-  override def flush(): Unit = if !buffer.isEmpty then
+  override def flush(): Unit = if !buffer.nil then
     chunks.put(buffer.toArray.immutable(using Unsafe))
     buffer.clear()

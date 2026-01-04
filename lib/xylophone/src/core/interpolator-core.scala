@@ -32,50 +32,14 @@
                                                                                                   */
 package xylophone
 
+import scala.quoted.*
+
 import anticipation.*
-import gossamer.*
-import spectacular.*
-import wisteria.*
+import contextual.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import vacuous.*
 
-object XmlEncoder extends Derivation[XmlEncoder]:
-  given text: XmlEncoder[Text] =
-    text => XmlAst.Element(XmlName(t"Text"), List(XmlAst.Textual(text)))
-
-  given string: XmlEncoder[String] =
-    string => XmlAst.Element(XmlName(t"String"), List(XmlAst.Textual(string.tt)))
-
-  given seq: [value: XmlEncoder, collection[element] <: Seq[element]]
-        =>  XmlEncoder[collection[value]] = elements =>
-      XmlAst.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[value]].write(_)))
-
-  given int: XmlEncoder[Int] = int =>
-    XmlAst.Element(XmlName(t"Int"), List(XmlAst.Textual(int.show)))
-
-  private val attributeAttribute = attribute()
-
-  inline def join[derivation <: Product: ProductReflection]: XmlEncoder[derivation] =
-    value =>
-      val elements = fields(value):
-        [field] => field => context.write(field).copy(name = XmlName(label))
-
-      XmlAst.Element(XmlName(typeName), elements.to(List))
-
-  inline def split[derivation: SumReflection]: XmlEncoder[derivation] = value =>
-    variant(value):
-      [variant <: derivation] => variant =>
-        val xml = context.write(variant)
-
-        XmlAst.Element
-          (XmlName(typeName),
-           xml.children,
-           xml.attributes.updated(XmlName("type".tt), xml.name.name),
-           xml.namespaces)
-
-  private def textElements(value: XmlAst.Element): Text =
-    value.children.collect { case XmlAst.Textual(txt) => txt }.join
-
-trait XmlEncoder[-value]:
-  def write(value: value): XmlAst.Element
-
-  def contramap[value2](lambda: value2 => value): XmlEncoder[value2] =
-    value => write(lambda(value))
+transparent inline def interpolation[topic](inline context: StringContext): Interpolation =
+  ${Interpolation[topic]('context)}

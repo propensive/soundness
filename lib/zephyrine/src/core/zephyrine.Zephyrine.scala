@@ -30,8 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package xylophone
+package zephyrine
 
+import language.experimental.captureChecking
+
+import scala.quoted.*
+
+import contingency.*
+import fulminate.*
 import proscenium.*
+import rudiments.*
 
-case class label(name: String) extends StaticAnnotation
+object Zephyrine:
+  def consume(cursor: Expr[Cursor[?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =
+    import quotes.reflect.*
+    val text = text0.valueOrAbort
+
+    def recur(index: Int, checks: Expr[Unit]): Expr[Unit] =
+      if index >= text.length then checks else
+        val char = text(index)
+        val checks2 =
+          '{  $checks
+              $cursor.next()
+              $cursor.lay($otherwise): datum =>
+                if datum != ${Expr(char)} then $otherwise  }
+
+        recur(index + 1, checks2)
+
+    recur(0, '{()})

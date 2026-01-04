@@ -99,14 +99,14 @@ object Tests extends Suite(m"Quantitative Tests"):
         demilitarize:
           (20*Metre*Second)/(Metre*Second): Double
         .map(_.message)
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"Principal units are preferred"):
         demilitarize:
           val x = 2*Metre
           val y = 3*Foot
           val z: Quantity[Metres[2]] = x*y
-      .assert(_.isEmpty)
+      .assert(_.nil)
 
       test(m"Non-principal units are not preferred"):
         demilitarize:

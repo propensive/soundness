@@ -36,6 +36,7 @@ import scala.compiletime.*, ops.int.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -142,7 +143,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   type Topic <: Tuple
 
   def name: Text = descent.prim.or(root)
-  def empty: Boolean = descent.isEmpty
+  def empty: Boolean = descent.nil
 
   inline def knownElementTypes: Boolean = inline !![Topic] match
     case _: Zero           => true
@@ -321,7 +322,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     def recur(left: List[Text], right: List[Text], size: Int, count: Int)
     : Path on Plane =
 
-        if left.isEmpty then Path.of(root, left0.drop(size - count)*)
+        if left.nil then Path.of(root, left0.drop(size - count)*)
         else if left.head == right.head then recur(left.tail, right.tail, size + 1, count + 1)
         else recur(left.tail, right.tail, size + 1, 0)
 
@@ -335,7 +336,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       case EmptyTuple   => Unset
 
       case _ =>
-        if descent.isEmpty then Unset
+        if descent.nil then Unset
         else Path.of[Plane, Limit, Tuple](root, descent.tail*)
 
   def ancestors: List[Path on Plane under Limit] =

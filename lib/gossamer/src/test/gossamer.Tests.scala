@@ -174,7 +174,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       test(m"get bytes from empty Text"):
         t"".sysBytes.to(List)
 
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
       test(m"get Text length"):
         t"hello world".length
@@ -316,12 +316,12 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"abc")
 
       test(m"Check an empty Text is empty"):
-        t"".empty
+        t"".nil
 
       . assert(_ == true)
 
       test(m"Check a non-empty Text is not empty"):
-        t"abc".empty
+        t"abc".nil
 
       . assert(_ == false)
 
@@ -546,7 +546,7 @@ object Tests extends Suite(m"Gossamer Tests"):
           val x: String = Text("text")
         . map(_.message)
 
-      . assert(!_.isEmpty)
+      . assert(!_.nil)
 
     suite(m"Decimalization tests"):
       test(m"Write negative pi"):

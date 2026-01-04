@@ -34,6 +34,7 @@ package hieroglyph
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import kaleidoscope.*
 import proscenium.*
@@ -118,7 +119,7 @@ object Unicode:
   lazy val eastAsianWidths: TreeMap[CharRange, EaWidth] =
     extension (map: TreeMap[CharRange, EaWidth])
       def append(range: CharRange, width: EaWidth): TreeMap[CharRange, EaWidth] =
-        if map.isEmpty then map.updated(range, width)
+        if map.nil then map.updated(range, width)
         else if map.lastKey.to == (range.from - 1) && map(map.lastKey) == width
         then map.removed(map.lastKey).updated(CharRange(map.lastKey.from, range.to), width)
         else map.updated(range, width)

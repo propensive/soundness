@@ -110,8 +110,8 @@ object Contrastable:
           . join(t"{", t", ", t"}")
 
         val message =
-          if leftOnly.isEmpty then t"+${describe(rightOnly)}"
-          else if rightOnly.isEmpty then t"-${describe(leftOnly)}"
+          if leftOnly.nil then t"+${describe(rightOnly)}"
+          else if rightOnly.nil then t"-${describe(leftOnly)}"
           else t"-${describe(leftOnly)}╱+${describe(rightOnly)}"
 
         Juxtaposition.Different(left.show, right.show, message)

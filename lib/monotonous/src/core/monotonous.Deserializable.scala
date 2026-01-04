@@ -37,6 +37,7 @@ import scala.compiletime.*, ops.int.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
@@ -55,7 +56,7 @@ trait Deserializable:
     def recur(stream: Stream[Text], previous: Text, carry: Int): Stream[Bytes] = stream match
       case head #:: tail =>
         val carry2 = (carry + head.length)%atomicity
-        deserialize(previous, head, -carry, tail.isEmpty) #:: recur(tail, head, carry2)
+        deserialize(previous, head, -carry, tail.nil) #:: recur(tail, head, carry2)
 
       case _ =>
         if carry > 0 then Stream(deserialize(previous, t"", -carry, true)) else Stream()
