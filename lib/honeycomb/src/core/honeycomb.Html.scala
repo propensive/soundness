@@ -72,7 +72,8 @@ object Html extends Tag.Container
           admissible  = Set("head", "body"),
           mode        = Html.Mode.Whitespace,
           insertable  = true,
-          foreign     = false), Format:
+          foreign     = false,
+          boundary    = true), Format:
   type Topic = "html"
   type Transport = "head" | "body"
 
@@ -90,10 +91,8 @@ object Html extends Tag.Container
 
   inline given extrapolator: Html is Extrapolable:
 
-    transparent inline def extrapolate[parts <: Tuple](scrutinee: Html)
-    : Boolean | Option[Tuple | Html] =
-
-        ${Honeycomb.extractor[parts]('scrutinee)}
+    transparent inline def extrapolate[parts <: Tuple](scrutinee: Html): Extrapolation[Html] =
+      ${Honeycomb.extractor[parts]('scrutinee)}
 
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
@@ -393,6 +392,9 @@ object Html extends Tag.Container
 
     def fail(issue: Issue): Nothing =
       abort(ParseError(Html, Position(cursor.line, cursor.column), issue))
+
+    def warn(issue: Issue): Unit =
+      raise(ParseError(Html, Position(cursor.line, cursor.column), issue))
 
     @tailrec
     def skip(): Unit = cursor.let:
