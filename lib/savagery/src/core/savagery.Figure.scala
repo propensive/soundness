@@ -46,9 +46,8 @@ sealed trait Figure:
 
 case class Rectangle(position: Point, width: Float, height: Float) extends Figure:
   def xml: Xml = unsafely:
-    Xml.parse:
-      given showable: Float is Showable = _.toString.tt
-      t"""<rect x="${position.x} y="${position.y}" width="$width" height="$height"/>"""
+    given showable: Float is Showable = _.toString.tt
+    x"<rect x=${position.x.show} y=${position.y.show} width=${width.show} height=${height.show}/>"
 
 case class Outline
    (ops:       List[Stroke]       = Nil,
@@ -60,8 +59,7 @@ extends Figure:
 
   def xml: Xml =
     val d: Text = ops.reverse.map(_.encode).join(t" ")
-    // FIXME
-    unsafely(Xml.parse(t"""<path d="$d"/>"""))
+    x"<path d=$d/>"
 
   def moveTo(point: Point): Outline = Outline(Move(point) :: ops)
   def lineTo(point: Point): Outline = Outline(Draw(point) :: ops)
@@ -98,9 +96,8 @@ extends Figure:
 case class Ellipse(center: Point, xRadius: Float, yRadius: Float, angle: Angle) extends Figure:
   def circle: Boolean = xRadius == yRadius
 
-  def xml: Xml = unsafely:
-    Xml.parse:
-      given showable: Float is Showable = _.toString.tt
-      if circle
-      then t"""<circle cx="${center.x}" cy="${center.y}" r="${xRadius}"/>"""
-      else t"""<ellipse cx="${center.x}" cy="${center.y}" rx="${xRadius}" ry="${yRadius}"/>"""
+  def xml: Xml =
+    given showable: Float is Showable = _.toString.tt
+    if circle
+    then x"<circle cx=${center.x.show} cy=${center.y.show} r=${xRadius.show}/>"
+    else x"<ellipse cx=${center.x.show} cy=${center.y.show} rx=${xRadius.show} ry=${yRadius.show}/>"
