@@ -14,7 +14,7 @@ import soundness.*
 
 To work with HTML, we will represent values with the general `Html` type.
 Different HTML node types are represented by subtypes of `Html`, and may be
-e`Element`s, `Comment`s, `TextNode`s, a `Doctype` (document type declaration) or
+`Element`s, `Comment`s, `TextNode`s, a `Doctype` (document type declaration) or
 `Fragment`s (sequences of several HTML nodes).
 
 `Comment`s, `TextNode`s and `Doctype` are leaf nodes and have no children.
@@ -63,7 +63,6 @@ attributes as named parameters to `Tag`s constructs elements with attributes,
 and applying `Html` values (or a type such as `Text` which can be automatically
 converted to `Html`) as repeated arguments adds children to an existing element.
 
-
 For example,
 - `Br` represents an empty `<br>`
 - `Img(src = "image.jpg")` represents `<img src="image.jpg">`
@@ -99,8 +98,8 @@ children, it may also be a `Tag`. If it is not a `Fragment` then it will also
 conform to `Node`.
 
 Tags which accept children, tags which don't, and _transparent_ tags (such as
-`<a>`) have additional trait interfaces mixed in—`Container`, `Void` and
-`Transparent` respectively. So an empty element like `<br>` is a `Tag & Void`.
+`<a>`) have additional trait interfaces mixed in—`Tag.Container`, `Tag.Void` and
+`Tag.Transparent` respectively. So an empty element like `<br>` is a `Tag & Void`.
 
 Furthermore, if known, the tag name is encoded in an element's type, so `<br>`
 is a `Tag of "br"`, as well as an `Element of "br"` and an `Html of "br"`.
@@ -110,14 +109,15 @@ Note that `of` is just an infix type alias, defined as:
 infix type of [target, topic] = target { type Topic = topic }
 ```
 
-It has the effect of "injecting" a type member called `Topic` into another type. So
-`Html of "br"` is the same as `Html { type Topic = "br" }`.
+It has the effect of "injecting" a type member called `Topic` into another type.
+So `Html of "br"` is an alias of `Html { type Topic = "br" }`.
 
 We can also represent an HTML value which we know statically has one of a set of
 possible tag names. `Html of "ul" | "ol"` can represent either `<ul>` or `<ol>`
 nodes.
 
-Note that `|` has higher precedence than `of` and other non-symbolic infix types.
+Note that `|` has higher precedence than `of` and other non-symbolic infix
+types, so we can write this type without parentheses.
 
 The type aliases `Flow`, `Phrasing`, `Interactive`, `Embedded`, `Sectioning`,
 `ScriptSupporting`, `Metadata` and `Heading` are defined as unions of string
@@ -128,24 +128,26 @@ types are defined as accepting _flow_ or _phrasing_ content.
 For example, `List[Html of Flow](Hr, P("Hello"), Br)` is a list of HTML elements, all of
 which are part of the _flow_ content model.
 
-The types of elements that an `Element` may hold as children may also be encoded in its type.
-An instance of `Html over "li"` represents an element, such as `Ol` or `Ul`, which can hold
-`Li` children. As with `of`, `over` is a type alias which injects another type member called
-`Transport`. The two infix types can be combined, so a `Ul` element is an
-`Element of "ul" over "li"`.
+The types of elements that an `Element` may hold as children may also be encoded
+in its type. An instance of `Html over "li"` represents an element, such as `Ol`
+or `Ul`, which can hold `Li` children. As with `of`, `over` is a type alias
+which injects another type member called `Transport`. The two infix types can be
+combined, so a `Ul` element is an `Element of "ul" over "li"`.
 
-This same type can be written, `Element over "li" of "ul"` without changing its meaning,
-but this isn't conventional.
+This same type can be written as `Element over "li" of "ul"` without changing
+its meaning—when expanded to type members, the types are identical—but this
+isn't conventional.
 
-(The name `Transport` is a generalization of the subject of the `over` preposition, defined
-in a more general context. It doesn't make so much sense when applied to HTML.)
+(The name `Transport` is a generalization of the subject for the `over`
+prepositional type alias, which is defined in a more general context. It doesn't
+make so much sense when applied to HTML.)
 
 Finally, the `in` infix type associates a `Dom` with `Html`, `Element`s and
 `Tag`s. For most purposes, the WHATWG `Dom` will be used. Therefore all `Html` elements we
 encounter will be `Html in Whatwg` elements.
 
-Including the `Dom` in the type serves two purposes. Primarily, it provides the
-context for interpreting the node's `Topic` (i.e. its tag name).
+Including the `Dom` as part of the type serves two purposes. Primarily, it
+provides the context for interpreting the node's `Topic` (i.e. its tag name).
 
 But its presence in the type automatically brings a number of contextual values
 into scope. Most notably, this includes context which determines the attributes
@@ -154,24 +156,26 @@ that are valid for this particular element.
 Together, this provides the expressivity to be very precise about what is
 statically known about HTML values. We can write a type like,
 `Node & Container of "em" | "i" | "b" over Phrasing in Whatwg` and know that it
-referes to a single container node which accepts children that are `Phrasing`
+refers to a single container node that accepts children that are `Phrasing`
 content, is an `<em>`, `<i>` or `<b>` node and is defined in the `Whatwg` `Dom`.
 
-While this expressivity is available, it's usually unnecessary to be so precise.
-A type such as `Html of Flow` is often adequate precision.
+While this expressivity is available, and the Honeycomb API uses it for
+precision, it's usually unnecessary to be so specific in user applications. A
+type such as `Html of Flow` is often adequate precision.
 
 ### Parsing
 
-Textual content may be parsed into `Html` values from any textual source. This includes `Text`
-values, `Path`s representing files on disk, `HttpUrl`s, classpath resources, or any other source
-for which a `Streamable by Text` typclass exists.
+Textual content may be parsed into `Html` values from any textual source. This
+includes `Text` values, `Path`s representing files on disk, `HttpUrl`s,
+classpath resources, or any other source for which a `Streamable by Text`
+typclass exists.
 
 Two generic methods, `load` and `read`, can be used to parse the source as HTML. Of these,
 `load` always loads an entire HTML document, with a document type declaration
 (if it exists) and a single root `<html>` node. The result type is a `Document[Html]` whose
-`root` member is an instance of `Html`.
+`root` member is an instance of `Html` and whose `header` is a `Doctype`.
 
-Both require a `Dom` instance in scope, which will be used to control how parsing works.
+Both require a `Dom` instance in scope, which controls how parsing works.
 
 ```scala
 val doc: Document[Html] = url"https://example.com/index.html".load[Html]
@@ -197,28 +201,28 @@ specifying the tag names we wish to accept (at the top level) as the `Topic`
 type member of the `Html` we pass to the `read` method.
 
 If we expect to read an unordered list, we can call, `input.read[Html of "ul"]`.
-If we expect the possibility of ordered lists too, we can call, `input.read[Html
-of "ul" | "ol"]`. If we want to accept _any flow content_ we can call
-`input.read[Html of Flow]`.
+If we expect the possibility of ordered lists too, we can call,
+`input.read[Html of "ul" | "ol"]`. If we want to accept _any flow content_ we
+can call `input.read[Html of Flow]` and get an `Html of Flow in dom`.
 
-This additional static information can influence the parser. It will fail at
+This additional static information can influence the parser. It can fail at
 runtime if the content does not match the desired type. But it may also parse
-input differently depending on which type is expected. (This sort of behavior
-is familiar in Scala where an expected return type may influence typechecking.)
+input differently depending on which type is expected.
 
-For example, reading `"<p>Hello world</p>".read[Html of "p"]` is equivalent to
+For example, calling `"<p>Hello world</p>".read[Html of "p"]` is equivalent to
 the construction, `P("Hello world")`. Whereas,
 `"<p>Hello world</p>".read[Html of "html"]` is equivalent to the construction,
 `Html(Body(P("Hello world")))`. And `"<p>Hello world</p>".read[Html of "ul"]` is
 a runtime error.
 
-The HTML specification defines rules for when additional tags may be inferred,
-and when they cannot. These rules are encoded in the `Dom` instance.
+The HTML specification defines rules for when additional tags may be
+inferred—inserted into the DOM when they don't explicitly appear in the
+source—and when they cannot. These rules are encoded in the `Dom` instance.
 
 ### Static HTML values
 
 While it's possible to construct `Html` values using factory methods, such as
-`Ol(Li("Alpha"), Li("Beta"), Li("Gamma"))`, this may be written as raw HTML
+`Ol(Li("Alpha"), Li("Beta"), Li("Gamma"))`, this may also be written as raw HTML
 using the `h""` string interpolator, for example
 `h"<ol><li>Alpha</li><li>Beta</li><li>Gamma</li></ol>"`.
 
@@ -247,3 +251,75 @@ The distinction between an `item` value of `Html` and a value of, say, `Html of
 "li"` is important to capture: if we wish to apply a constructor to it, say,
 `Ul(item)`, that would not typecheck unless we know that the value `item` is
 precisely `Html of "li"`.
+
+Interpolators can additionally include substitutions, provided these appear in a
+suitable position in the HTML content.
+
+These positions include:
+ - body content, e.g. `h"<p>$content</p>"`
+ - attribute values, e.g. `h"<img src=$location>"`
+ - attribute value text, e.g. `h"<img src="/images/$filename">"`
+ - attribute maps, e.g. `h"<img src="dog.jpg" $attributes>"`
+ - comments, e.g. `h"<!--$comment-->"`
+
+Note the subtle difference between _attribute values_ and _attribute value
+text_: the latter appears inside quotes, while the former doesn't.
+
+These substitutions are typechecked according to their position and surrounding
+context. A substitution of body content must be an `Html` type that is an
+acceptable child of the enclosing element, or a type that is convertible to it;
+attribute values must have a type that corresponds to the attribute; attribute
+value text must be `Showable`, but is not constrained by the attribute type;
+attribute maps must be an instance of `Map[Text, Optional[Text]]` containing
+attribute keys and values; comments must be `Showable`.
+
+### `Renderable`
+
+The `Renderable` typeclass makes it possible to substitute other types anywhere
+an `Html` value is expected. A `Renderable` instance defines both the method of
+converting a value of some type to HTML through its implementation, and the type
+of HTML it produces through its type, e.g. `Html of "li"` or `Html of Flow`.
+
+For example, a `given` instance of `List[Text] is Renderable in "li"` could
+define how to render a list of `Text` values as `Html of "li"`.
+
+Here's how that might look:
+```scala
+given List[Text] is Renderable in "li" =
+  list => Fragment(list.map(Li(_))*)
+```
+
+With this definition in scope, and given a `list`, an instance of `List[Text]`,
+it becomes possible to call `list.html`, `Ul(list)` or `h"<ol>$list</ol>"`. But
+`Div(list)` is not permitted because a `<div>` cannot contain `<li>` children.
+
+### `Fragment`s
+
+All `Html` values will be either a `Node`, representing exactly one node
+(whether it be element, comment or text) or a `Fragment`, representing an
+arbitrary sequence of nodes.
+
+More often than not, it's acceptable and convenient to accept a sequence of
+nodes anywhere a single node would be acceptable. The nature of HTML is that, as
+a text-based data format, any constraint of a parameter or return type of
+_exactly one node_ is arbitrary.
+
+Therefore, the meaning given to the conventional `Html` type is that it should
+always permit sequences of nodes. There are, however, places where exactly one
+node is necessary, and these are represented by the `Node` type, which excludes
+`Fragment`s.
+
+`Fragment`s are designed to be as intuitive as possible. They are seamlessly
+unwrapped whenever they are provided as children to an `Element`, and equality
+is defined for all `Html` subtypes such that a `Fragment` of exactly one node is
+equal to that node, and has the same hashcode.
+
+### Serialization
+
+HTML can be converted to text in one of two ways.
+
+Most simply, a `Showable` instance exists that allows `.show` to be called on
+any `Html` value to convert it to `Text`. This works fine for most purposes, but
+it is not optimized for large amounts of HTML or for streaming.
+
+### Pattern Matching
