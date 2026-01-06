@@ -94,6 +94,14 @@ object Html extends Tag.Container
     transparent inline def extrapolate[parts <: Tuple](scrutinee: Html): Extrapolation[Html] =
       ${Honeycomb.extractor[parts]('scrutinee)}
 
+  given addable: [dom        <: Dom,
+                  leftTopic  <: Label,
+                  rightTopic <: Label,
+                  left       <: Html of leftTopic in dom,
+                  right      <: Html of rightTopic in dom]
+        => left is Addable by right to (Fragment of leftTopic | rightTopic in dom) =
+    (left, right) =>
+      Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
         =>  Tactic[ParseError]
@@ -855,6 +863,27 @@ extends Node, Topical, Transportive, Dynamic:
       case element@Element(tag.label, _, _, _) => element.of[tag.Topic].in[tag.Form]
 
     Fragment[tag.Topic](children2.mutable(using Unsafe)*).in[tag.Form]
+
+
+  def ^+ (html: Html of Transport): Element of Topic over Transport in Form =
+    html.match
+      case fragment: Fragment =>
+        Element(label, attributes, IArray.from(fragment.nodes) ++ children, foreign)
+      case node: Node =>
+        Element(label, attributes, node +: children, foreign)
+    . of[Topic]
+    . over[Transport]
+    . in[Form]
+
+  def +^ (html: Html of Transport): Element of Topic over Transport in Form =
+    html.match
+      case fragment: Fragment =>
+        Element(label, attributes, children ++ fragment.nodes, foreign)
+      case node: Node =>
+        Element(label, attributes, children :+ node, foreign)
+    . of[Topic]
+    . over[Transport]
+    . in[Form]
 
   override def equals(that: Any): Boolean = that match
     case Fragment(node: Element) => this == node

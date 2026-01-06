@@ -431,3 +431,15 @@ object Tests extends Suite(m"Honeycomb Tests"):
           val html = Div(Ul(Li("one"), Li("two"), Li("three")))
           html / Ul / Li
         . assert(_ == Fragment(Li("one"), Li("two"), Li("three")))
+
+        test(m"Joining HTML"):
+          H1("title") + P("Hello world")
+        . assert(_ == h"<h1>title</h1><p>Hello world</p>")
+
+        test(m"Insert prefix child"):
+          Div(P("body")) ^+ H1("title")
+        . assert(_ == h"<div><h1>title</h1><p>body</p></div>")
+
+        test(m"Insert suffix child"):
+          Div(H1("title")) +^ P("body")
+        . assert(_ == h"<div><h1>title</h1><p>body</p></div>")
