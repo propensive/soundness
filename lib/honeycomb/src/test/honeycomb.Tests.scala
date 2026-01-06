@@ -420,3 +420,14 @@ object Tests extends Suite(m"Honeycomb Tests"):
           P(Img(alt = "titletext")).absolve match
             case h"""<p><$img></p>""" => img
         . assert(_ == Img(alt = t"titletext"))
+
+      suite(m"Accessor tests"):
+        test(m"Simple accessor"):
+          val html = Table(Tbody(Tr(Th("Hello world"))))
+          html / Tbody / Tr / Th
+        . assert(_ == Th("Hello world"))
+
+        test(m"Collecting accessor"):
+          val html = Div(Ul(Li("one"), Li("two"), Li("three")))
+          html / Ul / Li
+        . assert(_ == Fragment(Li("one"), Li("two"), Li("three")))

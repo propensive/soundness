@@ -812,6 +812,8 @@ sealed into trait Html extends Topical, Documentary, Formal:
   private[honeycomb] def over[transport <: Label]: this.type over transport =
     asInstanceOf[this.type over transport]
 
+  def / (tag: Tag): Fragment of tag.Topic in tag.Form = Fragment().of[tag.Topic].in[tag.Form]
+
 sealed trait Node extends Html
 
 case class Comment(text: Text) extends Node:
@@ -847,6 +849,12 @@ extends Node, Topical, Transportive, Dynamic:
 
   override def toString(): String =
     s"<$label>${children.mkString}</$label>"
+
+  override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
+    val children2 = children.collect:
+      case element@Element(tag.label, _, _, _) => element.of[tag.Topic].in[tag.Form]
+
+    Fragment[tag.Topic](children2.mutable(using Unsafe)*).in[tag.Form]
 
   override def equals(that: Any): Boolean = that match
     case Fragment(node: Element) => this == node
@@ -894,6 +902,9 @@ case class Fragment(nodes: Node*) extends Html:
     case Fragment(nodes0*) => nodes0 == nodes
     case node: Html        => nodes.length == 1 && nodes(0) == node
     case _                 => false
+
+  override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
+    Fragment(nodes.flatMap { html => (html / tag).nodes }*).of[tag.Topic].in[tag.Form]
 
 case class Doctype(text: Text) extends Node:
   override def hashCode: Int = List(this).hashCode
