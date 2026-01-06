@@ -257,6 +257,7 @@ object test extends ScalaModule:
     urticose.test,
     nomenclature.test,
     octogenarian.test,
+    obligatory.test,
     panopticon.test,
     //perihelion.test,
     phoenicia.test,
@@ -676,6 +677,10 @@ object orthodoxy extends Library:
   object core extends Component(scintillate.server, jacinta.core)
   object test extends Tests(core)
 
+object obligatory extends Library:
+  object core extends Component(urticose.core, zephyrine.core, revolution.core, jacinta.core)
+  object test extends Tests(core)
+
 object panopticon extends Library:
   object core extends Component(rudiments.core)
   object test extends Tests(core, honeycomb.core)
@@ -686,6 +691,7 @@ object parasite extends Library:
 
 /*object perihelion extends Library:
   object core extends Component(telekinesis.core, scintillate.server, gastronomy.core, eucalyptus.core)
+  object test extends Component(core)
 
   object test extends Tests(core)
 }*/
@@ -1024,7 +1030,6 @@ object publishing extends Module:
     yossarian.core.publishLocal()()
     zephyrine.core.publishLocal()()
     zeppelin.core.publishLocal()()
-
     soundness.base.publishLocal()()
     soundness.cli.publishLocal()()
     soundness.data.publishLocal()()
