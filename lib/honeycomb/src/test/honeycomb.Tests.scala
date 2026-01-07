@@ -443,3 +443,11 @@ object Tests extends Suite(m"Honeycomb Tests"):
         test(m"Insert suffix child"):
           Div(H1("title")) +^ P("body")
         . assert(_ == h"<div><h1>title</h1><p>body</p></div>")
+
+        test(m"Insert prefix children"):
+          Div(P("body")) ^+ (H1("title") + H2("subtitle"))
+        . assert(_ == h"<div><h1>title</h1><h2>subtitle</h2><p>body</p></div>")
+
+        test(m"Insert suffix children"):
+          Div(H1("title")) +^ (P("body") + P("more"))
+        . assert(_ == h"<div><h1>title</h1><p>body</p><p>more</p></div>")
