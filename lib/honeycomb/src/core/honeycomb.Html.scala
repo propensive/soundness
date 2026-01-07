@@ -94,6 +94,14 @@ object Html extends Tag.Container
     transparent inline def extrapolate[parts <: Tuple](scrutinee: Html): Extrapolation[Html] =
       ${Honeycomb.extractor[parts]('scrutinee)}
 
+  given addable: [dom        <: Dom,
+                  leftTopic  <: Label,
+                  rightTopic <: Label,
+                  left       <: Html of leftTopic in dom,
+                  right      <: Html of rightTopic in dom]
+        => left is Addable by right to (Fragment of leftTopic | rightTopic in dom) =
+    (left, right) =>
+      Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
         =>  Tactic[ParseError]
@@ -812,6 +820,10 @@ sealed into trait Html extends Topical, Documentary, Formal:
   private[honeycomb] def over[transport <: Label]: this.type over transport =
     asInstanceOf[this.type over transport]
 
+  def / (tag: Tag): Fragment of tag.Topic in tag.Form = Fragment().of[tag.Topic].in[tag.Form]
+
+  def body: Fragment of Topic over Transport in Form
+
 sealed trait Node extends Html
 
 case class Comment(text: Text) extends Node:
@@ -822,6 +834,8 @@ case class Comment(text: Text) extends Node:
     case Fragment(Comment(text0)) => text0 == text
     case _                        => false
 
+  def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
+
 case class TextNode(text: Text) extends Node:
   type Topic = "#text"
 
@@ -831,6 +845,8 @@ case class TextNode(text: Text) extends Node:
     case Fragment(textual: TextNode) => this == textual
     case TextNode(text0)             => text0 == text
     case _                           => false
+
+  def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
 
 object Element:
   def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
@@ -847,6 +863,35 @@ extends Node, Topical, Transportive, Dynamic:
 
   override def toString(): String =
     s"<$label>${children.mkString}</$label>"
+
+  override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
+    val children2 = children.collect:
+      case element@Element(tag.label, _, _, _) => element.of[tag.Topic].in[tag.Form]
+
+    Fragment[tag.Topic](children2.mutable(using Unsafe)*).in[tag.Form]
+
+  def body: Fragment of Topic over Transport in Form =
+    Fragment[Topic](children.map(_.of[Topic])*).over[Transport].in[Form]
+
+  def ^+ (html: Html of Transport): Element of Topic over Transport in Form =
+    html.match
+      case fragment: Fragment =>
+        Element(label, attributes, IArray.from(fragment.nodes) ++ children, foreign)
+      case node: Node =>
+        Element(label, attributes, node +: children, foreign)
+    . of[Topic]
+    . over[Transport]
+    . in[Form]
+
+  def +^ (html: Html of Transport): Element of Topic over Transport in Form =
+    html.match
+      case fragment: Fragment =>
+        Element(label, attributes, children ++ fragment.nodes, foreign)
+      case node: Node =>
+        Element(label, attributes, children :+ node, foreign)
+    . of[Topic]
+    . over[Transport]
+    . in[Form]
 
   override def equals(that: Any): Boolean = that match
     case Fragment(node: Element) => this == node
@@ -895,6 +940,11 @@ case class Fragment(nodes: Node*) extends Html:
     case node: Html        => nodes.length == 1 && nodes(0) == node
     case _                 => false
 
+  override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
+    Fragment(nodes.flatMap { html => (html / tag).nodes }*).of[tag.Topic].in[tag.Form]
+
+  def body: Fragment of Topic over Transport in Form = this
+
 case class Doctype(text: Text) extends Node:
   override def hashCode: Int = List(this).hashCode
 
@@ -902,3 +952,5 @@ case class Doctype(text: Text) extends Node:
     case Doctype(text0)           => text0 == text
     case Fragment(Doctype(text0)) => text0 == text
     case _                        => false
+
+  def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]

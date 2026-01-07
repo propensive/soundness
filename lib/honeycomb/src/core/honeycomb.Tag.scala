@@ -140,7 +140,7 @@ object Tag:
     def applyDynamic[className <: Label](method: className)
          (children: Optional[Html of (? <: Transport)]*)
          (using css: Classes of className)
-    : Element of Topic in Form =
+    : Element of Topic over Transport in Form =
 
         val nodes = children.compact.nodes
 
@@ -149,7 +149,7 @@ object Tag:
           val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
           presets.updated("class", value)
 
-        Element(label, presets2, nodes, foreign).of[Topic].in[Form]
+        Element(label, presets2, nodes, foreign).of[Topic].over[Transport].in[Form]
 
     def node(attributes: Map[Text, Optional[Text]]): Result =
       new Element(label, presets ++ attributes, IArray(), foreign) with Html.Populable()
