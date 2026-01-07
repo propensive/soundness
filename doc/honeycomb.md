@@ -314,6 +314,121 @@ unwrapped whenever they are provided as children to an `Element`, and equality
 is defined for all `Html` subtypes such that a `Fragment` of exactly one node is
 equal to that node, and has the same hashcode.
 
+### Attributes
+
+Attributes of `Element`s are store internally as `Text`, but may be attributed
+to elements from typed values. For example, the HTML specification requires that
+some attributes be integers, while others take values from an enumerated list of
+options.
+
+The typing of attributes needs some explanation.
+
+Each valid attribute name, such as `title` or `width`, has a phantom type
+associated with it. Sometimes the same attribute has different phantom types
+when applied to different elements because those attributes have different
+meanings on different elements.
+
+These phantom types _represent_ the types of values that attribute can take, but
+are not the actual type of the value that attribute takes. But each phantom type
+may be associated with a concrete type, such as `Int` or `Text` or an
+enumeration of values, which _is_ the type of the value.
+
+For example, `width` has the phantom type `Attributive.PositiveInt`, which is
+associated with `Int`. So for an `Int` called `int`, we can write
+`Img(width = int)` or `h"<img width=$int>"`, while a `Double` value could not be
+used.
+
+When deciding what concrete type an attribute takes, Honeycomb checks for an
+`Attribute` typeclass corresponding to the attribute name and (except for global
+attributes) the element name. That typeclass will be associated with ag phantom
+type. Subsequently it checks for an `Attributive` typeclass corresponding to the
+phantom type, and finds its associted concrete type.
+
+For example, if we write `Img(title = info)`, the compiler is constrained in two ways:
+1. the value `info` has a type
+2. there is an expected type for a `title` attribute on an `<img>` element
+
+In order for the code to compile, Honeycomb will need to find a phantom
+type—let's call it `topic`—such that there is an instance of `info.type is
+Attributive to topic` and an instance of `"title" is Attribute on "img" of
+topic`. In this case, it could choose the phantom type `Attributive.Textual`.
+
+Why this indirection? The reason is twofold.
+
+Firstly, many HTML attributes, like `width`, `height`, `maxlength` and seven
+other attributes all share the same type; in this case,
+`Attributive.PositiveInt`. If we wish to support `Int`s for these attributes (or
+`Long`s, `Short`s or `Byte`s) we should not have to define the same typeclass
+instance for every attribute. Phantom types associated with each _HTML attribute
+type_ make it possible to support all attributes of that type with a single
+typeclass.
+
+Secondly, attribute types should be _pluggable_. If an application uses a
+particular library for representing URLs as `Weblink`s, for example, a single
+`given Weblink is Attributive to Attributive.Url` declaration should be
+sufficient to enable `Weblink`s to be used consistently anywhere an attribute
+expects a URL.
+
+Currently, the set of definitions of `Attributive` instances is incomplete.
+Definitions exist to make primitive types attributive to attributes which take
+those values, but most other types are not defined. For now, the best solution
+is to make `Text` values attribtive for _all_ attributes. This can be achieved
+with one import:
+```scala
+import attributives.textAttributes
+```
+
+#### CSS `class` attributes
+
+A common global attribute is `class`. This is inconvenient to write in Scala
+because it's a keyword. Instead, we would normally need to write it as,
+`` P(`class` = "info")("body text") ``.
+
+To make things easier, there's a shortcut, especially for `class` attributes.
+Instead, we can write, `P.info("body text")`, provided `info` has been declared
+as a valid CSS class name, with a contextual value such as,
+```scala
+given (Stylesheet of "info") = Stylesheet()
+```
+or if we wanted to define several classes at once,
+```scala
+given (Stylesheet of "info" | "warning" | "error") = Stylesheet()
+```
+
+Note that the right-hand side constructor is always `Stylesheet()`; the most
+important part is the type.
+
+The requirement of a contextual `Stylesheet` value adds some typesafety to
+referring to class names. If this is not required, then freeform class names can
+be used in the `Tag.class()` style by importing:
+```scala
+import stylesheets.uncheckedClasses
+```
+
+### Transforming HTML
+
+A few methods are provided for producing new `Html` values from existing values.
+
+Two or more `Html` values can be joined with, `html + html2`, producing a
+`Fragment` whose precise type corresponds to the types of `html` and `html2`.
+
+An `Html` value may also be inserted _inside_ another, provided it is statically
+known to be an `Element`—since it is not possible to add a child to any other
+subtype of `Html`. Two methods are available `^+` and `+^` both of which add the
+right operand as a child of the left operand.
+
+While `^+` inserts it at the start (as indicated by the `^` appearing to the
+_left_ of the `+` in the symbolic operator), `+^` inserts the child at the end.
+
+Given an `Element`, attributes may be added (or overwritten if they exist already) with,
+```scala
+val node = h"""<img src="puppy.jpg">"""
+val node2 = node.alt = "An image of a young dog"
+```
+
+Since `Html` values are immutable, `node` remains unchanged and `node2` is now the value,
+`h"""<img src="puppy.jpg" alt="An image of a young dog">"""`.
+
 ### Serialization
 
 HTML can be converted to text in one of two ways.
@@ -321,6 +436,22 @@ HTML can be converted to text in one of two ways.
 Most simply, a `Showable` instance exists that allows `.show` to be called on
 any `Html` value to convert it to `Text`. This works fine for most purposes, but
 it is not optimized for large amounts of HTML or for streaming.
+
+This works fast enough for most purposes, but is not optimized.
+
+For performance-critical code, a streaming solution is available which produces
+a `Stream[Text]` (an alias of `LazyList[Text]`), broken into chunks.
+
+Any `Document[Html]` may be converted to a stream with, `doc.stream[Text]` (or
+`doc.stream[Bytes]`), in a concurrent environment. This requires a few imports
+to set up:
+```scala
+import codicils.cancel
+import supervisors.global
+import threading.virtual
+
+doc.stream[Text]
+```
 
 ### Pattern Matching
 
@@ -383,9 +514,28 @@ html match
 
 It is possible to extract from other positions, too. These include,
  - attribute values
- - attribute value text
  - collections of attributes
- - comments
- - single elements
+ - `Comment`s
+ - `Node`s
+ - `Element`s (i.e. nodes which are not text or comments)
 
-This is almost the same as the list of insertion positions.
+This is almost the same as the list of insertion positions, but there are some limitations and
+implementation restrictions.
+
+- `case h"<img src=$source>"` will match an entire attribute
+- `case h"<img $attributes>"` will match the attributes of the `<img>` tag
+- `case h"<img src=$source $attributes>"` will extract the `src` attribute as `source`
+  and any additional addributes (excluding `src`) as a `Map`
+- `case h"<!--$comment-->"` will match an entire comment
+- `case h"<$element>"` will match an HTML element, but not any other kind of node
+
+Currently, it is not possible to extract a `Fragment` in a pattern match, though we would like
+to be able to do this.
+```scala
+val html = t"<ul><li>one</li><li>two</li></ul>".read[Html]
+html match
+  case h"<ul>$items</ul>" => items
+```
+
+Unfortunately, an extractor will only match a single node. In a later release of Honeycomb it
+will be possible to have `items` instantiated from this pattern as a `Fragment`.
