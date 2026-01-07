@@ -41,7 +41,7 @@ import vacuous.*
 
 import doms.html.whatwg
 import whatwg.*
-import attributives.attributiveText
+import attributives.textAttributes
 
 object Checkbox:
   given renderable: Checkbox is Renderable in Phrasing = checkbox =>

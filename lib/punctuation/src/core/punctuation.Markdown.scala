@@ -16,7 +16,7 @@ import vacuous.*
 import zephyrine.*
 
 import doms.html.whatwg, whatwg.*
-import attributives.attributiveText
+import attributives.textAttributes
 
 object Markdown:
   trait Node
