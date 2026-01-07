@@ -822,6 +822,8 @@ sealed into trait Html extends Topical, Documentary, Formal:
 
   def / (tag: Tag): Fragment of tag.Topic in tag.Form = Fragment().of[tag.Topic].in[tag.Form]
 
+  def body: Fragment of Topic over Transport in Form
+
 sealed trait Node extends Html
 
 case class Comment(text: Text) extends Node:
@@ -832,6 +834,8 @@ case class Comment(text: Text) extends Node:
     case Fragment(Comment(text0)) => text0 == text
     case _                        => false
 
+  def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
+
 case class TextNode(text: Text) extends Node:
   type Topic = "#text"
 
@@ -841,6 +845,8 @@ case class TextNode(text: Text) extends Node:
     case Fragment(textual: TextNode) => this == textual
     case TextNode(text0)             => text0 == text
     case _                           => false
+
+  def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
 
 object Element:
   def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
@@ -864,6 +870,8 @@ extends Node, Topical, Transportive, Dynamic:
 
     Fragment[tag.Topic](children2.mutable(using Unsafe)*).in[tag.Form]
 
+  def body: Fragment of Topic over Transport in Form =
+    Fragment[Topic](children.map(_.of[Topic])*).over[Transport].in[Form]
 
   def ^+ (html: Html of Transport): Element of Topic over Transport in Form =
     html.match
@@ -935,6 +943,8 @@ case class Fragment(nodes: Node*) extends Html:
   override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
     Fragment(nodes.flatMap { html => (html / tag).nodes }*).of[tag.Topic].in[tag.Form]
 
+  def body: Fragment of Topic over Transport in Form = this
+
 case class Doctype(text: Text) extends Node:
   override def hashCode: Int = List(this).hashCode
 
@@ -942,3 +952,5 @@ case class Doctype(text: Text) extends Node:
     case Doctype(text0)           => text0 == text
     case Fragment(Doctype(text0)) => text0 == text
     case _                        => false
+
+  def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
