@@ -32,6 +32,8 @@
                                                                                                   */
 package honeycomb
 
+import scala.util.NotGiven
+
 import anticipation.*
 import contextual.*
 import prepositional.*
@@ -75,3 +77,9 @@ extension (html: Seq[Html])
 
 package doms.html:
   given whatwg: Whatwg = Whatwg()
+
+package stylesheets:
+  given uncheckedClasses: [classname <: Label: ValueOf] => NotGiven[classname =:= "apply"]
+        => Stylesheet of classname =
+    new Stylesheet(Set(valueOf[classname])):
+      type Topic = classname

@@ -220,11 +220,19 @@ object Tests extends Suite(m"Honeycomb Tests"):
           t"""<table><tbody><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
         . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
-        given (Stylesheet of "test" | "foo") = Stylesheet()
 
         test(m"<thead> works like <tbody>"):
           t"""<table class="test"><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
-        . assert(_ == Table.test(Thead(Tr(Th("First"), Td("Second"), Td("Third")))))
+        . assert: result =>
+            given (Stylesheet of "test" | "foo") = Stylesheet()
+            result == Table.test(Thead(Tr(Th("First"), Td("Second"), Td("Third"))))
+
+        test(m"Generic stylesheet"):
+          t"""<table class="test"><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
+        . assert: result =>
+            import stylesheets.uncheckedClasses
+            println(Table.test(Thead(Tr(Th("First"), Td("Second"), Td("Third")))))
+            result == Table.test(Thead(Tr(Th("First"), Td("Second"), Td("Third"))))
 
         test(m"<tfoot> closes inferred <tbody>"):
           t"""<table><tr><th>First<td>Second<td>Third<tfoot><tr><td>Footer</table>""".read[Html of Flow]
