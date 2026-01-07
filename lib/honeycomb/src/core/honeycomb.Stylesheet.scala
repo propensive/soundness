@@ -38,21 +38,22 @@ import prepositional.*
 import proscenium.*
 import spectacular.*
 import symbolism.*
+import typonym.*
 import vacuous.*
 
-object Classes:
-  given generic: Classes is GenericCssSelection = _.names.join(t".", t".", t"")
+object Stylesheet:
+  given generic: Stylesheet is GenericCssSelection = _.classes.join(t".", t".", t"")
 
-  def apply[name <: Label: ValueOf](): Classes of name =
-    new Classes(Set(valueOf[name])) { type Topic = name }
+  def apply[name <: Label: Reifiable to List[String]](): Stylesheet of name =
+    new Stylesheet(name.reify.map(_.tt).to(Set)) { type Topic = name }
 
-  given addable: Classes is Addable by Classes to Classes =
-    (classes, additions) => Classes(classes.names ++ additions.names)
+  given addable: Stylesheet is Addable by Stylesheet to Stylesheet =
+    (classes, additions) => Stylesheet(classes.classes ++ additions.classes)
 
-  given subtractable: Classes is Subtractable by Classes to Classes =
-    (classes, subtractions) => Classes(classes.names -- subtractions.names)
+  given subtractable: Stylesheet is Subtractable by Stylesheet to Stylesheet =
+    (classes, subtractions) => Stylesheet(classes.classes -- subtractions.classes)
 
-  given empty: Classes(Set()):
+  given empty: Stylesheet(Set()):
     type Topic = "apply"
 
-case class Classes(names: Set[Text]) extends Topical
+case class Stylesheet(classes: Set[Text]) extends Topical

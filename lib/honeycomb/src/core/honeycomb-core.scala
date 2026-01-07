@@ -45,7 +45,7 @@ extension [renderable: Renderable](value: renderable)
   def html: Html of renderable.Form = renderable.render(value)
 
 package attributives:
-  given attributiveText: [target] => Text is Attributive to target =
+  given textAttributes: [target] => Text is Attributive to target =
     (key, value) => (key, value)
 
 extension (inline context: StringContext)

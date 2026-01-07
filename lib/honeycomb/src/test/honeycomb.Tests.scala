@@ -220,7 +220,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
           t"""<table><tbody><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
         . assert(_ == Table(Tbody(Tr(Th("First"), Td("Second"), Td("Third")))))
 
-        given (Classes of "test") = Classes()
+        given (Stylesheet of "test" | "foo") = Stylesheet()
 
         test(m"<thead> works like <tbody>"):
           t"""<table class="test"><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
