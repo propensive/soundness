@@ -33,3 +33,6 @@
 package contextual
 
 type Extrapolation[result] = Boolean | Option[Tuple | result]
+
+transparent inline def interpolation[topic](inline context: StringContext): Interpolation =
+  ${Interpolation[topic]('context)}
