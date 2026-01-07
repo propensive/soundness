@@ -16,7 +16,7 @@ import vacuous.*
 import zephyrine.*
 
 import doms.html.whatwg
-import attributives.attributiveText
+import attributives.textAttributes
 
 enum Layout extends Markdown.Node:
   case BlockQuote(line: Ordinal, layout: Layout*)

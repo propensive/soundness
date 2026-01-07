@@ -40,7 +40,7 @@ import vacuous.*
 
 import doms.html.whatwg
 import whatwg.*
-import attributives.attributiveText
+import attributives.textAttributes
 
 object Combobox:
   given renderable: Combobox is Renderable in Phrasing = combobox =>

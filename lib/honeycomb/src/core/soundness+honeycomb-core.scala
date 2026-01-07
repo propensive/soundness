@@ -33,7 +33,7 @@
 package soundness
 
 export honeycomb
-. { Autocomplete, Attribute, Classes, Capture, Crossorigin, DomId, Element,
+. { Autocomplete, Attribute, Stylesheet, Capture, Crossorigin, DomId, Element,
     HDir, Attributive, HttpEquiv, Kind, Method, Node, h, Html,
     Preload, Rel, Rev, Sandbox, Scope, Shape, Tag, Target, Wrap, html,
     Renderable }

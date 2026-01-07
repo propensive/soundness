@@ -34,14 +34,16 @@ package typonym
 
 import scala.quoted.*
 
+import anticipation.*
 import prepositional.*
 import proscenium.*
 
 object Reifiable:
-  transparent inline given setUnion: [phantom, value] => phantom is Reifiable to List[value] =
+  transparent inline given listUnion: [phantom, value] => phantom is Reifiable to List[value] =
     val result: List[value] = reifyAs[TypeSet[phantom], List[value]]
 
     () => result
 
 trait Reifiable extends Typeclass, Resultant:
+  def reify: Result = reification()
   def reification(): Result

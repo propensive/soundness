@@ -42,7 +42,7 @@ import vacuous.*
 
 import doms.html.whatwg
 import whatwg.*
-import attributives.attributiveText
+import attributives.textAttributes
 
 private given realm: Realm = realm"legerdemain"
 
@@ -76,8 +76,7 @@ package formulations:
           validation: Optional[Message],
           required:   Boolean)
     : Html of Flow =
-        given alertClass: (Classes of "alert") = Classes()
-        given requiredClass: (Classes of "required") = Classes()
+        given alertClass: (Stylesheet of "alert" | "required") = Stylesheet()
         Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required(t"*"))
 
         // Div

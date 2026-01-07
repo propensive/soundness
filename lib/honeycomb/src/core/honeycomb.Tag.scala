@@ -91,7 +91,7 @@ object Tag:
         boundary:   Boolean                   = false)
   : Container of label over children in dom =
 
-      val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
+      val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
 
       Container
        (valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary)
@@ -104,7 +104,7 @@ object Tag:
        (presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false)
   : Transparent of label over children in dom =
 
-      val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
+      val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
 
       transparent(valueOf[label].tt, admissible, presets, boundary = boundary)
       . of[label]
@@ -137,15 +137,15 @@ object Tag:
            (label, autoclose, mode, presets, admissible, insertable, foreign, false, false, boundary):
     type Result = Element & Html.Populable of Topic over Transport in Form
 
-    def applyDynamic[className <: Label](method: className)
+    def applyDynamic[className <: Label: ValueOf](method: className)
          (children: Optional[Html of (? <: Transport)]*)
-         (using css: Classes of className)
+         (using css: Stylesheet of (? >: className))
     : Element of Topic over Transport in Form =
 
         val nodes = children.compact.nodes
 
-        val presets2 = if css.names.nil then presets else
-          val cls = css.names.join(t" ")
+        val presets2 = if css.classes.nil then presets else
+          val cls: Text = valueOf[className]
           val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
           presets.updated("class", value)
 
@@ -179,11 +179,11 @@ object Tag:
 
     def applyDynamic[className <: Label](method: className)
          (children: Optional[Html of (? <: Transport)]*)
-         (using css: Classes of className)
+         (using css: Stylesheet of (? >: className))
     : Element of Topic in Form =
 
-        val presets2 = if css.names.nil then presets else
-          val cls = css.names.join(t" ")
+        val presets2 = if css.classes.nil then presets else
+          val cls = css.classes.join(t" ")
           val value = presets.at("class").lay(cls) { preset => t"$preset $cls" }
           presets.updated("class", value)
 

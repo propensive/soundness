@@ -16,7 +16,7 @@ import vacuous.*
 import zephyrine.*
 
 import doms.html.whatwg
-import attributives.attributiveText
+import attributives.textAttributes
 
 enum Prose extends Markdown.Node:
   case Textual(text: Text)

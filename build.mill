@@ -817,7 +817,7 @@ object turbulence extends Library:
   object test extends Tests(probably.cli, core)
 
 object typonym extends Library:
-  object core extends Component(proscenium.core, prepositional.core)
+  object core extends Component(proscenium.core, prepositional.core, anticipation.text)
   object test extends Tests(probably.cli, core)
 
 object ulysses extends Library:

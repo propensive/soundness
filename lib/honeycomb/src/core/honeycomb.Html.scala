@@ -108,7 +108,7 @@ object Html extends Tag.Container
         =>  (Html of content) is Aggregable by Text =
 
     input =>
-      val root = Tag.root(content.reification().map(_.tt).to(Set))
+      val root = Tag.root(content.reify.map(_.tt).to(Set))
       parse(input.iterator, root).of[content]
 
   given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
@@ -827,19 +827,18 @@ sealed into trait Html extends Topical, Documentary, Formal:
 sealed trait Node extends Html
 
 case class Comment(text: Text) extends Node:
-  override def hashCode: Int = List(this).hashCode
-
   override def equals(that: Any): Boolean = that match
     case Comment(text0)           => text0 == text
     case Fragment(Comment(text0)) => text0 == text
     case _                        => false
 
   def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
+  override def toString(): String = this.show.s
 
 case class TextNode(text: Text) extends Node:
   type Topic = "#text"
 
-  override def hashCode: Int = List(this).hashCode
+  override def toString(): String = this.show.s
 
   override def equals(that: Any): Boolean = that match
     case Fragment(textual: TextNode) => this == textual
@@ -861,8 +860,7 @@ case class Element
              foreign:    Boolean)
 extends Node, Topical, Transportive, Dynamic:
 
-  override def toString(): String =
-    s"<$label>${children.mkString}</$label>"
+  override def toString(): String = this.show.s
 
   override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
     val children2 = children.collect:
@@ -934,6 +932,7 @@ object Fragment:
 
 case class Fragment(nodes: Node*) extends Html:
   override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode
+  override def toString(): String = this.show.s
 
   override def equals(that: Any): Boolean = that match
     case Fragment(nodes0*) => nodes0 == nodes
@@ -946,7 +945,6 @@ case class Fragment(nodes: Node*) extends Html:
   def body: Fragment of Topic over Transport in Form = this
 
 case class Doctype(text: Text) extends Node:
-  override def hashCode: Int = List(this).hashCode
 
   override def equals(that: Any): Boolean = that match
     case Doctype(text0)           => text0 == text

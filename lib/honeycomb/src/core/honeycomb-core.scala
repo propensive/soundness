@@ -32,6 +32,8 @@
                                                                                                   */
 package honeycomb
 
+import scala.util.NotGiven
+
 import anticipation.*
 import contextual.*
 import prepositional.*
@@ -45,7 +47,7 @@ extension [renderable: Renderable](value: renderable)
   def html: Html of renderable.Form = renderable.render(value)
 
 package attributives:
-  given attributiveText: [target] => Text is Attributive to target =
+  given textAttributes: [target] => Text is Attributive to target =
     (key, value) => (key, value)
 
 extension (inline context: StringContext)
@@ -75,3 +77,9 @@ extension (html: Seq[Html])
 
 package doms.html:
   given whatwg: Whatwg = Whatwg()
+
+package stylesheets:
+  given uncheckedClasses: [classname <: Label: ValueOf] => NotGiven[classname =:= "apply"]
+        => Stylesheet of classname =
+    new Stylesheet(Set(valueOf[classname])):
+      type Topic = classname
