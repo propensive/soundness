@@ -323,3 +323,69 @@ any `Html` value to convert it to `Text`. This works fine for most purposes, but
 it is not optimized for large amounts of HTML or for streaming.
 
 ### Pattern Matching
+
+As with the construction of new `Html` objects using interpolators, it's possible
+to do the reverse: to pattern-match against an `Html` value. For example,
+
+```scala
+html match
+  case h"<li>one</li>" => 1
+  case h"<li>two</li>" => 2
+  case _               => Unset
+```
+
+Depending on the value of `html`, we could get a result of `1`, `2` or `Unset`. Matches against
+literal patterns such as these must be exact, but the `Html` value may be either a matching
+`Node` instance or a `Fragment` containing just that `Node`.
+
+Patterns may be arbitrarily complex, if desired, like
+`h"<ul><li>one</li><li>two</li></ul>"`—but such patterns become more fragile to
+subtle differences. However, patterns are parsed, checked as correct HTML, and
+matched on the DOM structure; not a serialized string. So
+`h"<ul><li>one<li>two</ul>"` would match the pattern above, despite being
+written without explicit closing `</li>` tags.
+
+It's also possible to extrapolate values from a pattern by binding variables to
+"holes" in a pattern. Here's the example from above, rewritten to extract just
+the contents of the `<li>` element.
+
+```scala
+html match
+  case h"<li>$value</li>" => value match
+    case h"one"             => 1
+    case h"two"             => 2
+    case _                  => Unset
+  case _                  => Unset
+```
+
+Here, `value` is extracted from the `<li>` element. An `<li>` may contain text or HTML elements,
+so the type of `value` reflects that. We are interested in matching on a `TextNode`,
+so we match against `h"one"` and `h"two"` patterns rather than strings.
+
+It is also possible to write it like this,
+```scala
+html match
+  case h"<li>${TextNode(value)}</li>" => value match
+    case "one"                          => 1
+    case "two"                          => 2
+    case _                              => Unset
+  case _                              => Unset
+```
+or this:
+```scala
+html match
+  case h"<li>$value</li>" => value match
+    case TextNode("one")    => 1
+    case TextNode("two")    => 2
+    case _                  => Unset
+  case _                  => Unset
+```
+
+It is possible to extract from other positions, too. These include,
+ - attribute values
+ - attribute value text
+ - collections of attributes
+ - comments
+ - single elements
+
+This is almost the same as the list of insertion positions.
