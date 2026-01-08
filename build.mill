@@ -1,3 +1,7 @@
+//| mill-version: 1.1.0-RC3
+//| mill-jvm-version: temurin:25
+//| mill-jvm-opts: ["-XX:NonProfiledCodeHeapSize=250m", "-XX:ReservedCodeCacheSize=500m"]
+
                                                                                                   /*
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃                                                                                                  ┃
