@@ -61,7 +61,79 @@ import charDecoders.utf8
 import textSanitizers.skip
 
 object Whatwg:
-  // Attributes
+  // Attribute types
+  erased trait AccessKeys
+  erased trait Affirmation
+  erased trait Autocapitalization
+  erased trait ButtonType
+  erased trait Closedby
+  erased trait Color
+  erased trait Colorspace
+  erased trait Command
+  erased trait ContentEditable
+  erased trait Coords
+  erased trait Crossorigin
+  erased trait CustomElementName
+  erased trait Css
+  erased trait CssClassList
+  erased trait Datetime
+  erased trait Decimal
+  erased trait Decoding
+  erased trait Dir
+  erased trait Enctype
+  erased trait EnterKeyHint
+  erased trait FetchPriority
+  erased trait HashName
+  erased trait Hidden
+  erased trait HttpEquiv
+  erased trait Id
+  erased trait Ids
+  erased trait ImageSizes
+  erased trait ImageSrcSet
+  erased trait InputMode
+  erased trait InputType
+  erased trait InputValue
+  erased trait Integral
+  erased trait ItemProp
+  erased trait Kind
+  erased trait Language
+  erased trait Laziness
+  erased trait MediaQueryList
+  erased trait Method
+  erased trait Minmax
+  erased trait MimeList
+  erased trait Mime
+  erased trait Name
+  erased trait OlType
+  erased trait Openness
+  erased trait PermissionsPolicy
+  erased trait Popover
+  erased trait PopoverAction
+  erased trait PositiveInt
+  erased trait Presence
+  erased trait Preload
+  erased trait ReferrerPolicy
+  erased trait Regex
+  erased trait Sandbox
+  erased trait ScriptType
+  erased trait Shape
+  erased trait Sizes
+  erased trait Softness
+  erased trait SourceSizeList
+  erased trait Srcdoc
+  erased trait SrcSet
+  erased trait Switch
+  erased trait Target
+  erased trait Temporal
+  erased trait Textual
+  erased trait ThScope
+  erased trait Tokens
+  erased trait Truth
+  erased trait Upto8
+  erased trait Url
+  erased trait Urls
+  erased trait Utf8
+
   type Attribute = honeycomb.Attribute in Whatwg
 
   private type HeightTags =
@@ -107,177 +179,177 @@ object Whatwg:
       type Self = self
       type Form = Whatwg
 
-  given abbr: ("abbr" is Attribute on "th" of Attributive.Textual) = attribute()
-  given accept: ("accept" is Attribute on "input" of Attributive.MimeList) = attribute()
-  given acceptCharset: ("acceptCharset" is Attribute on "form" of Attributive.Utf8) = attribute()
-  given accesskey: ("accesskey" is Attribute of Attributive.AccessKeys) = globalAttribute()
-  given action: ("action" is Attribute on "form" of Attributive.Url) = attribute()
-  given allow: ("allow" is Attribute on "iframe" of Attributive.PermissionsPolicy) = attribute()
-  given allowfullscreen: ("allowfullscreen" is Attribute on "iframe" of Attributive.Presence) = attribute()
-  given alpha: ("alpha" is Attribute on "input" of Attributive.Presence) = attribute()
-  given alt: ("alt" is Attribute on "area" | "img" | "input" of Attributive.Textual) = attribute()
-  given as: ("as" is Attribute on "link" of Attributive.Textual) = attribute()
-  given async: ("async" is Attribute on "script" of Attributive.Presence) = attribute()
-  given autocapitalize: ("autocapitalize" is Attribute of Attributive.Autocapitalization) = globalAttribute()
-  given autocomplete: ("autocomplete" is Attribute on "form" of Attributive.Switch) = attribute()
-  given autocomplete2: ("autocomplete" is Attribute on "input" | "select" | "textarea" of Attributive.Switch) = attribute()
-  given autocorrect: ("autocorrect" is Attribute of Attributive.Textual) = globalAttribute()
-  given autofocus: ("autofocus" is Attribute of Attributive.Presence) = globalAttribute()
-  given autoplay: ("autoplay" is Attribute on "audio" | "video" of Attributive.Presence) = attribute()
-  given blocking: ("blocking" is Attribute on "link" | "script" | "style" of Attributive.Tokens) = attribute()
-  given charset: ("charset" is Attribute on "meta" of Attributive.Utf8) = attribute()
-  given checked: ("checked" is Attribute on "input" of Attributive.Presence) = attribute()
-  given cite: ("cite" is Attribute on "blockquote" | "del" | "ins" | "q" of Attributive.Url) = attribute()
-  given `class`: ("class" is Attribute of Attributive.CssClassList) = globalAttribute()
-  given closedby: ("closedby" is Attribute on "dialog" of Attributive.Closedby) = attribute()
-  given color: ("color" is Attribute on "link" of Attributive.Color) = attribute()
-  given colorspace: ("colorspace" is Attribute on "input" of Attributive.Colorspace) = attribute()
-  given cols: ("cols" is Attribute on "textarea" of Attributive.PositiveInt) = attribute()
-  given colspan: ("colspan" is Attribute on "td" | "th" of Attributive.PositiveInt) = attribute()
-  given command: ("command" is Attribute on "button" of Attributive.Command) = attribute()
-  given commandfor: ("commandfor" is Attribute on "button" of Attributive.Id) = attribute()
-  given content: ("content" is Attribute on "meta" of Attributive.Textual) = attribute()
-  given contenteditable: ("contenteditable" is Attribute of Attributive.ContentEditable) = globalAttribute()
-  given controls: ("controls" is Attribute on "audio" | "video" of Attributive.Presence) = attribute()
-  given coords: ("coords" is Attribute on "area" of Attributive.Coords) = attribute()
-  given crossorigin: ("crossorigin" is Attribute on CrossoriginTags of Attributive.Crossorigin) = attribute()
-  given data: ("data" is Attribute on "object" of Attributive.Url) = attribute()
-  given datetime: ("datetime" is Attribute on "del" | "ins" of Attributive.Datetime) = attribute()
-  given datetime2: ("datetime" is Attribute on "time" of Attributive.Temporal) = attribute()
-  given decoding: ("decoding" is Attribute on "img" of Attributive.Decoding) = attribute()
-  given default: ("default" is Attribute on "track" of Attributive.Presence) = attribute()
-  given defer: ("defer" is Attribute on "script" of Attributive.Presence) = attribute()
-  given dir: ("dir" is Attribute of Attributive.Dir) = globalAttribute()
-  given dirname: ("dirname" is Attribute on "input" | "textarea" of Attributive.Textual) = attribute()
-  given disabled: ("disabled" is Attribute on "button" | "input" | "optgroup" | "option" | "select" | "textarea" of Attributive.Presence) = attribute()
-  given disabled2: ("disabled" is Attribute on "fieldset" of Attributive.Presence) = attribute()
-  given disabled3: ("disabled" is Attribute on "link" of Attributive.Presence) = attribute()
-  given download4: ("download" is Attribute on "a" | "area" of Attributive.Textual) = attribute()
-  given draggable: ("draggable" is Attribute of Attributive.Truth) = globalAttribute()
-  given enctype: ("enctype" is Attribute on "form" of Attributive.Enctype) = attribute()
-  given enterkeyhint: ("enterkeyhint" is Attribute of Attributive.EnterKeyHint) = globalAttribute()
-  given fetchpriority: ("fetchpriority" is Attribute on "img" | "link" | "script" of Attributive.FetchPriority) = attribute()
-  given `for`: ("for" is Attribute on "label" of Attributive.Id) = attribute()
-  given for2: ("for" is Attribute on "output" of Attributive.Tokens) = attribute()
-  given form: ("form" is Attribute on FormTags of Attributive.Id) = attribute()
-  given formaction: ("formaction" is Attribute on "input" | "button" of Attributive.Url) = attribute()
-  given formenctype: ("formenctype" is Attribute on "input" | "button" of Attributive.Enctype) = attribute()
-  given formmethod: ("formmethod" is Attribute on "input" | "button" of Attributive.Method) = attribute()
-  given formnovalidate: ("formnovalidate" is Attribute on "input" | "button" of Attributive.Presence) = attribute()
-  given formtarget: ("formtarget" is Attribute on "input" | "button" of Attributive.Target) = attribute()
-  given headers: ("headers" is Attribute on "td" | "th" of Attributive.Tokens) = attribute()
-  given headingoffset: ("headingoffset" is Attribute of Attributive.Upto8) = globalAttribute()
-  given headingreset: ("headingoffset" is Attribute of Attributive.Presence) = globalAttribute()
-  given height: ("height" is Attribute on HeightTags of Attributive.PositiveInt) = attribute()
-  given hidden: ("hidden" is Attribute of Attributive.Hidden) = globalAttribute()
-  given high: ("high" is Attribute on "meter" of Attributive.Decimal) = attribute()
-  given href: ("href" is Attribute on "a" | "area" of Attributive.Url) = attribute()
-  given href2: ("href" is Attribute on "base" of Attributive.Url) = attribute()
-  given href3: ("href" is Attribute on "link" of Attributive.Url) = attribute()
-  given hreflang: ("hreflang" is Attribute on "a" | "link" of Attributive.Language) = attribute()
-  given httpEquiv: ("http-equiv" is Attribute on "meta" of Attributive.HttpEquiv) = attribute()
-  given id: ("id" is Attribute of Attributive.Id) = globalAttribute()
-  given imagesizes: ("imagesizes" is Attribute on "link" of Attributive.ImageSizes) = attribute()
-  given imagesrcset: ("imagesrcset" is Attribute on "link" of Attributive.ImageSrcSet) = attribute()
-  given inert: ("inert" is Attribute of Attributive.Presence) = globalAttribute()
-  given inputmode: ("inputmode" is Attribute of Attributive.InputMode) = globalAttribute()
-  given integrity: ("integrity" is Attribute on "link" | "script" of Attributive.Textual) = attribute()
-  given is: ("is" is Attribute of Attributive.CustomElementName) = globalAttribute()
-  given ismap: ("ismap" is Attribute on "img" of Attributive.Presence) = attribute()
-  given itemid: ("itemid" is Attribute of Attributive.Url) = globalAttribute()
-  given itemprop: ("itemprop" is Attribute of Attributive.ItemProp) = globalAttribute()
-  given itemref: ("itemref" is Attribute of Attributive.Ids) = globalAttribute()
-  given itemscope: ("itemscope" is Attribute of Attributive.Presence) = globalAttribute()
-  given itemtype: ("itemtype" is Attribute of Attributive.Urls) = globalAttribute()
-  given kind: ("kind" is Attribute on "track" of Attributive.Kind) = attribute()
-  given label: ("label" is Attribute on "optgroup" | "option" | "track" of Attributive.Textual) = attribute()
-  given lang: ("lang" is Attribute of Attributive.Language) = globalAttribute()
-  given list: ("list" is Attribute on "input" of Attributive.Id) = attribute()
-  given loading: ("loading" is Attribute on "img" | "iframe" of Attributive.Laziness) = attribute()
-  given loop: ("loop" is Attribute on "audio" | "video" of Attributive.Presence) = attribute()
-  given low: ("low" is Attribute on "meter" of Attributive.Decimal) = attribute()
-  given max: ("max" is Attribute on "input" of Attributive.Minmax) = attribute()
-  given max2: ("max" is Attribute on "meter" | "progress" of Attributive.Decimal) = attribute()
-  given maxlength: ("maxlength" is Attribute on "input" | "textarea" of Attributive.PositiveInt) = attribute()
-  given media: ("media" is Attribute on MediaTags of Attributive.MediaQueryList) = attribute()
-  given method: ("method" is Attribute on "form" of Attributive.Method) = attribute()
-  given min: ("min" is Attribute on "input" of Attributive.Minmax) = attribute()
-  given min2: ("min" is Attribute on "meter" of Attributive.Decimal) = attribute()
-  given minlength: ("minlength" is Attribute on "input" | "textarea" of Attributive.PositiveInt) = attribute()
-  given multiple: ("multiple" is Attribute on "input" | "select" of Attributive.Presence) = attribute()
-  given muted: ("muted" is Attribute on "audio" | "video" of Attributive.Presence) = attribute()
-  given name: ("name" is Attribute on "button" | "fieldset" | "input" | "output" | "select" | "textarea" of Attributive.Name) = attribute()
-  given name2: ("name" is Attribute on "details" of Attributive.Name) = attribute()
-  given name3: ("name" is Attribute on "form" of Attributive.Name) = attribute()
-  given name4: ("name" is Attribute on "iframe" | "object" of Attributive.Target) = attribute()
-  given name5: ("name" is Attribute on "map" of Attributive.Name) = attribute()
-  given name6: ("name" is Attribute on "meta" of Attributive.Name) = attribute()
-  given name7: ("name" is Attribute on "slot" of Attributive.Name) = attribute()
-  given nomodule: ("nomodule" is Attribute on "script" of Attributive.Presence) = attribute()
-  given nonce: ("nonce" is Attribute of Attributive.Textual) = globalAttribute()
-  given novalidate: ("novalidate" is Attribute on "form" of Attributive.Presence) = attribute()
-  given open: ("open" is Attribute on "details" | "dialog" of Attributive.Presence) = attribute()
-  given optimum: ("optimum" is Attribute on "meter" of Attributive.Decimal) = attribute()
-  given pattern: ("pattern" is Attribute on "input" of Attributive.Regex) = attribute()
-  given ping: ("ping" is Attribute on "a" | "area" of Attributive.Urls) = attribute()
-  given placeholder: ("placeholder" is Attribute on "input" | "textarea" of Attributive.Textual) = attribute()
-  given playsinline: ("playsinline" is Attribute on "video" of Attributive.Presence) = attribute()
-  given popover: ("popover" is Attribute of Attributive.Popover) = globalAttribute()
-  given popovertarget: ("popovertarget" is Attribute on "button" | "input" of Attributive.Id) = attribute()
-  given popovertargetaction: ("popovertargetaction" is Attribute on "button" | "input" of Attributive.PopoverAction) = attribute()
-  given poster: ("poster" is Attribute on "video" of Attributive.Url) = attribute()
-  given preload: ("preload" is Attribute on "audio" | "video" of Attributive.Preload) = attribute()
-  given readonly: ("readonly" is Attribute on "input" | "textarea" of Attributive.Presence) = attribute()
-  given referrerpolicy: ("referrerpolicy" is Attribute on ReferrerpolicyTags of Attributive.ReferrerPolicy) = attribute()
-  given rel: ("rel" is Attribute on "a" | "area" of Attributive.Tokens) = attribute()
-  given rel2: ("rel" is Attribute on "link" of Attributive.Tokens) = attribute()
-  given required: ("required" is Attribute on RequiredTags of Attributive.Presence) = attribute()
-  given reversed: ("reversed" is Attribute on "ol" of Attributive.Presence) = attribute()
-  given rows: ("rows" is Attribute on "textarea" of Attributive.PositiveInt) = attribute()
-  given rowspan: ("rowspan" is Attribute on "td" | "th" of Attributive.PositiveInt) = attribute()
-  given sandbox: ("sandbox" is Attribute on "iframe" of Attributive.Sandbox) = attribute()
-  given scope: ("scope" is Attribute on "th" of Attributive.ThScope) = attribute()
-  given selected: ("selected" is Attribute on "option" of Attributive.Presence) = attribute()
-  given shadowrootclonable: ("shadowrootclonable" is Attribute on "template" of Attributive.Presence) = attribute()
-  given shadowrootcustomelementregistry: ("shadowrootcustomelementregistry" is Attribute on "template" of Attributive.Presence) = attribute()
-  given shadowrootdelegatesfocus: ("shadowrootdelegatesfocus" is Attribute on "template" of Attributive.Presence) = attribute()
-  given shadowrootmode: ("shadowrootmode" is Attribute on "template" of Attributive.Openness) = attribute()
-  given shadowrootserializable: ("shadowrootserializable" is Attribute on "template" of Attributive.Presence) = attribute()
-  given shape: ("shape" is Attribute on "area" of Attributive.Shape) = attribute()
-  given size: ("size" is Attribute on "input" | "select" of Attributive.PositiveInt) = attribute()
-  given sizes: ("sizes" is Attribute on "img" | "source" of Attributive.SourceSizeList) = attribute()
-  given sizes2: ("sizes" is Attribute on "link" of Attributive.Sizes) = attribute()
-  given slot: ("slot" is Attribute of Attributive.Textual) = globalAttribute()
-  given span: ("span" is Attribute on "col" | "colgroup" of Attributive.PositiveInt) = attribute()
-  given spellcheck: ("spellcheck" is Attribute of Attributive.Truth) = globalAttribute()
-  given src: ("src" is Attribute on SrcTags of Attributive.Url) = attribute()
-  given srcdoc: ("srcdoc" is Attribute on "iframe" of Attributive.Srcdoc) = attribute()
-  given srclang: ("srclang" is Attribute on "track" of Attributive.Language) = attribute()
-  given srcset: ("srcset" is Attribute on "img" | "source" of Attributive.SrcSet) = attribute()
-  given start: ("start" is Attribute on "ol" of Attributive.Integral) = attribute()
-  given step: ("step" is Attribute on "input" of Attributive.Decimal) = attribute()
-  given style: ("style" is Attribute of Attributive.Css) = globalAttribute()
-  given tabindex: ("tabindex" is Attribute of Attributive.Integral) = globalAttribute()
-  given target: ("target" is Attribute on "a" | "area" of Attributive.Target) = attribute()
-  given target2: ("target" is Attribute on "base" of Attributive.Target) = attribute()
-  given target3: ("target" is Attribute on "form" of Attributive.Target) = attribute()
-  given title: ("title" is Attribute of Attributive.Textual) = globalAttribute()
-  given translate: ("translate" is Attribute of Attributive.Affirmation) = globalAttribute()
-  given `type`: ("type" is Attribute on "a" | "link" of Attributive.Mime) = attribute()
-  given type2: ("type" is Attribute on "button" of Attributive.ButtonType) = attribute()
-  given type3: ("type" is Attribute on "embed" | "object" | "source" of Attributive.Mime) = attribute()
-  given type4: ("type" is Attribute on "input" of Attributive.InputType) = attribute()
-  given type5: ("type" is Attribute on "ol" of Attributive.OlType) = attribute()
-  given type6: ("type" is Attribute on "script" of Attributive.ScriptType) = attribute()
-  given usemap: ("usemaptype" is Attribute on "img" | "input" | "object" of Attributive.HashName) = attribute()
-  given value: ("value" is Attribute on "button" | "option" of Attributive.Textual) = attribute()
-  given value2: ("value" is Attribute on "data" of Attributive.Textual) = attribute()
-  given value3: ("value" is Attribute on "input" of Attributive.InputValue) = attribute()
-  given value4: ("value" is Attribute on "li" of Attributive.Integral) = attribute()
-  given value5: ("value" is Attribute on "meter" | "progress" of Attributive.Decimal) = attribute()
-  given width: ("width" is Attribute on WidthTags of Attributive.PositiveInt) = attribute()
-  given wrap: ("wrap" is Attribute on "textarea" of Attributive.Softness) = attribute()
-  given writingsuggestions: ("writingsuggestions" is Attribute of Attributive.Truth) = globalAttribute()
+  given abbr: ("abbr" is Attribute on "th" of Textual) = attribute()
+  given accept: ("accept" is Attribute on "input" of MimeList) = attribute()
+  given acceptCharset: ("acceptCharset" is Attribute on "form" of Utf8) = attribute()
+  given accesskey: ("accesskey" is Attribute of AccessKeys) = globalAttribute()
+  given action: ("action" is Attribute on "form" of Url) = attribute()
+  given allow: ("allow" is Attribute on "iframe" of PermissionsPolicy) = attribute()
+  given allowfullscreen: ("allowfullscreen" is Attribute on "iframe" of Presence) = attribute()
+  given alpha: ("alpha" is Attribute on "input" of Presence) = attribute()
+  given alt: ("alt" is Attribute on "area" | "img" | "input" of Textual) = attribute()
+  given as: ("as" is Attribute on "link" of Textual) = attribute()
+  given async: ("async" is Attribute on "script" of Presence) = attribute()
+  given autocapitalize: ("autocapitalize" is Attribute of Autocapitalization) = globalAttribute()
+  given autocomplete: ("autocomplete" is Attribute on "form" of Switch) = attribute()
+  given autocomplete2: ("autocomplete" is Attribute on "input" | "select" | "textarea" of Switch) = attribute()
+  given autocorrect: ("autocorrect" is Attribute of Textual) = globalAttribute()
+  given autofocus: ("autofocus" is Attribute of Presence) = globalAttribute()
+  given autoplay: ("autoplay" is Attribute on "audio" | "video" of Presence) = attribute()
+  given blocking: ("blocking" is Attribute on "link" | "script" | "style" of Tokens) = attribute()
+  given charset: ("charset" is Attribute on "meta" of Utf8) = attribute()
+  given checked: ("checked" is Attribute on "input" of Presence) = attribute()
+  given cite: ("cite" is Attribute on "blockquote" | "del" | "ins" | "q" of Url) = attribute()
+  given `class`: ("class" is Attribute of CssClassList) = globalAttribute()
+  given closedby: ("closedby" is Attribute on "dialog" of Closedby) = attribute()
+  given color: ("color" is Attribute on "link" of Color) = attribute()
+  given colorspace: ("colorspace" is Attribute on "input" of Colorspace) = attribute()
+  given cols: ("cols" is Attribute on "textarea" of PositiveInt) = attribute()
+  given colspan: ("colspan" is Attribute on "td" | "th" of PositiveInt) = attribute()
+  given command: ("command" is Attribute on "button" of Command) = attribute()
+  given commandfor: ("commandfor" is Attribute on "button" of Id) = attribute()
+  given content: ("content" is Attribute on "meta" of Textual) = attribute()
+  given contenteditable: ("contenteditable" is Attribute of ContentEditable) = globalAttribute()
+  given controls: ("controls" is Attribute on "audio" | "video" of Presence) = attribute()
+  given coords: ("coords" is Attribute on "area" of Coords) = attribute()
+  given crossorigin: ("crossorigin" is Attribute on CrossoriginTags of Crossorigin) = attribute()
+  given data: ("data" is Attribute on "object" of Url) = attribute()
+  given datetime: ("datetime" is Attribute on "del" | "ins" of Datetime) = attribute()
+  given datetime2: ("datetime" is Attribute on "time" of Temporal) = attribute()
+  given decoding: ("decoding" is Attribute on "img" of Decoding) = attribute()
+  given default: ("default" is Attribute on "track" of Presence) = attribute()
+  given defer: ("defer" is Attribute on "script" of Presence) = attribute()
+  given dir: ("dir" is Attribute of Dir) = globalAttribute()
+  given dirname: ("dirname" is Attribute on "input" | "textarea" of Textual) = attribute()
+  given disabled: ("disabled" is Attribute on "button" | "input" | "optgroup" | "option" | "select" | "textarea" of Presence) = attribute()
+  given disabled2: ("disabled" is Attribute on "fieldset" of Presence) = attribute()
+  given disabled3: ("disabled" is Attribute on "link" of Presence) = attribute()
+  given download4: ("download" is Attribute on "a" | "area" of Textual) = attribute()
+  given draggable: ("draggable" is Attribute of Truth) = globalAttribute()
+  given enctype: ("enctype" is Attribute on "form" of Enctype) = attribute()
+  given enterkeyhint: ("enterkeyhint" is Attribute of EnterKeyHint) = globalAttribute()
+  given fetchpriority: ("fetchpriority" is Attribute on "img" | "link" | "script" of FetchPriority) = attribute()
+  given `for`: ("for" is Attribute on "label" of Id) = attribute()
+  given for2: ("for" is Attribute on "output" of Tokens) = attribute()
+  given form: ("form" is Attribute on FormTags of Id) = attribute()
+  given formaction: ("formaction" is Attribute on "input" | "button" of Url) = attribute()
+  given formenctype: ("formenctype" is Attribute on "input" | "button" of Enctype) = attribute()
+  given formmethod: ("formmethod" is Attribute on "input" | "button" of Method) = attribute()
+  given formnovalidate: ("formnovalidate" is Attribute on "input" | "button" of Presence) = attribute()
+  given formtarget: ("formtarget" is Attribute on "input" | "button" of Target) = attribute()
+  given headers: ("headers" is Attribute on "td" | "th" of Tokens) = attribute()
+  given headingoffset: ("headingoffset" is Attribute of Upto8) = globalAttribute()
+  given headingreset: ("headingoffset" is Attribute of Presence) = globalAttribute()
+  given height: ("height" is Attribute on HeightTags of PositiveInt) = attribute()
+  given hidden: ("hidden" is Attribute of Hidden) = globalAttribute()
+  given high: ("high" is Attribute on "meter" of Decimal) = attribute()
+  given href: ("href" is Attribute on "a" | "area" of Url) = attribute()
+  given href2: ("href" is Attribute on "base" of Url) = attribute()
+  given href3: ("href" is Attribute on "link" of Url) = attribute()
+  given hreflang: ("hreflang" is Attribute on "a" | "link" of Language) = attribute()
+  given httpEquiv: ("http-equiv" is Attribute on "meta" of HttpEquiv) = attribute()
+  given id: ("id" is Attribute of Id) = globalAttribute()
+  given imagesizes: ("imagesizes" is Attribute on "link" of ImageSizes) = attribute()
+  given imagesrcset: ("imagesrcset" is Attribute on "link" of ImageSrcSet) = attribute()
+  given inert: ("inert" is Attribute of Presence) = globalAttribute()
+  given inputmode: ("inputmode" is Attribute of InputMode) = globalAttribute()
+  given integrity: ("integrity" is Attribute on "link" | "script" of Textual) = attribute()
+  given is: ("is" is Attribute of CustomElementName) = globalAttribute()
+  given ismap: ("ismap" is Attribute on "img" of Presence) = attribute()
+  given itemid: ("itemid" is Attribute of Url) = globalAttribute()
+  given itemprop: ("itemprop" is Attribute of ItemProp) = globalAttribute()
+  given itemref: ("itemref" is Attribute of Ids) = globalAttribute()
+  given itemscope: ("itemscope" is Attribute of Presence) = globalAttribute()
+  given itemtype: ("itemtype" is Attribute of Urls) = globalAttribute()
+  given kind: ("kind" is Attribute on "track" of Kind) = attribute()
+  given label: ("label" is Attribute on "optgroup" | "option" | "track" of Textual) = attribute()
+  given lang: ("lang" is Attribute of Language) = globalAttribute()
+  given list: ("list" is Attribute on "input" of Id) = attribute()
+  given loading: ("loading" is Attribute on "img" | "iframe" of Laziness) = attribute()
+  given loop: ("loop" is Attribute on "audio" | "video" of Presence) = attribute()
+  given low: ("low" is Attribute on "meter" of Decimal) = attribute()
+  given max: ("max" is Attribute on "input" of Minmax) = attribute()
+  given max2: ("max" is Attribute on "meter" | "progress" of Decimal) = attribute()
+  given maxlength: ("maxlength" is Attribute on "input" | "textarea" of PositiveInt) = attribute()
+  given media: ("media" is Attribute on MediaTags of MediaQueryList) = attribute()
+  given method: ("method" is Attribute on "form" of Method) = attribute()
+  given min: ("min" is Attribute on "input" of Minmax) = attribute()
+  given min2: ("min" is Attribute on "meter" of Decimal) = attribute()
+  given minlength: ("minlength" is Attribute on "input" | "textarea" of PositiveInt) = attribute()
+  given multiple: ("multiple" is Attribute on "input" | "select" of Presence) = attribute()
+  given muted: ("muted" is Attribute on "audio" | "video" of Presence) = attribute()
+  given name: ("name" is Attribute on "button" | "fieldset" | "input" | "output" | "select" | "textarea" of Name) = attribute()
+  given name2: ("name" is Attribute on "details" of Name) = attribute()
+  given name3: ("name" is Attribute on "form" of Name) = attribute()
+  given name4: ("name" is Attribute on "iframe" | "object" of Target) = attribute()
+  given name5: ("name" is Attribute on "map" of Name) = attribute()
+  given name6: ("name" is Attribute on "meta" of Name) = attribute()
+  given name7: ("name" is Attribute on "slot" of Name) = attribute()
+  given nomodule: ("nomodule" is Attribute on "script" of Presence) = attribute()
+  given nonce: ("nonce" is Attribute of Textual) = globalAttribute()
+  given novalidate: ("novalidate" is Attribute on "form" of Presence) = attribute()
+  given open: ("open" is Attribute on "details" | "dialog" of Presence) = attribute()
+  given optimum: ("optimum" is Attribute on "meter" of Decimal) = attribute()
+  given pattern: ("pattern" is Attribute on "input" of Regex) = attribute()
+  given ping: ("ping" is Attribute on "a" | "area" of Urls) = attribute()
+  given placeholder: ("placeholder" is Attribute on "input" | "textarea" of Textual) = attribute()
+  given playsinline: ("playsinline" is Attribute on "video" of Presence) = attribute()
+  given popover: ("popover" is Attribute of Popover) = globalAttribute()
+  given popovertarget: ("popovertarget" is Attribute on "button" | "input" of Id) = attribute()
+  given popovertargetaction: ("popovertargetaction" is Attribute on "button" | "input" of PopoverAction) = attribute()
+  given poster: ("poster" is Attribute on "video" of Url) = attribute()
+  given preload: ("preload" is Attribute on "audio" | "video" of Preload) = attribute()
+  given readonly: ("readonly" is Attribute on "input" | "textarea" of Presence) = attribute()
+  given referrerpolicy: ("referrerpolicy" is Attribute on ReferrerpolicyTags of ReferrerPolicy) = attribute()
+  given rel: ("rel" is Attribute on "a" | "area" of Tokens) = attribute()
+  given rel2: ("rel" is Attribute on "link" of Tokens) = attribute()
+  given required: ("required" is Attribute on RequiredTags of Presence) = attribute()
+  given reversed: ("reversed" is Attribute on "ol" of Presence) = attribute()
+  given rows: ("rows" is Attribute on "textarea" of PositiveInt) = attribute()
+  given rowspan: ("rowspan" is Attribute on "td" | "th" of PositiveInt) = attribute()
+  given sandbox: ("sandbox" is Attribute on "iframe" of Sandbox) = attribute()
+  given scope: ("scope" is Attribute on "th" of ThScope) = attribute()
+  given selected: ("selected" is Attribute on "option" of Presence) = attribute()
+  given shadowrootclonable: ("shadowrootclonable" is Attribute on "template" of Presence) = attribute()
+  given shadowrootcustomelementregistry: ("shadowrootcustomelementregistry" is Attribute on "template" of Presence) = attribute()
+  given shadowrootdelegatesfocus: ("shadowrootdelegatesfocus" is Attribute on "template" of Presence) = attribute()
+  given shadowrootmode: ("shadowrootmode" is Attribute on "template" of Openness) = attribute()
+  given shadowrootserializable: ("shadowrootserializable" is Attribute on "template" of Presence) = attribute()
+  given shape: ("shape" is Attribute on "area" of Shape) = attribute()
+  given size: ("size" is Attribute on "input" | "select" of PositiveInt) = attribute()
+  given sizes: ("sizes" is Attribute on "img" | "source" of SourceSizeList) = attribute()
+  given sizes2: ("sizes" is Attribute on "link" of Sizes) = attribute()
+  given slot: ("slot" is Attribute of Textual) = globalAttribute()
+  given span: ("span" is Attribute on "col" | "colgroup" of PositiveInt) = attribute()
+  given spellcheck: ("spellcheck" is Attribute of Truth) = globalAttribute()
+  given src: ("src" is Attribute on SrcTags of Url) = attribute()
+  given srcdoc: ("srcdoc" is Attribute on "iframe" of Srcdoc) = attribute()
+  given srclang: ("srclang" is Attribute on "track" of Language) = attribute()
+  given srcset: ("srcset" is Attribute on "img" | "source" of SrcSet) = attribute()
+  given start: ("start" is Attribute on "ol" of Integral) = attribute()
+  given step: ("step" is Attribute on "input" of Decimal) = attribute()
+  given style: ("style" is Attribute of Css) = globalAttribute()
+  given tabindex: ("tabindex" is Attribute of Integral) = globalAttribute()
+  given target: ("target" is Attribute on "a" | "area" of Target) = attribute()
+  given target2: ("target" is Attribute on "base" of Target) = attribute()
+  given target3: ("target" is Attribute on "form" of Target) = attribute()
+  given title: ("title" is Attribute of Textual) = globalAttribute()
+  given translate: ("translate" is Attribute of Affirmation) = globalAttribute()
+  given `type`: ("type" is Attribute on "a" | "link" of Mime) = attribute()
+  given type2: ("type" is Attribute on "button" of ButtonType) = attribute()
+  given type3: ("type" is Attribute on "embed" | "object" | "source" of Mime) = attribute()
+  given type4: ("type" is Attribute on "input" of InputType) = attribute()
+  given type5: ("type" is Attribute on "ol" of OlType) = attribute()
+  given type6: ("type" is Attribute on "script" of ScriptType) = attribute()
+  given usemap: ("usemaptype" is Attribute on "img" | "input" | "object" of HashName) = attribute()
+  given value: ("value" is Attribute on "button" | "option" of Textual) = attribute()
+  given value2: ("value" is Attribute on "data" of Textual) = attribute()
+  given value3: ("value" is Attribute on "input" of InputValue) = attribute()
+  given value4: ("value" is Attribute on "li" of Integral) = attribute()
+  given value5: ("value" is Attribute on "meter" | "progress" of Decimal) = attribute()
+  given width: ("width" is Attribute on WidthTags of PositiveInt) = attribute()
+  given wrap: ("wrap" is Attribute on "textarea" of Softness) = attribute()
+  given writingsuggestions: ("writingsuggestions" is Attribute of Truth) = globalAttribute()
 
 class Whatwg() extends Dom:
   private type InteractivePhrasing =
