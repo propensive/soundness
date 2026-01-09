@@ -232,8 +232,6 @@ object Honeycomb:
               case '[type result <: Tuple; result] =>
                 '{$result.asInstanceOf[Option[result]]}
 
-
-
   def interpolator[parts <: Tuple: Type](insertions0: Expr[Seq[Any]]): Macro[Html] =
     import quotes.reflect.*
     import doms.html.whatwg
@@ -387,9 +385,14 @@ object Honeycomb:
           case '[type topic <: Label; topic] =>
             '{
                 ${  serialize(html).absolve match
-                      case List(one: Expr[?]) => one.asExprOf[Html]
+                      case List(one: Expr[?]) => html match
+                        case _: TextNode        => one.asExprOf[TextNode]
+                        case _: Element         => one.asExprOf[Element]
+                        case _: Comment         => one.asExprOf[Comment]
+                        case _: Doctype         => one.asExprOf[Doctype]
                       case many               => '{Fragment(${Expr.ofList(many)}*)}  }
-                . of[topic]  }
+                . of[topic]
+                . in[Whatwg]  }
 
   def attributes[result: Type, thisType <: Tag to result: Type]
        (tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]])

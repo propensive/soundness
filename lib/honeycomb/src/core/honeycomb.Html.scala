@@ -905,25 +905,44 @@ extends Node, Topical, Transportive, Dynamic:
     ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
 
 
-  def selectDynamic(name: Label)(using attribute: name.type is Attribute on Topic in Form)
-  : Optional[Text] =
+  transparent inline def selectDynamic(name: Label): Any =
 
-      attributes.at(name.tt)
+    compiletime.summonFrom:
+      case attribute: (name.type is Attribute on (? >: Topic) in Form) =>
+        compiletime.summonFrom:
+          case unattributive: (attribute.Topic is Unattributive) =>
+            unattributive.unattribute(attributes.at(name.tt))
+      case attribute: (name.type is Attribute in Form) =>
+        compiletime.summonFrom:
+          case unattributive: (attribute.Topic is Unattributive) =>
+            unattributive.unattribute(attributes.at(name.tt))
 
 
-  def updateDynamic[value](name: Label)(using attribute: name.type is Attribute in Form)
-       //(using Topic <:< attribute.Plane) - disabled to allow global attributes
-       (value: value)
-       (using attributive: value is Attributive to attribute.Topic)
+  inline def updateDynamic[value](name: Label)(value: value)
   : Element of Topic over Transport in Form =
 
-      attributive.attribute(name, value).match
-        case Unset        => Element(label, attributes - name, children, foreign)
-        case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
+      compiletime.summonFrom:
+        case attribute: (name.type is Attribute on (? >: Topic) in Form) =>
+          val attributive = compiletime.summonInline[value is Attributive to attribute.Topic]
 
-      . of[Topic]
-      . over[Transport]
-      . in[Form]
+          attributive.attribute(name, value).match
+            case Unset        => Element(label, attributes - name, children, foreign)
+            case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
+
+          . of[Topic]
+          . over[Transport]
+          . in[Form]
+
+        case attribute: (name.type is Attribute in Form) =>
+          val attributive = compiletime.summonInline[value is Attributive to attribute.Topic]
+
+          attributive.attribute(name, value).match
+            case Unset        => Element(label, attributes - name, children, foreign)
+            case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
+
+          . of[Topic]
+          . over[Transport]
+          . in[Form]
 
 object Fragment:
   @targetName("make")

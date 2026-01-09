@@ -45,35 +45,35 @@ import spectacular.*
 import urticose.*
 import vacuous.*
 
-object Attributive:
+object Unattributive:
+  given textTextual: Whatwg.Textual is Unattributive to Text = _.or(t"")
 
-  given textTextual: Text is Attributive to Whatwg.Textual = (key, value) => (key, value)
-  given stringTextual: String is Attributive to Whatwg.Textual = (key, value) => (key, value.tt)
+  // given boolean: Boolean is Attributive to Presence = (key, value) =>
+  //   if value then (key, Unset) else Unset
 
-  given boolean: Boolean is Attributive to Whatwg.Presence = (key, value) =>
-    if value then (key, Unset) else Unset
+  // given switch: Boolean is Attributive to Switch = (key, value) =>
+  //   (key, if value then t"on" else t"off")
 
-  given switch: Boolean is Attributive to Whatwg.Switch = (key, value) =>
-    (key, if value then t"on" else t"off")
+  // given truth: Boolean is Attributive to Truth = (key, value) =>
+  //   (key, if value then t"true" else t"false")
 
-  given truth: Boolean is Attributive to Whatwg.Truth = (key, value) =>
-    (key, if value then t"true" else t"false")
+  given int: Whatwg.Integral is Unattributive to Optional[Int] = _.let(_.s.toInt)
+  given positiveInt: Whatwg.PositiveInt is Unattributive to Optional[Int] = _.let(_.s.toInt)
 
-  given int: Int is Attributive to Whatwg.Integral = _ -> _.show
-  given posInt: Int is Attributive to Whatwg.PositiveInt = _ -> _.show
-  given double: Double is Attributive to Whatwg.Decimal = _ -> _.toString.tt
-  given domId: DomId is Attributive to Whatwg.Id = _ -> _.toString.tt
-  given stylesheet: Stylesheet is Attributive to Whatwg.CssClassList = _ -> _.classes.join(t" ")
+  given cssClassList: Whatwg.CssClassList is Unattributive to List[Text] =
+    _.let(_.cut(t" ")).or(Nil)
 
-  given url: [url: Abstractable across Urls to Text] => url is Attributive to Whatwg.Url =
-    (key, value) => (key, value.generic)
+  // given posInt: Int is Attributive to PositiveInt = _ -> _.show
+  // given double: Double is Attributive to Decimal = _ -> _.toString.tt
+  // given domId: DomId is Attributive to Id = _ -> _.toString.tt
+  // given stylesheet: Stylesheet is Attributive to CssClassList = _ -> _.classes.join(t" ")
 
-  given url: HttpUrl is Attributive to Whatwg.Url = (key, value) => (key, value.show)
+  // given url: [url: Abstractable across Urls to Text] => url is Attributive to Url =
+  //   (key, value) => (key, value.generic)
 
-  given style: Text is Attributive to Whatwg.Css = (key, value) => (key, value)
+  // given url: HttpUrl is Attributive to Url = (key, value) => (key, value.show)
 
-  given cssClassList: List[Text] is Attributive to Whatwg.CssClassList =
-    (key, value) => (key, value.join(t" "))
+  // given style: Text is Attributive to Css = (key, value) => (key, value)
 
-trait Attributive extends Typeclass, Resultant:
-  def attribute(key: Text, value: Self): Optional[(Text, Optional[Text])]
+trait Unattributive extends Typeclass, Resultant:
+  def unattribute(value: Optional[Text]): Result

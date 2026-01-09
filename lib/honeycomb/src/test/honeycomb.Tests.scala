@@ -352,8 +352,12 @@ object Tests extends Suite(m"Honeycomb Tests"):
       . assert(_ == P("value: 😀"))
 
       test(m"attribute access"):
-        Input.Button.`type`
-      . assert(_ == t"button")
+        Img(alt = "hello world").alt
+      . assert(_ == t"hello world")
+
+      test(m"typed attribute access"):
+        Img(width = 50).width
+      . assert(_ == 50)
 
       suite(m"Interpolator tests"):
         test(m"simple interpolator"):
@@ -362,6 +366,11 @@ object Tests extends Suite(m"Honeycomb Tests"):
           def more: Int = 42
           h"""<p title=$attribute><!-- inner:$comment:outer -->This is some $more HTML.</p>"""
         . assert(_ == P(title = "attribute")(Comment(" inner:comment:outer "), "This is some ", "42", " HTML."))
+
+        test(m"modify attribute"):
+          val img = Img(alt = "hello")
+          img.alt = img.alt+" world"
+        . assert(_ == Img(alt = "hello world"))
 
         test(m"interpolate multiple attributes"):
           val dirname = "dirname"
