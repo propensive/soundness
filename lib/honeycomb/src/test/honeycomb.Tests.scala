@@ -368,8 +368,8 @@ object Tests extends Suite(m"Honeycomb Tests"):
         . assert(_ == P(title = "attribute")(Comment(" inner:comment:outer "), "This is some ", "42", " HTML."))
 
         test(m"modify attribute"):
-          val img = Img(`class` = List(t"foo"))
-          img.`class` ::= t"bar"
+          val img = Img(alt = "hello")
+          img.alt = img.alt+" world"
         . assert(_ == Img(alt = "hello world"))
 
         test(m"interpolate multiple attributes"):
