@@ -23,42 +23,43 @@ case class rpc() extends scala.annotation.StaticAnnotation
 
 object Obligatory
 
-package framings:
-  given contentLength: Tactic[FramingError] => Framing by Text = input =>
+package unframables:
+  given contentLength: Tactic[FrameError] => Unframable by Text = input =>
     val cursor = Cursor(input)
-    def key(mark: Mark)(using Cursor.Held): Text = cursor.lay(abort(FramingError())):
+    def key(mark: Mark)(using Cursor.Held): Text = cursor.lay(abort(FrameError())):
       case ':'  =>
         cursor.grab(mark, cursor.mark).also:
           cursor.next()
 
       case char =>
-        if cursor.next() then key(mark) else abort(FramingError())
+        if cursor.next() then key(mark) else abort(FrameError())
 
-    def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(abort(FramingError())):
+    def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(abort(FrameError())):
       case '\r'  =>
         cursor.grab(mark, cursor.mark).also:
-          if cursor.next() then cursor.datum
-
+          cursor.lay(???): datum =>
+            println(datum)
       case char =>
-        if cursor.next() then key(mark) else abort(FramingError())
+        if cursor.next() then key(mark) else abort(FrameError())
 
     var length: Int = 0
 
     cursor.hold(key(cursor.mark)).lower match
       case t"content-length" =>
-        length = safely(cursor.hold(value(cursor.mark)).as[Int]).or(abort(FramingError()))
+        length = safely(cursor.hold(value(cursor.mark)).as[Int]).or(abort(FrameError()))
+
       case t"content-type"   => cursor.hold(value(cursor.mark))
 
 
-  given newlineDelimited: Framing by Text = input =>
+  given newlineDelimited: Unframable by Text = input =>
     val cursor = Cursor(input)
     ???
 
-case class FramingError() extends Error(m"could not unframe the message")
+case class FrameError() extends Error(m"could not unframe the message")
 
-object Framing
+object Unframable
 
-trait Framing:
+trait Unframable:
   type Operand
   def break(input: Iterator[Operand]): Iterator[Operand]
 
@@ -69,20 +70,21 @@ object Rpc:
   given lsp: Lsp is Protocolic over (Rcp in Json) = ???
 
 
-trait Lsp:
-
+object Lsp:
   case class Folder(uri: Text, name: Text)
   case class ClientInfo(name: Text, version: Semver)
+
+trait Lsp:
 
   @rpc
   def initialize
        (processId:        Int,
-        clientInfo:       ClientInfo,
+        clientInfo:       Lsp.ClientInfo,
         locale:           Text,
         rootPath:         Text,
         rootUri:          Text,
         capabilities:     Json,
-        workspaceFolders: List[Folder])
+        workspaceFolders: List[Lsp.Folder])
   : Unit
 
   @rpc
