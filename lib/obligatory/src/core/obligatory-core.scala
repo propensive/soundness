@@ -20,7 +20,6 @@ import errorDiagnostics.stackTraces
 
 case class rpc() extends scala.annotation.StaticAnnotation
 
-
 object Obligatory
 
 package unframables:
@@ -51,11 +50,17 @@ package unframables:
       case t"content-type"   => cursor.hold(value(cursor.mark))
 
 
-  given newlineDelimited: Unframable by Text = input =>
+  given lengthPrefixed: Tactic[FrameError] => Unframable by Bytes = input =>
     val cursor = Cursor(input)
     ???
 
-case class FrameError() extends Error(m"could not unframe the message")
+
+
+  given newlineDelimited: Tactic[FrameError] => Unframable by Text = input =>
+    val cursor = Cursor(input)
+    ???
+
+case class FrameError()(using Diagnostics) extends Error(m"could not deframe the message")
 
 object Unframable
 
@@ -70,12 +75,15 @@ object Rpc:
   given lsp: Lsp is Protocolic over (Rcp in Json) = ???
 
 
+trait Semantizable extends Typeclass:
+  extension (value: Self) def narrate: Text = narration(value)
+  def narration(value: Self): Text
+
 object Lsp:
   case class Folder(uri: Text, name: Text)
   case class ClientInfo(name: Text, version: Semver)
 
 trait Lsp:
-
   @rpc
   def initialize
        (processId:        Int,
