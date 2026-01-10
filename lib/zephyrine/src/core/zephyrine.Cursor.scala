@@ -237,10 +237,10 @@ class Cursor[data](initial:    data,
     val last = end.block - first
     var offset = start.block - first
 
-    if start.block == end.block
-    then
+    if start.block == end.block then
       if end.index.previous.n0 >= start.index.n0
       then addressable.clone(buffer(offset), start.index, end.index.previous)(target)
+
     else
       var focus = buffer(offset)
       addressable.clone(focus, start.index, addressable.length(focus).u)(target)
