@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<web-app>
+  <servlet>
+    <servlet-name>soundnessweb</servlet-name>
+    <servlet-class>dev.soundness.Service</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>soundnessweb</servlet-name>
+    <url-pattern>/*</url-pattern>
+  </servlet-mapping>
+</web-app>
