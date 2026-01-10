@@ -69,29 +69,7 @@ object settings:
     "-language:experimental.namedTypeArguments"
   )
 
-  val scalaOptionsCC = Seq(
-    "-experimental",
-    "-new-syntax",
-    "-feature",
-    //"-explain",
-    "-deprecation",
-    //"-Wunused:imports",
-    "-Wimplausible-patterns",
-    //"-Wsafe-init",
-    "-Xmax-inlines", "100",
-    "-Ycc-new",
-    "-Yno-flexible-types",
-    "-Yexplicit-nulls",
-    "-Ycheck-all-patmat",
-    //"-explain-cyclic",
-    "-language:experimental.modularity",
-    "-language:experimental.genericNumberLiterals",
-    "-language:experimental.into",
-    "-language:experimental.erasedDefinitions",
-    "-language:implicitConversions",
-    "-language:experimental.saferExceptions",
-    "-language:experimental.namedTypeArguments"
-  )
+  val scalaOptionsCC = scalaOptions ++ Seq("-Ycc-new")
 
 trait BaseScalaModule extends ScalaModule:
   override def scalaVersion = settings.scalaVersion
