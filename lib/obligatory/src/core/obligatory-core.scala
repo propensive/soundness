@@ -70,6 +70,10 @@ object Rpc:
   given lsp: Lsp is Protocolic over (Rcp in Json) = ???
 
 
+trait Narratable extends Typeclass:
+  extension (value: Self) def narrate: Text = narration(value)
+  def narration(value: Self): Text
+
 object Lsp:
   case class Folder(uri: Text, name: Text)
   case class ClientInfo(name: Text, version: Semver)
