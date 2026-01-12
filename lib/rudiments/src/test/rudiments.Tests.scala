@@ -142,11 +142,11 @@ object Tests extends Suite(m"Rudiments Tests"):
     suite(m"hex tests"):
       test(m"Specify some bytes"):
         hex"bacdf1e9".to(List)
-      .assert(_ == Bytes(-70, -51, -15, -23).to(List))
+      .assert(_ == Data(-70, -51, -15, -23).to(List))
 
       test(m"Specify some bytes in uppercase with a space"):
         hex"BACD F1E9".to(List)
-      .assert(_ == Bytes(-70, -51, -15, -23).to(List))
+      .assert(_ == Data(-70, -51, -15, -23).to(List))
 
       test(m"Non-even number of bytes"):
         demilitarize:
@@ -356,17 +356,17 @@ object Tests extends Suite(m"Rudiments Tests"):
         Exit.Fail(3)
       .assert(_() == 3)
 
-    suite(m"Bytes tests"):
-      test(m"Construct a `Bytes` literal"):
-        Bytes(1, 2, 3)
+    suite(m"Data tests"):
+      test(m"Construct a `Data` literal"):
+        Data(1, 2, 3)
       .assert(_.length == 3)
 
-      // test(m"Construct a `Bytes` value from a Long"):
-      //   Bytes(Long.MaxValue)
+      // test(m"Construct a `Data` value from a Long"):
+      //   Data(Long.MaxValue)
       // .assert(_.length == 8)
 
-      test(m"Construct an empty `Bytes`"):
-        Bytes()
+      test(m"Construct an empty `Data`"):
+        Data()
       .assert(_.length == 0)
 
     suite(m"Memory tests"):

@@ -128,4 +128,4 @@ object HttpClient:
         val headers2: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
           (key, values) => values.asScala.map { value => Http.Header(key.tt, value.tt) }
 
-        Http.Response.make(status2, headers2, unsafely(response.body().nn.stream[Bytes]))
+        Http.Response.make(status2, headers2, unsafely(response.body().nn.stream[Data]))

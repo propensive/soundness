@@ -51,7 +51,7 @@ object Routable:
       val address = jn.InetAddress.getByName(endpoint.remote.s).nn
       Connection(address, endpoint.port.number, jn.DatagramSocket())
 
-    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
+    def transmit(connection: Connection, input: Stream[Data]): Unit =
       input.each: bytes =>
         val packet =
           jn.DatagramPacket
@@ -65,7 +65,7 @@ object Routable:
     def connect(port: UdpPort): Connection =
       Connection(port.number, jn.DatagramSocket())
 
-    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
+    def transmit(connection: Connection, input: Stream[Data]): Unit =
       input.each: bytes =>
         val packet = jn.DatagramPacket
                       (bytes.mutable(using Unsafe),
@@ -79,4 +79,4 @@ trait Routable extends Typeclass:
   type Connection
 
   def connect(endpoint: Self): Connection
-  def transmit(connection: Connection, input: Stream[Bytes]): Unit
+  def transmit(connection: Connection, input: Stream[Data]): Unit

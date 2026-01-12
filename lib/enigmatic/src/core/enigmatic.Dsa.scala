@@ -46,7 +46,7 @@ class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signing:
   type Size = bits
   def keySize: bits = valueOf[bits]
 
-  def genKey(): Bytes =
+  def genKey(): Data =
     val generator = js.KeyPairGenerator.getInstance("DSA").nn
     val random = js.SecureRandom()
     generator.initialize(keySize, random)
@@ -58,22 +58,22 @@ class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signing:
 
     keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
-  def sign(data: Bytes, keyBytes: Bytes): Bytes =
+  def sign(data: Data, keyData: Data): Data =
     val sig = init()
-    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyBytes.to(Array)))
+    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyData.to(Array)))
     sig.initSign(key)
     sig.update(data.to(Array))
     sig.sign().nn.immutable(using Unsafe)
 
-  def verify(data: Bytes, signature: Bytes, keyBytes: Bytes): Boolean =
+  def verify(data: Data, signature: Data, keyData: Data): Boolean =
     val sig = init()
-    val key = keyFactory().generatePublic(jss.X509EncodedKeySpec(keyBytes.to(Array)))
+    val key = keyFactory().generatePublic(jss.X509EncodedKeySpec(keyData.to(Array)))
     sig.initVerify(key)
     sig.update(data.to(Array))
     sig.verify(signature.to(Array))
 
-  def privateToPublic(keyBytes: Bytes): Bytes =
-    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyBytes.to(Array))).nn match
+  def privateToPublic(keyData: Data): Data =
+    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyData.to(Array))).nn match
       case key: jsi.DSAPrivateKey => key
       case key: js.PrivateKey     => panic(m"unexpected private key type")
 

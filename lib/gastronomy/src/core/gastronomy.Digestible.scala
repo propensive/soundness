@@ -109,10 +109,10 @@ object Digestible extends Derivable[Digestible]:
   given text: [text <: Text] => text is Digestible =
     (digestion, text) => digestion.append(text.bytes(using charEncoders.utf8))
 
-  given bytes: Bytes is Digestible = _.append(_)
+  given bytes: Data is Digestible = _.append(_)
   given digest: Digest is Digestible = (digestion, digest) => digestion.append(digest.bytes)
 
-  given encodable: [value: Encodable in Bytes] => value is Digestible =
+  given encodable: [value: Encodable in Data] => value is Digestible =
     bytes.contramap(value.encode)
 
 trait Digestible extends Typeclass:

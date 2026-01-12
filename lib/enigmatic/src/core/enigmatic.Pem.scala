@@ -41,7 +41,7 @@ import monotonous.*, alphabets.base64.standard
 import rudiments.*
 import vacuous.*
 
-case class Pem(label: PemLabel, data: Bytes):
+case class Pem(label: PemLabel, data: Data):
   def serialize: Text =
     Seq
      (Seq(t"-----BEGIN $label-----"),

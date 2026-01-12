@@ -36,4 +36,4 @@ import anticipation.*
 
 enum UdpResponse:
   case Ignore
-  case Reply(data: Bytes)
+  case Reply(data: Data)

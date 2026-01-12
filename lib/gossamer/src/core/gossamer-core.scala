@@ -74,7 +74,7 @@ extension (textObject: Text.type)
     block(using builder)
     builder()
 
-  def ascii(bytes: Bytes): Text = new String(bytes.mutable(using Unsafe), "ASCII").tt
+  def ascii(bytes: Data): Text = new String(bytes.mutable(using Unsafe), "ASCII").tt
 
   def fill(length: Int)(lambda: Int => Char): Text =
     val array = new Array[Char](length)
@@ -89,7 +89,7 @@ extension (inline ctx: StringContext)
 extension (ctx: StringContext)
   def t = SimpleTExtractor(ctx.parts.head.tt)
 
-extension (bytes: Bytes)
+extension (bytes: Data)
   def utf8: Text = String(bytes.mutable(using Unsafe), "UTF-8").tt
   def utf16: Text = String(bytes.mutable(using Unsafe), "UTF-16").tt
   def ascii: Text = String(bytes.mutable(using Unsafe), "ASCII").tt
@@ -402,7 +402,7 @@ extension (text: Text)
   inline def urlDecode: Text = URLDecoder.decode(text.s, "UTF-8").nn.tt
   inline def punycode: Text = java.net.IDN.toASCII(text.s).nn.tt
   inline def bytes(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
-  inline def sysBytes: IArray[Byte] = CharEncoder.system.encode(text)
+  inline def sysData: IArray[Byte] = CharEncoder.system.encode(text)
 
   def proximity(other: Text)(using proximity: Proximity): proximity.Operand =
     proximity.distance(text, other)

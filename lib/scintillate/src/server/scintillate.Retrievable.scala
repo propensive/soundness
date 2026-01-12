@@ -42,7 +42,7 @@ import spectacular.*
 import telekinesis.*
 
 trait Retrievable(val mediaType: MediaType) extends Typeclass, Servable:
-  def stream(response: Self): Stream[Bytes]
+  def stream(response: Self): Stream[Data]
 
 
   final def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder)

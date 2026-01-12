@@ -49,11 +49,11 @@ trait Deserializable:
   type Form <: Serialization
   protected val atomicity: Int = 1
 
-  def deserialize(previous: Text, current: Text, index0: Int, last: Boolean): Bytes
-  def deserialize(value: Text): Bytes = deserialize(t"", value, 0, true)
+  def deserialize(previous: Text, current: Text, index0: Int, last: Boolean): Data
+  def deserialize(value: Text): Data = deserialize(t"", value, 0, true)
 
-  def deserialize(stream: Stream[Text]): Stream[Bytes] =
-    def recur(stream: Stream[Text], previous: Text, carry: Int): Stream[Bytes] = stream match
+  def deserialize(stream: Stream[Text]): Stream[Data] =
+    def recur(stream: Stream[Text], previous: Text, carry: Int): Stream[Data] = stream match
       case head #:: tail =>
         val carry2 = (carry + head.length)%atomicity
         deserialize(previous, head, -carry, tail.nil) #:: recur(tail, head, carry2)
@@ -70,7 +70,7 @@ object Deserializable:
       new:
         override protected val atomicity = 8.lcm(base)/base
 
-        def deserialize(previous: Text, text: Text, index0: Int, last: Boolean): Bytes =
+        def deserialize(previous: Text, text: Text, index0: Int, last: Boolean): Data =
           val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'
 
           val length =

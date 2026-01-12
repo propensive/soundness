@@ -45,8 +45,8 @@ import turbulence.*
 import vacuous.*
 
 object Ttf:
-  def apply[source: Streamable by Bytes](source: source): Ttf =
-    val data = source.read[Bytes]
+  def apply[source: Streamable by Data](source: source): Ttf =
+    val data = source.read[Data]
     Ttf(data)
 
   enum PlatformId:
@@ -55,7 +55,7 @@ object Ttf:
   enum EncodingId:
     case Unicode1, Unicode1_1, IsoIec10646, Unicode2Bmp, Unicode2Full, UnicodeVariation, UnicodeFull
 
-case class Ttf(data: Bytes):
+case class Ttf(data: Data):
   ttf =>
 
   case class TableOffset(id: TableTag, checksum: B32, offset: Int, length: Int)

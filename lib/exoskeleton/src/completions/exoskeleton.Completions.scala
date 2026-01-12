@@ -194,7 +194,7 @@ object Completions:
           if path.exists()
           then Installation.InstallResult.AlreadyInstalled(shell, path.encode)
           else
-            path.open(script(shell, command).sysBytes.writeTo(_))
+            path.open(script(shell, command).sysData.writeTo(_))
             Installation.InstallResult.Installed(shell, path.encode)
 
         . or(Installation.InstallResult.NoWritableLocation(shell))

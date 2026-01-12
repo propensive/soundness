@@ -65,7 +65,7 @@ object Computable:
   given string: String is Computable = proc =>
     Text.construct(stream.compute(proc).map(_.s).each(append(_))).s
 
-  given dataStream: Tactic[StreamError] => Stream[Bytes] is Computable =
+  given dataStream: Tactic[StreamError] => Stream[Data] is Computable =
     proc => Streamable.inputStream.stream(proc.getInputStream.nn)
 
   given exitStatus: Exit is Computable = _.waitFor() match

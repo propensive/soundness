@@ -51,8 +51,8 @@ object Tests extends Suite(m"Monotonous tests"):
 
   val allNumbers = IArray.from((0 to 18).map(_.toByte))
 
-  val stream = Stream(Bytes(1), Bytes(2, 3), Bytes(4, 5, 6), Bytes(7, 8, 9, 10),
-      Bytes(11, 12, 13, 14, 15), Bytes(16, 17, 18, 19, 20, 21), Bytes(22, 23, 24, 25, 26, 27, 28))
+  val stream = Stream(Data(1), Data(2, 3), Data(4, 5, 6), Data(7, 8, 9, 10),
+      Data(11, 12, 13, 14, 15), Data(16, 17, 18, 19, 20, 21), Data(22, 23, 24, 25, 26, 27, 28))
 
   def run(): Unit = stochastic:
 

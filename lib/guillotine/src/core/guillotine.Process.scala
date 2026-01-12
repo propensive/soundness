@@ -56,17 +56,17 @@ object Process:
 
   given writableText: [command <: Label, result] => Tactic[StreamError]
         =>  Process[command, result] is Writable by Text =
-    (process, stream) => process.stdin(stream.map(_.sysBytes))
+    (process, stream) => process.stdin(stream.map(_.sysData))
 
 class Process[+exec <: Label, result](process: java.lang.Process) extends ProcessRef:
   def pid: Pid = Pid(process.pid)
   def alive: Boolean = process.isAlive
   def attend(): Unit = process.waitFor()
 
-  def stdout(): Stream[Bytes] raises StreamError =
+  def stdout(): Stream[Data] raises StreamError =
     Streamable.inputStream.stream(process.getInputStream.nn)
 
-  def stderr(): Stream[Bytes] raises StreamError =
+  def stderr(): Stream[Data] raises StreamError =
     Streamable.inputStream.stream(process.getErrorStream.nn)
 
 

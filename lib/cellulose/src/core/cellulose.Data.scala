@@ -42,15 +42,15 @@ import vacuous.*
 
 import language.dynamics
 
-object Data:
-  given insertion: [entity: Encodable in Codl] => Insertion[List[Data], entity] =
+object Atom:
+  given insertion: [entity: Encodable in Codl] => Insertion[List[Atom], entity] =
     value =>
       entity.encoded(value).list.head.children.to(List).map(_.data).collect:
-        case data: Data => data
+        case data: Atom => data
 
-  given inspectable: Data is Inspectable = data => t"Data(${data.key}, ${data.children.length})"
+  given inspectable: Atom is Inspectable = data => t"Atom(${data.key}, ${data.children.length})"
 
-case class Data(key: Text, children: IArray[CodlNode] = IArray(), layout: Layout = Layout.empty,
+case class Atom(key: Text, children: IArray[CodlNode] = IArray(), layout: Layout = Layout.empty,
                     schema: CodlSchema = CodlSchema.Free)
 extends Indexed:
 
@@ -69,12 +69,12 @@ extends Indexed:
       index(name).prim.let(children(_).fieldValue)
     case _ => key
 
-  def promote(n: Int): Data = copy(layout = layout.copy(params = n))
+  def promote(n: Int): Atom = copy(layout = layout.copy(params = n))
 
   def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
 
   override def equals(that: Any) = that.matchable(using Unsafe) match
-    case that: Data =>
+    case that: Atom =>
       key == that.key && children.sameElements(that.children) && layout == that.layout
       && schema == that.schema
 

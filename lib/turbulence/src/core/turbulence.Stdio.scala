@@ -82,10 +82,10 @@ trait Stdio extends Io:
 
   protected[turbulence] lazy val reader: ji.Reader = ji.InputStreamReader(in)
 
-  def write(bytes: Bytes): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
+  def write(bytes: Data): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def print(text: Text): Unit = out.print(text.s)
 
-  def writeErr(bytes: Bytes): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.length)
+  def writeErr(bytes: Data): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def printErr(text: Text): Unit = err.print(text.s)
 
   def read(array: Array[Byte]): Int = in.read(array, 0, array.length)

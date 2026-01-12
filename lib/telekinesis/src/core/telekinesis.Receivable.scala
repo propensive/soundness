@@ -45,17 +45,17 @@ trait Receivable2:
   given instantiable: [content: Instantiable across HttpRequests from Text] => Tactic[HttpError]
         =>  content is Receivable =
     Receivable:
-      body => content(body.read[Bytes].utf8)
+      body => content(body.read[Data].utf8)
 
 object Receivable extends Receivable2:
 
-  def apply[result](lambda: Stream[Bytes] => result): result is Receivable raises HttpError =
+  def apply[result](lambda: Stream[Data] => result): result is Receivable raises HttpError =
     response =>
       response.successBody.let(lambda).lest(HttpError(response.status, response.textHeaders))
 
-  given text: Tactic[HttpError] => Text is Receivable = Receivable(_.read[Bytes].utf8)
+  given text: Tactic[HttpError] => Text is Receivable = Receivable(_.read[Data].utf8)
 
-  given streamable: [stream: Aggregable by Bytes] => Tactic[HttpError] => stream is Receivable =
+  given streamable: [stream: Aggregable by Data] => Tactic[HttpError] => stream is Receivable =
     Receivable(stream.aggregate(_))
 
   given httpStatus: Http.Status is Receivable = _.status

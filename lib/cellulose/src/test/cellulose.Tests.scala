@@ -520,11 +520,11 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Access deeper nested key"):
         doc.term(0).name(1)()
-      .assert(_ == CodlNode(Data(t"gamma")))
+      .assert(_ == CodlNode(Atom(t"gamma")))
 
       test(m"Access deeper nested param"):
         doc.term().name()(1)
-      .assert(_ == CodlNode(Data(t"beta")))
+      .assert(_ == CodlNode(Atom(t"beta")))
 
     def read(text: Text): CodlDoc = Codl.parse(text)
 
@@ -535,7 +535,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Simplest non-empty document"):
         read(t"root").wiped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root"))))
+      .assert(_ == CodlDoc(CodlNode(Atom(t"root"))))
 
       test(m"Root peers"):
         read(t"root\nelement\n").wiped
@@ -562,62 +562,62 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"grandchild")()),
           CodlNode(t"child")(CodlNode(t"grandchild")())), CodlNode(t"peer")()))
 
-      test(m"Data with parameter"):
+      test(m"Atom with parameter"):
         read(t"root param").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"param")())))
 
-      test(m"Data with remark"):
+      test(m"Atom with remark"):
         read(t"root # remark").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Extra(0, Nil, t"remark"))))
+      .assert(_ == CodlDoc(CodlNode(Atom(t"root"), Extra(0, Nil, t"remark"))))
 
-      test(m"Data after comment"):
+      test(m"Atom after comment"):
         read(t"# comment\nroot").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Extra(0, List(t" comment"), Unset))))
+      .assert(_ == CodlDoc(CodlNode(Atom(t"root"), Extra(0, List(t" comment"), Unset))))
 
-      test(m"Data after two comments"):
+      test(m"Atom after two comments"):
         read(t"# comment 1\n# comment 2\nroot").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Extra(0, List(t" comment 1", t" comment 2"), Unset))))
+      .assert(_ == CodlDoc(CodlNode(Atom(t"root"), Extra(0, List(t" comment 1", t" comment 2"), Unset))))
 
       test(m"Comment on child"):
         read(t"root\n  # comment\n  child").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(0, List(t" comment"),
+      .assert(_ == CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child"), Extra(0, List(t" comment"),
           Unset)))))))
 
       test(m"Comment and blank line on child"):
         read(t"root\n\n  # comment\n  child").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(1, List(t" comment"),
+      .assert(_ == CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child"), Extra(1, List(t" comment"),
           Unset)))))))
 
-      test(m"Data with multiple parameters"):
+      test(m"Atom with multiple parameters"):
         read(t"root param1 param2").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"param1")(), CodlNode(t"param2")())))
 
       test(m"Blank line before child"):
         read(t"root\n\n  child").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(1, Nil)))))))
+      .assert(_ == CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child"), Extra(1, Nil)))))))
 
       test(m"Two blank lines before child"):
         read(t"root\n\n \n  child").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child", IArray()), Extra(2, Nil, Unset)))))))
+      .assert(_ == CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child", IArray()), Extra(2, Nil, Unset)))))))
 
-      test(m"Data with multiple parameters, remark and comment"):
+      test(m"Atom with multiple parameters, remark and comment"):
         read(t"# comment\nroot param1 param2 # remark").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Extra(0,
+      .assert(_ == CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Extra(0,
           List(t" comment"), t"remark"))))
 
-      test(m"Data with multiple parameters, remark, comment and peer"):
+      test(m"Atom with multiple parameters, remark, comment and peer"):
         read(t"# comment\nroot param1 param2 # remark\npeer").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Extra(0,
+      .assert(_ == CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Extra(0,
           List(t" comment"), t"remark")), CodlNode(t"peer")()))
 
       test(m"Comment on blank node"):
         read(t"# comment\n\nroot").untyped
-      .assert(_ == CodlDoc(CodlNode(Unset, Extra(0, List(t" comment"), Unset)), CodlNode(Data(t"root"), Extra(1,
+      .assert(_ == CodlDoc(CodlNode(Unset, Extra(0, List(t" comment"), Unset)), CodlNode(Atom(t"root"), Extra(1,
           Nil, Unset))))
 
       test(m"Remark after blank line"):
         read(t"root\n\npeer # remark").untyped
-      .assert(_ == CodlDoc(CodlNode(t"root")(), CodlNode(Data(t"peer"), Extra(0, Nil, t"remark"))))
+      .assert(_ == CodlDoc(CodlNode(t"root")(), CodlNode(Atom(t"peer"), Extra(0, Nil, t"remark"))))
 
       test(m"Long item"):
         read(t"root\n    one two\n").wiped
@@ -683,7 +683,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Root node has correct name"):
         topSchema.parse(t"root").untyped()
-      .assert(_ == CodlNode(Data(t"root")))
+      .assert(_ == CodlNode(Atom(t"root")))
 
       test(m"Root node has correct schema"):
         topSchema.parse(t"root").schema
@@ -747,7 +747,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Present required node does not throw exception"):
         requiredChild.parse(t"root\n  child").untyped.root().child()
-      .assert(_ == Data(t"child"))
+      .assert(_ == Atom(t"child"))
 
       val repeatableChild = Struct(AtMostOne,
                               t"root" -> Struct(AtMostOne,
@@ -761,7 +761,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Duplicated repeatable child is permitted"):
         repeatableChild.parse(t"root\n  child\n  child").untyped.root().child(1)
-      .assert(_ == Data(t"child"))
+      .assert(_ == Atom(t"child"))
 
       val atLeastOneChild = Struct(AtMostOne,
                               t"root" -> Struct(AtMostOne,
@@ -771,11 +771,11 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"'At least one' may mean one"):
         atLeastOneChild.parse(t"root\n  child").untyped.root().child()
-      .assert(_ == Data(t"child"))
+      .assert(_ == Atom(t"child"))
 
       test(m"'At least one' may mean two"):
         atLeastOneChild.parse(t"root\n  child\n  child").untyped.root().child(1)
-      .assert(_ == Data(t"child"))
+      .assert(_ == Atom(t"child"))
 
       test(m"'At least one' may not mean zero"):
         capture[ParseError](requiredChild.parse(t"root"))
@@ -801,7 +801,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
 
       test(m"Access parameters by name"):
         childWithTwoParams(One, One).parse(t"root\n  child first second").root().child().beta()
-      .assert(_ == Data(t"second", IArray(), schema = Field(One), layout = Layout(0, false, 14)))
+      .assert(_ == Atom(t"second", IArray(), schema = Field(One), layout = Layout(0, false, 14)))
 
       test(m"Surplus parameters"):
         capture(childWithTwoParams(One, One).parse(t"root\n  child one two three"))
@@ -953,66 +953,66 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
       .assert(_ == doc.uncommented)
 
       val doc2 = schema.parse(t"field\n  child\n")
-      test(m"Serialize and deserialize one node and child"):
+      test(m"Serialize/deserialize one node and child"):
         roundtrip(doc2)
       .assert(_ == doc2.uncommented)
 
       val doc3 = schema.parse(t"field\n  child value")
-      test(m"Serialize and deserialize one node and child/param"):
+      test(m"Serialize/deserialize one node and child/param"):
         roundtrip(doc3)
       .assert(_ == doc3.uncommented)
 
       val doc4 = schema.parse(t"field\n  child value value2 value3")
-      test(m"Serialize and deserialize one node and child with three params"):
+      test(m"Serialize/deserialize one node and child with three params"):
         roundtrip(doc4)
       .assert(_ == doc4.uncommented)
 
       val doc5 = schema.parse(t"field\n  child value value2\nfield2\nfield3")
-      test(m"Serialize and deserialize document with indent, outdent and peer"):
+      test(m"Serialize/deserialize document with indent, outdent and peer"):
         roundtrip(doc5)
       .assert(_ == doc5.uncommented)
 
     suite(m"Serialization tests"):
 
       test(m"Serialize a node"):
-        CodlDoc(CodlNode(Data(t"root"))).write
+        CodlDoc(CodlNode(Atom(t"root"))).write
       .assert(_ == t"root\n")
 
       test(m"Serialize a node and a child"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")))))).write
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child")))))).write
       .assert(_ == t"root\n  child\n")
 
       test(m"Serialize a node and a child with params layout"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"))), Layout(1, false, 0))))
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child"))), Layout(1, false, 0))))
         . write
       .assert(_ == t"root child\n")
 
       test(m"Serialize a node and a child with block param"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello World"))), Layout(2, true, 0)))).write
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child")), CodlNode(Atom(t"Hello World"))), Layout(2, true, 0)))).write
       .assert(_ == t"root child\n    Hello World\n")
 
       test(m"Serialize a node and a child with multiline block param"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child")), CodlNode(Data(t"Hello\nWorld"))), Layout(2, true, 0)))).write
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child")), CodlNode(Atom(t"Hello\nWorld"))), Layout(2, true, 0)))).write
       .assert(_ == t"root child\n    Hello\n    World\n")
 
       test(m"Serialize a node and a child with comment"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(comments = List(t" comment"))))))).write
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child"), Extra(comments = List(t" comment"))))))).write
       .assert(_ == t"root\n  # comment\n  child\n")
 
       test(m"Serialize a node and a child with multiline comment"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(comments = List(t" line 1", t" line 2"))))))).write
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child"), Extra(comments = List(t" line 1", t" line 2"))))))).write
       .assert(_ == t"root\n  # line 1\n  # line 2\n  child\n")
 
-      test(m"Serialize a node and a child with multiline comment and blank lines"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(blank = 2, comments = List(t" line 1", t" line 2"))))))).write
+      test(m"Serialize node/child with multiline comment and blank lines"):
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child"), Extra(blank = 2, comments = List(t" line 1", t" line 2"))))))).write
       .assert(_ == t"root\n\n\n  # line 1\n  # line 2\n  child\n")
 
       test(m"Serialize a node and a child with blank lines"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(blank = 2)))))).write
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child"), Extra(blank = 2)))))).write
       .assert(_ == t"root\n\n\n  child\n")
 
       test(m"Serialize a node and a child with a remark"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(remark = t"some remark")))))).write
+        CodlDoc(CodlNode(Atom(t"root", IArray(CodlNode(Atom(t"child"), Extra(remark = t"some remark")))))).write
       .assert(_ == t"root\n  child # some remark\n")
 
     suite(m"Double-spacing tests"):

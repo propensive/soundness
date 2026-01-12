@@ -42,8 +42,8 @@ import gastronomy.*
 import prepositional.*
 import rudiments.*
 
-extension [encodable: Encodable in Bytes](value: encodable)
-  def hmac[algorithm <: Algorithm](key: Bytes)(using hash: Hash in algorithm): Hmac in algorithm =
+extension [encodable: Encodable in Data](value: encodable)
+  def hmac[algorithm <: Algorithm](key: Data)(using hash: Hash in algorithm): Hmac in algorithm =
 
     val mac = hash.hmac0
     mac.init(SecretKeySpec(key.to(Array), hash.name.s))

@@ -70,7 +70,7 @@ case class Permutation(factoradic: Factoradic):
   lazy val lehmer: List[Int] = factoradic.expand
   lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.length)))
 
-  def bytes: Bytes = unsafely(factoradic.number.toByteArray.immutable)
+  def bytes: Data = unsafely(factoradic.number.toByteArray.immutable)
 
   def apply(n: Int): Int = expansion(n)
 

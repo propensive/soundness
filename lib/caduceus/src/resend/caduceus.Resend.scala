@@ -81,7 +81,7 @@ package couriers:
 
     def send(envelope: Envelope): Resend.Receipt =
       val attachments = envelope.email.attachments.map: attachment =>
-        Attachment(attachment.name, attachment.stream.read[Bytes].serialize[Base64])
+        Attachment(attachment.name, attachment.stream.read[Data].serialize[Base64])
 
       val request =
         Request

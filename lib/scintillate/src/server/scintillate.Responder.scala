@@ -36,5 +36,5 @@ import anticipation.*
 import proscenium.*
 
 trait Responder:
-  def sendBody(status: Int, body: Stream[Bytes]): Unit
+  def sendBody(status: Int, body: Stream[Data]): Unit
   def addHeader(key: Text, value: Text): Unit

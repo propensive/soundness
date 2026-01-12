@@ -34,22 +34,22 @@ package anticipation
 
 import prepositional.*
 
-type Bytes = IArray[Byte]
+type Data = IArray[Byte]
 
-object Bytes:
-  def apply(xs: Byte*): Bytes = IArray(xs*)
-  def empty: Bytes = IArray()
+object Data:
+  def apply(xs: Byte*): Data = IArray(xs*)
+  def empty: Data = IArray()
 
-  def construct(count: Int)(lambda: Array[Byte] => Unit): Bytes =
+  def construct(count: Int)(lambda: Array[Byte] => Unit): Data =
     val array: Array[Byte] = new Array[Byte](count)
     lambda(array)
     array.asInstanceOf[IArray[Byte]]
 
-  def fill(count: Int)(lambda: Int => Byte): Bytes = construct(count): array =>
+  def fill(count: Int)(lambda: Int => Byte): Data = construct(count): array =>
     for index <- 0 until count do array(index) = lambda(index)
 
-extension [encodable: Encodable in Bytes](value: encodable)
-  def bytestream: Bytes = encodable.encode(value)
+extension [encodable: Encodable in Data](value: encodable)
+  def bytestream: Data = encodable.encode(value)
 
 extension (long: Long)
-  def bytes: Bytes = IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)
+  def bytes: Data = IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)

@@ -42,7 +42,7 @@ import spectacular.*
 import turbulence.*
 
 object Servable:
-  def apply[response](mediaType: response => MediaType)(lambda: response => Stream[Bytes])
+  def apply[response](mediaType: response => MediaType)(lambda: response => Stream[Data])
   : response is Servable = response =>
 
       val headers = List(Http.Header(t"content-type", mediaType(response).show))
@@ -61,17 +61,17 @@ object Servable:
     Servable[response](value => unsafely(Media.parse(response.generic(value)(0)))): value =>
       response.generic(value)(1)
 
-  given data: Bytes is Servable = Servable[Bytes](_ => media"application/octet-stream")(Stream(_))
+  given data: Data is Servable = Servable[Data](_ => media"application/octet-stream")(Stream(_))
 
   inline given media: [media: Media] => media is Servable =
     compiletime.summonFrom:
-      case encodable: (`media` is Encodable in Bytes) => value =>
+      case encodable: (`media` is Encodable in Data) => value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
         Http.Response.make(Http.Ok, headers, Stream(encodable.encode(value)))
 
-      case given (`media` is Streamable by Bytes)       => value =>
+      case given (`media` is Streamable by Data)       => value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Response.make(Http.Ok, headers, value.stream[Bytes])
+        Http.Response.make(Http.Ok, headers, value.stream[Data])
 
 trait Servable extends Typeclass:
   def serve(content: Self): Http.Response

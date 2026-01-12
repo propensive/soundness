@@ -44,15 +44,15 @@ import spectacular.*
 import vacuous.*
 
 object Digest:
-  def apply[hash <: Algorithm](bytes: Bytes): Digest in hash = new Digest(bytes):
+  def apply[hash <: Algorithm](bytes: Data): Digest in hash = new Digest(bytes):
     type Form = hash
 
   given showable: [digest <: Algorithm] => Alphabet[Base64] => Digest in digest is Showable =
     _.bytes.serialize[Base64]
 
-  given encodable: [digest <: Algorithm] => Digest in digest is Encodable in Bytes = _.bytes
+  given encodable: [digest <: Algorithm] => Digest in digest is Encodable in Data = _.bytes
 
-class Digest(val bytes: Bytes):
+class Digest(val bytes: Data):
   type Form <: Algorithm
 
   override def equals(that: Any) = that.asMatchable match

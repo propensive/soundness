@@ -48,7 +48,7 @@ class Rsa[bits <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
   type Size = bits
   def keySize: bits = valueOf[bits]
 
-  def privateToPublic(bytes: Bytes): Bytes =
+  def privateToPublic(bytes: Data): Data =
     val javaKey = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(unsafely(bytes.mutable))).nn
     val key = javaKey match
       case key: jsi.RSAPrivateCrtKey => key
@@ -57,7 +57,7 @@ class Rsa[bits <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
     val spec = jss.RSAPublicKeySpec(key.getModulus, key.getPublicExponent)
     keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
 
-  def decrypt(bytes: Bytes, key: Bytes): Bytes =
+  def decrypt(bytes: Data, key: Data): Data =
     val cipher = init()
 
     val privateKey =
@@ -66,13 +66,13 @@ class Rsa[bits <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
     cipher.init(jc.Cipher.DECRYPT_MODE, privateKey)
     cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
 
-  def encrypt(bytes: Bytes, key: Bytes): Bytes =
+  def encrypt(bytes: Data, key: Data): Data =
     val cipher = init()
     val publicKey = keyFactory().generatePublic(jss.X509EncodedKeySpec(key.mutable(using Unsafe)))
     cipher.init(jc.Cipher.ENCRYPT_MODE, publicKey)
     cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
 
-  def genKey(): Bytes =
+  def genKey(): Data =
     val generator = js.KeyPairGenerator.getInstance("RSA").nn
     generator.initialize(keySize)
     val keyPair = generator.generateKeyPair().nn

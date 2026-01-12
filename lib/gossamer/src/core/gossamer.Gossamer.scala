@@ -82,15 +82,15 @@ object Gossamer:
       anticipation.Text(String.join("\n", array*).nn)
 
   object opaques:
-    opaque type Ascii = anticipation.Bytes
+    opaque type Ascii = anticipation.Data
 
     object Ascii:
-      def apply(bytes: Bytes): Ascii = bytes
+      def apply(bytes: Data): Ascii = bytes
 
       given showable: Ascii is Showable =
         ascii => String(ascii.mutable(using Unsafe), "ASCII").nn.tt
 
-      extension (ascii: Ascii) def bytes: Bytes = ascii
+      extension (ascii: Ascii) def bytes: Data = ascii
 
       given textual: Ascii is Textual:
         type Show[value] = value is Showable
@@ -98,7 +98,7 @@ object Gossamer:
         val empty: Ascii = IArray.from[Byte](Nil)
         val classTag: ClassTag[Ascii] = summon[ClassTag[Ascii]]
 
-        def apply(text: Text): Ascii = text.sysBytes
+        def apply(text: Text): Ascii = text.sysData
         def apply(char: Char): Ascii = IArray(char.toByte)
         def length(ascii: Ascii): Int = ascii.size
         def text(ascii: Ascii): Text = String(ascii.mutable(using Unsafe), "ASCII").nn.tt
@@ -118,7 +118,7 @@ object Gossamer:
           ascii.indexOfSlice(apply(sub)).puncture(-1).let(_.z)
 
         def show[value](value: value)(using show: Show[value]): Ascii =
-          Ascii(show.text(value).sysBytes)
+          Ascii(show.text(value).sysData)
 
         def segment(ascii: Ascii, interval: Interval): Ascii =
           ascii.slice(interval.start.n0, interval.end.n0)
@@ -132,7 +132,7 @@ object Gossamer:
         if char >= 128 then halt(m"$char is not a valid ASCII character")
         Expr[Byte](char.toByte)
 
-      '{Ascii(Bytes(${Varargs(bytes)}*))}
+      '{Ascii(Data(${Varargs(bytes)}*))}
 
     def recur(first: List[Expr[Ascii]], second: List[Expr[Ascii]], expr: Expr[Ascii]): Expr[Ascii] =
       first match

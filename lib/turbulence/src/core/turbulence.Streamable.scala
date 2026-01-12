@@ -45,7 +45,7 @@ import symbolism.*
 import vacuous.*
 
 object Streamable:
-  given bytes: Bytes is Streamable by Bytes = Stream(_)
+  given bytes: Data is Streamable by Data = Stream(_)
   given text: [textual <: Text] => textual is Streamable by Text = Stream(_)
 
   given stream: [element] => Stream[element] is Streamable by element = identity(_)
@@ -91,14 +91,14 @@ object Streamable:
       Stream.defer(recur(0L.b))
 
   given inputStream: [input <: ji.InputStream] => Tactic[StreamError]
-        =>  input is Streamable by Bytes =
+        =>  input is Streamable by Data =
     channel.contramap(jn.channels.Channels.newChannel(_).nn)
 
-  given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Streamable by Bytes =
+  given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Streamable by Data =
     channel =>
       val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
-      def recur(total: Long): Stream[Bytes] =
+      def recur(total: Long): Stream[Data] =
         try channel.read(buf) match
           case -1 => Stream().also(try channel.close() catch case err: Exception => ())
           case 0  => recur(total)
@@ -112,7 +112,7 @@ object Streamable:
 
             array.immutable(using Unsafe) #:: recur(total + count)
 
-        catch case e: Exception => Stream(raise(StreamError(total.b)) yet Bytes())
+        catch case e: Exception => Stream(raise(StreamError(total.b)) yet Data())
 
       Stream.defer(recur(0))
 

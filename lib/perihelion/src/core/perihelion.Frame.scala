@@ -38,17 +38,17 @@ import vacuous.*
 
 
 object Frame:
-  def apply(bytes: Bytes, offset: Int = 0): Frame = ???
+  def apply(bytes: Data, offset: Int = 0): Frame = ???
 
-enum Frame(payload: Bytes):
-  case Continuation(fin: Boolean, payload: Bytes) extends Frame(payload)
-  case Text(fin: Boolean, payload: Bytes) extends Frame(payload)
-  case Binary(fin: Boolean, payload: Bytes) extends Frame(payload)
-  case Ping(payload: Bytes) extends Frame(payload)
-  case Pong(payload: Bytes) extends Frame(payload)
-  case Close(code: Int) extends Frame(Bytes())
+enum Frame(payload: Data):
+  case Continuation(fin: Boolean, payload: Data) extends Frame(payload)
+  case Text(fin: Boolean, payload: Data) extends Frame(payload)
+  case Binary(fin: Boolean, payload: Data) extends Frame(payload)
+  case Ping(payload: Data) extends Frame(payload)
+  case Pong(payload: Data) extends Frame(payload)
+  case Close(code: Int) extends Frame(Data())
 
-  private def mask: Optional[Bytes] = Unset
+  private def mask: Optional[Data] = Unset
 
   def length = payload.length
 
@@ -73,14 +73,14 @@ enum Frame(payload: Bytes):
   private def byte1: Byte =
     ((if mask.present then bin"10000000" else bin"00000000") | lengthByte).toByte
 
-  def header: Bytes = headerLength match
-    case 2 => Bytes(byte0, byte1)
-    case 4 => Bytes(byte0, byte1, (length >> 8).toByte, length.toByte)
+  def header: Data = headerLength match
+    case 2 => Data(byte0, byte1)
+    case 4 => Data(byte0, byte1, (length >> 8).toByte, length.toByte)
     case _ =>
       val byte6 = (length >> 24).toByte
       val byte7 = (length >> 16).toByte
       val byte8 = (length >> 8).toByte
       val byte9 = length.toByte
-      Bytes(byte0, byte1, 0, 0, 0, 0, byte6, byte7, byte8, byte9)
+      Data(byte0, byte1, 0, 0, 0, 0, byte6, byte7, byte8, byte9)
 
-  def bytes: Bytes = header ++ payload
+  def bytes: Data = header ++ payload

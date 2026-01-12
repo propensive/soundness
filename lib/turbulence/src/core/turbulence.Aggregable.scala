@@ -44,10 +44,10 @@ import symbolism.*
 import vacuous.*
 
 object Aggregable:
-  given bytesBytes: Bytes is Aggregable by Bytes = source0 =>
+  given bytesData: Data is Aggregable by Data = source0 =>
     val size = source0.foldLeft(0)(_ + _.length)
     var source = source0
-    Bytes.construct(size): array =>
+    Data.construct(size): array =>
       var index = Prim
       while !source.nil do
         val bytes = source.head
@@ -55,8 +55,8 @@ object Aggregable:
         index += bytes.length
         source = source.tail
 
-  given bytesText: (decoder: CharDecoder) => Text is Aggregable by Bytes =
-    bytesBytes.map(decoder.decoded)
+  given bytesText: (decoder: CharDecoder) => Text is Aggregable by Data =
+    bytesData.map(decoder.decoded)
 
   given textText: Text is Aggregable by Text = source0 =>
     var source = source0

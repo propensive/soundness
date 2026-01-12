@@ -52,13 +52,13 @@ import vacuous.*
 import alphabets.base256.alphanumericOrBraille
 
 object Postable:
-  def apply[response](mediaType0: MediaType, stream0: response => Stream[Bytes])
+  def apply[response](mediaType0: MediaType, stream0: response => Stream[Data])
   : response is Postable =
 
       new Postable:
         type Self = response
         def mediaType(response: response): MediaType = mediaType0
-        def stream(response: response): Stream[Bytes] = stream0(response)
+        def stream(response: response): Stream[Data] = stream0(response)
 
 
   given text: (encoder: CharEncoder) => Text is Postable =
@@ -68,9 +68,9 @@ object Postable:
     Postable(media"application/octet-stream", _.map(_.bytes))
 
   given unit: Unit is Postable = Postable(media"text/plain", unit => Stream())
-  given bytes: Bytes is Postable = Postable(media"application/octet-stream", Stream(_))
+  given bytes: Data is Postable = Postable(media"application/octet-stream", Stream(_))
 
-  given byteStream: Stream[Bytes] is Postable = Postable(media"application/octet-stream", identity)
+  given byteStream: Stream[Data] is Postable = Postable(media"application/octet-stream", identity)
 
   given query: Query is Postable =
     import charEncoders.utf8
@@ -84,11 +84,11 @@ object Postable:
       type Self = response
 
       def mediaType(content: response): MediaType = content.generic(0).decode[MediaType]
-      def stream(content: response): Stream[Bytes] = content.generic(1)
+      def stream(content: response): Stream[Data] = content.generic(1)
 
 trait Postable extends Typeclass:
   def mediaType(content: Self): MediaType
-  def stream(content: Self): Stream[Bytes]
+  def stream(content: Self): Stream[Data]
 
   def preview(value: Self): Text = stream(value).prim.lay(t""): bytes =>
     val sample = bytes.take(1024)

@@ -61,7 +61,7 @@ object Cellulose extends Cellulose2:
     def name: Text = t"CoDL"
 
     def apply(value: List[Codllike]): Codl = value
-    def wrap(value: Text): Codl = Codl(List(Codllike(IArray(CodlNode(Data(value))))))
+    def wrap(value: Text): Codl = Codl(List(Codllike(IArray(CodlNode(Atom(value))))))
 
     def decodableField[value: Decodable in Text]: value is Decodable in Codl raises CodlError =
       decodable(value.decoded(_))
@@ -70,13 +70,13 @@ object Cellulose extends Cellulose2:
       codl =>
         codl.list.prim.lest(CodlError(CodlError.Reason.BadFormat(Unset)))
         . children match
-            case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
+            case IArray(CodlNode(Atom(value, _, _, _), _)) => lambda(value)
 
             case _ =>
               abort(CodlError(CodlError.Reason.BadFormat(Unset)))
 
     def field[encodable: Encodable in Text]: encodable is Encodable in Codl =
-      value => Codl(List(Codllike(IArray(CodlNode(Data(encodable.encoded(value)))))))
+      value => Codl(List(Codllike(IArray(CodlNode(Atom(encodable.encoded(value)))))))
 
     case class Position(line: Int, column: Int, length: Int) extends Format.Position:
       def describe: Text = t"line $line, column $column"
@@ -214,7 +214,7 @@ object Cellulose extends Cellulose2:
     def parse[source]
          (source:    source,
           schema:    CodlSchema = CodlSchema.Free,
-          subs:      List[Data] = Nil,
+          subs:      List[Atom] = Nil,
           fromStart: Boolean    = false)
         (using streamable: source is Streamable by Text, aggregate: Tactic[ParseError])
     : CodlDoc =
@@ -243,7 +243,7 @@ object Cellulose extends Cellulose2:
 
             (uniqueId2, copy(children = closed :: children, params = params + 1))
 
-          def substitute(data: Data): Proto =
+          def substitute(data: Atom): Proto =
             copy(children = CodlNode(data) :: children, params = params + 1)
 
           def setExtra(extra: Optional[Extra]): Proto = copy(extra = extra)
@@ -253,7 +253,7 @@ object Cellulose extends Cellulose2:
               case key: Text =>
                 val extra2 = extra.let { m => m.copy(comments = m.comments.reverse) }
 
-                val data = Data
+                val data = Atom
                             (key,
                             IArray.from(children.reverse),
                             Layout(params, multiline, col - margin),
@@ -279,7 +279,7 @@ object Cellulose extends Cellulose2:
               peerIds: Map[Text, (Int, Int)],
               stack:   List[(Proto, List[CodlNode])],
               lines:   Int,
-              subs:    List[Data],
+              subs:    List[Atom],
               body:    Stream[Char],
               tabs:    List[Int])
         : CodlDoc =
@@ -293,7 +293,7 @@ object Cellulose extends Cellulose2:
                         peerIds: Map[Text, (Int, Int)]         = peerIds,
                         stack:   List[(Proto, List[CodlNode])] = stack,
                         lines:   Int                           = lines,
-                        subs:    List[Data]                    = subs,
+                        subs:    List[Atom]                    = subs,
                         body:    Stream[Char]                  = Stream(),
                         tabs:    List[Int]                     = Nil)
             : CodlDoc =
@@ -645,18 +645,18 @@ object Cellulose extends Cellulose2:
         (first.column, stream(first, padding = false).drop(1))
 
 
-    case class State(parts: List[Text], subs: List[Data]):
+    case class State(parts: List[Text], subs: List[Atom]):
       def content: Text = parts.reverse.join(t"\u0000")
 
-    object Prefix extends Interpolator[List[Data], State, CodlDoc]:
+    object Prefix extends Interpolator[List[Atom], State, CodlDoc]:
       protected def complete(state: State): CodlDoc = ???
         // try Codl.parse(state.content, CodlSchema.Free, state.subs.reverse, fromStart = true)
         // catch case error: AggregateError[ParseError] => ???
 
       def initial: State = State(Nil, Nil)
-      def skip(state: State): State = insert(state, List(Data(t"_")))
+      def skip(state: State): State = insert(state, List(Atom(t"_")))
 
-      def insert(state: State, data: List[Data]): State =
+      def insert(state: State, data: List[Atom]): State =
         state.copy(subs = data.reverse ::: state.subs)
 
       def parse(state: State, next: Text): State =

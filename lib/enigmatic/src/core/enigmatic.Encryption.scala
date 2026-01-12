@@ -35,5 +35,5 @@ package enigmatic
 import anticipation.*
 
 trait Encryption:
-  def encrypt(value: Bytes, privateKey: Bytes): Bytes
-  def decrypt(bytes: Bytes, publicKey: Bytes): Bytes
+  def encrypt(value: Data, privateKey: Data): Data
+  def decrypt(bytes: Data, publicKey: Data): Data

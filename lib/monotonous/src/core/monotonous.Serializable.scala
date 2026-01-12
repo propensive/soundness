@@ -40,7 +40,7 @@ import rudiments.*
 object Serializable:
   def base[base <: Serialization](bits: Int)(using alphabet: Alphabet[base]): Serializable in base =
     new:
-      def encode(bytes: Bytes): Text =
+      def encode(bytes: Data): Text =
         val mask = (1 << bits) - 1
         val multiple = 8/bits.gcd(8)
         val divisor = bits/bits.gcd(8)
@@ -76,4 +76,4 @@ object Serializable:
 
 trait Serializable:
   type Form <: Serialization
-  def encode(bytes: Bytes): Text
+  def encode(bytes: Data): Text

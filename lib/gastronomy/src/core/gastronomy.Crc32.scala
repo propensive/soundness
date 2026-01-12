@@ -46,9 +46,9 @@ object Crc32:
   given hash: Hash in Crc32:
     def init(): Digestion = new Digestion:
       private val state: juz.CRC32 = juz.CRC32()
-      def append(bytes: Bytes): Unit = state.update(bytes.mutable(using Unsafe))
+      def append(bytes: Data): Unit = state.update(bytes.mutable(using Unsafe))
 
-      def digest(): Bytes =
+      def digest(): Data =
         val int = state.getValue()
         IArray[Byte]((int >> 24).toByte, (int >> 16).toByte, (int >> 8).toByte, int.toByte)
 

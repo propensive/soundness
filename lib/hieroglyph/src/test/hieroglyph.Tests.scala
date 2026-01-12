@@ -41,7 +41,7 @@ import errorDiagnostics.stackTraces
 object Tests extends Suite(m"Hieroglyph tests"):
   def run(): Unit =
     val japanese = t"平ぱ記動テ使村方島おゃぎむ万離ワ学つス携"
-    val japaneseBytes = japanese.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+    val japaneseData = japanese.s.getBytes("UTF-8").nn.immutable(using Unsafe)
 
     suite(m"Character widths"):
       test(m"Check narrow character width"):
@@ -60,16 +60,16 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
       test(m"Decode Japanese from UTF-8"):
         import textSanitizers.skip
-        charDecoders.utf8.decoded(japaneseBytes)
+        charDecoders.utf8.decoded(japaneseData)
       .assert(_ == japanese)
 
       for chunk <- 1 to 25 do
         test(m"Decode Japanese text in chunks of size $chunk"):
           import textSanitizers.skip
-          charDecoders.utf8.decoded(japaneseBytes.grouped(chunk).to(Stream)).join
+          charDecoders.utf8.decoded(japaneseData.grouped(chunk).to(Stream)).join
         .assert(_ == japanese)
 
-      val badUtf8 = Bytes(45, -62, 49, 48)
+      val badUtf8 = Data(45, -62, 49, 48)
 
       test(m"Decode invalid UTF-8 sequence, skipping errors"):
         import textSanitizers.skip

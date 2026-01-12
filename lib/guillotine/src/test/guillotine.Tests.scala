@@ -212,8 +212,8 @@ object Tests extends Suite(m"Guillotine tests"):
       .assert(_ == List("Hello world"))
 
       test(m"read stream of bytes"):
-        sh"echo 'Hello world'".exec[Stream[Bytes]]().read[Bytes].to(List)
-      .assert(_ == Bytes(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to(List))
+        sh"echo 'Hello world'".exec[Stream[Data]]().read[Data].to(List)
+      .assert(_ == Data(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to(List))
 
       test(m"fork sleeping process"):
         val t0 = System.currentTimeMillis

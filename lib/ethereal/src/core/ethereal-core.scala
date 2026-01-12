@@ -147,7 +147,7 @@ def cli[bus <: Matchable](using executive: Executive)
               . writeTo(file)
 
             jarFile.open: jarFile =>
-              Eof(path).open(jarFile.stream[Bytes].writeTo(_))
+              Eof(path).open(jarFile.stream[Data].writeTo(_))
 
             path.executable() = true
 

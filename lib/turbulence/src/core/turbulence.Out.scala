@@ -36,7 +36,7 @@ import anticipation.*
 import rudiments.*
 
 object Out:
-  def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.write(bytes)
+  def write(bytes: Data)(using stdio: Stdio): Unit = stdio.write(bytes)
 
   def print[textual: Printable as printable](text: Termcap ?=> textual)(using stdio: Stdio): Unit =
     stdio.print(printable.print(text(using stdio.termcap), stdio.termcap))

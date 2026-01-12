@@ -145,7 +145,7 @@ object Installer:
               Log.info(DaemonLogEvent.WriteExecutable(filename))
 
               service.executable.open: file =>
-                val stream = file.stream[Bytes]
+                val stream = file.stream[Data]
 
                 if prefixSize > 0.b
                 then (stream.take(prefixSize) ++ stream.discard(fileSize - jarSize)).writeTo(file)

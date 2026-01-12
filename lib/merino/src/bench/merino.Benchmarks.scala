@@ -181,12 +181,12 @@ lazy val jsonExample1 = """
   "taglib": {
     "taglib-uri": "cofax.tld",
     "taglib-location": "/WEB-INF/tlds/cofax.tld"}}}
-""".getBytes("UTF-8")
+""".getData("UTF-8")
 
 val jsonExample2 = """
 {"menu":{"id":"file","value":"File","popup":{"menuitem":[{"value":"New","onclick":"CreateNewDoc()"},
 {"value":"Open","onclick":"OpenDoc()"},{"value":"Close","onclick":"CloseDoc()"}]}}}
-""".getBytes("UTF-8")
+""".getData("UTF-8")
 
 lazy val jsonExample3 = """
 {"menu": {
@@ -216,4 +216,4 @@ lazy val jsonExample3 = """
         {"id": "About", "label": "About Adobe CVG Viewer..."}
     ]
 }}
-""".getBytes("UTF-8")
+""".getData("UTF-8")

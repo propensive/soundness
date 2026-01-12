@@ -49,6 +49,6 @@ extension [digestible: Digestible](value: digestible)
     val digester = Digester(digestible.digest(_, value))
     digester.apply
 
-extension [source: Streamable by Bytes](source: source)
+extension [source: Streamable by Data](source: source)
   def checksum[hash <: Algorithm](using Hash in hash): Digest in hash =
-    source.stream[Bytes].digest[hash]
+    source.stream[Data].digest[hash]

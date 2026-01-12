@@ -69,9 +69,9 @@ enum Primitive:
 extension (context: StringContext) def w(): Ident = Ident(context.parts.head.tt.cut(t"-"))
 
 object Wit:
-  given aggregable: Wit is Aggregable by Bytes = parse(_)
+  given aggregable: Wit is Aggregable by Data = parse(_)
 
-  def parse(input: Stream[Bytes]): Wit =
+  def parse(input: Stream[Data]): Wit =
     val conduit = Conduit(input)
     def fail(msg: Message): Nothing = panic(msg)
 

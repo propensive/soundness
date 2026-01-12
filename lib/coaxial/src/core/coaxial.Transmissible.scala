@@ -39,11 +39,11 @@ import prepositional.*
 import proscenium.*
 
 trait Transmissible extends Typeclass:
-  def serialize(message: Self): Stream[Bytes]
+  def serialize(message: Self): Stream[Data]
 
 object Transmissible:
-  given bytes: [bytes <: Bytes] => bytes is Transmissible = Stream(_)
-  given stream: [stream <: Stream[Bytes]] => stream is Transmissible = identity(_)
+  given bytes: [bytes <: Data] => bytes is Transmissible = Stream(_)
+  given stream: [stream <: Stream[Data]] => stream is Transmissible = identity(_)
 
   given text: [text <: Text] => CharEncoder => text is Transmissible =
     text => Stream(text.bytes)

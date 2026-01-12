@@ -41,12 +41,12 @@ import turbulence.*
 import java.nio.file as jnf
 
 object ZipEntry:
-  def apply[resource: Streamable by Bytes](path: Path on Zip, resource: resource): ZipEntry =
-    new ZipEntry(path, () => resource.stream[Bytes])
+  def apply[resource: Streamable by Data](path: Path on Zip, resource: resource): ZipEntry =
+    new ZipEntry(path, () => resource.stream[Data])
 
-  given streamable: ZipEntry is Streamable by Bytes = Streamable.stream[Bytes].contramap(_.content())
+  given streamable: ZipEntry is Streamable by Data = Streamable.stream[Data].contramap(_.content())
 
   // 00:00:00, 1 January 2000
   val epoch: jnf.attribute.FileTime = jnf.attribute.FileTime.fromMillis(946684800000L).nn
 
-case class ZipEntry(ref: Path on Zip, content: () => Stream[Bytes])
+case class ZipEntry(ref: Path on Zip, content: () => Stream[Data])

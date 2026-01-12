@@ -44,7 +44,7 @@ object Lineation:
     inline def active: false = false
     inline def track(datum: Char): false = false
 
-  inline given untrackedBytes: Lineation:
+  inline given untrackedData: Lineation:
     type Operand = Byte
     inline def active: false = false
     inline def track(datum: Byte): false = false

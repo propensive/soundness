@@ -50,7 +50,7 @@ object CodlNode:
     t"${data.key}[${data.children.map(_.inspect).join(t",")}]"
 
   val empty: CodlNode = CodlNode()
-  def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
+  def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Atom(key, IArray.from(child)))
 
   given contrastable: (CodlNode is Inspectable) => CodlNode is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.inspect) else
@@ -73,7 +73,7 @@ object CodlNode:
 
       Juxtaposition.Collation(t"Node", comparison, left.key.or(t"—"), right.key.or(t"—"))
 
-case class CodlNode(data: Optional[Data] = Unset, extra: Optional[Extra] = Unset) extends Dynamic:
+case class CodlNode(data: Optional[Atom] = Unset, extra: Optional[Extra] = Unset) extends Dynamic:
   def key: Optional[Text] = data.let(_.key)
   def empty: Boolean = unsafely(data.absent || data.assume.children.nil)
   def blank: Boolean = data.absent && extra.absent
@@ -89,28 +89,28 @@ case class CodlNode(data: Optional[Data] = Unset, extra: Optional[Extra] = Unset
 
   override def toString: String = data.toString
 
-  def apply(key: Text): List[Data] = data.lay(List[CodlNode]())(_(key)).map(_.data).collect:
-    case data: Data => data
+  def apply(key: Text): List[Atom] = data.lay(List[CodlNode]())(_(key)).map(_.data).collect:
+    case data: Atom => data
 
   def selectDynamic(key: String)(using erased DynamicCodlEnabler)
-  : List[Data] raises CodlError =
+  : List[Atom] raises CodlError =
 
       data.lest(CodlError(CodlError.Reason.MissingValue(key.show))).selectDynamic(key)
 
 
   def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)
-  : Data raises CodlError =
+  : Atom raises CodlError =
 
       selectDynamic(key)(idx)
 
 
   def untyped: CodlNode =
-    val data2 = data.let { data => Data(data.key, children = data.children.map(_.untyped)) }
+    val data2 = data.let { data => Atom(data.key, children = data.children.map(_.untyped)) }
     CodlNode(data2, extra)
 
   def uncommented: CodlNode =
     val data2 = data.let: data =>
-       Data(data.key, children = data.children.map(_.uncommented), Layout.empty, data.schema)
+       Atom(data.key, children = data.children.map(_.uncommented), Layout.empty, data.schema)
 
     CodlNode(data2, Unset)
 

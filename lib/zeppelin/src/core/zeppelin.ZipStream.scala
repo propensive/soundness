@@ -48,10 +48,10 @@ import zephyrine.*
 import java.util.zip as juz
 
 object ZipStream:
-  def apply[streamable: Streamable by Bytes](source: streamable): ZipStream logs Text =
-    new ZipStream(() => source.stream[Bytes], _ => true)
+  def apply[streamable: Streamable by Data](source: streamable): ZipStream logs Text =
+    new ZipStream(() => source.stream[Data], _ => true)
 
-class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
+class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
 
   def keep(predicate: (Path on Zip) => Boolean): ZipStream =
     new ZipStream(stream, { (ref: Path on Zip) => filter(ref) && predicate(ref) })
@@ -84,7 +84,7 @@ class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
                 entry.getName().nn.tt.decode[Path on Zip]
 
           if !filter(ref) then recur() else
-            def read(): Stream[Bytes] =
+            def read(): Stream[Data] =
               if zipIn.available == 0 then Stream() else
                 val size = entry.getSize.toInt.min(4096).puncture(-1).or(4096)
                 val array: Array[Byte] = new Array[Byte](size)

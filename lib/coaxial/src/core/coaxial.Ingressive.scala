@@ -39,10 +39,10 @@ import hieroglyph.*
 import prepositional.*
 
 trait Ingressive extends Typeclass:
-  def deserialize(message: Bytes): Self
+  def deserialize(message: Data): Self
 
 object Ingressive:
-  given bytes: Bytes is Ingressive = identity(_)
+  given bytes: Data is Ingressive = identity(_)
   given text: CharDecoder => Text is Ingressive = _.text
 
   given decoder: [message: Decodable in Text] => CharDecoder => message is Ingressive =

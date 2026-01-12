@@ -46,8 +46,8 @@ import vacuous.*
 import charEncoders.utf8
 
 object Attachable:
-  given generic: [entity: {Nominable, Media, Streamable by Bytes}] => entity is Attachable =
-    value => Asset(entity.name(value), entity.mediaType(value), value.stream[Bytes])
+  given generic: [entity: {Nominable, Media, Streamable by Data}] => entity is Attachable =
+    value => Asset(entity.name(value), entity.mediaType(value), value.stream[Data])
 
   given asset: Asset is Attachable = identity(_)
 

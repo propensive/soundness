@@ -47,10 +47,10 @@ import turbulence.*
 import vacuous.*
 
 object Tar:
-  val zeroBlock: Bytes = IArray.fill[Byte](512)(0)
+  val zeroBlock: Data = IArray.fill[Byte](512)(0)
 
-  given streamable: Tar is Streamable by Bytes = _.serialize
+  given streamable: Tar is Streamable by Data = _.serialize
 
 case class Tar(entries: LazyList[TarEntry]):
-  def serialize: LazyList[Bytes] =
+  def serialize: LazyList[Data] =
     entries.flatMap(_.serialize) #::: LazyList(Tar.zeroBlock, Tar.zeroBlock)

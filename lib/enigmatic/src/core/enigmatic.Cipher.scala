@@ -38,5 +38,5 @@ import proscenium.*
 trait Cipher:
   type Size <: Nat
   def keySize: Size
-  def privateToPublic(key: Bytes): Bytes
-  def genKey(): Bytes
+  def privateToPublic(key: Data): Data
+  def genKey(): Data

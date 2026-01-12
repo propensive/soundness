@@ -69,8 +69,8 @@ object Printer:
             out.write(comment.s)
             out.write('\n')
 
-        (data: Optional[Data]) match
-          case Data(key, children, layout, schema) =>
+        (data: Optional[Atom]) match
+          case Atom(key, children, layout, schema) =>
             for i <- 0 until indent do out.write(' ')
             out.write(key.s)
 
@@ -78,7 +78,7 @@ object Printer:
               case Field(_) =>
                 children.each: child =>
                   child.absolve match
-                    case CodlNode(Data(key, _, layout, _), _) =>
+                    case CodlNode(Atom(key, _, layout, _), _) =>
                       out.write("  ")
                       out.write(key.s)
                 out.write('\n')
@@ -91,7 +91,7 @@ object Printer:
                 ps.each: param =>
                   param.absolve match
                     case CodlNode
-                          (Data(key, IArray(CodlNode(Data(value, _, layout, _), _)), _, _), _) =>
+                          (Atom(key, IArray(CodlNode(Atom(value, _, layout, _), _)), _, _), _) =>
                       if layout.multiline then
                         out.write('\n')
                         printBlock(indent + 4, key)
@@ -102,7 +102,7 @@ object Printer:
                         out.write(value.s)
                         col += value.length
 
-                    case CodlNode(Data(key, IArray(), layout, _), _) =>
+                    case CodlNode(Atom(key, IArray(), layout, _), _) =>
                       if layout.multiline then
                         out.write('\n')
                         printBlock(indent + 4, key)
@@ -121,7 +121,7 @@ object Printer:
                   out.write('\n')
 
                   if children.length >= layout.params then children(layout.params - 1).absolve match
-                    case CodlNode(Data(key, _, _, _), _) =>
+                    case CodlNode(Atom(key, _, _, _), _) =>
                       for i <- 0 until (indent + 4) do out.write(' ')
                       for ch <- key.chars do
                         out.write(ch)

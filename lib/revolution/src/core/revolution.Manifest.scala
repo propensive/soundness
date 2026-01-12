@@ -45,8 +45,8 @@ import turbulence.*
 import vacuous.*
 
 object Manifest:
-  protected def parse[streamable: Streamable by Bytes](source: streamable): Manifest =
-    val java = juj.Manifest(source.read[Stream[Bytes]].inputStream)
+  protected def parse[streamable: Streamable by Data](source: streamable): Manifest =
+    val java = juj.Manifest(source.read[Stream[Data]].inputStream)
 
     Manifest:
       java.getMainAttributes.nn.asScala.to(List).map: (key, value) =>
@@ -54,8 +54,8 @@ object Manifest:
 
       . to(Map)
 
-  given streamable: Manifest is Streamable by Bytes = manifest => Stream(manifest.serialize)
-  given aggregable: Manifest is Aggregable by Bytes = parse(_)
+  given streamable: Manifest is Streamable by Data = manifest => Stream(manifest.serialize)
+  given aggregable: Manifest is Aggregable by Data = parse(_)
 
   def apply(entries: ManifestEntry*): Manifest = Manifest:
     entries.map: entry =>
@@ -77,7 +77,7 @@ case class Manifest(entries: Map[Text, Text]):
       if entries.contains(attribute.key) then key.decoded(entries(attribute.key)) else Unset
 
 
-  def serialize: Bytes =
+  def serialize: Data =
     val manifest = juj.Manifest()
     entries.each: (key, value) =>
       manifest.getMainAttributes.nn.putValue(key.s, value.s)

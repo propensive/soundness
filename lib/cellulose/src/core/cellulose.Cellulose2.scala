@@ -62,7 +62,7 @@ trait Cellulose2:
                   val schematic = compiletime.summonInline[field is CodlSchematic]
 
                   context.encoded(field).list.map: value =>
-                    CodlNode(Data(label2, value.children, Layout.empty, schemata(index).schema))
+                    CodlNode(Atom(label2, value.children, Layout.empty, schemata(index).schema))
 
                   . filter(!_.empty)
 
@@ -81,6 +81,6 @@ trait Cellulose2:
             Codl:
               values.list.prim.let:
                 case doc: CodlDoc => doc.get(label2)
-                case data: Data   => data.get(label2)
+                case data: Atom   => data.get(label2)
 
               . lest(CodlError(CodlError.Reason.BadFormat(label2)))

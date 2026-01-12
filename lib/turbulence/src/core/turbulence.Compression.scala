@@ -43,16 +43,16 @@ import vacuous.*
 
 trait Compression:
   type Self <: CompressionAlgorithm
-  def compress(stream: Stream[Bytes]): Stream[Bytes]
-  def decompress(stream: Stream[Bytes]): Stream[Bytes]
+  def compress(stream: Stream[Data]): Stream[Data]
+  def decompress(stream: Stream[Data]): Stream[Data]
 
 object Compression:
   given gzip: Gzip is Compression:
-    def compress(stream: Stream[Bytes]): Stream[Bytes] =
+    def compress(stream: Stream[Data]): Stream[Data] =
       val out = ji.ByteArrayOutputStream()
       val out2 = juz.GZIPOutputStream(out)
 
-      def recur(stream: Stream[Bytes]): Stream[Bytes] = stream match
+      def recur(stream: Stream[Data]): Stream[Data] = stream match
         case head #:: tail =>
           out2.write(head.mutable(using Unsafe))
           if out.size == 0 then recur(tail) else
@@ -66,5 +66,5 @@ object Compression:
 
       recur(stream)
 
-    def decompress(stream: Stream[Bytes]): Stream[Bytes] =
-      unsafely(juz.GZIPInputStream(stream.inputStream).stream[Bytes])
+    def decompress(stream: Stream[Data]): Stream[Data] =
+      unsafely(juz.GZIPInputStream(stream.inputStream).stream[Data])

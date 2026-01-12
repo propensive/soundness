@@ -47,7 +47,7 @@ import turbulence.*
 import vacuous.*
 
 object TarEntry:
-  def apply[data: Readable by Bytes, instant: Abstractable across Instants]
+  def apply[data: Readable by Data, instant: Abstractable across Instants]
        (name:  TarRef,
         data:  data,
         mode:  UnixMode              = UnixMode(),
@@ -59,7 +59,7 @@ object TarEntry:
     val mtimeU32: U32 =
       (mtime.let(_.milliseconds).or(System.currentTimeMillis)/1000).toInt.bits.u32
 
-    TarEntry.File(name, mode, user, group, mtimeU32, data.stream[Bytes])
+    TarEntry.File(name, mode, user, group, mtimeU32, data.stream[Data])
 
 enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
   case File
@@ -68,7 +68,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
          user:  UnixUser,
          group: UnixGroup,
          mtime: U32,
-         data:  LazyList[Bytes])
+         data:  LazyList[Data])
   extends TarEntry(path, mode, user, group, mtime)
 
   case Directory(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
@@ -108,7 +108,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     case file: File => file.data.sumBy(_.length).bits.u32
     case _          => 0
 
-  def dataBlocks: LazyList[Bytes] = this match
+  def dataBlocks: LazyList[Data] = this match
     case file: File => file.data.chunked(512)
     case directory  => LazyList()
 
@@ -133,10 +133,10 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     case special: CharSpecial  => special.device
     case special: BlockSpecial => special.device
 
-  def format(number: U32, width: Int): Bytes =
+  def format(number: U32, width: Int): Data =
     number.octal.pad(width - 1).bytes
 
-  lazy val header: Bytes = Bytes.construct(512): array =>
+  lazy val header: Data = Data.construct(512): array =>
     array.place(entryName.bytes, Prim)
     array.place(mode.bytes, 100.z)
     array.place(user.bytes, 108.z)
@@ -161,4 +161,4 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     val total = array.map(_.bits.u8.u32).reduce(_ + _)
     array.place(format(total, 8), 148.z)
 
-  def serialize: LazyList[Bytes] = header #:: dataBlocks
+  def serialize: LazyList[Data] = header #:: dataBlocks

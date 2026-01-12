@@ -346,7 +346,7 @@ extension (iarray: IArray.type)
     lambda(array)
     array.immutable(using Unsafe)
 
-extension (bytes: Bytes)
+extension (bytes: Data)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
 
 extension [indexable: Indexable](inline value: indexable)
@@ -378,7 +378,7 @@ extension (bs: Long)
   def gib: Memory = Memory(bs*1024*1024*1024)
   def tib: Memory = Memory(bs*1024*1024*1024*1024)
 
-extension (bytes: Bytes)
+extension (bytes: Data)
   def memory: Memory = Memory(bytes.size)
 
 

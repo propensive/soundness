@@ -43,6 +43,6 @@ object Signature:
     import alphabets.base64.standard
     t"Signature(${sig.bytes.serialize[Base64]})"
 
-  given encodable: [cipher <: Cipher] => Signature[cipher] is Encodable in Bytes = _.bytes
+  given encodable: [cipher <: Cipher] => Signature[cipher] is Encodable in Data = _.bytes
 
-case class Signature[+cipher <: Cipher](bytes: Bytes)
+case class Signature[+cipher <: Cipher](bytes: Data)

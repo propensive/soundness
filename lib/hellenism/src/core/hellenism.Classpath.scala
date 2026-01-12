@@ -97,7 +97,7 @@ object Classpath extends Root(t""):
   given streamable: [path <: Path on Classpath]
         => Tactic[ClasspathError]
         => (classloader: Classloader)
-        => path is Streamable by Bytes =
+        => path is Streamable by Data =
     given Tactic[StreamError] = strategies.throwUnsafely
 
     Streamable.inputStream.contramap: path =>
