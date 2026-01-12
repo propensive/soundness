@@ -63,13 +63,19 @@ object Servable:
 
   given data: Data is Servable = Servable[Data](_ => media"application/octet-stream")(Stream(_))
 
-  inline given media: [media: Media] => media is Servable =
-    compiletime.summonFrom:
-      case encodable: (`media` is Encodable in Data) => value =>
+  inline given media: [media: Media] => media is Servable = compiletime.summonFrom:
+    case encodable: (`media` is Encodable in Data) =>
+      value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
         Http.Response.make(Http.Ok, headers, Stream(encodable.encode(value)))
 
-      case given (`media` is Streamable by Data)       => value =>
+    case given (`media` is Streamable by Data) =>
+      value =>
+        val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
+        Http.Response.make(Http.Ok, headers, value.stream[Data])
+
+    case given (`media` is Streamable by Text) =>
+      value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
         Http.Response.make(Http.Ok, headers, value.stream[Data])
 

@@ -46,6 +46,7 @@ import contextual.*
 import contingency.*
 import denominative.*
 import fulminate.*
+import gesticulate.*
 import gossamer.*
 import hellenism.*
 import hieroglyph.*
@@ -80,6 +81,8 @@ object Html extends Tag.Container
   erased trait Integral
   erased trait Decimal
   erased trait Id
+
+  given media: Document[Html] is Media = _ => media"text/html"
 
   def doctype: Doctype = Doctype(t"html")
 
