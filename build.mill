@@ -794,7 +794,7 @@ object superlunary extends Library:
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
 
-  object test extends Component(jvm):
+  object test extends Tests(jvm):
     override def finalMainClass: Task.Simple[String] = "superlunary.run"
 
 object surveillance extends Library:
