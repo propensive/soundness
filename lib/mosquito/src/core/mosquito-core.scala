@@ -32,4 +32,4 @@
                                                                                                   */
 package mosquito
 
-export Mosquito.Vector
+export Mosquito.Tensor
