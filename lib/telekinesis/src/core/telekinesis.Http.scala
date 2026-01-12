@@ -305,6 +305,7 @@ object Http:
 
         ${Telekinesis.response('headers)}
 
+    given conversion: [servable: Servable] => Conversion[servable, Response] = servable.serve(_)
 
     transparent inline def applyDynamic(id: "apply")(inline headers: Any*): Prototype | Response =
       ${Telekinesis.response('headers)}
@@ -409,11 +410,11 @@ object Http:
 
       Response(version, status, headers.reverse, body)
 
-  case class Response private
-              (version:     Http.Version,
-               status:      Http.Status,
-               textHeaders: List[Http.Header],
-               body:        Stream[Data]):
+  into case class Response private
+                   (version:     Http.Version,
+                    status:      Http.Status,
+                    textHeaders: List[Http.Header],
+                    body:        Stream[Data]):
 
     def successBody: Optional[Stream[Data]] =
       body.unless(status.category != Http.Status.Category.Successful)
