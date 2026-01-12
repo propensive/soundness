@@ -41,6 +41,7 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import hieroglyph.*
@@ -159,6 +160,7 @@ object Json extends Json2, Dynamic:
 
   given long: Tactic[JsonError] => Long is Decodable in Json = _.root.long
   given int: Tactic[JsonError] => Int is Decodable in Json = _.root.long.toInt
+  given ordinal: Tactic[JsonError] => Ordinal is Decodable in Json = _.root.long.toInt.z
   given text: Tactic[JsonError] => Text is Decodable in Json = _.root.string
 
   given string: Tactic[JsonError] => String is Decodable in Json =
@@ -186,6 +188,10 @@ object Json extends Json2, Dynamic:
   given stringEncodable: String is Encodable in Json = string => Json.ast(JsonAst(string))
   given doubleEncodable: Double is Encodable in Json = double => Json.ast(JsonAst(double))
   given intEncodable: Int is Encodable in Json = int => Json.ast(JsonAst(int.toLong))
+
+  given ordinalEncodable: Ordinal is Encodable in Json =
+    ordinal => Json.ast(JsonAst(ordinal.n0.toLong))
+
   given longEncodable: Long is Encodable in Json = long => Json.ast(JsonAst(long))
   given booleanEncodable: Boolean is Encodable in Json = boolean => Json.ast(JsonAst(boolean))
   given jsonEncodable: Json is Encodable in Json = identity(_)
