@@ -167,12 +167,12 @@ object Tests extends Suite(m"Gossamer Tests"):
 
     suite(m"Text methods"):
       test(m"get bytes from text"):
-        t"hello".sysBytes.to(List)
+        t"hello".sysData.to(List)
 
       . assert(_ == List(104, 101, 108, 108, 111))
 
       test(m"get bytes from empty Text"):
-        t"".sysBytes.to(List)
+        t"".sysData.to(List)
 
       . assert(_.nil)
 

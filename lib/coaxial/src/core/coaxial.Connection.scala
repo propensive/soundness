@@ -43,4 +43,4 @@ import Control.*
 
 case class Connection
    (private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream):
-  def stream(): Stream[Bytes] raises StreamError = in.stream[Bytes]
+  def stream(): Stream[Data] raises StreamError = in.stream[Data]

@@ -47,4 +47,4 @@ import turbulence.*
 import vacuous.*
 
 case class UnixUser(value: Int, name: Optional[Text] = Unset):
-  def bytes: Bytes = value.octal.pad(7, Rtl, '0').bytes
+  def bytes: Data = value.octal.pad(7, Rtl, '0').bytes

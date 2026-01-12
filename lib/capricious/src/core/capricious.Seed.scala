@@ -43,7 +43,7 @@ import proscenium.*
 object Seed:
   def apply(long: Long): Seed = Seed(long.bits.bytes)
 
-case class Seed(value: Bytes):
+case class Seed(value: Data):
   def entropy: Int = value.length*8
   def long: Long = Long(value)
 

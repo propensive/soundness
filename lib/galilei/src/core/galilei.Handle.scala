@@ -39,7 +39,7 @@ import proscenium.*
 import turbulence.*
 
 object Handle:
-  given streamable: Tactic[StreamError] => Handle is Streamable by Bytes = _.reader()
-  given writable: Tactic[StreamError] => Handle is Writable by Bytes = _.writer(_)
+  given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
+  given writable: Tactic[StreamError] => Handle is Writable by Data = _.writer(_)
 
-class Handle(val reader: () => Stream[Bytes], val writer: Stream[Bytes] => Unit)
+class Handle(val reader: () => Stream[Data], val writer: Stream[Data] => Unit)

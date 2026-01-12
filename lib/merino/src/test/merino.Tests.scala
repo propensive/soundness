@@ -73,12 +73,12 @@ object Tests extends Suite(m"Merino tests"):
     val testDir = ji.File(work, "data")
 
     suite(m"Parse large files"):
-      val file: Bytes = test(m"Read file"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(testDir, "huge.json"))).read[Bytes]
+      val file: Data = test(m"Read file"):
+        ji.BufferedInputStream(ji.FileInputStream(ji.File(testDir, "huge.json"))).read[Data]
       .check()
 
-      val file2: Bytes = test(m"Read file 2"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(testDir, "huge2.json"))).read[Bytes]
+      val file2: Data = test(m"Read file 2"):
+        ji.BufferedInputStream(ji.FileInputStream(ji.File(testDir, "huge2.json"))).read[Data]
       .check()
 
       // test(m"Parse huge file with Jawn"):

@@ -40,4 +40,4 @@ extension (inline ctx: StringContext)
     ${Media.Prefix.expand('ctx, 'parts)}
 
 extension [media](value: media)
-  inline def ascribe(media: MediaType): Content = Content(media, value.stream[Bytes])
+  inline def ascribe(media: MediaType): Content = Content(media, value.stream[Data])

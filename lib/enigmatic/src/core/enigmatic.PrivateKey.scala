@@ -47,23 +47,23 @@ object PrivateKey:
 
   given showable: [key <: Cipher] => PrivateKey[key] is Showable = key =>
     import alphabets.base64.standard
-    t"PrivateKey(${key.privateBytes.digest[Sha2[256]].serialize[Base64]})"
+    t"PrivateKey(${key.privateData.digest[Sha2[256]].serialize[Base64]})"
 
-class PrivateKey[cipher <: Cipher](private[enigmatic] val privateBytes: Bytes):
+class PrivateKey[cipher <: Cipher](private[enigmatic] val privateData: Data):
   def public(using cipher: cipher): PublicKey[cipher] =
-    PublicKey(cipher.privateToPublic(privateBytes))
+    PublicKey(cipher.privateToPublic(privateData))
 
 
-  def decrypt[decodable: Decodable in Bytes](bytes: Bytes)(using cipher: cipher & Encryption)
+  def decrypt[decodable: Decodable in Data](bytes: Data)(using cipher: cipher & Encryption)
   : decodable raises CryptoError =
 
-      decodable.decoded(cipher.decrypt(bytes, privateBytes))
+      decodable.decoded(cipher.decrypt(bytes, privateData))
 
 
-  def sign[encodable: Encodable in Bytes](value: encodable)(using cipher: cipher & Signing)
+  def sign[encodable: Encodable in Data](value: encodable)(using cipher: cipher & Signing)
   : Signature[cipher] =
 
-      Signature(cipher.sign(encodable.encode(value), privateBytes))
+      Signature(cipher.sign(encodable.encode(value), privateData))
 
 
-  def pem(reveal: Divulgence.type): Pem = Pem(PemLabel.PrivateKey, privateBytes)
+  def pem(reveal: Divulgence.type): Pem = Pem(PemLabel.PrivateKey, privateData)

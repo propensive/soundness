@@ -90,7 +90,7 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
       val file: Path on Linux = out/"Generated$$Code$$From$$Quoted.class"
       val code: Quotes ?=> Expr[Unit] = '{ def _code(): Unit = $code0 }
       staging.run(code)
-      val classfile: Classfile = new Classfile(file.open(_.read[Bytes]))
+      val classfile: Classfile = new Classfile(file.open(_.read[Data]))
       classfile.methods.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
 
 

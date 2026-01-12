@@ -92,8 +92,8 @@ case class LineSeparation
     crlf:    LineSeparation.Action,
     lfcr:    LineSeparation.Action):
 
-  def newlineBytes = newline match
-    case LineSeparation.NewlineSeq.Cr   => Bytes(13)
-    case LineSeparation.NewlineSeq.Lf   => Bytes(10)
-    case LineSeparation.NewlineSeq.CrLf => Bytes(13, 10)
-    case LineSeparation.NewlineSeq.LfCr => Bytes(10, 13)
+  def newlineData = newline match
+    case LineSeparation.NewlineSeq.Cr   => Data(13)
+    case LineSeparation.NewlineSeq.Lf   => Data(10)
+    case LineSeparation.NewlineSeq.CrLf => Data(13, 10)
+    case LineSeparation.NewlineSeq.LfCr => Data(10, 13)

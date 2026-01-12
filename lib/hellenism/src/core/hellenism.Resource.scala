@@ -42,7 +42,7 @@ import turbulence.*
 import vacuous.*
 
 object Resource:
-  given streamable: (classloader: Classloader) => Resource is Streamable by Bytes =
+  given streamable: (classloader: Classloader) => Resource is Streamable by Data =
     given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
 
     Streamable.inputStream.contramap: resource =>

@@ -62,20 +62,20 @@ extension [bindable: Bindable](socket: bindable)
 
 
 extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
-  def transmit[message: Transmissible](input: message): Stream[Bytes] =
+  def transmit[message: Transmissible](input: message): Stream[Data] =
     val connection = serviceable.connect(endpoint)
 
     serviceable.transmit(connection, message.serialize(input))
     serviceable.receive(connection)
 
 
-  def exchange[state](initialState: state)[message: Ingressive](initialMessage: message = Bytes())
+  def exchange[state](initialState: state)[message: Ingressive](initialMessage: message = Data())
        (handle: (state: state) ?=> message => Control[state])
   : state =
 
       val connection = serviceable.connect(endpoint)
 
-      def recur(input: Stream[Bytes], state: state): state = input.flow(state):
+      def recur(input: Stream[Data], state: state): state = input.flow(state):
         handle(using state)(message.deserialize(head)) match
           case Continue(state2) => recur(tail, state2.or(state))
           case Terminate        => state

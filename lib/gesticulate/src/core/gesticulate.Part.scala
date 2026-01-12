@@ -39,11 +39,11 @@ import turbulence.*
 import vacuous.*
 
 object Part:
-  given streamable: Part is Streamable by Bytes = _.body
+  given streamable: Part is Streamable by Data = _.body
 
 case class Part
    (disposition: Optional[Multipart.Disposition],
     headers:     Map[Text, Text],
     name:        Optional[Text],
     filename:    Optional[Text],
-    body:        Stream[Bytes])
+    body:        Stream[Data])

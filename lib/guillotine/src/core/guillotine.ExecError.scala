@@ -36,6 +36,6 @@ import anticipation.*
 import fulminate.*
 import proscenium.*
 
-case class ExecError(command: Command, stdout: Stream[Bytes], stderr: Stream[Bytes])
+case class ExecError(command: Command, stdout: Stream[Data], stderr: Stream[Data])
    (using Diagnostics)
 extends Error(m"execution of the command $command failed")

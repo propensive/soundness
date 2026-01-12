@@ -35,7 +35,7 @@ package anticipation
 import prepositional.*
 
 object Encodable:
-  given bytes: Bytes is Encodable in Bytes = identity(_)
+  given bytes: Data is Encodable in Data = identity(_)
   given int: Int is Encodable in Text = _.toString.tt
   given double: Double is Encodable in Text = _.toString.tt
   given byte: Byte is Encodable in Text = _.toString.tt

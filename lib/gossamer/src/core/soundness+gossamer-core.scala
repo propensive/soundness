@@ -38,7 +38,7 @@ export gossamer
     pascal, camel, snake, kebab, length, lower, upper, plain, skip, keep, capitalize, uncapitalize,
     tail, init, chars, snip, reverse, contains, trim, where, upto, dropWhile, translate, count, pad,
     center, fit, uncamel, unkebab, unsnake, starts, ends, tr, subscripts, superscripts, sub,
-    urlEncode, urlDecode, punycode, bytes, sysBytes, proximity, join, add, words, lines, appendln,
+    urlEncode, urlDecode, punycode, bytes, sysData, proximity, join, add, words, lines, appendln,
     spaced, slices, seek, search, Ascii, AsciiBuilder, Ltr, Rtl, erase, before, after, from,
     Lexicon, Dictionary }
 

@@ -59,17 +59,17 @@ object Emittable:
         source.s.getChars(start.n0, start.n0 + size, target, index.n0)
 
   inline given bytes: Emittable:
-    type Self = Bytes
-    type Source = Bytes
+    type Self = Data
+    type Source = Data
     type Transport = Array[Byte]
 
-    def produce(block: Array[Byte], size: Int): Bytes =
+    def produce(block: Array[Byte], size: Int): Data =
       java.util.Arrays.copyOfRange(block, 0, size).nn.immutable(using Unsafe)
 
-    def length(bytes: Bytes): Int = bytes.length
+    def length(bytes: Data): Int = bytes.length
     def allocate(size: Int): Array[Byte] = new Array[Byte](size)
 
-    inline def copy(source: Bytes, start: Ordinal, target: Array[Byte], index: Ordinal, size: Int)
+    inline def copy(source: Data, start: Ordinal, target: Array[Byte], index: Ordinal, size: Int)
     : Unit =
 
         System.arraycopy(source.mutable(using Unsafe), start.n0, target, index.n0, index.n0 + size)

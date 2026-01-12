@@ -46,22 +46,22 @@ class Aes[bits <: 128 | 192 | 256: ValueOf]() extends Cipher, Encryption, Symmet
   def keySize: bits = valueOf[bits]
 
   private def init() = jc.Cipher.getInstance("AES/ECB/PKCS5Padding")
-  private def makeKey(key: Bytes): SecretKeySpec = SecretKeySpec(key.mutable(using Unsafe), "AES")
+  private def makeKey(key: Data): SecretKeySpec = SecretKeySpec(key.mutable(using Unsafe), "AES")
 
-  def encrypt(bytes: Bytes, key: Bytes): Bytes =
+  def encrypt(bytes: Data, key: Data): Data =
     val cipher = init().nn
     cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key))
     cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
 
-  def decrypt(bytes: Bytes, key: Bytes): Bytes =
+  def decrypt(bytes: Data, key: Data): Data =
     val cipher = init().nn
     cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key))
     cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
 
-  def genKey(): Bytes =
+  def genKey(): Data =
     val keyGen = jc.KeyGenerator.getInstance("AES").nn
     keyGen.init(keySize)
 
     keyGen.generateKey().nn.getEncoded.nn.immutable(using Unsafe)
 
-  def privateToPublic(key: Bytes): Bytes = key
+  def privateToPublic(key: Data): Data = key

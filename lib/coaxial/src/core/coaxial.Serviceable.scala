@@ -49,7 +49,7 @@ import Control.*
 
 object Serviceable:
   given domainSocket: Tactic[StreamError] => DomainSocket is Serviceable:
-    type Output = Bytes
+    type Output = Data
     case class Connection(channel: jnc.SocketChannel)
 
     def connect(domainSocket: DomainSocket): Connection =
@@ -60,16 +60,16 @@ object Serviceable:
 
       Connection(channel)
 
-    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
+    def transmit(connection: Connection, input: Stream[Data]): Unit =
       input.each: bytes =>
         connection.channel.write(ByteBuffer.wrap(bytes.mutable(using Unsafe)))
 
       connection.channel.shutdownOutput()
 
-    def receive(connection: Connection): Stream[Bytes] =
+    def receive(connection: Connection): Stream[Data] =
       val buffer = ByteBuffer.allocate(512).nn
 
-      def recur(): Stream[Bytes] =
+      def recur(): Stream[Data] =
         connection.channel.read(buffer) match
           case -1 =>
             connection.channel.shutdownInput()
@@ -86,13 +86,13 @@ object Serviceable:
     def close(connection: Connection): Unit = connection.channel.close()
 
   given tcpEndpoint: (Online, Tactic[StreamError]) => Endpoint[TcpPort] is Serviceable:
-    type Output = Bytes
+    type Output = Data
     type Connection = jn.Socket
 
     def connect(endpoint: Endpoint[TcpPort]): jn.Socket =
       jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number)
 
-    def transmit(socket: jn.Socket, input: Stream[Bytes]): Unit =
+    def transmit(socket: jn.Socket, input: Stream[Data]): Unit =
       val out = socket.getOutputStream.nn
 
       input.each: bytes =>
@@ -101,17 +101,17 @@ object Serviceable:
 
     def close(socket: jn.Socket): Unit = socket.close()
 
-    def receive(socket: jn.Socket): Stream[Bytes] = socket.getInputStream.nn.stream[Bytes]
+    def receive(socket: jn.Socket): Stream[Data] = socket.getInputStream.nn.stream[Data]
 
   given tcpPort: Tactic[StreamError] => TcpPort is Serviceable:
-    type Output = Bytes
+    type Output = Data
     type Connection = jn.Socket
 
     def connect(port: TcpPort): jn.Socket = jn.Socket(jn.InetAddress.getLocalHost.nn, port.number)
     def close(socket: jn.Socket): Unit = socket.close()
-    def receive(socket: jn.Socket): Stream[Bytes] = socket.getInputStream.nn.stream[Bytes]
+    def receive(socket: jn.Socket): Stream[Data] = socket.getInputStream.nn.stream[Data]
 
-    def transmit(socket: jn.Socket, input: Stream[Bytes]): Unit =
+    def transmit(socket: jn.Socket, input: Stream[Data]): Unit =
       val out = socket.getOutputStream.nn
 
       input.each: bytes =>
@@ -119,5 +119,5 @@ object Serviceable:
         out.flush()
 
 trait Serviceable extends Routable:
-  def receive(connection: Connection): Stream[Bytes]
+  def receive(connection: Connection): Stream[Data]
   def close(connection: Connection): Unit

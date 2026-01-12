@@ -34,7 +34,7 @@ package polaris
 
 import anticipation.*
 
-class Buffer(private[polaris] val bytes: Bytes, initialPosition: Int = 0):
+class Buffer(private[polaris] val bytes: Data, initialPosition: Int = 0):
   private[polaris] var position: Int = initialPosition
   def offset: Int = position
   def advance(count: Int): Unit = position += count

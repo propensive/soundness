@@ -53,16 +53,16 @@ object CharDecoder:
 
 class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer):
   type Self = Text
-  type Form = Bytes
+  type Form = Data
 
-  def decoded(bytes: Bytes, omit: Boolean): Text =
+  def decoded(bytes: Data, omit: Boolean): Text =
     val buf: StringBuilder = StringBuilder()
     decoded(Stream(bytes)).each { text => buf.append(text.s) }
     buf.toString.tt
 
-  def decoded(bytes: Bytes): Text = decoded(bytes, false)
+  def decoded(bytes: Data): Text = decoded(bytes, false)
 
-  def decoded(stream: Stream[Bytes]): Stream[Text] =
+  def decoded(stream: Stream[Data]): Stream[Text] =
     val decoder = encoding.charset.newDecoder().nn
     val out = jn.CharBuffer.allocate(4096).nn
     val in = jn.ByteBuffer.allocate(4096).nn

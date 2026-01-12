@@ -49,27 +49,27 @@ object Conduit:
     case Data, Clutch, End
 
   case class Snapshot
-              (stream: Stream[Bytes], current: Bytes, index: Ordinal, done: Int, clutch: Boolean)
+              (stream: Stream[Data], current: Data, index: Ordinal, done: Int, clutch: Boolean)
 
-class Conduit(input0: Stream[Bytes]):
-  private val input: Stream[Bytes] = input0.filter(_.nonEmpty)
-  private var stream: Stream[Bytes] = if input.nil then Stream() else input.tail
-  private var current: Bytes = if input.nil then Bytes() else input.head
+class Conduit(input0: Stream[Data]):
+  private val input: Stream[Data] = input0.filter(_.nonEmpty)
+  private var stream: Stream[Data] = if input.nil then Stream() else input.tail
+  private var current: Data = if input.nil then Data() else input.head
   private var index: Ordinal = Prim
   private var done: Int = 0
   private var clutch: Boolean = false
 
-  private var stream0: Stream[Bytes] = stream
-  private var current0: Bytes = current
+  private var stream0: Stream[Data] = stream
+  private var current0: Data = current
   private var index0: Ordinal = index
   private var done0: Int = done
   private var clutch0: Boolean = clutch
 
-  def block: Bytes = current
+  def block: Data = current
   def datum: Int = try current(index.n0) catch case _: ArrayIndexOutOfBoundsException => -1
   def ordinal: Ordinal = index
 
-  def remainder: Stream[Bytes] = stream
+  def remainder: Stream[Data] = stream
 
   def next(): Boolean = step() match
     case Conduit.State.Clutch => if stream.nil then false else (cue() yet next())
@@ -101,7 +101,7 @@ class Conduit(input0: Stream[Bytes]):
 
 
 
-  final def save(): Bytes =
+  final def save(): Data =
     val rnd = math.random()
     val length = (index + done) - (index0 + done0)
     IArray.create(length): array =>
@@ -172,7 +172,7 @@ class Conduit(input0: Stream[Bytes]):
     mark()
     if expect(chars*) then revert() yet true else recur(chars*)
 
-  final def take(count: Int): Bytes =
+  final def take(count: Int): Data =
     mark()
     skip(count)
     save()

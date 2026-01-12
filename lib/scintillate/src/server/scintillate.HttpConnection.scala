@@ -73,7 +73,7 @@ object HttpConnection:
 
     val buffer = new Array[Byte](65536)
 
-    def stream(): Stream[Bytes] =
+    def stream(): Stream[Data] =
       val len = in.read(buffer)
       if len > 0 then buffer.slice(0, len).snapshot #:: stream() else Stream.empty
 

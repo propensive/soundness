@@ -231,15 +231,15 @@ extension (obj: Stream.type)
 
     recur(0)
 
-extension (bytes: Bytes)
-  def gzip: Bytes =
+extension (bytes: Data)
+  def gzip: Data =
     val out = ji.ByteArrayOutputStream()
     val out2 = juz.GZIPOutputStream(out)
     out2.write(bytes.mutable(using Unsafe))
     out2.close()
     out.toByteArray.nn.immutable(using Unsafe)
 
-  def gunzip: Bytes =
+  def gunzip: Data =
     val in = ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
     val in2 = juz.GZIPInputStream(in)
     val out = ji.ByteArrayOutputStream()
@@ -254,27 +254,27 @@ extension (bytes: Bytes)
 
     out.toByteArray.nn.immutable(using Unsafe)
 
-extension (stream: Stream[Bytes])
-  def discard(memory: Memory): Stream[Bytes] =
-    def recur(stream: Stream[Bytes], count: Memory): Stream[Bytes] = stream.flow(Stream()):
+extension (stream: Stream[Data])
+  def discard(memory: Memory): Stream[Data] =
+    def recur(stream: Stream[Data], count: Memory): Stream[Data] = stream.flow(Stream()):
       if head.memory < count
       then recur(tail, count - head.memory) else head.drop(count.long.toInt) #:: tail
 
     recur(stream, memory)
 
-  def compress[compression <: CompressionAlgorithm: Compression]: Stream[Bytes] =
+  def compress[compression <: CompressionAlgorithm: Compression]: Stream[Data] =
     compression.compress(stream)
 
-  def decompress[compression <: CompressionAlgorithm: Compression]: Stream[Bytes] =
+  def decompress[compression <: CompressionAlgorithm: Compression]: Stream[Data] =
     compression.decompress(stream)
 
-  def shred(mean: Double, variance: Double)(using Random): Stream[Bytes] =
+  def shred(mean: Double, variance: Double)(using Random): Stream[Data] =
     given gamma: Distribution = Gamma.approximate(mean, variance)
 
     def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
 
-    def recur(stream: Stream[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
-    : Stream[Bytes] =
+    def recur(stream: Stream[Data], sourcePos: Int, dest: Array[Byte], destPos: Int)
+    : Stream[Data] =
 
       stream match
         case source #:: more =>
@@ -297,12 +297,12 @@ extension (stream: Stream[Bytes])
 
     recur(stream, 0, newArray(), 0)
 
-  def chunked(size: Int, zeroPadding: Boolean = false): Stream[Bytes] =
+  def chunked(size: Int, zeroPadding: Boolean = false): Stream[Data] =
     def newArray(): Array[Byte] = new Array[Byte](size)
 
 
-    def recur(stream: Stream[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
-    : Stream[Bytes] =
+    def recur(stream: Stream[Data], sourcePos: Int, dest: Array[Byte], destPos: Int)
+    : Stream[Data] =
 
         stream match
           case source #:: more =>
@@ -327,8 +327,8 @@ extension (stream: Stream[Bytes])
 
     recur(stream, 0, newArray(), 0)
 
-  def take(memory: Memory): Stream[Bytes] =
-    def recur(stream: Stream[Bytes], count: Memory): Stream[Bytes] =
+  def take(memory: Memory): Stream[Data] =
+    def recur(stream: Stream[Data], count: Memory): Stream[Data] =
       stream.flow(Stream()):
         if head.memory < count then head #:: recur(tail, count - head.memory)
         else Stream(head.take(count.long.toInt))
@@ -336,9 +336,9 @@ extension (stream: Stream[Bytes])
     recur(stream, memory)
 
   def inputStream: ji.InputStream = new ji.InputStream:
-    private var current: Stream[Bytes] = stream
+    private var current: Stream[Data] = stream
     private var offset: Int = 0
-    private var focus: Bytes = IArray.empty[Byte]
+    private var focus: Data = IArray.empty[Byte]
 
     override def available(): Int =
       val diff = focus.length - offset

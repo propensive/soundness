@@ -66,7 +66,7 @@ class Classloader(val java: ClassLoader):
   def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
   def on(name: Text): Optional[Class[?]] = Optional(Class.forName(name.s, true, java))
 
-  def apply(path: Text): Optional[Bytes] =
+  def apply(path: Text): Optional[Data] =
     Optional(java.getResourceAsStream(path.s)).let(_.readAllBytes().nn.immutable(using Unsafe))
 
 

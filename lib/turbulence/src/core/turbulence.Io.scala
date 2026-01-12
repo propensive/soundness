@@ -35,5 +35,5 @@ package turbulence
 import anticipation.*
 
 trait Io:
-  def write(bytes: Bytes): Unit
+  def write(bytes: Data): Unit
   def print(text: Text): Unit

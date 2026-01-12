@@ -74,4 +74,4 @@ case class UnixMode
     if otherExec then sum += 1
     sum
 
-  def bytes: Bytes = int.octal.pad(7, Rtl, '0').bytes
+  def bytes: Data = int.octal.pad(7, Rtl, '0').bytes

@@ -35,5 +35,5 @@ package enigmatic
 import anticipation.*
 
 trait Signing:
-  def sign(data: Bytes, privateKey: Bytes): Bytes
-  def verify(data: Bytes, signature: Bytes, publicKey: Bytes): Boolean
+  def sign(data: Data, privateKey: Data): Data
+  def verify(data: Data, signature: Data, publicKey: Data): Boolean

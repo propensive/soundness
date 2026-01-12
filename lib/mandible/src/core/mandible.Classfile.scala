@@ -61,7 +61,7 @@ import columnAttenuation.ignore
 import jlc.attribute.UnknownAttribute
 
 object Classfile:
-  given aggregable: Classfile is Aggregable by Bytes = stream => new Classfile(stream.read[Bytes])
+  given aggregable: Classfile is Aggregable by Data = stream => new Classfile(stream.read[Data])
 
   def apply(name: Text)(using classloader: Classloader): Optional[Classfile] =
     classloader(name).let(new Classfile(_))
@@ -71,7 +71,7 @@ object Classfile:
     val name = t"${cls.getName().nn.replace('.', '/').nn}.class"
     classloader(name).let(new Classfile(_))
 
-class Classfile(data: Bytes):
+class Classfile(data: Data):
   val sourceFile: Optional[Text] =
     model.attributes.nn.iterator.nn.asScala.to(List).collect:
       case attribute: jlca.SourceFileAttribute =>

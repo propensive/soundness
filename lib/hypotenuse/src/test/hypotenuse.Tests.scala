@@ -44,30 +44,30 @@ object Tests extends Suite(m"Hypotenuse tests"):
 
     suite(m"Bitmap tests"):
       test(m"Check first bit of 10"):
-        B64(Bytes(0, 0, 0, 0, 0, 0, 0, 10)).bit(Prim)
+        B64(Data(0, 0, 0, 0, 0, 0, 0, 10)).bit(Prim)
       .assert(_ == false)
 
       test(m"Check second bit of 6"):
-        B64(Bytes(0, 0, 0, 0, 0, 0, 0, 6)).bit(Sec)
+        B64(Data(0, 0, 0, 0, 0, 0, 0, 6)).bit(Sec)
       .assert(_ == true)
 
       test(m"Check third bit of 6"):
-        B64(Bytes(0, 0, 0, 0, 0, 0, 0, 6)).bit(Ter)
+        B64(Data(0, 0, 0, 0, 0, 0, 0, 6)).bit(Ter)
       .assert(_ == true)
 
       test(m"Check fourth bit of 6"):
-        B64(Bytes(0, 0, 0, 0, 0, 0, 0, 6)).bit(Quat)
+        B64(Data(0, 0, 0, 0, 0, 0, 0, 6)).bit(Quat)
       .assert(_ == false)
 
-      test(m"Check first two bits of 6")(B64(Bytes(0, 0, 0, 0, 0, 0, 0, 6))(Prim thru Sec)).assert(_ == B64(2))
-      test(m"Check first three bits of 6")(B64(Bytes(0, 0, 0, 0, 0, 0, 0, 6))(Prim thru Ter)).assert(_ == B64(6))
-      test(m"Check first four bits of 6")(B64(Bytes(0, 0, 0, 0, 0, 0, 0, 6))(Prim thru Quat)).assert(_ == B64(6))
-      test(m"Check middle two bits of 6")(B64(Bytes(0, 0, 0, 0, 0, 0, 0, 6))(Sec thru Ter)).assert(_ == B64(3))
+      test(m"Check first two bits of 6")(B64(Data(0, 0, 0, 0, 0, 0, 0, 6))(Prim thru Sec)).assert(_ == B64(2))
+      test(m"Check first three bits of 6")(B64(Data(0, 0, 0, 0, 0, 0, 0, 6))(Prim thru Ter)).assert(_ == B64(6))
+      test(m"Check first four bits of 6")(B64(Data(0, 0, 0, 0, 0, 0, 0, 6))(Prim thru Quat)).assert(_ == B64(6))
+      test(m"Check middle two bits of 6")(B64(Data(0, 0, 0, 0, 0, 0, 0, 6))(Sec thru Ter)).assert(_ == B64(3))
 
-      test(m"Check middle two bits as subsequent")(B64(Bytes(0, 0, 0, 0, 0, 0, 0, 6))(Prim.subsequent(2)))
+      test(m"Check middle two bits as subsequent")(B64(Data(0, 0, 0, 0, 0, 0, 0, 6))(Prim.subsequent(2)))
       . assert(_ == B64(3))
 
-      test(m"Check first two bits as preceding")(B64(Bytes(0, 0, 0, 0, 0, 0, 0, 6))(Ter.preceding(2)))
+      test(m"Check first two bits as preceding")(B64(Data(0, 0, 0, 0, 0, 0, 0, 6))(Ter.preceding(2)))
       . assert(_ == B64(2))
 
 

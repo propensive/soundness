@@ -92,7 +92,7 @@ object Bootstrapper:
   case class Requirement(url: into[HttpUrl], digest: Text):
     def text = t"$digest:$url"
 
-  case class Entry(name: Text, data: Bytes)
+  case class Entry(name: Text, data: Data)
 
   case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
 
@@ -136,7 +136,7 @@ object Bootstrapper:
           val url = (maven + relative).encode.decode[HttpUrl]
           val url2 = (maven + relative0).encode.decode[HttpUrl]
           val digest = url.fetch().read[Text]
-          val data: Bytes = (base + relative0).open(_.read[Bytes])
+          val data: Data = (base + relative0).open(_.read[Data])
           val localDigest: Text = data.digest[Sha1].serialize[Hex]
 
           if digest != localDigest then
@@ -153,13 +153,13 @@ object Bootstrapper:
         val manifest: Promise[Manifest] = Promise()
 
         val todo: List[Requirement | Entry] = jarfile.open: handle =>
-          ZipStream(handle.read[Bytes]).map: entry =>
+          ZipStream(handle.read[Data]).map: entry =>
             if entry.ref.show == t"META-INF/MANIFEST.MF"
-            then manifest.fulfill(entry.read[Bytes].read[Manifest]) yet Unset
+            then manifest.fulfill(entry.read[Data].read[Manifest]) yet Unset
             else if entry.ref.show == t"burdock/Bootstrap.class"
-            then Entry(entry.ref.show, entry.read[Bytes])
+            then Entry(entry.ref.show, entry.read[Data])
             else entries.at((entry.ref.show, entry.checksum[Sha1].serialize[Hex])).or:
-              Entry(entry.ref.show, entry.read[Bytes])
+              Entry(entry.ref.show, entry.read[Data])
 
           . to(List).compact
 

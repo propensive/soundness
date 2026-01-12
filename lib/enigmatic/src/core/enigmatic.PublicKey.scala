@@ -43,17 +43,17 @@ object PublicKey:
     import alphabets.hex.lowerCase
     t"PublicKey(${key.bytes.serialize[Hex]})"
 
-  given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Bytes = _.bytes
+  given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Data = _.bytes
 
 
-case class PublicKey[cipher <: Cipher](bytes: Bytes):
-  def encrypt[value: Encodable in Bytes](value: value)(using algorithm: cipher & Encryption)
-  : Bytes =
+case class PublicKey[cipher <: Cipher](bytes: Data):
+  def encrypt[value: Encodable in Data](value: value)(using algorithm: cipher & Encryption)
+  : Data =
 
       algorithm.encrypt(value.bytestream, bytes)
 
 
-  def verify[encodable: Encodable in Bytes](value: encodable, signature: Signature[cipher])
+  def verify[encodable: Encodable in Data](value: encodable, signature: Signature[cipher])
        (using algorithm: cipher & Signing)
   : Boolean =
 

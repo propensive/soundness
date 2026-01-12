@@ -63,7 +63,7 @@ trait Bindable extends Typeclass:
 object Bindable:
   given domainSocket: Tactic[StreamError] => DomainSocket is Bindable:
     type Binding = jnc.ServerSocketChannel
-    type Output = Bytes
+    type Output = Data
     type Input = Connection
 
     def bind(domainSocket: DomainSocket): jnc.ServerSocketChannel =
@@ -79,7 +79,7 @@ object Bindable:
 
       Connection(in, out)
 
-    def transmit(channel: jnc.ServerSocketChannel, connection: Connection, bytes: Bytes): Unit =
+    def transmit(channel: jnc.ServerSocketChannel, connection: Connection, bytes: Data): Unit =
       connection.out.write(bytes.mutable(using Unsafe))
       connection.out.flush()
 
@@ -92,14 +92,14 @@ object Bindable:
 
   given tcpPort: Tactic[StreamError] => TcpPort is Bindable:
     type Binding = jn.ServerSocket
-    type Output = Bytes
+    type Output = Data
     type Input = jn.Socket
 
     def bind(port: TcpPort): Binding = jn.ServerSocket(port.number)
 
     def connect(binding: Binding): jn.Socket = binding.accept().nn
 
-    def transmit(socket: jn.ServerSocket, input: Input, bytes: Bytes): Unit =
+    def transmit(socket: jn.ServerSocket, input: Input, bytes: Data): Unit =
       input.getOutputStream.nn.write(bytes.mutable(using Unsafe))
       input.getOutputStream.nn.flush()
 

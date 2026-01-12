@@ -35,4 +35,4 @@ package coaxial
 import anticipation.*
 import urticose.*
 
-case class Packet(data: Bytes, sender: Ipv4 | Ipv6, port: UdpPort)
+case class Packet(data: Data, sender: Ipv4 | Ipv6, port: UdpPort)

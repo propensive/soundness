@@ -47,23 +47,23 @@ import rudiments.*
 import vacuous.*
 
 object Addressable:
-  inline given bytes: Bytes is Addressable:
+  inline given bytes: Data is Addressable:
     type Operand = Byte
     type Target = ji.ByteArrayOutputStream
 
-    val empty: Bytes = IArray.from(Nil)
+    val empty: Data = IArray.from(Nil)
     inline def blank(size: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(size)
 
-    inline def build(target: ji.ByteArrayOutputStream): Bytes =
+    inline def build(target: ji.ByteArrayOutputStream): Data =
       target.toByteArray.nn.immutable(using Unsafe)
 
-    inline def length(bytes: Bytes): Int = bytes.length
-    inline def address(bytes: Bytes, index: Ordinal): Byte = bytes(index.n0)
+    inline def length(bytes: Data): Int = bytes.length
+    inline def address(bytes: Data, index: Ordinal): Byte = bytes(index.n0)
 
-    inline def grab(bytes: Bytes, start: Ordinal, end: Ordinal): Bytes =
+    inline def grab(bytes: Data, start: Ordinal, end: Ordinal): Data =
       bytes.slice(start.n0, end.n0)
 
-    inline def clone(source: Bytes, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
+    inline def clone(source: Data, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
     : Unit =
 
         target.write(source.mutable(using Unsafe), start.n0, end.n0 - start.n0 - 1)

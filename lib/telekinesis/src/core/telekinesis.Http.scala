@@ -193,7 +193,7 @@ object Http:
   object Request:
     given showable: Request is Showable = request =>
       val bodySample: Text =
-        try request.body().read[Bytes].utf8 catch
+        try request.body().read[Data].utf8 catch
           case err: StreamError  => t"[-/-]"
 
       val headers: Text =
@@ -257,7 +257,7 @@ object Http:
           val host:        Hostname,
           val target:      Text,
           val textHeaders: List[Http.Header],
-          val body:        () => Stream[Bytes]):
+          val body:        () => Stream[Data]):
 
     inline def request: this.type = this
 
@@ -273,7 +273,7 @@ object Http:
     lazy val query: Query =
       contentType.let(_.base.show) match
         case t"application/x-www-form-urlencoded" =>
-          queryText.decode[Query] ++ body().read[Bytes].utf8.decode[Query]
+          queryText.decode[Query] ++ body().read[Data].utf8.decode[Query]
 
         case _ =>
           queryText.decode[Query]
@@ -311,7 +311,7 @@ object Http:
 
     case class Prototype(status0: Optional[Status], headers: Seq[Header]):
 
-      def apply(body: Stream[Bytes] = Stream()): Response =
+      def apply(body: Stream[Data] = Stream()): Response =
         Response(1.1, status0.or(Ok), headers.to(List), body)
 
       def apply[servable: Servable](body: servable): Response =
@@ -319,19 +319,19 @@ object Http:
         Response
          (1.1, status0.or(response.status), headers.to(List) ++ response.textHeaders, response.body)
 
-    given streamable: Tactic[HttpError] => Response is Streamable by Bytes = response =>
+    given streamable: Tactic[HttpError] => Response is Streamable by Data = response =>
       val body = response.status.category match
         case Http.Status.Category.Successful => response.body
 
         case _ =>
           raise(HttpError(response.status, response.textHeaders)) yet response.body
 
-      body.stream[Bytes]
+      body.stream[Data]
 
-    def make(status: Status, headers: List[Header], body: Stream[Bytes]): Response =
+    def make(status: Status, headers: List[Header], body: Stream[Data]): Response =
       new Response(1.1, status, headers, body)
 
-    def parse(stream: Stream[Bytes]): Response raises HttpResponseError =
+    def parse(stream: Stream[Data]): Response raises HttpResponseError =
       val conduit = Conduit(stream)
 
       inline def expect(char: Char) = if conduit.datum != char then raise:
@@ -413,9 +413,9 @@ object Http:
               (version:     Http.Version,
                status:      Http.Status,
                textHeaders: List[Http.Header],
-               body:        Stream[Bytes]):
+               body:        Stream[Data]):
 
-    def successBody: Optional[Stream[Bytes]] =
+    def successBody: Optional[Stream[Data]] =
       body.unless(status.category != Http.Status.Category.Successful)
 
     def receive[body: Receivable as receivable]: body = receivable.read(this)

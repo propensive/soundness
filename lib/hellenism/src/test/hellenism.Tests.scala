@@ -49,7 +49,7 @@ object Tests extends Suite(m"Proscenium Tests"):
     . assert(_ == Classpath / "scala" / "Option.class")
 
     test(m"check that a classpath file is streamable"):
-      cp"/scala/Option.class".read[Bytes]
+      cp"/scala/Option.class".read[Data]
     . assert(_.length > 0)
 
     test(m"check that a nonexistent classpath file is an error"):

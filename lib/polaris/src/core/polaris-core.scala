@@ -34,7 +34,7 @@ package polaris
 
 import anticipation.*
 
-extension (bytes: Bytes)
+extension (bytes: Data)
   def unpackFrom[data: Unpackable](offset: Int): data.Result =
     data.unpack(Buffer(bytes, offset))
 

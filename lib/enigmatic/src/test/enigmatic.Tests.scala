@@ -113,13 +113,13 @@ object Tests extends Suite(m"Gastronomy tests"):
 
     test(m"RSA roundtrip"):
       val privateKey: PrivateKey[Rsa[1024]] = PrivateKey.generate[Rsa[1024]]()
-      val message: Bytes = privateKey.public.encrypt(t"Hello world")
+      val message: Data = privateKey.public.encrypt(t"Hello world")
       privateKey.decrypt(message).text
     .assert(_ == t"Hello world")
 
     test(m"AES roundtrip"):
       val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
-      val message: Bytes = key.encrypt(t"Hello world")
+      val message: Data = key.encrypt(t"Hello world")
       key.decrypt(message).text
     .assert(_ == t"Hello world")
 

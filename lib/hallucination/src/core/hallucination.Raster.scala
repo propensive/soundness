@@ -77,14 +77,14 @@ object Raster:
    for x <- 0 until width; y <- 0 until height do image.setRGB(x, y, pixel(x, y).asInt)
    new Raster(image)
 
-  def apply[streamable: Streamable by Bytes](input: streamable): Raster =
-    new Raster(ji.ImageIO.read(input.read[Bytes].javaInputStream).nn)
+  def apply[streamable: Streamable by Data](input: streamable): Raster =
+    new Raster(ji.ImageIO.read(input.read[Data].javaInputStream).nn)
 
   def apply[form: Rasterizable as rasterizable](image: jai.BufferedImage): Raster in form =
     new Raster(image):
       type Form = form
 
-  given streamable: [form: Rasterizable] => (Raster in form) is Streamable by Bytes = raster =>
+  given streamable: [form: Rasterizable] => (Raster in form) is Streamable by Data = raster =>
     val out = StreamOutputStream()
     ji.ImageIO.write(raster.image, form.name.s, out)
     out.close()
@@ -95,7 +95,7 @@ object Raster:
     type Result = HttpStreams.Content
 
     def genericize(image: Raster in format): HttpStreams.Content =
-      (format.mediaType.basic, image.read[Stream[Bytes]])
+      (format.mediaType.basic, image.read[Stream[Data]])
 
   given graphical: Raster is Graphical:
     def pixel(raster: Raster, x: Int, y: Int): Int = raster(x, y).asInt
@@ -103,7 +103,7 @@ object Raster:
     def height(raster: Raster): Int = raster.height
 
   given aggregable: [format: Rasterizable as rasterizable] => Tactic[RasterError]
-        => (Raster in format) is Aggregable by Bytes =
+        => (Raster in format) is Aggregable by Data =
     rasterizable.read(_)
 
-  given aggregable2: Tactic[RasterError] => Raster is Aggregable by Bytes = Raster(_)
+  given aggregable2: Tactic[RasterError] => Raster is Aggregable by Data = Raster(_)

@@ -40,7 +40,7 @@ sealed trait Control[+state]
 object Control:
   sealed trait Interactive
 
-  case class Conclude[+state](message: Bytes, state: Optional[state])
+  case class Conclude[+state](message: Data, state: Optional[state])
   extends Control[state]
 
   case object Terminate extends Control[Nothing]
@@ -48,7 +48,7 @@ object Control:
   case class Continue[+state](state: Optional[state] = Unset)
   extends Control[state], Interactive
 
-  case class Reply[+state](message: Bytes, state: Optional[state])
+  case class Reply[+state](message: Data, state: Optional[state])
   extends Control[state], Interactive
 
 

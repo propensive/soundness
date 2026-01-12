@@ -38,7 +38,7 @@ import proscenium.*
 import turbulence.*
 
 object Asset:
-  def apply[entity: {Media, Streamable by Bytes}](name: Text, content: entity): Asset =
-    Asset(name, content.mediaType, content.stream[Bytes])
+  def apply[entity: {Media, Streamable by Data}](name: Text, content: entity): Asset =
+    Asset(name, content.mediaType, content.stream[Data])
 
-case class Asset(name: Text, media: MediaType, stream: Stream[Bytes])
+case class Asset(name: Text, media: MediaType, stream: Stream[Data])

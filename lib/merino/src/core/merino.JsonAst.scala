@@ -157,19 +157,19 @@ object JsonAst extends Format:
       value
 
 
-  given Tactic[ParseError] => JsonAst is Aggregable by Bytes = source =>
+  given Tactic[ParseError] => JsonAst is Aggregable by Data = source =>
     // FIXME: This is a horrible hack to avoid the problems with streaming
-    parse(source.read[Bytes])
+    parse(source.read[Data])
 
-  def parse(source: Bytes): JsonAst raises ParseError =
-    val stream: Stream[Bytes] = Stream(source)
+  def parse(source: Data): JsonAst raises ParseError =
+    val stream: Stream[Data] = Stream(source)
     var line: Int = 0
     var colStart: Int = 0
 
     try
       if stream.nil then abort(ParseError(this, Position(0, 0), Issue.EmptyInput))
 
-      val block: Bytes = stream.head
+      val block: Data = stream.head
       val penultimate = block.length - 1
       var cur: Int = 0
       val numberText: StringBuilder = StringBuilder()

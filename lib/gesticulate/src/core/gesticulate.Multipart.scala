@@ -51,10 +51,10 @@ object Multipart:
   enum Disposition:
     case Inline, Attachment, FormData
 
-  def parse[input: Streamable by Bytes](input: input, boundary0: Optional[Text] = Unset)
+  def parse[input: Streamable by Data](input: input, boundary0: Optional[Text] = Unset)
   : Multipart raises MultipartError =
 
-      val conduit = Conduit(input.stream[Bytes])
+      val conduit = Conduit(input.stream[Data])
       conduit.mark()
       conduit.next()
       if conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
@@ -90,7 +90,7 @@ object Multipart:
             conduit.next()
             headers((key, value) :: list)
 
-      def body(): Stream[Bytes] = conduit.step() match
+      def body(): Stream[Data] = conduit.step() match
         case Conduit.State.Clutch =>
           val block = conduit.block
           conduit.cue()
@@ -110,7 +110,7 @@ object Multipart:
           case other =>
             body()
 
-      def parsePart(headers: Map[Text, Text], stream: Stream[Bytes]): Part =
+      def parsePart(headers: Map[Text, Text], stream: Stream[Data]): Part =
         headers.at(t"Content-Disposition").let: disposition =>
           val parts = disposition.cut(t";").map(_.trim)
 
