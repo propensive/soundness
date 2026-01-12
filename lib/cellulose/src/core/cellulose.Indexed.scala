@@ -56,7 +56,7 @@ trait Indexed extends Codllike, Dynamic:
 
   lazy val index: Map[Text, List[Int]] =
     children.map(_.data).zipWithIndex.foldLeft(Map[Text, List[Int]]()):
-      case (acc, (data: Data, idx)) =>
+      case (acc, (data: Atom, idx)) =>
         if idx < layout.params then schema.param(idx).lay(acc): entry =>
           acc.upsert(entry.key, _.lay(List(idx))(idx :: _))
         else acc.upsert(data.key, _.lay(List(idx))(idx :: _))
@@ -85,14 +85,14 @@ trait Indexed extends Codllike, Dynamic:
 
       case Some(idx) =>
         List.range(idx, layout.params).map: idx =>
-          Data(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
+          Atom(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
 
-  def selectDynamic(key: String)(using erased DynamicCodlEnabler): List[Data] raises CodlError =
+  def selectDynamic(key: String)(using erased DynamicCodlEnabler): List[Atom] raises CodlError =
     index(key.show).map(children(_).data).collect:
-      case data: Data => data
+      case data: Atom => data
 
 
   def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)
-  : Data raises CodlError =
+  : Atom raises CodlError =
 
       selectDynamic(key)(idx)

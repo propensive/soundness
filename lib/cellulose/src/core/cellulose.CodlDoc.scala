@@ -99,13 +99,13 @@ extends Indexed:
         case (nodes, Ins(right, value))        => value :: nodes
         case (nodes, Par(left, right, value)) =>
           val orig: CodlNode = original(left)
-          val origData: Data = orig.data.or(???)
+          val origAtom: Atom = orig.data.or(???)
 
           if orig.id.absent || updates(right).id.absent then orig :: nodes
           else
-            val children2 = recur(origData.children, updates(right).data.or(???).children)
+            val children2 = recur(origAtom.children, updates(right).data.or(???).children)
             // FIXME: Check layout remains safe
-            orig.copy(data = origData.copy(children = children2)) :: nodes
+            orig.copy(data = origAtom.copy(children = children2)) :: nodes
 
       IArray.from(nodes2.reverse)
 

@@ -54,12 +54,12 @@ object Bcodl:
 
   private def write(out: ji.Writer, schema: CodlSchema, nodes: IArray[CodlNode]): Unit =
     val dataNodes = nodes.map(_.data).collect:
-      case data: Data => data
+      case data: Atom => data
 
     write(out, dataNodes.length)
 
     dataNodes.each:
-      case Data(key, children, _, _) =>
+      case Atom(key, children, _, _) =>
         schema match
           case Field(_) =>
             write(out, key)
@@ -78,7 +78,7 @@ object Bcodl:
         schema match
           case Field(_) =>
             val key = readText(reader)
-            CodlNode(Data(key, IArray(), Layout.empty, CodlSchema.Free))
+            CodlNode(Atom(key, IArray(), Layout.empty, CodlSchema.Free))
 
           case schema =>
             val subschema = readNumber(reader) match
@@ -89,7 +89,7 @@ object Bcodl:
 
             val children = IArray.from(recur(subschema(1)))
 
-            CodlNode(Data(key, children, Layout.empty, subschema(1)))
+            CodlNode(Atom(key, children, Layout.empty, subschema(1)))
 
     CodlDoc(IArray.from(recur(schema)), schema, 0)
 
