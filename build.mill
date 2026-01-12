@@ -147,7 +147,7 @@ trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
   def scalacOptions =
     settings.scalaOptions ++ Seq("-Xplugin", (larceny.plugin.assembly().path).toString())
 
-trait Bundle(dependencies: PublishModule*) extends BaseScalaModule with PublishModule:
+trait Bundle(dependencies: PublishModule*) extends BaseScalaModule, PublishModule:
   def sources = Task.Sources()
   def moduleDeps = dependencies
 
@@ -336,23 +336,23 @@ object test extends ScalaModule:
 
 object abacist extends Library:
   object core extends Component(quantitative.units)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object acyclicity extends Library:
   object core extends Component(gossamer.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object adversaria extends Library:
   object core extends Component(rudiments.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object ambience extends Library:
   object core extends Component(gossamer.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object anamnesis extends Library:
   object core extends Component(rudiments.core, contingency.core, distillate.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object anthology extends Library:
   object core extends Component(hellenism.core)
@@ -362,7 +362,7 @@ object anthology extends Library:
 
   object `java` extends Component(galilei.core, ambience.core, core, anticipation.log)
   object bundle extends Component(core, zeppelin.core, hellenism.core, galilei.core, revolution.core, eucalyptus.core)
-  object test extends Tests(probably.cli, `scala`, `java`, core)
+  object test extends Tests(`scala`, `java`, core)
 
 object anticipation extends Library:
   object generic extends Component(prepositional.core)
@@ -383,118 +383,118 @@ object anticipation extends Library:
 
 object austronesian extends Library:
   object core extends Component(wisteria.core, distillate.core, probably.core, hellenism.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object aviation extends Library:
   object core extends Component(abacist.core, quantitative.units)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object baroque extends Library:
   object core extends Component(gossamer.core, quantitative.core, geodesy.core)
-  object test extends Tests(probably.cli, core, abacist.core, quantitative.units, mosquito.core)
+  object test extends Tests(core, abacist.core, quantitative.units, mosquito.core)
 
 // object bitumen extends Library:
 //   object core extends Component(polaris.core, serpentine.core, gossamer.core, turbulence.core)
-//   object test extends Tests(probably.cli, core)
+//   object test extends Tests(core)
 
 object burdock extends Library:
   object boot extends Component
   object core extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core, hellenism.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object caduceus extends Library:
   object core extends Component(urticose.core, gesticulate.core, honeycomb.core)
   object resend extends Component(core, honeycomb.core, telekinesis.core, jacinta.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object caesura extends Library:
   object core extends Component(turbulence.core, escritoire.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object camouflage extends Library:
   object core extends Component(parasite.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object capricious extends Library:
   object core extends Component(wisteria.core, hypotenuse.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object cardinality extends Library:
   object core extends Component(fulminate.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object cataclysm extends Library:
   object core extends Component(gossamer.core, anticipation.css, anticipation.html, serpentine.core, anticipation.color, hypotenuse.core, quantitative.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object cellulose extends Library:
   object core extends Component(eucalyptus.core, chiaroscuro.core, kaleidoscope.core, polyvinyl.core, zephyrine.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object charisma extends Library:
   object core extends Component(gossamer.core, hieroglyph.core, hypotenuse.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object chiaroscuro extends Library:
   object core extends Component(escapade.core, dendrology.tree, escritoire.core, dissonance.core, larceny.plugin)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object coaxial extends Library:
   object core extends Component(galilei.core, urticose.core)
-  object test extends Tests(probably.cli, core, jacinta.core, superlunary.core)
+  object test extends Tests(core, jacinta.core, superlunary.core)
 
 object contextual extends Library:
   object core extends Component(rudiments.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object contingency extends Library:
   object core extends Component(rudiments.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object cosmopolite extends Library:
   object core extends Component(gossamer.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object dendrology extends Library:
   object tree extends Component(gossamer.core)
   object dag extends Component(gossamer.core, acyclicity.core)
-  object test extends Tests(probably.cli, tree, dag)
+  object test extends Tests(tree, dag)
 
 object denominative extends Library:
   object core extends Component(anticipation.text)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object digression extends Library:
   object core extends Component(rudiments.core, contingency.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object dissonance extends Library:
   object core extends Component(rudiments.core, contingency.core, turbulence.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object distillate extends Library:
   object core extends Component(contingency.core, digression.core, inimitable.core, wisteria.core)
-  object test extends Tests(probably.cli, core, urticose.url)
+  object test extends Tests(core, urticose.url)
 
 object diuretic extends Library:
   object core extends Component(anticipation.path, anticipation.url, anticipation.time)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 // object embarcadero extends Library:
 //   object core extends Component(jacinta.core, telekinesis.core, eucalyptus.core)
-//   object test extends Tests(probably.cli, core)
+//   object test extends Tests(core)
 
 object enigmatic extends Library:
   object core extends Component(gastronomy.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object escapade extends Library:
   object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, hypotenuse.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object escritoire extends Library:
   object core extends Component(gossamer.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object ethereal extends Library:
   object core extends Component(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core)
@@ -502,14 +502,14 @@ object ethereal extends Library:
   object example extends Component(core, exoskeleton.completions):
     override def finalMainClass: Task.Simple[String] = "ethereal.run"
 
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object eucalyptus extends Library:
   object core extends Component(turbulence.core, gossamer.core)
   object syslog extends Component(guillotine.core, core)
   object gcp extends Component(jacinta.core, core)
   object ansi extends Component(escapade.core, core, iridescence.core)
-  object test extends Tests(probably.cli, ansi, core, syslog)
+  object test extends Tests(ansi, core, syslog)
 
 object exoskeleton extends Library:
   object args extends Component(escapade.core, profanity.core, ambience.core)
@@ -522,46 +522,46 @@ object exoskeleton extends Library:
        (mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
         mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends Tests(probably.cli, rig)
+  object test extends Tests(rig)
 
 object feudalism extends Library:
   object core extends Component(rudiments.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object fulminate extends Library:
   object core extends Component(anticipation.css, anticipation.http, symbolism.core, anticipation.print, anticipation.http, anticipation.log, proscenium.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object galilei extends Library:
   object core extends Component(serpentine.core, guillotine.core, nomenclature.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object gastronomy extends Library:
   object core extends Component(monotonous.core, turbulence.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object geodesy extends Library:
   object core extends Component(gossamer.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object gesticulate extends Library:
   object core extends Component(gossamer.core, anticipation.html, turbulence.core, zephyrine.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object gossamer extends Library:
   object core extends Component(mercator.core, hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core, distillate.core)
-  object test extends Tests(probably.cli, core, serpentine.core)
+  object test extends Tests(core, serpentine.core)
 
 object guillotine extends Library:
   object core extends Component(contextual.core, anticipation.log, contingency.core, turbulence.core, gossamer.core, ambience.core)
-  object test extends Tests(probably.cli, core, galilei.core)
+  object test extends Tests(core, galilei.core)
 
 object hallucination extends Library:
   object core extends Component(anticipation.gfx, iridescence.core, gesticulate.core)
   object ansi extends Component(escapade.core, core)
-  object test extends Tests(probably.cli, ansi)
+  object test extends Tests(ansi)
 
 object harlequin extends Library:
   object core extends Component(anthology.scala, gossamer.core):
@@ -569,49 +569,49 @@ object harlequin extends Library:
 
   object ansi extends Component(core, escapade.core)
   object md extends Component(core, punctuation.html, honeycomb.core)
-  object test extends Tests(probably.cli, ansi, md)
+  object test extends Tests(ansi, md)
 
 object hellenism extends Library:
   object core extends Component(anticipation.url, ambience.core, galilei.core)
-  object test extends Tests(probably.cli, core, turbulence.core)
+  object test extends Tests(core, turbulence.core)
 
 object honeycomb extends Library:
   object core extends Component(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core, typonym.core, adversaria.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object hieroglyph extends Library:
   object core extends Component(kaleidoscope.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object hyperbole extends Library:
   object core extends Component(harlequin.ansi, escapade.core, escritoire.core, dendrology.tree, hieroglyph.core):
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends Tests(probably.cli, core, quantitative.units, mandible.core)
+  object test extends Tests(core, quantitative.units, mandible.core)
 
 object hypotenuse extends Library:
   object core extends Component(cardinality.core, anticipation.opaque, contingency.core)
-  object test extends Tests(probably.cli, core, quantitative.units, abacist.core)
+  object test extends Tests(core, quantitative.units, abacist.core)
 
 object imperial extends Library:
   object core extends Component(anticipation.path, digression.core, guillotine.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object inimitable extends Library:
   object core extends Component(rudiments.core, contingency.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object iridescence extends Library:
   object core extends Component(contextual.core, anticipation.color, hypotenuse.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object jacinta extends Library:
   object core extends Component(merino.core, gossamer.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object kaleidoscope extends Library:
   object core extends Component(rudiments.core, contingency.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object larceny extends Library:
   object plugin extends Component():
@@ -622,84 +622,84 @@ object larceny extends Library:
 
 object legerdemain extends Library:
   object core extends Component(honeycomb.core, anamnesis.core)
-  object test extends Tests(probably.cli, core, scintillate.server)
+  object test extends Tests(core, scintillate.server)
 
 object mandible extends Library:
   object core extends Component(hellenism.core, hyperbole.core, escritoire.core):
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends Tests(probably.cli, core, revolution.core, quantitative.units)
+  object test extends Tests(core, revolution.core, quantitative.units)
 
 object mercator extends Library:
   object core extends Component(fulminate.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object merino extends Library:
   object core extends Component(turbulence.core, zephyrine.core)
-  object test extends Tests(probably.cli, core, sedentary.core, diuretic.core)
+  object test extends Tests(core, sedentary.core, diuretic.core)
 
 object metamorphose extends Library:
   object core extends Component(contingency.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object monotonous extends Library:
   object core extends Component(gossamer.core, hypotenuse.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object mosquito extends Library:
   object core extends Component(gossamer.core)
-  object test extends Tests(probably.cli, quantitative.units, core, baroque.core)
+  object test extends Tests(quantitative.units, core, baroque.core)
 
 object urticose extends Library:
   object core extends Component(gossamer.core, hypotenuse.core)
   object url extends Component(escapade.core, serpentine.core, anticipation.html, core)
-  object test extends Tests(probably.cli, core, url)
+  object test extends Tests(core, url)
 
 object nomenclature extends Library:
   object core extends Component(gossamer.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object octogenarian extends Library:
   object core extends Component(guillotine.core, galilei.core, ambience.core, gastronomy.core, urticose.core, enigmatic.core, anticipation.url)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object panopticon extends Library:
   object core extends Component(rudiments.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object parasite extends Library:
   object core extends Component(digression.core, mercator.core, anticipation.time, feudalism.core)
-  object test extends Tests(probably.cli, core, quantitative.units)
+  object test extends Tests(core, quantitative.units)
 
 /*object perihelion extends Library:
   object core extends Component(telekinesis.core, scintillate.server, gastronomy.core, eucalyptus.core)
 
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 }*/
 
 object phoenicia extends Library:
   object core extends Component(hypotenuse.core, turbulence.core, quantitative.core, polaris.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object plutocrat extends Library:
   object core extends Component(anticipation.opaque, hypotenuse.core, gossamer.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object polaris extends Library:
   object core extends Component(hypotenuse.core, wisteria.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object polyvinyl extends Library:
   object core extends Component(rudiments.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object prepositional extends Library:
   object core extends Component
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object proscenium extends Library:
   object core extends Component
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object probably extends Library:
   object core extends Component(gossamer.core, chiaroscuro.core, ambience.core, turbulence.core, eucalyptus.core, coverage):
@@ -711,7 +711,7 @@ object probably extends Library:
 
 object profanity extends Library:
   object core extends Component(eucalyptus.core, diuretic.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object punctuation extends Library:
   object core extends Component(gossamer.core, turbulence.core, honeycomb.core):
@@ -719,16 +719,16 @@ object punctuation extends Library:
 
   object html extends Component(core, honeycomb.core)
   object ansi extends Component(core, escapade.core, harlequin.core)
-  object test extends Tests(probably.cli, core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
+  object test extends Tests(core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
 
 object quantitative extends Library:
   object core extends Component(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time, probably.core)
   object units extends Component(core)
-  object test extends Tests(probably.cli, core, units)
+  object test extends Tests(core, units)
 
 object revolution extends Library:
   object core extends Component(serpentine.core, turbulence.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object rudiments extends Library:
   object core extends Component(
@@ -745,15 +745,15 @@ object rudiments extends Library:
       proscenium.core
     )
 
-  object test extends Tests(probably.cli, core, abacist.core, quantitative.units)
+  object test extends Tests(core, abacist.core, quantitative.units)
 
 object satirical extends Library:
   object core extends Component(gossamer.core, turbulence.core, zephyrine.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object savagery extends Library:
   object core extends Component(cataclysm.core, xylophone.core, quantitative.core, iridescence.core, geodesy.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object scintillate extends Library:
   object server extends Component(telekinesis.core, hellenism.core)
@@ -761,25 +761,25 @@ object scintillate extends Library:
   object servlet extends Component(server):
     def mvnDeps = Seq(mvn"jakarta.servlet:jakarta.servlet-api:6.0.0")
 
-  object test extends Tests(probably.cli, server, servlet)
+  object test extends Tests(server, servlet)
 
 object sedentary extends Library:
   object core extends Component(probably.core, superlunary.jvm, anthology.bundle, urticose.url, diuretic.core)
-  object test extends Tests(probably.cli, core, quantitative.units)
+  object test extends Tests(core, quantitative.units)
 
 object serpentine extends Library:
   object core extends Component(gossamer.core, nomenclature.core, ambience.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object spectacular extends Library:
   object core extends Component(rudiments.core, stenography.core, inimitable.core, contingency.core, wisteria.core, digression.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object stenography extends Library:
   object core extends Component(rudiments.core):
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object superlunary extends Library:
   object core extends Component(anticipation.css, symbolism.core, anticipation.text, anticipation.http, jacinta.core, inimitable.core, gastronomy.core, ambience.core, hellenism.core, anthology.scala, austronesian.core):
@@ -794,227 +794,227 @@ object superlunary extends Library:
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
 
-  object test extends Component(probably.cli, jvm):
+  object test extends Tests(jvm):
     override def finalMainClass: Task.Simple[String] = "superlunary.run"
 
 object surveillance extends Library:
   object core extends Component(anticipation.path, eucalyptus.core, feudalism.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object symbolism extends Library:
   object core extends Component(prepositional.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object tarantula extends Library:
   object core extends Component(jacinta.core, telekinesis.core, guillotine.core, cataclysm.core, honeycomb.core, hallucination.core, diuretic.core, eucalyptus.core, gastronomy.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object telekinesis extends Library:
   object core extends Component(monotonous.core, gesticulate.core, urticose.url, coaxial.core, legerdemain.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object turbulence extends Library:
   object core extends Component(hieroglyph.core, parasite.core, capricious.core, stenography.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object typonym extends Library:
   object core extends Component(proscenium.core, prepositional.core, anticipation.text)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object ulysses extends Library:
   object core extends Component(gastronomy.core, cardinality.core, hypotenuse.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object umbrageous extends Library:
   object plugin extends Component():
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends Tests(probably.cli, plugin)
+  object test extends Tests(plugin)
 
 object vacuous extends Library:
   object core extends Component(fulminate.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object vexillology extends Library:
   object core extends Component(hypotenuse.core, distillate.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object vicarious extends Library:
   object core extends Component(rudiments.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object wisteria extends Library:
   object core extends Component(contingency.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object xylophone extends Library:
   object core extends Component(wisteria.core, gossamer.core, turbulence.core, zephyrine.core, adversaria.core, typonym.core, hellenism.core, serpentine.core, urticose.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object yossarian extends Library:
   object core extends Component(iridescence.core, contingency.core, kaleidoscope.core, gossamer.core, turbulence.core, denominative.core)
-  object test extends Tests(probably.cli, core)
+  object test extends Tests(core)
 
 object zephyrine extends Library:
   object core extends Component(hieroglyph.core, hypotenuse.core):
     override def scalacOptions = settings.scalaOptionsCC
 
-  object test extends Tests(probably.cli, core):
+  object test extends Tests(core):
     override def scalacOptions = settings.scalaOptionsCC
 
 object zeppelin extends Library:
   object core extends Component(galilei.core, zephyrine.core)
-  object test extends Tests(probably.cli, core, imperial.core, diuretic.core)
+  object test extends Tests(core, imperial.core, diuretic.core)
 
 object publishing extends Module:
   def local(localIvyRepo: String = null): Command[Unit] = Task.Command:
-    abacist.core.publishLocal()
-    acyclicity.core.publishLocal()
-    adversaria.core.publishLocal()
-    ambience.core.publishLocal()
-    anamnesis.core.publishLocal()
-    anthology.core.publishLocal()
-    anthology.java.publishLocal()
-    anthology.scala.publishLocal()
-    anticipation.codec.publishLocal()
-    anticipation.color.publishLocal()
-    anticipation.css.publishLocal()
-    anticipation.generic.publishLocal()
-    anticipation.gfx.publishLocal()
-    anticipation.html.publishLocal()
-    anticipation.http.publishLocal()
-    anticipation.log.publishLocal()
-    anticipation.opaque.publishLocal()
-    anticipation.path.publishLocal()
-    anticipation.print.publishLocal()
-    anticipation.text.publishLocal()
-    anticipation.time.publishLocal()
-    anticipation.url.publishLocal()
-    austronesian.core.publishLocal()
-    aviation.core.publishLocal()
-    baroque.core.publishLocal()
-    burdock.boot.publishLocal()
-    burdock.core.publishLocal()
-    caduceus.core.publishLocal()
-    caduceus.resend.publishLocal()
-    caesura.core.publishLocal()
-    camouflage.core.publishLocal()
-    capricious.core.publishLocal()
-    cardinality.core.publishLocal()
-    cataclysm.core.publishLocal()
-    cellulose.core.publishLocal()
-    charisma.core.publishLocal()
-    chiaroscuro.core.publishLocal()
-    coaxial.core.publishLocal()
-    contextual.core.publishLocal()
-    contingency.core.publishLocal()
-    cosmopolite.core.publishLocal()
-    dendrology.dag.publishLocal()
-    dendrology.tree.publishLocal()
-    denominative.core.publishLocal()
-    digression.core.publishLocal()
-    dissonance.core.publishLocal()
-    distillate.core.publishLocal()
-    diuretic.core.publishLocal()
-    enigmatic.core.publishLocal()
-    escapade.core.publishLocal()
-    escritoire.core.publishLocal()
-    ethereal.core.publishLocal()
-    eucalyptus.ansi.publishLocal()
-    eucalyptus.core.publishLocal()
-    eucalyptus.gcp.publishLocal()
-    eucalyptus.syslog.publishLocal()
-    exoskeleton.args.publishLocal()
-    exoskeleton.completions.publishLocal()
-    exoskeleton.core.publishLocal()
-    feudalism.core.publishLocal()
-    fulminate.core.publishLocal()
-    galilei.core.publishLocal()
-    gastronomy.core.publishLocal()
-    geodesy.core.publishLocal()
-    gesticulate.core.publishLocal()
-    gossamer.core.publishLocal()
-    guillotine.core.publishLocal()
-    hallucination.ansi.publishLocal()
-    hallucination.core.publishLocal()
-    harlequin.ansi.publishLocal()
-    harlequin.core.publishLocal()
-    harlequin.md.publishLocal()
-    hellenism.core.publishLocal()
-    hieroglyph.core.publishLocal()
-    honeycomb.core.publishLocal()
-    hyperbole.core.publishLocal()
-    hypotenuse.core.publishLocal()
-    imperial.core.publishLocal()
-    inimitable.core.publishLocal()
-    iridescence.core.publishLocal()
-    jacinta.core.publishLocal()
-    kaleidoscope.core.publishLocal()
-    larceny.plugin.publishLocal()
-    legerdemain.core.publishLocal()
-    mandible.core.publishLocal()
-    mercator.core.publishLocal()
-    merino.core.publishLocal()
-    metamorphose.core.publishLocal()
-    monotonous.core.publishLocal()
-    mosquito.core.publishLocal()
-    urticose.core.publishLocal()
-    urticose.url.publishLocal()
-    nomenclature.core.publishLocal()
-    octogenarian.core.publishLocal()
-    panopticon.core.publishLocal()
-    parasite.core.publishLocal()
-    //perihelion.core.publishLocal()
-    phoenicia.core.publishLocal()
-    plutocrat.core.publishLocal()
-    polaris.core.publishLocal()
-    polyvinyl.core.publishLocal()
-    prepositional.core.publishLocal()
-    probably.coverage.publishLocal()
-    probably.cli.publishLocal()
-    probably.core.publishLocal()
-    profanity.core.publishLocal()
-    proscenium.core.publishLocal()
-    punctuation.ansi.publishLocal()
-    punctuation.core.publishLocal()
-    punctuation.html.publishLocal()
-    quantitative.core.publishLocal()
-    quantitative.units.publishLocal()
-    revolution.core.publishLocal()
-    rudiments.core.publishLocal()
-    savagery.core.publishLocal()
-    scintillate.server.publishLocal()
-    scintillate.servlet.publishLocal()
-    sedentary.core.publishLocal()
-    serpentine.core.publishLocal()
-    spectacular.core.publishLocal()
-    stenography.core.publishLocal()
-    superlunary.core.publishLocal()
-    superlunary.jvm.publishLocal()
-    surveillance.core.publishLocal()
-    symbolism.core.publishLocal()
-    tarantula.core.publishLocal()
-    telekinesis.core.publishLocal()
-    turbulence.core.publishLocal()
-    typonym.core.publishLocal()
-    ulysses.core.publishLocal()
-    umbrageous.plugin.publishLocal()
-    vacuous.core.publishLocal()
-    vicarious.core.publishLocal()
-    wisteria.core.publishLocal()
-    xylophone.core.publishLocal()
-    yossarian.core.publishLocal()
-    zephyrine.core.publishLocal()
-    zeppelin.core.publishLocal()
+    abacist.core.publishLocal()()
+    acyclicity.core.publishLocal()()
+    adversaria.core.publishLocal()()
+    ambience.core.publishLocal()()
+    anamnesis.core.publishLocal()()
+    anthology.core.publishLocal()()
+    anthology.java.publishLocal()()
+    anthology.scala.publishLocal()()
+    anticipation.codec.publishLocal()()
+    anticipation.color.publishLocal()()
+    anticipation.css.publishLocal()()
+    anticipation.generic.publishLocal()()
+    anticipation.gfx.publishLocal()()
+    anticipation.html.publishLocal()()
+    anticipation.http.publishLocal()()
+    anticipation.log.publishLocal()()
+    anticipation.opaque.publishLocal()()
+    anticipation.path.publishLocal()()
+    anticipation.print.publishLocal()()
+    anticipation.text.publishLocal()()
+    anticipation.time.publishLocal()()
+    anticipation.url.publishLocal()()
+    austronesian.core.publishLocal()()
+    aviation.core.publishLocal()()
+    baroque.core.publishLocal()()
+    burdock.boot.publishLocal()()
+    burdock.core.publishLocal()()
+    caduceus.core.publishLocal()()
+    caduceus.resend.publishLocal()()
+    caesura.core.publishLocal()()
+    camouflage.core.publishLocal()()
+    capricious.core.publishLocal()()
+    cardinality.core.publishLocal()()
+    cataclysm.core.publishLocal()()
+    cellulose.core.publishLocal()()
+    charisma.core.publishLocal()()
+    chiaroscuro.core.publishLocal()()
+    coaxial.core.publishLocal()()
+    contextual.core.publishLocal()()
+    contingency.core.publishLocal()()
+    cosmopolite.core.publishLocal()()
+    dendrology.dag.publishLocal()()
+    dendrology.tree.publishLocal()()
+    denominative.core.publishLocal()()
+    digression.core.publishLocal()()
+    dissonance.core.publishLocal()()
+    distillate.core.publishLocal()()
+    diuretic.core.publishLocal()()
+    enigmatic.core.publishLocal()()
+    escapade.core.publishLocal()()
+    escritoire.core.publishLocal()()
+    ethereal.core.publishLocal()()
+    eucalyptus.ansi.publishLocal()()
+    eucalyptus.core.publishLocal()()
+    eucalyptus.gcp.publishLocal()()
+    eucalyptus.syslog.publishLocal()()
+    exoskeleton.args.publishLocal()()
+    exoskeleton.completions.publishLocal()()
+    exoskeleton.core.publishLocal()()
+    feudalism.core.publishLocal()()
+    fulminate.core.publishLocal()()
+    galilei.core.publishLocal()()
+    gastronomy.core.publishLocal()()
+    geodesy.core.publishLocal()()
+    gesticulate.core.publishLocal()()
+    gossamer.core.publishLocal()()
+    guillotine.core.publishLocal()()
+    hallucination.ansi.publishLocal()()
+    hallucination.core.publishLocal()()
+    harlequin.ansi.publishLocal()()
+    harlequin.core.publishLocal()()
+    harlequin.md.publishLocal()()
+    hellenism.core.publishLocal()()
+    hieroglyph.core.publishLocal()()
+    honeycomb.core.publishLocal()()
+    hyperbole.core.publishLocal()()
+    hypotenuse.core.publishLocal()()
+    imperial.core.publishLocal()()
+    inimitable.core.publishLocal()()
+    iridescence.core.publishLocal()()
+    jacinta.core.publishLocal()()
+    kaleidoscope.core.publishLocal()()
+    larceny.plugin.publishLocal()()
+    legerdemain.core.publishLocal()()
+    mandible.core.publishLocal()()
+    mercator.core.publishLocal()()
+    merino.core.publishLocal()()
+    metamorphose.core.publishLocal()()
+    monotonous.core.publishLocal()()
+    mosquito.core.publishLocal()()
+    urticose.core.publishLocal()()
+    urticose.url.publishLocal()()
+    nomenclature.core.publishLocal()()
+    octogenarian.core.publishLocal()()
+    panopticon.core.publishLocal()()
+    parasite.core.publishLocal()()
+    //perihelion.core.publishLocal()()
+    phoenicia.core.publishLocal()()
+    plutocrat.core.publishLocal()()
+    polaris.core.publishLocal()()
+    polyvinyl.core.publishLocal()()
+    prepositional.core.publishLocal()()
+    probably.coverage.publishLocal()()
+    probably.cli.publishLocal()()
+    probably.core.publishLocal()()
+    profanity.core.publishLocal()()
+    proscenium.core.publishLocal()()
+    punctuation.ansi.publishLocal()()
+    punctuation.core.publishLocal()()
+    punctuation.html.publishLocal()()
+    quantitative.core.publishLocal()()
+    quantitative.units.publishLocal()()
+    revolution.core.publishLocal()()
+    rudiments.core.publishLocal()()
+    savagery.core.publishLocal()()
+    scintillate.server.publishLocal()()
+    scintillate.servlet.publishLocal()()
+    sedentary.core.publishLocal()()
+    serpentine.core.publishLocal()()
+    spectacular.core.publishLocal()()
+    stenography.core.publishLocal()()
+    superlunary.core.publishLocal()()
+    superlunary.jvm.publishLocal()()
+    surveillance.core.publishLocal()()
+    symbolism.core.publishLocal()()
+    tarantula.core.publishLocal()()
+    telekinesis.core.publishLocal()()
+    turbulence.core.publishLocal()()
+    typonym.core.publishLocal()()
+    ulysses.core.publishLocal()()
+    umbrageous.plugin.publishLocal()()
+    vacuous.core.publishLocal()()
+    vicarious.core.publishLocal()()
+    wisteria.core.publishLocal()()
+    xylophone.core.publishLocal()()
+    yossarian.core.publishLocal()()
+    zephyrine.core.publishLocal()()
+    zeppelin.core.publishLocal()()
 
-    soundness.base.publishLocal()
-    soundness.cli.publishLocal()
-    soundness.data.publishLocal()
-    soundness.sci.publishLocal()
-    soundness.test.publishLocal()
-    soundness.tool.publishLocal()
-    soundness.web.publishLocal()
+    soundness.base.publishLocal()()
+    soundness.cli.publishLocal()()
+    soundness.data.publishLocal()()
+    soundness.sci.publishLocal()()
+    soundness.test.publishLocal()()
+    soundness.tool.publishLocal()()
+    soundness.web.publishLocal()()
 
-    soundness.all.publishLocal()
+    soundness.all.publishLocal()()
 
     Result.Success(())
