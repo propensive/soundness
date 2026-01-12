@@ -42,12 +42,12 @@ import symbolism.*
 import vacuous.*
 
 object Mosquito:
-  opaque type Vector[value, size <: Int] = Tuple
+  opaque type Tensor[value, size <: Int] = Tuple
 
-  object Vector:
-    def apply(elems: Tuple): Vector[Tuple.Union[elems.type], Tuple.Size[elems.type]] = elems
+  object Tensor:
+    def apply(elems: Tuple): Tensor[Tuple.Union[elems.type], Tuple.Size[elems.type]] = elems
 
-    def take[element](list: List[element], size: Int): Optional[Vector[element, size.type]] =
+    def take[element](list: List[element], size: Int): Optional[Tensor[element, size.type]] =
       if size == 0 then Zero else list match
         case Nil          => Unset
         case head :: tail => take(tail, size - 1).let(head *: _)
@@ -55,17 +55,17 @@ object Mosquito:
 
     given addable: [value,
                     size <: Int,
-                    left <: Vector[value, size],
+                    left <: Tensor[value, size],
                     value2,
-                    right <: Vector[value2, size],
+                    right <: Tensor[value2, size],
                     result]
           => (addable: value is Addable by value2 to result)
           => left is Addable:
       type Self = left
       type Operand = right
-      type Result = Vector[result, size]
+      type Result = Tensor[result, size]
 
-      def add(left: left, right: right): Vector[result, size] =
+      def add(left: left, right: right): Tensor[result, size] =
         def recur(left: Tuple, right: Tuple): Tuple = left match
           case leftHead *: leftTail => right match
             case rightHead *: rightTail =>
@@ -80,25 +80,25 @@ object Mosquito:
 
         recur(left, right)
 
-    given negatable: [value, size <: Int, vector <: Vector[value, size], result]
+    given negatable: [value, size <: Int, tensor <: Tensor[value, size], result]
           => (negatable: value is Negatable to result)
-          => vector is Negatable:
-      type Result = Vector[result, size]
-      def negate(operand: vector): Vector[result, size] = operand.map(negatable.negate(_))
+          => tensor is Negatable:
+      type Result = Tensor[result, size]
+      def negate(operand: tensor): Tensor[result, size] = operand.map(negatable.negate(_))
 
     given subtractable: [value,
                          size <: Int,
-                         left <: Vector[value, size],
+                         left <: Tensor[value, size],
                          value2,
-                         right <: Vector[value2, size],
+                         right <: Tensor[value2, size],
                          result]
           => (subtractable: value is Subtractable by value2 to result)
           => left is Subtractable:
       type Self = left
       type Operand = right
-      type Result = Vector[result, size]
+      type Result = Tensor[result, size]
 
-      def subtract(left: left, right: right): Vector[result, size] =
+      def subtract(left: left, right: right): Tensor[result, size] =
         def recur(left: Tuple, right: Tuple): Tuple = left match
           case leftHead *: leftTail => right match
             case rightHead *: rightTail =>
@@ -114,10 +114,10 @@ object Mosquito:
         recur(left, right)
 
     given showable: [size <: Int: ValueOf, element: Showable] => Text is Measurable
-          =>  Vector[element, size] is Showable =
+          =>  Tensor[element, size] is Showable =
 
-      vector =>
-        val items = vector.list.map(_.show)
+      tensor =>
+        val items = tensor.list.map(_.show)
         val width = items.maxBy(_.length).length
         val size = valueOf[size]
         if size == 1 then t"( ${items(0)} )"
@@ -130,12 +130,12 @@ object Mosquito:
 
           (top :: middle ::: bottom :: Nil).join(t"\n")
 
-  extension [left](left: Vector[left, 3])
-    def cross[right](right: Vector[right, 3])
+  extension [left](left: Tensor[left, 3])
+    def cross[right](right: Tensor[right, 3])
          (using multiplication: left is Multiplicable by right,
                 addition:       multiplication.Result is Addable by multiplication.Result,
                 subtraction:    multiplication.Result is Subtractable by multiplication.Result)
-    : Vector[addition.Result, 3] =
+    : Tensor[addition.Result, 3] =
 
         val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
         val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
@@ -144,7 +144,7 @@ object Mosquito:
         first *: second *: third *: Zero
 
 
-  extension [size <: Int, left](left: Vector[left, size])
+  extension [size <: Int, left](left: Tensor[left, size])
     def element(index: Int): left = left.toArray(index).asInstanceOf[left]
     def apply(index: Int): left = left.toArray(index).asInstanceOf[left]
     def list: List[left] = left.toList.asInstanceOf[List[left]]
@@ -167,7 +167,7 @@ object Mosquito:
         recur(left.element(0)*left.element(0), size - 1)
 
 
-    def map[left2](fn: left => left2): Vector[left2, size] =
+    def map[left2](fn: left => left2): Tensor[left2, size] =
       def recur(tuple: Tuple): Tuple = tuple match
         case head *: tail => fn(head.asInstanceOf[left]) *: recur(tail)
         case _            => Zero
@@ -180,7 +180,7 @@ object Mosquito:
                 addable:       square is Addable by square to square,
                 rootable:      square is Rootable[2] to left,
                 divisible:     left is Divisible by left to Double)
-    : Vector[Double, size] =
+    : Tensor[Double, size] =
 
         val magnitude: left = left.norm
 
@@ -191,7 +191,7 @@ object Mosquito:
         recur(left)
 
 
-    def dot[right](right: Vector[right, size])
+    def dot[right](right: Tensor[right, size])
          (using multiply: left is Multiplicable by right,
                 size:     ValueOf[size],
                 addable:  multiply.Result is Addable by multiply.Result,
@@ -207,6 +207,6 @@ object Mosquito:
 
 
 extension [element](list: List[element])
-  def slide(size: Int): Stream[Vector[element, size.type]] = list match
+  def slide(size: Int): Stream[Tensor[element, size.type]] = list match
     case Nil          => Stream()
-    case head :: tail => Vector.take(list, size).lay(Stream())(_ #:: tail.slide(size))
+    case head :: tail => Tensor.take(list, size).lay(Stream())(_ #:: tail.slide(size))
