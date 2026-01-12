@@ -39,3 +39,9 @@ export honeycomb
 
 package doms.html:
   export honeycomb.doms.html.whatwg
+
+package attributives:
+  export honeycomb.attributives.textAttributes
+
+package stylesheets:
+  export honeycomb.stylesheets.uncheckedClasses
