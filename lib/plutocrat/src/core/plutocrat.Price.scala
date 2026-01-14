@@ -37,28 +37,47 @@ import proscenium.*
 import symbolism.*
 
 object Price:
-  given [currency <: Currency & Singleton: ValueOf, price <: Price[currency]] => price is Divisible:
+  given [currency <: Label, price <: Price in currency] => price is Divisible:
     type Self = price
     type Operand = Double
-    type Result = Price[currency]
+    type Result = Price in currency
 
-    def divide(left: price, right: Double): Price[currency] =
+    def divide(left: price, right: Double): Price in currency =
       Price(left.principal/right, left.tax/right)
 
-case class Price[currency <: Currency & Singleton: ValueOf]
-   (principal: Money[currency], tax: Money[currency]):
+  def apply[currency <: Label](principal0: Money in currency, tax0: Money in currency)
+  : Price in currency =
+
+      new Price:
+        type Form = currency
+        val principal = principal0
+        val tax = tax0
+
+trait Price:
+  type Form <: Label
+
+  val principal: Money in Form
+  val tax: Money in Form
 
   def effectiveTaxRate: Double = tax/principal
 
   @targetName("add")
-  infix def + (right: Price[currency]): Price[currency] =
+  infix def + (right: Price in Form): Price in Form =
     Price(principal + right.principal, tax + right.tax)
 
   @targetName("subtract")
-  infix def - (right: Price[currency]): Price[currency] =
+  infix def - (right: Price in Form): Price in Form =
     Price(principal - right.principal, tax - right.tax)
 
   @targetName("negate")
-  def `unary_-`: Price[currency] = Price(-principal, -tax)
+  def `unary_-`: Price in Form = Price(-principal, -tax)
 
-  def inclusive: Money[currency] = principal + tax
+  def inclusive: Money in Form = principal + tax
+
+  override def hashCode(): Int = (principal.asInstanceOf[Long] ^ tax.asInstanceOf[Long]*31).hashCode
+
+  override def toString(): String = s"Price(${principal.value} ${principal.currency}, ${tax.value} ${tax.currency})"
+
+  override def equals(that: Any): Boolean = that match
+    case that: Price => principal == that.principal && tax == that.tax
+    case _           => false

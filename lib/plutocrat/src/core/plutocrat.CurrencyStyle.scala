@@ -35,4 +35,4 @@ package plutocrat
 import anticipation.*
 
 trait CurrencyStyle:
-  def format(currency: Currency, unit: Text, subunit: Text): Text
+  def format(code: Text, symbol: Text, unit: Text, subunit: Text): Text

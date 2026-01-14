@@ -259,6 +259,7 @@ object test extends ScalaModule:
     panopticon.test,
     //perihelion.test,
     phoenicia.test,
+    plutocrat.test,
     polaris.test,
     polyvinyl.test,
     prepositional.test,
@@ -307,7 +308,6 @@ object test extends ScalaModule:
     // eucalyptus
     // guillotine
     // legerdemain
-    // plutocrat
     // savagery
     // superlunary
     // surveillance

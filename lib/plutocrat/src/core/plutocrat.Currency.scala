@@ -33,16 +33,45 @@
 package plutocrat
 
 import anticipation.*
+import prepositional.*
+import proscenium.*
 
-open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
-  def apply(value: Double): Money[this.type] =
-    val integral = value.toLong
-    val tweak = (if integral < 0 then -0.5 else 0.5)/modulus
-    Money(this)(integral, ((value - integral + tweak)*modulus).toInt)
+object Currency:
+  def apply[self <: Label: ValueOf, topic <: Label: ValueOf, transport <: Int & Singleton: ValueOf, form <: Label: ValueOf]()
+  : self is Currency of topic over transport in form =
+      new Currency:
+        type Self = self
+        type Topic = topic
+        type Transport = transport
+        type Form = form
 
-  def minor(long: Long): Money[this.type] =
-    val major = long/modulus
-    val minor = long%modulus
-    Money(this)(major, minor.toInt)
+        val code: Text = valueOf[self].tt
+        val name: Text = valueOf[topic].tt
+        val symbol: Text = valueOf[form].tt
+        val modulus: Int = valueOf[transport]
 
-  def zero: Money[this.type] = apply(0.00)
+trait Currency:
+  type Self <: Label
+  type Topic <: Label: ValueOf
+  type Transport <: Int & Singleton: ValueOf
+  type Form <: Label: ValueOf
+
+  val code: Text
+  val name: Text
+  val symbol: Text
+  val modulus: Int
+
+  inline def apply(value: Double): Money in Self = Money[Self](code.s, Math.round(value*modulus))
+
+// open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
+//   def apply(value: Double): Money in this.type =
+//     val integral = value.toLong
+//     val tweak = (if integral < 0 then -0.5 else 0.5)/modulus
+//     Money(this)(integral, ((value - integral + tweak)*modulus).toInt)
+
+//   def minor(long: Long): Money in this.type =
+//     val major = long/modulus
+//     val minor = long%modulus
+//     Money(this)(major, minor.toInt)
+
+//   def zero: Money in this.type = apply(0.00)

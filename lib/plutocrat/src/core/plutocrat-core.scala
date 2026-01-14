@@ -34,130 +34,54 @@ package plutocrat
 
 import denominative.*
 import gossamer.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
 import symbolism.*
 
 package currencyStyles:
-  given local: CurrencyStyle = (currency, unit, subunit) => t"${currency.symbol}$unit.$subunit"
-  given generic: CurrencyStyle = (currency, unit, subunit) => t"$unit.$subunit ${currency.isoCode}"
+  given local: CurrencyStyle = (code, symbol, unit, subunit) => t"$symbol$unit.$subunit"
+  given generic: CurrencyStyle = (code, symbol, unit, subunit) => t"$unit.$subunit $code"
 
 package currencies:
   // These are listed as the "most traded currencies" on Wikipedia
   // Source: https://en.wikipedia.org/wiki/Template:Most_traded_currencies
 
-  type Usd = Usd.type
-  object Usd extends Currency(t"USD", t"$$",   t"US Dollar",          100)
-
-  type Eur = Eur.type
-  object Eur extends Currency(t"EUR", t"€",    t"Euro",               100)
-
-  type Jpy = Jpy.type
-  object Jpy extends Currency(t"JPY", t"¥",    t"Japanese Yen",       100)
-
-  type Gbp = Gbp.type
-  object Gbp extends Currency(t"GBP", t"£",    t"Pounds Sterling",    100)
-
-  type Cny = Cny.type
-  object Cny extends Currency(t"CNY", t"¥",    t"Renminbi",           100)
-
-  type Aud = Aud.type
-  object Aud extends Currency(t"AUD", t"A$$",  t"Australian Dollar",  100)
-
-  type Cad = Cad.type
-  object Cad extends Currency(t"CAD", t"C$$",  t"Canadian Dollar",    100)
-
-  type Chf = Chf.type
-  object Chf extends Currency(t"CHF", t"CHF",  t"Swiss Franc",        100)
-
-  type Hkd = Hkd.type
-  object Hkd extends Currency(t"HKD", t"HK$$", t"Hong Kong Dollar",   100)
-
-  type Sgd = Sgd.type
-  object Sgd extends Currency(t"SGD", t"S$$",  t"Singapore Dollar",   100)
-
-  type Sek = Sek.type
-  object Sek extends Currency(t"SEK", t"kr",   t"Swedish Krona",      100)
-
-  type Krw = Krw.type
-  object Krw extends Currency(t"KRW", t"₩",    t"South Korean Won",   100)
-
-  type Nok = Nok.type
-  object Nok extends Currency(t"NOK", t"kr",   t"Norwegian Krone",    100)
-
-  type Nzd = Nzd.type
-  object Nzd extends Currency(t"NZD", t"NZ$$", t"New Zealand Dollar", 100)
-
-  type Inr = Inr.type
-  object Inr extends Currency(t"INR", t"₹",    t"Indian Rupee",       100)
-
-  type Mxn = Mxn.type
-  object Mxn extends Currency(t"MXN", t"$$",   t"Mexican Peso",       100)
-
-  type Twd = Twd.type
-  object Twd extends Currency(t"TWD", t"NT$$", t"New Taiwan Dollar",  100)
-
-  type Zar = Zar.type
-  object Zar extends Currency(t"ZAR", t"R",    t"South African Rand", 100)
-
-  type Brl = Brl.type
-  object Brl extends Currency(t"BRL", t"R$$",  t"Brazilian Real",     100)
-
-  type Dkk = Dkk.type
-  object Dkk extends Currency(t"DKK", t"kr",   t"Danish Krone",       100)
-
-  type Pln = Pln.type
-  object Pln extends Currency(t"PLN", t"zł",   t"Polish Złoty",       100)
-
-  type Thb = Thb.type
-  object Thb extends Currency(t"THB", t"฿",    t"Thai Baht",          100)
-
-  type Ils = Ils.type
-  object Ils extends Currency(t"ILS", t"₪",    t"Israeli New Shekel", 100)
-
-  type Idr = Idr.type
-  object Idr extends Currency(t"IDR", t"Rp",   t"Indonesian Rupiah",  100)
-
-  type Czk = Czk.type
-  object Czk extends Currency(t"CZK", t"Kč",   t"Czech Koruna",       100)
-
-  type Aed = Aed.type
-  object Aed extends Currency(t"AED", t"Dh",   t"UAE Dirham",         100)
-
-  type Try = Try.type
-  object Try extends Currency(t"TRY", t"₺",    t"Turkish Lira",       100)
-
-  type Huf = Huf.type
-  object Huf extends Currency(t"HUF", t"Ft",   t"Hungarian Forint",   100)
-
-  type Clp = Clp.type
-  object Clp extends Currency(t"CLP", t"$$",   t"Chilean Peso",       100)
-
-  type Sar = Sar.type
-  object Sar extends Currency(t"SAR", t"SAR",  t"Saudi Ryial",        100)
-
-  type Php = Php.type
-  object Php extends Currency(t"PHP", t"₱",    t"Philippine Peso",    100)
-
-  type Myr = Myr.type
-  object Myr extends Currency(t"MYR", t"RM",   t"Malaysian Ringgit",  100)
-
-  type Cop = Cop.type
-  object Cop extends Currency(t"COP", t"$$",   t"Colombian Peso",     100)
-
-  type Rub = Rub.type
-  object Rub extends Currency(t"RUB", t"₽",    t"Russian Ruble",      100)
-
-  type Ron = Ron.type
-  object Ron extends Currency(t"RON", t"lei",  t"Romanian Leu",       100)
-
-  type Pen = Pen.type
-  object Pen extends Currency(t"PEN", t"S/",   t"Peruvian Sol",       100)
+  given Usd: ("USD" is Currency of "US Dollar" in "$" over 100) = Currency()
+  given Eur: ("EUR" is Currency of "Euro" in "€" over 100) = Currency()
+  given Jpy: ("JPY" is Currency of "Japanese Yen" in "¥" over 100) = Currency()
+  given Gbp: ("GBP" is Currency of "Pounds Sterling" in "£" over 100) = Currency()
+  given Cny: ("CNY" is Currency of "Renminbi" in "¥" over 100) = Currency()
+  given Aud: ("AUD" is Currency of "Australian Dollar" in "A$" over 100) = Currency()
+  given Cad: ("CAD" is Currency of "Canadian Dollar" in "C$" over 100) = Currency()
+  given Chf: ("CHF" is Currency of "Swiss Franc" in "CHF" over 100) = Currency()
+  given Hkd: ("HKD" is Currency of "Hong Kong Dollar" in "HK$" over 100) = Currency()
+  given Sgd: ("SGD" is Currency of "Singapore Dollar" in "S$" over 100) = Currency()
+  given Sek: ("SEK" is Currency of "Swedish Krona" in "kr" over 100) = Currency()
+  given Krw: ("KRW" is Currency of "South Korean Won" in "₩" over 100) = Currency()
+  given Nok: ("NOK" is Currency of "Norwegian Krone" in "kr" over 100) = Currency()
+  given Nzd: ("NZD" is Currency of "New Zealand Dollar" in "NZ$" over 100) = Currency()
+  given Inr: ("INR" is Currency of "Indian Rupee" in "₹" over 100) = Currency()
+  given Mxn: ("MXN" is Currency of "Mexican Peso" in "$" over 100) = Currency()
+  given Twd: ("TWD" is Currency of "New Taiwan Dollar" in "NT$" over 100) = Currency()
+  given Zar: ("ZAR" is Currency of "South African Rand" in "R" over 100) = Currency()
+  given Brl: ("BRL" is Currency of "Brazilian Real" in "R$" over 100) = Currency()
+  given Dkk: ("DKK" is Currency of "Danish Krone" in "kr" over 100) = Currency()
+  given Pln: ("PLN" is Currency of "Polish Złoty" in "zł" over 100) = Currency()
+  given Thb: ("THB" is Currency of "Thai Baht" in "฿" over 100) = Currency()
+  given Ils: ("ILS" is Currency of "Israeli New Shekel" in "₪" over 100) = Currency()
+  given Idr: ("IDR" is Currency of "Indonesian Rupiah" in "Rp" over 100) = Currency()
+  given Czk: ("CZK" is Currency of "Czech Koruna" in "Kč" over 100) = Currency()
+  given Aed: ("AED" is Currency of "United Arab Emirates Dirham" in "AED" over 100) = Currency()
+  given Try: ("TRY" is Currency of "Turkish Lira" in "₺" over 100) = Currency()
+  given Huf: ("HUF" is Currency of "Hungarian Forint" in "Ft" over 100) = Currency()
+  given Clp: ("CLP" is Currency of "Chilean Peso" in "$" over 100) = Currency()
+  given Sar: ("SAR" is Currency of "Saudi Riyal" in "SR" over 100) = Currency()
+  given Php: ("PHP" is Currency of "Philippine Peso" in "₱" over 100) = Currency()
+  given Myr: ("MYR" is Currency of "Malaysian Ringgit" in "RM" over 100) = Currency()
+  given Cop: ("COP" is Currency of "Colombian Peso" in "$$" over 100) = Currency()
+  given Rub: ("RUB" is Currency of "Russian Ruble" in "₽" over 100) = Currency()
+  given Ron: ("RON" is Currency of "Romanian Leu" in "lei" over 100) = Currency()
+  given Pen: ("PEN" is Currency of "Peruvian Sol" in "S/" over 100) = Currency()
 
 export Plutocrat.Money
-
-extension [currency <: Currency & Singleton: ValueOf](seq: Iterable[Money[currency]])
-  def total: Money[currency] =
-    def recur(seq: Iterable[Money[currency]], total: Money[currency]): Money[currency] =
-      if seq.nil then total else recur(seq.tail, total + seq.head)
-
-    val currency: currency = summon[ValueOf[currency]].value
-    recur(seq, currency.zero)
