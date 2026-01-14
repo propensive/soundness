@@ -101,6 +101,16 @@ object Plutocrat:
 
       def divide(left: left, right: right): Double = left.toDouble/right.toDouble
 
+    given divisible3: [currency <: Currency & Singleton, money <: Money[currency]]
+          => money is Divisible:
+      type Self = money
+      type Operand = Int
+      type Result = Money[currency]
+
+      def divide(left: money, right: Int): Money[currency] =
+        val value = left/right
+        (value + value.signum/2).toLong
+
 
     inline given orderable: [currency <: Currency & Singleton] => Money[currency] is Orderable:
       inline def compare

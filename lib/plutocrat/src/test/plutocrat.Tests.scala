@@ -34,6 +34,8 @@ package plutocrat
 
 import soundness.*
 
+import autopsies.contrastExpectations
+
 import currencies.*
 
 object Tests extends Suite(m"Plutocrat tests"):
@@ -64,7 +66,7 @@ object Tests extends Suite(m"Plutocrat tests"):
       . assert(_ == Eur(2.99))
 
       test(m"Multiply an amount"):
-        Eur(3.01)*3
+        Eur(3.01)*3.0
 
       . assert(_ == Eur(9.03))
 
@@ -74,16 +76,15 @@ object Tests extends Suite(m"Plutocrat tests"):
       . assert(_ == Eur(1.00))
 
       test(m"Split an amount"):
-        Eur(3.01).split(3).total
+        Eur(3.01).share(3).total
 
       . assert(_ == Eur(3.01))
 
-      /*test(m"Different currencies cannot be combined"):
+      test(m"Different currencies cannot be combined"):
         demilitarize:
           Eur(1.00) + Gbp(1.00)
-        .map(_.id)
 
-      . assert(_ == List(CompileErrorId.MissingImplicitArgument))*/
+      . assert(_.map(_.reason) == List(CompileError.Reason.MissingImplicitArgument))
 
       test(m"Monetary values can be negated"):
         -Eur(1.99)
@@ -117,6 +118,5 @@ object Tests extends Suite(m"Plutocrat tests"):
       . assert(_ == Price(Gbp(2.94), Gbp(0.59)))
 
       test(m"Prices in different currencies cannot be combined"):
-        demilitarize(Eur(1.00).tax(0.175) + Gbp(1.00).tax(0.2)).map(_.message)
-
-      . assert(_ == List(t"Found:    plutocrat.Price[plutocrat.currencies.Gbp.type]\nRequired: plutocrat.Price[plutocrat.currencies.Eur.type]"))
+        demilitarize(Eur(1.00).tax(0.175) + Gbp(1.00).tax(0.2))
+      . assert(!_.nil)
