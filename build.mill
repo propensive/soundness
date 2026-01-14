@@ -663,6 +663,10 @@ object octogenarian extends Library:
   object core extends Component(guillotine.core, galilei.core, ambience.core, gastronomy.core, urticose.core, enigmatic.core, anticipation.url)
   object test extends Tests(core)
 
+object orthodoxy extends Library:
+  object core extends Component(scintillate.server, jacinta.core)
+  object test extends Tests(core)
+
 object panopticon extends Library:
   object core extends Component(rudiments.core)
   object test extends Tests(core)

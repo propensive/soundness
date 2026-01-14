@@ -36,6 +36,7 @@ import anticipation.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import inimitable.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -54,11 +55,11 @@ object Cookie:
   def apply[value: {Encodable in Text, Decodable in Text}](using DummyImplicit)
        [duration: Abstractable across Durations to Long]
        (name:     Text,
-        domain:   Optional[Hostname]     = Unset,
+        domain:   Optional[Hostname] = Unset,
         expiry:   Optional[duration] = Unset,
-        secure:   Boolean                = false,
-        httpOnly: Boolean                = false,
-        path:     Optional[Text]         = Unset) =
+        secure:   Boolean            = false,
+        httpOnly: Boolean            = false,
+        path:     Optional[Text]     = Unset) =
 
     new Cookie[value](name, domain, expiry.let(_.generic/1_000_000L), secure, httpOnly, path)
 
@@ -111,3 +112,7 @@ case class Cookie[value: {Encodable in Text, Decodable in Text}]
 
   inline def apply()(using Http.Request): Optional[value] =
     summon[Http.Request].textCookies.at(name).let(_.decode)
+
+  object Session:
+    def unapply(using request: Http.Request)[result](lambda: value ?=> result): Option[result] =
+      request.textCookies.at(name).let(_.decode).letGiven(lambda).option

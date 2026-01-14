@@ -120,6 +120,9 @@ object Query extends Dynamic:
   def of(parameters: List[(Text, Text)]): Query = new Query(parameters)
   def of(parameter: Text): Query = new Query(List(t"" -> parameter))
 
+  given addable: Query is Addable by Query to Query =
+    (left, right) => new Query(left.values ++ right.values)
+
 case class Query private (values: List[(Text, Text)]) extends Dynamic:
   private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))
   def append(more: Query): Query = new Query(values ++ more.values)
@@ -134,6 +137,20 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
   : result =
 
       decodable.decoded(apply(label.tt))
+
+  def updateDynamic(label: String)[result: Encodable in Query]
+       (using erased (label.type is Parametric to result))
+       (value: result)
+  : Query =
+      val updates: List[(Text, Text)] = value.encode.values
+
+      val values2 =
+        if updates.length == 1 && updates(0)(0) == ""
+        then (label.tt, updates(0)(1)) :: values
+        else values ++ (updates.map { (key, value) => (t"$label.$key", value) })
+
+      new Query(values2)
+
 
 
   def at[value: Decodable in Text](name: Text): Optional[Text] = apply(name)().let(_.decode)
