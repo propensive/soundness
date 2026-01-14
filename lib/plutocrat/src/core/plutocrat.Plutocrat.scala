@@ -43,79 +43,87 @@ import spectacular.*
 import symbolism.*
 
 object Plutocrat:
-  opaque type Money[+currency <: Currency & Singleton] = Long
+  opaque type Money = Long
+
+  extension (value: Long) protected def in[currency <: Label]: Money in currency =
+    value.asInstanceOf[Money in currency]
 
   object Money:
-    erased given underlying: [currency <: Currency & Singleton]
-           => Underlying[Money[currency], Int] =
-      !!
+    erased given underlying: [currency <: Label] => Underlying[Money in currency, Int] = !!
 
-    def apply(currency: Currency & Singleton)(wholePart: Long, subunit: Int): Money[currency.type] =
-      wholePart*currency.modulus + subunit
+    protected[plutocrat] def apply[currency <: Label](currency: Text, value: Long)
+    : Money in currency =
 
-    given ordering: [currency <: Currency & Singleton] => Ordering[Money[currency]] =
-      Ordering.Long match
-        case ordering: Ordering[Money[currency]] => ordering
+        val c1 = ((currency.s(0) - 'A') & 0b11111L) << 59
+        val c2 = ((currency.s(1) - 'A') & 0b11111L) << 54
+        val c3 = ((currency.s(2) - 'A') & 0b11111L) << 49
 
-    given showable: [currency <: Currency & Singleton: ValueOf] => (currencyStyle: CurrencyStyle)
-          =>  Money[currency] is Showable =
+        (value & ((1L << 49) - 1L) | c1 | c2 | c3).asInstanceOf[Money in currency]
+
+
+    protected[plutocrat] def apply[currency <: Label](currency: Text, value: Double)
+    : Money in currency =
+
+        apply[currency](currency, Math.round(value))
+
+
+    def apply[currency <: Label: ValueOf](value: Long): Money in currency =
+      apply(valueOf[currency], value).in[currency]
+
+    given showable: [currency: Currency] => (currencyStyle: CurrencyStyle)
+          =>  Money in currency is Showable =
 
       money =>
-        val currency = valueOf[currency]
-        val units = (money/currency.modulus).toString.show
-        val subunit = (money%currency.modulus).toString.show.pad(2, Rtl, '0')
+        val units = (money.value/currency.modulus).toString.show
+        val subunit = (money.value%currency.modulus).toString.show.pad(2, Rtl, '0')
 
-        currencyStyle.format(currency, units, subunit)
+        currencyStyle.format(currency.code, currency.symbol, units, subunit)
 
-    given addable: [currency <: Currency & Singleton]
-          =>  Money[currency] is Addable by Money[currency] to Money[currency] =
-      _ + _
+    given addable: [currency <: Label]
+          =>  (Money in currency) is Addable by (Money in currency) to (Money in currency) =
+      (left, right) => Money(left.currency, left.value + right.value).in[currency]
 
-    given subtractable: [currency <: Currency & Singleton]
-          =>  Money[currency] is Subtractable by Money[currency] to Money[currency] =
-      _ - _
+    given subtractable: [currency <: Label]
+          =>  (Money in currency) is Subtractable by (Money in currency) to (Money in currency) =
+      (left, right) => Money(left.currency, left.value - right.value).in[currency]
 
-    given multiplicable: [currency <: Currency & Singleton]
-          =>  Money[currency] is Multiplicable by Double to Money[currency] =
+    given multiplicable: [currency <: Label]
+          =>  (Money in currency) is Multiplicable by Double to (Money in currency) =
       (left, right) =>
-        val value = left*right
-        (value + value.signum/2).toLong
+        Money(left.currency, left.value*right).in[currency]
 
-    given divisible: [currency <: Currency & Singleton, money <: Money[currency]]
+    given divisible: [currency <: Label, money <: (Money in currency)]
           => money is Divisible:
       type Self = money
       type Operand = Double
-      type Result = Money[currency]
+      type Result = Money in currency
 
-      def divide(left: money, right: Double): Money[currency] =
-        val value = left/right
-        (value + value.signum/2).toLong
+      def divide(left: money, right: Double): Money in currency =
+        Money(left.currency, left.value/right).in[currency]
 
-    given divisible2: [currency <: Currency & Singleton,
-                       left <: Money[currency],
-                       right <: Money[currency]]
+    given divisible2: [currency <: Label,
+                       left <: Money in currency,
+                       right <: Money in currency]
           => left is Divisible:
       type Self = left
       type Operand = right
       type Result = Double
 
-      def divide(left: left, right: right): Double = left.toDouble/right.toDouble
+      def divide(left: left, right: right): Double = left.value.toDouble/right.value.toDouble
 
-    given divisible3: [currency <: Currency & Singleton, money <: Money[currency]]
-          => money is Divisible:
+    given divisible3: [currency <: Label, money <: Money in currency] => money is Divisible:
       type Self = money
       type Operand = Int
-      type Result = Money[currency]
+      type Result = Money in currency
 
-      def divide(left: money, right: Int): Money[currency] =
-        val value = left/right
-        (value + value.signum/2).toLong
+      def divide(left: money, right: Int): Money in currency =
+        Money(left.currency, left.value/right).in[currency]
 
 
-    inline given orderable: [currency <: Currency & Singleton] => Money[currency] is Orderable:
+    inline given orderable: [currency <: Label] => (Money in currency) is Orderable:
       inline def compare
-                  (inline left:        Money[currency],
-                   inline right:       Money[currency],
+                  (inline left:        Money in currency,
+                   inline right:       Money in currency,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
       : Boolean =
@@ -123,20 +131,32 @@ object Plutocrat:
           if left.value == right.value then !strict else (left.value < right.value)^greaterThan
 
 
-    given zeroic: [currency <: Currency & Singleton] => Money[currency] is Zeroic:
-      def zero: Money[currency] = 0L
+    given zeroic: [currency <: Label: Currency] => (Money in currency) is Zeroic:
+      def zero: Money in currency = Money(currency.code, 0L).in[currency]
 
-  extension [currency <: Currency & Singleton](money: Money[currency])
-    def value: Long = money
+    given negatable: [currency <: Label] => (Money in currency) is Negatable:
+      type Result = Money in currency
 
-  extension [currency <: Currency & Singleton: ValueOf](left: Money[currency])
-    @targetName("negate")
-    def `unary_-`: Money[currency] = -left
-    def tax(rate: Double): Price[currency] = Price(left, (left*rate + 0.5).toLong)
+      def negate(money: Money in currency): Money in currency =
+        Money(money.currency, -money.value).in[currency]
+
+  extension (money: Money)
+    def currency: Text =
+      val c1: Char = (((money >> 59) & 0b00011111) + 'A').toChar
+      val c2: Char = (((money >> 54) & 0b00011111) + 'A').toChar
+      val c3: Char = (((money >> 49) & 0b00011111) + 'A').toChar
+
+      new String(Array(c1, c2, c3)).tt
+
+    def value: Long = (money << 15) >> 15
+
+  extension [currency <: Label: ValueOf](left: Money in currency)
+    def tax(rate: Double): Price in currency =
+      Price(left, Money(left.currency, left.value*rate).in[currency])
 
     @tailrec
-    def share(right: Int, result: List[Money[currency]] = Nil): List[Money[currency]] =
+    def share(right: Int, result: List[Money in currency] = Nil): List[Money in currency] =
       if right == 1 then left :: result else
-        val share: Money[currency] = left/right
-        val remainder: Money[currency] = (left - share)
+        val share: Money in currency = (left/right).in[currency]
+        val remainder: Money in currency = (left - share).in[currency]
         remainder.share(right - 1, share :: result)

@@ -36,17 +36,35 @@ import soundness.*
 
 import autopsies.contrastExpectations
 
-import currencies.*
+import currencies.{Gbp, Eur}
 
 object Tests extends Suite(m"Plutocrat tests"):
   def run(): Unit =
     suite(m"Money tests"):
       test(m"Show a local monetary value"):
         import currencyStyles.local
-        val amount: Money[Eur] = Eur(3.01)
+        val amount: Money in "EUR" = Eur(3.01)
         t"Received $amount"
 
       . assert(_ == t"Received €3.01")
+
+      test(m"Type error for different currencies"):
+        demilitarize:
+          val amount: Money in "EUR" = Gbp(3.01)
+
+      . assert(!_.nil)
+
+      test(m"No type error for unspecified currency"):
+        demilitarize:
+          val amount: Money = Gbp(3.01)
+
+      . assert(_.nil)
+
+      test(m"Currency is recoverable from runtime"):
+        val amount: Money = Gbp(3.01)
+        amount.currency
+
+      . assert(_ == "GBP")
 
       test(m"Show a monetary value"):
         import currencyStyles.generic
@@ -60,7 +78,7 @@ object Tests extends Suite(m"Plutocrat tests"):
 
       . assert(_ == Eur(3.03))
 
-      test(m"Subtract an amounts"):
+      test(m"Subtract an amount"):
         Eur(3.01) - Eur(0.02)
 
       . assert(_ == Eur(2.99))
