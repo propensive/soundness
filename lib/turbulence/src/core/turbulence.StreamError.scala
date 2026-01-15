@@ -35,5 +35,5 @@ package turbulence
 import fulminate.*
 import rudiments.*
 
-case class StreamError(total: Memory)(using Diagnostics)
+case class StreamError(total: Bytes)(using Diagnostics)
 extends Error(m"the stream was cut prematurely after $total")

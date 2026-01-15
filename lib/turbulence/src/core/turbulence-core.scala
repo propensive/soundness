@@ -255,12 +255,12 @@ extension (bytes: Data)
     out.toByteArray.nn.immutable(using Unsafe)
 
 extension (stream: Stream[Data])
-  def discard(memory: Memory): Stream[Data] =
-    def recur(stream: Stream[Data], count: Memory): Stream[Data] = stream.flow(Stream()):
-      if head.memory < count
-      then recur(tail, count - head.memory) else head.drop(count.long.toInt) #:: tail
+  def discard(bytes: Bytes): Stream[Data] =
+    def recur(stream: Stream[Data], count: Bytes): Stream[Data] = stream.flow(Stream()):
+      if head.bytes < count
+      then recur(tail, count - head.bytes) else head.drop(count.long.toInt) #:: tail
 
-    recur(stream, memory)
+    recur(stream, bytes)
 
   def compress[compression <: CompressionAlgorithm: Compression]: Stream[Data] =
     compression.compress(stream)
@@ -327,13 +327,13 @@ extension (stream: Stream[Data])
 
     recur(stream, 0, newArray(), 0)
 
-  def take(memory: Memory): Stream[Data] =
-    def recur(stream: Stream[Data], count: Memory): Stream[Data] =
+  def take(bytes: Bytes): Stream[Data] =
+    def recur(stream: Stream[Data], count: Bytes): Stream[Data] =
       stream.flow(Stream()):
-        if head.memory < count then head #:: recur(tail, count - head.memory)
+        if head.bytes < count then head #:: recur(tail, count - head.bytes)
         else Stream(head.take(count.long.toInt))
 
-    recur(stream, memory)
+    recur(stream, bytes)
 
   def inputStream: ji.InputStream = new ji.InputStream:
     private var current: Stream[Data] = stream

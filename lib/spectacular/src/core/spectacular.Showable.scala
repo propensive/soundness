@@ -64,7 +64,7 @@ object Showable:
   given boolean: (affirmation: Affirmation) => Boolean is Showable = affirmation(_)
   given option: [value: Showable] => Option[value] is Showable = _.fold("none".tt)(value.text(_))
   given uuid: Uuid is Showable = _.text
-  given memory: Memory is Showable = _.text
+  given bytes: Bytes is Showable = _.text
   given enumeration: [enumeration <: reflect.Enum] => enumeration is Showable = _.toString.tt
 
   given set: [element: Showable] => Set[element] is Showable =

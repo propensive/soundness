@@ -51,7 +51,7 @@ object Streamable:
   given stream: [element] => Stream[element] is Streamable by element = identity(_)
 
   given inCharReader: (stdio: Stdio) => In.type is Streamable by Char = in =>
-    def recur(count: Memory): Stream[Char] =
+    def recur(count: Bytes): Stream[Char] =
       stdio.reader.read() match
         case -1  => Stream()
         case int => int.toChar #:: recur(count + 1.b)
@@ -59,7 +59,7 @@ object Streamable:
     Stream.defer(recur(0L.b))
 
   given inByteReader: (stdio: Stdio) => In.type is Streamable by Byte = in =>
-    def recur(count: Memory): Stream[Byte] =
+    def recur(count: Bytes): Stream[Byte] =
       stdio.in.read() match
         case -1  => Stream()
         case int => int.toByte #:: recur(count + 1.b)
@@ -67,7 +67,7 @@ object Streamable:
     Stream.defer(recur(0L.b))
 
   given reader: [input <: ji.Reader] => Tactic[StreamError] => input is Streamable by Char = reader =>
-    def recur(count: Memory): Stream[Char] =
+    def recur(count: Bytes): Stream[Char] =
       try reader.read() match
         case -1  => Stream()
         case int => int.toChar #:: recur(count + 1.b)
@@ -80,7 +80,7 @@ object Streamable:
   given bufferedReader: [input <: ji.BufferedReader] => Tactic[StreamError]
         =>  input is Streamable by Line =
     reader =>
-      def recur(count: Memory): Stream[Line] =
+      def recur(count: Bytes): Stream[Line] =
         try reader.readLine() match
           case null         => Stream()
           case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
