@@ -188,7 +188,7 @@ object soundness extends ScalaModule:
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
-    legerdemain.core, caduceus.core, caduceus.resend)
+    legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core)
 
   object all extends Bundle(base, cli, data, sci, test, tool, web)
 
@@ -966,6 +966,7 @@ object publishing extends Module:
     urticose.url.publishLocal()()
     nomenclature.core.publishLocal()()
     octogenarian.core.publishLocal()()
+    orthodoxy.core.publishLocal()()
     panopticon.core.publishLocal()()
     parasite.core.publishLocal()()
     //perihelion.core.publishLocal()()

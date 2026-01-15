@@ -90,7 +90,8 @@ class OAuth[decodable]
   private val OAuthPath: Path on Www = redirect.path
 
   def oauth[decodable: Decodable in Text](using Http.Request, Online, HttpEvent is Loggable)
-       (using store: OAuthStore[decodable], session: Session)(lambda: OAuth.Context of this.type ?=> Http.Response)
+       (lambda: OAuth.Context of this.type ?=> Http.Response)
+       (using store: OAuthStore[decodable], session: Session)
   : Http.Response raises OAuthError =
 
       request.path match
