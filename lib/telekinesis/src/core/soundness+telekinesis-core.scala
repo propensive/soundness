@@ -34,7 +34,8 @@ package soundness
 
 export telekinesis
 . { Auth, Cookie, Http, HttpError, HttpEvent, Directive, ConnectError, Receivable, Fetchable,
-    HttpClient, Postable, Servable, fetch, submit, Parameter, query, orchestrate, Submission }
+    HttpClient, Postable, Servable, fetch, submit, Parameter, query, orchestrate, Submission,
+    Session, session }
 
 package queryParameters:
   export telekinesis.queryParameters.arbitrary

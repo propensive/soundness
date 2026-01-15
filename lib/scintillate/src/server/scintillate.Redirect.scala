@@ -39,7 +39,7 @@ import proscenium.*
 import telekinesis.*
 
 object Redirect:
-  def apply[link: Abstractable across Urls to Text](location: link, permanent: Boolean)
+  def apply[link: Abstractable across Urls to Text](location: link, permanent: Boolean = false)
   : Redirect =
 
       new Redirect(location.generic, permanent)
@@ -50,4 +50,4 @@ object Redirect:
     val status = if redirect.permanent then Http.MovedPermanently else Http.Found
     Http.Response(status, location = redirect.location)()
 
-case class Redirect(location: Text, permanent: Boolean = false)
+case class Redirect(location: Text, permanent: Boolean)
