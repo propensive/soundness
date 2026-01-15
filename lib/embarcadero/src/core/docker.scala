@@ -55,7 +55,7 @@ import logging.silent
 
 case class ContainerImage(id: Text)
 
-case class Container(id: Text, created: Long, virtualSize: Memory)
+case class Container(id: Text, created: Long, virtualSize: Bytes)
 
 case class DockerEngine(port: Int)
 

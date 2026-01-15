@@ -54,10 +54,10 @@ object Commensurable:
         ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
 
 
-  given memory: Memory is Orderable:
+  given bytes: Bytes is Orderable:
     inline def compare
-                (inline left:    Memory,
-                 inline right:   Memory,
+                (inline left:    Bytes,
+                 inline right:   Bytes,
                  inline strict:  Boolean,
                  inline greater: Boolean)
     : Boolean =

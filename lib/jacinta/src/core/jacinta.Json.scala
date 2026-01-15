@@ -71,7 +71,7 @@ trait Json2:
         =>  Optional[value] is Decodable in Json = json =>
     if json.root.isAbsent then Unset else value.decoded(json)
 
-  given memory: Tactic[JsonError] => Memory is Decodable in Json = json => json.root.long.b
+  given bytes: Tactic[JsonError] => Bytes is Decodable in Json = json => json.root.long.b
 
   inline given decodable: [value] => value is Decodable in Json = summonFrom:
     case given (`value` is Decodable in Text) =>

@@ -115,7 +115,7 @@ object GarbageCollection:
                     val preMemory = gcInfo.getMemoryUsageBeforeGc().nn
                     val postMemory = gcInfo.getMemoryUsageAfterGc().nn
 
-                    val memory: Map[Text, (Memory, Memory)] =
+                    val memory: Map[Text, (Bytes, Bytes)] =
                       preMemory.keySet.nn.iterator.nn.asScala.map: key =>
                         key.tt
                         -> (preMemory.get(key).nn.getUsed.b, postMemory.get(key).nn.getUsed.b)
@@ -140,7 +140,7 @@ case class GarbageCollection
             (run:       Ordinal,
              collector: GarbageCollection.Collector,
              cause:     GarbageCollection.Cause,
-             memory:    Map[Text, (before: Memory, after: Memory)]):
-  def before: Memory = memory.to(List).map(_(1)(0)).total
-  def after: Memory = memory.to(List).map(_(1)(1)).total
-  def reduction: Memory = before - after
+             bytes:     Map[Text, (before: Bytes, after: Bytes)]):
+  def before: Bytes = bytes.to(List).map(_(1)(0)).total
+  def after: Bytes = bytes.to(List).map(_(1)(1)).total
+  def reduction: Bytes = before - after

@@ -108,7 +108,7 @@ extension [plane: Filesystem](path: Path on plane)
           case TraversalOrder.PostOrder => child.descendants #::: Stream(child)
 
 
-  def size()(using plane is Explorable): Memory raises IoError =
+  def size()(using plane is Explorable): Bytes raises IoError =
     import filesystemOptions.dereferenceSymlinks.disabled
     given TraversalOrder = TraversalOrder.PreOrder
     descendants.fuse(jnf.Files.size(path.javaPath).b)(state + next.size())

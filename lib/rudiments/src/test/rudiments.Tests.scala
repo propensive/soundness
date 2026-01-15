@@ -369,34 +369,34 @@ object Tests extends Suite(m"Rudiments Tests"):
         Data()
       .assert(_.length == 0)
 
-    suite(m"Memory tests"):
-      test(m"Construct a simple Memory"):
-        4.b: Memory
-      .assert(_ == Memory(4))
+    suite(m"Bytes tests"):
+      test(m"Construct a simple Bytes"):
+        4.b: Bytes
+      .assert(_ == Bytes(4))
 
-      test(m"Divide one memory by an integer"):
+      test(m"Divide one Bytes by an integer"):
         1024.b/128
       .assert(_ == 8.b)
 
-      test(m"Divide one `Memory` by another"):
+      test(m"Divide one `Bytes` by another"):
         1024.b/128.b
       .assert(_ == 8.0)
 
-      // test(m"Construct a simple Memory in kB"):
-      //   4.kb: Memory
-      // .assert(_ == Memory(4096))
+      // test(m"Construct a simple Bytes in kB"):
+      //   4.kb: Bytes
+      // .assert(_ == Bytes(4096))
 
-      // test(m"Construct a simple Memory in MB"):
-      //   4.mb: Memory
-      // .assert(_ == Memory(4096*1024L))
+      // test(m"Construct a simple Bytes in MB"):
+      //   4.mb: Bytes
+      // .assert(_ == Bytes(4096*1024L))
 
-      // test(m"Construct a simple Memory in GB"):
-      //   4.gb: Memory
-      // .assert(_ == Memory(4096*1024L*1024L))
+      // test(m"Construct a simple Bytes in GB"):
+      //   4.gb: Bytes
+      // .assert(_ == Bytes(4096*1024L*1024L))
 
-      // test(m"Construct a simple Memory in TB"):
-      //   4.tb: Memory
-      // .assert(_ == Memory(4096*1024L*1024L*1024L))
+      // test(m"Construct a simple Bytes in TB"):
+      //   4.tb: Bytes
+      // .assert(_ == Bytes(4096*1024L*1024L*1024L))
 
       /*test(m"Compare bytes with >"):
         4.gb > 4.mb

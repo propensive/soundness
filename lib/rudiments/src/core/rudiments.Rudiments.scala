@@ -43,7 +43,7 @@ import vacuous.*
 
 object Rudiments:
   private given realm: Realm = realm"rudiments"
-  opaque type Memory = Long
+  opaque type Bytes = Long
   opaque type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
   @annotation.targetName("And")
@@ -61,22 +61,23 @@ object Rudiments:
     def int: Int = digit
     def char: Char = ('0' + int).toChar
 
-  object Memory:
-    def apply(long: Long): Memory = long
-    given ordering: Ordering[Memory] = Ordering.Long.on(_.long)
-    given zeroic: Memory is Zeroic:
-      inline def zero: Memory = 0L
+  object Bytes:
+    def apply(long: Long): Bytes = long
+    given ordering: Ordering[Bytes] = Ordering.Long.on(_.long)
+    given zeroic: Bytes is Zeroic:
+      inline def zero: Bytes = 0L
 
-    given communicable: [memory <: Memory] => memory is Communicable =
-      memory => Message(memory.text)
+    given communicable: [bytes <: Bytes] => bytes is Communicable =
+      bytes => Message(bytes.text)
 
-    given addable: Memory is Addable by Memory to Memory = _ + _
-    given subtractable: Memory is Subtractable by Memory to Memory = _ - _
-    given multiplicable: Memory is Multiplicable by Int to Memory = _*_
-    given divisible: Memory is Divisible by Int to Memory = _/_
-    given divisible2: Memory is Divisible by Memory to Double = _.toDouble/_
+    given addable: Bytes is Addable by Bytes to Bytes = _ + _
+    given subtractable: Bytes is Subtractable by Bytes to Bytes = _ - _
+    given multiplicable: Bytes is Multiplicable by Int to Bytes = _*_
+    given multiplicable2: Int is Multiplicable by Bytes to Bytes = _*_
+    given divisible: Bytes is Divisible by Int to Bytes = _/_
+    given divisible2: Bytes is Divisible by Bytes to Double = _.toDouble/_
 
-    extension (left: Memory)
+    extension (left: Bytes)
       def long: Long = left
       def text: Text = (left.toString+" bytes").tt
 
@@ -93,4 +94,4 @@ object Rudiments:
     import quotes.reflect.*
     '{Class.forName(${Expr(TypeRepr.of[target].typeSymbol.fullName)}).asInstanceOf[Class[target]]}
 
-export Rudiments.{Memory, Digit}
+export Rudiments.{Bytes, Digit}

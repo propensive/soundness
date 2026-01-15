@@ -42,7 +42,7 @@ import rudiments.*
 import symbolism.*
 
 object Heap:
-  def used: Memory = Memory:
+  def used: Bytes = Bytes:
     jlm.ManagementFactory.getMemoryPoolMXBeans().nn.stream().nn
     . filter(_.nn.getType() == jlm.MemoryType.HEAP).nn
     . mapToLong(_.nn.getUsage().nn.getUsed()).nn
