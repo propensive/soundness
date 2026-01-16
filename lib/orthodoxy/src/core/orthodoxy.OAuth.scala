@@ -89,7 +89,7 @@ class OAuth[decodable]
         secret:   Optional[Text] = Unset):
   private val OAuthPath: Path on Www = redirect.path
 
-  def oauth[decodable: Decodable in Text](using Http.Request, Online, HttpEvent is Loggable)
+  def oauth(using Http.Request, Online, HttpEvent is Loggable)
        (lambda: OAuth.Context of this.type ?=> Http.Response)
        (using store: OAuthStore[decodable], session: Session)
   : Http.Response raises OAuthError =
