@@ -59,27 +59,8 @@ object Optic:
       def apply(origin: Origin): Operand = origin
       def update(origin: Origin, value: Target): Result = value
 
-      def modify[applicative[_]: Applicative](origin: Origin)
-           (lambda: Operand => applicative[Target])
-      : applicative[Result] =
-          lambda(origin)
+      def modify(origin: Origin)(lambda: Operand => Target): Result = lambda(origin)
 
-
-
-object Applicative:
-  type Id[value] = value
-
-  given identity: Id is Applicative:
-    type Self = Id
-    def pure[value](value: value): Self[value] = value
-    def ap[left, right](lambda: Self[left => right], left: Self[left]): Self[right] = lambda(left)
-    def map[left, right](left: Self[left], lambda: left => right): Self[right] = lambda(left)
-
-trait Applicative:
-  type Self[_]
-  def pure[value](value: value): Self[value]
-  def ap[left, right](lambda: Self[left => right], left: Self[left]): Self[right]
-  def map[left, right](left: Self[left], lambda: left => right): Self[right]
 
 
 trait Optic extends Typeclass, Dynamic:
@@ -89,8 +70,7 @@ trait Optic extends Typeclass, Dynamic:
     type Operand
     type Target
 
-    def modify[applicative[_]: Applicative](origin: Origin)(lambda: Operand => applicative[Target])
-    : applicative[Result]
+    def modify(origin: Origin)(lambda: Operand => Target): Result
 
     def selectDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
     : Optic from Origin to Result by lens.Operand onto lens.Target =
@@ -102,7 +82,14 @@ trait Optic extends Typeclass, Dynamic:
     : Origin => Result =
         origin =>
           println("apply dynamic")
-          Composable.optics.composition(this, lens).modify[[any] =>> any](origin)(_ => value)
+          Composable.optics.composition(this, lens).modify(origin)(_ => value)
+
+    def update[result, traversal: Optic from Operand to Target onto result as optic]
+         (traversal: traversal, value: result)
+    : Origin => Result =
+        origin =>
+          println("update dynamic")
+          Composable.optics.composition(this, optic).modify(origin)(_ => value)
 
 object Composable:
 
@@ -118,11 +105,8 @@ object Composable:
         type Operand = operand2
         type Target = target2
 
-        def modify[applicative[_]: Applicative](origin: origin)
-             (lambda: Operand => applicative[target2])
-        : applicative[result] =
-            println("modify in optic")
-            left.modify[applicative](origin)(right.modify(_)(lambda))
+        def modify(origin: origin)(lambda: Operand => target2): result =
+          left.modify(origin)(right.modify(_)(lambda))
 
   given lenses: [origin, target, target2]
         => (Lens from origin onto target) is Composable by
@@ -146,11 +130,8 @@ trait Lens extends Optic:
   def apply(origin: Origin): Operand
   def update(origin: Origin, value: Operand): Origin
 
-  def modify[applicative[_]: Applicative](origin: Origin)(lambda: Operand => applicative[Target])
-  : applicative[Origin] =
-
-        applicative.map(lambda(apply(origin)), this(origin) = _)
-
+  def modify(origin: Origin)(lambda: Operand => Target): Origin =
+    update(origin, lambda(apply(origin)))
 
 
 trait Composable:
@@ -218,14 +199,17 @@ def test: Unit =
     def apply(person: Person): List[Role] = person.roles
     def update(person: Person, value: List[Role]): Person = person.copy(roles = value)
 
-  given eachPersonRoles: (Optic from Person to Person by List[Role] onto Role) = new Optic:
-    type Origin = Person
-    type Target = Role
-    type Result = Person
-    type Operand = List[Role]
+  given list: [element]
+              => Each.type is Optic from List[element] to List[element] by element onto element =
+    new Optic:
+      type Self = Each.type
+      type Origin = List[element]
+      type Target = element
+      type Result = List[element]
+      type Operand = element
 
-    def modify[applicative[_]: Applicative](person: Person)(lambda: List[Role] => applicative[Role]): applicative[Person] =
-      applicative.map(lambda(person.roles), role => person.copy(roles = person.roles.map(_ => role)))
+      def modify(roles: List[element])(lambda: element => element): List[element] =
+        roles.map(lambda)
 
 
   // given headPersonRoles: (Optic from Person to Person by Optional[Role] onto Optional[Role]) = new Optic:
@@ -240,3 +224,5 @@ def test: Unit =
 
   println(company.lens(_.ceo = Person("John Doe", List(Role("CTO", 7)))))
   println(company.lens(_.ceo.name = "Jimmy"))
+  println(company.lens(_.ceo.roles = Nil))
+  println(company.lens(_.ceo.roles(Each) = Role("Developer", 5)))
