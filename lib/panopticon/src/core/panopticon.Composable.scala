@@ -43,8 +43,8 @@ object Composable:
 
   given optics: [origin, result, operand, target, operand2, target2]
         => (Optic from origin to result by operand onto target) is Composable by
-            (Optic from operand to target by operand2 onto target2) to
-            (Optic from origin to result by operand2 onto target2) =
+               (Optic from operand to target by operand2 onto target2) to
+               (Optic from origin to result by operand2 onto target2) =
     (left, right) =>
       Optic[Any, origin, result, operand2, target2]: (origin, lambda) =>
         left.modify(origin)(right.modify(_)(lambda))

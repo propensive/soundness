@@ -61,7 +61,7 @@ object Panopticon:
 
     val make = symbol.companionModule.methodMember("apply").head
 
-    field.info.asType match
+    field.info.asType.absolve match
       case '[target] =>
         '{
             Lens[self, origin, target]
@@ -71,6 +71,7 @@ object Panopticon:
                       val params = symbol.caseFields.map: field =>
                         if field.name == name then 'value.asTerm else 'origin.asTerm.select(field)
 
-                      Ref(symbol.companionModule).select(make).appliedToArgs(params).asExprOf[origin]
+                      Ref(symbol.companionModule).select(make).appliedToArgs(params)
+                      . asExprOf[origin]
                     }
               })  }

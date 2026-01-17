@@ -39,6 +39,8 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
+import language.dynamics
+
 object Lens:
   def apply[self, origin, target](get: origin => target, set: (origin, target) => origin)
   : self is Lens from origin onto target =
