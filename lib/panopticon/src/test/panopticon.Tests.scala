@@ -34,6 +34,8 @@ package panopticon
 
 import soundness.*
 
+import autopsies.contrastExpectations
+
 case class Organization(name: String, leader: Person)
 case class Person(name: String, age: Int, role: Role)
 case class Role(name: String, salary: Int)
@@ -46,9 +48,33 @@ object Tests extends Suite(m"Panopticon tests"):
 
 
     val company = Company(Person("John", List(Role("CEO", 1), Role("CFO", 2), Role("CIO", 3))), "Acme")
-    println(company)
-    println(company.lens(_.ceo = Person("John Doe", List(Role("CTO", 7)))))
-    println(company.lens(_.ceo.name = "Jimmy"))
-    println(company.lens(_.ceo.roles = Nil))
-    println(company.lens(_.ceo.roles(Head).name = "Developer"))
-    println(company.lens(_.ceo.roles(Each).name = prior+"!"))
+
+    test(m"update company CEO"):
+      company.lens(_.ceo = Person("John Doe", List(Role("CTO", 7))))
+    . assert(_ == Company(Person("John Doe", List(Role("CTO", 7))), "Acme"))
+
+    test(m"update company CEO name"):
+      company.lens(_.ceo.name = "Bill")
+    . assert(_ == Company(Person("Bill", List(Role("CEO", 1), Role("CFO", 2), Role("CIO", 3))), "Acme"))
+
+    test(m"update company CEO roles"):
+      company.lens(_.ceo.roles = Nil)
+    . assert(_ == Company(Person("John", Nil), "Acme"))
+
+    test(m"update company CEO roles and name"):
+      company.lens
+        ( _.ceo.roles = Nil,
+          _.ceo.name = "Bill" )
+    . assert(_ == Company(Person("Bill", Nil), "Acme"))
+
+    test(m"update head role"):
+      company.lens(_.ceo.roles(Head) = Role("Changed", 13))
+    . assert(_ == Company(Person("John", List(Role("Changed", 13), Role("CFO", 2), Role("CIO", 3))), "Acme"))
+
+    test(m"update head role name"):
+      company.lens(_.ceo.roles(Head).name = "Changed")
+    . assert(_ == Company(Person("John", List(Role("Changed", 1), Role("CFO", 2), Role("CIO", 3))), "Acme"))
+
+    test(m"adjust each role names"):
+      company.lens(_.ceo.roles(Each).name = prior+"!")
+    . assert(_ == Company(Person("John", List(Role("CEO!", 1), Role("CFO!", 2), Role("CIO!", 3))), "Acme"))
