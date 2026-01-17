@@ -91,7 +91,7 @@ class OAuth[decodable]
 
   def oauth(using Http.Request, Online, HttpEvent is Loggable)
        (lambda: OAuth.Context of this.type ?=> Http.Response)
-       (using store: OAuthStore[decodable], session: Session)
+       (using store: OAuthStore[decodable], session: Session)(using decodable is Decodable in Text)
   : Http.Response raises OAuthError =
 
       request.path match
