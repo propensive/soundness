@@ -58,43 +58,56 @@ object Optic:
 
       def apply(origin: Origin): Operand = origin
       def update(origin: Origin, value: Target): Result = value
-
       def modify(origin: Origin)(lambda: Operand => Target): Result = lambda(origin)
 
+  def apply[self, origin, result, operand, target](lambda: (origin, operand => target) => result)
+  : self is Optic from origin to result by operand onto target =
 
+      new Optic:
+        type Self = self
+        type Origin = origin
+        type Target = target
+        type Operand = operand
+        type Result = result
+
+        def modify(origin: Origin)(lambda2: Operand => Target): Result = lambda(origin, lambda2)
 
 trait Optic extends Typeclass, Dynamic:
-  lens0 =>
-    type Origin
-    type Result
-    type Operand
-    type Target
+  type Origin
+  type Result
+  type Operand
+  type Target
 
-    def modify(origin: Origin)(lambda: Operand => Target): Result
+  def modify(origin: Origin)(lambda: Operand => Target): Result
 
-    def selectDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
-    : Optic from Origin to Result by lens.Operand onto lens.Target =
+  def selectDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
+  : Optic from Origin to Result by lens.Operand onto lens.Target =
 
-        Composable.optics.composition(this, lens)
+      Composable.optics.composition(this, lens)
 
 
-    def updateDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
-         (value: (prior: lens.Operand) ?=> lens.Target)
-    : Origin => Result =
-        origin =>
-          Composable.optics.composition(this, lens).modify(origin)(value(using _))
+  def updateDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
+        (value: (prior: lens.Operand) ?=> lens.Target)
+  : Origin => Result =
 
-    def update[result, operand, traversal: Optic from Operand to Target by operand onto result as optic]
-         (traversal: traversal, value: (prior: operand) ?=> result)
-    : Origin => Result =
-        origin =>
-          Composable.optics.composition(this, optic).modify(origin)(value(using _))
+      Composable.optics.composition(this, lens).modify(_)(value(using _))
 
-    def applyDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
-         [target, traversal: Optic from lens.Operand to lens.Target onto target as optic]
-         (traversal: traversal)
-    : Optic from Origin to Result by optic.Operand onto target =
-        Composable.optics.composition(Composable.optics.composition(this, lens), optic)
+
+  def update
+       [result, operand, traversal: Optic from Operand to Target by operand onto result as optic]
+       (traversal: traversal, value: (prior: optic.Operand) ?=> result)
+  : Origin => Result =
+
+      Composable.optics.composition(this, optic).modify(_)(value(using _))
+
+
+  def applyDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
+        [target, traversal: Optic from lens.Operand to lens.Target onto target as optic]
+        (traversal: traversal)
+  : Optic from Origin to Result by optic.Operand onto target =
+
+      Composable.optics.composition(Composable.optics.composition(this, lens), optic)
+
 
 object Composable:
 
@@ -103,28 +116,16 @@ object Composable:
             (Optic from operand to target by operand2 onto target2) to
             (Optic from origin to result by operand2 onto target2) =
     (left, right) =>
-      new Optic:
-        type Origin = origin
-        type Result = result
-        type Operand = operand2
-        type Target = target2
-
-        def modify(origin: origin)(lambda: Operand => target2): result =
-          left.modify(origin)(right.modify(_)(lambda))
+      Optic[Any, origin, result, operand2, target2]: (origin, lambda) =>
+        left.modify(origin)(right.modify(_)(lambda))
 
   given lenses: [origin, target, target2]
-        => (Lens from origin onto target) is Composable by
-            (Lens from target onto target2) to
-            (Lens from origin onto target2) =
+        => (Lens from origin onto target) is Composable by (Lens from target onto target2) to
+               (Lens from origin onto target2) =
     (left, right) =>
-      new Lens:
-        type Origin = origin
-        type Target = target2
-
-        def apply(origin: Origin): Operand = right(left(origin))
-
-        def update(origin: Origin, value: Target): Result =
-          left(origin) = right(left(origin)) = value
+      Lens[Any, origin, target2]
+       ({ origin => right(left(origin)) },
+        { (origin, value) => left(origin) = right(left(origin)) = value })
 
 object Lens:
 
@@ -165,26 +166,13 @@ extension [value](left: value)
 object Each:
   given optic: [element]
                => Each.type is Optic from List[element] to List[element] by element onto element =
-    new Optic:
-      type Self = Each.type
-      type Origin = List[element]
-      type Target = element
-      type Result = List[element]
-      type Operand = element
-
-      def modify(list: List[element])(lambda: element => element): List[element] = list.map(lambda)
+    Optic[Each.type, List[element], List[element], element, element](_.map(_))
 
 object Head:
   given optic: [element]
                => Head.type is Optic from List[element] to List[element] by element onto element =
-    new Optic:
-      type Self = Head.type
-      type Origin = List[element]
-      type Operand = element
-      type Result = List[element]
-      type Target = element
-
-      def modify(list: List[element])(lambda: element => element): List[element] = list match
+    Optic[Head.type, List[element], List[element], element, element]: (origin, lambda) =>
+      origin match
         case head :: tail => lambda(head) :: tail
         case Nil          => Nil
 
