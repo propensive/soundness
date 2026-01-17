@@ -32,8 +32,30 @@
                                                                                                   */
 package panopticon
 
+import anticipation.*
+import fulminate.*
+import prepositional.*
 import proscenium.*
+import rudiments.*
+import vacuous.*
 
-trait Dereferencer[aim, label <: Label]:
-  type Field
-  def field(aim: aim): Field
+object Lens:
+  def apply[self, origin, target](get: origin => target, set: (origin, target) => origin)
+  : self is Lens from origin onto target =
+      new Lens:
+        type Self = self
+        type Origin = origin
+        type Target = target
+
+        def apply(origin: Origin): Operand = get(origin)
+        def update(origin: Origin, value: Target): Result = set(origin, value)
+
+trait Lens extends Optic:
+  type Result = Origin
+  type Operand = Target
+
+  def apply(origin: Origin): Operand
+  def update(origin: Origin, value: Operand): Origin
+
+  def modify(origin: Origin)(lambda: Operand => Target): Origin =
+    update(origin, lambda(apply(origin)))

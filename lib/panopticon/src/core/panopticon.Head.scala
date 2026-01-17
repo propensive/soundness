@@ -32,15 +32,17 @@
                                                                                                   */
 package panopticon
 
+import anticipation.*
+import fulminate.*
 import prepositional.*
+import proscenium.*
+import rudiments.*
+import vacuous.*
 
-extension [value](value: value)
-  def lens(lambdas: (Optic from value to value by value onto value => value => value)*): value =
-    lambdas.foldLeft(value): (value, lambda) =>
-      lambda(Optic.identity)(value)
-
-extension [value](left: value)
-  def compose[operand, result](right: operand)
-       (using composable: value is Composable by operand to result)
-  : result =
-      composable.composition(left, right)
+object Head:
+  given optic: [element]
+               => Head.type is Optic from List[element] to List[element] by element onto element =
+    Optic[Head.type, List[element], List[element], element, element]: (origin, lambda) =>
+      origin match
+        case head :: tail => lambda(head) :: tail
+        case Nil          => Nil

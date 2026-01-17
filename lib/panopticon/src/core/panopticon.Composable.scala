@@ -32,15 +32,34 @@
                                                                                                   */
 package panopticon
 
+import anticipation.*
+import fulminate.*
 import prepositional.*
+import proscenium.*
+import rudiments.*
+import vacuous.*
 
-extension [value](value: value)
-  def lens(lambdas: (Optic from value to value by value onto value => value => value)*): value =
-    lambdas.foldLeft(value): (value, lambda) =>
-      lambda(Optic.identity)(value)
+object Composable:
 
-extension [value](left: value)
-  def compose[operand, result](right: operand)
-       (using composable: value is Composable by operand to result)
-  : result =
-      composable.composition(left, right)
+  given optics: [origin, result, operand, target, operand2, target2]
+        => (Optic from origin to result by operand onto target) is Composable by
+            (Optic from operand to target by operand2 onto target2) to
+            (Optic from origin to result by operand2 onto target2) =
+    (left, right) =>
+      Optic[Any, origin, result, operand2, target2]: (origin, lambda) =>
+        left.modify(origin)(right.modify(_)(lambda))
+
+  given lenses: [origin, target, target2]
+        => (Lens from origin onto target) is Composable by (Lens from target onto target2) to
+               (Lens from origin onto target2) =
+    (left, right) =>
+      Lens[Any, origin, target2]
+       ({ origin => right(left(origin)) },
+        { (origin, value) => left(origin) = right(left(origin)) = value })
+
+trait Composable:
+  type Self
+  type Operand
+  type Result
+
+  def composition(left: Self, right: Operand): Result

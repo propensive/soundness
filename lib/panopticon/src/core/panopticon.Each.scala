@@ -32,10 +32,14 @@
                                                                                                   */
 package panopticon
 
-import scala.quoted.*
+import anticipation.*
+import fulminate.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import vacuous.*
 
-import language.dynamics
-
-// class Aim[from, path <: Tuple]() extends Dynamic:
-//   transparent inline def selectDynamic(member: String): Any =
-//     ${Panopticon.dereference[from, path]('member)}
+object Each:
+  given optic: [element]
+               => Each.type is Optic from List[element] to List[element] by element onto element =
+    Optic[Each.type, List[element], List[element], element, element](_.map(_))

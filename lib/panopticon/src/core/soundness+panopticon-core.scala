@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-// export panopticon.{Dereferencer, Aim, Lens}
+export panopticon.{Optic, Composable, Lens, lens, Head, Each}
