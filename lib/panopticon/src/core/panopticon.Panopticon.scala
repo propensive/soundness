@@ -45,10 +45,44 @@ import scala.compiletime.*
 import language.dynamics
 import scala.annotation.internal.preview
 
+
+case class Foo(x: Int, y: String)
+val foo = Foo(1, "hello")
 object Panopticon:
   private given realm: Realm = realm"panopticon"
 
+
+  def lens[self: Type, origin <: Product: Type]: Macro[self is Lens from origin] =
+    import quotes.reflect.*
+    val name: String = TypeRepr.of[self].literal[String].or:
+      halt(m"cannot derive non-String field names")
+
+    val symbol = TypeRepr.of[origin].typeSymbol
+    val field = symbol.caseFields.find(_.name == name).getOrElse:
+      halt(m"${TypeRepr.of[origin].show} has no field called $name")
+
+    println('{Foo.apply(3, "four")}.asTerm)
+    val make = symbol.companionModule.methodMember("apply").head
+
+    field.info.asType match
+      case '[target] =>
+        '{
+            Lens[self, origin, target]
+             ({ value => ${ 'value.asTerm.select(field).asExprOf[target] } },
+              { (origin, value) =>
+                  ${
+                      val params = symbol.caseFields.map: field =>
+                        if field.name == name then 'value.asTerm else 'origin.asTerm.select(field)
+
+                      Ref(symbol.companionModule).select(make).appliedToArgs(params).asExprOf[origin]
+                    }
+              })  }
+
 object Optic:
+
+  transparent inline given deref: [name <: Label, product <: Product] => name is Lens from product =
+    ${Panopticon.lens[name, product]}
+
   def identity[value]: Optic from value to value by value onto value =
     new Optic:
       type Origin = value
@@ -128,16 +162,15 @@ object Composable:
         { (origin, value) => left(origin) = right(left(origin)) = value })
 
 object Lens:
-
   def apply[self, origin, target](get: origin => target, set: (origin, target) => origin)
   : self is Lens from origin onto target =
-    new Lens:
-      type Self = self
-      type Origin = origin
-      type Target = target
+      new Lens:
+        type Self = self
+        type Origin = origin
+        type Target = target
 
-      def apply(origin: Origin): Operand = get(origin)
-      def update(origin: Origin, value: Target): Result = set(origin, value)
+        def apply(origin: Origin): Operand = get(origin)
+        def update(origin: Origin, value: Target): Result = set(origin, value)
 
 trait Lens extends Optic:
   type Result = Origin

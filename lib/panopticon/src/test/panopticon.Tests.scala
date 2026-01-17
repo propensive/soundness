@@ -44,21 +44,6 @@ object Tests extends Suite(m"Panopticon tests"):
     case class Person(name: Text, roles: List[Role])
     case class Role(name: Text, count: Int)
 
-    given companyName: ("name" is Lens from Company onto Text) =
-      Lens(_.name, (company, name) => company.copy(name = name))
-
-    given personName: ("name" is Lens from Person onto Text) =
-      Lens(_.name, (person, name) => person.copy(name = name))
-
-    given roleName: ("name" is Lens from Role onto Text) =
-      Lens(_.name, (role, name) => role.copy(name = name))
-
-    given companyCeo: ("ceo" is Lens from Company onto Person) =
-      Lens(_.ceo, (company, ceo) => company.copy(ceo = ceo))
-
-    given personRoles: ("roles" is Lens from Person onto List[Role]) =
-      Lens(_.roles, (person, roles) => person.copy(roles = roles))
-
 
     val company = Company(Person("John", List(Role("CEO", 1), Role("CFO", 2), Role("CIO", 3))), "Acme")
     println(company)
