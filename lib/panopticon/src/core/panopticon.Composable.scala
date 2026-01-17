@@ -39,39 +39,27 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-import scala.quoted.*
-import scala.compiletime.*
+object Composable:
 
-import language.dynamics
-import scala.annotation.internal.preview
+  given optics: [origin, result, operand, target, operand2, target2]
+        => (Optic from origin to result by operand onto target) is Composable by
+               (Optic from operand to target by operand2 onto target2) to
+               (Optic from origin to result by operand2 onto target2) =
+    (left, right) =>
+      Optic[Any, origin, result, operand2, target2]: (origin, lambda) =>
+        left.modify(origin)(right.modify(_)(lambda))
 
+  given lenses: [origin, target, target2]
+        => (Lens from origin onto target) is Composable by (Lens from target onto target2) to
+               (Lens from origin onto target2) =
+    (left, right) =>
+      Lens[Any, origin, target2]
+       ({ origin => right(left(origin)) },
+        { (origin, value) => left(origin) = right(left(origin)) = value })
 
-object Panopticon:
-  private given realm: Realm = realm"panopticon"
+trait Composable:
+  type Self
+  type Operand
+  type Result
 
-
-  def lens[self: Type, origin <: Product: Type]: Macro[self is Lens from origin] =
-    import quotes.reflect.*
-    val name: String = TypeRepr.of[self].literal[String].or:
-      halt(m"cannot derive non-String field names")
-
-    val symbol = TypeRepr.of[origin].typeSymbol
-    val field = symbol.caseFields.find(_.name == name).getOrElse:
-      halt(m"${TypeRepr.of[origin].show} has no field called $name")
-
-    val make = symbol.companionModule.methodMember("apply").head
-
-    field.info.asType.absolve match
-      case '[target] =>
-        '{
-            Lens[self, origin, target]
-             ({ value => ${ 'value.asTerm.select(field).asExprOf[target] } },
-              { (origin, value) =>
-                  ${
-                      val params = symbol.caseFields.map: field =>
-                        if field.name == name then 'value.asTerm else 'origin.asTerm.select(field)
-
-                      Ref(symbol.companionModule).select(make).appliedToArgs(params)
-                      . asExprOf[origin]
-                    }
-              })  }
+  def composition(left: Self, right: Operand): Result

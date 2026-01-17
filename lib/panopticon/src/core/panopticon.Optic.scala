@@ -46,32 +46,64 @@ import language.dynamics
 import scala.annotation.internal.preview
 
 
-object Panopticon:
-  private given realm: Realm = realm"panopticon"
+object Optic:
+  transparent inline given deref: [name <: Label, product <: Product] => name is Lens from product =
+    ${Panopticon.lens[name, product]}
+
+  def identity[value]: Optic from value to value by value onto value =
+    new Optic:
+      type Origin = value
+      type Result = value
+      type Operand = value
+      type Target = value
+
+      def apply(origin: Origin): Operand = origin
+      def update(origin: Origin, value: Target): Result = value
+      def modify(origin: Origin)(lambda: Operand => Target): Result = lambda(origin)
+
+  def apply[self, origin, result, operand, target](lambda: (origin, operand => target) => result)
+  : self is Optic from origin to result by operand onto target =
+
+      new Optic:
+        type Self = self
+        type Origin = origin
+        type Target = target
+        type Operand = operand
+        type Result = result
+
+        def modify(origin: Origin)(lambda2: Operand => Target): Result = lambda(origin, lambda2)
+
+trait Optic extends Typeclass, Dynamic:
+  type Origin
+  type Result
+  type Operand
+  type Target
+
+  def modify(origin: Origin)(lambda: Operand => Target): Result
+
+  def selectDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
+  : Optic from Origin to Result by lens.Operand onto lens.Target =
+
+      Composable.optics.composition(this, lens)
 
 
-  def lens[self: Type, origin <: Product: Type]: Macro[self is Lens from origin] =
-    import quotes.reflect.*
-    val name: String = TypeRepr.of[self].literal[String].or:
-      halt(m"cannot derive non-String field names")
+  def updateDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
+        (value: (prior: lens.Operand) ?=> lens.Target)
+  : Origin => Result =
 
-    val symbol = TypeRepr.of[origin].typeSymbol
-    val field = symbol.caseFields.find(_.name == name).getOrElse:
-      halt(m"${TypeRepr.of[origin].show} has no field called $name")
+      Composable.optics.composition(this, lens).modify(_)(value(using _))
 
-    val make = symbol.companionModule.methodMember("apply").head
 
-    field.info.asType.absolve match
-      case '[target] =>
-        '{
-            Lens[self, origin, target]
-             ({ value => ${ 'value.asTerm.select(field).asExprOf[target] } },
-              { (origin, value) =>
-                  ${
-                      val params = symbol.caseFields.map: field =>
-                        if field.name == name then 'value.asTerm else 'origin.asTerm.select(field)
+  def update[traversal, result](traversal: traversal, value: result)
+       (using optic: traversal is Optic from Operand to Target, equality: result <:< optic.Target)
+  : Origin => Result =
 
-                      Ref(symbol.companionModule).select(make).appliedToArgs(params)
-                      . asExprOf[origin]
-                    }
-              })  }
+      Composable.optics.composition(this, optic).modify(_)(_ => equality(value))
+
+
+  def applyDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
+        [target, traversal: Optic from lens.Operand to lens.Target onto target as optic]
+        (traversal: traversal)
+  : Optic from Origin to Result by optic.Operand onto target =
+
+      Composable.optics.composition(Composable.optics.composition(this, lens), optic)

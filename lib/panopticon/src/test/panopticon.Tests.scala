@@ -34,91 +34,47 @@ package panopticon
 
 import soundness.*
 
+import autopsies.contrastExpectations
+
 case class Organization(name: String, leader: Person)
 case class Person(name: String, age: Int, role: Role)
 case class Role(name: String, salary: Int)
 
 object Tests extends Suite(m"Panopticon tests"):
   def run(): Unit =
-    test(m"Check that correct type is inferred"):
-      val salary = Lens[Organization](_.leader.role.salary)
-      salary: Lens[Organization, ("salary", "role", "leader"), Int]
-    .assert()
+    case class Company(ceo: Person, name: Text)
+    case class Person(name: Text, roles: List[Role])
+    case class Role(name: Text, count: Int)
 
-    test(m"Check that non-existant fields are inaccessible"):
-      demilitarize:
-        Lens[Organization](_.age)
-      . map(_.message)
-    .assert(_ == List("panopticon: the field age is not a member of panopticon.Organization"))
 
-    test(m"Check that indirect non-existant fields are inaccessible"):
-      demilitarize(Lens[Organization](_.leader.size)).map(_.message)
+    val company = Company(Person("John", List(Role("CEO", 1), Role("CFO", 2), Role("CIO", 3))), "Acme")
 
-    . assert(_ == List("panopticon: the field size is not a member of panopticon.Person"))
+    test(m"update company CEO"):
+      company.lens(_.ceo = Person("John Doe", List(Role("CTO", 7))))
+    . assert(_ == Company(Person("John Doe", List(Role("CTO", 7))), "Acme"))
 
-    test(m"Check that two compatible lenses can be added"):
-      val orgLeader = Lens[Organization](_.leader)
-      val personName = Lens[Person](_.name)
-      orgLeader ++ personName
-    .assert()
+    test(m"update company CEO name"):
+      company.lens(_.ceo.name = "Bill")
+    . assert(_ == Company(Person("Bill", List(Role("CEO", 1), Role("CFO", 2), Role("CIO", 3))), "Acme"))
 
-    test(m"Check that two incompatible lenses can be added"):
-      demilitarize:
-        val orgLeader = Lens[Organization](_.leader)
-        val roleName = Lens[Role](_.name)
-        orgLeader ++ roleName
-      .map(_.message)
-    .assert(_.nonEmpty)
+    test(m"update company CEO roles"):
+      company.lens(_.ceo.roles = Nil)
+    . assert(_ == Company(Person("John", Nil), "Acme"))
 
-    val ceo = Role("CEO", 120000)
-    val leader = Person("Jack Smith", 59, ceo)
-    val org = Organization("Acme Inc", leader)
+    test(m"update company CEO roles and name"):
+      company.lens
+        ( _.ceo.roles = Nil,
+          _.ceo.name = "Bill" )
+    . assert(_ == Company(Person("Bill", Nil), "Acme"))
 
-    test(m"Can apply a simple lens to get a value"):
-      val lens = Lens[Organization](_.leader)
-      lens(org)
-    .assert(_ == leader)
+    test(m"update head role"):
+      company.lens(_.ceo.roles(Head) = Role("Changed", 13))
+    . assert(_ == Company(Person("John", List(Role("Changed", 13), Role("CFO", 2), Role("CIO", 3))), "Acme"))
 
-    test(m"Can apply a lens to get a value"):
-      val lens = Lens[Organization](_.leader.role.salary)
-      lens(org)
-    .assert(_ == 120000)
+    test(m"update head role name"):
+      company.lens(_.ceo.roles(Head).name = "Changed")
+    . assert(_ == Company(Person("John", List(Role("Changed", 1), Role("CFO", 2), Role("CIO", 3))), "Acme"))
 
-    test(m"Can updatea value with a simple lens"):
-      val lens = Lens[Role](_.salary)
-      val newRole: Role = lens(ceo) = 100
-      newRole.salary
-    .assert(_ == 100)
-
-    test(m"Get a value with a deep lens"):
-      val lens = Lens[Organization](_.leader.role.salary)
-
-    test(m"Can update a value with a deep lens"):
-      val lens = Lens[Organization](_.leader.role.salary)
-      val newOrganization: Organization = lens(org) = 1000
-      newOrganization.leader.role.salary
-    .assert(_ == 1000)
-
-    object Date:
-      given Dereferencer[Date, "month"]:
-        type Field = Int
-        def field(target: Date): Int = target.month
-
-    class Date(val day: Int, val month: Int, val year: Int)
-
-    val date = new Date(1, 3, 2000)
-
-    test(m"Test non-case-class get"):
-      val lens = Lens[Date](_.month)
-      lens(date)
-    .assert(_ == 3)
-
-    // val orgName = Lens[Organization, Mono["name"], String](_.name, (org, name) => org.copy(name = name))
-
-    // test(m"Manual lens can access field"):
-    //   orgName(org)
-    // .assert(_ == "Acme Inc")
-
-    // test(m"Manual lens can update field"):
-    //   orgName(org) = "Emca Inc"
-    // .assert(_.name == "Emca Inc")
+    test(m"adjust each role names"):
+      company.lens(_.ceo.roles(Each).name = prior+"!")
+    . assert(_ == Company(Person("John", List(Role("CEO!", 1), Role("CFO!", 2), Role("CIO!", 3))), "Acme"))

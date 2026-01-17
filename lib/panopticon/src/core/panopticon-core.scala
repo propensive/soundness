@@ -32,4 +32,15 @@
                                                                                                   */
 package panopticon
 
-export Panopticon.Lens
+import prepositional.*
+
+extension [value](value: value)
+  def lens(lambdas: (Optic from value to value by value onto value => value => value)*): value =
+    lambdas.foldLeft(value): (value, lambda) =>
+      lambda(Optic.identity)(value)
+
+extension [value](left: value)
+  def compose[operand, result](right: operand)
+       (using composable: value is Composable by operand to result)
+  : result =
+      composable.composition(left, right)

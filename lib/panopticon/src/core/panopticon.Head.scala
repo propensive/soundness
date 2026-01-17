@@ -39,39 +39,10 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-import scala.quoted.*
-import scala.compiletime.*
-
-import language.dynamics
-import scala.annotation.internal.preview
-
-
-object Panopticon:
-  private given realm: Realm = realm"panopticon"
-
-
-  def lens[self: Type, origin <: Product: Type]: Macro[self is Lens from origin] =
-    import quotes.reflect.*
-    val name: String = TypeRepr.of[self].literal[String].or:
-      halt(m"cannot derive non-String field names")
-
-    val symbol = TypeRepr.of[origin].typeSymbol
-    val field = symbol.caseFields.find(_.name == name).getOrElse:
-      halt(m"${TypeRepr.of[origin].show} has no field called $name")
-
-    val make = symbol.companionModule.methodMember("apply").head
-
-    field.info.asType.absolve match
-      case '[target] =>
-        '{
-            Lens[self, origin, target]
-             ({ value => ${ 'value.asTerm.select(field).asExprOf[target] } },
-              { (origin, value) =>
-                  ${
-                      val params = symbol.caseFields.map: field =>
-                        if field.name == name then 'value.asTerm else 'origin.asTerm.select(field)
-
-                      Ref(symbol.companionModule).select(make).appliedToArgs(params)
-                      . asExprOf[origin]
-                    }
-              })  }
+object Head:
+  given optic: [element]
+               => Head.type is Optic from List[element] to List[element] by element onto element =
+    Optic[Head.type, List[element], List[element], element, element]: (origin, lambda) =>
+      origin match
+        case head :: tail => lambda(head) :: tail
+        case Nil          => Nil
