@@ -34,135 +34,209 @@ package panopticon
 
 import anticipation.*
 import fulminate.*
+import prepositional.*
 import proscenium.*
+import rudiments.*
+import vacuous.*
 
 import scala.quoted.*
 import scala.compiletime.*
 
 import language.dynamics
+import scala.annotation.internal.preview
 
 object Panopticon:
   private given realm: Realm = realm"panopticon"
-  opaque type Lens[from, path <: Tuple, to] = Int
-  opaque type InitLens[from] = Int
 
-  object Lens:
-    def apply[from]: InitLens[from] = 0
-    def make[from, path <: Tuple, to](): Lens[from, path, to] = 0
+object Optic:
+  def identity[value]: Optic from value to value by value onto value =
+    new Optic:
+      type Origin = value
+      type Result = value
+      type Operand = value
+      type Target = value
 
-  extension [from](initLens: InitLens[from])
-    def apply[path <: Tuple, to](lambda: Aim[from, Zero] => Aim[to, path]): Lens[from, path, to] =
-      0
+      def apply(origin: Origin): Operand = origin
+      def update(origin: Origin, value: Target): Result = value
 
-  extension [from, path <: Tuple, to](lens: Lens[from, path, to])
-    @targetName("append")
-    infix def ++ [to2, path2 <: Tuple](right: Lens[to, path2, to2])
-    : Lens[from, Tuple.Concat[path, path2], to2] =
-
-        Lens.make()
-
-
-    inline def apply(aim: from): to = ${Panopticon.get[from, path, to]('aim)}
-
-    inline def update(aim: from, newValue: to): from =
-      ${Panopticon.set[from, path, to]('aim, 'newValue)}
-
-  private def getPath[tuple <: Tuple: Type](path: List[String] = Nil)(using Quotes): List[String] =
-    import quotes.reflect.*
-
-    Type.of[tuple] match
-      case '[type tail <: Tuple; head *: tail] =>
-        TypeRepr.of[head].asMatchable.absolve match
-          case ConstantType(StringConstant(str)) => getPath[tail](str :: path)
-
-      case _ =>
-        path
+      def modify[applicative[_]: Applicative](origin: Origin)
+           (lambda: Operand => applicative[Target])
+      : applicative[Result] =
+          lambda(origin)
 
 
-  def getPaths[tuple <: Tuple: Type](paths: List[List[String]] = Nil)(using Quotes)
-  : List[List[String]] =
 
-      Type.of[tuple] match
-        case '[type tail <: Tuple; head *: tail] =>
-          Type.of[head].absolve match
-            case '[type tupleType <: Tuple; tupleType] =>
-              getPath[tupleType]() :: getPaths[tail]()
+object Applicative:
+  type Id[value] = value
 
-        case _ =>
-          halt(m"unexpectedly did not match")
+  given identity: Id is Applicative:
+    type Self = Id
+    def pure[value](value: value): Self[value] = value
+    def ap[left, right](lambda: Self[left => right], left: Self[left]): Self[right] = lambda(left)
+    def map[left, right](left: Self[left], lambda: left => right): Self[right] = lambda(left)
 
-
-  def get[from: Type, path <: Tuple: Type, to: Type](value: Expr[from]): Macro[to] =
-
-    import quotes.reflect.*
-
-    def select[aim: Type](path: List[String], expr: Expr[aim]): Expr[to] =
-      path match
-        case Nil          => expr.asExprOf[to]
-        case next :: tail => ConstantType(StringConstant(next)).asType.absolve match
-          case '[type next <: Label; next] =>
-            Expr.summon[Dereferencer[aim, next]] match
-              case Some('{ type field
-                           $dereferencer: Dereferencer[aim, label] {  type Field = field  } }) =>
-                select[field](tail, '{$dereferencer.field($expr)})
-
-              case _ =>
-                val aimSymbol = TypeRepr.of[aim].typeSymbol
-
-                expr.asTerm.select(aimSymbol.fieldMember(next)).asExpr.absolve match
-                  case '{$expr: aimType} => select[aimType](tail, expr)
-
-    select[from](getPath[path](), value).asExprOf[to]
+trait Applicative:
+  type Self[_]
+  def pure[value](value: value): Self[value]
+  def ap[left, right](lambda: Self[left => right], left: Self[left]): Self[right]
+  def map[left, right](left: Self[left], lambda: left => right): Self[right]
 
 
-  def set[from: Type, path <: Tuple: Type, to: Type](value: Expr[from], newValue: Expr[to])
-  : Macro[from] =
+trait Optic extends Typeclass, Dynamic:
+  lens0 =>
+    type Origin
+    type Result
+    type Operand
+    type Target
 
-      import quotes.reflect.*
+    def modify[applicative[_]: Applicative](origin: Origin)(lambda: Operand => applicative[Target])
+    : applicative[Result]
 
-      val fromTypeRepr: TypeRepr = TypeRepr.of[from]
+    def selectDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
+    : Optic from Origin to Result by lens.Operand onto lens.Target =
+        println("select dynamic")
+        Composable.optics.composition(this, lens)
 
-      def rewrite(path: List[String], term: Term): Term =
-        path match
-          case Nil =>
-            term
+    def updateDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
+         (value: lens.Target)
+    : Origin => Result =
+        origin =>
+          println("apply dynamic")
+          Composable.optics.composition(this, lens).modify[[any] =>> any](origin)(_ => value)
 
-          case next :: tail =>
-            val newParams = term.tpe.typeSymbol.caseFields.map: field =>
-              if field.name == next then
-                if tail == Nil then newValue.asTerm else rewrite(tail, Select(term, field))
-              else Select(term, field)
+object Composable:
 
-            term.tpe.classSymbol match
-              case Some(classSymbol) =>
-                Apply
-                 (Select(New(TypeIdent(classSymbol)), term.tpe.typeSymbol.primaryConstructor),
-                  newParams)
+  given optics: [origin, result, operand, target, operand2, target2]
+        => (Optic from origin to result by operand onto target) is Composable by
+            (Optic from operand to target by operand2 onto target2) to
+            (Optic from origin to result by operand2 onto target2) =
+    (left, right) =>
+      new Optic:
+        println("new optic")
+        type Origin = origin
+        type Result = result
+        type Operand = operand2
+        type Target = target2
 
-              case None =>
-                halt(m"the type ${fromTypeRepr.show} does not have a primary constructor")
+        def modify[applicative[_]: Applicative](origin: origin)
+             (lambda: Operand => applicative[target2])
+        : applicative[result] =
+            println("modify in optic")
+            left.modify[applicative](origin)(right.modify(_)(lambda))
 
-      rewrite(getPath[path](), value.asTerm).asExprOf[from]
+  given lenses: [origin, target, target2]
+        => (Lens from origin onto target) is Composable by
+            (Lens from target onto target2) to
+            (Lens from origin onto target2) =
+    (left, right) =>
+      new Lens:
+        println("new lens")
+        type Origin = origin
+        type Target = target2
+
+        def apply(origin: Origin): Operand = right(left(origin))
+
+        def update(origin: Origin, value: Target): Result =
+          left(origin) = right(left(origin)) = value
+
+trait Lens extends Optic:
+  type Result = Origin
+  type Operand = Target
+
+  def apply(origin: Origin): Operand
+  def update(origin: Origin, value: Operand): Origin
+
+  def modify[applicative[_]: Applicative](origin: Origin)(lambda: Operand => applicative[Target])
+  : applicative[Origin] =
+
+        applicative.map(lambda(apply(origin)), this(origin) = _)
 
 
-  def dereference[aim: Type, tuple <: Tuple: Type](member: Expr[String]): Macro[Any] =
-    import quotes.reflect.*
 
-    val fieldName = member.valueOrAbort
-    val fieldNameType = ConstantType(StringConstant(fieldName)).asType
-    val aimType = TypeRepr.of[aim]
+trait Composable:
+  type Self
+  type Operand
+  type Result
 
-    fieldNameType.absolve match
-      case '[type fieldName <: Label; fieldName] =>
-        Expr.summon[Dereferencer[aim, fieldName]] match
-          case Some('{ type field
-                       $dereferencer: Dereferencer[aim, label] { type Field = field } }) =>
-            '{Aim[field, fieldName *: tuple]()}
+  def composition(left: Self, right: Operand): Result
 
-          case _ =>
-            aimType.typeSymbol.caseFields.find(_.name == fieldName) match
-              case None =>
-                halt(m"the field $fieldName is not a member of ${aimType.show}")
+  extension (left: Self) def compose(right: Operand): Result = composition(left, right)
 
-              case Some(symbol) => symbol.info.asType.absolve match
-                case '[result] => '{Aim[result, fieldName *: tuple]()}
+trait Traversal:
+  type Result[topic]
+  def traverse[topic, target](result: Result[topic])(lambda: topic => target): Result[target]
+
+object Each extends Traversal:
+  type Result[topic] = List[topic]
+
+  def traverse[topic, target](result: Result[topic])(lambda: topic => target): Result[target] =
+    result.map(lambda)
+
+object Head extends Traversal:
+  type Result[topic] = Optional[topic]
+  def traverse[topic, target](result: Result[topic])(lambda: topic => target): Result[target] =
+    result.let(lambda)
+
+
+extension [value](value: value)
+  def lens[target](lambda: Optic from value to value by value onto value => value => target): target =
+    lambda(Optic.identity)(value)
+
+case class Company(ceo: Person, name: Text)
+case class Person(name: Text, roles: List[Role])
+case class Role(name: Text, count: Int)
+
+@main
+def test: Unit =
+  val company = Company(Person("John", List(Role("CEO", 1))), "Acme")
+
+  given companyName: ("name" is Lens from Company onto Text) = new Lens:
+    type Self = "name"
+    type Origin = Company
+    type Target = Text
+    def apply(company: Company): Text = company.name
+    def update(company: Company, value: Text): Company = company.copy(name = value)
+
+  given personName: ("name" is Lens from Person onto Text) = new Lens:
+    type Self = "name"
+    type Origin = Person
+    type Target = Text
+    def apply(person: Person): Text = person.name
+    def update(person: Person, value: Text): Person = person.copy(name = value)
+
+  given companyPerson: ("ceo" is Lens from Company onto Person) = new Lens:
+    type Self = "ceo"
+    type Origin = Company
+    type Target = Person
+    def apply(company: Company): Person = company.ceo
+    def update(company: Company, value: Person): Company = company.copy(ceo = value)
+
+  given personRoles: ("roles" is Lens from Person onto List[Role]) = new Lens:
+    type Self = "roles"
+    type Origin = Person
+    type Target = List[Role]
+    def apply(person: Person): List[Role] = person.roles
+    def update(person: Person, value: List[Role]): Person = person.copy(roles = value)
+
+  given eachPersonRoles: (Optic from Person to Person by List[Role] onto Role) = new Optic:
+    type Origin = Person
+    type Target = Role
+    type Result = Person
+    type Operand = List[Role]
+
+    def modify[applicative[_]: Applicative](person: Person)(lambda: List[Role] => applicative[Role]): applicative[Person] =
+      applicative.map(lambda(person.roles), role => person.copy(roles = person.roles.map(_ => role)))
+
+
+  // given headPersonRoles: (Optic from Person to Person by Optional[Role] onto Optional[Role]) = new Optic:
+  //   type Origin = Person
+  //   type Operand = Optional[Role]
+  //   type Result = Person
+  //   type Target = Optional[Role]
+  //   def apply(person: Person): Optional[Role] = person.roles.prim
+  //   def update(person: Person, value: Optional[Role]): Person = person.roles match
+  //     case Nil          => person.copy(roles = List(value).compact)
+  //     case head :: tail => person.copy(roles = List(value).compact ++ tail)
+
+  println(company.lens(_.ceo = Person("John Doe", List(Role("CTO", 7)))))
+  println(company.lens(_.ceo.name = "Jimmy"))

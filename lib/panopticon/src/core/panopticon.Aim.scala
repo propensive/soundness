@@ -36,6 +36,6 @@ import scala.quoted.*
 
 import language.dynamics
 
-class Aim[from, path <: Tuple]() extends Dynamic:
-  transparent inline def selectDynamic(member: String): Any =
-    ${Panopticon.dereference[from, path]('member)}
+// class Aim[from, path <: Tuple]() extends Dynamic:
+//   transparent inline def selectDynamic(member: String): Any =
+//     ${Panopticon.dereference[from, path]('member)}

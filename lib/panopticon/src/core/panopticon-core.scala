@@ -32,4 +32,4 @@
                                                                                                   */
 package panopticon
 
-export Panopticon.Lens
+// export Panopticon.Lens
