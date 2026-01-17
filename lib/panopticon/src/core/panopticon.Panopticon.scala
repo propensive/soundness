@@ -74,19 +74,21 @@ trait Optic extends Typeclass, Dynamic:
 
     def selectDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
     : Optic from Origin to Result by lens.Operand onto lens.Target =
+
         Composable.optics.composition(this, lens)
 
-    def updateDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
-         (value: lens.Target)
-    : Origin => Result =
-        origin =>
-          Composable.optics.composition(this, lens).modify(origin)(_ => value)
 
-    def update[result, traversal: Optic from Operand to Target onto result as optic]
-         (traversal: traversal, value: result)
+    def updateDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
+         (value: (prior: lens.Operand) ?=> lens.Target)
     : Origin => Result =
         origin =>
-          Composable.optics.composition(this, optic).modify(origin)(_ => value)
+          Composable.optics.composition(this, lens).modify(origin)(value(using _))
+
+    def update[result, operand, traversal: Optic from Operand to Target by operand onto result as optic]
+         (traversal: traversal, value: (prior: operand) ?=> result)
+    : Origin => Result =
+        origin =>
+          Composable.optics.composition(this, optic).modify(origin)(value(using _))
 
     def applyDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
          [target, traversal: Optic from lens.Operand to lens.Target onto target as optic]
@@ -124,6 +126,18 @@ object Composable:
         def update(origin: Origin, value: Target): Result =
           left(origin) = right(left(origin)) = value
 
+object Lens:
+
+  def apply[self, origin, target](get: origin => target, set: (origin, target) => origin)
+  : self is Lens from origin onto target =
+    new Lens:
+      type Self = self
+      type Origin = origin
+      type Target = target
+
+      def apply(origin: Origin): Operand = get(origin)
+      def update(origin: Origin, value: Target): Result = set(origin, value)
+
 trait Lens extends Optic:
   type Result = Origin
   type Operand = Target
@@ -142,72 +156,15 @@ trait Composable:
 
   def composition(left: Self, right: Operand): Result
 
-  extension (left: Self) def compose(right: Operand): Result = composition(left, right)
+extension [value](left: value)
+  def compose[operand, result](right: operand)
+       (using composable: value is Composable by operand to result)
+  : result =
+      composable.composition(left, right)
 
-trait Traversal:
-  type Result[topic]
-  def traverse[topic, target](result: Result[topic])(lambda: topic => target): Result[target]
-
-object Each extends Traversal:
-  type Result[topic] = List[topic]
-
-  def traverse[topic, target](result: Result[topic])(lambda: topic => target): Result[target] =
-    result.map(lambda)
-
-object Head extends Traversal:
-  type Result[topic] = Optional[topic]
-  def traverse[topic, target](result: Result[topic])(lambda: topic => target): Result[target] =
-    result.let(lambda)
-
-
-extension [value](value: value)
-  def lens[target](lambda: Optic from value to value by value onto value => value => target): target =
-    lambda(Optic.identity)(value)
-
-case class Company(ceo: Person, name: Text)
-case class Person(name: Text, roles: List[Role])
-case class Role(name: Text, count: Int)
-
-@main
-def test: Unit =
-
-  given companyName: ("name" is Lens from Company onto Text) = new Lens:
-    type Self = "name"
-    type Origin = Company
-    type Target = Text
-    def apply(company: Company): Text = company.name
-    def update(company: Company, value: Text): Company = company.copy(name = value)
-
-  given personName: ("name" is Lens from Person onto Text) = new Lens:
-    type Self = "name"
-    type Origin = Person
-    type Target = Text
-    def apply(person: Person): Text = person.name
-    def update(person: Person, value: Text): Person = person.copy(name = value)
-
-  given roleName: ("name" is Lens from Role onto Text) = new Lens:
-    type Self = "name"
-    type Origin = Role
-    type Target = Text
-    def apply(role: Role): Text = role.name
-    def update(role: Role, value: Text): Role = role.copy(name = value)
-
-  given companyPerson: ("ceo" is Lens from Company onto Person) = new Lens:
-    type Self = "ceo"
-    type Origin = Company
-    type Target = Person
-    def apply(company: Company): Person = company.ceo
-    def update(company: Company, value: Person): Company = company.copy(ceo = value)
-
-  given personRoles: ("roles" is Lens from Person onto List[Role]) = new Lens:
-    type Self = "roles"
-    type Origin = Person
-    type Target = List[Role]
-    def apply(person: Person): List[Role] = person.roles
-    def update(person: Person, value: List[Role]): Person = person.copy(roles = value)
-
-  given list: [element]
-              => Each.type is Optic from List[element] to List[element] by element onto element =
+object Each:
+  given optic: [element]
+               => Each.type is Optic from List[element] to List[element] by element onto element =
     new Optic:
       type Self = Each.type
       type Origin = List[element]
@@ -215,22 +172,23 @@ def test: Unit =
       type Result = List[element]
       type Operand = element
 
-      def modify(list: List[element])(lambda: element => element): List[element] =
-        list.map(lambda)
+      def modify(list: List[element])(lambda: element => element): List[element] = list.map(lambda)
 
+object Head:
+  given optic: [element]
+               => Head.type is Optic from List[element] to List[element] by element onto element =
+    new Optic:
+      type Self = Head.type
+      type Origin = List[element]
+      type Operand = element
+      type Result = List[element]
+      type Target = element
 
-  // given headPersonRoles: (Optic from Person to Person by Optional[Role] onto Optional[Role]) = new Optic:
-  //   type Origin = Person
-  //   type Operand = Optional[Role]
-  //   type Result = Person
-  //   type Target = Optional[Role]
-  //   def apply(person: Person): Optional[Role] = person.roles.prim
-  //   def update(person: Person, value: Optional[Role]): Person = person.roles match
-  //     case Nil          => person.copy(roles = List(value).compact)
-  //     case head :: tail => person.copy(roles = List(value).compact ++ tail)
+      def modify(list: List[element])(lambda: element => element): List[element] = list match
+        case head :: tail => lambda(head) :: tail
+        case Nil          => Nil
 
-  val company = Company(Person("John", List(Role("CEO", 1), Role("CFO", 2), Role("CIO", 3))), "Acme")
-  println(company.lens(_.ceo = Person("John Doe", List(Role("CTO", 7)))))
-  println(company.lens(_.ceo.name = "Jimmy"))
-  println(company.lens(_.ceo.roles = Nil))
-  println(company.lens(_.ceo.roles(Each).name = "Developer"))
+extension [value](value: value)
+  def lens(lambdas: (Optic from value to value by value onto value => value => value)*): value =
+    lambdas.foldLeft(value): (value, lambda) =>
+      lambda(Optic.identity)(value)
