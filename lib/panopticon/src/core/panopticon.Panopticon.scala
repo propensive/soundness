@@ -74,22 +74,25 @@ trait Optic extends Typeclass, Dynamic:
 
     def selectDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
     : Optic from Origin to Result by lens.Operand onto lens.Target =
-        println("select dynamic")
         Composable.optics.composition(this, lens)
 
     def updateDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
          (value: lens.Target)
     : Origin => Result =
         origin =>
-          println("apply dynamic")
           Composable.optics.composition(this, lens).modify(origin)(_ => value)
 
     def update[result, traversal: Optic from Operand to Target onto result as optic]
          (traversal: traversal, value: result)
     : Origin => Result =
         origin =>
-          println("update dynamic")
           Composable.optics.composition(this, optic).modify(origin)(_ => value)
+
+    def applyDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
+         [target, traversal: Optic from lens.Operand to lens.Target onto target as optic]
+         (traversal: traversal)
+    : Optic from Origin to Result by optic.Operand onto target =
+        Composable.optics.composition(Composable.optics.composition(this, lens), optic)
 
 object Composable:
 
@@ -99,7 +102,6 @@ object Composable:
             (Optic from origin to result by operand2 onto target2) =
     (left, right) =>
       new Optic:
-        println("new optic")
         type Origin = origin
         type Result = result
         type Operand = operand2
@@ -114,7 +116,6 @@ object Composable:
             (Lens from origin onto target2) =
     (left, right) =>
       new Lens:
-        println("new lens")
         type Origin = origin
         type Target = target2
 
@@ -169,7 +170,6 @@ case class Role(name: Text, count: Int)
 
 @main
 def test: Unit =
-  val company = Company(Person("John", List(Role("CEO", 1))), "Acme")
 
   given companyName: ("name" is Lens from Company onto Text) = new Lens:
     type Self = "name"
@@ -184,6 +184,13 @@ def test: Unit =
     type Target = Text
     def apply(person: Person): Text = person.name
     def update(person: Person, value: Text): Person = person.copy(name = value)
+
+  given roleName: ("name" is Lens from Role onto Text) = new Lens:
+    type Self = "name"
+    type Origin = Role
+    type Target = Text
+    def apply(role: Role): Text = role.name
+    def update(role: Role, value: Text): Role = role.copy(name = value)
 
   given companyPerson: ("ceo" is Lens from Company onto Person) = new Lens:
     type Self = "ceo"
@@ -208,8 +215,8 @@ def test: Unit =
       type Result = List[element]
       type Operand = element
 
-      def modify(roles: List[element])(lambda: element => element): List[element] =
-        roles.map(lambda)
+      def modify(list: List[element])(lambda: element => element): List[element] =
+        list.map(lambda)
 
 
   // given headPersonRoles: (Optic from Person to Person by Optional[Role] onto Optional[Role]) = new Optic:
@@ -222,7 +229,8 @@ def test: Unit =
   //     case Nil          => person.copy(roles = List(value).compact)
   //     case head :: tail => person.copy(roles = List(value).compact ++ tail)
 
+  val company = Company(Person("John", List(Role("CEO", 1), Role("CFO", 2), Role("CIO", 3))), "Acme")
   println(company.lens(_.ceo = Person("John Doe", List(Role("CTO", 7)))))
   println(company.lens(_.ceo.name = "Jimmy"))
   println(company.lens(_.ceo.roles = Nil))
-  println(company.lens(_.ceo.roles(Each) = Role("Developer", 5)))
+  println(company.lens(_.ceo.roles(Each).name = "Developer"))
