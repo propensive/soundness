@@ -107,10 +107,10 @@ object Digestible extends Derivable[Digestible]:
     (digestion, char) => digestion.append(IArray((char >> 8).toByte, char.toByte))
 
   given text: [text <: Text] => text is Digestible =
-    (digestion, text) => digestion.append(text.bytes(using charEncoders.utf8))
+    (digestion, text) => digestion.append(text.data(using charEncoders.utf8))
 
   given bytes: Data is Digestible = _.append(_)
-  given digest: Digest is Digestible = (digestion, digest) => digestion.append(digest.bytes)
+  given digest: Digest is Digestible = (digestion, digest) => digestion.append(digest.data)
 
   given encodable: [value: Encodable in Data] => value is Digestible =
     bytes.contramap(value.encode)

@@ -62,19 +62,19 @@ object Postable:
 
 
   given text: (encoder: CharEncoder) => Text is Postable =
-    Postable(media"text/plain", value => Stream(IArray.from(value.bytes)))
+    Postable(media"text/plain", value => Stream(IArray.from(value.data)))
 
   given textStream: (encoder: CharEncoder) => Stream[Text] is Postable =
-    Postable(media"application/octet-stream", _.map(_.bytes))
+    Postable(media"application/octet-stream", _.map(_.data))
 
   given unit: Unit is Postable = Postable(media"text/plain", unit => Stream())
-  given bytes: Data is Postable = Postable(media"application/octet-stream", Stream(_))
+  given data: Data is Postable = Postable(media"application/octet-stream", Stream(_))
 
   given byteStream: Stream[Data] is Postable = Postable(media"application/octet-stream", identity)
 
   given query: Query is Postable =
     import charEncoders.utf8
-    Postable(media"application/x-www-form-urlencoded", query => Stream(query.queryString.bytes))
+    Postable(media"application/x-www-form-urlencoded", query => Stream(query.queryString.data))
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
         =>  Tactic[MediaTypeError]
@@ -90,7 +90,7 @@ trait Postable extends Typeclass:
   def mediaType(content: Self): MediaType
   def stream(content: Self): Stream[Data]
 
-  def preview(value: Self): Text = stream(value).prim.lay(t""): bytes =>
-    val sample = bytes.take(1024)
+  def preview(value: Self): Text = stream(value).prim.lay(t""): data =>
+    val sample = data.take(1024)
     val string: Text = sample.serialize[Base256]
-    if bytes.length > 128 then t"$string..." else string
+    if data.length > 128 then t"$string..." else string

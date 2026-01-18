@@ -49,7 +49,7 @@ object CssStylesheet:
       type Result = HttpStreams.Content
 
       def genericize(stylesheet: CssStylesheet): HttpStreams.Content =
-           (t"text/css; charset=${charEncoder.encoding.name}", Stream(stylesheet.text.bytes))
+           (t"text/css; charset=${charEncoder.encoding.name}", Stream(stylesheet.text.data))
 
 
   trait Item:

@@ -91,7 +91,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
         import unsafeExceptions.canThrowAny
         import textSanitizers.strict
         given CharEncoder = enc"UTF-8".encoder
-        capture[CharDecodeError](charDecoders.utf8.decoded(t"café".bytes.dropRight(1)))
+        capture[CharDecodeError](charDecoders.utf8.decoded(t"café".data.dropRight(1)))
       .assert(_ == CharDecodeError(4, enc"UTF-8"))
 
     suite(m"Compile-time tests"):

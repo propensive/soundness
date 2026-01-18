@@ -401,7 +401,7 @@ extension (text: Text)
   inline def urlEncode: Text = URLEncoder.encode(text.s, "UTF-8").nn.tt
   inline def urlDecode: Text = URLDecoder.decode(text.s, "UTF-8").nn.tt
   inline def punycode: Text = java.net.IDN.toASCII(text.s).nn.tt
-  inline def bytes(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
+  inline def data(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
   inline def sysData: IArray[Byte] = CharEncoder.system.encode(text)
 
   def proximity(other: Text)(using proximity: Proximity): proximity.Operand =

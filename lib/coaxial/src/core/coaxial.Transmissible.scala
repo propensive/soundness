@@ -46,7 +46,7 @@ object Transmissible:
   given stream: [stream <: Stream[Data]] => stream is Transmissible = identity(_)
 
   given text: [text <: Text] => CharEncoder => text is Transmissible =
-    text => Stream(text.bytes)
+    text => Stream(text.data)
 
   given encoder: [message: Encodable in Text] => CharEncoder => message is Transmissible =
-    value => Stream(value.encode.bytes)
+    value => Stream(value.encode.data)
