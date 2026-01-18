@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export panopticon.{Optic, Composable, Lens, lens, Head, Each}
+export panopticon.{Optic, Composable, Lens, lens, Each}

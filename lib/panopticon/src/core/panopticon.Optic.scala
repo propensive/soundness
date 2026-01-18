@@ -33,6 +33,7 @@
 package panopticon
 
 import anticipation.*
+import denominative.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
@@ -73,6 +74,13 @@ object Optic:
 
         def modify(origin: Origin)(lambda2: Operand => Target): Result = lambda(origin, lambda2)
 
+  given prim: [element]
+               => Prim.type is Optic from List[element] to List[element] by element onto element =
+    Optic[Prim.type, List[element], List[element], element, element]: (origin, lambda) =>
+      origin match
+        case head :: tail => lambda(head) :: tail
+        case Nil          => Nil
+
 trait Optic extends Typeclass, Dynamic:
   type Origin
   type Result
@@ -95,15 +103,15 @@ trait Optic extends Typeclass, Dynamic:
 
 
   def update[traversal, result](traversal: traversal, value: result)
-       (using optic: traversal is Optic from Operand to Target, equality: result <:< optic.Target)
+       (using optic: traversal.type is Optic from Operand to Target, equality: result <:< optic.Target)
   : Origin => Result =
 
       Composable.optics.composition(this, optic).modify(_)(_ => equality(value))
 
 
-  def applyDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
-        [target, traversal: Optic from lens.Operand to lens.Target onto target as optic]
-        (traversal: traversal)
+  def applyDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)[target]
+        (traversal: Any)
+        (using optic: traversal.type is Optic from lens.Operand to lens.Target onto target)
   : Optic from Origin to Result by optic.Operand onto target =
 
       Composable.optics.composition(Composable.optics.composition(this, lens), optic)
