@@ -68,11 +68,11 @@ object Tests extends Suite(m"Panopticon tests"):
     . assert(_ == Company(Person("Bill", Nil), "Acme"))
 
     test(m"update head role"):
-      company.lens(_.ceo.roles(Head) = Role("Changed", 13))
+      company.lens(_.ceo.roles(Prim) = Role("Changed", 13))
     . assert(_ == Company(Person("John", List(Role("Changed", 13), Role("CFO", 2), Role("CIO", 3))), "Acme"))
 
     test(m"update head role name"):
-      company.lens(_.ceo.roles(Head).name = "Changed")
+      company.lens(_.ceo.roles(Prim).name = "Changed")
     . assert(_ == Company(Person("John", List(Role("Changed", 1), Role("CFO", 2), Role("CIO", 3))), "Acme"))
 
     test(m"adjust each role names"):
