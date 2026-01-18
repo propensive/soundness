@@ -46,7 +46,7 @@ object Auth:
   import alphabets.base64.standard
 
   given showable: Auth is Showable =
-    case Basic(username, password) => t"Basic ${t"$username:$password".bytes.serialize[Base64]}"
+    case Basic(username, password) => t"Basic ${t"$username:$password".data.serialize[Base64]}"
     case Bearer(token)             => t"Bearer $token"
     case Digest(digest)            => t"Digest $digest"
     case Hoba(text)                => t"HOBA $text"

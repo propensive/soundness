@@ -73,7 +73,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     test(m"Sha1, Base64Url"):
       import alphabets.base64.url
       println(t"Hello world".digest[Sha1].serialize[Base64])
-      t"Hello world".digest[Sha1].bytes.serialize[Base64]
+      t"Hello world".digest[Sha1].data.serialize[Base64]
     .assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
 
     test(m"Sha384, Base64"):
@@ -138,23 +138,23 @@ object Tests extends Suite(m"Gastronomy tests"):
     .assert(!identity(_))
 
     test(m"MD5 HMAC"):
-      pangram.hmac[Md5](t"key".bytes).serialize[Hex]
+      pangram.hmac[Md5](t"key".data).serialize[Hex]
     .check(_ == t"80070713463E7749B90C2DC24911E275")
 
     test(m"SHA1 HMAC"):
-      pangram.hmac[Sha1](t"key".bytes).serialize[Hex]
+      pangram.hmac[Sha1](t"key".data).serialize[Hex]
     .assert(_ == t"DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
 
     test(m"SHA256 HMAC"):
-      pangram.hmac[Sha2[256]](t"key".bytes).serialize[Hex]
+      pangram.hmac[Sha2[256]](t"key".data).serialize[Hex]
     .assert(_ == t"F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
 
     test(m"SHA384 HMAC"):
       import alphabets.base64.standard
-      pangram.hmac[Sha2[384]](t"key".bytes).serialize[Base64]
+      pangram.hmac[Sha2[384]](t"key".data).serialize[Base64]
     .assert(_ == t"1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
 
     test(m"SHA512 HMAC"):
       import alphabets.base64.standard
-      pangram.hmac[Sha2[512]](t"key".bytes).serialize[Base64]
+      pangram.hmac[Sha2[512]](t"key".data).serialize[Base64]
     .assert(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")

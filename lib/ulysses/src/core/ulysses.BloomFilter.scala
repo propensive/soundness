@@ -61,10 +61,10 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
   private val requiredEntropyBits = ln(bitSize ** hashCount).double.toInt + 1
 
   private def hash(value: element): BigInt =
-    def recur(count: Int = 0, bytes: List[Array[Byte]] = Nil): BigInt =
-      if bytes.map(_.length).sum*8 < requiredEntropyBits
-      then recur(count + 1, (count, value).digest[algorithm].bytes.mutable(using Unsafe) :: bytes)
-      else BigInt(bytes.to(Array).flatten).abs
+    def recur(count: Int = 0, data: List[Array[Byte]] = Nil): BigInt =
+      if data.map(_.length).sum*8 < requiredEntropyBits
+      then recur(count + 1, (count, value).digest[algorithm].data.mutable(using Unsafe) :: data)
+      else BigInt(data.to(Array).flatten).abs
 
     recur()
 

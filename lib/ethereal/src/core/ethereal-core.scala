@@ -244,7 +244,7 @@ def cli[bus <: Matchable](using executive: Executive)
             Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
             val exitStatus: Exit = client(pid).exitPromise.await()
 
-            socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
+            socket.getOutputStream.nn.write(exitStatus().show.data.mutable(using Unsafe))
             socket.close()
             clients.remove(pid)
             if terminatePid() == pid then termination

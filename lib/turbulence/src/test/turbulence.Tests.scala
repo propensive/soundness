@@ -46,8 +46,8 @@ object Tests extends Suite(m"Turbulence tests"):
     suite(m"Shredding"):
       given Seed = Seed(1L)
       import randomization.seeded
-      val bytes: Data = Data.fill(1000)(_.toByte)
-      val stream: Stream[Data] = Stream(bytes)
+      val data: Data = Data.fill(1000)(_.toByte)
+      val stream: Stream[Data] = Stream(data)
       val shredded: Iterable[Stream[Data]] = stochastic:
         (0 until 100).map: index =>
           stream.shred(20.0, 10.0)
@@ -59,7 +59,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
         test(m"correct content after shredding"):
           stream.reduce(_ ++ _)
-        . assert(_ === bytes)
+        . assert(_ === data)
 
     suite(m"Streaming Unicode tests"):
       val ascii = IArray(t"", t"a", t"ab", t"abc", t"abcd")
@@ -79,24 +79,24 @@ object Tests extends Suite(m"Turbulence tests"):
         bs     <- 1 to 8
       do
         test(m"length tests"):
-          val stream = string.bytes.grouped(bs).to(Stream)
+          val stream = string.data.grouped(bs).to(Stream)
           val result = stream.read[Text]
-          result.bytes.length
-        .assert(_ == string.bytes.length)
+          result.data.length
+        .assert(_ == string.data.length)
 
         test(m"roundtrip tests"):
-          val stream = string.bytes.grouped(bs).to(Stream)
+          val stream = string.data.grouped(bs).to(Stream)
           val result = stream.read[Text]
 
           result
         .assert(_ == string)
 
     val qbf = t"The quick brown fox\njumps over the lazy dog"
-    val qbfData = qbf.bytes
+    val qbfData = qbf.data
 
     object Ref:
       given Ref is Streamable by Text = ref => Stream(t"abc", t"def")
-      given Ref is Streamable by Data = ref => Stream(t"abc".bytes, t"def".bytes)
+      given Ref is Streamable by Data = ref => Stream(t"abc".data, t"def".data)
 
     case class Ref()
 
@@ -106,7 +106,7 @@ object Tests extends Suite(m"Turbulence tests"):
     case class Ref2()
 
     object Ref3:
-      given Ref3 is Streamable by Data = ref => Stream(t"abc".bytes, t"def".bytes)
+      given Ref3 is Streamable by Data = ref => Stream(t"abc".data, t"def".data)
 
     case class Ref3()
 
@@ -129,7 +129,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read some type as Data with Text and Byte Streamable instance"):
         Ref().read[Data].to(List)
-      .assert(_ == t"abcdef".bytes.to(List))
+      .assert(_ == t"abcdef".data.to(List))
 
       test(m"Read some type as Text with only Text Streamable instance"):
         Ref2().read[Text]
@@ -137,7 +137,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read some type as Data with only Text Streamable instance"):
         Ref2().read[Data].to(List)
-      .assert(_ == t"abcdef".bytes.to(List))
+      .assert(_ == t"abcdef".data.to(List))
 
       test(m"Read some type as Text with only Data Streamable instance"):
         Ref3().read[Text]
@@ -145,7 +145,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read some type as Data with only Data Streamable instance"):
         Ref3().read[Data].to(List)
-      .assert(_ == t"abcdef".bytes.to(List))
+      .assert(_ == t"abcdef".data.to(List))
 
       test(m"Read Text as Stream[Text]"):
         qbf.read[Stream[Text]].join
@@ -190,12 +190,12 @@ object Tests extends Suite(m"Turbulence tests"):
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object GeneralStore:
-        given GeneralStore is Writable by Data = (store, stream) => stream.each: bytes =>
-          bytes.each: byte =>
+        given GeneralStore is Writable by Data = (store, stream) => stream.each: data =>
+          data.each: byte =>
             store.arrayBuffer.append(byte)
 
         given GeneralStore is Writable by Text = (store, texts) => texts.each: text =>
-          text.bytes.each: byte =>
+          text.data.each: byte =>
             store.arrayBuffer.append(byte)
 
       class ByteStore():
@@ -203,8 +203,8 @@ object Tests extends Suite(m"Turbulence tests"):
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object ByteStore:
-        given ByteStore is Writable by Data = (store, stream) => stream.each: bytes =>
-          bytes.each: byte =>
+        given ByteStore is Writable by Data = (store, stream) => stream.each: data =>
+          data.each: byte =>
             store.arrayBuffer.append(byte)
 
       class TextStore():
@@ -294,12 +294,12 @@ object Tests extends Suite(m"Turbulence tests"):
     //     def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
     //   object GeneralStore:
-    //     given GeneralStore is Writable by Data = (store, stream) => stream.each: bytes =>
-    //       bytes.each: byte =>
+    //     given GeneralStore is Writable by Data = (store, stream) => stream.each: data =>
+    //       data.each: byte =>
     //         store.arrayBuffer.append(byte)
 
     //     given GeneralStore is Writable by Text = (store, texts) => texts.each: text =>
-    //       text.bytes.each: byte =>
+    //       text.data.each: byte =>
     //         store.arrayBuffer.append(byte)
 
     //   class ByteStore():
@@ -307,8 +307,8 @@ object Tests extends Suite(m"Turbulence tests"):
     //     def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
     //   object ByteStore:
-    //     given ByteStore is Writable by Data = (store, stream) => stream.each: bytes =>
-    //       bytes.each: byte =>
+    //     given ByteStore is Writable by Data = (store, stream) => stream.each: data =>
+    //       data.each: byte =>
     //         Eof(store.arrayBuffer).write(byte)
 
     //   class TextStore():

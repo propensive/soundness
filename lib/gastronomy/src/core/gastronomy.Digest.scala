@@ -44,19 +44,19 @@ import spectacular.*
 import vacuous.*
 
 object Digest:
-  def apply[hash <: Algorithm](bytes: Data): Digest in hash = new Digest(bytes):
+  def apply[hash <: Algorithm](data: Data): Digest in hash = new Digest(data):
     type Form = hash
 
   given showable: [digest <: Algorithm] => Alphabet[Base64] => Digest in digest is Showable =
-    _.bytes.serialize[Base64]
+    _.data.serialize[Base64]
 
-  given encodable: [digest <: Algorithm] => Digest in digest is Encodable in Data = _.bytes
+  given encodable: [digest <: Algorithm] => Digest in digest is Encodable in Data = _.data
 
-class Digest(val bytes: Data):
+class Digest(val data: Data):
   type Form <: Algorithm
 
   override def equals(that: Any) = that.asMatchable match
-    case digest: Digest => bytes.sameElements(digest.bytes)
+    case digest: Digest => data.sameElements(digest.data)
     case _              => false
 
-  override def hashCode: Int = ju.Arrays.hashCode(bytes.mutable(using Unsafe): Array[Byte])
+  override def hashCode: Int = ju.Arrays.hashCode(data.mutable(using Unsafe): Array[Byte])

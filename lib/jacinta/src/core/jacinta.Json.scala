@@ -253,13 +253,13 @@ object Json extends Json2, Dynamic:
       type Result = HttpStreams.Content
 
       def genericize(json: Json): HttpStreams.Content =
-        (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.bytes))
+        (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.data))
 
   given decodable: Tactic[ParseError] => Json is Decodable in Text =
-    text => Stream(text.bytes(using charEncoders.utf8)).read[Json]
+    text => Stream(text.data(using charEncoders.utf8)).read[Json]
 
   given instantiable: Tactic[ParseError] => Json is Instantiable across HttpRequests from Text =
-    text => Stream(text.bytes(using charEncoders.utf8)).read[Json]
+    text => Stream(text.data(using charEncoders.utf8)).read[Json]
 
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))

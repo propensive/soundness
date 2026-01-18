@@ -249,7 +249,7 @@ object Http:
         newline()
         newline()
 
-      text.bytes #:: request.body()
+      text.data #:: request.body()
 
   class Request
          (val method:      Http.Method,
