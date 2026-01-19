@@ -249,6 +249,10 @@ object Json extends Json2, Dynamic:
   given aggregable: Tactic[ParseError] => Json is Aggregable by Data =
     bytes => Json(bytes.read[JsonAst])
 
+  given aggregableDirect: [value: Decodable in Json] => Tactic[ParseError] => Tactic[JsonError]
+        => (value over Json) is Aggregable by Data =
+    bytes => Json(bytes.read[JsonAst]).as[value].asInstanceOf[value over Json]
+
   given showable: JsonPrinter => Json is Showable = json =>
     try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
 

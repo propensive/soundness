@@ -172,6 +172,10 @@ object Tests extends Suite(m"Jacinta Tests"):
         beatles.read[Json].as[Band]
       .assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
 
+      test(m"Extract a band directly"):
+        beatles.read[Band over Json]
+      .assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
+
       enum Player:
         case Guitarist(person: Person)
         case Drummer(person: Person)
