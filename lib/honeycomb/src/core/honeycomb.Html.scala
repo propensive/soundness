@@ -82,7 +82,7 @@ object Html extends Tag.Container
   erased trait Decimal
   erased trait Id
 
-  given media: Document[Html] is Media = _ => media"text/html"
+  given media: Document[Html] is Media = _ => media"text/html;charset=UTF-8"
 
   def doctype: Doctype = Doctype(t"html")
 
