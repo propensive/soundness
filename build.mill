@@ -171,7 +171,7 @@ object soundness extends ScalaModule:
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
     gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core, panopticon.core,
     camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core, xylophone.core,
-    anamnesis.core)
+    anamnesis.core, jacinta.time)
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
     charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
@@ -607,7 +607,8 @@ object iridescence extends Library:
 
 object jacinta extends Library:
   object core extends Component(merino.core, gossamer.core)
-  object test extends Tests(core)
+  object time extends Component(core, aviation.core)
+  object test extends Tests(time)
 
 object kaleidoscope extends Library:
   object core extends Component(rudiments.core, contingency.core)
@@ -953,6 +954,7 @@ object publishing extends Module:
     inimitable.core.publishLocal()()
     iridescence.core.publishLocal()()
     jacinta.core.publishLocal()()
+    jacinta.time.publishLocal()()
     kaleidoscope.core.publishLocal()()
     larceny.plugin.publishLocal()()
     legerdemain.core.publishLocal()()
