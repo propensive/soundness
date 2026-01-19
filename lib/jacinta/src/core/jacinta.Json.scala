@@ -58,18 +58,20 @@ import zephyrine.*
 import JsonError.Reason
 
 trait Json2:
-  given optionalEncodable: [value: Encodable in Json as encodable]
-        =>  Optional[value] is Encodable in Json =
+  given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+        => (encodable: inner is Encodable in Json)
+        =>  value is Encodable in Json =
     new Encodable:
       type Self = Optional[value]
       type Form = Json
 
       def encoded(value: Optional[value]): Json =
-        value.let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
+        value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
 
-  given optional: [value: Decodable in Json] => Tactic[JsonError]
-        =>  Optional[value] is Decodable in Json = json =>
-    if json.root.isAbsent then Unset else value.decoded(json)
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[JsonError]
+        => (decodable: => inner is Decodable in Json)
+        =>  value is Decodable in Json = json =>
+    if json.root.isAbsent then Unset else decodable.decoded(json)
 
   given bytes: Tactic[JsonError] => Bytes is Decodable in Json = json => json.root.long.b
 
@@ -171,7 +173,7 @@ object Json extends Json2, Dynamic:
 
     json => if json.root.isAbsent then None else Some(value.decoded(json))
 
-  given optionEncodable: [value: Encodable in Json as encodable]
+  given optionEncodable: [value] => (encodable: value is Encodable in Json)
         =>  Option[value] is Encodable in Json =
     new Encodable:
       type Self = Option[value]
@@ -196,32 +198,35 @@ object Json extends Json2, Dynamic:
   given booleanEncodable: Boolean is Encodable in Json = boolean => Json.ast(JsonAst(boolean))
   given jsonEncodable: Json is Encodable in Json = identity(_)
 
-  given listEncodable: [list <: List, element: Encodable in Json]
+  given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Json)
         =>  list[element] is Encodable in Json =
-    values => Json.ast(JsonAst(IArray.from(values.map(element.encoded(_).root))))
+    values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
 
-  given setEncodable: [set <: Set, element: Encodable in Json]
+  given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Json)
         =>  set[element] is Encodable in Json =
-    values => Json.ast(JsonAst(IArray.from(values.map(element.encoded(_).root))))
+    values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
 
-  given trieEncodable: [trie <: Trie, element: Encodable in Json]
+  given trieEncodable: [trie <: Trie, element] => (encodable: => element is Encodable in Json)
         =>  trie[element] is Encodable in Json =
-    values => Json.ast(JsonAst(IArray.from(values.map(element.encoded(_).root))))
+    values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
 
-  given array: [collection <: Iterable, element: Decodable in Json]
+  given array: [collection <: Iterable, element]
         => (factory:    Factory[element, collection[element]],
             jsonAccess: Tactic[JsonError],
             foci:       Foci[JsonPointer])
+        => (decodable: => element is Decodable in Json)
         =>  collection[element] is Decodable in Json =
     value =>
       val builder = factory.newBuilder
       value.root.array.each: json =>
         focus(prior.or(JsonPointer()) / ordinal)
-         (builder += element.decoded(Json.ast(json)))
+         (builder += decodable.decoded(Json.ast(json)))
 
       builder.result()
 
-  given map: [key: Decodable in Text, element: Decodable in Json] => Tactic[JsonError]
+  given map: [key: Decodable in Text, element]
+        => (decodable: => element is Decodable in Json)
+        =>  Tactic[JsonError]
         =>  Map[key, element] is Decodable in Json =
 
     value =>
@@ -229,9 +234,10 @@ object Json extends Json2, Dynamic:
 
       keys.indices.fuse(Map[key, element]()):
         focus(prior.or(JsonPointer()) / keys(next).tt):
-          state.updated(keys(next).tt.decode, element.decoded(Json.ast(values(next))))
+          state.updated(keys(next).tt.decode, decodable.decoded(Json.ast(values(next))))
 
-  given mapEncodable: [key: Encodable in Text, element: Encodable in Json]
+  given mapEncodable: [key: Encodable in Text, element]
+        => (encodable: element is Encodable in Json)
         => Map[key, element] is Encodable in Json =
     map =>
       val keys: List[key] = map.keys.to(List)
