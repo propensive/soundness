@@ -140,8 +140,8 @@ trait Json2:
           Json.ast:
             context.encode(value).root.asMatchable.absolve match
               case (labels, values) => labels.asMatchable.absolve match
-                case labels: IArray[String] => values.asMatchable.absolve match
-                  case values: IArray[JsonAst] =>
+                case labels: IArray[String] @unchecked => values.asMatchable.absolve match
+                  case values: IArray[JsonAst] @unchecked =>
                     JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
 
 object Json extends Json2, Dynamic:
