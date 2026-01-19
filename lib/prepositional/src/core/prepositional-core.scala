@@ -59,7 +59,7 @@ infix type on [refined <: { type Plane }, plane] = refined { type Plane = plane 
 infix type onto [refined <: { type Target }, target] = refined { type Target = target }
 
 // Transportive
-infix type over [refined <: { type Transport }, transport] = refined { type Transport = transport }
+infix type over [refined, transport] = refined { type Transport = transport }
 
 // Contrastive
 infix type against [refined <: { type Contrast }, contrast] = refined { type Contrast = contrast }
