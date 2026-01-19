@@ -221,21 +221,22 @@ object Json extends Json2, Dynamic:
 
       builder.result()
 
-  given map: [element: Decodable in Json] => Tactic[JsonError]
-        =>  Map[Text, element] is Decodable in Json =
+  given map: [key: Decodable in Text, element: Decodable in Json] => Tactic[JsonError]
+        =>  Map[key, element] is Decodable in Json =
 
     value =>
       val (keys, values) = value.root.obj
 
-      keys.indices.fuse(Map[Text, element]()):
+      keys.indices.fuse(Map[key, element]()):
         focus(prior.or(JsonPointer()) / keys(next).tt):
-          state.updated(keys(next).tt, element.decoded(Json.ast(values(next))))
+          state.updated(keys(next).tt.decode, element.decoded(Json.ast(values(next))))
 
-  given mapEncodable: [element: Encodable in Json] => Map[Text, element] is Encodable in Json =
+  given mapEncodable: [key: Encodable in Text, element: Encodable in Json]
+        => Map[key, element] is Encodable in Json =
     map =>
-      val keys: IArray[String] = IArray.from(map.keys.ss)
-      val values = keys.map(map(_).encode.root)
-      Json.ast(JsonAst((keys, values)))
+      val keys: List[key] = map.keys.to(List)
+      val values = IArray.from(keys.map(map(_).encode.root))
+      Json.ast(JsonAst((IArray.from(keys.map(_.encode.s)), values)))
 
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
