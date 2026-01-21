@@ -48,10 +48,10 @@ object Optical:
           case head :: tail => lambda(head) :: tail
           case Nil          => Nil
 
-  given at: [key, element] => At[key] is Optical from Map[key, element] onto Optional[element] =
+  given at: [key, element] => At[key] is Optical from Map[key, element] onto element =
     at =>
       Optic: (origin, lambda) =>
-        lambda(origin.at(at.key)).lay(origin - at.key)(origin.updated(at.key, _))
+        origin.at(at.key).let(lambda).lay(origin)(origin.updated(at.key, _))
 
 trait Optical:
   type Self

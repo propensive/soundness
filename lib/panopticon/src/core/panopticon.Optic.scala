@@ -96,16 +96,18 @@ trait Optic extends Typeclass, Dynamic:
       Composable.optics.composition(this, lens).modify(_)(value(using _))
 
 
-  def update[traversal, origin](traversal: traversal, value: origin)
-       (using optical: traversal.type is Optical from Target, equality: origin <:< optical.Target)
+  def update[target](traversal: Any, value: target)
+       (using optical: (? >: traversal.type) is Optical from Target, equality: target <:< optical.Target)
   : Origin => Origin =
 
-      Composable.optics.composition(this, optical.optic(traversal)).modify(_)(_ => equality(value))
+      Composable.optics.composition
+       (this, optical.optic(traversal)).modify(_)(_ => equality(value))
 
 
-  def applyDynamic(name: Label)(using lens: name.type is Optic from Target)[target]
+  def applyDynamic(name: Label)[operand](using lens: name.type is Optic from Target onto operand)
+        [target]
         (traversal: Any)
-        (using optical: traversal.type is Optical from lens.Target onto target)
+        (using optical: (? >: traversal.type) is Optical from operand onto target)
   : Optic from Origin onto target =
 
       Composable.optics.composition

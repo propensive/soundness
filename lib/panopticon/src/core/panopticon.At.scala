@@ -39,11 +39,4 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-object At:
-  given optical: [key, element]
-        =>  At[key] is Optical from Map[key, element] onto Optional[element] =
-    at =>
-      Optic: (origin, lambda) =>
-        lambda(origin.at(at.key)).lay(origin - at.key)(origin.updated(at.key, _))
-
 case class At[key](key: key)
