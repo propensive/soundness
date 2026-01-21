@@ -89,3 +89,11 @@ object Tests extends Suite(m"Panopticon tests"):
     test(m"adjust user role name"):
       user.lens(_.roles(At(t"cfo")).name = "CFO!")
     . assert(_ == User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("CFO!", 2), t"cio" -> Role("CIO", 3))))
+
+    test(m"filter traversal"):
+      company.lens(_.ceo.roles(Filter[Role](_.count > 1)) = Role("Changed", 0))
+    . assert(_ == Company(Person("John", List(Role("CEO", 1), Role("Changed", 0), Role("Changed", 0))), "Acme"))
+
+    test(m"filter traversal inner"):
+      company.lens(_.ceo.roles(Filter[Role](_.count > 1)).count = 0)
+    . assert(_ == Company(Person("John", List(Role("CEO", 1), Role("CFO", 0), Role("CIO", 0))), "Acme"))

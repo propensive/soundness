@@ -53,6 +53,18 @@ object Optical:
       Optic: (origin, lambda) =>
         origin.at(at.key).let(lambda).lay(origin)(origin.updated(at.key, _))
 
+  given filter: [key, element] => Filter[key] is Optical from Map[key, element] onto element =
+    filter =>
+      Optic: (origin, lambda) =>
+        origin.map: (key, value) =>
+          if filter.predicate(key) then (key, lambda(value)) else (key, value)
+
+  given filter2: [element] => Filter[element] is Optical from List[element] onto element =
+    filter =>
+      Optic: (origin, lambda) =>
+        origin.map: value =>
+          if filter.predicate(value) then lambda(value) else value
+
 trait Optical:
   type Self
   type Target
