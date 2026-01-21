@@ -41,5 +41,5 @@ import vacuous.*
 
 object Each:
   given optic: [element]
-               => Each.type is Optic from List[element] to List[element] by element onto element =
-    Optic[Each.type, List[element], List[element], element, element](_.map(_))
+               => Each.type is Optic from List[element] onto element =
+    Optic[Each.type, List[element], element](_.map(_))

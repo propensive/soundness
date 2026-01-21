@@ -41,12 +41,11 @@ import vacuous.*
 
 object Composable:
 
-  given optics: [origin, result, operand, target, operand2, target2]
-        => (Optic from origin to result by operand onto target) is Composable by
-               (Optic from operand to target by operand2 onto target2) to
-               (Optic from origin to result by operand2 onto target2) =
+  given optics: [origin, operand, target]
+        => (Optic from origin onto operand) is Composable by (Optic from operand onto target) to
+               (Optic from origin onto target) =
     (left, right) =>
-      Optic[Any, origin, result, operand2, target2]: (origin, lambda) =>
+      Optic[Any, origin, target]: (origin, lambda) =>
         left.modify(origin)(right.modify(_)(lambda))
 
   given lenses: [origin, target, target2]

@@ -51,67 +51,61 @@ object Optic:
   transparent inline given deref: [name <: Label, product <: Product] => name is Lens from product =
     ${Panopticon.lens[name, product]}
 
-  def identity[value]: Optic from value to value by value onto value =
+  def identity[value]: Optic from value onto value =
     new Optic:
       type Origin = value
-      type Result = value
-      type Operand = value
       type Target = value
 
-      def apply(origin: Origin): Operand = origin
-      def update(origin: Origin, value: Target): Result = value
-      def modify(origin: Origin)(lambda: Operand => Target): Result = lambda(origin)
+      def apply(origin: Origin): Target = origin
+      def update(origin: Origin, value: Target): Origin = value
+      def modify(origin: Origin)(lambda: Target => Target): Origin = lambda(origin)
 
-  def apply[self, origin, result, operand, target](lambda: (origin, operand => target) => result)
-  : self is Optic from origin to result by operand onto target =
+  def apply[self, origin, target](lambda: (origin, target => target) => origin)
+  : self is Optic from origin onto target =
 
       new Optic:
         type Self = self
         type Origin = origin
         type Target = target
-        type Operand = operand
-        type Result = result
 
-        def modify(origin: Origin)(lambda2: Operand => Target): Result = lambda(origin, lambda2)
+        def modify(origin: Origin)(lambda2: Target => Target): Origin = lambda(origin, lambda2)
 
   given prim: [element]
-               => Prim.type is Optic from List[element] to List[element] by element onto element =
-    Optic[Prim.type, List[element], List[element], element, element]: (origin, lambda) =>
+               => Prim.type is Optic from List[element] onto element =
+    Optic[Prim.type, List[element], element]: (origin, lambda) =>
       origin match
         case head :: tail => lambda(head) :: tail
         case Nil          => Nil
 
 trait Optic extends Typeclass, Dynamic:
   type Origin
-  type Result
-  type Operand
   type Target
 
-  def modify(origin: Origin)(lambda: Operand => Target): Result
+  def modify(origin: Origin)(lambda: Target => Target): Origin
 
-  def selectDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
-  : Optic from Origin to Result by lens.Operand onto lens.Target =
+  def selectDynamic(name: Label)(using lens: name.type is Optic from Target)
+  : Optic from Origin onto lens.Target =
 
       Composable.optics.composition(this, lens)
 
 
-  def updateDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)
-        (value: (prior: lens.Operand) ?=> lens.Target)
-  : Origin => Result =
+  def updateDynamic(name: Label)(using lens: name.type is Optic from Target)
+        (value: (prior: lens.Target) ?=> lens.Target)
+  : Origin => Origin =
 
       Composable.optics.composition(this, lens).modify(_)(value(using _))
 
 
-  def update[traversal, result](traversal: traversal, value: result)
-       (using optic: traversal.type is Optic from Operand to Target, equality: result <:< optic.Target)
-  : Origin => Result =
+  def update[traversal, origin](traversal: traversal, value: origin)
+       (using optic: traversal.type is Optic from Target, equality: origin <:< optic.Target)
+  : Origin => Origin =
 
       Composable.optics.composition(this, optic).modify(_)(_ => equality(value))
 
 
-  def applyDynamic(name: Label)(using lens: name.type is Optic from Operand to Target)[target]
+  def applyDynamic(name: Label)(using lens: name.type is Optic from Target)[target]
         (traversal: Any)
-        (using optic: traversal.type is Optic from lens.Operand to lens.Target onto target)
-  : Optic from Origin to Result by optic.Operand onto target =
+        (using optic: traversal.type is Optic from lens.Target onto target)
+  : Optic from Origin onto target =
 
       Composable.optics.composition(Composable.optics.composition(this, lens), optic)

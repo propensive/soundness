@@ -49,15 +49,12 @@ object Lens:
         type Origin = origin
         type Target = target
 
-        def apply(origin: Origin): Operand = get(origin)
-        def update(origin: Origin, value: Target): Result = set(origin, value)
+        def apply(origin: Origin): Target = get(origin)
+        def update(origin: Origin, value: Target): Origin = set(origin, value)
 
 trait Lens extends Optic:
-  type Result = Origin
-  type Operand = Target
+  def apply(origin: Origin): Target
+  def update(origin: Origin, value: Target): Origin
 
-  def apply(origin: Origin): Operand
-  def update(origin: Origin, value: Operand): Origin
-
-  def modify(origin: Origin)(lambda: Operand => Target): Origin =
+  def modify(origin: Origin)(lambda: Target => Target): Origin =
     update(origin, lambda(apply(origin)))
