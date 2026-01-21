@@ -46,6 +46,7 @@ object Tests extends Suite(m"Panopticon tests"):
     case class Person(name: Text, roles: List[Role])
     case class Role(name: Text, count: Int)
 
+    case class User(name: Text, roles: Map[Text, Role])
 
     val company = Company(Person("John", List(Role("CEO", 1), Role("CFO", 2), Role("CIO", 3))), "Acme")
 
@@ -78,3 +79,21 @@ object Tests extends Suite(m"Panopticon tests"):
     test(m"adjust each role names"):
       company.lens(_.ceo.roles(Each).name = prior+"!")
     . assert(_ == Company(Person("John", List(Role("CEO!", 1), Role("CFO!", 2), Role("CIO!", 3))), "Acme"))
+
+    val user = User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("CFO", 2), t"cio" -> Role("CIO", 3)))
+
+    test(m"adjust user role"):
+      user.lens(_.roles(At(t"cfo")) = Role("CFO!", 2))
+    . assert(_ == User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("CFO!", 2), t"cio" -> Role("CIO", 3))))
+
+    test(m"adjust user role name"):
+      user.lens(_.roles(At(t"cfo")).name = "CFO!")
+    . assert(_ == User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("CFO!", 2), t"cio" -> Role("CIO", 3))))
+
+    test(m"filter traversal"):
+      company.lens(_.ceo.roles(Filter[Role](_.count > 1)) = Role("Changed", 0))
+    . assert(_ == Company(Person("John", List(Role("CEO", 1), Role("Changed", 0), Role("Changed", 0))), "Acme"))
+
+    test(m"filter traversal inner"):
+      company.lens(_.ceo.roles(Filter[Role](_.count > 1)).count = 0)
+    . assert(_ == Company(Person("John", List(Role("CEO", 1), Role("CFO", 0), Role("CIO", 0))), "Acme"))

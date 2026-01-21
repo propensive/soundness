@@ -32,13 +32,4 @@
                                                                                                   */
 package panopticon
 
-import anticipation.*
-import fulminate.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import vacuous.*
-
-object Each:
-  given optical: [element] => Each.type is Optical from List[element] onto element =
-    each => Optic[Each.type, List[element], element](_.map(_))
+case class Filter[key](predicate: key => Boolean)

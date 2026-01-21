@@ -35,7 +35,7 @@ package panopticon
 import prepositional.*
 
 extension [value](value: value)
-  def lens(lambdas: (Optic from value to value by value onto value => value => value)*): value =
+  def lens(lambdas: (Optic from value onto value => value => value)*): value =
     lambdas.foldLeft(value): (value, lambda) =>
       lambda(Optic.identity)(value)
 
