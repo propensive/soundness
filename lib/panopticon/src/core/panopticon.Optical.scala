@@ -33,12 +33,29 @@
 package panopticon
 
 import anticipation.*
+import denominative.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
 
-object Each:
-  given optical: [element] => Each.type is Optical from List[element] onto element =
-    each => Optic[Each.type, List[element], element](_.map(_))
+object Optical:
+  given prim: [element] => Prim.type is Optical from List[element] onto element =
+    prim =>
+      Optic: (origin, lambda) =>
+        origin match
+          case head :: tail => lambda(head) :: tail
+          case Nil          => Nil
+
+  given at: [key, element] => At[key] is Optical from Map[key, element] onto Optional[element] =
+    at =>
+      Optic: (origin, lambda) =>
+        lambda(origin.at(at.key)).lay(origin - at.key)(origin.updated(at.key, _))
+
+trait Optical:
+  type Self
+  type Target
+  type Origin
+
+  def optic(self: Self): Optic from Origin onto Target
