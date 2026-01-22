@@ -576,7 +576,7 @@ object hellenism extends Library:
   object test extends Tests(core, turbulence.core)
 
 object honeycomb extends Library:
-  object core extends Component(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core, typonym.core, adversaria.core)
+  object core extends Component(gossamer.core, panopticon.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core, urticose.url, hellenism.core, typonym.core, adversaria.core)
   object test extends Tests(core)
 
 object hieroglyph extends Library:
@@ -671,7 +671,7 @@ object orthodoxy extends Library:
 
 object panopticon extends Library:
   object core extends Component(rudiments.core)
-  object test extends Tests(core)
+  object test extends Tests(core, honeycomb.core)
 
 object parasite extends Library:
   object core extends Component(digression.core, mercator.core, anticipation.time, feudalism.core)
