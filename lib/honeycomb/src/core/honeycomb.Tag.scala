@@ -46,6 +46,7 @@ import fulminate.*
 import gossamer.*
 import hellenism.*
 import hieroglyph.*
+import panopticon.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -60,6 +61,20 @@ import charDecoders.utf8
 import textSanitizers.skip
 
 object Tag:
+
+  given optical: [html <: Html] => Tag is Optical from html onto Node = tag =>
+    Optic: (origin, lambda) =>
+      origin match
+        case Element(label, attributes, children, boundary) =>
+          val children2 = children.map:
+            case element@Element(tag.label, _, _, _) => lambda(element)
+            case other                               => other
+
+          Element(label, attributes, children2, boundary).asInstanceOf[html]
+
+        case other =>
+          other
+
   def root(children: Set[Text]): Tag =
     new Tag("#root", false, Html.Mode.Normal, Map(), children, false, false, false):
       type Result = this.type
