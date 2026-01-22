@@ -97,3 +97,53 @@ object Tests extends Suite(m"Panopticon tests"):
     test(m"filter traversal inner"):
       company.lens(_.ceo.roles(Filter[Role](_.count > 1)).count = 0)
     . assert(_ == Company(Person("John", List(Role("CEO", 1), Role("CFO", 0), Role("CIO", 0))), "Acme"))
+
+    import doms.html.whatwg.*
+
+    test(m"adjust an HTML value"):
+      val table: Html = Table(Tbody(
+        Tr(
+          Td("Name"),
+          Td("Role"),
+          Td("Count")
+        ),
+        Tr(
+          Td("John"),
+          Td("CEO"),
+          Td("1")
+        ),
+        Tr(
+          Td("John"),
+          Td("CFO"),
+          Td("2")
+        ),
+        Tr(
+          Td("John"),
+          Td("CIO"),
+          Td("3")
+        )
+      ))
+
+      table.lens(_(Tbody)(Tr)(Td) = Td("-"))
+    . assert(_ == Table(Tbody(
+        Tr(
+          Td("-"),
+          Td("-"),
+          Td("-")
+        ),
+        Tr(
+          Td("-"),
+          Td("-"),
+          Td("-")
+        ),
+        Tr(
+          Td("-"),
+          Td("-"),
+          Td("-")
+        ),
+        Tr(
+          Td("-"),
+          Td("-"),
+          Td("-")
+        )
+      )))
