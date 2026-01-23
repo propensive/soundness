@@ -45,11 +45,11 @@ import vacuous.*
 object Serpentine:
   def path(context: Expr[StringContext]): Macro[Path] =
     val name: String = context.valueOrAbort.parts.head
-    safely(name.tt.decode[Path on Linux]).let: path =>
-      '{Path.of[Linux, %.type, Tuple](${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)}
+    safely(name.tt.decode[Path on Posix]).let: path =>
+      '{Path.of[Posix, %.type, Tuple](${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)}
     . or:
         safely(name.tt.decode[Path on Windows]).let: path =>
           val varargs = Varargs(path.descent.map(Expr(_)))
           '{  Path.of[Windows, Drive, Tuple](${Expr(path.root)}, $varargs*)  }
 
-        . or(halt(m"The path ${name} is not a valid Windows on Linux path"))
+        . or(halt(m"The path ${name} is not a valid Windows or POSIX path"))

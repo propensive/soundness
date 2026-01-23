@@ -44,3 +44,4 @@ package interfaces.paths:
   given pathOnWindows: (Path on Windows) is Representative of Paths = !!
   given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
   given pathOnLocal: (Path on Local) is Representative of Paths = !!
+  given pathOnPosix: (Path on Posix) is Representative of Paths = !!

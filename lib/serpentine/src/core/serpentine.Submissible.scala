@@ -38,6 +38,7 @@ import prepositional.*
 object Submissible:
   given linux: %.type is Submissible on Linux = _ => ()
   given macOs: %.type is Submissible on MacOs = _ => ()
+  given posix: %.type is Submissible on Posix = _ => ()
 
 trait Submissible extends Typeclass, Planar:
   def check(name: Text): Unit
