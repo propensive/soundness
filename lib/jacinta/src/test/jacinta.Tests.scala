@@ -222,3 +222,21 @@ object Tests extends Suite(m"Jacinta Tests"):
         val array2 = array(1) = 5
         array2.as[List[Int]]
       . assert(_ == List(1, 5, 3))
+
+      case class Role(name: String)
+      case class Entity(name: String, age: Int, roles: List[Role])
+      case class Org(name: String, leader: Entity)
+
+      val org = Org("The Beatles", Entity("John", 40, List(Role("Leader")))).json
+
+      test(m"Lens update on JSON"):
+        import dynamicJsonAccess.enabled
+        val org2 = org.lens(_.leader.age = 41.json)
+        org2.as[Org]
+      . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader")))))
+
+      // test(m"Lens update with optic on JSON"):
+      //   import dynamicJsonAccess.enabled
+      //   val org2 = org.lens(_.leader.roles(1).name = prior+"!")
+      //   org2.as[Org]
+      // . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader!")))))
