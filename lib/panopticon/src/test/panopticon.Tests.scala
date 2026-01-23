@@ -83,11 +83,11 @@ object Tests extends Suite(m"Panopticon tests"):
     val user = User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("CFO", 2), t"cio" -> Role("CIO", 3)))
 
     test(m"adjust user role"):
-      user.lens(_.roles(At(t"cfo")) = Role("CFO!", 2))
+      user.lens(_.roles(t"cfo") = Role("CFO!", 2))
     . assert(_ == User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("CFO!", 2), t"cio" -> Role("CIO", 3))))
 
     test(m"adjust user role name"):
-      user.lens(_.roles(At(t"cfo")).name = "CFO!")
+      user.lens(_.roles(t"cfo").name = "CFO!")
     . assert(_ == User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("CFO!", 2), t"cio" -> Role("CIO", 3))))
 
     test(m"filter traversal"):

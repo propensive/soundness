@@ -48,10 +48,10 @@ object Optical:
           case head :: tail => lambda(head) :: tail
           case Nil          => Nil
 
-  given at: [key, element] => At[key] is Optical from Map[key, element] onto element =
-    at =>
+  given at: [key, element] => key is Optical from Map[key, element] onto element =
+    key =>
       Optic: (origin, lambda) =>
-        origin.at(at.key).let(lambda).lay(origin)(origin.updated(at.key, _))
+        origin.at(key).let(lambda).lay(origin)(origin.updated(key, _))
 
   given filter: [key, element] => Filter[key] is Optical from Map[key, element] onto element =
     filter =>
