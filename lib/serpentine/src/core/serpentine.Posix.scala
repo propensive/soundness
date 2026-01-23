@@ -33,70 +33,23 @@
 package serpentine
 
 import anticipation.*
-import contingency.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-object Radical:
-  given drive: Tactic[PathError] => Drive is Radical:
-    type Plane = Windows
+erased trait Posix
 
-    def decode(text: Text): Drive =
-      if text.length >= 3 && text.s.charAt(1) == ':' && text.s.charAt(2) == '\\'
-      then Drive(text.s.charAt(0))
-      else raise(PathError(_.InvalidRoot)) yet Drive('C')
+object Posix:
+  type Rules =
+    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+    & MustNotEqual["Icon\r"] & MustNotContain[":"]
 
-    def length(text: Text): Int = 3
-    def encode(drive: Drive): Text = t"${drive.letter}:\\"
+  erased given Posix is Nominative under Rules = !!
 
-  given linux: Tactic[PathError] => %.type is Radical:
-    type Plane = Linux
+  given filesystem: Posix is Filesystem:
+    type UniqueRoot = true
 
-    def length(text: Text): Int = 1
-
-    def decode(text: Text): %.type =
-      if text.starts(t"/") then % else raise(PathError(_.InvalidRoot)) yet %
-
-    def encode(root: %.type): Text = t"/"
-
-  given posix: Tactic[PathError] => %.type is Radical:
-    type Plane = Posix
-
-    def length(text: Text): Int = 1
-
-    def decode(text: Text): %.type =
-      if text.starts(t"/") then % else raise(PathError(_.InvalidRoot)) yet %
-
-    def encode(root: %.type): Text = t"/"
-
-  given macOs: Tactic[PathError] => %.type is Radical:
-    type Plane = MacOs
-
-    def length(text: Text): Int = 1
-
-    def decode(text: Text): %.type =
-      if text.starts(t"/") then % else raise(PathError(_.InvalidRoot)) yet %
-
-    def encode(root: %.type): Text = t"/"
-
-  given local: Tactic[PathError] => (%.type | Drive) is Radical:
-    type Plane = Local
-
-    def length(text: Text): 1 | 3 =
-      if text.starts(t"/") then 1 else if text.s(1) == ':' && text.s(2) == '\\' then 3
-      else abort(PathError(_.InvalidRoot))
-
-    def decode(text: Text): %.type | Drive =
-      length(text) match
-        case 1 => %
-        case 3 => Drive(text.s(0).lest(PathError(_.InvalidRoot)))
-
-    def encode(root: %.type | Drive): Text = root match
-      case Drive(letter) => t"$letter:\\"
-      case %             => t"/"
-
-trait Radical extends Typeclass, Planar:
-  def decode(text: Text): Self
-  def length(text: Text): Int
-  def encode(self: Self): Text
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."

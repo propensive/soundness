@@ -35,7 +35,5 @@ package serpentine
 export Path.`%`
 export Relative.{`^`, `?`}
 
-type Posix = MacOs | Linux
-
 extension (inline context: StringContext)
   transparent inline def p(): Path = ${Serpentine.path('context)}

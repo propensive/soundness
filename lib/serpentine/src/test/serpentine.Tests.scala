@@ -602,7 +602,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       . assert(_ == Drive('C') / "Windows" / "System32" / "file.txt")
 
       test(m"Linux path"):
-        p"/home/user/data.csv": Path on Linux
+        p"/home/user/data.csv": Path on Posix
       . assert(_ == % / "home" / "user" / "data.csv")
 
       test(m"Linux path does not conform to Windows"):
@@ -617,4 +617,4 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       test(m"Invalid path"):
         demilitarize(p"123").map(_.message)
-      . assert(_ == List("serpentine: The path 123 is not a valid Windows on Linux path"))
+      . assert(_ == List("serpentine: The path 123 is not a valid Windows or POSIX path"))
