@@ -290,6 +290,21 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
       apply(field.tt)(index)
 
+  def update[value: Encodable in Json](index: Int, value: value): Json raises JsonError =
+    Json.ast(JsonAst(root.array.updated(index, value.encode.root)))
+
+  def updateDynamic(field: String)[value: Encodable in Json](value: value): Json raises JsonError =
+    root.obj(0).indexWhere(_ == field) match
+      case -1    =>
+        val keys: IArray[String] = root.obj(0) :+ field
+        val values: IArray[JsonAst] = root.obj(1) :+ value.encode.root
+        Json.ast(JsonAst(keys -> values))
+
+      case index =>
+        val keys: IArray[String] = root.obj(0)
+        val values: IArray[JsonAst] = root.obj(1).updated(index, value.encode.root)
+        Json.ast(JsonAst(keys -> values))
+
 
   def apply(field: Text): Json raises JsonError =
     root.obj(0).indexWhere(_ == field.s) match

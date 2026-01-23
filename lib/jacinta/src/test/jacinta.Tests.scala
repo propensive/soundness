@@ -208,3 +208,17 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"Decode a NewBand"):
         newBandText.read[Json].as[NewBand]
       .assert(_ == newBand)
+
+      test(m"Update a JSON object dynamically"):
+        import dynamicJsonAccess.enabled
+        val john = t"""{"name": "John", "age": 40}""".decode[Json]
+        val john2 = john.age = 41
+        john2.as[Person]
+      . assert(_ == Person("John", 41))
+
+      test(m"Update a JSON array dynamically"):
+        import dynamicJsonAccess.enabled
+        val array = t"""[1, 2, 3]""".decode[Json]
+        val array2 = array(1) = 5
+        array2.as[List[Int]]
+      . assert(_ == List(1, 5, 3))
