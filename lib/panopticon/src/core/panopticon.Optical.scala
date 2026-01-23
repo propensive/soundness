@@ -41,12 +41,11 @@ import rudiments.*
 import vacuous.*
 
 object Optical:
-  given prim: [element] => Prim.type is Optical from List[element] onto element =
-    prim =>
+  given ordinal: [element] => Ordinal is Optical from List[element] onto element =
+    ordinal =>
       Optic: (origin, lambda) =>
-        origin match
-          case head :: tail => lambda(head) :: tail
-          case Nil          => Nil
+        if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin(ordinal.n0)))
+        else Nil
 
   given at: [key, element] => key is Optical from Map[key, element] onto element =
     key =>
