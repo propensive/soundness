@@ -37,6 +37,7 @@ import soundness.*
 import charEncoders.utf8
 import strategies.throwUnsafely
 import jsonPrinters.minimal
+import autopsies.contrastExpectations
 
 case class Foo(x: Int, y: Text) derives CanEqual
 
@@ -235,8 +236,14 @@ object Tests extends Suite(m"Jacinta Tests"):
         org2.as[Org]
       . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader")))))
 
-      // test(m"Lens update with optic on JSON"):
-      //   import dynamicJsonAccess.enabled
-      //   val org2 = org.lens(_.leader.roles(1).name = prior+"!")
-      //   org2.as[Org]
-      // . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader!")))))
+      test(m"Lens update with optic on JSON"):
+        import dynamicJsonAccess.enabled
+        val org2 = org.lens(_.leader.roles(Prim) = Role("-").json)
+        org2.as[Org]
+      . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))
+
+      test(m"Deeper lens update with optic on JSON"):
+        import dynamicJsonAccess.enabled
+        val org2 = org.lens(_.leader.roles(Prim).name = "-".json)
+        org2.as[Org]
+      . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))

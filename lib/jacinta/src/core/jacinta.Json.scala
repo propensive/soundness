@@ -152,7 +152,16 @@ object Json extends Json2, Dynamic:
 
   given lens: [name <: Label: ValueOf] => DynamicJsonEnabler => Tactic[JsonError]
         => name is Lens from Json onto Json =
-    Lens[name, Json, Json](_.selectDynamic(valueOf[name]), (json: Json, focus: Json) => json.modify(valueOf[name], focus))
+    Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+
+  given ordinal: [element] => Ordinal is Optical from Json onto Json =
+    ordinal =>
+      Optic: (origin, lambda) =>
+        if origin.root.isArray then
+          val array = origin.root.asInstanceOf[IArray[JsonAst]]
+          if array.length <= ordinal.n0 then origin else Json.ast:
+            JsonAst(array.updated(ordinal.n0, lambda(Json.ast(array(ordinal.n0))).root))
+        else origin
 
   given boolean: Json is Decodable in Json = identity(_)
 
