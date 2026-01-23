@@ -37,6 +37,7 @@ import soundness.*
 import charEncoders.utf8
 import strategies.throwUnsafely
 import jsonPrinters.minimal
+import autopsies.contrastExpectations
 
 case class Foo(x: Int, y: Text) derives CanEqual
 
@@ -208,3 +209,41 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"Decode a NewBand"):
         newBandText.read[Json].as[NewBand]
       .assert(_ == newBand)
+
+      test(m"Update a JSON object dynamically"):
+        import dynamicJsonAccess.enabled
+        val john = t"""{"name": "John", "age": 40}""".decode[Json]
+        val john2 = john.age = 41
+        john2.as[Person]
+      . assert(_ == Person("John", 41))
+
+      test(m"Update a JSON array dynamically"):
+        import dynamicJsonAccess.enabled
+        val array = t"""[1, 2, 3]""".decode[Json]
+        val array2 = array(1) = 5
+        array2.as[List[Int]]
+      . assert(_ == List(1, 5, 3))
+
+      case class Role(name: String)
+      case class Entity(name: String, age: Int, roles: List[Role])
+      case class Org(name: String, leader: Entity)
+
+      val org = Org("The Beatles", Entity("John", 40, List(Role("Leader")))).json
+
+      test(m"Lens update on JSON"):
+        import dynamicJsonAccess.enabled
+        val org2 = org.lens(_.leader.age = 41.json)
+        org2.as[Org]
+      . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader")))))
+
+      test(m"Lens update with optic on JSON"):
+        import dynamicJsonAccess.enabled
+        val org2 = org.lens(_.leader.roles(Prim) = Role("-").json)
+        org2.as[Org]
+      . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))
+
+      test(m"Deeper lens update with optic on JSON"):
+        import dynamicJsonAccess.enabled
+        val org2 = org.lens(_.leader.roles(Prim).name = "-".json)
+        org2.as[Org]
+      . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))

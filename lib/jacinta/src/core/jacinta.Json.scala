@@ -46,6 +46,7 @@ import distillate.*
 import gossamer.*
 import hieroglyph.*
 import merino.*
+import panopticon.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -148,6 +149,19 @@ trait Json2:
 
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
+
+  given lens: [name <: Label: ValueOf] => DynamicJsonEnabler => Tactic[JsonError]
+        => name is Lens from Json onto Json =
+    Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+
+  given ordinal: [element] => Ordinal is Optical from Json onto Json =
+    ordinal =>
+      Optic: (origin, lambda) =>
+        if origin.root.isArray then
+          val array = origin.root.asInstanceOf[IArray[JsonAst]]
+          if array.length <= ordinal.n0 then origin else Json.ast:
+            JsonAst(array.updated(ordinal.n0, lambda(Json.ast(array(ordinal.n0))).root))
+        else origin
 
   given boolean: Json is Decodable in Json = identity(_)
 
@@ -290,6 +304,24 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
       apply(field.tt)(index)
 
+
+  def update[value: Encodable in Json](index: Int, value: value)(using erased DynamicJsonEnabler)
+  : Json raises JsonError =
+
+      Json.ast(JsonAst(root.array.updated(index, value.encode.root)))
+
+
+  def updateDynamic(field: String)[value: Encodable in Json](value: value)
+       (using erased DynamicJsonEnabler)
+  : Json raises JsonError =
+
+      modify(field, value.encode)
+
+
+  private[jacinta] def modify(field: String, value: Json): Json raises JsonError =
+    root.obj(0).indexWhere(_ == field) match
+      case -1    => Json.ast(JsonAst((root.obj(0) :+ field), (root.obj(1) :+ value.root)))
+      case index => Json.ast(JsonAst(root.obj(0), (root.obj(1).updated(index, value.root))))
 
   def apply(field: Text): Json raises JsonError =
     root.obj(0).indexWhere(_ == field.s) match

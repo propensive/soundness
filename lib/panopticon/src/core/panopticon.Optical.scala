@@ -41,17 +41,28 @@ import rudiments.*
 import vacuous.*
 
 object Optical:
-  given prim: [element] => Prim.type is Optical from List[element] onto element =
-    prim =>
+  given ordinalList: [element] => Ordinal is Optical from List[element] onto element =
+    ordinal =>
       Optic: (origin, lambda) =>
-        origin match
-          case head :: tail => lambda(head) :: tail
-          case Nil          => Nil
+        if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin(ordinal.n0)))
+        else origin
 
-  given at: [key, element] => At[key] is Optical from Map[key, element] onto element =
-    at =>
+  given ordinalVector: [element] => Ordinal is Optical from Vector[element] onto element =
+    ordinal =>
       Optic: (origin, lambda) =>
-        origin.at(at.key).let(lambda).lay(origin)(origin.updated(at.key, _))
+        if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin(ordinal.n0)))
+        else origin
+
+  given ordinalSeq: [element] => Ordinal is Optical from Seq[element] onto element =
+    ordinal =>
+      Optic: (origin, lambda) =>
+        if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin(ordinal.n0)))
+        else origin
+
+  given at: [key, element] => key is Optical from Map[key, element] onto element =
+    key =>
+      Optic: (origin, lambda) =>
+        origin.at(key).let(lambda).lay(origin)(origin.updated(key, _))
 
   given filter: [key, element] => Filter[key] is Optical from Map[key, element] onto element =
     filter =>
