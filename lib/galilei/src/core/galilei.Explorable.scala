@@ -54,6 +54,17 @@ object Explorable:
         . map(_.toString.tt.decode[Path on Linux])
         . to(Stream)
 
+  given Posix is Explorable:
+    def children(path: Path on Posix): Stream[Path on Posix] =
+      given tactic: Tactic[PathError] = strategies.throwUnsafely
+
+      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then Stream() else
+        jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+        . iterator().nn
+        . asScala
+        . map(_.toString.tt.decode[Path on Posix])
+        . to(Stream)
+
   given Windows is Explorable:
     def children(path: Path on Windows): Stream[Path on Windows] =
       given tactic: Tactic[PathError] = strategies.throwUnsafely
