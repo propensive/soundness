@@ -41,11 +41,23 @@ import rudiments.*
 import vacuous.*
 
 object Optical:
-  given ordinal: [element] => Ordinal is Optical from List[element] onto element =
+  given ordinalList: [element] => Ordinal is Optical from List[element] onto element =
     ordinal =>
       Optic: (origin, lambda) =>
         if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin(ordinal.n0)))
-        else Nil
+        else origin
+
+  given ordinalVector: [element] => Ordinal is Optical from Vector[element] onto element =
+    ordinal =>
+      Optic: (origin, lambda) =>
+        if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin(ordinal.n0)))
+        else origin
+
+  given ordinalSeq: [element] => Ordinal is Optical from Seq[element] onto element =
+    ordinal =>
+      Optic: (origin, lambda) =>
+        if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin(ordinal.n0)))
+        else origin
 
   given at: [key, element] => key is Optical from Map[key, element] onto element =
     key =>
