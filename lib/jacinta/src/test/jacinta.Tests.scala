@@ -39,6 +39,7 @@ import strategies.throwUnsafely
 import jsonPrinters.minimal
 import autopsies.contrastExpectations
 
+given discernible: [any] => any is Discernible in Json = () => t"_type"
 case class Foo(x: Int, y: Text) derives CanEqual
 
 case class InvalidState(name: String) extends Exception("Not a valid state: "+name)

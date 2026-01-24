@@ -106,11 +106,12 @@ trait Json2:
       json =>
         provide[Tactic[JsonError]]:
           provide[Tactic[VariantError]]:
+            val discernible = summonInline[derivation is Discernible in Json]
             val values = json.root.obj
 
-            values(0).indexOf("_type") match
+            values(0).indexOf(discernible.key()) match
               case -1 =>
-                focus(prior.or(JsonPointer()) / t"_type"):
+                focus(prior.or(JsonPointer()) / discernible.key()):
                   abort(JsonError(Reason.Absent))
 
               case index =>
@@ -138,6 +139,7 @@ trait Json2:
              ((labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))))
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
+      val discernible = summonInline[derivation is Discernible in Json]
       variant(value): [variant <: derivation] =>
         value =>
           Json.ast:
@@ -145,7 +147,7 @@ trait Json2:
               case (labels, values) => labels.asMatchable.absolve match
                 case labels: IArray[String] @unchecked => values.asMatchable.absolve match
                   case values: IArray[JsonAst] @unchecked =>
-                    JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
+                    JsonAst(((discernible.key().s +: labels), (label.asInstanceOf[JsonAst] +: values)))
 
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
@@ -317,11 +319,30 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
       modify(field, value.encode)
 
+  def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicJsonEnabler)
+  : Json raises JsonError =
+
+      delete(field)
+
 
   private[jacinta] def modify(field: String, value: Json): Json raises JsonError =
     root.obj(0).indexWhere(_ == field) match
       case -1    => Json.ast(JsonAst((root.obj(0) :+ field), (root.obj(1) :+ value.root)))
       case index => Json.ast(JsonAst(root.obj(0), (root.obj(1).updated(index, value.root))))
+
+  private[jacinta] def delete(field: String): Json raises JsonError =
+    root.obj(0).indexWhere(_ == field) match
+      case -1    => Json.ast(JsonAst(root.obj))
+      case index =>
+        val keys = root.obj(0)
+        val values = root.obj(1)
+        val keys2 = new Array[String](keys.length - 1)
+        System.arraycopy(keys, 0, keys2, 0, index)
+        System.arraycopy(keys, index + 1, keys2, index, keys.length - index - 1)
+        val values2 = new Array[String](values.length - 1)
+        System.arraycopy(values, 0, values2, 0, index)
+        System.arraycopy(values, index + 1, values2, index, values.length - index - 1)
+        Json.ast(JsonAst(keys2.immutable(using Unsafe) -> values2.immutable(using Unsafe)))
 
   def apply(field: Text): Json raises JsonError =
     root.obj(0).indexWhere(_ == field.s) match
