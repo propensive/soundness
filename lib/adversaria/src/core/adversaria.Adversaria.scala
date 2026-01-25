@@ -41,6 +41,36 @@ import proscenium.*
 import scala.quoted.*
 
 object Adversaria:
+  private def rebuild(using Quotes)(term: quotes.reflect.Term): quotes.reflect.Term =
+    import quotes.reflect.*
+
+    object Mapper extends TreeMap:
+      override def transformTypeTree(tree: TypeTree)(owner: Symbol): TypeTree =
+        tree match
+          case ident: TypeIdent =>
+            val tree2 = TypeIdent(tree.symbol)
+            tree2
+
+      override def transformTerm(tree: Term)(owner: Symbol): Term =
+        tree match
+          case Ident(id) =>
+            val tree2 = Ident(tree.symbol.termRef)
+            tree2
+          case Apply(fn, args) =>
+            val tree2 = Apply(transformTerm(fn)(owner), transformTerms(args)(owner))
+            tree2
+          case Select(qualifier, name) =>
+            val tree2 = Select(transformTerm(qualifier)(owner), tree.symbol)
+            tree2
+          case New(tpt) =>
+            val tree2 = New(transformTypeTree(tpt)(owner))
+            tree2
+          case tree =>
+            super.transformTerm(tree)(owner)
+
+    Mapper.transformTerm(term)(Symbol.spliceOwner)
+
+
   def firstField[target <: Product: Type, annotation <: StaticAnnotation: Type]
   : Macro[CaseField[target, annotation]] =
 
@@ -49,13 +79,19 @@ object Adversaria:
       val targetType = TypeRepr.of[target]
       val fields = targetType.typeSymbol.caseFields
 
-      fields.flatMap: field =>
-        field.annotations.map(_.asExpr).collect:
-          case '{$annotation: `annotation`} => annotation
+      val paramss = targetType.classSymbol.get.primaryConstructor.paramSymss
+      val params = paramss.find(_.headOption.fold(false)( _.isTerm)).getOrElse(Nil)
+
+      fields.zip(params).flatMap: (field, param) =>
+        param.annotations.map(_.asExpr).collect:
+          case '{$annotation: `annotation`} =>
+            rebuild(annotation.asTerm).asExprOf[annotation]
 
         . map: annotation =>
-            '{CaseField(Text(${Expr(field.name)}), (target: target) =>
-                ${'target.asTerm.select(field).asExpr}, $annotation)}
+            '{
+                CaseField(Text(${Expr(field.name)}), (target: target) =>
+                  ${'target.asTerm.select(field).asExpr}, $annotation)
+            }
         . reverse
       . head
 
@@ -68,16 +104,21 @@ object Adversaria:
       val targetType = TypeRepr.of[target]
       val fields = targetType.typeSymbol.caseFields
 
-      val elements: List[Expr[CaseField[target, annotation]]] = fields.flatMap: field =>
-        val name = Expr(field.name)
-        field.annotations.map(_.asExpr).collect:
-          case '{$annotation: `annotation`} => annotation
+      val paramss = targetType.classSymbol.get.primaryConstructor.paramSymss
+      val params = paramss.find(_.headOption.fold(false)( _.isTerm)).getOrElse(Nil)
 
-        . map: annotation =>
-            '{CaseField(Text($name), (target: target) => ${'target.asTerm.select(field).asExpr},
-                $annotation)}
+      val elements: List[Expr[CaseField[target, annotation]]] =
+        fields.zip(params).flatMap: (field, param) =>
+          val name = Expr(field.name)
+          param.annotations.map(_.asExpr).collect:
+            case '{$annotation: `annotation`} =>
+              rebuild(annotation.asTerm).asExprOf[annotation]
 
-        . reverse
+          . map: annotation =>
+              '{CaseField(Text($name), (target: target) => ${'target.asTerm.select(field).asExpr},
+                  $annotation)}
+
+          . reverse
 
       Expr.ofList(elements)
 
@@ -110,22 +151,27 @@ object Adversaria:
           def select(entity: entity, name: Text): Result = lambdas(name)(entity)
     }
 
-  def fieldAnnotations[target: Type](lambda: Expr[target => Any]): Macro[List[StaticAnnotation]] =
-    import quotes.reflect.*
+  def fieldAnnotations[target: Type](lambda: Expr[target => Any])
+  : Macro[List[StaticAnnotation]] =
 
-    val targetType = TypeRepr.of[target]
+      import quotes.reflect.*
 
-    val field = lambda.asTerm match
-      case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
-        targetType.typeSymbol.caseFields.find(_.name == term).getOrElse:
-          panic(m"the member $term is not a case class field")
+      val targetType = TypeRepr.of[target]
+      val paramss = targetType.classSymbol.get.primaryConstructor.paramSymss
+      val params = paramss.find(_.headOption.fold(false)( _.isTerm)).getOrElse(Nil)
 
-      case _ =>
-        panic(m"the lambda must be a simple reference to a case class field")
+      val field = lambda.asTerm match
+        case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
+          params.find(_.name == term).getOrElse:
+            panic(m"the member $term is not a case class field")
 
-    Expr.ofList:
-      field.annotations.map(_.asExpr).collect:
-        case '{ $annotation: StaticAnnotation } => annotation
+        case _ =>
+          panic(m"the lambda must be a simple reference to a case class field")
+
+      Expr.ofList:
+        field.annotations.map(_.asExpr).collect:
+          case '{ $annotation: StaticAnnotation } =>
+            rebuild(annotation.asTerm).asExprOf[StaticAnnotation]
 
 
   def typeAnnotations[annotation <: StaticAnnotation: Type, target: Type]
