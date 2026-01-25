@@ -34,7 +34,11 @@ package soundness
 
 export jacinta
 . { dynamicJsonAccess, DynamicJsonEnabler, Json, JsonError, JsonPointer, JsonPrimitive, JsonPrinter,
-    Ndjson, json, Discernible }
+    Ndjson, json }
 
 package jsonPrinters:
   export jacinta.jsonPrinters.{indented, minimal}
+
+package jsonDiscriminables:
+  export jacinta.jsonDiscriminables.discriminatedUnionByType
+  export jacinta.jsonDiscriminables.discriminatedUnionByKind

@@ -3,6 +3,7 @@ package jacinta
 import scala.collection.mutable as scm
 import scala.annotation.*
 
+import adversaria.*
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -10,6 +11,7 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import serpentine.*
 import telekinesis.*
@@ -20,36 +22,36 @@ import wisteria.*
 import zephyrine.*
 
 object Schematic:
-  given byte: Byte is Schematic in JsonSchema = () => JsonSchema.integer()
-  given short: Short is Schematic in JsonSchema = () => JsonSchema.integer()
-  given int: Int is Schematic in JsonSchema = () => JsonSchema.integer()
-  given long: Long is Schematic in JsonSchema = () => JsonSchema.integer()
-  given float: Float is Schematic in JsonSchema = () => JsonSchema.number()
-  given double: Double is Schematic in JsonSchema = () => JsonSchema.number()
-  given text: Text is Schematic in JsonSchema = () => JsonSchema.string()
-  given email: EmailAddress is Schematic in JsonSchema = () => JsonSchema.string()
-  given boolean: Boolean is Schematic in JsonSchema = () => JsonSchema.boolean()
+  given byte: Byte is Schematic in JsonSchema = () => JsonSchema.Integer()
+  given short: Short is Schematic in JsonSchema = () => JsonSchema.Integer()
+  given int: Int is Schematic in JsonSchema = () => JsonSchema.Integer()
+  given long: Long is Schematic in JsonSchema = () => JsonSchema.Integer()
+  given float: Float is Schematic in JsonSchema = () => JsonSchema.Number()
+  given double: Double is Schematic in JsonSchema = () => JsonSchema.Number()
+  given text: Text is Schematic in JsonSchema = () => JsonSchema.String()
+  given email: EmailAddress is Schematic in JsonSchema = () => JsonSchema.String()
+  given boolean: Boolean is Schematic in JsonSchema = () => JsonSchema.Boolean()
 
   given optional: [value: Schematic in JsonSchema] => Optional[value] is Schematic in JsonSchema =
     () =>
       value.schema() match
-        case entity: JsonSchema.`object` => entity.copy(optional = true)
-        case entity: JsonSchema.integer  => entity.copy(optional = true)
-        case entity: JsonSchema.number   => entity.copy(optional = true)
-        case entity: JsonSchema.string   => entity.copy(optional = true)
-        case entity: JsonSchema.array    => entity.copy(optional = true)
-        case entity: JsonSchema.boolean  => entity.copy(optional = true)
-        case entity: JsonSchema.`null`   => entity.copy(optional = true)
+        case entity: JsonSchema.Object => entity.copy(optional = true)
+        case entity: JsonSchema.Integer  => entity.copy(optional = true)
+        case entity: JsonSchema.Number   => entity.copy(optional = true)
+        case entity: JsonSchema.String   => entity.copy(optional = true)
+        case entity: JsonSchema.Array    => entity.copy(optional = true)
+        case entity: JsonSchema.Boolean  => entity.copy(optional = true)
+        case entity: JsonSchema.Null   => entity.copy(optional = true)
 
   given list: [value: Schematic in JsonSchema] => List[value] is Schematic in JsonSchema =
-    () => JsonSchema.array(items = value.schema())
+    () => JsonSchema.Array(items = value.schema())
 
   given set: [value: Schematic in JsonSchema] => Set[value] is Schematic in JsonSchema =
-    () => JsonSchema.array(items = value.schema())
+    () => JsonSchema.Array(items = value.schema())
 
   given map: [key: Encodable in Text, value: Schematic in JsonSchema]
         =>  Map[key, value] is Schematic in JsonSchema =
-    () => JsonSchema.`object`(additionalProperties = true)
+    () => JsonSchema.Object(additionalProperties = true)
 
 trait Schematic extends Typeclass, Formal:
   def schema(): Form
@@ -57,15 +59,29 @@ trait Schematic extends Typeclass, Formal:
 
 object JsonSchema extends ProductDerivable[Schematic in JsonSchema]:
 
-  given discernible: JsonSchema is Discernible in Json = () => t"type"
-
   given encodable: JsonSchema is Encodable in Json = Json.EncodableDerivation.derived
+  given discriminatedUnion: JsonSchema is Discriminable:
+    type Form = Json
+    type Self = JsonSchema
+
+    import dynamicJsonAccess.enabled
+    def rewrite(kind: Text, json: Json): Json = unsafely(json.updateDynamic("type")(kind.lower))
+    def variant(json: Json): Json = unsafely(json.updateDynamic("type")(Unset))
+
+    def discriminate(json: Json): Optional[Text] =
+      safely(json.selectDynamic("type").as[Text]).let(_.capitalize)
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Schematic in JsonSchema =
     () =>
-      val descriptions = summonInline[]
+      val descriptions = Annotations.fields[derivation, memo].indexBy(_.name)
+      println(descriptions)
       val map =
-        contexts { [field] => schema => (label, schema.schema()) }.to(Map)
+        contexts:
+          [field] => schema =>
+            val schema2 = descriptions.at(label).lay(schema.schema()): memo =>
+              schema.schema().description = memo.annotation.description
+            (label, schema2)
+        .to(Map)
 
       val required: List[Text] =
         contexts:
@@ -73,7 +89,7 @@ object JsonSchema extends ProductDerivable[Schematic in JsonSchema]:
         . compact
         . to(List)
 
-      `object`(properties = map, required = required)
+      Object(properties = map, required = required)
 
   object Format:
     given encodable: Format is Encodable in Text = _.toString.tt.uncamel.kebab
@@ -91,7 +107,17 @@ enum JsonSchema extends Documentary:
   def optional: scala.Boolean
   def description: Optional[Text]
 
-  case `object`
+  def `description_=`(description: Text): JsonSchema = this match
+    case entity: Object  => entity.copy(description = description)
+    case entity: Array   => entity.copy(description = description)
+    case entity: String  => entity.copy(description = description)
+    case entity: Number  => entity.copy(description = description)
+    case entity: Integer => entity.copy(description = description)
+    case entity: Boolean => entity.copy(description = description)
+    case entity: Null    => entity.copy(description = description)
+
+
+  case Object
         (description:          Optional[Text]        = Unset,
          properties:           Map[Text, JsonSchema] = Map(),
          optional:             scala.Boolean         = false,
@@ -99,7 +125,7 @@ enum JsonSchema extends Documentary:
          `enum`:               List[Json]            = Nil,
          additionalProperties: scala.Boolean         = false)
 
-  case `array`
+  case Array
         (description: Optional[Text]       = Unset,
          items:       Optional[JsonSchema] = Unset,
          minItems:    Optional[Int]        = Unset,
@@ -108,7 +134,7 @@ enum JsonSchema extends Documentary:
          maxContains: Optional[Int]        = Unset,
          minContains: Optional[Int]        = Unset)
 
-  case `string`
+  case String
         (description: Optional[Text]              = Unset,
          minLength:   Optional[Int]               = Unset,
          maxLength:   Optional[Int]               = Unset,
@@ -116,7 +142,7 @@ enum JsonSchema extends Documentary:
          format:      Optional[JsonSchema.Format] = Unset,
          optional:    scala.Boolean               = false)
 
-  case `number`
+  case Number
         (description:      Optional[Text]   = Unset,
          multipleOf:       Optional[Double] = Unset,
          maximum:          Optional[Double] = Unset,
@@ -125,7 +151,7 @@ enum JsonSchema extends Documentary:
          exclusiveMaximum: Optional[Double] = Unset,
          optional:         scala.Boolean    = false)
 
-  case integer
+  case Integer
         (description:      Optional[Text] = Unset,
          maximum:          Optional[Int]  = Unset,
          minimum:          Optional[Int]  = Unset,
@@ -133,8 +159,8 @@ enum JsonSchema extends Documentary:
          exclusiveMaximum: Optional[Int]  = Unset,
          optional:         scala.Boolean  = false)
 
-  case boolean(description: Optional[Text] = Unset, optional: scala.Boolean = false)
-  case `null`(description: Optional[Text] = Unset, optional: scala.Boolean = false)
+  case Boolean(description: Optional[Text] = Unset, optional: scala.Boolean = false)
+  case Null(description: Optional[Text] = Unset, optional: scala.Boolean = false)
 
 
 object JsonPointer:

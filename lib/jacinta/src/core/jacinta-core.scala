@@ -44,6 +44,7 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import wisteria.*
 
 import JsonError.Reason
 
@@ -121,3 +122,10 @@ extension [entity: Encodable in Json](value: entity) def json: Json = entity.enc
 package jsonPrinters:
   given indented: JsonPrinter = JsonPrinter.print(_, true)
   given minimal: JsonPrinter = JsonPrinter.print(_, false)
+
+package jsonDiscriminables:
+  given discriminatedUnionByType: [value] => value is Discriminable in Json =
+    Json.discriminatedUnion[value]("type")
+
+  given discriminatedUnionByKind: [value] => value is Discriminable in Json =
+    Json.discriminatedUnion[value]("kind")

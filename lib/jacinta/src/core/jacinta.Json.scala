@@ -106,19 +106,15 @@ trait Json2:
       json =>
         provide[Tactic[JsonError]]:
           provide[Tactic[VariantError]]:
-            val discernible = summonInline[derivation is Discernible in Json]
-            val values = json.root.obj
+            val discriminable = infer[derivation is Discriminable in Json]
 
-            values(0).indexOf(discernible.key()) match
-              case -1 =>
-                focus(prior.or(JsonPointer()) / discernible.key()):
-                  abort(JsonError(Reason.Absent))
+            val discriminant: Text = discriminable.discriminate(json).or:
+              focus(prior.or(JsonPointer()))(abort(JsonError(Reason.Absent)))
 
-              case index =>
-                delegate(values(1)(index).string): [variant <: derivation] =>
-                  context =>
-                    // The cast became necessary when upgrading to Scala 3.7.1.
-                    context.decoded(json).asInstanceOf[derivation]
+            delegate(discriminant): [variant <: derivation] =>
+              context =>
+                // The cast became necessary when upgrading to Scala 3.7.1.
+                context.decoded(json).asInstanceOf[derivation]
 
   object EncodableDerivation extends Derivable[Encodable in Json]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Json =
@@ -139,15 +135,9 @@ trait Json2:
              ((labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))))
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
-      val discernible = summonInline[derivation is Discernible in Json]
+      val discriminable = infer[derivation is Discriminable in Json]
       variant(value): [variant <: derivation] =>
-        value =>
-          Json.ast:
-            context.encode(value).root.asMatchable.absolve match
-              case (labels, values) => labels.asMatchable.absolve match
-                case labels: IArray[String] @unchecked => values.asMatchable.absolve match
-                  case values: IArray[JsonAst] @unchecked =>
-                    JsonAst(((discernible.key().s +: labels), (label.asInstanceOf[JsonAst] +: values)))
+        value => discriminable.rewrite(label, context.encode(value))
 
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
@@ -292,6 +282,22 @@ object Json extends Json2, Dynamic:
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))
+
+  def discriminatedUnion[value](label: Text): value is Discriminable in Json = new Discriminable:
+    type Form = Json
+    type Self = value
+
+    protected def key: String = label.s
+
+    import dynamicJsonAccess.enabled
+    def rewrite(kind: Text, json: Json): Json = unsafely:
+      json.updateDynamic(key)(kind)
+
+    def discriminate(json: Json): Optional[Text] =
+      safely(json.selectDynamic(key).as[Text])
+
+    def variant(json: Json): Json = unsafely:
+      json.updateDynamic(key)(Unset)
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
