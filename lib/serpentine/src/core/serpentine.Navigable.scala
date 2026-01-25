@@ -40,11 +40,10 @@ import proscenium.*
 import spectacular.*
 
 object Navigable:
-  given label: [string <: Label] => string is Navigable = _.tt
-  given int: [int <: Int] => int is Navigable = _.toString.tt
-  given text: [text <: Text] => text is Navigable = identity(_)
-  given name: [plane, name <: Name[plane]] => name is Navigable = identity(_)
-  given uuid: [uuid <: Uuid] => uuid is Navigable = _.text
+  given label: [plane, string <: Label] => string is Navigable on plane = _.tt
+  given text: [plane, text <: Text] => text is Navigable on plane = identity(_)
+  given name: [plane, name <: Name[plane]] => name is Navigable on plane = identity(_)
+  given uuid: [plane, uuid <: Uuid] => uuid is Navigable on plane = _.text
 
-trait Navigable extends Typeclass:
+trait Navigable extends Typeclass, Planar:
   def follow(name: Self): Text
