@@ -344,7 +344,8 @@ object acyclicity extends Library:
 
 object adversaria extends Library:
   object core extends Component(rudiments.core)
-  object test extends Tests(core)
+  object examples extends Component(core)
+  object test extends Tests(examples)
 
 object ambience extends Library:
   object core extends Component(gossamer.core)
