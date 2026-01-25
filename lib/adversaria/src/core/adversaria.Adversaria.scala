@@ -82,53 +82,50 @@ object Adversaria:
       Expr.ofList(elements)
 
 
-  def dereferenceable[entity: Type, value: Type]
-  : Macro[entity is Dereferenceable to value] =
-      import quotes.reflect.*
+  def dereferenceable[entity: Type, value: Type]: Macro[entity is Dereferenceable to value] =
+    import quotes.reflect.*
 
-      def namesList: Expr[List[Text]] = Expr.ofList:
-        TypeRepr.of[entity]
-        . typeSymbol
-        . fieldMembers
-        . filter(_.info <:< TypeRepr.of[value])
-        . map: field =>
-            '{  ${Literal(StringConstant(field.name)).asExprOf[String]}.tt }
+    def namesList: Expr[List[Text]] = Expr.ofList:
+      TypeRepr.of[entity]
+      . typeSymbol
+      . fieldMembers
+      . filter(_.info <:< TypeRepr.of[value])
+      . map: field =>
+          '{  ${Literal(StringConstant(field.name)).asExprOf[String]}.tt }
 
-      def lambdaMap: Expr[List[(Text, entity => value)]] = Expr.ofList:
-        TypeRepr.of[entity]
-        . typeSymbol
-        . fieldMembers
-        . filter(_.info <:< TypeRepr.of[value])
-        . map: field =>
-            val name = '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
-            '{  ($name, (value: entity) => ${'value.asTerm.select(field).asExprOf[value]}) }
-      '{
-          new Dereferenceable:
-            type Self = entity
-            type Result = value
-            private val lambdas: Map[Text, Self => Result] = ${lambdaMap}.toMap
-            def names(entity: Self): List[Text] = ${namesList}
-            def select(entity: entity, name: Text): Result = lambdas(name)(entity)
-      }
+    def lambdaMap: Expr[List[(Text, entity => value)]] = Expr.ofList:
+      TypeRepr.of[entity]
+      . typeSymbol
+      . fieldMembers
+      . filter(_.info <:< TypeRepr.of[value])
+      . map: field =>
+          val name = '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
+          '{  ($name, (value: entity) => ${'value.asTerm.select(field).asExprOf[value]}) }
+    '{
+        new Dereferenceable:
+          type Self = entity
+          type Result = value
+          private val lambdas: Map[Text, Self => Result] = ${lambdaMap}.toMap
+          def names(entity: Self): List[Text] = ${namesList}
+          def select(entity: entity, name: Text): Result = lambdas(name)(entity)
+    }
 
-  def fieldAnnotations[target: Type](lambda: Expr[target => Any])
-  : Macro[List[StaticAnnotation]] =
+  def fieldAnnotations[target: Type](lambda: Expr[target => Any]): Macro[List[StaticAnnotation]] =
+    import quotes.reflect.*
 
-      import quotes.reflect.*
+    val targetType = TypeRepr.of[target]
 
-      val targetType = TypeRepr.of[target]
+    val field = lambda.asTerm match
+      case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
+        targetType.typeSymbol.caseFields.find(_.name == term).getOrElse:
+          panic(m"the member $term is not a case class field")
 
-      val field = lambda.asTerm match
-        case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
-          targetType.typeSymbol.caseFields.find(_.name == term).getOrElse:
-            panic(m"the member $term is not a case class field")
+      case _ =>
+        panic(m"the lambda must be a simple reference to a case class field")
 
-        case _ =>
-          panic(m"the lambda must be a simple reference to a case class field")
-
-      Expr.ofList:
-        field.annotations.map(_.asExpr).collect:
-          case '{ $annotation: StaticAnnotation } => annotation
+    Expr.ofList:
+      field.annotations.map(_.asExpr).collect:
+        case '{ $annotation: StaticAnnotation } => annotation
 
 
   def typeAnnotations[annotation <: StaticAnnotation: Type, target: Type]
