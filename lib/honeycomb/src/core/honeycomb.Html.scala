@@ -927,7 +927,7 @@ extends Node, Topical, Transportive, Dynamic:
 
       compiletime.summonFrom:
         case attribute: (name.type is Attribute on (? >: Topic) in Form) =>
-          val attributive = compiletime.summonInline[value is Attributive to attribute.Topic]
+          val attributive = infer[value is Attributive to attribute.Topic]
 
           attributive.attribute(name, value).match
             case Unset        => Element(label, attributes - name, children, foreign)
@@ -938,7 +938,7 @@ extends Node, Topical, Transportive, Dynamic:
           . in[Form]
 
         case attribute: (name.type is Attribute in Form) =>
-          val attributive = compiletime.summonInline[value is Attributive to attribute.Topic]
+          val attributive = infer[value is Attributive to attribute.Topic]
 
           attributive.attribute(name, value).match
             case Unset        => Element(label, attributes - name, children, foreign)

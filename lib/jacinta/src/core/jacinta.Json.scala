@@ -50,7 +50,9 @@ import panopticon.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import serpentine.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import wisteria.*
@@ -106,18 +108,15 @@ trait Json2:
       json =>
         provide[Tactic[JsonError]]:
           provide[Tactic[VariantError]]:
-            val values = json.root.obj
+            val discriminable = infer[derivation is Discriminable in Json]
 
-            values(0).indexOf("_type") match
-              case -1 =>
-                focus(prior.or(JsonPointer()) / t"_type"):
-                  abort(JsonError(Reason.Absent))
+            val discriminant: Text = discriminable.discriminate(json).or:
+              focus(prior.or(JsonPointer()))(abort(JsonError(Reason.Absent)))
 
-              case index =>
-                delegate(values(1)(index).string): [variant <: derivation] =>
-                  context =>
-                    // The cast became necessary when upgrading to Scala 3.7.1.
-                    context.decoded(json).asInstanceOf[derivation]
+            delegate(discriminant): [variant <: derivation] =>
+              context =>
+                // The cast became necessary when upgrading to Scala 3.7.1.
+                context.decoded(json).asInstanceOf[derivation]
 
   object EncodableDerivation extends Derivable[Encodable in Json]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Encodable in Json =
@@ -138,14 +137,9 @@ trait Json2:
              ((labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))))
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
+      val discriminable = infer[derivation is Discriminable in Json]
       variant(value): [variant <: derivation] =>
-        value =>
-          Json.ast:
-            context.encode(value).root.asMatchable.absolve match
-              case (labels, values) => labels.asMatchable.absolve match
-                case labels: IArray[String] @unchecked => values.asMatchable.absolve match
-                  case values: IArray[JsonAst] @unchecked =>
-                    JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
+        value => discriminable.rewrite(label, context.encode(value))
 
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
@@ -267,8 +261,7 @@ object Json extends Json2, Dynamic:
         => (value over Json) is Aggregable by Data =
     bytes => Json(bytes.read[JsonAst]).as[value].asInstanceOf[value over Json]
 
-  given showable: JsonPrinter => Json is Showable = json =>
-    try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
+  given showable: JsonPrinter => Json is Showable = _.root.show
 
   given abstractable: (encoder: CharEncoder, printer: JsonPrinter)
         =>  Json is Abstractable across HttpStreams to HttpStreams.Content =
@@ -290,6 +283,18 @@ object Json extends Json2, Dynamic:
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))
+
+  def discriminatedUnion[value](label: Text): value is Discriminable in Json = new Discriminable:
+    type Form = Json
+    type Self = value
+
+    protected def key: String = label.s
+
+    import dynamicJsonAccess.enabled
+
+    def rewrite(kind: Text, json: Json): Json = unsafely(json.updateDynamic(key)(kind))
+    def discriminate(json: Json): Optional[Text] = safely(json.selectDynamic(key).as[Text])
+    def variant(json: Json): Json = unsafely(json.updateDynamic(key)(Unset))
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
@@ -317,11 +322,30 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
       modify(field, value.encode)
 
+  def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicJsonEnabler)
+  : Json raises JsonError =
+
+      delete(field)
+
 
   private[jacinta] def modify(field: String, value: Json): Json raises JsonError =
     root.obj(0).indexWhere(_ == field) match
       case -1    => Json.ast(JsonAst((root.obj(0) :+ field), (root.obj(1) :+ value.root)))
       case index => Json.ast(JsonAst(root.obj(0), (root.obj(1).updated(index, value.root))))
+
+  private[jacinta] def delete(field: String): Json raises JsonError =
+    root.obj(0).indexWhere(_ == field) match
+      case -1    => Json.ast(JsonAst(root.obj))
+      case index =>
+        val keys = root.obj(0)
+        val values = root.obj(1)
+        val keys2 = new Array[String](keys.length - 1)
+        System.arraycopy(keys, 0, keys2, 0, index)
+        System.arraycopy(keys, index + 1, keys2, index, keys.length - index - 1)
+        val values2 = new Array[String](values.length - 1)
+        System.arraycopy(values, 0, values2, 0, index)
+        System.arraycopy(values, index + 1, values2, index, values.length - index - 1)
+        Json.ast(JsonAst(keys2.immutable(using Unsafe) -> values2.immutable(using Unsafe)))
 
   def apply(field: Text): Json raises JsonError =
     root.obj(0).indexWhere(_ == field.s) match
@@ -387,7 +411,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
             false
 
         case (rightKeys, rightValues) => rightKeys.asMatchable.absolve match
-           case rightKeys: IArray[String] @unchecked => rightValues.asMatchable.absolve match
+          case rightKeys: IArray[String] @unchecked => rightValues.asMatchable.absolve match
             case rightValues: IArray[JsonAst] @unchecked => left.asMatchable.absolve match
               case (leftKeys, leftValues) => leftKeys.asMatchable.absolve match
                 case leftKeys: IArray[String] @unchecked =>

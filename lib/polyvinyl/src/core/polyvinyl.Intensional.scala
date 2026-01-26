@@ -30,35 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package polyvinyl
 
-import scala.compiletime.*
-
-import anticipation.*
-import denominative.*
-import gossamer.*
+import prepositional.*
 import proscenium.*
-import spectacular.*
-import vacuous.*
 
-object Jacinta:
-  opaque type JsonPointer = List[Text | Ordinal]
-
-  object JsonPointer:
-    given showable: JsonPointer is Showable = pointer =>
-      def recur(elements: List[Ordinal | Text], result: Text): Text =
-        elements.asMatchable.absolve match
-          case Nil         => if result.nil then t"." else result
-          case key :: tail => key.asMatchable.absolve match
-            case index: Ordinal => recur(tail, t"[${index.n0}]$result")
-            case key: Text      => recur(tail, t".$key$result")
-
-      recur(pointer.reverse, t"")
-
-    def apply(elements: List[Text | Ordinal] = Nil): JsonPointer = elements
-
-  extension (path: JsonPointer)
-    @targetName("child")
-    infix def / (child: Text | Ordinal): JsonPointer = child :: path
-
-    def parent: Optional[JsonPointer] = if path.nil then Unset else JsonPointer(path.tail)
+trait Intensional[record <: Record in data, data, label <: Label, value]:
+  def transform(data: data, params: List[String]): value

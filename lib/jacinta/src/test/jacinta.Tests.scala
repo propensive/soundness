@@ -39,6 +39,8 @@ import strategies.throwUnsafely
 import jsonPrinters.minimal
 import autopsies.contrastExpectations
 
+import jsonDiscriminables.discriminatedUnionByKind
+
 case class Foo(x: Int, y: Text) derives CanEqual
 
 case class InvalidState(name: String) extends Exception("Not a valid state: "+name)
@@ -185,7 +187,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       val paulCoproduct = test(m"Serialize a coproduct"):
         val paul: Player = Player.Bassist(paulObj)
         paul.json.show
-      .check(_ == t"""{"_type":"Bassist","person":{"name":"Paul","age":81}}""")
+      .check(_ == t"""{"person":{"name":"Paul","age":81},"kind":"Bassist"}""")
 
       test(m"Decode a coproduct"):
         summon[Int is Decodable in Json]
@@ -204,7 +206,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       val newBandText = test(m"Serialize NewBand"):
         newBand.json.show
-      .check(_ == t"""{"members":[{"_type":"Bassist","person":{"name":"Paul","age":81}},{"_type":"Drummer","person":{"name":"Ringo","age":82}},{"_type":"Guitarist","person":{"name":"John","age":40}},{"_type":"Guitarist","person":{"name":"George","age":58}}]}""")
+      .check(_ == t"""{"members":[{"person":{"name":"Paul","age":81},"kind":"Bassist"},{"person":{"name":"Ringo","age":82},"kind":"Drummer"},{"person":{"name":"John","age":40},"kind":"Guitarist"},{"person":{"name":"George","age":58},"kind":"Guitarist"}]}""")
 
       test(m"Decode a NewBand"):
         newBandText.read[Json].as[NewBand]

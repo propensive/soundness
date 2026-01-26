@@ -33,28 +33,11 @@
 package adversaria
 
 import scala.annotation.StaticAnnotation
+import scala.annotation.ConstantAnnotation
 
 import soundness.*
 
 import autopsies.contrastExpectations
-
-final case class id() extends StaticAnnotation
-final case class unique() extends StaticAnnotation
-final case class count(number: Int) extends StaticAnnotation
-final case class ref(x: Int) extends StaticAnnotation
-
-case class Person(name: Text, @id email: Text)
-
-@count(10)
-case class Company(name: Text)
-
-case class Employee(person: Person, @id @unique code: Long)
-case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int, @ref(4) delta: Int)
-
-object Example1:
-  val foo: Int = 42
-  val bar: String = "BAR"
-  val baz: 12 = 12
 
 object Tests extends Suite(m"Adversaria tests"):
 
@@ -90,7 +73,7 @@ object Tests extends Suite(m"Adversaria tests"):
 
     test(m"get annotations on type"):
       summon[Annotations[StaticAnnotation, Company]].annotations
-    .assert(_.contains(count(10)))
+    .assert(_.contains(adversaria.count(10)))
 
     test(m"find the field with a particular annotation"):
       val ann = summon[CaseField[Person, id]]
@@ -102,11 +85,11 @@ object Tests extends Suite(m"Adversaria tests"):
       summon[CaseField[Person, id]].name
     .assert(_ == t"email")
 
-    // test(m"check that given for missing annotation is not resolved"):
-    //   demilitarize:
-    //     summon[CaseField[Company, id]]
-    //   .map(_.message)
-    // .assert(_.nonEmpty)
+    test(m"check that given for missing annotation is not resolved"):
+      demilitarize:
+        summon[CaseField[Company, id]]
+      .map(_.message)
+    .assert(_.nonEmpty)
 
     test(m"extract annotation value generically"):
       def getId[T <: Product](value: T)(using ann: CaseField[T, id]): ann.Topic = ann(value)

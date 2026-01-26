@@ -90,7 +90,7 @@ object Probably:
                 Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
 
               '{  given decompose: testType is Decomposable = $decomposable
-                  val contrast = compiletime.summonInline[testType is Contrastable]
+                  val contrast = infer[testType is Contrastable]
 
                   assertion[testType, test, report, result]
                    ($runner,

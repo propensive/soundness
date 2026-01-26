@@ -171,7 +171,7 @@ object soundness extends ScalaModule:
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
     gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core, panopticon.core,
     camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core, xylophone.core,
-    anamnesis.core, jacinta.time)
+    anamnesis.core, jacinta.time, jacinta.schema)
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
     charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
@@ -188,7 +188,7 @@ object soundness extends ScalaModule:
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
-    legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http)
+    legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema)
 
   object all extends Bundle(base, cli, data, sci, test, tool, web)
 
@@ -344,7 +344,8 @@ object acyclicity extends Library:
 
 object adversaria extends Library:
   object core extends Component(rudiments.core)
-  object test extends Tests(core)
+  object examples extends Component(core)
+  object test extends Tests(examples)
 
 object ambience extends Library:
   object core extends Component(gossamer.core)
@@ -606,10 +607,11 @@ object iridescence extends Library:
   object test extends Tests(core)
 
 object jacinta extends Library:
-  object core extends Component(merino.core, panopticon.core, gossamer.core)
+  object core extends Component(merino.core, urticose.url, panopticon.core, gossamer.core)
   object time extends Component(core, aviation.core)
   object http extends Component(core, telekinesis.core)
-  object test extends Tests(time, http)
+  object schema extends Component(core, telekinesis.core)
+  object test extends Tests(time, http, schema)
 
 object kaleidoscope extends Library:
   object core extends Component(rudiments.core, contingency.core)
@@ -957,6 +959,7 @@ object publishing extends Module:
     jacinta.core.publishLocal()()
     jacinta.http.publishLocal()()
     jacinta.time.publishLocal()()
+    jacinta.schema.publishLocal()()
     kaleidoscope.core.publishLocal()()
     larceny.plugin.publishLocal()()
     legerdemain.core.publishLocal()()

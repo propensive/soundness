@@ -350,11 +350,11 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     summonFrom:
       case given ((? >: child.type) is Admissible on Plane) =>
         Path.of[Plane, Limit, child.type *: Topic]
-          (root, infer[child.type is Navigable].follow(child) +: descent*)
+          (root, infer[child.type is Navigable on Plane].follow(child) +: descent*)
 
       case _ =>
         Path.unplatformed[Limit, child.type *: Topic]
-          (root, infer[child.type is Navigable].follow(child) +: descent*)
+          (root, infer[child.type is Navigable on Plane].follow(child) +: descent*)
 
 
   transparent inline def peer(child: Any)(using child.type is Admissible on Plane)
@@ -362,11 +362,11 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     inline !![Topic] match
       case _: (head *: tail) =>
         Path.of[Plane, Limit, child.type *: tail]
-         (root, infer[child.type is Navigable].follow(child) +: descent*)
+         (root, infer[child.type is Navigable on Plane].follow(child) +: descent*)
 
       case _ =>
         Path.of[Plane, Limit, Tuple]
-         (root, infer[child.type is Navigable].follow(child) +: descent*)
+         (root, infer[child.type is Navigable on Plane].follow(child) +: descent*)
 
   transparent inline def + (relative: Relative): Path =
     type Base = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Topic], relative.Limit]]

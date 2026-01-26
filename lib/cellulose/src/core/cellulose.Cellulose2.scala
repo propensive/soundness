@@ -59,7 +59,7 @@ trait Cellulose2:
               fields(product):
                 [field] => field =>
                   val label2 = mapping.at(label).or(label)
-                  val schematic = compiletime.summonInline[field is CodlSchematic]
+                  val schematic = infer[field is CodlSchematic]
 
                   context.encoded(field).list.map: value =>
                     CodlNode(Atom(label2, value.children, Layout.empty, schemata(index).schema))

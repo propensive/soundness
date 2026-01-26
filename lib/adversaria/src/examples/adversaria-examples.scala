@@ -30,10 +30,24 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package polyvinyl
+package adversaria
 
-import prepositional.*
-import proscenium.*
+import soundness.*
 
-trait Schematic[record <: Record in data, data, label <: Label, value]:
-  def transform(data: data, params: List[String]): value
+final case class id() extends StaticAnnotation
+final case class unique() extends StaticAnnotation
+final case class count(number: Int) extends StaticAnnotation
+final case class ref(x: Int) extends StaticAnnotation
+
+case class Person(name: Text, @id email: Text)
+
+@count(10)
+case class Company(name: Text)
+
+case class Employee(person: Person, @id @unique code: Long)
+case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int, @ref(4) delta: Int)
+
+object Example1:
+  val foo: Int = 42
+  val bar: String = "BAR"
+  val baz: 12 = 12

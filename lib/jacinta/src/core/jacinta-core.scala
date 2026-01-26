@@ -44,12 +44,11 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import wisteria.*
 
 import JsonError.Reason
 
-export Jacinta.JsonPointer
-
-given showable: (js: JsonPrinter) => JsonAst is Showable = js.print(_)
+given showable: (printer: JsonPrinter) => JsonAst is Showable = printer.print(_)
 
 extension (json: JsonAst)
   inline def isNumber: Boolean = isDouble || isLong || isBigDecimal
@@ -121,3 +120,10 @@ extension [entity: Encodable in Json](value: entity) def json: Json = entity.enc
 package jsonPrinters:
   given indented: JsonPrinter = JsonPrinter.print(_, true)
   given minimal: JsonPrinter = JsonPrinter.print(_, false)
+
+package jsonDiscriminables:
+  given discriminatedUnionByType: [value] => value is Discriminable in Json =
+    Json.discriminatedUnion[value]("type")
+
+  given discriminatedUnionByKind: [value] => value is Discriminable in Json =
+    Json.discriminatedUnion[value]("kind")

@@ -38,3 +38,7 @@ export jacinta
 
 package jsonPrinters:
   export jacinta.jsonPrinters.{indented, minimal}
+
+package jsonDiscriminables:
+  export jacinta.jsonDiscriminables.discriminatedUnionByType
+  export jacinta.jsonDiscriminables.discriminatedUnionByKind
