@@ -30,18 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package orthodoxy
 
-export honeycomb
-. { Autocomplete, Attribute, Stylesheet, Capture, Crossorigin, DomId, Element, Comment, TextNode,
-    Fragment, Doctype, HDir, Attributive, HttpEquiv, Kind, Method, Node, h, Html,
-    Preload, Rel, Rev, Sandbox, Shape, Tag, Target, Wrap, html, Renderable }
+import anticipation.*
+import distillate.*
+import prepositional.*
 
-package doms.html:
-  export honeycomb.doms.html.whatwg
+object Authorization:
+  given encodable: Authorization is Encodable in Text = _.key
 
-package attributives:
-  export honeycomb.attributives.textAttributes
+  given decodable: [scope <: Scope] => (Authorization of scope) is Decodable in Text =
+    Authorization(_).of[scope]
 
-package stylesheets:
-  export honeycomb.stylesheets.uncheckedClasses
+class Authorization(val key: Text) extends Topical:
+  private[orthodoxy] def of[scope <: Scope]: Authorization of scope =
+    this.asInstanceOf[Authorization of scope]

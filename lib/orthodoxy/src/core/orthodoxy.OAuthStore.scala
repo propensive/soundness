@@ -30,13 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package orthodoxy
 
-import gossamer.*
-import spectacular.*
+import scala.collection.mutable as scm
 
-object Scope:
-  given showable: Scope is Showable = _.toString.show.lower
+import anticipation.*
+import inimitable.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import telekinesis.*
+import urticose.*
+import vacuous.*
 
-enum Scope:
-  case Row, Col, Rowgroup, Colgroup
+class OAuthStore():
+  case class State
+              (redirect: Path on Www,
+               uuid:     Uuid                    = Uuid(),
+               access:   Optional[Authorization] = Unset,
+               refresh:  Optional[Text]          = Unset,
+               expiry:   Optional[Long]          = Unset):
+
+    def expired: Boolean = expiry.let(System.currentTimeMillis > _).or(false)
+
+  private val data: scm.HashMap[Session, State] = scm.HashMap()
+
+  def update(session: Session, state: State): Unit = data(session) = state
+  def apply(session: Session): Optional[State] = data.at(session)

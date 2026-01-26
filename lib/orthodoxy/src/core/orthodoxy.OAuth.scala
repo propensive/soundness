@@ -59,29 +59,10 @@ import queryParameters.arbitrary
 import stdioSources.virtualMachine.ansi
 import jsonPrinters.indented
 
-class OAuthStore[decodable]():
-  case class State
-              (redirect: Path on Www,
-               uuid:     Uuid                = Uuid(),
-               access:   Optional[decodable] = Unset,
-               refresh:  Optional[Text]      = Unset,
-               expiry:   Optional[Long]      = Unset):
-
-    def expired: Boolean = expiry.let(System.currentTimeMillis > _).or(false)
-
-  private val data: scm.HashMap[Session, State] = scm.HashMap()
-
-  def update(session: Session, state: State): Unit = data(session) = state
-  def apply(session: Session): Optional[State] = data.at(session)
-
-given Http.Request => Session = Session("mysession")
-
-case class OAuthScope(name: Text)
-
 object OAuth:
   erased trait Context extends Topical
 
-class OAuth[decodable]
+class OAuth
        (init:     HttpUrl,
         exchange: HttpUrl,
         redirect: HttpUrl,
@@ -91,7 +72,7 @@ class OAuth[decodable]
 
   def oauth(using Http.Request, Online, HttpEvent is Loggable)
        (lambda: OAuth.Context of this.type ?=> Http.Response)
-       (using store: OAuthStore[decodable], session: Session)(using decodable is Decodable in Text)
+       (using store: OAuthStore, session: Session)
   : Http.Response raises OAuthError =
 
       request.path match
@@ -129,14 +110,9 @@ class OAuth[decodable]
                 val response = exchange.submit(Http.Post)(query.per(secret)(_.client_secret = _))
 
                 val response2 = response.status match
-                  case Http.Ok => response
-
-                  case Http.Unauthorized =>
-                    // FIXME: Need to handle refresh token
-                    abort(OAuthError(OAuthError.Reason.Other))
-
-                  case status =>
-                    abort(OAuthError(OAuthError.Reason.Other))
+                  case Http.Ok           => response
+                  case Http.Unauthorized => abort(OAuthError(OAuthError.Reason.Other))
+                  case status            => abort(OAuthError(OAuthError.Reason.Other))
 
 
                 val json = response2.receive[Json]
@@ -150,7 +126,7 @@ class OAuth[decodable]
                   safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
 
                 store(session) =
-                  state.copy(access = access.decode, expiry = expiry, refresh = refresh)
+                  state.copy(access = Authorization(access), expiry = expiry, refresh = refresh)
 
                 Http.Response(new Redirect(state.redirect.show, false))
 
@@ -159,13 +135,13 @@ class OAuth[decodable]
         case _ =>
           lambda(using !![OAuth.Context of this.type])
 
-  def require(scopes: OAuthScope*)[result]
-       (using store: OAuthStore[decodable], session: Session, request: Http.Request)
+  def require[scope <: Scope & Singleton: Precise](scopes: scope*)
+       (using store: OAuthStore, session: Session, request: Http.Request)
        (using OAuth.Context of this.type)
-       (lambda: decodable ?=> Http.Response)
+       (lambda: Authorization of scope ?=> Http.Response)
   : Http.Response =
 
-      store(session).let(_.access).letGiven(lambda).or:
+      store(session).let(_.access).let(_.of[scope]).letGiven(lambda).or:
         val state = store.State(request.path)
         store(session) = state
 
@@ -173,7 +149,7 @@ class OAuth[decodable]
          (client_id     = client,
           redirect_uri  = redirect,
           access_type   = t"offline",
-          scope         = scopes.map(_.name).join(t" "),
+          scope         = scopes.flatMap(_.names).to(Set).to(List).join(t" "),
           state         = state.uuid.show,
           response_type = t"code")
 

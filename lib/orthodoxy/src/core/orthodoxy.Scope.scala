@@ -30,18 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package orthodoxy
 
-export honeycomb
-. { Autocomplete, Attribute, Stylesheet, Capture, Crossorigin, DomId, Element, Comment, TextNode,
-    Fragment, Doctype, HDir, Attributive, HttpEquiv, Kind, Method, Node, h, Html,
-    Preload, Rel, Rev, Sandbox, Shape, Tag, Target, Wrap, html, Renderable }
+import anticipation.*
+import prepositional.*
 
-package doms.html:
-  export honeycomb.doms.html.whatwg
+case class Scope(names: Text*):
+  def apply()(using authorization: Authorization of (? >: this.type)): Authorization of this.type =
+    authorization.of[this.type]
 
-package attributives:
-  export honeycomb.attributives.textAttributes
-
-package stylesheets:
-  export honeycomb.stylesheets.uncheckedClasses
+  type Check = Authorization of (? >: this.type)
