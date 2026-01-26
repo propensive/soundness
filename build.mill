@@ -607,10 +607,10 @@ object iridescence extends Library:
   object test extends Tests(core)
 
 object jacinta extends Library:
-  object core extends Component(merino.core, panopticon.core, gossamer.core)
+  object core extends Component(merino.core, urticose.url, panopticon.core, gossamer.core)
   object time extends Component(core, aviation.core)
   object http extends Component(core, telekinesis.core)
-  object schema extends Component(core, urticose.url, telekinesis.core)
+  object schema extends Component(core, telekinesis.core)
   object test extends Tests(time, http, schema)
 
 object kaleidoscope extends Library:
