@@ -34,10 +34,21 @@ package orthodoxy
 
 import anticipation.*
 import distillate.*
+import gossamer.*
 import prepositional.*
+import telekinesis.*
 import vacuous.*
 
-case class Authorization(key: Text, scopes: List[Text], expiry: Optional[Long], refresh: Optional[Text])
+
+object Authorization:
+  given authorization: ("authorization" is Directive of Authorization) =
+    authorization => t"Bearer ${authorization.key}"
+
+case class Authorization
+            (key:     Text,
+             scopes:  List[Text],
+             expiry:  Optional[Long],
+             refresh: Optional[Text])
 extends Topical:
   private[orthodoxy] def of[scope <: Scope]: Authorization of scope =
     this.asInstanceOf[Authorization of scope]
