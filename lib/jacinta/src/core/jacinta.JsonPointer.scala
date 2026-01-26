@@ -11,10 +11,13 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import symbolism.*
 import urticose.*
 import vacuous.*
 
-object JsonPointer:
+object JsonPointer extends Root(""):
+  type Plane = JsonPointer
+
   trait Registry:
     private val documents: scm.HashMap[HttpUrl, Json] = scm.HashMap()
     def update(url: HttpUrl, document: Json): Unit = documents(url) = document
@@ -36,7 +39,13 @@ object JsonPointer:
   given JsonPointer is Encodable in Text = pointer =>
     t"${pointer.url.let(_.encode).or(t"")}#${pointer.path}"
 
-case class JsonPointer(url: Optional[HttpUrl], path: Path on JsonPointer):
+  given divisible: JsonPointer is Divisible by Text to JsonPointer =
+    (pointer, segment) => JsonPointer(pointer.url, pointer.path / segment)
+
+  given divisible2: JsonPointer is Divisible by Ordinal to JsonPointer =
+    (pointer, segment) => JsonPointer(pointer.url, pointer.path / segment)
+
+case class JsonPointer(url: Optional[HttpUrl] = Unset, path: Path on JsonPointer = JsonPointer):
   def apply(using registry: JsonPointer.Registry)(document: Json): Json raises JsonPointerError =
     url.let(registry(_).lest(JsonPointerError())).or(document)
 

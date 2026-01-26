@@ -48,9 +48,7 @@ import wisteria.*
 
 import JsonError.Reason
 
-export Jacinta.JsonPointer
-
-given showable: (js: JsonPrinter) => JsonAst is Showable = js.print(_)
+given showable: (printer: JsonPrinter) => JsonAst is Showable = printer.print(_)
 
 extension (json: JsonAst)
   inline def isNumber: Boolean = isDouble || isLong || isBigDecimal
