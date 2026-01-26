@@ -33,10 +33,17 @@
 package orthodoxy
 
 import anticipation.*
+import contingency.*
 import prepositional.*
+import rudiments.*
 
 case class Scope(names: Text*):
-  def apply()(using authorization: Authorization of (? >: this.type)): Authorization of this.type =
-    authorization.of[this.type]
+  def apply()(using authorization: Authorization of (? >: this.type))
+  : Authorization of this.type raises OAuthError =
+      names.each: name =>
+        if !authorization.scopes.contains(name)
+        then raise(OAuthError(OAuthError.Reason.InsufficientPrivileges(name)))
+
+      authorization.of[this.type]
 
   type Check = Authorization of (? >: this.type)

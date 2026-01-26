@@ -35,13 +35,9 @@ package orthodoxy
 import anticipation.*
 import distillate.*
 import prepositional.*
+import vacuous.*
 
-object Authorization:
-  given encodable: Authorization is Encodable in Text = _.key
-
-  given decodable: [scope <: Scope] => (Authorization of scope) is Decodable in Text =
-    Authorization(_).of[scope]
-
-class Authorization(val key: Text) extends Topical:
+case class Authorization(key: Text, scopes: List[Text], expiry: Optional[Long], refresh: Optional[Text])
+extends Topical:
   private[orthodoxy] def of[scope <: Scope]: Authorization of scope =
     this.asInstanceOf[Authorization of scope]

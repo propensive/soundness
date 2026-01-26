@@ -119,14 +119,14 @@ class OAuth
                 import dynamicJsonAccess.enabled
                 val access = json.access_token.as[Text]
                 val refresh = safely(json.refresh_token.as[Text])
-                val scope = json.scope.as[Text].cut(t" ")
+                val scopes = json.scope.as[Text].cut(t" ")
                 val tokenType = json.token_type.as[Text] // assume `Bearer`
 
                 val expiry: Optional[Long] =
                   safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
 
                 store(session) =
-                  state.copy(access = Authorization(access), expiry = expiry, refresh = refresh)
+                  state.copy(access = Authorization(access, scopes, expiry, refresh))
 
                 Http.Response(new Redirect(state.redirect.show, false))
 

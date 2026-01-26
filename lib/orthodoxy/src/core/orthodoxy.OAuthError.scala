@@ -32,6 +32,7 @@
                                                                                                   */
 package orthodoxy
 
+import anticipation.*
 import fulminate.*
 import telekinesis.*
 import urticose.*
@@ -41,16 +42,18 @@ object OAuthError:
     case Connection(url: HttpUrl, reason: ConnectError.Reason)
     case InvalidJsonResponse
     case UnexpectedHttpStatus(status: Http.Status)
+    case InsufficientPrivileges(scope: Text)
     case Other
 
   import Reason.*
 
   given Reason is Communicable =
-    case Connection(url, reason)      => m"""could not connect to the OAuth provider at $url because
-                                             $reason"""
-    case InvalidJsonResponse          => m"Invalid JSON response"
-    case UnexpectedHttpStatus(status) => m"the provider returne an unexpected HTTP status: $status"
-    case Other                        => m"an unexpected error occurred"
+    case Connection(url, reason)       => m"""could not connect to the OAuth provider at $url because
+                                              $reason"""
+    case InvalidJsonResponse           => m"Invalid JSON response"
+    case UnexpectedHttpStatus(status)  => m"the provider returne an unexpected HTTP status: $status"
+    case InsufficientPrivileges(scope) => m"the user has not granted access to $scope"
+    case Other                         => m"an unexpected error occurred"
 
 case class OAuthError(reason: OAuthError.Reason)(using Diagnostics)
 extends Error(m"OAuth failed because $reason")
