@@ -32,42 +32,20 @@
                                                                                                   */
 package telekinesis
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import distillate.*
-import fulminate.*
-import inimitable.*
-import legerdemain.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
-import spectacular.*
-import urticose.*
 import vacuous.*
 
-import language.dynamics
+object Context:
+  def apply[value](): Context[value] = new Context[value]:
+    private val store: scm.HashMap[Session, value] = scm.HashMap()
+    def apply()(using session: Session): Optional[value] = store.at(session)
+    def update(value: value)(using session: Session): Unit = store(session) = value
 
-private given realm: Realm = realm"telekinesis"
-
-package queryParameters:
-  erased given arbitrary: [key <: Label, value] => key is Parametric to value = !!
-
-extension [value: Encodable in Query](value: value)
-  def query: Query = value.encode
-
-extension [fetchable: Fetchable](endpoint: fetchable)
-  def fetch: Http.Fetch[fetchable.Target] =
-    Http.Fetch(fetchable.text(endpoint), fetchable.target(endpoint), fetchable.hostname(endpoint))
-
-  def submit: Http.Submit[fetchable.Target] =
-    Http.Submit(fetchable.text(endpoint), fetchable.target(endpoint), fetchable.hostname(endpoint))
-
-extension (url: into[HttpUrl])
-  @targetName("withQuery")
-  def query(query: Query): HttpUrl =
-    val query2 = url.query.let(query ++ _.decode[Query]).or(query)
-    Url(url.origin, url.location, query2.encode, url.fragment)
-
-extension (cookie: Cookie[Session])
-  def session(lambda: Session ?=> Http.Response)(using Http.Request): Http.Response =
-    val session = cookie().or(Session(Uuid().show))
-    lambda(using session) + cookie(session)
+trait Context[value]:
+  def apply()(using session: Session): Optional[value]
+  def update(value: value)(using session: Session): Unit
