@@ -15,14 +15,16 @@ import vacuous.*
 import wisteria.*
 
 
-object JsonSchema extends ProductDerivable[Schematic in JsonSchema]:
+object JsonSchema extends Derivable[Schematic in JsonSchema]:
 
   given encodable: JsonSchema is Encodable in Json = Json.EncodableDerivation.derived
+
   given discriminatedUnion: JsonSchema is Discriminable:
     type Form = Json
     type Self = JsonSchema
 
     import dynamicJsonAccess.enabled
+
     def rewrite(kind: Text, json: Json): Json = unsafely(json.updateDynamic("type")(kind.lower))
     def variant(json: Json): Json = unsafely(json.updateDynamic("type")(Unset))
 
@@ -32,7 +34,6 @@ object JsonSchema extends ProductDerivable[Schematic in JsonSchema]:
   inline def join[derivation <: Product: ProductReflection]: derivation is Schematic in JsonSchema =
     () =>
       val descriptions = Annotations.fields[derivation, memo].indexBy(_.name)
-      println(descriptions)
       val map =
         contexts:
           [field] => schema =>
@@ -48,6 +49,14 @@ object JsonSchema extends ProductDerivable[Schematic in JsonSchema]:
         . to(List)
 
       Object(properties = map, required = required)
+
+  inline def split[derivation: SumReflection]: derivation is Schematic in JsonSchema =
+    () =>
+      val schemas = variantLabels.map: label =>
+        delegate(label):
+          [variant <: derivation] => _.schema()
+
+      JsonSchema.Object(oneOf = schemas, required = List("kind"))
 
   object Format:
     given encodable: Format is Encodable in Text = _.toString.tt.uncamel.kebab
@@ -78,7 +87,8 @@ enum JsonSchema extends Documentary:
          optional:             scala.Boolean         = false,
          required:             List[Text]            = Nil,
          `enum`:               List[Json]            = Nil,
-         additionalProperties: scala.Boolean         = false)
+         additionalProperties: scala.Boolean         = false,
+         oneOf:                List[JsonSchema]      = Nil)
 
   case Array
         (description: Optional[Text]       = Unset,
