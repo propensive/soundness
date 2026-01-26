@@ -259,8 +259,7 @@ object Json extends Json2, Dynamic:
         => (value over Json) is Aggregable by Data =
     bytes => Json(bytes.read[JsonAst]).as[value].asInstanceOf[value over Json]
 
-  given showable: JsonPrinter => Json is Showable = json =>
-    try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
+  given showable: JsonPrinter => Json is Showable = _.root.show
 
   given abstractable: (encoder: CharEncoder, printer: JsonPrinter)
         =>  Json is Abstractable across HttpStreams to HttpStreams.Content =
@@ -290,14 +289,10 @@ object Json extends Json2, Dynamic:
     protected def key: String = label.s
 
     import dynamicJsonAccess.enabled
-    def rewrite(kind: Text, json: Json): Json = unsafely:
-      json.updateDynamic(key)(kind)
 
-    def discriminate(json: Json): Optional[Text] =
-      safely(json.selectDynamic(key).as[Text])
-
-    def variant(json: Json): Json = unsafely:
-      json.updateDynamic(key)(Unset)
+    def rewrite(kind: Text, json: Json): Json = unsafely(json.updateDynamic(key)(kind))
+    def discriminate(json: Json): Optional[Text] = safely(json.selectDynamic(key).as[Text])
+    def variant(json: Json): Json = unsafely(json.updateDynamic(key)(Unset))
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
