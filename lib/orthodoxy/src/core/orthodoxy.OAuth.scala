@@ -107,26 +107,38 @@ class OAuth
                     redirect_uri  = redirect,
                     client_id     = client)
 
-                val response = exchange.submit(Http.Post)(query.per(secret)(_.client_secret = _))
+                val response: Optional[Http.Response] =
+                  exchange.submit(Http.Post)(query.per(secret)(_.client_secret = _))
+                  . unless(state.expired)
 
-                val response2 = response.status match
-                  case Http.Ok           => response
-                  case Http.Unauthorized => abort(OAuthError(OAuthError.Reason.Other))
+                val json: Json = response.let(_.status) match
+                  case Http.Ok           => response.vouch.receive[Json]
+                  case Http.Unauthorized | Unset =>
+                    state.refresh.let: refresh =>
+                      val query = Query(grant_type = t"refresh_token", refresh_token = refresh)
+
+                      val response =
+                        exchange.submit(Http.Post)(query.per(secret)(_.client_secret = _))
+
+                      response.status match
+                        case Http.Ok => response.receive[Json]
+                        case _       => abort(OAuthError(OAuthError.Reason.Unauthorized))
+
+                    . lest(OAuthError(OAuthError.Reason.Unauthorized))
+
                   case status            => abort(OAuthError(OAuthError.Reason.Other))
 
-
-                val json = response2.receive[Json]
                 import dynamicJsonAccess.enabled
+
                 val access = json.access_token.as[Text]
                 val refresh = safely(json.refresh_token.as[Text])
                 val scopes = json.scope.as[Text].cut(t" ")
                 val tokenType = json.token_type.as[Text] // assume `Bearer`
+                val expiry: Optional[Long] = safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
+                val state2 = state.copy(access = Authorization(access, scopes, expiry, refresh))
 
-                val expiry: Optional[Long] =
-                  safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
+                store(session) = state2
 
-                store(session) =
-                  state.copy(access = Authorization(access, scopes, expiry, refresh))
 
                 Http.Response(new Redirect(state.redirect.show, false))
 
@@ -135,6 +147,7 @@ class OAuth
         case _ =>
           lambda(using !![OAuth.Context of this.type])
 
+
   def require[scope <: Scope & Singleton: Precise](scopes: scope*)
        (using store: OAuthStore, session: Session, request: Http.Request)
        (using OAuth.Context of this.type)
@@ -142,7 +155,7 @@ class OAuth
   : Http.Response =
 
       store(session).let(_.access).let(_.of[scope]).letGiven(lambda).or:
-        val state = store.State(request.path)
+        val state = OAuthStore.State(request.path)
         store(session) = state
 
         val query = Query

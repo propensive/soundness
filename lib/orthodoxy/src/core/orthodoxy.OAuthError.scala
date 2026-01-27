@@ -43,6 +43,7 @@ object OAuthError:
     case InvalidJsonResponse
     case UnexpectedHttpStatus(status: Http.Status)
     case InsufficientPrivileges(scope: Text)
+    case Unauthorized
     case Other
 
   import Reason.*
@@ -53,6 +54,7 @@ object OAuthError:
     case InvalidJsonResponse           => m"Invalid JSON response"
     case UnexpectedHttpStatus(status)  => m"the provider returne an unexpected HTTP status: $status"
     case InsufficientPrivileges(scope) => m"the user has not granted access to $scope"
+    case Unauthorized                  => m"authorization was not granted"
     case Other                         => m"an unexpected error occurred"
 
 case class OAuthError(reason: OAuthError.Reason)(using Diagnostics)

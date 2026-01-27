@@ -43,7 +43,7 @@ import telekinesis.*
 import urticose.*
 import vacuous.*
 
-class OAuthStore():
+object OAuthStore:
   case class State
               (redirect: Path on Www,
                uuid:     Uuid                    = Uuid(),
@@ -53,7 +53,9 @@ class OAuthStore():
 
     def expired: Boolean = expiry.let(System.currentTimeMillis > _).or(false)
 
-  private val data: scm.HashMap[Session, State] = scm.HashMap()
 
-  def update(session: Session, state: State): Unit = data(session) = state
-  def apply(session: Session): Optional[State] = data.at(session)
+class OAuthStore():
+  private val data: scm.HashMap[Session, OAuthStore.State] = scm.HashMap()
+
+  def update(session: Session, state: OAuthStore.State): Unit = data(session) = state
+  def apply(session: Session): Optional[OAuthStore.State] = data.at(session)
