@@ -151,9 +151,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
 
       new Query(values2)
 
-
-
-  def at[value: Decodable in Text](name: Text): Optional[Text] = apply(name)().let(_.decode)
+  def at[value: Decodable in Text](name: Text): Optional[value] = apply(name)().let(_.decode)
   def as[value: Decodable in Query]: value tracks Pointer = value.decoded(this)
 
   def apply(): Optional[Text] = values match
