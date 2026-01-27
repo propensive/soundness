@@ -90,10 +90,6 @@ object Decodable extends Decodable2:
       val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))
       raise(VariantError(value, enumeration.name, names)) yet enumeration.value(Prim).vouch
 
-  given over: [self: Decodable in transport, transport: Decodable in form, form]
-        => (self over transport) is Decodable in form =
-    value => value.decode.decode
-
 trait Decodable extends Typeclass, Formal:
   inline def decodable: this.type = this
   def decoded(value: Form): Self

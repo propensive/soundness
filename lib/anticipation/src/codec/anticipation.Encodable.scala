@@ -45,10 +45,6 @@ object Encodable:
   given text: Text is Encodable in Text = identity(_)
   given char: Char is Encodable in Text = _.toString.tt
 
-  given over: [self: Encodable in transport, transport: Encodable in form, form]
-        => (self over transport) is Encodable in form =
-    value => value.encode.encode
-
 trait Encodable extends Typeclass, Formal:
   private inline def encodable: this.type = this
   def encoded(value: Self): Form
