@@ -37,90 +37,75 @@ import denominative.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
+import vacuous.*
 
 import scala.quoted.*
 
 object Adversaria:
-  private def rebuild(using Quotes)(term: quotes.reflect.Term): quotes.reflect.Term =
+  private def rebuild(using Quotes)(term: quotes.reflect.Term): Optional[quotes.reflect.Term] =
     import quotes.reflect.*
+    import unsafeExceptions.canThrowAny
 
     object Mapper extends TreeMap:
       override def transformTypeTree(tree: TypeTree)(owner: Symbol): TypeTree =
         tree match
-          case ident: TypeIdent =>
-            val tree2 = TypeIdent(tree.symbol)
-            tree2
+          case ident: TypeIdent => TypeIdent(tree.symbol)
+          case tree             => throw Exception()
 
-      override def transformTerm(tree: Term)(owner: Symbol): Term =
+      override def transformTerm(tree: Term)(sym: Symbol): Term =
         tree match
-          case Ident(id) =>
-            val tree2 = Ident(tree.symbol.termRef)
-            tree2
-          case Apply(fn, args) =>
-            val tree2 = Apply(transformTerm(fn)(owner), transformTerms(args)(owner))
-            tree2
-          case Select(qualifier, name) =>
-            val tree2 = Select(transformTerm(qualifier)(owner), tree.symbol)
-            tree2
-          case New(tpt) =>
-            val tree2 = New(transformTypeTree(tpt)(owner))
-            tree2
-          case tree =>
-            super.transformTerm(tree)(owner)
+          case Ident(id)               => Ident(tree.symbol.termRef)
+          case Apply(fn, args)         => Apply(transformTerm(fn)(sym), transformTerms(args)(sym))
+          case Select(qualifier, name) => Select(transformTerm(qualifier)(sym), tree.symbol)
+          case New(tpt)                => New(transformTypeTree(tpt)(sym))
+          case Literal(constant)       => Literal(constant)
+          case tree                    => throw Exception()
 
-    Mapper.transformTerm(term)(Symbol.spliceOwner)
+    try Mapper.transformTerm(term)(Symbol.spliceOwner) catch case _: Exception => Unset
 
+  def general[operand <: StaticAnnotation: Type, self: Type, plane: Type, limit: Type]
+  : Macro[self is Annotated by operand on plane under limit] =
 
-  def firstField[target <: Product: Type, annotation <: StaticAnnotation: Type]
-  : Macro[CaseField[target, annotation]] =
+      import quotes.reflect.{Annotated as _, *}
 
-      import quotes.reflect.*
+      val self = TypeRepr.of[self]
+      val plane = TypeRepr.of[plane]
+      val operand = TypeRepr.of[operand]
+      val limit = TypeRepr.of[limit]
 
-      val targetType = TypeRepr.of[target]
-      val fields = targetType.typeSymbol.caseFields
-
-      val paramss = targetType.classSymbol.get.primaryConstructor.paramSymss
-      val params = paramss.find(_.headOption.fold(false)( _.isTerm)).getOrElse(Nil)
-
-      fields.zip(params).flatMap: (field, param) =>
-        param.annotations.map(_.asExpr).collect:
-          case '{$annotation: `annotation`} =>
-            rebuild(annotation.asTerm).asExprOf[annotation]
-
-        . map: annotation =>
-            '{
-                CaseField(Text(${Expr(field.name)}), (target: target) =>
-                  ${'target.asTerm.select(field).asExpr}, $annotation)
-            }
-        . reverse
-      . head
+      val paramss = self.classSymbol.get.primaryConstructor.paramSymss
+      val params = paramss.find(_.headOption.fold(false)(_.isTerm)).getOrElse(Nil)
 
 
-  def fields[target <: Product: Type, annotation <: StaticAnnotation: Type]
-  : Macro[List[CaseField[target, annotation]]] =
-
-      import quotes.reflect.*
-
-      val targetType = TypeRepr.of[target]
-      val fields = targetType.typeSymbol.caseFields
-
-      val paramss = targetType.classSymbol.get.primaryConstructor.paramSymss
-      val params = paramss.find(_.headOption.fold(false)( _.isTerm)).getOrElse(Nil)
-
-      val elements: List[Expr[CaseField[target, annotation]]] =
-        fields.zip(params).flatMap: (field, param) =>
-          val name = Expr(field.name)
-          param.annotations.map(_.asExpr).collect:
-            case '{$annotation: `annotation`} =>
-              rebuild(annotation.asTerm).asExprOf[annotation]
-
-          . map: annotation =>
-              '{CaseField(Text($name), (target: target) => ${'target.asTerm.select(field).asExpr},
-                  $annotation)}
-
+      def matching(annotations: List[Term]): Expr[List[operand]] =
+        Expr.ofList:
+          annotations.map(_.asExpr).collect:
+              case '{$annotation: `operand`} => rebuild(annotation.asTerm)
+          . compact
+          . map(_.asExprOf[operand])
           . reverse
 
-      Expr.ofList(elements)
+      if limit =:= TypeRepr.of[Any] then
+        val annotations = matching(self.typeSymbol.annotations)
+
+        val params2 = params.per(plane.literal[String]): (params, field) =>
+          params.filter(_.name == field)
+
+        val fields = params2.flatMap: param =>
+          if param.annotations.nil then Nil else
+            List('{(${Expr(param.name)}.tt, ${matching(param.annotations)}.to(Set))})
+
+        if fields.size == 1
+        then '{Annotated.Field[operand, self, plane, limit]($annotations.to(Set), ${Expr.ofList(fields)}.to(Map))}
+        else '{Annotated.Fields[operand, self, plane, limit]($annotations.to(Set), ${Expr.ofList(fields)}.to(Map))}
+
+      else
+        val subtypes = limit.typeSymbol.children.map: subtype =>
+          '{(${Expr(subtype.name)}.tt, ${matching(subtype.annotations)}.to(Set))}
+
+        '{Annotated.Subtypes[operand, self, plane, limit](${Expr.ofList(subtypes)}.to(Map))}
+
 
 
   def dereferenceable[entity: Type, value: Type]: Macro[entity is Dereferenceable to value] =
@@ -150,40 +135,3 @@ object Adversaria:
           def names(entity: Self): List[Text] = ${namesList}
           def select(entity: entity, name: Text): Result = lambdas(name)(entity)
     }
-
-  def fieldAnnotations[target: Type](lambda: Expr[target => Any])
-  : Macro[List[StaticAnnotation]] =
-
-      import quotes.reflect.*
-
-      val targetType = TypeRepr.of[target]
-      val paramss = targetType.classSymbol.get.primaryConstructor.paramSymss
-      val params = paramss.find(_.headOption.fold(false)( _.isTerm)).getOrElse(Nil)
-
-      val field = lambda.asTerm match
-        case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
-          params.find(_.name == term).getOrElse:
-            panic(m"the member $term is not a case class field")
-
-        case _ =>
-          panic(m"the lambda must be a simple reference to a case class field")
-
-      Expr.ofList:
-        field.annotations.map(_.asExpr).collect:
-          case '{ $annotation: StaticAnnotation } =>
-            rebuild(annotation.asTerm).asExprOf[StaticAnnotation]
-
-
-  def typeAnnotations[annotation <: StaticAnnotation: Type, target: Type]
-  : Macro[Annotations[annotation, target]] =
-
-      import quotes.reflect.*
-
-      val targetType = TypeRepr.of[target]
-      val annotations = targetType.typeSymbol.annotations.map(_.asExpr).collect:
-        case '{$annotation: `annotation`} => annotation
-
-      if annotations.nil then
-        val typeName = TypeRepr.of[annotation].show
-        panic(m"the type ${targetType.show} did not have the annotation $typeName")
-      else '{Annotations[annotation, target](${Expr.ofList(annotations)}*)}

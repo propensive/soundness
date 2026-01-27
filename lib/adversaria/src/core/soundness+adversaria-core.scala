@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export adversaria.{Dereferenceable, membersOfType, Annotations, CaseField}
+export adversaria.Annotated

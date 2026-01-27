@@ -32,28 +32,47 @@
                                                                                                   */
 package adversaria
 
+import anticipation.*
+import prepositional.*
 import proscenium.*
+import vacuous.*
 
 import scala.quoted.*
 
-case class Annotations[annotation <: StaticAnnotation, target](annotations: annotation*)
+object Annotated:
+  transparent inline given annotations: [topic <: StaticAnnotation, self, plane, limit]
+                           => self is Annotated by topic on plane under limit =
 
-object Annotations:
-  inline given[annotation <: StaticAnnotation, target]: Annotations[annotation, target] =
+      ${Adversaria.general[topic, self, plane, limit]}
 
-    ${Adversaria.typeAnnotations[annotation, target]}
+  class Fields[operand <: StaticAnnotation, self, plane, limit]
+         (annotations0: Set[operand], fields0: Map[Text, Set[operand]])
+  extends Annotated:
+    type Operand = operand
+    type Self = self
+    type Plane = plane
+    type Limit = limit
 
-  transparent inline def field[target](inline lambda: target => Any): List[StaticAnnotation] =
-    ${Adversaria.fieldAnnotations[target]('lambda)}
+    def fields: Map[Text, Set[operand]] = fields0
+    def annotations: Set[operand] = annotations0
+    def apply(): Set[operand] = annotations0
 
+  class Field[operand <: StaticAnnotation, self, plane, limit]
+         (annotations0: Set[operand], fields0: Map[Text, Set[operand]])
+  extends Fields[operand, self, plane, limit](annotations0, fields0):
+    type Unique = true
+    def field: Text = fields.keys.head
+    override def apply(): Set[operand] = fields(field)
 
-  transparent inline def fields[target <: Product, annotation <: StaticAnnotation]
-  : List[CaseField[target, annotation]] =
+  class Subtypes[operand <: StaticAnnotation, self, plane, limit](subtypes0: Map[Text, Set[operand]])
+  extends Annotated:
+    type Operand = operand
+    type Self = self
+    type Plane = plane
+    type Limit = limit
 
-      ${Adversaria.fields[target, annotation]}
+    def subtypes: Map[Text, Set[operand]] = subtypes0
+    def apply(): Map[Text, Set[operand]] = subtypes0
 
-
-  transparent inline def firstField[target <: Product, annotation <: StaticAnnotation]
-  : CaseField[target, annotation] =
-
-      ${Adversaria.firstField[target, annotation]}
+sealed trait Annotated extends Planar, Typeclass, Limited:
+  type Operand <: StaticAnnotation

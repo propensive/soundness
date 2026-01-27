@@ -42,59 +42,37 @@ import autopsies.contrastExpectations
 object Tests extends Suite(m"Adversaria tests"):
 
   def run(): Unit =
-
-    test(m"first field"):
-      val letters = Letters(5, 6, 7, 8)
-      Annotations.firstField[Letters, ref](letters)
-    .assert(_ == 5)
-
     test(m"access field annotations"):
-      Annotations.field[Employee](_.code)
-    .assert(_.contains(unique()))
+      summon[Employee is Annotated on "code"]()
+    .assert(_ == Set(ident(), unique()))
 
-    test(m"check nonexistant annotations"):
-      Annotations.field[Employee](_.person)
-    .assert(_ == Nil)
+    test(m"access specific field annotation"):
+      summon[Employee is Annotated by unique on "code"]()
+    .assert(_ == Set(unique()))
 
-    test(m"get field values"):
-      val letters = Letters(5, 6, 7, 8)
-      Annotations.fields[Letters, ref].map(_(letters))
-    .assert(_ == List(5, 6, 6, 8))
+    test(m"access type annotations"):
+      summon[Company is Annotated]()
+    .assert(_.has(number(10)))
 
-    test(m"get field annotations"):
-      val letters = Letters(5, 6, 7, 8)
-      Annotations.fields[Letters, ref].map(_.annotation)
-    .assert(_ == List(ref(1), ref(2), ref(3), ref(4)))
+    test(m"access type annotations with no annotations"):
+      summon[Colored is Annotated]()
+    .assert(_ == Set())
 
-    test(m"get field names"):
-      val letters = Letters(5, 6, 7, 8)
-      Annotations.fields[Letters, ref].map(_.name)
-    .assert(_ == List("alpha", "beta", "beta", "delta"))
+    test(m"exclude type annotations"):
+      summon[Company is Annotated by unique].annotations
+    .assert(!_.has(number(10)))
 
-    test(m"get annotations on type"):
-      summon[Annotations[StaticAnnotation, Company]].annotations
-    .assert(_.contains(adversaria.count(10)))
+    test(m"unique annotation"):
+      summon[Letters is Annotated].fields
+    .assert(_ == Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)), "delta" -> Set(ref(4))))
 
-    test(m"find the field with a particular annotation"):
-      val ann = summon[CaseField[Person, id]]
-      val person = Person(t"John Smith", t"test@example.com")
-      ann(person)
-    .assert(_ == t"test@example.com")
+    test(m"unique annotation 2"):
+      summon[adversaria.Hsv is Annotated by ident].field
+    .assert(_ == "value")
 
-    test(m"check the name of the field found by an annotation"):
-      summon[CaseField[Person, id]].name
-    .assert(_ == t"email")
-
-    test(m"check that given for missing annotation is not resolved"):
-      demilitarize:
-        summon[CaseField[Company, id]]
-      .map(_.message)
-    .assert(_.nonEmpty)
-
-    test(m"extract annotation value generically"):
-      def getId[T <: Product](value: T)(using ann: CaseField[T, id]): ann.Topic = ann(value)
-      getId(Employee(Person(t"John Smith", t"test@example.com"), 3141592))
-    .assert(_ == 3141592)
+    test(m"subtype annotations"):
+      summon[Annotated under Colored].subtypes
+    .assert(_ == Map("Rgb" -> Set(unique()), "Hsv" -> Set(number(3))))
 
     test(m"List map of fields of an object"):
       summon[Example1.type is Dereferenceable to Int].members(Example1)
