@@ -111,7 +111,7 @@ object Quantitative extends Quantitative2:
 
     given genericDuration: [units <: Measure: Normalizable to Seconds[1]]
           =>  Quantity[units] is Abstractable across Durations to Long =
-      quantity => (quantity.normalize*1000.0).toLong
+      quantity => (quantity.normalize*1_000_000_000.0).toLong
 
 
     given specificDuration: [units <: Measure: Normalizable to Seconds[1]]
