@@ -34,20 +34,27 @@ package adversaria
 
 import soundness.*
 
-final case class id() extends StaticAnnotation
+final case class ident() extends StaticAnnotation
 final case class unique() extends StaticAnnotation
-final case class count(number: Int) extends StaticAnnotation
+final case class number(number: Int) extends StaticAnnotation
 final case class ref(x: Int) extends StaticAnnotation
 
-case class Person(name: Text, @id email: Text)
+case class Person(name: Text, @ident email: Text)
 
-@count(10)
+@number(10)
 case class Company(name: Text)
 
-case class Employee(person: Person, @id @unique code: Long)
+case class Employee(person: Person, @ident @unique code: Long)
 case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int, @ref(4) delta: Int)
 
 object Example1:
   val foo: Int = 42
   val bar: String = "BAR"
   val baz: 12 = 12
+
+sealed trait Colored
+@number(3)
+case class Hsv(hue: Double, saturation: Double, @ident value: Double) extends Colored
+
+@unique()
+case class Rgb(red: Int, green: Int, blue: Int) extends Colored
