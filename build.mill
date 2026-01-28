@@ -171,7 +171,7 @@ object soundness extends ScalaModule:
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
     gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core, panopticon.core,
     camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core, xylophone.core,
-    anamnesis.core, jacinta.time, jacinta.schema)
+    anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core)
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
     charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
@@ -234,6 +234,7 @@ object test extends ScalaModule:
     gastronomy.test,
     geodesy.test,
     gesticulate.test,
+    gnossienne.test,
     gossamer.test,
     hallucination.test,
     harlequin.test,
@@ -549,6 +550,10 @@ object geodesy extends Library:
 
 object gesticulate extends Library:
   object core extends Component(gossamer.core, anticipation.html, turbulence.core, zephyrine.core)
+  object test extends Tests(core)
+
+object gnossienne extends Library:
+  object core extends Component(distillate.core, adversaria.core)
   object test extends Tests(core)
 
 object gossamer extends Library:
@@ -941,6 +946,7 @@ object publishing extends Module:
     gastronomy.core.publishLocal()()
     geodesy.core.publishLocal()()
     gesticulate.core.publishLocal()()
+    gnossienne.core.publishLocal()()
     gossamer.core.publishLocal()()
     guillotine.core.publishLocal()()
     hallucination.ansi.publishLocal()()
