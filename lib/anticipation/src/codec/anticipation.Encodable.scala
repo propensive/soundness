@@ -44,6 +44,7 @@ object Encodable:
   given float: Float is Encodable in Text = _.toString.tt
   given text: Text is Encodable in Text = identity(_)
   given char: Char is Encodable in Text = _.toString.tt
+  given string: String is Encodable in Text = _.tt
 
 trait Encodable extends Typeclass, Formal:
   private inline def encodable: this.type = this

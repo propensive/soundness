@@ -9,6 +9,7 @@ import contingency.*
 import distillate.*
 import gossamer.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
@@ -33,12 +34,12 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Schematic in JsonSchema =
     () =>
-      val descriptions = Annotations.fields[derivation, memo].indexBy(_.name)
+      val descriptions = infer[derivation is Annotated.Fields by memo].fields
       val map =
         contexts:
           [field] => schema =>
             val schema2 = descriptions.at(label).lay(schema.schema()): memo =>
-              schema.schema().description = memo.annotation.description
+              schema.schema().description = memo.map(_.description).join(t"\n")
             (label, schema2)
         .to(Map)
 
@@ -52,9 +53,12 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
 
   inline def split[derivation: SumReflection]: derivation is Schematic in JsonSchema =
     () =>
+      val descriptions = infer[Annotated.Subtypes by memo under derivation].subtypes
       val schemas = variantLabels.map: label =>
         delegate(label):
-          [variant <: derivation] => _.schema()
+          [variant <: derivation] => schema =>
+            descriptions.at(label).lay(schema.schema()): memo =>
+              schema.schema().description = memo.map(_.description).join(t"\n")
 
       JsonSchema.Object(oneOf = schemas, required = List("kind"))
 

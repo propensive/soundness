@@ -92,19 +92,34 @@ object Adversaria:
         val params2 = params.per(plane.literal[String]): (params, field) =>
           params.filter(_.name == field)
 
-        val fields = params2.flatMap: param =>
-          if param.annotations.nil then Nil else
-            List('{(${Expr(param.name)}.tt, ${matching(param.annotations)}.to(Set))})
+        val fields =
+          params2.flatMap: param =>
+            if param.annotations.nil then Nil else
+              List(param.name ->'{(${Expr(param.name)}.tt, ${matching(param.annotations)}.to(Set))})
+          . to(Map)
 
         if fields.size == 1
-        then '{Annotated.Field[operand, self, plane, limit]($annotations.to(Set), ${Expr.ofList(fields)}.to(Map))}
-        else '{Annotated.Fields[operand, self, plane, limit]($annotations.to(Set), ${Expr.ofList(fields)}.to(Map))}
+        then
+          val field: String = fields.head(0)
+          val target: TypeRepr = ConstantType(StringConstant(field))
+
+          (params.find(_.name == field).get.info.asType, target.asType).absolve match
+            case ('[topic], '[ type target <: Label; target ]) =>
+              ' {
+                  Annotated.AnnotatedField[operand, self, plane, limit, topic, target]
+                   ($annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map))
+                }
+        else
+          ' {
+              Annotated.AnnotatedFields[operand, self, plane, limit]
+               ($annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map))
+            }
 
       else
         val subtypes = limit.typeSymbol.children.map: subtype =>
           '{(${Expr(subtype.name)}.tt, ${matching(subtype.annotations)}.to(Set))}
 
-        '{Annotated.Subtypes[operand, self, plane, limit](${Expr.ofList(subtypes)}.to(Map))}
+        '{Annotated.AnnotatedSubtypes[operand, self, plane, limit](${Expr.ofList(subtypes)}.to(Map))}
 
 
 
