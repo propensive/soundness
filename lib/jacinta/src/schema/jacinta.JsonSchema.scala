@@ -34,7 +34,10 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Schematic in JsonSchema =
     () =>
-      val descriptions = infer[derivation is Annotated.Fields by memo].fields
+      val descriptions = infer[derivation is Annotated by memo] match
+        case annotated: Annotated.Fields => annotated.fields
+        case _                             => Map()
+
       val map =
         contexts:
           [field] => schema =>
@@ -53,7 +56,10 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
 
   inline def split[derivation: SumReflection]: derivation is Schematic in JsonSchema =
     () =>
-      val descriptions = infer[Annotated.Subtypes by memo under derivation].subtypes
+      val descriptions = infer[Annotated by memo under derivation] match
+        case annotated: Annotated.Subtypes => annotated.subtypes
+        case _                             => Map()
+
       val schemas = variantLabels.map: label =>
         delegate(label):
           [variant <: derivation] => schema =>
