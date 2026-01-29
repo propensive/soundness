@@ -68,3 +68,12 @@ object Tests extends Suite(m"Obligatory Tests"):
 
         Iterator(input).break().to(List)
       . assert(_ == List("data: foobar\ndata: baz", "data: hello world"))
+
+
+      test(m"Remote server"):
+        import supervisors.global
+        import codicils.cancel
+        val server = Rpc.remote[Lsp](url"http://localhost:8080/")
+        import jsonPrinters.minimal
+        println(server.initialize(8, Lsp.ClientInfo("client1", sv"3.7.8"), t"mylocale", t"mypath", t"myuri", 8.json, Nil).show)
+      . assert()

@@ -32,16 +32,22 @@
                                                                                                   */
 package obligatory
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import contingency.*
 import distillate.*
+import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import inimitable.*
 import jacinta.*
+import parasite.*
 import prepositional.*
 import revolution.*
 import rudiments.*
+import telekinesis.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
@@ -50,10 +56,6 @@ import scala.annotation.*
 import scala.quoted.*
 
 import errorDiagnostics.stackTraces
-
-case class rpc() extends StaticAnnotation
-
-object Obligatory
 
 package breakables:
   given contentLength: Tactic[FrameError] => Text is Breakable = input =>
@@ -184,7 +186,7 @@ package breakables:
       def next(): Text = ready.asInstanceOf[Text].also:
         ready = Unset
 
-  given serverSideEvents: Text is Breakable = input =>
+  given serverSentEvents: Text is Breakable = input =>
     val cursor = Cursor(input)
 
     def frame(start: Cursor.Mark)(using Cursor.Held): Optional[Text] = cursor.hold:
@@ -205,19 +207,47 @@ package breakables:
       def next(): Text = ready.asInstanceOf[Text].also:
         ready = Unset
 
+
+
+object JsonRpc:
+  object Envelope:
+    given sequenceIdEncodable: (Int | Text) is Encodable in Json =
+      case int: Int   => int.json
+      case text: Text => text.json
+
+    given sequenceIdDecodable: Tactic[JsonError] => (Int | Text) is Decodable in Json = json =>
+      safely(json.as[Int]).or(json.as[Text])
+
+    given encodable: Envelope is Encodable in Json = Json.EncodableDerivation.derived
+
+  case class Envelope(jsonrpc: Text, method: Text, params: Json, id: Optional[Int | Text])
+
+  private val promises: scm.HashMap[Uuid, Promise[Json]] = scm.HashMap()
+
+  def handle(url: HttpUrl, method: Text, payload: Json)(using Monitor, Codicil, Online): Promise[Json] =
+    val uuid = Uuid()
+    val promise: Promise[Json] = Promise()
+    promises(uuid) = promise
+    import charEncoders.utf8
+    import jsonPrinters.minimal
+    import logging.silent
+
+    unsafely:
+      async:
+        promise.fulfill:
+          unsafely:
+            url.submit(Http.Post)(Envelope("2.0", method, payload, uuid.encode).json).receive[Json]
+
+    promise
+
+
+
 case class FrameError()(using Diagnostics) extends Error(m"could not deframe the message")
 
 object Breakable
 
 trait Breakable extends Typeclass:
   def break(input: Iterator[Self]): Iterator[Self]
-
-trait Rcp extends Formal
-
-object Rpc:
-
-  given lsp: Lsp is Protocolic over (Rcp in Json) = ???
-
 
 trait Semantizable extends Typeclass:
   extension (value: Self) def narrate: Text = narration(value)
@@ -230,8 +260,10 @@ object Lsp:
 extension [element: Breakable](stream: Iterator[element])
   def break(): Iterator[element] = element.break(stream)
 
+case class TextDocument(uri: Text, languageId: Text, version: Int, text: Text)
+
 trait Lsp:
-  @rpc
+  @remote
   def initialize
        (processId:        Int,
         clientInfo:       Lsp.ClientInfo,
@@ -240,18 +272,19 @@ trait Lsp:
         rootUri:          Text,
         capabilities:     Json,
         workspaceFolders: List[Lsp.Folder])
-  : Unit
+  : Json
 
-  @rpc
+  @remote
   def initialized(): Unit
 
-  @rpc
+  @remote
   def shutdown(): Unit
 
-  @rpc
+  @remote
   def exit(): Unit
 
-  case class TextDocument(uri: Text, languageId: Text, version: Int, text: Text)
-
-  @rpc
+  @remote
   def `textDocument/didOpen`(textDocument: TextDocument): Unit
+
+object Rpc:
+  inline def remote[interface](url: HttpUrl): interface = ${Obligatory.remote[interface]('url)}
