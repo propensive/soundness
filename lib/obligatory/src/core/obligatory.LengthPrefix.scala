@@ -32,8 +32,41 @@
                                                                                                   */
 package obligatory
 
+import anticipation.*
+import contingency.*
 import prepositional.*
+import proscenium.*
+import rudiments.*
+import vacuous.*
+import zephyrine.*
 
-extension [element](stream: Iterator[element])
-  def break[frame](using breakable: element is Breakable by frame): Iterator[element] =
-    breakable.break(stream)
+object LengthPrefix:
+  given breakable: Tactic[FrameError] => Data is Breakable by LengthPrefix = input =>
+    def fail() = abort(FrameError())
+    val cursor = Cursor(input)
+
+    def length: Optional[Int] =
+      cursor.lay(Unset): byte0 =>
+        cursor.next()
+        cursor.lay(fail()): byte1 =>
+          cursor.next()
+          cursor.lay(fail()): byte2 =>
+            cursor.next()
+            cursor.lay(fail()): byte3 =>
+              cursor.next()
+              byte0 << 24 | byte1 << 16 | byte2 << 8 | byte3
+
+
+    def frame(): Optional[Data] = length.let: length =>
+      cursor.take(fail())(length)
+
+    new Iterator[Data]:
+      private var ready: Optional[Data] = Unset
+      def hasNext: Boolean =
+        if ready == Unset then ready = frame()
+        ready != Unset
+
+      def next(): Data = ready.asInstanceOf[Data].also:
+        ready = Unset
+
+erased trait LengthPrefix

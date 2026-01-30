@@ -32,8 +32,59 @@
                                                                                                   */
 package obligatory
 
+import anticipation.*
+import contingency.*
+import distillate.*
+import gossamer.*
+import hieroglyph.*
 import prepositional.*
+import proscenium.*
+import rudiments.*
+import vacuous.*
+import zephyrine.*
 
-extension [element](stream: Iterator[element])
-  def break[frame](using breakable: element is Breakable by frame): Iterator[element] =
-    breakable.break(stream)
+object ContentLength:
+  given breakable: Tactic[FrameError] => Text is Breakable by ContentLength = input =>
+    val cursor = Cursor(input)
+    def fail(): Nothing = abort(FrameError())
+
+    def skip(): Unit = while cursor.next() && cursor.datum(using Unsafe) == ' ' do ()
+    def key(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail()):
+      case Cr  => if mark != cursor.mark then fail() else
+        cursor.consume(fail())("\n")
+        cursor.next()
+        Unset
+
+      case ':' =>
+        cursor.grab(mark, cursor.mark).also(skip())
+
+      case chr =>
+        if cursor.next() then key(mark) else abort(FrameError())
+
+    def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail()):
+      case '\r' => cursor.grab(mark, cursor.mark).also:
+        cursor.consume(fail())("\n")
+        cursor.next()
+      case char => if cursor.next() then value(mark) else fail()
+
+    def frame(length: Int): Optional[Text] =
+      if cursor.finished then Unset else cursor.hold(key(cursor.mark).let(_.lower)) match
+        case Unset           => cursor.take(fail())(length)
+        case t"content-type" => cursor.hold(value(cursor.mark)) yet frame(length)
+
+        case t"content-length" =>
+          frame(safely(cursor.hold(value(cursor.mark)).decode[Int]).or(fail()))
+
+        case other =>
+          fail()
+
+    new Iterator[Text]:
+      private var ready: Optional[Text] = Unset
+      def hasNext: Boolean =
+        if ready == Unset then ready = frame(0)
+        ready != Unset
+
+      def next(): Text = ready.asInstanceOf[Text].also:
+        ready = Unset
+
+erased trait ContentLength

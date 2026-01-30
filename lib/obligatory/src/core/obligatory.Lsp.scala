@@ -32,8 +32,55 @@
                                                                                                   */
 package obligatory
 
-import prepositional.*
+import scala.collection.mutable as scm
 
-extension [element](stream: Iterator[element])
-  def break[frame](using breakable: element is Breakable by frame): Iterator[element] =
-    breakable.break(stream)
+import anticipation.*
+import contingency.*
+import distillate.*
+import eucalyptus.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import inimitable.*
+import jacinta.*
+import parasite.*
+import prepositional.*
+import revolution.*
+import rudiments.*
+import telekinesis.*
+import urticose.*
+import vacuous.*
+import zephyrine.*
+
+import scala.annotation.*
+import scala.quoted.*
+
+object Lsp:
+  case class TextDocument(uri: Text, languageId: Text, version: Int, text: Text)
+  case class Folder(uri: Text, name: Text)
+  case class ClientInfo(name: Text, version: Semver)
+
+
+trait Lsp:
+  @remote
+  def initialize
+       (processId:        Int,
+        clientInfo:       Lsp.ClientInfo,
+        locale:           Text,
+        rootPath:         Text,
+        rootUri:          Text,
+        capabilities:     Json,
+        workspaceFolders: List[Lsp.Folder])
+  : Json
+
+  @remote
+  def initialized(): Unit
+
+  @remote
+  def shutdown(): Unit
+
+  @remote
+  def exit(): Unit
+
+  @remote
+  def `textDocument/didOpen`(textDocument: Lsp.TextDocument): Unit

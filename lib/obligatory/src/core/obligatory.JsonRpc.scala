@@ -32,8 +32,61 @@
                                                                                                   */
 package obligatory
 
-import prepositional.*
+import scala.collection.mutable as scm
 
-extension [element](stream: Iterator[element])
-  def break[frame](using breakable: element is Breakable by frame): Iterator[element] =
-    breakable.break(stream)
+import anticipation.*
+import contingency.*
+import distillate.*
+import eucalyptus.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import inimitable.*
+import jacinta.*
+import parasite.*
+import prepositional.*
+import revolution.*
+import rudiments.*
+import telekinesis.*
+import urticose.*
+import vacuous.*
+import zephyrine.*
+
+import scala.annotation.*
+import scala.quoted.*
+
+import errorDiagnostics.stackTraces
+
+object JsonRpc:
+  private val promises: scm.HashMap[Uuid, Promise[Json]] = scm.HashMap()
+
+  case class Request(jsonrpc: Text, method: Text, params: Json, id: Optional[Text])
+  case class Response(jsonrpc: Text, result: Json, id: Optional[Uuid])
+
+  def receive(json: Json): Unit raises RpcError =
+    mitigate:
+      case error: JsonError => RpcError()
+      case error: UuidError => RpcError()
+
+    . within:
+        val response = json.as[Response]
+        response.id.let(_.decode[Uuid]).let: uuid =>
+          promises.at(uuid).let: promise =>
+            safely(promise.fulfill(response.result))
+
+
+  def request(url: HttpUrl, method: Text, payload: Json)(using Monitor, Codicil, Online): Promise[Json] =
+    val uuid = Uuid()
+    val promise: Promise[Json] = Promise()
+    promises(uuid) = promise
+    import charEncoders.utf8
+    import jsonPrinters.minimal
+    import logging.silent
+
+    unsafely:
+      async:
+        promise.fulfill:
+          unsafely:
+            url.submit(Http.Post)(Request("2.0", method, payload, uuid.encode).json).receive[Json]
+
+    promise

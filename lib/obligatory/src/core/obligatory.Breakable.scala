@@ -32,8 +32,30 @@
                                                                                                   */
 package obligatory
 
-import prepositional.*
+import scala.collection.mutable as scm
 
-extension [element](stream: Iterator[element])
-  def break[frame](using breakable: element is Breakable by frame): Iterator[element] =
-    breakable.break(stream)
+import anticipation.*
+import contingency.*
+import distillate.*
+import eucalyptus.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import inimitable.*
+import jacinta.*
+import parasite.*
+import prepositional.*
+import revolution.*
+import rudiments.*
+import telekinesis.*
+import urticose.*
+import vacuous.*
+import zephyrine.*
+
+import scala.annotation.*
+import scala.quoted.*
+
+import errorDiagnostics.stackTraces
+
+trait Breakable extends Typeclass, Operable:
+  def break(input: Iterator[Self]): Iterator[Self]

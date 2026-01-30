@@ -32,8 +32,6 @@
                                                                                                   */
 package obligatory
 
-import prepositional.*
+import proscenium.*
 
-extension [element](stream: Iterator[element])
-  def break[frame](using breakable: element is Breakable by frame): Iterator[element] =
-    breakable.break(stream)
+case class remote() extends StaticAnnotation

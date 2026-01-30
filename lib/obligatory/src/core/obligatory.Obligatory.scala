@@ -56,21 +56,23 @@ import scala.quoted.*
 
 import errorDiagnostics.stackTraces
 
-case class remote() extends StaticAnnotation
-
 object Obligatory:
   given Realm = realm"obligatory"
 
   def remote[interface: Type](url: Expr[HttpUrl]): Macro[interface] =
     import quotes.reflect.*
     val remoteType = TypeRepr.of[remote].typeSymbol
+    val localType = TypeRepr.of[local].typeSymbol
     val interface = TypeRepr.of[interface]
 
     val remoteMethods = TypeRepr.of[interface].typeSymbol.declaredMethods.filter: method =>
       method.annotations.exists(_.tpe.typeSymbol == remoteType)
 
-    def decls(cls: Symbol) = remoteMethods.map: method =>
-      Symbol.newMethod(cls, method.name, method.info, Flags.EmptyFlags, Symbol.noSymbol)
+    val localMethods = TypeRepr.of[interface].typeSymbol.declaredMethods.filter: method =>
+      method.annotations.exists(_.tpe.typeSymbol == localType)
+
+    def decls(classSymbol: Symbol) = remoteMethods.map: method =>
+      Symbol.newMethod(classSymbol, method.name, method.info, Flags.EmptyFlags, Symbol.noSymbol)
 
 
     val parents  = List(TypeTree.of[Object], TypeTree.of[interface])
@@ -84,13 +86,12 @@ object Obligatory:
       decls    = decls,
       privateWithin = Symbol.noSymbol)
 
-    val cls = module.moduleClass
-
+    val classSymbol = module.moduleClass
 
     val defDefs = remoteMethods.map: method =>
       val paramSymbols = method.paramSymss.head
+      val runSym = classSymbol.declaredMethod(method.name).head
 
-      val runSym = cls.declaredMethod(method.name).head
       DefDef(runSym, {
         case List(params) =>
           given Quotes = runSym.asQuotes
@@ -111,20 +112,28 @@ object Obligatory:
             case _                     => false
 
           val id = if notification then '{Unset} else Expr(Uuid().show)
+
           val methodName = Expr(method.name.tt)
-          (Expr.summon[Monitor], Expr.summon[Codicil]) match
-            case (Some(monitor), Some(codicil)) =>
-              Some:
-                ' {
-                    val json = Map(${Varargs(entries)}*).json
-                    unsafely:
-                      JsonRpc.handle($url, $methodName, json)(using $monitor, $codicil)
-                      . await()
-                  }.asTerm
-            case _ =>
-              halt(m"no monitor found")
-        }
-      )
+
+          Expr.summon[Monitor] match
+            case Some(monitor) => Expr.summon[Codicil] match
+              case Some(codicil) => Expr.summon[Online] match
+                case Some(online) =>
+                  Some:
+                    ' {
+                        val json = Map(${Varargs(entries)}*).json
+                        unsafely:
+                          JsonRpc.request($url, $methodName, json)
+                           (using $monitor, $codicil, $online)
+                          . await()
+                      }
+                    . asTerm
+
+                case _ => halt(m"a contextual Online instance is required")
+              case _ => halt(m"a contextual Codicil instance is required")
+            case _ => halt(m"a contextual Monitor instance is required")
+        case _ => halt(m"the method ${method.name} must have exactly one parameter list")
+      })
 
 
     val modDef = ClassDef.module(module, parents, body = defDefs)

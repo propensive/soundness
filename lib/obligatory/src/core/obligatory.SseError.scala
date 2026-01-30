@@ -32,8 +32,6 @@
                                                                                                   */
 package obligatory
 
-import prepositional.*
+import fulminate.*
 
-extension [element](stream: Iterator[element])
-  def break[frame](using breakable: element is Breakable by frame): Iterator[element] =
-    breakable.break(stream)
+case class SseError()(using Diagnostics) extends Error(m"the server-sent event was not valid")
