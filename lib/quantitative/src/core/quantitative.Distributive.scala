@@ -38,16 +38,14 @@ import prepositional.*
 import proscenium.*
 
 object Distributive:
-  inline given distributive: [measure <: Measure] => Quantity[measure] is Distributive by Double =
+  inline given distributive: [measure <: Measure] => Quantity[measure] is Distributive:
+    type Operand = Double
     val units = Quantity.units[measure]
-    new Distributive:
-      type Self = Quantity[measure]
-      type Operand = Double
+    type Self = Quantity[measure]
 
-      def parts(value: Quantity[measure]): List[Double] = List(value.underlying)
+    def parts(value: Quantity[measure]): List[Double] = List(value.underlying)
 
-      def place(value: Quantity[measure], parts: List[Text]): Text =
-        t"${parts(0)} $units"
+    def place(value: Quantity[measure], parts: List[Text]): Text = t"${parts(0)} $units"
 
 trait Distributive extends Typeclass:
   type Operand
