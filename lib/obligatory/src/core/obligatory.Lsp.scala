@@ -62,7 +62,7 @@ object Lsp:
 
 
 trait Lsp:
-  @remote
+  @rpc
   def initialize
        (processId:        Int,
         clientInfo:       Lsp.ClientInfo,
@@ -73,14 +73,14 @@ trait Lsp:
         workspaceFolders: List[Lsp.Folder])
   : Json
 
-  @remote
+  @rpc
   def initialized(): Unit
 
-  @remote
+  @rpc
   def shutdown(): Unit
 
-  @remote
+  @rpc
   def exit(): Unit
 
-  @remote
+  @rpc
   def `textDocument/didOpen`(textDocument: Lsp.TextDocument): Unit

@@ -656,7 +656,7 @@ object orthodoxy extends Library:
   object test extends Tests(core)
 
 object obligatory extends Library:
-  object core extends Component(urticose.core, eucalyptus.core, zephyrine.core, telekinesis.core, revolution.core, jacinta.core)
+  object core extends Component(urticose.core, scintillate.server, hyperbole.core, eucalyptus.core, zephyrine.core, telekinesis.core, revolution.core, jacinta.schema, jacinta.http)
   object test extends Tests(core)
 
 object panopticon extends Library:

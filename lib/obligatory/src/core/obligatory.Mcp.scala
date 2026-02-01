@@ -59,6 +59,7 @@ import errorDiagnostics.stackTraces
 
 object Mcp:
   type Cursor = Text
+
   case class TaskAugmentedRequestParams(task: Optional[TaskMetadata])
   case class Error(code: Int, message: Text, data: Optional[Json])
 
@@ -66,6 +67,9 @@ object Mcp:
     given encodable: TextInt is Encodable in Json = _.id match
       case text: Text => text.json
       case int: Int   => int.json
+
+    given decodable: Tactic[JsonError] => TextInt is Decodable in Json =
+      json => TextInt(safely(json.as[Int]).or(json.as[Text]))
 
   case class TextInt(id: Text | Int)
 
@@ -77,40 +81,37 @@ object Mcp:
   val UrlElicitationRequired = -32042
 
   case class TaskMetadata(ttl: Optional[Int])
-
   case class Icon(src: HttpUrl, mimeType: Text, sizes: List[Text], theme: Optional[Text])
-  case class Icons(icons: List[Icon])
-
   case class BaseMetadata(name: Text, title: Optional[Text])
 
-  case class Implementation(version: Text, description: Optional[Text], websiteUrl: Optional[Text])
+  case class Implementation
+    ( name:        Text,
+      title:       Optional[Text]       = Unset,
+      icons:       Optional[List[Icon]] = Unset,
+      version:     Text,
+      description: Optional[Text]       = Unset,
+      websiteUrl:  Optional[Text]       = Unset)
 
   case class ClientInfo
-              (name:        Text,
-               title:       Text,
-               version:     Text,
-               description: Text,
-               icons:       List[Icon])
-
-  case class Initialize
-              (protocolVersion: Text,
-               capabilities:    Json,
-               serverInfo:      ServerInfo,
-               instructions:    Text)
+    ( name:        Text,
+      title:       Text,
+      version:     Text,
+      description: Text,
+      icons:       List[Icon] )
 
   case class ServerInfo
-              (name:        Text,
-               title:       Text,
-               version:     Text,
-               description: Text,
-               icons:       List[Icon],
-               websiteUrl:  HttpUrl)
+    ( name:        Text,
+      title:       Text,
+      version:     Text,
+      description: Text,
+      icons:       List[Icon],
+      websiteUrl:  HttpUrl )
 
-  case class InitializeResult
-              (protocolVersion: Text,
-               capabilities:    ServerCapabilities,
-               serverInfo:      Implementation,
-               instructions:    Optional[Text])
+  case class Initialize
+    ( protocolVersion: Text,
+      capabilities:    ServerCapabilities,
+      serverInfo:      Implementation,
+      instructions:    Optional[Text] )
 
   case class ListChanged(listChanged: Optional[Boolean])
   case class Resources(subscribe: Optional[Boolean], listChanged: Optional[Boolean])
@@ -120,49 +121,307 @@ object Mcp:
   case class RequestsElicitation(create: Optional[Json])
   case class Call(call: Optional[Json])
   case class RequestsSampling(createMessage: Optional[Json])
-  case class Tasks(list: Optional[Json], cancel: Optional[Json], requests: Optional[Requests])
+
+  case class Tasks
+    ( list:     Optional[Json]     = Unset,
+      cancel:   Optional[Json]     = Unset,
+      requests: Optional[Requests] = Unset )
+
+  case class ListTasks(tasks: List[Task])
 
   case class Requests
-              (sampling:    Optional[RequestsSampling],
-               elicitation: Optional[RequestsElicitation],
-               tools:       Optional[Call])
+    ( sampling:    Optional[RequestsSampling]    = Unset,
+      elicitation: Optional[RequestsElicitation] = Unset,
+      tools:       Optional[Call]                = Unset )
 
   case class ServerCapabilities
-              (experimental: Optional[Map[Text, Json]],
-               logging:      Optional[Json],
-               completions:  Optional[Json],
-               prompts:      Optional[ListChanged],
-               resources:    Optional[Resources],
-               tools:        Optional[ListChanged],
-               tasks:        Optional[Tasks])
+    ( experimental: Optional[Map[Text, Json]] = Unset,
+      logging:      Optional[Json]            = Unset,
+      completions:  Optional[Json]            = Unset,
+      prompts:      Optional[ListChanged]     = Unset,
+      resources:    Optional[Resources]       = Unset,
+      tools:        Optional[ListChanged]     = Unset,
+      tasks:        Optional[Tasks]           = Unset )
 
   case class ClientCapabilities
-              (experimental: Optional[Map[Text, Json]],
-               roots:        Optional[ListChanged],
-               sampling:     Optional[Sampling],
-               elicitation:  Optional[Elicitation],
-               tasks:        Optional[Tasks])
+    ( experimental: Optional[Map[Text, Json]] = Unset,
+      roots:        Optional[ListChanged]     = Unset,
+      sampling:     Optional[Sampling]        = Unset,
+      elicitation:  Optional[Elicitation]     = Unset,
+      tasks:        Optional[Tasks]           = Unset )
 
-trait Mcp:
+  object Contents:
+    given encodable: Contents is Encodable in Json = _.contents match
+      case text: TextResourceContents => text.json
+      case blob: BlobResourceContents => blob.json
 
+    given decodable: Tactic[JsonError] => Contents is Decodable in Json = json =>
+      Contents(safely(json.as[TextResourceContents]).or(json.as[BlobResourceContents]))
+
+  case class Contents(contents: TextResourceContents | BlobResourceContents)
+  case class Context(arguments: Optional[Map[Text, Text]])
+
+
+  case class ListResources(resources: List[Resource])
+  case class ListResourceTemplates(resourceTemplates: List[ResourceTemplate])
+  case class ReadResource(contents: List[Contents])
+  case class Resource
+    ( name:        Text,
+      title:       Optional[Text] = Unset,
+      icons:       List[Icon]     = Nil,
+      description: Optional[Text] = Unset,
+      mimeType:    Optional[Text] = Unset,
+      annotations: Annotations,
+      size:        Long )
+
+  case class ResourceTemplate
+    ( name:        Text,
+      title:       Optional[Text],
+      icons:       List[Icon],
+      uriTemplate: Text,
+      description: Optional[Text],
+      mimeType:    Optional[Text],
+      annotations: Annotations )
+
+  case class ResourceContents(uri: Text, mimeType: Optional[Text])
+  case class TextResourceContents(uri: Text, mimeType: Optional[Text], text: Text)
+  case class BlobResourceContents(uri: Text, mimeType: Optional[Text], blob: Text)
+  case class ListPrompts(cursor: Optional[Cursor], prompts: List[Prompt])
+
+  case class Annotations
+    ( audience:     Optional[List[Role]],
+      priority:     Optional[Int],
+      lastModified: Optional[Text] )
+
+  case class Complete(completion: Completion)
+  case class Completion(values: List[Text], total: Optional[Int], hasMore: Optional[Boolean])
+
+  object Role:
+    given encodable: Role is Encodable in Json =
+      case Role.User      => t"user".json
+      case Role.Assistant => t"assistant".json
+
+    given decodable: Tactic[JsonError] => Role is Decodable in Json = _.as[Text] match
+      case t"user"      => Role.User
+      case t"assistant" => Role.Assistant
+      case _            => abort(JsonError(JsonError.Reason.OutOfRange))
+
+  enum Role:
+    case User, Assistant
+
+  object TaskSupport:
+    given encodable: TaskSupport is Encodable in Json =
+      case TaskSupport.Forbidden => t"forbidden".json
+      case TaskSupport.Optional  => t"optional".json
+      case TaskSupport.Required  => t"required".json
+
+    given decodable: Tactic[JsonError] => TaskSupport is Decodable in Json = _.as[Text] match
+      case t"forbidden" => TaskSupport.Forbidden
+      case t"optional"  => TaskSupport.Optional
+      case t"required"  => TaskSupport.Required
+      case _            => abort(JsonError(JsonError.Reason.OutOfRange))
+
+  enum TaskSupport:
+    case Forbidden, Optional, Required
+
+  object LoggingLevel:
+    given encodable: LoggingLevel is Encodable in Json = _.toString.tt.lower.json
+
+    given decodable: Tactic[JsonError] => LoggingLevel is Decodable in Json = _.as[Text] match
+      case t"debug"     => LoggingLevel.Debug
+      case t"info"      => LoggingLevel.Info
+      case t"notice"    => LoggingLevel.Notice
+      case t"warning"   => LoggingLevel.Warning
+      case t"error"     => LoggingLevel.Error
+      case t"critical"  => LoggingLevel.Critical
+      case t"alert"     => LoggingLevel.Alert
+      case t"emergency" => LoggingLevel.Emergency
+      case _            => abort(JsonError(JsonError.Reason.OutOfRange))
+
+  enum LoggingLevel:
+    case Debug, Info, Notice, Warning, Error, Critical, Alert, Emergency
+
+  object TaskStatus:
+    given encodable: TaskStatus is Encodable in Json = _.toString.tt.lower.json
+
+    given decodable: Tactic[JsonError] => TaskStatus is Decodable in Json = _.as[Text] match
+      case t"working"        => TaskStatus.Working
+      case t"input_required" => TaskStatus.InputRequired
+      case t"completed"      => TaskStatus.Completed
+      case t"failed"         => TaskStatus.Failed
+      case t"cancelled"      => TaskStatus.Cancelled
+      case _                 => abort(JsonError(JsonError.Reason.OutOfRange))
+
+  enum TaskStatus:
+    case Working, InputRequired, Completed, Failed, Cancelled
+
+  case class Prompt(name: Text, title: Optional[Text], icons: List[Icon])
+  case class Argument(name: Text, value: Text)
+  case class Reference(name: Text, title: Optional[Text], `type`: Text, uri: Optional[Text])
+
+  case class CallTool
+    ( content:           List[ContentBlock],
+      structuredContent: Optional[Map[Text, Json]],
+      isError:           Optional[Boolean] )
+
+  case class ListTools(tools: List[Tool])
+
+  case class Tool
+    ( description:  Optional[Text],
+      inputSchema:  JsonSchema,
+      execution:    Optional[ToolExecution],
+      outputSchema: Optional[JsonSchema],
+      annotations:  Optional[ToolAnnotations] )
+
+  case class ToolExecution(taskSupport: Optional[TaskSupport])
+
+  case class ToolAnnotations
+    ( title:           Optional[Text],
+      readOnlyHint:    Optional[Boolean],
+      destructiveHint: Optional[Boolean],
+      idempotentHint:  Optional[Boolean],
+      openWorldHint:   Optional[Boolean] )
+
+  object ContentBlock:
+    import dynamicJsonAccess.enabled
+
+    given encodable: ContentBlock is Encodable in Json =
+      case content: TextContent  => unsafely(content.json.`type` = "text")
+      case content: ImageContent => unsafely(content.json.`type` = "image")
+      case content: AudioContent => unsafely(content.json.`type` = "audio")
+      case content: ResourceLink => unsafely(content.json.`type` = "resource_link")
+      case content: EmbeddedResource => unsafely(content.json.`type` = "resource")
+
+    given decodable: Tactic[JsonError] => ContentBlock is Decodable in Json = json =>
+      json.`type`.as[Text] match
+        case "text"          => json.as[TextContent]
+        case "image"         => json.as[ImageContent]
+        case "audio"         => json.as[AudioContent]
+        case "resource_link" => json.as[ResourceLink]
+        // case "resource"      => json.as[EmbeddedResource]
+
+  sealed trait ContentBlock
+  case class TextContent(text: Text, annotations: Optional[Annotations]) extends ContentBlock
+
+  case class ImageContent(data: Text, mimeType: Text, annotations: Optional[Annotations])
+  extends ContentBlock
+
+  case class AudioContent(data: Text, mimeType: Text, annotations: Optional[Annotations])
+  extends ContentBlock
+
+  case class ResourceLink(uri: Text) extends ContentBlock
+  case class EmbeddedResource(resource: Resource) extends ContentBlock
+
+  case class Task
+    ( taskId:        Text,
+      status:        TaskStatus,
+      statusMessage: Optional[Text],
+      createdAt:     Text,
+      lastUpdatedAt: Text,
+      ttl:           Int,
+      pollInterval:  Optional[Int] )
+
+
+trait McpServer:
   import Mcp.*
 
-  @remote
-  def `notifications/cancelled`(request: Optional[TextInt], reason: Optional[Text]): Unit
+  @rpc
+  def ping(): Unit
 
-  @remote
-  def initialize(protocolVersion: Text, capabilities: ClientCapabilities, clientInfo: Implementation): InitializeResult
+  @rpc
+  def initialize
+    ( protocolVersion: Text,
+      capabilities:    ClientCapabilities,
+      clientInfo:      Implementation,
+      _meta:           Optional[Json])
+  : Initialize
 
-  @remote
-  def `notifications/initialized`(): Unit
+  @rpc
+  def `completion/complete`
+    ( ref:      Reference,
+      argument: Argument,
+      context:  Optional[Context],
+      _meta:    Optional[Json])
+  : Complete
 
-  @remote
-  def ping(): Json
+  @rpc
+  def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit
 
-  @remote
+  @rpc
+  def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json]): Unit
+
+  @rpc
+  def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts
+
+  @rpc
+  def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources
+
+  @rpc
+  def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates
+
+  @rpc
+  def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource
+
+  @rpc
+  def `resources/subscribe`(uri: Text, _meta: Optional[Json]): Unit
+
+  @rpc
+  def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit
+
+  @rpc
+  def `tools/call`(name: Text, arguments: Optional[Map[Text, Json]], _meta: Optional[Json])
+  : CallTool
+
+  @rpc
+  def `tools/list`(_meta: Optional[Json]): ListTools
+
+  @rpc
+  def `tasks/get`(taskId: Text, _meta: Optional[Json]): Task
+
+  @rpc
+  def `tasks/result`(taskId: Text, _meta: Optional[Json]): Map[Text, Json]
+
+  @rpc
+  def `tasks/list`(_meta: Optional[Json]): ListTasks
+
+  @rpc
+  def `tasks/cancel`(taskId: Text, _meta: Optional[Json]): Task
+
+  @rpc
+  def `notifications/cancelled`
+    ( request: Optional[TextInt],
+      reason:  Optional[Text],
+      _meta:   Optional[Json] ): Unit
+
+  @rpc
   def `notifications/progress`
-       (progressToken: TextInt,
-        progress:      Double,
-        total:         Optional[Double],
-        message:       Optional[Text])
+    ( progressToken: TextInt,
+      progress:      Double,
+      total:         Optional[Double],
+      message:       Optional[Text],
+      _meta:         Optional[Json] )
   : Unit
+
+  @rpc
+  def `notifications/initialized`(_meta: Optional[Json]): Unit
+
+  @rpc
+  def `notifications/roots/list_changed`(_meta: Optional[Json]): Unit
+
+  @rpc
+  def `notifications/tasks/status`
+    ( taskId:        Text,
+      status:        TaskStatus,
+      statusMessage: Optional[Text],
+      createdAt:     Text,
+      lastUpdatedAt: Text,
+      ttl:           Int,
+      pollInterval:  Optional[Int],
+      _meta:         Optional[Json] )
+  : Unit
+
+  @rpc
+  def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit
+
+  @rpc
+  def `notifications/resources/updated`(uri: Text, _meta: Optional[Json]): Unit

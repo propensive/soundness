@@ -38,6 +38,7 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import hyperbole.*
 import inimitable.*
 import jacinta.*
 import parasite.*
@@ -47,6 +48,7 @@ import revolution.*
 import rudiments.*
 import spectacular.*
 import telekinesis.*
+import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
@@ -55,25 +57,69 @@ import scala.annotation.*
 import scala.quoted.*
 
 import errorDiagnostics.stackTraces
+import stdioSources.virtualMachine.ansi
 
 object Obligatory:
   given Realm = realm"obligatory"
 
-  def remote[interface: Type](url: Expr[HttpUrl]): Macro[interface] =
+  def dispatcher[interface: Type](target: Expr[interface]): Macro[Json => Optional[Json]] =
     import quotes.reflect.*
-    val remoteType = TypeRepr.of[remote].typeSymbol
-    val localType = TypeRepr.of[local].typeSymbol
+
+    val rpcType = TypeRepr.of[rpc].typeSymbol
     val interface = TypeRepr.of[interface]
 
-    val remoteMethods = TypeRepr.of[interface].typeSymbol.declaredMethods.filter: method =>
-      method.annotations.exists(_.tpe.typeSymbol == remoteType)
+    val rpcMethods = interface.typeSymbol.declaredMethods.filter: method =>
+      method.annotations.exists(_.tpe.typeSymbol == rpcType)
 
-    val localMethods = TypeRepr.of[interface].typeSymbol.declaredMethods.filter: method =>
-      method.annotations.exists(_.tpe.typeSymbol == localType)
+    ' {
+        json =>
+          import dynamicJsonAccess.enabled
+          given Tactic[JsonError] = strategies.throwUnsafely
+          val request = json.as[JsonRpc.Request]
+          val method = request.method
 
-    def decls(classSymbol: Symbol) = remoteMethods.map: method =>
+          $ {
+              val cases = rpcMethods.map: method =>
+                val params = method.paramSymss.head.map: param =>
+                  param.info.asType.absolve match
+                    case '[param] => Expr.summon[param is Decodable in Json] match
+                      case Some(decoder) =>
+                        '{$decoder.decoded(request.params(${Expr(param.name)}))}
+                        . asTerm
+                      case None =>
+                        halt(m"could not find a JSON decoder for parameter ${param.name} of method ${method.name}")
+
+                val application = Apply(Select(target.asTerm, method), params)
+
+                val rtnType: TypeRepr = method.info.absolve match
+                  case MethodType(_, _, rtn) => rtn
+
+                val rhs = rtnType.asType match
+                  case '[Unit] => '{${application.asExpr} yet Unset}
+                  case '[rtn] => Expr.summon[rtn is Encodable in Json] match
+                    case Some(encoder) =>
+                      '{JsonRpc.Response("2.0", $encoder.encode(${application.asExprOf[rtn]}), request.id).json}
+                    case None =>
+                      halt(m"could not find a JSON encoder for return type of method ${method.name}")
+
+                CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
+
+              Match('method.asTerm, cases).asExprOf[Optional[Json]]
+            }
+      }
+
+
+
+  def remote[interface: Type](url: Expr[HttpUrl]): Macro[interface] =
+    import quotes.reflect.*
+    val rpcType = TypeRepr.of[rpc].typeSymbol
+    val interface = TypeRepr.of[interface]
+
+    val rpcMethods = interface.typeSymbol.declaredMethods.filter: method =>
+      method.annotations.exists(_.tpe.typeSymbol == rpcType)
+
+    def decls(classSymbol: Symbol) = rpcMethods.map: method =>
       Symbol.newMethod(classSymbol, method.name, method.info, Flags.EmptyFlags, Symbol.noSymbol)
-
 
     val parents  = List(TypeTree.of[Object], TypeTree.of[interface])
 
@@ -88,7 +134,7 @@ object Obligatory:
 
     val classSymbol = module.moduleClass
 
-    val defDefs = remoteMethods.map: method =>
+    val defDefs = rpcMethods.map: method =>
       val paramSymbols = method.paramSymss.head
       val runSym = classSymbol.declaredMethod(method.name).head
 
@@ -107,19 +153,18 @@ object Obligatory:
               case _ =>
                 halt(m"all remote methods in ${TypeRepr.of[interface].show} must have a single parameter list")
 
-          val notification = runSym.info match
-            case MethodType(_, _, rtn) => rtn.typeSymbol == TypeRepr.of[Unit].typeSymbol
-            case _                     => false
+          val rtnType: TypeRepr = runSym.info.absolve match
+            case MethodType(_, _, rtn) => rtn
 
+          val notification = rtnType.typeSymbol == TypeRepr.of[Unit].typeSymbol
           val id = if notification then '{Unset} else Expr(Uuid().show)
-
           val methodName = Expr(method.name.tt)
 
           Expr.summon[Monitor] match
             case Some(monitor) => Expr.summon[Codicil] match
               case Some(codicil) => Expr.summon[Online] match
                 case Some(online) =>
-                  Some:
+                  if notification then Some:
                     ' {
                         val json = Map(${Varargs(entries)}*).json
                         unsafely:
@@ -128,13 +173,26 @@ object Obligatory:
                           . await()
                       }
                     . asTerm
+                  else rtnType.asType.absolve match
+                    case '[rtn] => Expr.summon[rtn is Decodable in Json] match
+                      case Some(decoder) =>
+                        Some:
+                          ' {
+                              val json = Map(${Varargs(entries)}*).json
+                              unsafely:
+                                JsonRpc.request($url, $methodName, json)
+                                 (using $monitor, $codicil, $online)
+                                . await()
+                                . decode[rtn](using $decoder)
+                            }
+                          . asTerm
 
+                      case _ => halt(m"a contextual ${TypeRepr.of[rtn is Decodable in Json].show} was not found")
                 case _ => halt(m"a contextual Online instance is required")
               case _ => halt(m"a contextual Codicil instance is required")
             case _ => halt(m"a contextual Monitor instance is required")
         case _ => halt(m"the method ${method.name} must have exactly one parameter list")
       })
-
 
     val modDef = ClassDef.module(module, parents, body = defDefs)
 
