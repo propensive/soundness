@@ -349,7 +349,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
   def apply(field: Text): Json raises JsonError =
     root.obj(0).indexWhere(_ == field.s) match
-      case -1    => focus(prior.or(JsonPointer()) / field)(raise(JsonError(Reason.Absent)) yet this)
+      case -1    => Json.ast(JsonAst(Unset))
       case index => Json(root.obj(1)(index))
 
   override def hashCode: Int =
