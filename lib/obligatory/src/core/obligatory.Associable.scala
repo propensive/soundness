@@ -33,99 +33,26 @@
 package obligatory
 
 import anticipation.*
-import contingency.*
 import denominative.*
 import distillate.*
-import gesticulate.*
-import gossamer.*
-import hieroglyph.*
-import jacinta.*
+import inimitable.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
-import symbolism.*
 import telekinesis.*
 import vacuous.*
-import zephyrine.*
 
-object Sse:
-  given servable: LazyList[Sse] is Servable =
-    import charEncoders.utf8
-    Servable[LazyList[Sse]](_ => media"text/event-stream")(_.map(_.encode.data))
+object Associable:
+  given mcp: McpServer is Associable:
+    type Operand = Http.Request
+    type Target = Http.Response
 
-  given breakable: Text is Breakable by Sse = input =>
-    val cursor = Cursor(input)
+    def association(request: Http.Request): McpServer =
+      given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
+      request.headers.mcpSessionId.prim.let(McpServer(_)).or(McpServer(Uuid().encode))
 
-    def frame(start: Cursor.Mark)(using Cursor.Held): Optional[Text] = cursor.hold:
-      if !cursor.finished && cursor.seek(Lf) then
-        val end = cursor.mark
-        cursor.next()
-        cursor.lay(cursor.grab(start, end)): char =>
-          if char == Lf then cursor.next() yet cursor.grab(start, end) else frame(start)
-      else if cursor.mark == start then Unset else
-        cursor.grab(start, cursor.mark)
+    def associate(session: McpServer)(response: Http.Response): Http.Response =
+      response + Http.Header("mcp-session-id", session.id)
 
-    new Iterator[Text]:
-      private var ready: Optional[Text] = Unset
-      def hasNext: Boolean =
-        if ready == Unset then ready = cursor.hold(frame(cursor.mark))
-        ready != Unset
-
-      def next(): Text = ready.asInstanceOf[Text].also:
-        ready = Unset
-
-  given jsonEncodable: Json is Encodable in Sse =
-    import jsonPrinters.minimal
-    json => Sse("message", List(json.show))
-
-  given decodable: Tactic[SseError] => Sse is Decodable in Text = text =>
-    var event: Text = "message"
-    var data: List[Text] = Nil
-    var id: Optional[Text] = Unset
-    var retry: Optional[Long] = Unset
-
-    text.cut(Lf).each: line =>
-      line.s.indexOf(':') match
-        case -1 => raise(SseError())
-        case n  =>
-          val value = line.skip(if line.at(n.z + 1) == ' ' then n + 2 else n + 1)
-
-          line.keep(n) match
-            case "event" => event = value
-            case "data"  => data ::= value
-            case "id"    => id = value
-            case "retry" => retry = safely(value.decode[Long]).lest(SseError())
-            case _       => raise(SseError())
-
-    Sse(event, data.reverse, id, retry)
-
-  given encodable: Sse is Encodable in Text =
-    sse =>
-      val buffer = StringBuilder()
-      buffer.append("event: ")
-      buffer.append(sse.event.s)
-      buffer.append("\n")
-
-      sse.data.each: line =>
-        buffer.append("data: ")
-        buffer.append(line)
-        buffer.append("\n")
-
-      sse.id.let: id =>
-        buffer.append("id: ")
-        buffer.append(id)
-        buffer.append("\n")
-
-      sse.retry.let: retry =>
-        buffer.append("retry: ")
-        buffer.append(retry)
-        buffer.append("\n")
-
-      buffer.append("\n")
-      buffer.toString().tt
-
-case class Sse
-            (event: Text           = "message",
-             data:  List[Text]     = Nil,
-             id:    Optional[Text] = Unset,
-             retry: Optional[Long] = Unset)
+trait Associable extends Operable, Typeclass, Targetable:
+  def association(operand: Operand): Self
+  def associate(session: Self)(response: Target): Target

@@ -69,7 +69,8 @@ object Obligatory:
     val interface = TypeRepr.of[interface]
 
     val rpcMethods = interface.typeSymbol.declaredMethods.filter: method =>
-      method.annotations.exists(_.tpe.typeSymbol == rpcType)
+      val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+      allAnnotations.exists(_.tpe.typeSymbol == rpcType)
 
     ' {
         json =>
@@ -87,7 +88,8 @@ object Obligatory:
                         '{$decoder.decoded(request.params(${Expr(param.name)}))}
                         . asTerm
                       case None =>
-                        halt(m"could not find a JSON decoder for parameter ${param.name} of method ${method.name}")
+                        halt(m"""could not find a JSON decoder for parameter ${param.name} of method
+                                 ${method.name}""")
 
                 val application = Apply(Select(target.asTerm, method), params)
 
@@ -98,7 +100,14 @@ object Obligatory:
                   case '[Unit] => '{${application.asExpr} yet Unset}
                   case '[rtn] => Expr.summon[rtn is Encodable in Json] match
                     case Some(encoder) =>
-                      '{JsonRpc.Response("2.0", $encoder.encode(${application.asExprOf[rtn]}), request.id).json}
+                      ' {
+                          JsonRpc.Response
+                           ("2.0",
+                            $encoder.encode(${application.asExprOf[rtn]}),
+                            request.id)
+                          . json
+                        }
+
                     case None =>
                       halt(m"could not find a JSON encoder for return type of method ${method.name}")
 
@@ -109,14 +118,14 @@ object Obligatory:
       }
 
 
-
   def remote[interface: Type](url: Expr[HttpUrl]): Macro[interface] =
     import quotes.reflect.*
     val rpcType = TypeRepr.of[rpc].typeSymbol
     val interface = TypeRepr.of[interface]
 
     val rpcMethods = interface.typeSymbol.declaredMethods.filter: method =>
-      method.annotations.exists(_.tpe.typeSymbol == rpcType)
+      val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+      allAnnotations.exists(_.tpe.typeSymbol == rpcType)
 
     def decls(classSymbol: Symbol) = rpcMethods.map: method =>
       Symbol.newMethod(classSymbol, method.name, method.info, Flags.EmptyFlags, Symbol.noSymbol)

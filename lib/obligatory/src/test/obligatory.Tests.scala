@@ -81,125 +81,7 @@ object Tests extends Suite(m"Obligatory Tests"):
         import codicils.cancel
         import internetAccess.enabled
         import Mcp.*
-        val server = remote[McpServer](url"http://localhost:8080/")
-
-        object Server extends McpServer:
-          import Mcp.*
-          @rpc
-          def ping(): Unit = ???
-
-          @rpc
-          def initialize
-            ( protocolVersion: Text,
-              capabilities:    ClientCapabilities,
-              clientInfo:      Implementation,
-              _meta:           Optional[Json] )
-          : Mcp.Initialize =
-
-              println(s"protocol version = $protocolVersion")
-              println(s"capabilities = $capabilities")
-              println(s"client info = $clientInfo")
-              println(capabilities.experimental.or(Map()).mapValues(_.show).toMap)
-
-              Mcp.Initialize("2025-11-25", ServerCapabilities(), Implementation("pyrus", version = "1.0.0"), "This is just a test MCP implementation")
-
-          @rpc
-          def `completion/complete`
-                (ref:      Reference,
-                  argument: Argument,
-                  context:  Optional[Context],
-                  _meta:    Optional[Json] )
-          : Complete =
-
-              ???
-
-
-          @rpc
-          def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit = ???
-
-          @rpc
-          def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json]): Unit = ???
-
-          @rpc
-          def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts = ???
-
-          @rpc
-          def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources = ListResources(Nil)
-
-          @rpc
-          def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates = ???
-
-          @rpc
-          def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource = ???
-
-          @rpc
-          def `resources/subscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
-
-          @rpc
-          def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
-
-          @rpc
-          def `tools/call`(name: Text, arguments: Optional[Map[Text, Json]], _meta: Optional[Json]): CallTool = ???
-
-          @rpc
-          def `tools/list`(_meta: Optional[Json]): ListTools = ListTools(Nil)
-
-          @rpc
-          def `tasks/get`(taskId: Text, _meta: Optional[Json]): Task = ???
-
-          @rpc
-          def `tasks/result`(taskId: Text, _meta: Optional[Json]): Map[Text, Json] = ???
-
-          @rpc
-          def `tasks/list`(_meta: Optional[Json]): ListTasks = ???
-
-          @rpc
-          def `notifications/cancelled`(request: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json])
-          : Unit =
-
-              ???
-
-
-          @rpc
-          def `notifications/progress`
-            ( progressToken: TextInt,
-              progress:      Double,
-              total:         Optional[Double],
-              message:       Optional[Text],
-              _meta:         Optional[Json] )
-          : Unit =
-
-              ???
-
-
-          @rpc
-          def `notifications/initialized`(_meta: Optional[Json]): Unit =
-            println("MCP Server Initialized")
-
-          @rpc
-          def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit = ???
-
-          @rpc
-          def `notifications/resources/updated`(uri: Text, _meta: Optional[Json]): Unit = ???
-
-          @rpc
-          def `tasks/cancel`(taskId: Text, _meta: Optional[Json]): Task = ???
-
-          @rpc
-          def `notifications/roots/list_changed`(_meta: Optional[Json]): Unit = ???
-
-          @rpc
-          def `notifications/tasks/status`
-            ( taskId:        Text,
-              status:        TaskStatus,
-              statusMessage: Optional[Text],
-              createdAt:     Text,
-              lastUpdatedAt: Text,
-              ttl:           Int,
-              pollInterval:  Optional[Int],
-              _meta:         Optional[Json] )
-          : Unit = ???
-
+        val server = remote[McpApi](url"http://localhost:8080/")
 
         import supervisors.global
         import codicils.cancel
@@ -212,25 +94,11 @@ object Tests extends Suite(m"Obligatory Tests"):
         tcp"8080".serve:
           request.path match
             case % => t"Nothing here"
+            case % /: t"favicon.ico" => t"Nothing here"
+            case % /: t"favicon.png" => t"Nothing here"
+            case % /: t"favicon.svg" => t"Nothing here"
             case % /: t"mcp" =>
-              val input = request.body().read[Json]
-              println()
-              request.textHeaders.each: header =>
-                println(header.key + ": " + header.value)
-
-              given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
-              val session: Text = request.headers.mcpSessionId.prim.or(Uuid().encode)
-              println(input.show)
-              recover:
-                case error: ParseError =>
-                  Http.Response(Http.Ok, mcpSessionId = session):
-                    JsonRpc.error(-32700, t"Parse error: ${error.message}".show).json
-                case error: JsonError =>
-                  Http.Response(Http.Ok, mcpSessionId = session):
-                    JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).json
-              . within:
-                  Http.Response(Http.Ok, mcpSessionId = session)(JsonRpc.serve(Server)(input)
-                  . or(Json(Map())))
+              JsonRpc.server[McpServer]
 
         Thread.sleep(1000000)
 

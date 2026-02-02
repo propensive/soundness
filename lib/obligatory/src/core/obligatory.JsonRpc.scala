@@ -39,6 +39,7 @@ import contingency.*
 import distillate.*
 import eucalyptus.*
 import fulminate.*
+import gesticulate.*
 import gossamer.*
 import hieroglyph.*
 import inimitable.*
@@ -47,7 +48,9 @@ import parasite.*
 import prepositional.*
 import revolution.*
 import rudiments.*
+import spectacular.*
 import telekinesis.*
+import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
@@ -66,20 +69,61 @@ object JsonRpc:
   case class Request(jsonrpc: Text, method: Text, params: Json, id: Optional[Json])
   case class Response(jsonrpc: Text, result: Json, id: Optional[Json])
 
+  inline def server
+    [ interface: {Associable by Http.Request onto Http.Response, Streamable by Sse as streamable} ]
+    ( using request: Http.Request )
+    ( using Monitor, Codicil, Online )
+  : Http.Response =
+      send(serve[interface](_))
+
+  def send
+    [ interface: { Associable by Http.Request onto Http.Response, Streamable by Sse as streamable }]
+    ( dispatch: interface => Json => Optional[Json] )
+    ( using request: Http.Request )
+    ( using Monitor, Codicil, Online )
+  : Http.Response =
+      import jsonPrinters.minimal
+      import charEncoders.utf8
+      import charDecoders.utf8
+      import textSanitizers.skip
+
+      given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
+      val sessionId: Text = request.headers.mcpSessionId.prim.or(Uuid().encode)
+      val session: interface = interface.association(request)
+
+      recover:
+        case error: ParseError => interface.associate(session):
+          Http.Response(Http.Ok):
+            JsonRpc.error(-32700, t"Parse error: ${error.message}".show).json
+
+        case error: JsonError => interface.associate(session):
+          Http.Response(Http.Ok):
+            JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).json
+
+      . within:
+          val input = request.body().read[Json]
+          try
+            request.method match
+              case Http.Get => interface.associate(session):
+                Thread.sleep(2000)
+                Http.Response(Http.Ok, connection = t"keep-alive", cacheControl = t"no-cache")
+                  ( streamable.stream(session) )
+
+              case Http.Post =>
+                dispatch(session)(input).let: json =>
+                  interface.associate(session)(Http.Response(Http.Ok)(json))
+
+                . or:
+                    interface.associate(session)(Http.Response(Http.Accepted)())
+          catch
+            case error: Throwable =>
+              println(error.getMessage)
+              error.printStackTrace()
+              Http.Response(Http.Ok):
+                JsonRpc.error(-32603, t"Internal error: ${error.toString}".show).json
+
   def error(code: Int, message: Text): Response =
     Response("2.0", Map(t"code" -> code.json, t"message" -> message.json).json, Unset)
-
-  // def receive(json: Json): Unit raises RpcError =
-  //   mitigate:
-  //     case error: JsonError => RpcError()
-  //     case error: UuidError => RpcError()
-
-  //   . within:
-  //       val response = json.as[Response]
-  //       response.id.let(_.decode[Uuid]).let: uuid =>
-  //         promises.at(uuid).let: promise =>
-  //           safely(promise.fulfill(response.result))
-
 
   def request(url: HttpUrl, method: Text, payload: Json)(using Monitor, Codicil, Online): Promise[Json] =
     val uuid = Uuid().text

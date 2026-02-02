@@ -73,6 +73,9 @@ object Http:
 
   type Version = 0.9 | 1.0 | 1.1 | 2.0 | 3.0
 
+  object Header:
+    given encodable: Http.Header is Encodable in Http.Header = identity(_)
+
   case class Header(key: Text, value: Text)
 
   object Method:

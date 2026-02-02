@@ -1953,3 +1953,4 @@ model/vrml
 model/x3d-vrml
 model/x3d+fastinfoset
 model/x3d+xml
+text/event-stream

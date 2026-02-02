@@ -45,9 +45,11 @@ import inimitable.*
 import jacinta.*
 import parasite.*
 import prepositional.*
+import proscenium.*
 import revolution.*
 import rudiments.*
 import telekinesis.*
+import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
@@ -58,6 +60,7 @@ import scala.quoted.*
 import errorDiagnostics.stackTraces
 
 object Mcp:
+
   type Cursor = Text
 
   case class TaskAugmentedRequestParams(task: Optional[TaskMetadata])
@@ -322,7 +325,7 @@ object Mcp:
       pollInterval:  Optional[Int] )
 
 
-trait McpServer:
+trait McpApi:
   import Mcp.*
 
   @rpc
@@ -425,3 +428,108 @@ trait McpServer:
 
   @rpc
   def `notifications/resources/updated`(uri: Text, _meta: Optional[Json]): Unit
+
+object McpServer:
+  private val sessions: scm.HashMap[Text, McpServer] = scm.HashMap()
+
+  def apply(session: Text): McpServer = sessions.establish(session)(new McpServer(session))
+
+  given McpServer is Streamable by Sse = _.sse
+
+case class McpServer(id: Text) extends McpApi:
+  private var channel: Spool[Json] = Spool()
+
+  def sse: Stream[Sse] =
+    channel.stream.map: json =>
+      import jsonPrinters.minimal
+      Sse(data = List(json.encode))
+
+  def put(json: Json): Unit = channel.put(json)
+
+  import Mcp.*
+
+  def ping(): Unit = ???
+
+  def initialize
+    ( protocolVersion: Text,
+      capabilities:    ClientCapabilities,
+      clientInfo:      Implementation,
+      _meta:           Optional[Json] )
+  : Mcp.Initialize =
+
+      Mcp.Initialize("2025-11-25", ServerCapabilities(), Implementation("pyrus", version = "1.0.0"), "This is just a test MCP implementation")
+
+  def `completion/complete`
+    ( ref:      Reference,
+      argument: Argument,
+      context:  Optional[Context],
+      _meta:    Optional[Json] )
+  : Complete =
+
+      ???
+
+
+  def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit = ???
+
+  def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json]): Unit = ???
+
+  def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts = ???
+
+  def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources = ListResources(Nil)
+
+  def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates = ???
+
+  def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource = ???
+
+  def `resources/subscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
+
+  def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
+
+  def `tools/call`(name: Text, arguments: Optional[Map[Text, Json]], _meta: Optional[Json]): CallTool = ???
+
+  def `tools/list`(_meta: Optional[Json]): ListTools = ListTools(Nil)
+
+  def `tasks/get`(taskId: Text, _meta: Optional[Json]): Task = ???
+
+  def `tasks/result`(taskId: Text, _meta: Optional[Json]): Map[Text, Json] = ???
+
+  def `tasks/list`(_meta: Optional[Json]): ListTasks = ???
+
+  def `notifications/cancelled`(request: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json])
+  : Unit =
+
+      ???
+
+
+  def `notifications/progress`
+    ( progressToken: TextInt,
+      progress:      Double,
+      total:         Optional[Double],
+      message:       Optional[Text],
+      _meta:         Optional[Json] )
+  : Unit =
+
+      ???
+
+
+  def `notifications/initialized`(_meta: Optional[Json]): Unit =
+    println("MCP Server Initialized")
+
+  def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit = ???
+
+  def `notifications/resources/updated`(uri: Text, _meta: Optional[Json]): Unit = ???
+
+  def `tasks/cancel`(taskId: Text, _meta: Optional[Json]): Task = ???
+
+  def `notifications/roots/list_changed`(_meta: Optional[Json]): Unit = ???
+
+  def `notifications/tasks/status`
+    ( taskId:        Text,
+      status:        TaskStatus,
+      statusMessage: Optional[Text],
+      createdAt:     Text,
+      lastUpdatedAt: Text,
+      ttl:           Int,
+      pollInterval:  Optional[Int],
+      _meta:         Optional[Json] )
+  : Unit = ???
