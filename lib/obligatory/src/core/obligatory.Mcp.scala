@@ -67,7 +67,7 @@ object Mcp:
   case class Error(code: Int, message: Text, data: Optional[Json])
 
   object TextInt:
-    given encodable: TextInt is Encodable in Json = _.id match
+    given encodable: TextInt is Encodable in Json = _.id.absolve match
       case text: Text => text.json
       case int: Int   => int.json
 
@@ -258,7 +258,18 @@ object Mcp:
   enum TaskStatus:
     case Working, InputRequired, Completed, Failed, Cancelled
 
-  case class Prompt(name: Text, title: Optional[Text], icons: List[Icon])
+  case class PromptArgument
+    ( name:        Text,
+      title:       Optional[Text],
+      icons:       List[Icon],
+      description: Optional[Text] )
+
+  case class Prompt
+    ( name:        Text,
+      title:       Optional[Text],
+      icons:       List[Icon],
+      description: Optional[Text],
+      arguments:   List[PromptArgument] )
   case class Argument(name: Text, value: Text)
   case class Reference(name: Text, title: Optional[Text], `type`: Text, uri: Optional[Text])
 
@@ -268,6 +279,9 @@ object Mcp:
       isError:           Optional[Boolean] )
 
   case class ListTools(tools: List[Tool])
+  case class ListRoots(tools: List[Root])
+
+  case class Root(uri: Text, name: Optional[Text])
 
   case class Tool
     ( description:  Optional[Text],
@@ -285,14 +299,43 @@ object Mcp:
       idempotentHint:  Optional[Boolean],
       openWorldHint:   Optional[Boolean] )
 
+  case class ToolChoice(mode: Mode)
+
+  object Mode:
+    given encodable: Mode is Encodable in Json =
+      case Mode.Auto     => t"auto".json
+      case Mode.Required => t"required".json
+      case Mode.None     => t"none".json
+
+    given decodable: Tactic[JsonError] => Mode is Decodable in Json = _.as[Text] match
+      case t"auto"     => Mode.Auto
+      case t"required" => Mode.Required
+      case t"none"     => Mode.None
+      case _           => abort(JsonError(JsonError.Reason.OutOfRange))
+
+  enum Mode:
+    case Auto, Required, None
+
+  case class SamplingMessage(role: Role, content: List[SamplingMessageContentBlock])
+
+  case class SamplingMessageContentBlock(text: Text) // FIXME
+
+  case class ModelPreferences
+    ( hints:                Optional[List[ModelHint]] = Unset,
+      costPriority:         Optional[Double]          = Unset,
+      speedPriority:        Optional[Double]          = Unset,
+      intelligencePriority: Optional[Double]          = Unset)
+
+  case class ModelHint(name: Optional[Text])
+
   object ContentBlock:
     import dynamicJsonAccess.enabled
 
     given encodable: ContentBlock is Encodable in Json =
-      case content: TextContent  => unsafely(content.json.`type` = "text")
-      case content: ImageContent => unsafely(content.json.`type` = "image")
-      case content: AudioContent => unsafely(content.json.`type` = "audio")
-      case content: ResourceLink => unsafely(content.json.`type` = "resource_link")
+      case content: TextContent      => unsafely(content.json.`type` = "text")
+      case content: ImageContent     => unsafely(content.json.`type` = "image")
+      case content: AudioContent     => unsafely(content.json.`type` = "audio")
+      case content: ResourceLink     => unsafely(content.json.`type` = "resource_link")
       case content: EmbeddedResource => unsafely(content.json.`type` = "resource")
 
     given decodable: Tactic[JsonError] => ContentBlock is Decodable in Json = json =>
@@ -301,7 +344,8 @@ object Mcp:
         case "image"         => json.as[ImageContent]
         case "audio"         => json.as[AudioContent]
         case "resource_link" => json.as[ResourceLink]
-        // case "resource"      => json.as[EmbeddedResource]
+        //case "resource"      => json.as[EmbeddedResource]
+        case _               => abort(JsonError(JsonError.Reason.OutOfRange))
 
   sealed trait ContentBlock
   case class TextContent(text: Text, annotations: Optional[Annotations]) extends ContentBlock
@@ -315,6 +359,12 @@ object Mcp:
   case class ResourceLink(uri: Text) extends ContentBlock
   case class EmbeddedResource(resource: Resource) extends ContentBlock
 
+  case class CreateMessage
+    ( role:       Role,
+      content:    List[SamplingMessageContentBlock],
+      model:      Text,
+      stopReason: Optional[Text] )
+
   case class Task
     ( taskId:        Text,
       status:        TaskStatus,
@@ -325,8 +375,10 @@ object Mcp:
       pollInterval:  Optional[Int] )
 
 
-trait McpApi:
+trait McpApi extends JsonRpc:
   import Mcp.*
+
+  type Origin = McpClient
 
   @rpc
   def ping(): Unit
@@ -434,18 +486,9 @@ object McpServer:
 
   def apply(session: Text): McpServer = sessions.establish(session)(new McpServer(session))
 
-  given McpServer is Streamable by Sse = _.sse
+  given McpServer is Streamable by Sse = _.stream
 
 case class McpServer(id: Text) extends McpApi:
-  private var channel: Spool[Json] = Spool()
-
-  def sse: Stream[Sse] =
-    channel.stream.map: json =>
-      import jsonPrinters.minimal
-      Sse(data = List(json.encode))
-
-  def put(json: Json): Unit = channel.put(json)
-
   import Mcp.*
 
   def ping(): Unit = ???
@@ -456,6 +499,10 @@ case class McpServer(id: Text) extends McpApi:
       clientInfo:      Implementation,
       _meta:           Optional[Json] )
   : Mcp.Initialize =
+
+
+      unsafely:
+        client.ping()
 
       Mcp.Initialize("2025-11-25", ServerCapabilities(), Implementation("pyrus", version = "1.0.0"), "This is just a test MCP implementation")
 
@@ -495,7 +542,10 @@ case class McpServer(id: Text) extends McpApi:
 
   def `tasks/list`(_meta: Optional[Json]): ListTasks = ???
 
-  def `notifications/cancelled`(request: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json])
+  def `notifications/cancelled`
+    ( request: Optional[TextInt],
+      reason:  Optional[Text],
+      _meta:   Optional[Json] )
   : Unit =
 
       ???
@@ -533,3 +583,27 @@ case class McpServer(id: Text) extends McpApi:
       pollInterval:  Optional[Int],
       _meta:         Optional[Json] )
   : Unit = ???
+
+trait McpClient:
+  import Mcp.*
+
+  @rpc
+  def ping(): Unit
+
+  @rpc
+  def `sampling/createMessage`
+    ( task: Optional[TaskMetadata],
+      messages: List[SamplingMessage],
+      modelPreferences: Optional[ModelPreferences],
+      systemPrompt:     Optional[Text],
+      includeContext:   Optional[Text],
+      temperature:      Optional[Double],
+      maxTokens:        Optional[Int],
+      stopSequences:    Optional[List[Text]],
+      metadata:         Optional[Json],
+      tools:            Optional[List[Tool]],
+      toolChoice:       Optional[ToolChoice] )
+  : CreateMessage
+
+  @rpc
+  def `roots/list`(): ListRoots

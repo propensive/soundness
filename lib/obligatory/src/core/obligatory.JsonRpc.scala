@@ -46,6 +46,7 @@ import inimitable.*
 import jacinta.*
 import parasite.*
 import prepositional.*
+import proscenium.*
 import revolution.*
 import rudiments.*
 import spectacular.*
@@ -125,7 +126,7 @@ object JsonRpc:
   def error(code: Int, message: Text): Response =
     Response("2.0", Map(t"code" -> code.json, t"message" -> message.json).json, Unset)
 
-  def request(url: HttpUrl, method: Text, payload: Json)(using Monitor, Codicil, Online): Promise[Json] =
+  def request(target: JsonRpc, method: Text, payload: Json): Promise[Json] =
     val uuid = Uuid().text
     val promise: Promise[Json] = Promise()
     promises(uuid) = promise
@@ -133,10 +134,36 @@ object JsonRpc:
     import jsonPrinters.minimal
     import logging.silent
 
-    unsafely:
-      async:
-        promise.fulfill:
-          unsafely:
-            url.submit(Http.Post)(Request("2.0", method, payload, uuid.json).json).receive[Json]
-
+    target.put(Request("2.0", method, payload, uuid.json).json)
     promise
+
+  def receive(id: Text, result: Json): Unit =
+    promises.at(id).let: promise =>
+      promise.offer(result)
+
+
+  def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Codicil, Online)
+  : Promise[Json] =
+      val uuid = Uuid().text
+      val promise: Promise[Json] = Promise()
+      promises(uuid) = promise
+      import charEncoders.utf8
+      import jsonPrinters.minimal
+      import logging.silent
+
+      val request = Request("2.0", method, payload, uuid.json).json
+
+      async:
+        unsafely:
+          promise.fulfill(target.submit(Http.Post)(request).receive[Json])
+
+      promise
+
+trait JsonRpc extends Original:
+  private var channel: Spool[Json] = Spool()
+  inline def client: Origin = ${Obligatory.client[Origin]('this)}
+  def put(json: Json): Unit = channel.put(json)
+
+  def stream: Stream[Sse] = channel.stream.map: json =>
+    import jsonPrinters.minimal
+    Sse(data = List(json.encode))

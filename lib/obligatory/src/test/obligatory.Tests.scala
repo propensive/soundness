@@ -90,15 +90,13 @@ object Tests extends Suite(m"Obligatory Tests"):
         import webserverErrorPages.stackTraces
         import classloaders.threadContext
 
-
         tcp"8080".serve:
           request.path match
             case % => t"Nothing here"
             case % /: t"favicon.ico" => t"Nothing here"
             case % /: t"favicon.png" => t"Nothing here"
             case % /: t"favicon.svg" => t"Nothing here"
-            case % /: t"mcp" =>
-              JsonRpc.server[McpServer]
+            case % /: t"mcp"         => JsonRpc.server[McpServer]
 
         Thread.sleep(1000000)
 

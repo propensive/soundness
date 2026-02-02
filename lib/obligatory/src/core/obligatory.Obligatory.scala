@@ -69,53 +69,62 @@ object Obligatory:
     val interface = TypeRepr.of[interface]
 
     val rpcMethods = interface.typeSymbol.declaredMethods.filter: method =>
-      val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
-      allAnnotations.exists(_.tpe.typeSymbol == rpcType)
+      val annotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+      annotations.exists(_.tpe.typeSymbol == rpcType)
 
     ' {
         json =>
           import dynamicJsonAccess.enabled
           given Tactic[JsonError] = strategies.throwUnsafely
-          val request = json.as[JsonRpc.Request]
-          val method = request.method
 
-          $ {
-              val cases = rpcMethods.map: method =>
-                val params = method.paramSymss.head.map: param =>
-                  param.info.asType.absolve match
-                    case '[param] => Expr.summon[param is Decodable in Json] match
-                      case Some(decoder) =>
-                        '{$decoder.decoded(request.params(${Expr(param.name)}))}
-                        . asTerm
-                      case None =>
-                        halt(m"""could not find a JSON decoder for parameter ${param.name} of method
-                                 ${method.name}""")
+          safely(json.method.as[Text]) match
+            case Unset =>
+              val response = json.as[JsonRpc.Response]
+              response.id.let: id =>
+                JsonRpc.receive(id.as[Text], response.result)
 
-                val application = Apply(Select(target.asTerm, method), params)
+              Unset
 
-                val rtnType: TypeRepr = method.info.absolve match
-                  case MethodType(_, _, rtn) => rtn
+            case method: Text =>
+              val request = json.as[JsonRpc.Request]
 
-                val rhs = rtnType.asType match
-                  case '[Unit] => '{${application.asExpr} yet Unset}
-                  case '[rtn] => Expr.summon[rtn is Encodable in Json] match
-                    case Some(encoder) =>
-                      ' {
-                          JsonRpc.Response
-                           ("2.0",
-                            $encoder.encode(${application.asExprOf[rtn]}),
-                            request.id)
-                          . json
-                        }
+              $ {
+                  val cases = rpcMethods.map: method =>
+                    val params = method.paramSymss.head.map: param =>
+                      param.info.asType.absolve match
+                        case '[param] => Expr.summon[param is Decodable in Json] match
+                          case Some(decoder) =>
+                            '{$decoder.decoded(request.params(${Expr(param.name)}))}
+                            . asTerm
+                          case None =>
+                            halt(m"""could not find a JSON decoder for parameter ${param.name} of method
+                                    ${method.name}""")
 
-                    case None =>
-                      halt(m"could not find a JSON encoder for return type of method ${method.name}")
+                    val application = Apply(Select(target.asTerm, method), params)
 
-                CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
+                    val rtnType: TypeRepr = method.info.absolve match
+                      case MethodType(_, _, rtn) => rtn
 
-              Match('method.asTerm, cases).asExprOf[Optional[Json]]
-            }
-      }
+                    val rhs = rtnType.asType match
+                      case '[Unit] => '{${application.asExpr} yet Unset}
+                      case '[rtn] => Expr.summon[rtn is Encodable in Json] match
+                        case Some(encoder) =>
+                          ' {
+                              JsonRpc.Response
+                               ("2.0",
+                                $encoder.encode(${application.asExprOf[rtn]}),
+                                request.id)
+                              . json
+                            }
+
+                        case None =>
+                          halt(m"could not find a JSON encoder for return type of method ${method.name}")
+
+                    CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
+
+                  Match('method.asTerm, cases).asExprOf[Optional[Json]]
+                }
+        }
 
 
   def remote[interface: Type](url: Expr[HttpUrl]): Macro[interface] =
@@ -200,6 +209,85 @@ object Obligatory:
                 case _ => halt(m"a contextual Online instance is required")
               case _ => halt(m"a contextual Codicil instance is required")
             case _ => halt(m"a contextual Monitor instance is required")
+        case _ => halt(m"the method ${method.name} must have exactly one parameter list")
+      })
+
+    val modDef = ClassDef.module(module, parents, body = defDefs)
+
+
+    Block(modDef.toList, Ref(module)).asExprOf[interface]
+
+  def client[interface: Type](rpc: Expr[JsonRpc]): Macro[interface] =
+    import quotes.reflect.*
+    val rpcType = TypeRepr.of[rpc].typeSymbol
+    val interface = TypeRepr.of[interface]
+
+    val rpcMethods = interface.typeSymbol.declaredMethods.filter: method =>
+      val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+      allAnnotations.exists(_.tpe.typeSymbol == rpcType)
+
+    def decls(classSymbol: Symbol) = rpcMethods.map: method =>
+      Symbol.newMethod(classSymbol, method.name, method.info, Flags.EmptyFlags, Symbol.noSymbol)
+
+    val parents  = List(TypeTree.of[Object], TypeTree.of[interface])
+
+    val module = Symbol.newModule
+     (owner    = Symbol.spliceOwner,
+      name     = Symbol.freshName(interface.typeSymbol.name),
+      modFlags = Flags.EmptyFlags,
+      clsFlags = Flags.EmptyFlags,
+      parents  = _ => parents.map(_.tpe),
+      decls    = decls,
+      privateWithin = Symbol.noSymbol)
+
+    val classSymbol = module.moduleClass
+
+    val defDefs = rpcMethods.map: method =>
+      val paramSymbols = method.paramSymss.head
+      val runSym = classSymbol.declaredMethod(method.name).head
+
+      DefDef(runSym, {
+        case List(params) =>
+          given Quotes = runSym.asQuotes
+          val entries = params.zip(paramSymbols).map: (ident, param) =>
+            param.info.asType match
+              case '[param] =>
+                Expr.summon[param is Encodable in Json] match
+                  case Some('{$encoder: (`param` `is` Encodable `in` Json) }) =>
+                    val name = Expr(param.name)
+                    '{ $name -> ${encoder}.encoded(${ident.asExprOf[param]}) }
+                  case _ =>
+                    halt(m"no encoder found for parameter ${param.name} of method ${method.name}")
+              case _ =>
+                halt(m"all remote methods in ${TypeRepr.of[interface].show} must have a single parameter list")
+
+          val rtnType: TypeRepr = runSym.info.absolve match
+            case MethodType(_, _, rtn) => rtn
+
+          val notification = rtnType.typeSymbol == TypeRepr.of[Unit].typeSymbol
+          val id = if notification then '{Unset} else Expr(Uuid().show)
+          val methodName = Expr(method.name.tt)
+
+          if notification then Some:
+            ' {
+                val json = Map(${Varargs(entries)}*).json
+                JsonRpc.request($rpc, $methodName, json)
+              }
+            . asTerm
+          else rtnType.asType.absolve match
+            case '[rtn] => Expr.summon[rtn is Decodable in Json] match
+              case Some(decoder) =>
+                Some:
+                  ' {
+                      val json = Map(${Varargs(entries)}*).json
+                      unsafely:
+                        JsonRpc.request($rpc, $methodName, json)
+                        . await()
+                        . decode[rtn](using $decoder)
+                    }
+                  . asTerm
+
+              case _ => halt(m"a contextual ${TypeRepr.of[rtn is Decodable in Json].show} was not found")
         case _ => halt(m"the method ${method.name} must have exactly one parameter list")
       })
 
