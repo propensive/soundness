@@ -44,7 +44,7 @@ import vacuous.*
 import zephyrine.*
 
 object ContentLength:
-  given breakable: Tactic[FrameError] => Text is Breakable by ContentLength = input =>
+  given framable: Tactic[FrameError] => Text is Framable by ContentLength = input =>
     val cursor = Cursor(input)
     def fail(): Nothing = abort(FrameError())
 

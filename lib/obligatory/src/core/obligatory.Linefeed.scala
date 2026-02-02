@@ -42,7 +42,7 @@ import vacuous.*
 import zephyrine.*
 
 object Linefeed:
-  given breakable: Text is Breakable by Linefeed = input =>
+  given framable: Text is Framable by Linefeed = input =>
     val cursor = Cursor(input)
 
     def frame(): Optional[Text] = cursor.hold:

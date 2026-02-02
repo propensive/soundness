@@ -42,7 +42,7 @@ import vacuous.*
 import zephyrine.*
 
 object CarriageReturn:
-  given breakable: Text is Breakable by CarriageReturn = input =>
+  given framable: Text is Framable by CarriageReturn = input =>
     val cursor = Cursor(input)
 
     def frame(): Optional[Text] = cursor.hold:

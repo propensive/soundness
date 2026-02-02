@@ -41,18 +41,6 @@ import rudiments.*
 import telekinesis.*
 import vacuous.*
 
-object Associable:
-  given mcp: McpServer is Associable:
-    type Operand = Http.Request
-    type Target = Http.Response
-
-    def association(request: Http.Request): McpServer =
-      given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
-      request.headers.mcpSessionId.prim.let(McpServer(_)).or(McpServer(Uuid().encode))
-
-    def associate(session: McpServer)(response: Http.Response): Http.Response =
-      response + Http.Header("mcp-session-id", session.id)
-
 trait Associable extends Operable, Typeclass, Targetable:
   def association(operand: Operand): Self
   def associate(session: Self)(response: Target): Target

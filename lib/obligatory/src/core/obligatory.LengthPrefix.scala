@@ -41,7 +41,7 @@ import vacuous.*
 import zephyrine.*
 
 object LengthPrefix:
-  given breakable: Tactic[FrameError] => Data is Breakable by LengthPrefix = input =>
+  given framable: Tactic[FrameError] => Data is Framable by LengthPrefix = input =>
     def fail() = abort(FrameError())
     val cursor = Cursor(input)
 

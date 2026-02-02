@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package synesthesia
 
 import scala.collection.mutable as scm
 
@@ -43,11 +43,14 @@ import gossamer.*
 import hieroglyph.*
 import inimitable.*
 import jacinta.*
+import obligatory.*
 import parasite.*
 import prepositional.*
+import proscenium.*
 import revolution.*
 import rudiments.*
 import telekinesis.*
+import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
@@ -57,5 +60,26 @@ import scala.quoted.*
 
 import errorDiagnostics.stackTraces
 
-trait Breakable extends Typeclass, Operable:
-  def break(input: Iterator[Self]): Iterator[Self]
+trait McpClient:
+  import Mcp.*
+
+  @rpc
+  def ping(): Unit
+
+  @rpc
+  def `sampling/createMessage`
+    ( task: Optional[TaskMetadata],
+      messages: List[SamplingMessage],
+      modelPreferences: Optional[ModelPreferences],
+      systemPrompt:     Optional[Text],
+      includeContext:   Optional[Text],
+      temperature:      Optional[Double],
+      maxTokens:        Optional[Int],
+      stopSequences:    Optional[List[Text]],
+      metadata:         Optional[Json],
+      tools:            Optional[List[Tool]],
+      toolChoice:       Optional[ToolChoice] )
+  : CreateMessage
+
+  @rpc
+  def `roots/list`(): ListRoots

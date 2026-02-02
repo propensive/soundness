@@ -53,7 +53,7 @@ object Sse:
     import charEncoders.utf8
     Servable[LazyList[Sse]](_ => media"text/event-stream")(_.map(_.encode.data))
 
-  given breakable: Text is Breakable by Sse = input =>
+  given framable: Text is Framable by Sse = input =>
     val cursor = Cursor(input)
 
     def frame(start: Cursor.Mark)(using Cursor.Held): Optional[Text] = cursor.hold:
