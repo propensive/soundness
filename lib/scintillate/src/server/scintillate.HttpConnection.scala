@@ -96,18 +96,27 @@ object HttpConnection:
       response.textHeaders.each:
         case Http.Header(key, value) =>
           if key.lower == t"transfer-encoding" && value.lower == t"chunked" then chunked = true
+
           exchange.getResponseHeaders.nn.add(key.s, value.s)
 
       val length = if chunked then 0 else response.body match
-        case Stream()     => -1
-        case Stream(data) => data.length
-        case _            => 0
+        case Stream()   => -1
+        case data: Data => data.length
+        case _          => 0
 
       exchange.sendResponseHeaders(response.status.code, length)
       val responseBody = exchange.getResponseBody.nn
 
-      response.body.map(_.mutable(using Unsafe)).each(responseBody.write(_))
-      responseBody.flush()
+      response.body match
+        case data: Data =>
+          responseBody.write(data.mutable(using Unsafe))
+          responseBody.flush()
+
+        case stream: Stream[Data] =>
+          stream.foreach: block =>
+            responseBody.write(block.mutable(using Unsafe))
+            responseBody.flush()
+
       exchange.close()
 
     new HttpConnection(request, false, port, respond)

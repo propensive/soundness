@@ -327,9 +327,11 @@ object Http:
         case _ =>
           raise(HttpError(response.status, response.textHeaders)) yet response.body
 
-      body.stream[Data]
+      body match
+        case data:   Data         => Stream(data)
+        case stream: Stream[Data] => stream
 
-    def make(status: Status, headers: List[Header], body: Stream[Data]): Response =
+    def make(status: Status, headers: List[Header], body: Data | Stream[Data]): Response =
       new Response(1.1, status, headers, body)
 
     def parse(stream: Stream[Data]): Response raises HttpResponseError =
@@ -414,10 +416,13 @@ object Http:
                    (version:     Http.Version,
                     status:      Http.Status,
                     textHeaders: List[Http.Header],
-                    body:        Stream[Data]):
+                    body:        Data | Stream[Data]):
 
     def successBody: Optional[Stream[Data]] =
-      body.unless(status.category != Http.Status.Category.Successful)
+      if status.category != Http.Status.Category.Successful then Unset else body match
+        case data:   Data         => Stream(data)
+        case stream: Stream[Data] => stream
+
 
     def receive[body: Receivable as receivable]: body = receivable.read(this)
 

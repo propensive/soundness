@@ -48,7 +48,6 @@ trait Receivable2:
       body => content(body.read[Data].utf8)
 
 object Receivable extends Receivable2:
-
   def apply[result](lambda: Stream[Data] => result): result is Receivable raises HttpError =
     response =>
       response.successBody.let(lambda).lest(HttpError(response.status, response.textHeaders))
