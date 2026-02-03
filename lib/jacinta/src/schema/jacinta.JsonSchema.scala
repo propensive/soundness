@@ -92,13 +92,13 @@ enum JsonSchema extends Documentary:
 
 
   case Object
-        (description:          Optional[Text]        = Unset,
-         properties:           Map[Text, JsonSchema] = Map(),
-         optional:             scala.Boolean         = false,
-         required:             List[Text]            = Nil,
-         `enum`:               List[Json]            = Nil,
-         additionalProperties: scala.Boolean         = false,
-         oneOf:                List[JsonSchema]      = Nil)
+        (description:          Optional[Text]             = Unset,
+         properties:           Map[Text, JsonSchema]      = Map(),
+         optional:             scala.Boolean              = false,
+         required:             Optional[List[Text]]       = Unset,
+         `enum`:               Optional[List[Json]]       = Unset,
+         additionalProperties: scala.Boolean              = false,
+         oneOf:                Optional[List[JsonSchema]] = Unset)
 
   case Array
         (description: Optional[Text]       = Unset,

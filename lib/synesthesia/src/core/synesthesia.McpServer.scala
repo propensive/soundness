@@ -49,6 +49,7 @@ import prepositional.*
 import proscenium.*
 import revolution.*
 import rudiments.*
+import spectacular.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
@@ -72,16 +73,34 @@ object McpServer:
     def associate(session: McpServer)(response: Http.Response): Http.Response =
       response + Http.Header("mcp-session-id", session.id)
 
+
   private val sessions: scm.HashMap[Text, McpServer] = scm.HashMap()
 
-  def apply(session: Text): McpServer = sessions.establish(session)(new McpServer(session))
+  def apply(session: Text): McpServer = sessions.establish(session)(new MyMcpServer(session))
 
-  given McpServer is Streamable by Sse = _.stream
-
-case class McpServer(id: Text) extends Mcp:
+abstract class McpServer(val id: Text):
   import Mcp.*
 
-  def ping(): Unit = ???
+  def name: Text
+  def description: Text
+  def version: Semver
+  def prompts: List[Prompt]
+
+object McpInterface:
+  given streamable: McpInterface is Streamable by Sse = _.stream
+
+  inline def tools[interface <: McpServer]: List[Mcp.Tool] = ${Synesthesia.tools[interface]}
+
+  inline def apply(server: McpServer): McpInterface =
+    new McpInterface(server, tools[server.type])
+
+
+class McpInterface(val server: McpServer, val tools: List[Mcp.Tool]) extends Mcp.Api:
+  import Mcp.*
+
+  protected var loggingLevel: LoggingLevel = LoggingLevel.Info
+
+  def ping(): Unit = ()
 
   def initialize
     ( protocolVersion: Text,
@@ -90,11 +109,12 @@ case class McpServer(id: Text) extends Mcp:
       _meta:           Optional[Json] )
   : Mcp.Initialize =
 
-
-      unsafely:
-        client.ping()
-
-      Mcp.Initialize("2025-11-25", ServerCapabilities(), Implementation("pyrus", version = "1.0.0"), "This is just a test MCP implementation")
+      Mcp.Initialize
+        ( "2025-11-25",
+          ServerCapabilities(),
+          Implementation(server.name, version = server.version.encode),
+          server.description )
+      . tap(println(_))
 
   def `completion/complete`
     ( ref:      Reference,
@@ -106,11 +126,14 @@ case class McpServer(id: Text) extends Mcp:
       ???
 
 
-  def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit = ???
+  def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit =
+    loggingLevel = level
 
-  def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json]): Unit = ???
+  def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json]): Unit =
+    ???
 
-  def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts = ???
+  def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts =
+    ListPrompts(Unset, server.prompts)
 
   def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources = ListResources(Nil)
 
@@ -124,18 +147,20 @@ case class McpServer(id: Text) extends Mcp:
 
   def `tools/call`(name: Text, arguments: Optional[Map[Text, Json]], _meta: Optional[Json]): CallTool = ???
 
-  def `tools/list`(_meta: Optional[Json]): ListTools = ListTools(Nil)
+  def `tools/list`(_meta: Optional[Json]): ListTools =
+    ListTools(tools)
+    . tap: tools =>
+      import jsonPrinters.indented
+      println(tools.json.show)
 
   def `tasks/get`(taskId: Text, _meta: Optional[Json]): Task = ???
 
   def `tasks/result`(taskId: Text, _meta: Optional[Json]): Map[Text, Json] = ???
 
-  def `tasks/list`(_meta: Optional[Json]): ListTasks = ???
+  def `tasks/list`(_meta: Optional[Json]): ListTasks = ListTasks(Nil)
 
   def `notifications/cancelled`
-    ( request: Optional[TextInt],
-      reason:  Optional[Text],
-      _meta:   Optional[Json] )
+    ( request: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json] )
   : Unit =
 
       ???
@@ -152,8 +177,7 @@ case class McpServer(id: Text) extends Mcp:
       ???
 
 
-  def `notifications/initialized`(_meta: Optional[Json]): Unit =
-    println("MCP Server Initialized")
+  def `notifications/initialized`(_meta: Optional[Json]): Unit = ()
 
   def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit = ???
 
@@ -173,3 +197,31 @@ case class McpServer(id: Text) extends Mcp:
       pollInterval:  Optional[Int],
       _meta:         Optional[Json] )
   : Unit = ???
+
+object MyMcpServer:
+  val sessions: scm.HashMap[Text, MyMcpServer] = scm.HashMap()
+
+  def apply(id: Text): MyMcpServer = sessions.establish(id):
+    new MyMcpServer(id)
+
+  given associable: McpInterface is Associable:
+    type Operand = Http.Request
+    type Target = Http.Response
+
+    def association(request: Http.Request): McpInterface =
+      given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
+      McpInterface(request.headers.mcpSessionId.prim.let(MyMcpServer(_)).or(MyMcpServer(Uuid().encode)))
+
+    def associate(session: McpInterface)(response: Http.Response): Http.Response =
+      response + Http.Header("mcp-session-id", session.server.id)
+
+class MyMcpServer(id: Text) extends McpServer(id):
+  import Mcp.*
+
+  def name: Text = "Pyrus"
+  def description: Text = "A simple server"
+  def version: Semver = v"1.0.0"
+  def prompts: List[Prompt] = Nil
+
+  @tool
+  def color(name: Text): Text = "purple"

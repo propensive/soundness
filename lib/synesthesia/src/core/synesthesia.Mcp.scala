@@ -284,11 +284,14 @@ object Mcp:
   case class Root(uri: Text, name: Optional[Text])
 
   case class Tool
-    ( description:  Optional[Text],
+    ( name:         Text,
       inputSchema:  JsonSchema,
-      execution:    Optional[ToolExecution],
       outputSchema: Optional[JsonSchema],
-      annotations:  Optional[ToolAnnotations] )
+      title:        Optional[Text]            = Unset,
+      icons:        Optional[List[Icon]]      = Unset,
+      description:  Optional[Text]            = Unset,
+      execution:    Optional[ToolExecution]   = Unset,
+      annotations:  Optional[ToolAnnotations] = Unset )
 
   case class ToolExecution(taskSupport: Optional[TaskSupport])
 
@@ -374,108 +377,108 @@ object Mcp:
       ttl:           Int,
       pollInterval:  Optional[Int] )
 
-trait Mcp extends JsonRpc:
-  import Mcp.*
+  trait Api extends JsonRpc:
+    import Mcp.*
 
-  type Origin = McpClient
+    type Origin = McpClient
 
-  @rpc
-  def ping(): Unit
+    @rpc
+    def ping(): Unit
 
-  @rpc
-  def initialize
-    ( protocolVersion: Text,
-      capabilities:    ClientCapabilities,
-      clientInfo:      Implementation,
-      _meta:           Optional[Json])
-  : Initialize
+    @rpc
+    def initialize
+      ( protocolVersion: Text,
+        capabilities:    ClientCapabilities,
+        clientInfo:      Implementation,
+        _meta:           Optional[Json])
+    : Initialize
 
-  @rpc
-  def `completion/complete`
-    ( ref:      Reference,
-      argument: Argument,
-      context:  Optional[Context],
-      _meta:    Optional[Json])
-  : Complete
+    @rpc
+    def `completion/complete`
+      ( ref:      Reference,
+        argument: Argument,
+        context:  Optional[Context],
+        _meta:    Optional[Json])
+    : Complete
 
-  @rpc
-  def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit
+    @rpc
+    def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit
 
-  @rpc
-  def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json]): Unit
+    @rpc
+    def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json]): Unit
 
-  @rpc
-  def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts
+    @rpc
+    def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts
 
-  @rpc
-  def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources
+    @rpc
+    def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources
 
-  @rpc
-  def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates
+    @rpc
+    def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates
 
-  @rpc
-  def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource
+    @rpc
+    def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource
 
-  @rpc
-  def `resources/subscribe`(uri: Text, _meta: Optional[Json]): Unit
+    @rpc
+    def `resources/subscribe`(uri: Text, _meta: Optional[Json]): Unit
 
-  @rpc
-  def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit
+    @rpc
+    def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit
 
-  @rpc
-  def `tools/call`(name: Text, arguments: Optional[Map[Text, Json]], _meta: Optional[Json])
-  : CallTool
+    @rpc
+    def `tools/call`(name: Text, arguments: Optional[Map[Text, Json]], _meta: Optional[Json])
+    : CallTool
 
-  @rpc
-  def `tools/list`(_meta: Optional[Json]): ListTools
+    @rpc
+    def `tools/list`(_meta: Optional[Json]): ListTools
 
-  @rpc
-  def `tasks/get`(taskId: Text, _meta: Optional[Json]): Task
+    @rpc
+    def `tasks/get`(taskId: Text, _meta: Optional[Json]): Task
 
-  @rpc
-  def `tasks/result`(taskId: Text, _meta: Optional[Json]): Map[Text, Json]
+    @rpc
+    def `tasks/result`(taskId: Text, _meta: Optional[Json]): Map[Text, Json]
 
-  @rpc
-  def `tasks/list`(_meta: Optional[Json]): ListTasks
+    @rpc
+    def `tasks/list`(_meta: Optional[Json]): ListTasks
 
-  @rpc
-  def `tasks/cancel`(taskId: Text, _meta: Optional[Json]): Task
+    @rpc
+    def `tasks/cancel`(taskId: Text, _meta: Optional[Json]): Task
 
-  @rpc
-  def `notifications/cancelled`
-    ( request: Optional[TextInt],
-      reason:  Optional[Text],
-      _meta:   Optional[Json] ): Unit
+    @rpc
+    def `notifications/cancelled`
+      ( request: Optional[TextInt],
+        reason:  Optional[Text],
+        _meta:   Optional[Json] ): Unit
 
-  @rpc
-  def `notifications/progress`
-    ( progressToken: TextInt,
-      progress:      Double,
-      total:         Optional[Double],
-      message:       Optional[Text],
-      _meta:         Optional[Json] )
-  : Unit
+    @rpc
+    def `notifications/progress`
+      ( progressToken: TextInt,
+        progress:      Double,
+        total:         Optional[Double],
+        message:       Optional[Text],
+        _meta:         Optional[Json] )
+    : Unit
 
-  @rpc
-  def `notifications/initialized`(_meta: Optional[Json]): Unit
+    @rpc
+    def `notifications/initialized`(_meta: Optional[Json]): Unit
 
-  @rpc
-  def `notifications/roots/list_changed`(_meta: Optional[Json]): Unit
+    @rpc
+    def `notifications/roots/list_changed`(_meta: Optional[Json]): Unit
 
-  @rpc
-  def `notifications/tasks/status`
-    ( taskId:        Text,
-      status:        TaskStatus,
-      statusMessage: Optional[Text],
-      createdAt:     Text,
-      lastUpdatedAt: Text,
-      ttl:           Int,
-      pollInterval:  Optional[Int],
-      _meta:         Optional[Json] )
-  : Unit
+    @rpc
+    def `notifications/tasks/status`
+      ( taskId:        Text,
+        status:        TaskStatus,
+        statusMessage: Optional[Text],
+        createdAt:     Text,
+        lastUpdatedAt: Text,
+        ttl:           Int,
+        pollInterval:  Optional[Int],
+        _meta:         Optional[Json] )
+    : Unit
 
-  @rpc
-  def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit
+    @rpc
+    def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit
 
-  @rpc
-  def `notifications/resources/updated`(uri: Text, _meta: Optional[Json]): Unit
+    @rpc
+    def `notifications/resources/updated`(uri: Text, _meta: Optional[Json]): Unit

@@ -30,39 +30,83 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package synesthesia
+
+import anticipation.*
+import contingency.*
+import distillate.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import hyperbole.*
+import inimitable.*
+import jacinta.*
+import parasite.*
+import prepositional.*
+import proscenium.*
+import revolution.*
+import rudiments.*
+import spectacular.*
+import telekinesis.*
+import turbulence.*
+import urticose.*
+import vacuous.*
+import zephyrine.*
 
 import scala.annotation.*
 import scala.quoted.*
 
-import fulminate.*
-import telekinesis.*
+import errorDiagnostics.stackTraces
+import stdioSources.virtualMachine.ansi
 
-class servlet extends MacroAnnotation:
-  override def transform(using Quotes)
-                (tree: quotes.reflect.Definition, companion: Option[quotes.reflect.Definition])
-  : List[quotes.reflect.Definition] =
+object Synesthesia:
+  given Realm = realm"synesthesia"
+
+  def tools[interface: Type]: Macro[List[Mcp.Tool]] =
     import quotes.reflect.*
+    val toolType = TypeRepr.of[tool].typeSymbol
+    val interface = TypeRepr.of[interface]
 
-      tree match
-        case defDef@DefDef(name, params, result, Some(body)) =>
-          if !(result.tpe <:< TypeRepr.of[Http.Response])
-          then halt(m"the return type ${result.show} is not a subtype of HttpResponse[?]")
+    println(interface.typeSymbol)
 
-          val ref =
-            Ref(defDef.symbol)
-            . etaExpand(tree.symbol.owner)
-            . asExprOf[HttpConnection => Http.Response]
+    val toolMethods = interface.typeSymbol.declaredMethods.filter: method =>
+      val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+      allAnnotations.exists(_.tpe.typeSymbol == toolType)
 
-          val parents0 = List('{new JavaServletFn($ref)}.asTerm)
-          val parents = List(TypeTree.of[HttpConnection])
-          val newClassName = Symbol.freshName(name)
+    println(toolMethods)
 
-          val cls =
-            Symbol.newClass(Symbol.spliceOwner, name, parents.map(_.tpe), _ => Nil, selfType = None)
+    val entries = toolMethods.map: method =>
+      val paramNames = method.paramSymss.head.map: param =>
+        Expr(param.name.tt)
 
-          val clsDef = ClassDef(cls, parents, body = Nil)
-          List(tree, clsDef)
+      val params = method.paramSymss.head.map: param =>
+        param.info.asType.absolve match
+          case '[param] => Expr.summon[param is Schematic in JsonSchema] match
+            case Some(schematic) =>
+              ' {(${Expr(param.name)}.tt, $schematic.schema())}
 
-        case other =>
-          halt(m"the @servlet annotation must be applied to a method")
+            case None =>
+              halt(m"There was no JSON schema for ${param.name}")
+
+      val properties = '{${Expr.ofList(params)}.toMap}
+
+
+
+      val result: TypeRepr = method.info.absolve match
+        case MethodType(_, _, result) => result
+
+      result.asType match
+        case '[result] => Expr.summon[result is Schematic in JsonSchema] match
+          case Some(schematic) =>
+            ' {
+                val name = ${Expr(method.name)}
+                val inputSchema =
+                  JsonSchema.Object
+                    ( properties = $properties, required = ${Expr.ofList(paramNames)} )
+
+                val outputSchema = $schematic.schema()
+
+                Mcp.Tool(name, inputSchema = inputSchema, outputSchema = outputSchema)
+              }
+
+    Expr.ofList(entries)

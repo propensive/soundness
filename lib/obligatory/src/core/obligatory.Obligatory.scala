@@ -102,17 +102,17 @@ object Obligatory:
 
                     val application = Apply(Select(target.asTerm, method), params)
 
-                    val rtnType: TypeRepr = method.info.absolve match
-                      case MethodType(_, _, rtn) => rtn
+                    val result: TypeRepr = method.info.absolve match
+                      case MethodType(_, _, result) => result
 
-                    val rhs = rtnType.asType match
+                    val rhs = result.asType match
                       case '[Unit] => '{${application.asExpr} yet Unset}
-                      case '[rtn] => Expr.summon[rtn is Encodable in Json] match
+                      case '[result] => Expr.summon[result is Encodable in Json] match
                         case Some(encoder) =>
                           ' {
                               JsonRpc.Response
                                ("2.0",
-                                $encoder.encode(${application.asExprOf[rtn]}),
+                                $encoder.encode(${application.asExprOf[result]}),
                                 request.id)
                               . json
                             }
@@ -171,10 +171,10 @@ object Obligatory:
               case _ =>
                 halt(m"all remote methods in ${TypeRepr.of[interface].show} must have a single parameter list")
 
-          val rtnType: TypeRepr = runSym.info.absolve match
-            case MethodType(_, _, rtn) => rtn
+          val result: TypeRepr = runSym.info.absolve match
+            case MethodType(_, _, result) => result
 
-          val notification = rtnType.typeSymbol == TypeRepr.of[Unit].typeSymbol
+          val notification = result.typeSymbol == TypeRepr.of[Unit].typeSymbol
           val id = if notification then '{Unset} else Expr(Uuid().show)
           val methodName = Expr(method.name.tt)
 
@@ -191,8 +191,8 @@ object Obligatory:
                           . await()
                       }
                     . asTerm
-                  else rtnType.asType.absolve match
-                    case '[rtn] => Expr.summon[rtn is Decodable in Json] match
+                  else result.asType.absolve match
+                    case '[result] => Expr.summon[result is Decodable in Json] match
                       case Some(decoder) =>
                         Some:
                           ' {
@@ -201,11 +201,11 @@ object Obligatory:
                                 JsonRpc.request($url, $methodName, json)
                                  (using $monitor, $codicil, $online)
                                 . await()
-                                . decode[rtn](using $decoder)
+                                . decode[result](using $decoder)
                             }
                           . asTerm
 
-                      case _ => halt(m"a contextual ${TypeRepr.of[rtn is Decodable in Json].show} was not found")
+                      case _ => halt(m"a contextual ${TypeRepr.of[result is Decodable in Json].show} was not found")
                 case _ => halt(m"a contextual Online instance is required")
               case _ => halt(m"a contextual Codicil instance is required")
             case _ => halt(m"a contextual Monitor instance is required")
@@ -261,10 +261,10 @@ object Obligatory:
               case _ =>
                 halt(m"all remote methods in ${TypeRepr.of[interface].show} must have a single parameter list")
 
-          val rtnType: TypeRepr = runSym.info.absolve match
-            case MethodType(_, _, rtn) => rtn
+          val result: TypeRepr = runSym.info.absolve match
+            case MethodType(_, _, result) => result
 
-          val notification = rtnType.typeSymbol == TypeRepr.of[Unit].typeSymbol
+          val notification = result.typeSymbol == TypeRepr.of[Unit].typeSymbol
           val id = if notification then '{Unset} else Expr(Uuid().show)
           val methodName = Expr(method.name.tt)
 
@@ -274,8 +274,8 @@ object Obligatory:
                 JsonRpc.request($rpc, $methodName, json)
               }
             . asTerm
-          else rtnType.asType.absolve match
-            case '[rtn] => Expr.summon[rtn is Decodable in Json] match
+          else result.asType.absolve match
+            case '[result] => Expr.summon[result is Decodable in Json] match
               case Some(decoder) =>
                 Some:
                   ' {
@@ -283,11 +283,11 @@ object Obligatory:
                       unsafely:
                         JsonRpc.request($rpc, $methodName, json)
                         . await()
-                        . decode[rtn](using $decoder)
+                        . decode[result](using $decoder)
                     }
                   . asTerm
 
-              case _ => halt(m"a contextual ${TypeRepr.of[rtn is Decodable in Json].show} was not found")
+              case _ => halt(m"a contextual ${TypeRepr.of[result is Decodable in Json].show} was not found")
         case _ => halt(m"the method ${method.name} must have exactly one parameter list")
       })
 
