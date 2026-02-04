@@ -62,18 +62,64 @@ import stdioSources.virtualMachine.ansi
 object Synesthesia:
   given Realm = realm"synesthesia"
 
-  def tools[interface: Type]: Macro[List[Mcp.Tool]] =
+  def spec[interface: Type]: Macro[interface is McpSpecification] =
     import quotes.reflect.*
     val toolType = TypeRepr.of[tool].typeSymbol
     val interface = TypeRepr.of[interface]
-
-    println(interface.typeSymbol)
 
     val toolMethods = interface.typeSymbol.declaredMethods.filter: method =>
       val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
       allAnnotations.exists(_.tpe.typeSymbol == toolType)
 
-    println(toolMethods)
+    // This has been written as a partial function because the more natural way of writing it,
+    // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
+    val invocation: Expr[interface ~> ((Text, Json) => Json)] =
+      ' {
+          {
+            case target: `interface` =>
+              (method: Text, input: Json) =>
+                import dynamicJsonAccess.enabled
+                given Tactic[JsonError] = strategies.throwUnsafely
+
+                val request = input.as[Map[Text, Json]]
+
+                $ {
+                    val cases = toolMethods.map: method =>
+                      val params = method.paramSymss.head.map: param =>
+                        param.info.asType.absolve match
+                          case '[param] => Expr.summon[param is Decodable in Json] match
+                            case Some(decoder) =>
+                              ' {
+                                  given param is Decodable in Json = $decoder
+                                  request(${Expr(param.name)}).as[param]
+                                }
+                              . asTerm
+                            case None =>
+                              halt(m"""could not find a JSON decoder for parameter ${param.name} of
+                                      method ${method.name}""")
+
+                      val application = Apply(Select('target.asTerm, method), params)
+
+                      val result: TypeRepr = method.info.absolve match
+                        case MethodType(_, _, result) => result
+
+                      val rhs = result.asType match
+                        case '[result] => Expr.summon[result is Encodable in Json] match
+                          case Some(encoder) =>
+                            ' {
+                                Map("result".tt -> $encoder.encode(${application.asExprOf[result]}))
+                                . json
+                              }
+
+                          case None =>
+                            halt(m"could not find a JSON encoder for return type of method ${method.name}")
+
+                      CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
+
+                    Match('method.asTerm, cases).asExprOf[Json]
+                  }
+            }
+          }
 
     val entries = toolMethods.map: method =>
       val paramNames = method.paramSymss.head.map: param =>
@@ -90,8 +136,6 @@ object Synesthesia:
 
       val properties = '{${Expr.ofList(params)}.toMap}
 
-
-
       val result: TypeRepr = method.info.absolve match
         case MethodType(_, _, result) => result
 
@@ -104,9 +148,21 @@ object Synesthesia:
                   JsonSchema.Object
                     ( properties = $properties, required = ${Expr.ofList(paramNames)} )
 
-                val outputSchema = $schematic.schema()
+                val outputSchema =
+                  JsonSchema.Object
+                    ( properties = Map(t"result" -> $schematic.schema()),
+                      required   = List(t"result") )
 
                 Mcp.Tool(name, inputSchema = inputSchema, outputSchema = outputSchema)
               }
 
-    Expr.ofList(entries)
+    val toolsList = Expr.ofList(entries)
+
+    ' {
+        new McpSpecification:
+          type Self = interface
+          def tools(): List[Mcp.Tool] = $toolsList
+
+          def invoke(server: interface, method: Text, input: Json): Json =
+            $invocation(server)(method, input)
+      }

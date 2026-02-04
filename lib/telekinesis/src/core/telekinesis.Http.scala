@@ -419,7 +419,14 @@ object Http:
                    (version:     Http.Version,
                     status:      Http.Status,
                     textHeaders: List[Http.Header],
-                    body:        Data | Stream[Data]):
+                    body:        Data | Stream[Data])
+  extends Dynamic:
+
+    def updateDynamic[label <: Label: Directive of topic, topic](name: label)(value: topic)
+    : Response =
+        val key2 = name.tt.uncamel.kebab.lower
+        copy(textHeaders = Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2))
+
 
     def successBody: Optional[Stream[Data]] =
       if status.category != Http.Status.Category.Successful then Unset else body match

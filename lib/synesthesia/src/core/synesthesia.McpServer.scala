@@ -61,46 +61,42 @@ import scala.quoted.*
 
 import errorDiagnostics.stackTraces
 
-object McpServer:
-  given associable: McpServer is Associable:
-    type Operand = Http.Request
-    type Target = Http.Response
-
-    def association(request: Http.Request): McpServer =
-      given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
-      request.headers.mcpSessionId.prim.let(McpServer(_)).or(McpServer(Uuid().encode))
-
-    def associate(session: McpServer)(response: Http.Response): Http.Response =
-      response + Http.Header("mcp-session-id", session.id)
-
-
-  private val sessions: scm.HashMap[Text, McpServer] = scm.HashMap()
-
-  def apply(session: Text): McpServer = sessions.establish(session)(new MyMcpServer(session))
-
-abstract class McpServer(val id: Text):
+trait McpServer():
   import Mcp.*
+  private val sessions: scm.HashMap[Text, Session] = scm.HashMap()
+
+  type Session
+
+  def session(id: Text): Session = sessions.establish(id)(initialize())
+  def initialize(): Session
+
+  def serve(using this.type is McpSpecification, Monitor, Codicil, Online, Http.Request)
+  : Http.Response =
+
+      unsafely:
+        val interface: McpInterface = McpInterface(this)
+        Mcp.send(this, interface)(JsonRpc.serve(interface))
 
   def name: Text
   def description: Text
   def version: Semver
   def prompts: List[Prompt]
 
+
 object McpInterface:
   given streamable: McpInterface is Streamable by Sse = _.stream
 
-  inline def tools[interface <: McpServer]: List[Mcp.Tool] = ${Synesthesia.tools[interface]}
-
-  inline def apply(server: McpServer): McpInterface =
-    new McpInterface(server, tools[server.type])
+  inline def apply(server: McpServer)(using spec: server.type is McpSpecification): McpInterface =
+    new McpInterface(server, spec)
 
 
-class McpInterface(val server: McpServer, val tools: List[Mcp.Tool]) extends Mcp.Api:
+class McpInterface(val server: McpServer, val spec: McpSpecification) extends Mcp.Api:
   import Mcp.*
 
   protected var loggingLevel: LoggingLevel = LoggingLevel.Info
 
-  def ping(): Unit = ()
+  def ping(): Unit =
+    println("Received ping")
 
   def initialize
     ( protocolVersion: Text,
@@ -145,10 +141,12 @@ class McpInterface(val server: McpServer, val tools: List[Mcp.Tool]) extends Mcp
 
   def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
 
-  def `tools/call`(name: Text, arguments: Optional[Map[Text, Json]], _meta: Optional[Json]): CallTool = ???
+  def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool =
+    val server2 = server.asInstanceOf[spec.Self]
+    CallTool(structuredContent = spec.invoke(server.asInstanceOf[spec.Self], name, arguments))
 
   def `tools/list`(_meta: Optional[Json]): ListTools =
-    ListTools(tools)
+    ListTools(spec.tools())
     . tap: tools =>
       import jsonPrinters.indented
       println(tools.json.show)
@@ -163,7 +161,7 @@ class McpInterface(val server: McpServer, val tools: List[Mcp.Tool]) extends Mcp
     ( request: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json] )
   : Unit =
 
-      ???
+      ()
 
 
   def `notifications/progress`
@@ -174,10 +172,11 @@ class McpInterface(val server: McpServer, val tools: List[Mcp.Tool]) extends Mcp
       _meta:         Optional[Json] )
   : Unit =
 
-      ???
+      ()
 
 
-  def `notifications/initialized`(_meta: Optional[Json]): Unit = ()
+  def `notifications/initialized`(_meta: Optional[Json]): Unit =
+    println("Notifications initialized")
 
   def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit = ???
 
@@ -198,26 +197,13 @@ class McpInterface(val server: McpServer, val tools: List[Mcp.Tool]) extends Mcp
       _meta:         Optional[Json] )
   : Unit = ???
 
-object MyMcpServer:
-  val sessions: scm.HashMap[Text, MyMcpServer] = scm.HashMap()
-
-  def apply(id: Text): MyMcpServer = sessions.establish(id):
-    new MyMcpServer(id)
-
-  given associable: McpInterface is Associable:
-    type Operand = Http.Request
-    type Target = Http.Response
-
-    def association(request: Http.Request): McpInterface =
-      given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
-      McpInterface(request.headers.mcpSessionId.prim.let(MyMcpServer(_)).or(MyMcpServer(Uuid().encode)))
-
-    def associate(session: McpInterface)(response: Http.Response): Http.Response =
-      response + Http.Header("mcp-session-id", session.server.id)
-
-class MyMcpServer(id: Text) extends McpServer(id):
+object MyMcpServer extends McpServer():
+  type Session = this.type
   import Mcp.*
 
+  def initialize(): this.type =
+    println("MCP initialize()")
+    this
   def name: Text = "Pyrus"
   def description: Text = "A simple server"
   def version: Semver = v"1.0.0"

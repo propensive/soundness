@@ -354,6 +354,13 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case -1    => Json.ast(JsonAst(Unset))
       case index => Json(root.obj(1)(index))
 
+  def unsafeApply(field: Text): Json =
+    if root.isAbsent then Json.ast(JsonAst(Unset))
+    else unsafely:
+      root.obj(0).indexWhere(_ == field.s) match
+        case -1    => Json.ast(JsonAst(Unset))
+        case index => Json(root.obj(1)(index))
+
   override def hashCode: Int =
     def recur(value: JsonAst): Int = value.asMatchable match
       case value: Long       => value.hashCode

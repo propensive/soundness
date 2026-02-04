@@ -30,84 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
-
-import scala.collection.mutable as scm
+package synesthesia
 
 import anticipation.*
-import contingency.*
-import distillate.*
-import eucalyptus.*
-import fulminate.*
-import gesticulate.*
-import gossamer.*
-import hieroglyph.*
-import inimitable.*
 import jacinta.*
-import parasite.*
 import prepositional.*
-import proscenium.*
-import revolution.*
-import rudiments.*
-import spectacular.*
-import telekinesis.*
-import turbulence.*
-import urticose.*
-import vacuous.*
-import zephyrine.*
 
-import scala.annotation.*
-import scala.quoted.*
+object McpSpecification:
+  inline given mcpSpecification: [server <: McpServer] => server is McpSpecification =
+    ${Synesthesia.spec[server]}
 
-import errorDiagnostics.stackTraces
 
-object JsonRpc:
-  private val promises: scm.HashMap[Text | Int, Promise[Json]] = scm.HashMap()
+trait McpSpecification extends Typeclass:
 
-  inline def serve[interface](interface: interface): Json => Optional[Json] =
-    ${Obligatory.dispatcher[interface]('interface)}
-
-  case class Request(jsonrpc: Text, method: Text, params: Json, id: Optional[Json])
-  case class Response(jsonrpc: Text, result: Json, id: Optional[Json])
-
-  def error(code: Int, message: Text): Response =
-    Response("2.0", Map(t"code" -> code.json, t"message" -> message.json).json, Unset)
-
-  def request(target: JsonRpc, method: Text, payload: Json): Promise[Json] =
-    val uuid = Uuid().text
-    val promise: Promise[Json] = Promise()
-    promises(uuid) = promise
-    import charEncoders.utf8
-    import jsonPrinters.minimal
-    import logging.silent
-
-    target.put(Request("2.0", method, payload, uuid.json).json)
-    promise
-
-  def receive(id: Text, result: Json): Unit = promises.at(id).let(_.offer(result))
-
-  def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Codicil, Online)
-  : Promise[Json] =
-      val uuid = Uuid().text
-      val promise: Promise[Json] = Promise()
-      promises(uuid) = promise
-      import charEncoders.utf8
-      import jsonPrinters.minimal
-      import logging.silent
-
-      val request = Request("2.0", method, payload, uuid.json).json
-
-      async:
-        unsafely:
-          promise.fulfill(target.submit(Http.Post)(request).receive[Json])
-
-      promise
-
-trait JsonRpc extends Original:
-  private var channel: Spool[Json] = Spool()
-  inline def client: Origin = ${Obligatory.client[Origin]('this)}
-  def put(json: Json): Unit = channel.put(json)
-
-  def stream: Stream[Sse] = channel.stream.map: json =>
-    import jsonPrinters.minimal
-    Sse(data = List(json.encode))
+  def tools(): List[Mcp.Tool]
+  def invoke(target: Self, method: Text, params: Json): Json

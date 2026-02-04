@@ -49,6 +49,7 @@ import prepositional.*
 import proscenium.*
 import revolution.*
 import rudiments.*
+import spectacular.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
@@ -62,6 +63,56 @@ import errorDiagnostics.stackTraces
 
 object Mcp:
   type Cursor = Text
+
+  def send[interface <: McpServer](server: interface, mcpInterface: McpInterface)
+    ( dispatch: Json => Optional[Json] )
+    ( using request: Http.Request )
+    ( using Monitor, Codicil, Online )
+  : Http.Response =
+      import jsonPrinters.minimal
+      import charEncoders.utf8
+      import charDecoders.utf8
+      import textSanitizers.skip
+
+      given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
+
+      val sessionId: Text =
+        safely(request.headers.mcpSessionId.prim.let(_.decode[Uuid])).or(Uuid()).show
+
+      val session: server.Session = server.session(sessionId)
+
+      recover:
+        case error: ParseError =>
+          Http.Response(Http.Ok):
+            JsonRpc.error(-32700, t"Parse error: ${error.message}".show).json
+          . mcpSessionId = sessionId
+
+        case error: JsonError =>
+          Http.Response(Http.Ok):
+            JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).json
+          . mcpSessionId = sessionId
+
+      . within:
+          val input = request.body().read[Json]
+          try
+            request.method match
+              case Http.Get =>
+                Http.Response(Http.Ok, connection = t"keep-alive", cacheControl = t"no-cache")
+                  ( mcpInterface.stream )
+                . mcpSessionId = sessionId
+
+              case Http.Post =>
+                dispatch(input).let: json =>
+                  Http.Response(Http.Ok)(json).mcpSessionId = sessionId
+
+                . or:
+                    Http.Response(Http.Accepted)().mcpSessionId = sessionId
+          catch
+            case error: Throwable =>
+              println(error.getMessage)
+              error.printStackTrace()
+              Http.Response(Http.Ok):
+                JsonRpc.error(-32603, t"Internal error: ${error.toString}".show).json
 
   case class TaskAugmentedRequestParams(task: Optional[TaskMetadata])
   case class Error(code: Int, message: Text, data: Optional[Json])
@@ -143,7 +194,7 @@ object Mcp:
       completions:  Optional[Json]            = Unset,
       prompts:      Optional[ListChanged]     = Unset,
       resources:    Optional[Resources]       = Unset,
-      tools:        Optional[ListChanged]     = Unset,
+      tools:        ListChanged               = ListChanged(true),
       tasks:        Optional[Tasks]           = Unset )
 
   case class ClientCapabilities
@@ -274,9 +325,9 @@ object Mcp:
   case class Reference(name: Text, title: Optional[Text], `type`: Text, uri: Optional[Text])
 
   case class CallTool
-    ( content:           List[ContentBlock],
-      structuredContent: Optional[Map[Text, Json]],
-      isError:           Optional[Boolean] )
+    ( content:           List[ContentBlock] = Nil,
+      structuredContent: Optional[Json]     = Unset,
+      isError:           Optional[Boolean]  = Unset )
 
   case class ListTools(tools: List[Tool])
   case class ListRoots(tools: List[Root])
@@ -426,8 +477,7 @@ object Mcp:
     def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit
 
     @rpc
-    def `tools/call`(name: Text, arguments: Optional[Map[Text, Json]], _meta: Optional[Json])
-    : CallTool
+    def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool
 
     @rpc
     def `tools/list`(_meta: Optional[Json]): ListTools

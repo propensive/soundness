@@ -9,6 +9,9 @@ import charEncoders.utf8
 import charDecoders.utf8
 import textSanitizers.skip
 import jsonPrinters.minimal
+import internetAccess.enabled
+import supervisors.global
+import codicils.cancel
 
 object Tests extends Suite(m"Synesthesia Tests"):
   def run(): Unit =
@@ -33,8 +36,13 @@ object Tests extends Suite(m"Synesthesia Tests"):
           case % /: t"favicon.png" => t"Nothing here"
           case % /: t"favicon.svg" => t"Nothing here"
           case % /: t"mcp"         =>
-            import MyMcpServer.associable
-            JsonRpc.server[McpInterface]
+            try
+              unsafely:
+                MyMcpServer.serve
+            catch case throwable: Throwable =>
+              println(s"Error serving MCP: ${throwable.getMessage}")
+              throwable.printStackTrace()
+              ???
 
       Thread.sleep(1000000)
 
