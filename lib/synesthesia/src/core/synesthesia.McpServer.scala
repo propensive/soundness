@@ -91,7 +91,8 @@ object McpInterface:
     new McpInterface(server, spec)
 
 
-class McpInterface(val server: McpServer, val spec: McpSpecification) extends Mcp.Api:
+class McpInterface(val server: McpServer, val spec: server.type is McpSpecification)
+extends Mcp.Api:
   import Mcp.*
 
   protected var loggingLevel: LoggingLevel = LoggingLevel.Info
@@ -143,8 +144,7 @@ class McpInterface(val server: McpServer, val spec: McpSpecification) extends Mc
   def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
 
   def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool =
-    val server2 = server.asInstanceOf[spec.Self]
-    val result = spec.invoke(server.asInstanceOf[spec.Self], name, arguments)
+    val result = spec.invoke(server, name, arguments)
 
     import jsonPrinters.minimal
     CallTool(content = List(TextContent(result.show)), structuredContent = result)
