@@ -26,10 +26,6 @@ object Tests extends Suite(m"Synesthesia Tests"):
 
       tcp"8080".serve:
         request.path match
-          case %                   => t"Nothing here"
-          case % /: t"favicon.ico" => t"Nothing here"
-          case % /: t"favicon.png" => t"Nothing here"
-          case % /: t"favicon.svg" => t"Nothing here"
           case % /: t"mcp"         =>
             try
               unsafely:
@@ -38,6 +34,7 @@ object Tests extends Suite(m"Synesthesia Tests"):
               println(s"Error serving MCP: ${throwable.getMessage}")
               throwable.printStackTrace()
               ???
+          case _                   => t"Nothing here"
 
       Thread.sleep(1000000)
 

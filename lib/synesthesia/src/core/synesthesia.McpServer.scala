@@ -144,7 +144,10 @@ class McpInterface(val server: McpServer, val spec: McpSpecification) extends Mc
 
   def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool =
     val server2 = server.asInstanceOf[spec.Self]
-    CallTool(structuredContent = spec.invoke(server.asInstanceOf[spec.Self], name, arguments))
+    val result = spec.invoke(server.asInstanceOf[spec.Self], name, arguments)
+
+    import jsonPrinters.minimal
+    CallTool(content = List(TextContent(result.show)), structuredContent = result)
 
   def `tools/list`(_meta: Optional[Json]): ListTools =
     ListTools(spec.tools())

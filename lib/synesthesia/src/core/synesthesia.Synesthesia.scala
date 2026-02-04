@@ -88,31 +88,37 @@ object Synesthesia:
                       val params = method.paramSymss.head.map: param =>
                         param.info.asType.absolve match
                           case '[param] => Expr.summon[param is Decodable in Json] match
-                            case Some(decoder) =>
+                            case Some(decodable) =>
                               ' {
-                                  given param is Decodable in Json = $decoder
+                                  given param is Decodable in Json = $decodable
+                                  println(s"received ${request(${Expr(param.name)})}")
                                   request(${Expr(param.name)}).as[param]
                                 }
                               . asTerm
                             case None =>
-                              halt(m"""could not find a JSON decoder for parameter ${param.name} of
-                                      method ${method.name}""")
+                              halt(m"""could not find a contextual
+                                      `${TypeRepr.of[param].show} is Decodable in Json` instance for
+                                      the parameter ${param.name} of ${method.name}""")
 
                       val application = Apply(Select('target.asTerm, method), params)
 
                       val result: TypeRepr = method.info.absolve match
                         case MethodType(_, _, result) => result
 
-                      val rhs = result.asType match
+                      val rhs = result.asType.absolve match
                         case '[result] => Expr.summon[result is Encodable in Json] match
                           case Some(encoder) =>
                             ' {
-                                Map("result".tt -> $encoder.encode(${application.asExprOf[result]}))
-                                . json
+                                import jsonPrinters.indented
+                                val output = Map("result".tt -> $encoder.encode(${application.asExprOf[result]}))
+                                println(s"returning ${output.json.show}")
+                                output.json
                               }
 
                           case None =>
-                            halt(m"could not find a JSON encoder for return type of method ${method.name}")
+                            halt(m"""could not find a contextual
+                                    `${TypeRepr.of[result].show} is Encodable in Json` instance for
+                                    the return type of ${method.name}""")
 
                       CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
 

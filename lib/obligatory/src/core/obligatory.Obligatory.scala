@@ -106,7 +106,7 @@ object Obligatory:
                     val result: TypeRepr = method.info.absolve match
                       case MethodType(_, _, result) => result
 
-                    val rhs = result.asType match
+                    val rhs = result.asType.absolve match
                       case '[Unit] => '{${application.asExpr} yet Unset}
                       case '[result] => Expr.summon[result is Encodable in Json] match
                         case Some(encoder) =>
@@ -119,7 +119,9 @@ object Obligatory:
                             }
 
                         case None =>
-                          halt(m"could not find a JSON encoder for the return type of method ${method.name}")
+                          halt(m"""could not find a contextual
+                                  `${TypeRepr.of[result].show} is Encodable in Json` instance for
+                                  the return type of ${method.name}""")
 
                     CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
 
@@ -143,13 +145,13 @@ object Obligatory:
     val parents  = List(TypeTree.of[Object], TypeTree.of[interface])
 
     val module = Symbol.newModule
-     (owner    = Symbol.spliceOwner,
-      name     = Symbol.freshName(interface.typeSymbol.name),
-      modFlags = Flags.EmptyFlags,
-      clsFlags = Flags.EmptyFlags,
-      parents  = _ => parents.map(_.tpe),
-      decls    = decls,
-      privateWithin = Symbol.noSymbol)
+      ( owner    = Symbol.spliceOwner,
+        name     = Symbol.freshName(interface.typeSymbol.name),
+        modFlags = Flags.EmptyFlags,
+        clsFlags = Flags.EmptyFlags,
+        parents  = _ => parents.map(_.tpe),
+        decls    = decls,
+        privateWithin = Symbol.noSymbol )
 
     val classSymbol = module.moduleClass
 
@@ -167,12 +169,15 @@ object Obligatory:
                   case Some('{$encoder: (`param` `is` Encodable `in` Json) }) =>
                     val name = Expr(param.name)
                     '{ $name -> ${encoder}.encoded(${ident.asExprOf[param]}) }
+
                   case _ =>
                     halt(m"""could not find a contextual
                              `${TypeRepr.of[param].show} is Encodable in Json` instance for
                              parameter ${param.name} of ${method.name}""")
+
               case _ =>
-                halt(m"all remote methods in ${TypeRepr.of[interface].show} must have a single parameter list")
+                halt(m"""all remote methods in ${TypeRepr.of[interface].show} must have a single
+                         parameter list""")
 
           val result: TypeRepr = runSym.info.absolve match
             case MethodType(_, _, result) => result
@@ -209,9 +214,9 @@ object Obligatory:
                           . asTerm
 
                       case _ => halt(m"a contextual ${TypeRepr.of[result is Decodable in Json].show} was not found")
-                case _ => halt(m"a contextual Online instance is required")
-              case _ => halt(m"a contextual Codicil instance is required")
-            case _ => halt(m"a contextual Monitor instance is required")
+                case _ => halt(m"a contextual `Online` instance is required")
+              case _ => halt(m"a contextual `Codicil` instance is required")
+            case _ => halt(m"a contextual `Monitor` instance is required")
         case _ => halt(m"the method ${method.name} must have exactly one parameter list")
       })
 

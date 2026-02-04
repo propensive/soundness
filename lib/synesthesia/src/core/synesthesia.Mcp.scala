@@ -103,7 +103,9 @@ object Mcp:
 
               case Http.Post =>
                 dispatch(input).let: json =>
-                  Http.Response(Http.Ok)(json).mcpSessionId = sessionId
+                  import jsonPrinters.indented
+                  println(json.json.show)
+                  Http.Response(Http.Ok)(json.json).mcpSessionId = sessionId
 
                 . or:
                     Http.Response(Http.Accepted)().mcpSessionId = sessionId
@@ -402,12 +404,13 @@ object Mcp:
         case _               => abort(JsonError(JsonError.Reason.OutOfRange))
 
   sealed trait ContentBlock
-  case class TextContent(text: Text, annotations: Optional[Annotations]) extends ContentBlock
-
-  case class ImageContent(data: Text, mimeType: Text, annotations: Optional[Annotations])
+  case class TextContent(text: Text, annotations: Optional[Annotations] = Unset)
   extends ContentBlock
 
-  case class AudioContent(data: Text, mimeType: Text, annotations: Optional[Annotations])
+  case class ImageContent(data: Text, mimeType: Text, annotations: Optional[Annotations] = Unset)
+  extends ContentBlock
+
+  case class AudioContent(data: Text, mimeType: Text, annotations: Optional[Annotations] = Unset)
   extends ContentBlock
 
   case class ResourceLink(uri: Text) extends ContentBlock
