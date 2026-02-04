@@ -54,6 +54,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import wisteria.*
 import zephyrine.*
 
 import scala.annotation.*
@@ -211,3 +212,8 @@ object MyMcpServer extends McpServer():
 
   @tool
   def color(name: Text): Text = "purple"
+
+  @tool
+  def encodeMagic(text: Text): Text =
+    Thread.sleep(1000)
+    text.reverse

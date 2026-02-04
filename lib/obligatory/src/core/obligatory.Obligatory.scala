@@ -97,8 +97,9 @@ object Obligatory:
                             '{$decoder.decoded(request.params(${Expr(param.name)}))}
                             . asTerm
                           case None =>
-                            halt(m"""could not find a JSON decoder for parameter ${param.name} of method
-                                    ${method.name}""")
+                            halt(m"""could not find a contextual
+                                    `${TypeRepr.of[param].show} is Decodable in Json` instance for
+                                    the parameter ${param.name} of ${method.name}""")
 
                     val application = Apply(Select(target.asTerm, method), params)
 
@@ -118,7 +119,7 @@ object Obligatory:
                             }
 
                         case None =>
-                          halt(m"could not find a JSON encoder for return type of method ${method.name}")
+                          halt(m"could not find a JSON encoder for the return type of method ${method.name}")
 
                     CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
 
@@ -167,7 +168,9 @@ object Obligatory:
                     val name = Expr(param.name)
                     '{ $name -> ${encoder}.encoded(${ident.asExprOf[param]}) }
                   case _ =>
-                    halt(m"no encoder found for parameter ${param.name} of method ${method.name}")
+                    halt(m"""could not find a contextual
+                             `${TypeRepr.of[param].show} is Encodable in Json` instance for
+                             parameter ${param.name} of ${method.name}""")
               case _ =>
                 halt(m"all remote methods in ${TypeRepr.of[interface].show} must have a single parameter list")
 
@@ -257,9 +260,12 @@ object Obligatory:
                     val name = Expr(param.name)
                     '{ $name -> ${encoder}.encoded(${ident.asExprOf[param]}) }
                   case _ =>
-                    halt(m"no encoder found for parameter ${param.name} of method ${method.name}")
+                    halt(m"""could not find a contextual
+                             `${TypeRepr.of[param].show} is Encodable in Json` instance for
+                             parameter ${param.name} of ${method.name}""")
               case _ =>
-                halt(m"all remote methods in ${TypeRepr.of[interface].show} must have a single parameter list")
+                halt(m"""all remote methods in ${TypeRepr.of[interface].show} must have a single
+                         parameter list""")
 
           val result: TypeRepr = runSym.info.absolve match
             case MethodType(_, _, result) => result
@@ -287,7 +293,10 @@ object Obligatory:
                     }
                   . asTerm
 
-              case _ => halt(m"a contextual ${TypeRepr.of[result is Decodable in Json].show} was not found")
+              case _ =>
+                halt(m"""could not find a contextual
+                         `${TypeRepr.of[result].show} is Decodable in Json` instance for the return
+                         type of ${method.name}""")
         case _ => halt(m"the method ${method.name} must have exactly one parameter list")
       })
 

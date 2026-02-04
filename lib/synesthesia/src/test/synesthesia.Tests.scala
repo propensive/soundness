@@ -16,12 +16,7 @@ import codicils.cancel
 object Tests extends Suite(m"Synesthesia Tests"):
   def run(): Unit =
     test(m"Remote server"):
-      import supervisors.global
-      import codicils.cancel
       import internetAccess.enabled
-      import Mcp.*
-      val server = remote[McpApi](url"http://localhost:8080/")
-
       import supervisors.global
       import codicils.cancel
       import httpServers.stdlib

@@ -30,19 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package synesthesia
+package obligatory
 
-import anticipation.*
-import jacinta.*
-import prepositional.*
-import vacuous.*
+import fulminate.*
+import proscenium.*
 
-object McpSpecification:
-  inline given mcpSpecification: [server <: McpServer] => server is McpSpecification =
-    ${Synesthesia.spec[server]}
-
-
-trait McpSpecification extends Typeclass:
-
-  def tools(): List[Mcp.Tool]
-  def invoke(target: Self, method: Text, params: Json): Json
+case class JsonRpcError()(using Diagnostics)
+extends Error(m"an error occurred during a JSON-RPC operation")

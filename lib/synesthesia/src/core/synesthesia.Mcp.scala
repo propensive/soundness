@@ -135,7 +135,7 @@ object Mcp:
   val UrlElicitationRequired = -32042
 
   case class TaskMetadata(ttl: Optional[Int])
-  case class Icon(src: HttpUrl, mimeType: Text, sizes: List[Text], theme: Optional[Text])
+  case class Icon(src: Text, mimeType: Text, sizes: List[Text], theme: Optional[Text])
   case class BaseMetadata(name: Text, title: Optional[Text])
 
   case class Implementation
