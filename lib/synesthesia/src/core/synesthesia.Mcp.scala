@@ -185,7 +185,7 @@ object Mcp:
       instructions:    Optional[Text] )
 
   case class ListChanged(listChanged: Optional[Boolean])
-  case class Resources(subscribe: Optional[Boolean], listChanged: Optional[Boolean])
+  case class Resources(subscribe: Optional[Boolean] = true, listChanged: Optional[Boolean] = true)
 
   case class Sampling(context: Optional[Json], tools: Optional[Json])
   case class Elicitation(form: Optional[Json], url: Optional[Json])
@@ -210,7 +210,7 @@ object Mcp:
       logging:      Optional[Json]            = Unset,
       completions:  Optional[Json]            = Unset,
       prompts:      Optional[ListChanged]     = Unset,
-      resources:    Optional[Resources]       = Unset,
+      resources:    Optional[Resources]       = Resources(),
       tools:        ListChanged               = ListChanged(true),
       tasks:        Optional[Tasks]           = Unset )
 
@@ -236,14 +236,16 @@ object Mcp:
   case class ListResources(resources: List[Resource])
   case class ListResourceTemplates(resourceTemplates: List[ResourceTemplate])
   case class ReadResource(contents: List[Contents])
+
   case class Resource
     ( name:        Text,
+      uri:         Text,
       title:       Optional[Text] = Unset,
-      icons:       List[Icon]     = Nil,
       description: Optional[Text] = Unset,
+      icons:       List[Icon]     = Nil,
       mimeType:    Optional[Text] = Unset,
-      annotations: Annotations,
-      size:        Long )
+      annotations: Annotations    = Annotations(),
+      size:        Optional[Long] = Unset )
 
   case class ResourceTemplate
     ( name:        Text,
@@ -260,9 +262,9 @@ object Mcp:
   case class ListPrompts(cursor: Optional[Cursor], prompts: List[Prompt])
 
   case class Annotations
-    ( audience:     Optional[List[Role]],
-      priority:     Optional[Int],
-      lastModified: Optional[Text] )
+    ( audience:     Optional[List[Role]] = Unset,
+      priority:     Optional[Int]        = Unset,
+      lastModified: Optional[Text]       = Unset )
 
   case class Complete(completion: Completion)
   case class Completion(values: List[Text], total: Optional[Int], hasMore: Optional[Boolean])
@@ -568,23 +570,22 @@ object Mcp:
     (     sessionId: Text,
       val server:    McpServer from McpClient,
       val spec:      server.type is McpSpecification )
-  extends Mcp.Api:
+  extends Api:
 
     println(s"Initializing MCP Interface (${this.toString})")
 
     protected var loggingLevel: LoggingLevel = LoggingLevel.Info
 
-    def ping(): Unit =
-      println("Received ping")
+    def ping(): Unit = println("Received ping")
 
     def initialize
       ( protocolVersion: Text,
         capabilities:    ClientCapabilities,
         clientInfo:      Implementation,
         _meta:           Optional[Json] )
-    : Mcp.Initialize =
+    : Initialize =
 
-        Mcp.Initialize
+        Initialize
           ( "2025-11-25",
             ServerCapabilities(),
             Implementation(server.name, version = server.version.encode),
@@ -610,7 +611,8 @@ object Mcp:
     def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts =
       ListPrompts(Unset, server.prompts)
 
-    def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources = ListResources(Nil)
+    def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources =
+      ListResources(spec.resources())
 
     def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates = ???
 

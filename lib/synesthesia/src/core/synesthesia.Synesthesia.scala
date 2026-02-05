@@ -65,11 +65,21 @@ object Synesthesia:
   def spec[interface: Type]: Macro[interface is McpSpecification] =
     import quotes.reflect.*
     val toolType = TypeRepr.of[tool].typeSymbol
+    val aboutType = TypeRepr.of[about].typeSymbol
+    val titleType = TypeRepr.of[title].typeSymbol
+    val resourceType = TypeRepr.of[resource].typeSymbol
     val interface = TypeRepr.of[interface]
 
     val toolMethods = interface.typeSymbol.declaredMethods.filter: method =>
       val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
       allAnnotations.exists(_.tpe.typeSymbol == toolType)
+
+    val resourceMethods = interface.typeSymbol.declaredMethods.filter: method =>
+      val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+      allAnnotations.exists(_.tpe.typeSymbol == resourceType)
+
+    val jsonErrors = Expr.summon[Tactic[JsonError]].getOrElse:
+      halt(m"""could not find a contextual `Tactic[McpError]` instance""")
 
     // This has been written as a partial function because the more natural way of writing it,
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
@@ -79,7 +89,7 @@ object Synesthesia:
             case target: `interface` =>
               (method: Text, input: Json, client: McpClient) =>
                 import dynamicJsonAccess.enabled
-                given Tactic[JsonError] = strategies.throwUnsafely
+                given Tactic[JsonError] = $jsonErrors
 
                 val request = input.as[Map[Text, Json]]
 
@@ -140,7 +150,19 @@ object Synesthesia:
             }
           }
 
-    val entries = toolMethods.map: method =>
+    val toolEntries = toolMethods.map: method =>
+      val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+
+      val about: Expr[Optional[Text]] =
+        allAnnotations.find(_.tpe.typeSymbol == aboutType).map: annotation =>
+          '{${annotation.asExprOf[about]}.text}
+        . getOrElse('{Unset})
+
+      val title: Expr[Optional[Text]] =
+        allAnnotations.find(_.tpe.typeSymbol == titleType).map: annotation =>
+          '{${annotation.asExprOf[title]}.text}
+        . getOrElse('{Unset})
+
       val paramNames = method.paramSymss.head.map: param =>
         Expr(param.name.tt)
 
@@ -163,7 +185,6 @@ object Synesthesia:
         case '[result] => Expr.summon[result is Schematic in JsonSchema] match
           case Some(schematic) =>
             ' {
-                val name = ${Expr(method.name)}
                 val inputSchema =
                   JsonSchema.Object
                     ( properties = $properties, required = ${Expr.ofList(paramNames)} )
@@ -173,19 +194,68 @@ object Synesthesia:
                     ( properties = Map(t"result" -> $schematic.schema()),
                       required   = List(t"result") )
 
-                Mcp.Tool(name, inputSchema = inputSchema, outputSchema = outputSchema)
+                Mcp.Tool
+                  ( name         = ${Expr(method.name)},
+                    title        = $title,
+                    description  = $about,
+                    inputSchema  = inputSchema,
+                    outputSchema = outputSchema )
               }
           case None =>
             halt(m"""there was no contextual
                      `${TypeRepr.of[result].show} is Schematic in JsonSchema` instance for the
                      return type of ${method.name}""")
 
-    val toolsList = Expr.ofList(entries)
+    val resourceEntries = resourceMethods.map: method =>
+      val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+      allAnnotations.exists(_.tpe.typeSymbol == resourceType)
+
+      val uri: Expr[Text] =
+        '{${allAnnotations.find(_.tpe.typeSymbol == resourceType).get.asExprOf[resource]}.uri}
+
+      val about: Expr[Optional[Text]] =
+        allAnnotations.find(_.tpe.typeSymbol == aboutType).map: annotation =>
+          '{${annotation.asExprOf[about]}.text}
+        . getOrElse('{Unset})
+
+      val title: Expr[Optional[Text]] =
+        allAnnotations.find(_.tpe.typeSymbol == titleType).map: annotation =>
+          '{${annotation.asExprOf[title]}.text}
+        . getOrElse('{Unset})
+
+      if method.paramSymss.length > 0 then halt(m"MCP resource methods cannot have any parameters")
+
+      val result: TypeRepr = method.info.widen
+
+      result.asType.absolve match
+        case '[result] =>
+          Expr.summon[result is Streamable by Text] match
+            case Some(streamable) =>
+              ' {
+                  val name = ${Expr(method.name)}
+                  Mcp.Resource
+                    ( name        = name,
+                      uri         = $uri,
+                      title       = $title,
+                      description = $about )
+                }
+            case None => Expr.summon[result is Streamable by Data] match
+              case Some(streamable) =>
+                ' {
+                    val name = ${Expr(method.name)}
+                    Mcp.Resource(name, $uri, $title, $about)
+                  }
+
+              case None =>
+                halt(m"""there was no contextual
+                        `${TypeRepr.of[result].show} is Streamable` instance for the
+                        return type of ${method.name}""")
 
     ' {
         new McpSpecification:
           type Self = interface
-          def tools(): List[Mcp.Tool] = $toolsList
+          def tools(): List[Mcp.Tool] = ${Expr.ofList(toolEntries)}
+          def resources(): List[Mcp.Resource] = ${Expr.ofList(resourceEntries)}
 
           def invoke(server: interface, client: McpClient, method: Text, input: Json): Json =
             $invocation(server)(method, input, client)

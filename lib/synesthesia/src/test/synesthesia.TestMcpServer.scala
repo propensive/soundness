@@ -1,8 +1,11 @@
 package synesthesia
 
 import anticipation.*
+import honeycomb.*
 import gossamer.*
 import revolution.*
+import turbulence.*
+import zephyrine.*
 
 object TestMcpServer extends McpServer():
   class Session() extends McpSession
@@ -34,3 +37,10 @@ object TestMcpServer extends McpServer():
     client.log(t"Applying the recipe to $text")
     Thread.sleep(1500)
     text.reverse
+
+  @resource("ui://html/content")
+  def content: Document[Html] =
+    import doms.html.whatwg
+    import doms.html.whatwg.*
+    val html = Html(Head(Title("MCP App")), Body(H1("Hello world")))
+    Document(html, doms.html.whatwg)

@@ -35,4 +35,4 @@ package synesthesia
 import anticipation.*
 import proscenium.*
 
-case class resource(uri: Text) extends StaticAnnotation
+case class title(text: Text) extends StaticAnnotation

@@ -121,8 +121,8 @@ object Html extends Tag.Container
   given loadable: (dom: Dom) => Tactic[ParseError] => Html is Loadable by Text = stream =>
     val root = Tag.root(Set(t"html"))
     parse(stream.iterator, root, doctypes = true) match
-      case Fragment(Doctype(doctype), content) => Document(content, Doctype(doctype))
-      case html@Element("html", _, _, _)       => Document(html, doctype)
+      case Fragment(Doctype(doctype), content) => Document(content, dom)
+      case html@Element("html", _, _, _)       => Document(html, dom)
       case _                                   =>
         abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
 
@@ -130,12 +130,13 @@ object Html extends Tag.Container
   private val indentation: Text =
     "\n                                                                "
 
-  given streamable: (Dom, Monitor, Codicil) => Document[Html] is Streamable by Text =
+  given streamable: (Monitor, Codicil) => Document[Html] is Streamable by Text =
     emit(_).to(Stream)
 
-  def emit(document: Document[Html], flat: Boolean = false)(using dom: Dom)(using Monitor, Codicil)
+  def emit(document: Document[Html], flat: Boolean = false)(using Monitor, Codicil)
   : Iterator[Text] =
 
+      val dom = document.metadata
       val emitter = Emitter[Text](4096)
       async:
         def recur(node: Html, indent: Int, block: Boolean, mode: Mode): Unit =
@@ -215,7 +216,7 @@ object Html extends Tag.Container
                 emitter.put(label)
                 emitter.put(">")
 
-        recur(document.metadata, 0, true, Mode.Whitespace)
+        recur(document.metadata.doctype, 0, true, Mode.Whitespace)
         recur(document.root, 0, true, Mode.Whitespace)
         emitter.finish()
 
@@ -814,7 +815,7 @@ object Html extends Tag.Container
 sealed into trait Html extends Topical, Documentary, Formal:
   type Topic <: Label
   type Transport <: Label
-  type Metadata = Doctype
+  type Metadata = Dom
   type Chunks = Text
   type Form <: Dom
 
