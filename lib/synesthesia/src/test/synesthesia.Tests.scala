@@ -29,7 +29,7 @@ object Tests extends Suite(m"Synesthesia Tests"):
           case % /: t"mcp"         =>
             try
               unsafely:
-                MyMcpServer.serve
+                TestMcpServer.serve
             catch case throwable: Throwable =>
               println(s"Error serving MCP: ${throwable.getMessage}")
               throwable.printStackTrace()

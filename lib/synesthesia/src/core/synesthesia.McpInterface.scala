@@ -62,24 +62,127 @@ import scala.quoted.*
 
 import errorDiagnostics.stackTraces
 
-trait McpServer():
+object McpInterface:
+
+  private val cache: scm.HashMap[McpServer, McpInterface] = scm.HashMap()
+
+  given streamable: McpInterface is Streamable by Sse = _.stream
+
+  inline def apply(server: McpServer from McpClient)(using spec: server.type is McpSpecification)
+  : McpInterface =
+
+      cache.establish(server):
+        new McpInterface(server, spec)
+
+
+class McpInterface(val server: McpServer from McpClient, val spec: server.type is McpSpecification)
+extends Mcp.Api:
   import Mcp.*
-  private val sessions: scm.HashMap[Text, Session] = scm.HashMap()
 
-  type Session
-  type Origin = McpClient
+  println(s"Initializing MCP Interface (${this.toString})")
 
-  def session(id: Text): Session = sessions.establish(id)(initialize())
-  def initialize(): Session
+  protected var loggingLevel: LoggingLevel = LoggingLevel.Info
 
-  def serve(using this.type is McpSpecification, Monitor, Codicil, Online, Http.Request)
-  : Http.Response =
+  def ping(): Unit =
+    println("Received ping")
 
-      unsafely:
-        val interface: McpInterface = McpInterface(this)
-        Mcp.send(this, interface)(JsonRpc.serve(interface))
+  def initialize
+    ( protocolVersion: Text,
+      capabilities:    ClientCapabilities,
+      clientInfo:      Implementation,
+      _meta:           Optional[Json] )
+  : Mcp.Initialize =
 
-  def name: Text
-  def description: Text
-  def version: Semver
-  def prompts: List[Prompt]
+      Mcp.Initialize
+        ( "2025-11-25",
+          ServerCapabilities(),
+          Implementation(server.name, version = server.version.encode),
+          server.description )
+      . tap(println(_))
+
+  def `completion/complete`
+    ( ref:      Reference,
+      argument: Argument,
+      context:  Optional[Context],
+      _meta:    Optional[Json] )
+  : Complete =
+
+      ???
+
+
+  def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit =
+    loggingLevel = level
+
+  def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json]): Unit =
+    ???
+
+  def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts =
+    ListPrompts(Unset, server.prompts)
+
+  def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources = ListResources(Nil)
+
+  def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates = ???
+
+  def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource = ???
+
+  def `resources/subscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
+
+  def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
+
+  def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool = unsafely:
+    val result = spec.invoke(server, client, name, arguments)
+
+    import jsonPrinters.minimal
+    CallTool(content = List(TextContent(result.show)), structuredContent = result)
+
+  def `tools/list`(_meta: Optional[Json]): ListTools =
+    ListTools(spec.tools())
+    . tap: tools =>
+      import jsonPrinters.indented
+      println(tools.json.show)
+
+  def `tasks/get`(taskId: Text, _meta: Optional[Json]): Task = ???
+
+  def `tasks/result`(taskId: Text, _meta: Optional[Json]): Map[Text, Json] = ???
+
+  def `tasks/list`(_meta: Optional[Json]): ListTasks = ListTasks(Nil)
+
+  def `notifications/cancelled`
+    ( request: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json] )
+  : Unit =
+
+      ()
+
+
+  def `notifications/progress`
+    ( progressToken: TextInt,
+      progress:      Double,
+      total:         Optional[Double],
+      message:       Optional[Text],
+      _meta:         Optional[Json] )
+  : Unit =
+
+      ()
+
+
+  def `notifications/initialized`(_meta: Optional[Json]): Unit =
+    println("Notifications initialized")
+
+  def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit = ???
+
+  def `notifications/resources/updated`(uri: Text, _meta: Optional[Json]): Unit = ???
+
+  def `tasks/cancel`(taskId: Text, _meta: Optional[Json]): Task = ???
+
+  def `notifications/roots/list_changed`(_meta: Optional[Json]): Unit = ???
+
+  def `notifications/tasks/status`
+    ( taskId:        Text,
+      status:        TaskStatus,
+      statusMessage: Optional[Text],
+      createdAt:     Text,
+      lastUpdatedAt: Text,
+      ttl:           Int,
+      pollInterval:  Optional[Int],
+      _meta:         Optional[Json] )
+  : Unit = ???
