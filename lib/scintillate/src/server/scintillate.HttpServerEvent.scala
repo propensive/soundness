@@ -33,14 +33,17 @@
 package scintillate
 
 import fulminate.*
+import rudiments.*
 import spectacular.*
 import telekinesis.*
 
 enum HttpServerEvent:
   case Received(request: Http.Request)
   case Processed(request: Http.Request, duration: Long)
+  case BrokenStream(length: Bytes)
 
 object HttpServerEvent:
   given communicable: HttpServerEvent is Communicable =
     case Received(request)            => m"Received request $request"
     case Processed(request, duration) => m"Processed request $request in ${duration}ms"
+    case BrokenStream(length)         => m"Sending response was aborted after $length"

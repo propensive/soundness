@@ -35,6 +35,7 @@ package scintillate
 import anticipation.*
 import contingency.*
 import digression.*
+import fulminate.*
 import parasite.*
 import proscenium.*
 import rudiments.*
@@ -57,9 +58,13 @@ extends RequestServable:
         try
           val connection = HttpConnection(exchange.nn)
 
-          connection.respond:
-            try handler(using connection) catch case throwable: Throwable =>
-              errorPage.handle(throwable, connection)
+          recover:
+            case StreamError(length) =>
+              Log.warn(HttpServerEvent.BrokenStream(length))
+          . within:
+              connection.respond:
+                try handler(using connection) catch case throwable: Throwable =>
+                  errorPage.handle(throwable, connection)
 
 
         catch case NonFatal(exception) => exception.printStackTrace()
