@@ -39,6 +39,8 @@ object TestMcpServer extends McpServer():
     text.reverse
 
   @resource("ui://html/content")
+  @about("Displays the app user interface")
+  @title("User interface")
   def content: Document[Html] =
     import doms.html.whatwg
     import doms.html.whatwg.*

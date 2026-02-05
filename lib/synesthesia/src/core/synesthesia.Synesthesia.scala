@@ -209,6 +209,7 @@ object Synesthesia:
     val resourceEntries = resourceMethods.map: method =>
       val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
       allAnnotations.exists(_.tpe.typeSymbol == resourceType)
+      println(allAnnotations)
 
       val uri: Expr[Text] =
         '{${allAnnotations.find(_.tpe.typeSymbol == resourceType).get.asExprOf[resource]}.uri}
@@ -232,9 +233,8 @@ object Synesthesia:
           Expr.summon[result is Streamable by Text] match
             case Some(streamable) =>
               ' {
-                  val name = ${Expr(method.name)}
                   Mcp.Resource
-                    ( name        = name,
+                    ( name        = ${Expr(method.name)},
                       uri         = $uri,
                       title       = $title,
                       description = $about )
@@ -242,14 +242,17 @@ object Synesthesia:
             case None => Expr.summon[result is Streamable by Data] match
               case Some(streamable) =>
                 ' {
-                    val name = ${Expr(method.name)}
-                    Mcp.Resource(name, $uri, $title, $about)
+                    Mcp.Resource
+                      ( name        = ${Expr(method.name)},
+                        uri         = $uri,
+                        title       = $title,
+                        description = $about )
                   }
 
               case None =>
                 halt(m"""there was no contextual
-                        `${TypeRepr.of[result].show} is Streamable` instance for the
-                        return type of ${method.name}""")
+                        `${TypeRepr.of[result].show} is Streamable` instance for the return type of
+                        ${method.name}""")
 
     ' {
         new McpSpecification:
