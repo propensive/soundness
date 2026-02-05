@@ -190,6 +190,8 @@ object Obligatory:
 
           val result: TypeRepr = runSym.info.absolve match
             case MethodType(_, _, result) => result
+            case _ => halt(m"""the type of method ${method.name} has the unexpected type,
+                               ${method.info.show}""")
 
           val notification = result.typeSymbol == TypeRepr.of[Unit].typeSymbol
           val id = if notification then '{Unset} else Expr(Uuid().show)
@@ -222,7 +224,9 @@ object Obligatory:
                             }
                           . asTerm
 
-                      case _ => halt(m"a contextual ${TypeRepr.of[result is Decodable in Json].show} was not found")
+                      case _ => halt(m"""a contextual
+                                         ${TypeRepr.of[result is Decodable in Json].show} was not
+                                         found""")
                 case _ => halt(m"a contextual `Online` instance is required")
               case _ => halt(m"a contextual `Codicil` instance is required")
             case _ => halt(m"a contextual `Monitor` instance is required")

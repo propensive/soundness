@@ -64,7 +64,7 @@ import errorDiagnostics.stackTraces
 object Mcp:
   type Cursor = Text
 
-  def send[interface <: McpServer](server: interface, mcpInterface: McpInterface)
+  def send[interface <: McpServer](id: Text, server: interface, mcpInterface: Interface)
     ( dispatch: Json => Optional[Json] )
     ( using request: Http.Request )
     ( using Monitor, Codicil, Online )
@@ -77,25 +77,20 @@ object Mcp:
       given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
       given lastEventId: ("lastEventId" is Directive of Text) = identity(_)
 
-      val sessionId: Text =
-        safely(request.headers.mcpSessionId.prim.let(_.decode[Uuid])).or(Uuid()).show
-
-      println(s"Session ID: $sessionId")
-
-      val session: server.Session = server.session(sessionId)
+      println(s"Session ID: $id")
 
       recover:
         case error: ParseError =>
           println("parse error")
           Http.Response(Http.Ok):
             JsonRpc.error(-32700, t"Parse error: ${error.message}".show).json
-          . mcpSessionId = sessionId
+          . mcpSessionId = id
 
         case error: JsonError =>
           println("json error")
           Http.Response(Http.Ok):
             JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).json
-          . mcpSessionId = sessionId
+          . mcpSessionId = id
 
       . within:
           try
@@ -113,7 +108,7 @@ object Mcp:
                 println(s"Recovery from ${request.headers.lastEventId.prim}")
                 Http.Response(Http.Ok, connection = t"keep-alive", cacheControl = t"no-cache")
                   ( mcpInterface.stream )
-                . mcpSessionId = sessionId
+                . mcpSessionId = id
 
               case Http.Post =>
                 println("POST")
@@ -122,10 +117,10 @@ object Mcp:
                   println("dispatch")
                   import jsonPrinters.indented
                   println(json.show)
-                  Http.Response(Http.Ok)(json).mcpSessionId = sessionId
+                  Http.Response(Http.Ok)(json).mcpSessionId = id
 
                 . or:
-                    Http.Response(Http.Accepted)().mcpSessionId = sessionId
+                    Http.Response(Http.Accepted)().mcpSessionId = id
               case method =>
                 println(s"Received HTTP request with method $method")
                 ???
@@ -452,7 +447,6 @@ object Mcp:
       pollInterval:  Optional[Int] )
 
   trait Api extends JsonRpc:
-    import Mcp.*
 
     type Origin = McpClient
 
@@ -555,3 +549,131 @@ object Mcp:
 
     @rpc
     def `notifications/resources/updated`(uri: Text, _meta: Optional[Json]): Unit
+
+  object Interface:
+
+    private val cache: scm.HashMap[Text, Interface] = scm.HashMap()
+
+    given streamable: Interface is Streamable by Sse = _.stream
+
+    inline def apply(sessionId: Text, server: McpServer from McpClient)
+      ( using spec: server.type is McpSpecification )
+    : Interface =
+
+        cache.establish(sessionId):
+          new Interface(sessionId, server, spec)
+
+
+  class Interface
+    (     sessionId: Text,
+      val server:    McpServer from McpClient,
+      val spec:      server.type is McpSpecification )
+  extends Mcp.Api:
+
+    println(s"Initializing MCP Interface (${this.toString})")
+
+    protected var loggingLevel: LoggingLevel = LoggingLevel.Info
+
+    def ping(): Unit =
+      println("Received ping")
+
+    def initialize
+      ( protocolVersion: Text,
+        capabilities:    ClientCapabilities,
+        clientInfo:      Implementation,
+        _meta:           Optional[Json] )
+    : Mcp.Initialize =
+
+        Mcp.Initialize
+          ( "2025-11-25",
+            ServerCapabilities(),
+            Implementation(server.name, version = server.version.encode),
+            server.description )
+        . tap(println(_))
+
+    def `completion/complete`
+      ( ref:      Reference,
+        argument: Argument,
+        context:  Optional[Context],
+        _meta:    Optional[Json] )
+    : Complete =
+
+        ???
+
+
+    def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit =
+      loggingLevel = level
+
+    def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json]): Unit =
+      ???
+
+    def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts =
+      ListPrompts(Unset, server.prompts)
+
+    def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources = ListResources(Nil)
+
+    def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates = ???
+
+    def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource = ???
+
+    def `resources/subscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
+
+    def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
+
+    def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool = unsafely:
+      val result = spec.invoke(server, client, name, arguments)
+
+      import jsonPrinters.minimal
+      CallTool(content = List(TextContent(result.show)), structuredContent = result)
+
+    def `tools/list`(_meta: Optional[Json]): ListTools =
+      ListTools(spec.tools())
+      . tap: tools =>
+        import jsonPrinters.indented
+        println(tools.json.show)
+
+    def `tasks/get`(taskId: Text, _meta: Optional[Json]): Task = ???
+
+    def `tasks/result`(taskId: Text, _meta: Optional[Json]): Map[Text, Json] = ???
+
+    def `tasks/list`(_meta: Optional[Json]): ListTasks = ListTasks(Nil)
+
+    def `notifications/cancelled`
+      ( request: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json] )
+    : Unit =
+
+        ()
+
+
+    def `notifications/progress`
+      ( progressToken: TextInt,
+        progress:      Double,
+        total:         Optional[Double],
+        message:       Optional[Text],
+        _meta:         Optional[Json] )
+    : Unit =
+
+        ()
+
+
+    def `notifications/initialized`(_meta: Optional[Json]): Unit =
+      println("Notifications initialized")
+
+    def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit = ???
+
+    def `notifications/resources/updated`(uri: Text, _meta: Optional[Json]): Unit = ???
+
+    def `tasks/cancel`(taskId: Text, _meta: Optional[Json]): Task = ???
+
+    def `notifications/roots/list_changed`(_meta: Optional[Json]): Unit = ???
+
+    def `notifications/tasks/status`
+      ( taskId:        Text,
+        status:        TaskStatus,
+        statusMessage: Optional[Text],
+        createdAt:     Text,
+        lastUpdatedAt: Text,
+        ttl:           Int,
+        pollInterval:  Optional[Int],
+        _meta:         Optional[Json] )
+    : Unit = ???

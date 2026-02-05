@@ -49,6 +49,7 @@ import prepositional.*
 import proscenium.*
 import revolution.*
 import rudiments.*
+import scintillate.*
 import spectacular.*
 import telekinesis.*
 import turbulence.*
@@ -66,20 +67,25 @@ trait McpServer():
   import Mcp.*
   private val sessions: scm.HashMap[Text, Session] = scm.HashMap()
 
-  type Session
+  type Session <: McpSession
   type Origin = McpClient
 
   def session(id: Text): Session = sessions.establish(id)(initialize())
   def initialize(): Session
 
+  private given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
+
   def serve(using this.type is McpSpecification, Monitor, Codicil, Online, Http.Request)
   : Http.Response =
 
       unsafely:
-        val interface: McpInterface = McpInterface(this)
-        Mcp.send(this, interface)(JsonRpc.serve(interface))
+        val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)
+        val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
+        Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))
 
   def name: Text
   def description: Text
   def version: Semver
   def prompts: List[Prompt]
+
+trait McpSession

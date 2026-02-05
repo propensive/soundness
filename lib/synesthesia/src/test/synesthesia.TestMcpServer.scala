@@ -5,12 +5,12 @@ import gossamer.*
 import revolution.*
 
 object TestMcpServer extends McpServer():
-  type Session = this.type
+  class Session() extends McpSession
   import Mcp.*
 
-  def initialize(): this.type =
+  def initialize(): Session =
     println("MCP initialize()")
-    this
+    Session()
 
   def name: Text = "Pyrus"
   def description: Text = "A simple server"
