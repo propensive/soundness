@@ -75,40 +75,60 @@ object Mcp:
       import textSanitizers.skip
 
       given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
+      given lastEventId: ("lastEventId" is Directive of Text) = identity(_)
 
       val sessionId: Text =
         safely(request.headers.mcpSessionId.prim.let(_.decode[Uuid])).or(Uuid()).show
+
+      println(s"Session ID: $sessionId")
 
       val session: server.Session = server.session(sessionId)
 
       recover:
         case error: ParseError =>
+          println("parse error")
           Http.Response(Http.Ok):
             JsonRpc.error(-32700, t"Parse error: ${error.message}".show).json
           . mcpSessionId = sessionId
 
         case error: JsonError =>
+          println("json error")
           Http.Response(Http.Ok):
             JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).json
           . mcpSessionId = sessionId
 
       . within:
-          val input = request.body().read[Json]
           try
             request.method match
+              case Http.Options =>
+                println("OPTIONS")
+                Http.Response(Http.NoContent)()
+
+              case Http.Delete =>
+                println("DELETE")
+                Http.Response(Http.Accepted)()
+
               case Http.Get =>
+                println("GET")
+                println(s"Recovery from ${request.headers.lastEventId.prim}")
                 Http.Response(Http.Ok, connection = t"keep-alive", cacheControl = t"no-cache")
                   ( mcpInterface.stream )
                 . mcpSessionId = sessionId
 
               case Http.Post =>
+                println("POST")
+                val input = request.body().read[Json]
                 dispatch(input).let: json =>
+                  println("dispatch")
                   import jsonPrinters.indented
-                  println(json.json.show)
-                  Http.Response(Http.Ok)(json.json).mcpSessionId = sessionId
+                  println(json.show)
+                  Http.Response(Http.Ok)(json).mcpSessionId = sessionId
 
                 . or:
                     Http.Response(Http.Accepted)().mcpSessionId = sessionId
+              case method =>
+                println(s"Received HTTP request with method $method")
+                ???
           catch
             case error: Throwable =>
               println(error.getMessage)

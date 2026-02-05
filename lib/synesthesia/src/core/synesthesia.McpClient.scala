@@ -64,10 +64,10 @@ trait McpClient:
   import Mcp.*
 
   @rpc
-  def ping(): Unit
+  protected def ping(): Unit
 
   @rpc
-  def `sampling/createMessage`
+  protected def `sampling/createMessage`
     ( task: Optional[TaskMetadata],
       messages: List[SamplingMessage],
       modelPreferences: Optional[ModelPreferences],
@@ -82,4 +82,12 @@ trait McpClient:
   : CreateMessage
 
   @rpc
-  def `roots/list`(): ListRoots
+  protected def `roots/list`(): ListRoots
+
+  @rpc
+  protected def `notifications/message`
+    ( level: LoggingLevel, logger: Optional[Text], data: Json )
+  : Unit
+
+  def log(message: Text): Unit =
+    `notifications/message`(LoggingLevel.Info, "updates", Map("message" -> message).json)

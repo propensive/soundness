@@ -45,4 +45,4 @@ object McpSpecification:
 trait McpSpecification extends Typeclass:
 
   def tools(): List[Mcp.Tool]
-  def invoke(target: Self, method: Text, params: Json): Json
+  def invoke(target: Self, client: McpClient, method: Text, params: Json): Json

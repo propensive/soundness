@@ -67,6 +67,7 @@ trait McpServer():
   private val sessions: scm.HashMap[Text, Session] = scm.HashMap()
 
   type Session
+  type Origin = McpClient
 
   def session(id: Text): Session = sessions.establish(id)(initialize())
   def initialize(): Session
@@ -84,16 +85,26 @@ trait McpServer():
   def prompts: List[Prompt]
 
 
+
+
 object McpInterface:
+
+  private val cache: scm.HashMap[McpServer, McpInterface] = scm.HashMap()
+
   given streamable: McpInterface is Streamable by Sse = _.stream
 
-  inline def apply(server: McpServer)(using spec: server.type is McpSpecification): McpInterface =
-    new McpInterface(server, spec)
+  inline def apply(server: McpServer from McpClient)(using spec: server.type is McpSpecification)
+  : McpInterface =
+
+      cache.establish(server):
+        new McpInterface(server, spec)
 
 
-class McpInterface(val server: McpServer, val spec: server.type is McpSpecification)
+class McpInterface(val server: McpServer from McpClient, val spec: server.type is McpSpecification)
 extends Mcp.Api:
   import Mcp.*
+
+  println(s"Initializing MCP Interface (${this.toString})")
 
   protected var loggingLevel: LoggingLevel = LoggingLevel.Info
 
@@ -143,8 +154,8 @@ extends Mcp.Api:
 
   def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
 
-  def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool =
-    val result = spec.invoke(server, name, arguments)
+  def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool = unsafely:
+    val result = spec.invoke(server, client, name, arguments)
 
     import jsonPrinters.minimal
     CallTool(content = List(TextContent(result.show)), structuredContent = result)
@@ -208,6 +219,7 @@ object MyMcpServer extends McpServer():
   def initialize(): this.type =
     println("MCP initialize()")
     this
+
   def name: Text = "Pyrus"
   def description: Text = "A simple server"
   def version: Semver = v"1.0.0"
@@ -217,6 +229,16 @@ object MyMcpServer extends McpServer():
   def color(name: Text): Text = "purple"
 
   @tool
-  def encodeMagic(text: Text): Text =
-    Thread.sleep(1000)
+  def encodeMagic(text: Text)(using client: McpClient): Text =
+    Thread.sleep(1500)
+    client.log(t"Searching for $text in the magic book")
+    Thread.sleep(1500)
+    client.log(t"Found it in the magic book")
+    Thread.sleep(1500)
+    client.log(t"Cross-referencing magic recipe")
+    Thread.sleep(1500)
+    client.log(t"Studying the recipe")
+    Thread.sleep(1500)
+    client.log(t"Applying the recipe to $text")
+    Thread.sleep(1500)
     text.reverse

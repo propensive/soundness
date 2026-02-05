@@ -105,6 +105,8 @@ object Obligatory:
 
                     val result: TypeRepr = method.info.absolve match
                       case MethodType(_, _, result) => result
+                      case _ => halt(m"""the type of method ${method.name} has the unexpected type,
+                                         ${method.info.show}""")
 
                     val rhs = result.asType.absolve match
                       case '[Unit] => '{${application.asExpr} yet Unset}
@@ -125,7 +127,14 @@ object Obligatory:
 
                     CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
 
-                  Match('method.asTerm, cases).asExprOf[Optional[Json]]
+                  val wildcard = Expr.summon[Tactic[JsonRpcError]] match
+                    case Some(tactic) =>
+                      CaseDef(Wildcard(), None, '{abort(JsonRpcError())(using $tactic)}.asTerm)
+
+                    case None =>
+                      halt(m"""could not find a contextual `Tactic[JsonRpcError]` instance""")
+
+                  Match('method.asTerm, cases :+ wildcard).asExprOf[Optional[Json]]
                 }
         }
 
@@ -194,7 +203,7 @@ object Obligatory:
                     ' {
                         val json = Map(${Varargs(entries)}*).json
                         unsafely:
-                          JsonRpc.request($url, $methodName, json)
+                          JsonRpc.notification($url, $methodName, json)
                            (using $monitor, $codicil, $online)
                           . await()
                       }
@@ -282,7 +291,7 @@ object Obligatory:
           if notification then Some:
             ' {
                 val json = Map(${Varargs(entries)}*).json
-                JsonRpc.request($rpc, $methodName, json)
+                JsonRpc.notification($rpc, $methodName, json)
               }
             . asTerm
           else result.asType.absolve match

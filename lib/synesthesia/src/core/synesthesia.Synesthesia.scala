@@ -73,11 +73,11 @@ object Synesthesia:
 
     // This has been written as a partial function because the more natural way of writing it,
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
-    val invocation: Expr[interface ~> ((Text, Json) => Json)] =
+    val invocation: Expr[interface ~> ((Text, Json, McpClient) => Json)] =
       ' {
           {
             case target: `interface` =>
-              (method: Text, input: Json) =>
+              (method: Text, input: Json, client: McpClient) =>
                 import dynamicJsonAccess.enabled
                 given Tactic[JsonError] = strategies.throwUnsafely
 
@@ -85,13 +85,16 @@ object Synesthesia:
 
                 $ {
                     val cases = toolMethods.map: method =>
+                      val result: TypeRepr = method.info.absolve match
+                        case MethodType(_, _, MethodType(_, _, result)) => result
+                        case MethodType(_, _, result) => result
+
                       val params = method.paramSymss.head.map: param =>
                         param.info.asType.absolve match
                           case '[param] => Expr.summon[param is Decodable in Json] match
                             case Some(decodable) =>
                               ' {
                                   given param is Decodable in Json = $decodable
-                                  println(s"received ${request(${Expr(param.name)})}")
                                   request(${Expr(param.name)}).as[param]
                                 }
                               . asTerm
@@ -100,10 +103,14 @@ object Synesthesia:
                                       `${TypeRepr.of[param].show} is Decodable in Json` instance for
                                       the parameter ${param.name} of ${method.name}""")
 
-                      val application = Apply(Select('target.asTerm, method), params)
 
-                      val result: TypeRepr = method.info.absolve match
-                        case MethodType(_, _, result) => result
+                      val application = method.paramSymss.length match
+                        case 1 => Apply(Select('target.asTerm, method), params)
+                        case 2 => Apply(Apply(Select('target.asTerm, method), params), List('client.asTerm))
+
+                        case _ =>
+                          halt(m"""MCP tool definitions should have exactly one explicit parameter
+                                   block and optionally one contextual parameter block""")
 
                       val rhs = result.asType.absolve match
                         case '[result] => Expr.summon[result is Encodable in Json] match
@@ -111,7 +118,6 @@ object Synesthesia:
                             ' {
                                 import jsonPrinters.indented
                                 val output = Map("result".tt -> $encoder.encode(${application.asExprOf[result]}))
-                                println(s"returning ${output.json.show}")
                                 output.json
                               }
 
@@ -122,7 +128,14 @@ object Synesthesia:
 
                       CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
 
-                    Match('method.asTerm, cases).asExprOf[Json]
+                    val wildcard = Expr.summon[Tactic[McpError]] match
+                      case Some(tactic) =>
+                        CaseDef(Wildcard(), None, '{abort(McpError())(using $tactic)}.asTerm)
+
+                      case None =>
+                        halt(m"""could not find a contextual `Tactic[McpError]` instance""")
+
+                    Match('method.asTerm, cases :+ wildcard).asExprOf[Json]
                   }
             }
           }
@@ -143,9 +156,10 @@ object Synesthesia:
       val properties = '{${Expr.ofList(params)}.toMap}
 
       val result: TypeRepr = method.info.absolve match
+        case MethodType(_, _, MethodType(_, _, result)) => result
         case MethodType(_, _, result) => result
 
-      result.asType match
+      result.asType.absolve match
         case '[result] => Expr.summon[result is Schematic in JsonSchema] match
           case Some(schematic) =>
             ' {
@@ -161,6 +175,10 @@ object Synesthesia:
 
                 Mcp.Tool(name, inputSchema = inputSchema, outputSchema = outputSchema)
               }
+          case None =>
+            halt(m"""there was no contextual
+                     `${TypeRepr.of[result].show} is Schematic in JsonSchema` instance for the
+                     return type of ${method.name}""")
 
     val toolsList = Expr.ofList(entries)
 
@@ -169,6 +187,6 @@ object Synesthesia:
           type Self = interface
           def tools(): List[Mcp.Tool] = $toolsList
 
-          def invoke(server: interface, method: Text, input: Json): Json =
-            $invocation(server)(method, input)
+          def invoke(server: interface, client: McpClient, method: Text, input: Json): Json =
+            $invocation(server)(method, input, client)
       }
