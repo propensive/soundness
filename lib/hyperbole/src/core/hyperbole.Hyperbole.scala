@@ -517,7 +517,7 @@ object Hyperbole:
         case (false, false) => webColors.MediumSeaGreen
 
       val text = e"$color(${node.name})"
-      val tag2: Char = if node.tag == ' ' then '▪' else (node.tag+'ⓐ' - 'a').toChar
+      val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
 
       Expansion
        (e"${tiles.drop(1).map(treeStyles.default.text(_)).join}$tag2 $text",

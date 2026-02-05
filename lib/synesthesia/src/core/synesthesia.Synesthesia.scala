@@ -41,6 +41,7 @@ import hieroglyph.*
 import hyperbole.*
 import inimitable.*
 import jacinta.*
+import monotonous.*
 import parasite.*
 import prepositional.*
 import proscenium.*
@@ -83,7 +84,7 @@ object Synesthesia:
 
     // This has been written as a partial function because the more natural way of writing it,
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
-    val invocation: Expr[interface ~> ((Text, Json, McpClient) => Json)] =
+    val toolInvocation: Expr[interface ~> ((Text, Json, McpClient) => Json)] =
       ' {
           {
             case target: `interface` =>
@@ -150,6 +151,62 @@ object Synesthesia:
             }
           }
 
+    val resourceInvocation: Expr[interface ~> (Text => Mcp.Contents)] =
+      ' {
+          {
+            case target: `interface` =>
+              (uri: Text) =>
+                println(s"Looking for resource: $uri")
+                $ {
+                    val cases = resourceMethods.map: method =>
+                      val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+                      method.info.widen.asType match
+                        case '[result] =>
+                          val result: TypeRepr = method.info.widen
+                          val value = Select('target.asTerm, method).asExprOf[result]
+
+                          val uri: Expr[Text] =
+                            '{${allAnnotations.find(_.tpe.typeSymbol == resourceType).get.asExprOf[resource]}.uri}
+
+                          val rhs = Expr.summon[result is Streamable by Text] match
+                            case Some(streamable) =>
+                              ' {
+                                  given result is Streamable by Text = $streamable
+
+                                  Mcp.Contents:
+                                    Mcp.TextResourceContents($uri, Unset, text = $value.read[Text])
+                                }
+                            case None => Expr.summon[result is Streamable by Data] match
+                              case Some(streamable) =>
+                                ' {
+                                    import alphabets.base64.standard
+                                    given result is Streamable by Data = $streamable
+                                    Mcp.Contents:
+                                      Mcp.BlobResourceContents
+                                        ( $uri, Unset, blob = $value.read[Data].serialize[Base64] )
+                                  }
+                              case None =>
+                                halt(m"""there was no contextual
+                                        `${TypeRepr.of[result].show} is Streamable` instance for the
+                                        return type of ${method.name}""")
+
+
+                          val application = method.paramSymss.length match
+                            case 0 => Select('target.asTerm, method)
+
+                            case _ =>
+                              halt(m"""MCP resource definitions should have exactly one explicit
+                                       parameter block and optionally one contextual parameter block
+                                       """)
+
+                          (uri, rhs)
+
+                    cases.foldLeft('{???}):
+                      case (acc, (pattern, rhs)) => '{ if uri == $pattern then $rhs else $acc }
+                  }
+            }
+          }
+
     val toolEntries = toolMethods.map: method =>
       val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
 
@@ -209,7 +266,6 @@ object Synesthesia:
     val resourceEntries = resourceMethods.map: method =>
       val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
       allAnnotations.exists(_.tpe.typeSymbol == resourceType)
-      println(allAnnotations)
 
       val uri: Expr[Text] =
         '{${allAnnotations.find(_.tpe.typeSymbol == resourceType).get.asExprOf[resource]}.uri}
@@ -239,6 +295,7 @@ object Synesthesia:
                       title       = $title,
                       description = $about )
                 }
+
             case None => Expr.summon[result is Streamable by Data] match
               case Some(streamable) =>
                 ' {
@@ -260,6 +317,9 @@ object Synesthesia:
           def tools(): List[Mcp.Tool] = ${Expr.ofList(toolEntries)}
           def resources(): List[Mcp.Resource] = ${Expr.ofList(resourceEntries)}
 
-          def invoke(server: interface, client: McpClient, method: Text, input: Json): Json =
-            $invocation(server)(method, input, client)
+          def invokeTool(server: interface, client: McpClient, method: Text, input: Json): Json =
+            $toolInvocation(server)(method, input, client)
+
+          def invokeResource(server: interface, method: Text): Mcp.Contents =
+            $resourceInvocation(server)(method)
       }

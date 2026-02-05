@@ -616,14 +616,16 @@ object Mcp:
 
     def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates = ???
 
-    def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource = ???
+    def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource =
+      println(s"Reading resource: $uri")
+      ReadResource(List(spec.invokeResource(server, uri)))
 
     def `resources/subscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
 
     def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
 
     def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool = unsafely:
-      val result = spec.invoke(server, client, name, arguments)
+      val result = spec.invokeTool(server, client, name, arguments)
 
       import jsonPrinters.minimal
       CallTool(content = List(TextContent(result.show)), structuredContent = result)
