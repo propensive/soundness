@@ -62,6 +62,7 @@ import scala.quoted.*
 import errorDiagnostics.stackTraces
 
 object Mcp:
+  val version = t"2025-11-25"
   type Cursor = Text
 
   def send[interface <: McpServer](id: Text, server: interface, mcpInterface: Interface)
@@ -75,6 +76,7 @@ object Mcp:
       import textSanitizers.skip
 
       given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
+      given mcpProtocolVersion: ("mcpProtocolVersion" is Directive of Text) = identity(_)
       given lastEventId: ("lastEventId" is Directive of Text) = identity(_)
 
       println(s"Session ID: $id")
@@ -97,30 +99,55 @@ object Mcp:
             request.method match
               case Http.Options =>
                 println("OPTIONS")
-                Http.Response(Http.NoContent)()
+                Http.Response
+                  ( Http.NoContent,
+                    mcpProtocolVersion = version,
+                    mcpSessionId       = id )
+                  (  )
 
               case Http.Delete =>
                 println("DELETE")
-                Http.Response(Http.Accepted)()
+                Http.Response
+                  ( Http.Accepted,
+                    mcpProtocolVersion = version,
+                    mcpSessionId       = id )
+                  (  )
 
               case Http.Get =>
                 println("GET")
                 println(s"Recovery from ${request.headers.lastEventId.prim}")
-                Http.Response(Http.Ok, connection = t"keep-alive", cacheControl = t"no-cache")
+                Http.Response
+                  ( Http.Ok,
+                    connection         = t"keep-alive",
+                    cacheControl       = t"no-cache",
+                    mcpProtocolVersion = version,
+                    mcpSessionId       = id )
                   ( mcpInterface.stream )
-                . mcpSessionId = id
 
               case Http.Post =>
                 println("POST")
                 val input = request.body().read[Json]
+                println("PAYLOAD: "+input.show)
+                println("--------")
+                request.textHeaders.each: header =>
+                  println(s"Header: ${header.key} = ${header.value}")
+                println("--------")
                 dispatch(input).let: json =>
                   println("dispatch")
                   import jsonPrinters.indented
                   println(json.show)
-                  Http.Response(Http.Ok)(json).mcpSessionId = id
+                  Http.Response
+                    ( Http.Ok,
+                      mcpProtocolVersion = version,
+                      mcpSessionId       = id )
+                    ( json )
 
                 . or:
-                    Http.Response(Http.Accepted)().mcpSessionId = id
+                    Http.Response
+                      ( Http.Accepted,
+                        mcpProtocolVersion = version,
+                        mcpSessionId       = id )
+                      (  )
               case method =>
                 println(s"Received HTTP request with method $method")
                 ???
@@ -168,14 +195,14 @@ object Mcp:
       title:       Text,
       version:     Text,
       description: Text,
-      icons:       List[Icon] )
+      icons:       Optional[List[Icon]] = Unset)
 
   case class ServerInfo
     ( name:        Text,
       title:       Text,
       version:     Text,
       description: Text,
-      icons:       List[Icon],
+      icons:       Optional[List[Icon]] = Unset,
       websiteUrl:  HttpUrl )
 
   case class Initialize
@@ -209,7 +236,7 @@ object Mcp:
     ( experimental: Optional[Map[Text, Json]] = Unset,
       logging:      Optional[Json]            = Unset,
       completions:  Optional[Json]            = Unset,
-      prompts:      Optional[ListChanged]     = Unset,
+      prompts:      Optional[ListChanged]     = ListChanged(true),
       resources:    Optional[Resources]       = Resources(),
       tools:        ListChanged               = ListChanged(true),
       tasks:        Optional[Tasks]           = Unset )
@@ -240,17 +267,17 @@ object Mcp:
   case class Resource
     ( name:        Text,
       uri:         Text,
-      title:       Optional[Text] = Unset,
-      description: Optional[Text] = Unset,
-      icons:       List[Icon]     = Nil,
-      mimeType:    Optional[Text] = Unset,
-      annotations: Annotations    = Annotations(),
-      size:        Optional[Long] = Unset )
+      title:       Optional[Text]       = Unset,
+      description: Optional[Text]       = Unset,
+      icons:       Optional[List[Icon]] = Unset,
+      mimeType:    Optional[Text]       = Unset,
+      annotations: Annotations          = Annotations(),
+      size:        Optional[Long]       = Unset )
 
   case class ResourceTemplate
     ( name:        Text,
       title:       Optional[Text],
-      icons:       List[Icon],
+      icons:       Optional[List[Icon]],
       uriTemplate: Text,
       description: Optional[Text],
       mimeType:    Optional[Text],
@@ -262,7 +289,7 @@ object Mcp:
   case class ListPrompts(cursor: Optional[Cursor], prompts: List[Prompt])
 
   case class Annotations
-    ( audience:     Optional[List[Role]] = Unset,
+    ( audience:     Optional[List[Role]] =  Unset,
       priority:     Optional[Int]        = Unset,
       lastModified: Optional[Text]       = Unset )
 
@@ -330,18 +357,22 @@ object Mcp:
 
   case class PromptArgument
     ( name:        Text,
-      title:       Optional[Text],
-      icons:       List[Icon],
-      description: Optional[Text] )
+      title:       Optional[Text]       = Unset,
+      icons:       Optional[List[Icon]] = Unset,
+      description: Optional[Text]       = Unset )
 
   case class Prompt
     ( name:        Text,
-      title:       Optional[Text],
-      icons:       List[Icon],
-      description: Optional[Text],
-      arguments:   List[PromptArgument] )
+      title:       Optional[Text]                 = Unset,
+      icons:       Optional[List[Icon]]           = Unset,
+      description: Optional[Text]                 = Unset,
+      arguments:   Optional[List[PromptArgument]] = Unset)
   case class Argument(name: Text, value: Text)
   case class Reference(name: Text, title: Optional[Text], `type`: Text, uri: Optional[Text])
+
+  case class PromptMessage(role: Role, content: ContentBlock)
+
+  case class GetPrompt(description: Optional[Text], messages: List[PromptMessage])
 
   case class CallTool
     ( content:           List[ContentBlock] = Nil,
@@ -361,7 +392,8 @@ object Mcp:
       icons:        Optional[List[Icon]]      = Unset,
       description:  Optional[Text]            = Unset,
       execution:    Optional[ToolExecution]   = Unset,
-      annotations:  Optional[ToolAnnotations] = Unset )
+      annotations:  Optional[ToolAnnotations] = Unset,
+      _meta:        Optional[Json]            = Unset )
 
   case class ToolExecution(taskSupport: Optional[TaskSupport])
 
@@ -435,7 +467,7 @@ object Mcp:
 
   case class CreateMessage
     ( role:       Role,
-      content:    List[SamplingMessageContentBlock],
+      content:    List[ContentBlock],
       model:      Text,
       stopReason: Optional[Text] )
 
@@ -475,7 +507,8 @@ object Mcp:
     def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit
 
     @rpc
-    def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json]): Unit
+    def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json])
+    : GetPrompt
 
     @rpc
     def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts
@@ -586,7 +619,7 @@ object Mcp:
     : Initialize =
 
         Initialize
-          ( "2025-11-25",
+          (version,
             ServerCapabilities(),
             Implementation(server.name, version = server.version.encode),
             server.description )
@@ -605,11 +638,17 @@ object Mcp:
     def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit =
       loggingLevel = level
 
-    def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json]): Unit =
-      ???
+    def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json])
+    : GetPrompt =
+
+        val messages = spec.invokePrompt(server, client, name, arguments.or(Map())).map:
+          case Human(message) => PromptMessage(Role.User, TextContent(message))
+          case Agent(message) => PromptMessage(Role.Assistant, TextContent(message))
+
+        GetPrompt(Unset, messages)
 
     def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts =
-      ListPrompts(Unset, server.prompts)
+      ListPrompts(Unset, spec.prompts())
 
     def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources =
       ListResources(spec.resources())
@@ -617,7 +656,6 @@ object Mcp:
     def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates = ???
 
     def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource =
-      println(s"Reading resource: $uri")
       ReadResource(List(spec.invokeResource(server, uri)))
 
     def `resources/subscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
@@ -634,7 +672,6 @@ object Mcp:
       ListTools(spec.tools())
       . tap: tools =>
         import jsonPrinters.indented
-        println(tools.json.show)
 
     def `tasks/get`(taskId: Text, _meta: Optional[Json]): Task = ???
 

@@ -34,7 +34,7 @@ object Tests extends Suite(m"Synesthesia Tests"):
               println(s"Error serving MCP: ${throwable.getMessage}")
               throwable.printStackTrace()
               ???
-          case _                   => t"Nothing here"
+          case _                   => Http.Response(Http.NotFound)(t"Error 404: Not found")
 
       Thread.sleep(1000000)
 

@@ -24,6 +24,7 @@ object TestMcpServer extends McpServer():
   def color(name: Text): Text = "purple"
 
   @tool
+  // @ui("ui://html/content")
   def encodeMagic(text: Text)(using client: McpClient): Text =
     Thread.sleep(1500)
     client.log(t"Searching for $text in the magic book")
@@ -46,3 +47,13 @@ object TestMcpServer extends McpServer():
     import doms.html.whatwg.*
     val html = Html(Head(Title("MCP App")), Body(H1("Hello world")))
     Document(html, doms.html.whatwg)
+
+  @prompt
+  def introduction(name: Text): List[Discourse] =
+    List
+      ( human"Hi $name! Welcome to Pyrus. To get started, tell me about your conference." )
+
+  @prompt
+  def describeSponsors: List[Discourse] = List
+    ( agent"I am Eren, and I am collecting information about sponsors.",
+      human"I want to share information about sponsors with Eren." )

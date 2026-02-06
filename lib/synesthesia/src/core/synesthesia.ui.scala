@@ -32,65 +32,7 @@
                                                                                                   */
 package synesthesia
 
-import scala.collection.mutable as scm
-
 import anticipation.*
-import contingency.*
-import distillate.*
-import eucalyptus.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*
-import inimitable.*
-import jacinta.*
-import obligatory.*
-import parasite.*
-import prepositional.*
 import proscenium.*
-import revolution.*
-import rudiments.*
-import telekinesis.*
-import turbulence.*
-import urticose.*
-import vacuous.*
-import zephyrine.*
 
-import scala.annotation.*
-import scala.quoted.*
-
-import errorDiagnostics.stackTraces
-
-trait McpClient:
-  import Mcp.*
-
-  @rpc
-  protected def ping(): Unit
-
-  // @rpc
-  // protected def `sampling/createMessage`
-  //   ( task:             Optional[TaskMetadata],
-  //     messages:         List[SamplingMessage],
-  //     modelPreferences: Optional[ModelPreferences],
-  //     systemPrompt:     Optional[Text],
-  //     includeContext:   Optional[Text],
-  //     temperature:      Optional[Double],
-  //     maxTokens:        Optional[Int],
-  //     stopSequences:    Optional[List[Text]],
-  //     metadata:         Optional[Json],
-  //     tools:            Optional[List[Tool]],
-  //     toolChoice:       Optional[ToolChoice] )
-  // : CreateMessage
-
-  // @rpc
-  // protected def `roots/list`(): ListRoots
-
-  @rpc
-  protected def `notifications/message`
-    ( level: LoggingLevel, logger: Optional[Text], data: Json )
-  : Unit
-
-  def log(message: Text): Unit =
-    `notifications/message`(LoggingLevel.Info, "updates", Map("message" -> message).json)
-
-  def elicit[result: Decodable in Json](message: Text): result = ???
-  def sample(message: Text): Unit = ???
+case class ui(uri: Text) extends StaticAnnotation

@@ -294,7 +294,6 @@ object Http:
           val name2 = name.tt.uncamel.kebab.lower
           textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
-
     lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
     lazy val textCookies: Map[Text, Text] =
