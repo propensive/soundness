@@ -401,7 +401,7 @@ object Synesthesia:
                 '{${annotation.asExprOf[about]}.text}
               . getOrElse('{Unset})
 
-            '{Mcp.PromptArgument(${Expr(param.name.tt)}, $title, Nil, $about)}
+            '{Mcp.PromptArgument(${Expr(param.name.tt)}, $title, $about)}
         . getOrElse(Nil)
 
       ' {

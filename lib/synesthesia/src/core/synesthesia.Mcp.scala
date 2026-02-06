@@ -158,8 +158,8 @@ object Mcp:
               Http.Response(Http.Ok):
                 JsonRpc.error(-32603, t"Internal error: ${error.toString}".show).json
 
-  case class TaskAugmentedRequestParams(task: Optional[TaskMetadata])
-  case class Error(code: Int, message: Text, data: Optional[Json])
+  case class TaskAugmentedRequestParams(task: Optional[TaskMetadata] = Unset)
+  case class Error(code: Int, message: Text, data: Optional[Json] = Unset)
 
   object TextInt:
     given encodable: TextInt is Encodable in Json = _.id.absolve match
@@ -178,9 +178,14 @@ object Mcp:
   val InternalError = -32603
   val UrlElicitationRequired = -32042
 
-  case class TaskMetadata(ttl: Optional[Int])
-  case class Icon(src: Text, mimeType: Text, sizes: List[Text], theme: Optional[Text])
-  case class BaseMetadata(name: Text, title: Optional[Text])
+  case class TaskMetadata(ttl: Optional[Int] = Unset)
+  case class RelatedTaskMetadata(taskId: Text)
+  case class Icon
+    ( src:      Text,
+      mimeType: Optional[Text]       = Unset,
+      sizes:    Optional[List[Text]] = Unset,
+      theme:    Optional[Text]       = Unset )
+  case class BaseMetadata(name: Text, title: Optional[Text] = Unset)
 
   case class Implementation
     ( name:        Text,
@@ -209,23 +214,23 @@ object Mcp:
     ( protocolVersion: Text,
       capabilities:    ServerCapabilities,
       serverInfo:      Implementation,
-      instructions:    Optional[Text] )
+      instructions:    Optional[Text] = Unset )
 
-  case class ListChanged(listChanged: Optional[Boolean])
+  case class ListChanged(listChanged: Optional[Boolean] = Unset)
   case class Resources(subscribe: Optional[Boolean] = true, listChanged: Optional[Boolean] = true)
 
-  case class Sampling(context: Optional[Json], tools: Optional[Json])
-  case class Elicitation(form: Optional[Json], url: Optional[Json])
-  case class RequestsElicitation(create: Optional[Json])
-  case class Call(call: Optional[Json])
-  case class RequestsSampling(createMessage: Optional[Json])
+  case class Sampling(context: Optional[Json] = Unset, tools: Optional[Json] = Unset)
+  case class Elicitation(form: Optional[Json] = Unset, url: Optional[Json] = Unset)
+  case class RequestsElicitation(create: Optional[Json] = Unset)
+  case class Call(call: Optional[Json] = Unset)
+  case class RequestsSampling(createMessage: Optional[Json] = Unset)
 
   case class Tasks
     ( list:     Optional[Json]     = Unset,
       cancel:   Optional[Json]     = Unset,
       requests: Optional[Requests] = Unset )
 
-  case class ListTasks(tasks: List[Task])
+  case class ListTasks(nextCursor: Optional[Cursor] = Unset, tasks: List[Task] = Nil)
 
   case class Requests
     ( sampling:    Optional[RequestsSampling]    = Unset,
@@ -257,12 +262,12 @@ object Mcp:
       Contents(safely(json.as[TextResourceContents]).or(json.as[BlobResourceContents]))
 
   case class Contents(contents: TextResourceContents | BlobResourceContents)
-  case class Context(arguments: Optional[Map[Text, Text]])
+  case class Context(arguments: Optional[Map[Text, Text]] = Unset)
 
 
-  case class ListResources(resources: List[Resource])
-  case class ListResourceTemplates(resourceTemplates: List[ResourceTemplate])
-  case class ReadResource(contents: List[Contents])
+  case class ListResources(nextCursor: Optional[Cursor] = Unset, resources: List[Resource] = Nil)
+  case class ListResourceTemplates(nextCursor: Optional[Cursor] = Unset, resourceTemplates: List[ResourceTemplate] = Nil)
+  case class ReadResource(contents: List[Contents] = Nil)
 
   case class Resource
     ( name:        Text,
@@ -272,29 +277,31 @@ object Mcp:
       icons:       Optional[List[Icon]] = Unset,
       mimeType:    Optional[Text]       = Unset,
       annotations: Annotations          = Annotations(),
-      size:        Optional[Long]       = Unset )
+      size:        Optional[Long]       = Unset,
+      _meta:       Optional[Json]       = Unset )
 
   case class ResourceTemplate
     ( name:        Text,
-      title:       Optional[Text],
-      icons:       Optional[List[Icon]],
+      title:       Optional[Text]       = Unset,
+      icons:       Optional[List[Icon]] = Unset,
       uriTemplate: Text,
-      description: Optional[Text],
-      mimeType:    Optional[Text],
-      annotations: Annotations )
+      description: Optional[Text]       = Unset,
+      mimeType:    Optional[Text]       = Unset,
+      annotations: Annotations          = Annotations(),
+      _meta:       Optional[Json]       = Unset )
 
-  case class ResourceContents(uri: Text, mimeType: Optional[Text])
-  case class TextResourceContents(uri: Text, mimeType: Optional[Text], text: Text)
-  case class BlobResourceContents(uri: Text, mimeType: Optional[Text], blob: Text)
-  case class ListPrompts(cursor: Optional[Cursor], prompts: List[Prompt])
+  case class ResourceContents(uri: Text, mimeType: Optional[Text] = Unset, _meta: Optional[Json] = Unset)
+  case class TextResourceContents(uri: Text, mimeType: Optional[Text] = Unset, text: Text, _meta: Optional[Json] = Unset)
+  case class BlobResourceContents(uri: Text, mimeType: Optional[Text] = Unset, blob: Text, _meta: Optional[Json] = Unset)
+  case class ListPrompts(nextCursor: Optional[Cursor] = Unset, prompts: List[Prompt] = Nil)
 
   case class Annotations
     ( audience:     Optional[List[Role]] =  Unset,
-      priority:     Optional[Int]        = Unset,
+      priority:     Optional[Double]     = Unset,
       lastModified: Optional[Text]       = Unset )
 
   case class Complete(completion: Completion)
-  case class Completion(values: List[Text], total: Optional[Int], hasMore: Optional[Boolean])
+  case class Completion(values: List[Text] = Nil, total: Optional[Int] = Unset, hasMore: Optional[Boolean] = Unset)
 
   object Role:
     given encodable: Role is Encodable in Json =
@@ -341,8 +348,15 @@ object Mcp:
   enum LoggingLevel:
     case Debug, Info, Notice, Warning, Error, Critical, Alert, Emergency
 
+  case class LoggingMessage(level: LoggingLevel, logger: Optional[Text] = Unset, data: Json)
+
   object TaskStatus:
-    given encodable: TaskStatus is Encodable in Json = _.toString.tt.lower.json
+    given encodable: TaskStatus is Encodable in Json =
+      case TaskStatus.Working       => t"working".json
+      case TaskStatus.InputRequired => t"input_required".json
+      case TaskStatus.Completed     => t"completed".json
+      case TaskStatus.Failed        => t"failed".json
+      case TaskStatus.Cancelled     => t"cancelled".json
 
     given decodable: Tactic[JsonError] => TaskStatus is Decodable in Json = _.as[Text] match
       case t"working"        => TaskStatus.Working
@@ -357,37 +371,53 @@ object Mcp:
 
   case class PromptArgument
     ( name:        Text,
-      title:       Optional[Text]       = Unset,
-      icons:       Optional[List[Icon]] = Unset,
-      description: Optional[Text]       = Unset )
+      title:       Optional[Text]    = Unset,
+      description: Optional[Text]    = Unset,
+      required:    Optional[Boolean] = Unset )
 
   case class Prompt
     ( name:        Text,
       title:       Optional[Text]                 = Unset,
       icons:       Optional[List[Icon]]           = Unset,
       description: Optional[Text]                 = Unset,
-      arguments:   Optional[List[PromptArgument]] = Unset)
+      arguments:   Optional[List[PromptArgument]] = Unset,
+      _meta:       Optional[Json]                 = Unset )
   case class Argument(name: Text, value: Text)
-  case class Reference(name: Text, title: Optional[Text], `type`: Text, uri: Optional[Text])
+  object Reference:
+    import dynamicJsonAccess.enabled
+
+    given encodable: Reference is Encodable in Json =
+      case ref: PromptReference            => unsafely(ref.json.`type` = "ref/prompt")
+      case ref: ResourceTemplateReference  => unsafely(ref.json.`type` = "ref/resource")
+
+    given decodable: Tactic[JsonError] => Reference is Decodable in Json = json =>
+      json.`type`.as[Text] match
+        case "ref/prompt"   => json.as[PromptReference]
+        case "ref/resource" => json.as[ResourceTemplateReference]
+        case _              => abort(JsonError(JsonError.Reason.OutOfRange))
+
+  sealed trait Reference
+  case class PromptReference(name: Text, title: Optional[Text] = Unset) extends Reference
+  case class ResourceTemplateReference(uri: Text) extends Reference
 
   case class PromptMessage(role: Role, content: ContentBlock)
 
-  case class GetPrompt(description: Optional[Text], messages: List[PromptMessage])
+  case class GetPrompt(description: Optional[Text] = Unset, messages: List[PromptMessage] = Nil)
 
   case class CallTool
     ( content:           List[ContentBlock] = Nil,
       structuredContent: Optional[Json]     = Unset,
       isError:           Optional[Boolean]  = Unset )
 
-  case class ListTools(tools: List[Tool])
-  case class ListRoots(tools: List[Root])
+  case class ListTools(nextCursor: Optional[Cursor] = Unset, tools: List[Tool] = Nil)
+  case class ListRoots(roots: List[Root] = Nil)
 
-  case class Root(uri: Text, name: Optional[Text])
+  case class Root(uri: Text, name: Optional[Text] = Unset, _meta: Optional[Json] = Unset)
 
   case class Tool
     ( name:         Text,
       inputSchema:  JsonSchema,
-      outputSchema: Optional[JsonSchema],
+      outputSchema: Optional[JsonSchema]       = Unset,
       title:        Optional[Text]            = Unset,
       icons:        Optional[List[Icon]]      = Unset,
       description:  Optional[Text]            = Unset,
@@ -395,16 +425,16 @@ object Mcp:
       annotations:  Optional[ToolAnnotations] = Unset,
       _meta:        Optional[Json]            = Unset )
 
-  case class ToolExecution(taskSupport: Optional[TaskSupport])
+  case class ToolExecution(taskSupport: Optional[TaskSupport] = Unset)
 
   case class ToolAnnotations
-    ( title:           Optional[Text],
-      readOnlyHint:    Optional[Boolean],
-      destructiveHint: Optional[Boolean],
-      idempotentHint:  Optional[Boolean],
-      openWorldHint:   Optional[Boolean] )
+    ( title:           Optional[Text]    = Unset,
+      readOnlyHint:    Optional[Boolean] = Unset,
+      destructiveHint: Optional[Boolean] = Unset,
+      idempotentHint:  Optional[Boolean] = Unset,
+      openWorldHint:   Optional[Boolean] = Unset )
 
-  case class ToolChoice(mode: Mode)
+  case class ToolChoice(mode: Optional[Mode] = Unset)
 
   object Mode:
     given encodable: Mode is Encodable in Json =
@@ -421,9 +451,28 @@ object Mcp:
   enum Mode:
     case Auto, Required, None
 
-  case class SamplingMessage(role: Role, content: List[SamplingMessageContentBlock])
+  case class SamplingMessage(role: Role, content: List[SamplingMessageContentBlock], _meta: Optional[Json] = Unset)
 
-  case class SamplingMessageContentBlock(text: Text) // FIXME
+  object SamplingMessageContentBlock:
+    import dynamicJsonAccess.enabled
+
+    given encodable: SamplingMessageContentBlock is Encodable in Json =
+      case content: TextContent       => unsafely(content.json.`type` = "text")
+      case content: ImageContent      => unsafely(content.json.`type` = "image")
+      case content: AudioContent      => unsafely(content.json.`type` = "audio")
+      case content: ToolUseContent    => unsafely(content.json.`type` = "tool_use")
+      case content: ToolResultContent => unsafely(content.json.`type` = "tool_result")
+
+    given decodable: Tactic[JsonError] => SamplingMessageContentBlock is Decodable in Json = json =>
+      json.`type`.as[Text] match
+        case "text"        => json.as[TextContent]
+        case "image"       => json.as[ImageContent]
+        case "audio"       => json.as[AudioContent]
+        case "tool_use"    => json.as[ToolUseContent]
+        case "tool_result" => json.as[ToolResultContent]
+        case _             => abort(JsonError(JsonError.Reason.OutOfRange))
+
+  sealed trait SamplingMessageContentBlock
 
   case class ModelPreferences
     ( hints:                Optional[List[ModelHint]] = Unset,
@@ -431,7 +480,7 @@ object Mcp:
       speedPriority:        Optional[Double]          = Unset,
       intelligencePriority: Optional[Double]          = Unset)
 
-  case class ModelHint(name: Optional[Text])
+  case class ModelHint(name: Optional[Text] = Unset)
 
   object ContentBlock:
     import dynamicJsonAccess.enabled
@@ -449,36 +498,92 @@ object Mcp:
         case "image"         => json.as[ImageContent]
         case "audio"         => json.as[AudioContent]
         case "resource_link" => json.as[ResourceLink]
-        //case "resource"      => json.as[EmbeddedResource]
+        case "resource"      => json.as[EmbeddedResource]
         case _               => abort(JsonError(JsonError.Reason.OutOfRange))
 
   sealed trait ContentBlock
   case class TextContent(text: Text, annotations: Optional[Annotations] = Unset)
-  extends ContentBlock
+  extends ContentBlock, SamplingMessageContentBlock
 
   case class ImageContent(data: Text, mimeType: Text, annotations: Optional[Annotations] = Unset)
-  extends ContentBlock
+  extends ContentBlock, SamplingMessageContentBlock
 
   case class AudioContent(data: Text, mimeType: Text, annotations: Optional[Annotations] = Unset)
+  extends ContentBlock, SamplingMessageContentBlock
+
+  case class ResourceLink
+    ( name:        Text,
+      uri:         Text,
+      title:       Optional[Text]       = Unset,
+      description: Optional[Text]       = Unset,
+      icons:       Optional[List[Icon]] = Unset,
+      mimeType:    Optional[Text]       = Unset,
+      annotations: Annotations          = Annotations(),
+      size:        Optional[Long]       = Unset,
+      _meta:       Optional[Json]       = Unset )
+  extends ContentBlock
+  case class EmbeddedResource
+    ( resource:    Contents,
+      annotations: Optional[Annotations] = Unset,
+      _meta:       Optional[Json]        = Unset )
   extends ContentBlock
 
-  case class ResourceLink(uri: Text) extends ContentBlock
-  case class EmbeddedResource(resource: Resource) extends ContentBlock
+  case class ToolUseContent(id: Text, name: Text, input: Json)
+  extends SamplingMessageContentBlock
+
+  case class ToolResultContent
+    ( toolUseId:         Text,
+      content:           List[ContentBlock]  = Nil,
+      structuredContent: Optional[Json]      = Unset,
+      isError:           Optional[Boolean]   = Unset )
+  extends SamplingMessageContentBlock
 
   case class CreateMessage
     ( role:       Role,
-      content:    List[ContentBlock],
+      content:    List[SamplingMessageContentBlock],
       model:      Text,
-      stopReason: Optional[Text] )
+      stopReason: Optional[Text] = Unset )
 
   case class Task
     ( taskId:        Text,
       status:        TaskStatus,
-      statusMessage: Optional[Text],
+      statusMessage: Optional[Text] = Unset,
       createdAt:     Text,
       lastUpdatedAt: Text,
-      ttl:           Int,
-      pollInterval:  Optional[Int] )
+      ttl:           Optional[Int]  = Unset,
+      pollInterval:  Optional[Int]  = Unset )
+
+  case class CreateTaskResult(task: Task)
+
+  object ElicitAction:
+    given encodable: ElicitAction is Encodable in Json =
+      case ElicitAction.Accept  => t"accept".json
+      case ElicitAction.Decline => t"decline".json
+      case ElicitAction.Cancel  => t"cancel".json
+
+    given decodable: Tactic[JsonError] => ElicitAction is Decodable in Json = _.as[Text] match
+      case t"accept"  => ElicitAction.Accept
+      case t"decline" => ElicitAction.Decline
+      case t"cancel"  => ElicitAction.Cancel
+      case _          => abort(JsonError(JsonError.Reason.OutOfRange))
+
+  enum ElicitAction:
+    case Accept, Decline, Cancel
+
+  case class ElicitResult(action: ElicitAction, content: Optional[Json] = Unset)
+
+  case class ElicitRequestFormParams
+    ( message:         Text,
+      requestedSchema: Json,
+      mode:            Optional[Text] = Unset )
+
+  case class ElicitRequestURLParams
+    ( mode:          Text,
+      message:       Text,
+      elicitationId: Text,
+      url:           Text )
+
+  case class ElicitationComplete(elicitationId: Text)
 
   trait Api extends JsonRpc:
 
@@ -548,9 +653,9 @@ object Mcp:
 
     @rpc
     def `notifications/cancelled`
-      ( request: Optional[TextInt],
-        reason:  Optional[Text],
-        _meta:   Optional[Json] ): Unit
+      ( requestId: Optional[TextInt],
+        reason:    Optional[Text],
+        _meta:     Optional[Json] ): Unit
 
     @rpc
     def `notifications/progress`
@@ -574,7 +679,7 @@ object Mcp:
         statusMessage: Optional[Text],
         createdAt:     Text,
         lastUpdatedAt: Text,
-        ttl:           Int,
+        ttl:           Optional[Int],
         pollInterval:  Optional[Int],
         _meta:         Optional[Json] )
     : Unit
@@ -584,6 +689,15 @@ object Mcp:
 
     @rpc
     def `notifications/resources/updated`(uri: Text, _meta: Optional[Json]): Unit
+
+    @rpc
+    def `notifications/prompts/list_changed`(_meta: Optional[Json]): Unit
+
+    @rpc
+    def `notifications/tools/list_changed`(_meta: Optional[Json]): Unit
+
+    @rpc
+    def `notifications/message`(level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json]): Unit
 
   object Interface:
 
@@ -648,10 +762,10 @@ object Mcp:
         GetPrompt(Unset, messages)
 
     def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts =
-      ListPrompts(Unset, spec.prompts())
+      ListPrompts(prompts = spec.prompts())
 
     def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources =
-      ListResources(spec.resources())
+      ListResources(resources = spec.resources())
 
     def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates = ???
 
@@ -669,7 +783,7 @@ object Mcp:
       CallTool(content = List(TextContent(result.show)), structuredContent = result)
 
     def `tools/list`(_meta: Optional[Json]): ListTools =
-      ListTools(spec.tools())
+      ListTools(tools = spec.tools())
       . tap: tools =>
         import jsonPrinters.indented
 
@@ -677,10 +791,10 @@ object Mcp:
 
     def `tasks/result`(taskId: Text, _meta: Optional[Json]): Map[Text, Json] = ???
 
-    def `tasks/list`(_meta: Optional[Json]): ListTasks = ListTasks(Nil)
+    def `tasks/list`(_meta: Optional[Json]): ListTasks = ListTasks(tasks = Nil)
 
     def `notifications/cancelled`
-      ( request: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json] )
+      ( requestId: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json] )
     : Unit =
 
         ()
@@ -714,7 +828,13 @@ object Mcp:
         statusMessage: Optional[Text],
         createdAt:     Text,
         lastUpdatedAt: Text,
-        ttl:           Int,
+        ttl:           Optional[Int],
         pollInterval:  Optional[Int],
         _meta:         Optional[Json] )
     : Unit = ???
+
+    def `notifications/prompts/list_changed`(_meta: Optional[Json]): Unit = ???
+
+    def `notifications/tools/list_changed`(_meta: Optional[Json]): Unit = ???
+
+    def `notifications/message`(level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json]): Unit = ???
