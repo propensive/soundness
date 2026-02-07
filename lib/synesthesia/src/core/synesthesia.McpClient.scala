@@ -89,8 +89,18 @@ trait McpClient:
     ( level: LoggingLevel, logger: Optional[Text], data: Json )
   : Unit
 
+  @rpc
+  protected def `elicitation/create`
+    ( mode:            Optional[Text],
+      message:         Text,
+      requestedSchema: Json )
+  : Json
+
   def log(message: Text): Unit =
     `notifications/message`(LoggingLevel.Info, "updates", Map("message" -> message).json)
 
-  def elicit[result: Decodable in Json](message: Text): result = ???
+  def elicit[result: Schematic in JsonSchema](message: Text): Json =
+    `elicitation/create`(t"form", message, result.schema().json)
+
+
   def sample(message: Text): Unit = ???

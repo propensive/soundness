@@ -256,7 +256,7 @@ object Synesthesia:
                 $ {
                     val cases = resourceMethods.map: method =>
                       val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
-                      method.info.widen.asType match
+                      method.info.widen.asType.absolve match
                         case '[result] =>
                           val result: TypeRepr = method.info.widen
                           val value = Select('target.asTerm, method).asExprOf[result]

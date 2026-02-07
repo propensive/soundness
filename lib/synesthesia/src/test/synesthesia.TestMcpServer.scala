@@ -1,10 +1,12 @@
 package synesthesia
 
 import anticipation.*
+import contingency.*
 import honeycomb.*
 import gossamer.*
 import revolution.*
 import turbulence.*
+import vacuous.*
 import zephyrine.*
 
 object TestMcpServer extends McpServer():
@@ -29,6 +31,10 @@ object TestMcpServer extends McpServer():
     Thread.sleep(1500)
     client.log(t"Searching for $text in the magic book")
     Thread.sleep(1500)
+
+    case class WebsiteUrl(url: Text)
+    client.elicit[WebsiteUrl](t"Please provide the URL for your favourite website.")
+
     client.log(t"Found it in the magic book")
     Thread.sleep(1500)
     client.log(t"Cross-referencing magic recipe")
@@ -47,13 +53,3 @@ object TestMcpServer extends McpServer():
     import doms.html.whatwg.*
     val html = Html(Head(Title("MCP App")), Body(H1("Hello world")))
     Document(html, doms.html.whatwg)
-
-  @prompt
-  def introduction(name: Text): List[Discourse] =
-    List
-      ( human"Hi $name! Welcome to Pyrus. To get started, tell me about your conference." )
-
-  @prompt
-  def describeSponsors: List[Discourse] = List
-    ( agent"I am Eren, and I am collecting information about sponsors.",
-      human"I want to share information about sponsors with Eren." )

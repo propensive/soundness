@@ -158,7 +158,7 @@ object Mcp:
               Http.Response(Http.Ok):
                 JsonRpc.error(-32603, t"Internal error: ${error.toString}".show).json
 
-  case class TaskAugmentedRequestParams(task: Optional[TaskMetadata] = Unset)
+  case class TaskAugmented(task: Optional[TaskMetadata] = Unset)
   case class Error(code: Int, message: Text, data: Optional[Json] = Unset)
 
   object TextInt:
@@ -185,6 +185,7 @@ object Mcp:
       mimeType: Optional[Text]       = Unset,
       sizes:    Optional[List[Text]] = Unset,
       theme:    Optional[Text]       = Unset )
+
   case class BaseMetadata(name: Text, title: Optional[Text] = Unset)
 
   case class Implementation
@@ -572,16 +573,20 @@ object Mcp:
 
   case class ElicitResult(action: ElicitAction, content: Optional[Json] = Unset)
 
-  case class ElicitRequestFormParams
+  sealed trait ElicitRequest
+
+  case class ElicitRequestForm
     ( message:         Text,
       requestedSchema: Json,
       mode:            Optional[Text] = Unset )
+  extends ElicitRequest
 
-  case class ElicitRequestURLParams
+  case class ElicitRequestUrl
     ( mode:          Text,
       message:       Text,
       elicitationId: Text,
       url:           Text )
+  extends ElicitRequest
 
   case class ElicitationComplete(elicitationId: Text)
 
