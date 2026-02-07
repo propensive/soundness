@@ -69,29 +69,7 @@ object settings:
     "-language:experimental.namedTypeArguments"
   )
 
-  val scalaOptionsCC = Seq(
-    "-experimental",
-    "-new-syntax",
-    "-feature",
-    //"-explain",
-    "-deprecation",
-    //"-Wunused:imports",
-    "-Wimplausible-patterns",
-    //"-Wsafe-init",
-    "-Xmax-inlines", "100",
-    "-Ycc-new",
-    "-Yno-flexible-types",
-    "-Yexplicit-nulls",
-    "-Ycheck-all-patmat",
-    //"-explain-cyclic",
-    "-language:experimental.modularity",
-    "-language:experimental.genericNumberLiterals",
-    "-language:experimental.into",
-    "-language:experimental.erasedDefinitions",
-    "-language:implicitConversions",
-    "-language:experimental.saferExceptions",
-    "-language:experimental.namedTypeArguments"
-  )
+  val scalaOptionsCC = scalaOptions ++ Seq("-Ycc-new")
 
 trait BaseScalaModule extends ScalaModule:
   override def scalaVersion = settings.scalaVersion
@@ -227,6 +205,7 @@ object test extends ScalaModule:
     diuretic.test,
     enigmatic.test,
     ethereal.test,
+    exegesis.test,
     exoskeleton.test,
     feudalism.test,
     fulminate.test,
@@ -257,6 +236,7 @@ object test extends ScalaModule:
     urticose.test,
     nomenclature.test,
     octogenarian.test,
+    obligatory.test,
     panopticon.test,
     //perihelion.test,
     phoenicia.test,
@@ -279,6 +259,7 @@ object test extends ScalaModule:
     superlunary.test,
     surveillance.test,
     symbolism.test,
+    synesthesia.test,
     tarantula.test,
     turbulence.test,
     typonym.test,
@@ -513,6 +494,10 @@ object eucalyptus extends Library:
   object ansi extends Component(escapade.core, core, iridescence.core)
   object test extends Tests(ansi, core, syslog)
 
+object exegesis extends Library:
+  object core extends Component(obligatory.core)
+  object test extends Component(core)
+
 object exoskeleton extends Library:
   object args extends Component(escapade.core, profanity.core, ambience.core)
   object core extends Component(args, galilei.core)
@@ -676,6 +661,10 @@ object orthodoxy extends Library:
   object core extends Component(scintillate.server, jacinta.core)
   object test extends Tests(core)
 
+object obligatory extends Library:
+  object core extends Component(urticose.core, scintillate.server, hyperbole.core, eucalyptus.core, zephyrine.core, telekinesis.core, revolution.core, jacinta.schema, jacinta.http)
+  object test extends Tests(core)
+
 object panopticon extends Library:
   object core extends Component(rudiments.core)
   object test extends Tests(core, honeycomb.core)
@@ -686,6 +675,7 @@ object parasite extends Library:
 
 /*object perihelion extends Library:
   object core extends Component(telekinesis.core, scintillate.server, gastronomy.core, eucalyptus.core)
+  object test extends Component(core)
 
   object test extends Tests(core)
 }*/
@@ -818,6 +808,10 @@ object symbolism extends Library:
   object core extends Component(prepositional.core)
   object test extends Tests(core)
 
+object synesthesia extends Library:
+  object core extends Component(obligatory.core)
+  object test extends Tests(core)
+
 object tarantula extends Library:
   object core extends Component(jacinta.core, telekinesis.core, guillotine.core, cataclysm.core, honeycomb.core, hallucination.core, diuretic.core, eucalyptus.core, gastronomy.core)
   object test extends Tests(core)
@@ -937,6 +931,7 @@ object publishing extends Module:
     eucalyptus.core.publishLocal()()
     eucalyptus.gcp.publishLocal()()
     eucalyptus.syslog.publishLocal()()
+    exegesis.core.publishLocal()()
     exoskeleton.args.publishLocal()()
     exoskeleton.completions.publishLocal()()
     exoskeleton.core.publishLocal()()
@@ -978,6 +973,7 @@ object publishing extends Module:
     urticose.core.publishLocal()()
     urticose.url.publishLocal()()
     nomenclature.core.publishLocal()()
+    obligatory.core.publishLocal()()
     octogenarian.core.publishLocal()()
     orthodoxy.core.publishLocal()()
     panopticon.core.publishLocal()()
@@ -1024,7 +1020,6 @@ object publishing extends Module:
     yossarian.core.publishLocal()()
     zephyrine.core.publishLocal()()
     zeppelin.core.publishLocal()()
-
     soundness.base.publishLocal()()
     soundness.cli.publishLocal()()
     soundness.data.publishLocal()()

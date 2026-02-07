@@ -396,13 +396,17 @@ trait Quantitative2:
 
       (leftNorm*rightNorm).repr.map(_.asType).absolve match
         case Some('[type result <: Measure; result]) =>
-          '{ Multiplicable[multiplicand, multiplier, Quantity[result]] {
-              (left, right) =>
-                ${Quantitative.multiply('left, 'right, false).asExprOf[Quantity[result]]} } }
+          ' {
+              Multiplicable[multiplicand, multiplier, Quantity[result]]:
+                (left, right) =>
+                  ${Quantitative.multiply('left, 'right, false).asExprOf[Quantity[result]]}
+            }
 
         case None =>
-          '{ Multiplicable[multiplicand, multiplier, Double]: (left, right) =>
-              ${Quantitative.multiply('left, 'right, false).asExprOf[Double]} }
+          ' {
+              Multiplicable[multiplicand, multiplier, Double]: (left, right) =>
+                ${Quantitative.multiply('left, 'right, false).asExprOf[Double]}
+            }
 
 
   def divTypeclass
@@ -420,13 +424,17 @@ trait Quantitative2:
 
       (leftNorm/rightNorm).repr.map(_.asType).absolve match
         case Some('[type result <: Measure; result]) =>
-          '{ Divisible[dividend, divisor, Quantity[result]] {
-              (left, right) =>
-                ${Quantitative.multiply('left, 'right, true).asExprOf[Quantity[result]]} } }
+          ' {
+              Divisible[dividend, divisor, Quantity[result]]:
+                (left, right) =>
+                  ${Quantitative.multiply('left, 'right, true).asExprOf[Quantity[result]]}
+            }
 
         case None =>
-          '{ Divisible[dividend, divisor, Double]: (left, right) =>
-              ${Quantitative.multiply('left, 'right, true).asExprOf[Double]} }
+          ' {
+              Divisible[dividend, divisor, Double]: (left, right) =>
+                ${Quantitative.multiply('left, 'right, true).asExprOf[Double]}
+            }
 
 
   def divTypeclass2[right <: Measure: Type, divisor <: Quantity[right]: Type]
@@ -440,14 +448,20 @@ trait Quantitative2:
 
       (leftNorm/rightNorm).repr.map(_.asType).absolve match
         case Some('[type result <: Measure; result]) =>
-          '{ Divisible[Double, divisor, Quantity[result]] {
-              (left, right) =>
-                ${  (Quantitative.multiply
-                      ('{Quantity(left)}, 'right, true).asExprOf[Quantity[result]])} } }
+          ' {
+              Divisible[Double, divisor, Quantity[result]]:
+                (left, right) =>
+                  $ {
+                      Quantitative.multiply
+                        ('{Quantity(left)}, 'right, true).asExprOf[Quantity[result]]
+                    }
+            }
 
         case None =>
-          '{ Divisible[Double, divisor, Double]: (left, right) =>
-              ${Quantitative.multiply('{Quantity(left)}, 'right, true).asExprOf[Double]} }
+          ' {
+              Divisible[Double, divisor, Double]: (left, right) =>
+                ${Quantitative.multiply('{Quantity(left)}, 'right, true).asExprOf[Double]}
+            }
 
 
   def divTypeclass3[right <: Measure: Type, divisor <: Quantity[right]: Type]
@@ -461,14 +475,20 @@ trait Quantitative2:
 
       (leftNorm/rightNorm).repr.map(_.asType).absolve match
         case Some('[type result <: Measure; result]) =>
-          '{ Divisible[Int, divisor, Quantity[result]] {
-              (left, right) =>
-                ${(Quantitative.multiply
-                     ('{Quantity(left.toDouble)}, 'right, true).asExprOf[Quantity[result]])} } }
+          ' {
+              Divisible[Int, divisor, Quantity[result]]:
+                (left, right) =>
+                  $ {
+                      Quantitative.multiply
+                       ('{Quantity(left.toDouble)}, 'right, true).asExprOf[Quantity[result]]
+                    }
+            }
 
         case None =>
-          '{ Divisible[Int, divisor, Double]: (left, right) =>
-              ${Quantitative.multiply('{Quantity(left.toDouble)}, 'right, true).asExprOf[Double]} }
+          ' {
+              Divisible[Int, divisor, Double]: (left, right) =>
+                ${Quantitative.multiply('{Quantity(left.toDouble)}, 'right, true).asExprOf[Double]}
+            }
 
 
   def sqrtTypeclass[value <: Measure: Type]: Macro[Quantity[value] is Rootable[2]] =
@@ -564,11 +584,7 @@ trait Quantitative2:
       val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
       if left2 != right2 then '{compiletime.error(${Expr(incompatibleTypeText(left, right))})}
-      else '{
-        println($leftValue)
-        println($rightValue)
-        $leftValue == $rightValue
-      }
+      else '{$leftValue == $rightValue}
 
 
   def sub[left <: Measure: Type, right <: Measure: Type]
@@ -603,9 +619,11 @@ trait Quantitative2:
 
       units.repr.map(_.asType).absolve match
         case Some('[type measure <: Measure; measure]) =>
-          '{ Subtractable[quantity, quantity2, Quantity[measure]] {
-              (left, right) =>
-                ${Quantitative.sub('left, 'right).asExprOf[Quantity[measure]]} } }
+          ' {
+              Subtractable[quantity, quantity2, Quantity[measure]]:
+                (left, right) =>
+                  ${Quantitative.sub('left, 'right).asExprOf[Quantity[measure]]}
+            }
 
 
   def addTypeclass
@@ -617,11 +635,13 @@ trait Quantitative2:
   : Expr[quantity is Addable by quantity2] =
 
       val (units, other) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
+
       units.repr.map(_.asType).absolve match
         case Some('[type result <: Measure; result]) =>
-          '{ Addable[quantity, quantity2, Quantity[result]] {
-              (left, right) =>
-                ${Quantitative.add('left, 'right).asExprOf[Quantity[result]]} } }
+          ' {
+              Addable[quantity, quantity2, Quantity[result]]: (left, right) =>
+                ${Quantitative.add('left, 'right).asExprOf[Quantity[result]]}
+            }
 
   def checkable
        [left      <: Measure:         Type,
@@ -635,8 +655,10 @@ trait Quantitative2:
 
       units.repr.map(_.asType).absolve match
         case Some('[type result <: Measure; result]) =>
-          '{  Checkable[quantity, quantity2] {
-                (left, right) => ${Quantitative.check('left, 'right)} } }
+          ' {
+              Checkable[quantity, quantity2]: (left, right) =>
+                ${Quantitative.check('left, 'right)}
+            }
 
 
   def norm[units <: Measure: Type, norm[power <: Nat] <: Units[power, ?]: Type]

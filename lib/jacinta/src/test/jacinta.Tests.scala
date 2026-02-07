@@ -148,6 +148,11 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"""{"y": 1}""".read[Json].as[OptFoo].x
       .assert(_ == None)
 
+      test(m"Access an absent Optional dynamically"):
+        import dynamicJsonAccess.enabled
+        t"""{"y": 1}""".read[Json].missing.as[Optional[Int]]
+      .assert(_ == Unset)
+
     suite(m"Generic derivation tests"):
       case class Person(name: Text, age: Int)
       case class Band(guitarists: List[Person], drummer: Person, bassist: Option[Person])

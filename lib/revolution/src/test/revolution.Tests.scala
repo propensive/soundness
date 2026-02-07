@@ -128,14 +128,14 @@ object Tests extends Suite(m"Revolution Tests"):
     suite(m"Semantic version precedence"):
       val ordered =
         List
-         (sv"1.0.0-alpha",
-          sv"1.0.0-alpha.1",
-          sv"1.0.0-alpha.beta",
-          sv"1.0.0-beta",
-          sv"1.0.0-beta.2",
-          sv"1.0.0-beta.11",
-          sv"1.0.0-rc.1",
-          sv"1.0.0")
+         (v"1.0.0-alpha",
+          v"1.0.0-alpha.1",
+          v"1.0.0-alpha.beta",
+          v"1.0.0-beta",
+          v"1.0.0-beta.2",
+          v"1.0.0-beta.11",
+          v"1.0.0-rc.1",
+          v"1.0.0")
 
       for List(left, right) <- ordered.sliding(2) do
         test(m"Check that $left < $right"):

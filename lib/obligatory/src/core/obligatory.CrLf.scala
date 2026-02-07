@@ -30,24 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package obligatory
 
 import anticipation.*
-import gesticulate.*
-import gossamer.*
+import contingency.*
+import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
-import telekinesis.*
+import vacuous.*
+import zephyrine.*
 
-trait Retrievable(val mediaType: MediaType) extends Typeclass, Servable:
-  def stream(response: Self): Stream[Data]
+object CrLf:
+  given framable: Tactic[FrameError] => Text is Framable by CrLf = input =>
+    val cursor = Cursor(input)
 
+    def frame(): Optional[Text] = cursor.hold:
+      val start = cursor.mark
+      if !cursor.finished && cursor.seek(Cr)
+      then cursor.grab(start, cursor.mark).also:
+        cursor.next()
+        if !cursor.lay(false)(_ == Lf) then abort(FrameError()) else cursor.next()
+      else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
 
-  final def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder)
-  : Unit =
+    new Iterator[Text]:
+      private var ready: Optional[Text] = Unset
+      def hasNext: Boolean =
+        if ready == Unset then ready = frame()
+        ready != Unset
 
-      responder.addHeader(t"content-type", mediaType.show)
-      headers.each(responder.addHeader)
-      responder.sendBody(status, stream(content))
+      def next(): Text = ready.asInstanceOf[Text].also:
+        ready = Unset
+
+erased trait CrLf

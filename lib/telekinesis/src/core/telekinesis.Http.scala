@@ -73,6 +73,9 @@ object Http:
 
   type Version = 0.9 | 1.0 | 1.1 | 2.0 | 3.0
 
+  object Header:
+    given encodable: Http.Header is Encodable in Http.Header = identity(_)
+
   case class Header(key: Text, value: Text)
 
   object Method:
@@ -291,7 +294,6 @@ object Http:
           val name2 = name.tt.uncamel.kebab.lower
           textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
-
     lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
     lazy val textCookies: Map[Text, Text] =
@@ -327,9 +329,11 @@ object Http:
         case _ =>
           raise(HttpError(response.status, response.textHeaders)) yet response.body
 
-      body.stream[Data]
+      body match
+        case data:   Data         => Stream(data)
+        case stream: Stream[Data] => stream
 
-    def make(status: Status, headers: List[Header], body: Stream[Data]): Response =
+    def make(status: Status, headers: List[Header], body: Data | Stream[Data]): Response =
       new Response(1.1, status, headers, body)
 
     def parse(stream: Stream[Data]): Response raises HttpResponseError =
@@ -414,10 +418,20 @@ object Http:
                    (version:     Http.Version,
                     status:      Http.Status,
                     textHeaders: List[Http.Header],
-                    body:        Stream[Data]):
+                    body:        Data | Stream[Data])
+  extends Dynamic:
+
+    def updateDynamic[label <: Label: Directive of topic, topic](name: label)(value: topic)
+    : Response =
+        val key2 = name.tt.uncamel.kebab.lower
+        copy(textHeaders = Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2))
+
 
     def successBody: Optional[Stream[Data]] =
-      body.unless(status.category != Http.Status.Category.Successful)
+      if status.category != Http.Status.Category.Successful then Unset else body match
+        case data:   Data         => Stream(data)
+        case stream: Stream[Data] => stream
+
 
     def receive[body: Receivable as receivable]: body = receivable.read(this)
 

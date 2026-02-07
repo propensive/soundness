@@ -86,11 +86,11 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
         val out = servletResponse.getOutputStream.nn
 
         response.body match
-          case Stream()     => servletResponse.addHeader("content-length", "0")
-          case Stream(data) => servletResponse.addHeader("content-length", data.length.show.s)
-                                out.write(data.mutable(using Unsafe))
-          case body           => servletResponse.addHeader("transfer-encoding", "chunked")
-                                body.map(_.mutable(using Unsafe)).each(out.write(_))
+          case data: Data         => servletResponse.addHeader("content-length", data.length.show.s)
+                                     out.write(data.mutable(using Unsafe))
+          case Stream()           => servletResponse.addHeader("content-length", "0")
+          case body: Stream[Data] => servletResponse.addHeader("transfer-encoding", "chunked")
+                                     body.map(_.mutable(using Unsafe)).each(out.write(_))
 
         out.close()
 

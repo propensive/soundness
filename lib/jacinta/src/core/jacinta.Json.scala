@@ -347,10 +347,19 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         System.arraycopy(values, index + 1, values2, index, values.length - index - 1)
         Json.ast(JsonAst(keys2.immutable(using Unsafe) -> values2.immutable(using Unsafe)))
 
+
   def apply(field: Text): Json raises JsonError =
-    root.obj(0).indexWhere(_ == field.s) match
-      case -1    => focus(prior.or(JsonPointer()) / field)(raise(JsonError(Reason.Absent)) yet this)
+    if root.isAbsent then Json.ast(JsonAst(Unset))
+    else root.obj(0).indexWhere(_ == field.s) match
+      case -1    => Json.ast(JsonAst(Unset))
       case index => Json(root.obj(1)(index))
+
+  def unsafeApply(field: Text): Json =
+    if root.isAbsent then Json.ast(JsonAst(Unset))
+    else unsafely:
+      root.obj(0).indexWhere(_ == field.s) match
+        case -1    => Json.ast(JsonAst(Unset))
+        case index => Json(root.obj(1)(index))
 
   override def hashCode: Int =
     def recur(value: JsonAst): Int = value.asMatchable match

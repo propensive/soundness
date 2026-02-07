@@ -32,6 +32,9 @@
                                                                                                   */
 package scintillate
 
+import java.io as ji
+import com.sun.net.httpserver as csnh
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -44,8 +47,6 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-
-import com.sun.net.httpserver as csnh
 
 object HttpConnection:
   def apply(exchange: csnh.HttpExchange): HttpConnection logs HttpServerEvent =
@@ -91,29 +92,48 @@ object HttpConnection:
     val port = Option(exchange.getRequestURI.nn.getPort).filter(_ > 0).getOrElse:
       exchange.getLocalAddress.nn.getPort
 
-    def respond(response: Http.Response): Unit =
+    def respond(response: Http.Response): Unit raises StreamError =
       var chunked = false
       response.textHeaders.each:
         case Http.Header(key, value) =>
           if key.lower == t"transfer-encoding" && value.lower == t"chunked" then chunked = true
+
           exchange.getResponseHeaders.nn.add(key.s, value.s)
 
       val length = if chunked then 0 else response.body match
-        case Stream()     => -1
-        case Stream(data) => data.length
-        case _            => 0
+        case Stream()   => -1
+        case data: Data => data.length
+        case _          => 0
 
       exchange.sendResponseHeaders(response.status.code, length)
       val responseBody = exchange.getResponseBody.nn
 
-      response.body.map(_.mutable(using Unsafe)).each(responseBody.write(_))
-      responseBody.flush()
+      var count: Int = 0
+      response.body match
+        case data: Data =>
+          try
+            responseBody.write(data.mutable(using Unsafe))
+            count += data.length
+            responseBody.flush()
+          catch case _: ji.IOException => abort(StreamError(count.b))
+
+        case stream: Stream[Data] =>
+          stream.foreach: block =>
+            try
+              responseBody.write(block.mutable(using Unsafe))
+              count += block.length
+              responseBody.flush()
+            catch case _: ji.IOException => abort(StreamError(count.b))
+
       exchange.close()
 
     new HttpConnection(request, false, port, respond)
 
 class HttpConnection
-   (request: Http.Request, val tls: Boolean, val port: Int, val respond: Http.Response => Unit)
+   (     request: Http.Request,
+     val tls:     Boolean,
+     val port:    Int,
+     val respond: Tactic[StreamError] ?=> Http.Response => Unit )
 extends Http.Request
    (request.method,
     request.version,

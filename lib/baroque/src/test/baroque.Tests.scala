@@ -65,7 +65,7 @@ object Tests extends Suite(m"Baroque tests"):
     test(m"Show a quantity complex number"):
       val re = 1.0*Metre/Second
       val im = Metre*9.0/Second
-      Complex[Quantity[Metres[1] & Seconds[-1]]](1.0*Metre/Second, Metre*9.0/Second).show
+      Complex(re, im).show
     .assert(_ == t"(1.00 + 9.00ℐ) m·s¯¹")
 
     test(m"Show a quantity complex number with only a real part"):

@@ -188,6 +188,16 @@ class Cursor[data](initial:    data,
   inline def line: Ordinal = lineNo
   inline def column: Ordinal = columnNo
 
+  inline def seek(target: addressable.Operand): Boolean =
+    var found = false
+    var continue = true
+
+    while continue do
+      found = datum(using Unsafe) == target
+      continue = !found && next()
+
+    found
+
   inline def mark(using held: Cursor.Held): Mark = Mark(focusBlock, focus).tap: mark =>
     inline if lineation.active then
       marks.append(mark)
@@ -233,14 +243,27 @@ class Cursor[data](initial:    data,
     clone(start, end)(buffer)
     addressable.build(buffer)
 
+  inline def take(inline otherwise: => data)(length: Int): data =
+    var buffer = addressable.blank(length)
+    var count = 0
+    hold:
+      val start = mark
+      while count < length do
+        next()
+        count += 1
+
+      grab(start, mark)
+
+
+
   inline def clone(start: Mark, end: Mark)(target: addressable.Target): Unit = if start != end then
     val last = end.block - first
     var offset = start.block - first
 
-    if start.block == end.block
-    then
+    if start.block == end.block then
       if end.index.previous.n0 >= start.index.n0
       then addressable.clone(buffer(offset), start.index, end.index.previous)(target)
+
     else
       var focus = buffer(offset)
       addressable.clone(focus, start.index, addressable.length(focus).u)(target)

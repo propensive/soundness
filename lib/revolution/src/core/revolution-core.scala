@@ -33,7 +33,7 @@
 package revolution
 
 extension (inline context: StringContext)
-  inline def sv(): Semver = ${Revolution.semver('context)}
+  inline def v(): Semver = ${Revolution.semver('context)}
 
 package manifestAttributes:
   object ManifestVersion       extends ManifestAttribute["Manifest-Version"]()

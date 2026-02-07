@@ -290,13 +290,13 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"Parse Document without doctype"):
         t"""<title>Heading</title>
             <p>body""".load[Html]
-      . assert(_ == Document(example, Html.doctype))
+      . assert(_ == Document(example, doms.html.whatwg))
 
       test(m"Parse Document with doctype"):
         t"""<!doctype html>
             <title>Heading</title>
             <p>body""".load[Html]
-      . assert(_ == Document(example, Html.doctype))
+      . assert(_ == Document(example, doms.html.whatwg))
 
       test(m"Parse RCDATA with an entity"):
         t"""<title>Push &amp; Pull</title>""".read[Html of Metadata]

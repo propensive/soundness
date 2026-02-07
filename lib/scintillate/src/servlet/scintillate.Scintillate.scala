@@ -45,9 +45,9 @@ class servlet extends MacroAnnotation:
     import quotes.reflect.*
 
       tree match
-        case defDef@DefDef(name, params, returnType, Some(body)) =>
-          if !(returnType.tpe <:< TypeRepr.of[Http.Response])
-          then halt(m"the return type ${returnType.show} is not a subtype of HttpResponse[?]")
+        case defDef@DefDef(name, params, result, Some(body)) =>
+          if !(result.tpe <:< TypeRepr.of[Http.Response])
+          then halt(m"the return type ${result.show} is not a subtype of HttpResponse[?]")
 
           val ref =
             Ref(defDef.symbol)

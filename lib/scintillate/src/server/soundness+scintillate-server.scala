@@ -33,9 +33,8 @@
 package soundness
 
 export scintillate
-. { cookie, basicAuth, request, Acceptable, HttpConnection, HttpServer, HttpServerEvent,
-    NotFound, Redirect, RequestServable, Responder, Retrievable, ServerError, Unfulfilled,
-    NoCache }
+. { cookie, basicAuth, request, Acceptable, HttpConnection, HttpServer, HttpServerEvent, NotFound,
+    Redirect, RequestServable, Responder, ServerError, Unfulfilled, NoCache }
 
 package httpServers:
   export scintillate.httpServers.{stdlib, stdlibPublic}

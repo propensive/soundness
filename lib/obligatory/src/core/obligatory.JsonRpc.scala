@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.43.0.                                                                    ┃
+┃    Soundness, version 0.53.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,51 +30,114 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package kaleidoscope
+package obligatory
 
+import scala.collection.mutable as scm
+
+import anticipation.*
+import contingency.*
+import distillate.*
+import eucalyptus.*
 import fulminate.*
+import gesticulate.*
+import gossamer.*
+import hieroglyph.*
+import inimitable.*
+import jacinta.*
+import parasite.*
+import prepositional.*
+import proscenium.*
+import revolution.*
+import rudiments.*
+import spectacular.*
+import telekinesis.*
+import turbulence.*
+import urticose.*
+import vacuous.*
+import zephyrine.*
 
-import RegexError.Reason.*
+import scala.annotation.*
+import scala.quoted.*
 
-object RegexError:
-  enum Reason:
-    case UnclosedGroup, ExpectedGroup, BadRepetition, Uncapturable, UnexpectedChar, NotInGroup,
-        IncompleteRepetition, InvalidPattern, UnclosedEscape, EmptyCharClass, ZeroMaximum
+import errorDiagnostics.stackTraces
 
-  object Reason:
-    given communicable: Reason is Communicable =
-      case UnclosedGroup =>
-        m"a capturing group was not closed"
+object JsonRpc:
+  private val promises: scm.HashMap[Text | Int, Promise[Json]] = scm.HashMap()
 
-      case ExpectedGroup =>
-        m"a capturing group was expected immediately following an extractor"
+  inline def serve[interface](interface: interface): Json => Optional[Json] =
+    ${Obligatory.dispatcher[interface]('interface)}
 
-      case BadRepetition =>
-        m"the maximum number of repetitions is less than the minimum"
+  case class Request(jsonrpc: Text, method: Text, params: Json, id: Optional[Json])
+  case class Response(jsonrpc: Text, result: Json, id: Optional[Json])
 
-      case Uncapturable =>
-        m"a capturing group inside a repeating group can not be extracted"
+  def error(code: Int, message: Text): Response =
+    Response("2.0", Map(t"code" -> code.json, t"message" -> message.json).json, Unset)
 
-      case UnexpectedChar =>
-        m"the repetition range contained an unexpected character"
+  def notification(target: JsonRpc, method: Text, payload: Json): Promise[Unit] =
+    import charEncoders.utf8
+    import jsonPrinters.minimal
+    import logging.silent
 
-      case NotInGroup =>
-        m"a closing parenthesis was found without a corresponding opening parenthesis"
+    target.put(Request("2.0", method, payload, Unset).json)
+    Promise[Unit]().tap(_.offer(()))
 
-      case IncompleteRepetition =>
-        m"the repetition range was not closed"
+  def request(target: JsonRpc, method: Text, payload: Json): Promise[Json] =
+    val uuid = Uuid().text
+    val promise: Promise[Json] = Promise()
+    promises(uuid) = promise
+    import charEncoders.utf8
+    import jsonPrinters.minimal
+    import logging.silent
 
-      case InvalidPattern =>
-        m"the pattern was invalid"
+    target.put(Request("2.0", method, payload, uuid.json).json)
+    promise
 
-      case UnclosedEscape =>
-        m"nothing followed the escape character `\`"
+  def receive(id: Text, result: Json): Unit = promises.at(id).let(_.offer(result))
 
-      case EmptyCharClass =>
-        m"the character class is empty"
+  def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Codicil, Online)
+  : Promise[Json] =
+      val uuid = Uuid().text
+      val promise: Promise[Json] = Promise()
+      promises(uuid) = promise
+      import charEncoders.utf8
+      import jsonPrinters.minimal
+      import logging.silent
 
-      case ZeroMaximum =>
-        m"the maximum number of repetitions must be greater than zero"
+      val request = Request("2.0", method, payload, uuid.json).json
 
-case class RegexError(index: Int, reason: RegexError.Reason)(using Diagnostics)
-extends Error(m"the regular expression could not be parsed because $reason at $index")
+      async:
+        unsafely:
+          promise.fulfill(target.submit(Http.Post)(request).receive[Json])
+
+      promise
+
+  def notification(target: HttpUrl, method: Text, payload: Json)
+    ( using Monitor, Codicil, Online )
+  : Promise[Unit] =
+
+      import charEncoders.utf8
+      import jsonPrinters.minimal
+      import logging.silent
+
+      val request = Request("2.0", method, payload, Unset).json
+
+      unsafely:
+        target.submit(Http.Post)(request).receive[Text]
+
+      Promise[Unit]().tap(_.offer(()))
+
+trait JsonRpc extends Original:
+  private val channel: Spool[Json] = Spool()
+
+  inline def client: Origin = ${Obligatory.client[Origin]('this)}
+  def put(json: Json): Unit =
+    import jsonPrinters.minimal
+    println(t"putting ${json.show}")
+    channel.put(json)
+
+  def stream: Stream[Sse] =
+    println("STREAMING")
+    channel.stream.map: json =>
+      import jsonPrinters.minimal
+      println(t"sending SSE ${json.show}")
+      Sse(data = List(json.encode))
