@@ -43,6 +43,7 @@ import gossamer.*
 import hieroglyph.*
 import inimitable.*
 import jacinta.*
+import obligatory.*
 import parasite.*
 import prepositional.*
 import revolution.*
