@@ -42,11 +42,6 @@ import temporaryDirectories.java
 object Tests extends Suite(m"Mandible tests"):
   def run(): Unit =
     test(m"Compile something"):
-      Out.println:
-        disassemble:
-          '{ println(t"Hello".s) }
-        . teletype
-
       val rewrite =
         Classfile[StackTrace].let(_.methods.find(_.name == t"rewrite").getOrElse(Unset)).vouch
     . assert()
