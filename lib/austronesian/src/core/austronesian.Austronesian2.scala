@@ -88,7 +88,7 @@ object Austronesian2:
     import quotes.reflect.*
 
     invoke.asTerm match
-      case term => println(term)
+      case term => ()
 
     '{???}
 

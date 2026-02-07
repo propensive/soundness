@@ -1152,7 +1152,6 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
         print(complex)
       .assert(_ == t"foo\n  gamma  a\n  delta  2\nfoo\n  gamma  c\n  delta  6\n  eta  e\nquux\n  alpha  e\n  beta  1\n  beta  2\n  beta  4\n")
 
-      println("------")
       test(m"roundtrip a complex case class 1"):
         read(print(complex)).as[Bar]
       .assert(_ == complex)
@@ -1170,8 +1169,6 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
       case class Entry(name: Text, value: Int)
 
       test(m"Amok example"):
-        println("Base1:")
-        println(summon[Base1 is CodlSchematic].schema())
         t"domain  java\nlanguage  scala\n".read[CodlDoc of Base1].materialize
       . assert(_ == Base1("java", "scala"))
 
@@ -1184,8 +1181,6 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
       . assert(_ == Base2("java", "scala", List(t"alpha")))
 
       test(m"Amok example 3"):
-        println("Base2:")
-        println(summon[Base2 is CodlSchematic].schema())
         t"domain  java\nlanguage  scala\nentry  alpha\nentry  beta\n".read[CodlDoc of Base2].materialize
       . assert(_ == Base2("java", "scala", List(t"alpha", t"beta")))
 
@@ -1194,14 +1189,10 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
       . assert(_ == Base3("java", "scala", Nil))
 
       test(m"Amok example 4a"):
-        println("Base3:")
-        println(summon[Base3 is CodlSchematic].schema())
         t"domain  java\nlanguage  scala\nentry  alpha  42\nentry  beta  42\n".read[CodlDoc of Base3].materialize
       . assert(_ == Base3("java", "scala", List(Entry(t"alpha", 42), Entry(t"beta", 42))))
 
       test(m"Amok example 5"):
-        println("Base4:")
-        println(summon[Base4 is CodlSchematic].schema())
         t"domain  java\nlanguage  scala\nentry  alpha  42\n".read[CodlDoc of Base4].materialize
       . assert(_ == Base4("java", "scala", Entry(t"alpha", 42)))
 

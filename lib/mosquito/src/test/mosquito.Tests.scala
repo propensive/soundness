@@ -156,8 +156,6 @@ object Tests extends Suite(m"Mosquito tests"):
       test(m"Sum of two tensors of different quantities"):
         val v1 = Tensor(5*Inch, 2*Inch, Inch)
         val v2 = Tensor(2*Metre, 3*Metre, 6*Metre)
-        println(v1.show)
-        println(v2.show)
 
         val sum = v1 + v1
       .assert()

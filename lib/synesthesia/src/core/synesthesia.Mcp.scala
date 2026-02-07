@@ -79,17 +79,13 @@ object Mcp:
       given mcpProtocolVersion: ("mcpProtocolVersion" is Directive of Text) = identity(_)
       given lastEventId: ("lastEventId" is Directive of Text) = identity(_)
 
-      println(s"Session ID: $id")
-
       recover:
         case error: ParseError =>
-          println("parse error")
           Http.Response(Http.Ok):
             JsonRpc.error(-32700, t"Parse error: ${error.message}".show).json
           . mcpSessionId = id
 
         case error: JsonError =>
-          println("json error")
           Http.Response(Http.Ok):
             JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).json
           . mcpSessionId = id
@@ -98,7 +94,6 @@ object Mcp:
           try
             request.method match
               case Http.Options =>
-                println("OPTIONS")
                 Http.Response
                   ( Http.NoContent,
                     mcpProtocolVersion = version,
@@ -106,7 +101,6 @@ object Mcp:
                   (  )
 
               case Http.Delete =>
-                println("DELETE")
                 Http.Response
                   ( Http.Accepted,
                     mcpProtocolVersion = version,
@@ -114,8 +108,6 @@ object Mcp:
                   (  )
 
               case Http.Get =>
-                println("GET")
-                println(s"Recovery from ${request.headers.lastEventId.prim}")
                 Http.Response
                   ( Http.Ok,
                     connection         = t"keep-alive",
@@ -125,17 +117,9 @@ object Mcp:
                   ( mcpInterface.stream )
 
               case Http.Post =>
-                println("POST")
                 val input = request.body().read[Json]
-                println("PAYLOAD: "+input.show)
-                println("--------")
-                request.textHeaders.each: header =>
-                  println(s"Header: ${header.key} = ${header.value}")
-                println("--------")
                 dispatch(input).let: json =>
-                  println("dispatch")
                   import jsonPrinters.indented
-                  println(json.show)
                   Http.Response
                     ( Http.Ok,
                       mcpProtocolVersion = version,
@@ -149,12 +133,9 @@ object Mcp:
                         mcpSessionId       = id )
                       (  )
               case method =>
-                println(s"Received HTTP request with method $method")
                 ???
           catch
             case error: Throwable =>
-              println(error.getMessage)
-              error.printStackTrace()
               Http.Response(Http.Ok):
                 JsonRpc.error(-32603, t"Internal error: ${error.toString}".show).json
 
@@ -724,11 +705,9 @@ object Mcp:
       val spec:      server.type is McpSpecification )
   extends Api:
 
-    println(s"Initializing MCP Interface (${this.toString})")
-
     protected var loggingLevel: LoggingLevel = LoggingLevel.Info
 
-    def ping(): Unit = println("Received ping")
+    def ping(): Unit = ()
 
     def initialize
       ( protocolVersion: Text,
@@ -742,7 +721,6 @@ object Mcp:
             ServerCapabilities(),
             Implementation(server.name, version = server.version.encode),
             server.description )
-        . tap(println(_))
 
     def `completion/complete`
       ( ref:      Reference,
@@ -816,8 +794,7 @@ object Mcp:
         ()
 
 
-    def `notifications/initialized`(_meta: Optional[Json]): Unit =
-      println("Notifications initialized")
+    def `notifications/initialized`(_meta: Optional[Json]): Unit = ()
 
     def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit = ???
 

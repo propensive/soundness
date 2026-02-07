@@ -47,7 +47,7 @@ object Tests extends Suite(m"Satirical tests"):
     . assert(_ == Wit(Interface(w"example-interface", Nil)))
 
     test(m"Parse empty interface ignoring comment"):
-      t"// a comment\n // another\ninterface example-interface {   } ".read[Wit].tap(println)
+      t"// a comment\n // another\ninterface example-interface {   } ".read[Wit]
     . assert(_ == Wit(Interface(w"example-interface", Nil)))
 
     test(m"Parse empty world and interface"):

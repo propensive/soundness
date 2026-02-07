@@ -48,8 +48,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
     suite(m"Response construction tests"):
       test(m"Create a new HTTP response"):
-        Http.Response(Http.Ok, contentType = media"application/json")(t"hello").tap: response =>
-          println(response)
+        Http.Response(Http.Ok, contentType = media"application/json")(t"hello")
 
       . assert()
 
@@ -113,10 +112,6 @@ object Tests extends Suite(m"Telekinesis tests"):
         url"https://httpbin.org/post"
         . submit(Http.Post, contentEncoding = enc"UTF-8", accept = media"application/json")
         . apply(t"Hello world")
-        . tap: response =>
-            println(response)
-            unsafely:
-              println(response.receive[Text])
 
       . assert()
 
@@ -124,38 +119,22 @@ object Tests extends Suite(m"Telekinesis tests"):
         url"https://httpbin.org/post".submit(Http.Post, enc"UTF-8", accept = media"application/json")
          (t"Hello world")
 
-        . tap: response =>
-          println(response)
-          unsafely:
-            println(response.receive[Text])
-
       . assert()
 
       test(m"Fetch another URL with just a method"):
         url"https://httpbin.org/put".submit(Http.Put)
          (t"Hello world")
 
-        . tap: response =>
-          println(response)
-          unsafely:
-            println(response.receive[Text])
-
       . assert()
 
       test(m"Fetch another URL with defaults"):
         url"https://httpbin.org/post".submit()(t"Hello world")
-
-        . tap: response =>
-          println(response)
-          unsafely:
-            println(response.receive[Text])
 
       . assert()
 
     suite(m"DNS Errors"):
       test(m"Nonexistent DNS"):
         capture[ConnectError](url"http://www.asorbkxoreuatoehudncak.com/".fetch())
-        .tap(println(_))
 
       . assert(_ == ConnectError(ConnectError.Reason.Dns))
 

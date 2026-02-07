@@ -44,7 +44,7 @@ object Tests extends Suite(m"Coaxial tests"):
   def run(): Unit = unsafely:
 
     val u = udp"3876".json.show
-    println(Json.parse(u).as[UdpPort])
+    Json.parse(u).as[UdpPort]
 
     supervise:
       val task = async:
@@ -65,7 +65,6 @@ object Tests extends Suite(m"Coaxial tests"):
 
       test(m"Send UDP messages until port opens"):
         Thread.sleep(5000)
-        println("transmitting")
         udp"3962".transmit(jvmInstanceId.show)
       .assert()
 

@@ -132,12 +132,9 @@ trait JsonRpc extends Original:
   inline def client: Origin = ${Obligatory.client[Origin]('this)}
   def put(json: Json): Unit =
     import jsonPrinters.minimal
-    println(t"putting ${json.show}")
     channel.put(json)
 
   def stream: Stream[Sse] =
-    println("STREAMING")
     channel.stream.map: json =>
       import jsonPrinters.minimal
-      println(t"sending SSE ${json.show}")
       Sse(data = List(json.encode))

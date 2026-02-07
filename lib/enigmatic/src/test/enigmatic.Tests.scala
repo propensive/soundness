@@ -72,7 +72,6 @@ object Tests extends Suite(m"Gastronomy tests"):
 
     test(m"Sha1, Base64Url"):
       import alphabets.base64.url
-      println(t"Hello world".digest[Sha1].serialize[Base64])
       t"Hello world".digest[Sha1].data.serialize[Base64]
     .assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
 
@@ -97,7 +96,6 @@ object Tests extends Suite(m"Gastronomy tests"):
         |MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
         |-----END EXAMPLE-----
         """.s.stripMargin.show
-      println(example)
 
       Pem.parse(example).label
     .assert(_ == PemLabel.Proprietary(t"EXAMPLE"))

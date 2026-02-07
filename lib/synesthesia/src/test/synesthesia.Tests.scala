@@ -31,7 +31,6 @@ object Tests extends Suite(m"Synesthesia Tests"):
               unsafely:
                 TestMcpServer.serve
             catch case throwable: Throwable =>
-              println(s"Error serving MCP: ${throwable.getMessage}")
               throwable.printStackTrace()
               ???
           case _                   => Http.Response(Http.NotFound)(t"Error 404: Not found")

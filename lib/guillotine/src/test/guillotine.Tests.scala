@@ -164,7 +164,6 @@ object Tests extends Suite(m"Guillotine tests"):
         sh"echo Hello World".inspect
       .check(_ == t"""sh"echo Hello World"""")
 
-      println(sh"echo 'Hello World'".inspect)
       test(m"simple command with space"):
         sh"echo 'Hello World'".inspect
       .check(_ == t"""sh"echo 'Hello World'"""")
