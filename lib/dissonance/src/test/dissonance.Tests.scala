@@ -162,7 +162,7 @@ object Tests extends Suite(m"Dissonance tests"):
         reverseStream.read[Diff[Text]]
       .assert(_ == Diff(Par(0, 0), Del(1, t"quux"), Del(2, t"bop"), Ins(1, t"bar")))
 
-      test(m"Apply parsed diff to source to get result"):
+      test(m"Apply parsed reverse diff to get source"):
         reverseStream.read[Diff[Text]].patch(end)
       .assert(_ == start)
 

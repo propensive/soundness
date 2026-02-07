@@ -52,7 +52,7 @@ object Tests extends Suite(m"Ulysses tests"):
       bloom.bitSize
     .assert(_ == 6631)
 
-    test(m"Check that more bits are required to store with more certainty"):
+    test(m"More bits required for more certainty"):
       val bloom = BloomFilter[Text](100, 0.001)
       bloom.bitSize
     .assert(_ == 994)

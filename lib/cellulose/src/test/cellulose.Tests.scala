@@ -387,7 +387,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true), Peer,
           Item(t"next", 3, 0))))
 
-      test(m"Terminated content"):
+      test(m"Parse terminated content"):
         parseText(t"""|root child
                       |##
                       |""".s.stripMargin.show)(1)
@@ -412,7 +412,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
                       |""".s.stripMargin.show)(1).to(List)
       .assert(_ == Stream(Item(t"root", 0, 0), Item(t"child", 1, 4, true), Peer, Body(Stream())).to(List))
 
-      test(m"Terminated content with body"):
+      test(m"Parse terminated content with body"):
         parseText(t"""|root
                       |##
                       | follow""".s.stripMargin.show)(1)
@@ -631,7 +631,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
         read(t"root\n  child\n    this\n        one two\n        three four\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"this")(CodlNode(t"one two\nthree four")())))))
 
-      test(m"Terminated content"):
+      test(m"Read terminated content"):
         read(t"ROOT\n  one two\n##\nfoobar\nbaz").wiped
       .assert(_ == CodlDoc(CodlNode(t"ROOT")(CodlNode(t"one")(CodlNode(t"two")()))))
 
@@ -639,7 +639,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
         read(t"root\n    one two\n##").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")())))
 
-      test(m"Terminated content with body"):
+      test(m"Read terminated content with body"):
         read(t"root\n    one two\n##\nunparsed").body
       .assert(_ == Stream('u', 'n', 'p', 'a', 'r', 's', 'e', 'd'))
 

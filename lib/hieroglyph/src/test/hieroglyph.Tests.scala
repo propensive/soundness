@@ -76,7 +76,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
         charDecoders.utf8.decoded(badUtf8)
       .assert(_ == t"-10")
 
-      test(m"Decode invalid UTF-8 sequence, substituting for a question mark"):
+      test(m"Decode invalid UTF-8 with question mark substitution"):
         import textSanitizers.substitute
         charDecoders.utf8.decoded(badUtf8)
       .assert(_ == t"-?10")
@@ -99,7 +99,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
         demilitarize(enc"ABCDEF").map(_.message)
       .assert(_ == List(t"hieroglyph: the encoding ABCDEF was not available"))
 
-      test(m"Check that a non-encoding encoding does have a `decoder` method"):
+      test(m"Non-encoding has a decoder method"):
         import textSanitizers.skip
         demilitarize(enc"ISO-2022-CN".decoder).map(_.message)
       .assert(_ == List())
@@ -108,6 +108,6 @@ object Tests extends Suite(m"Hieroglyph tests"):
         demilitarize(enc"ISO-2022-CN".encoder).map(_.message)
       .assert(_.length == 1)
 
-      test(m"Check that an encoding which can encode has an encoder method"):
+      test(m"Encoding has an encoder method"):
         demilitarize(enc"ISO-8859-1".encoder).map(_.message)
       .assert(_ == List())

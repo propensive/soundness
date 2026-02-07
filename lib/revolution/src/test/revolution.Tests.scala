@@ -121,7 +121,7 @@ object Tests extends Suite(m"Revolution Tests"):
           t"99999999999999999999999.999999999999999999.99999999999999999----RC-SNAPSHOT.12.09.1--------------------------------..12")
 
       for version <- invalid do
-        test(m"Parser rejects $version"):
+        test(m"Parser rejects ${version.keep(20)}"):
           safely(version.decode[Semver])
         . assert(_.absent)
 

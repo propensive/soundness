@@ -114,12 +114,12 @@ object Tests extends Suite(m"Plutocrat tests"):
 
       . assert(_ == false)
 
-      test(m"Compare equal amounts"):
+      test(m"Compare equal amounts with >"):
         Eur(1.01) > Eur(1.01)
 
       . assert(_ == false)
 
-      test(m"Compare equal amounts"):
+      test(m"Compare equal amounts with >="):
         Eur(1.01) >= Eur(1.01)
 
       . assert(_ == true)

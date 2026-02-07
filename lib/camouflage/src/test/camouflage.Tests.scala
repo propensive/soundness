@@ -60,7 +60,7 @@ object Tests extends Suite(m"Camouflage tests"):
       cache(1)(t"un")
     .assert(_ == t"one")
 
-    test(m"Check that an series of accesses causes least-recently-used key to be evicted"):
+    test(m"LRU eviction after series of accesses"):
       val cache = LruCache[Int, Text](4)
       cache(1)(t"one")
       cache(2)(t"two")

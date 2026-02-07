@@ -139,13 +139,6 @@ object Tests extends Suite(m"Zephyrine tests"):
 
       . assert(_ == true)
 
-      test(m"Can find sequence of two bytes"):
-        val stream = Stream(Data(0x10, 0x11, 0x12, 0x13), Data(0x14, 0x15))
-        val conduit = Conduit(stream)
-        conduit.search(0x11, 0x12)
-
-      . assert(_ == true)
-
       test(m"Gets correct offset for sequence of two bytes"):
         val stream = Stream(Data(0x10, 0x11, 0x12, 0x13), Data(0x14, 0x15))
         val conduit = Conduit(stream)
@@ -154,7 +147,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
       . assert(_ == Sec)
 
-      test(m"Gets correct offset for sequence of three bytes when they're at the start"):
+      test(m"Correct offset for three-byte sequence at start"):
         val stream = Stream(Data(0x10, 0x11, 0x12, 0x13), Data(0x14, 0x15))
         val conduit = Conduit(stream)
         conduit.search(0x10, 0x11, 0x12)

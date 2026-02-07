@@ -91,7 +91,7 @@ object Tests extends Suite(m"Metamorphose tests"):
         capture[PermutationError](Factoradic(List(2, 1)))
       .assert(_ == PermutationError(PermutationError.Reason.BaseRange(2, 2)))
 
-      test(m"ensure that an error occurs for more complex out-of-range base"):
+      test(m"error for complex out-of-range base"):
         capture[PermutationError](Factoradic(List(0, 0, 8, 3, 0, 1, 0)))
       .assert(_ == PermutationError(PermutationError.Reason.BaseRange(8, 5)))
 

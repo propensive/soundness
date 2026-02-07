@@ -108,15 +108,11 @@ object Tests extends Suite(m"Escapade tests"):
         boldItalicSample.find(t"end").vouch.styles
       .assert(_.bi.all(!_.bold && !_.italic))
 
-      test(m"nested non-bold, non-italic text is neither"):
-        boldItalicSample.find(t"end").vouch.styles
-      .assert(_.bi.all(!_.bold && !_.italic))
-
       test(m"nested bold/italic (without intermediate characters) is both"):
         boldItalicSample2.find(t"bold-italic").vouch.styles
       .assert(_.bi.all(_.bold && _.italic))
 
-      test(m"normal text following doubly-nested text (without intermediate characters) is normal"):
+      test(m"normal text after doubly-nested text is normal"):
         boldItalicSample2.find(t"end").vouch.styles
       .assert(_.all(_ == Style()))
 

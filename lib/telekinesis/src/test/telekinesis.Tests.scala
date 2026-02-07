@@ -47,17 +47,17 @@ object Tests extends Suite(m"Telekinesis tests"):
     import internetAccess.enabled
 
     suite(m"Response construction tests"):
-      test(m"Create a new HTTP response"):
+      test(m"Create HTTP response with status and content type"):
         Http.Response(Http.Ok, contentType = media"application/json")(t"hello")
 
       . assert()
 
-      test(m"Create a new HTTP response"):
+      test(m"Create HTTP response with status only"):
         Http.Response(Http.Found)
 
       . assert()
 
-      test(m"Create a new HTTP response"):
+      test(m"Create HTTP response with content type only"):
         Http.Response(contentType = media"image/jpeg")
 
       . assert()
@@ -192,9 +192,6 @@ object Tests extends Suite(m"Telekinesis tests"):
         . assert(_ == ConnectError(Ssl(Handshake)))
 
         test(m"dh1024")(capture[ConnectError](url"https://dh1024.badssl.com/".fetch()))
-        . assert(_ == ConnectError(Ssl(Handshake)))
-
-        test(m"null")(capture[ConnectError](url"https://null.badssl.com/".fetch()))
         . assert(_ == ConnectError(Ssl(Handshake)))
 
         test(m"null")(capture[ConnectError](url"https://null.badssl.com/".fetch()))
