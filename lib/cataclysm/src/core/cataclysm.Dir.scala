@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.53.0.                                                                    ┃
+┃    Soundness, version 0.54.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
