@@ -48,5 +48,4 @@ class Random(private val generator: su.Random):
   def unitInterval(): Double = generator.nextDouble()
   def apply[value: Randomizable](): value = value.from(this)
 
-  transparent inline def shuffle[element](seq: Seq[element]): Seq[element] =
-    generator.shuffle(seq)
+  transparent inline def shuffle[element](seq: Seq[element]): Seq[element] = generator.shuffle(seq)
