@@ -47,18 +47,17 @@ object Tests extends Suite(m"Telekinesis tests"):
     import internetAccess.enabled
 
     suite(m"Response construction tests"):
-      test(m"Create a new HTTP response"):
-        Http.Response(Http.Ok, contentType = media"application/json")(t"hello").tap: response =>
-          println(response)
+      test(m"Create HTTP response with status and content type"):
+        Http.Response(Http.Ok, contentType = media"application/json")(t"hello")
 
       . assert()
 
-      test(m"Create a new HTTP response"):
+      test(m"Create HTTP response with status only"):
         Http.Response(Http.Found)
 
       . assert()
 
-      test(m"Create a new HTTP response"):
+      test(m"Create HTTP response with content type only"):
         Http.Response(contentType = media"image/jpeg")
 
       . assert()
@@ -113,10 +112,6 @@ object Tests extends Suite(m"Telekinesis tests"):
         url"https://httpbin.org/post"
         . submit(Http.Post, contentEncoding = enc"UTF-8", accept = media"application/json")
         . apply(t"Hello world")
-        . tap: response =>
-            println(response)
-            unsafely:
-              println(response.receive[Text])
 
       . assert()
 
@@ -124,38 +119,22 @@ object Tests extends Suite(m"Telekinesis tests"):
         url"https://httpbin.org/post".submit(Http.Post, enc"UTF-8", accept = media"application/json")
          (t"Hello world")
 
-        . tap: response =>
-          println(response)
-          unsafely:
-            println(response.receive[Text])
-
       . assert()
 
       test(m"Fetch another URL with just a method"):
         url"https://httpbin.org/put".submit(Http.Put)
          (t"Hello world")
 
-        . tap: response =>
-          println(response)
-          unsafely:
-            println(response.receive[Text])
-
       . assert()
 
       test(m"Fetch another URL with defaults"):
         url"https://httpbin.org/post".submit()(t"Hello world")
-
-        . tap: response =>
-          println(response)
-          unsafely:
-            println(response.receive[Text])
 
       . assert()
 
     suite(m"DNS Errors"):
       test(m"Nonexistent DNS"):
         capture[ConnectError](url"http://www.asorbkxoreuatoehudncak.com/".fetch())
-        .tap(println(_))
 
       . assert(_ == ConnectError(ConnectError.Reason.Dns))
 
@@ -213,9 +192,6 @@ object Tests extends Suite(m"Telekinesis tests"):
         . assert(_ == ConnectError(Ssl(Handshake)))
 
         test(m"dh1024")(capture[ConnectError](url"https://dh1024.badssl.com/".fetch()))
-        . assert(_ == ConnectError(Ssl(Handshake)))
-
-        test(m"null")(capture[ConnectError](url"https://null.badssl.com/".fetch()))
         . assert(_ == ConnectError(Ssl(Handshake)))
 
         test(m"null")(capture[ConnectError](url"https://null.badssl.com/".fetch()))

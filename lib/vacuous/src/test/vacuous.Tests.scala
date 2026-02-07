@@ -88,7 +88,7 @@ object Tests extends Suite(m"Vacuous Tests"):
         . map(_.message)
       . assert(_.nonEmpty)
 
-      test(m"Abstract type is not proven distinct from anything, e.g. String"):
+      test(m"Abstract type not proven distinct from String"):
         demilitarize:
           def foo[T]: Unit = infer[T is Distinct from String].unit
           foo[String]
@@ -104,7 +104,7 @@ object Tests extends Suite(m"Vacuous Tests"):
         . map(_.message)
       . assert(_.contains(t"vacuous: type T is abstract"))
 
-      test(m"Inline abstract type is not proven distinct from anything, e.g. Int"):
+      test(m"Inline abstract type not distinct from Int"):
         demilitarize:
           inline def foo[T]: Unit =
             erased val x = infer[T is Distinct from String]
@@ -114,7 +114,7 @@ object Tests extends Suite(m"Vacuous Tests"):
         . map(_.message)
       . assert(_ == Nil)
 
-      test(m"Inline abstract type is not proven distinct from anything, e.g. String"):
+      test(m"Inline abstract type not distinct from String"):
         demilitarize:
           inline def foo[T]: Unit =
             erased val x = infer[T is Distinct from String]
@@ -145,7 +145,7 @@ object Tests extends Suite(m"Vacuous Tests"):
       . assert(_.nonEmpty)
 
 
-      test(m"String singleton is not distinct from different String singleton"):
+      test(m"String singleton not distinct from another"):
         demilitarize:
           inline def foo[T]: Unit =
             erased val x = infer[T is Distinct from "foo"]

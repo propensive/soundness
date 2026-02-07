@@ -141,11 +141,6 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
         . assert(_ == RegexError(4, RegexError.Reason.NotInGroup))
 
-        test(m"Fail to parse aa(bb){2,,1}c"):
-          capture(Regex.parse(List(t"aabb){2,,1}c")))
-
-        . assert(_ == RegexError(4, RegexError.Reason.NotInGroup))
-
         test(m"Fail to parse aabb){2,,1}c"):
           capture(Regex.parse(List(t"aabb){2,,1}c")))
 
@@ -362,14 +357,6 @@ object Tests extends Suite(m"Kaleidoscope tests"):
             case _ => Nil
 
         . assert(_ == Unset)
-
-        test(m"Match characters in subgroup"):
-          t"favourite" match
-            case r"fav($vowels[ou]*)rite" => vowels
-            case _ => Nil
-
-        . assert(_ == List('o', 'u'))
-
 
         test(m"Match characters in subgroup"):
           t"favourite" match

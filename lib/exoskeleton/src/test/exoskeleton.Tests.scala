@@ -170,10 +170,6 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
         . assert()
 
-        test(m"Test subcommands with spaces on zsh"):
-          Zsh.tmux()(Tmux.completions(t"distribution "))
-        . assert(_ == t"gentoo    -- Gentoo Linux\nred hat   -- Red Hat Linux\nubuntu    -- Ubuntu")
-
         test(m"Test capture 2"):
           Zsh.tmux()(Tmux.completions(t"distribution "))
 

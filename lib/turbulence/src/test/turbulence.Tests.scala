@@ -123,11 +123,11 @@ object Tests extends Suite(m"Turbulence tests"):
         qbf.read[Text]
       .assert(_ == qbf)
 
-      test(m"Read some type as Text with Text and Byte Streamable instance"):
+      test(m"Read type as Text with Text and Byte Streamable"):
         Ref().read[Text]
       .assert(_ == t"abcdef")
 
-      test(m"Read some type as Data with Text and Byte Streamable instance"):
+      test(m"Read type as Data with Text and Byte Streamable"):
         Ref().read[Data].to(List)
       .assert(_ == t"abcdef".data.to(List))
 
@@ -227,13 +227,13 @@ object Tests extends Suite(m"Turbulence tests"):
         store()
       .assert(_ == qbf)
 
-      test(m"Write Stream[Text] to some reference with Text and Data instances"):
+      test(m"Write Stream[Text] with Text and Data instances"):
         val store = GeneralStore()
         Stream(qbf).writeTo(store)
         store()
       .assert(_ == qbf)
 
-      test(m"Write Stream[Data] to some reference with Text and Data instances"):
+      test(m"Write Stream[Data] with Text and Data instances"):
         val store = GeneralStore()
         Stream(qbfData).writeTo(store)
         store()
@@ -251,13 +251,13 @@ object Tests extends Suite(m"Turbulence tests"):
         store()
       .assert(_ == qbf)
 
-      test(m"Write Stream[Text] to some reference with only a Data instance"):
+      test(m"Write Stream[Text] with only Data instance"):
         val store = ByteStore()
         Stream(qbf).writeTo(store)
         store()
       .assert(_ == qbf)
 
-      test(m"Write Stream[Data] to some reference with only a Data instance"):
+      test(m"Write Stream[Data] with only Data instance"):
         val store = ByteStore()
         Stream(qbfData).writeTo(store)
         store()
@@ -275,13 +275,13 @@ object Tests extends Suite(m"Turbulence tests"):
         store()
       .assert(_ == qbf)
 
-      test(m"Write Stream[Text] to some reference with only a Text instance"):
+      test(m"Write Stream[Text] with only Text instance"):
         val store = TextStore()
         Stream(qbf).writeTo(store)
         store()
       .assert(_ == qbf)
 
-      test(m"Write Stream[Data] to some reference with only a Text instance"):
+      test(m"Write Stream[Data] with only Text instance"):
         val store = TextStore()
         Stream(qbfData).writeTo(store)
         store()
@@ -331,13 +331,13 @@ object Tests extends Suite(m"Turbulence tests"):
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Stream[Text] to some reference with Text and Data instances"):
+      // test(m"Append Stream[Text] with Text and Data instances"):
       //   val store = GeneralStore()
       //   Stream(qbf).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Stream[Data] to some reference with Text and Data instances"):
+      // test(m"Append Stream[Data] with Text and Data instances"):
       //   val store = GeneralStore()
       //   Stream(qbfData).appendTo(store)
       //   store()
@@ -355,13 +355,13 @@ object Tests extends Suite(m"Turbulence tests"):
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Stream[Text] to some reference with only a Data instance"):
+      // test(m"Append Stream[Text] with only Data instance"):
       //   val store = ByteStore()
       //   Stream(qbf).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Stream[Data] to some reference with only a Data instance"):
+      // test(m"Append Stream[Data] with only Data instance"):
       //   val store = ByteStore()
       //   Stream(qbfData).appendTo(store)
       //   store()
@@ -379,13 +379,13 @@ object Tests extends Suite(m"Turbulence tests"):
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Stream[Text] to some reference with only a Text instance"):
+      // test(m"Append Stream[Text] with only Text instance"):
       //   val store = TextStore()
       //   Stream(qbf).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Stream[Data] to some reference with only a Text instance"):
+      // test(m"Append Stream[Data] with only Text instance"):
       //   val store = TextStore()
       //   Stream(qbfData).appendTo(store)
       //   store()
@@ -399,11 +399,11 @@ object Tests extends Suite(m"Turbulence tests"):
         supervise(l1.multiplex(l2).to(Set))
       .assert(_ == Set.range(1, 11))
 
-      test(m"Check that two multiplexed streams contain elements from the first stream in order"):
+      test(m"Multiplexed streams preserve first stream order"):
         supervise(l1.multiplex(l2).filter(_%2 == 0))
       .assert(_ == l1)
 
       for i <- 1 to 10
-      do test(m"Check that two multiplexed streams contain elements from the second stream in order"):
+      do test(m"Multiplexed streams preserve second stream order"):
         supervise(l1.multiplex(l2).filter(_%2 == 1))
       .assert(_ == l2)

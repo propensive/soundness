@@ -251,7 +251,7 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == t"")
 
-      test(m"drop more characters from the right than the length of the Text"):
+      test(m"drop more right chars than text length"):
         t"Hello".skip(10, Rtl)
 
       . assert(_ == t"")
@@ -271,7 +271,7 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == t"Hello")
 
-      test(m"take more characters from the right than the length of the Text"):
+      test(m"take more right chars than text length"):
         t"Hello".keep(10, Rtl)
 
       . assert(_ == t"Hello")
@@ -500,12 +500,12 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == Quin)
 
-      test(m"Index of character satisfying predicate with start point at result index"):
+      test(m"Index satisfying predicate starting at result"):
         t"oh, Hello World".where(_.isUpper, Quin)
 
       . assert(_ == Quin)
 
-      test(m"Index of character satisfying predicate with start point after first result"):
+      test(m"Index satisfying predicate starting after result"):
         t"oh, Hello World".where(_.isUpper, Sen)
 
       . assert(_ == 10.z)
@@ -515,12 +515,12 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == t"HELLO")
 
-      test(m"Take characters when predicate is never true returns empty text"):
+      test(m"Take chars when predicate is never true"):
         t"hello world".whilst(_.isUpper)
 
       . assert(_ == t"")
 
-      test(m"Take characters when predicate isn't initially true returns empty text"):
+      test(m"Take chars when predicate isn't initially true"):
         t"Helloworld".whilst(_.isLower)
 
       . assert(_ == t"")
@@ -1031,11 +1031,6 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       test(m"Two-entry dictionary lookups with more overlap"):
         val dictionary = Dictionary(t"color" -> "COLOR", t"colors" -> "COLORS")
-        (dictionary(t"color"), dictionary(t"colors"))
-      .assert(_ == ("COLOR", "COLORS"))
-
-      test(m"Two-entry dictionary lookups with more overlap, reverse order"):
-        val dictionary = Dictionary(t"colors" -> "COLORS", t"color" -> "COLOR")
         (dictionary(t"color"), dictionary(t"colors"))
       .assert(_ == ("COLOR", "COLORS"))
 

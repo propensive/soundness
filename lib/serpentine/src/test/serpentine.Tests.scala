@@ -80,13 +80,13 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       . assert(_ == Path(t"/", t"baz", t""))
 
-      test(m"Construct a path with unknown text label is permitted without Tactic"):
+      test(m"Path with unknown label permitted without Tactic"):
         val dir: Text = t"dir"
         val path = (% / dir)
 
       . assert()
 
-      test(m"Construct a path with unknown label not permitted on Linux without Tactic"):
+      test(m"Unknown label not permitted on Linux without Tactic"):
         demilitarize:
           val dir: Text = t"dir"
           val path = (% / dir / "baz").on[Linux]
@@ -95,14 +95,14 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       . assert(_.length == 1)
 
-      test(m"Construct a path with unknown label is permitted on Linux with Tactic"):
+      test(m"Unknown label permitted on Linux with Tactic"):
         val dir: Text = t"dir"
         given Tactic[NameError] = strategies.throwUnsafely
         val path = (% / dir).on[Linux]
 
       . assert()
 
-      test(m"Construct a path with unknown label is permitted on top of Linux Path"):
+      test(m"Unknown label permitted on top of Linux Path"):
         val dir: Text = t"dir"
         given Tactic[NameError] = strategies.throwUnsafely
         val path = (% / dir).on[Linux] / "other"
@@ -336,7 +336,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
 
       . assert(identity)
 
-      test(m"Specific path auto-converted to plane does not have known elements"):
+      test(m"Auto-converted path has no known elements"):
         val path: Path on Linux = % / "foo" / "bar"
         path.knownElements
 
@@ -375,7 +375,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
         val result: Path of ("work" , "home") = path1.conjunction(path2)
       . assert()
 
-      test(m"Different typelevel conjunction of two unplatformed Linux paths"):
+      test(m"Typelevel conjunction of unplatformed Linux paths"):
         val path1 = % / "home" / "work" / "data" / "foo" / "bar"
         val path2 = % / "home" / "more"
         val result: Path of Mono["home"] = path1.conjunction(path2)

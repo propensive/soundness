@@ -119,18 +119,18 @@ object Tests extends Suite(m"Caesura tests"):
         t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""".read[Sheet].rows
       .assert(_ == Stream(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\"\n\"2\n3\n")))
 
-      test(m"multi-line CSV with quoted quotes adjacent to open/close quotes"):
+      test(m"CSV with quoted quotes adjacent to delimiters"):
         t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""".read[Sheet].rows
       .assert(_ == Stream(Dsv(t"f\"oo", t"\"Hello\nWorld\"")))
 
 
     suite(m"Alternative formats"):
-      test(m"Parse TSV data"):
+      test(m"Parse TSV data without header"):
         import dsvFormats.tsv
         t"Hello\tWorld\n".read[Sheet].rows
       .assert(_ == Stream(Dsv(t"Hello", t"World")))
 
-      test(m"Parse TSV data"):
+      test(m"Parse TSV data with header"):
         import dsvFormats.tsvWithHeader
         t"Greeting\tAddressee\nHello\tWorld\n".read[Sheet]
       .assert(_ == Sheet(Stream(Dsv(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeader, IArray(t"Greeting", t"Addressee")))

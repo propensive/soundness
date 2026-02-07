@@ -111,14 +111,6 @@ object Tests extends Suite(m"Aviation Tests"):
         LeapSeconds.during(Year(1981), true)
       .assert(_ == 20)
 
-      test(m"There are 19 leap seconds in the first half of 1981"):
-        LeapSeconds.during(Year(1981), false)
-      .assert(_ == 19)
-
-      test(m"There are 20 leap seconds in the second half of 1981"):
-        LeapSeconds.during(Year(1981), true)
-      .assert(_ == 20)
-
       test(m"There are 20 leap seconds in the first half of 1982"):
         LeapSeconds.during(Year(1982), false)
       .assert(_ == 20)
@@ -657,7 +649,7 @@ object Tests extends Suite(m"Aviation Tests"):
             2025-Apr-18 + WorkingDays(1)
           . assert(_ == 2025-Apr-22)
 
-          test(m"Check that one working day after Good Friday is Tuesday after Easter"):
+          test(m"Working day after Good Friday is Easter Tuesday"):
             import hebdomads.european
             2025-Apr-19 + WorkingDays(1)
           . assert(_ == 2025-Apr-23)

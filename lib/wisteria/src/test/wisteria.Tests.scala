@@ -42,8 +42,8 @@ import autopsies.contrastExpectations
 
 object SumOnly extends SumDerivation[SumOnly]:
 
-  given SumOnly[SumOnlyEnum.Alpha] = alpha => println(s"$alpha is an alpha")
-  given SumOnly[SumOnlyEnum.Beta] = beta => println(s"$beta is a beta")
+  given SumOnly[SumOnlyEnum.Alpha] = alpha => ()
+  given SumOnly[SumOnlyEnum.Beta] = beta => ()
 
   inline def split[derivation: SumReflection]: SumOnly[derivation] =
     value => variant(value):
@@ -217,62 +217,7 @@ object Producer extends Derivation[Producer]:
 
 object Tests extends Suite(m"Wisteria tests"):
   def run(): Unit =
-    val george = Person("George Washington".tt, 61, true)
-    val ronald = User(Person("Ronald Reagan".tt, 51, true), "ronald@whitehouse.gov".tt)
-    println(ronald.present)
-    println((ronald, george).present)
-    println(Date(15, Month.Feb, 1985).present)
-    val time: Temporal = Date(15, Month.Jan, 1983)
-    println(time.present)
-    println("Jimmy Carter,99,yes".tt.read[Person].present)
-
-
-    import Tree.*
-    println(Branch(4, Branch(1, Leaf, Branch(2, Leaf, Leaf)), Leaf).present)
-
     given Tactic[VariantError] = strategies.throwUnsafely
-
-    println("President:Richard Nixon,37".tt.read[Human].present)
-
-    println("hello".tt === "hElLo".tt)
-    println(President("jimmy carter".tt, 99) === President("JIMMY CARTER".tt, 99))
-    println(President("jimmy carter2".tt, 99) === President("JIMMY CARTER".tt, 99))
-    println(President("jimmy carter".tt, 99) === President("JIMMY CARTER".tt, 100))
-    val array1 = IArray("jimmy".tt, "gerry".tt, "ronald".tt)
-    val array2 = IArray("Jimmy".tt, "Gerry".tt, "Ronald".tt)
-    println(array1 === array2)
-
-    val human1 = "President:Richard Nixon,37".tt.read[Human]
-    val human2 = "President:George Washington".tt.read[President]
-    println("with default "+human2.present)
-    val human3 = "Person:george washington,1,yes".tt.read[Human]
-    println(human1 === human2)
-    println(human2 === human3)
-    val human4 = Try("Broken:george washington,1,yes".tt.read[Human])
-    println(human4.isFailure)
-    println(human4.failed.get.getMessage())
-    val animal = "Carnivore:Wolf".tt.read[Animal]
-    println("with default "+animal.present)
-
-    println("withContext:")
-    val parserForTest = summon[Parser[ParserTestCaseClass]]
-    val successfulParse = parserForTest.parse("120,false")
-    println(successfulParse.exists(_.intValue == 120))
-    println(successfulParse.exists(_.booleanValue == false))
-    println(parserForTest.parse("error").nil)
-
-    println("isSimpleSum")
-    val showForSimple = summon[Show[Simple]]
-    println(showForSimple.show(Simple.Second))
-    // TODO: use check if not compiles
-    // val compilationError = summon[Show[Adt]]
-
-    println("choice + singletonValue")
-    demilitarize:
-      val producer = summon[Producer[Simple]]
-      println(producer.produce("Third"))
-      println(Try(producer.produce("Secondd")))
-
 
     suite(m"Arithmetic tests"):
       case class User(name: Text, age: Int)

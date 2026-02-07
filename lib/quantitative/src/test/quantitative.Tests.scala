@@ -77,12 +77,6 @@ object Tests extends Suite(m"Quantitative Tests"):
 
       . assert()
 
-      test(m"Specify a quantity"):
-        case class Speed(value: Quantity[Metres[1] & Hours[-1]])
-        Speed(10*Kilo(Metre)/Hour)
-
-      . assert()
-
       test(m"Cannot subtract quantities of different units"):
         demilitarize:
           Metre - 2*Second
@@ -133,12 +127,12 @@ object Tests extends Suite(m"Quantitative Tests"):
         .map(_.message)
       .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents area; these are incompatible physical quantities"))
 
-      test(m"Units of the same dimension can be checked for equivalence (and found equal)"):
+      test(m"Same-dimension units found equal"):
         Mile === 1760*Yard
 
       . assert(_ == true)
 
-      test(m"Units of the same dimension can be checked for equivalence (and found unequal)"):
+      test(m"Same-dimension units found unequal"):
         Mile === Inch
 
       . assert(_ == false)
@@ -151,13 +145,13 @@ object Tests extends Suite(m"Quantitative Tests"):
       . assert(_ == List("quantitative: the left operand represents distance, but the right operand represents energy; these are incompatible physical quantities"))
 
     suite(m"Automatic conversions"):
-      test(m"Conversions are applied automatically to RHS in multiplication"):
+      test(m"Auto-conversion on RHS in multiplication"):
         val x = 2*Metre
         val y = 3*Foot
         x*y
       .assert(_ == 1.8288000000000002*Metre*Metre)
 
-      test(m"Conversions are applied automatically to LHS in multiplication"):
+      test(m"Auto-conversion on LHS in multiplication"):
         val x = 2*Metre
         val y = 3*Foot
         y*x
@@ -333,11 +327,11 @@ object Tests extends Suite(m"Quantitative Tests"):
       case class Pts(value: Double)
       given Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72.0
 
-      test(m"quantify a distance"):
+      test(m"quantify a distance less than inch"):
         Pts(71).quantify < Inch
       .assert(_ == true)
 
-      test(m"quantify a distance"):
+      test(m"quantify a distance more than inch"):
         Pts(73).quantify > Inch
       .assert(_ == true)
 

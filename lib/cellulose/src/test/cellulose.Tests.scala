@@ -387,7 +387,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
       .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true), Peer,
           Item(t"next", 3, 0))))
 
-      test(m"Terminated content"):
+      test(m"Parse terminated content"):
         parseText(t"""|root child
                       |##
                       |""".s.stripMargin.show)(1)
@@ -412,7 +412,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
                       |""".s.stripMargin.show)(1).to(List)
       .assert(_ == Stream(Item(t"root", 0, 0), Item(t"child", 1, 4, true), Peer, Body(Stream())).to(List))
 
-      test(m"Terminated content with body"):
+      test(m"Parse terminated content with body"):
         parseText(t"""|root
                       |##
                       | follow""".s.stripMargin.show)(1)
@@ -631,7 +631,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
         read(t"root\n  child\n    this\n        one two\n        three four\n").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"child")(CodlNode(t"this")(CodlNode(t"one two\nthree four")())))))
 
-      test(m"Terminated content"):
+      test(m"Read terminated content"):
         read(t"ROOT\n  one two\n##\nfoobar\nbaz").wiped
       .assert(_ == CodlDoc(CodlNode(t"ROOT")(CodlNode(t"one")(CodlNode(t"two")()))))
 
@@ -639,7 +639,7 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
         read(t"root\n    one two\n##").wiped
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one two")())))
 
-      test(m"Terminated content with body"):
+      test(m"Read terminated content with body"):
         read(t"root\n    one two\n##\nunparsed").body
       .assert(_ == Stream('u', 'n', 'p', 'a', 'r', 's', 'e', 'd'))
 
@@ -1152,7 +1152,6 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
         print(complex)
       .assert(_ == t"foo\n  gamma  a\n  delta  2\nfoo\n  gamma  c\n  delta  6\n  eta  e\nquux\n  alpha  e\n  beta  1\n  beta  2\n  beta  4\n")
 
-      println("------")
       test(m"roundtrip a complex case class 1"):
         read(print(complex)).as[Bar]
       .assert(_ == complex)
@@ -1170,8 +1169,6 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
       case class Entry(name: Text, value: Int)
 
       test(m"Amok example"):
-        println("Base1:")
-        println(summon[Base1 is CodlSchematic].schema())
         t"domain  java\nlanguage  scala\n".read[CodlDoc of Base1].materialize
       . assert(_ == Base1("java", "scala"))
 
@@ -1184,8 +1181,6 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
       . assert(_ == Base2("java", "scala", List(t"alpha")))
 
       test(m"Amok example 3"):
-        println("Base2:")
-        println(summon[Base2 is CodlSchematic].schema())
         t"domain  java\nlanguage  scala\nentry  alpha\nentry  beta\n".read[CodlDoc of Base2].materialize
       . assert(_ == Base2("java", "scala", List(t"alpha", t"beta")))
 
@@ -1194,14 +1189,10 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
       . assert(_ == Base3("java", "scala", Nil))
 
       test(m"Amok example 4a"):
-        println("Base3:")
-        println(summon[Base3 is CodlSchematic].schema())
         t"domain  java\nlanguage  scala\nentry  alpha  42\nentry  beta  42\n".read[CodlDoc of Base3].materialize
       . assert(_ == Base3("java", "scala", List(Entry(t"alpha", 42), Entry(t"beta", 42))))
 
       test(m"Amok example 5"):
-        println("Base4:")
-        println(summon[Base4 is CodlSchematic].schema())
         t"domain  java\nlanguage  scala\nentry  alpha  42\n".read[CodlDoc of Base4].materialize
       . assert(_ == Base4("java", "scala", Entry(t"alpha", 42)))
 

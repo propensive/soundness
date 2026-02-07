@@ -125,12 +125,12 @@ object Tests extends Suite(m"Guillotine tests"):
         sh"""ls 'x'${a}"""
       .assert(_ == Command(t"ls", t"xa", t"b"))
 
-      test(m"empty list insertion"):
+      test(m"empty list insertion unquoted"):
         val a = List()
         sh"""ls ${a}"""
       .assert(_ == Command(t"ls"))
 
-      test(m"empty list insertion"):
+      test(m"empty list insertion quoted"):
         val a = List()
         sh"""ls '${a}'"""
       .assert(_ == Command(t"ls", t""))
@@ -164,7 +164,6 @@ object Tests extends Suite(m"Guillotine tests"):
         sh"echo Hello World".inspect
       .check(_ == t"""sh"echo Hello World"""")
 
-      println(sh"echo 'Hello World'".inspect)
       test(m"simple command with space"):
         sh"echo 'Hello World'".inspect
       .check(_ == t"""sh"echo 'Hello World'"""")
@@ -186,7 +185,7 @@ object Tests extends Suite(m"Guillotine tests"):
         sh"echo 'hello world'"
       .assert(_ == sh"""echo "hello world"""")
 
-      test(m"check that two commands written with different whitespace are equivalent"):
+      test(m"commands with different whitespace are equal"):
         sh"one two   three"
       .assert(_ == sh"one   two three")
 

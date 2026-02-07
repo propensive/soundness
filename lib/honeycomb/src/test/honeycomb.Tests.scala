@@ -231,7 +231,6 @@ object Tests extends Suite(m"Honeycomb Tests"):
           t"""<table class="test"><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
         . assert: result =>
             import stylesheets.uncheckedClasses
-            println(Table.test(Thead(Tr(Th("First"), Td("Second"), Td("Third")))))
             result == Table.test(Thead(Tr(Th("First"), Td("Second"), Td("Third"))))
 
         test(m"<tfoot> closes inferred <tbody>"):

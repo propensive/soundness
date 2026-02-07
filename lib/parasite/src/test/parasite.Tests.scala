@@ -255,24 +255,16 @@ object Tests extends Suite(m"Parasite tests"):
             value = 2
 
             val task2 = async:
-              println("pre delay 1: "+java.lang.System.currentTimeMillis())
               delay(1.0*Second) // halt
-              println("post delay 1: "+java.lang.System.currentTimeMillis())
               value = 3
 
             task2.await() // halt
             value = 6
-            println("pre delay 2: "+java.lang.System.currentTimeMillis())
             delay(1.0*Second)
-            println("post delay 2: "+java.lang.System.currentTimeMillis())
             value = 4
 
-          println("pre snooze: "+java.lang.System.currentTimeMillis())
           snooze(0.2*Second)
-          println("post snooze: "+java.lang.System.currentTimeMillis())
-          println(t"value = $value")
           task.cancel() // halt
-          println(t"value = $value")
           safely(task.await())
           value
         .assert(_ == 2)
@@ -289,7 +281,6 @@ object Tests extends Suite(m"Parasite tests"):
           task.await()
           value
         .assert(_ == 3)
-        println("C")
 
         test(m"Incomplete child is cancelled"):
           import codicils.cancel
@@ -310,17 +301,12 @@ object Tests extends Suite(m"Parasite tests"):
             Stream.continually:
               count += 1
               relent()
-              println(java.lang.System.currentTimeMillis())
               snooze(100L)
             . take(10)
             . to(List)
 
           snooze(300L)
-          println("CANCEL")
-
-          println("X")
           task.cancel()
-          println("Y")
           count
         .assert(_ == 2)
 

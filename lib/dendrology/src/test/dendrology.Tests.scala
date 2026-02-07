@@ -82,4 +82,4 @@ object Tests extends Suite(m"Dendrology tests"):
   def run(): Unit =
     import treeStyles.default
     import dagStyles.default
-    DagDiagram(types).render { node => t"▪ $node" }.each(println(_))
+    DagDiagram(types).render { node => t"▪ $node" }

@@ -90,7 +90,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       Zipfile(twoEntryFile).entries()
     .assert(_.length == 2)
 
-    test(m"Check ZIP file's first entry has correct content after update"):
+    test(m"ZIP first entry correct after update"):
       Zipfile(twoEntryFile).entries().head.read[Text]
     .assert(_ == t"Hello world")
 

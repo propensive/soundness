@@ -54,16 +54,13 @@ object Tests extends Suite(m"Superlunary Tests"):
             println(y)
             Example(t"Time: $x $y ${jl.System.currentTimeMillis - ${message}.count}", 9)  }
 
-      println(fn(Example(t"one", jl.System.currentTimeMillis)))
-      println(fn(Example(t"two", jl.System.currentTimeMillis)))
+      fn(Example(t"one", jl.System.currentTimeMillis))
+      fn(Example(t"two", jl.System.currentTimeMillis))
 
       var count = 100
-      println:
-        Isolation.dispatch:
-          '{  "hello message"+($count + 1) }
+      Isolation.dispatch:
+        '{  "hello message"+($count + 1) }
 
     catch
       case error: Throwable =>
-        println("Uncaught throwable")
-        println(error)
         error.printStackTrace()

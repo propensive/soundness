@@ -186,11 +186,6 @@ object Tests extends Suite(m"Abacist Tests"):
           Quanta[Weight](1, 3, 2).show
         .assert(_ == t"1st 3lb 2oz")
 
-        test(m"Show a weight of three parts"):
-          Quanta[Weight](1, 3, 2).show
-        .assert(_ == t"1st 3lb 2oz")
-
-
         test(m"Show with custom unit rendering"):
           given UnitsNames[Height] = () => List(t"'", t"\"")
           Quanta[Height](5, 9).show

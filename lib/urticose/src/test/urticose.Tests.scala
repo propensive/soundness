@@ -150,10 +150,6 @@ object Tests extends Suite(m"Urticose tests"):
         capture(t"1:2:3:4:5:6:7:8:9".decode[Ipv6])
       .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6WrongNumberOfGroups(9)))
 
-      test(m"IPv6 address wrong number of groups"):
-        capture(t"1:2:3:4:5:6:7:8:9".decode[Ipv6])
-      .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6WrongNumberOfGroups(9)))
-
       test(m"IPv6 duplicate double-colon"):
         capture(t"1::3:7::9".decode[Ipv6])
       .assert(_ == IpAddressError(IpAddressError.Reason.Ipv6MultipleDoubleColons))
@@ -462,11 +458,11 @@ object Tests extends Suite(m"Urticose tests"):
         t"01-23-45-ab-cd-ef".decode[MacAddress]
       .assert(_ == MacAddress(1251004370415L))
 
-      test(m"Check MAC address with too few groups"):
+      test(m"Check MAC address with 5 groups"):
         capture[MacAddressError](t"01-23-ab-cd-ef".decode[MacAddress])
       .assert(_ == MacAddressError(WrongGroupCount(5)))
 
-      test(m"Check MAC address with too few groups"):
+      test(m"Check MAC address with 7 groups"):
         capture[MacAddressError](t"01-23-45-67-ab-cd-ef".decode[MacAddress])
       .assert(_ == MacAddressError(WrongGroupCount(7)))
 

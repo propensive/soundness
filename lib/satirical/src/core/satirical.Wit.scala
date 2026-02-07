@@ -144,7 +144,6 @@ object Wit:
 
     def packageDeclaration(): Package =
       val namespace = ident()
-      println(conduit.datum)
       conduit.datum match
         case ':' =>
           val name = ident()

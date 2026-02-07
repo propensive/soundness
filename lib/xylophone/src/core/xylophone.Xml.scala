@@ -126,7 +126,6 @@ object Xml extends Tag.Container
       case Fragment(header: Header, content) => Document(content, header)
 
       case other =>
-        println(other.show)
         abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
 
   given streamable: (Monitor, Codicil) => Document[Xml] is Streamable by Text =
