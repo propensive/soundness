@@ -32,6 +32,8 @@
                                                                                                   */
 package obligatory
 
+import java.util.concurrent.atomic as juca
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -41,94 +43,33 @@ import gossamer.*
 import hieroglyph.*
 import jacinta.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import telekinesis.*
+import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-object Sse:
-  given servable: LazyList[Sse] is Servable =
-    import charEncoders.utf8
-    Servable[LazyList[Sse]](_ => media"text/event-stream")(_.map(_.encode.data))
+class SseSource(capacity: Int):
+  private val buffer: Array[Sse] = new Array(capacity)
+  private val counter: juca.AtomicInteger = new juca.AtomicInteger(0)
+  private var current: Int = 0
+  private var spool: Spool[Sse] = Spool()
 
-  given framable: Text is Framable by Sse = input =>
-    val cursor = Cursor(input)
+  def put[entity: Encodable in Sse](value: entity): Unit = synchronized:
+    val sse = value.encode.copy(id = current.show)
+    buffer(current%capacity) = sse
+    spool.put(sse)
+    current += 1
 
-    def frame(start: Cursor.Mark)(using Cursor.Held): Optional[Text] = cursor.hold:
-      if !cursor.finished && cursor.seek(Lf) then
-        val end = cursor.mark
-        cursor.next()
-        cursor.lay(cursor.grab(start, end)): char =>
-          if char == Lf then cursor.next() yet cursor.grab(start, end) else frame(start)
-      else if cursor.mark == start then Unset else
-        cursor.grab(start, cursor.mark)
+  def stream(start: Optional[Int] = Unset): Stream[Sse] raises SseError = synchronized:
+    start.let: start =>
+      spool.stop()
+      spool = Spool()
+      if current - start - 1 > capacity then abort(SseError()) else
+        ((start + 1) until current).map: index =>
+          spool.put(buffer(index%capacity))
 
-    new Iterator[Text]:
-      private var ready: Optional[Text] = Unset
-      def hasNext: Boolean =
-        if ready == Unset then ready = cursor.hold(frame(cursor.mark))
-        ready != Unset
-
-      def next(): Text = ready.asInstanceOf[Text].also:
-        ready = Unset
-
-  given jsonEncodable: Json is Encodable in Sse =
-    import jsonPrinters.minimal
-    json => Sse("message", List(json.show))
-
-  given textEncodable: Text is Encodable in Sse =
-    text => Sse("message", List(text))
-
-  given decodable: Tactic[SseError] => Sse is Decodable in Text = text =>
-    var event: Text = "message"
-    var data: List[Text] = Nil
-    var id: Optional[Text] = Unset
-    var retry: Optional[Long] = Unset
-
-    text.cut(Lf).each: line =>
-      line.s.indexOf(':') match
-        case -1 => raise(SseError())
-        case n  =>
-          val value = line.skip(if line.at(n.z + 1) == ' ' then n + 2 else n + 1)
-
-          line.keep(n) match
-            case "event" => event = value
-            case "data"  => data ::= value
-            case "id"    => id = value
-            case "retry" => retry = safely(value.decode[Long]).lest(SseError())
-            case _       => raise(SseError())
-
-    Sse(event, data.reverse, id, retry)
-
-  given encodable: Sse is Encodable in Text =
-    sse =>
-      val buffer = StringBuilder()
-      buffer.append("event: ")
-      buffer.append(sse.event.s)
-      buffer.append("\n")
-
-      sse.data.each: line =>
-        buffer.append("data: ")
-        buffer.append(line)
-        buffer.append("\n")
-
-      sse.id.let: id =>
-        buffer.append("id: ")
-        buffer.append(id)
-        buffer.append("\n")
-
-      sse.retry.let: retry =>
-        buffer.append("retry: ")
-        buffer.append(retry)
-        buffer.append("\n")
-
-      buffer.append("\n")
-      buffer.toString().tt
-
-case class Sse
-            (event: Text           = "message",
-             data:  List[Text]     = Nil,
-             id:    Optional[Text] = Unset,
-             retry: Optional[Long] = Unset)
+    spool.stream
