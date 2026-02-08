@@ -166,7 +166,8 @@ object soundness extends ScalaModule:
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
-    legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema)
+    legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema,
+    obligatory.core, synesthesia.core)
 
   object all extends Bundle(base, cli, data, sci, test, tool, web)
 
