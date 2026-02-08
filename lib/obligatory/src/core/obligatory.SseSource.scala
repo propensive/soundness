@@ -52,7 +52,7 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-case class SseSource(capacity: Int):
+class SseSource(capacity: Int):
   private val buffer: Array[Sse] = new Array(capacity)
   private val counter: juca.AtomicInteger = new juca.AtomicInteger(0)
   private var current: Int = 0
