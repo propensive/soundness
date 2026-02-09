@@ -47,9 +47,9 @@ import scala.quoted.*
 
 object Probably:
   private def handle[test: Type, result: Type]
-               (test:      Expr[Test[test]],
-                predicate: Expr[test => Boolean],
-                action:    Expr[Trial[test] => result])
+    ( test:      Expr[Test[test]],
+      predicate: Expr[test => Boolean],
+      action:    Expr[Trial[test] => result] )
   : Macro[result] =
 
       import quotes.reflect.*
@@ -140,15 +140,15 @@ object Probably:
 
 
   def assertion[test, test2 <: test, report, result]
-       (runner:       Runner[report],
-        test:         Test[test2],
-        predicate:    test2 => Boolean,
-        result:       Trial[test2] => result,
-        contrast:     test is Contrastable,
-        exp:          Option[test],
-        inc:          Inclusion[report, Verdict],
-        inc2:         Inclusion[report, Verdict.Detail],
-        decomposable: test is Decomposable)
+    ( runner:       Runner[report],
+      test:         Test[test2],
+      predicate:    test2 => Boolean,
+      result:       Trial[test2] => result,
+      contrast:     test is Contrastable,
+      exp:          Option[test],
+      inc:          Inclusion[report, Verdict],
+      inc2:         Inclusion[report, Verdict.Detail],
+      decomposable: test is Decomposable )
   : result =
 
       runner.run(test).pipe: run =>
@@ -163,12 +163,12 @@ object Probably:
               exp match
                 case Some(exp) =>
                   inc2.include
-                   (runner.report,
-                    test.id,
-                    Verdict.Detail.Compare
-                     (decomposable.decomposition(exp).text,
-                      decomposable.decomposition(value).text,
-                      contrast.juxtaposition(exp, value)))
+                    ( runner.report,
+                      test.id,
+                      Verdict.Detail.Compare
+                        ( decomposable.decomposition(exp).text,
+                          decomposable.decomposition(value).text,
+                          contrast.juxtaposition(exp, value) ) )
                 case None =>
                   // inc2.include(runner.report, test.id, Verdict.Detail.Compare
                   //  (summon[Any is Contrastable].compare(value, 1)))

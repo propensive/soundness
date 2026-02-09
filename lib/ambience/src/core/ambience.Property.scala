@@ -56,7 +56,7 @@ object Property:
 
 
     def applyDynamic[property](key: String)()
-      (using properties: System, reader: (name+"."+key.type) is Property of property)
+      ( using properties: System, reader: (name+"."+key.type) is Property of property )
     : property =
 
         val name = property+"."+key

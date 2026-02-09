@@ -46,7 +46,7 @@ object Diff:
 
   private def parse(lines: Stream[Text]): Diff[Text] raises DiffError =
     def recur
-         (todo: Stream[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
+      ( todo: Stream[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int )
     : Diff[Text] =
 
         if pos < target

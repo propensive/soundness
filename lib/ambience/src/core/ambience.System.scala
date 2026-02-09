@@ -41,7 +41,7 @@ import vacuous.*
 object System:
   object properties extends Dynamic:
     def apply[property](property: Text)
-         (using properties: System, reader: String is Property of property)
+      ( using properties: System, reader: String is Property of property )
     : property =
 
         reader.read(properties(property), property)

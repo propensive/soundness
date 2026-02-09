@@ -212,11 +212,11 @@ object Cellulose extends Cellulose2:
 
 
     def parse[source]
-         (source:    source,
-          schema:    CodlSchema = CodlSchema.Free,
-          subs:      List[Atom] = Nil,
-          fromStart: Boolean    = false)
-        (using streamable: source is Streamable by Text, aggregate: Tactic[ParseError])
+      ( source:    source,
+        schema:    CodlSchema = CodlSchema.Free,
+        subs:      List[Atom] = Nil,
+        fromStart: Boolean    = false )
+      ( using streamable: source is Streamable by Text, aggregate: Tactic[ParseError] )
     : CodlDoc =
 
         val (margin, stream) =
@@ -225,14 +225,14 @@ object Cellulose extends Cellulose2:
         val baseSchema: CodlSchema = schema
 
         case class Proto
-                    (key:      Optional[Text]   = Unset,
-                     line:     Int              = 0,
-                     col:      Int              = 0,
-                     children:  List[CodlNode]  = Nil,
-                     extra:     Optional[Extra] = Unset,
-                     schema:    CodlSchema      = CodlSchema.Free,
-                     params:    Int             = 0,
-                     multiline: Boolean         = false):
+          ( key:       Optional[Text]   = Unset,
+            line:      Int              = 0,
+            col:       Int              = 0,
+            children:  List[CodlNode]   = Nil,
+            extra:     Optional[Extra]  = Unset,
+            schema:    CodlSchema       = CodlSchema.Free,
+            params:    Int              = 0,
+            multiline: Boolean          = false ):
 
           def commit(child: Proto): (Optional[(Text, (Int, Int))], Proto) =
             val closed = child.close
@@ -273,29 +273,29 @@ object Cellulose extends Cellulose2:
 
         @tailrec
         def recur
-             (tokens:  Stream[CodlToken],
-              focus:   Proto,
-              peers:   List[CodlNode],
-              peerIds: Map[Text, (Int, Int)],
-              stack:   List[(Proto, List[CodlNode])],
-              lines:   Int,
-              subs:    List[Atom],
-              body:    Stream[Char],
-              tabs:    List[Int])
+          ( tokens:  Stream[CodlToken],
+            focus:   Proto,
+            peers:   List[CodlNode],
+            peerIds: Map[Text, (Int, Int)],
+            stack:   List[(Proto, List[CodlNode])],
+            lines:   Int,
+            subs:    List[Atom],
+            body:    Stream[Char],
+            tabs:    List[Int] )
         : CodlDoc =
 
             def schema: CodlSchema = stack.prim.lay(baseSchema)(_.head.schema)
 
             inline def go
-                        (tokens:  Stream[CodlToken]             = tokens.tail,
-                        focus:   Proto                         = focus,
-                        peers:   List[CodlNode]                = peers,
-                        peerIds: Map[Text, (Int, Int)]         = peerIds,
-                        stack:   List[(Proto, List[CodlNode])] = stack,
-                        lines:   Int                           = lines,
-                        subs:    List[Atom]                    = subs,
-                        body:    Stream[Char]                  = Stream(),
-                        tabs:    List[Int]                     = Nil)
+              ( tokens:  Stream[CodlToken]             = tokens.tail,
+                focus:   Proto                         = focus,
+                peers:   List[CodlNode]                = peers,
+                peerIds: Map[Text, (Int, Int)]         = peerIds,
+                stack:   List[(Proto, List[CodlNode])] = stack,
+                lines:   Int                           = lines,
+                subs:    List[Atom]                    = subs,
+                body:    Stream[Char]                  = Stream(),
+                tabs:    List[Int]                     = Nil )
             : CodlDoc =
 
                 recur(tokens, focus, peers, peerIds, stack, lines, subs, body, tabs)
@@ -478,11 +478,11 @@ object Cellulose extends Cellulose2:
 
 
         def istream
-            (char:    Character,
-              state:   State     = Indent,
-              indent:  Int       = margin,
-              count:   Int,
-              padding: Boolean)
+          ( char:    Character,
+            state:   State     = Indent,
+            indent:  Int       = margin,
+            count:   Int,
+            padding: Boolean )
         : Stream[CodlToken] =
 
             stream(char, state, indent, count, padding)
@@ -490,11 +490,11 @@ object Cellulose extends Cellulose2:
 
         @tailrec
         def stream
-            (char:    Character,
-              state:   State     = Indent,
-              indent:  Int       = margin,
-              count:   Int       = start,
-              padding: Boolean)
+          ( char:    Character,
+            state:   State     = Indent,
+            indent:  Int       = margin,
+            count:   Int       = start,
+            padding: Boolean )
         : Stream[CodlToken] =
 
             inline def next(): Character =
@@ -505,10 +505,10 @@ object Cellulose extends Cellulose2:
 
 
             inline def recur
-                        (state:   State,
-                        indent:  Int     = indent,
-                        count:   Int     = count + 1,
-                        padding: Boolean = padding)
+              ( state:   State,
+                indent:  Int     = indent,
+                count:   Int     = count + 1,
+                padding: Boolean = padding )
             : Stream[CodlToken] =
 
                 stream(next(), state, indent, count, padding)
@@ -527,10 +527,10 @@ object Cellulose extends Cellulose2:
 
 
             inline def irecur
-                        (state: State,
-                        indent: Int      = indent,
-                        count: Int       = count + 1,
-                        padding: Boolean = padding)
+              ( state:   State,
+                indent:  Int     = indent,
+                count:   Int     = count + 1,
+                padding: Boolean = padding )
             : Stream[CodlToken] =
 
                 istream(next(), state, indent, count, padding)

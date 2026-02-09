@@ -56,7 +56,7 @@ trait Interpolator[input, state, result]:
   extends Error(m"error $positionalMessage at position $start")
 
   def expand(context: Expr[StringContext], seq: Expr[Seq[Any]])(using thisType: Type[this.type])
-       (using Type[input], Type[state], Type[result])
+    ( using Type[input], Type[state], Type[result] )
   : Macro[result] =
 
       expansion(context, seq)(1)
@@ -83,11 +83,11 @@ trait Interpolator[input, state, result]:
                   (msg, start + off.or(0), start + off.or(0) + len.or(end - start - off.or(0)))
 
       def recur
-          (seq:       Seq[Expr[Any]],
-            parts:     Seq[String],
-            positions: Seq[Position],
-            state:     state,
-            expr:      Expr[state])
+        ( seq:       Seq[Expr[Any]],
+          parts:     Seq[String],
+          positions: Seq[Position],
+          state:     state,
+          expr:      Expr[state] )
       : (state, Expr[result]) throws PositionalError =
 
         seq match

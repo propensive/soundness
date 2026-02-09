@@ -38,7 +38,7 @@ import fulminate.*
 import proscenium.*
 
 class AttemptTactic[error <: Exception, success](label: boundary.Label[Attempt[success, error]])
-       (using Diagnostics)
+  ( using Diagnostics )
 extends Tactic[error]:
   private given boundary.Label[Attempt[success, error]] = label
 

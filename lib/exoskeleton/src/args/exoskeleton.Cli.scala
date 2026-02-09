@@ -57,10 +57,10 @@ object Cli:
   def await(): List[Text] = safely(trigger.await(10000L)) yet messages.reverse
 
   def arguments
-       (textArguments: Iterable[Text],
-        focus:         Optional[Int]     = Unset,
-        position:      Optional[Int]     = Unset,
-        tab:           Optional[Ordinal] = Unset)
+    ( textArguments: Iterable[Text],
+      focus:         Optional[Int]     = Unset,
+      position:      Optional[Int]     = Unset,
+      tab:           Optional[Ordinal] = Unset )
   : List[Argument] =
 
       textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
@@ -82,8 +82,8 @@ trait Cli extends Console:
   def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit = ()
 
   def suggest
-       (argument: Argument,
-        update:   (prior: List[Suggestion]) ?=> List[Suggestion],
-        prefix:   Text,
-        suffix:   Text) =
+    ( argument: Argument,
+      update:   (prior: List[Suggestion]) ?=> List[Suggestion],
+      prefix:   Text,
+      suffix:   Text ) =
     ()

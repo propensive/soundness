@@ -50,10 +50,10 @@ trait Abacist3:
       type Contrast = Quanta[units]
 
       inline def compare
-                  (inline left:        Quanta[units],
-                   inline right:       Quanta[units],
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
+        ( inline left:        Quanta[units],
+          inline right:       Quanta[units],
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
       : Boolean =
 
           inline if greaterThan

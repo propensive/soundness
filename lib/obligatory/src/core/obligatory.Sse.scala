@@ -128,7 +128,7 @@ object Sse:
       buffer.toString().tt
 
 case class Sse
-            (event: Text           = "message",
-             data:  List[Text]     = Nil,
-             id:    Optional[Text] = Unset,
-             retry: Optional[Long] = Unset)
+  ( event: Text           = "message",
+    data:  List[Text]     = Nil,
+    id:    Optional[Text] = Unset,
+    retry: Optional[Long] = Unset )

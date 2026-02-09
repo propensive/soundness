@@ -145,8 +145,8 @@ extension [value](iterables: Iterable[Iterable[value]])
 
 extension [value](iterable: Iterable[value])
   transparent inline def total
-                          (using addable:  value is Addable by value,
-                                 equality: addable.Result =:= value)
+    ( using addable:  value is Addable by value,
+            equality: addable.Result =:= value )
   : Optional[value] =
 
       compiletime.summonFrom:
@@ -158,21 +158,21 @@ extension [value](iterable: Iterable[value])
 
 
   transparent inline def mean
-                          (using addable:   value is Addable by value,
-                                 equality:  addable.Result =:= value,
-                                 divisible: value is Divisible by Double,
-                                 eqality2:  divisible.Result =:= value)
+    ( using addable:   value is Addable by value,
+            equality:  addable.Result =:= value,
+            divisible: value is Divisible by Double,
+            eqality2:  divisible.Result =:= value )
   : Optional[value] =
       iterable.total.let(_/iterable.size.toDouble)
 
   inline def mean2
-              (using subtractable: value is Subtractable by value,
-                     addable:      subtractable.Result is Addable by subtractable.Result,
-                     equality:     addable.Result =:= subtractable.Result,
-                     divisible:    subtractable.Result is Divisible by Double,
-                     equality2:    divisible.Result =:= subtractable.Result,
-                     addable2:     value is Addable by divisible.Result,
-                     equality3:    addable2.Result =:= value)
+    ( using subtractable: value is Subtractable by value,
+            addable:      subtractable.Result is Addable by subtractable.Result,
+            equality:     addable.Result =:= subtractable.Result,
+            divisible:    subtractable.Result is Divisible by Double,
+            equality2:    divisible.Result =:= subtractable.Result,
+            addable2:     value is Addable by divisible.Result,
+            equality3:    addable2.Result =:= value )
   : Optional[value] =
 
       if iterable.nil then Unset else
@@ -181,16 +181,16 @@ extension [value](iterable: Iterable[value])
           arbitrary + total/iterable.size.toDouble
 
   def variance
-       (using addable:       value is Addable by value,
-              equality:      addable.Result =:= value,
-              divisible:     value is Divisible by Double,
-              equality2:     divisible.Result =:= value,
-              subtractable:  value is Subtractable by value,
-              multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
-              addable2:      multiplicable.Result is Addable by multiplicable.Result,
-              zeroic2:       multiplicable.Result is Zeroic,
-              equality3:     addable2.Result =:= multiplicable.Result,
-              divisible2:    multiplicable.Result is Divisible by Double)
+    ( using addable:       value is Addable by value,
+            equality:      addable.Result =:= value,
+            divisible:     value is Divisible by Double,
+            equality2:     divisible.Result =:= value,
+            subtractable:  value is Subtractable by value,
+            multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
+            addable2:      multiplicable.Result is Addable by multiplicable.Result,
+            zeroic2:       multiplicable.Result is Zeroic,
+            equality3:     addable2.Result =:= multiplicable.Result,
+            divisible2:    multiplicable.Result is Divisible by Double )
   : Optional[divisible2.Result] =
 
       iterable.mean.let: mean =>
@@ -198,14 +198,14 @@ extension [value](iterable: Iterable[value])
 
 
   def std
-       (using addable:       value is Addable by value,
-              equality:      addable.Result =:= value,
-              divisible:     value is Divisible by Double,
-              equality2:     divisible.Result =:= value,
-              divisible2:    value is Divisible by value,
-              equality3:     divisible2.Result =:= Double,
-              multiplicable: value is Multiplicable by Double,
-              equality4:     multiplicable.Result =:= value)
+    ( using addable:       value is Addable by value,
+            equality:      addable.Result =:= value,
+            divisible:     value is Divisible by Double,
+            equality2:     divisible.Result =:= value,
+            divisible2:    value is Divisible by value,
+            equality3:     divisible2.Result =:= Double,
+            multiplicable: value is Multiplicable by Double,
+            equality4:     multiplicable.Result =:= value )
   : Optional[value] =
 
       iterable.mean.let: mean0 =>
@@ -223,9 +223,9 @@ extension [value](iterable: Iterable[value])
 
 
   def product
-       (using unital:        value is Unital,
-              multiplicable: value is Multiplicable by value,
-              equality:      multiplicable.Result =:= value)
+    ( using unital:        value is Unital,
+            multiplicable: value is Multiplicable by value,
+            equality:      multiplicable.Result =:= value )
   : value =
 
       iterable.foldLeft(unital.one)(multiplicable.multiply)

@@ -49,7 +49,7 @@ object Annotated:
     def fields: Map[Text, Set[Operand]]
 
   class AnnotatedFields[operand <: StaticAnnotation, self, plane, limit]
-         (annotations0: Set[operand], fields0: Map[Text, Set[operand]])
+    ( annotations0: Set[operand], fields0: Map[Text, Set[operand]] )
   extends Fields:
     type Operand = operand
     type Self = self
@@ -64,7 +64,7 @@ object Annotated:
     def field: Text
 
   class AnnotatedField[operand <: StaticAnnotation, self, plane, limit, topic, target <: Label]
-         (annotations0: Set[operand], fields0: Map[Text, Set[operand]])
+    ( annotations0: Set[operand], fields0: Map[Text, Set[operand]] )
   extends AnnotatedFields[operand, self, plane, limit](annotations0, fields0), Field:
     type Unique = true
     type Topic = topic
@@ -77,7 +77,7 @@ object Annotated:
     def apply(): Map[Text, Set[Operand]]
 
   class AnnotatedSubtypes[operand <: StaticAnnotation, self, plane, limit]
-         (subtypes0: Map[Text, Set[operand]])
+    ( subtypes0: Map[Text, Set[operand]] )
   extends Subtypes:
     type Operand = operand
     type Self = self

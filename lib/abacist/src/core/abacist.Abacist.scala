@@ -111,7 +111,7 @@ object Abacist:
 
 
   def multiplyQuanta[units <: Tuple: Type]
-       (count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean)
+    ( count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean )
   : Macro[Any] =
 
       if division then '{Quanta.fromLong[units](($count.long/$multiplier + 0.5).toLong)}
@@ -130,7 +130,7 @@ object Abacist:
 
 
   def fromQuantity[quantity <: Measure: Type, units <: Tuple: Type]
-       (quantity: Expr[Quantity[quantity]])
+    ( quantity: Expr[Quantity[quantity]] )
   : Macro[Quanta[units]] =
 
       import quotes.reflect.*

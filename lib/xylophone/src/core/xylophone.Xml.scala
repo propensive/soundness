@@ -68,7 +68,7 @@ import textSanitizers.skip
 import scala.annotation.tailrec
 
 object Xml extends Tag.Container
-         (label = "xml", admissible = Set("head", "body")), Format:
+  ( label = "xml", admissible = Set("head", "body") ), Format:
   type Topic = "xml"
   type Transport = "head" | "body"
 
@@ -342,12 +342,12 @@ object Xml extends Tag.Container
     case Node(parent: Text)
 
   private[xylophone] def parse[schema <: XmlSchema]
-       (input:       Iterator[Text],
-        root:        Tag,
-        callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
-        fastforward: Int                               = 0,
-        headers:     Boolean = false)
-       (using schema: XmlSchema): Xml raises ParseError =
+    ( input:       Iterator[Text],
+      root:        Tag,
+      callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
+      fastforward: Int                               = 0,
+      headers:     Boolean = false )
+    ( using schema: XmlSchema ): Xml raises ParseError =
 
     import lineation.linefeedChars
 
@@ -828,9 +828,9 @@ case class TextNode(text: Text) extends Node:
     case _                           => false
 
 case class Element
-            (label:      Text,
-             attributes: Map[Text, Text],
-             children:   IArray[Node])
+  ( label:      Text,
+    attributes: Map[Text, Text],
+    children:   IArray[Node] )
 extends Node, Topical, Transportive:
 
   override def toString(): String =
@@ -857,7 +857,7 @@ extends Node, Topical, Transportive:
 
 
   def updateDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute in Form)
-       (value: Text)
+    ( value: Text )
   : Element of Topic over Transport in Form =
 
       Element(label, attributes.updated(name, value), children)

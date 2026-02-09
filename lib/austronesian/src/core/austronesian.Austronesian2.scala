@@ -94,11 +94,11 @@ object Austronesian2:
 
 
   def proxy
-     (className:   Expr[Text],
+    ( className:   Expr[Text],
       methodName:  Expr[String],
       arguments:   Expr[Seq[Any]],
       classloader: Expr[Classloader],
-      singleton:   Expr[Boolean])
+      singleton:   Expr[Boolean] )
   : Macro[Any] =
 
     import quotes.reflect.*

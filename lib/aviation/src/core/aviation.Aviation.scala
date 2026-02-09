@@ -112,10 +112,10 @@ object Aviation:
 
     given orderable: Year is Orderable:
       inline def compare
-                  (inline left:        Year,
-                   inline right:       Year,
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
+        ( inline left:        Year,
+          inline right:       Year,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
       : Boolean =
 
           if left == right then !strict else (left < right)^greaterThan
@@ -159,8 +159,9 @@ object Aviation:
     erased given underlying: Underlying[Date, Int] = !!
     def of(day: Int): Date = day
 
-    def apply(using calendar: Calendar)
-         (year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal)
+    def apply
+      ( using calendar: Calendar )
+      ( year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal )
     : Date raises TimeError =
 
         calendar.jdn(year, month, day)
@@ -228,10 +229,10 @@ object Aviation:
 
     inline given orderable: Date is Orderable:
       inline def compare
-                  (inline left:        Date,
-                   inline right:       Date,
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
+        ( inline left:        Date,
+          inline right:       Date,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
       : Boolean =
 
           if left == right then !strict else (left < right)^greaterThan

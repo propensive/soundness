@@ -172,7 +172,7 @@ object Contingency:
 
 
   def track[accrual <: Exception: Type, focus: Type]
-       (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
+    ( accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual] )
   : Macro[Tracking[accrual, ?, focus]] =
 
       import quotes.reflect.*
@@ -194,7 +194,7 @@ object Contingency:
 
 
   def validate[accrual: Type, focus: Type]
-       (accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual])
+    ( accrual: Expr[accrual], handler: Expr[(Optional[focus], accrual) ?=> Exception ~> accrual] )
   : Macro[Any] =
 
       import quotes.reflect.*
@@ -216,7 +216,7 @@ object Contingency:
 
 
   def accrue[accrual <: Exception: Type]
-       (accrual: Expr[accrual], handler: Expr[accrual ?=> Exception ~> accrual])
+    ( accrual: Expr[accrual], handler: Expr[accrual ?=> Exception ~> accrual] )
   : Macro[Any] =
 
       import quotes.reflect.*
@@ -254,7 +254,7 @@ object Contingency:
 
 
   def mitigateWithin[context[_]: Type, result: Type]
-       (mitigate: Expr[Mitigation[context]], lambda: Expr[context[result]])
+    ( mitigate: Expr[Mitigation[context]], lambda: Expr[context[result]] )
   : Macro[result] =
 
         import quotes.reflect.*
@@ -280,7 +280,7 @@ object Contingency:
 
 
   def recoverWithin[context[_]: Type, result: Type]
-       (recovery: Expr[Recovery[?, context]], lambda: Expr[context[result]])
+    ( recovery: Expr[Recovery[?, context]], lambda: Expr[context[result]] )
   : Macro[result] =
 
       type ContextResult = context[result]
@@ -312,10 +312,10 @@ object Contingency:
 
 
   def accrueWithin[accrual <: Exception: Type, context[_]: Type, result: Type]
-       (accrue:      Expr[Accrue[accrual, context]],
-        lambda:      Expr[context[result]],
-        tactic:      Expr[Tactic[accrual]],
-        diagnostics: Expr[Diagnostics])
+    ( accrue:      Expr[Accrue[accrual, context]],
+      lambda:      Expr[context[result]],
+      tactic:      Expr[Tactic[accrual]],
+      diagnostics: Expr[Diagnostics] )
   : Macro[result] =
 
       '{  val ref: juca.AtomicReference[accrual] = juca.AtomicReference(null)
@@ -352,10 +352,10 @@ object Contingency:
 
 
   def trackWithin[accrual <: Exception: Type, context[_]: Type, result: Type, focus: Type]
-       (track:       Expr[Tracking[accrual, context, focus]],
-        lambda:      Expr[Foci[focus] ?=> context[result]],
-        tactic:      Expr[Tactic[accrual]],
-        diagnostics: Expr[Diagnostics])
+    ( track:       Expr[Tracking[accrual, context, focus]],
+      lambda:      Expr[Foci[focus] ?=> context[result]],
+      tactic:      Expr[Tactic[accrual]],
+      diagnostics: Expr[Diagnostics] )
   : Macro[result] =
 
       '{  val foci: Foci[focus] = TrackFoci()
@@ -395,9 +395,9 @@ object Contingency:
 
 
   def validateWithin[accrual <: Exception: Type, context[_]: Type, focus: Type]
-       (validate:    Expr[Validate[accrual, context, focus]],
-        lambda:      Expr[Foci[focus] ?=> context[Any]],
-        diagnostics: Expr[Diagnostics])
+    ( validate:    Expr[Validate[accrual, context, focus]],
+      lambda:      Expr[Foci[focus] ?=> context[Any]],
+      diagnostics: Expr[Diagnostics] )
   : Macro[accrual] =
 
       '{  val foci: Foci[focus] = TrackFoci()

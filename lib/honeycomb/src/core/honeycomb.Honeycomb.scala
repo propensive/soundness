@@ -395,7 +395,7 @@ object Honeycomb:
                 . in[Whatwg]  }
 
   def attributes[result: Type, thisType <: Tag to result: Type]
-       (tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]])
+    ( tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]] )
   : Macro[result] =
       import quotes.reflect.*
 

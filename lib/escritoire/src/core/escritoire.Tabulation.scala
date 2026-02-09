@@ -61,8 +61,8 @@ abstract class Tabulation[text: ClassTag]():
 
 
   def grid(width: Int)
-       (using style: TableStyle, metrics: Text is Measurable, textual: text is Textual)
-       (using attenuation: Attenuation)
+    ( using style: TableStyle, metrics: Text is Measurable, textual: text is Textual )
+    ( using attenuation: Attenuation )
   : Grid[text] =
 
       case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):

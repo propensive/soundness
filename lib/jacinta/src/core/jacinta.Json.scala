@@ -317,7 +317,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
 
   def updateDynamic(field: String)[value: Encodable in Json](value: value)
-       (using erased DynamicJsonEnabler)
+    ( using erased DynamicJsonEnabler )
   : Json raises JsonError =
 
       modify(field, value.encode)

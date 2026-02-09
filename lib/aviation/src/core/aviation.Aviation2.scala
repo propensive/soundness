@@ -103,10 +103,10 @@ object Aviation2:
 
     inline given orderable: Instant is Orderable:
       inline def compare
-                  (inline left:        Instant,
-                   inline right:       Instant,
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
+        ( inline left:        Instant,
+          inline right:       Instant,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
       : Boolean =
 
           if left.long == right.long then !strict else (left.long < right.long)^greaterThan

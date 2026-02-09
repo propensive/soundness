@@ -133,14 +133,14 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
 
 
   def selectDynamic[result](label: String)(using erased (label.type is Parametric to result))
-       (using decodable: result is Decodable in Query)
+    ( using decodable: result is Decodable in Query )
   : result =
 
       decodable.decoded(apply(label.tt))
 
   def updateDynamic(label: String)[result: Encodable in Query]
-       (using erased (label.type is Parametric to result))
-       (value: result)
+    ( using erased (label.type is Parametric to result) )
+    ( value: result )
   : Query =
       val updates: List[(Text, Text)] = value.encode.values
 
