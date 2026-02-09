@@ -81,10 +81,10 @@ case class Permutation(factoradic: Factoradic):
 
     def recur
       ( lehmer:  List[Int],
-          prefix:  List[element],
-          list:    List[element],
-          current: Int,
-          result:  List[element])
+        prefix:  List[element],
+        list:    List[element],
+        current: Int,
+        result:  List[element] )
     : List[element] =
 
         lehmer match

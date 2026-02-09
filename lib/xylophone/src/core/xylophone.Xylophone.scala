@@ -97,8 +97,8 @@ object Xylophone:
 
       def checkPi
         ( array:     Expr[Array[Any]],
-            pattern:   ProcessingInstruction,
-            scrutinee: Expr[ProcessingInstruction])
+          pattern:   ProcessingInstruction,
+          scrutinee: Expr[ProcessingInstruction] )
       : Expr[Boolean] =
 
           '{  ${Expr(pattern.target)} == $scrutinee.target

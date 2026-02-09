@@ -41,9 +41,9 @@ import proscenium.*
 
 class AccrueTactic
   [ error <: Exception, accrual, result ]
-  ( label: boundary.Label[Option[result]],
-    ref: juca.AtomicReference[accrual],
-    initial: accrual)
+  ( label:   boundary.Label[Option[result]],
+    ref:     juca.AtomicReference[accrual],
+    initial: accrual )
    (lambda: (accrual: accrual) ?=> Exception ~> accrual)
    (using val diagnostics: Diagnostics)
 extends Tactic[error]:

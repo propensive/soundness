@@ -56,9 +56,9 @@ trait Quantitative2:
 
       inline def compare
         ( inline left:    Temperature,
-                  inline right:   Temperature,
-                  inline strict:  Boolean,
-                  inline greater: Boolean)
+          inline right:   Temperature,
+          inline strict:  Boolean,
+          inline greater: Boolean )
       : Boolean =
 
           !strict && left.kelvin == right.kelvin || (left.kelvin < right.kelvin) ^ greater
@@ -383,9 +383,9 @@ trait Quantitative2:
 
   def mulTypeclass
     [ left         <: Measure:         Type,
-        multiplicand <: Quantity[left]:  Type,
-        right        <: Measure:         Type,
-        multiplier   <: Quantity[right]: Type]
+      multiplicand <: Quantity[left]:  Type,
+      right        <: Measure:         Type,
+      multiplier   <: Quantity[right]: Type ]
   : Macro[multiplicand is Multiplicable by multiplier] =
 
       val left = UnitsMap[left]
@@ -411,9 +411,9 @@ trait Quantitative2:
 
   def divTypeclass
     [ left     <: Measure:         Type,
-        dividend <: Quantity[left]:  Type,
-        right    <: Measure:         Type,
-        divisor  <: Quantity[right]: Type]
+      dividend <: Quantity[left]:  Type,
+      right    <: Measure:         Type,
+      divisor  <: Quantity[right]: Type ]
   : Macro[dividend is Divisible by divisor] =
 
       val left = UnitsMap[left]
@@ -534,9 +534,9 @@ trait Quantitative2:
 
   def greaterThan[left <: Measure: Type, right <: Measure: Type]
     ( leftExpr:  Expr[Quantity[left]],
-        rightExpr: Expr[Quantity[right]],
-        strict:    Expr[Boolean],
-        invert:    Expr[Boolean])
+      rightExpr: Expr[Quantity[right]],
+      strict:    Expr[Boolean],
+      invert:    Expr[Boolean] )
        (using Quotes)
   : Expr[Boolean] =
 
@@ -609,9 +609,9 @@ trait Quantitative2:
 
   def subTypeclass
     [ left      <: Measure:         Type,
-        quantity  <: Quantity[left]:  Type,
-        right     <: Measure:         Type,
-        quantity2 <: Quantity[right]: Type]
+      quantity  <: Quantity[left]:  Type,
+      right     <: Measure:         Type,
+      quantity2 <: Quantity[right]: Type ]
        (using Quotes)
   : Expr[quantity is Subtractable by quantity2] =
 
@@ -628,9 +628,9 @@ trait Quantitative2:
 
   def addTypeclass
     [ left      <: Measure:         Type,
-        quantity  <: Quantity[left]:  Type,
-        right     <: Measure:         Type,
-        quantity2 <: Quantity[right]: Type]
+      quantity  <: Quantity[left]:  Type,
+      right     <: Measure:         Type,
+      quantity2 <: Quantity[right]: Type ]
        (using Quotes)
   : Expr[quantity is Addable by quantity2] =
 
@@ -645,9 +645,9 @@ trait Quantitative2:
 
   def checkable
     [ left      <: Measure:         Type,
-        quantity  <: Quantity[left]:  Type,
-        right     <: Measure:         Type,
-        quantity2 <: Quantity[right]: Type]
+      quantity  <: Quantity[left]:  Type,
+      right     <: Measure:         Type,
+      quantity2 <: Quantity[right]: Type ]
        (using Quotes)
   : Expr[quantity is Checkable against quantity2] =
 

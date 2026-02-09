@@ -135,7 +135,7 @@ extension [plane: Filesystem](path: Path on plane)
 
   def hardLinkTo(destination: Path on plane)
     ( using overwritePreexisting:     OverwritePreexisting on plane,
-              createNonexistentParents: CreateNonexistentParents on plane)
+            createNonexistentParents: CreateNonexistentParents on plane )
   : Path on plane raises IoError =
 
       createNonexistentParents(destination):
@@ -161,9 +161,9 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def copyTo(destination: Path on plane)
-    ( using overwritePreexisting:    OverwritePreexisting on plane,
-              dereferenceSymlinks:     DereferenceSymlinks,
-              createNonexistentParents: CreateNonexistentParents on plane)
+    ( using overwritePreexisting:     OverwritePreexisting on plane,
+            dereferenceSymlinks:      DereferenceSymlinks,
+            createNonexistentParents: CreateNonexistentParents on plane )
   : Path on plane raises IoError =
 
       createNonexistentParents(destination):
@@ -175,8 +175,8 @@ extension [plane: Filesystem](path: Path on plane)
 
   def copyInto(destination: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
-              dereferenceSymlinks:  DereferenceSymlinks,
-              substantiable:        (Path on plane) is Substantiable)
+            dereferenceSymlinks:  DereferenceSymlinks,
+            substantiable:        (Path on plane) is Substantiable )
   : Path on plane raises IoError =
 
       given CreateNonexistentParents on plane =
@@ -188,9 +188,9 @@ extension [plane: Filesystem](path: Path on plane)
 
   def moveTo(destination: Path on plane)
     ( using overwritePreexisting:     OverwritePreexisting on plane,
-              moveAtomically:           MoveAtomically,
-              dereferenceSymlinks:      DereferenceSymlinks,
-              createNonexistentParents: CreateNonexistentParents on plane)
+            moveAtomically:           MoveAtomically,
+            dereferenceSymlinks:      DereferenceSymlinks,
+            createNonexistentParents: CreateNonexistentParents on plane )
   : Path on plane raises IoError =
 
       val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
@@ -216,7 +216,7 @@ extension [plane: Filesystem](path: Path on plane)
 
   def symlinkTo(destination: Path on plane)
     ( using overwritePreexisting:     OverwritePreexisting on plane,
-              createNonexistentParents: CreateNonexistentParents on plane)
+            createNonexistentParents: CreateNonexistentParents on plane )
   : Path on plane raises IoError =
 
       createNonexistentParents(destination):

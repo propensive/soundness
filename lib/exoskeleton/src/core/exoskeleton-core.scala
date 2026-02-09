@@ -97,12 +97,12 @@ package executives:
 
     def invocation
       ( arguments:        Iterable[Text],
-          environment:      Environment,
-          workingDirectory: WorkingDirectory,
-          stdio:            Stdio,
-          signals:          Spool[Signal],
-          entrypoint:       Entrypoint,
-          login:            Login)
+        environment:      Environment,
+        workingDirectory: WorkingDirectory,
+        stdio:            Stdio,
+        signals:          Spool[Signal],
+        entrypoint:       Entrypoint,
+        login:            Login )
          (using interpreter: Interpreter)
     : Invocation =
 

@@ -90,7 +90,7 @@ case class LineSeparation
     cr:      LineSeparation.Action,
     lf:      LineSeparation.Action,
     crlf:    LineSeparation.Action,
-    lfcr:    LineSeparation.Action):
+    lfcr:    LineSeparation.Action ):
 
   def newlineData = newline match
     case LineSeparation.NewlineSeq.Cr   => Data(13)

@@ -133,8 +133,8 @@ object Mosquito:
   extension [left](left: Tensor[left, 3])
     def cross[right](right: Tensor[right, 3])
       ( using multiplication: left is Multiplicable by right,
-                addition:       multiplication.Result is Addable by multiplication.Result,
-                subtraction:    multiplication.Result is Subtractable by multiplication.Result)
+              addition:       multiplication.Result is Addable by multiplication.Result,
+              subtraction:    multiplication.Result is Subtractable by multiplication.Result )
     : Tensor[addition.Result, 3] =
 
         val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
@@ -177,9 +177,9 @@ object Mosquito:
 
     def unitary[square]
       ( using multiplicable: left is Multiplicable by left to square,
-                addable:       square is Addable by square to square,
-                rootable:      square is Rootable[2] to left,
-                divisible:     left is Divisible by left to Double)
+              addable:       square is Addable by square to square,
+              rootable:      square is Rootable[2] to left,
+              divisible:     left is Divisible by left to Double )
     : Tensor[Double, size] =
 
         val magnitude: left = left.norm
@@ -193,9 +193,9 @@ object Mosquito:
 
     def dot[right](right: Tensor[right, size])
       ( using multiply: left is Multiplicable by right,
-                size:     ValueOf[size],
-                addable:  multiply.Result is Addable by multiply.Result,
-                equality: addable.Result =:= multiply.Result)
+              size:     ValueOf[size],
+              addable:  multiply.Result is Addable by multiply.Result,
+              equality: addable.Result =:= multiply.Result )
     : multiply.Result =
 
         def recur(index: Int, sum: multiply.Result): multiply.Result =

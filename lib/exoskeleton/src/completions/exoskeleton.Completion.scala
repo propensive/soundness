@@ -63,7 +63,7 @@ case class Completion
     signals:          Spool[Signal],
     tty:              Text,
     tab:              Ordinal,
-    login:            Login)
+    login:            Login )
    (using interpreter: Interpreter)
 extends Cli:
   private lazy val parameters: interpreter.Topic = interpreter.interpret(arguments)

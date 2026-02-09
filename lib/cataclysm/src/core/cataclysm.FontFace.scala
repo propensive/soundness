@@ -49,7 +49,7 @@ case class FontFace
     lineGapOverride:       Optional[Text] = Unset,
     sizeAdjust:            Optional[Text] = Unset,
     src:                   Optional[Text] = Unset,
-    unicodeRange:          Optional[Text] = Unset)
+    unicodeRange:          Optional[Text] = Unset )
 extends CssStylesheet.Item:
 
   def text: Text =

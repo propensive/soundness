@@ -123,9 +123,9 @@ object Plutocrat:
     inline given orderable: [currency <: Label] => (Money in currency) is Orderable:
       inline def compare
         ( inline left:        Money in currency,
-                   inline right:       Money in currency,
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
+          inline right:       Money in currency,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
       : Boolean =
 
           if left.value == right.value then !strict else (left.value < right.value)^greaterThan

@@ -225,14 +225,14 @@ object Cellulose extends Cellulose2:
         val baseSchema: CodlSchema = schema
 
         case class Proto
-          ( key:       Optional[Text]   = Unset,
-            line:      Int              = 0,
-            col:       Int              = 0,
-            children:  List[CodlNode]   = Nil,
-            extra:     Optional[Extra]  = Unset,
-            schema:    CodlSchema       = CodlSchema.Free,
-            params:    Int              = 0,
-            multiline: Boolean          = false ):
+          ( key:       Optional[Text]  = Unset,
+            line:      Int             = 0,
+            col:       Int             = 0,
+            children:  List[CodlNode]  = Nil,
+            extra:     Optional[Extra] = Unset,
+            schema:    CodlSchema      = CodlSchema.Free,
+            params:    Int             = 0,
+            multiline: Boolean         = false ):
 
           def commit(child: Proto): (Optional[(Text, (Int, Int))], Proto) =
             val closed = child.close

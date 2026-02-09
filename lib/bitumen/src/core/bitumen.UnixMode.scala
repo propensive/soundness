@@ -57,7 +57,7 @@ case class UnixMode
     groupExec:  Boolean = false,
     otherRead:  Boolean = true,
     otherWrite: Boolean = false,
-    otherExec:  Boolean = false):
+    otherExec:  Boolean = false ):
 
   def int: Int =
     var sum: Int = 0

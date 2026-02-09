@@ -225,9 +225,9 @@ object Quantitative extends Quantitative2:
 
       inline def compare
         ( inline left:        Quantity[units],
-                   inline right:       Quantity[units2],
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
+          inline right:       Quantity[units2],
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
       : Boolean =
 
           ${Quantitative.greaterThan[units, units2]('left, 'right, 'strict, 'greaterThan)}

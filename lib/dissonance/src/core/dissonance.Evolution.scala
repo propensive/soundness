@@ -70,10 +70,10 @@ def evolve[element: ClassTag]
 
             def merge
               ( atoms:   List[Atom[element]],
-                  edits:   List[Change[element]],
-                  done:    List[Atom[element]] = Nil,
-                  skips:   List[Atom[element]] = Nil,
-                  inserts: List[Atom[element]] = Nil)
+                edits:   List[Change[element]],
+                done:    List[Atom[element]]   = Nil,
+                skips:   List[Atom[element]]   = Nil,
+                inserts: List[Atom[element]]   = Nil )
             : List[Atom[element]] =
 
                 def finish(): List[Atom[element]] =

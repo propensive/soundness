@@ -67,9 +67,9 @@ object Subcompiler:
 
   def compile
     ( language:  List[Settings.Setting.ChoiceWithHelp[String]],
-        classpath: String,
-        source:    String,
-        regions:   Set[(Int, Int)])
+      classpath: String,
+      source:    String,
+      regions:   Set[(Int, Int)] )
   : List[CompileError] =
 
       object driver extends Driver:

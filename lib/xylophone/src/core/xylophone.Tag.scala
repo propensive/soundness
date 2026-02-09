@@ -71,8 +71,8 @@ object Tag:
 
   def container
     [ label    <: Label: ValueOf,
-        children <: Label: Reifiable to List[String],
-        schema   <: XmlSchema]
+      children <: Label: Reifiable to List[String],
+      schema   <: XmlSchema ]
        (presets: Map[Text, Text] = Map())
   : Container of label over children in schema =
 

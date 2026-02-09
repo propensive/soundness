@@ -46,7 +46,7 @@ case class Invocation
     stdio:            Stdio,
     signals:          Spool[Signal],
     proceed:          Boolean,
-    login:            Login)
+    login:            Login )
    (using interpreter: Interpreter)
 extends Cli, Stdio:
 

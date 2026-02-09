@@ -59,9 +59,9 @@ trait Intension[data, record <: Record in data]:
 
       def refine
         ( value:       Expr[data],
-            fields:      List[(String, RecordField)],
-            refinedType: TypeRepr,
-            caseDefs:    List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)))
+          fields:      List[(String, RecordField)],
+          refinedType: TypeRepr,
+          caseDefs:    List[CaseDef]               = List(CaseDef(Wildcard(), None, '{???}.asTerm)) )
       : (TypeRepr, List[CaseDef]) =
 
           fields match

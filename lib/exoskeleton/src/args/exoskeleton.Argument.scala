@@ -54,10 +54,10 @@ object Argument:
 
 case class Argument
   ( position: Int,
-             value:    Text,
-             cursor:   Optional[Int],
-             tab:      Optional[Ordinal],
-             format:   Argument.Format):
+    value:    Text,
+    cursor:   Optional[Int],
+    tab:      Optional[Ordinal],
+    format:   Argument.Format ):
 
   override def toString(): String = this.inspect.s
 

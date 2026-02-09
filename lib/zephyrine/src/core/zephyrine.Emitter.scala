@@ -86,10 +86,10 @@ trait Emittable:
 
   inline def copy
     ( source: Source,
-                         start:  Ordinal,
-                         target: Transport,
-                         index:  Ordinal,
-                         size:   Int)
+      start:  Ordinal,
+      target: Transport,
+      index:  Ordinal,
+      size:   Int )
   : Unit
 
 

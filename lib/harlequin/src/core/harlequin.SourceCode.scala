@@ -48,7 +48,7 @@ case class SourceCode
   ( language: ProgrammingLanguage,
     offset:   Int,
     lines:    IArray[List[SourceToken]],
-    focus:    Optional[((Int, Int), (Int, Int))] = Unset):
+    focus:    Optional[((Int, Int), (Int, Int))] = Unset ):
 
   def lastLine: Int = offset + lines.length - 1
   def apply(line: Int): List[SourceToken] = lines(line - offset)

@@ -45,7 +45,7 @@ trait Formulation:
 
   def element
     ( widget:     Html of Phrasing,
-        legend:     Text,
-        validation: Optional[Message],
-        required:   Boolean)
+      legend:     Text,
+      validation: Optional[Message],
+      required:   Boolean )
   : Html of Flow

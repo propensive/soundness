@@ -46,10 +46,10 @@ import vacuous.*
 object OAuth:
   case class State
     ( redirect: Path on Www,
-               uuid:     Uuid                    = Uuid(),
-               access:   Optional[Authorization] = Unset,
-               refresh:  Optional[Text]          = Unset,
-               expiry:   Optional[Long]          = Unset):
+      uuid:     Uuid                    = Uuid(),
+      access:   Optional[Authorization] = Unset,
+      refresh:  Optional[Text]          = Unset,
+      expiry:   Optional[Long]          = Unset ):
 
     def expired: Boolean = expiry.let(System.currentTimeMillis > _).or(false)
 

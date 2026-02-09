@@ -117,4 +117,4 @@ case class Geolocation
     altitude:    Optional[Double] = Unset,
     crs:         Optional[Text]   = Unset,
     uncertainty: Optional[Double] = Unset,
-    parameters:  Map[Text, Text]  = Map())
+    parameters:  Map[Text, Text]  = Map() )

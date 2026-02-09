@@ -51,7 +51,7 @@ case class TextStyle
     reverse:   Boolean       = false,
     underline: Boolean       = false,
     conceal:   Boolean       = false,
-    strike:    Boolean       = false):
+    strike:    Boolean       = false ):
 
   import escapes.*
   import TextStyle.esc

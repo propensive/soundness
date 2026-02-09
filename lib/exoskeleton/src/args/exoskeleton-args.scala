@@ -90,9 +90,9 @@ package interpreters:
   private def interpreter(arguments: List[Argument], clustering: Boolean): Commandline =
     def recur
       ( todo:        List[Argument],
-          arguments:   List[Argument],
-          current:     Optional[Argument],
-          commandline: Commandline)
+        arguments:   List[Argument],
+        current:     Optional[Argument],
+        commandline: Commandline )
     : Commandline =
 
         def push(): Commandline = current.lay(Commandline(arguments.reverse)): current =>

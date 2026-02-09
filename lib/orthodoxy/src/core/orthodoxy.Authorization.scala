@@ -46,9 +46,9 @@ object Authorization:
 
 case class Authorization
   ( key:     Text,
-             scopes:  List[Text],
-             expiry:  Optional[Long],
-             refresh: Optional[Text])
+    scopes:  List[Text],
+    expiry:  Optional[Long],
+    refresh: Optional[Text] )
 extends Topical:
   private[orthodoxy] def of[scope <: Scope]: Authorization of scope =
     this.asInstanceOf[Authorization of scope]

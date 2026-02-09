@@ -175,14 +175,14 @@ object Mcp:
       icons:       Optional[List[Icon]] = Unset,
       version:     Text,
       description: Optional[Text]       = Unset,
-      websiteUrl:  Optional[Text]       = Unset)
+      websiteUrl:  Optional[Text]       = Unset )
 
   case class ClientInfo
     ( name:        Text,
       title:       Text,
       version:     Text,
       description: Text,
-      icons:       Optional[List[Icon]] = Unset)
+      icons:       Optional[List[Icon]] = Unset )
 
   case class ServerInfo
     ( name:        Text,
@@ -196,7 +196,7 @@ object Mcp:
     ( protocolVersion: Text,
       capabilities:    ServerCapabilities,
       serverInfo:      Implementation,
-      instructions:    Optional[Text] = Unset )
+      instructions:    Optional[Text]     = Unset )
 
   case class ListChanged(listChanged: Optional[Boolean] = Unset)
   case class Resources(subscribe: Optional[Boolean] = true, listChanged: Optional[Boolean] = true)
@@ -278,7 +278,7 @@ object Mcp:
   case class ListPrompts(nextCursor: Optional[Cursor] = Unset, prompts: List[Prompt] = Nil)
 
   case class Annotations
-    ( audience:     Optional[List[Role]] =  Unset,
+    ( audience:     Optional[List[Role]] = Unset,
       priority:     Optional[Double]     = Unset,
       lastModified: Optional[Text]       = Unset )
 
@@ -399,7 +399,7 @@ object Mcp:
   case class Tool
     ( name:         Text,
       inputSchema:  JsonSchema,
-      outputSchema: Optional[JsonSchema]       = Unset,
+      outputSchema: Optional[JsonSchema]      = Unset,
       title:        Optional[Text]            = Unset,
       icons:        Optional[List[Icon]]      = Unset,
       description:  Optional[Text]            = Unset,
@@ -460,7 +460,7 @@ object Mcp:
     ( hints:                Optional[List[ModelHint]] = Unset,
       costPriority:         Optional[Double]          = Unset,
       speedPriority:        Optional[Double]          = Unset,
-      intelligencePriority: Optional[Double]          = Unset)
+      intelligencePriority: Optional[Double]          = Unset )
 
   case class ModelHint(name: Optional[Text] = Unset)
 
@@ -515,16 +515,16 @@ object Mcp:
 
   case class ToolResultContent
     ( toolUseId:         Text,
-      content:           List[ContentBlock]  = Nil,
-      structuredContent: Optional[Json]      = Unset,
-      isError:           Optional[Boolean]   = Unset )
+      content:           List[ContentBlock] = Nil,
+      structuredContent: Optional[Json]     = Unset,
+      isError:           Optional[Boolean]  = Unset )
   extends SamplingMessageContentBlock
 
   case class CreateMessage
     ( role:       Role,
       content:    List[SamplingMessageContentBlock],
       model:      Text,
-      stopReason: Optional[Text] = Unset )
+      stopReason: Optional[Text]                    = Unset )
 
   case class Task
     ( taskId:        Text,
@@ -583,7 +583,7 @@ object Mcp:
       ( protocolVersion: Text,
         capabilities:    ClientCapabilities,
         clientInfo:      Implementation,
-        _meta:           Optional[Json])
+        _meta:           Optional[Json] )
     : Initialize
 
     @rpc
@@ -591,7 +591,7 @@ object Mcp:
       ( ref:      Reference,
         argument: Argument,
         context:  Optional[Context],
-        _meta:    Optional[Json])
+        _meta:    Optional[Json] )
     : Complete
 
     @rpc

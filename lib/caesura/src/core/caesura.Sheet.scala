@@ -54,7 +54,7 @@ import java.util as ju
 case class Sheet
   ( rows:    Stream[Dsv],
     format:  Optional[DsvFormat]    = Unset,
-    columns: Optional[IArray[Text]] = Unset):
+    columns: Optional[IArray[Text]] = Unset ):
 
   def as[value: Decodable in Dsv]: Stream[value] tracks CellRef = rows.map(_.as[value])
 

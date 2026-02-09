@@ -138,9 +138,9 @@ object GarbageCollection:
 
 case class GarbageCollection
   ( run:       Ordinal,
-             collector: GarbageCollection.Collector,
-             cause:     GarbageCollection.Cause,
-             bytes:     Map[Text, (before: Bytes, after: Bytes)]):
+    collector: GarbageCollection.Collector,
+    cause:     GarbageCollection.Cause,
+    bytes:     Map[Text, (before: Bytes, after: Bytes)] ):
   def before: Bytes = bytes.to(List).map(_(1)(0)).total
   def after: Bytes = bytes.to(List).map(_(1)(1)).total
   def reduction: Bytes = before - after

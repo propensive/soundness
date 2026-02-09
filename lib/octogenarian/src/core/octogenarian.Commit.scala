@@ -43,4 +43,4 @@ case class Commit
     author:    Text,
     committer: Text,
     signature: Optional[Pem],
-    message:   List[Text])
+    message:   List[Text] )

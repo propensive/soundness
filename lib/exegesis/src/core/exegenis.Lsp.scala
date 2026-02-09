@@ -66,12 +66,12 @@ trait Lsp:
   @rpc
   def initialize
     ( processId:        Int,
-        clientInfo:       Lsp.ClientInfo,
-        locale:           Text,
-        rootPath:         Text,
-        rootUri:          Text,
-        capabilities:     Json,
-        workspaceFolders: List[Lsp.Folder])
+      clientInfo:       Lsp.ClientInfo,
+      locale:           Text,
+      rootPath:         Text,
+      rootUri:          Text,
+      capabilities:     Json,
+      workspaceFolders: List[Lsp.Folder] )
   : Json
 
   @rpc

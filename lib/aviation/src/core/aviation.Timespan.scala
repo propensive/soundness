@@ -65,7 +65,7 @@ object Timespan:
 
   def fixed
     ( denomination: StandardTime.Second.type | StandardTime.Minute.type | StandardTime.Hour.type,
-        n: Int)
+      n:            Int )
   : Timespan =
 
       denomination match

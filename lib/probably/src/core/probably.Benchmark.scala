@@ -46,7 +46,7 @@ case class Benchmark
     mean:        Double,
     sd:          Double,
     confidence:  Benchmark.Percentiles,
-    baseline:    Optional[Baseline]):
+    baseline:    Optional[Baseline] ):
 
   def zScore(percentile: Benchmark.Percentiles): Double = percentile match
     case 80 => 0.842

@@ -118,10 +118,10 @@ object Git:
 
   inline def clone[source <: Matchable, path: Abstractable across Paths to Text]
     ( source:     source,
-               targetPath: path,
-               bare:       Boolean             = false,
-               branch:     Optional[GitBranch] = Unset,
-               recursive:  Boolean             = false)
+      targetPath: path,
+      bare:       Boolean             = false,
+      branch:     Optional[GitBranch] = Unset,
+      recursive:  Boolean             = false )
               (using Internet,
                      WorkingDirectory,
                      (Path on Linux) is Decodable in Text,

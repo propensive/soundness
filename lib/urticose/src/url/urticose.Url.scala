@@ -52,10 +52,10 @@ import symbolism.*
 import vacuous.*
 
 class Url[+scheme <: Label]
-  ( val origin:    Origin[scheme],
-        val location:  Text,
-        val query:     Optional[Text] = Unset,
-        val fragment:  Optional[Text] = Unset)
+  ( val origin:   Origin[scheme],
+    val location: Text,
+    val query:    Optional[Text] = Unset,
+    val fragment: Optional[Text] = Unset )
 extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$location"):
 
   type Plane = Www

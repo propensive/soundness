@@ -44,4 +44,4 @@ case class PtyState
     bracketedPasteMode: Boolean = false,
     hideCursor:         Boolean = false,
     title:              Text    = t"",
-    link:               Text    = t"")
+    link:               Text    = t"" )

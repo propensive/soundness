@@ -131,9 +131,9 @@ object HttpConnection:
 
 class HttpConnection
   (     request: Http.Request,
-     val tls:     Boolean,
-     val port:    Int,
-     val respond: Tactic[StreamError] ?=> Http.Response => Unit )
+    val tls:     Boolean,
+    val port:    Int,
+    val respond: Tactic[StreamError] ?=> Http.Response => Unit )
 extends Http.Request
    (request.method,
     request.version,

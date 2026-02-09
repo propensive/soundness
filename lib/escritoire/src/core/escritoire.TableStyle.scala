@@ -41,7 +41,7 @@ case class TableStyle
     titleLine:  Optional[BoxLine],
     sideLines:  BoxLine,
     innerLines: BoxLine,
-    charset:    LineCharset):
+    charset:    LineCharset ):
 
   def columnCost: Int = padding*2 + 1
   def cost(columns: Int): Int = columns*columnCost + 1

@@ -860,9 +860,9 @@ object Element:
 
 case class Element
   ( label:      Text,
-             attributes: Map[Text, Optional[Text]],
-             children:   IArray[Node],
-             foreign:    Boolean)
+    attributes: Map[Text, Optional[Text]],
+    children:   IArray[Node],
+    foreign:    Boolean )
 extends Node, Topical, Transportive, Dynamic:
 
   override def toString(): String = this.show.s

@@ -54,11 +54,11 @@ object Tests extends Suite(m"Punctuation tests"):
   def run(): Unit =
     case class Testcase
       ( markdown:   Text,
-                 html:       Text,
-                 example:    Int,
-                 start_line: Int,
-                 end_line:   Int,
-                 section:    Text)
+        html:       Text,
+        example:    Int,
+        start_line: Int,
+        end_line:   Int,
+        section:    Text )
 
     cp"/punctuation/mdspec.json"
     . read[Json]

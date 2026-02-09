@@ -64,10 +64,10 @@ object Issuer:
 
 class Issuer
   ( init:     HttpUrl,
-        exchange: HttpUrl,
-        redirect: HttpUrl,
-        client:   Text,
-        secret:   Optional[Text] = Unset):
+    exchange: HttpUrl,
+    redirect: HttpUrl,
+    client:   Text,
+    secret:   Optional[Text] = Unset ):
   private val OAuthPath: Path on Www = redirect.path
 
   def oauth(using Http.Request, Online, HttpEvent is Loggable)

@@ -72,9 +72,9 @@ package formulations:
 
     def element
       ( widget:     Html of Phrasing,
-          legend:     Text,
-          validation: Optional[Message],
-          required:   Boolean)
+        legend:     Text,
+        validation: Optional[Message],
+        required:   Boolean )
     : Html of Flow =
         given alertClass: (Stylesheet of "alert" | "required") = Stylesheet()
         Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required(t"*"))

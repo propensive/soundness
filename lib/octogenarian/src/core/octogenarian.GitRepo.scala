@@ -219,13 +219,13 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
   def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): Stream[Commit] logs GitEvent =
     def recur
       ( stream:    Stream[Text],
-          hash:      Optional[GitHash] = Unset,
-          tree:      Optional[GitHash] = Unset,
-          parents:   List[GitHash]     = Nil,
-          author:    Optional[Text]    = Unset,
-          committer: Optional[Text]    = Unset,
-          signature: List[Text]        = Nil,
-          lines:     List[Text]        = Nil)
+        hash:      Optional[GitHash] = Unset,
+        tree:      Optional[GitHash] = Unset,
+        parents:   List[GitHash]     = Nil,
+        author:    Optional[Text]    = Unset,
+        committer: Optional[Text]    = Unset,
+        signature: List[Text]        = Nil,
+        lines:     List[Text]        = Nil )
     : Stream[Commit] =
 
         def commit(): Stream[Commit] =

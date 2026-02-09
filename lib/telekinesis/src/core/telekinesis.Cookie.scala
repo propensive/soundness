@@ -55,11 +55,11 @@ object Cookie:
   def apply[value: {Encodable in Text, Decodable in Text}](using DummyImplicit)
     [ duration: Abstractable across Durations to Long ]
     ( name:     Text,
-        domain:   Optional[Hostname] = Unset,
-        expiry:   Optional[duration] = Unset,
-        secure:   Boolean            = false,
-        httpOnly: Boolean            = false,
-        path:     Optional[Text]     = Unset) =
+      domain:   Optional[Hostname] = Unset,
+      expiry:   Optional[duration] = Unset,
+      secure:   Boolean            = false,
+      httpOnly: Boolean            = false,
+      path:     Optional[Text]     = Unset ) =
 
     new Cookie[value](name, domain, expiry.let(_.generic/1_000_000L), secure, httpOnly, path)
 
@@ -92,12 +92,12 @@ object Cookie:
 
   case class Value
     ( name:     Text,
-               value:    Text,
-               domain:   Optional[Text] = Unset,
-               path:     Optional[Text] = Unset,
-               expiry:   Optional[Long] = Unset,
-               secure:   Boolean        = false,
-               httpOnly: Boolean        = false)
+      value:    Text,
+      domain:   Optional[Text] = Unset,
+      path:     Optional[Text] = Unset,
+      expiry:   Optional[Long] = Unset,
+      secure:   Boolean        = false,
+      httpOnly: Boolean        = false )
 
 case class Cookie[value: {Encodable in Text, Decodable in Text}]
   ( name:     Text,
@@ -105,7 +105,7 @@ case class Cookie[value: {Encodable in Text, Decodable in Text}]
     expiry:   Optional[Long],
     secure:   Boolean,
     httpOnly: Boolean,
-    path:     Optional[Text]):
+    path:     Optional[Text] ):
 
   def apply(value: value): Cookie.Value =
     Cookie.Value(name, value.encode, domain.let(_.show), path, expiry.let(_/1000), secure, httpOnly)

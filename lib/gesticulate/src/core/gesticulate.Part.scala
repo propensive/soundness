@@ -46,4 +46,4 @@ case class Part
     headers:     Map[Text, Text],
     name:        Optional[Text],
     filename:    Optional[Text],
-    body:        Stream[Data])
+    body:        Stream[Data] )

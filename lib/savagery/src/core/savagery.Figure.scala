@@ -53,7 +53,7 @@ case class Outline
   ( ops:       List[Stroke]       = Nil,
     style:     Optional[CssStyle] = Unset,
     id:        Optional[SvgId]    = Unset,
-    transform: List[Transform]    = Nil)
+    transform: List[Transform]    = Nil )
 extends Figure:
   import Stroke.*
 

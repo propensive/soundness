@@ -78,7 +78,7 @@ object Cursor:
 
   transparent inline def apply[data](iterator: Iterator[data])
     ( using addressable0: data is Addressable,
-                     lineation0:   Lineation by addressable0.Operand)
+            lineation0:   Lineation by addressable0.Operand )
   : Cursor[data] =
 
       if iterator.hasNext then

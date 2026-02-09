@@ -128,7 +128,7 @@ object Teletype:
 case class Teletype
   ( plain:      Text,
     spans:      TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
-    insertions: TreeMap[Int, Text] = TreeMap() ):
+    insertions: TreeMap[Int, Text]                = TreeMap() ):
 
   def explicit: Text = render(termcapDefinitions.xtermTrueColor).bind: char =>
     if char.toInt == 27 then t"\\e" else char.show

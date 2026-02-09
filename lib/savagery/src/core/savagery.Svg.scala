@@ -40,4 +40,4 @@ case class Svg
     viewWidth:  Float,
     viewHeight: Float,
     defs:       List[SvgDef],
-    figures:    List[Figure])
+    figures:    List[Figure] )

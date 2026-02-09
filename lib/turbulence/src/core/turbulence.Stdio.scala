@@ -41,9 +41,9 @@ import vacuous.*
 object Stdio:
   def apply
     ( out:     ji.PrintStream | Null,
-        err:     ji.PrintStream | Null,
-        in:      ji.InputStream | Null,
-        termcap: Termcap)
+      err:     ji.PrintStream | Null,
+      in:      ji.InputStream | Null,
+      termcap: Termcap )
   : Stdio =
 
       val safeOut: ji.PrintStream = Optional(out).or(MutePrintStream)

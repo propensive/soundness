@@ -40,10 +40,10 @@ import language.experimental.pureFunctions
 object Switch:
   def apply
     ( name:        Text | Char,
-        repeatable:  Boolean           = false,
-        aliases:     List[Text | Char] = Nil,
-        description: Optional[Text]    = Unset,
-        secret:      Boolean           = false)
+      repeatable:  Boolean           = false,
+      aliases:     List[Text | Char] = Nil,
+      description: Optional[Text]    = Unset,
+      secret:      Boolean           = false )
   : Flag =
 
       Flag(name, repeatable, aliases, description, secret)

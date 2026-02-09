@@ -49,7 +49,7 @@ case class Decimalizer
     superscript:        Boolean        = true,
     exponentMultiple:   Int            = 1,
     infinity:           Text           = "\u221e".tt,
-    nan:                Text           = "\u2209\u211d".tt)
+    nan:                Text           = "\u2209\u211d".tt )
 extends DecimalConverter:
 
   def exponentScale(i: Int, a: Int): Int = if i == 0 then a else exponentScale(i/10, a + 1)

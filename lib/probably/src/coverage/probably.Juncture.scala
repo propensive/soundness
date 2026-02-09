@@ -51,7 +51,7 @@ case class Juncture
     treeName:   Text,
     branch:     Boolean,
     ignored:    Boolean,
-    code:       List[Text]):
+    code:       List[Text] ):
 
   def contains(right: Juncture): Boolean =
     (right.start >= start && right.end <= end && !(right.start == start && right.end == end))

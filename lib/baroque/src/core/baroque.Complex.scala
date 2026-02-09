@@ -131,10 +131,10 @@ object Complex:
 case class Complex[component](real: component, imaginary: component):
   inline def argument
     ( using multiplication: component is Multiplicable by component,
-                     addition:       multiplication.Result is Addable by multiplication.Result,
-                     sqrt:           addition.Result is Rootable[2],
-                     division:       component is Divisible by sqrt.Result,
-                     equality:       division.Result =:= Double)
+            addition:       multiplication.Result is Addable by multiplication.Result,
+            sqrt:           addition.Result is Rootable[2],
+            division:       component is Divisible by sqrt.Result,
+            equality:       division.Result =:= Double )
   : Angle =
 
       Angle(scala.math.atan2(imaginary/modulus, real/modulus))
@@ -142,8 +142,8 @@ case class Complex[component](real: component, imaginary: component):
 
   inline def modulus
     ( using multiplication: component is Multiplicable by component,
-                     addition:       multiplication.Result is Addable by multiplication.Result,
-                     squareRoot:     addition.Result is Rootable[2])
+            addition:       multiplication.Result is Addable by multiplication.Result,
+            squareRoot:     addition.Result is Rootable[2] )
   : squareRoot.Result =
 
       squareRoot.root(real*real + imaginary*imaginary)
@@ -151,12 +151,12 @@ case class Complex[component](real: component, imaginary: component):
 
   inline def sqrt
     ( using multiplication:  component is Multiplicable by component,
-                     addition:        multiplication.Result is Addable by multiplication.Result,
-                     sqrt:            addition.Result is Rootable[2],
-                     division:        component is Divisible by sqrt.Result,
-                     equality:        division.Result =:= Double,
-                     sqrt2:           sqrt.Result is Rootable[2],
-                     multiplication2: sqrt2.Result is Multiplicable by Double)
+            addition:        multiplication.Result is Addable by multiplication.Result,
+            sqrt:            addition.Result is Rootable[2],
+            division:        component is Divisible by sqrt.Result,
+            equality:        division.Result =:= Double,
+            sqrt2:           sqrt.Result is Rootable[2],
+            multiplication2: sqrt2.Result is Multiplicable by Double )
   : Complex[multiplication2.Result] =
 
       Complex(modulus.sqrt, argument/2.0)

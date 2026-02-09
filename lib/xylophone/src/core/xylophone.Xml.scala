@@ -346,7 +346,7 @@ object Xml extends Tag.Container
       root:        Tag,
       callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
       fastforward: Int                               = 0,
-      headers:     Boolean = false )
+      headers:     Boolean                           = false )
     ( using schema: XmlSchema ): Xml raises ParseError =
 
     import lineation.linefeedChars

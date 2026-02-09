@@ -86,10 +86,10 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   inline def dispatch[output]
               (body: (References over Transport) ?=> Quotes ?=> Expr[output])
               [version <: Scalac.Versions]
-    ( using codepoint:     Codepoint,
-                     properties:    System,
-                     directory:     TemporaryDirectory,
-                     stageable:     Stageable over Transport in Form)
+    ( using codepoint:  Codepoint,
+            properties: System,
+            directory:  TemporaryDirectory,
+            stageable:  Stageable over Transport in Form )
   : Result[output] raises CompilerError raises RemoteError =
 
       val references: References over Transport = References[Transport]()

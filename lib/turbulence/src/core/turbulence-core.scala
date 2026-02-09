@@ -130,8 +130,8 @@ extension [element](stream: Stream[element])
   def regulate(tap: Tap)(using Monitor): Stream[element] =
     def defer
       ( active: Boolean,
-          stream: Stream[Some[element] | Tap.Regulation],
-          buffer: List[element])
+        stream: Stream[Some[element] | Tap.Regulation],
+        buffer: List[element] )
     : Stream[element] =
 
         recur(active, stream, buffer)

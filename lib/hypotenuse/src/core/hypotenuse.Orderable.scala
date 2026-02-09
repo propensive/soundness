@@ -46,9 +46,9 @@ trait Orderable extends Commensurable:
 
     inline def compare
       ( inline left:    self,
-                 inline right:   self,
-                 inline strict:  Boolean,
-                 inline greater: Boolean)
+        inline right:   self,
+        inline strict:  Boolean,
+        inline greater: Boolean )
     : Boolean =
 
         orderable.compare(lambda(left), lambda(right), strict, greater)
