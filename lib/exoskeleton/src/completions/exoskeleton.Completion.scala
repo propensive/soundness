@@ -64,7 +64,7 @@ case class Completion
     tty:              Text,
     tab:              Ordinal,
     login:            Login )
-   (using interpreter: Interpreter)
+  ( using interpreter: Interpreter )
 extends Cli:
   private lazy val parameters: interpreter.Topic = interpreter.interpret(arguments)
 
@@ -109,7 +109,7 @@ extends Cli:
     explanation = update(using explanation)
 
   override def suggest
-                (argument: Argument,
+    ( argument: Argument,
                  update:   (prior: List[Suggestion]) ?=> List[Suggestion],
                  prefix:   Text,
                  suffix:   Text) =

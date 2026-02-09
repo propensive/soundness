@@ -71,8 +71,8 @@ class Issuer
   private val OAuthPath: Path on Www = redirect.path
 
   def oauth(using Http.Request, Online, HttpEvent is Loggable)
-       (lambda: Issuer.Context of this.type ?=> Http.Response)
-       (using store: OAuth, session: Session)
+    ( lambda: Issuer.Context of this.type ?=> Http.Response )
+    ( using store: OAuth, session: Session )
   : Http.Response raises OAuthError =
 
       request.path match
@@ -149,8 +149,8 @@ class Issuer
 
   def require[scope <: Scope & Singleton: Precise](scopes: scope*)
     ( using store: OAuth, session: Session, request: Http.Request )
-       (using Issuer.Context of this.type)
-       (lambda: Authorization of scope ?=> Http.Response)
+    ( using Issuer.Context of this.type )
+    ( lambda: Authorization of scope ?=> Http.Response )
   : Http.Response =
 
       store(session).let(_.access).let(_.of[scope]).letGiven(lambda).or:

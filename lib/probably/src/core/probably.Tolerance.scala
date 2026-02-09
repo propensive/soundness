@@ -37,7 +37,7 @@ import prepositional.*
 import symbolism.*
 
 case class Tolerance[value](base: value, tolerance: value)
-            (greaterThan: (value, value) => Boolean,
+  ( greaterThan: (value, value) => Boolean,
              add: (value, value) => value,
              subtract: (value, value) => value):
 

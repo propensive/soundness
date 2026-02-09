@@ -101,7 +101,7 @@ extension [element](stream: Stream[element])
 
 
   inline def flow[result](inline termination: => result)
-              (inline proceed: (head: element, tail: Stream[element]) ?=> result)
+    ( inline proceed: (head: element, tail: Stream[element]) ?=> result )
   : result =
       stream match
         case head #:: tail => proceed(using head, tail)

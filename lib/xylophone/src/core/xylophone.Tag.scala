@@ -73,7 +73,7 @@ object Tag:
     [ label    <: Label: ValueOf,
       children <: Label: Reifiable to List[String],
       schema   <: XmlSchema ]
-       (presets: Map[Text, Text] = Map())
+    ( presets: Map[Text, Text] = Map() )
   : Container of label over children in schema =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
@@ -96,7 +96,7 @@ object Tag:
       . in[Form]
 
 abstract class Tag
-       (label: Text, val presets: Map[Text, Text] = Map(), val admissible:  Set[Text] = Set())
+  ( label: Text, val presets: Map[Text, Text] = Map(), val admissible:  Set[Text] = Set() )
 extends Element(label, presets, IArray()), Formal, Dynamic:
 
   type Result <: Element

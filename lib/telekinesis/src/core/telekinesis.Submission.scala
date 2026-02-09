@@ -59,7 +59,7 @@ case class Submission[value](query: Optional[Query]):
     ( submit:     Optional[Text]       = Unset,
       value:      Optional[value]      = Unset,
       validation: Optional[Validation] = Unset )
-       (using value is Formulaic, value is Encodable in Query, Formulation)
+    ( using value is Formulaic, value is Encodable in Query, Formulation )
   : Html of Flow =
 
       // FIXME: Check why `data` isn't used

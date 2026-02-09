@@ -71,7 +71,7 @@ package executives:
         signals:          Spool[Signal],
         entrypoint:       Entrypoint,
         login:            Login )
-         (using interpreter: Interpreter)
+      ( using interpreter: Interpreter )
     : Cli =
 
         arguments match

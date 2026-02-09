@@ -57,7 +57,7 @@ object Envelope:
       bcc:     EmailAddress | List[EmailAddress],
       replyTo: EmailAddress | List[EmailAddress],
       subject: Text )
-       (using courier: Courier, sender: Sender)
+    ( using courier: Courier, sender: Sender )
   : Envelope =
 
       Envelope

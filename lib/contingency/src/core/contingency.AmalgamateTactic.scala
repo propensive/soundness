@@ -39,7 +39,7 @@ import proscenium.*
 
 class AmalgamateTactic[error <: Exception, success]
   ( label: boundary.Label[success | error] )
-   (using Diagnostics)
+  ( using Diagnostics )
 extends Tactic[error]:
   type Result = success | error
   type Return = success | error

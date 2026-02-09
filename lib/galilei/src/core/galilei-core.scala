@@ -62,7 +62,7 @@ extension [target: Substantiable](value: target)
 
 extension [target: Openable](value: target)
   def open[result]
-     (lambda:  target.Result => result, options: List[target.Operand] = Nil)
+    ( lambda:  target.Result => result, options: List[target.Operand] = Nil )
   : result =
 
       target.open(value, lambda, options)
@@ -204,7 +204,7 @@ extension [plane: Filesystem](path: Path on plane)
 
   def moveInto
     ( destination: Path on plane )
-       (using overwritePreexisting: OverwritePreexisting on plane,
+    ( using overwritePreexisting: OverwritePreexisting on plane,
               moveAtomically:       MoveAtomically,
               substantiable:        (Path on plane) is Substantiable,
               dereferenceSymlinks:  DereferenceSymlinks)
@@ -228,7 +228,7 @@ extension [plane: Filesystem](path: Path on plane)
 
   def symlinkInto
     ( destination: Path on plane )
-       (using overwritePreexisting: OverwritePreexisting on plane,
+    ( using overwritePreexisting: OverwritePreexisting on plane,
               moveAtomically:       MoveAtomically,
               substantiable:        (Path on plane) is Substantiable,
               dereferenceSymlinks:  DereferenceSymlinks)

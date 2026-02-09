@@ -74,8 +74,8 @@ def certify[error <: Exception: Tactic](): Unit = error.certify()
 
 
 def raise[success, exception <: Exception: Recoverable to success]
-   (error: Diagnostics ?=> exception)
-   (using tactic: Tactic[exception])
+  ( error: Diagnostics ?=> exception )
+  ( using tactic: Tactic[exception] )
 : success =
 
     tactic.record(error)
@@ -87,7 +87,7 @@ def abort[success, exception <: Exception: Tactic](error: Diagnostics ?=> except
 
 
 def safely[error <: Exception](using erased Void)[success]
-   (block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=> success)
+  ( block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=> success )
 : Optional[success] =
 
     try boundary: label ?=>
@@ -96,7 +96,7 @@ def safely[error <: Exception](using erased Void)[success]
 
 
 def unsafely[error <: Exception](using erased Void)[success]
-   (block: Unsafe ?=> ThrowTactic[error, success] ?=> CanThrow[Exception] ?=> success)
+  ( block: Unsafe ?=> ThrowTactic[error, success] ?=> CanThrow[Exception] ?=> success )
 : success =
 
     boundary: label ?=>
@@ -105,7 +105,7 @@ def unsafely[error <: Exception](using erased Void)[success]
 
 
 def throwErrors[error <: Exception](using CanThrow[error])[success]
-   (block: ThrowTactic[error, success] ?=> success)
+  ( block: ThrowTactic[error, success] ?=> success )
 : success =
 
     block(using ThrowTactic())
@@ -143,7 +143,7 @@ def amalgamate[error <: Exception](using erased Void)[success]
 
 
 def abortive[error <: Error](using Quotes, Realm)[success]
-   (block: Diagnostics ?=> HaltTactic[error, success] ?=> success)
+  ( block: Diagnostics ?=> HaltTactic[error, success] ?=> success )
 : success =
 
     given haltTactic: HaltTactic[error, success]()
@@ -189,21 +189,21 @@ extension [result, lambda[_]](inline recovery: Recovery[result, lambda])
 
 
 transparent inline def track[focus](using erased Void)[accrual <: Exception](accrual: accrual)
-   (inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual)
+  ( inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual )
 : Tracking[accrual, ?, focus] =
 
     ${Contingency.track[accrual, focus]('accrual, 'block)}
 
 
 transparent inline def validate[focus](using erased Void)[accrual](accrual: accrual)
-   (inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual)
+  ( inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual )
 : Any =
 
     ${Contingency.validate[accrual, focus]('accrual, 'block)}
 
 
 transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
-   (inline block: (accrual: accrual) ?=> Exception ~> accrual)
+  ( inline block: (accrual: accrual) ?=> Exception ~> accrual )
 : Any =
 
     ${Contingency.accrue[accrual]('accrual, 'block)}

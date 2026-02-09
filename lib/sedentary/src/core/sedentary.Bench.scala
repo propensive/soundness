@@ -89,17 +89,17 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
 
   inline def apply[duration: Abstractable across Durations to Long, report]
     ( name: Message )
-              (target:     duration,
+    ( target:     duration,
                iterations: Optional[Int]                   = Unset,
                warmups:    Optional[Int]                   = Unset,
                confidence: Optional[Benchmark.Percentiles] = Unset,
                baseline:   Optional[Baseline]              = Unset)
-              (body0: (References over Transport) ?=> Quotes ?=> Expr[Unit])
+    ( body0: (References over Transport) ?=> Quotes ?=> Expr[Unit] )
               [version <: Scalac.Versions]
-              (using System,
+    ( using System,
                      TemporaryDirectory,
                      Stageable over Transport in Form)
-              (using runner:    Runner[report],
+    ( using runner:    Runner[report],
                      inclusion: Inclusion[report, Benchmark],
                      suite:     Testable,
                      codepoint: Codepoint)

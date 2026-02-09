@@ -97,7 +97,7 @@ class Watch():
   private val watches: scm.HashSet[PathWatch] = scm.HashSet[PathWatch]()
 
   private class PathWatch
-                 (private[Watch] val key: jnf.WatchKey,
+    ( private[Watch] val key: jnf.WatchKey,
                   private[Watch] val base: jnf.Path,
                                  val spool: Spool[WatchEvent],
                                  val filter: Text => Boolean):

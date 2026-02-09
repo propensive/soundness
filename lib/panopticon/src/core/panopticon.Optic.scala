@@ -90,7 +90,7 @@ trait Optic extends Typeclass, Dynamic:
 
 
   def updateDynamic(name: Label)(using lens: name.type is Optic from Target)
-        (value: (prior: lens.Target) ?=> lens.Target)
+    ( value: (prior: lens.Target) ?=> lens.Target )
   : Origin => Origin =
 
       Composable.optics.composition(this, lens).modify(_)(value(using _))
@@ -107,7 +107,7 @@ trait Optic extends Typeclass, Dynamic:
   def applyDynamic(name: Label)[operand](using lens: name.type is Optic from Target onto operand)
     [ target, traversal ]
     ( traversal: traversal )
-        (using optical: (? >: traversal.type) is Optical from operand onto target)
+    ( using optical: (? >: traversal.type) is Optical from operand onto target )
   : Optic from Origin onto target =
 
       Composable.optics.composition

@@ -43,9 +43,9 @@ import vacuous.*
 object ProductDerivation:
   trait Methods[typeclass[_]]:
     protected transparent inline def construct[derivation <: Product]
-                                      (using reflection: ProductReflection[derivation],
+      ( using reflection: ProductReflection[derivation],
                                              requirement: ContextRequirement)
-                                      (inline lambda: [field]
+      ( inline lambda: [field]
                                                       =>  requirement.Optionality[typeclass[field]]
                                                       => (typeclass: requirement.Optionality
                                                                       [typeclass[field]],
@@ -70,7 +70,7 @@ object ProductDerivation:
       ( using requirement: ContextRequirement )
          [derivation <: Product]
       ( using reflection: ProductReflection[derivation] )
-         (inline bind: [input, output]
+      ( inline bind: [input, output]
                        =>  constructor[input]
                        => (input => constructor[output])
                        =>  constructor[output],
@@ -100,10 +100,10 @@ object ProductDerivation:
 
 
     protected transparent inline def contexts[derivation <: Product]
-                                      (using reflection:  ProductReflection[derivation],
+      ( using reflection:  ProductReflection[derivation],
                                              requirement: ContextRequirement)
                                       [result]
-                                      (inline lambda: [field]
+      ( inline lambda: [field]
                                                       =>  requirement.Optionality[typeclass[field]]
                                                       => (typeclass:   requirement.Optionality
                                                                         [typeclass[field]],
@@ -137,8 +137,8 @@ object ProductDerivation:
         case _                                                 => false
 
     protected transparent inline def complement[derivation <: Product, field]
-                                      (product: derivation)
-                                      (using fieldIndex:  Int & FieldIndex[field],
+      ( product: derivation )
+      ( using fieldIndex:  Int & FieldIndex[field],
                                              reflection:  ProductReflection[derivation],
                                              requirement: ContextRequirement)
     : field =
@@ -155,10 +155,10 @@ object ProductDerivation:
 
 
     protected transparent inline def fields[derivation <: Product](inline product: derivation)
-                                      (using requirement: ContextRequirement)
-                                      (using reflection: ProductReflection[derivation])
+      ( using requirement: ContextRequirement )
+      ( using reflection: ProductReflection[derivation] )
                                       [result]
-                                      (inline lambda: [field]
+      ( inline lambda: [field]
                                                       =>  field
                                                       => (context: requirement.Optionality
                                                                     [typeclass[field]],

@@ -49,7 +49,7 @@ private given realm: Realm = realm"legerdemain"
 
 def elicit[value: Formulaic]
   ( query: Optional[Query] = Unset, validation: Validation, submit: Optional[Text] )
-   (using formulation: Formulation)
+  ( using formulation: Formulation )
 : Html of Flow =
 
     formulation.form

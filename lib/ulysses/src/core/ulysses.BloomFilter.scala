@@ -56,7 +56,7 @@ object BloomFilter:
 
 case class BloomFilter[element: Digestible, algorithm <: Algorithm]
   ( bitSize: Int, hashCount: Int, bits: sci.BitSet )
-   (using Hash in algorithm):
+  ( using Hash in algorithm ):
 
   private val requiredEntropyBits = ln(bitSize ** hashCount).double.toInt + 1
 

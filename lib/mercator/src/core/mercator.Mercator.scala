@@ -120,7 +120,7 @@ object Mercator:
 
         def apply
           [ value, value2 ]
-             (value: monad[value])(lambda: value => value2): monad[value2] =
+          ( value: monad[value] )(lambda: value => value2): monad[value2] =
           ${functorExpr}.map(value)(lambda)
 
 

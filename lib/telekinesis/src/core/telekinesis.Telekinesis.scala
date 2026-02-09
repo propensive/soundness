@@ -49,7 +49,7 @@ object Telekinesis:
       method: Optional[Expr[Http.Method]] = Unset,
       status: Optional[Expr[Http.Status]] = Unset,
       done:   List[Expr[Http.Header]]     = Nil )
-       (using Quotes)
+    ( using Quotes )
   : (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
 
       import quotes.reflect.*

@@ -46,7 +46,7 @@ given stdio: (terminal: Terminal) => Stdio = terminal.stdio
 
 def interactive[result](block: (terminal: Terminal) ?=> result)
   ( using console: Console, monitor: Monitor, codicil: Codicil )
-   (using BracketedPasteMode,
+  ( using BracketedPasteMode,
           BackgroundColorDetection,
           TerminalFocusDetection,
           TerminalSizeDetection)

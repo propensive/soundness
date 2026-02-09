@@ -39,5 +39,5 @@ import vacuous.*
 
 case class InterpolationError
   ( error: Message, offset: Optional[Int] = Unset, length: Optional[Int] = Unset )
-   (using Diagnostics)
+  ( using Diagnostics )
 extends Error(m"$error at ${offset.or(-1)} - ${length.or(-1)}")

@@ -130,7 +130,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
   def fetch(depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)
     ( using GitCommand, Internet, WorkingDirectory )
-       (using gitError: Tactic[GitError], exec: Tactic[ExecError])
+    ( using gitError: Tactic[GitError], exec: Tactic[ExecError] )
   : GitProcess[Unit] logs GitEvent /*^{gitError, exec}*/ =
 
       val depthOption = depth.lay(sh"") { depth => sh"--depth=$depth" }

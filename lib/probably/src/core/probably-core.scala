@@ -63,7 +63,7 @@ extension [left](left: left)
 extension [value](value: value)
   @targetName("plusOrMinus")
   inline infix def +/- (tolerance: value)
-    ( using inline commensurable: value is Commensurable against value,
+  ( using inline commensurable: value is Commensurable against value,
             addable:              value is Addable by value,
             equality:             addable.Result =:= value,
             subtractable:         value is Subtractable by value,
@@ -90,7 +90,7 @@ def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): Te
 
 
 def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
-   (block: Testable ?=> Unit)
+  ( block: Testable ?=> Unit )
 : Unit =
 
     runner.suite(Testable(name, suite), block)

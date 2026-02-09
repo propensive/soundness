@@ -108,7 +108,7 @@ object Installer:
 
   def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
     ( using service: DaemonService[?], environment: Environment, home: HomeDirectory )
-       (using Effectful, Diagnostics)
+    ( using Effectful, Diagnostics )
   : Result logs DaemonLogEvent raises InstallError =
 
       import workingDirectories.java

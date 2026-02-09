@@ -47,7 +47,7 @@ case class Invocation
     signals:          Spool[Signal],
     proceed:          Boolean,
     login:            Login )
-   (using interpreter: Interpreter)
+  ( using interpreter: Interpreter )
 extends Cli, Stdio:
 
   export stdio.{termcap, out, err, in}

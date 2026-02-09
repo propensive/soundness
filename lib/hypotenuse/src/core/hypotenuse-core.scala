@@ -460,7 +460,7 @@ inline def log1p(f64: Conversion.into[F64]): F64 = F64(math.log1p(f64.double))
 extension [left](inline left: left)
   @targetName("lt")
   inline infix def < [right](inline right: right)
-    ( using inline commensurable: left is Commensurable against right )
+  ( using inline commensurable: left is Commensurable against right )
   : Boolean =
 
       commensurable.compare(left, right, true, false)

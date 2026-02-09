@@ -53,7 +53,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
 
 
   protected def makeConnection
-                 (request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse)
+    ( request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse )
   : HttpConnection raises StreamError =
 
       val uri = request.getRequestURI.nn.tt
@@ -104,7 +104,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
 
 
   override def service
-                (request: jsh.HttpServletRequest | Null, response: jsh.HttpServletResponse | Null)
+    ( request: jsh.HttpServletRequest | Null, response: jsh.HttpServletResponse | Null )
   : Unit =
 
       if request != null && response != null then try handle(request, response) catch

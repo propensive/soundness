@@ -44,7 +44,7 @@ import vacuous.*
 object variables extends Dynamic:
   inline def applyDynamicNamed[result](apply: "apply")(variables: (String, Text)*)
     ( using environment0: Environment )
-              (block: Environment ?=> result)
+    ( block: Environment ?=> result )
   : result =
 
       val map = variables.map(_.tt.uncamel.snake.upper -> _).toMap

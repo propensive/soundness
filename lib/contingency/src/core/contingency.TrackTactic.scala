@@ -39,7 +39,7 @@ import proscenium.*
 
 class TrackTactic[error <: Exception, accrual, result, supplement]
   ( label: boundary.Label[Option[result]], initial: accrual, foci: Foci[supplement] )
-   (using Diagnostics)
+  ( using Diagnostics )
 extends Tactic[error]:
 
   private given boundary.Label[Option[result]] = label
