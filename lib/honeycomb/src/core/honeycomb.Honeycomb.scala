@@ -81,12 +81,12 @@ object Honeycomb:
 
       def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
       : Expr[Boolean] =
-          '{  ${Expr(pattern.text)} == $scrutinee.text  }
+          '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
       : Expr[Boolean] =
 
-          '{  ${Expr(pattern.text)} == $scrutinee.text  }
+          '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       : Expr[Boolean] =
@@ -102,7 +102,7 @@ object Honeycomb:
 
 
           elements(0):
-            '{  $scrutinee.nodes.length == ${Expr(pattern.nodes.length)} }
+            '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
       def checkElement(array: Expr[Array[Any]], pattern: Element, scrutinee: Expr[Element])
       : Expr[Boolean] =
@@ -114,7 +114,7 @@ object Honeycomb:
               types ::= TypeRepr.of[Map[Text, Optional[Text]]]
               iterator.next()
               val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
-              '{ $expr && { $array(${Expr(idx)}) = ${scrutinee}.attributes -- $others; true } }
+              '{$expr && { $array(${Expr(idx)}) = ${scrutinee}.attributes -- $others; true }}
 
             case head :: tail =>
               attributes(tail):
@@ -124,12 +124,12 @@ object Honeycomb:
                     idx += 1
                     types ::= TypeRepr.of[Text]
                     iterator.next()
-                    '{ $array(${Expr(idx)}) = $scrutinee.attributes(${Expr(head)}); true }
+                    '{$array(${Expr(idx)}) = $scrutinee.attributes(${Expr(head)}); true}
 
                   case text: Text =>
-                    '{ $scrutinee.attributes(${Expr(head)}) == ${Expr(text)} }
+                    '{$scrutinee.attributes(${Expr(head)}) == ${Expr(text)}}
 
-                '{ $expr && $boolean }
+                '{$expr && $boolean}
 
           val attributesChecked = attributes(pattern.attributes.to(List).map(_(0)))('{true})
 
@@ -143,10 +143,12 @@ object Honeycomb:
               elements(index + 1)('{$expr && $expr2})
 
           val elementsChecked = elements(0):
-            '{  ${Expr(pattern.label)} == $scrutinee.label
-                && $scrutinee.children.length == ${Expr(pattern.children.length)} }
+            ' {
+                ${Expr(pattern.label)} == $scrutinee.label
+                && $scrutinee.children.length == ${Expr(pattern.children.length)}
+              }
 
-          '{ $attributesChecked && $elementsChecked }
+          '{$attributesChecked && $elementsChecked}
 
       def descend(array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean])
       : Expr[Boolean] =
@@ -157,9 +159,11 @@ object Honeycomb:
               iterator.next()
               types ::= TypeRepr.of[Text]
 
-              '{  $expr
+              ' {
+                  $expr
                   && $scrutinee.isInstanceOf[Comment]
-                  && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Comment].text; true }  }
+                  && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Comment].text; true }
+                }
 
             case TextNode("\u0000") =>
               idx += 1
@@ -172,18 +176,18 @@ object Honeycomb:
                 case _ =>
                   panic(m"unexpected hole type")
 
-              '{  $expr && { $array(${Expr(idx)}) = $scrutinee; true }  }
+              '{$expr && { $array(${Expr(idx)}) = $scrutinee; true }}
 
             case textual@TextNode(text) =>
               val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[TextNode]})
-              '{  $expr && $scrutinee.isInstanceOf[TextNode] && $checked  }
+              '{$expr && $scrutinee.isInstanceOf[TextNode] && $checked}
 
             case comment@Comment(text) =>
               if text.contains("\u0000")
               then halt(m"""only the entire comment text can be matched; write the extractor as
                             ${t"<!--$$text-->"}""")
               val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Comment]})
-              '{  $expr && $scrutinee.isInstanceOf[Comment] && $checked  }
+              '{$expr && $scrutinee.isInstanceOf[Comment] && $checked}
 
             case Doctype(_) =>
               halt(m"cannot match against a document type declaration")
@@ -198,24 +202,28 @@ object Honeycomb:
                 case _ =>
                   halt(m"unexpected hole type")
 
-              '{  $expr && { $array(${Expr(idx)}) = $scrutinee; true }  }
+              '{$expr && { $array(${Expr(idx)}) = $scrutinee; true }}
 
             case element: Element =>
               def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Element]})
-              '{  $expr && $scrutinee.isInstanceOf[Element] && $checked  }
+              '{$expr && $scrutinee.isInstanceOf[Element] && $checked}
 
             case fragment@Fragment(nodes*) =>
               val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Fragment]})
-              '{  $expr && $scrutinee.isInstanceOf[Fragment] && $checked  }
+              '{$expr && $scrutinee.isInstanceOf[Fragment] && $checked}
 
 
       val result: Expr[Extrapolation[Html]] =
-        '{  val extracts = new Array[Any](${Expr(holes.size)})
+        ' {
+            val extracts = new Array[Any](${Expr(holes.size)})
             val matches: Boolean = ${descend('extracts, html, scrutinee, '{true})}
-            ${  if holes.size == 0 then '{matches}
+            $ {
+                if holes.size == 0 then '{matches}
                 else if holes.size == 1
                 then '{if !matches then None else Some(extracts(0).asInstanceOf[Html])}
-                else '{if !matches then None else Some(Tuple.fromArray(extracts))} }  }
+                else '{if !matches then None else Some(Tuple.fromArray(extracts))}
+              }
+          }
 
       types.length match
         case 0 =>
@@ -256,7 +264,7 @@ object Honeycomb:
       val iterator: Iterator[Expr[Any]] =
         holes.to(List).sortBy(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
           expr.absolve match
-            case '{ $expr: value } => hole match
+            case '{$expr: value} => hole match
               case Hole.Attribute(tag, attribute) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => ConstantType(StringConstant(attribute.s)).asType.absolve match
@@ -327,10 +335,14 @@ object Honeycomb:
         case Fragment(children*) => children.flatMap(serialize(_))
         case Element(label, attributes, children, foreign) =>
           val exprs = attributes.to(List).map: (key, value) =>
-            '{  (${Expr(key)},
-                 ${  if value == "\u0000".tt then iterator.next().asExprOf[Optional[Text]]
-                     else if value == Unset then '{Unset}
-                     else Expr[Text](value.asInstanceOf[Text])  })  }
+            ' {
+                ( ${Expr(key)},
+                  ${
+                      if value == "\u0000".tt then iterator.next().asExprOf[Optional[Text]]
+                      else if value == Unset then '{Unset}
+                      else Expr[Text](value.asInstanceOf[Text])
+                  } )
+              }
             . asExprOf[(Text, Optional[Text])]
 
           val map = '{Map(${Expr.ofList(exprs)}*)}
@@ -384,13 +396,15 @@ object Honeycomb:
       . absolve match
           case '[type topic <: Label; topic] =>
             '{
-                ${  serialize(html).absolve match
+                $ {
+                    serialize(html).absolve match
                       case List(one: Expr[?]) => html match
                         case _: TextNode        => one.asExprOf[TextNode]
                         case _: Element         => one.asExprOf[Element]
                         case _: Comment         => one.asExprOf[Comment]
                         case _: Doctype         => one.asExprOf[Doctype]
-                      case many               => '{Fragment(${Expr.ofList(many)}*)}  }
+                      case many               => '{Fragment(${Expr.ofList(many)}*)}
+                  }
                 . of[topic]
                 . in[Whatwg]  }
 
@@ -408,7 +422,7 @@ object Honeycomb:
                   type form;
                   Tag { type Topic = topic; type Form = form } ] => args.map: arg =>
             arg.absolve match
-              case '{ ($key, $value: value) } =>
+              case '{($key, $value: value)} =>
                 TypeRepr.of[topic].literal[String].let: topic =>
                   key.asTerm match
                     case Literal(StringConstant(key)) =>
@@ -417,9 +431,9 @@ object Honeycomb:
                         case '[type key <: Label; key] =>
                           Expr.summon[key is Attribute in form on (? >: topic)]
                           . orElse(Expr.summon[key is Attribute in form]) match
-                            case Some('{ type result; $expr: Attribute { type Topic = result } }) =>
+                            case Some('{type result; $expr: Attribute { type Topic = result }}) =>
                               Expr.summon[(? >: value) is Attributive to result] match
-                                case Some('{ $converter: Attributive }) =>
+                                case Some('{$converter: Attributive}) =>
                                   '{$converter.attribute(${Expr(key.tt)}, $value)}
 
                                 case _ =>

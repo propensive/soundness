@@ -462,8 +462,10 @@ object Http:
               client:   HttpClient onto target )
     : Http.Response =
 
-        ${ ( Telekinesis.submit[target, payload]
-              ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) ) }
+        $ {
+            ( Telekinesis.submit[target, payload]
+              ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
+          }
 
 
     inline def applyDynamic[payload: Postable as postable](id: "apply")(inline headers: Any*)
@@ -473,8 +475,10 @@ object Http:
               client:   HttpClient onto target )
     : Http.Response =
 
-        ${ ( Telekinesis.submit[target, payload]
-              ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) ) }
+        $ {
+            ( Telekinesis.submit[target, payload]
+               ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
+          }
 
 
   case class Fetch[target](originForm: Text, target: target, host: Hostname)

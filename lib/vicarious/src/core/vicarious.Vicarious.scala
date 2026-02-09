@@ -50,7 +50,7 @@ object Vicarious:
       def fields[product: Type](term: Term): List[Term] =
         TypeRepr.of[product].typeSymbol.caseFields.flatMap: field =>
           term.select(field).asExpr.absolve match
-            case '{ $field: field } =>
+            case '{$field: field} =>
               '{$lambda[field]($field)}.asTerm :: fields[field](field.asTerm)
 
       '{  given classTag0: ClassTag[value] = $classTag

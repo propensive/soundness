@@ -505,7 +505,7 @@ trait Quantitative2:
 
       unitsType.absolve match
         case '[type result <: Measure; result] =>
-          val sqrt = '{ (value: Quantity[value]) => Quantity[result](math.sqrt(value.value)) }
+          val sqrt = '{(value: Quantity[value]) => Quantity[result](math.sqrt(value.value))}
           val cast = sqrt.asExprOf[Quantity[value] => Quantity[result]]
 
           '{Rootable[2, Quantity[value], Quantity[result]]($cast(_))}
@@ -526,7 +526,7 @@ trait Quantitative2:
 
       unitsType.absolve match
         case '[type result <: Measure; result] =>
-          val cbrt = '{ (value: Quantity[value]) => Quantity(math.cbrt(value.value)) }
+          val cbrt = '{(value: Quantity[value]) => Quantity(math.cbrt(value.value))}
           val cast = cbrt.asExprOf[Quantity[value] => Quantity[result]]
 
           '{Rootable[3, Quantity[value], Quantity[result]]($cast(_))}

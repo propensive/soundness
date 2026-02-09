@@ -50,6 +50,6 @@ object Serpentine:
     . or:
         safely(name.tt.decode[Path on Windows]).let: path =>
           val varargs = Varargs(path.descent.map(Expr(_)))
-          '{  Path.of[Windows, Drive, Tuple](${Expr(path.root)}, $varargs*)  }
+          '{Path.of[Windows, Drive, Tuple](${Expr(path.root)}, $varargs*)}
 
         . or(halt(m"The path ${name} is not a valid Windows or POSIX path"))

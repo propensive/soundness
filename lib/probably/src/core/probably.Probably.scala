@@ -55,7 +55,7 @@ object Probably:
       import quotes.reflect.*
 
       Expr.summon[Runner[?]].getOrElse(halt(m"No `Runner` instance is available")).absolve match
-        case '{ $runner: Runner[report] } =>
+        case '{$runner: Runner[report]} =>
 
           val inclusion = Expr.summon[Inclusion[report, Verdict]].getOrElse:
             halt(m"Can't embed test verdicts in ${Type.of[report].show}")
@@ -81,7 +81,7 @@ object Probably:
             case None =>
               Unset
 
-            case Some('{ type analyse; $autopsy: (Autopsy { type Analyse = analyse }) }) =>
+            case Some('{type analyse; $autopsy: (Autopsy { type Analyse = analyse })}) =>
               TypeRepr.of[analyse].literal[Boolean]
 
           if analyse.or(false) then exp match
@@ -128,13 +128,13 @@ object Probably:
                     Decomposable.any[test]) )  }
 
   def check[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[test] =
-    handle[test, test](test, predicate, '{ (t: Trial[test]) => t.get })
+    handle[test, test](test, predicate, '{(t: Trial[test]) => t.get})
 
   def assert[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[Unit] =
-    handle[test, Unit](test, predicate, '{ _ => () })
+    handle[test, Unit](test, predicate, '{_ => ()})
 
   def aspire[test: Type](test: Expr[Test[test]]): Macro[Unit] =
-    handle[test, Unit](test, '{ _ => true }, '{ _ => () })
+    handle[test, Unit](test, '{_ => true}, '{_ => ()})
 
   def succeed: Any => Boolean = (value: Any) => true
 
@@ -196,4 +196,4 @@ object Probably:
     val decomposable: Expr[test is Decomposable] =
       Expr.summon[test is Decomposable].get
 
-    '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $decomposable) }
+    '{$test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $decomposable)}

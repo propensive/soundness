@@ -81,7 +81,7 @@ object Nomenclature2:
     import quotes.reflect.*
 
     Expr.summon[system is Nominative] match
-      case Some('{ type limit; $nominative: (Nominative { type Limit = limit }) }) =>
+      case Some('{type limit; $nominative: (Nominative { type Limit = limit })}) =>
         val checks = decompose(TypeRepr.of[limit]).to(List).map(_.asType).foldLeft('{()}):
           case (expr, '[type param <: String; type rule <: Check[param]; rule]) =>
             Nomenclature3.staticCompanion[rule] match

@@ -153,7 +153,7 @@ method, passing in a quoted block of code, like so:
 ```scala
 def run(): Unit =
   Remote.dispatch:
-    '{ println("Hello world") }
+    '{println("Hello world")}
 ```
 
 Invoking `run()` will dispatch the code `println("Hello world")` to its remote
@@ -451,4 +451,3 @@ The logo shows a moon, reflected in water.
 
 Superlunary is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

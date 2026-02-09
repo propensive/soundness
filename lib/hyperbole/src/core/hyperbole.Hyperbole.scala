@@ -230,8 +230,8 @@ object Hyperbole:
         val typeName =
           safely:
             tree.asExpr match
-              case '{ $term: tpe } => TypeRepr.of[tpe].show
-              case _               => Unset
+              case '{$term: tpe} => TypeRepr.of[tpe].show
+              case _             => Unset
           . or(t"")
 
         tree match

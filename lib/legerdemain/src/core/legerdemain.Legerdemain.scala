@@ -52,7 +52,7 @@ object Legerdemain:
 
             Expr.summon[keyType is Parametric to (? >: valueType)].getOrElse:
               Expr.summon[keyType is Parametric].absolve match
-                case Some('{ $parametric: (Parametric { type Result = resultType }) }) =>
+                case Some('{$parametric: (Parametric { type Result = resultType })}) =>
                   halt(m"""the parameter ${key.valueOrAbort} takes values of
                            ${Type.of[resultType].show} but the provided value had type
                            ${Type.of[valueType].show}""")

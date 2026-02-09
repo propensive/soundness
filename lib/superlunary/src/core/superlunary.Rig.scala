@@ -100,9 +100,13 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
           // This is necessary to allocate references as a side effect
           staging.withQuotes:
-            '{  (array: Array[Object]) =>
-                  ${  references() = 'array
-                      body(using references)  }  }
+            ' {
+                (array: Array[Object]) =>
+                  $ {
+                      references() = 'array
+                      body(using references)
+                    }
+              }
 
           cache(codepoint)
 
@@ -127,8 +131,10 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                     val array = new Array[Object](1)
                     array(0) =
                       stageable.embed[output]
-                       (${  references() = '{stageable.deserialize(form)}
-                            body(using references)  })
+                       ($ {
+                            references() = '{stageable.deserialize(form)}
+                            body(using references)
+                          })
                     array  }
 
           val target = stage(out)

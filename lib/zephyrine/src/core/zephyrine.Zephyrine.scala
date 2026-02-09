@@ -50,10 +50,12 @@ object Zephyrine:
       if index >= text.length then checks else
         val char = text(index)
         val checks2 =
-          '{  $checks
+          ' {
+              $checks
               $cursor.next()
               $cursor.lay($otherwise): datum =>
-                if datum != ${Expr(char)} then $otherwise  }
+                if datum != ${Expr(char)} then $otherwise
+            }
 
         recur(index + 1, checks2)
 

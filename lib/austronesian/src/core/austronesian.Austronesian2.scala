@@ -105,7 +105,7 @@ object Austronesian2:
 
     val args: IArray[Expr[Pojo]] = arguments.absolve match
       case Varargs(arguments) => IArray.from(arguments).map:
-        case '{ $argument: argument } =>
+        case '{$argument: argument} =>
 
           val encodable = Expr.summon[argument is Encodable in Pojo].getOrElse:
             halt(m"${TypeRepr.of[argument].show} is not encodable as a standard library parameter")
@@ -116,11 +116,15 @@ object Austronesian2:
           panic(m"unmatched argument")
 
     if singleton.valueOrAbort then
-      '{  val javaClass = Class.forName($className.s+"$", true, $classloader.java).nn
+      ' {
+          val javaClass = Class.forName($className.s+"$", true, $classloader.java).nn
           val instance = javaClass.getField("MODULE$").nn.get(null).nn
           val method = javaClass.getMethod($methodName, classOf[Object]).nn
-          method.invoke(instance, null)  }
+          method.invoke(instance, null)
+        }
     else
-      '{  val javaClass = Class.forName($className.s, true, $classloader.java).nn
+      ' {
+          val javaClass = Class.forName($className.s, true, $classloader.java).nn
           val method = javaClass.getMethod($methodName).nn
-          method.invoke(null, null)  }
+          method.invoke(null, null)
+        }

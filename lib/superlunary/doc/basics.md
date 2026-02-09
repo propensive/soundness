@@ -93,7 +93,7 @@ method, passing in a quoted block of code, like so:
 ```scala
 def run(): Unit =
   Remote.dispatch:
-    '{ println("Hello world") }
+    '{println("Hello world")}
 ```
 
 Invoking `run()` will dispatch the code `println("Hello world")` to its remote

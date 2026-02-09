@@ -318,9 +318,11 @@ object Contingency:
       diagnostics: Expr[Diagnostics] )
   : Macro[result] =
 
-      '{  val ref: juca.AtomicReference[accrual] = juca.AtomicReference(null)
+      ' {
+          val ref: juca.AtomicReference[accrual] = juca.AtomicReference(null)
           val result = boundary[Option[result]]: label ?=>
-            ${  import quotes.reflect.*
+            $ {
+                import quotes.reflect.*
 
                 val cases = unwrap(accrue.asTerm) match
                   case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
@@ -338,7 +340,8 @@ object Contingency:
                 val term = lambda.asTerm.select(method).appliedToArgs(tactics.to(List))
                 val expr = term.asExprOf[result]
 
-                '{Some($expr)}  }
+                '{Some($expr)}
+              }
 
           result match
             case None        => $tactic.abort:
@@ -348,7 +351,7 @@ object Contingency:
             case Some(value) => ref.get() match
               case null        => value
               case error       => $tactic.abort(error)
-      }
+        }
 
 
   def trackWithin[accrual <: Exception: Type, context[_]: Type, result: Type, focus: Type]
@@ -361,7 +364,8 @@ object Contingency:
       '{  val foci: Foci[focus] = TrackFoci()
 
           val result: Option[result] = boundary[Option[result]]: label ?=>
-            ${  import quotes.reflect.*
+            $ {
+                import quotes.reflect.*
 
                 val cases = unwrap(track.asTerm) match
                   case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
@@ -381,7 +385,8 @@ object Contingency:
 
                 val expr = term.asExprOf[result]
 
-                '{Some($expr)}  }
+                '{Some($expr)}
+              }
 
           result match
             case None =>
@@ -403,7 +408,8 @@ object Contingency:
       '{  val foci: Foci[focus] = TrackFoci()
 
           boundary[Any]: label ?=>
-            ${  import quotes.reflect.*
+            $ {
+                import quotes.reflect.*
 
                 val cases = unwrap(validate.asTerm) match
                   case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
@@ -422,7 +428,8 @@ object Contingency:
                 val term =
                   '{$lambda(using foci)}.asTerm.select(method).appliedToArgs(tactics.to(List))
 
-                term.asExpr  }
+                term.asExpr
+              }
 
           foci.fold[accrual]($validate.initial)($validate.lambda(using _, _))
 

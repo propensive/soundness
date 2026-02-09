@@ -61,7 +61,7 @@ object Telekinesis:
 
         . absolve
         . match
-            case '{ type keyType <: Label; $directive: (Directive { type Self = keyType }) } =>
+            case '{type keyType <: Label; $directive: (Directive { type Self = keyType })} =>
               TypeRepr.of[keyType].absolve match
                 case ConstantType(StringConstant(key)) =>
                   val header =
@@ -70,26 +70,26 @@ object Telekinesis:
                   expand(tail, method, status, header :: done)
 
       todo.absolve match
-        case '{ $method2: Http.Method } +: tail =>
+        case '{$method2: Http.Method} +: tail =>
           if method.present then halt(m"the request method can only be specified once")
           expand(tail, method2, status, done)
 
-        case '{ ("", $method2: Http.Method) } +: tail =>
+        case '{("", $method2: Http.Method)} +: tail =>
           if method.present then halt(m"the request method can only be specified once")
           expand(tail, method2, status, done)
 
-        case '{ $status2: Http.Status } +: tail =>
+        case '{$status2: Http.Status} +: tail =>
           if status.present then halt(m"the HTTP status can only be specified once")
           expand(tail, method, status2, done)
 
-        case '{ ("", $status2: Http.Status) } +: tail =>
+        case '{("", $status2: Http.Status)} +: tail =>
           if status.present then halt(m"the HTTP status can only be specified once")
           expand(tail, method, status2, done)
 
-        case '{ ("", $value: valueType) } +: tail =>
+        case '{("", $value: valueType)} +: tail =>
           unnamed[valueType](value, tail)
 
-        case '{ type keyType <: Label; ($key: keyType, $value: valueType) } +: tail =>
+        case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
           val name: Text = key.value.get.tt.uncamel.map(_.capitalize).kebab
 
           val Directive = Expr.summon[keyType is Directive of valueType].getOrElse:
@@ -99,7 +99,7 @@ object Telekinesis:
           val header = '{Http.Header($key.tt.uncamel.kebab, $Directive.encode($value))}
           expand(tail, method, status, header :: done)
 
-        case '{ $value: valueType } +: tail =>
+        case '{$value: valueType} +: tail =>
           unnamed[valueType](value, tail)
 
         case Seq() =>
@@ -168,7 +168,7 @@ object Telekinesis:
   def response(headers: Expr[Seq[Any]]): Macro[Http.Response.Prototype | Http.Response] =
     headers.absolve.match
       case Varargs(exprs) => exprs.to(List).only:
-        case '{ $value: valueType } :: Nil =>
+        case '{$value: valueType} :: Nil =>
           Expr.summon[(? >: valueType) is Servable].map { servable => '{$servable.serve($value)} }
           . optional
 

@@ -138,7 +138,7 @@ trait Intension[data, record <: Record in data]:
       val (refinedType, caseDefs) = refine(value, fields.to(List), TypeRepr.of[record])
 
       val matchFn: Expr[String => data => Any] =
-        '{ (name: String) => ${Match('name.asTerm, caseDefs).asExprOf[data => Any]} }
+        '{(name: String) => ${Match('name.asTerm, caseDefs).asExprOf[data => Any]}}
 
       refinedType.asType.absolve match
         case '[type refinedType <: record; refinedType] =>

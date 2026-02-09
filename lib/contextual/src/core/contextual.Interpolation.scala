@@ -55,7 +55,7 @@ object Interpolation:
 
     recur(context.valueOrAbort.parts.to(List)).asType.absolve match
       case '[type transport <: Tuple; transport] =>
-        '{  new Interpolation() { type Topic = topic; type Transport = transport }  }
+        '{new Interpolation() { type Topic = topic; type Transport = transport }}
 
 
 trait Interpolation:
