@@ -117,14 +117,14 @@ object Sheet:
 
 
   private def recur
-               (content:  Stream[Text],
-                index:    Ordinal                  = Prim,
-                column:   Int                      = 0,
-                cells:    Array[Text]              = new Array[Text](0),
-                builder:  TextBuilder              = TextBuilder(),
-                state:    State                    = State.Fresh,
-                headings: Optional[Map[Text, Int]] = Unset)
-               (using format: DsvFormat, tactic: Tactic[DsvError])
+    ( content:  Stream[Text],
+      index:    Ordinal                  = Prim,
+      column:   Int                      = 0,
+      cells:    Array[Text]              = new Array[Text](0),
+      builder:  TextBuilder              = TextBuilder(),
+      state:    State                    = State.Fresh,
+      headings: Optional[Map[Text, Int]] = Unset )
+    ( using format: DsvFormat, tactic: Tactic[DsvError] )
   : Stream[Dsv] =
 
       inline def putCell(): Array[Text] =

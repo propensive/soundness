@@ -67,17 +67,17 @@ package couriers:
 
     private case class Attachment(filename: Text, content: Text)
     private case class Request
-                        (from:         EmailAddress,
-                         to:           List[EmailAddress],
-                         subject:      Text,
-                         bcc:          List[EmailAddress],
-                         cc:           List[EmailAddress],
-                         scheduled_at: Optional[Text],
-                         replyTo:      List[EmailAddress],
-                         headers:      Map[Text, Text],
-                         html:         Optional[Text],
-                         text:         Optional[Text],
-                         attachments:  List[Attachment])
+      ( from:         EmailAddress,
+        to:           List[EmailAddress],
+        subject:      Text,
+        bcc:          List[EmailAddress],
+        cc:           List[EmailAddress],
+        scheduled_at: Optional[Text],
+        replyTo:      List[EmailAddress],
+        headers:      Map[Text, Text],
+        html:         Optional[Text],
+        text:         Optional[Text],
+        attachments:  List[Attachment] )
 
     def send(envelope: Envelope): Resend.Receipt =
       val attachments = envelope.email.attachments.map: attachment =>
@@ -100,15 +100,15 @@ package couriers:
       def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
 
       mitigate:
-        case ConnectError(reason)         => Out.println(reason.communicate) yet error
-        case ParseError(_, _, reason)     => Out.println(reason.describe) yet error
-        case HttpError(status, _)         => Out.println(status.communicate) yet error
-        case JsonError(reason)            => Out.println(reason.communicate) yet error
-        case MediaTypeError(_, _)         => error
+        case ConnectError(reason)     => Out.println(reason.communicate) yet error
+        case ParseError(_, _, reason) => Out.println(reason.describe) yet error
+        case HttpError(status, _)     => Out.println(status.communicate) yet error
+        case JsonError(reason)        => Out.println(reason.communicate) yet error
+        case MediaTypeError(_, _)     => error
 
       . within:
           url"https://api.resend.com/emails".submit
-           (Http.Post, authorization = Auth.Bearer(apiKey.key))
-           (request.json)
+            ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
+            ( request.json )
           . receive[Json]
           . as[Resend.Receipt]
