@@ -96,7 +96,7 @@ package executives:
 
 
     def invocation
-         (arguments:        Iterable[Text],
+      ( arguments:        Iterable[Text],
           environment:      Environment,
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
@@ -124,7 +124,7 @@ inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
   lambda(using !![Effectful])
 
 def application(using executive: Executive, interpreter: Interpreter)
-   (arguments: Iterable[Text], signals: List[Signal] = Nil)
+  ( arguments: Iterable[Text], signals: List[Signal] = Nil )
    (block: Cli ?=> executive.Return)
 : Unit =
 

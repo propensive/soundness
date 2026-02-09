@@ -53,7 +53,7 @@ extends Question[item]:
 
 
   def ask
-       (using interactivity: Interactivity[TerminalEvent],
+    ( using interactivity: Interactivity[TerminalEvent],
               interaction: Interaction[item, SelectMenu[item]])
        [result]
        (lambda: Interactivity[TerminalEvent] ?=> item => result)

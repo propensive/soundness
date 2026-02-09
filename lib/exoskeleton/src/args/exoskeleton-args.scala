@@ -51,7 +51,7 @@ package interpreters:
 
     
     def read[operand: Interpretable](arguments: List[Argument], flag: Flag)
-         (using cli: Cli, discoverable: (? <: operand) is Discoverable)
+      ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
     : Optional[operand] =
     
         Unset
@@ -66,7 +66,7 @@ package interpreters:
 
     
     def read[operand: Interpretable](commandline: Commandline, flag: Flag)
-         (using cli: Cli, discoverable: (? <: operand) is Discoverable)
+      ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
     : Optional[operand] =
   
         commandline.read(flag)
@@ -81,7 +81,7 @@ package interpreters:
    
     
     def read[operand: Interpretable](commandline: Commandline, flag: Flag)
-         (using cli: Cli, discoverable: (? <: operand) is Discoverable)
+      ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
     : Optional[operand] =
     
         commandline.read(flag)
@@ -89,7 +89,7 @@ package interpreters:
 
   private def interpreter(arguments: List[Argument], clustering: Boolean): Commandline =
     def recur
-         (todo:        List[Argument],
+      ( todo:        List[Argument],
           arguments:   List[Argument],
           current:     Optional[Argument],
           commandline: Commandline)

@@ -55,7 +55,7 @@ extension (text: Text)
     builder.toString.tt
 
 extension [monad[_], collection[element] <: Iterable[element], element]
-          (elems: collection[monad[element]])
+  ( elems: collection[monad[element]] )
           (using monad: Monad[monad])
 
   def sequence(using buildFrom: BuildFrom[List[element], element, collection[element]])
@@ -74,7 +74,7 @@ extension [monad[_], collection[element] <: Iterable[element], element]
 
 extension [collection[element] <: Iterable[element], element](elems: collection[element])
   def traverse[element2, monad[_]](lambda: element => monad[element2])
-       (using monad:     Monad[monad],
+    ( using monad:     Monad[monad],
               buildFrom: BuildFrom[List[element2], element2, collection[element2]])
   : monad[collection[element2]] =
 

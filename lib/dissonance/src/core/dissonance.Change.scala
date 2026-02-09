@@ -59,5 +59,5 @@ case class Par[+element](left: Int, right: Int, value: Optional[element] = Unset
 extends Edit[element]
 
 case class Sub[+element]
-            (left: Int, right: Int, leftValue: Optional[element], rightValue: Optional[element])
+  ( left: Int, right: Int, leftValue: Optional[element], rightValue: Optional[element] )
 extends Change[element]

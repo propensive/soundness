@@ -36,5 +36,5 @@ import proscenium.*
 import vacuous.*
 
 class Tracking[accrual <: Exception, lambda[_], focus]
-   (val initial: accrual,
+  ( val initial: accrual,
     val lambda: (Optional[focus], accrual) ?=> Exception ~> accrual)

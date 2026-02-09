@@ -161,7 +161,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       case _ => false
 
   def resolve(text: Text)
-       (using (Path on Plane) is Decodable in Text,
+    ( using (Path on Plane) is Decodable in Text,
               (Relative on Plane) is Decodable in Text)
   : Path on Plane raises PathError =
 

@@ -78,7 +78,7 @@ object Installer:
 
 
   def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
-       (using Environment, HomeDirectory, System)
+    ( using Environment, HomeDirectory, System )
   : List[Path on Linux] logs DaemonLogEvent raises InstallError =
 
       mitigate:
@@ -107,7 +107,7 @@ object Installer:
 
 
   def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
-       (using service: DaemonService[?], environment: Environment, home: HomeDirectory)
+    ( using service: DaemonService[?], environment: Environment, home: HomeDirectory )
        (using Effectful, Diagnostics)
   : Result logs DaemonLogEvent raises InstallError =
 

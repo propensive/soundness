@@ -45,7 +45,7 @@ object Authorization:
     authorization => t"Bearer ${authorization.key}"
 
 case class Authorization
-            (key:     Text,
+  ( key:     Text,
              scopes:  List[Text],
              expiry:  Optional[Long],
              refresh: Optional[Text])

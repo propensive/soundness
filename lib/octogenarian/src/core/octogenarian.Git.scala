@@ -75,8 +75,8 @@ object Git:
 
 
   def init
-      [path: Abstractable across Paths to Text]
-       (targetPath: path, bare: Boolean = false)
+    [ path: Abstractable across Paths to Text ]
+    ( targetPath: path, bare: Boolean = false )
        (using WorkingDirectory,
               Tactic[GitError],
               (Path on Linux) is Decodable in Text,
@@ -98,7 +98,7 @@ object Git:
 
 
   inline def cloneCommit[source <: Matchable, path: Abstractable across Paths to Text]
-              (source: source, targetPath: path, commit: GitHash)
+    ( source: source, targetPath: path, commit: GitHash )
               (using Internet,
                      (Path on Linux) is Decodable in Text,
                      GitCommand,
@@ -117,7 +117,7 @@ object Git:
 
 
   inline def clone[source <: Matchable, path: Abstractable across Paths to Text]
-              (source:     source,
+    ( source:     source,
                targetPath: path,
                bare:       Boolean             = false,
                branch:     Optional[GitBranch] = Unset,

@@ -219,7 +219,7 @@ extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lamb
 
 extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
   inline def within[result](inline lambda: Foci[focus] ?=> lambda[result])
-              (using tactic: Tactic[accrual], diagnostics: Diagnostics)
+    ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
   : result =
 
       ${ (Contingency.trackWithin[accrual, lambda, result, focus]
@@ -236,7 +236,7 @@ extension [accrual <: Exception,  lambda[_], focus]
 
 extension [element](sequence: Iterable[element])
   transparent inline def survive[result](using Void)[error <: Exception]
-    ( lambda: (OptionalTactic[error, result], Diagnostics, CanThrow[Exception])
+    ( lambda: (OptionalTactic[error, result], Diagnostics, CanThrow[Exception] )
                ?=> element => result )
   : Iterable[result] =
 

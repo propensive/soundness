@@ -38,7 +38,7 @@ import proscenium.*
 import vacuous.*
 
 case class FontFace
-   (ascentOverride:        Optional[Text] = Unset,
+  ( ascentOverride:        Optional[Text] = Unset,
     descentOverride:       Optional[Text] = Unset,
     fontDisplay:           Optional[Text] = Unset,
     fontFamily:            Optional[Text] = Unset,

@@ -40,7 +40,7 @@ import turbulence.*
 import vacuous.*
 
 case class Invocation
-   (arguments:        List[Argument],
+  ( arguments:        List[Argument],
     environment:      Environment,
     workingDirectory: WorkingDirectory,
     stdio:            Stdio,

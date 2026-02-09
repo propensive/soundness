@@ -51,7 +51,7 @@ extension [augend](left: augend)
 
 extension [minuend](left: minuend)
   inline infix def - [subtrahend](right: subtrahend)
-                     (using subtractable: minuend is Subtractable by subtrahend)
+    ( using subtractable: minuend is Subtractable by subtrahend )
   : subtractable.Result =
 
       subtractable.subtract(left, right)
@@ -67,7 +67,7 @@ extension [dividend](left: dividend)
 extension [multiplicand](left: multiplicand)
   @targetName("multiply")
   inline infix def * [multiplier](right: multiplier)
-                     (using multiplicable: multiplicand is Multiplicable by multiplier)
+    ( using multiplicable: multiplicand is Multiplicable by multiplier )
   : multiplicable.Result =
 
       multiplicable.multiply(left, right)

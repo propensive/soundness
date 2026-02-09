@@ -41,7 +41,7 @@ object Benchmark:
   type Percentiles = 80 | 85 | 90 | 95 | 96 | 97 | 98 | 99
 
 case class Benchmark
-   (nanoseconds: Long,
+  ( nanoseconds: Long,
     iterations:  Long,
     mean:        Double,
     sd:          Double,

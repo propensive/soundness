@@ -39,7 +39,7 @@ import symbolism.*
 import DagTile.*
 
 case class TextualDagStyle[line: Textual]
-            (space:      Text,
+  ( space:      Text,
              corner:     Text,
              vertical:   Text,
              firstMid:   Text,

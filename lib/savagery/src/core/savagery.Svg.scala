@@ -35,7 +35,7 @@ package savagery
 import quantitative.*
 
 case class Svg
-   (width:      Quantity[Units[1, Distance]],
+  ( width:      Quantity[Units[1, Distance]],
     height:     Quantity[Units[1, Distance]],
     viewWidth:  Float,
     viewHeight: Float,

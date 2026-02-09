@@ -52,7 +52,7 @@ import scala.compiletime.*
 import java.util as ju
 
 case class Sheet
-   (rows:    Stream[Dsv],
+  ( rows:    Stream[Dsv],
     format:  Optional[DsvFormat]    = Unset,
     columns: Optional[IArray[Text]] = Unset):
 

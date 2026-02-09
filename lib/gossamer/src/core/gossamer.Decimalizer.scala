@@ -39,7 +39,7 @@ import rudiments.*
 import vacuous.*
 
 case class Decimalizer
-   (significantFigures: Optional[Int]  = Unset,
+  ( significantFigures: Optional[Int]  = Unset,
     decimalPlaces:      Optional[Int]  = Unset,
     decimalPoint:       Char           = '.',
     minusSign:          Char           = '-',

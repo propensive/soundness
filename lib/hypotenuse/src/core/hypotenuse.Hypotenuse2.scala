@@ -153,7 +153,7 @@ object Hypotenuse2:
 
 
   def commensurable
-       (expr: Expr[Boolean],
+    ( expr: Expr[Boolean],
         bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
         strict: Expr[Boolean],
         greaterThan: Expr[Boolean])

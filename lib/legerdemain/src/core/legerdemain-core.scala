@@ -48,7 +48,7 @@ private given realm: Realm = realm"legerdemain"
 
 
 def elicit[value: Formulaic]
-   (query: Optional[Query] = Unset, validation: Validation, submit: Optional[Text])
+  ( query: Optional[Query] = Unset, validation: Validation, submit: Optional[Text] )
    (using formulation: Formulation)
 : Html of Flow =
 
@@ -71,7 +71,7 @@ package formulations:
       Form(action = t".", method = t"post")(Fragment(content*), Input.Submit(value = submit.or(t"Submit")))
 
     def element
-         (widget:     Html of Phrasing,
+      ( widget:     Html of Phrasing,
           legend:     Text,
           validation: Optional[Message],
           required:   Boolean)

@@ -51,7 +51,7 @@ object Envelope:
     case one: (`entity` @unchecked)      => List(one)
 
   def apply[sendable: Sendable]
-       (email:   sendable,
+    ( email:   sendable,
         to:      EmailAddress | List[EmailAddress],
         cc:      EmailAddress | List[EmailAddress],
         bcc:     EmailAddress | List[EmailAddress],
@@ -71,7 +71,7 @@ object Envelope:
 
 
 case class Envelope
-            (from:        EmailAddress,
+  ( from:        EmailAddress,
              to:          List[EmailAddress],
              cc:          List[EmailAddress],
              bcc:         List[EmailAddress],

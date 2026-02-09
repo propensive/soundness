@@ -205,7 +205,7 @@ object Cellulose extends Cellulose2:
 
 
     def read[entity: {Decodable in Codl, CodlSchematic}](using Void)[streamable: Streamable by Text]
-         (source: streamable)
+      ( source: streamable )
     : entity raises ParseError raises CodlError =
 
         entity.schema().parse(source.stream[Text]).as[entity]

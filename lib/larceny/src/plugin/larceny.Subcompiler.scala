@@ -59,14 +59,14 @@ object Subcompiler:
 
 
   def compile
-    (language: List[Settings.Setting.ChoiceWithHelp[String]], classpath: String, source: String)
+    ( language: List[Settings.Setting.ChoiceWithHelp[String]], classpath: String, source: String )
   : List[CompileError] =
 
       compile(language, classpath, source, Set((0, source.length)))
 
 
   def compile
-       (language:  List[Settings.Setting.ChoiceWithHelp[String]],
+    ( language:  List[Settings.Setting.ChoiceWithHelp[String]],
         classpath: String,
         source:    String,
         regions:   Set[(Int, Int)])

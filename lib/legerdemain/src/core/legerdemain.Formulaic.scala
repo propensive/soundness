@@ -51,7 +51,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
         =>  value is Formulaic:
 
     def fields
-         (pointer:     Pointer,
+      ( pointer:     Pointer,
           legend:      Text,
           query:       Query,
           validation:  Validation,
@@ -80,7 +80,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
 
 trait Formulaic extends Typeclass:
   def fields
-       (pointer:     Pointer,
+    ( pointer:     Pointer,
         legend:      Text,
         query:       Query,
         validation:  Validation,

@@ -55,7 +55,7 @@ trait Quantitative2:
       type Contrast = Temperature
 
       inline def compare
-                  (inline left:    Temperature,
+        ( inline left:    Temperature,
                   inline right:   Temperature,
                   inline strict:  Boolean,
                   inline greater: Boolean)
@@ -255,7 +255,7 @@ trait Quantitative2:
 
 
   def ratio
-       (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true)
+    ( from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true )
   : Macro[Double] =
 
       import quotes.reflect.*
@@ -339,7 +339,7 @@ trait Quantitative2:
 
 
   def multiply[left <: Measure: Type, right <: Measure: Type]
-       (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]], division: Boolean)
+    ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]], division: Boolean )
   : Macro[Any] =
 
       val left: UnitsMap = UnitsMap[left]
@@ -382,7 +382,7 @@ trait Quantitative2:
 
 
   def mulTypeclass
-       [left         <: Measure:         Type,
+    [ left         <: Measure:         Type,
         multiplicand <: Quantity[left]:  Type,
         right        <: Measure:         Type,
         multiplier   <: Quantity[right]: Type]
@@ -410,7 +410,7 @@ trait Quantitative2:
 
 
   def divTypeclass
-       [left     <: Measure:         Type,
+    [ left     <: Measure:         Type,
         dividend <: Quantity[left]:  Type,
         right    <: Measure:         Type,
         divisor  <: Quantity[right]: Type]
@@ -533,7 +533,7 @@ trait Quantitative2:
 
 
   def greaterThan[left <: Measure: Type, right <: Measure: Type]
-       (leftExpr:  Expr[Quantity[left]],
+    ( leftExpr:  Expr[Quantity[left]],
         rightExpr: Expr[Quantity[right]],
         strict:    Expr[Boolean],
         invert:    Expr[Boolean])
@@ -554,7 +554,7 @@ trait Quantitative2:
 
 
   def add[left <: Measure: Type, right <: Measure: Type]
-       (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]])
+    ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]] )
        (using Quotes)
   : Expr[Any] =
 
@@ -573,7 +573,7 @@ trait Quantitative2:
 
 
   def check[left <: Measure: Type, right <: Measure: Type]
-       (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]])
+    ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]] )
        (using Quotes)
   : Expr[Boolean] =
 
@@ -588,7 +588,7 @@ trait Quantitative2:
 
 
   def sub[left <: Measure: Type, right <: Measure: Type]
-       (leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]])
+    ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]] )
        (using Quotes)
   : Expr[Any] =
 
@@ -608,7 +608,7 @@ trait Quantitative2:
 
 
   def subTypeclass
-       [left      <: Measure:         Type,
+    [ left      <: Measure:         Type,
         quantity  <: Quantity[left]:  Type,
         right     <: Measure:         Type,
         quantity2 <: Quantity[right]: Type]
@@ -627,7 +627,7 @@ trait Quantitative2:
 
 
   def addTypeclass
-       [left      <: Measure:         Type,
+    [ left      <: Measure:         Type,
         quantity  <: Quantity[left]:  Type,
         right     <: Measure:         Type,
         quantity2 <: Quantity[right]: Type]
@@ -644,7 +644,7 @@ trait Quantitative2:
             }
 
   def checkable
-       [left      <: Measure:         Type,
+    [ left      <: Measure:         Type,
         quantity  <: Quantity[left]:  Type,
         right     <: Measure:         Type,
         quantity2 <: Quantity[right]: Type]
@@ -662,7 +662,7 @@ trait Quantitative2:
 
 
   def norm[units <: Measure: Type, norm[power <: Nat] <: Units[power, ?]: Type]
-       (expr: Expr[Quantity[units]])
+    ( expr: Expr[Quantity[units]] )
        (using Quotes)
   : Expr[Any] =
 

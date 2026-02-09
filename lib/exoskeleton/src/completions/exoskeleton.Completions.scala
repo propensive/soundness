@@ -123,7 +123,7 @@ object Completions:
 
 
   def install(force: Boolean = false)(using entrypoint: Entrypoint)
-       (using WorkingDirectory, Effectful, Diagnostics)
+    ( using WorkingDirectory, Effectful, Diagnostics )
   : Installation raises InstallError logs CliEvent =
 
       mitigate:
@@ -178,7 +178,7 @@ object Completions:
 
 
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
-       (using Effectful, Diagnostics)
+    ( using Effectful, Diagnostics )
   : Installation.InstallResult raises InstallError logs CliEvent =
 
     mitigate:

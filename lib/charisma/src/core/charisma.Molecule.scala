@@ -42,7 +42,7 @@ import symbolism.*
 import vacuous.*
 
 case class Molecule
-   (elements: Map[ChemicalElement, Int], charge: Int, state: Optional[PhysicalState] = Unset)
+  ( elements: Map[ChemicalElement, Int], charge: Int, state: Optional[PhysicalState] = Unset )
 extends Molecular:
   def molecule: Molecule = this
 

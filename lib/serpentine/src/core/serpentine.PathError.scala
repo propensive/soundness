@@ -43,7 +43,7 @@ import scala.compiletime.*
 object PathError:
 
   def apply(reason: PathError.Reason.type => PathError.Reason, path: Optional[Text] = Unset)
-       (using Diagnostics)
+    ( using Diagnostics )
   : PathError =
 
       new PathError(reason(PathError.Reason), path)

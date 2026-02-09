@@ -44,7 +44,7 @@ import serpentine.*
 import language.experimental.pureFunctions
 
 case class DaemonService[bus <: Matchable]
-   (pid:        Pid,
+  ( pid:        Pid,
     shutdown:   () => Unit,
     cliInput:   Stdin,
     executable: Path on Linux,

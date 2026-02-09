@@ -506,7 +506,7 @@ object Html extends Tag.Container
 
     @tailrec
     def attributes(tag: Text, foreign: Boolean, entries: Map[Text, Optional[Text]] = ListMap())
-         (using Cursor.Held)
+      ( using Cursor.Held )
     : Map[Text, Optional[Text]] =
 
         skip() yet cursor.lay(fail(ExpectedMore)):
@@ -859,7 +859,7 @@ object Element:
       Element(label, attributes, children.nodes, true).of["#foreign"]
 
 case class Element
-            (label:      Text,
+  ( label:      Text,
              attributes: Map[Text, Optional[Text]],
              children:   IArray[Node],
              foreign:    Boolean)

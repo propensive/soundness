@@ -74,7 +74,7 @@ object Websocket:
        (websocket.spool.stream.map(_.bytes))
 
 class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => ResultType)
-       (using Monitor, Codicil):
+  ( using Monitor, Codicil ):
 
   given prefix3: ("secWebsocketKey" is Directive of Text) = identity(_)
   val key: Text = request.headers.secWebsocketKey.prim.or(panic(m"Missing header"))
@@ -83,7 +83,7 @@ class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => Resu
   val task: Task[ResultType] = async(handle(events()))
 
   def unmask(bytes: Data, mask: Data): Data = Data.fill(bytes.length): index =>
-    (bytes(index)^mask(index%4)).toByte
+    ( bytes(index)^mask(index%4)).toByte
 
   def events(): Stream[Frame] =
     lazy val conduit: Conduit = Conduit(request.body())

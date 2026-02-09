@@ -97,7 +97,7 @@ extends Topical:
 
 
   def select(options: Iterable[Topic])
-       (using cli: Cli, interpreter: Interpreter, suggestible: Topic is Suggestible)
+    ( using cli: Cli, interpreter: Interpreter, suggestible: Topic is Suggestible )
   : Optional[Topic] =
 
       val mapping: Map[Text, Topic] =

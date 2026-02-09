@@ -39,7 +39,7 @@ import language.experimental.pureFunctions
 
 object Switch:
   def apply
-       (name:        Text | Char,
+    ( name:        Text | Char,
         repeatable:  Boolean           = false,
         aliases:     List[Text | Char] = Nil,
         description: Optional[Text]    = Unset,

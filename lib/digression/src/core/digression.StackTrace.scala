@@ -291,7 +291,7 @@ object StackTrace:
         s"$root\ncaused by:\n\n$cause".tt
 
 case class StackTrace
-   (component: Text,
+  ( component: Text,
     className: Text,
     message:   Message,
     frames:    List[StackTrace.Frame],

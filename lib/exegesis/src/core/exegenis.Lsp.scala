@@ -65,7 +65,7 @@ object Lsp:
 trait Lsp:
   @rpc
   def initialize
-       (processId:        Int,
+    ( processId:        Int,
         clientInfo:       Lsp.ClientInfo,
         locale:           Text,
         rootPath:         Text,

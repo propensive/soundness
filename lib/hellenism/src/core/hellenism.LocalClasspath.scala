@@ -64,7 +64,7 @@ object LocalClasspath:
 
 
   def apply
-       (entries: List
+    ( entries: List
                   [ClasspathEntry.Directory
                    | ClasspathEntry.Jar
                    | ClasspathEntry.JavaRuntime.type])
@@ -86,7 +86,7 @@ object LocalClasspath:
         else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)
 
 class LocalClasspath private
-   (val entries: List
+  ( val entries: List
                   [ClasspathEntry.Directory
                    | ClasspathEntry.Jar
                    | ClasspathEntry.JavaRuntime.type],

@@ -83,7 +83,7 @@ class Classfile(data: Data):
 
     def bytecode: Optional[Bytecode] = Optional(model.code().nn.get()).let: code =>
       def recur
-           (todo:  List[jlc.CodeElement],
+        ( todo:  List[jlc.CodeElement],
             line:  Optional[Int],
             done:  List[Bytecode.Instruction],
             stack: Optional[List[Bytecode.Frame]],

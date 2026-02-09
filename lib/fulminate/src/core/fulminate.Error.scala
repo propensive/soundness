@@ -40,7 +40,7 @@ object Error:
     case throwable: Throwable => UncheckedError(throwable)
 
 transparent abstract class Error(val message: Message, private val cause: Throwable | Null = null)
-   (using val diagnostics: Diagnostics)
+  ( using val diagnostics: Diagnostics )
 extends Exception(message.text.s, cause, false, diagnostics.captureStack):
   this: Error =>
   def fullClass: List[Text] = List(getClass.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)

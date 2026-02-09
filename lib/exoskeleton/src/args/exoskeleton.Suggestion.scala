@@ -42,7 +42,7 @@ import language.experimental.pureFunctions
 
 object Suggestion:
   def apply
-       (core:        Text,
+    ( core:        Text,
         description: Optional[Text | Teletype] = Unset,
         hidden:      Boolean                   = false,
         incomplete:  Boolean                   = false,
@@ -56,7 +56,7 @@ object Suggestion:
 
 
 case class Suggestion
-   (core:        Text,
+  ( core:        Text,
     description: Optional[Text | Teletype],
     hidden:      Boolean,
     incomplete:  Boolean,

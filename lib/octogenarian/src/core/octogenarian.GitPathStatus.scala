@@ -36,4 +36,4 @@ import anticipation.*
 import vacuous.*
 
 case class GitPathStatus
-   (status1: Optional[GitStatus], status2: Optional[GitStatus], path1: Text, path2: Optional[Text])
+  ( status1: Optional[GitStatus], status2: Optional[GitStatus], path1: Text, path2: Optional[Text] )

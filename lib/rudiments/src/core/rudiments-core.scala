@@ -423,7 +423,7 @@ extension (erased tuple: Tuple)
 
 extension (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
   inline def literal
-              [primitive <: Boolean | Byte | Short | Int | Long | Float | Double | Char | String
+    [ primitive <: Boolean | Byte | Short | Int | Long | Float | Double | Char | String
                             | Unit | Null]
   : Optional[primitive] =
 

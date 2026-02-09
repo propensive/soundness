@@ -67,9 +67,9 @@ object ProductDerivation:
 
     protected transparent inline
     def constructWith[constructor[_]]
-         (using requirement: ContextRequirement)
+      ( using requirement: ContextRequirement )
          [derivation <: Product]
-         (using reflection: ProductReflection[derivation])
+      ( using reflection: ProductReflection[derivation] )
          (inline bind: [input, output]
                        =>  constructor[input]
                        => (input => constructor[output])

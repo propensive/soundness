@@ -41,7 +41,7 @@ enum LineCharset:
     case Ascii   => BoxDrawing.asciiChars
 
   def apply
-       (top: BoxLine = BoxLine.Blank,
+    ( top: BoxLine = BoxLine.Blank,
         right: BoxLine = BoxLine.Blank,
         bottom: BoxLine = BoxLine.Blank,
         left: BoxLine = BoxLine.Blank)

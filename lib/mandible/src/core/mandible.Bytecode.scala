@@ -91,7 +91,7 @@ object Bytecode:
     case Array(frame: Frame)
 
   case class Instruction
-              (opcode: Opcode, line: Optional[Int], stack: Optional[List[Frame]], offset: Int)
+    ( opcode: Opcode, line: Optional[Int], stack: Optional[List[Frame]], offset: Int )
 
   enum Opcode:
     case Nop

@@ -44,7 +44,7 @@ trait Formulation:
   def form(content: Seq[Html of Flow], submit: Optional[Text]): Html of Flow
 
   def element
-       (widget:     Html of Phrasing,
+    ( widget:     Html of Phrasing,
         legend:     Text,
         validation: Optional[Message],
         required:   Boolean)

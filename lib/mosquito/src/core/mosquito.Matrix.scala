@@ -45,7 +45,7 @@ import vacuous.*
 import scala.compiletime.*, ops.int.*
 
 class Matrix[element, rows <: Int, columns <: Int]
-   (val rows: Int, val columns: Int, val elements: IArray[element]):
+  ( val rows: Int, val columns: Int, val elements: IArray[element] ):
 
   def apply(row: Int, column: Int): element = elements(columns*row + column)
 
@@ -61,7 +61,7 @@ class Matrix[element, rows <: Int, columns <: Int]
 
   @targetName("scalarMul")
   def * [right](right: right)
-        (using multiplication: element is Multiplicable by right)
+    ( using multiplication: element is Multiplicable by right )
         (using ClassTag[multiplication.Result])
   : Matrix[multiplication.Result, rows, columns] =
 
@@ -86,7 +86,7 @@ class Matrix[element, rows <: Int, columns <: Int]
 
   @targetName("mul")
   def * [right, rightColumns <: Int: ValueOf]
-        (right: Matrix[right, columns, rightColumns])
+    ( right: Matrix[right, columns, rightColumns] )
         (using multiplication: element is Multiplicable by right,
                addition:       multiplication.Result is Addable by multiplication.Result,
                equality:       addition.Result =:= multiplication.Result,
@@ -137,8 +137,8 @@ object Matrix:
     Tuple.Union[Tuple.Map[rows, [tuple] =>> Tuple.Size[tuple & Tuple]]]
 
   transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using erased Void)
-                           [element]
-                           (rows: Tuple)
+    [ element ]
+    ( rows: Tuple )
                            (using Constraint[rows.type, element],
                                  Columns =:= ColumnConstraint[rows.type],
                                  Rows =:= Tuple.Size[rows.type],

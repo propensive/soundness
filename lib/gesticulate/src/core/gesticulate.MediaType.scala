@@ -45,7 +45,7 @@ import vacuous.*
 import language.dynamics
 
 case class MediaType
-   (group:     Media.Group,
+  ( group:     Media.Group,
     subtype:    Media.Subtype,
     suffixes:   List[Media.Suffix] = Nil,
     parameters: List[(Text, Text)] = Nil)

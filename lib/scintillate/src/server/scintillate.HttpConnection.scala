@@ -130,7 +130,7 @@ object HttpConnection:
     new HttpConnection(request, false, port, respond)
 
 class HttpConnection
-   (     request: Http.Request,
+  (     request: Http.Request,
      val tls:     Boolean,
      val port:    Int,
      val respond: Tactic[StreamError] ?=> Http.Response => Unit )

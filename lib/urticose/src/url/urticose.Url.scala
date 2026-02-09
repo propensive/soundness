@@ -52,7 +52,7 @@ import symbolism.*
 import vacuous.*
 
 class Url[+scheme <: Label]
-       (val origin:    Origin[scheme],
+  ( val origin:    Origin[scheme],
         val location:  Text,
         val query:     Optional[Text] = Unset,
         val fragment:  Optional[Text] = Unset)

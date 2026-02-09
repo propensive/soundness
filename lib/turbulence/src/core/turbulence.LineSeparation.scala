@@ -40,7 +40,7 @@ object LineSeparation:
                       next:      => Unit,
                inline mkNewline: => Unit,
                inline put: Byte  => Unit)
-              (lineSeparators: LineSeparation)
+                 ( lineSeparators: LineSeparation )
   : Unit =
 
       val action: Action = read match
@@ -86,7 +86,7 @@ object LineSeparation:
     case Nl, NlCr, NlLf, LfNl, CrNl, NlNl, Cr, Lf, Skip
 
 case class LineSeparation
-   (newline: LineSeparation.NewlineSeq,
+  ( newline: LineSeparation.NewlineSeq,
     cr:      LineSeparation.Action,
     lf:      LineSeparation.Action,
     crlf:    LineSeparation.Action,

@@ -146,7 +146,7 @@ object Syntax:
     Symbolic(if name.s.startsWith("_$") then name.s.drop(2).tt else name)
 
   def typeBounds(using Quotes)
-       (sub: Syntax, lower: quotes.reflect.TypeRepr, upper: quotes.reflect.TypeRepr)
+    ( sub: Syntax, lower: quotes.reflect.TypeRepr, upper: quotes.reflect.TypeRepr )
   : Syntax =
 
       import quotes.reflect.*

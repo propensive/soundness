@@ -80,7 +80,7 @@ case class Permutation(factoradic: Factoradic):
 
 
     def recur
-         (lehmer:  List[Int],
+      ( lehmer:  List[Int],
           prefix:  List[element],
           list:    List[element],
           current: Int,

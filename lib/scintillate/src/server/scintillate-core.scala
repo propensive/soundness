@@ -84,7 +84,7 @@ package httpServers:
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.Response)
-   (using connection: HttpConnection)
+  ( using connection: HttpConnection )
 : Http.Response raises AuthError =
 
     connection.headers.authorization match

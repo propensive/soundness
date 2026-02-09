@@ -44,7 +44,7 @@ object TextStyle:
   val esc: Char = 27.toChar
 
 case class TextStyle
-   (fg:        Optional[Int] = Unset,
+  ( fg:        Optional[Int] = Unset,
     bg:        Optional[Int] = Unset,
     italic:    Boolean       = false,
     bold:      Boolean       = false,

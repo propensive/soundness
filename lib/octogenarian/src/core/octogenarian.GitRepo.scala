@@ -108,7 +108,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
 
   def switch(branch: GitBranch)
-       (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
+    ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
   : Unit logs GitEvent =
 
       sh"$git $repoOptions switch $branch".exec[Exit]() match
@@ -117,7 +117,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
 
   def pull()(using GitCommand, Internet, WorkingDirectory)
-       (using gitError: Tactic[GitError], exec: Tactic[ExecError])
+    ( using gitError: Tactic[GitError], exec: Tactic[ExecError] )
   : GitProcess[Unit] logs GitEvent =
 
       val process = sh"$git $repoOptions pull --progress".fork[Exit]()
@@ -129,7 +129,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
 
   def fetch(depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)
-       (using GitCommand, Internet, WorkingDirectory)
+    ( using GitCommand, Internet, WorkingDirectory )
        (using gitError: Tactic[GitError], exec: Tactic[ExecError])
   : GitProcess[Unit] logs GitEvent /*^{gitError, exec}*/ =
 
@@ -196,7 +196,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
   object config:
     def get[value: Decodable in Text](variable: Text)
-         (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
+      ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
     : value logs GitEvent =
 
         sh"$git $repoOptions config --get $variable".exec[Text]().decode[value]
@@ -218,7 +218,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
   def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): Stream[Commit] logs GitEvent =
     def recur
-         (stream:    Stream[Text],
+      ( stream:    Stream[Text],
           hash:      Optional[GitHash] = Unset,
           tree:      Optional[GitHash] = Unset,
           parents:   List[GitHash]     = Nil,

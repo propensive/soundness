@@ -119,7 +119,7 @@ case class Ttf(data: Data):
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx)))
 
   case class HeadTable
-              (majorVersion:       U16,
+    ( majorVersion:       U16,
                minorVersion:       U16,
                fontRevisionHigh:   U16,
                fontRevisionLow:    U16,
@@ -129,7 +129,7 @@ case class Ttf(data: Data):
                unitsPerEm:         U16)
 
   case class HheaTable
-              (majorVersion:        U16,
+    ( majorVersion:        U16,
                minorVersion:        U16,
                ascender:            S16,
                descender:           S16,
@@ -219,7 +219,7 @@ case class Ttf(data: Data):
         def glyph(char: Char): Glyph[ttf.type] = ???
 
       case class Format4
-                  (length:        Int,
+        ( length:        Int,
                    language:      Int,
                    segCount:      Int,
                    searchRange:   Int,

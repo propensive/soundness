@@ -53,7 +53,7 @@ import classloaders.system
 object Tests extends Suite(m"Punctuation tests"):
   def run(): Unit =
     case class Testcase
-                (markdown:   Text,
+      ( markdown:   Text,
                  html:       Text,
                  example:    Int,
                  start_line: Int,

@@ -88,7 +88,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
   type Transport = Json
 
   inline def apply[duration: Abstractable across Durations to Long, report]
-              (name: Message)
+    ( name: Message )
               (target:     duration,
                iterations: Optional[Int]                   = Unset,
                warmups:    Optional[Int]                   = Unset,

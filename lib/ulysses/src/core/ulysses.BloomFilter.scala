@@ -45,8 +45,8 @@ import scala.collection.mutable as scm
 
 object BloomFilter:
   def apply[element: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)
-       [algorithm <: Algorithm]
-       (using Hash in algorithm)
+    [ algorithm <: Algorithm ]
+    ( using Hash in algorithm )
   : BloomFilter[element, algorithm] =
 
       val bitSize: Int = (-1.44*approximateSize*ln(targetErrorRate.double).double).toInt
@@ -55,7 +55,7 @@ object BloomFilter:
 
 
 case class BloomFilter[element: Digestible, algorithm <: Algorithm]
-   (bitSize: Int, hashCount: Int, bits: sci.BitSet)
+  ( bitSize: Int, hashCount: Int, bits: sci.BitSet )
    (using Hash in algorithm):
 
   private val requiredEntropyBits = ln(bitSize ** hashCount).double.toInt + 1

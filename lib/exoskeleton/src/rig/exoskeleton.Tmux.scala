@@ -76,7 +76,7 @@ object Tmux:
       screenshot().screen.filter(!_.starts(t"> ")).join(t"\n").trim
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
-       (using tool: Sandbox.Tool, tmux: Tmux)
+    ( using tool: Sandbox.Tool, tmux: Tmux )
        (using Monitor, WorkingDirectory)
   : Text raises TmuxError =
 

@@ -53,7 +53,7 @@ object Argument:
 
 
 case class Argument
-            (position: Int,
+  ( position: Int,
              value:    Text,
              cursor:   Optional[Int],
              tab:      Optional[Ordinal],

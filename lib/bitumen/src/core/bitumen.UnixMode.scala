@@ -47,7 +47,7 @@ import turbulence.*
 import vacuous.*
 
 case class UnixMode
-   (setUid:     Boolean = false,
+  ( setUid:     Boolean = false,
     setGid:     Boolean = false,
     ownerRead:  Boolean = true,
     ownerWrite: Boolean = true,

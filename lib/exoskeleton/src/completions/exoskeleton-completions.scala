@@ -64,7 +64,7 @@ package executives:
     type Return = Execution
 
     def invocation
-         (arguments:        Iterable[Text],
+      ( arguments:        Iterable[Text],
           environment:      Environment,
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,

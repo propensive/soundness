@@ -50,7 +50,7 @@ case class Rectangle(position: Point, width: Float, height: Float) extends Figur
     x"<rect x=${position.x.show} y=${position.y.show} width=${width.show} height=${height.show}/>"
 
 case class Outline
-   (ops:       List[Stroke]       = Nil,
+  ( ops:       List[Stroke]       = Nil,
     style:     Optional[CssStyle] = Unset,
     id:        Optional[SvgId]    = Unset,
     transform: List[Transform]    = Nil)

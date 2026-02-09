@@ -49,7 +49,7 @@ object Conduit:
     case Data, Clutch, End
 
   case class Snapshot
-              (stream: Stream[Data], current: Data, index: Ordinal, done: Int, clutch: Boolean)
+    ( stream: Stream[Data], current: Data, index: Ordinal, done: Int, clutch: Boolean )
 
 class Conduit(input0: Stream[Data]):
   private val input: Stream[Data] = input0.filter(_.nonEmpty)

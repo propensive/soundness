@@ -40,7 +40,7 @@ object Juncture:
   given ordering: Ordering[Juncture] = Ordering.by[Juncture, Int](_.start).orElseBy(-_.end)
 
 case class Juncture
-   (id:         Int,
+  ( id:         Int,
     path:       Text,
     className:  Text,
     methodName: Text,

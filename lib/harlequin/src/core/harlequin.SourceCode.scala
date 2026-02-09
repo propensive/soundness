@@ -45,7 +45,7 @@ import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
 import scala.collection.mutable as scm
 
 case class SourceCode
-   (language: ProgrammingLanguage,
+  ( language: ProgrammingLanguage,
     offset:   Int,
     lines:    IArray[List[SourceToken]],
     focus:    Optional[((Int, Int), (Int, Int))] = Unset):

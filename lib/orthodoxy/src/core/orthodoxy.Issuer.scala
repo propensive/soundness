@@ -63,7 +63,7 @@ object Issuer:
   erased trait Context extends Topical
 
 class Issuer
-       (init:     HttpUrl,
+  ( init:     HttpUrl,
         exchange: HttpUrl,
         redirect: HttpUrl,
         client:   Text,
@@ -148,7 +148,7 @@ class Issuer
 
 
   def require[scope <: Scope & Singleton: Precise](scopes: scope*)
-       (using store: OAuth, session: Session, request: Http.Request)
+    ( using store: OAuth, session: Session, request: Http.Request )
        (using Issuer.Context of this.type)
        (lambda: Authorization of scope ?=> Http.Response)
   : Http.Response =

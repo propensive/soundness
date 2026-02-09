@@ -80,7 +80,7 @@ object Hypotenuse:
     erased given underlying: Underlying[F64, Double] = erasedValue
 
     inline given canEqual: CanEqual
-                            [F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte] =
+      [ F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte ] =
       erasedValue
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 = F64:
@@ -92,7 +92,7 @@ object Hypotenuse:
 
     inline given orderable: F64 is Orderable:
       inline def compare
-                  (inline left:    F64,
+        ( inline left:    F64,
                    inline right:   F64,
                    inline strict:  Boolean,
                    inline greater: Boolean)
@@ -111,7 +111,7 @@ object Hypotenuse:
       type Contrast = Int
 
       inline def compare
-                  (inline left:        F64,
+        ( inline left:        F64,
                    inline right:       Int,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
@@ -139,7 +139,7 @@ object Hypotenuse:
 
 
       inline def compare
-                  (inline left:        F64,
+        ( inline left:        F64,
                    inline right:       Double,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
@@ -189,12 +189,12 @@ object Hypotenuse:
     erased given underlying: Underlying[F32, Float] = erasedValue
 
     inline given canEqual: CanEqual
-                            [F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte] =
+      [ F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte ] =
       erasedValue
 
     inline given orderable: F32 is Orderable:
       inline def compare
-                  (inline left:        F32,
+        ( inline left:        F32,
                    inline right:       F32,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
@@ -251,7 +251,7 @@ object Hypotenuse:
 
     inline given orderable: U64 is Orderable:
       inline def compare
-                  (inline left:        U64,
+        ( inline left:        U64,
                    inline right:       U64,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
@@ -283,7 +283,7 @@ object Hypotenuse:
     inline given orderable: S64 is Orderable:
 
       inline def compare
-                  (inline left:        S64,
+        ( inline left:        S64,
                    inline right:       S64,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
@@ -309,7 +309,7 @@ object Hypotenuse:
 
     inline given orderable: U32 is Orderable:
       inline def compare
-                  (inline left:        U32,
+        ( inline left:        U32,
                    inline right:       U32,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
@@ -340,7 +340,7 @@ object Hypotenuse:
 
     inline given orderable: S32 is Orderable:
       inline def compare
-                  (inline left:        S32,
+        ( inline left:        S32,
                    inline right:       S32,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
@@ -366,7 +366,7 @@ object Hypotenuse:
 
     inline given orderable: U16 is Orderable:
       inline def compare
-                  (inline left:        U16,
+        ( inline left:        U16,
                    inline right:       U16,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
@@ -398,7 +398,7 @@ object Hypotenuse:
 
     inline given orderable: S16 is Orderable:
       inline def compare
-                  (inline left:        S16,
+        ( inline left:        S16,
                    inline right:       S16,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
@@ -427,7 +427,7 @@ object Hypotenuse:
 
     inline given orderable: U8 is Orderable:
       inline def compare
-                  (inline left:        U8,
+        ( inline left:        U8,
                    inline right:       U8,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)
@@ -458,7 +458,7 @@ object Hypotenuse:
 
     inline given inquality: S8 is Orderable:
       inline def compare
-                  (inline left:        S8,
+        ( inline left:        S8,
                    inline right:       S8,
                    inline strict:      Boolean,
                    inline greaterThan: Boolean)

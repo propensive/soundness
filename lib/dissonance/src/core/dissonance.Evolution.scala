@@ -69,7 +69,7 @@ def evolve[element: ClassTag]
 
 
             def merge
-                 (atoms:   List[Atom[element]],
+              ( atoms:   List[Atom[element]],
                   edits:   List[Change[element]],
                   done:    List[Atom[element]] = Nil,
                   skips:   List[Atom[element]] = Nil,

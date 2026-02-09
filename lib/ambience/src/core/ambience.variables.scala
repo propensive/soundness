@@ -43,7 +43,7 @@ import vacuous.*
 
 object variables extends Dynamic:
   inline def applyDynamicNamed[result](apply: "apply")(variables: (String, Text)*)
-              (using environment0: Environment)
+    ( using environment0: Environment )
               (block: Environment ?=> result)
   : result =
 

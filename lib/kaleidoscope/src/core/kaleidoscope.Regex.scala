@@ -74,7 +74,7 @@ object Regex:
     def unitary: Boolean = this == Exactly(1)
 
   case class Group
-              (start:      Int,
+    ( start:      Int,
                end:        Int,
                outerEnd:   Int,
                groups:     List[Group] = Nil,
@@ -311,7 +311,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
 
 
       def recur
-          (todo:    List[Regex.Group],
+        ( todo:    List[Regex.Group],
             matches: List[Optional[Text | Char] | List[Text | Char]],
             index:   Int)
       : List[Optional[Text | Char] | List[Text | Char]] =

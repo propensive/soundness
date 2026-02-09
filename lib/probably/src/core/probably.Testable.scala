@@ -38,7 +38,7 @@ import rudiments.*
 import vacuous.*
 
 class Testable(val name: Message, val parent: Optional[Testable] = Unset)
-   (using codepoint: Codepoint):
+  ( using codepoint: Codepoint ):
 
   override def equals(that: Any): Boolean = that.matchable(using Unsafe) match
     case that: Testable => name == that.name && parent == that.parent

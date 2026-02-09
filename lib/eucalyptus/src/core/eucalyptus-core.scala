@@ -93,7 +93,7 @@ extension (logObject: Log.type)
 
 
   def route[format](using erased Void)[entry: Inscribable in format, writable: Writable by format]
-       (target: writable)
+    ( target: writable )
        (using Monitor)
   : entry is Loggable =
 

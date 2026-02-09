@@ -45,7 +45,7 @@ import vacuous.*
 
 object Telekinesis:
   def expand
-       (todo:    Seq[Expr[Any]],
+    ( todo:    Seq[Expr[Any]],
         method:  Optional[Expr[Http.Method]]  = Unset,
         status:  Optional[Expr[Http.Status]]  = Unset,
         done:    List[Expr[Http.Header]]      = Nil)
@@ -107,7 +107,7 @@ object Telekinesis:
 
 
   def submit[target: Type, payload: Type]
-       (submit:   Expr[Http.Submit[target]],
+    ( submit:   Expr[Http.Submit[target]],
         headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
         online:   Expr[Online],
         loggable: Expr[HttpEvent is Loggable],
@@ -139,7 +139,7 @@ object Telekinesis:
 
 
   def fetch[target: Type]
-       (fetch:    Expr[Http.Fetch[target]],
+    ( fetch:    Expr[Http.Fetch[target]],
         headers:  Expr[Seq[Any]],
         online:   Expr[Online],
         loggable: Expr[HttpEvent is Loggable],

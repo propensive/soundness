@@ -125,7 +125,7 @@ object Semver:
 
 
 case class Semver
-            (major:      Long,
+  ( major:      Long,
              minor:      Long,
              patch:      Long,
              prerelease: List[Long | Text] = Nil,

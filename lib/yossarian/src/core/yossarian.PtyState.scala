@@ -36,7 +36,7 @@ import anticipation.*
 import gossamer.*
 
 case class PtyState
-   (cursor:             Int     = 0,
+  ( cursor:             Int     = 0,
     savedCursor:        Int     = 0,
     style:              Style   = Style(),
     focusDetectionMode: Boolean = false,

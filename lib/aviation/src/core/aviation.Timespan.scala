@@ -64,7 +64,7 @@ object Timespan:
     case StandardTime.Second => Timespan(0, 0, 0, 0, 0, n)
 
   def fixed
-       (denomination: StandardTime.Second.type | StandardTime.Minute.type | StandardTime.Hour.type,
+    ( denomination: StandardTime.Second.type | StandardTime.Minute.type | StandardTime.Hour.type,
         n: Int)
   : Timespan =
 

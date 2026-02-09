@@ -137,7 +137,7 @@ object GarbageCollection:
         emitter.removeNotificationListener(listener)
 
 case class GarbageCollection
-            (run:       Ordinal,
+  ( run:       Ordinal,
              collector: GarbageCollection.Collector,
              cause:     GarbageCollection.Cause,
              bytes:     Map[Text, (before: Bytes, after: Bytes)]):

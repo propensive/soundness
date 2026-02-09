@@ -63,7 +63,7 @@ trait Interpolator[input, state, result]:
 
 
   def expansion
-       (context: Expr[StringContext], seq: Expr[Seq[Any]])
+    ( context: Expr[StringContext], seq: Expr[Seq[Any]] )
        (using thisType: Type[this.type])
        (using Quotes, Type[input], Type[state], Type[result])
   : (state, Expr[result]) =

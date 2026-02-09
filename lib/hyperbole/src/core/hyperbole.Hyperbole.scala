@@ -92,7 +92,7 @@ object Hyperbole:
         e""
 
     case class TastyTree
-                (tag:          Char,
+      ( tag:          Char,
                  typeName:     Text,
                  name:         Text,
                  expr:         Text,
@@ -124,7 +124,7 @@ object Hyperbole:
 
     object TastyTree:
       def apply
-           (tag:       Char,
+        ( tag:       Char,
             typeName:  Text,
             name:      Text,
             tree:      Optional[Tree],

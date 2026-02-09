@@ -48,7 +48,7 @@ import vacuous.*
 
 object TarEntry:
   def apply[data: Readable by Data, instant: Abstractable across Instants]
-       (name:  TarRef,
+    ( name:  TarRef,
         data:  data,
         mode:  UnixMode              = UnixMode(),
         user:  UnixUser              = UnixUser(0),

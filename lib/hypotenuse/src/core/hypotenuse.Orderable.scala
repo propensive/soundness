@@ -45,7 +45,7 @@ trait Orderable extends Commensurable:
 
 
     inline def compare
-                (inline left:    self,
+      ( inline left:    self,
                  inline right:   self,
                  inline strict:  Boolean,
                  inline greater: Boolean)

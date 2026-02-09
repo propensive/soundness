@@ -86,7 +86,7 @@ package columnar:
 
 
         def format
-             (text: textual, position: Int, lineStart: Int, lastSpace: Int, lines: List[textual])
+          ( text: textual, position: Int, lineStart: Int, lastSpace: Int, lines: List[textual] )
         : List[textual] =
 
             if position < text.length then

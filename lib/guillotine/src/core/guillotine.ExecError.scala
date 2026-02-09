@@ -37,5 +37,5 @@ import fulminate.*
 import proscenium.*
 
 case class ExecError(command: Command, stdout: Stream[Data], stderr: Stream[Data])
-   (using Diagnostics)
+  ( using Diagnostics )
 extends Error(m"execution of the command $command failed")

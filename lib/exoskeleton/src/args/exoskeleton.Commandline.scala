@@ -39,7 +39,7 @@ import vacuous.*
 import language.experimental.pureFunctions
 
 case class Commandline
-   (positional:     List[Argument]                = Nil,
+  ( positional:     List[Argument]                = Nil,
     parameters:     Map[Argument, List[Argument]] = Map(),
     postpositional: List[Argument]                = Nil,
     focus:          Optional[Argument]            = Unset):
@@ -48,7 +48,7 @@ case class Commandline
     parameters.find { (key, value) => flag.matches(key) }.map(_(1)).getOrElse(Nil)
 
   def read[operand: Interpretable](flag: Flag)
-       (using cli: Cli, discoverable: (? <: operand) is Discoverable)
+    ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
   : Optional[operand] =
 
       cli.register(flag, discoverable)

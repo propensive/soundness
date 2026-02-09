@@ -42,7 +42,7 @@ object Part:
   given streamable: Part is Streamable by Data = _.body
 
 case class Part
-   (disposition: Optional[Multipart.Disposition],
+  ( disposition: Optional[Multipart.Disposition],
     headers:     Map[Text, Text],
     name:        Optional[Text],
     filename:    Optional[Text],

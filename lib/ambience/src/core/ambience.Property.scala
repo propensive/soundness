@@ -64,7 +64,7 @@ object Property:
 
 
     inline def apply[property]()
-                (using properties: System, reader: name is Property of property)
+      ( using properties: System, reader: name is Property of property )
     : property =
 
         val name = valueOf[name]

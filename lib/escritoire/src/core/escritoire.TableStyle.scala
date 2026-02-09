@@ -35,7 +35,7 @@ package escritoire
 import vacuous.*
 
 case class TableStyle
-   (padding:    Int,
+  ( padding:    Int,
     topLine:    Optional[BoxLine],
     bottomLine: Optional[BoxLine],
     titleLine:  Optional[BoxLine],

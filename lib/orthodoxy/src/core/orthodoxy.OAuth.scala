@@ -45,7 +45,7 @@ import vacuous.*
 
 object OAuth:
   case class State
-              (redirect: Path on Www,
+    ( redirect: Path on Www,
                uuid:     Uuid                    = Uuid(),
                access:   Optional[Authorization] = Unset,
                refresh:  Optional[Text]          = Unset,

@@ -61,7 +61,7 @@ case class Javac(options: List[JavacOption]):
     override def getCharContent(ignoreEncodingErrors: Boolean): CharSequence = code.s
 
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
-       (sources: Map[Text, Text], out: path)
+    ( sources: Map[Text, Text], out: path )
        (using System, Monitor, Codicil)
   : CompileProcess logs CompileEvent raises CompilerError =
 

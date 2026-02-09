@@ -63,7 +63,7 @@ object CodlDoc:
   given aggregable2: Tactic[ParseError] => CodlDoc is Aggregable by Text = Codl.parse(_)
 
 case class CodlDoc
-   (children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: Stream[Char] = Stream())
+  ( children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: Stream[Char] = Stream() )
 extends Indexed:
 
   type Topic

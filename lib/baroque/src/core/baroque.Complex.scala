@@ -122,7 +122,7 @@ object Complex:
 
 
   def apply[component: Multiplicable by Double as multiplication]
-       (modulus: component, argument: Angle)
+    ( modulus: component, argument: Angle )
   : Complex[multiplication.Result] =
 
       Complex(modulus*math.cos(argument.radians), modulus*math.sin(argument.radians))
@@ -130,7 +130,7 @@ object Complex:
 
 case class Complex[component](real: component, imaginary: component):
   inline def argument
-              (using multiplication: component is Multiplicable by component,
+    ( using multiplication: component is Multiplicable by component,
                      addition:       multiplication.Result is Addable by multiplication.Result,
                      sqrt:           addition.Result is Rootable[2],
                      division:       component is Divisible by sqrt.Result,
@@ -141,7 +141,7 @@ case class Complex[component](real: component, imaginary: component):
 
 
   inline def modulus
-              (using multiplication: component is Multiplicable by component,
+    ( using multiplication: component is Multiplicable by component,
                      addition:       multiplication.Result is Addable by multiplication.Result,
                      squareRoot:     addition.Result is Rootable[2])
   : squareRoot.Result =
@@ -150,7 +150,7 @@ case class Complex[component](real: component, imaginary: component):
 
 
   inline def sqrt
-              (using multiplication:  component is Multiplicable by component,
+    ( using multiplication:  component is Multiplicable by component,
                      addition:        multiplication.Result is Addable by multiplication.Result,
                      sqrt:            addition.Result is Rootable[2],
                      division:        component is Divisible by sqrt.Result,
