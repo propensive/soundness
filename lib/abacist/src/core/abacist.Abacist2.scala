@@ -106,8 +106,9 @@ object Abacist2 extends Abacist3:
           t"$number $units"
         . join(t", ")
 
-    def distributive[units <: Tuple](parts0: Quanta[units] => List[Long])
-         (place0: (Quanta[units], List[Text]) => Text)
+    def distributive[units <: Tuple]
+      ( parts0: Quanta[units] => List[Long] )
+      ( place0: (Quanta[units], List[Text]) => Text )
     : Quanta[units] is Distributive by Long =
 
         new Distributive:

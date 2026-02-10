@@ -84,8 +84,8 @@ package daemonConfig:
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service
 
 def cli[bus <: Matchable](using executive: Executive)
-   (block: DaemonService[bus] ?=> executive.Interface ?=> executive.Return)
-   (using interpreter:   Interpreter,
+  ( block: DaemonService[bus] ?=> executive.Interface ?=> executive.Return )
+  ( using interpreter:   Interpreter,
           stderrSupport: StderrSupport = daemonConfig.supportStderr,
           threading:     Threading,
           handler:       Backstop)

@@ -50,13 +50,13 @@ object NumericRange:
   @annotation.targetName("Range")
   object `~`:
     given comparable: [min <: Double & Singleton, max <: Double & Singleton]
-          => (min: ValueOf[min], max: ValueOf[max])
-          =>  TypeTest[Double, min ~ max] =
+    =>  ( min: ValueOf[min], max: ValueOf[max] )
+    =>  TypeTest[Double, min ~ max] =
 
-      value =>
-        if value >= min.value && value <= max.value
-        then Some(value.asInstanceOf[(min ~ max) & value.type])
-        else None
+        value =>
+          if value >= min.value && value <= max.value
+          then Some(value.asInstanceOf[(min ~ max) & value.type])
+          else None
 
     class RangeParser[min <: Double, max <: Double]
     extends FromDigits.Decimal[min ~ max]:

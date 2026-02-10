@@ -43,9 +43,11 @@ import vacuous.*
 
 trait Receivable2:
   given instantiable: [content: Instantiable across HttpRequests from Text] => Tactic[HttpError]
-        =>  content is Receivable =
-    Receivable:
-      body => content(body.read[Data].utf8)
+  =>  content is Receivable =
+
+      Receivable:
+        body => content(body.read[Data].utf8)
+
 
 object Receivable extends Receivable2:
   def apply[result](lambda: Stream[Data] => result): result is Receivable raises HttpError =

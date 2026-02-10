@@ -49,7 +49,7 @@ extends Interpolator[Nothing, Optional[result], result]:
 
 
   def expand(context: Expr[StringContext])(using Type[result])
-       (using thisType: Type[this.type])
+    ( using thisType: Type[this.type] )
   : Macro[result] =
 
       expand(context, '{Nil})(using thisType)

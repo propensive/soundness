@@ -252,6 +252,6 @@ object CompileError:
     case MatchIsNotPartialFunction
 
 case class CompileError
-            (reason: CompileError.Reason, message: String, code: String, start: Int, offset: Int):
+  ( reason: CompileError.Reason, message: String, code: String, start: Int, offset: Int ):
 
   def point: Int = start + offset

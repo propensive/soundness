@@ -66,9 +66,11 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
 
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
-  def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
-       (sources: Map[Text, Text], out: path)
-       (using System, Monitor, Codicil)
+  def apply
+    ( classpath: LocalClasspath )
+    [ path: Abstractable across Paths to Text ]
+    ( sources: Map[Text, Text], out: path )
+    ( using System, Monitor, Codicil )
   : CompileProcess logs CompileEvent raises CompilerError =
 
       val scalacProcess: CompileProcess = CompileProcess()
@@ -87,10 +89,10 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
           ()
 
         override def progress
-                      (current:      Int,
-                       total:        Int,
-                       currentStage: String | Null,
-                       nextStage:    String | Null)
+          ( current:      Int,
+            total:        Int,
+            currentStage: String | Null,
+            nextStage:    String | Null )
         : Boolean =
 
           val int = (100.0*current/total).toInt

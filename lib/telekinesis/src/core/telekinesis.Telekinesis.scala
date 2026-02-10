@@ -45,11 +45,11 @@ import vacuous.*
 
 object Telekinesis:
   def expand
-       (todo:    Seq[Expr[Any]],
-        method:  Optional[Expr[Http.Method]]  = Unset,
-        status:  Optional[Expr[Http.Status]]  = Unset,
-        done:    List[Expr[Http.Header]]      = Nil)
-       (using Quotes)
+    ( todo:   Seq[Expr[Any]],
+      method: Optional[Expr[Http.Method]] = Unset,
+      status: Optional[Expr[Http.Status]] = Unset,
+      done:   List[Expr[Http.Header]]     = Nil )
+    ( using Quotes )
   : (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
 
       import quotes.reflect.*
@@ -61,7 +61,7 @@ object Telekinesis:
 
         . absolve
         . match
-            case '{ type keyType <: Label; $directive: (Directive { type Self = keyType }) } =>
+            case '{type keyType <: Label; $directive: (Directive { type Self = keyType })} =>
               TypeRepr.of[keyType].absolve match
                 case ConstantType(StringConstant(key)) =>
                   val header =
@@ -70,26 +70,26 @@ object Telekinesis:
                   expand(tail, method, status, header :: done)
 
       todo.absolve match
-        case '{ $method2: Http.Method } +: tail =>
+        case '{$method2: Http.Method} +: tail =>
           if method.present then halt(m"the request method can only be specified once")
           expand(tail, method2, status, done)
 
-        case '{ ("", $method2: Http.Method) } +: tail =>
+        case '{("", $method2: Http.Method)} +: tail =>
           if method.present then halt(m"the request method can only be specified once")
           expand(tail, method2, status, done)
 
-        case '{ $status2: Http.Status } +: tail =>
+        case '{$status2: Http.Status} +: tail =>
           if status.present then halt(m"the HTTP status can only be specified once")
           expand(tail, method, status2, done)
 
-        case '{ ("", $status2: Http.Status) } +: tail =>
+        case '{("", $status2: Http.Status)} +: tail =>
           if status.present then halt(m"the HTTP status can only be specified once")
           expand(tail, method, status2, done)
 
-        case '{ ("", $value: valueType) } +: tail =>
+        case '{("", $value: valueType)} +: tail =>
           unnamed[valueType](value, tail)
 
-        case '{ type keyType <: Label; ($key: keyType, $value: valueType) } +: tail =>
+        case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
           val name: Text = key.value.get.tt.uncamel.map(_.capitalize).kebab
 
           val Directive = Expr.summon[keyType is Directive of valueType].getOrElse:
@@ -99,7 +99,7 @@ object Telekinesis:
           val header = '{Http.Header($key.tt.uncamel.kebab, $Directive.encode($value))}
           expand(tail, method, status, header :: done)
 
-        case '{ $value: valueType } +: tail =>
+        case '{$value: valueType} +: tail =>
           unnamed[valueType](value, tail)
 
         case Seq() =>
@@ -107,13 +107,13 @@ object Telekinesis:
 
 
   def submit[target: Type, payload: Type]
-       (submit:   Expr[Http.Submit[target]],
-        headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
-        online:   Expr[Online],
-        loggable: Expr[HttpEvent is Loggable],
-        payload:  Expr[payload],
-        postable: Expr[payload is Postable],
-        client:   Expr[HttpClient onto target])
+    ( submit:   Expr[Http.Submit[target]],
+      headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
+      online:   Expr[Online],
+      loggable: Expr[HttpEvent is Loggable],
+      payload:  Expr[payload],
+      postable: Expr[payload is Postable],
+      client:   Expr[HttpClient onto target] )
   : Macro[Http.Response] =
 
       headers.absolve match
@@ -124,7 +124,8 @@ object Telekinesis:
             case Unset                     => '{Http.Post}
             case method: Expr[Http.Method] => method
 
-          '{  given online0: Online = $online
+          ' {
+              given online0: Online = $online
               given payload is Postable = $postable
               given loggable0: HttpEvent is Loggable = $loggable
               val host: Hostname = $submit.host
@@ -135,15 +136,16 @@ object Telekinesis:
               val request =
                 Http.Request($method, 1.1, host, path, contentType :: $headers.to(List), () => body)
 
-              $client.request(request, $submit.target)  }
+              $client.request(request, $submit.target)
+            }
 
 
   def fetch[target: Type]
-       (fetch:    Expr[Http.Fetch[target]],
-        headers:  Expr[Seq[Any]],
-        online:   Expr[Online],
-        loggable: Expr[HttpEvent is Loggable],
-        client:   Expr[HttpClient onto target])
+    ( fetch:    Expr[Http.Fetch[target]],
+      headers:  Expr[Seq[Any]],
+      online:   Expr[Online],
+      loggable: Expr[HttpEvent is Loggable],
+      client:   Expr[HttpClient onto target] )
   : Macro[Http.Response] =
 
       headers.absolve match
@@ -154,7 +156,8 @@ object Telekinesis:
             case Unset                    => '{Http.Get}
             case method: Expr[Http.Method] => method
 
-          '{  given online0: Online = $online
+          ' {
+              given online0: Online = $online
               given loggable0: HttpEvent is Loggable = $loggable
 
               val path = $fetch.originForm
@@ -162,13 +165,14 @@ object Telekinesis:
               val request =
                 Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), () => Stream())
 
-              $client.request(request, $fetch.target)  }
+              $client.request(request, $fetch.target)
+            }
 
 
   def response(headers: Expr[Seq[Any]]): Macro[Http.Response.Prototype | Http.Response] =
     headers.absolve.match
       case Varargs(exprs) => exprs.to(List).only:
-        case '{ $value: valueType } :: Nil =>
+        case '{$value: valueType} :: Nil =>
           Expr.summon[(? >: valueType) is Servable].map { servable => '{$servable.serve($value)} }
           . optional
 

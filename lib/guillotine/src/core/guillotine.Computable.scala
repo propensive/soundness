@@ -74,9 +74,12 @@ object Computable:
 
   given unit: Unit is Computable = exitStatus.map(_ => ())
 
+
   given instantiable: [instantiable: Instantiable across Paths from Text]
-        =>  instantiable is Computable =
-    path => instantiable(text.compute(path))
+  =>  instantiable is Computable =
+
+      path => instantiable(text.compute(path))
+
 
 trait Computable extends Typeclass:
   def compute(process: java.lang.Process): Self

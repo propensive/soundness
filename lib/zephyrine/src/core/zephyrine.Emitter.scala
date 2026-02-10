@@ -85,11 +85,11 @@ trait Emittable:
   def produce(block: Transport, size: Int): Self
 
   inline def copy
-                        (source: Source,
-                         start:  Ordinal,
-                         target: Transport,
-                         index:  Ordinal,
-                         size:   Int)
+    ( source: Source,
+      start:  Ordinal,
+      target: Transport,
+      index:  Ordinal,
+      size:   Int )
   : Unit
 
 

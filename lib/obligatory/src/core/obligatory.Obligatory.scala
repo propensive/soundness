@@ -177,7 +177,7 @@ object Obligatory:
                 Expr.summon[param is Encodable in Json] match
                   case Some('{$encoder: (`param` `is` Encodable `in` Json) }) =>
                     val name = Expr(param.name)
-                    '{ $name -> ${encoder}.encoded(${ident.asExprOf[param]}) }
+                    '{$name -> ${encoder}.encoded(${ident.asExprOf[param]})}
 
                   case _ =>
                     halt(m"""could not find a contextual
@@ -276,7 +276,7 @@ object Obligatory:
                 Expr.summon[param is Encodable in Json] match
                   case Some('{$encoder: (`param` `is` Encodable `in` Json) }) =>
                     val name = Expr(param.name)
-                    '{ $name -> ${encoder}.encoded(${ident.asExprOf[param]}) }
+                    '{$name -> ${encoder}.encoded(${ident.asExprOf[param]})}
                   case _ =>
                     halt(m"""could not find a contextual
                              `${TypeRepr.of[param].show} is Encodable in Json` instance for

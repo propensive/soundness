@@ -81,16 +81,18 @@ object Nomenclature2:
     import quotes.reflect.*
 
     Expr.summon[system is Nominative] match
-      case Some('{ type limit; $nominative: (Nominative { type Limit = limit }) }) =>
+      case Some('{type limit; $nominative: (Nominative { type Limit = limit })}) =>
         val checks = decompose(TypeRepr.of[limit]).to(List).map(_.asType).foldLeft('{()}):
           case (expr, '[type param <: String; type rule <: Check[param]; rule]) =>
             Nomenclature3.staticCompanion[rule] match
               case '{$rule: Rule} =>
                 TypeRepr.of[param] match
                   case ConstantType(StringConstant(string)) =>
-                    '{  if $rule.check($name, ${Expr(string)}.tt) then $expr
+                    ' {
+                        if $rule.check($name, ${Expr(string)}.tt) then $expr
                         else provide[Tactic[NameError]]:
-                          raise(NameError($name, $rule, ${Expr(string)}))  }
+                          raise(NameError($name, $rule, ${Expr(string)}))
+                      }
 
         '{$checks; $name.asInstanceOf[Name[system]]}
 
@@ -120,9 +122,14 @@ object Nomenclature2:
     val name: Text = constant[name].tt
 
     Expr.summon[plane is Nominative] match
-      case Some('{ type limit
-                   type nominative <: Nominative { type Limit = limit }
-                   $value: nominative }) =>
+      case
+        Some
+          ( ' {
+                type limit
+                type nominative <: Nominative { type Limit = limit }
+                $value: nominative
+              } ) =>
+
         decompose(TypeRepr.of[limit]).to(List).each: repr =>
           val text = repr.asMatchable match
             case AppliedType(_, List(param)) => param.asMatchable match
@@ -132,6 +139,7 @@ object Nomenclature2:
           val rule = companion[Rule](repr.typeSymbol)
           if !rule.check(name, text)
           then halt(m"the name is not valid because it ${rule.describe(text)}")
+
       case _ =>
         halt(m"Could not access constraint")
 

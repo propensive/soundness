@@ -75,7 +75,7 @@ def mute[format](using erased Void)[result](lambda: (format is Loggable) ?=> res
 
 extension (logObject: Log.type)
   def envelop[tag, event: {Taggable by tag, Loggable as loggable}](value: tag)[result]
-       (lambda: (event is Loggable) ?=> result)
+    ( lambda: (event is Loggable) ?=> result )
   : result =
 
       lambda(using loggable.contramap(_.tag(value)))
@@ -93,8 +93,8 @@ extension (logObject: Log.type)
 
 
   def route[format](using erased Void)[entry: Inscribable in format, writable: Writable by format]
-       (target: writable)
-       (using Monitor)
+    ( target: writable )
+    ( using Monitor )
   : entry is Loggable =
 
       new:
@@ -115,11 +115,14 @@ package logging:
   given silent: [format] => format is Loggable = Log.silent[format]
 
   given stdout: [format: Printable, inscribable: Inscribable in format] => Stdio
-        =>  inscribable is Loggable =
-    (level, realm, timestamp, event) =>
-      Out.println(inscribable.formatter(event, level, realm, timestamp))
+  =>  inscribable is Loggable =
+
+      (level, realm, timestamp, event) =>
+        Out.println(inscribable.formatter(event, level, realm, timestamp))
+
 
   given stderr: [inscribable: Inscribable in format, format: Printable] => Stdio
-        =>  inscribable is Loggable =
-    (level, realm, timestamp, event) =>
-      Err.println(inscribable.formatter(event, level, realm, timestamp))
+  =>  inscribable is Loggable =
+
+      (level, realm, timestamp, event) =>
+        Err.println(inscribable.formatter(event, level, realm, timestamp))

@@ -59,8 +59,9 @@ object arithmetic:
             [field] => _.add(complement(left), complement(right))
 
   inline given addable: [value <: Product: ProductReflection]
-               => value is Addable by value to value =
-    AddableDerivation.derived[value]
+  =>  value is Addable by value to value =
+
+      AddableDerivation.derived[value]
 
 
   object SubtractableDerivation
@@ -72,9 +73,11 @@ object arithmetic:
           construct:
             [field] => _.subtract(complement(left), complement(right))
 
+
   inline given subtractable: [value <: Product: ProductReflection]
-                => value is Subtractable by value to value =
-    SubtractableDerivation.derived[value]
+  =>  value is Subtractable by value to value =
+
+      SubtractableDerivation.derived[value]
 
 
   object MultiplicableDerivation
@@ -86,9 +89,11 @@ object arithmetic:
           construct:
             [field] => _.multiply(complement(left), complement(right))
 
+
   inline given multiplicable: [value <: Product: ProductReflection]
-                => value is Multiplicable by value to value =
-    MultiplicableDerivation.derived[value]
+  =>  value is Multiplicable by value to value =
+
+      MultiplicableDerivation.derived[value]
 
 
   object DivisibleDerivation
@@ -101,5 +106,6 @@ object arithmetic:
             [field] => _.divide(complement(left), complement(right))
 
   inline given divisible: [value <: Product: ProductReflection]
-                => value is Divisible by value to value =
-    DivisibleDerivation.derived[value]
+  =>  value is Divisible by value to value =
+
+      DivisibleDerivation.derived[value]

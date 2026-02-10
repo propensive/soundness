@@ -84,12 +84,12 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   def stage(path: Path on Linux): Target
 
   inline def dispatch[output]
-              (body: (References over Transport) ?=> Quotes ?=> Expr[output])
-              [version <: Scalac.Versions]
-              (using codepoint:     Codepoint,
-                     properties:    System,
-                     directory:     TemporaryDirectory,
-                     stageable:     Stageable over Transport in Form)
+    ( body: (References over Transport) ?=> Quotes ?=> Expr[output] )
+    [ version <: Scalac.Versions ]
+    ( using codepoint:  Codepoint,
+            properties: System,
+            directory:  TemporaryDirectory,
+            stageable:  Stageable over Transport in Form )
   : Result[output] raises CompilerError raises RemoteError =
 
       val references: References over Transport = References[Transport]()
@@ -100,9 +100,13 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
           // This is necessary to allocate references as a side effect
           staging.withQuotes:
-            '{  (array: Array[Object]) =>
-                  ${  references() = 'array
-                      body(using references)  }  }
+            ' {
+                (array: Array[Object]) =>
+                  $ {
+                      references() = 'array
+                      body(using references)
+                    }
+              }
 
           cache(codepoint)
 
@@ -121,15 +125,19 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
             staging.Compiler.make(classloader.java)(using settings)
 
           val function: juf.Function[Form, Form] = staging.run:
-            '{  form =>
+            ' {
+                form =>
                   stageable.serialize:
 
                     val array = new Array[Object](1)
                     array(0) =
                       stageable.embed[output]
-                       (${  references() = '{stageable.deserialize(form)}
-                            body(using references)  })
-                    array  }
+                       ($ {
+                            references() = '{stageable.deserialize(form)}
+                            body(using references)
+                          })
+                    array
+              }
 
           val target = stage(out)
           cache = cache.updated(codepoint, (target, function))

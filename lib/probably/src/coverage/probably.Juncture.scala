@@ -40,7 +40,7 @@ object Juncture:
   given ordering: Ordering[Juncture] = Ordering.by[Juncture, Int](_.start).orElseBy(-_.end)
 
 case class Juncture
-   (id:         Int,
+  ( id:         Int,
     path:       Text,
     className:  Text,
     methodName: Text,
@@ -51,7 +51,7 @@ case class Juncture
     treeName:   Text,
     branch:     Boolean,
     ignored:    Boolean,
-    code:       List[Text]):
+    code:       List[Text] ):
 
   def contains(right: Juncture): Boolean =
     (right.start >= start && right.end <= end && !(right.start == start && right.end == end))

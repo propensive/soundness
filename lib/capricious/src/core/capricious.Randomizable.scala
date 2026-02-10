@@ -62,11 +62,11 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
       Set.fill(size.generate(random))(arbitrary[element]())
 
   given iarray: [element: {Randomizable, ClassTag}] => (size: RandomSize)
-        =>  IArray[element] is Randomizable =
+  =>  IArray[element] is Randomizable =
 
-    random =>
-      given random0: Random = random
-      IArray.fill(size.generate(random))(arbitrary[element]())
+      random =>
+        given random0: Random = random
+        IArray.fill(size.generate(random))(arbitrary[element]())
 
   given double: Distribution => Double is Randomizable = summon[Distribution].transform(_)
 

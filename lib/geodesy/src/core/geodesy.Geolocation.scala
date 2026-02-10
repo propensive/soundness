@@ -113,8 +113,8 @@ object Geolocation:
     t"geo:${location.encode}$alt${uncertainty.lay(t"") { u => t";u=$u" }}"
 
 case class Geolocation
-   (location:    Location,
+  ( location:    Location,
     altitude:    Optional[Double] = Unset,
     crs:         Optional[Text]   = Unset,
     uncertainty: Optional[Double] = Unset,
-    parameters:  Map[Text, Text]  = Map())
+    parameters:  Map[Text, Text]  = Map() )

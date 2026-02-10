@@ -54,10 +54,10 @@ object Attributive:
     if value then (key, Unset) else Unset
 
   given switch: Boolean is Attributive to Whatwg.Switch = (key, value) =>
-    (key, if value then t"on" else t"off")
+    ( key, if value then t"on" else t"off" )
 
   given truth: Boolean is Attributive to Whatwg.Truth = (key, value) =>
-    (key, if value then t"true" else t"false")
+    ( key, if value then t"true" else t"false" )
 
   given int: Int is Attributive to Whatwg.Integral = _ -> _.show
   given posInt: Int is Attributive to Whatwg.PositiveInt = _ -> _.show

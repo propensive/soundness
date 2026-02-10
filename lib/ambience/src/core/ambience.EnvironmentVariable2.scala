@@ -44,6 +44,6 @@ trait EnvironmentVariable2:
 
 
   given decoder: [label <: Label, variable: Decodable in Text]
-        =>  EnvironmentVariable[label, variable] =
+  =>  EnvironmentVariable[label, variable] =
 
       variable.decoded(_)

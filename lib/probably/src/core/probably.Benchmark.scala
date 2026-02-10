@@ -41,12 +41,12 @@ object Benchmark:
   type Percentiles = 80 | 85 | 90 | 95 | 96 | 97 | 98 | 99
 
 case class Benchmark
-   (nanoseconds: Long,
+  ( nanoseconds: Long,
     iterations:  Long,
     mean:        Double,
     sd:          Double,
     confidence:  Benchmark.Percentiles,
-    baseline:    Optional[Baseline]):
+    baseline:    Optional[Baseline] ):
 
   def zScore(percentile: Benchmark.Percentiles): Double = percentile match
     case 80 => 0.842

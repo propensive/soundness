@@ -125,11 +125,11 @@ object Semver:
 
 
 case class Semver
-            (major:      Long,
-             minor:      Long,
-             patch:      Long,
-             prerelease: List[Long | Text] = Nil,
-             build:      List[Long | Text] = Nil):
+  ( major:      Long,
+    minor:      Long,
+    patch:      Long,
+    prerelease: List[Long | Text] = Nil,
+    build:      List[Long | Text] = Nil ):
 
   def development: Boolean = major == 0
   def release: Semver = Semver(major, minor, patch, Nil, Nil)

@@ -83,12 +83,12 @@ object Decodable extends Decodable2:
   given char: Char is Decodable in Text = _.s(0)
 
   given enumeration: [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
-        =>  Tactic[VariantError]
-        =>  enumeration is Decodable in Text = value =>
+  =>  Tactic[VariantError]
+  =>  enumeration is Decodable in Text = value =>
 
-    enumeration.value(identifiable.decode(value)).or:
-      val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))
-      raise(VariantError(value, enumeration.name, names)) yet enumeration.value(Prim).vouch
+      enumeration.value(identifiable.decode(value)).or:
+        val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))
+        raise(VariantError(value, enumeration.name, names)) yet enumeration.value(Prim).vouch
 
 trait Decodable extends Typeclass, Formal:
   inline def decodable: this.type = this

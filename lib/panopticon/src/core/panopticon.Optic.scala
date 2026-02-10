@@ -71,11 +71,12 @@ object Optic:
         def modify(origin: Origin)(lambda2: Target => Target): Origin = lambda(origin, lambda2)
 
   given prim: [element]
-               => Prim.type is Optic from List[element] onto element =
-    Optic[Prim.type, List[element], element]: (origin, lambda) =>
-      origin match
-        case head :: tail => lambda(head) :: tail
-        case Nil          => Nil
+  =>  Prim.type is Optic from List[element] onto element =
+
+      Optic[Prim.type, List[element], element]: (origin, lambda) =>
+        origin match
+          case head :: tail => lambda(head) :: tail
+          case Nil          => Nil
 
 trait Optic extends Typeclass, Dynamic:
   type Origin
@@ -90,14 +91,14 @@ trait Optic extends Typeclass, Dynamic:
 
 
   def updateDynamic(name: Label)(using lens: name.type is Optic from Target)
-        (value: (prior: lens.Target) ?=> lens.Target)
+    ( value: (prior: lens.Target) ?=> lens.Target )
   : Origin => Origin =
 
       Composable.optics.composition(this, lens).modify(_)(value(using _))
 
 
   def update[target](traversal: Any, value: target)
-       (using optical: (? >: traversal.type) is Optical from Target onto (? >: target))
+    ( using optical: (? >: traversal.type) is Optical from Target onto (? >: target) )
   : Origin => Origin =
 
       Composable.optics.composition
@@ -105,16 +106,16 @@ trait Optic extends Typeclass, Dynamic:
 
 
   def applyDynamic(name: Label)[operand](using lens: name.type is Optic from Target onto operand)
-        [target, traversal]
-        (traversal: traversal)
-        (using optical: (? >: traversal.type) is Optical from operand onto target)
+    [ target, traversal ]
+    ( traversal: traversal )
+    ( using optical: (? >: traversal.type) is Optical from operand onto target )
   : Optic from Origin onto target =
 
       Composable.optics.composition
        (Composable.optics.composition(this, lens), optical.optic(traversal))
 
   def apply[target, optic](traversal: optic)
-        (using optical: (? >: traversal.type) is Optical from Target onto target)
+    ( using optical: (? >: traversal.type) is Optical from Target onto target )
   : Optic from Origin onto target =
 
       Composable.optics.composition(this, optical.optic(traversal))

@@ -36,11 +36,11 @@ import anticipation.*
 
 object LineSeparation:
   inline def readByte
-              (inline read:      => Byte,
+    ( inline read:      => Byte,
                       next:      => Unit,
                inline mkNewline: => Unit,
                inline put: Byte  => Unit)
-              (lineSeparators: LineSeparation)
+    ( lineSeparators: LineSeparation )
   : Unit =
 
       val action: Action = read match
@@ -86,11 +86,11 @@ object LineSeparation:
     case Nl, NlCr, NlLf, LfNl, CrNl, NlNl, Cr, Lf, Skip
 
 case class LineSeparation
-   (newline: LineSeparation.NewlineSeq,
+  ( newline: LineSeparation.NewlineSeq,
     cr:      LineSeparation.Action,
     lf:      LineSeparation.Action,
     crlf:    LineSeparation.Action,
-    lfcr:    LineSeparation.Action):
+    lfcr:    LineSeparation.Action ):
 
   def newlineData = newline match
     case LineSeparation.NewlineSeq.Cr   => Data(13)

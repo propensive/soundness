@@ -211,11 +211,11 @@ object Contrastable:
         Juxtaposition.Different(kind(left), kind(right))
 
   def comparison[value]
-       (name:       Text,
-        left:       IArray[Decomposition],
-        right:      IArray[Decomposition],
-        leftDebug:  Text,
-        rightDebug: Text)
+    ( name:       Text,
+      left:       IArray[Decomposition],
+      right:      IArray[Decomposition],
+      leftDebug:  Text,
+      rightDebug: Text )
   : Juxtaposition =
 
       if left == right then Juxtaposition.Same(leftDebug) else

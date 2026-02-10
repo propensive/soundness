@@ -63,11 +63,11 @@ extension [left](left: left)
 extension [value](value: value)
   @targetName("plusOrMinus")
   inline infix def +/- (tolerance: value)
-                       (using inline commensurable: value is Commensurable against value,
-                                     addable:       value is Addable by value,
-                                     equality:      addable.Result =:= value,
-                                     subtractable:  value is Subtractable by value,
-                                     equality2:     subtractable.Result =:= value)
+  ( using inline commensurable: value is Commensurable against value,
+            addable:              value is Addable by value,
+            equality:             addable.Result =:= value,
+            subtractable:         value is Subtractable by value,
+            equality2:            subtractable.Result =:= value )
   : Tolerance[value] =
 
       Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
@@ -75,11 +75,11 @@ extension [value](value: value)
 
   @targetName("plusOrMinus2")
   inline infix def ± (tolerance: value)
-                     (using inline commensurable: value is Commensurable against value,
-                                   addable:       value is Addable by value,
-                                   equality:      addable.Result =:= value,
-                                   subtractable:  value is Subtractable by value,
-                                   equality2:     subtractable.Result =:= value)
+    ( using inline commensurable: value is Commensurable against value,
+            addable:              value is Addable by value,
+            equality:             addable.Result =:= value,
+            subtractable:         value is Subtractable by value,
+            equality2:            subtractable.Result =:= value )
   : Tolerance[value] =
 
       value +/- (tolerance)
@@ -90,7 +90,7 @@ def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): Te
 
 
 def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
-   (block: Testable ?=> Unit)
+  ( block: Testable ?=> Unit )
 : Unit =
 
     runner.suite(Testable(name, suite), block)

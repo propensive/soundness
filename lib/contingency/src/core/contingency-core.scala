@@ -51,9 +51,12 @@ package strategies:
   given throwSafely: [error <: Exception: CanThrow, success] => ThrowTactic[error, success] =
     ThrowTactic()
 
+
   given mitigation: [error <: Exception: Tactic, error2 <: Exception: Mitigable to error]
-        =>  Tactic[error2] =
-    error.contramap(error2.mitigate(_))
+  =>  Tactic[error2] =
+
+      error.contramap(error2.mitigate(_))
+
 
   given fatalErrors: [exception <: Exception: Fatal] => Tactic[exception]:
     given diagnostics: Diagnostics = errorDiagnostics.stackTraces
@@ -74,8 +77,8 @@ def certify[error <: Exception: Tactic](): Unit = error.certify()
 
 
 def raise[success, exception <: Exception: Recoverable to success]
-   (error: Diagnostics ?=> exception)
-   (using tactic: Tactic[exception])
+  ( error: Diagnostics ?=> exception )
+  ( using tactic: Tactic[exception] )
 : success =
 
     tactic.record(error)
@@ -87,7 +90,7 @@ def abort[success, exception <: Exception: Tactic](error: Diagnostics ?=> except
 
 
 def safely[error <: Exception](using erased Void)[success]
-   (block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=> success)
+  ( block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=> success )
 : Optional[success] =
 
     try boundary: label ?=>
@@ -96,7 +99,7 @@ def safely[error <: Exception](using erased Void)[success]
 
 
 def unsafely[error <: Exception](using erased Void)[success]
-   (block: Unsafe ?=> ThrowTactic[error, success] ?=> CanThrow[Exception] ?=> success)
+  ( block: Unsafe ?=> ThrowTactic[error, success] ?=> CanThrow[Exception] ?=> success )
 : success =
 
     boundary: label ?=>
@@ -105,15 +108,15 @@ def unsafely[error <: Exception](using erased Void)[success]
 
 
 def throwErrors[error <: Exception](using CanThrow[error])[success]
-   (block: ThrowTactic[error, success] ?=> success)
+  ( block: ThrowTactic[error, success] ?=> success )
 : success =
 
     block(using ThrowTactic())
 
 
 def capture[error <: Exception](using erased Void)[success]
-     (block: EitherTactic[error, success] ?=> success)
-     (using Tactic[ExpectationError[success]], Diagnostics)
+  ( block: EitherTactic[error, success] ?=> success )
+  ( using Tactic[ExpectationError[success]], Diagnostics )
 : error =
 
     val value: Either[error, success] = boundary: label ?=>
@@ -125,8 +128,8 @@ def capture[error <: Exception](using erased Void)[success]
 
 
 def attempt[error <: Exception](using erased Void)[success]
-     (block: AttemptTactic[error, success] ?=> success)
-     (using Diagnostics)
+  ( block: AttemptTactic[error, success] ?=> success )
+  ( using Diagnostics )
 : Attempt[success, error] =
 
     boundary: label ?=>
@@ -134,8 +137,8 @@ def attempt[error <: Exception](using erased Void)[success]
 
 
 def amalgamate[error <: Exception](using erased Void)[success]
-     (block: AmalgamateTactic[error, success] ?=> success)
-     (using Diagnostics)
+  ( block: AmalgamateTactic[error, success] ?=> success )
+  ( using Diagnostics )
 : success | error =
 
     boundary: label ?=>
@@ -143,7 +146,7 @@ def amalgamate[error <: Exception](using erased Void)[success]
 
 
 def abortive[error <: Error](using Quotes, Realm)[success]
-   (block: Diagnostics ?=> HaltTactic[error, success] ?=> success)
+  ( block: Diagnostics ?=> HaltTactic[error, success] ?=> success )
 : success =
 
     given haltTactic: HaltTactic[error, success]()
@@ -165,8 +168,8 @@ infix type tracks [result, focus] = Foci[focus] ?=> result
 
 
 inline def focus[focus, result](using foci: Foci[focus])
-            (transform: (prior: Optional[focus]) ?=> focus)
-            (block: => result)
+  ( transform: (prior: Optional[focus]) ?=> focus )
+  ( block: => result )
 : result =
 
     val length = foci.length
@@ -189,21 +192,21 @@ extension [result, lambda[_]](inline recovery: Recovery[result, lambda])
 
 
 transparent inline def track[focus](using erased Void)[accrual <: Exception](accrual: accrual)
-   (inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual)
+  ( inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual )
 : Tracking[accrual, ?, focus] =
 
     ${Contingency.track[accrual, focus]('accrual, 'block)}
 
 
 transparent inline def validate[focus](using erased Void)[accrual](accrual: accrual)
-   (inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual)
+  ( inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual )
 : Any =
 
     ${Contingency.validate[accrual, focus]('accrual, 'block)}
 
 
 transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
-   (inline block: (accrual: accrual) ?=> Exception ~> accrual)
+  ( inline block: (accrual: accrual) ?=> Exception ~> accrual )
 : Any =
 
     ${Contingency.accrue[accrual]('accrual, 'block)}
@@ -211,7 +214,7 @@ transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
 
 extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lambda])
   inline def within[result](inline lambda: lambda[result])
-              (using tactic: Tactic[accrual], diagnostics: Diagnostics)
+    ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
   : result =
 
       ${Contingency.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic, 'diagnostics)}
@@ -219,15 +222,17 @@ extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lamb
 
 extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
   inline def within[result](inline lambda: Foci[focus] ?=> lambda[result])
-              (using tactic: Tactic[accrual], diagnostics: Diagnostics)
+    ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
   : result =
 
-      ${ (Contingency.trackWithin[accrual, lambda, result, focus]
-           ('track, 'lambda, 'tactic, 'diagnostics))  }
+      $ {
+          (Contingency.trackWithin[accrual, lambda, result, focus]
+           ('track, 'lambda, 'tactic, 'diagnostics))
+        }
 
 
 extension [accrual <: Exception,  lambda[_], focus]
-          (inline validate: Validate[accrual, lambda, focus])
+  ( inline validate: Validate[accrual, lambda, focus] )
   inline def within(inline lambda: Foci[focus] ?=> lambda[Any])(using diagnostics: Diagnostics)
   : accrual =
 
@@ -236,8 +241,8 @@ extension [accrual <: Exception,  lambda[_], focus]
 
 extension [element](sequence: Iterable[element])
   transparent inline def survive[result](using Void)[error <: Exception]
-                          (lambda: (OptionalTactic[error, result], Diagnostics, CanThrow[Exception])
-                                    ?=> element => result)
+    ( lambda: (OptionalTactic[error, result], Diagnostics, CanThrow[Exception] )
+               ?=> element => result )
   : Iterable[result] =
 
       sequence.map { element => safely(lambda(element)) }.compact
@@ -249,8 +254,8 @@ extension [value](optional: Optional[value])
 
 
   def dare[error <: Exception](using erased Void)[success]
-       (block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=>
-                  value => success)
+    ( block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=>
+                value => success )
   : Optional[success] =
 
       try boundary: label ?=>

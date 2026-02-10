@@ -41,12 +41,16 @@ import prepositional.*
 
 object Reference:
   given encodable: [entity: Resolvable] => (entity.Operand is Encodable in Text)
-        =>  (Reference to entity) is Encodable in Text =
-    _.key.encode
+  =>  (Reference to entity) is Encodable in Text =
+
+      _.key.encode
+
 
   given decodable: [entity: Resolvable] => (entity.Operand is Decodable in Text)
-        =>  (Reference to entity) is Decodable in Text =
-    value => Reference(value.decode)
+  =>  (Reference to entity) is Decodable in Text =
+
+      value => Reference(value.decode)
+
 
   def apply[result: Resolvable](operand: result.Operand): Reference to result =
     new Reference(operand):

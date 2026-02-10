@@ -77,8 +77,8 @@ object Postable:
     Postable(media"application/x-www-form-urlencoded", query => Stream(query.queryString.data))
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
-        =>  Tactic[MediaTypeError]
-        =>  response is Postable =
+  =>  Tactic[MediaTypeError]
+  =>  response is Postable =
 
     new Postable:
       type Self = response

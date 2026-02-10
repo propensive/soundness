@@ -54,7 +54,7 @@ case class PublicKey[cipher <: Cipher](bytes: Data):
 
 
   def verify[encodable: Encodable in Data](value: encodable, signature: Signature[cipher])
-       (using algorithm: cipher & Signing)
+    ( using algorithm: cipher & Signing )
   : Boolean =
 
       algorithm.verify(encodable.encode(value), signature.bytes, bytes)

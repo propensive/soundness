@@ -47,15 +47,15 @@ import scala.quoted.*
 
 object Probably:
   private def handle[test: Type, result: Type]
-               (test:      Expr[Test[test]],
-                predicate: Expr[test => Boolean],
-                action:    Expr[Trial[test] => result])
+    ( test:      Expr[Test[test]],
+      predicate: Expr[test => Boolean],
+      action:    Expr[Trial[test] => result] )
   : Macro[result] =
 
       import quotes.reflect.*
 
       Expr.summon[Runner[?]].getOrElse(halt(m"No `Runner` instance is available")).absolve match
-        case '{ $runner: Runner[report] } =>
+        case '{$runner: Runner[report]} =>
 
           val inclusion = Expr.summon[Inclusion[report, Verdict]].getOrElse:
             halt(m"Can't embed test verdicts in ${Type.of[report].show}")
@@ -81,7 +81,7 @@ object Probably:
             case None =>
               Unset
 
-            case Some('{ type analyse; $autopsy: (Autopsy { type Analyse = analyse }) }) =>
+            case Some('{type analyse; $autopsy: (Autopsy { type Analyse = analyse })}) =>
               TypeRepr.of[analyse].literal[Boolean]
 
           if analyse.or(false) then exp match
@@ -89,23 +89,40 @@ object Probably:
               val decomposable: Expr[testType is Decomposable] =
                 Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
 
-              '{  given decompose: testType is Decomposable = $decomposable
+              ' {
+                  given decompose: testType is Decomposable = $decomposable
                   val contrast = infer[testType is Contrastable]
 
                   assertion[testType, test, report, result]
-                   ($runner,
-                    $test,
-                    $predicate,
-                    $action,
-                    contrast,
-                    Some($expr),
-                    $inclusion,
-                    $inclusion2,
-                    decompose)  }
+                    ( $runner,
+                      $test,
+                      $predicate,
+                      $action,
+                      contrast,
+                      Some($expr),
+                      $inclusion,
+                      $inclusion2,
+                      decompose )
+                }
 
             case _ =>
-              '{  ( assertion[test, test, report, result]
-                    ($runner,
+              ' {
+                  ( assertion[test, test, report, result]
+                      ( $runner,
+                        $test,
+                        $predicate,
+                        $action,
+                        Contrastable.nothing[test],
+                        None,
+                        $inclusion,
+                        $inclusion2,
+                        Decomposable.any[test] ) )
+                }
+
+          else
+            ' {
+                ( assertion[test, test, report, result]
+                    ( $runner,
                       $test,
                       $predicate,
                       $action,
@@ -113,42 +130,31 @@ object Probably:
                       None,
                       $inclusion,
                       $inclusion2,
-                      Decomposable.any[test]) )  }
-
-          else
-            '{  ( assertion[test, test, report, result]
-                  ($runner,
-                    $test,
-                    $predicate,
-                    $action,
-                    Contrastable.nothing[test],
-                    None,
-                    $inclusion,
-                    $inclusion2,
-                    Decomposable.any[test]) )  }
+                      Decomposable.any[test]) )
+              }
 
   def check[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[test] =
-    handle[test, test](test, predicate, '{ (t: Trial[test]) => t.get })
+    handle[test, test](test, predicate, '{(t: Trial[test]) => t.get})
 
   def assert[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[Unit] =
-    handle[test, Unit](test, predicate, '{ _ => () })
+    handle[test, Unit](test, predicate, '{_ => ()})
 
   def aspire[test: Type](test: Expr[Test[test]]): Macro[Unit] =
-    handle[test, Unit](test, '{ _ => true }, '{ _ => () })
+    handle[test, Unit](test, '{_ => true}, '{_ => ()})
 
   def succeed: Any => Boolean = (value: Any) => true
 
 
   def assertion[test, test2 <: test, report, result]
-       (runner:       Runner[report],
-        test:         Test[test2],
-        predicate:    test2 => Boolean,
-        result:       Trial[test2] => result,
-        contrast:     test is Contrastable,
-        exp:          Option[test],
-        inc:          Inclusion[report, Verdict],
-        inc2:         Inclusion[report, Verdict.Detail],
-        decomposable: test is Decomposable)
+    ( runner:       Runner[report],
+      test:         Test[test2],
+      predicate:    test2 => Boolean,
+      result:       Trial[test2] => result,
+      contrast:     test is Contrastable,
+      exp:          Option[test],
+      inc:          Inclusion[report, Verdict],
+      inc2:         Inclusion[report, Verdict.Detail],
+      decomposable: test is Decomposable )
   : result =
 
       runner.run(test).pipe: run =>
@@ -163,12 +169,12 @@ object Probably:
               exp match
                 case Some(exp) =>
                   inc2.include
-                   (runner.report,
-                    test.id,
-                    Verdict.Detail.Compare
-                     (decomposable.decomposition(exp).text,
-                      decomposable.decomposition(value).text,
-                      contrast.juxtaposition(exp, value)))
+                    ( runner.report,
+                      test.id,
+                      Verdict.Detail.Compare
+                        ( decomposable.decomposition(exp).text,
+                          decomposable.decomposition(value).text,
+                          contrast.juxtaposition(exp, value) ) )
                 case None =>
                   // inc2.include(runner.report, test.id, Verdict.Detail.Compare
                   //  (summon[Any is Contrastable].compare(value, 1)))
@@ -196,4 +202,4 @@ object Probably:
     val decomposable: Expr[test is Decomposable] =
       Expr.summon[test is Decomposable].get
 
-    '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $decomposable) }
+    '{$test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $decomposable)}

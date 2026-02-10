@@ -42,27 +42,27 @@ import language.experimental.pureFunctions
 
 object Suggestion:
   def apply
-       (core:        Text,
-        description: Optional[Text | Teletype] = Unset,
-        hidden:      Boolean                   = false,
-        incomplete:  Boolean                   = false,
-        aliases:     List[Text]                = Nil,
-        prefix:      Text                      = t"",
-        suffix:      Text                      = t"",
-        expanded:    Boolean                   = false)
+    ( core:        Text,
+      description: Optional[Text | Teletype] = Unset,
+      hidden:      Boolean                   = false,
+      incomplete:  Boolean                   = false,
+      aliases:     List[Text]                = Nil,
+      prefix:      Text                      = t"",
+      suffix:      Text                      = t"",
+      expanded:    Boolean                   = false )
   : Suggestion =
 
       new Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix, expanded)
 
 
 case class Suggestion
-   (core:        Text,
+  ( core:        Text,
     description: Optional[Text | Teletype],
     hidden:      Boolean,
     incomplete:  Boolean,
     aliases:     List[Text],
     prefix:      Text,
     suffix:      Text,
-    expanded:    Boolean):
+    expanded:    Boolean ):
 
   def text: Text = prefix+core+suffix

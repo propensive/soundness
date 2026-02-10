@@ -46,16 +46,16 @@ import doms.html.whatwg, whatwg.*
 
 object Formulaic extends ProductDerivable[Formulaic]:
   given elicitable: [value]
-        => (elicitable: value is Elicitable)
-        => (renderable: elicitable.Operand is Renderable in Phrasing)
-        =>  value is Formulaic:
+  =>  ( elicitable: value is Elicitable )
+  =>  ( renderable: elicitable.Operand is Renderable in Phrasing )
+  =>  value is Formulaic:
 
     def fields
-         (pointer:     Pointer,
-          legend:      Text,
-          query:       Query,
-          validation:  Validation,
-          formulation: Formulation)
+      ( pointer:     Pointer,
+        legend:      Text,
+        query:       Query,
+        validation:  Validation,
+        formulation: Formulation )
     : Seq[Html of Flow] =
 
         val message: Optional[Message] = validation(pointer)
@@ -80,9 +80,9 @@ object Formulaic extends ProductDerivable[Formulaic]:
 
 trait Formulaic extends Typeclass:
   def fields
-       (pointer:     Pointer,
-        legend:      Text,
-        query:       Query,
-        validation:  Validation,
-        formulation: Formulation)
+    ( pointer:     Pointer,
+      legend:      Text,
+      query:       Query,
+      validation:  Validation,
+      formulation: Formulation )
   : Seq[Html of Flow]

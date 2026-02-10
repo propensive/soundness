@@ -51,13 +51,13 @@ object Envelope:
     case one: (`entity` @unchecked)      => List(one)
 
   def apply[sendable: Sendable]
-       (email:   sendable,
-        to:      EmailAddress | List[EmailAddress],
-        cc:      EmailAddress | List[EmailAddress],
-        bcc:     EmailAddress | List[EmailAddress],
-        replyTo: EmailAddress | List[EmailAddress],
-        subject: Text)
-       (using courier: Courier, sender: Sender)
+    ( email:   sendable,
+      to:      EmailAddress | List[EmailAddress],
+      cc:      EmailAddress | List[EmailAddress],
+      bcc:     EmailAddress | List[EmailAddress],
+      replyTo: EmailAddress | List[EmailAddress],
+      subject: Text )
+    ( using courier: Courier, sender: Sender )
   : Envelope =
 
       Envelope
@@ -71,10 +71,10 @@ object Envelope:
 
 
 case class Envelope
-            (from:        EmailAddress,
-             to:          List[EmailAddress],
-             cc:          List[EmailAddress],
-             bcc:         List[EmailAddress],
-             replyTo:     List[EmailAddress],
-             subject:     Text,
-             email:       Email)
+  ( from:    EmailAddress,
+    to:      List[EmailAddress],
+    cc:      List[EmailAddress],
+    bcc:     List[EmailAddress],
+    replyTo: List[EmailAddress],
+    subject: Text,
+    email:   Email )

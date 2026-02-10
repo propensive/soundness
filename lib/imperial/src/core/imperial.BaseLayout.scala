@@ -51,7 +51,7 @@ object BaseLayout:
       t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
 
 case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly: Boolean = false)
-            (using baseDir: BaseLayout.Dir):
+  ( using baseDir: BaseLayout.Dir ):
 
   type Topic = topic
 
@@ -68,7 +68,7 @@ case class BaseLayout[topic <: Tuple](private val part: Optional[Text], readOnly
 
 
   def apply[instantiable: Instantiable across Paths from Text]()
-       (using System, Environment)
+    ( using System, Environment )
   : instantiable raises PropertyError raises EnvironmentError =
 
       val path: Text = absolutePath

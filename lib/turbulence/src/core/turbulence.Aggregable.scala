@@ -69,8 +69,9 @@ object Aggregable:
     builder.toString.tt
 
   given stream: [element, element2] => (aggregable: element2 is Aggregable by element)
-        =>  Stream[element2] is Aggregable by element =
-    element => Stream(aggregable.aggregate(element))
+  =>  Stream[element2] is Aggregable by element =
+
+      element => Stream(aggregable.aggregate(element))
 
 trait Aggregable extends Typeclass, Operable:
   aggregable =>

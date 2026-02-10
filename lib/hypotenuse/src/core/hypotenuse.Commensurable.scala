@@ -40,26 +40,26 @@ import rudiments.*
 
 object Commensurable:
   inline given numeric: [operand <: Long | Int | Double | Char | Byte | Short | Float]
-        =>  Boolean is Commensurable:
-    type Contrast = operand
+  =>  Boolean is Commensurable:
 
+      type Contrast = operand
 
-    inline def compare
-                (inline left: Boolean,
-                 inline right: operand,
-                 inline strict: Boolean,
-                 inline greaterThan: Boolean)
-    : Boolean =
+      inline def compare
+        ( inline left:        Boolean,
+          inline right:       operand,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
+      : Boolean =
 
-        ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
+          ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
 
 
   given bytes: Bytes is Orderable:
     inline def compare
-                (inline left:    Bytes,
-                 inline right:   Bytes,
-                 inline strict:  Boolean,
-                 inline greater: Boolean)
+      ( inline left:    Bytes,
+        inline right:   Bytes,
+        inline strict:  Boolean,
+        inline greater: Boolean )
     : Boolean =
 
         !strict && left.long == right.long || (left.long < right.long) ^ greater
@@ -67,10 +67,10 @@ object Commensurable:
 
   inline given ordinal: Ordinal is Orderable:
     inline def compare
-                (inline left:    Ordinal,
-                 inline right:   Ordinal,
-                 inline strict:  Boolean,
-                 inline greater: Boolean)
+      ( inline left:    Ordinal,
+        inline right:   Ordinal,
+        inline strict:  Boolean,
+        inline greater: Boolean )
     : Boolean =
 
         inline if greater then inline if strict then left.gt(right) else left.ge(right)
@@ -78,10 +78,10 @@ object Commensurable:
 
   given orderable: [value: Ordering] => value is Orderable:
     inline def compare
-                (inline left:    value,
-                  inline right:   value,
-                  inline strict:  Boolean,
-                  inline greater: Boolean)
+      ( inline left:    value,
+        inline right:   value,
+        inline strict:  Boolean,
+        inline greater: Boolean )
     : Boolean =
 
         val n = value.compare(left, right)
@@ -92,8 +92,8 @@ object Commensurable:
 
 trait Commensurable extends Typeclass, Contrastive:
   inline def compare
-              (inline left:        Self,
-               inline right:       Contrast,
-               inline strict:      Boolean,
-               inline greaterThan: Boolean)
+    ( inline left:        Self,
+      inline right:       Contrast,
+      inline strict:      Boolean,
+      inline greaterThan: Boolean )
   : Boolean

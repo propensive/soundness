@@ -106,7 +106,7 @@ extension (bytes: Data)
 
 extension [textual](text: textual)
   def cut[delimiter](delimiter: delimiter, limit: Int = Int.MaxValue)
-       (using cuttable: textual is Cuttable by delimiter)
+    ( using cuttable: textual is Cuttable by delimiter )
   : List[textual] =
 
     cuttable.cut(text, delimiter, limit)
@@ -369,25 +369,27 @@ package proximities:
     distance + scale*prefixMatch.distance(left, right).min(4)*(1.0 - distance)
 
   given levenshteinDistance: (sensitivity: CaseSensitivity)
-        => (Proximity { type Triangulable = true }) by Int =
-    (left, right) =>
-      val m = left.s.length
-      val n = right.length
-      val old = new Array[Int](n + 1)
-      val dist = new Array[Int](n + 1)
+  =>  (Proximity { type Triangulable = true }) by Int =
 
-      for j <- 1 to n do old(j) = old(j - 1) + 1
+      (left, right) =>
+        val m = left.s.length
+        val n = right.length
+        val old = new Array[Int](n + 1)
+        val dist = new Array[Int](n + 1)
 
-      for i <- 1 to m do
-        dist(0) = old(0) + 1
+        for j <- 1 to n do old(j) = old(j - 1) + 1
 
-        for j <- 1 to n do
-          val c = if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
-          dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
+        for i <- 1 to m do
+          dist(0) = old(0) + 1
 
-        for j <- 0 to n do old(j) = dist(j)
+          for j <- 1 to n do
+            val c = if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
+            dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
 
-      dist(n)
+          for j <- 0 to n do old(j) = dist(j)
+
+        dist(n)
+
 
   given normalizedLevenshteinDistance: CaseSensitivity => Proximity by Double =
     (left, right) => levenshteinDistance.distance(left, right)/left.length.max(right.length)

@@ -104,7 +104,10 @@ object Deserializable:
   given hex: (Alphabet[Hex], Tactic[SerializationError]) => Deserializable in Hex = base(4)
   given octal: (Alphabet[Octal], Tactic[SerializationError]) => Deserializable in Octal = base(3)
 
+
   given quaternary: (Alphabet[Quaternary], Tactic[SerializationError])
-        => Deserializable in Quaternary = base(2)
+  =>  Deserializable in Quaternary =
+
+      base(2)
 
   given binary: (Alphabet[Binary], Tactic[SerializationError]) => Deserializable in Binary = base(1)

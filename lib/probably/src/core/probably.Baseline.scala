@@ -43,6 +43,6 @@ object Baseline:
     case Geometric, Arithmetic
 
 case class Baseline
-   (compare: Baseline.Compare = Mean,
+  ( compare: Baseline.Compare = Mean,
     metric:  Baseline.Metric  = BySpeed,
-    mode:    Baseline.Mode    = Geometric)
+    mode:    Baseline.Mode    = Geometric )

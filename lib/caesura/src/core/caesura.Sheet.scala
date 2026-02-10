@@ -52,9 +52,9 @@ import scala.compiletime.*
 import java.util as ju
 
 case class Sheet
-   (rows:    Stream[Dsv],
+  ( rows:    Stream[Dsv],
     format:  Optional[DsvFormat]    = Unset,
-    columns: Optional[IArray[Text]] = Unset):
+    columns: Optional[IArray[Text]] = Unset ):
 
   def as[value: Decodable in Dsv]: Stream[value] tracks CellRef = rows.map(_.as[value])
 
@@ -74,20 +74,22 @@ object Sheet:
   private enum State:
     case Fresh, Quoted, DoubleQuoted
 
+
   given abstractable: (CharEncoder, DsvFormat)
-        => Sheet is Abstractable across HttpStreams to HttpStreams.Content =
-    new Abstractable:
-      type Self = Sheet
-      type Domain = HttpStreams
-      type Result = HttpStreams.Content
+  =>  Sheet is Abstractable across HttpStreams to HttpStreams.Content =
 
-      def genericize(dsv: Sheet): HttpStreams.Content =
-        val mediaType: Text =
-          dsv.format.let(_.delimiter) match
-            case '\t' => t"text/tab-separated-values"
-            case _    => t"text/csv"
+      new Abstractable:
+        type Self = Sheet
+        type Domain = HttpStreams
+        type Result = HttpStreams.Content
 
-        (mediaType, dsv.stream[Text].map(_.data))
+        def genericize(dsv: Sheet): HttpStreams.Content =
+          val mediaType: Text =
+            dsv.format.let(_.delimiter) match
+              case '\t' => t"text/tab-separated-values"
+              case _    => t"text/csv"
+
+          (mediaType, dsv.stream[Text].map(_.data))
 
 
   given tabular: Sheet is Tabular[Text]:
@@ -117,14 +119,14 @@ object Sheet:
 
 
   private def recur
-               (content:  Stream[Text],
-                index:    Ordinal                  = Prim,
-                column:   Int                      = 0,
-                cells:    Array[Text]              = new Array[Text](0),
-                builder:  TextBuilder              = TextBuilder(),
-                state:    State                    = State.Fresh,
-                headings: Optional[Map[Text, Int]] = Unset)
-               (using format: DsvFormat, tactic: Tactic[DsvError])
+    ( content:  Stream[Text],
+      index:    Ordinal                  = Prim,
+      column:   Int                      = 0,
+      cells:    Array[Text]              = new Array[Text](0),
+      builder:  TextBuilder              = TextBuilder(),
+      state:    State                    = State.Fresh,
+      headings: Optional[Map[Text, Int]] = Unset )
+    ( using format: DsvFormat, tactic: Tactic[DsvError] )
   : Stream[Dsv] =
 
       inline def putCell(): Array[Text] =

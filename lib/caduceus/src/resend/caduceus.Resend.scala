@@ -61,54 +61,55 @@ object Resend:
 
 package couriers:
   given resend: (Tactic[CourierError], Online, HttpEvent is Loggable, HttpClient)
-        => (apiKey: Resend.ApiKey)
-        => Courier:
-    type Result = Resend.Receipt
+  =>  ( apiKey: Resend.ApiKey )
+  =>  Courier:
 
-    private case class Attachment(filename: Text, content: Text)
-    private case class Request
-                        (from:         EmailAddress,
-                         to:           List[EmailAddress],
-                         subject:      Text,
-                         bcc:          List[EmailAddress],
-                         cc:           List[EmailAddress],
-                         scheduled_at: Optional[Text],
-                         replyTo:      List[EmailAddress],
-                         headers:      Map[Text, Text],
-                         html:         Optional[Text],
-                         text:         Optional[Text],
-                         attachments:  List[Attachment])
+      type Result = Resend.Receipt
 
-    def send(envelope: Envelope): Resend.Receipt =
-      val attachments = envelope.email.attachments.map: attachment =>
-        Attachment(attachment.name, attachment.stream.read[Data].serialize[Base64])
+      private case class Attachment(filename: Text, content: Text)
+      private case class Request
+        ( from:         EmailAddress,
+          to:           List[EmailAddress],
+          subject:      Text,
+          bcc:          List[EmailAddress],
+          cc:           List[EmailAddress],
+          scheduled_at: Optional[Text],
+          replyTo:      List[EmailAddress],
+          headers:      Map[Text, Text],
+          html:         Optional[Text],
+          text:         Optional[Text],
+          attachments:  List[Attachment] )
 
-      val request =
-        Request
-         (envelope.from,
-          envelope.to,
-          envelope.subject,
-          envelope.bcc,
-          envelope.cc,
-          Unset,
-          envelope.replyTo,
-          envelope.email.headers,
-          envelope.email.html,
-          envelope.email.text,
-          attachments)
+      def send(envelope: Envelope): Resend.Receipt =
+        val attachments = envelope.email.attachments.map: attachment =>
+          Attachment(attachment.name, attachment.stream.read[Data].serialize[Base64])
 
-      def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
+        val request =
+          Request
+            ( envelope.from,
+              envelope.to,
+              envelope.subject,
+              envelope.bcc,
+              envelope.cc,
+              Unset,
+              envelope.replyTo,
+              envelope.email.headers,
+              envelope.email.html,
+              envelope.email.text,
+              attachments )
 
-      mitigate:
-        case ConnectError(reason)         => Out.println(reason.communicate) yet error
-        case ParseError(_, _, reason)     => Out.println(reason.describe) yet error
-        case HttpError(status, _)         => Out.println(status.communicate) yet error
-        case JsonError(reason)            => Out.println(reason.communicate) yet error
-        case MediaTypeError(_, _)         => error
+        def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
 
-      . within:
-          url"https://api.resend.com/emails".submit
-           (Http.Post, authorization = Auth.Bearer(apiKey.key))
-           (request.json)
-          . receive[Json]
-          . as[Resend.Receipt]
+        mitigate:
+          case ConnectError(reason)     => Out.println(reason.communicate) yet error
+          case ParseError(_, _, reason) => Out.println(reason.describe) yet error
+          case HttpError(status, _)     => Out.println(status.communicate) yet error
+          case JsonError(reason)        => Out.println(reason.communicate) yet error
+          case MediaTypeError(_, _)     => error
+
+        . within:
+            url"https://api.resend.com/emails".submit
+              ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
+              ( request.json )
+            . receive[Json]
+            . as[Resend.Receipt]

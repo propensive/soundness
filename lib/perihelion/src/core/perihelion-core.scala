@@ -37,8 +37,8 @@ import telekinesis.*
 
 
 def websocket[ResultType](lambda: (frames: LazyList[Frame]) ?=> ResultType)
-     (using request: Http.Request)
-     (using Monitor, Codicil)
+  ( using request: Http.Request )
+  ( using Monitor, Codicil )
 : Websocket[ResultType] =
 
     Websocket(request, lambda(using _))

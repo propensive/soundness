@@ -87,7 +87,7 @@ def async[result](using Codepoint)(evaluate: Worker ?=> result)(using Monitor, C
 
 
 def task[result](using Codepoint)(name: Text)(evaluate: Worker ?=> result)
-     (using Monitor, Codicil)
+  ( using Monitor, Codicil )
 : Task[result] =
 
     Task(evaluate(using _), daemon = false, name = name)
@@ -139,7 +139,7 @@ def supervise[result](block: Monitor ?=> result)(using threading: Threading, cod
 
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)
-   (using Tenacity, Monitor)
+  ( using Tenacity, Monitor )
 : value raises RetryError =
 
     @tailrec
@@ -161,7 +161,7 @@ def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) 
 
 extension [target](value: target)
   def intercept[event](using interceptable: event is Interceptable onto target)
-       (action: (event: event) ?=> Unit)
+    ( action: (event: event) ?=> Unit )
   : Hook =
 
       Hook(interceptable.register(value, action(using _)))

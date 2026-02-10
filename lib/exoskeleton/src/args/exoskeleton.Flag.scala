@@ -55,25 +55,25 @@ object Flag:
 
   @targetName("make")
   def apply[topic: Defaulting to Text]
-       (name:        Text | Char,
-        repeatable:  Boolean           = false,
-        aliases:     List[Text | Char] = Nil,
-        description: Optional[Text]    = Unset,
-        secret:      Boolean           = false)
+    ( name:        Text | Char,
+      repeatable:  Boolean           = false,
+      aliases:     List[Text | Char] = Nil,
+      description: Optional[Text]    = Unset,
+      secret:      Boolean           = false )
   : Flag of topic =
       new Flag(name, repeatable, aliases, description, secret):
         type Topic = topic
 
 case class Flag
-   (name:        Text | Char,
+  ( name:        Text | Char,
     repeatable:  Boolean,
     aliases:     List[Text | Char],
     description: Optional[Text],
-    secret:      Boolean)
+    secret:      Boolean )
 extends Topical:
 
   def suggest(using interpretable: Topic is Interpretable, discoverable: Topic is Discoverable)
-       (using cli: Cli)
+    ( using cli: Cli )
   : Unit =
 
       cli.register(this, discoverable)
@@ -86,10 +86,10 @@ extends Topical:
     flag == name || aliases.contains(flag)
 
   def apply()
-       (using cli:             Cli,
-              interpreter:     Interpreter,
-              interpretable:   Topic is Interpretable,
-              suggestions:     (? <: Topic) is Discoverable = Discoverable.noSuggestions)
+    ( using cli:           Cli,
+            interpreter:   Interpreter,
+            interpretable: Topic is Interpretable,
+            suggestions:   (? <: Topic) is Discoverable = Discoverable.noSuggestions )
   : Optional[Topic] =
 
       cli.register(this, suggestions)
@@ -97,7 +97,7 @@ extends Topical:
 
 
   def select(options: Iterable[Topic])
-       (using cli: Cli, interpreter: Interpreter, suggestible: Topic is Suggestible)
+    ( using cli: Cli, interpreter: Interpreter, suggestible: Topic is Suggestible )
   : Optional[Topic] =
 
       val mapping: Map[Text, Topic] =

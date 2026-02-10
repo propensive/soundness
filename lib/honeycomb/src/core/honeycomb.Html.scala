@@ -98,22 +98,25 @@ object Html extends Tag.Container
     transparent inline def extrapolate[parts <: Tuple](scrutinee: Html): Extrapolation[Html] =
       ${Honeycomb.extractor[parts]('scrutinee)}
 
+
   given addable: [dom        <: Dom,
                   leftTopic  <: Label,
                   rightTopic <: Label,
                   left       <: Html of leftTopic in dom,
                   right      <: Html of rightTopic in dom]
-        => left is Addable by right to (Fragment of leftTopic | rightTopic in dom) =
-    (left, right) =>
-      Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
+  =>  left is Addable by right to (Fragment of leftTopic | rightTopic in dom) =
+
+      (left, right) =>
+        Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
+
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
-        =>  Tactic[ParseError]
-        =>  (Html of content) is Aggregable by Text =
+  =>  Tactic[ParseError]
+  =>  (Html of content) is Aggregable by Text =
 
-    input =>
-      val root = Tag.root(content.reify.map(_.tt).to(Set))
-      parse(input.iterator, root).of[content]
+      input =>
+        val root = Tag.root(content.reify.map(_.tt).to(Set))
+        parse(input.iterator, root).of[content]
 
   given aggregable2: (dom: Dom) => Tactic[ParseError] => Html is Aggregable by Text =
     input => parse(input.iterator, dom.generic, doctypes = false)
@@ -274,8 +277,10 @@ object Html extends Tag.Container
     string => TextNode(string.tt).of[label]
 
   given conversion3: [label <: Label, content >: label <: Label]
-        =>  Conversion[Html of label, Html of content] =
-    _.of[content]
+  =>  Conversion[Html of label, Html of content] =
+
+      _.of[content]
+
 
   given comment: [content <: Label] =>  Conversion[Comment, Html of content] =
     _.of[content]
@@ -283,14 +288,19 @@ object Html extends Tag.Container
   given string2: Conversion[String, Html of "#foreign"] =
     string => TextNode(string.tt).of["#foreign"]
 
+
   given renderable: [content <: Label, value: Renderable in content]
-        => Conversion[value, Html of content] =
-    value.render(_)
+  =>  Conversion[value, Html of content] =
+
+      value.render(_)
+
 
   given sequences: [nodal, html <: Html] => (conversion: Conversion[nodal, html])
-        =>  Conversion[Seq[nodal], Seq[html]] =
-    (seq: Seq[nodal]) =>
-      seq.map(conversion(_))
+  =>  Conversion[Seq[nodal], Seq[html]] =
+
+      (seq: Seq[nodal]) =>
+        seq.map(conversion(_))
+
 
   enum Issue extends Format.Issue:
     case BadInsertion
@@ -506,7 +516,7 @@ object Html extends Tag.Container
 
     @tailrec
     def attributes(tag: Text, foreign: Boolean, entries: Map[Text, Optional[Text]] = ListMap())
-         (using Cursor.Held)
+      ( using Cursor.Held )
     : Map[Text, Optional[Text]] =
 
         skip() yet cursor.lay(fail(ExpectedMore)):
@@ -859,10 +869,10 @@ object Element:
       Element(label, attributes, children.nodes, true).of["#foreign"]
 
 case class Element
-            (label:      Text,
-             attributes: Map[Text, Optional[Text]],
-             children:   IArray[Node],
-             foreign:    Boolean)
+  ( label:      Text,
+    attributes: Map[Text, Optional[Text]],
+    children:   IArray[Node],
+    foreign:    Boolean )
 extends Node, Topical, Transportive, Dynamic:
 
   override def toString(): String = this.show.s

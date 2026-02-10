@@ -49,14 +49,17 @@ import vacuous.*
 
 object Process:
   given writable: [chunk, command <: Label, result]
-        =>  ji.OutputStream is Writable by chunk
-        =>  Process[command, result] is Writable by chunk =
+  =>  ji.OutputStream is Writable by chunk
+  =>  Process[command, result] is Writable by chunk =
 
-    (process, stream) => process.stdin(stream)
+      (process, stream) => process.stdin(stream)
+
 
   given writableText: [command <: Label, result] => Tactic[StreamError]
-        =>  Process[command, result] is Writable by Text =
-    (process, stream) => process.stdin(stream.map(_.sysData))
+  =>  Process[command, result] is Writable by Text =
+
+      (process, stream) => process.stdin(stream.map(_.sysData))
+
 
 class Process[+exec <: Label, result](process: java.lang.Process) extends ProcessRef:
   def pid: Pid = Pid(process.pid)

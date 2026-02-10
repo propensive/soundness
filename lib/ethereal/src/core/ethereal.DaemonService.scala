@@ -44,13 +44,13 @@ import serpentine.*
 import language.experimental.pureFunctions
 
 case class DaemonService[bus <: Matchable]
-   (pid:        Pid,
+  ( pid:        Pid,
     shutdown:   () => Unit,
     cliInput:   Stdin,
     executable: Path on Linux,
     deliver:    bus => Unit,
     bus:        Stream[bus],
-    script:     Text)
+    script:     Text )
 extends Entrypoint:
 
   def broadcast(message: bus): Unit = deliver(message)

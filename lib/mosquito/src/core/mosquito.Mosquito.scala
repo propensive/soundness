@@ -53,68 +53,74 @@ object Mosquito:
         case head :: tail => take(tail, size - 1).let(head *: _)
 
 
-    given addable: [value,
-                    size <: Int,
-                    left <: Tensor[value, size],
-                    value2,
-                    right <: Tensor[value2, size],
-                    result]
-          => (addable: value is Addable by value2 to result)
-          => left is Addable:
-      type Self = left
-      type Operand = right
-      type Result = Tensor[result, size]
+    given addable: [ value,
+                     size <: Int,
+                     left <: Tensor[value, size],
+                     value2,
+                     right <: Tensor[value2, size],
+                     result ]
+    =>  ( addable: value is Addable by value2 to result )
+    =>  left is Addable:
 
-      def add(left: left, right: right): Tensor[result, size] =
-        def recur(left: Tuple, right: Tuple): Tuple = left match
-          case leftHead *: leftTail => right match
-            case rightHead *: rightTail =>
-              (leftHead.asInstanceOf[value] + rightHead.asInstanceOf[value2])
-              *: recur(leftTail, rightTail)
+        type Self = left
+        type Operand = right
+        type Result = Tensor[result, size]
+
+        def add(left: left, right: right): Tensor[result, size] =
+          def recur(left: Tuple, right: Tuple): Tuple = left match
+            case leftHead *: leftTail => right match
+              case rightHead *: rightTail =>
+                (leftHead.asInstanceOf[value] + rightHead.asInstanceOf[value2])
+                *: recur(leftTail, rightTail)
+
+              case _ =>
+                Zero
 
             case _ =>
               Zero
 
-          case _ =>
-            Zero
+          recur(left, right)
 
-        recur(left, right)
 
     given negatable: [value, size <: Int, tensor <: Tensor[value, size], result]
-          => (negatable: value is Negatable to result)
-          => tensor is Negatable:
-      type Result = Tensor[result, size]
-      def negate(operand: tensor): Tensor[result, size] = operand.map(negatable.negate(_))
+    =>  ( negatable: value is Negatable to result )
+    =>  tensor is Negatable:
 
-    given subtractable: [value,
-                         size <: Int,
-                         left <: Tensor[value, size],
-                         value2,
-                         right <: Tensor[value2, size],
-                         result]
-          => (subtractable: value is Subtractable by value2 to result)
-          => left is Subtractable:
-      type Self = left
-      type Operand = right
-      type Result = Tensor[result, size]
+        type Result = Tensor[result, size]
+        def negate(operand: tensor): Tensor[result, size] = operand.map(negatable.negate(_))
 
-      def subtract(left: left, right: right): Tensor[result, size] =
-        def recur(left: Tuple, right: Tuple): Tuple = left match
-          case leftHead *: leftTail => right match
-            case rightHead *: rightTail =>
-              (leftHead.asInstanceOf[value] - rightHead.asInstanceOf[value2])
-              *: recur(leftTail, rightTail)
+
+    given subtractable: [ value,
+                          size <: Int,
+                          left <: Tensor[value, size],
+                          value2,
+                          right <: Tensor[value2, size],
+                          result ]
+    =>  ( subtractable: value is Subtractable by value2 to result )
+    =>  left is Subtractable:
+
+        type Self = left
+        type Operand = right
+        type Result = Tensor[result, size]
+
+        def subtract(left: left, right: right): Tensor[result, size] =
+          def recur(left: Tuple, right: Tuple): Tuple = left match
+            case leftHead *: leftTail => right match
+              case rightHead *: rightTail =>
+                (leftHead.asInstanceOf[value] - rightHead.asInstanceOf[value2])
+                *: recur(leftTail, rightTail)
+
+              case _ =>
+                Zero
 
             case _ =>
               Zero
 
-          case _ =>
-            Zero
+          recur(left, right)
 
-        recur(left, right)
 
     given showable: [size <: Int: ValueOf, element: Showable] => Text is Measurable
-          =>  Tensor[element, size] is Showable =
+    =>  Tensor[element, size] is Showable =
 
       tensor =>
         val items = tensor.list.map(_.show)
@@ -130,11 +136,12 @@ object Mosquito:
 
           (top :: middle ::: bottom :: Nil).join(t"\n")
 
+
   extension [left](left: Tensor[left, 3])
     def cross[right](right: Tensor[right, 3])
-         (using multiplication: left is Multiplicable by right,
-                addition:       multiplication.Result is Addable by multiplication.Result,
-                subtraction:    multiplication.Result is Subtractable by multiplication.Result)
+      ( using multiplication: left is Multiplicable by right,
+              addition:       multiplication.Result is Addable by multiplication.Result,
+              subtraction:    multiplication.Result is Subtractable by multiplication.Result )
     : Tensor[addition.Result, 3] =
 
         val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
@@ -153,7 +160,7 @@ object Mosquito:
 
 
     def norm
-         (using multiplicable: left is Multiplicable by left,
+      ( using multiplicable: left is Multiplicable by left,
                 addable:       multiplicable.Result is Addable by multiplicable.Result
                                 to multiplicable.Result,
                 rootable:      multiplicable.Result is Rootable[2] to left)
@@ -176,10 +183,10 @@ object Mosquito:
 
 
     def unitary[square]
-         (using multiplicable: left is Multiplicable by left to square,
-                addable:       square is Addable by square to square,
-                rootable:      square is Rootable[2] to left,
-                divisible:     left is Divisible by left to Double)
+      ( using multiplicable: left is Multiplicable by left to square,
+              addable:       square is Addable by square to square,
+              rootable:      square is Rootable[2] to left,
+              divisible:     left is Divisible by left to Double )
     : Tensor[Double, size] =
 
         val magnitude: left = left.norm
@@ -192,10 +199,10 @@ object Mosquito:
 
 
     def dot[right](right: Tensor[right, size])
-         (using multiply: left is Multiplicable by right,
-                size:     ValueOf[size],
-                addable:  multiply.Result is Addable by multiply.Result,
-                equality: addable.Result =:= multiply.Result)
+      ( using multiply: left is Multiplicable by right,
+              size:     ValueOf[size],
+              addable:  multiply.Result is Addable by multiply.Result,
+              equality: addable.Result =:= multiply.Result )
     : multiply.Result =
 
         def recur(index: Int, sum: multiply.Result): multiply.Result =

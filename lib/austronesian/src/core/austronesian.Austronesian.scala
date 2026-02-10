@@ -48,9 +48,9 @@ object Austronesian:
 
   object Pojo extends Pojo2:
     def apply
-         (pojo: Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character
-                | java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float
-                | java.lang.Double)
+      ( pojo: Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character
+              | java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float
+              | java.lang.Double )
     : Pojo =
 
         pojo
@@ -74,8 +74,9 @@ object Austronesian:
     //   trie => IArray.from(trie.map(_.encode))
 
     inline given list: [collection <: Iterable, element: Encodable in Pojo]
-          =>  collection[element] is Encodable in Pojo =
-      iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
+    =>  collection[element] is Encodable in Pojo =
+
+        iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
 
     inline given text2: Text is Decodable in Pojo = _.asInstanceOf[String].tt
     inline given string2: String is Decodable in Pojo = _.asInstanceOf[String]
@@ -86,10 +87,11 @@ object Austronesian:
     inline given char2: Char is Decodable in Pojo = _.asInstanceOf[Char]
     inline given boolean2: Boolean is Decodable in Pojo = _.asInstanceOf[Boolean]
 
-    inline given collection: [collection <: Iterable, element: Decodable in Pojo]
-          =>  Tactic[PojoError]
-          => (factory: scala.collection.Factory[element, collection[element]])
-          =>  collection[element] is Decodable in Pojo =
+    inline given collection
+    : [ collection <: Iterable, element: Decodable in Pojo ]
+    =>  Tactic[PojoError]
+    =>  ( factory: scala.collection.Factory[element, collection[element]] )
+    =>  collection[element] is Decodable in Pojo =
 
       case array: Array[Pojo @unchecked] =>
         factory.newBuilder.pipe: builder =>

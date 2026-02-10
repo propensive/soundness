@@ -52,19 +52,20 @@ object LocalClasspath:
   given encodable: System => LocalClasspath is Encodable in Text = _()
 
   given decodable: (System, Tactic[PropertyError])
-        => LocalClasspath is Decodable in Text =
-    classpath =>
-      val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
-        classpath.cut(System.properties.path.separator()).map: path =>
-          if path.ends(t"/") then ClasspathEntry.Directory(path)
-          else if path.ends(t".jar") then ClasspathEntry.Jar(path)
-          else ClasspathEntry.Directory(path)
+  =>  LocalClasspath is Decodable in Text =
 
-      new LocalClasspath(entries, entries.to(Set))
+      classpath =>
+        val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
+          classpath.cut(System.properties.path.separator()).map: path =>
+            if path.ends(t"/") then ClasspathEntry.Directory(path)
+            else if path.ends(t".jar") then ClasspathEntry.Jar(path)
+            else ClasspathEntry.Directory(path)
+
+        new LocalClasspath(entries, entries.to(Set))
 
 
   def apply
-       (entries: List
+    ( entries: List
                   [ClasspathEntry.Directory
                    | ClasspathEntry.Jar
                    | ClasspathEntry.JavaRuntime.type])
@@ -74,19 +75,21 @@ object LocalClasspath:
 
 
   given paths: [path: Abstractable across Paths to Text]
-        => (Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks)
-        =>  LocalClasspath is Addable by path to LocalClasspath =
-    (classpath, path) =>
-      path.generic.decode[Path on Linux].pipe: path =>
-        val entry: ClasspathEntry.Directory | ClasspathEntry.Jar = path.entry() match
-          case Directory => ClasspathEntry.Directory(path.encode)
-          case _         => ClasspathEntry.Jar(path.encode)
+  =>  ( Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks )
+  =>  LocalClasspath is Addable by path to LocalClasspath =
 
-        if classpath.entrySet.contains(entry) then classpath
-        else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)
+      (classpath, path) =>
+        path.generic.decode[Path on Linux].pipe: path =>
+          val entry: ClasspathEntry.Directory | ClasspathEntry.Jar = path.entry() match
+            case Directory => ClasspathEntry.Directory(path.encode)
+            case _         => ClasspathEntry.Jar(path.encode)
+
+          if classpath.entrySet.contains(entry) then classpath
+          else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)
+
 
 class LocalClasspath private
-   (val entries: List
+  ( val entries: List
                   [ClasspathEntry.Directory
                    | ClasspathEntry.Jar
                    | ClasspathEntry.JavaRuntime.type],

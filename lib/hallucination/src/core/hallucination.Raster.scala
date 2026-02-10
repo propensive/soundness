@@ -102,8 +102,11 @@ object Raster:
     def width(raster: Raster): Int = raster.width
     def height(raster: Raster): Int = raster.height
 
+
   given aggregable: [format: Rasterizable as rasterizable] => Tactic[RasterError]
-        => (Raster in format) is Aggregable by Data =
-    rasterizable.read(_)
+  =>  (Raster in format) is Aggregable by Data =
+
+      rasterizable.read(_)
+
 
   given aggregable2: Tactic[RasterError] => Raster is Aggregable by Data = Raster(_)

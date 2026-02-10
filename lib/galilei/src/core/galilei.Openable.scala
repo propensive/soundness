@@ -45,13 +45,13 @@ import java.nio.file as jnf
 
 object Openable:
   given openable: [filesystem: Filesystem, path <: Path on filesystem]
-        => (read:        ReadAccess,
-            write:       WriteAccess,
-            dereference: DereferenceSymlinks,
-            create:      CreateNonexistent on filesystem,
-            streamError: Tactic[StreamError],
-            ioError:     Tactic[IoError])
-        =>  path is Openable by jnf.OpenOption to Handle = new Openable:
+  =>  ( read:        ReadAccess,
+        write:       WriteAccess,
+        dereference: DereferenceSymlinks,
+        create:      CreateNonexistent on filesystem,
+        streamError: Tactic[StreamError],
+        ioError:     Tactic[IoError] )
+  =>  path is Openable by jnf.OpenOption to Handle = new Openable:
 
     type Self = path
     type Operand = jnf.OpenOption

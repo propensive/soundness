@@ -40,14 +40,14 @@ import turbulence.*
 import vacuous.*
 
 case class Invocation
-   (arguments:        List[Argument],
+  ( arguments:        List[Argument],
     environment:      Environment,
     workingDirectory: WorkingDirectory,
     stdio:            Stdio,
     signals:          Spool[Signal],
     proceed:          Boolean,
-    login:            Login)
-   (using interpreter: Interpreter)
+    login:            Login )
+  ( using interpreter: Interpreter )
 extends Cli, Stdio:
 
   export stdio.{termcap, out, err, in}

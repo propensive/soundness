@@ -52,7 +52,7 @@ import vacuous.*
 import scala.collection.mutable as scm
 
 case class Completion
-   (fullArguments:    List[Argument],
+  ( fullArguments:    List[Argument],
     arguments:        List[Argument],
     environment:      Environment,
     workingDirectory: WorkingDirectory,
@@ -63,8 +63,8 @@ case class Completion
     signals:          Spool[Signal],
     tty:              Text,
     tab:              Ordinal,
-    login:            Login)
-   (using interpreter: Interpreter)
+    login:            Login )
+  ( using interpreter: Interpreter )
 extends Cli:
   private lazy val parameters: interpreter.Topic = interpreter.interpret(arguments)
 
@@ -109,7 +109,7 @@ extends Cli:
     explanation = update(using explanation)
 
   override def suggest
-                (argument: Argument,
+    ( argument: Argument,
                  update:   (prior: List[Suggestion]) ?=> List[Suggestion],
                  prefix:   Text,
                  suffix:   Text) =

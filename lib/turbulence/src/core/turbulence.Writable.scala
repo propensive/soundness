@@ -46,7 +46,7 @@ import vacuous.*
 
 object Writable:
   given outputStreamData: [output <: ji.OutputStream] => (streamCut: Tactic[StreamError])
-        =>  output is Writable by Data =
+  =>  output is Writable by Data =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
@@ -55,7 +55,7 @@ object Writable:
       outputStream.close()
 
   given outputStreamText: (streamCut: Tactic[StreamError], encoder: CharEncoder)
-        =>  ji.OutputStream is Writable by Text =
+  =>  ji.OutputStream is Writable by Text =
 
     (outputStream, stream) =>
       stream.each: text =>
@@ -65,24 +65,30 @@ object Writable:
       outputStream.close()
 
   given decodingAdapter: [writable: Writable by Text] => (decoder: CharDecoder)
-        =>  writable is Writable by Data =
-    (target, stream) => writable.write(target, decoder.decoded(stream))
+  =>  writable is Writable by Data =
+
+      (target, stream) => writable.write(target, decoder.decoded(stream))
+
 
   given encodingAdapter: [writable: Writable by Data] => (encoder: CharEncoder)
-        =>  writable is Writable by Text =
-    (target, stream) => writable.write(target, encoder.encoded(stream))
+  =>  writable is Writable by Text =
+
+      (target, stream) => writable.write(target, encoder.encoded(stream))
+
 
   given channel: Tactic[StreamError]
-        =>  jn.channels.WritableByteChannel is Writable by Data = (channel, stream) =>
-    @tailrec
-    def recur(total: Bytes, todo: Stream[jn.ByteBuffer]): Unit =
-      todo.flow(()):
-        val count = try channel.write(head) catch case e: Exception => -1
+  =>  jn.channels.WritableByteChannel is Writable by Data =
 
-        if count == -1 then raise(StreamError(total))
-        else recur(total + count.b, if head.hasRemaining then todo else tail)
+    (channel, stream) =>
+      @tailrec
+      def recur(total: Bytes, todo: Stream[jn.ByteBuffer]): Unit =
+        todo.flow(()):
+          val count = try channel.write(head) catch case e: Exception => -1
 
-    recur(0.b, stream.map { bytes => jn.ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn })
+          if count == -1 then raise(StreamError(total))
+          else recur(total + count.b, if head.hasRemaining then todo else tail)
+
+      recur(0.b, stream.map { bytes => jn.ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn })
 
 trait Writable extends Typeclass, Operable:
   def write(target: Self, stream: Stream[Operand]): Unit

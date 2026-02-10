@@ -84,13 +84,14 @@ object Aviation:
     def apply(month: Month, day: Day): Anniversary = ((month.ordinal << 6) + day).toShort
 
     given showable: (endianness: Endianness, months: Months, separation: DateSeparation)
-          => Anniversary is Showable =
-      anniversary =>
-        val month: Text = months.name(anniversary.month)
+    =>  Anniversary is Showable =
 
-        endianness.match
-          case Endianness.LittleEndian => t"${anniversary.day}${separation.separator}$month"
-          case _                       => t"$month${separation.separator}${anniversary.day}"
+        anniversary =>
+          val month: Text = months.name(anniversary.month)
+
+          endianness.match
+            case Endianness.LittleEndian => t"${anniversary.day}${separation.separator}$month"
+            case _                       => t"$month${separation.separator}${anniversary.day}"
 
   extension (year: Year)
     @targetName("yearValue")
@@ -112,10 +113,10 @@ object Aviation:
 
     given orderable: Year is Orderable:
       inline def compare
-                  (inline left:        Year,
-                   inline right:       Year,
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
+        ( inline left:        Year,
+          inline right:       Year,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
       : Boolean =
 
           if left == right then !strict else (left < right)^greaterThan
@@ -159,8 +160,9 @@ object Aviation:
     erased given underlying: Underlying[Date, Int] = !!
     def of(day: Int): Date = day
 
-    def apply(using calendar: Calendar)
-         (year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal)
+    def apply
+      ( using calendar: Calendar )
+      ( year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal )
     : Date raises TimeError =
 
         calendar.jdn(year, month, day)
@@ -228,10 +230,10 @@ object Aviation:
 
     inline given orderable: Date is Orderable:
       inline def compare
-                  (inline left:        Date,
-                   inline right:       Date,
-                   inline strict:      Boolean,
-                   inline greaterThan: Boolean)
+        ( inline left:        Date,
+          inline right:       Date,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
       : Boolean =
 
           if left == right then !strict else (left < right)^greaterThan

@@ -39,7 +39,7 @@ import vacuous.*
 import language.experimental.pureFunctions
 
 case class Subcommand
-   (name: Text, description: Optional[Text | Teletype] = Unset, hidden: Boolean = false):
+  ( name: Text, description: Optional[Text | Teletype] = Unset, hidden: Boolean = false ):
 
   def unapply(argument: Argument)(using Cli): Boolean =
     argument.suggest(Suggestion(name, description, hidden) :: prior)

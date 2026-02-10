@@ -46,10 +46,12 @@ import language.experimental.pureFunctions
 
 object Tabulation:
   given printable: [text: {Textual as textual, Printable as printable}]
-        => (Text is Measurable, TableStyle, Attenuation)
-        =>  Tabulation[text] is Printable =
-    (tabulation, termcap) =>
-      tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
+  =>  ( Text is Measurable, TableStyle, Attenuation )
+  =>  Tabulation[text] is Printable =
+
+      (tabulation, termcap) =>
+        tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
+
 
 abstract class Tabulation[text: ClassTag]():
   type Row
@@ -61,8 +63,8 @@ abstract class Tabulation[text: ClassTag]():
 
 
   def grid(width: Int)
-       (using style: TableStyle, metrics: Text is Measurable, textual: text is Textual)
-       (using attenuation: Attenuation)
+    ( using style: TableStyle, metrics: Text is Measurable, textual: text is Textual )
+    ( using attenuation: Attenuation )
   : Grid[text] =
 
       case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):

@@ -49,17 +49,19 @@ object Tests extends Suite(m"Superlunary Tests"):
   def run(): Unit =
     try
       def fn(message: Example): Example = Jvm.dispatch:
-        '{  val x = ${message.name}
+        ' {
+            val x = ${message.name}
             val y = ${message.count}
             println(y)
-            Example(t"Time: $x $y ${jl.System.currentTimeMillis - ${message}.count}", 9)  }
+            Example(t"Time: $x $y ${jl.System.currentTimeMillis - ${message}.count}", 9)
+          }
 
       fn(Example(t"one", jl.System.currentTimeMillis))
       fn(Example(t"two", jl.System.currentTimeMillis))
 
       var count = 100
       Isolation.dispatch:
-        '{  "hello message"+($count + 1) }
+        '{"hello message"+($count + 1)}
 
     catch
       case error: Throwable =>

@@ -54,7 +54,7 @@ object Control:
 
   object Conclude:
     def apply[transmissible: Transmissible, state]
-         (message: transmissible, state: Optional[state] = Unset)
+      ( message: transmissible, state: Optional[state] = Unset )
     : Conclude[state] =
 
         Conclude(transmissible.serialize(message), state)
@@ -62,7 +62,7 @@ object Control:
 
   object Reply:
     def apply[transmissible: Transmissible, state]
-         (message: transmissible, state: Optional[state] = Unset)
+      ( message: transmissible, state: Optional[state] = Unset )
     : Reply[state] =
 
         Reply(transmissible.serialize(message), state)

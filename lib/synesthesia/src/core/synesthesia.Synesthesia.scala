@@ -71,7 +71,7 @@ object Synesthesia:
     val Varargs(arguments) = args
 
     val insertions = arguments.map:
-      case '{ $argument: argument } =>
+      case '{$argument: argument} =>
         Expr.summon[argument is Showable] match
           case Some(showable) =>
             '{$showable.text($argument)}
@@ -302,7 +302,7 @@ object Synesthesia:
                           (uri, rhs)
 
                     cases.foldLeft('{provide[Tactic[McpError]](abort(McpError()))}):
-                      case (acc, (pattern, rhs)) => '{ if uri == $pattern then $rhs else $acc }
+                      case (acc, (pattern, rhs)) => '{if uri == $pattern then $rhs else $acc}
                   }
             }
           }

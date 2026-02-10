@@ -50,13 +50,15 @@ object Distillate:
           type Self = enumeration
           val name: Text = ${Expr(TypeRepr.of[enumeration].show)}.tt
           val values: IArray[enumeration] =
-            ${  companion.absolve match
-                  case '{ $companion: companion } =>
+            $ {
+                companion.absolve match
+                  case '{$companion: companion} =>
                     val ref = TypeRepr.of[companion].typeSymbol.declaredMethod("values")
                               . headOption
                               . getOrElse:
                                   halt(m"""enum ${TypeRepr.of[enumeration].show} is not a simple
                                            choice""")
 
-                    companion.asTerm.select(ref).asExprOf[Array[enumeration]]  }
+                    companion.asTerm.select(ref).asExprOf[Array[enumeration]]
+              }
             . asInstanceOf[IArray[enumeration]]  }

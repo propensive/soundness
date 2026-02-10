@@ -48,10 +48,10 @@ import errorDiagnostics.stackTraces
 import doms.html.whatwg, whatwg.*
 
 class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = Unset)
-       (process: (Text => Html of Flow) => Optional[value] => result):
+  ( process: (Text => Html of Flow) => Optional[value] => result ):
   def otherwise(validate: (query: Query) ?=> Validation)(using Formulation, value is Formulaic)
-       (using decodable: Tactic[Exception] ?=> value is Decodable in Query)
-       (using request: Http.Request)
+    ( using decodable: Tactic[Exception] ?=> value is Decodable in Query )
+    ( using request: Http.Request )
   : result raises QueryError =
 
       request.method match
@@ -66,7 +66,7 @@ class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = 
 
 
 def orchestrate[value: Encodable in Query](initial: Optional[value] = Unset)[result]
-     (render: (form: Text => Html of Flow) ?=> (value: Optional[value]) => result)
+  ( render: (form: Text => Html of Flow) ?=> (value: Optional[value]) => result )
 : Orchestrate[value, result] =
 
     new Orchestrate[value, result](initial)(render(using _))

@@ -36,7 +36,7 @@ import anticipation.*
 import gossamer.*
 
 case class PtyState
-   (cursor:             Int     = 0,
+  ( cursor:             Int     = 0,
     savedCursor:        Int     = 0,
     style:              Style   = Style(),
     focusDetectionMode: Boolean = false,
@@ -44,4 +44,4 @@ case class PtyState
     bracketedPasteMode: Boolean = false,
     hideCursor:         Boolean = false,
     title:              Text    = t"",
-    link:               Text    = t"")
+    link:               Text    = t"" )

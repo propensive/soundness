@@ -58,10 +58,10 @@ trait Intension[data, record <: Record in data]:
 
 
       def refine
-          (value:       Expr[data],
-            fields:      List[(String, RecordField)],
-            refinedType: TypeRepr,
-            caseDefs:    List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)))
+        ( value:       Expr[data],
+          fields:      List[(String, RecordField)],
+          refinedType: TypeRepr,
+          caseDefs:    List[CaseDef]               = List(CaseDef(Wildcard(), None, '{???}.asTerm)) )
       : (TypeRepr, List[CaseDef]) =
 
           fields match
@@ -101,9 +101,11 @@ trait Intension[data, record <: Record in data]:
                       halt(m"""could not find a RecordAccessor instance for the field $name with
                             type $typeName""")
 
-                    case Some('{ type typeConstructor[_]
-                                $accessor: RecordAccessor
-                                            [`record`, `data`, typeName, typeConstructor] }) =>
+                    case Some(' {
+                                  type typeConstructor[_]
+                                  $accessor: RecordAccessor
+                                               [ `record`, `data`, typeName, typeConstructor ]
+                                }) =>
 
                       val nested = '{$target.access(${Expr(name)}, $value)}
                       val recordTypeRepr = TypeRepr.of[record]
@@ -112,15 +114,19 @@ trait Intension[data, record <: Record in data]:
                         refine(nested, map.to(List), recordTypeRepr)
 
                       val matchFn: Expr[String => data => Any] =
-                        '{ (name: String) =>
-                            ${Match('name.asTerm, nestedCaseDefs).asExprOf[data => Any]} }
+                        ' {
+                            (name: String) =>
+                              ${Match('name.asTerm, nestedCaseDefs).asExprOf[data => Any]}
+                          }
 
                       val maker: Expr[data => record] =
-                        '{ field => $target.make(field, $matchFn) }
+                        '{field => $target.make(field, $matchFn)}
 
                       val rhs: Expr[data => Any] =
-                        '{ data =>
-                             $accessor.transform($target.access(${Expr(name)}, data), $maker) }
+                        ' {
+                            data =>
+                              $accessor.transform($target.access(${Expr(name)}, data), $maker)
+                          }
 
                       val caseDef = CaseDef(Literal(StringConstant(name)), None, rhs.asTerm)
 
@@ -138,7 +144,7 @@ trait Intension[data, record <: Record in data]:
       val (refinedType, caseDefs) = refine(value, fields.to(List), TypeRepr.of[record])
 
       val matchFn: Expr[String => data => Any] =
-        '{ (name: String) => ${Match('name.asTerm, caseDefs).asExprOf[data => Any]} }
+        '{(name: String) => ${Match('name.asTerm, caseDefs).asExprOf[data => Any]}}
 
       refinedType.asType.absolve match
         case '[type refinedType <: record; refinedType] =>

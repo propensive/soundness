@@ -52,23 +52,31 @@ object Restorable extends ProductDerivation[[entity] =>> entity is Restorable]:
 
   given text: Text is Restorable:
     def restore(value: Expr[Pojo])(using Classloader): Macro[Text] =
-      '{  if $value.isInstanceOf[String] then $value.asInstanceOf[Text]
-          else throw new RuntimeException()  }
+      ' {
+          if $value.isInstanceOf[String] then $value.asInstanceOf[Text]
+          else throw new RuntimeException()
+        }
 
   given int: Int is Restorable:
     def restore(value: Expr[Pojo])(using Classloader): Macro[Int] =
-      '{  if $value.isInstanceOf[Int] then $value.asInstanceOf[Int]
-          else throw new RuntimeException()  }
+      ' {
+          if $value.isInstanceOf[Int] then $value.asInstanceOf[Int]
+          else throw new RuntimeException()
+        }
 
   given long: Long is Restorable:
     def restore(value: Expr[Pojo])(using Classloader): Macro[Long] =
-      '{  if $value.isInstanceOf[Long] then $value.asInstanceOf[Long]
-          else throw new RuntimeException()  }
+      ' {
+          if $value.isInstanceOf[Long] then $value.asInstanceOf[Long]
+          else throw new RuntimeException()
+        }
 
   given boolean: Boolean is Restorable:
     def restore(value: Expr[Pojo])(using Classloader): Macro[Boolean] =
-      '{  if $value.isInstanceOf[Boolean] then $value.asInstanceOf[Boolean]
-          else throw new RuntimeException()  }
+      ' {
+          if $value.isInstanceOf[Boolean] then $value.asInstanceOf[Boolean]
+          else throw new RuntimeException()
+        }
 
   // inline def split[derivation: SumReflection]: derivation is Restorable =
   //   new Restorable:
@@ -87,9 +95,11 @@ object Restorable extends ProductDerivation[[entity] =>> entity is Restorable]:
         [field] => typeclass =>
           typeclass.restore('{$value.asInstanceOf[Array[Pojo]](${Expr[Int](index)})})
 
-      '{  val cls0: Class[?] = Class.forName(${Expr(cls.getName.nn)}).nn
+      ' {
+          val cls0: Class[?] = Class.forName(${Expr(cls.getName.nn)}).nn
           val constructor = cls0.getDeclaredConstructors.nn(0).nn
-          constructor.newInstance(${Varargs(params)}*).nn.asInstanceOf[derivation]  }
+          constructor.newInstance(${Varargs(params)}*).nn.asInstanceOf[derivation]
+        }
 
 trait Restorable extends Typeclass:
   def restore(value: Expr[Pojo])(using Classloader): Macro[Self]

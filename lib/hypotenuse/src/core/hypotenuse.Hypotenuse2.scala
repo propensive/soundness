@@ -153,10 +153,10 @@ object Hypotenuse2:
 
 
   def commensurable
-       (expr: Expr[Boolean],
-        bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
-        strict: Expr[Boolean],
-        greaterThan: Expr[Boolean])
+    ( expr:        Expr[Boolean],
+      bound:       Expr[Int | Double | Char | Byte | Short | Long | Float],
+      strict:      Expr[Boolean],
+      greaterThan: Expr[Boolean] )
   : Macro[Boolean] =
 
       val errorMessage = m"this cannot be written as a range expression"

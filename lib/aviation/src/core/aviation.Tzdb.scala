@@ -51,20 +51,20 @@ object Tzdb:
 
   enum Entry:
     case Rule
-          (name:    Text,
-           from:    Int,
-           end:     Int,
-           change:  MonthDate,
-           time:    Time,
-           save:    Duration,
-           letters: Option[Text])
+      ( name:    Text,
+        from:    Int,
+        end:     Int,
+        change:  MonthDate,
+        time:    Time,
+        save:    Duration,
+        letters: Option[Text] )
 
     case Leap(year: Int, month: Month, day: Int, time: Time, addition: Boolean)
     case Zone(area: Text, location: Option[Text], info: Trie[ZoneInfo])
     case Link(from: Text, to: Text)
 
   case class ZoneInfo
-              (stdoff: into[Duration], rules: Text, format: Text => Text, until: Option[Text])
+    ( stdoff: into[Duration], rules: Text, format: Text => Text, until: Option[Text] )
 
   enum MonthDate:
     case Last(month: Month, day: Weekday)
@@ -178,10 +178,10 @@ object Tzdb:
 
     @tailrec
     def recur
-         (lineNo:  Int,
-          lines:   Stream[Text],
-          entries: List[Tzdb.Entry]        = Nil,
-          zone:    Option[Tzdb.Entry.Zone] = None)
+      ( lineNo:  Int,
+        lines:   Stream[Text],
+        entries: List[Tzdb.Entry]        = Nil,
+        zone:    Option[Tzdb.Entry.Zone] = None )
     : List[Tzdb.Entry] =
 
         if lines.nil then entries ++ zone else

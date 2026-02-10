@@ -149,7 +149,7 @@ object EmailAddress:
     EmailAddress(Unset, localPart, domain)
 
 case class EmailAddress
-   (displayName: Optional[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6):
+  ( displayName: Optional[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6 ):
 
   def text: Text =
     val local = localPart match

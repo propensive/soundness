@@ -41,9 +41,9 @@ import prepositional.*
 
 object Resolvable:
   def apply[result](store: => Set[result])[operand]
-       (using annotated:   result is Annotated by index,
-              dereference: result is Dereferenceable to operand,
-              encodable:   operand is Encodable in Text)
+    ( using annotated:   result is Annotated by index,
+            dereference: result is Dereferenceable to operand,
+            encodable:   operand is Encodable in Text )
   : result is Resolvable by operand raises ReferenceError =
 
       new Resolvable:

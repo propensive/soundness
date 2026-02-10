@@ -92,15 +92,15 @@ object Hyperbole:
         e""
 
     case class TastyTree
-                (tag:          Char,
-                 typeName:     Text,
-                 name:         Text,
-                 expr:         Text,
-                 source:       Teletype,
-                 nodes:        List[TastyTree],
-                 param:        Optional[Text],
-                 term:         Boolean,
-                 definitional: Boolean):
+      ( tag:          Char,
+        typeName:     Text,
+        name:         Text,
+        expr:         Text,
+        source:       Teletype,
+        nodes:        List[TastyTree],
+        param:        Optional[Text],
+        term:         Boolean,
+        definitional: Boolean ):
 
       def shortCode: Text =
         val c = expr.upto(_ != '\n')
@@ -124,12 +124,12 @@ object Hyperbole:
 
     object TastyTree:
       def apply
-           (tag:       Char,
-            typeName:  Text,
-            name:      Text,
-            tree:      Optional[Tree],
-            repr:      Optional[TypeRepr] = Unset,
-            parameter: Optional[Text]     = Unset)
+        ( tag:       Char,
+          typeName:  Text,
+          name:      Text,
+          tree:      Optional[Tree],
+          repr:      Optional[TypeRepr] = Unset,
+          parameter: Optional[Text]     = Unset )
       : TastyTree =
 
           val shown = tree.let(_.show.tt).or(repr.let(_.show)).or(t"")
@@ -230,8 +230,8 @@ object Hyperbole:
         val typeName =
           safely:
             tree.asExpr match
-              case '{ $term: tpe } => TypeRepr.of[tpe].show
-              case _               => Unset
+              case '{$term: tpe} => TypeRepr.of[tpe].show
+              case _             => Unset
           . or(t"")
 
         tree match

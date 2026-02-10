@@ -48,9 +48,12 @@ object Teletypeable:
   given teletype: Teletype is Teletypeable = identity(_)
   given text: Text is Teletypeable = text => Teletype(text)
 
+
   given colorable: [value: {Showable as showable, Colorable as colorable}]
-        =>  value is Teletypeable =
-    value => e"${value.color}(${value.show})"
+  =>  value is Teletypeable =
+
+      value => e"${value.color}(${value.show})"
+
 
   given message: Message is Teletypeable = _.fold[Teletype](e""): (acc, next, level) =>
     level match

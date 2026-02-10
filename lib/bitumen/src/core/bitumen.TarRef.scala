@@ -53,10 +53,10 @@ case class TarRef(descent: List[Name[InvalidTarNames]]):
 
 object TarRef:
   def apply(text: Text)
-       (using pathError:  Tactic[PathError],
-              navigable:  TarRef is Navigable[InvalidTarNames, Unset.type],
-              rootParser: RootParser[TarRef, Unset.type],
-              creator:    PathCreator[TarRef, InvalidTarNames, Unset.type])
+    ( using pathError:  Tactic[PathError],
+            navigable:  TarRef is Navigable[InvalidTarNames, Unset.type],
+            rootParser: RootParser[TarRef, Unset.type],
+            creator:    PathCreator[TarRef, InvalidTarNames, Unset.type] )
     :      TarRef =
     Navigable.decode[TarRef](text)
 

@@ -50,7 +50,7 @@ object Evolution:
     def has(n: Ordinal): Boolean = presence.contains(n)
 
 def evolve[element: ClassTag]
-     (versions: List[List[element]], similar: Optional[(element, element) => Boolean] = Unset)
+  ( versions: List[List[element]], similar: Optional[(element, element) => Boolean] = Unset )
 : Evolution[element] =
 
     import Evolution.Atom
@@ -69,11 +69,11 @@ def evolve[element: ClassTag]
 
 
             def merge
-                 (atoms:   List[Atom[element]],
-                  edits:   List[Change[element]],
-                  done:    List[Atom[element]] = Nil,
-                  skips:   List[Atom[element]] = Nil,
-                  inserts: List[Atom[element]] = Nil)
+              ( atoms:   List[Atom[element]],
+                edits:   List[Change[element]],
+                done:    List[Atom[element]]   = Nil,
+                skips:   List[Atom[element]]   = Nil,
+                inserts: List[Atom[element]]   = Nil )
             : List[Atom[element]] =
 
                 def finish(): List[Atom[element]] =

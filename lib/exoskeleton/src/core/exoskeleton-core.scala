@@ -96,14 +96,14 @@ package executives:
 
 
     def invocation
-         (arguments:        Iterable[Text],
-          environment:      Environment,
-          workingDirectory: WorkingDirectory,
-          stdio:            Stdio,
-          signals:          Spool[Signal],
-          entrypoint:       Entrypoint,
-          login:            Login)
-         (using interpreter: Interpreter)
+      ( arguments:        Iterable[Text],
+        environment:      Environment,
+        workingDirectory: WorkingDirectory,
+        stdio:            Stdio,
+        signals:          Spool[Signal],
+        entrypoint:       Entrypoint,
+        login:            Login )
+      ( using interpreter: Interpreter )
     : Invocation =
 
         Invocation
@@ -124,8 +124,8 @@ inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
   lambda(using !![Effectful])
 
 def application(using executive: Executive, interpreter: Interpreter)
-   (arguments: Iterable[Text], signals: List[Signal] = Nil)
-   (block: Cli ?=> executive.Return)
+  ( arguments: Iterable[Text], signals: List[Signal] = Nil )
+  ( block: Cli ?=> executive.Return )
 : Unit =
 
   val spool: Spool[Signal] = Spool()

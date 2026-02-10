@@ -44,7 +44,7 @@ import vacuous.*
 
 object Task:
   def apply[result](evaluate: Worker => result, daemon: Boolean, name: Optional[Text])
-       (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
+    ( using monitor: Monitor, codepoint: Codepoint, codicil: Codicil )
   : Task[result] =
 
       inline def evaluate0: Worker => result = evaluate

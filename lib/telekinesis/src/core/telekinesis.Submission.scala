@@ -56,10 +56,10 @@ case class Submission[value](query: Optional[Query]):
   def value(using value is Decodable in Query): Optional[value] = query.let(_.decode[value])
 
   def form
-       (submit:     Optional[Text]       = Unset,
-        value:      Optional[value]      = Unset,
-        validation: Optional[Validation] = Unset)
-       (using value is Formulaic, value is Encodable in Query, Formulation)
+    ( submit:     Optional[Text]       = Unset,
+      value:      Optional[value]      = Unset,
+      validation: Optional[Validation] = Unset )
+    ( using value is Formulaic, value is Encodable in Query, Formulation )
   : Html of Flow =
 
       // FIXME: Check why `data` isn't used

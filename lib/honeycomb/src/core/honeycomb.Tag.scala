@@ -83,7 +83,7 @@ object Tag:
 
 
   def void[label <: Label: ValueOf, dom <: Dom]
-       (presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false)
+    ( presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false )
   : Tag.Void of label in dom =
 
       new Void(valueOf[label].tt, presets, boundary).of[label].in[dom]
@@ -99,11 +99,11 @@ object Tag:
 
 
   def container[label <: Label: ValueOf, children <: Label: Reifiable to List[String], dom <: Dom]
-       (autoclose:  Boolean                   = false,
-        mode:       Html.Mode                 = Html.Mode.Normal,
-        presets:    Map[Text, Optional[Text]] = Map(),
-        insertable: Boolean                   = false,
-        boundary:   Boolean                   = false)
+    ( autoclose:  Boolean                   = false,
+      mode:       Html.Mode                 = Html.Mode.Normal,
+      presets:    Map[Text, Optional[Text]] = Map(),
+      insertable: Boolean                   = false,
+      boundary:   Boolean                   = false )
   : Container of label over children in dom =
 
       val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
@@ -116,7 +116,7 @@ object Tag:
 
 
   def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String], dom <: Dom]
-       (presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false)
+    ( presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false )
   : Transparent of label over children in dom =
 
       val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
@@ -127,10 +127,10 @@ object Tag:
 
 
   def transparent[dom <: Dom]
-       (label:    Text,
-        children: Set[Text],
-        presets:  Map[Text, Optional[Text]],
-        boundary: Boolean)
+    ( label:    Text,
+      children: Set[Text],
+      presets:  Map[Text, Optional[Text]],
+      boundary: Boolean )
   : Transparent in dom =
 
       Transparent(label, children, presets, boundary = boundary).in[dom]
@@ -140,21 +140,21 @@ object Tag:
 
 
   class Container
-         (label:      Text,
-          autoclose:  Boolean                   = false,
-          mode:       Html.Mode                 = Html.Mode.Normal,
-          presets:    Map[Text, Optional[Text]] = Map(),
-          admissible: Set[Text]                 = Set(),
-          insertable: Boolean                   = false,
-          foreign:    Boolean                   = false,
-          boundary:   Boolean                   = false)
+    ( label:      Text,
+      autoclose:  Boolean                   = false,
+      mode:       Html.Mode                 = Html.Mode.Normal,
+      presets:    Map[Text, Optional[Text]] = Map(),
+      admissible: Set[Text]                 = Set(),
+      insertable: Boolean                   = false,
+      foreign:    Boolean                   = false,
+      boundary:   Boolean                   = false )
   extends Tag
-           (label, autoclose, mode, presets, admissible, insertable, foreign, false, false, boundary):
+    ( label, autoclose, mode, presets, admissible, insertable, foreign, false, false, boundary ):
     type Result = Element & Html.Populable of Topic over Transport in Form
 
     def applyDynamic[className <: Label: ValueOf](method: className)
-         (children: Optional[Html of (? <: Transport)]*)
-         (using css: Stylesheet of (? >: className))
+      ( children: Optional[Html of (? <: Transport)]* )
+      ( using css: Stylesheet of (? >: className) )
     : Element of Topic over Transport in Form =
 
         val nodes = children.compact.nodes
@@ -173,28 +173,28 @@ object Tag:
       . in[Form]
 
   class Transparent
-         (label:      Text,
-          admissible: Set[Text],
-          presets:    Map[Text, Optional[Text]] = Map(),
-          foreign:    Boolean                   = false,
-          boundary:   Boolean                   = false)
+    ( label:      Text,
+      admissible: Set[Text],
+      presets:    Map[Text, Optional[Text]] = Map(),
+      foreign:    Boolean                   = false,
+      boundary:   Boolean                   = false )
   extends Tag
-           (label       = label,
-            autoclose   = false,
-            mode        = Html.Mode.Normal,
-            presets     = presets,
-            admissible  = admissible,
-            insertable  = false,
-            foreign     = foreign,
-            transparent = true,
-            boundary    = boundary):
+    ( label       = label,
+      autoclose   = false,
+      mode        = Html.Mode.Normal,
+      presets     = presets,
+      admissible  = admissible,
+      insertable  = false,
+      foreign     = foreign,
+      transparent = true,
+      boundary    = boundary ):
 
     type Result = Element & Html.Transparent of Topic over Transport in Form
 
 
     def applyDynamic[className <: Label](method: className)
-         (children: Optional[Html of (? <: Transport)]*)
-         (using css: Stylesheet of (? >: className))
+      ( children: Optional[Html of (? <: Transport)]* )
+      ( using css: Stylesheet of (? >: className) )
     : Element of Topic in Form =
 
         val presets2 = if css.classes.nil then presets else
@@ -223,16 +223,16 @@ object Tag:
       . in[Form]
 
 abstract class Tag
-       (    label:       Text,
-        val autoclose:   Boolean                   = false,
-        val mode:        Html.Mode                 = Html.Mode.Normal,
-        val presets:     Map[Text, Optional[Text]] = Map(),
-        val admissible:  Set[Text]                 = Set(),
-        val insertable:  Boolean                   = false,
-            foreign:     Boolean                   = false,
-        val void:        Boolean                   = false,
-        val transparent: Boolean                   = false,
-        val boundary:    Boolean                   = false)
+  (     label:       Text,
+    val autoclose:   Boolean                   = false,
+    val mode:        Html.Mode                 = Html.Mode.Normal,
+    val presets:     Map[Text, Optional[Text]] = Map(),
+    val admissible:  Set[Text]                 = Set(),
+    val insertable:  Boolean                   = false,
+        foreign:     Boolean                   = false,
+    val void:        Boolean                   = false,
+    val transparent: Boolean                   = false,
+    val boundary:    Boolean                   = false )
 extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
 
   type Result <: Element

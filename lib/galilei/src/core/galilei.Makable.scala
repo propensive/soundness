@@ -54,79 +54,84 @@ import language.experimental.pureFunctions
 
 object Makable:
   given [plane: Filesystem]
-  =>   (createNonexistentParents: CreateNonexistentParents on plane,
+  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
-        tactic:                   Tactic[IoError])
-  =>    Directory is Makable on plane to (Path on plane) =
-    new Makable:
-      type Self = Directory
-      type Result = Path on Plane
-      type Plane = plane
+        tactic:                   Tactic[IoError] )
+  =>  Directory is Makable on plane to (Path on plane) =
 
-      def make(path: Path on Plane): Path on Plane =
-        createNonexistentParents(path):
-          overwritePreexisting(path):
-            jnf.Files.createDirectory(jnf.Path.of(path.encode.s).nn)
-            path
+      new Makable:
+        type Self = Directory
+        type Result = Path on Plane
+        type Plane = plane
+
+        def make(path: Path on Plane): Path on Plane =
+          createNonexistentParents(path):
+            overwritePreexisting(path):
+              jnf.Files.createDirectory(jnf.Path.of(path.encode.s).nn)
+              path
 
   given socket: [plane <: Posix: Filesystem]
-  =>   (createNonexistentParents: CreateNonexistentParents on plane,
+  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
-        tactic:                   Tactic[IoError])
-  =>    Socket is Makable to Socket =
-    new Makable:
-      type Plane = plane
-      type Self = Socket
-      type Result = Socket
+        tactic:                   Tactic[IoError] )
+  =>  Socket is Makable to Socket =
 
-      def make(path: Path on Plane): Result =
-        createNonexistentParents(path):
-          overwritePreexisting(path):
-            val address = java.net.UnixDomainSocketAddress.of(path.javaPath).nn
-            val channel = jnc.ServerSocketChannel.open(java.net.StandardProtocolFamily.UNIX).nn
-            channel.bind(address)
-            Socket(channel)
+      new Makable:
+        type Plane = plane
+        type Self = Socket
+        type Result = Socket
+
+        def make(path: Path on Plane): Result =
+          createNonexistentParents(path):
+            overwritePreexisting(path):
+              val address = java.net.UnixDomainSocketAddress.of(path.javaPath).nn
+              val channel = jnc.ServerSocketChannel.open(java.net.StandardProtocolFamily.UNIX).nn
+              channel.bind(address)
+              Socket(channel)
 
   given file: [plane: Filesystem]
-  =>   (createNonexistentParents: CreateNonexistentParents on plane,
+  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
-        tactic:                   Tactic[IoError])
-  =>    File is Makable on plane to (Path on plane) =
-    new Makable:
-      type Plane = plane
-      type Self = File
-      type Result = Path on Plane
+        tactic:                   Tactic[IoError] )
+  =>  File is Makable on plane to (Path on plane) =
 
-      def make(path: Path on Plane): Path on Plane = path.also:
-        createNonexistentParents(path):
-          overwritePreexisting(path):
-            jnf.Files.createFile(path.javaPath)
+      new Makable:
+        type Plane = plane
+        type Self = File
+        type Result = Path on Plane
+
+        def make(path: Path on Plane): Path on Plane = path.also:
+          createNonexistentParents(path):
+            overwritePreexisting(path):
+              jnf.Files.createFile(path.javaPath)
+
 
   given fifo: [plane: Filesystem]
-  =>   (createNonexistentParents: CreateNonexistentParents on plane,
+  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         working:                  WorkingDirectory,
         tactic:                   Tactic[IoError],
-        loggable:                 ExecEvent is Loggable)
-  =>    Fifo is Makable to (Path on plane) =
-    new Makable:
-      type Self = Fifo
-      type Result = Path on Plane
-      type Plane = plane
+        loggable:                 ExecEvent is Loggable )
+  =>  Fifo is Makable to (Path on plane) =
 
-      def make(path: Path on Plane): Path on Plane = path.also:
-        createNonexistentParents(path):
-          overwritePreexisting(path):
-            mitigate:
-              case ExecError(_, _, _) =>
-                import errorDiagnostics.stackTraces
-                IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
+      new Makable:
+        type Self = Fifo
+        type Result = Path on Plane
+        type Plane = plane
 
-            . within:
-                sh"mkfifo $path"() match
-                  case Exit.Ok => ()
-                  case _             =>
-                    raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
+        def make(path: Path on Plane): Path on Plane = path.also:
+          createNonexistentParents(path):
+            overwritePreexisting(path):
+              mitigate:
+                case ExecError(_, _, _) =>
+                  import errorDiagnostics.stackTraces
+                  IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
+
+              . within:
+                  sh"mkfifo $path"() match
+                    case Exit.Ok => ()
+                    case _             =>
+                      raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
 
 trait Makable extends Typeclass, Resultant, Planar:
   def make(path: Path on Plane): Result
