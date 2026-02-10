@@ -420,36 +420,41 @@ object Honeycomb:
 
       val attributes: Seq[Expr[Optional[(Text, Optional[Text])]]] =
         Type.of[thisType].absolve match
-          case '[ type topic <: Label;
-                  type form;
-                  Tag { type Topic = topic; type Form = form } ] => args.map: arg =>
-            arg.absolve match
-              case '{($key, $value: value)} =>
-                TypeRepr.of[topic].literal[String].let: topic =>
-                  key.asTerm match
-                    case Literal(StringConstant(key)) =>
-                      if key == "" then panic(m"Empty key")
-                      else ConstantType(StringConstant(key)).asType.absolve match
-                        case '[type key <: Label; key] =>
-                          Expr.summon[key is Attribute in form on (? >: topic)]
-                          . orElse(Expr.summon[key is Attribute in form]) match
-                            case Some('{type result; $expr: Attribute { type Topic = result }}) =>
-                              Expr.summon[(? >: value) is Attributive to result] match
-                                case Some('{$converter: Attributive}) =>
-                                  '{$converter.attribute(${Expr(key.tt)}, $value)}
+          case
+            ' [
+                type topic <: Label
+                type form
+                Tag { type Topic = topic; type Form = form }
+              ] =>
 
-                                case _ =>
-                                  halt(m"""$key has attribute type ${TypeRepr.of[result].show},
-                                           but ${TypeRepr.of[value].show} cannot be attributed as
-                                           a ${TypeRepr.of[result].show} without a contextual
-                                           instance of
-                                           ${TypeRepr.of[value is Attributive to result].show}""")
+            args.map: arg =>
+              arg.absolve match
+                case '{($key, $value: value)} =>
+                  TypeRepr.of[topic].literal[String].let: topic =>
+                    key.asTerm match
+                      case Literal(StringConstant(key)) =>
+                        if key == "" then panic(m"Empty key")
+                        else ConstantType(StringConstant(key)).asType.absolve match
+                          case '[type key <: Label; key] =>
+                            Expr.summon[key is Attribute in form on (? >: topic)]
+                            . orElse(Expr.summon[key is Attribute in form]) match
+                              case Some('{type result; $expr: Attribute { type Topic = result }}) =>
+                                Expr.summon[(? >: value) is Attributive to result] match
+                                  case Some('{$converter: Attributive}) =>
+                                    '{$converter.attribute(${Expr(key.tt)}, $value)}
 
-                            case _ =>
-                              halt(m"the attribute $key cannot be used on the element <$topic>")
+                                  case _ =>
+                                    halt(m"""$key has attribute type ${TypeRepr.of[result].show},
+                                            but ${TypeRepr.of[value].show} cannot be attributed as
+                                            a ${TypeRepr.of[result].show} without a contextual
+                                            instance of
+                                            ${TypeRepr.of[value is Attributive to result].show}""")
 
-                    case _ =>
-                      halt(m"unable to determine attribute key type")
-                . or(halt(m"unexpected type"))
+                              case _ =>
+                                halt(m"the attribute $key cannot be used on the element <$topic>")
+
+                      case _ =>
+                        halt(m"unable to determine attribute key type")
+                  . or(halt(m"unexpected type"))
 
       '{$tag.node(${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]
