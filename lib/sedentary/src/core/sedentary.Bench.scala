@@ -113,7 +113,8 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
       val iterations0: Optional[Int] = iterations
       val iterations2: Int = iterations0.or(5)
       val target2: Expr[Long] = Expr(target.generic/iterations2)
-      '{  var count: Int = 1
+      ' {
+          var count: Int = 1
           var d: Long = 0
 
           // Run 10 times initially
@@ -145,7 +146,8 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
             val t1 = jl.System.nanoTime - t0
             result(i) = t1
 
-          result.to(List)  }
+          result.to(List)
+        }
 
     val results0 = dispatch(body)
     val sample: Long = results0(0)

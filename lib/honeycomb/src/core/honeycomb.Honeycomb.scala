@@ -271,8 +271,10 @@ object Honeycomb:
                     case '[attribute] =>
                       Expr.summon[attribute is Attribute in Whatwg on (? >: tag)]
                       . orElse(Expr.summon[attribute is Attribute in Whatwg]) match
-                        case Some('{ type result;
-                                     $typeclass: Attribute { type Topic = result } }) =>
+                        case Some(' {
+                                      type result
+                                      $typeclass: Attribute { type Topic = result }
+                                    }) =>
 
                           Expr.summon[(? >: value) is Attributive to result] match
                             case Some('{$attributive}) =>

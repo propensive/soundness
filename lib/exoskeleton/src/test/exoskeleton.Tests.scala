@@ -57,7 +57,8 @@ object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
     val foo: Text = "hello"
     Sandbox(t"abcd").dispatch:
-      '{  import executives.completions
+      ' {
+          import executives.completions
           import interpreters.posix
 
           val Alpha = Subcommand("alpha", e"a command to run")
@@ -105,7 +106,8 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
               case _            => execute(Exit.Fail(1))
 
-          t"finished"  }
+          t"finished"
+        }
 
     . sandbox:
         // Warmup runs to avoid timing issues in CI

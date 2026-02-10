@@ -47,9 +47,10 @@ object Legerdemain:
     : Expr[Query] =
 
         exprs match
-          case '{ type keyType <: Label
-                  ($key: keyType, $value: valueType) } :: tail =>
-
+          case ' {
+                   type keyType <: Label
+                   ($key: keyType, $value: valueType)
+                 } :: tail =>
             Expr.summon[keyType is Parametric to (? >: valueType)].getOrElse:
               Expr.summon[keyType is Parametric].absolve match
                 case Some('{$parametric: (Parametric { type Result = resultType })}) =>
@@ -65,8 +66,11 @@ object Legerdemain:
               halt(m"""there is no contextual ${Type.of[Encodable in Query].show} instance for
                        values of ${Type.of[valueType].show}""")
 
-            val parameters = '{ given valueType is Encodable in Query = $encodable
-                                $value.encode.prefix($key.tt).values }
+            val parameters =
+              ' {
+                  given valueType is Encodable in Query = $encodable
+                  $value.encode.prefix($key.tt).values
+                }
 
             recur(tail, parameters :: done)
 

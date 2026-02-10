@@ -51,6 +51,9 @@ object embeddings:
       val encoded: stageable.Transport = stageable.embed[value](value)
       val allocation: Int = refs.allocate(encoded)
 
-      '{  import strategies.throwUnsafely
+      ' {
+          import strategies.throwUnsafely
+
           stageable.extract[value]
-           (${refs.array}(${Expr(allocation)}).asInstanceOf[refs.Transport])  }
+            ( ${refs.array}(${Expr(allocation)}).asInstanceOf[refs.Transport] )
+        }

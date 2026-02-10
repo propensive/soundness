@@ -52,7 +52,8 @@ package eucalyptus
 //         show:           Expr[Any])
 //   : Macro[Unit] =
 
-//     '{  val time = System.currentTimeMillis
+//     ' {
+//         val time = System.currentTimeMillis
 //         val presentationalValue = $presentational
 
 //         try
@@ -64,7 +65,8 @@ package eucalyptus
 //               presentationalValue.show($message)(using castShow),
 //               time,
 //               $log.envelopes))
-//         catch case e: Exception => ()  }
+//         catch case e: Exception => ()
+//       }
 
 //   def route[text: Type]
 //       (routes:         Expr[PartialFunction[Entry[text], Any]],

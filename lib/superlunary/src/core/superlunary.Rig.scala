@@ -125,7 +125,8 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
             staging.Compiler.make(classloader.java)(using settings)
 
           val function: juf.Function[Form, Form] = staging.run:
-            '{  form =>
+            ' {
+                form =>
                   stageable.serialize:
 
                     val array = new Array[Object](1)
@@ -135,7 +136,8 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                             references() = '{stageable.deserialize(form)}
                             body(using references)
                           })
-                    array  }
+                    array
+              }
 
           val target = stage(out)
           cache = cache.updated(codepoint, (target, function))

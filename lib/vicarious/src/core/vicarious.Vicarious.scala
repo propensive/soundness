@@ -53,8 +53,10 @@ object Vicarious:
             case '{$field: field} =>
               '{$lambda[field]($field)}.asTerm :: fields[field](field.asTerm)
 
-      '{  given classTag0: ClassTag[value] = $classTag
-          Catalog(IArray(${Varargs(fields[key](value.asTerm).map(_.asExprOf[value]))}*))  }
+      ' {
+          given classTag0: ClassTag[value] = $classTag
+          Catalog(IArray(${Varargs(fields[key](value.asTerm).map(_.asExprOf[value]))}*))
+        }
 
   def fieldNames[product: Type](prefix: String)(using Quotes): List[String] =
     import quotes.reflect.*

@@ -67,6 +67,9 @@ object Mandible:
       val classname: Text =
         TypeRepr.of[target].classSymbol.get.fullName.sub(t".", t"/").nn+t".class"
 
-      '{  val classfile = Classfile(${Expr(classname)})(using $classloader)
+      ' {
+          val classfile = Classfile(${Expr(classname)})(using $classloader)
+
           classfile.let(_.methods.find(_.name == ${Expr(name.tt)}).getOrElse(Unset))
-          . let(_.bytecode)  }
+          . let(_.bytecode)
+        }

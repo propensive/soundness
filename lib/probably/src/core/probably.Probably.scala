@@ -89,23 +89,40 @@ object Probably:
               val decomposable: Expr[testType is Decomposable] =
                 Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
 
-              '{  given decompose: testType is Decomposable = $decomposable
+              ' {
+                  given decompose: testType is Decomposable = $decomposable
                   val contrast = infer[testType is Contrastable]
 
                   assertion[testType, test, report, result]
-                   ($runner,
-                    $test,
-                    $predicate,
-                    $action,
-                    contrast,
-                    Some($expr),
-                    $inclusion,
-                    $inclusion2,
-                    decompose)  }
+                    ( $runner,
+                      $test,
+                      $predicate,
+                      $action,
+                      contrast,
+                      Some($expr),
+                      $inclusion,
+                      $inclusion2,
+                      decompose )
+                }
 
             case _ =>
-              '{  ( assertion[test, test, report, result]
-                    ($runner,
+              ' {
+                  ( assertion[test, test, report, result]
+                      ( $runner,
+                        $test,
+                        $predicate,
+                        $action,
+                        Contrastable.nothing[test],
+                        None,
+                        $inclusion,
+                        $inclusion2,
+                        Decomposable.any[test] ) )
+                }
+
+          else
+            ' {
+                ( assertion[test, test, report, result]
+                    ( $runner,
                       $test,
                       $predicate,
                       $action,
@@ -113,19 +130,8 @@ object Probably:
                       None,
                       $inclusion,
                       $inclusion2,
-                      Decomposable.any[test]) )  }
-
-          else
-            '{  ( assertion[test, test, report, result]
-                  ($runner,
-                    $test,
-                    $predicate,
-                    $action,
-                    Contrastable.nothing[test],
-                    None,
-                    $inclusion,
-                    $inclusion2,
-                    Decomposable.any[test]) )  }
+                      Decomposable.any[test]) )
+              }
 
   def check[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[test] =
     handle[test, test](test, predicate, '{(t: Trial[test]) => t.get})

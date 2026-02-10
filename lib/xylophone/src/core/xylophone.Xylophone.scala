@@ -165,8 +165,10 @@ object Xylophone:
               elements(index + 1)('{$expr && $expr2})
 
           val elementsChecked = elements(0):
-            '{  ${Expr(pattern.label)} == $scrutinee.label
-                && $scrutinee.children.length == ${Expr(pattern.children.length)} }
+            ' {
+                ${Expr(pattern.label)} == $scrutinee.label
+                && $scrutinee.children.length == ${Expr(pattern.children.length)}
+              }
 
           '{$attributesChecked && $elementsChecked}
 
@@ -179,9 +181,15 @@ object Xylophone:
               iterator.next()
               types ::= TypeRepr.of[Text]
 
-              '{  $expr
+              ' {
+                  $expr
                   && $scrutinee.isInstanceOf[Comment]
-                  && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Comment].text; true }  }
+                  &&
+                    {
+                      $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Comment].text
+                      true
+                    }
+                }
 
             case ProcessingInstruction("\u0000", t"") =>
               idx += 1
@@ -323,8 +331,12 @@ object Xylophone:
                   case '[tag] => ConstantType(StringConstant(attribute.s)).asType.absolve match
                     case '[attribute] =>
                       Expr.summon[attribute is Xml.XmlAttribute] match
-                        case Some('{ type result;
-                                     $typeclass: Xml.XmlAttribute { type Topic = result } }) =>
+                        case
+                          Some
+                            ( ' {
+                                  type result;
+                                  $typeclass: Xml.XmlAttribute { type Topic = result }
+                                } ) =>
 
                           Expr.summon[(? >: value) is Attributive to result] match
                             case Some('{$attributive}) =>

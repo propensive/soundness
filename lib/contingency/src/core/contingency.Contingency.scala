@@ -361,7 +361,8 @@ object Contingency:
       diagnostics: Expr[Diagnostics] )
   : Macro[result] =
 
-      '{  val foci: Foci[focus] = TrackFoci()
+      ' {
+          val foci: Foci[focus] = TrackFoci()
 
           val result: Option[result] = boundary[Option[result]]: label ?=>
             $ {
@@ -395,8 +396,7 @@ object Contingency:
             case Some(value) =>
               if foci.success then value
               else $tactic.abort(foci.fold[accrual]($track.initial)($track.lambda(using _, _)))
-
-      }
+        }
 
 
   def validateWithin[accrual <: Exception: Type, context[_]: Type, focus: Type]
@@ -405,7 +405,8 @@ object Contingency:
       diagnostics: Expr[Diagnostics] )
   : Macro[accrual] =
 
-      '{  val foci: Foci[focus] = TrackFoci()
+      ' {
+          val foci: Foci[focus] = TrackFoci()
 
           boundary[Any]: label ?=>
             $ {
@@ -433,4 +434,4 @@ object Contingency:
 
           foci.fold[accrual]($validate.initial)($validate.lambda(using _, _))
 
-      }
+        }

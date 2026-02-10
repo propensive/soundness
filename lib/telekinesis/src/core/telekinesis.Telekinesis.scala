@@ -124,7 +124,8 @@ object Telekinesis:
             case Unset                     => '{Http.Post}
             case method: Expr[Http.Method] => method
 
-          '{  given online0: Online = $online
+          ' {
+              given online0: Online = $online
               given payload is Postable = $postable
               given loggable0: HttpEvent is Loggable = $loggable
               val host: Hostname = $submit.host
@@ -135,7 +136,8 @@ object Telekinesis:
               val request =
                 Http.Request($method, 1.1, host, path, contentType :: $headers.to(List), () => body)
 
-              $client.request(request, $submit.target)  }
+              $client.request(request, $submit.target)
+            }
 
 
   def fetch[target: Type]
@@ -154,7 +156,8 @@ object Telekinesis:
             case Unset                    => '{Http.Get}
             case method: Expr[Http.Method] => method
 
-          '{  given online0: Online = $online
+          ' {
+              given online0: Online = $online
               given loggable0: HttpEvent is Loggable = $loggable
 
               val path = $fetch.originForm
@@ -162,7 +165,8 @@ object Telekinesis:
               val request =
                 Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), () => Stream())
 
-              $client.request(request, $fetch.target)  }
+              $client.request(request, $fetch.target)
+            }
 
 
   def response(headers: Expr[Seq[Any]]): Macro[Http.Response.Prototype | Http.Response] =
