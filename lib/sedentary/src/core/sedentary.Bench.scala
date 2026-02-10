@@ -90,19 +90,17 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
   inline def apply[duration: Abstractable across Durations to Long, report]
     ( name: Message )
     ( target:     duration,
-               iterations: Optional[Int]                   = Unset,
-               warmups:    Optional[Int]                   = Unset,
-               confidence: Optional[Benchmark.Percentiles] = Unset,
-               baseline:   Optional[Baseline]              = Unset)
+      iterations: Optional[Int]                   = Unset,
+      warmups:    Optional[Int]                   = Unset,
+      confidence: Optional[Benchmark.Percentiles] = Unset,
+      baseline:   Optional[Baseline]              = Unset )
     ( body0: (References over Transport) ?=> Quotes ?=> Expr[Unit] )
-              [version <: Scalac.Versions]
-    ( using System,
-                     TemporaryDirectory,
-                     Stageable over Transport in Form)
+    [ version <: Scalac.Versions ]
+    ( using System, TemporaryDirectory, Stageable over Transport in Form )
     ( using runner:    Runner[report],
-                     inclusion: Inclusion[report, Benchmark],
-                     suite:     Testable,
-                     codepoint: Codepoint)
+            inclusion: Inclusion[report, Benchmark],
+            suite:     Testable,
+            codepoint: Codepoint )
   : Unit raises CompilerError raises RemoteError =
 
     val testId = TestId(name, suite, codepoint)

@@ -84,7 +84,7 @@ object Aviation:
     def apply(month: Month, day: Day): Anniversary = ((month.ordinal << 6) + day).toShort
 
     given showable: (endianness: Endianness, months: Months, separation: DateSeparation)
-    => Anniversary is Showable =
+    =>  Anniversary is Showable =
 
         anniversary =>
           val month: Text = months.name(anniversary.month)

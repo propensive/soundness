@@ -62,8 +62,8 @@ object Elicitable extends Elicitable2:
       Combobox(id, enumerable.values.to(List).map(enumerable.name(_)), value)
 
   given reference: [entity <: Entity: {Listable, Showable, Referenceable}]
-  => entity.Operand is Encodable in Text
-  => Reference[entity] is Elicitable:
+  =>  entity.Operand is Encodable in Text
+  =>  Reference[entity] is Elicitable:
 
       type Operand = Dropdown
 

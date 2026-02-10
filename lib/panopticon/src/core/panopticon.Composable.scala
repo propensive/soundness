@@ -56,8 +56,8 @@ object Composable:
 
       (left, right) =>
         Lens[Any, origin, target2]
-        ({ origin => right(left(origin)) },
-          { (origin, value) => left(origin) = right(left(origin)) = value })
+          ( { origin => right(left(origin)) },
+            { (origin, value) => left(origin) = right(left(origin)) = value } )
 
 
 trait Composable:

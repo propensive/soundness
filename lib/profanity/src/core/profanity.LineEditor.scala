@@ -81,7 +81,7 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
   def ask
     ( using interactivity: Interactivity[TerminalEvent],
             interaction:   Interaction[Text, LineEditor] )
-    [result]
+    [ result ]
     ( lambda: Interactivity[TerminalEvent] ?=> Text => result )
   : result raises DismissError =
 

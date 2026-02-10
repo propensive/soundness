@@ -91,21 +91,21 @@ object Cellulose extends Cellulose2:
     given textEncodable: Text is Encodable in Codl = value => Codl.wrap(value)
 
     given optionalEncodable: [inner, value >: Unset.type: Mandatable to inner]
-    => (encoder: => inner is Encodable in Codl)
-    => value is Encodable in Codl =
+    =>  ( encoder: => inner is Encodable in Codl )
+    =>  value is Encodable in Codl =
 
         _.let(_.asInstanceOf[inner]).lay(Codl(Nil))(encoder.encoded(_))
 
 
     given optionEncodable: [encodable: Encodable in Codl]
-    => Option[encodable] is Encodable in Codl =
+    =>  Option[encodable] is Encodable in Codl =
 
         case None        => Codl(List())
         case Some(value) => encodable.encoded(value)
 
 
     given listEncodable: [element] => (element: => element is Encodable in Codl)
-    => List[element] is Encodable in Codl =
+    =>  List[element] is Encodable in Codl =
 
         value => Codl(value.map(element.encoded(_).list.head))
 
@@ -138,8 +138,8 @@ object Cellulose extends Cellulose2:
 
 
     given listDecodable: [element]
-    => (decodable: => element is Decodable in Codl, schematic: => element is CodlSchematic)
-    => List[element] is Decodable in Codl =
+    =>  ( decodable: => element is Decodable in Codl, schematic: => element is CodlSchematic )
+    =>  List[element] is Decodable in Codl =
 
         value => schematic.schema() match
           case Field(_) => value.list.flatMap(_.children).map: node =>
@@ -149,7 +149,7 @@ object Cellulose extends Cellulose2:
             value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_))
 
     given setDecodable: [element: CodlSchematic] => (decodable: => element is Decodable in Codl)
-    => Set[element] is Decodable in Codl =
+    =>  Set[element] is Decodable in Codl =
 
         value =>
           element.schema() match

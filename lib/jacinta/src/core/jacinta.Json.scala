@@ -62,7 +62,7 @@ import JsonError.Reason
 
 trait Json2:
   given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
-  => (encodable: inner is Encodable in Json)
+  =>  ( encodable: inner is Encodable in Json )
   =>  value is Encodable in Json =
 
       new Encodable:
@@ -259,8 +259,8 @@ object Json extends Json2, Dynamic:
             state.updated(keys(next).tt.decode, decodable.decoded(Json.ast(values(next))))
 
   given mapEncodable: [key: Encodable in Text, element]
-  => (encodable: element is Encodable in Json)
-  => Map[key, element] is Encodable in Json =
+  =>  ( encodable: element is Encodable in Json )
+  =>  Map[key, element] is Encodable in Json =
 
       map =>
         val keys: List[key] = map.keys.to(List)
@@ -273,7 +273,7 @@ object Json extends Json2, Dynamic:
     bytes => Json(bytes.read[JsonAst])
 
   given aggregableDirect: [value: Decodable in Json] => Tactic[ParseError] => Tactic[JsonError]
-  => (value over Json) is Aggregable by Data =
+  =>  (value over Json) is Aggregable by Data =
 
       bytes => Json(bytes.read[JsonAst]).as[value].asInstanceOf[value over Json]
 

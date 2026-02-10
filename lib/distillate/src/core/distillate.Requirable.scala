@@ -39,7 +39,7 @@ import vacuous.*
 
 object Requirable:
   given decodable: [value] => (decodable: Tactic[Exception] ?=> value is Decodable in Text)
-  => value is Requirable =
+  =>  value is Requirable =
 
       () => safely("".tt.decode[value]).absent
 

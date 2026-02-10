@@ -76,7 +76,7 @@ object Sheet:
 
 
   given abstractable: (CharEncoder, DsvFormat)
-  => Sheet is Abstractable across HttpStreams to HttpStreams.Content =
+  =>  Sheet is Abstractable across HttpStreams to HttpStreams.Content =
 
       new Abstractable:
         type Self = Sheet

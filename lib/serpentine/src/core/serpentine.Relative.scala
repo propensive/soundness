@@ -111,7 +111,7 @@ object Relative:
        _.encode
 
   transparent inline given quotient: [filesystem, relative <: (Relative on filesystem) | Text]
-  => relative is Quotient =
+  =>  relative is Quotient =
 
       relative0 =>
         relative0 match

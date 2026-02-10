@@ -72,7 +72,7 @@ object Aviation2:
 
 
     given duration: [units <: Measure: Normalizable to Seconds[1]]
-    => Quantity[units] is InstantSubtractable to Instant =
+    =>  Quantity[units] is InstantSubtractable to Instant =
 
         new InstantSubtractable:
           type Self = Quantity[units]

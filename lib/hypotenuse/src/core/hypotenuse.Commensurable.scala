@@ -44,15 +44,14 @@ object Commensurable:
 
       type Contrast = operand
 
+      inline def compare
+        ( inline left:        Boolean,
+          inline right:       operand,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
+      : Boolean =
 
-    inline def compare
-      ( inline left:        Boolean,
-        inline right:       operand,
-        inline strict:      Boolean,
-        inline greaterThan: Boolean )
-    : Boolean =
-
-        ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
+          ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
 
 
   given bytes: Bytes is Orderable:

@@ -64,18 +64,18 @@ object ShowProperty:
           property3.show(tuple(2)) )
       . join(t" ")
 
-  given quad: [property:  ShowProperty,
-               property2: ShowProperty,
-               property3: ShowProperty,
-               property4: ShowProperty]
+  given quad: [ property:  ShowProperty,
+                property2: ShowProperty,
+                property3: ShowProperty,
+                property4: ShowProperty ]
   =>  ShowProperty[(property, property2, property3, property4)] =
 
       tuple =>
         List
-        (property.show(tuple(0)),
-          property2.show(tuple(1)),
-          property3.show(tuple(2)),
-          property4.show(tuple(3)))
+          ( property.show(tuple(0)),
+            property2.show(tuple(1)),
+            property3.show(tuple(2)),
+            property4.show(tuple(3)) )
         . join(t" ")
 
   given font: ShowProperty[Font] = _.names.map: f =>

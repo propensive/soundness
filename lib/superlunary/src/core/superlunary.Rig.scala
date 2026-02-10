@@ -85,7 +85,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
   inline def dispatch[output]
     ( body: (References over Transport) ?=> Quotes ?=> Expr[output] )
-              [version <: Scalac.Versions]
+    [ version <: Scalac.Versions ]
     ( using codepoint:  Codepoint,
             properties: System,
             directory:  TemporaryDirectory,

@@ -121,7 +121,7 @@ object Path:
     path => Message(path.encode)
 
   given generic: [filesystem: Filesystem, path <: Path on filesystem]
-  => path is Abstractable across Paths to Text =
+  =>  path is Abstractable across Paths to Text =
 
       _.encode
 

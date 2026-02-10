@@ -97,7 +97,7 @@ object Plutocrat:
           Money(left.currency, left.value*right).in[currency]
 
     given divisible: [currency <: Label, money <: (Money in currency)]
-    => money is Divisible:
+    =>  money is Divisible:
         type Self = money
         type Operand = Double
         type Result = Money in currency
@@ -106,7 +106,7 @@ object Plutocrat:
           Money(left.currency, left.value/right).in[currency]
 
     given divisible2: [currency <: Label, left <: Money in currency, right <: Money in currency]
-    => left is Divisible:
+    =>  left is Divisible:
 
         type Self = left
         type Operand = right

@@ -146,6 +146,6 @@ object Sh:
 
 
   given parameterizable: [parameterizable: Parameterizable]
-  => Insertion[Parameters, parameterizable] =
+  =>  Insertion[Parameters, parameterizable] =
 
       value => Parameters(parameterizable.show(value))

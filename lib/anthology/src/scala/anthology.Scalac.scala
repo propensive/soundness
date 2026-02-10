@@ -68,7 +68,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
 
   def apply
     ( classpath: LocalClasspath )
-    [path: Abstractable across Paths to Text]
+    [ path: Abstractable across Paths to Text ]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor, Codicil )
   : CompileProcess logs CompileEvent raises CompilerError =

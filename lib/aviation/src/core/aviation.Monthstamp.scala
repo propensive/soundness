@@ -41,7 +41,7 @@ case class Monthstamp(year: Year, month: Month)
 
 object Monthstamp:
   given showable: (months: Months, separation: DateSeparation, endianness: Endianness, years: Years)
-  => Monthstamp is Showable =
+  =>  Monthstamp is Showable =
 
       monthstamp =>
         endianness match

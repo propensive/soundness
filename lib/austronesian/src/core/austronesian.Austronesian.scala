@@ -88,10 +88,10 @@ object Austronesian:
     inline given boolean2: Boolean is Decodable in Pojo = _.asInstanceOf[Boolean]
 
     inline given collection
-        : [ collection <: Iterable, element: Decodable in Pojo ]
-          =>  Tactic[PojoError]
-          => (factory: scala.collection.Factory[element, collection[element]])
-          =>  collection[element] is Decodable in Pojo =
+    : [ collection <: Iterable, element: Decodable in Pojo ]
+    =>  Tactic[PojoError]
+    =>  ( factory: scala.collection.Factory[element, collection[element]] )
+    =>  collection[element] is Decodable in Pojo =
 
       case array: Array[Pojo @unchecked] =>
         factory.newBuilder.pipe: builder =>

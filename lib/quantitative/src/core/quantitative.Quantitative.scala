@@ -183,7 +183,7 @@ object Quantitative extends Quantitative2:
       inline def multiply(left: Int, right: multiplier): Quantity[right] = left*right
 
     given multiplicable5: [left <: Measure, multiplicand <: Quantity[left]]
-    => multiplicand is Multiplicable:
+    =>  multiplicand is Multiplicable:
 
         type Self = multiplicand
         type Operand = Int

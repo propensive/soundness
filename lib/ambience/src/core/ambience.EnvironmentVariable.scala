@@ -77,7 +77,7 @@ object EnvironmentVariable extends EnvironmentVariable2:
 
 
   given xdgStateHome: [path: Instantiable across Paths from Text]
-  => (EnvironmentVariable["xdgStateHome", path]) =
+  =>  ( EnvironmentVariable["xdgStateHome", path] ) =
 
       path(_)
 

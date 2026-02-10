@@ -111,16 +111,13 @@ object SumDerivation:
 
 
     protected transparent inline def delegate[derivation](label: Text)
-      ( using reflection:  SumReflection[derivation],
-                                             requirement: ContextRequirement)
-                                      [result]
+      ( using reflection:  SumReflection[derivation], requirement: ContextRequirement)
+      [ result ]
       ( inline lambda: [variant <: derivation]
-                                              =>  requirement.Optionality[typeclass[variant]]
-                                              => (context: requirement.Optionality
-                                                            [typeclass[variant]],
-                                                  label:   Text,
-                                                  index:   Int & VariantIndex[variant])
-                                              ?=> result)
+                       =>  requirement.Optionality[typeclass[variant]]
+                       =>  ( context: requirement.Optionality[typeclass[variant]],
+                             label:   Text,
+                             index:   Int & VariantIndex[variant] ) ?=> result )
     : result =
 
         type Labels = reflection.MirroredElemLabels
@@ -137,16 +134,13 @@ object SumDerivation:
 
 
     protected transparent inline def variant[derivation](sum: derivation)
-      ( using reflection:  SumReflection[derivation],
-                                             requirement: ContextRequirement)
-                                      [result]
+      ( using reflection:  SumReflection[derivation], requirement: ContextRequirement )
+      [ result ]
       ( inline lambda: [variant <: derivation]
-                                                      =>  variant
-                                                      => (context: requirement.Optionality
-                                                                    [typeclass[variant]],
-                                                          label:   Text,
-                                                          index:   Int & VariantIndex[variant])
-                                                      ?=> result)
+                       =>  variant
+                       =>  ( context: requirement.Optionality[typeclass[variant]],
+                             label:   Text,
+                             index:   Int & VariantIndex[variant] ) ?=> result )
     : result =
 
         type Labels = reflection.MirroredElemLabels
@@ -161,23 +155,15 @@ object SumDerivation:
 
 
     private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]
-      ( inline inputLabel: Text,
-                                            size:       Int,
-                                            index:      Int,
-                                            fallible:   Boolean)
-      ( using reflection:  SumReflection[derivation],
-                                           requirement: ContextRequirement)
-      ( inline predicate: (label: Text,
-                                                        index: Int & VariantIndex[derivation])
-                                                        ?=> Boolean)
-                                    [result]
+      ( inline inputLabel: Text, size: Int, index: Int, fallible: Boolean )
+      ( using reflection:  SumReflection[derivation], requirement: ContextRequirement )
+      ( inline predicate: (label: Text, index: Int & VariantIndex[derivation]) ?=> Boolean )
+      [ result ]
       ( inline lambda: [variant <: derivation]
-                                                    =>  requirement.Optionality[typeclass[variant]]
-                                                    => (context: requirement.Optionality
-                                                                  [typeclass[variant]],
-                                                        label:   Text,
-                                                        index:   Int & VariantIndex[variant])
-                                                    ?=> result)
+                       =>  requirement.Optionality[typeclass[variant]]
+                       =>  ( context: requirement.Optionality[typeclass[variant]],
+                             label:   Text,
+                             index:   Int & VariantIndex[variant] ) ?=> result )
     : Optional[result] =
 
         inline !![variants] match
@@ -209,23 +195,15 @@ object SumDerivation:
 
 
     private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]
-      ( inline sum:      derivation,
-                                            size:     Int,
-                                            index:    Int,
-                                            fallible: Boolean)
-      ( using reflection:  SumReflection[derivation],
-                                           requirement: ContextRequirement)
-      ( inline predicate: (label: Text,
-                                                        index: Int & VariantIndex[derivation])
-                                                        ?=> Boolean)
-                                    [result]
+      ( inline sum: derivation, size: Int, index: Int, fallible: Boolean )
+      ( using reflection:  SumReflection[derivation], requirement: ContextRequirement )
+      ( inline predicate: (label: Text, index: Int & VariantIndex[derivation] ) ?=> Boolean )
+      [ result ]
       ( inline lambda: [variant <: derivation]
-                                                    =>  variant
-                                                    => (context: requirement.Optionality
-                                                                  [typeclass[variant]],
-                                                        label: Text,
-                                                        index: Int & VariantIndex[variant])
-                                                    ?=> result)
+                       =>  variant
+                       =>  ( context: requirement.Optionality[typeclass[variant]],
+                             label: Text,
+                             index: Int & VariantIndex[variant] ) ?=> result )
     : Optional[result] =
 
         inline !![variants] match

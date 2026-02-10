@@ -59,8 +59,8 @@ object Mosquito:
                      value2,
                      right <: Tensor[value2, size],
                      result ]
-    => (addable: value is Addable by value2 to result)
-    => left is Addable:
+    =>  ( addable: value is Addable by value2 to result )
+    =>  left is Addable:
 
         type Self = left
         type Operand = right
@@ -96,8 +96,8 @@ object Mosquito:
                           value2,
                           right <: Tensor[value2, size],
                           result ]
-    => (subtractable: value is Subtractable by value2 to result)
-    => left is Subtractable:
+    =>  ( subtractable: value is Subtractable by value2 to result )
+    =>  left is Subtractable:
 
         type Self = left
         type Operand = right

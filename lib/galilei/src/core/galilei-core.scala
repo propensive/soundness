@@ -339,7 +339,7 @@ package filesystemOptions:
 
   object overwritePreexisting:
     given enabled: [plane: Filesystem]
-    => (deleteRecursively: DeleteRecursively on plane)
+    =>  ( deleteRecursively: DeleteRecursively on plane )
     =>  OverwritePreexisting on plane:
 
         type Plane = plane
@@ -382,7 +382,7 @@ package filesystemOptions:
 
   object createNonexistent:
     given enabled: [plane: Filesystem]
-    => (create: CreateNonexistentParents on plane)
+    =>  ( create: CreateNonexistentParents on plane )
     =>  (Path on plane) is Substantiable
     =>  CreateNonexistent on plane:
 

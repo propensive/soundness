@@ -61,8 +61,8 @@ object Resend:
 
 package couriers:
   given resend: (Tactic[CourierError], Online, HttpEvent is Loggable, HttpClient)
-  => (apiKey: Resend.ApiKey)
-  => Courier:
+  =>  ( apiKey: Resend.ApiKey )
+  =>  Courier:
 
       type Result = Resend.Receipt
 
@@ -86,17 +86,17 @@ package couriers:
 
         val request =
           Request
-          (envelope.from,
-            envelope.to,
-            envelope.subject,
-            envelope.bcc,
-            envelope.cc,
-            Unset,
-            envelope.replyTo,
-            envelope.email.headers,
-            envelope.email.html,
-            envelope.email.text,
-            attachments)
+            ( envelope.from,
+              envelope.to,
+              envelope.subject,
+              envelope.bcc,
+              envelope.cc,
+              Unset,
+              envelope.replyTo,
+              envelope.email.headers,
+              envelope.email.html,
+              envelope.email.text,
+              attachments )
 
         def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
 

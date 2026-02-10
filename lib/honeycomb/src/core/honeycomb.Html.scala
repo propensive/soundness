@@ -98,14 +98,17 @@ object Html extends Tag.Container
     transparent inline def extrapolate[parts <: Tuple](scrutinee: Html): Extrapolation[Html] =
       ${Honeycomb.extractor[parts]('scrutinee)}
 
+
   given addable: [dom        <: Dom,
                   leftTopic  <: Label,
                   rightTopic <: Label,
                   left       <: Html of leftTopic in dom,
                   right      <: Html of rightTopic in dom]
-        => left is Addable by right to (Fragment of leftTopic | rightTopic in dom) =
-    (left, right) =>
-      Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
+  =>  left is Addable by right to (Fragment of leftTopic | rightTopic in dom) =
+
+      (left, right) =>
+        Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
+
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (dom: Dom)
   =>  Tactic[ParseError]
@@ -287,7 +290,7 @@ object Html extends Tag.Container
 
 
   given renderable: [content <: Label, value: Renderable in content]
-  => Conversion[value, Html of content] =
+  =>  Conversion[value, Html of content] =
 
       value.render(_)
 
