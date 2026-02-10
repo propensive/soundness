@@ -91,22 +91,24 @@ object Cellulose extends Cellulose2:
     given textEncodable: Text is Encodable in Codl = value => Codl.wrap(value)
 
     given optionalEncodable: [inner, value >: Unset.type: Mandatable to inner]
-          => (encoder: => inner is Encodable in Codl)
-          => value is Encodable in Codl =
+    => (encoder: => inner is Encodable in Codl)
+    => value is Encodable in Codl =
 
-      _.let(_.asInstanceOf[inner]).lay(Codl(Nil))(encoder.encoded(_))
+        _.let(_.asInstanceOf[inner]).lay(Codl(Nil))(encoder.encoded(_))
 
 
     given optionEncodable: [encodable: Encodable in Codl]
-          => Option[encodable] is Encodable in Codl =
+    => Option[encodable] is Encodable in Codl =
 
         case None        => Codl(List())
         case Some(value) => encodable.encoded(value)
 
+
     given listEncodable: [element] => (element: => element is Encodable in Codl)
-          => List[element] is Encodable in Codl =
+    => List[element] is Encodable in Codl =
 
         value => Codl(value.map(element.encoded(_).list.head))
+
 
     given setEncodable: [element: Encodable in Codl] => Set[element] is Encodable in Codl =
       value => Codl(value.map(element.encoded(_).list.head).to(List))
@@ -122,37 +124,42 @@ object Cellulose extends Cellulose2:
     given textDecodable: Tactic[CodlError] => Text is Decodable in Codl = decodable(identity(_))
     given unitDecodable: Unit is Decodable in Codl = _ => ()
 
+
     given optionalDecodable: [value >: Unset.type: Mandatable]
-          => (decoder: => value.Result is Decodable in Codl)
-          =>  value is Decodable in Codl =
-      codl => if codl.list.nil then Unset else decoder.decoded(codl)
+    =>  ( decoder: => value.Result is Decodable in Codl )
+    =>  value is Decodable in Codl =
+
+        codl => if codl.list.nil then Unset else decoder.decoded(codl)
 
     given optionDecodable: [decodable] => (decoder: => decodable is Decodable in Codl)
-          => Option[decodable] is Decodable in Codl =
-      codl => if codl.list.nil then None else Some(decoder.decoded(codl))
+    =>  Option[decodable] is Decodable in Codl =
+
+        codl => if codl.list.nil then None else Some(decoder.decoded(codl))
+
 
     given listDecodable: [element]
-          => (decodable: => element is Decodable in Codl, schematic: => element is CodlSchematic)
-          => List[element] is Decodable in Codl =
+    => (decodable: => element is Decodable in Codl, schematic: => element is CodlSchematic)
+    => List[element] is Decodable in Codl =
 
-      value => schematic.schema() match
-        case Field(_) => value.list.flatMap(_.children).map: node =>
-          decodable.decoded(Codl(List(CodlDoc(node))))
-
-        case struct: Struct =>
-          value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_))
-
-    given setDecodable: [element: CodlSchematic] => (decodable: => element is Decodable in Codl)
-          => Set[element] is Decodable in Codl =
-      value =>
-        element.schema() match
-          case Field(_) =>
-            value.list.flatMap(_.children).map: node =>
-              decodable.decoded(Codl(List(CodlDoc(node))))
-            . to(Set)
+        value => schematic.schema() match
+          case Field(_) => value.list.flatMap(_.children).map: node =>
+            decodable.decoded(Codl(List(CodlDoc(node))))
 
           case struct: Struct =>
-            value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_)).to(Set)
+            value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_))
+
+    given setDecodable: [element: CodlSchematic] => (decodable: => element is Decodable in Codl)
+    => Set[element] is Decodable in Codl =
+
+        value =>
+          element.schema() match
+            case Field(_) =>
+              value.list.flatMap(_.children).map: node =>
+                decodable.decoded(Codl(List(CodlDoc(node))))
+              . to(Set)
+
+            case struct: Struct =>
+              value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_)).to(Set)
 
     enum Issue extends Format.Issue:
       case UnexpectedCarriageReturn

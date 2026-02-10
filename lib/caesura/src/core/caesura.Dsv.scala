@@ -84,11 +84,18 @@ object Dsv:
   given encoder: [encodable: Encodable in Text] => encodable is Encodable in Dsv =
     value => Dsv(encodable.encode(value))
 
+
   inline given decodableDerivation: [value <: Product: ProductReflection]
-               => value is Decodable in Dsv = DecodableDerivation.derived[value]
+  =>  value is Decodable in Dsv =
+
+      DecodableDerivation.derived[value]
+
 
   inline given encodableDerivation: [value <: Product: ProductReflection]
-               => value is Encodable in Dsv = EncodableDerivation.derived[value]
+  =>  value is Encodable in Dsv =
+
+      EncodableDerivation.derived[value]
+
 
   given showable: (format: DsvFormat) => Dsv is Showable =
     _.data.map: cell =>

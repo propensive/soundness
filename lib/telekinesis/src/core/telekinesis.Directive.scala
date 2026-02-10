@@ -45,8 +45,8 @@ import urticose.*
 
 object Directive:
   // Request headers
-  given contentEncoding: [encoding <: Encoding]
-        => ("contentEncoding" is Directive of encoding) = _.name
+  given contentEncoding: [encoding <: Encoding] => ("contentEncoding" is Directive of encoding) =
+    _.name
 
   given accept: ("accept" is Directive of MediaType) = _.show
   given accept2: ("accept" is Directive of List[MediaType]) = _.map(_.show).join(t",")
@@ -71,8 +71,8 @@ object Directive:
   given ifUnmodifiedSince: ("ifUnmodifiedSince" is Directive of Text) = identity(_)
   given maxForwards: ("maxForwards" is Directive of Int) = _.toString.tt
 
-  given origin: [url: Abstractable across Urls to Text]
-        => ("origin" is Directive of url) = _.generic
+  given origin: [url: Abstractable across Urls to Text] => ("origin" is Directive of url) =
+    _.generic
 
   given pragma: ("pragma" is Directive of Text) = identity(_)
   given prefer: ("prefer" is Directive of Text) = identity(_)

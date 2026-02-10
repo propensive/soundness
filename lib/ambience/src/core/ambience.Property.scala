@@ -75,13 +75,15 @@ object Property:
       (value, property) =>
         lambda(value.or(panic(m"the system property $property was unavailable")))
 
+
   given generic: [label <: String & Singleton] => Tactic[PropertyError]
-        => label is Property of Text =
-    (value, property) => value.lest(PropertyError(property))
+  =>  label is Property of Text =
+
+      (value, property) => value.lest(PropertyError(property))
 
 
   given javaHome: [path: Instantiable across Paths from Text]
-        => ("java.home" is Property of path) =
+  =>  ( "java.home" is Property of path ) =
 
       Property(path(_))
 
@@ -106,8 +108,9 @@ object Property:
 
 
   given javaRuntimeVersion: Tactic[PropertyError]
-        => ("java.runtime.version" is Property of Text) =
-    (value, name) => value.lest(PropertyError(name))
+  =>  ( "java.runtime.version" is Property of Text ) =
+
+      (value, name) => value.lest(PropertyError(name))
 
 
   given javaClassVersion: ("java.runtime.version" is Property of Int) =
@@ -116,8 +119,8 @@ object Property:
 
 
   // given javaExtDirs: [path: Instantiable across Paths from Text]
-  //       => (system: System, property: Tactic[PropertyError])
-  //       =>  Property["java.ext.dirs", List[path]] =
+  // =>  ( system: System, property: Tactic[PropertyError] )
+  // =>  Property["java.ext.dirs", List[path]] =
 
   //   _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
 
@@ -129,12 +132,13 @@ object Property:
 
 
   given userHome: [path: Instantiable across Paths from Text]
-        => ("user.home" is Property of path) =
-    Property(path(_))
+  =>  ( "user.home" is Property of path ) =
+
+      Property(path(_))
 
 
   given userDir: [path: Instantiable across Paths from Text]
-        => ("user.dir" is Property of path) =
+  =>  ( "user.dir" is Property of path ) =
 
       Property(path(_))
 
@@ -147,8 +151,8 @@ object Property:
 
 
   given decoder: [label <: Label, property] => (decoder: property is Decodable in Text)
-        =>  Tactic[PropertyError]
-        =>  label is Property of property =
+  =>  Tactic[PropertyError]
+  =>  label is Property of property =
 
     (value, name) =>
       decoder.decoded(value.lest(PropertyError(name)))

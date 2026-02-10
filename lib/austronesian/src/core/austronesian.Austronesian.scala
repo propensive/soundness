@@ -74,8 +74,9 @@ object Austronesian:
     //   trie => IArray.from(trie.map(_.encode))
 
     inline given list: [collection <: Iterable, element: Encodable in Pojo]
-          =>  collection[element] is Encodable in Pojo =
-      iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
+    =>  collection[element] is Encodable in Pojo =
+
+        iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
 
     inline given text2: Text is Decodable in Pojo = _.asInstanceOf[String].tt
     inline given string2: String is Decodable in Pojo = _.asInstanceOf[String]

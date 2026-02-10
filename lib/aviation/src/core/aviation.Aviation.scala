@@ -84,13 +84,14 @@ object Aviation:
     def apply(month: Month, day: Day): Anniversary = ((month.ordinal << 6) + day).toShort
 
     given showable: (endianness: Endianness, months: Months, separation: DateSeparation)
-          => Anniversary is Showable =
-      anniversary =>
-        val month: Text = months.name(anniversary.month)
+    => Anniversary is Showable =
 
-        endianness.match
-          case Endianness.LittleEndian => t"${anniversary.day}${separation.separator}$month"
-          case _                       => t"$month${separation.separator}${anniversary.day}"
+        anniversary =>
+          val month: Text = months.name(anniversary.month)
+
+          endianness.match
+            case Endianness.LittleEndian => t"${anniversary.day}${separation.separator}$month"
+            case _                       => t"$month${separation.separator}${anniversary.day}"
 
   extension (year: Year)
     @targetName("yearValue")

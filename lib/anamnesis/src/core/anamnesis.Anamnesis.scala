@@ -45,12 +45,17 @@ object Anamnesis:
 
   object Reference:
     given encodable: [entity <: Entity: Referenceable] => (entity.Operand is Encodable in Text)
-          => Reference[entity] is Encodable in Text =
-      reference => reference.expose.asInstanceOf[entity.Operand].encode
+
+    =>  Reference[entity] is Encodable in Text =
+
+        reference => reference.expose.asInstanceOf[entity.Operand].encode
+
 
     given decodable: [entity <: Entity: Referenceable] => (entity.Operand is Decodable in Text)
-          => Reference[entity] is Decodable in Text =
-      _.decode
+    =>  Reference[entity] is Decodable in Text =
+
+        _.decode
+
 
     def apply[entity <: Entity](entity: Entity): Reference[entity] = entity.ref
 

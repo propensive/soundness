@@ -42,19 +42,23 @@ import vacuous.*
 object Composable:
 
   given optics: [origin, operand, target]
-        => (Optic from origin onto operand) is Composable by (Optic from operand onto target) to
-               (Optic from origin onto target) =
-    (left, right) =>
-      Optic[Any, origin, target]: (origin, lambda) =>
-        left.modify(origin)(right.modify(_)(lambda))
+  =>  (Optic from origin onto operand) is Composable by (Optic from operand onto target) to
+          (Optic from origin onto target) =
+
+      (left, right) =>
+        Optic[Any, origin, target]: (origin, lambda) =>
+          left.modify(origin)(right.modify(_)(lambda))
+
 
   given lenses: [origin, target, target2]
-        => (Lens from origin onto target) is Composable by (Lens from target onto target2) to
-               (Lens from origin onto target2) =
-    (left, right) =>
-      Lens[Any, origin, target2]
-       ({ origin => right(left(origin)) },
-        { (origin, value) => left(origin) = right(left(origin)) = value })
+  =>  (Lens from origin onto target) is Composable by (Lens from target onto target2) to
+          (Lens from origin onto target2) =
+
+      (left, right) =>
+        Lens[Any, origin, target2]
+        ({ origin => right(left(origin)) },
+          { (origin, value) => left(origin) = right(left(origin)) = value })
+
 
 trait Composable:
   type Self

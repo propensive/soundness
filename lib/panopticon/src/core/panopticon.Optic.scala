@@ -71,11 +71,12 @@ object Optic:
         def modify(origin: Origin)(lambda2: Target => Target): Origin = lambda(origin, lambda2)
 
   given prim: [element]
-               => Prim.type is Optic from List[element] onto element =
-    Optic[Prim.type, List[element], element]: (origin, lambda) =>
-      origin match
-        case head :: tail => lambda(head) :: tail
-        case Nil          => Nil
+  =>  Prim.type is Optic from List[element] onto element =
+
+      Optic[Prim.type, List[element], element]: (origin, lambda) =>
+        origin match
+          case head :: tail => lambda(head) :: tail
+          case Nil          => Nil
 
 trait Optic extends Typeclass, Dynamic:
   type Origin

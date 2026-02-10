@@ -42,14 +42,15 @@ import language.dynamics
 
 object CssStylesheet:
   given abstractable: (charEncoder: CharEncoder)
-        =>  CssStylesheet is Abstractable across HttpStreams to HttpStreams.Content =
-    new Abstractable:
-      type Self = CssStylesheet
-      type Domain = HttpStreams
-      type Result = HttpStreams.Content
+  =>  CssStylesheet is Abstractable across HttpStreams to HttpStreams.Content =
 
-      def genericize(stylesheet: CssStylesheet): HttpStreams.Content =
-           (t"text/css; charset=${charEncoder.encoding.name}", Stream(stylesheet.text.data))
+      new Abstractable:
+        type Self = CssStylesheet
+        type Domain = HttpStreams
+        type Result = HttpStreams.Content
+
+        def genericize(stylesheet: CssStylesheet): HttpStreams.Content =
+          (t"text/css; charset=${charEncoder.encoding.name}", Stream(stylesheet.text.data))
 
 
   trait Item:

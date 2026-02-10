@@ -49,77 +49,104 @@ trait EnvironmentVariable[alias <: Label, +variable] extends Pure:
 
 object EnvironmentVariable extends EnvironmentVariable2:
   given path: [path: Instantiable across Paths from Text] => (system: System)
-        =>  EnvironmentVariable["path", List[path]] =
+  =>  EnvironmentVariable["path", List[path]] =
 
-    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+      _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
 
   given xdgDataDirs: [path: Instantiable across Paths from Text] => (system: System)
-        =>  EnvironmentVariable["xdgDataDirs", List[path]] =
+  =>  EnvironmentVariable["xdgDataDirs", List[path]] =
 
-    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+      _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
 
   given xdgConfigDirs: [path: Instantiable across Paths from Text] => (system: System)
-        =>  EnvironmentVariable["xdgConfigDirs", List[path]] =
+  =>  EnvironmentVariable["xdgConfigDirs", List[path]] =
 
-    _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+      _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+
 
   given xdgDataHome: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["xdgDataHome", path] =
+  =>  EnvironmentVariable["xdgDataHome", path] =
 
     path(_)
+
 
   given xdgConfigHome: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["xdgConfigHome", path] =
+  =>  EnvironmentVariable["xdgConfigHome", path] =
+
     path(_)
+
 
   given xdgStateHome: [path: Instantiable across Paths from Text]
-        => (EnvironmentVariable["xdgStateHome", path]) =
-    path(_)
+  => (EnvironmentVariable["xdgStateHome", path]) =
+
+      path(_)
+
 
   given xdgCacheHome: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["xdgCacheHome", path] =
+  =>  EnvironmentVariable["xdgCacheHome", path] =
 
-    path(_)
+      path(_)
+
 
   given xdgRuntimeDir: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["xdgRuntimeDir", path] =
-    path(_)
+  =>  EnvironmentVariable["xdgRuntimeDir", path] =
+
+      path(_)
+
 
   given home: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["home", path] =
-    path(_)
+  =>  EnvironmentVariable["home", path] =
+
+      path(_)
+
 
   given mail: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["mail", path] =
-    path(_)
+  =>  EnvironmentVariable["mail", path] =
+
+      path(_)
+
 
   given shell: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["shell", path] =
-    path(_)
+  =>  EnvironmentVariable["shell", path] =
+
+      path(_)
+
 
   given oldpwd: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["oldpwd", path] =
-    path(_)
+  =>  EnvironmentVariable["oldpwd", path] =
+
+      path(_)
+
 
   given windowid: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["windowid", path] =
-    path(_)
+  =>  EnvironmentVariable["windowid", path] =
+
+      path(_)
+
 
   given editor: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["editor", path] =
-    path(_)
+  =>  EnvironmentVariable["editor", path] =
+
+      path(_)
+
 
   given pager: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["pager", path] =
-    path(_)
+  =>  EnvironmentVariable["pager", path] =
+
+      path(_)
+
 
   given sshAuthSock: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["sshAuthSock", path] =
-    path(_)
+  =>  EnvironmentVariable["sshAuthSock", path] =
+
+      path(_)
+
 
   given manpager: [path: Instantiable across Paths from Text]
-        =>  EnvironmentVariable["manpager", path] =
-    path(_)
+  =>  EnvironmentVariable["manpager", path] =
+
+      path(_)
+
 
   given columns: (Int is Decodable in Text) => EnvironmentVariable["columns", Int] = _.decode[Int]
   given lang: EnvironmentVariable["lang", Text] = identity(_)

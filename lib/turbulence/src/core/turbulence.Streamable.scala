@@ -78,21 +78,25 @@ object Streamable:
     Stream.defer(recur(0L.b))
 
   given bufferedReader: [input <: ji.BufferedReader] => Tactic[StreamError]
-        =>  input is Streamable by Line =
-    reader =>
-      def recur(count: Bytes): Stream[Line] =
-        try reader.readLine() match
-          case null         => Stream()
-          case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
-        catch case err: ji.IOException =>
-          reader.close()
-          raise(StreamError(count)) yet Stream()
+  =>  input is Streamable by Line =
 
-      Stream.defer(recur(0L.b))
+      reader =>
+        def recur(count: Bytes): Stream[Line] =
+          try reader.readLine() match
+            case null         => Stream()
+            case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
+          catch case err: ji.IOException =>
+            reader.close()
+            raise(StreamError(count)) yet Stream()
+
+        Stream.defer(recur(0L.b))
+
 
   given inputStream: [input <: ji.InputStream] => Tactic[StreamError]
-        =>  input is Streamable by Data =
-    channel.contramap(jn.channels.Channels.newChannel(_).nn)
+  =>  input is Streamable by Data =
+
+      channel.contramap(jn.channels.Channels.newChannel(_).nn)
+
 
   given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Streamable by Data =
     channel =>

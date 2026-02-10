@@ -41,14 +41,16 @@ case class Monthstamp(year: Year, month: Month)
 
 object Monthstamp:
   given showable: (months: Months, separation: DateSeparation, endianness: Endianness, years: Years)
-        => Monthstamp is Showable =
-    monthstamp =>
-      endianness match
-        case Endianness.LittleEndian =>
-          t"${monthstamp.year}${separation.separator}${monthstamp.month}"
+  => Monthstamp is Showable =
 
-        case _ =>
-          t"${monthstamp.month}${separation.separator}${monthstamp.year}"
+      monthstamp =>
+        endianness match
+          case Endianness.LittleEndian =>
+            t"${monthstamp.year}${separation.separator}${monthstamp.month}"
+
+          case _ =>
+            t"${monthstamp.month}${separation.separator}${monthstamp.year}"
+
 
   given subtractable: Monthstamp is Subtractable:
     type Result = Date

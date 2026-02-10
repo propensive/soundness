@@ -135,7 +135,7 @@ trait PosixCommands:
   erased given wc: ("wc" is Intelligible to Text) = !!
 
   erased given which: [path] => (erased path is Instantiable across Paths from Text)
-               => ("which" is Intelligible to path) = !!
+  =>  ( "which" is Intelligible to path ) = !!
 
   erased given who: ("who" is Intelligible to Text) = !!
   erased given write: ("write" is Intelligible to Text) = !!

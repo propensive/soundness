@@ -41,9 +41,10 @@ import scala.quoted.*
 
 object Annotated:
   transparent inline given annotations: [topic <: StaticAnnotation, self, plane, limit]
-                           => self is Annotated by topic on plane under limit =
+  =>  self is Annotated by topic on plane under limit =
 
       ${Adversaria.general[topic, self, plane, limit]}
+
 
   trait Fields extends Annotated:
     def fields: Map[Text, Set[Operand]]

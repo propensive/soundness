@@ -40,8 +40,9 @@ import rudiments.*
 
 object Commensurable:
   inline given numeric: [operand <: Long | Int | Double | Char | Byte | Short | Float]
-        =>  Boolean is Commensurable:
-    type Contrast = operand
+  =>  Boolean is Commensurable:
+
+      type Contrast = operand
 
 
     inline def compare

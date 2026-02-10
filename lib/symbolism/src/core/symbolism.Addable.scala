@@ -73,13 +73,16 @@ object Addable:
   given byte: Byte is Addable by Byte to Byte = Addable:
     (augend, addend) => (augend + addend).toByte
 
-  given concatenable: [left, right] => (concatenable: left is Concatenable by right)
-        => left is Addable:
-    type Self = left
-    type Operand = right
-    type Result = left | right
 
-    def add(left: left, right: right): left | right = concatenable.concat(left, right)
+  given concatenable: [left, right] => (concatenable: left is Concatenable by right)
+  =>  left is Addable:
+
+      type Self = left
+      type Operand = right
+      type Result = left | right
+
+      def add(left: left, right: right): left | right = concatenable.concat(left, right)
+
 
 trait Addable extends Typeclass, Operable, Resultant:
   type Augend = Self

@@ -54,32 +54,32 @@ import vacuous.*
 
 package httpServers:
   given stdlib: [port <: (80 | 443 | 8080 | 8000)]
-        => (Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable)
-        =>  WebserverErrorPage
-        =>  Http is Protocolic:
+  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
+  =>  WebserverErrorPage
+  =>  Http is Protocolic:
 
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
+      type Transport = TcpPort of port
+      type Self = Http
+      type Server = Service
+      type Request = HttpConnection
+      type Response = Http.Response
 
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number, true).handle(lambda)
+      def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
+        HttpServer(port.number, true).handle(lambda)
 
   given stdlibPublic: [port <: (80 | 443 | 8080 | 8000)]
-        => (Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable)
-        =>  WebserverErrorPage
-        =>  Http is Protocolic:
+  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
+  =>  WebserverErrorPage
+  =>  Http is Protocolic:
 
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
+      type Transport = TcpPort of port
+      type Self = Http
+      type Server = Service
+      type Request = HttpConnection
+      type Response = Http.Response
 
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number, false).handle(lambda)
+      def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
+        HttpServer(port.number, false).handle(lambda)
 
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
 

@@ -62,7 +62,7 @@ object Path:
     type Limit = %.type
 
   given decodable: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
-        =>  (Path on filesystem) is Decodable in Text =
+  =>  (Path on filesystem) is Decodable in Text =
 
       text =>
         val root = radical.encode(radical.decode(text))
@@ -72,7 +72,7 @@ object Path:
         Path.of(root, parts2.reverse.map(filesystem.unescape(_))*)
 
   given decodable2: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
-        =>  (Path on filesystem under root) is Decodable in Text =
+  =>  (Path on filesystem under root) is Decodable in Text =
 
       text =>
         val root = radical.encode(radical.decode(text))
@@ -85,15 +85,17 @@ object Path:
     path.descent.prim.or(path.root)
 
   given trustedInstantiable: [filesystem: Filesystem]
-        =>  (radical: Tactic[PathError] ?=> Radical on filesystem)
-        =>  (Path on filesystem) is Instantiable across Paths from Paths.Trusted =
-    given Radical on filesystem = radical(using strategies.throwUnsafely)
-    _.text.decode[Path on filesystem]
+  =>  ( radical: Tactic[PathError] ?=> Radical on filesystem )
+  =>  (Path on filesystem) is Instantiable across Paths from Paths.Trusted =
+
+      given Radical on filesystem = radical(using strategies.throwUnsafely)
+      _.text.decode[Path on filesystem]
 
   given instantiable: [filesystem: Filesystem]
-        =>  Radical on filesystem
-        =>  (Path on filesystem) is Instantiable across Paths from Text =
-    _.decode[Path on filesystem]
+  =>  Radical on filesystem
+  =>  (Path on filesystem) is Instantiable across Paths from Text =
+
+      _.decode[Path on filesystem]
 
   def unplatformed[root, topic <: Tuple](root: Text, descent: Text*): Path of topic under root =
     new Path(root, descent*):
@@ -119,24 +121,28 @@ object Path:
     path => Message(path.encode)
 
   given generic: [filesystem: Filesystem, path <: Path on filesystem]
-        => path is Abstractable across Paths to Text =
-    _.encode
+  => path is Abstractable across Paths to Text =
+
+      _.encode
+
 
   private def conversion[from, to](lambda: from => to): Conversion[from, to] = lambda(_)
 
   inline given convert: [topic, root, filesystem, path <: Path of topic under root]
-         =>  Conversion[path, Path of topic on filesystem under root] =
-    conversion(_.on[filesystem])
+  =>  Conversion[path, Path of topic on filesystem under root] =
+
+      conversion(_.on[filesystem])
 
 
   transparent inline given quotient: [filesystem, root, path <: Path on filesystem under root]
-                     => (radical: root is Radical on filesystem)
-                     => path is Quotient =
-    ( path =>
-        if path.empty then None
-        else if path.descent.length == 1 then Some((radical.decode(path.root), path.descent.head))
-        else Some((radical.decode(path.root), Relative(0, path.descent*))) )
-    : path is Quotient of root over (Relative on filesystem) | Text
+  =>  ( radical: root is Radical on filesystem )
+  =>  path is Quotient =
+
+      ( path =>
+          if path.empty then None
+          else if path.descent.length == 1 then Some((radical.decode(path.root), path.descent.head))
+          else Some((radical.decode(path.root), Relative(0, path.descent*))) )
+      : path is Quotient of root over (Relative on filesystem) | Text
 
 
 case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:

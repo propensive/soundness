@@ -58,9 +58,12 @@ object Digestible extends Derivable[Digestible]:
           int.digest(digestion, index)
           context.digest(digestion, variant)
 
+
   given optional: [digestible: Digestible] => util.NotGiven[Unset.type <:< digestible]
-        =>  Optional[digestible] is Digestible =
-    (acc, value) => value.let(digestible.digest(acc, _))
+  =>  Optional[digestible] is Digestible =
+
+      (acc, value) => value.let(digestible.digest(acc, _))
+
 
   given list: [list <: List, value: Digestible] => list[value] is Digestible =
     (digestion, list) => list.each(value.digest(digestion, _))
@@ -74,11 +77,14 @@ object Digestible extends Derivable[Digestible]:
   given iarray: [value: Digestible] => IArray[value] is Digestible =
     (digestion, iarray) => iarray.each(value.digest(digestion, _))
 
+
   given map: [digestible: Digestible, digestible2: Digestible]
-        =>  Map[digestible, digestible2] is Digestible =
-    (digestion, map) => map.each: (key, value) =>
-      digestible.digest(digestion, key)
-      digestible2.digest(digestion, value)
+  =>  Map[digestible, digestible2] is Digestible =
+
+      (digestion, map) => map.each: (key, value) =>
+        digestible.digest(digestion, key)
+        digestible2.digest(digestion, value)
+
 
   given stream: [value: Digestible] => Stream[value] is Digestible =
     (digestion, iterable) => iterable.each(value.digest(digestion, _))

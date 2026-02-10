@@ -75,22 +75,21 @@ object Relative:
     new Conversion[from, to]:
       def apply(from: from): to = fn(from)
 
-  given decodable: [filesystem: Filesystem]
-        =>  (Relative on filesystem) is Decodable in Text = text =>
-    if text == filesystem.self then ? else
-      text.cut(filesystem.separator).pipe: parts =>
-        (if parts.last == t"" then parts.init else parts).pipe: parts =>
-          if parts.nil then Relative(0) else
-            (if parts.head == filesystem.self then parts.tail else parts).pipe: parts =>
-              val ascent = parts.takeWhile(_ == filesystem.parent).length
-              val descent = parts.drop(ascent).reverse
+  given decodable: [filesystem: Filesystem] => (Relative on filesystem) is Decodable in Text =
+    text =>
+      if text == filesystem.self then ? else
+        text.cut(filesystem.separator).pipe: parts =>
+          (if parts.last == t"" then parts.init else parts).pipe: parts =>
+            if parts.nil then Relative(0) else
+              (if parts.head == filesystem.self then parts.tail else parts).pipe: parts =>
+                val ascent = parts.takeWhile(_ == filesystem.parent).length
+                val descent = parts.drop(ascent).reverse
 
-              Relative(ascent, descent*)
+                Relative(ascent, descent*)
 
 
   inline given conversion: [topic, ascent <: Int, filesystem]
-               =>  Conversion[Relative of topic under ascent,
-                              Relative of topic under ascent on filesystem] =
+  =>  Conversion[Relative of topic under ascent, Relative of topic under ascent on filesystem] =
 
       conversion(_.on[filesystem])
 
@@ -108,24 +107,25 @@ object Relative:
         . join(ascender*relative.ascent, filesystem.separator, t"")
 
   given showable: [filesystem: Filesystem, relative <: Relative on filesystem]
-  => relative is Showable =
+  =>  relative is Showable =
        _.encode
 
   transparent inline given quotient: [filesystem, relative <: (Relative on filesystem) | Text]
-                           => relative is Quotient =
-    relative0 =>
-      relative0 match
-        case _: Relative =>
-          val relative = relative0.asInstanceOf[Relative on filesystem]
+  => relative is Quotient =
 
-          relative.descent match
-            case Nil | _ :: Nil => None
-            case _ :: _ :: Nil  => Some((relative.descent(1), relative.descent(0)))
+      relative0 =>
+        relative0 match
+          case _: Relative =>
+            val relative = relative0.asInstanceOf[Relative on filesystem]
 
-            case _ =>
-              Some((relative.descent.last, Relative(0, relative.descent.init*)))
+            relative.descent match
+              case Nil | _ :: Nil => None
+              case _ :: _ :: Nil  => Some((relative.descent(1), relative.descent(0)))
 
-        case _ => None
+              case _ =>
+                Some((relative.descent.last, Relative(0, relative.descent.init*)))
+
+          case _ => None
 
   : relative is Quotient of Text over (Relative on filesystem) | Text
 

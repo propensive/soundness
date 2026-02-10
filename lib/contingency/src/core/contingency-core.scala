@@ -51,9 +51,12 @@ package strategies:
   given throwSafely: [error <: Exception: CanThrow, success] => ThrowTactic[error, success] =
     ThrowTactic()
 
+
   given mitigation: [error <: Exception: Tactic, error2 <: Exception: Mitigable to error]
-        =>  Tactic[error2] =
-    error.contramap(error2.mitigate(_))
+  =>  Tactic[error2] =
+
+      error.contramap(error2.mitigate(_))
+
 
   given fatalErrors: [exception <: Exception: Fatal] => Tactic[exception]:
     given diagnostics: Diagnostics = errorDiagnostics.stackTraces

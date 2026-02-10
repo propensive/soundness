@@ -74,20 +74,22 @@ object Sheet:
   private enum State:
     case Fresh, Quoted, DoubleQuoted
 
+
   given abstractable: (CharEncoder, DsvFormat)
-        => Sheet is Abstractable across HttpStreams to HttpStreams.Content =
-    new Abstractable:
-      type Self = Sheet
-      type Domain = HttpStreams
-      type Result = HttpStreams.Content
+  => Sheet is Abstractable across HttpStreams to HttpStreams.Content =
 
-      def genericize(dsv: Sheet): HttpStreams.Content =
-        val mediaType: Text =
-          dsv.format.let(_.delimiter) match
-            case '\t' => t"text/tab-separated-values"
-            case _    => t"text/csv"
+      new Abstractable:
+        type Self = Sheet
+        type Domain = HttpStreams
+        type Result = HttpStreams.Content
 
-        (mediaType, dsv.stream[Text].map(_.data))
+        def genericize(dsv: Sheet): HttpStreams.Content =
+          val mediaType: Text =
+            dsv.format.let(_.delimiter) match
+              case '\t' => t"text/tab-separated-values"
+              case _    => t"text/csv"
+
+          (mediaType, dsv.stream[Text].map(_.data))
 
 
   given tabular: Sheet is Tabular[Text]:

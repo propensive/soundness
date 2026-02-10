@@ -56,9 +56,12 @@ object CodlDoc:
   given showable: (printer: CodlPrinter) => CodlDoc is Showable = printer.serialize(_)
   given similarity: Similarity[CodlDoc] = _.schema == _.schema
 
+
   given aggregable: [subject: CodlSchematic] => Tactic[ParseError]
-        => (CodlDoc of subject) is Aggregable by Text =
-    subject.schema().parse(_).asInstanceOf[CodlDoc of subject]
+  => (CodlDoc of subject) is Aggregable by Text =
+
+      subject.schema().parse(_).asInstanceOf[CodlDoc of subject]
+
 
   given aggregable2: Tactic[ParseError] => CodlDoc is Aggregable by Text = Codl.parse(_)
 

@@ -46,9 +46,9 @@ import doms.html.whatwg, whatwg.*
 
 object Formulaic extends ProductDerivable[Formulaic]:
   given elicitable: [value]
-        => (elicitable: value is Elicitable)
-        => (renderable: elicitable.Operand is Renderable in Phrasing)
-        =>  value is Formulaic:
+  =>  ( elicitable: value is Elicitable )
+  =>  ( renderable: elicitable.Operand is Renderable in Phrasing )
+  =>  value is Formulaic:
 
     def fields
       ( pointer:     Pointer,

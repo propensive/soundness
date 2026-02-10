@@ -81,9 +81,12 @@ object Schematic:
   given set: [value: Schematic in JsonSchema] => Set[value] is Schematic in JsonSchema =
     () => JsonSchema.Array(items = value.schema())
 
+
   given map: [key: Encodable in Text, value: Schematic in JsonSchema]
-        =>  Map[key, value] is Schematic in JsonSchema =
-    () => JsonSchema.Object(additionalProperties = true)
+  =>  Map[key, value] is Schematic in JsonSchema =
+
+      () => JsonSchema.Object(additionalProperties = true)
+
 
 trait Schematic extends Typeclass, Formal:
   def schema(): Form

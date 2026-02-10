@@ -42,17 +42,23 @@ import vacuous.*
 
 object Extractable:
   given decodable: [text <: Text, result]
-        => (decodable: Tactic[Exception] ?=> result is Decodable in Text)
-        =>  text is Extractable to result =
-     value => safely(decodable(using strategies.throwUnsafely).decoded(value))
+  =>  ( decodable: Tactic[Exception] ?=> result is Decodable in Text )
+  =>  text is Extractable to result =
+
+      value => safely(decodable(using strategies.throwUnsafely).decoded(value))
+
 
   given optional: [result: Extractable]
-        =>  Optional[result] is Extractable to result.Result =
-    value => value.let(result.extract(_))
+  =>  Optional[result] is Extractable to result.Result =
+
+      value => value.let(result.extract(_))
+
 
   given irrefutable: [result] => (irrefutable: Text is Irrefutable to result)
-        =>  String is Irrefutable to result =
-    value => irrefutable.unapply(value.tt)
+  =>  String is Irrefutable to result =
+
+      value => irrefutable.unapply(value.tt)
+
 
   given textChar: [text <: Text] => text is Extractable to Char =
     text => if text.s.length == 1 then text.s.head else Unset
@@ -132,22 +138,27 @@ object Extractable:
   given doubleFloat: [double <: Double] => double is Extractable to Float =
     double => double.toFloat.unless(value.toDouble != double)
 
-  given valueOf: [enumeration <: Enum: Mirror.SumOf as mirror, text <: Text]
-        =>  text is Extractable to enumeration =
-    text =>
-      import Selectable.reflectiveSelectable
 
-      mirror match
-        case mirror: { def valueOf(name: String): enumeration } @unchecked =>
-          try mirror.valueOf(text.s) catch case error: Exception => Unset
+  given valueOf: [enumeration <: Enum: Mirror.SumOf as mirror, text <: Text]
+  =>  text is Extractable to enumeration =
+
+      text =>
+        import Selectable.reflectiveSelectable
+
+        mirror match
+          case mirror: { def valueOf(name: String): enumeration } @unchecked =>
+            try mirror.valueOf(text.s) catch case error: Exception => Unset
+
 
   given fromOrdinal: [enumeration <: Enum: Mirror.SumOf as mirror, int <: Int]
-        =>  int is Extractable to enumeration =
-    ordinal =>
-      import Selectable.reflectiveSelectable
-      mirror match
-        case mirror: { def fromOrdinal(ordinal: Int): enumeration } @unchecked =>
-          try mirror.fromOrdinal(ordinal) catch case error: Exception => Unset
+  =>  int is Extractable to enumeration =
+
+      ordinal =>
+        import Selectable.reflectiveSelectable
+        mirror match
+          case mirror: { def fromOrdinal(ordinal: Int): enumeration } @unchecked =>
+            try mirror.fromOrdinal(ordinal) catch case error: Exception => Unset
+
 
 trait Extractable extends Typeclass, Resultant:
   def extract(value: Self): Optional[Result]

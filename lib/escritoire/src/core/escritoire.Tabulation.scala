@@ -46,10 +46,12 @@ import language.experimental.pureFunctions
 
 object Tabulation:
   given printable: [text: {Textual as textual, Printable as printable}]
-        => (Text is Measurable, TableStyle, Attenuation)
-        =>  Tabulation[text] is Printable =
-    (tabulation, termcap) =>
-      tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
+  =>  ( Text is Measurable, TableStyle, Attenuation )
+  =>  Tabulation[text] is Printable =
+
+      (tabulation, termcap) =>
+        tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
+
 
 abstract class Tabulation[text: ClassTag]():
   type Row

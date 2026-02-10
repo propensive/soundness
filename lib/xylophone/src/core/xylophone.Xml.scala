@@ -110,12 +110,12 @@ object Xml extends Tag.Container
 
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
-        =>  Tactic[ParseError]
-        =>  (Xml of content) is Aggregable by Text =
+  =>  Tactic[ParseError]
+  =>  (Xml of content) is Aggregable by Text =
 
-    input =>
-      val root = Tag.root(content.reification().map(_.tt).to(Set))
-      parse(input.iterator, root).of[content]
+      input =>
+        val root = Tag.root(content.reification().map(_.tt).to(Set))
+        parse(input.iterator, root).of[content]
 
   given aggregable2: (schema: XmlSchema) => Tactic[ParseError] => Xml is Aggregable by Text =
     input => parse(input.iterator, schema.generic, headers = false)
@@ -277,9 +277,12 @@ object Xml extends Tag.Container
   given string: [label >: "#text" <: Label] => Conversion[String, Xml of label] =
     string => TextNode(string.tt).of[label]
 
+
   given conversion3: [label <: Label, content >: label <: Label]
-        =>  Conversion[Xml of label, Xml of content] =
-    _.of[content]
+  =>  Conversion[Xml of label, Xml of content] =
+
+      _.of[content]
+
 
   given comment: [content <: Label] =>  Conversion[Comment, Xml of content] =
     _.of[content]
@@ -288,9 +291,10 @@ object Xml extends Tag.Container
     value.encoded(_)
 
   given sequences: [nodal, xml <: Xml] => (conversion: Conversion[nodal, xml])
-        =>  Conversion[Seq[nodal], Seq[xml]] =
-    (seq: Seq[nodal]) =>
-      seq.map(conversion(_))
+  =>  Conversion[Seq[nodal], Seq[xml]] =
+
+      (seq: Seq[nodal]) =>
+        seq.map(conversion(_))
 
   enum Issue extends Format.Issue:
     case BadInsertion
@@ -313,24 +317,30 @@ object Xml extends Tag.Container
     case InvalidAttributeUse(attribute: Text, element: Text)
 
     def describe: Message = this match
-      case BadInsertion                   =>  m"a value cannot be inserted into XML at this point"
-      case ExpectedMore                   =>  m"the content ended prematurely"
-      case BadDocument                    =>  m"the document did not contain a single root tag"
-      case UnquotedAttribute              =>  m"the attribute value must be single- or double-quoted"
-      case InvalidTag(name)               =>  m"<$name> is not a valid tag"
-      case InvalidTagStart(prefix)        =>  m"there is no valid tag whose name starts $prefix"
-      case DuplicateAttribute(name)       =>  m"the attribute $name already exists on this tag"
-      case InadmissibleTag(name, parent)  =>  m"<$name> cannot be a child of <$parent>"
-      case OnlyWhitespace(char)           =>  m"the character $char was found where only whitespace is permitted"
-      case Unexpected(char)               =>  m"the character $char was not expected"
-      case UnknownEntity(name)            =>  m"the entity &$name is not defined"
-      case ForbiddenUnquoted(char)        =>  m"the character $char is forbidden in an unquoted attribute"
-      case MismatchedTag(open, close)     =>  m"the tag </$close> did not match the opening tag <$open>"
-      case UnopenedTag(close)             =>  m"the tag </$close> has no corresponding opening tag"
-      case Incomplete(tag)                =>  m"the content ended while the tag <$tag> was left open"
-      case UnknownAttribute(name)         =>  m"$name is not a recognized attribute"
-      case UnknownAttributeStart(name)    =>  m"there is no valid attribute whose name starts $name"
-      case InvalidAttributeUse(name, tag) =>  m"the attribute $name cannot be used on the tag <$tag>"
+      case BadInsertion                   => m"a value cannot be inserted into XML at this point"
+      case ExpectedMore                   => m"the content ended prematurely"
+      case BadDocument                    => m"the document did not contain a single root tag"
+      case UnquotedAttribute              => m"the attribute value must be single- or double-quoted"
+      case InvalidTag(name)               => m"<$name> is not a valid tag"
+      case InvalidTagStart(prefix)        => m"there is no valid tag whose name starts $prefix"
+      case DuplicateAttribute(name)       => m"the attribute $name already exists on this tag"
+      case InadmissibleTag(name, parent)  => m"<$name> cannot be a child of <$parent>"
+      case Unexpected(char)               => m"the character $char was not expected"
+      case UnknownEntity(name)            => m"the entity &$name is not defined"
+      case UnopenedTag(close)             => m"the tag </$close> has no corresponding opening tag"
+      case Incomplete(tag)                => m"the content ended while the tag <$tag> was left open"
+      case UnknownAttribute(name)         => m"$name is not a recognized attribute"
+      case UnknownAttributeStart(name)    => m"there is no valid attribute whose name starts $name"
+      case InvalidAttributeUse(name, tag) => m"the attribute $name cannot be used on the tag <$tag>"
+
+      case MismatchedTag(open, close) =>
+        m"the tag </$close> did not match the opening tag <$open>"
+
+      case ForbiddenUnquoted(char) =>
+        m"the character $char is forbidden in an unquoted attribute"
+
+      case OnlyWhitespace(char) =>
+        m"the character $char was found where only whitespace is permitted"
 
   case class Position(line: Ordinal, column: Ordinal) extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
@@ -521,11 +531,20 @@ object Xml extends Tag.Container
     @tailrec
     def hexEntity(mark: Mark, value: Int)(using Cursor.Held): Optional[Text] =
       cursor.lay(fail(ExpectedMore)):
-        case digit if digit.isDigit         => cursor.next() yet hexEntity(mark, 16*value + (digit - '0'))
-        case letter if 'a' <= letter <= 'f' => cursor.next() yet hexEntity(mark, 16*value + (letter - 87))
-        case letter if 'A' <= letter <= 'F' => cursor.next() yet hexEntity(mark, 16*value + (letter - 55))
-        case ';'                            => cursor.next() yet value.unicode
-        case chr                            => Unset
+        case digit if digit.isDigit         =>
+          cursor.next() yet hexEntity(mark, 16*value + (digit - '0'))
+
+        case letter if 'a' <= letter <= 'f' =>
+          cursor.next() yet hexEntity(mark, 16*value + (letter - 87))
+
+        case letter if 'A' <= letter <= 'F' =>
+          cursor.next() yet hexEntity(mark, 16*value + (letter - 55))
+
+        case ';' =>
+          cursor.next() yet value.unicode
+
+        case chr =>
+          Unset
 
     @tailrec
     def decimalEntity(mark: Mark, value: Int): Optional[Text] = cursor.lay(fail(ExpectedMore)):

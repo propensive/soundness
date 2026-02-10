@@ -71,7 +71,7 @@ object Plutocrat:
       apply(valueOf[currency], value).in[currency]
 
     given showable: [currency: Currency] => (currencyStyle: CurrencyStyle)
-          =>  Money in currency is Showable =
+    =>  Money in currency is Showable =
 
       money =>
         val units = (money.value/currency.modulus).toString.show
@@ -80,36 +80,40 @@ object Plutocrat:
         currencyStyle.format(currency.code, currency.symbol, units, subunit)
 
     given addable: [currency <: Label]
-          =>  (Money in currency) is Addable by (Money in currency) to (Money in currency) =
-      (left, right) => Money(left.currency, left.value + right.value).in[currency]
+    =>  (Money in currency) is Addable by (Money in currency) to (Money in currency) =
+        (left, right) =>
+          Money(left.currency, left.value + right.value).in[currency]
 
     given subtractable: [currency <: Label]
-          =>  (Money in currency) is Subtractable by (Money in currency) to (Money in currency) =
-      (left, right) => Money(left.currency, left.value - right.value).in[currency]
+    =>  (Money in currency) is Subtractable by (Money in currency) to (Money in currency) =
+
+        (left, right) =>
+          Money(left.currency, left.value - right.value).in[currency]
 
     given multiplicable: [currency <: Label]
-          =>  (Money in currency) is Multiplicable by Double to (Money in currency) =
-      (left, right) =>
-        Money(left.currency, left.value*right).in[currency]
+    =>  (Money in currency) is Multiplicable by Double to (Money in currency) =
+
+        (left, right) =>
+          Money(left.currency, left.value*right).in[currency]
 
     given divisible: [currency <: Label, money <: (Money in currency)]
-          => money is Divisible:
-      type Self = money
-      type Operand = Double
-      type Result = Money in currency
+    => money is Divisible:
+        type Self = money
+        type Operand = Double
+        type Result = Money in currency
 
-      def divide(left: money, right: Double): Money in currency =
-        Money(left.currency, left.value/right).in[currency]
+        def divide(left: money, right: Double): Money in currency =
+          Money(left.currency, left.value/right).in[currency]
 
-    given divisible2: [currency <: Label,
-                       left <: Money in currency,
-                       right <: Money in currency]
-          => left is Divisible:
-      type Self = left
-      type Operand = right
-      type Result = Double
+    given divisible2: [currency <: Label, left <: Money in currency, right <: Money in currency]
+    => left is Divisible:
 
-      def divide(left: left, right: right): Double = left.value.toDouble/right.value.toDouble
+        type Self = left
+        type Operand = right
+        type Result = Double
+
+        def divide(left: left, right: right): Double = left.value.toDouble/right.value.toDouble
+
 
     given divisible3: [currency <: Label, money <: Money in currency] => money is Divisible:
       type Self = money

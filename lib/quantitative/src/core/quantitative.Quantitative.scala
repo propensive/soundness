@@ -110,41 +110,47 @@ object Quantitative extends Quantitative2:
     given numeric: [units <: Measure] => Numeric[Quantity[units]] = summon[Numeric[Double]]
 
     given genericDuration: [units <: Measure: Normalizable to Seconds[1]]
-          =>  Quantity[units] is Abstractable across Durations to Long =
-      quantity => (quantity.normalize*1_000_000_000.0).toLong
+    =>  Quantity[units] is Abstractable across Durations to Long =
+
+        quantity => (quantity.normalize*1_000_000_000.0).toLong
 
 
     given specificDuration: [units <: Measure: Normalizable to Seconds[1]]
-          =>  Quantity[units] is Instantiable across Durations from Long =
-      long => Quantity[units](long*units.ratio()/1_000_000_000.0)
+    =>  Quantity[units] is Instantiable across Durations from Long =
+        long => Quantity[units](long*units.ratio()/1_000_000_000.0)
 
-    transparent inline given addable: [left <: Measure,
-                                       quantity <: Quantity[left],
-                                       right <: Measure,
-                                       quantity2 <: Quantity[right]]
-                             =>  quantity is Addable by quantity2 =
-      ${Quantitative.addTypeclass[left, quantity, right, quantity2]}
+    transparent inline given addable: [ left <: Measure,
+                                        quantity <: Quantity[left],
+                                        right <: Measure,
+                                        quantity2 <: Quantity[right] ]
+    =>  quantity is Addable by quantity2 =
 
-    inline given checkable: [left <: Measure,
-                             quantity <: Quantity[left],
-                             right <: Measure,
-                             quantity2 <: Quantity[right]]
-                 =>  quantity is Checkable against quantity2 =
-      ${Quantitative.checkable[left, quantity, right, quantity2]}
+        ${Quantitative.addTypeclass[left, quantity, right, quantity2]}
 
-    transparent inline given subtractable: [left <: Measure,
-                                            quantity <: Quantity[left],
-                                            right <: Measure,
-                                            quantity2 <: Quantity[right]]
-                             =>  quantity is Subtractable by quantity2 =
-      ${Quantitative.subTypeclass[left, quantity, right, quantity2]}
+    inline given checkable: [ left <: Measure,
+                              quantity <: Quantity[left],
+                              right <: Measure,
+                              quantity2 <: Quantity[right] ]
+    =>  quantity is Checkable against quantity2 =
 
-    transparent inline given multiplicable: [left <: Measure,
-                                             multiplicand <: Quantity[left],
+        ${Quantitative.checkable[left, quantity, right, quantity2]}
+
+    transparent inline given subtractable: [ left <: Measure,
+                                             quantity <: Quantity[left],
                                              right <: Measure,
-                                             multiplier <: Quantity[right]]
-                             =>  multiplicand is Multiplicable by multiplier =
-      ${Quantitative.mulTypeclass[left, multiplicand, right, multiplier]}
+                                             quantity2 <: Quantity[right] ]
+    =>  quantity is Subtractable by quantity2 =
+
+        ${Quantitative.subTypeclass[left, quantity, right, quantity2]}
+
+    transparent inline given multiplicable: [ left <: Measure,
+                                              multiplicand <: Quantity[left],
+                                              right <: Measure,
+                                              multiplier <: Quantity[right] ]
+    =>  multiplicand is Multiplicable by multiplier =
+
+        ${Quantitative.mulTypeclass[left, multiplicand, right, multiplier]}
+
 
     given negatable: [left <: Measure, operand <: Quantity[left]] => operand is Negatable:
       type Self = operand
@@ -152,20 +158,22 @@ object Quantitative extends Quantitative2:
       def negate(operand: Self): Quantity[left] = -operand
 
     given multiplicable2: [left <: Measure, multiplicand <: Quantity[left]]
-          =>  multiplicand is Multiplicable:
-      type Self = multiplicand
-      type Operand = Double
-      type Result = Quantity[left]
+    =>  multiplicand is Multiplicable:
 
-      inline def multiply(left: multiplicand, right: Double): Quantity[left] = left*right
+        type Self = multiplicand
+        type Operand = Double
+        type Result = Quantity[left]
+
+        inline def multiply(left: multiplicand, right: Double): Quantity[left] = left*right
 
     given multiplicable3: [right <: Measure, multiplier <: Quantity[right]]
-          =>  Double is Multiplicable:
-      type Self = Double
-      type Operand = multiplier
-      type Result = Quantity[right]
+    =>  Double is Multiplicable:
 
-      inline def multiply(left: Double, right: multiplier): Quantity[right] = left*right
+        type Self = Double
+        type Operand = multiplier
+        type Result = Quantity[right]
+
+        inline def multiply(left: Double, right: multiplier): Quantity[right] = left*right
 
     given multiplicable4: [right <: Measure, multiplier <: Quantity[right]] => Int is Multiplicable:
       type Self = Int
@@ -175,27 +183,35 @@ object Quantitative extends Quantitative2:
       inline def multiply(left: Int, right: multiplier): Quantity[right] = left*right
 
     given multiplicable5: [left <: Measure, multiplicand <: Quantity[left]]
-          => multiplicand is Multiplicable:
-      type Self = multiplicand
-      type Operand = Int
-      type Result = Quantity[left]
+    => multiplicand is Multiplicable:
 
-      inline def multiply(left: multiplicand, right: Int): Quantity[left] = left*right
+        type Self = multiplicand
+        type Operand = Int
+        type Result = Quantity[left]
 
-    transparent inline given divisible: [left <: Measure,
-                                         dividend <: Quantity[left],
-                                         right <: Measure,
-                                         divisor <: Quantity[right]]
-                             =>  dividend is Divisible by divisor =
-      ${Quantitative.divTypeclass[left, dividend, right, divisor]}
+        inline def multiply(left: multiplicand, right: Int): Quantity[left] = left*right
+
+
+    transparent inline given divisible: [ left <: Measure,
+                                          dividend <: Quantity[left],
+                                          right <: Measure,
+                                          divisor <: Quantity[right] ]
+    =>  dividend is Divisible by divisor =
+
+        ${Quantitative.divTypeclass[left, dividend, right, divisor]}
+
 
     transparent inline given divisible2: [right <: Measure, divisor <: Quantity[right]]
-                             =>  Double is Divisible by divisor =
-      ${Quantitative.divTypeclass2[right, divisor]}
+    =>  Double is Divisible by divisor =
+
+        ${Quantitative.divTypeclass2[right, divisor]}
+
 
     transparent inline given divisible3: [right <: Measure, divisor <: Quantity[right]]
-                             =>  Int is Divisible by divisor =
-      ${Quantitative.divTypeclass3[right, divisor]}
+    =>  Int is Divisible by divisor =
+
+        ${Quantitative.divTypeclass3[right, divisor]}
+
 
     given divisibleDouble: [left <: Measure, dividend <: Quantity[left]] => dividend is Divisible:
       type Self = dividend
