@@ -39,8 +39,8 @@ given quantaDecoder: Tactic[JsonError] => HoursAndMinutes is Decodable in Json =
   summon[Int is Decodable in Json].map(Quanta(_))
 
 given (Tactic[ParseError], Tactic[JsonError])
-      => (decodable: Text is Decodable in Json)
-      =>  Route is Decodable in Json =
+=>  ( decodable: Text is Decodable in Json )
+=>  Route is Decodable in Json =
   decodable.map: points =>
     Route:
       Json.parse(points).as[List[List[Double]]].filter(_.length == 2).map: point =>
