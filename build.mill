@@ -64,6 +64,7 @@ object settings:
     "-language:experimental.genericNumberLiterals",
     "-language:experimental.into",
     "-language:experimental.erasedDefinitions",
+    // "-language:experimental.packageObjectValues",
     "-language:implicitConversions",
     "-language:experimental.saferExceptions",
     "-language:experimental.namedTypeArguments"
@@ -515,6 +516,10 @@ object exoskeleton extends Library:
 object feudalism extends Library:
   object core extends Component(rudiments.core)
   object test extends Tests(core)
+
+object frontier extends Library:
+  object core extends Component(rudiments.core, dendrology.tree, escapade.core)
+  object test extends Tests(core, scintillate.servlet, jacinta.schema)
 
 object fulminate extends Library:
   object core extends Component(anticipation.css, anticipation.http, symbolism.core, anticipation.print, anticipation.http, anticipation.log, proscenium.core):
