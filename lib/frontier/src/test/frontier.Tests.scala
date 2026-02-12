@@ -30,87 +30,46 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package fulminate
+package frontier
 
-import scala.compiletime.*
-import scala.quoted.*
+import soundness.*
 
 import anticipation.*
-import proscenium.*
+import contingency.*
+import zephyrine.*
+import telekinesis.*
+import prepositional.*
 
-export Fulminate.Diagnostics
+import autopsies.contrastExpectations
 
-package errorDiagnostics:
-  given empty: Diagnostics = Diagnostics.omit
-  given stackTraces: Diagnostics = Diagnostics.capture
-
-def panic(message: Message): Nothing = throw Panic(message)
-
-def halt(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
-: Nothing =
-
-    import quotes.reflect.*
-    import dotty.tools.dotc.config.Settings.Setting.value
-
-    val useColor: Boolean = quotes match
-      case quotes: runtime.impl.QuotesImpl =>
-        value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
-
-      case _ =>
-        false
-
-    val esc = 27.toChar
-
-    val text =
-      if useColor
-      then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
-      else s"${summon[Realm].name}: ${message.text}"
-
-    if pos == null then report.errorAndAbort(text) else report.errorAndAbort(text, pos)
+import missingContext.explain
 
 
-def warn(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
-: Unit =
+object Delta:
+  ()
 
-    import quotes.reflect.*
-    import dotty.tools.dotc.config.Settings.Setting.value
+class Alpha()
+class Beta()
+class Gamma()
+class Delta()
 
-    val esc = 27.toChar
-
-    val useColor: Boolean = quotes match
-      case quotes: runtime.impl.QuotesImpl =>
-        value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
-
-      case _ =>
-        false
-
-    val text =
-      if useColor
-      then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
-      else s"${summon[Realm].name}: ${message.text}"
-
-    if pos == null then report.warning(text) else report.warning(text, pos)
+object Gamma:
+  given gamma: Gamma = Gamma()
 
 
-extension (inline context: StringContext)
-  transparent inline def m[param](inline subs: param = Zero): Message =
-    inline subs.asMatchable match
-      case tuple: Tuple =>
-        import unsafeExceptions.canThrowAny
+object Beta:
+  given beta: Delta => Beta = Beta()
+  ()
 
-        Message
-          ( context.parts.map(_.tt).map(TextEscapes.escape(_)).to(List),
-            Message.make[tuple.type](tuple, Nil) )
+trait Alpha2:
+  given alpha2: Delta => Alpha = Alpha()
 
-      case other =>
-        import unsafeExceptions.canThrowAny
+object Alpha extends Alpha2:
+  given alpha: (Beta, Gamma) => Alpha = Alpha()
 
-        Message
-          ( context.parts.map(_.tt).map(TextEscapes.escape(_)).to(List),
-            List(infer[(? >: other.type) is Communicable].message(other)) )
 
-extension (inline context: StringContext)
-  inline def realm(): Realm = ${Fulminate.realm('context)}
+def go()(using Alpha): Unit = ()
 
-extension [communicable: Communicable](value: communicable)
-  def communicate: Message = communicable.message(value)
+object Tests extends Suite(m"Frontier tests"):
+  def run(response: Http.Response): Unit =
+    response.receive[Json]

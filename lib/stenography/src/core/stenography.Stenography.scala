@@ -42,6 +42,12 @@ object Stenography:
 
   def typename[typename <: AnyKind: Type]: Macro[Text] = Expr(name[typename])
 
+  def name(using Quotes)(typeRepr: quotes.reflect.TypeRepr): Text =
+    import quotes.reflect.*
+    typeRepr.asType match
+      case '[tpe] => name[tpe]
+
+
   def name[typename <: AnyKind: Type](using Quotes): Text =
     import quotes.reflect.*
     val outer = quotes.absolve match
