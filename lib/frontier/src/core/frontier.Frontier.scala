@@ -49,7 +49,7 @@ object Frontier:
   def explain[target: Type]: Macro[target] =
     import quotes.reflect.*
     val id = next()
-    def log(message: String, depth: Int): Unit = ()//)println(s"[$id]: ${"  "*depth}${message}")
+    def log(message: String, depth: Int): Unit = () //)println(s"[$id]: ${"  "*depth}${message}")
     log(s"new macro invocation for ${Stenography.name[target]}", 0)
 
     val self = Symbol.requiredMethod("frontier.missingContext.explain")
@@ -67,8 +67,8 @@ object Frontier:
       log(s"searching for ${Stenography.name(repr)}", depth)
       Implicits.searchIgnoring(repr)(self :: exclusions*) match
         case success: ImplicitSearchSuccess =>
-          log(s"found ${Ref(success.tree.symbol).show}", depth)
-          Found(t"${Ref(success.tree.symbol).show}: ${Stenography.name(repr)}", success.tree.asExpr)
+          log(s"found ${Stenography.name(success.tree.symbol.termRef)}", depth)
+          Found(t"${Stenography.name(repr)}", success.tree.asExpr)
 
         case failure: ImplicitSearchFailure =>
           log(s"${Stenography.name(repr).show} is missing", depth)
@@ -85,16 +85,20 @@ object Frontier:
                   log(s"found inline given at ${Ref(term.symbol).show}", depth)
                   term match
                     case TypeApply(left, right) =>
-                      Candidate("???", List(seek(right.head.tpe, Nil, depth + 1)))
+                      if term.symbol.name == "explainMissingContext"
+                      then Missing(Stenography.name(repr), Nil)
+                      else Candidate("???", List(seek(right.head.tpe, term.symbol :: exclusions, depth + 1)))
 
                 case None =>
                   Missing(Stenography.name(repr), Nil)
 
             case Apply(fun, args) =>
               def resolve(methodType: TypeRepr): Missing = methodType match
-                case MethodType(_, types, _) =>
-                  log(s"found method ${Ref(fun.symbol).show}", depth)
-                  val candidate = Candidate(Stenography.name(fun.symbol.termRef).show.skip(5, Rtl), types.map(seek(_, Nil, depth + 1)))
+                case MethodType(_, types, more) =>
+                  log(s"found method ${Stenography.name(fun.symbol.termRef).show.skip(5, Rtl)}", depth)
+                  val name = Stenography.name(fun.symbol.termRef).show.skip(5, Rtl)
+                  val candidate =
+                    Candidate(name, types.map(seek(_, Nil, depth + 1)))
 
                   val candidates = seek(repr, fun.symbol :: exclusions, depth) match
                     case Missing(_, candidates) => candidate :: candidates
@@ -107,7 +111,7 @@ object Frontier:
                   resolve(fun.tpe.simplified)
 
                 case other =>
-                  halt(m"nothing: ${other.show}")
+                  Missing(Stenography.name(repr), Nil)
 
               resolve(fun.symbol.info)
 
@@ -128,11 +132,11 @@ object Frontier:
             case Found(_, _)            => Nil
 
           TreeDiagram[Result](results*).render:
-            case Found(name, _)     => e" ✓ found $Italic($name)"
-            case Missing(name, _)   => e" ✗ requires $Italic($name)"
-            case Candidate(name, _) => e" ◆ candidate $Italic($name)"
+            case Found(name, _)     => e" \e[38;5;34m$Bold(✓)\e[0m found \e[38;5;119m$Italic($name)\e[0m"
+            case Missing(name, _)   => e" \e[38;5;88m$Bold(✗)\e[0m requires \e[38;5;114m$Italic($name)\e[0m"
+            case Candidate(name, _) => e" \e[38;5;208m$Bold(▪)\e[0m candidate \e[38;5;227m$Italic($name)\e[0m"
           . join
-              ( e"contextual value not found\n\n ■ resolving ${Stenography.name[target]}\n",
+              ( e"contextual value not found\n\n \e[38;5;88m$Bold(■)\e[0m resolving \e[38;5;208m$Italic(${Stenography.name[target]})\e[0m\n",
                 e"\n",
                 e"\n" )
           . render(termcapDefinitions.xterm256)

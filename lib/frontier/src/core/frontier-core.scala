@@ -7,5 +7,5 @@ import proscenium.*
 
 inline def doExplain[target]: target = ${Frontier.explain[target]}
 
-package missingContext:
-  transparent inline given explain: [any] => any = doExplain[any]
+package context:
+  transparent inline given explainMissingContext: [any] => any = doExplain[any]

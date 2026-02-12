@@ -54,8 +54,8 @@ object Stenography:
       case quotes: runtime.impl.QuotesImpl =>
         given ctx: core.Contexts.Context = quotes.ctx
         ctx.compilationUnit.tpdTree.absolve match
-          case ast.tpd.PackageDef(_, statements) =>
-            statements.collect:
+          case ast.tpd.PackageDef(root, statements) =>
+            Typename(root.show) :: statements.collect:
               case ast.tpd.Import(name, List(SimpleSelector("_"))) => Typename(name.show)
 
           case _ =>
@@ -69,19 +69,20 @@ object Stenography:
       try symbol.tree :: owners(parent) catch case _ =>
         Nil
 
-    val imports = owners(Symbol.spliceOwner).flatMap:
-      case tree@DefDef(_, _, _, Some(Block(entries, _))) => entries.collect:
-        case Import(name, List(SimpleSelector("_"))) => Typename(name.show)
-
-      case tree@ValDef(_, _, _) =>
-        Nil
-
-      case tree: ClassDef =>
-        tree.body.collect:
+    val imports: List[Typename] =
+      owners(Symbol.spliceOwner).flatMap:
+        case tree@DefDef(_, _, _, Some(Block(entries, _))) => entries.collect:
           case Import(name, List(SimpleSelector("_"))) => Typename(name.show)
 
-      case tree =>
-        Nil
+        case tree@ValDef(_, _, _) =>
+          Nil
+
+        case tree: ClassDef =>
+          tree.body.collect:
+            case Import(name, List(SimpleSelector("_"))) => Typename(name.show)
+
+        case tree =>
+          Nil
 
     given Imports = Imports(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer)
 
