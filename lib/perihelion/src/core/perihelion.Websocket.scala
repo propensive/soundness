@@ -62,16 +62,16 @@ object Websocket:
       given prefix2: ("secWebsocketVersion" is Directive of Int) = _.toString.tt
 
       Http.Response
-       (Http.SwitchingProtocols,
-        secWebsocketAccept  = (websocket.key+Websocket.magic)
-                              . digest[Sha1]
-                              . serialize[Base64]
-                              . keep(28),
-        secWebsocketVersion = 13,
-        transferEncoding    = TransferEncoding.Chunked,
-        connection          = t"Upgrade",
-        upgrade             = t"websocket")
-       (websocket.spool.stream.map(_.bytes))
+        ( Http.SwitchingProtocols,
+          secWebsocketAccept  = (websocket.key+Websocket.magic)
+                                . digest[Sha1]
+                                . serialize[Base64]
+                                . keep(28),
+          secWebsocketVersion = 13,
+          transferEncoding    = TransferEncoding.Chunked,
+          connection          = t"Upgrade",
+          upgrade             = t"websocket" )
+            ( websocket.spool.stream.map(_.bytes) )
 
 class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => ResultType)
   ( using Monitor, Codicil ):

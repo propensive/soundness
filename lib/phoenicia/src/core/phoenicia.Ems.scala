@@ -40,4 +40,4 @@ import quantitative.*
 object Ems:
   given designation: Designation[Ems[1]] = () => t"ems"
 
-erased trait Ems[Power <: Nat] extends Units[Power, FontSize]
+sealed trait Ems[Power <: Nat] extends Units[Power, FontSize]

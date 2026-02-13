@@ -74,7 +74,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
               if cell.minHeight > lineNumber
               then
                 cell.textAlign.pad
-                 (cell(lineNumber), widths(index), lineNumber == cell.minHeight - 1)
+                  ( cell(lineNumber), widths(index), lineNumber == cell.minHeight - 1 )
 
               else Textual((t" "*widths(index)))
 
@@ -107,22 +107,22 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
 
           if index == 0 then
             style.charset
-             (top    = vertical(ascenders, style.sideLines),
-              right  = horizontal.or(BoxLine.Blank),
-              bottom = vertical(descenders, style.sideLines),
-              left   = BoxLine.Blank)
+              ( top    = vertical(ascenders, style.sideLines),
+                right  = horizontal.or(BoxLine.Blank),
+                bottom = vertical(descenders, style.sideLines),
+                left   = BoxLine.Blank )
           else if index == (width - 1) then
             style.charset
-             (top    = vertical(ascenders, style.sideLines),
-              right  = BoxLine.Blank,
-              bottom = vertical(descenders, style.sideLines),
-              left   = horizontal.or(BoxLine.Blank))
+              ( top    = vertical(ascenders, style.sideLines),
+                right  = BoxLine.Blank,
+                bottom = vertical(descenders, style.sideLines),
+                left   = horizontal.or(BoxLine.Blank) )
           else
             style.charset
-             (top    = vertical(ascenders, style.innerLines),
-              right  = horizontal.or(BoxLine.Blank),
-              bottom = vertical(descenders, style.innerLines),
-              left   = horizontal.or(BoxLine.Blank))
+              ( top    = vertical(ascenders, style.innerLines),
+                right  = horizontal.or(BoxLine.Blank),
+                bottom = vertical(descenders, style.innerLines),
+                left   = horizontal.or(BoxLine.Blank) )
 
     val topLine =
       if style.topLine.absent then Stream() else Stream(rule(Unset, sections.head.widths))

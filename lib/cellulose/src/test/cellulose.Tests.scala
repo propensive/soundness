@@ -1080,6 +1080,8 @@ object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
       // .assert(_ == CodlDoc(CodlNode(t"name")(CodlNode(t"Barry")()), CodlNode(t"rank")(CodlNode(t"1")())))
 
       test(m"write a case class with optional field unspecified"):
+        case class Player2(name: Text, rank: Int)
+        summon[Player2 is Encodable in Codl]
         Player(t"Barry", Unset).codl.untyped
       .assert(_ == CodlDoc(CodlNode(t"name")(CodlNode(t"Barry")())))
 

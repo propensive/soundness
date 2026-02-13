@@ -248,7 +248,10 @@ object Mcp:
 
 
   case class ListResources(nextCursor: Optional[Cursor] = Unset, resources: List[Resource] = Nil)
-  case class ListResourceTemplates(nextCursor: Optional[Cursor] = Unset, resourceTemplates: List[ResourceTemplate] = Nil)
+
+  case class ListResourceTemplates
+    ( nextCursor: Optional[Cursor] = Unset, resourceTemplates: List[ResourceTemplate] = Nil )
+
   case class ReadResource(contents: List[Contents] = Nil)
 
   case class Resource
@@ -272,9 +275,15 @@ object Mcp:
       annotations: Annotations          = Annotations(),
       _meta:       Optional[Json]       = Unset )
 
-  case class ResourceContents(uri: Text, mimeType: Optional[Text] = Unset, _meta: Optional[Json] = Unset)
-  case class TextResourceContents(uri: Text, mimeType: Optional[Text] = Unset, text: Text, _meta: Optional[Json] = Unset)
-  case class BlobResourceContents(uri: Text, mimeType: Optional[Text] = Unset, blob: Text, _meta: Optional[Json] = Unset)
+  case class ResourceContents
+    ( uri: Text, mimeType: Optional[Text] = Unset, _meta: Optional[Json] = Unset )
+
+  case class TextResourceContents
+    ( uri: Text, mimeType: Optional[Text] = Unset, text: Text, _meta: Optional[Json] = Unset )
+
+  case class BlobResourceContents
+    ( uri: Text, mimeType: Optional[Text] = Unset, blob: Text, _meta: Optional[Json] = Unset )
+
   case class ListPrompts(nextCursor: Optional[Cursor] = Unset, prompts: List[Prompt] = Nil)
 
   case class Annotations
@@ -283,7 +292,9 @@ object Mcp:
       lastModified: Optional[Text]       = Unset )
 
   case class Complete(completion: Completion)
-  case class Completion(values: List[Text] = Nil, total: Optional[Int] = Unset, hasMore: Optional[Boolean] = Unset)
+
+  case class Completion
+    ( values: List[Text] = Nil, total: Optional[Int] = Unset, hasMore: Optional[Boolean] = Unset )
 
   object Role:
     given encodable: Role is Encodable in Json =
@@ -433,7 +444,8 @@ object Mcp:
   enum Mode:
     case Auto, Required, None
 
-  case class SamplingMessage(role: Role, content: List[SamplingMessageContentBlock], _meta: Optional[Json] = Unset)
+  case class SamplingMessage
+    ( role: Role, content: List[SamplingMessageContentBlock], _meta: Optional[Json] = Unset )
 
   object SamplingMessageContentBlock:
     import dynamicJsonAccess.enabled
@@ -608,7 +620,8 @@ object Mcp:
     def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources
 
     @rpc
-    def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates
+    def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json])
+    : ListResourceTemplates
 
     @rpc
     def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource
@@ -683,7 +696,9 @@ object Mcp:
     def `notifications/tools/list_changed`(_meta: Optional[Json]): Unit
 
     @rpc
-    def `notifications/message`(level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json]): Unit
+    def `notifications/message`
+      ( level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json] )
+    : Unit
 
   object Interface:
 
@@ -750,7 +765,11 @@ object Mcp:
     def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources =
       ListResources(resources = spec.resources())
 
-    def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates = ???
+    def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json])
+    : ListResourceTemplates =
+
+        ???
+
 
     def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource =
       ReadResource(List(spec.invokeResource(server, uri)))
@@ -819,4 +838,8 @@ object Mcp:
 
     def `notifications/tools/list_changed`(_meta: Optional[Json]): Unit = ???
 
-    def `notifications/message`(level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json]): Unit = ???
+    def `notifications/message`
+      ( level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json] )
+    : Unit =
+
+        ???

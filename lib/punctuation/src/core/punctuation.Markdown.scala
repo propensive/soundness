@@ -63,7 +63,8 @@ object Markdown:
       case ' '                          => builder.append("%20")
       case '\\'                         => builder.append("%5C")
 
-      case char@('-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '=' | ':' | '?') =>
+      case char@('-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '='
+                 | ':' | '?') =>
         builder.append(char)
 
       case char =>
@@ -137,10 +138,10 @@ object Markdown:
             case Layout.Paragraph(_, contents*) :: tail if tight =>
               val content = Fragment(contents.map(phrasing(_))*)
               merge
-               (false,
-                tail,
-                (if block then Fragment("\n", content) else content) :: done,
-                tight)
+                ( false,
+                  tail,
+                  (if block then Fragment("\n", content) else content) :: done,
+                  tight )
 
             case head :: tail =>
               merge(true, tail, Fragment("\n", layout(head)) :: done, tight)

@@ -36,7 +36,7 @@ import anticipation.*
 import gesticulate.*
 import prepositional.*
 
-erased trait Gif
+sealed trait Gif
 
 object Gif:
   def apply(): Rasterizable = rasterization

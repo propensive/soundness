@@ -42,7 +42,7 @@ import prepositional.*
 import proscenium.*
 import vacuous.*
 
-trait EnvironmentVariable[alias <: Label, +variable] extends Pure:
+trait EnvironmentVariable[alias <: Label, +variable]:
   inline def defaultName: Text = name.or(valueOf[alias].tt.uncamel.snake.upper)
   def name: Optional[Text] = Unset
   def read(value: Text): variable

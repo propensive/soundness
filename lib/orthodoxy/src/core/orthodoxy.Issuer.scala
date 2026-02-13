@@ -60,7 +60,7 @@ import stdioSources.virtualMachine.ansi
 import jsonPrinters.indented
 
 object Issuer:
-  erased trait Context extends Topical
+  sealed trait Context extends Topical
 
 class Issuer
   ( init:     HttpUrl,
@@ -102,10 +102,10 @@ class Issuer
 
                 val query =
                   Query
-                   (grant_type    = t"authorization_code",
-                    code          = code,
-                    redirect_uri  = redirect,
-                    client_id     = client)
+                    ( grant_type    = t"authorization_code",
+                      code          = code,
+                      redirect_uri  = redirect,
+                      client_id     = client )
 
                 val response: Optional[Http.Response] = if state.expired then Unset else
                   exchange.submit(Http.Post)(query.per(secret)(_.client_secret = _))
@@ -133,7 +133,10 @@ class Issuer
                 val refresh = safely(json.refresh_token.as[Text])
                 val scopes = json.scope.as[Text].cut(t" ")
                 val tokenType = json.token_type.as[Text] // assume `Bearer`
-                val expiry: Optional[Long] = safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
+
+                val expiry: Optional[Long] =
+                  safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
+
                 val state2 = state.copy(access = Authorization(access, scopes, expiry, refresh))
 
                 store(session) = state2
@@ -158,11 +161,11 @@ class Issuer
         store(session) = state
 
         val query = Query
-         (client_id     = client,
-          redirect_uri  = redirect,
-          access_type   = t"offline",
-          scope         = scopes.flatMap(_.names).to(Set).to(List).join(t" "),
-          state         = state.uuid.show,
-          response_type = t"code")
+          ( client_id     = client,
+            redirect_uri  = redirect,
+            access_type   = t"offline",
+            scope         = scopes.flatMap(_.names).to(Set).to(List).join(t" "),
+            state         = state.uuid.show,
+            response_type = t"code" )
 
         Redirect(init.query(query))

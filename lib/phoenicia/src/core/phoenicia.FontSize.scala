@@ -38,4 +38,4 @@ import rudiments.*
 object FontSize:
   erased given quantity: Amount[Units[1, FontSize], "font size"] = !!
 
-erased trait FontSize extends Dimension
+sealed trait FontSize extends Dimension

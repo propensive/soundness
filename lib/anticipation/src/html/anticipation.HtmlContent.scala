@@ -32,4 +32,4 @@
                                                                                                   */
 package anticipation
 
-erased trait HtmlContent
+sealed trait HtmlContent

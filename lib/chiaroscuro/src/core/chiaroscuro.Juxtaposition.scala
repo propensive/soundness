@@ -142,10 +142,10 @@ object Juxtaposition:
 
             case Different(left, right, difference) =>
               Row
-               (line(t"▪"),
-                e"${rgb"#00aa00"}($left)",
-                e"${rgb"#bb0000"}($right)",
-                difference.let(_.teletype).or(e""))
+                ( line(t"▪"),
+                  e"${rgb"#00aa00"}($left)",
+                  e"${rgb"#bb0000"}($right)",
+                  difference.let(_.teletype).or(e"") )
 
             case Collation(_, comparison, left, right) =>
               if comparison.all(_(1).singleChar)
@@ -161,10 +161,10 @@ object Juxtaposition:
               else Row(line(t"■"), e"${rgb"#667799"}($left)", e"${rgb"#667799"}($right)", e"")
 
         val table = Table[Row]
-                     (Column(e"$name")(_.treeLine),
-                      Column(e"Expected", textAlign = TextAlignment.Left)(_.left),
-                      Column(e"Observed")(_.right),
-                      Column(e"Details")(_.memo.teletype))
+          ( Column(e"$name")(_.treeLine),
+            Column(e"Expected", textAlign = TextAlignment.Left)(_.left),
+            Column(e"Observed")(_.right),
+            Column(e"Details")(_.memo.teletype) )
 
         table
         . tabulate(TreeDiagram.by(children(_))(comparison*).render(line))

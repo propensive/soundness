@@ -49,7 +49,7 @@ object Plutocrat:
     value.asInstanceOf[Money in currency]
 
   object Money:
-    erased given underlying: [currency <: Label] => Underlying[Money in currency, Int] = !!
+    inline given underlying: [currency <: Label] => Underlying[Money in currency, Int] = !!
 
     protected[plutocrat] def apply[currency <: Label](currency: Text, value: Long)
     : Money in currency =

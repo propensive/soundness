@@ -184,19 +184,19 @@ case class Ttf(data: Data):
 
               val segments = (0 until segCount).map: n =>
                 Segment
-                 (B16(data, startCodesStart + n*2).u16.int.toChar,
-                  B16(data, endCodesStart + n*2).u16.int.toChar,
-                  B16(data, idDeltaStart).s16.int,
-                  B16(data, idRangeOffsetsStart).u16.int)
+                  ( B16(data, startCodesStart + n*2).u16.int.toChar,
+                    B16(data, endCodesStart + n*2).u16.int.toChar,
+                    B16(data, idDeltaStart).s16.int,
+                    B16(data, idRangeOffsetsStart).u16.int )
 
               Format4
-               (length,
-                language,
-                segCount,
-                searchRange,
-                entrySelector,
-                rangeShift,
-                IArray.from(segments))
+                ( length,
+                  language,
+                  segCount,
+                  searchRange,
+                  entrySelector,
+                  rangeShift,
+                  IArray.from(segments) )
 
             case 12 =>
               val length = B32(data, offset + 2).s32.int

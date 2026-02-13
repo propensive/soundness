@@ -60,4 +60,4 @@ object Linefeed:
       def next(): Text = ready.asInstanceOf[Text].also:
         ready = Unset
 
-erased trait Linefeed
+sealed trait Linefeed

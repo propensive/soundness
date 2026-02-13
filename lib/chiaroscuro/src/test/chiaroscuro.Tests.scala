@@ -60,11 +60,12 @@ object Tests extends Suite(m"Chiaroscuro tests"):
       test(m"Decompose a person"):
         Person(t"Bill", 29).decompose
 
-      . assert(_ == Product
-                     (t"Person",
-                      Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"),
-                          t"age"  -> Primitive(t"Int", t"29", 29)),
-                      Person(t"Bill", 29)))
+      . assert: value =>
+          value == Product
+            ( t"Person",
+              Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"),
+                  t"age"  -> Primitive(t"Int", t"29", 29)),
+              Person(t"Bill", 29))
 
       test(m"Decompose an organization"):
         Organization(t"Acme", Person(t"Bill", 29), Nil).decompose

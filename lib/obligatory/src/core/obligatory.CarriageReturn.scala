@@ -60,4 +60,4 @@ object CarriageReturn:
       def next(): Text = ready.asInstanceOf[Text].also:
         ready = Unset
 
-erased trait CarriageReturn
+sealed trait CarriageReturn

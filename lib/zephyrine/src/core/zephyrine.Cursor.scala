@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.captureChecking
-
 import scala.collection.mutable as scm
 import scala.annotation.publicInBinary
 import scala.caps as sc
@@ -49,7 +47,7 @@ object Cursor:
   opaque type Mark = Long
   opaque type Offset = Long
 
-  class Held() extends sc.Capability
+  class Held()
 
   object Mark:
     final val Initial: Mark = -1
@@ -85,7 +83,7 @@ object Cursor:
         val initial = iterator.next()
 
         new Cursor[data]
-             (initial, addressable0.length(initial), iterator, addressable0, lineation0)
+          ( initial, addressable0.length(initial), iterator, addressable0, lineation0 )
 
       else
         new Cursor[data](addressable0.empty, 0, Iterator.empty, addressable0, lineation0)
@@ -178,9 +176,10 @@ class Cursor[data](initial:    data,
 
     if finished then false else
       inline if lineation.active then
-        columnNo = if !lineation.track(addressable.address(current2, focus2)) then columnNo.next else
-          lineNo = lineNo.next
-          Prim
+        columnNo =
+          if !lineation.track(addressable.address(current2, focus2)) then columnNo.next else
+            lineNo = lineNo.next
+            Prim
       true
 
   inline def more: Boolean = !finished
@@ -203,7 +202,7 @@ class Cursor[data](initial:    data,
       marks.append(mark)
       offsets.append(Offset(lineNo, columnNo))
 
-  inline def datum(using Unsafe): addressable.Operand = addressable.address(current, focus)
+  inline def datum(using erased Unsafe): addressable.Operand = addressable.address(current, focus)
 
   inline def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)
   : result =

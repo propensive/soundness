@@ -45,9 +45,9 @@ object Compass:
 
   val points16: IArray[CardinalWind | IntercardinalWind | HalfWind] =
     IArray
-     (North, NorthNortheast, Northeast, EastNortheast, East, EastSoutheast, Southeast,
-      SouthSoutheast, South, SouthSouthwest, Southwest, WestSouthwest, West, WestNorthwest,
-      Northwest, NorthNorthwest)
+      ( North, NorthNortheast, Northeast, EastNortheast, East, EastSoutheast, Southeast,
+        SouthSoutheast, South, SouthSouthwest, Southwest, WestSouthwest, West, WestNorthwest,
+        Northwest, NorthNorthwest )
 
   inline def apply[points <: 4 | 8 | 16](angle: Angle): Compass[points] =
     inline !![points] match

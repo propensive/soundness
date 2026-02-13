@@ -40,7 +40,7 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 
-erased trait Local
+sealed trait Local
 
 object Local:
   // Note that Mac OS rules subsume Linux rules

@@ -64,5 +64,5 @@ case class Juncture
 
   def method: StackTrace.Method =
     StackTrace.Method
-     (StackTrace.rewrite(className.s),
-      StackTrace.rewrite(methodName.s, method = true))
+      ( StackTrace.rewrite(className.s),
+        StackTrace.rewrite(methodName.s, method = true) )

@@ -36,7 +36,7 @@ import anticipation.*
 import gesticulate.*
 import prepositional.*
 
-erased trait Jpeg
+sealed trait Jpeg
 
 object Jpeg:
   def apply(): Rasterizable = rasterization

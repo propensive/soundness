@@ -38,7 +38,7 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-erased trait Linux extends Posix
+trait Linux extends Posix
 
 object Linux:
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]

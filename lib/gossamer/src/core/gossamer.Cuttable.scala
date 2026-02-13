@@ -57,7 +57,7 @@ object Cuttable:
       @tailrec
       def recur(start: Ordinal, results: List[textual]): List[textual] =
         textual.indexOf
-         (text, delimiter, start).lay(text.segment(start till text.length.z) :: results):
+          ( text, delimiter, start).lay(text.segment(start till text.length.z) :: results):
           index => recur(index + dLength, text.segment(start till index) :: results)
 
       recur(Prim, Nil).reverse

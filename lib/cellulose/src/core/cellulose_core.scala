@@ -30,92 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ambience
-
-import java.nio.file as jnf
-import java.lang as jl
-
-import language.experimental.pureFunctions
+package cellulose
 
 import anticipation.*
-import fulminate.*
-import gossamer.*
 import prepositional.*
 import rudiments.*
-import vacuous.*
 
-package systems:
-  given empty: System:
-    def apply(name: Text): Unset.type = Unset
+extension (inline ctx: StringContext)
+  transparent inline def codl(inline parts: Any*): CodlDoc = ${Codl.Prefix.expand('ctx, 'parts)}
 
-  given java: System:
-    def apply(name: Text): Optional[Text] = Optional(jl.System.getProperty(name.s)).let(_.tt)
+extension [encodable: {Encodable in Codl, CodlSchematic}](value: encodable)
+  def codl: CodlDoc of encodable =
+    new CodlDoc
+      ( IArray.from(encodable.encoded(value).list.map(_.children).flatten),
+        encodable.schema(),
+        0 ):
 
-package workingDirectories:
-  given system: (properties: System) => WorkingDirectory =
-    () => properties(t"user.dir").or(panic(m"the property `user.dir` should be present"))
+      type Topic = encodable
 
-  given java: WorkingDirectory = system(using ambience.systems.java)
+package codlPrinters:
+  given standard: CodlPrinter = CodlPrinter.standardPrinter
 
-  given system: WorkingDirectory = () =>
-    Optional(jl.System.getProperty("user.dir")).let(_.tt).or:
-      panic(m"the `user.dir` system property is not set")
-
-  given default: WorkingDirectory = () => jnf.Paths.get("").nn.toAbsolutePath.toString
-
-package homeDirectories:
-  given system: (properties: System) => HomeDirectory =
-    () => properties(t"user.home").or(panic(m"the property `user.home` should be present"))
-
-  given java: HomeDirectory = system(using ambience.systems.java)
-
-  given system: HomeDirectory = () =>
-    Optional(jl.System.getProperty("user.home")).let(_.tt).or:
-      panic(m"the `user.home` system property is not set")
-
-  given environment: HomeDirectory = () =>
-    List("HOME", "USERPROFILE", "HOMEPATH").map(jl.System.getenv(_)).map(Optional(_)).compact.prim
-    . let(_.tt)
-    . or(panic(m"none of `HOME`, `USERPROFILE` or `HOMEPATH` environment variables is set"))
-
-
-package environments:
-  given empty: Environment:
-    def variable(name: Text): Unset.type = Unset
-
-  given java: Environment:
-    def variable(name: Text): Optional[Text] = Optional(jl.System.getenv(name.s)).let(_.tt)
-
-package temporaryDirectories:
-  given java: TemporaryDirectory = () =>
-    Optional(jl.System.getProperty("java.io.tmpdir")).let(_.tt).or:
-      panic(m"the `java.io.tmpdir` system property is not set")
-
-  given system: (system: System) => TemporaryDirectory = () => jl.System.getProperty("java.io.tmpdir").nn.tt
-
-  given environment: Environment => TemporaryDirectory = () =>
-    List("TMPDIR", "TMP", "TEMP").map(jl.System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt).or:
-      panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set")
-
-
-inline def temporaryDirectory[path: Representative of Paths](using temporary: TemporaryDirectory)
-: path =
-
-    compiletime.summonFrom:
-      case given (`path` is Instantiable across Paths from Paths.Trusted) =>
-        Paths.Trusted(temporary.directory()).instantiate
-
-      case given (`path` is Instantiable across Paths from Text) =>
-        temporary.directory().instantiate
-
-
-inline def workingDirectory[path: Representative of Paths](using work: WorkingDirectory): path =
-  compiletime.summonFrom:
-    case given (`path` is Instantiable across Paths from Paths.Trusted) =>
-      Paths.Trusted(work.directory()).instantiate
-
-    case given (`path` is Instantiable across Paths from Text) =>
-      work.directory().instantiate
-
-def homeDirectory[path: Instantiable across Paths from Text](using directory: HomeDirectory): path =
-  directory.path[path]
+package dynamicCodlAccess:
+  inline given enabled: DynamicCodlEnabler = !!

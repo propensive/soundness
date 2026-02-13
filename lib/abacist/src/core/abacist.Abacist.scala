@@ -75,7 +75,7 @@ object Abacist:
                         $max"""
 
                   recur
-                   (tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})})
+                    ( tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})} )
 
                 case None =>
                   recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
@@ -103,9 +103,9 @@ object Abacist:
 
               val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
               recur
-               (tail,
-                '{($expr.updated
-                    (${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value))})
+                ( tail,
+                  '{($expr.updated
+                      (${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value))} )
 
       recur(multipliers[units], '{ListMap()})
 
@@ -189,7 +189,7 @@ object Abacist:
         val value = ratio(head.ref, cascade.head.ref, head.power).valueOrAbort
         val value2 = tail.prim.let(_.ref).let(ratio(_, head.ref, head.power).valueOrAbort + 0.5)
         recur
-         (tail,
-          Multiplier(head, (value + 0.5).toInt, value2.let(_.toInt).or(Int.MaxValue)) :: units)
+          ( tail,
+            Multiplier(head, (value + 0.5).toInt, value2.let(_.toInt).or(Int.MaxValue)) :: units )
 
     recur(cascade)

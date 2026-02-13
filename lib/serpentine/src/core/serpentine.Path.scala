@@ -113,7 +113,8 @@ object Path:
 
 
   given encodable: [filesystem: Filesystem] => Path on filesystem is Encodable in Text =
-    path => path.descent.map(filesystem.escape(_)).reverse.join(path.root, filesystem.separator, t"")
+    path =>
+      path.descent.map(filesystem.escape(_)).reverse.join(path.root, filesystem.separator, t"")
 
   given showable: [filesystem: Filesystem] => Path on filesystem is Showable = _.encode
 
@@ -251,29 +252,29 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
                 summonFrom:
                   case given (Plane =:= `plane`) =>
                     Relative[Plane, Topic2, ascent.type]
-                     (ascent, descent.dropRight(baseAscent)*)
+                      ( ascent, descent.dropRight(baseAscent)* )
 
                   case _ =>
                     Relative[Any, Topic2, ascent.type]
-                     (ascent, descent.dropRight(baseAscent)*)
+                      ( ascent, descent.dropRight(baseAscent)* )
 
               case _ =>
                 summonFrom:
                   case given (Plane =:= `plane`) =>
                     Relative[Plane, Tuple, Nat]
-                     (right.depth - path.depth, descent.dropRight(path.depth)*)
+                      ( right.depth - path.depth, descent.dropRight(path.depth)* )
                   case _ =>
                     Relative[Any, Tuple, Nat]
-                     (right.depth - path.depth, descent.dropRight(path.depth)*)
+                      ( right.depth - path.depth, descent.dropRight(path.depth)* )
 
           case _ =>
             summonFrom:
               case given (Plane =:= `plane`) =>
                 Relative[Plane, Tuple, Nat]
-                 (right.depth - path.depth, descent.dropRight(path.depth)*)
+                  ( right.depth - path.depth, descent.dropRight(path.depth)* )
               case _ =>
                 Relative[Any, Tuple, Nat]
-                 (right.depth - path.depth, descent.dropRight(path.depth)*)
+                  ( right.depth - path.depth, descent.dropRight(path.depth)* )
 
       case false =>
         Unset
@@ -285,7 +286,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
             summonFrom:
               case given (Plane =:= `plane`) =>
                 Relative[Plane, Tuple, Nat]
-                 (right.depth - path.depth, descent.dropRight(path.depth)*)
+                  ( right.depth - path.depth, descent.dropRight(path.depth)* )
 
               case _ =>
                 Relative[Any, Tuple, Nat](right.depth - path.depth, descent.dropRight(path.depth)*)
@@ -348,7 +349,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   def ancestors: List[Path on Plane under Limit] =
     safely(parent).let { parent => parent :: parent.ancestors }.or(Nil)
 
-  def child(value: Text)(using Unsafe): Path on Plane under Limit =
+  def child(value: Text)(using erased Unsafe): Path on Plane under Limit =
     Path.of[Plane, Limit, Text *: Topic](root, value +: descent*)
 
   @targetName("slash")
@@ -368,14 +369,14 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     inline !![Topic] match
       case _: (head *: tail) =>
         Path.of[Plane, Limit, child.type *: tail]
-         (root, infer[child.type is Navigable on Plane].follow(child) +: descent*)
+          ( root, infer[child.type is Navigable on Plane].follow(child) +: descent* )
 
       case _ =>
         Path.of[Plane, Limit, Tuple]
-         (root, infer[child.type is Navigable on Plane].follow(child) +: descent*)
+          ( root, infer[child.type is Navigable on Plane].follow(child) +: descent* )
 
   transparent inline def + (relative: Relative): Path =
     type Base = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Topic], relative.Limit]]
     type Topic2 = Tuple.Concat[relative.Topic, Base]
     Path.of[Plane, Limit, Topic2]
-     (root, relative.descent ++ descent.drop(relative.ascent)*)
+      ( root, relative.descent ++ descent.drop(relative.ascent)* )

@@ -30,100 +30,93 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package ambience
 
-import language.dynamics
+import java.nio.file as jnf
+import java.lang as jl
+
 import language.experimental.pureFunctions
 
-import scala.compiletime.*
-
 import anticipation.*
-import contingency.*
-import merino.*
+import fulminate.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
 import vacuous.*
-import wisteria.*
 
-import JsonError.Reason
+package systems:
+  given empty: System:
+    def apply(name: Text): Unset.type = Unset
 
-given showable: (printer: JsonPrinter) => JsonAst is Showable = printer.print(_)
+  given java: System:
+    def apply(name: Text): Optional[Text] = Optional(jl.System.getProperty(name.s)).let(_.tt)
 
-extension (json: JsonAst)
-  inline def isNumber: Boolean = isDouble || isLong || isBigDecimal
-  inline def isAbsent: Boolean = json == Unset
-  inline def isLong: Boolean = json.isInstanceOf[Long]
-  inline def isDouble: Boolean = json.isInstanceOf[Double]
-  inline def isBigDecimal: Boolean = json.isInstanceOf[BigDecimal]
-  inline def isObject: Boolean = json.isInstanceOf[(?, ?)]
-  inline def isString: Boolean = json.isInstanceOf[String]
-  inline def isBoolean: Boolean = json.isInstanceOf[Boolean]
+package workingDirectories:
+  given system: (properties: System) => WorkingDirectory =
+    () => properties(t"user.dir").or(panic(m"the property `user.dir` should be present"))
 
-  inline def isNull: Boolean = json.asMatchable match
-    case v: Null => v == null
-    case _       => false
+  given java: WorkingDirectory = system(using ambience.systems.java)
 
-  inline def isArray: Boolean = json.isInstanceOf[Array[?]]
+  given system: WorkingDirectory = () =>
+    Optional(jl.System.getProperty("user.dir")).let(_.tt).or:
+      panic(m"the `user.dir` system property is not set")
 
-  private def expected(jsonPrimitive: JsonPrimitive): Unit raises JsonError =
-    raise(JsonError(if isAbsent then Reason.Absent else Reason.NotType(primitive, jsonPrimitive)))
+  given default: WorkingDirectory = () => jnf.Paths.get("").nn.toAbsolutePath.toString
 
-  def array: IArray[JsonAst] raises JsonError =
-    if isArray then json.asInstanceOf[IArray[JsonAst]]
-    else expected(JsonPrimitive.Array) yet IArray[JsonAst]()
+package homeDirectories:
+  given system: (properties: System) => HomeDirectory =
+    () => properties(t"user.home").or(panic(m"the property `user.home` should be present"))
 
-  def double: Double raises JsonError = json.asMatchable match
-    case value: Double     => value
-    case value: Long       => value.toDouble
-    case value: BigDecimal => value.toDouble
-    case _                 => expected(JsonPrimitive.Number) yet 0.0
+  given java: HomeDirectory = system(using ambience.systems.java)
 
-  def bigDecimal: BigDecimal raises JsonError = json.asMatchable match
-    case value: BigDecimal => value
-    case value: Long       => BigDecimal(value)
-    case value: Double     => BigDecimal(value)
-    case _                 => expected(JsonPrimitive.Number) yet BigDecimal(0L)
+  given system: HomeDirectory = () =>
+    Optional(jl.System.getProperty("user.home")).let(_.tt).or:
+      panic(m"the `user.home` system property is not set")
 
-  def long: Long raises JsonError = json.asMatchable match
-    case value: Long       => value
-    case value: Double     => value.toLong
-    case value: BigDecimal => value.toLong
-    case _                 => expected(JsonPrimitive.Number) yet 0L
+  given environment: HomeDirectory = () =>
+    List("HOME", "USERPROFILE", "HOMEPATH").map(jl.System.getenv(_)).map(Optional(_)).compact.prim
+    . let(_.tt)
+    . or(panic(m"none of `HOME`, `USERPROFILE` or `HOMEPATH` environment variables is set"))
 
-  def primitive: JsonPrimitive =
-    if isNumber then JsonPrimitive.Number
-    else if isBoolean then JsonPrimitive.Boolean
-    else if isString then JsonPrimitive.String
-    else if isObject then JsonPrimitive.Object
-    else if isArray then JsonPrimitive.Array
-    else JsonPrimitive.Null
 
-  def string: Text raises JsonError =
-    if isString then json.asInstanceOf[Text]
-    else expected(JsonPrimitive.String) yet "".tt
+package environments:
+  given empty: Environment:
+    def variable(name: Text): Unset.type = Unset
 
-  def boolean: Boolean raises JsonError =
-    if isBoolean then json.asInstanceOf[Boolean]
-    else expected(JsonPrimitive.Boolean) yet false
+  given java: Environment:
+    def variable(name: Text): Optional[Text] = Optional(jl.System.getenv(name.s)).let(_.tt)
 
-  def obj: (IArray[String], IArray[JsonAst]) raises JsonError =
-    if isObject then json.asInstanceOf[(IArray[String], IArray[JsonAst])]
-    else expected(JsonPrimitive.Object) yet (IArray[String]() -> IArray[JsonAst]())
+package temporaryDirectories:
+  given java: TemporaryDirectory = () =>
+    Optional(jl.System.getProperty("java.io.tmpdir")).let(_.tt).or:
+      panic(m"the `java.io.tmpdir` system property is not set")
 
-  def number: Long | Double | BigDecimal raises JsonError =
-    if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
-    else expected(JsonPrimitive.Number) yet 0L
+  given system: (system: System) => TemporaryDirectory =
+    () => jl.System.getProperty("java.io.tmpdir").nn.tt
 
-extension [entity: Encodable in Json](value: entity) def json: Json = entity.encode(value)
+  given environment: Environment => TemporaryDirectory = () =>
+    List("TMPDIR", "TMP", "TEMP").map(jl.System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt)
+    . or(panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set"))
 
-package jsonPrinters:
-  given indented: JsonPrinter = JsonPrinter.print(_, true)
-  given minimal: JsonPrinter = JsonPrinter.print(_, false)
 
-package jsonDiscriminables:
-  given discriminatedUnionByType: [value] => value is Discriminable in Json =
-    Json.discriminatedUnion[value]("type")
+inline def temporaryDirectory[path: Representative of Paths](using temporary: TemporaryDirectory)
+: path =
 
-  given discriminatedUnionByKind: [value] => value is Discriminable in Json =
-    Json.discriminatedUnion[value]("kind")
+    compiletime.summonFrom:
+      case given (`path` is Instantiable across Paths from Paths.Trusted) =>
+        Paths.Trusted(temporary.directory()).instantiate
+
+      case given (`path` is Instantiable across Paths from Text) =>
+        temporary.directory().instantiate
+
+
+inline def workingDirectory[path: Representative of Paths](using work: WorkingDirectory): path =
+  compiletime.summonFrom:
+    case given (`path` is Instantiable across Paths from Paths.Trusted) =>
+      Paths.Trusted(work.directory()).instantiate
+
+    case given (`path` is Instantiable across Paths from Text) =>
+      work.directory().instantiate
+
+def homeDirectory[path: Instantiable across Paths from Text](using directory: HomeDirectory): path =
+  directory.path[path]

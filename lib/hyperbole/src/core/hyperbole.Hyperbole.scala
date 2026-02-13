@@ -520,20 +520,20 @@ object Hyperbole:
       val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
 
       Expansion
-       (e"${tiles.drop(1).map(treeStyles.default.text(_)).join}$tag2 $text",
-        node.typeName,
-        node.param,
-        node.shortCode,
-        node.source)
+        ( e"${tiles.drop(1).map(treeStyles.default.text(_)).join}$tag2 $text",
+          node.typeName,
+          node.param,
+          node.shortCode,
+          node.source )
 
     Table[Expansion]
-     (Column(e"TASTy"): node =>
-        val param = node.param.let { param => e"$Italic(${webColors.Orange}($param))" }.or(e"")
-        e"${node.text} $param",
-      Column(e"Type"): node =>
-        val name = StackTrace.rewrite(node.typeName.s, false)
-        if node.typeName.nil then e"" else e"${webColors.Gray}(: $Italic(${name}))",
-      Column(e"Source")(_.source))
+      ( Column(e"TASTy"): node =>
+          val param = node.param.let { param => e"$Italic(${webColors.Orange}($param))" }.or(e"")
+          e"${node.text} $param",
+        Column(e"Type"): node =>
+          val name = StackTrace.rewrite(node.typeName.s, false)
+          if node.typeName.nil then e"" else e"${webColors.Gray}(: $Italic(${name}))",
+        Column(e"Source")(_.source) )
 
     . tabulate(seq)
     . grid(10000)

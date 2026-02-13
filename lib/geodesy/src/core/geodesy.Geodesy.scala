@@ -145,8 +145,8 @@ object Geodesy:
 
       val result: Double =
         math.atan2
-         (math.sin(dLng)*math.cos(right.latitude),
-          math.cos(left.latitude)*math.sin(right.latitude) -
-              math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng))
+          ( math.sin(dLng)*math.cos(right.latitude),
+            math.cos(left.latitude)*math.sin(right.latitude) -
+                math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng) )
 
       compass.direction(Angle(result))

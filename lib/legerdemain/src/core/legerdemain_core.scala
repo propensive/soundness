@@ -30,122 +30,58 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package legerdemain
 
 import anticipation.*
-import denominative.*
+import contingency.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
+import honeycomb.*
+import prepositional.*
 import vacuous.*
 
-private given realm: Realm = realm"exoskeleton"
+import doms.html.whatwg
+import whatwg.*
+import attributives.textAttributes
 
-package interpreters:
-  given simple: Interpreter:
-    type Topic = List[Argument]
-    
-    def interpret(arguments: List[Argument]): List[Argument] = arguments
-    def focus(arguments: List[Argument]): Optional[Argument] = Unset
-    def find(arguments: List[Argument], flag: Flag): List[Argument] = Nil
-
-    
-    def read[operand: Interpretable](arguments: List[Argument], flag: Flag)
-      ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
-    : Optional[operand] =
-    
-        Unset
+private given realm: Realm = realm"legerdemain"
 
 
-  given posixClustering: Interpreter:
-    type Topic = Commandline
-    
-    def interpret(arguments: List[Argument]): Commandline = interpreter(arguments, true)
-    def focus(commandline: Commandline): Optional[Argument] = commandline.focus
-    def find(commandline: Commandline, flag: Flag): List[Argument] = commandline.at(flag)
+def elicit[value: Formulaic]
+  ( query: Optional[Query] = Unset, validation: Validation, submit: Optional[Text] )
+  ( using formulation: Formulation )
+: Html of Flow =
 
-    
-    def read[operand: Interpretable](commandline: Commandline, flag: Flag)
-      ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
-    : Optional[operand] =
-  
-        commandline.read(flag)
+    formulation.form
+      ( value.fields(Pointer.Self, t"", query.or(Query.empty), validation, formulation), submit )
 
 
-  given posix: Interpreter:
-    type Topic = Commandline
-    
-    def interpret(arguments: List[Argument]): Commandline = interpreter(arguments, false)
-    def focus(commandline: Commandline): Optional[Argument] = commandline.focus
-    def find(commandline: Commandline, flag: Flag): List[Argument] = commandline.at(flag)
-   
-    
-    def read[operand: Interpretable](commandline: Commandline, flag: Flag)
-      ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
-    : Optional[operand] =
-    
-        commandline.read(flag)
+extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
+  def edit(validation: Validation, submit: Optional[Text])(using formulation: Formulation)
+  : Html of Flow =
+
+      formulation.form
+        ( formulaic.fields(Pointer.Self, t"", formulaic.encoded(value), validation, formulation),
+          submit )
 
 
-  private def interpreter(arguments: List[Argument], clustering: Boolean): Commandline =
-    def recur
-      ( todo:        List[Argument],
-        arguments:   List[Argument],
-        current:     Optional[Argument],
-        commandline: Commandline )
-    : Commandline =
+package formulations:
+  given default: Formulation:
+    def form(content: Seq[Html of Flow], submit: Optional[Text]): Html of Flow =
+      Form
+        ( action = t".", method = t"post" )
+        ( Fragment(content*), Input.Submit(value = submit.or(t"Submit")) )
 
-        def push(): Commandline = current.lay(Commandline(arguments.reverse)): current =>
-          commandline.copy
-           (parameters = commandline.parameters.updated(current, arguments.reverse))
+    def element
+      ( widget:     Html of Phrasing,
+        legend:     Text,
+        validation: Optional[Message],
+        required:   Boolean )
+    : Html of Flow =
+        given alertClass: (Stylesheet of "alert" | "required") = Stylesheet()
+        Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required(t"*"))
 
-        def postprocess(commandline: Commandline): Commandline =
-          val parameters2: Map[Argument, List[Argument]] =
-            commandline.parameters.to(List).flatMap: (key, values) =>
-              val flag = key.value
-              if flag.starts(t"--") && flag.contains(t"=")
-              then
-                val key2 = key.copy(format = Argument.Format.EqualityPrefix)
-                val value = key.copy(format = Argument.Format.EqualitySuffix)
-                List(key2 -> (value :: values))
-              else if flag.starts(t"-") && !flag.starts(t"--") && flag.length > 2
-              then
-                if clustering then
-                  val init =
-                    (0 until (flag.length - 2)).to(List).map: index =>
-                      key.copy(format = Argument.Format.CharFlag(index.z)) -> Nil
-
-                  init :+ (key.copy(format = Argument.Format.CharFlag((flag.length - 2).z)), values)
-                else
-                  List:
-                    key.copy(format = Argument.Format.CharFlag(Prim))
-                    -> (key.copy(format = Argument.Format.FlagSuffix) :: values)
-
-              else List(key -> values)
-            . to(Map)
-
-          val focus2 = current.let: current =>
-            val focusCursor: Ordinal = current.cursor.or(current.value.length).z
-
-            (parameters2.keySet ++ parameters2.values.flatten).find: argument =>
-              current.position == argument.position && argument.contains(focusCursor)
-
-            . optional
-
-          commandline.copy(parameters = parameters2, focus = focus2)
-
-        todo match
-          case head :: tail =>
-            if head.value == t"--" then push().copy(postpositional = tail)
-            else if head.value.starts(t"-") then recur(tail, Nil, head, push())
-            else
-              val commandline2 =
-                if head.cursor.present then commandline.copy(focus = current) else commandline
-              recur(tail, head :: arguments, current, commandline2)
-
-          case Nil =>
-            postprocess(push())
-
-    recur(arguments, Nil, Unset, Commandline())
-
-def arguments(using cli: Cli): List[Argument] = cli.arguments
+        // Div
+        //  (validation.let(_.html).let(P.alert(_)),
+        //   Label(legend, widget),
+        //   Span.required(t"*").unless(!required))

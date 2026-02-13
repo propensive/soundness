@@ -90,9 +90,9 @@ object Anticipation:
 
     given conversion: Conversion[String, Text] = identity(_)
 
-    erased given canEqual: CanEqual[Text, Text] = erasedValue
-    erased given canEqual2: CanEqual[String, Text] = erasedValue
-    erased given canEqual3: CanEqual[Text, String] = erasedValue
+    erased given canEqual: CanEqual[Text, Text] = caps.unsafe.unsafeErasedValue
+    erased given canEqual2: CanEqual[String, Text] = caps.unsafe.unsafeErasedValue
+    erased given canEqual3: CanEqual[Text, String] = caps.unsafe.unsafeErasedValue
 
     given typeable: Typeable[Text]:
       def unapply(value: Any): Option[value.type & Text] = value.asMatchable match

@@ -230,19 +230,18 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
         def commit(): Stream[Commit] =
           if hash.absent || tree.absent || author.absent || committer.absent then Stream()
-          else
-            given unsafe: Unsafe = Unsafe
+          else unsafely:
             val pem = parsePem(signature.join(t"\n"))
 
             Stream:
               Commit
-               (hash.vouch,
-                tree.vouch,
-                parents.reverse,
-                author.vouch,
-                committer.vouch,
-                pem,
-                lines.reverse)
+                ( hash.vouch,
+                  tree.vouch,
+                  parents.reverse,
+                  author.vouch,
+                  committer.vouch,
+                  pem,
+                  lines.reverse )
 
         def read(stream: Stream[Text], lines: List[Text]): (List[Text], Stream[Text]) =
           stream match

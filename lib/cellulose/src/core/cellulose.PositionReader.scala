@@ -95,10 +95,10 @@ class PositionReader(private var in: Stream[Text]):
           case Unset => requireCr = true
           case false =>
             raise
-             (ParseError
-               (Codl,
-                Codl.Position(lastLine, lastCol, 1),
-                Codl.Issue.CarriageReturnMismatch(false)))
+              ( ParseError
+                  ( Codl,
+                    Codl.Position(lastLine, lastCol, 1),
+                    Codl.Issue.CarriageReturnMismatch(false) ) )
 
           case true  =>
             ()
@@ -116,10 +116,10 @@ class PositionReader(private var in: Stream[Text]):
         requireCr match
           case true  =>
             raise
-             (ParseError
-               (Codl,
-                Codl.Position(lastLine, lastCol, 1),
-                Codl.Issue.CarriageReturnMismatch(true)))
+              ( ParseError
+                  ( Codl,
+                    Codl.Position(lastLine, lastCol, 1),
+                    Codl.Issue.CarriageReturnMismatch(true) ) )
 
           case Unset =>
             requireCr = false

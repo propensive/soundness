@@ -30,56 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package legerdemain
+package escapade
+
+import language.experimental.pureFunctions
 
 import anticipation.*
-import contingency.*
 import fulminate.*
-import gossamer.*
-import honeycomb.*
-import prepositional.*
-import vacuous.*
 
-import doms.html.whatwg
-import whatwg.*
-import attributives.textAttributes
+type Escape = Ansi.Input.Escape
 
-private given realm: Realm = realm"legerdemain"
+export Escapade.CharSpan
 
+object Bold
+object Italic
+object Underline
+object Strike
+object Reverse
+object Conceal
 
-def elicit[value: Formulaic]
-  ( query: Optional[Query] = Unset, validation: Validation, submit: Optional[Text] )
-  ( using formulation: Formulation )
-: Html of Flow =
+extension (inline ctx: StringContext)
+  transparent inline def e(inline parts: Any*): Teletype = ${Ansi.Interpolator.expand('ctx, 'parts)}
 
-    formulation.form
-     (value.fields(Pointer.Self, t"", query.or(Query.empty), validation, formulation), submit)
+extension [teletypeable: Teletypeable](value: teletypeable) def teletype: Teletype =
+  teletypeable.teletype(value)
 
-
-extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
-  def edit(validation: Validation, submit: Optional[Text])(using formulation: Formulation)
-  : Html of Flow =
-
-      formulation.form
-       (formulaic.fields(Pointer.Self, t"", formulaic.encoded(value), validation, formulation),
-        submit)
-
-
-package formulations:
-  given default: Formulation:
-    def form(content: Seq[Html of Flow], submit: Optional[Text]): Html of Flow =
-      Form(action = t".", method = t"post")(Fragment(content*), Input.Submit(value = submit.or(t"Submit")))
-
-    def element
-      ( widget:     Html of Phrasing,
-        legend:     Text,
-        validation: Optional[Message],
-        required:   Boolean )
-    : Html of Flow =
-        given alertClass: (Stylesheet of "alert" | "required") = Stylesheet()
-        Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required(t"*"))
-
-        // Div
-        //  (validation.let(_.html).let(P.alert(_)),
-        //   Label(legend, widget),
-        //   Span.required(t"*").unless(!required))
+package printableTypes:
+  given message: Message is Printable = summon[Teletype is Printable].contramap(_.teletype)

@@ -48,7 +48,7 @@ object Combobox:
       whatwg.Option(value = option)
 
     Fragment
-     (Input(name = combobox.name, list = DomId(combobox.name), value = combobox.value),
-      Datalist(id = DomId(combobox.name))(items*))
+      ( Input(name = combobox.name, list = DomId(combobox.name), value = combobox.value),
+        Datalist(id = DomId(combobox.name))(items*) )
 
 case class Combobox(name: Text, options: List[Text], value: Text) extends Widget

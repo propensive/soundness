@@ -30,129 +30,125 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package exoskeleton
 
-import java.util.function as juf
+import java.lang as jl
+
+import sun.misc as sm
 
 import ambience.*
-import anthology.*
 import anticipation.*
 import contingency.*
 import digression.*
 import distillate.*
-import galilei.*
-import hellenism.*
-import inimitable.*
+import escapade.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*, textMetrics.uniform
 import nomenclature.*
 import prepositional.*
-import proscenium.*
+import profanity.*
 import rudiments.*
 import serpentine.*
-import spectacular.*
-import symbolism.*
+import turbulence.*
 import vacuous.*
 
-import interfaces.paths.pathOnLinux
-import systems.java
+package backstops:
+  given silent: Backstop:
+    def handle(error: Throwable)(using Stdio): Exit = error match
+      case error: Exception => Exit(1)
+      case error: Throwable => Exit(2)
 
-import scala.quoted.*
+  given genericErrorMessage: Backstop:
+    def handle(error: Throwable)(using Stdio): Exit = error match
+      case error: Exception =>
+        Out.println(t"An unexpected error occurred.")
+        Exit(1)
+
+      case error: Throwable =>
+        Out.println(t"An unexpected error occurred.")
+        Exit(2)
+
+  given exceptionMessage: Backstop:
+    def handle(error: Throwable)(using Stdio): Exit = error match
+      case error: Exception =>
+        Out.println(error.toString.tt)
+        Exit(1)
+
+      case error: Throwable =>
+        Out.println(error.toString.tt)
+        Exit(2)
+
+  given stackTrace: Backstop:
+    def handle(error: Throwable)(using Stdio): Exit = error match
+      case error: Exception =>
+        Out.println(StackTrace(error).teletype)
+        Exit(1)
+
+      case error: Throwable =>
+        Out.println(StackTrace(error).teletype)
+        Exit(2)
+
+package executives:
+  given direct: (backstop: Backstop) => Executive:
+    type Return = Exit
+    type Interface = Invocation
 
 
-trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transportive:
-  type Result[output]
-  type Transport <: Object
+    def invocation
+      ( arguments:        Iterable[Text],
+        environment:      Environment,
+        workingDirectory: WorkingDirectory,
+        stdio:            Stdio,
+        signals:          Spool[Signal],
+        entrypoint:       Entrypoint,
+        login:            Login )
+      ( using interpreter: Interpreter )
+    : Invocation =
 
-  protected val scalac: Scalac[?]
-  protected def invoke[output](stage: Stage[output, Form, Target]): Result[output]
-  private var cache: Map[Codepoint, (Target, juf.Function[Form, Form])] = Map()
-  protected val classloader = classloader0
+        Invocation
+          ( Cli.arguments(arguments, Unset, Unset, Unset),
+            environments.java,
+            workingDirectories.java,
+            stdio,
+            signals,
+            arguments.size == 0 || arguments.head != t"{admin}",
+            login )
 
-  def classpath(out: Path on Linux): LocalClasspath = LocalClasspath:
-    Classpath.Directory(out)
-    :: (classloaders.threadContext.classpath.match
-      case classpath: LocalClasspath =>
-        classpath.entries
 
-      case _ =>
-        unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
+    def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
+      try exitStatus(using invocation)
+      catch case error: Throwable => backstop.handle(error)(using invocation.stdio)
 
-  lazy val settings2: staging.Compiler.Settings =
-    staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
+inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
+  lambda(using !![Effectful])
 
-  lazy val compiler2: staging.Compiler = staging.Compiler.make(classloader.java)(using settings2)
+def application(using executive: Executive, interpreter: Interpreter)
+  ( arguments: Iterable[Text], signals: List[Signal] = Nil )
+  ( block: Cli ?=> executive.Return )
+: Unit =
 
-  def stage(path: Path on Linux): Target
+  val spool: Spool[Signal] = Spool()
+  signals.each: signal =>
+    sm.Signal.handle(sm.Signal(signal.shortName.s), event => spool.put(signal))
 
-  inline def dispatch[output]
-    ( body: (References over Transport) ?=> Quotes ?=> Expr[output] )
-    [ version <: Scalac.Versions ]
-    ( using codepoint:  Codepoint,
-            properties: System,
-            directory:  TemporaryDirectory,
-            stageable:  Stageable over Transport in Form )
-  : Result[output] raises CompilerError raises RemoteError =
+  val entrypoint = new Entrypoint:
+    def executable: Path on Linux =
+      safely(ProcessHandle.current.nn.info.nn.command.nn.get.nn.tt.decode[Path on Linux])
+      . or(panic(m"cannot determine java invocation"))
 
-      val references: References over Transport = References[Transport]()
+    def script: Text = executable.name
 
-      val (target, function): (Target, juf.Function[Form, Form]) =
-        if cache.contains(codepoint) then
-          given staging.Compiler = compiler2
+  // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment
+  // variables
+  val cli =
+    executive.invocation
+      ( arguments,
+        environments.java,
+        workingDirectories.java,
+        stdioSources.virtualMachine.ansi,
+        spool,
+        entrypoint,
+        Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset) )
 
-          // This is necessary to allocate references as a side effect
-          staging.withQuotes:
-            ' {
-                (array: Array[Object]) =>
-                  $ {
-                      references() = 'array
-                      body(using references)
-                    }
-              }
-
-          cache(codepoint)
-
-        else
-          val uuid = Uuid()
-
-          val out =
-            import strategies.throwUnsafely
-            (temporaryDirectory / uuid).on[Linux]
-
-          val settings: staging.Compiler.Settings =
-            staging.Compiler.Settings.make
-              (Some(out.encode.s), scalac.commandLineArguments.map(_.s))
-
-          given compiler: staging.Compiler =
-            staging.Compiler.make(classloader.java)(using settings)
-
-          val function: juf.Function[Form, Form] = staging.run:
-            ' {
-                form =>
-                  stageable.serialize:
-
-                    val array = new Array[Object](1)
-                    array(0) =
-                      stageable.embed[output]
-                        ( $ {
-                              references() = '{stageable.deserialize(form)}
-                              body(using references)
-                            } )
-                    array
-              }
-
-          val target = stage(out)
-          cache = cache.updated(codepoint, (target, function))
-
-          (target, function)
-
-      invoke[output]
-        ( Stage
-          ( target,
-            function =>
-              stageable.extract[output]:
-                stageable.deserialize(function(stageable.serialize(references())))
-                . head.asInstanceOf[Transport]) )
-
-      // catch case throwable: Throwable =>
-      //   println(throwable)
-      //   throwable.printStackTrace()
-      //   abort(CompilerError())
+  jl.System.exit(executive.process(cli)(block)())

@@ -55,7 +55,7 @@ object Routable:
       input.each: bytes =>
         val packet =
           jn.DatagramPacket
-           (bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port)
+            ( bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port )
 
         connection.socket.send(packet)
 

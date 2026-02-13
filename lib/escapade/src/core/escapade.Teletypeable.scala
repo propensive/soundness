@@ -173,7 +173,7 @@ object Teletypeable:
 
   given throwable: Throwable is Teletypeable = throwable =>
     Teletype.make[String]
-     (throwable.getClass.getName.nn.show.cut(t".").last.s, _.copy(fg = 0xdc133b))
+      ( throwable.getClass.getName.nn.show.cut(t".").last.s, _.copy(fg = 0xdc133b) )
 
 trait Teletypeable extends Typeclass:
   def teletype(value: Self): Teletype

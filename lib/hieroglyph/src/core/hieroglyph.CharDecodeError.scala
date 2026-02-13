@@ -36,4 +36,4 @@ import fulminate.*
 
 case class CharDecodeError(pos: Int, encoding: Encoding)(using Diagnostics)
 extends Error
- (m"The byte sequence at position $pos could not be decoded with the encoding $encoding")
+  ( m"The byte sequence at position $pos could not be decoded with the encoding $encoding" )

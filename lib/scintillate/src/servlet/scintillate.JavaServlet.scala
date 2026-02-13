@@ -69,12 +69,12 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
 
       val httpRequest =
         Http.Request
-         (method      = request.getMethod.nn.show.decode[Http.Method],
-          version     = Http.Version.parse(request.getProtocol.nn.tt),
-          host        = unsafely(request.getServerName.nn.tt.decode[Hostname]),
-          target      = target,
-          body        = () => streamBody(request),
-          textHeaders = headers)
+          ( method      = request.getMethod.nn.show.decode[Http.Method],
+            version     = Http.Version.parse(request.getProtocol.nn.tt),
+            host        = unsafely(request.getServerName.nn.tt.decode[Hostname]),
+            target      = target,
+            body        = () => streamBody(request),
+            textHeaders = headers )
 
       def respond(response: Http.Response): Unit =
         servletResponse.setStatus(response.status.code)

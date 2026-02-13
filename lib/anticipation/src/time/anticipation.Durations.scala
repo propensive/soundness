@@ -43,4 +43,4 @@ object Durations:
   given instantiable: Long is Instantiable across Durations from Long = identity(_)
   given abstractable: Long is Abstractable across Durations to Long = identity(_)
 
-erased trait Durations
+sealed trait Durations

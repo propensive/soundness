@@ -109,7 +109,7 @@ object Tag:
       val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
 
       Container
-       (valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary)
+        ( valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary )
       . of[label]
       . over[children]
       . in[dom]

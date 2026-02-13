@@ -61,13 +61,13 @@ object Envelope:
   : Envelope =
 
       Envelope
-       (sender.email,
-        many(to),
-        many(cc),
-        many(bcc),
-        many(replyTo),
-        subject,
-        sendable.email(email))
+        ( sender.email,
+          many(to),
+          many(cc),
+          many(bcc),
+          many(replyTo),
+          subject,
+          sendable.email(email) )
 
 
 case class Envelope

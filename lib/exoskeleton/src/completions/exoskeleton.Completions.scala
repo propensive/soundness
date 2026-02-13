@@ -156,12 +156,12 @@ object Completions:
               then Installation.InstallResult.ShellNotInstalled(Shell.Bash)
               else
                 install
-                 (Shell.Bash,
-                  command,
-                  Name[Linux](command),
-                  List
-                   (Xdg.dataDirs[Path on Linux].last/"bash-completion"/"completions",
-                    Xdg.dataHome[Path on Linux]/"bash-completion"/"completions"))
+                  ( Shell.Bash,
+                    command,
+                    Name[Linux](command),
+                    List
+                      ( Xdg.dataDirs[Path on Linux].last/"bash-completion"/"completions",
+                        Xdg.dataHome[Path on Linux]/"bash-completion"/"completions") )
 
             val fish: Installation.InstallResult =
               if sh"sh -c 'command -v fish'".exec[Exit]() != Exit.Ok

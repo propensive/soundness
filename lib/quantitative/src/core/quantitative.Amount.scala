@@ -38,7 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-erased trait Amount[dimension <: Measure, label <: Label]()
+sealed trait Amount[dimension <: Measure, label <: Label]()
 
 object Amount:
   // base units

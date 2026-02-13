@@ -71,12 +71,12 @@ object Openable:
         else options
 
       path.protect(IoError.Operation.Open)
-       (jnc.FileChannel.open(jnf.Path.of(path.encode.s), options2*).nn)
+        ( jnc.FileChannel.open(jnf.Path.of(path.encode.s), options2*).nn )
 
     def handle(channel: jnc.FileChannel): Handle =
       Handle
-       (() => Streamable.channel.stream(channel).stream[Data],
-        Writable.channel.write(channel, _))
+        ( () => Streamable.channel.stream(channel).stream[Data],
+          Writable.channel.write(channel, _) )
 
 
     def close(channel: jnc.FileChannel): Unit = channel.close()

@@ -32,4 +32,4 @@
                                                                                                   */
 package monotonous
 
-erased trait Base32 extends Serialization
+sealed trait Base32 extends Serialization

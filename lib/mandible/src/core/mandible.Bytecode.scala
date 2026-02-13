@@ -63,14 +63,14 @@ import columnAttenuation.ignore
 object Bytecode:
   given teletypeable: Bytecode is Teletypeable = bytecode =>
     val table = Table[Instruction]
-                 (Column(e"$Bold(Source)", textAlign = TextAlignment.Right): line =>
-                    line.line.let: line =>
-                      val source = e"${rgb"#88aabb"}(${bytecode.sourceFile.or(t"")})"
-                      e"$source:${rgb"#ddddbb"}(${line.show})"
-                    . or(e""),
-                  Column(e"")(_.offset.show.subscripts),
-                  Column(e"$Bold(Opcode)")(_.opcode.teletype),
-                  Column(e"$Bold(Stack)")(_.stack.let(_.teletype).or(e"")))
+      ( Column(e"$Bold(Source)", textAlign = TextAlignment.Right): line =>
+          line.line.let: line =>
+            val source = e"${rgb"#88aabb"}(${bytecode.sourceFile.or(t"")})"
+            e"$source:${rgb"#ddddbb"}(${line.show})"
+          . or(e""),
+        Column(e"")(_.offset.show.subscripts),
+        Column(e"$Bold(Opcode)")(_.opcode.teletype),
+        Column(e"$Bold(Stack)")(_.stack.let(_.teletype).or(e"")) )
 
     table.tabulate(bytecode.instructions).grid(160).render.join(e"\n")
 

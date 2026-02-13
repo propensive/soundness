@@ -32,4 +32,4 @@
                                                                                                   */
 package monotonous
 
-erased trait Base64 extends Serialization
+sealed trait Base64 extends Serialization

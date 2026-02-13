@@ -32,5 +32,5 @@
                                                                                                   */
 package urticose
 
-erased trait Port:
+sealed trait Port:
   type Topic <: Int

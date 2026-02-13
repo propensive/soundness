@@ -44,9 +44,9 @@ import vacuous.*
 case class Pem(label: PemLabel, data: Data):
   def serialize: Text =
     Seq
-     (Seq(t"-----BEGIN $label-----"),
-      data.grouped(48).to(Seq).map(_.serialize[Base64]),
-      Seq(t"-----END $label-----")).flatten.join(t"\n")
+      ( Seq(t"-----BEGIN $label-----"),
+        data.grouped(48).to(Seq).map(_.serialize[Base64]),
+        Seq(t"-----END $label-----")).flatten.join(t"\n" )
 
 object Pem:
   def parse(text: Text)(using Diagnostics): Pem raises PemError =

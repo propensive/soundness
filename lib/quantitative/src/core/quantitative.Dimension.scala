@@ -34,10 +34,10 @@ package quantitative
 
 trait Dimension
 
-erased trait Distance extends Dimension
-erased trait Mass extends Dimension
-erased trait Time extends Dimension
-erased trait Heat extends Dimension
-erased trait Current extends Dimension
-erased trait Luminosity extends Dimension
-erased trait AmountOfSubstance extends Dimension
+sealed trait Distance extends Dimension
+sealed trait Mass extends Dimension
+sealed trait Time extends Dimension
+sealed trait Heat extends Dimension
+sealed trait Current extends Dimension
+sealed trait Luminosity extends Dimension
+sealed trait AmountOfSubstance extends Dimension

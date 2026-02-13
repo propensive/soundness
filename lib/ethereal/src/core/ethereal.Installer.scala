@@ -92,13 +92,13 @@ object Installer:
 
           val preferences: List[Path on Linux] =
             List
-             (Xdg.bin[Path on Linux],
-              % / "usr" / "local" / "bin",
-              % / "usr" / "bin",
-              % / "usr" / "local" / "sbin",
-              % / "opt" / "bin",
-              % / "bin",
-              % / "bin")
+              ( Xdg.bin[Path on Linux],
+                % / "usr" / "local" / "bin",
+                % / "usr" / "bin",
+                % / "usr" / "local" / "sbin",
+                % / "opt" / "bin",
+                % / "bin",
+                % / "bin" )
 
           paths.filter(_.exists()).filter(_.writable()).sortBy: directory =>
             preferences.indexOf(directory) match

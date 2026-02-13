@@ -32,4 +32,4 @@
                                                                                                   */
 package monotonous
 
-erased trait Serialization
+trait Serialization

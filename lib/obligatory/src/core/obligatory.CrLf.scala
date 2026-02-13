@@ -62,4 +62,4 @@ object CrLf:
       def next(): Text = ready.asInstanceOf[Text].also:
         ready = Unset
 
-erased trait CrLf
+sealed trait CrLf

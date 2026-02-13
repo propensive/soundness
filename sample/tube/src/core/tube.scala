@@ -275,7 +275,7 @@ case class Plan(journeys: List[Journey])
 case class Journey(duration: HoursAndMinutes, legs: List[Leg])
 
 case class Leg
-   (duration:      HoursAndMinutes,
+  ( duration:      HoursAndMinutes,
     path:          LegPath,
     instruction:   Instruction,
     routeOptions:  List[RouteOption],

@@ -32,4 +32,4 @@
                                                                                                   */
 package turbulence
 
-erased trait Gzip extends CompressionAlgorithm
+sealed trait Gzip extends CompressionAlgorithm

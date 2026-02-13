@@ -47,20 +47,21 @@ given decimalizer: Decimalizer = Decimalizer(3)
 case class Library(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
 
 val libraries: List[Library] = List
- (Library
-   (t"wisteria",
-    t"Wisteria",
-    581,
-    2017,
-    t"Simple, fast and transparant generic derivation for typeclasses"),
-  Library
-   (t"quantitative",
-    t"Quantitative",
-    1271,
-    2023,
-    t"Statically-checked physical units with seamless syntax"),
-  Library(t"turbulence", t"Turbulence", 1047, 2022, t"Simple tools for working with data streams"),
-  Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables"))
+    ( Library
+      ( t"wisteria",
+        t"Wisteria",
+        581,
+        2017,
+        t"Simple, fast and transparant generic derivation for typeclasses"),
+      Library
+        ( t"quantitative",
+          t"Quantitative",
+          1271,
+          2023,
+          t"Statically-checked physical units with seamless syntax"),
+      Library
+        ( t"turbulence", t"Turbulence", 1047, 2022, t"Simple tools for working with data streams" ),
+      Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
 
 import columnAttenuation.fail
 
@@ -68,15 +69,15 @@ import columnAttenuation.fail
 def run(): Unit =
   val table =
     Table[Library]
-     (Column(e"$Bold(Name)", sizing = columnar.Prose): lib =>
-        e"$Bold(${lib.name})",
-      Column(e"$Bold(Identifier)", sizing = columnar.Collapsible(0.9))(_.id),
-      Column(e"$Bold(LoC)", sizing = columnar.Collapsible(0.3))(_.linesOfCode),
-      Column(e"$Bold(Year)", sizing = columnar.Collapsible(0.5)): lib =>
-        if lib.year > 2020 then e"${webColors.SandyBrown}(${lib.year})"
-        else e"${webColors.Chocolate}(${lib.year})",
-      Column(e"$Bold(Description)", textAlign = TextAlignment.Justify, sizing = columnar.Prose):
-        lib => e"$Italic(${lib.description})")
+      ( Column(e"$Bold(Name)", sizing = columnar.Prose): lib =>
+          e"$Bold(${lib.name})",
+        Column(e"$Bold(Identifier)", sizing = columnar.Collapsible(0.9))(_.id),
+        Column(e"$Bold(LoC)", sizing = columnar.Collapsible(0.3))(_.linesOfCode),
+        Column(e"$Bold(Year)", sizing = columnar.Collapsible(0.5)): lib =>
+          if lib.year > 2020 then e"${webColors.SandyBrown}(${lib.year})"
+          else e"${webColors.Chocolate}(${lib.year})",
+        Column(e"$Bold(Description)", textAlign = TextAlignment.Justify, sizing = columnar.Prose):
+          lib => e"$Italic(${lib.description})" )
 
   // given TableRelabelling[Person] = () => Map(
   //   t"name" -> t"Addressee",
@@ -92,12 +93,12 @@ def run(): Unit =
     Out.println(data.table)
 
     val table2 = Table[Fruit]
-     (Column(e"$Bold(Color)", textAlign = TextAlignment.Center): fruit =>
-        e"${Bg(fruit.color)}(   )",
-      Column(e"$Bold(English)")(_.english),
-      Column(e"$Bold(Russian)")(_.russian),
-      Column(e"$Bold(Chinese)")(_.chinese),
-      Column(e"$Bold(Japanese)")(_.japanese))
+      ( Column(e"$Bold(Color)", textAlign = TextAlignment.Center): fruit =>
+          e"${Bg(fruit.color)}(   )",
+        Column(e"$Bold(English)")(_.english),
+        Column(e"$Bold(Russian)")(_.russian),
+        Column(e"$Bold(Chinese)")(_.chinese),
+        Column(e"$Bold(Japanese)")(_.japanese) )
 
     Out.println(table2.tabulate(fruits).grid(100))
 
@@ -106,8 +107,8 @@ def run(): Unit =
 
     val pinkFloyd =
       List
-       (Member(t"Nick Mason", t"@nickmasondrums", 80),
-        Member(t"David Gilmour", t"@davidgilmour", 78))
+        ( Member(t"Nick Mason", t"@nickmasondrums", 80),
+          Member(t"David Gilmour", t"@davidgilmour", 78) )
 
     Out.println(pinkFloyd.table)
 
@@ -124,10 +125,10 @@ case class Fruit(chinese: Text, english: Text, russian: Text, japanese: Text, co
 
 val fruits =
   List
-   (Fruit(t"苹果", t"apple", t"яблоко", t"リンゴ", webColors.Crimson),
-    Fruit(t"梨", t"pear", t"груша", t"ナシ", webColors.YellowGreen),
-    Fruit(t"橙子", t"orange", t"апельсин", t"オレンジ", webColors.DarkOrange),
-    Fruit(t"柚子", t"yuzu", t"юдзу", t"柚子", webColors.Yellow))
+    ( Fruit(t"苹果", t"apple", t"яблоко", t"リンゴ", webColors.Crimson),
+      Fruit(t"梨", t"pear", t"груша", t"ナシ", webColors.YellowGreen),
+      Fruit(t"橙子", t"orange", t"апельсин", t"オレンジ", webColors.DarkOrange),
+      Fruit(t"柚子", t"yuzu", t"юдзу", t"柚子", webColors.Yellow) )
 
 enum Foo:
   case User(name: Text, size: Double)

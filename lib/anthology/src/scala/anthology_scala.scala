@@ -99,7 +99,7 @@ object scalacOptions:
         Scalac.Option[3.3](t"-language:experimental.relaxedExtensionImports")
 
       val erasedDefinitions = Scalac.Option[Scalac.Versions]
-                               (t"-language:experimental.erasedDefinitions")
+        ( t"-language:experimental.erasedDefinitions" )
 
       val saferExceptions =
         Scalac.Option[3.2 | 3.3 | 3.4 | 3.5 | 3.6](t"-language:experimental.saferExceptions")
@@ -138,10 +138,10 @@ extension (companion: Notice.type)
       position.nn.pipe: position =>
         val codeRange =
           CodeRange
-           (position.startLine.nn,
-            position.startColumn.nn,
-            position.endLine.nn,
-            position.endColumn.nn)
+            ( position.startLine.nn,
+              position.startColumn.nn,
+              position.endLine.nn,
+              position.endColumn.nn )
 
         Notice(importance, file, message, codeRange)
 

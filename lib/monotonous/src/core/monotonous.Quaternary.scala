@@ -32,4 +32,4 @@
                                                                                                   */
 package monotonous
 
-erased trait Quaternary extends Serialization
+sealed trait Quaternary extends Serialization

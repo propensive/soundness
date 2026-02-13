@@ -36,7 +36,7 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-erased trait Dos
+sealed trait Dos
 
 object Dos:
   type Rules = MustMatch["[^.]{1,8}(\\.[^.]{1,3})?"] & MustNotContain[" "] & MustMatch["[!-~]*"]

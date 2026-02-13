@@ -32,4 +32,4 @@
                                                                                                   */
 package monotonous
 
-erased trait Binary extends Serialization
+sealed trait Binary extends Serialization

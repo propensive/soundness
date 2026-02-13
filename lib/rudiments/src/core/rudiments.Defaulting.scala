@@ -35,9 +35,9 @@ package rudiments
 import prepositional.*
 
 trait Defaulting2:
-  erased given [value, anything] => value is Defaulting to anything = !!
+  inline given [value, anything] => value is Defaulting to anything = !!
 
 object Defaulting extends Defaulting2:
-  erased given [value] => value is Defaulting to value = !!
+  inline given [value] => value is Defaulting to value = !!
 
-erased trait Defaulting extends Typeclass, Resultant
+sealed trait Defaulting extends Typeclass, Resultant

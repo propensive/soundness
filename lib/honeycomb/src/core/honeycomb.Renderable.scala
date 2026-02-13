@@ -61,18 +61,18 @@ object Renderable:
 
     val rows = stackTrace.frames.map: frame =>
       Tr
-       (Td.at(Code(t"at")),
-        Td.`class`(Code(frame.method.className)),
-        Td.method(Code(frame.method.method)),
-        Td.file(Code(frame.file)),
-        Td(Code(t":")),
-        Td.line(Code(frame.line.let(_.show).or(t""))))
+        ( Td.at(Code(t"at")),
+          Td.`class`(Code(frame.method.className)),
+          Td.method(Code(frame.method.method)),
+          Td.file(Code(frame.file)),
+          Td(Code(t":")),
+          Td.line(Code(frame.line.let(_.show).or(t""))) )
 
     Div.stack
-     (H2(stackTrace.component),
-      H3(stackTrace.className),
-      H4(stackTrace.message.html),
-      Table(Tbody(rows*)))
+      ( H2(stackTrace.component),
+        H3(stackTrace.className),
+        H4(stackTrace.message.html),
+        Table(Tbody(rows*)) )
 
 
 trait Renderable extends Typeclass, Formal:

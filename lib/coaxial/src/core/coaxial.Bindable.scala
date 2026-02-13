@@ -128,11 +128,11 @@ object Bindable:
           val bytes: Array[Byte] = ip.getAddress.nn
 
           Ipv6
-           (Long(bytes.take(8).immutable(using Unsafe)),
-            Long(bytes.drop(8).immutable(using Unsafe)))
+            ( Long(bytes.take(8).immutable(using Unsafe)),
+              Long(bytes.drop(8).immutable(using Unsafe)) )
 
       Packet
-       (array.take(packet.getLength).immutable(using Unsafe), ip, UdpPort.unsafe(address.getPort))
+        ( array.take(packet.getLength).immutable(using Unsafe), ip, UdpPort.unsafe(address.getPort) )
 
     def transmit(socket: jn.DatagramSocket, input: Packet, response: UdpResponse): Unit =
       response match

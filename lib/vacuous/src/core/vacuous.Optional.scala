@@ -96,4 +96,4 @@ object Optional:
 object Optionality:
   inline given default: [value] => Optionality[value] = ${Vacuous.check[value]}
 
-erased trait Optionality[-value]
+sealed trait Optionality[-value]

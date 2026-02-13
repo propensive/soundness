@@ -71,7 +71,7 @@ object Authority:
 
           . pipe:
             Authority
-             (value.segment((arobase + 1) till colon).decode[Hostname], value.keep(arobase.n0), _)
+              ( value.segment((arobase + 1) till colon).decode[Hostname], value.keep(arobase.n0), _ )
 
         case _ =>
           Authority(value.after(arobase).decode[Hostname], value.before(arobase))

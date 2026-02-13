@@ -99,7 +99,7 @@ def safely[error <: Exception](using erased Void)[success]
 
 
 def unsafely[error <: Exception](using erased Void)[success]
-  ( block: Unsafe ?=> ThrowTactic[error, success] ?=> CanThrow[Exception] ?=> success )
+  ( block: (erased Unsafe) ?=> ThrowTactic[error, success] ?=> CanThrow[Exception] ?=> success )
 : success =
 
     boundary: label ?=>
@@ -226,8 +226,8 @@ extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accru
   : result =
 
       $ {
-          (Contingency.trackWithin[accrual, lambda, result, focus]
-           ('track, 'lambda, 'tactic, 'diagnostics))
+          Contingency.trackWithin[accrual, lambda, result, focus]
+            ( 'track, 'lambda, 'tactic, 'diagnostics )
         }
 
 

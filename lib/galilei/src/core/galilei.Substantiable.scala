@@ -38,8 +38,11 @@ import prepositional.*
 import serpentine.*
 
 object Substantiable:
-  given substantiable: [filesystem: Filesystem, path <: Path on filesystem] => path is Substantiable =
-    path => jnf.Files.exists(path.javaPath)
+  given substantiable: [filesystem: Filesystem, path <: Path on filesystem]
+  =>  path is Substantiable =
+
+      path => jnf.Files.exists(path.javaPath)
+
 
 
 trait Substantiable extends Typeclass:

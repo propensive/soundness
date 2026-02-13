@@ -114,9 +114,9 @@ object Obligatory:
                         case Some(encoder) =>
                           ' {
                               JsonRpc.Response
-                               ("2.0",
-                                $encoder.encode(${application.asExprOf[result]}),
-                                request.id)
+                                ( "2.0",
+                                  $encoder.encode(${application.asExprOf[result]}),
+                                  request.id )
                               . json
                             }
 
@@ -206,7 +206,7 @@ object Obligatory:
                         val json = Map(${Varargs(entries)}*).json
                         unsafely:
                           JsonRpc.notification($url, $methodName, json)
-                           (using $monitor, $codicil, $online)
+                            ( using $monitor, $codicil, $online )
                           . await()
                       }
                     . asTerm
@@ -218,7 +218,7 @@ object Obligatory:
                               val json = Map(${Varargs(entries)}*).json
                               unsafely:
                                 JsonRpc.request($url, $methodName, json)
-                                 (using $monitor, $codicil, $online)
+                                  ( using $monitor, $codicil, $online )
                                 . await()
                                 . decode[result](using $decoder)
                             }
@@ -253,13 +253,13 @@ object Obligatory:
     val parents  = List(TypeTree.of[Object], TypeTree.of[interface])
 
     val module = Symbol.newModule
-     (owner    = Symbol.spliceOwner,
-      name     = Symbol.freshName(interface.typeSymbol.name),
-      modFlags = Flags.EmptyFlags,
-      clsFlags = Flags.EmptyFlags,
-      parents  = _ => parents.map(_.tpe),
-      decls    = decls,
-      privateWithin = Symbol.noSymbol)
+      ( owner    = Symbol.spliceOwner,
+        name     = Symbol.freshName(interface.typeSymbol.name),
+        modFlags = Flags.EmptyFlags,
+        clsFlags = Flags.EmptyFlags,
+        parents  = _ => parents.map(_.tpe),
+        decls    = decls,
+        privateWithin = Symbol.noSymbol )
 
     val classSymbol = module.moduleClass
 

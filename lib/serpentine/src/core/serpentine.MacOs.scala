@@ -38,7 +38,7 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-erased trait MacOs extends Posix
+sealed trait MacOs extends Posix
 
 object MacOs:
   type Rules =

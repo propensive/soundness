@@ -32,4 +32,4 @@
                                                                                                   */
 package typonym
 
-erased trait TypeSet[+element]
+sealed trait TypeSet[+element]

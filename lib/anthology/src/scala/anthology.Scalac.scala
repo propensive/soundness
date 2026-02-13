@@ -100,8 +100,8 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
           if int > last then
             last = int
             scalacProcess.put
-             (CompileProgress
-               (last/100.0, if currentStage == null then t"null" else currentStage.tt))
+              ( CompileProgress
+                ( last/100.0, if currentStage == null then t"null" else currentStage.tt) )
 
           scalacProcess.continue
 
@@ -136,7 +136,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
                   if !reporter.hasErrors then finish(Scalac.Scala3, run)
 
                 scalacProcess.put
-                 (if reporter.hasErrors then CompileResult.Failure else CompileResult.Success)
+                  ( if reporter.hasErrors then CompileResult.Failure else CompileResult.Success )
 
               catch case suc.NonFatal(error) =>
                 scalacProcess.put(CompileResult.Crash(error.stackTrace))

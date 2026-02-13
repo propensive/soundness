@@ -41,13 +41,13 @@ import language.experimental.pureFunctions
 
 enum DaemonEvent:
   case Init
-        (pid:         Pid,
-         login:       Login,
-         work:        Text,
-         script:      Text,
-         cliInput:    Stdin,
-         arguments:   List[Text],
-         environment: List[Text])
+    ( pid:         Pid,
+      login:       Login,
+      work:        Text,
+      script:      Text,
+      cliInput:    Stdin,
+      arguments:   List[Text],
+      environment: List[Text] )
 
   case Trap(pid: Pid, signal: Signal)
   case Exit(pid: Pid)

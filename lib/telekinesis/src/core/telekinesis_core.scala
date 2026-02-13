@@ -49,7 +49,7 @@ import language.dynamics
 private given realm: Realm = realm"telekinesis"
 
 package queryParameters:
-  erased given arbitrary: [key <: Label, value] => key is Parametric to value = !!
+  inline given arbitrary: [key <: Label, value] => key is Parametric to value = !!
 
 extension [value: Encodable in Query](value: value)
   def query: Query = value.encode

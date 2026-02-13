@@ -32,4 +32,4 @@
                                                                                                   */
 package caesura
 
-erased trait DynamicDsvEnabler
+sealed trait DynamicDsvEnabler

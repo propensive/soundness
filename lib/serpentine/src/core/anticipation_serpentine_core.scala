@@ -30,125 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package anticipation
 
-import java.lang as jl
-
-import sun.misc as sm
-
-import ambience.*
-import anticipation.*
 import contingency.*
-import digression.*
-import distillate.*
-import escapade.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*, textMetrics.uniform
-import nomenclature.*
 import prepositional.*
-import profanity.*
 import rudiments.*
 import serpentine.*
-import turbulence.*
-import vacuous.*
+import scala.sys.SystemProperties
 
-package backstops:
-  given silent: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception => Exit(1)
-      case error: Throwable => Exit(2)
+package interfaces.paths:
 
-  given genericErrorMessage: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(t"An unexpected error occurred.")
-        Exit(1)
-
-      case error: Throwable =>
-        Out.println(t"An unexpected error occurred.")
-        Exit(2)
-
-  given exceptionMessage: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(error.toString.tt)
-        Exit(1)
-
-      case error: Throwable =>
-        Out.println(error.toString.tt)
-        Exit(2)
-
-  given stackTrace: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(StackTrace(error).teletype)
-        Exit(1)
-
-      case error: Throwable =>
-        Out.println(StackTrace(error).teletype)
-        Exit(2)
-
-package executives:
-  given direct: (backstop: Backstop) => Executive:
-    type Return = Exit
-    type Interface = Invocation
-
-
-    def invocation
-      ( arguments:        Iterable[Text],
-        environment:      Environment,
-        workingDirectory: WorkingDirectory,
-        stdio:            Stdio,
-        signals:          Spool[Signal],
-        entrypoint:       Entrypoint,
-        login:            Login )
-      ( using interpreter: Interpreter )
-    : Invocation =
-
-        Invocation
-         (Cli.arguments(arguments, Unset, Unset, Unset),
-          environments.java,
-          workingDirectories.java,
-          stdio,
-          signals,
-          arguments.size == 0 || arguments.head != t"{admin}",
-          login)
-
-
-    def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
-      try exitStatus(using invocation)
-      catch case error: Throwable => backstop.handle(error)(using invocation.stdio)
-
-inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
-  lambda(using !![Effectful])
-
-def application(using executive: Executive, interpreter: Interpreter)
-  ( arguments: Iterable[Text], signals: List[Signal] = Nil )
-  ( block: Cli ?=> executive.Return )
-: Unit =
-
-  val spool: Spool[Signal] = Spool()
-  signals.each: signal =>
-    sm.Signal.handle(sm.Signal(signal.shortName.s), event => spool.put(signal))
-
-  val entrypoint = new Entrypoint:
-    def executable: Path on Linux =
-      safely(ProcessHandle.current.nn.info.nn.command.nn.get.nn.tt.decode[Path on Linux])
-      . or(panic(m"cannot determine java invocation"))
-
-    def script: Text = executable.name
-
-  // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment
-  // variables
-  val cli =
-    executive.invocation
-     (arguments,
-      environments.java,
-      workingDirectories.java,
-      stdioSources.virtualMachine.ansi,
-      spool,
-      entrypoint,
-      Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset))
-
-  jl.System.exit(executive.process(cli)(block)())
+  inline given pathOnLinux: (Path on Linux) is Representative of Paths = !!
+  inline given pathOnWindows: (Path on Windows) is Representative of Paths = !!
+  inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
+  inline given pathOnLocal: (Path on Local) is Representative of Paths = !!
+  inline given pathOnPosix: (Path on Posix) is Representative of Paths = !!

@@ -35,4 +35,4 @@ package anticipation
 object HttpStreams:
   type Content = (Text, LazyList[IArray[Byte]])
 
-erased trait HttpStreams
+sealed trait HttpStreams

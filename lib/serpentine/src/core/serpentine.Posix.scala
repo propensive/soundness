@@ -38,7 +38,7 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-erased trait Posix
+trait Posix
 
 object Posix:
   type Rules =

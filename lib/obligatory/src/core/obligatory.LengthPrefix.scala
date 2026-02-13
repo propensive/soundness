@@ -69,4 +69,4 @@ object LengthPrefix:
       def next(): Data = ready.asInstanceOf[Data].also:
         ready = Unset
 
-erased trait LengthPrefix
+sealed trait LengthPrefix

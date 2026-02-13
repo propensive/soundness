@@ -32,4 +32,4 @@
                                                                                                   */
 package jacinta
 
-erased trait DynamicJsonEnabler
+sealed trait DynamicJsonEnabler

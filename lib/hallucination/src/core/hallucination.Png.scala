@@ -36,7 +36,7 @@ import anticipation.*
 import gesticulate.*
 import prepositional.*
 
-erased trait Png
+sealed trait Png
 
 object Png:
   def apply(): Rasterizable = rasterization
