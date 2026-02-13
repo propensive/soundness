@@ -45,12 +45,12 @@ import symbolism.*
 import scala.annotation.*
 
 object Complex:
-  inline given showable: [value: {Showable, Zeroic, Commensurable against value, Negatable to value}]
-  =>  Complex[value] is Showable =
+  inline given showable: [part: {Showable, Zeroic, Commensurable against part, Negatable to part}]
+  =>  Complex[part] is Showable =
 
       complex =>
         compiletime.summonFrom:
-          case distributive: (`value` is Distributive) =>
+          case distributive: (`part` is Distributive) =>
             provide[Complex[distributive.Operand] is Showable]:
               provide[distributive.Operand is Zeroic]:
                 val reParts: List[distributive.Operand] = distributive.parts(complex.real)
@@ -62,9 +62,9 @@ object Complex:
                 distributive.place(complex.real, parts2)
 
           case _ =>
-            if complex.imaginary == zero[value] then complex.real.show
-            else if complex.real == zero[value] then t"${complex.imaginary.show}ℐ"
-            else if complex.imaginary < zero[value]
+            if complex.imaginary == zero[part] then complex.real.show
+            else if complex.real == zero[part] then t"${complex.imaginary.show}ℐ"
+            else if complex.imaginary < zero[part]
             then t"${complex.real.show} - ${(-complex.imaginary).show}ℐ"
             else t"${complex.real.show} + ${complex.imaginary.show}ℐ"
 

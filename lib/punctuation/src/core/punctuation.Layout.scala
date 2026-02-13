@@ -54,7 +54,11 @@ enum Layout extends Markdown.Node:
   case BlockQuote(line: Ordinal, layout: Layout*)
 
   case OrderedList
-        (line: Ordinal, start: Int, tight: Boolean, delimiter: Optional['.' | ')'], items: List[Layout]*)
+    ( line:      Ordinal,
+      start:     Int,
+      tight:     Boolean,
+      delimiter: Optional['.' | ')'],
+      items:     List[Layout]* )
 
   case BulletList(line: Ordinal, tight: Boolean, items: List[Layout]*)
   case CodeBlock(line: Ordinal, info: List[Text], content: Text)

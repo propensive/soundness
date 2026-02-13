@@ -91,11 +91,12 @@ package temporaryDirectories:
     Optional(jl.System.getProperty("java.io.tmpdir")).let(_.tt).or:
       panic(m"the `java.io.tmpdir` system property is not set")
 
-  given system: (system: System) => TemporaryDirectory = () => jl.System.getProperty("java.io.tmpdir").nn.tt
+  given system: (system: System) => TemporaryDirectory =
+    () => jl.System.getProperty("java.io.tmpdir").nn.tt
 
   given environment: Environment => TemporaryDirectory = () =>
-    List("TMPDIR", "TMP", "TEMP").map(jl.System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt).or:
-      panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set")
+    List("TMPDIR", "TMP", "TEMP").map(jl.System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt)
+    . or(panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set"))
 
 
 inline def temporaryDirectory[path: Representative of Paths](using temporary: TemporaryDirectory)

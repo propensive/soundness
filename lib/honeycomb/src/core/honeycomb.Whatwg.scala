@@ -192,7 +192,10 @@ object Whatwg:
   given async: ("async" is Attribute on "script" of Presence) = attribute()
   given autocapitalize: ("autocapitalize" is Attribute of Autocapitalization) = globalAttribute()
   given autocomplete: ("autocomplete" is Attribute on "form" of Switch) = attribute()
-  given autocomplete2: ("autocomplete" is Attribute on "input" | "select" | "textarea" of Switch) = attribute()
+
+  given autocomplete2: ("autocomplete" is Attribute on "input" | "select" | "textarea" of Switch) =
+    attribute()
+
   given autocorrect: ("autocorrect" is Attribute of Textual) = globalAttribute()
   given autofocus: ("autofocus" is Attribute of Presence) = globalAttribute()
   given autoplay: ("autoplay" is Attribute on "audio" | "video" of Presence) = attribute()
@@ -221,21 +224,30 @@ object Whatwg:
   given defer: ("defer" is Attribute on "script" of Presence) = attribute()
   given dir: ("dir" is Attribute of Dir) = globalAttribute()
   given dirname: ("dirname" is Attribute on "input" | "textarea" of Textual) = attribute()
-  given disabled: ("disabled" is Attribute on "button" | "input" | "optgroup" | "option" | "select" | "textarea" of Presence) = attribute()
+
+  private type Disableable = "button" | "input" | "optgroup" | "option" | "select" | "textarea"
+  given disabled: ("disabled" is Attribute on Disableable of Presence) = attribute()
   given disabled2: ("disabled" is Attribute on "fieldset" of Presence) = attribute()
   given disabled3: ("disabled" is Attribute on "link" of Presence) = attribute()
   given download4: ("download" is Attribute on "a" | "area" of Textual) = attribute()
   given draggable: ("draggable" is Attribute of Truth) = globalAttribute()
   given enctype: ("enctype" is Attribute on "form" of Enctype) = attribute()
   given enterkeyhint: ("enterkeyhint" is Attribute of EnterKeyHint) = globalAttribute()
-  given fetchpriority: ("fetchpriority" is Attribute on "img" | "link" | "script" of FetchPriority) = attribute()
+
+  private type FetchPrioritizable = "img" | "link" | "script"
+  given fetchpriority: ("fetchpriority" is Attribute on FetchPrioritizable of FetchPriority) =
+    attribute()
+
   given `for`: ("for" is Attribute on "label" of Id) = attribute()
   given for2: ("for" is Attribute on "output" of Tokens) = attribute()
   given form: ("form" is Attribute on FormTags of Id) = attribute()
   given formaction: ("formaction" is Attribute on "input" | "button" of Url) = attribute()
   given formenctype: ("formenctype" is Attribute on "input" | "button" of Enctype) = attribute()
   given formmethod: ("formmethod" is Attribute on "input" | "button" of Method) = attribute()
-  given formnovalidate: ("formnovalidate" is Attribute on "input" | "button" of Presence) = attribute()
+
+  given formnovalidate: ("formnovalidate" is Attribute on "input" | "button" of Presence) =
+    attribute()
+
   given formtarget: ("formtarget" is Attribute on "input" | "button" of Target) = attribute()
   given headers: ("headers" is Attribute on "td" | "th" of Tokens) = attribute()
   given headingoffset: ("headingoffset" is Attribute of Upto8) = globalAttribute()
@@ -278,7 +290,9 @@ object Whatwg:
   given minlength: ("minlength" is Attribute on "input" | "textarea" of PositiveInt) = attribute()
   given multiple: ("multiple" is Attribute on "input" | "select" of Presence) = attribute()
   given muted: ("muted" is Attribute on "audio" | "video" of Presence) = attribute()
-  given name: ("name" is Attribute on "button" | "fieldset" | "input" | "output" | "select" | "textarea" of Name) = attribute()
+
+  private type NameElements = "button" | "fieldset" | "input" | "output" | "select" | "textarea"
+  given name: ("name" is Attribute on NameElements of Name) = attribute()
   given name2: ("name" is Attribute on "details" of Name) = attribute()
   given name3: ("name" is Attribute on "form" of Name) = attribute()
   given name4: ("name" is Attribute on "iframe" | "object" of Target) = attribute()
@@ -296,11 +310,17 @@ object Whatwg:
   given playsinline: ("playsinline" is Attribute on "video" of Presence) = attribute()
   given popover: ("popover" is Attribute of Popover) = globalAttribute()
   given popovertarget: ("popovertarget" is Attribute on "button" | "input" of Id) = attribute()
-  given popovertargetaction: ("popovertargetaction" is Attribute on "button" | "input" of PopoverAction) = attribute()
+
+  given pta: ("popovertargetaction" is Attribute on "button" | "input" of PopoverAction) =
+    attribute()
+
   given poster: ("poster" is Attribute on "video" of Url) = attribute()
   given preload: ("preload" is Attribute on "audio" | "video" of Preload) = attribute()
   given readonly: ("readonly" is Attribute on "input" | "textarea" of Presence) = attribute()
-  given referrerpolicy: ("referrerpolicy" is Attribute on ReferrerpolicyTags of ReferrerPolicy) = attribute()
+
+  given referrerpolicy: ("referrerpolicy" is Attribute on ReferrerpolicyTags of ReferrerPolicy) =
+    attribute()
+
   given rel: ("rel" is Attribute on "a" | "area" of Tokens) = attribute()
   given rel2: ("rel" is Attribute on "link" of Tokens) = attribute()
   given required: ("required" is Attribute on RequiredTags of Presence) = attribute()
@@ -310,11 +330,19 @@ object Whatwg:
   given sandbox: ("sandbox" is Attribute on "iframe" of Sandbox) = attribute()
   given scope: ("scope" is Attribute on "th" of ThScope) = attribute()
   given selected: ("selected" is Attribute on "option" of Presence) = attribute()
-  given shadowrootclonable: ("shadowrootclonable" is Attribute on "template" of Presence) = attribute()
-  given shadowrootcustomelementregistry: ("shadowrootcustomelementregistry" is Attribute on "template" of Presence) = attribute()
-  given shadowrootdelegatesfocus: ("shadowrootdelegatesfocus" is Attribute on "template" of Presence) = attribute()
+
+  given shadowrootclonable: ("shadowrootclonable" is Attribute on "template" of Presence) =
+    attribute()
+
+  given srcer: ("shadowrootcustomelementregistry" is Attribute on "template" of Presence) =
+    attribute()
+
+  given srdf: ("shadowrootdelegatesfocus" is Attribute on "template" of Presence) = attribute()
   given shadowrootmode: ("shadowrootmode" is Attribute on "template" of Openness) = attribute()
-  given shadowrootserializable: ("shadowrootserializable" is Attribute on "template" of Presence) = attribute()
+
+  given shadowrootserializable: ("shadowrootserializable" is Attribute on "template" of Presence) =
+    attribute()
+
   given shape: ("shape" is Attribute on "area" of Shape) = attribute()
   given size: ("size" is Attribute on "input" | "select" of PositiveInt) = attribute()
   given sizes: ("sizes" is Attribute on "img" | "source" of SourceSizeList) = attribute()
@@ -564,7 +592,9 @@ class Whatwg() extends Dom:
   val Menu = Tag.container["menu", "li" | ScriptSupporting, Whatwg](mode = Html.Mode.Whitespace)
 
   object Meta extends Tag.Void("meta", sci.Map(), false):
-    val ApplicationName = Tag.void["meta", Whatwg](presets = sci.Map(t"name" -> t"application-name"))
+    val ApplicationName =
+      Tag.void["meta", Whatwg](presets = sci.Map(t"name" -> t"application-name"))
+
     val Author = Tag.void["meta", Whatwg](presets = sci.Map(t"name" -> t"author"))
     val Description = Tag.void["meta", Whatwg](presets = sci.Map(t"name" -> t"description"))
     val Generator = Tag.void["meta", Whatwg](presets = sci.Map(t"name" -> t"generator"))

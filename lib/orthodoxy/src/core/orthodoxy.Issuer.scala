@@ -133,7 +133,10 @@ class Issuer
                 val refresh = safely(json.refresh_token.as[Text])
                 val scopes = json.scope.as[Text].cut(t" ")
                 val tokenType = json.token_type.as[Text] // assume `Bearer`
-                val expiry: Optional[Long] = safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
+
+                val expiry: Optional[Long] =
+                  safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
+
                 val state2 = state.copy(access = Authorization(access, scopes, expiry, refresh))
 
                 store(session) = state2

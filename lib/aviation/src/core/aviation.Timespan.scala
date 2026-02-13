@@ -38,7 +38,7 @@ import proscenium.*
 import symbolism.*
 
 object Timespan:
-  given genericDuration: Timespan is Instantiable & Abstractable across Durations from Long to Long =
+  given generic: Timespan is Instantiable & Abstractable across Durations from Long to Long =
     new Abstractable with Instantiable:
       type Self = Timespan
       type Domain = Durations

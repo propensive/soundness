@@ -181,10 +181,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
         case other                => panic(m"impossible state")
 
 
-  def await[abstractable: Abstractable across Durations to Long](duration: abstractable): Result raises AsyncError =
-    promise.attend(duration)
-    thread.join()
-    result()
+  def await[abstractable: Abstractable across Durations to Long](duration: abstractable)
+  : Result raises AsyncError =
+
+      promise.attend(duration)
+      thread.join()
+      result()
+
 
   def await(): Result raises AsyncError =
     promise.attend()

@@ -119,7 +119,10 @@ object Adversaria:
         val subtypes = limit.typeSymbol.children.map: subtype =>
           '{(${Expr(subtype.name)}.tt, ${matching(subtype.annotations)}.to(Set))}
 
-        '{Annotated.AnnotatedSubtypes[operand, self, plane, limit](${Expr.ofList(subtypes)}.to(Map))}
+        ' {
+            Annotated.AnnotatedSubtypes[operand, self, plane, limit]
+              ( ${Expr.ofList(subtypes)}.to(Map) )
+          }
 
 
 

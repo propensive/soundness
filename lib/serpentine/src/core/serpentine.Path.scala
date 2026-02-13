@@ -113,7 +113,8 @@ object Path:
 
 
   given encodable: [filesystem: Filesystem] => Path on filesystem is Encodable in Text =
-    path => path.descent.map(filesystem.escape(_)).reverse.join(path.root, filesystem.separator, t"")
+    path =>
+      path.descent.map(filesystem.escape(_)).reverse.join(path.root, filesystem.separator, t"")
 
   given showable: [filesystem: Filesystem] => Path on filesystem is Showable = _.encode
 

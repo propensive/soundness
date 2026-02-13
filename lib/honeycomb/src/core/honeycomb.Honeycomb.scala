@@ -71,7 +71,8 @@ object Honeycomb:
       var holes: Map[Ordinal, Html.Hole] = Map()
       def capture(ordinal: Ordinal, hole: Html.Hole) = holes = holes.updated(ordinal, hole)
 
-      val html: Html = Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
+      val html: Html =
+        Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
       val holes2 = holes.to(List).sortBy(_(0)).map(_(1))
       val iterator = holes2.to(Iterator)
@@ -150,7 +151,8 @@ object Honeycomb:
 
           '{$attributesChecked && $elementsChecked}
 
-      def descend(array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean])
+      def descend
+        ( array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean] )
       : Expr[Boolean] =
 
           pattern match
@@ -281,7 +283,11 @@ object Honeycomb:
                               '{$attributive.attribute(${Expr(attribute)}, $expr).let(_(1))}
 
                             case _ =>
-                              halt(m"""${TypeRepr.of[value].show} cannot be attributed to an attribute of ${Syntax(TypeRepr.of[result]).show}""")
+                              halt:
+                                m"""
+                                  ${TypeRepr.of[value].show} cannot be attributed to an attribute of
+                                  ${Syntax(TypeRepr.of[result]).show}
+                                """
 
                         case _ =>
                           halt(m"the attribute $attribute cannot be used on the element <$tag>")

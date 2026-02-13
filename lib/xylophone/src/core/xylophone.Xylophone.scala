@@ -109,7 +109,7 @@ object Xylophone:
       def checkHeader(array: Expr[Array[Any]], pattern: Header, scrutinee: Expr[Header])
       : Expr[Boolean] =
 
-          '{${Expr(pattern.version)} == $scrutinee.version} // FIXME: Check encoding and standalone too
+          '{${Expr(pattern.version)} == $scrutinee.version} // FIXME: Check encoding/standalone too
 
       def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       : Expr[Boolean] =
@@ -343,7 +343,11 @@ object Xylophone:
                               '{$attributive.attribute(${Expr(attribute)}, $expr).let(_(1))}
 
                             case _ =>
-                              halt(m"""${TypeRepr.of[value].show} cannot be attributed to an attribute of ${Syntax(TypeRepr.of[result]).show}""")
+                              halt:
+                                m"""
+                                  ${TypeRepr.of[value].show} cannot be attributed to an attribute of
+                                  ${Syntax(TypeRepr.of[result]).show}
+                                """
 
                         case _ =>
                           expr match

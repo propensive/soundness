@@ -131,7 +131,8 @@ object Makable:
                   sh"mkfifo $path"() match
                     case Exit.Ok => ()
                     case _             =>
-                      raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
+                      raise
+                        ( IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied) )
 
 trait Makable extends Typeclass, Resultant, Planar:
   def make(path: Path on Plane): Result

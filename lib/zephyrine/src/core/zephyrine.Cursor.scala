@@ -178,9 +178,10 @@ class Cursor[data](initial:    data,
 
     if finished then false else
       inline if lineation.active then
-        columnNo = if !lineation.track(addressable.address(current2, focus2)) then columnNo.next else
-          lineNo = lineNo.next
-          Prim
+        columnNo =
+          if !lineation.track(addressable.address(current2, focus2)) then columnNo.next else
+            lineNo = lineNo.next
+            Prim
       true
 
   inline def more: Boolean = !finished

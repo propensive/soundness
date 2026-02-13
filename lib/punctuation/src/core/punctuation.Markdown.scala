@@ -63,7 +63,8 @@ object Markdown:
       case ' '                          => builder.append("%20")
       case '\\'                         => builder.append("%5C")
 
-      case char@('-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '=' | ':' | '?') =>
+      case char@('-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '='
+                 | ':' | '?') =>
         builder.append(char)
 
       case char =>

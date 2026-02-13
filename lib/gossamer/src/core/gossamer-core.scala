@@ -383,7 +383,9 @@ package proximities:
           dist(0) = old(0) + 1
 
           for j <- 1 to n do
-            val c = if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
+            val c =
+              if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
+
             dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
 
           for j <- 0 to n do old(j) = dist(j)
