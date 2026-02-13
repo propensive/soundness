@@ -38,7 +38,7 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-erased trait Windows
+sealed trait Windows
 
 object Windows:
   type Rules =

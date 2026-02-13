@@ -99,7 +99,7 @@ def safely[error <: Exception](using erased Void)[success]
 
 
 def unsafely[error <: Exception](using erased Void)[success]
-  ( block: Unsafe ?=> ThrowTactic[error, success] ?=> CanThrow[Exception] ?=> success )
+  ( block: (erased Unsafe) ?=> ThrowTactic[error, success] ?=> CanThrow[Exception] ?=> success )
 : success =
 
     boundary: label ?=>

@@ -232,9 +232,9 @@ object Json extends Json2, Dynamic:
 
 
   given array: [collection <: Iterable, element]
-  =>  ( factory:    Factory[element, collection[element]],
-        jsonAccess: Tactic[JsonError],
-        foci:       Foci[JsonPointer] )
+  =>  ( factory: Factory[element, collection[element]],
+        tactic:  Tactic[JsonError],
+        foci:    Foci[JsonPointer] )
   =>  ( decodable: => element is Decodable in Json)
   =>  collection[element] is Decodable in Json =
 
@@ -246,8 +246,7 @@ object Json extends Json2, Dynamic:
 
         builder.result()
 
-  given map: [key: Decodable in Text, element]
-  =>  ( decodable: => element is Decodable in Json )
+  given map: [key: Decodable in Text, element] => (decodable: => element is Decodable in Json)
   =>  Tactic[JsonError]
   =>  Map[key, element] is Decodable in Json =
 

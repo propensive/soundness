@@ -37,5 +37,5 @@ import proscenium.*
 
 object Intelligible extends PosixCommands
 
-erased trait Intelligible extends Resultant:
+sealed trait Intelligible extends Resultant:
   type Self <: Label

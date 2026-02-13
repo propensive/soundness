@@ -53,7 +53,7 @@ import zephyrine.*
 
 import language.dynamics
 
-erased trait Http
+sealed trait Http
 
 object Http:
   object Version:

@@ -40,7 +40,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 
-erased trait Www
+sealed trait Www
 
 object Www:
   given submissible: (%.type is Submissible on Www) = void => ()

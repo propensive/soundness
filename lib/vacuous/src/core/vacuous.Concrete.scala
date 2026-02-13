@@ -37,4 +37,4 @@ import prepositional.*
 object Concrete:
  inline given concrete: [typeRef] => typeRef is Concrete = ${Vacuous.concrete[typeRef]}
 
-erased trait Concrete extends Typeclass
+sealed trait Concrete extends Typeclass

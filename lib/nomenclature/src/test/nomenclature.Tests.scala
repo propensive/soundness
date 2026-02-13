@@ -40,8 +40,8 @@ import probably.*
 import rudiments.*
 import spectacular.*
 
-erased trait Id
-erased trait Id2
+sealed trait Id
+sealed trait Id2
 
 object Tests extends Suite(m"Nomenclature tests"):
   def run(): Unit =

@@ -72,9 +72,9 @@ object Xml extends Tag.Container
   type Topic = "xml"
   type Transport = "head" | "body"
 
-  erased trait Integral
-  erased trait Decimal
-  erased trait Id
+  sealed trait Integral
+  sealed trait Decimal
+  sealed trait Id
 
   given textDecodable: [value: Decodable in Text] => Tactic[XmlError] => value is Decodable in Xml =
     case TextNode(text)                        =>  value.decoded(text)

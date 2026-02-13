@@ -90,7 +90,7 @@ object Quantitative extends Quantitative2:
     inline def amount[name <: Label]: Text = ${Quantitative.amount[units]}
 
   object MetricUnit:
-    erased given underlying: [units <: Measure] => Underlying[MetricUnit[units], Double] = !!
+    inline given underlying: [units <: Measure] => Underlying[MetricUnit[units], Double] = !!
 
     def apply[units <: Measure](value: Double): MetricUnit[units] = value
 
@@ -98,8 +98,8 @@ object Quantitative extends Quantitative2:
     def apply[units <: Measure](value: Quantity[units]): MetricUnit[units] = value
 
   object Quantity:
-    erased given underlying: [units <: Measure] => Underlying[Quantity[units], Double] = !!
-    erased given canEqual: [units <: Measure] => CanEqual[Quantity[units], Quantity[units]] = !!
+    inline given underlying: [units <: Measure] => Underlying[Quantity[units], Double] = !!
+    inline given canEqual: [units <: Measure] => CanEqual[Quantity[units], Quantity[units]] = !!
 
     inline def unitsMap[units <: Measure]: Map[Text, Int] = ${Quantitative.collectUnits[units]}
     inline def units[units <: Measure]: Text = expressUnits(unitsMap[units])

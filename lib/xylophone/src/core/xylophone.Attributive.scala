@@ -45,7 +45,7 @@ import urticose.*
 import vacuous.*
 
 object Attributive:
-  erased trait Textual
+  sealed trait Textual
 
   given textTextual: Text is Attributive to Textual = (key, value) => (key, value)
   given stringTextual: String is Attributive to Textual = (key, value) => (key, value.tt)

@@ -50,7 +50,7 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-def execute(block: Effectful ?=> Invocation ?=> Exit)(using cli: Cli): Execution =
+def execute(block: (erased Effectful) ?=> Invocation ?=> Exit)(using cli: Cli): Execution =
   cli.absolve match
     case completion: Completion => Execution(Exit.Ok)
     case invocation: Invocation => Execution(block(using !!)(using invocation))

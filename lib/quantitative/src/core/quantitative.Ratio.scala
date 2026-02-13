@@ -32,4 +32,4 @@
                                                                                                   */
 package quantitative
 
-erased trait Ratio[units <: Measure, ratio <: Double & Singleton]
+sealed trait Ratio[units <: Measure, ratio <: Double & Singleton]

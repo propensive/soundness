@@ -60,7 +60,7 @@ import stdioSources.virtualMachine.ansi
 import jsonPrinters.indented
 
 object Issuer:
-  erased trait Context extends Topical
+  sealed trait Context extends Topical
 
 class Issuer
   ( init:     HttpUrl,

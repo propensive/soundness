@@ -39,7 +39,7 @@ object Rgb24Opaque:
   opaque type Rgb24 = Int
 
   object Rgb24:
-    given underlying: Underlying[Rgb24, Int] = !!
+    inline given underlying: Underlying[Rgb24, Int] = !!
     given chromatic: Rgb24 is Chromatic = _.asInt
 
     def apply(red: Int, green: Int, blue: Int): Rgb24 =

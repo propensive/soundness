@@ -110,9 +110,10 @@ extends Cli:
 
   override def suggest
     ( argument: Argument,
-                 update:   (prior: List[Suggestion]) ?=> List[Suggestion],
-                 prefix:   Text,
-                 suffix:   Text) =
+      update:   (prior: List[Suggestion]) ?=> List[Suggestion],
+      prefix:   Text,
+      suffix:   Text ) =
+
     if focused(argument) then
       cursorSuggestions = update(using cursorSuggestions).map: suggestion =>
         if suggestion.expanded then suggestion

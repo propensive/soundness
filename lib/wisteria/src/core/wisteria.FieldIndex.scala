@@ -32,4 +32,4 @@
                                                                                                   */
 package wisteria
 
-erased trait FieldIndex[field]
+sealed trait FieldIndex[field]

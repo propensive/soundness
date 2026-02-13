@@ -32,4 +32,4 @@
                                                                                                   */
 package anticipation
 
-erased trait Urls
+sealed trait Urls

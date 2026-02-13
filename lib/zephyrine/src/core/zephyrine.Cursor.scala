@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.captureChecking
-
 import scala.collection.mutable as scm
 import scala.annotation.publicInBinary
 import scala.caps as sc
@@ -49,7 +47,7 @@ object Cursor:
   opaque type Mark = Long
   opaque type Offset = Long
 
-  class Held() extends sc.Capability
+  class Held()
 
   object Mark:
     final val Initial: Mark = -1

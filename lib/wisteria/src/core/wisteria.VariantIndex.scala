@@ -36,4 +36,4 @@ object VariantIndex:
   inline def apply[variant](int: Int): Int & VariantIndex[variant] =
     int.asInstanceOf[Int & VariantIndex[variant]]
 
-erased trait VariantIndex[variant]
+sealed trait VariantIndex[variant]

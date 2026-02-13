@@ -40,8 +40,8 @@ import scala.sys.SystemProperties
 
 package interfaces.paths:
 
-  given pathOnLinux: (Path on Linux) is Representative of Paths = !!
-  given pathOnWindows: (Path on Windows) is Representative of Paths = !!
-  given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
-  given pathOnLocal: (Path on Local) is Representative of Paths = !!
-  given pathOnPosix: (Path on Posix) is Representative of Paths = !!
+  inline given pathOnLinux: (Path on Linux) is Representative of Paths = !!
+  inline given pathOnWindows: (Path on Windows) is Representative of Paths = !!
+  inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
+  inline given pathOnLocal: (Path on Local) is Representative of Paths = !!
+  inline given pathOnPosix: (Path on Posix) is Representative of Paths = !!

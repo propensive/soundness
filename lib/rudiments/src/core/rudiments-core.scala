@@ -116,7 +116,7 @@ inline def that[result](inline block: => result): result = block
 export Rudiments.&
 
 @targetName("erasedValue")
-erased def !![erasure]: erasure = scala.compiletime.erasedValue
+inline def !![erasure]: erasure = caps.unsafe.unsafeErasedValue
 
 extension [value <: Matchable](iterable: Iterable[value])
   transparent inline def sift[filter <: value: Typeable]: Iterable[filter] =

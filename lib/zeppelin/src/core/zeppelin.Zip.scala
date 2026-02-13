@@ -82,4 +82,4 @@ object Zip:
     def decode(text: Text): %.type = %
     def encode(root: %.type): Text = t""
 
-erased trait Zip
+sealed trait Zip

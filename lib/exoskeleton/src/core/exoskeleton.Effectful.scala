@@ -32,4 +32,4 @@
                                                                                                   */
 package exoskeleton
 
-erased trait Effectful
+sealed trait Effectful

@@ -36,7 +36,7 @@ import anticipation.*
 import gesticulate.*
 import prepositional.*
 
-erased trait Bmp
+sealed trait Bmp
 
 object Bmp:
   def apply(): Rasterizable = rasterization

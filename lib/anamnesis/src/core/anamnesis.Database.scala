@@ -38,7 +38,7 @@ import rudiments.*
 import vacuous.*
 
 object Database:
-  erased trait Relation[left, right]
+  sealed trait Relation[left, right]
 
   inline def apply[relations <: Tuple](): Database of relations =
     val size = valueOf[Tuple.Size[relations]]

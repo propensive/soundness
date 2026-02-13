@@ -39,4 +39,4 @@ import proscenium.*
 object MustMatch extends Rule
   ( { text => m"must match $text" }, { (text, param) => text.s.matches(param.s) } )
 
-erased trait MustMatch[text <: Label] extends Check[text]
+sealed trait MustMatch[text <: Label] extends Check[text]

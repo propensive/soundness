@@ -37,7 +37,7 @@ import prepositional.*
 import quantitative.*
 import rudiments.*
 
-erased trait PropertyDef[-property]:
+sealed trait PropertyDef[-property]:
   type Self <: Label
 
 object PropertyDef:

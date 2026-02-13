@@ -78,9 +78,9 @@ object Html extends Tag.Container
   type Topic = "html"
   type Transport = "head" | "body"
 
-  erased trait Integral
-  erased trait Decimal
-  erased trait Id
+  sealed trait Integral
+  sealed trait Decimal
+  sealed trait Id
 
   given media: Document[Html] is Media =
     _ => media"text/html"(charset = "UTF-8")

@@ -38,4 +38,4 @@ import rudiments.*
 object Required:
   erased given Required is Nominative under MustNotEqual[""] = !!
 
-erased trait Required
+sealed trait Required

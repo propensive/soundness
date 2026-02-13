@@ -32,4 +32,4 @@
                                                                                                   */
 package cellulose
 
-erased trait DynamicCodlEnabler
+sealed trait DynamicCodlEnabler

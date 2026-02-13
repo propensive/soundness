@@ -32,4 +32,4 @@
                                                                                                   */
 package turbulence
 
-erased trait Zlib extends CompressionAlgorithm
+sealed trait Zlib extends CompressionAlgorithm
