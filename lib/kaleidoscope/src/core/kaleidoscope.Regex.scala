@@ -231,14 +231,14 @@ object Regex:
             val greed2 = greed()
 
             Group
-             (start,
-              end,
-              index,
-              children.reverse,
-              quantifier2,
-              greed2,
-              captured.has(start - 1),
-              false)
+              ( start,
+                end,
+                index,
+                children.reverse,
+                quantifier2,
+                greed2,
+                captured.has(start - 1),
+                false )
 
           case _ =>
             index += 1

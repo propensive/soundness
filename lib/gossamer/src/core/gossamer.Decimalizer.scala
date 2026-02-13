@@ -124,11 +124,11 @@ extends DecimalConverter:
               i -= 1
 
           write
-           (array,
-            bcd2 << shift*4,
-            fullLength - 1,
-            next >= 5,
-            if sign then point + 1 else point)
+            ( array,
+              bcd2 << shift*4,
+              fullLength - 1,
+              next >= 5,
+              if sign then point + 1 else point )
 
         else recur(next, bcd2, idx + 1)
 

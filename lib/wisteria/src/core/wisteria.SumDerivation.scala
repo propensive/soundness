@@ -223,8 +223,8 @@ object SumDerivation:
                       lambda[variant0](variant)(using context, label.tt, index3)
                     else
                       fold[derivation, variants, moreLabels](sum, size, index + 1, fallible)
-                       (predicate)
-                       (lambda)
+                        ( predicate )
+                        ( lambda )
 
           case _ =>
             inline if fallible

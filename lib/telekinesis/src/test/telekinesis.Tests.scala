@@ -117,13 +117,13 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       test(m"Fetch another URL without header names"):
         url"https://httpbin.org/post".submit(Http.Post, enc"UTF-8", accept = media"application/json")
-         (t"Hello world")
+          ( t"Hello world" )
 
       . assert()
 
       test(m"Fetch another URL with just a method"):
         url"https://httpbin.org/put".submit(Http.Put)
-         (t"Hello world")
+          ( t"Hello world" )
 
       . assert()
 

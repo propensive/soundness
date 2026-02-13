@@ -126,8 +126,8 @@ extends Cli:
         allFlags.collect { case text: Text => text }.match
           case main :: aliases =>
             List
-             (Suggestion
-               (Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
+              ( Suggestion
+                  ( Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))) )
 
           case Nil => Nil
 

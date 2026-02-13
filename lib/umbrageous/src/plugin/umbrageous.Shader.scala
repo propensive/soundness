@@ -71,7 +71,7 @@ class Shader(options: List[String]) extends PluginPhase:
                 prefixes2.lastOption.fold(prefixes) { (k, v) => prefixes.filter(_(0) != k) }.map:
                   case (_, prefix) =>
                     Import
-                     (Ident(prefix.toTermName), List(ImportSelector(Ident(StdNames.nme.WILDCARD))))
+                      ( Ident(prefix.toTermName), List(ImportSelector(Ident(StdNames.nme.WILDCARD))) )
 
               PackageDef(ident, imports ::: defs)
 

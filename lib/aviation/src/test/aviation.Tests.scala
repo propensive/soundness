@@ -606,13 +606,13 @@ object Tests extends Suite(m"Aviation Tests"):
 
         suite(m"UK holidays example"):
           given Holidays = Holidays(List
-                                     (Holiday(2025-Jan-1, t"New Year's Day"),
-                                      Holiday(2025-Apr-21, t"Good Friday"),
-                                      Holiday(2025-May-5, t"Early May Bank Holiday"),
-                                      Holiday(2025-May-26, t"Spring Bank Holiday"),
-                                      Holiday(2025-Aug-25, t"Summer Bank Holiday"),
-                                      Holiday(2025-Dec-25, t"Christmas Day"),
-                                      Holiday(2025-Dec-26, t"Boxing Day")))
+            ( Holiday(2025-Jan-1, t"New Year's Day"),
+              Holiday(2025-Apr-21, t"Good Friday"),
+              Holiday(2025-May-5, t"Early May Bank Holiday"),
+              Holiday(2025-May-26, t"Spring Bank Holiday"),
+              Holiday(2025-Aug-25, t"Summer Bank Holiday"),
+              Holiday(2025-Dec-25, t"Christmas Day"),
+              Holiday(2025-Dec-26, t"Boxing Day")) )
 
           test(m"Check the next working day after Monday is Tuesday"):
             import hebdomads.european

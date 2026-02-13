@@ -198,11 +198,11 @@ object ProductDerivation:
 
                   val accumulator2 =
                     lambda(accumulator)[fieldType](field)
-                     (using typeclass, default, label.tt, fieldIndex)
+                      ( using typeclass, default, label.tt, fieldIndex )
 
                   fold[derivation, moreFields, moreLabels, result]
-                   (moreFields, accumulator2, index + 1)
-                   (lambda)
+                    ( moreFields, accumulator2, index + 1 )
+                    ( lambda )
 
 
     private transparent inline def fold
@@ -234,7 +234,7 @@ object ProductDerivation:
 
                 val accumulator2 =
                   lambda(accumulator)[fieldType](typeclass)
-                   (using default, label.tt, dereference, fieldIndex)
+                    ( using default, label.tt, dereference, fieldIndex )
 
                 fold[derivation, moreFields, moreLabels, result](accumulator2, index + 1)(lambda)
 

@@ -104,18 +104,18 @@ package executives:
             val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 
             Completion
-             (Cli.arguments(arguments, focus2, position, tab),
-              Cli.arguments(rest2, focus2, position, tab),
-              environment,
-              workingDirectory,
-              shell,
-              focus2,
-              position,
-              stdio,
-              signals,
-              tty,
-              tab,
-              login)
+              ( Cli.arguments(arguments, focus2, position, tab),
+                Cli.arguments(rest2, focus2, position, tab),
+                environment,
+                workingDirectory,
+                shell,
+                focus2,
+                position,
+                stdio,
+                signals,
+                tty,
+                tab,
+                login )
 
           case t"{admin}" :: command :: Nil =>
             given Stdio = stdio
@@ -140,11 +140,11 @@ package executives:
                 Exit.Fail(1)
 
             Invocation
-             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, false, login)
+              ( Cli.arguments(arguments), environment, workingDirectory, stdio, signals, false, login )
 
           case other =>
             Invocation
-             (Cli.arguments(arguments), environment, workingDirectory, stdio, signals, true, login)
+              ( Cli.arguments(arguments), environment, workingDirectory, stdio, signals, true, login )
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match

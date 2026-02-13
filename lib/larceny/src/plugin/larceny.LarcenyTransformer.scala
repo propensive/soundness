@@ -76,14 +76,14 @@ class LarcenyTransformer() extends PluginPhase:
           val source2 = source.substring(content.span.start, content.span.end)
           val javaClasspath = System.getProperty("java.class.path").nn
           Apply
-           (Select
-             (Select
-               (Select(Ident(nme.ROOTPKG), "larceny".toTermName),
-                "Subcompiler".toTermName),
-              "compile".toTermName),
-            List
-             (Literal(Constant(javaClasspath+":"+ctx.settings.classpath.value)),
-              Literal(Constant(source2))))
+            ( Select
+                ( Select
+                    ( Select(Ident(nme.ROOTPKG), "larceny".toTermName),
+                      "Subcompiler".toTermName ),
+                  "compile".toTermName ),
+              List
+                ( Literal(Constant(javaClasspath+":"+ctx.settings.classpath.value)),
+                  Literal(Constant(source2)) ) )
 
         case Apply(Ident(name), List(content)) if name.toString == "demilitarize" =>
           val captured = errors.filter: error =>
@@ -92,18 +92,18 @@ class LarcenyTransformer() extends PluginPhase:
 
           val msgs = captured.map: error =>
             Apply
-             (Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName), "CompileError".toTermName),
-              List
-               (Literal(Constant(error.reason.ordinal)),
-                Literal(Constant(error.message)),
-                Literal(Constant(error.code)),
-                Literal(Constant(error.start)),
-                Literal(Constant(error.offset))))
+              ( Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName), "CompileError".toTermName),
+                List
+                  ( Literal(Constant(error.reason.ordinal)),
+                    Literal(Constant(error.message)),
+                    Literal(Constant(error.code)),
+                    Literal(Constant(error.start)),
+                    Literal(Constant(error.offset))) )
 
           Apply
-           (Ident(name),
-            List
-             (Block(List(), Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala), nme.List), msgs))))
+            ( Ident(name),
+              List
+                ( Block(List(), Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala), nme.List), msgs))) )
 
         case _ =>
           super.transform(tree)

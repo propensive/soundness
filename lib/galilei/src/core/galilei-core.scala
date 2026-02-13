@@ -253,7 +253,7 @@ extension [plane: Filesystem](path: Path on plane)
 
   def touch(): Unit raises IoError = protect(Operation.Metadata):
     jnf.Files.setLastModifiedTime
-     (path.javaPath, jnfa.FileTime.fromMillis(java.lang.System.currentTimeMillis))
+      ( path.javaPath, jnfa.FileTime.fromMillis(java.lang.System.currentTimeMillis) )
 
   def make[entry: Makable on plane](): entry.Result = entry.make(path)
 

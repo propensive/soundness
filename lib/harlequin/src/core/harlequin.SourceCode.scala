@@ -146,7 +146,7 @@ object SourceCode:
           if start == end then Stream() else
             text.segment(start.z thru end.u).cut(t"\n").to(Stream).flatMap: line =>
               Stream
-               (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
+                ( SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline )
             . init
 
         unparsed #::: content #::: stream(end)

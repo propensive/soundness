@@ -125,4 +125,4 @@ trait Classpath:
       case ClasspathEntry.JavaRuntime    => Nil
 
     new Classloader
-         (new jn.URLClassLoader(Array.from(urls), ClassLoader.getPlatformClassLoader().nn))
+      ( new jn.URLClassLoader(Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )

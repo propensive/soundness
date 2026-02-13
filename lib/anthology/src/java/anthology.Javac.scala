@@ -57,7 +57,7 @@ object Javac:
 case class Javac(options: List[JavacOption]):
   case class JavaSource(name: Text, code: Text)
   extends jt.SimpleJavaFileObject
-           (jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE):
+    ( jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE):
     override def getCharContent(ignoreEncodingErrors: Boolean): CharSequence = code.s
 
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
@@ -81,18 +81,18 @@ case class Javac(options: List[JavacOption]):
             val codeRange: Optional[CodeRange] =
               if diagnostic.getPosition == jt.Diagnostic.NOPOS then Unset else
                 CodeRange
-                 (diagnostic.getLineNumber.toInt,
-                  diagnostic.getColumnNumber.toInt,
-                  diagnostic.getLineNumber.toInt,
-                  (diagnostic.getColumnNumber + diagnostic.getEndPosition
-                  - diagnostic.getPosition).toInt)
+                  ( diagnostic.getLineNumber.toInt,
+                    diagnostic.getColumnNumber.toInt,
+                    diagnostic.getLineNumber.toInt,
+                    (diagnostic.getColumnNumber + diagnostic.getEndPosition
+                    - diagnostic.getPosition).toInt )
 
             process.put:
               Notice
-               (importance,
-                "name".tt,
-                diagnostic.getMessage(ju.Locale.getDefault()).nn.tt,
-                codeRange)
+                ( importance,
+                  "name".tt,
+                  diagnostic.getMessage(ju.Locale.getDefault()).nn.tt,
+                  codeRange )
 
       val options = List(t"-classpath", classpath(), t"-d", out.generic)
       val javaSources = sources.map(JavaSource(_, _)).asJava

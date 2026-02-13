@@ -352,7 +352,7 @@ package proximities:
 
      if matches == 0 then 0.0
      else (matches.toDouble/left.length + matches.toDouble/right.length +
-         (matches - count/2.0)/matches)/3
+       ( matches - count/2.0)/matches)/3
 
   given prefixMatch: (sensitivity: CaseSensitivity) => Proximity by Int = (left, right) =>
     val limit = left.length.min(right.length)

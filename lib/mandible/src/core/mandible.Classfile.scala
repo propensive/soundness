@@ -99,11 +99,11 @@ class Classfile(data: Data):
                 val stack2 = stack.let(opcode.transform(_))
 
                 recur
-                 (todo,
-                  Unset,
-                  Bytecode.Instruction(opcode, line, stack2, count) :: done,
-                  stack2,
-                  count + instruction.sizeInBytes)
+                  ( todo,
+                    Unset,
+                    Bytecode.Instruction(opcode, line, stack2, count) :: done,
+                    stack2,
+                    count + instruction.sizeInBytes )
 
               case lineNo: jlci.LineNumber =>
                 recur(todo, lineNo.line, done, stack, count)

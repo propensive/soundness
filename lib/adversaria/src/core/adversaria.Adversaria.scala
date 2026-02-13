@@ -107,12 +107,12 @@ object Adversaria:
             case ('[topic], '[ type target <: Label; target ]) =>
               ' {
                   Annotated.AnnotatedField[operand, self, plane, limit, topic, target]
-                   ($annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map))
+                    ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
                 }
         else
           ' {
               Annotated.AnnotatedFields[operand, self, plane, limit]
-               ($annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map))
+                ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
             }
 
       else

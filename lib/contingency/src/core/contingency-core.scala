@@ -226,8 +226,8 @@ extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accru
   : result =
 
       $ {
-          (Contingency.trackWithin[accrual, lambda, result, focus]
-           ('track, 'lambda, 'tactic, 'diagnostics))
+          Contingency.trackWithin[accrual, lambda, result, focus]
+            ( 'track, 'lambda, 'tactic, 'diagnostics )
         }
 
 

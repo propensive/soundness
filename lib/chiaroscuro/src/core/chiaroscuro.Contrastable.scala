@@ -178,11 +178,11 @@ object Contrastable:
       case (Decomposition.Product(leftName, left, _), Decomposition.Product(rightName, right, _)) =>
         val name = if leftName == rightName then leftName else t"$leftName/$rightName"
         Juxtaposition.Collation
-         (name,
-          left.keys.to(List).map: key =>
-            key -> juxtaposition(t"", left(key), right(key)),
-          leftName,
-          rightName)
+          ( name,
+            left.keys.to(List).map: key =>
+              key -> juxtaposition(t"", left(key), right(key)),
+            leftName,
+            rightName )
 
       case (Decomposition.Sum(lname0, left, _), Decomposition.Sum(rname0, right, _)) =>
         (left, right) match

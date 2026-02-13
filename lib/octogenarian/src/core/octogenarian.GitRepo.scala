@@ -236,13 +236,13 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
             Stream:
               Commit
-               (hash.vouch,
-                tree.vouch,
-                parents.reverse,
-                author.vouch,
-                committer.vouch,
-                pem,
-                lines.reverse)
+                ( hash.vouch,
+                  tree.vouch,
+                  parents.reverse,
+                  author.vouch,
+                  committer.vouch,
+                  pem,
+                  lines.reverse )
 
         def read(stream: Stream[Text], lines: List[Text]): (List[Text], Stream[Text]) =
           stream match

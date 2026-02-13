@@ -80,12 +80,12 @@ object HttpConnection:
 
     val request =
       Http.Request
-       (method      = method,
-        version     = version,
-        host        = host,
-        target      = target,
-        body        = () => stream(),
-        textHeaders = headers)
+        ( method      = method,
+          version     = version,
+          host        = host,
+          target      = target,
+          body        = () => stream(),
+          textHeaders = headers )
 
     Log.fine(HttpServerEvent.Received(request))
 
@@ -135,9 +135,9 @@ class HttpConnection
     val port:    Int,
     val respond: Tactic[StreamError] ?=> Http.Response => Unit )
 extends Http.Request
-   (request.method,
+  ( request.method,
     request.version,
     request.host,
     request.target,
     request.textHeaders,
-    request.body)
+    request.body )

@@ -104,7 +104,7 @@ trait Intension[data, record <: Record in data]:
                     case Some(' {
                                   type typeConstructor[_]
                                   $accessor: RecordAccessor
-                                               [ `record`, `data`, typeName, typeConstructor ]
+                                    [ `record`, `data`, typeName, typeConstructor ]
                                 }) =>
 
                       val nested = '{$target.access(${Expr(name)}, $value)}
@@ -135,10 +135,10 @@ trait Intension[data, record <: Record in data]:
                           val typeRepr = TypeRepr.of[typeConstructor[nestedRecordType]]
 
                           refine
-                           (value,
-                            tail,
-                            Refinement(refinedType, name, typeRepr),
-                            caseDef :: caseDefs)
+                            ( value,
+                              tail,
+                              Refinement(refinedType, name, typeRepr),
+                              caseDef :: caseDefs )
 
 
       val (refinedType, caseDefs) = refine(value, fields.to(List), TypeRepr.of[record])

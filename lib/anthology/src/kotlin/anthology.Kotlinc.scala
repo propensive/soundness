@@ -56,4 +56,4 @@ case class Kotlinc
       put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
 
     compiler.exec
-     (MessageCollector.NONE, configuration, kotlin.collections.CollectionsKt.listOf(code))
+      ( MessageCollector.NONE, configuration, kotlin.collections.CollectionsKt.listOf(code) )

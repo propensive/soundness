@@ -97,7 +97,7 @@ package interpreters:
 
         def push(): Commandline = current.lay(Commandline(arguments.reverse)): current =>
           commandline.copy
-           (parameters = commandline.parameters.updated(current, arguments.reverse))
+            ( parameters = commandline.parameters.updated(current, arguments.reverse) )
 
         def postprocess(commandline: Commandline): Commandline =
           val parameters2: Map[Argument, List[Argument]] =

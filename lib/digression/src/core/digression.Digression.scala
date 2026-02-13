@@ -50,11 +50,11 @@ object Digression:
 
   val javaKeywords: Set[String] =
     Set
-     ("abstract", "continue", "for", "new", "switch", "assert", "default", "if", "package",
-      "synchronized", "boolean", "do", "goto", "private", "this", "break", "double", "implements",
-      "protected", "throw", "byte", "else", "import", "public", "throws", "case", "enum",
-      "final", "interface", "static", "void", "class", "finally", "long", "strictfp", "volatile",
-      "const", "float", "native", "super", "while")
+      ( "abstract", "continue", "for", "new", "switch", "assert", "default", "if", "package",
+        "synchronized", "boolean", "do", "goto", "private", "this", "break", "double", "implements",
+        "protected", "throw", "byte", "else", "import", "public", "throws", "case", "enum",
+        "final", "interface", "static", "void", "class", "finally", "long", "strictfp", "volatile",
+        "const", "float", "native", "super", "while" )
 
   def fqcn(context: Expr[StringContext]): Macro[Fqcn] =
     abortive('{new Fqcn(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts)})})

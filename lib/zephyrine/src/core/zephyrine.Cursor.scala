@@ -85,7 +85,7 @@ object Cursor:
         val initial = iterator.next()
 
         new Cursor[data]
-             (initial, addressable0.length(initial), iterator, addressable0, lineation0)
+          ( initial, addressable0.length(initial), iterator, addressable0, lineation0 )
 
       else
         new Cursor[data](addressable0.empty, 0, Iterator.empty, addressable0, lineation0)

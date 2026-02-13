@@ -126,20 +126,20 @@ trait Quantitative2:
     @targetName("multiply")
     infix def * (that: UnitsMap): UnitsMap =
       new UnitsMap
-           ((dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
-              val dimUnit = unit(dim).orElse(that.unit(dim)).get
-              dim -> UnitPower(dimUnit, (unitPower(dim) + that.unitPower(dim)))
+        ( (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
+            val dimUnit = unit(dim).orElse(that.unit(dim)).get
+            dim -> UnitPower(dimUnit, (unitPower(dim) + that.unitPower(dim)))
 
-            . to(Map).filter(_(1).power != 0))
+          . to(Map).filter(_(1).power != 0) )
 
     @targetName("divide")
     infix def / (that: UnitsMap): UnitsMap =
       new UnitsMap
-           ((dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
-              val dimUnit = unit(dim).orElse(that.unit(dim)).get
-              dim -> UnitPower(dimUnit, (unitPower(dim) - that.unitPower(dim)))
+        ( (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
+            val dimUnit = unit(dim).orElse(that.unit(dim)).get
+            dim -> UnitPower(dimUnit, (unitPower(dim) - that.unitPower(dim)))
 
-            . to(Map).filter(_(1).power != 0))
+          . to(Map).filter(_(1).power != 0) )
 
     def construct(using Quotes)(types: List[UnitPower]): Option[quotes.reflect.TypeRepr] =
       import quotes.reflect.*
@@ -480,7 +480,10 @@ trait Quantitative2:
                 (left, right) =>
                   $ {
                       Quantitative.multiply
-                       ('{Quantity(left.toDouble)}, 'right, true).asExprOf[Quantity[result]]
+                        ( '{Quantity(left.toDouble)},
+                          'right,
+                          true )
+                      . asExprOf[Quantity[result]]
                     }
             }
 

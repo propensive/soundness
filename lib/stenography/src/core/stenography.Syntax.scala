@@ -347,11 +347,11 @@ object Syntax:
           case AppliedType(_, names) => apply(args0(1)).absolve match
             case Sequence(_, elements) =>
               Sequence
-               ('(',
-                names.zip(elements).map:
-                  _.absolve match
-                    case (ConstantType(StringConstant(name)), element) =>
-                      Named(false, name.tt, element))
+                ( '(',
+                  names.zip(elements).map:
+                    _.absolve match
+                      case (ConstantType(StringConstant(name)), element) =>
+                        Named(false, name.tt, element) )
 
           case ref@TypeRef(prefix, name) =>
             apply(ref)

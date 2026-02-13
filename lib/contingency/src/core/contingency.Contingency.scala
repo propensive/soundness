@@ -163,9 +163,9 @@ object Contingency:
 
       val typeLambda =
         TypeLambda
-         (List("result"),
-          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
-          typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
+          ( List("result"),
+            void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+            typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)) )
 
       typeLambda.asType.absolve match
         case '[type typeLambda[_]; typeLambda] => '{Mitigation[typeLambda]($handler)}
@@ -183,9 +183,9 @@ object Contingency:
 
       val typeLambda =
         TypeLambda
-         (List("result"),
-          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
-          typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
+          ( List("result"),
+            void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+            typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)) )
 
       typeLambda.asType.absolve match
         case '[type typeLambda[_]; typeLambda] =>
@@ -205,9 +205,9 @@ object Contingency:
 
       val typeLambda =
         TypeLambda
-         (List("result"),
-          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
-          typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
+          ( List("result"),
+            void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+            typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)) )
 
       typeLambda.asType.absolve match
         case '[type typeLambda[_]; typeLambda] =>
@@ -227,9 +227,9 @@ object Contingency:
 
       val typeLambda =
         TypeLambda
-         (List("result"),
-          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
-          typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
+          ( List("result"),
+            void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+            typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)) )
 
       typeLambda.asType.absolve match
         case '[type typeLambda[_]; typeLambda] =>
@@ -245,9 +245,9 @@ object Contingency:
 
     val typeLambda =
       TypeLambda
-       (List("result"),
-        void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
-        typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
+        ( List("result"),
+          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+          typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)) )
 
     typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] => '{Recovery[result, typeLambda]($handler)}

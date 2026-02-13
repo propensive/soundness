@@ -136,8 +136,8 @@ trait Json2:
                   values += encoded
 
           Json.ast
-           (JsonAst
-             ((labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))))
+            ( JsonAst
+              ( (labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))) )
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
       val discriminable = infer[derivation is Discriminable in Json]

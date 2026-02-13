@@ -107,13 +107,13 @@ package executives:
     : Invocation =
 
         Invocation
-         (Cli.arguments(arguments, Unset, Unset, Unset),
-          environments.java,
-          workingDirectories.java,
-          stdio,
-          signals,
-          arguments.size == 0 || arguments.head != t"{admin}",
-          login)
+          ( Cli.arguments(arguments, Unset, Unset, Unset),
+            environments.java,
+            workingDirectories.java,
+            stdio,
+            signals,
+            arguments.size == 0 || arguments.head != t"{admin}",
+            login )
 
 
     def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
@@ -143,12 +143,12 @@ def application(using executive: Executive, interpreter: Interpreter)
   // variables
   val cli =
     executive.invocation
-     (arguments,
-      environments.java,
-      workingDirectories.java,
-      stdioSources.virtualMachine.ansi,
-      spool,
-      entrypoint,
-      Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset))
+      ( arguments,
+        environments.java,
+        workingDirectories.java,
+        stdioSources.virtualMachine.ansi,
+        spool,
+        entrypoint,
+        Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset) )
 
   jl.System.exit(executive.process(cli)(block)())

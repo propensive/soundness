@@ -151,11 +151,11 @@ object Matrix:
       val columnCount = valueOf[Columns]
 
       new Matrix[element, Rows, Columns]
-           (rowCount,
-            columnCount,
-            IArray.create[element](columnCount*rowCount): array =>
-              for row <- 0 until rowCount; column <- 0 until columnCount
-              do rows.productElement(row).asMatchable.absolve match
-                case tuple: Tuple =>
-                  array(columnCount*row + column) =
-                    tuple.productElement(column).asInstanceOf[element])
+        ( rowCount,
+          columnCount,
+          IArray.create[element](columnCount*rowCount): array =>
+            for row <- 0 until rowCount; column <- 0 until columnCount
+            do rows.productElement(row).asMatchable.absolve match
+              case tuple: Tuple =>
+                array(columnCount*row + column) =
+                  tuple.productElement(column).asInstanceOf[element] )

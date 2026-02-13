@@ -68,13 +68,13 @@ import textSanitizers.skip
 import scala.annotation.tailrec
 
 object Html extends Tag.Container
-         (label       = "html",
-          autoclose   = true,
-          admissible  = Set("head", "body"),
-          mode        = Html.Mode.Whitespace,
-          insertable  = true,
-          foreign     = false,
-          boundary    = true), Format:
+  ( label       = "html",
+    autoclose   = true,
+    admissible  = Set("head", "body"),
+    mode        = Html.Mode.Whitespace,
+    insertable  = true,
+    foreign     = false,
+    boundary    = true), Format:
   type Topic = "html"
   type Transport = "head" | "body"
 
@@ -367,12 +367,13 @@ object Html extends Tag.Container
     case Node(parent: Text)
 
   private[honeycomb] def parse[dom <: Dom]
-       (input:       Iterator[Text],
-        root:        Tag,
-        callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
-        fastforward: Int                               = 0,
-        doctypes:    Boolean = false)
-       (using dom: Dom): Html raises ParseError =
+    ( input:       Iterator[Text],
+      root:        Tag,
+      callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
+      fastforward: Int                               = 0,
+      doctypes:    Boolean = false )
+    ( using dom: Dom)
+  : Html raises ParseError =
 
     import lineation.linefeedChars
 

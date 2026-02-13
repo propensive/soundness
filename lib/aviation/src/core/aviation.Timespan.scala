@@ -79,12 +79,12 @@ object Timespan:
     type Operand = Timespan
     def add(left: Timespan, right: Timespan): Timespan =
       Timespan
-       (left.years + right.years,
-        left.months + right.months,
-        left.days + right.days,
-        left.hours + right.hours,
-        left.minutes + right.minutes,
-        left.seconds + right.seconds)
+        ( left.years + right.years,
+          left.months + right.months,
+          left.days + right.days,
+          left.hours + right.hours,
+          left.minutes + right.minutes,
+          left.seconds + right.seconds )
 
   given subtractable: Chronology[StandardTime] => Timespan is Subtractable:
     type Result = Timespan
@@ -92,12 +92,12 @@ object Timespan:
 
     def subtract(left: Timespan, right: Timespan): Timespan =
       Timespan
-       (left.years - right.years,
-        left.months - right.months,
-        left.days - right.days,
-        left.hours - right.hours,
-        left.minutes - right.minutes,
-        left.seconds - right.seconds)
+        ( left.years - right.years,
+          left.months - right.months,
+          left.days - right.days,
+          left.hours - right.hours,
+          left.minutes - right.minutes,
+          left.seconds - right.seconds )
 
   given multiplicable: Chronology[StandardTime] => Timespan is Multiplicable:
     type Operand = Int
@@ -105,12 +105,12 @@ object Timespan:
 
     def multiply(left: Timespan, right: Int): Timespan =
       Timespan
-       (left.years*right,
-        left.months*right,
-        left.days*right,
-        left.hours*right,
-        left.minutes*right,
-        left.seconds*right)
+        ( left.years*right,
+          left.months*right,
+          left.days*right,
+          left.hours*right,
+          left.minutes*right,
+          left.seconds*right )
 
 case class Timespan(years: Int, months: Int, days: Int, hours: Int, minutes: Int, seconds: Int):
   def simplify(using chronology: Chronology[StandardTime]): Timespan = chronology.simplify(this)

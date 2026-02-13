@@ -222,9 +222,9 @@ object Aviation:
     given encodable: RomanCalendar => Date is Encodable in Text = date =>
       import hieroglyph.textMetrics.uniform
       List
-       (date.year.toString.tt,
-        date.month.numerical.toString.tt.pad(2, Rtl, '0'),
-        date.day.toString.tt.pad(2, Rtl, '0'))
+        ( date.year.toString.tt,
+          date.month.numerical.toString.tt.pad(2, Rtl, '0'),
+          date.day.toString.tt.pad(2, Rtl, '0') )
 
       . join(t"-")
 

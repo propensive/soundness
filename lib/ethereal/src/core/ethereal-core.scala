@@ -282,7 +282,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
             val stdio: Stdio =
               Stdio
-               (ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
+                ( ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap )
 
             def deliver(sourcePid: Pid, message: bus): Unit =
               clients.each: (pid, client) =>
@@ -290,26 +290,26 @@ def cli[bus <: Matchable](using executive: Executive)
 
             val service: DaemonService[bus] =
               DaemonService[bus]
-               (pid,
-                () => shutdown(pid),
-                shellInput,
-                script.decode[Path on Linux],
-                deliver(pid, _),
-                connection.bus.stream,
-                name)
+                ( pid,
+                  () => shutdown(pid),
+                  shellInput,
+                  script.decode[Path on Linux],
+                  deliver(pid, _),
+                  connection.bus.stream,
+                  name )
 
             Log.fine(DaemonLogEvent.NewCli)
 
             try
               val cli: executive.Interface =
                 executive.invocation
-                 (textArguments,
-                  environment,
-                  () => directory,
-                  stdio,
-                  connection.signals,
-                  service,
-                  login)
+                  ( textArguments,
+                    environment,
+                    () => directory,
+                    stdio,
+                    connection.signals,
+                    service,
+                    login )
 
               if cli.proceed then
                 val result = block(using service)(using cli)

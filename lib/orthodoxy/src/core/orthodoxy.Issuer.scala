@@ -102,10 +102,10 @@ class Issuer
 
                 val query =
                   Query
-                   (grant_type    = t"authorization_code",
-                    code          = code,
-                    redirect_uri  = redirect,
-                    client_id     = client)
+                    ( grant_type    = t"authorization_code",
+                      code          = code,
+                      redirect_uri  = redirect,
+                      client_id     = client )
 
                 val response: Optional[Http.Response] = if state.expired then Unset else
                   exchange.submit(Http.Post)(query.per(secret)(_.client_secret = _))
@@ -161,11 +161,11 @@ class Issuer
         store(session) = state
 
         val query = Query
-         (client_id     = client,
-          redirect_uri  = redirect,
-          access_type   = t"offline",
-          scope         = scopes.flatMap(_.names).to(Set).to(List).join(t" "),
-          state         = state.uuid.show,
-          response_type = t"code")
+          ( client_id     = client,
+            redirect_uri  = redirect,
+            access_type   = t"offline",
+            scope         = scopes.flatMap(_.names).to(Set).to(List).join(t" "),
+            state         = state.uuid.show,
+            response_type = t"code" )
 
         Redirect(init.query(query))
