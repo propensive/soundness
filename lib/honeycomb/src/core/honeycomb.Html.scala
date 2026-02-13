@@ -324,28 +324,33 @@ object Html extends Tag.Container
     case InvalidAttributeUse(attribute: Text, element: Text)
 
     def describe: Message = this match
-      case BadInsertion                  => m"a value cannot be inserted into HTML at this point"
-      case ExpectedMore                  => m"the content ended prematurely"
-      case UnexpectedDoctype             => m"the document type declaration was not expected here"
-      case BadDocument                   => m"the document did not contain a single root tag"
-      case InvalidCdata                  => m"CDATA content is only permitted in foreign namespaces"
-      case InvalidTag(name)              => m"<$name> is not a valid tag"
-      case InvalidTagStart(prefix)       => m"there is no valid tag whose name starts $prefix"
-      case DuplicateAttribute(name)      => m"the attribute $name already exists on this tag"
-      case InadmissibleTag(name, parent) => m"<$name> cannot be a child of <$parent>"
-      case Unexpected(char)              => m"the character $char was not expected"
-      case UnknownEntity(name)           => m"the entity &$name is not defined"
-      case UnopenedTag(close)            => m"the tag </$close> has no corresponding opening tag"
-      case Incomplete(tag)               => m"the content ended while the tag <$tag> was left open"
-      case UnknownAttribute(name)        => m"$name is not a recognized attribute"
-      case UnknownAttributeStart(name)   => m"there is no valid attribute whose name starts $name"
-      case InvalidAttributeUse(key, tag) => m"the attribute $key cannot be used on the tag <$tag>"
+      case BadInsertion                   => m"a value cannot be inserted into HTML at this point"
+      case ExpectedMore                   => m"the content ended prematurely"
+      case UnexpectedDoctype              => m"the document type declaration was not expected here"
+      case BadDocument                    => m"the document did not contain a single root tag"
+      case InvalidTag(name)               => m"<$name> is not a valid tag"
+      case InvalidTagStart(prefix)        => m"there is no valid tag whose name starts $prefix"
+      case DuplicateAttribute(name)       => m"the attribute $name already exists on this tag"
+      case InadmissibleTag(name, parent)  => m"<$name> cannot be a child of <$parent>"
+      case Unexpected(char)               => m"the character $char was not expected"
+      case UnknownEntity(name)            => m"the entity &$name is not defined"
+      case UnopenedTag(close)             => m"the tag </$close> has no corresponding opening tag"
+      case Incomplete(tag)                => m"the content ended while the tag <$tag> was left open"
+      case UnknownAttribute(name)         => m"$name is not a recognized attribute"
+      case UnknownAttributeStart(name)    => m"there is no valid attribute whose name starts $name"
+      case InvalidAttributeUse(name, tag) => m"the attribute $name cannot be used on the tag <$tag>"
+
+      case InvalidCdata =>
+        m"CDATA content is only permitted in foreign namespaces"
+
+      case OnlyWhitespace(char) =>
+        m"the character $char was found where only whitespace is permitted"
 
       case ForbiddenUnquoted(char) =>
         m"the character $char is forbidden in an unquoted attribute"
 
-      case OnlyWhitespace(char) =>
-        m"the character $char was found where only whitespace is permitted"
+      case MismatchedTag(open, close) =>
+        m"the tag </$close> did not match the opening tag <$open>"
 
   case class Position(line: Ordinal, column: Ordinal) extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
@@ -558,7 +563,7 @@ object Html extends Tag.Container
     @tailrec
     def hexEntity(mark: Mark, value: Int)(using Cursor.Held): Optional[Text] =
       cursor.lay(fail(ExpectedMore)):
-        case digit if digit.isDigit         =>
+        case digit if digit.isDigit =>
           cursor.next() yet hexEntity(mark, 16*value + (digit - '0'))
 
         case letter if 'a' <= letter <= 'f' =>
@@ -570,7 +575,7 @@ object Html extends Tag.Container
         case ';' =>
           cursor.next() yet value.unicode
 
-        case _ =>
+        case char =>
           Unset
 
     @tailrec
@@ -691,8 +696,9 @@ object Html extends Tag.Container
 
       case '\u0000' => fail(BadInsertion)
       case char =>
-        content = cursor.hold:
-          if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label
+        content =
+          cursor.hold:
+            if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label
 
         extra = cursor.hold(attributes(content, foreign))
 
