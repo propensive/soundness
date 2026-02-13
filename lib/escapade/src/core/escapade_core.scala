@@ -30,17 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package vacuous
+package escapade
 
-import prepositional.*
+import language.experimental.pureFunctions
 
-object Mandatable:
-  transparent inline given mandatable: [typeRef] => typeRef is Mandatable =
-    ${Vacuous.mandatable[typeRef]}
+import anticipation.*
+import fulminate.*
 
-  def apply[self, result <: self](): self is Mandatable to result = new Mandatable():
-    type Self = self
-    type Result = result
+type Escape = Ansi.Input.Escape
 
-sealed trait Mandatable extends Typeclass:
-  type Result <: Self
+export Escapade.CharSpan
+
+object Bold
+object Italic
+object Underline
+object Strike
+object Reverse
+object Conceal
+
+extension (inline ctx: StringContext)
+  transparent inline def e(inline parts: Any*): Teletype = ${Ansi.Interpolator.expand('ctx, 'parts)}
+
+extension [teletypeable: Teletypeable](value: teletypeable) def teletype: Teletype =
+  teletypeable.teletype(value)
+
+package printableTypes:
+  given message: Message is Printable = summon[Teletype is Printable].contramap(_.teletype)

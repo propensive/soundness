@@ -37,4 +37,7 @@ import prepositional.*
 object Concrete:
  inline given concrete: [typeRef] => typeRef is Concrete = ${Vacuous.concrete[typeRef]}
 
+ def apply[self](): self is Concrete = new Concrete:
+   type Self = self
+
 sealed trait Concrete extends Typeclass

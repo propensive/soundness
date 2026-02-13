@@ -36,8 +36,6 @@ import anticipation.*
 import gossamer.*
 import vacuous.*
 
-type Escape = Ansi.Input.Escape
-
 object Escape:
   def apply(code: Text, reset: Optional[Text] = Unset): Escape =
     Ansi.Input.Escape(code, reset.or(t""))

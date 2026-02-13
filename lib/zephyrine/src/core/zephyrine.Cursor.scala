@@ -202,7 +202,7 @@ class Cursor[data](initial:    data,
       marks.append(mark)
       offsets.append(Offset(lineNo, columnNo))
 
-  inline def datum(using Unsafe): addressable.Operand = addressable.address(current, focus)
+  inline def datum(using erased Unsafe): addressable.Operand = addressable.address(current, focus)
 
   inline def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)
   : result =

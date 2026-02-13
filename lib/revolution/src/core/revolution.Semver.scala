@@ -99,6 +99,9 @@ object Semver:
               if patch.starts(t"0") && patch2 != 0 then raise(SemverError(text))
               Semver(major2, minor2, patch2, prerelease3, build3)
 
+        case _ =>
+          raise(SemverError(text))
+
 
 
   given ordering: Ordering[Semver] = Ordering.fromLessThan: (left, right) =>

@@ -30,25 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cellulose
+package yossarian
 
-import anticipation.*
-import prepositional.*
-import rudiments.*
-
-extension (inline ctx: StringContext)
-  transparent inline def codl(inline parts: Any*): CodlDoc = ${Codl.Prefix.expand('ctx, 'parts)}
-
-extension [encodable: {Encodable in Codl, CodlSchematic}](value: encodable)
-  def codl: CodlDoc of encodable =
-    new CodlDoc
-      ( IArray.from(encodable.encoded(value).list.map(_.children).flatten),
-        encodable.schema(),
-        0):
-      type Topic = encodable
-
-package codlPrinters:
-  given standard: CodlPrinter = CodlPrinter.standardPrinter
-
-package dynamicCodlAccess:
-  erased given enabled: DynamicCodlEnabler = !!
+export Yossarian.{Style, Screen}

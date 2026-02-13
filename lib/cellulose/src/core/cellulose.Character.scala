@@ -73,8 +73,8 @@ object Character:
       case char: Char => Some(value.asInstanceOf[value.type & Character])
       case _          => None
 
-  erased given charCharacter: CanEqual[Char, Character] = !!
-  erased given characterChar: CanEqual[Character, Char] = !!
+  inline given charCharacter: CanEqual[Char, Character] = !!
+  inline given characterChar: CanEqual[Character, Char] = !!
 
   extension (char: Character)
     def char: Char = if char == -1 then '\u0000' else char.toChar

@@ -157,7 +157,7 @@ object Aviation:
         halt(m"expected a literal double value")
 
   object Date:
-    erased given underlying: Underlying[Date, Int] = !!
+    inline given underlying: Underlying[Date, Int] = !!
     def of(day: Int): Date = day
 
     def apply

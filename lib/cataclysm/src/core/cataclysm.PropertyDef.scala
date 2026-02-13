@@ -41,85 +41,85 @@ sealed trait PropertyDef[-property]:
   type Self <: Label
 
 object PropertyDef:
-  erased given alignContent: ("alignContent" is PropertyDef[Text]) = !!
-  erased given alignItems: ("alignItems" is PropertyDef[Text]) = !!
-  erased given alignSelf: ("alignSelf" is PropertyDef[Text]) = !!
-  erased given all: ("all" is PropertyDef[Text]) = !!
-  erased given animation: ("animation" is PropertyDef[Text]) = !!
+  inline given alignContent: ("alignContent" is PropertyDef[Text]) = !!
+  inline given alignItems: ("alignItems" is PropertyDef[Text]) = !!
+  inline given alignSelf: ("alignSelf" is PropertyDef[Text]) = !!
+  inline given all: ("all" is PropertyDef[Text]) = !!
+  inline given animation: ("animation" is PropertyDef[Text]) = !!
 
-  erased given animationDelay: [duration <: Measure]
+  inline given animationDelay: [duration <: Measure]
   =>  ( erased duration is Normalizable to Seconds[1] )
   =>  ( "animationDelay" is PropertyDef[Quantity[duration]] ) = !!
 
-  erased given animationDirection: ("animationDirection" is PropertyDef[Text]) = !!
+  inline given animationDirection: ("animationDirection" is PropertyDef[Text]) = !!
 
   given animationDuration: [duration <: Measure]
   =>  ( erased duration is Normalizable to Seconds[1] )
   =>  ( "animationDuration" is PropertyDef[Quantity[duration]] ) = !!
 
-  erased given animationFillMode: ("animationFillMode" is PropertyDef[AnimationFillMode]) = !!
-  erased given animationIterationCount: ("animationIterationCount" is PropertyDef[Text]) = !!
-  erased given animationName: ("animationName" is PropertyDef[Text]) = !!
-  erased given animationPlayState: ("animationPlayState" is PropertyDef[Text]) = !!
-  erased given animationTimingFunction: ("animationTimingFunction" is PropertyDef[Text]) = !!
-  erased given backfaceVisibility: ("backfaceVisibility" is PropertyDef[Text]) = !!
-  erased given background: ("background" is PropertyDef[Text]) = !!
-  erased given backgroundAttachment: ("backgroundAttachment" is PropertyDef[Text]) = !!
-  erased given backgroundBlendMode: ("backgroundBlendMode" is PropertyDef[Text]) = !!
-  erased given backgroundClip: ("backgroundClip" is PropertyDef[Text]) = !!
+  inline given animationFillMode: ("animationFillMode" is PropertyDef[AnimationFillMode]) = !!
+  inline given animationIterationCount: ("animationIterationCount" is PropertyDef[Text]) = !!
+  inline given animationName: ("animationName" is PropertyDef[Text]) = !!
+  inline given animationPlayState: ("animationPlayState" is PropertyDef[Text]) = !!
+  inline given animationTimingFunction: ("animationTimingFunction" is PropertyDef[Text]) = !!
+  inline given backfaceVisibility: ("backfaceVisibility" is PropertyDef[Text]) = !!
+  inline given background: ("background" is PropertyDef[Text]) = !!
+  inline given backgroundAttachment: ("backgroundAttachment" is PropertyDef[Text]) = !!
+  inline given backgroundBlendMode: ("backgroundBlendMode" is PropertyDef[Text]) = !!
+  inline given backgroundClip: ("backgroundClip" is PropertyDef[Text]) = !!
 
-  erased given backgroundColor1: [color]
+  inline given backgroundColor1: [color]
   =>  ( erased color is Chromatic )
   =>  ( "backgroundColor" is PropertyDef[color] ) = !!
 
-  erased given backgroundColor2: ("backgroundColor" is PropertyDef[Transparent.type]) = !!
-  erased given backgroundImage: ("backgroundImage" is PropertyDef[Text]) = !!
+  inline given backgroundColor2: ("backgroundColor" is PropertyDef[Transparent.type]) = !!
+  inline given backgroundImage: ("backgroundImage" is PropertyDef[Text]) = !!
   //given backgroundImage2: ("backgroundImage" is PropertyDef[Relative]) = !!
 
 
-  erased given backgroundImage3: [path]
+  inline given backgroundImage3: [path]
   =>  ( erased path is Abstractable across Paths to Text )
   =>  ( "backgroundImage" is PropertyDef[path] ) = !!
 
 
   //erased given backgroundImage4: ("backgroundImage" is PropertyDef[SimplePath]) = !!
-  erased given backgroundOrigin: ("backgroundOrigin" is PropertyDef[Text]) = !!
-  erased given backgroundPosition: ("backgroundPosition" is PropertyDef[Text]) = !!
-  erased given backgroundPosition2: ("backgroundPosition" is PropertyDef[Length | Int]) = !!
+  inline given backgroundOrigin: ("backgroundOrigin" is PropertyDef[Text]) = !!
+  inline given backgroundPosition: ("backgroundPosition" is PropertyDef[Text]) = !!
+  inline given backgroundPosition2: ("backgroundPosition" is PropertyDef[Length | Int]) = !!
 
-  erased given backgroundPosition3: ("backgroundPosition" is PropertyDef[(Length | Int,
+  inline given backgroundPosition3: ("backgroundPosition" is PropertyDef[(Length | Int,
                                                                           Length | Int)]) =
     !!
 
-  erased given backgroundRepeat: ("backgroundRepeat" is PropertyDef[Text]) = !!
-  erased given backgroundRepeat2: ("backgroundRepeat" is PropertyDef[BackgroundRepeat]) = !!
+  inline given backgroundRepeat: ("backgroundRepeat" is PropertyDef[Text]) = !!
+  inline given backgroundRepeat2: ("backgroundRepeat" is PropertyDef[BackgroundRepeat]) = !!
 
-  erased given backgroundRepeat3: ("backgroundRepeat" is PropertyDef
+  inline given backgroundRepeat3: ("backgroundRepeat" is PropertyDef
                                                           [(BackgroundRepeat, BackgroundRepeat)]) =
       !!
 
-  erased given backgroundSize: ("backgroundSize" is PropertyDef[Text]) = !!
-  erased given backgroundSize2: ("backgroundSize" is PropertyDef[Length | Int]) = !!
+  inline given backgroundSize: ("backgroundSize" is PropertyDef[Text]) = !!
+  inline given backgroundSize2: ("backgroundSize" is PropertyDef[Length | Int]) = !!
 
-  erased given border: [color]
-  =>  ( erased color is Chromatic )
+  inline given border: [color]
+  =>  ( inline color is Chromatic )
   =>  ( "border" is PropertyDef[(BorderStyle, Length | Int, color)] ) = !!
 
-  erased given borderBottom: [color] => (erased color is Chromatic)
+  inline given borderBottom: [color] => (inline color is Chromatic)
   =>  ( "borderBottom" is PropertyDef[(BorderStyle, Length | Int, color)] ) = !!
 
-  erased given borderBottomColor: [color] => (erased color is Chromatic)
+  inline given borderBottomColor: [color] => (inline color is Chromatic)
   =>  ( "borderBottomColor" is PropertyDef[color] ) = !!
 
-  erased given borderBottomColor2: ("borderBottomColor" is PropertyDef[Transparent.type]) = !!
-  erased given borderBottomLeftRadius: ("borderBottomLeftRadius" is PropertyDef[Length | Int]) = !!
+  inline given borderBottomColor2: ("borderBottomColor" is PropertyDef[Transparent.type]) = !!
+  inline given borderBottomLeftRadius: ("borderBottomLeftRadius" is PropertyDef[Length | Int]) = !!
 
-  erased given borderBottomRightRadius: ("borderBottomRightRadius" is PropertyDef[Length | Int]) =
+  inline given borderBottomRightRadius: ("borderBottomRightRadius" is PropertyDef[Length | Int]) =
     !!
 
-  erased given borderBottomStyle: ("borderBottomStyle" is PropertyDef[BorderStyle]) = !!
-  erased given borderBottomWidth: ("borderBottomWidth" is PropertyDef[Length | Int]) = !!
-  erased given borderCollapse: ("borderCollapse" is PropertyDef[Text]) = !!
+  inline given borderBottomStyle: ("borderBottomStyle" is PropertyDef[BorderStyle]) = !!
+  inline given borderBottomWidth: ("borderBottomWidth" is PropertyDef[Length | Int]) = !!
+  inline given borderCollapse: ("borderCollapse" is PropertyDef[Text]) = !!
 
   erased given borderColor1: [color] => (erased color is Chromatic)
   =>  ( "borderColor" is PropertyDef[color] ) = !!

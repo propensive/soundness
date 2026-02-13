@@ -76,7 +76,7 @@ trait Interpolator[input, state, result]:
       def rethrow[success](block: => success, start: Int, end: Int): success =
         try block catch case err: InterpolationError => err match
           case InterpolationError(msg, off, len) =>
-            erased given canThrow: CanThrow[PositionalError] = unsafeExceptions.canThrowAny
+            inline given canThrow: CanThrow[PositionalError] = unsafeExceptions.canThrowAny
             given diagnostics: Diagnostics = Diagnostics.omit
 
             throw PositionalError

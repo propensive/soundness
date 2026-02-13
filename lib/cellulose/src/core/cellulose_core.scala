@@ -30,27 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package escapade
-
-import language.experimental.pureFunctions
+package cellulose
 
 import anticipation.*
-import fulminate.*
-
-export Escapade.CharSpan
-
-object Bold
-object Italic
-object Underline
-object Strike
-object Reverse
-object Conceal
+import prepositional.*
+import rudiments.*
 
 extension (inline ctx: StringContext)
-  transparent inline def e(inline parts: Any*): Teletype = ${Ansi.Interpolator.expand('ctx, 'parts)}
+  transparent inline def codl(inline parts: Any*): CodlDoc = ${Codl.Prefix.expand('ctx, 'parts)}
 
-extension [teletypeable: Teletypeable](value: teletypeable) def teletype: Teletype =
-  teletypeable.teletype(value)
+extension [encodable: {Encodable in Codl, CodlSchematic}](value: encodable)
+  def codl: CodlDoc of encodable =
+    new CodlDoc
+      ( IArray.from(encodable.encoded(value).list.map(_.children).flatten),
+        encodable.schema(),
+        0 ):
 
-package printableTypes:
-  given message: Message is Printable = summon[Teletype is Printable].contramap(_.teletype)
+      type Topic = encodable
+
+package codlPrinters:
+  given standard: CodlPrinter = CodlPrinter.standardPrinter
+
+package dynamicCodlAccess:
+  inline given enabled: DynamicCodlEnabler = !!

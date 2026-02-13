@@ -80,7 +80,7 @@ extension [value](value: value)
 
   inline def typed[ValueSubtype <: value]: Boolean = value.isInstanceOf[ValueSubtype]
 
-  transparent inline def matchable(using Unsafe): value & Matchable =
+  transparent inline def matchable(using erased Unsafe): value & Matchable =
     value.asInstanceOf[value & Matchable]
 
   def give[result](block: value ?=> result): result = block(using value)
@@ -283,10 +283,10 @@ extension [value](iterable: Iterable[value])
     recur(0, iterable, 0, 0, 0)
 
 extension [element](value: IArray[element])
-  inline def mutable(using Unsafe): Array[element] = value.asInstanceOf[Array[element]]
+  inline def mutable(using erased Unsafe): Array[element] = value.asInstanceOf[Array[element]]
 
 extension [element](array: Array[element])
-  inline def immutable(using Unsafe): IArray[element] = array.asInstanceOf[IArray[element]]
+  inline def immutable(using erased Unsafe): IArray[element] = array.asInstanceOf[IArray[element]]
 
   def snapshot(using ClassTag[element]): IArray[element] =
     val newArray = new Array[element](array.length)

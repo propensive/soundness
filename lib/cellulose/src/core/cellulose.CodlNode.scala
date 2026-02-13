@@ -92,8 +92,7 @@ case class CodlNode(data: Optional[Atom] = Unset, extra: Optional[Extra] = Unset
   def apply(key: Text): List[Atom] = data.lay(List[CodlNode]())(_(key)).map(_.data).collect:
     case data: Atom => data
 
-  def selectDynamic(key: String)(using erased DynamicCodlEnabler)
-  : List[Atom] raises CodlError =
+  def selectDynamic(key: String)(using erased DynamicCodlEnabler): List[Atom] raises CodlError =
 
       data.lest(CodlError(CodlError.Reason.MissingValue(key.show))).selectDynamic(key)
 

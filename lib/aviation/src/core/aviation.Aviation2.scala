@@ -52,7 +52,7 @@ object Aviation2:
   opaque type TaiInstant = Long
 
   object TaiInstant:
-    erased given underlying: Underlying[TaiInstant, Long] = !!
+    inline given underlying: Underlying[TaiInstant, Long] = !!
 
     given generic: Aviation2.TaiInstant is Abstractable & Instantiable across Instants to
                     Long from Long =
@@ -92,7 +92,7 @@ object Aviation2:
     def apply[instant: Abstractable across Instants to Long](instant: instant): Instant =
       of(instant.generic)
 
-    erased given underlying: Underlying[Instant, Long] = !!
+    inline given underlying: Underlying[Instant, Long] = !!
     def of(millis: Long): Instant = millis
 
     given generic: Aviation2.Instant is Abstractable & Instantiable across Instants to Long from

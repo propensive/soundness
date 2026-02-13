@@ -349,7 +349,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   def ancestors: List[Path on Plane under Limit] =
     safely(parent).let { parent => parent :: parent.ancestors }.or(Nil)
 
-  def child(value: Text)(using Unsafe): Path on Plane under Limit =
+  def child(value: Text)(using erased Unsafe): Path on Plane under Limit =
     Path.of[Plane, Limit, Text *: Topic](root, value +: descent*)
 
   @targetName("slash")

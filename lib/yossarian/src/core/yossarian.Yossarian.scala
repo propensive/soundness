@@ -155,5 +155,3 @@ object Yossarian:
 
       def update(style: Style, boolean: Boolean): Style =
         if boolean then (style | (1L << bit)) else (style & ~(1L << bit))
-
-export Yossarian.{Style, Screen}
