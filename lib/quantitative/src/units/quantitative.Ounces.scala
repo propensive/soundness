@@ -40,4 +40,4 @@ trait Ounces[Power <: Nat] extends Units[Power, Mass]
 
 object Ounces:
   given designation: Designation[Ounces[1]] = () => "oz".tt
-  erased given ratio: Ratio[Kilograms[1] & Ounces[-1], 0.0283495] = !!
+  inline given ratio: Ratio[Kilograms[1] & Ounces[-1], 0.0283495] = !!

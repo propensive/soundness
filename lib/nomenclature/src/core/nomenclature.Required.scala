@@ -36,6 +36,6 @@ import prepositional.*
 import rudiments.*
 
 object Required:
-  erased given Required is Nominative under MustNotEqual[""] = !!
+  inline given Required is Nominative under MustNotEqual[""] = !!
 
 sealed trait Required

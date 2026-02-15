@@ -40,4 +40,4 @@ trait Drams[Power <: Nat] extends Units[Power, Mass]
 
 object Drams:
   given designation: Designation[Drams[1]] = () => "dr".tt
-  erased given ratio: Ratio[Kilograms[1] & Drams[-1], 0.00177184375] = !!
+  inline given ratio: Ratio[Kilograms[1] & Drams[-1], 0.00177184375] = !!

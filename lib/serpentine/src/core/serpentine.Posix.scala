@@ -45,7 +45,7 @@ object Posix:
     MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
     & MustNotEqual["Icon\r"] & MustNotContain[":"]
 
-  erased given Posix is Nominative under Rules = !!
+  inline given Posix is Nominative under Rules = !!
 
   given filesystem: Posix is Filesystem:
     type UniqueRoot = true

@@ -100,7 +100,7 @@ object Semver:
               Semver(major2, minor2, patch2, prerelease3, build3)
 
         case _ =>
-          raise(SemverError(text))
+          abort(SemverError(text))
 
 
 

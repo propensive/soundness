@@ -52,7 +52,7 @@ object Classpath extends Root(t""):
   type Plane = Classpath
   type Rules = MustNotContain["/"] & MustNotMatch["[0-9].*"] & MustMatch["[a-zA-Z0-9_$.]+"]
 
-  erased given nominative: Classpath is Nominative under Rules = !!
+  inline given nominative: Classpath is Nominative under Rules = !!
 
   given radical: Tactic[PathError] => Classpath.type is Radical:
     type Plane = Classpath

@@ -41,4 +41,4 @@ sealed trait Dos
 object Dos:
   type Rules = MustMatch["[^.]{1,8}(\\.[^.]{1,3})?"] & MustNotContain[" "] & MustMatch["[!-~]*"]
 
-  erased given Dos is Nominative under Rules = !!
+  inline given Dos is Nominative under Rules = !!

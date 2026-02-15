@@ -45,7 +45,7 @@ object MacOs:
     MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
     & MustNotEqual["Icon\r"] & MustNotContain[":"]
 
-  erased given MacOs is Nominative under Rules = !!
+  inline given MacOs is Nominative under Rules = !!
 
   given filesystem: MacOs is Filesystem:
     type UniqueRoot = true

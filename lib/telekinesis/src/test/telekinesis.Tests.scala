@@ -64,8 +64,8 @@ object Tests extends Suite(m"Telekinesis tests"):
 
     suite(m"Response construction tests"):
       test(m"Construct a Query"):
-        erased given key: ("key" is Parametric to Text) = !!
-        erased given param: ("param" is Parametric to Int) = !!
+        inline given key: ("key" is Parametric to Text) = !!
+        inline given param: ("param" is Parametric to Int) = !!
         Query(key = t"hello world", param = 24).show
 
       . assert(_ == t"key=hello+world&param=24")
@@ -89,7 +89,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       . assert(_ == t"first.name=Jack&first.age=12&second.name=Jill&second.age=11")
 
-      erased given second: ("second" is Parametric to Person) = !!
+      inline given second: ("second" is Parametric to Person) = !!
 
       val query = Query.of(List
                             (t"first.name"  -> t"Jack",

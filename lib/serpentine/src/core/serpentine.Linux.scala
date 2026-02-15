@@ -42,7 +42,7 @@ trait Linux extends Posix
 
 object Linux:
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
-  erased given nominative: Linux is Nominative under Rules = !!
+  inline given nominative: Linux is Nominative under Rules = !!
 
   given filesystem: Linux is Filesystem:
     type UniqueRoot = true

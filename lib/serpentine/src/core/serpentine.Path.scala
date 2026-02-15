@@ -51,10 +51,10 @@ import vacuous.*
 private given Realm = Realm(t"serpentine")
 
 object Path:
-  erased given pathOnLinux: (Path on Linux) is Representative of Paths = !!
-  erased given pathOnWindows: (Path on Windows) is Representative of Paths = !!
-  erased given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
-  erased given pathOnLocal: (Path on Local) is Representative of Paths = !!
+  inline given pathOnLinux: (Path on Linux) is Representative of Paths = !!
+  inline given pathOnWindows: (Path on Windows) is Representative of Paths = !!
+  inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
+  inline given pathOnLocal: (Path on Local) is Representative of Paths = !!
 
   @targetName("Root")
   object % extends Path(t"/"):
@@ -218,7 +218,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   transparent inline def sameRoot(right: Path): Boolean = summonFrom:
     case plane: (Plane is Filesystem) =>
-      inline if !![plane.UniqueRoot] then true else root == right.root
+      inline if erasedValue[plane.UniqueRoot] then true else root == right.root
     case _ =>
       root == right.root
 
@@ -241,7 +241,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
         val path = certain(right)
         inline val baseAscent: Int = count[Topic, right.Topic]
 
-        inline !![right.Topic] match
+        inline erasedValue[right.Topic] match
           case _: (_ *: _) | Zero =>
             inline val ascent = constValue[Tuple.Size[right.Topic]] - baseAscent
 
@@ -366,7 +366,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   transparent inline def peer(child: Any)(using child.type is Admissible on Plane)
   : Path on Plane under Limit =
-    inline !![Topic] match
+    inline erasedValue[Topic] match
       case _: (head *: tail) =>
         Path.of[Plane, Limit, child.type *: tail]
           ( root, infer[child.type is Navigable on Plane].follow(child) +: descent* )

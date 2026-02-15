@@ -45,8 +45,8 @@ sealed trait Id2
 
 object Tests extends Suite(m"Nomenclature tests"):
   def run(): Unit =
-    erased given id: Id is Nominative under MustEnd["!"] & MustNotStart["0"] & MustNotContain["."] = !!
-    erased given id2: Id2 is Nominative under MustNotEqual["."] & MustNotEqual[".."] = !!
+    inline given id: Id is Nominative under MustEnd["!"] & MustNotStart["0"] & MustNotContain["."] = !!
+    inline given id2: Id2 is Nominative under MustNotEqual["."] & MustNotEqual[".."] = !!
 
     test(m"Create a successful new name"):
       Name[Id](t"hello!")

@@ -38,4 +38,4 @@ import rudiments.*
 trait Tons[Power <: Nat] extends Units[Power, Mass]
 
 object Tons:
-  erased given ratio: Ratio[Kilograms[1] & Tons[-1], 1016.0469088] = !!
+  inline given ratio: Ratio[Kilograms[1] & Tons[-1], 1016.0469088] = !!

@@ -98,7 +98,7 @@ object Urticose:
       def text: Text = label
 
     object Ipv4:
-      erased given underlying: Underlying[Ipv4, Int] = !!
+      inline given underlying: Underlying[Ipv4, Int] = !!
 
       given showable: Ipv4 is Showable = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
@@ -133,7 +133,7 @@ object Urticose:
 
     object MacAddress:
       import MacAddressError.Reason.*
-      erased given underlying: Underlying[MacAddress, Long] = !!
+      inline given underlying: Underlying[MacAddress, Long] = !!
       given showable: MacAddress is Showable = _.text
       given encodable: MacAddress is Encodable in Text = _.text
       given decoder: Tactic[MacAddressError] => MacAddress is Decodable in Text = parse(_)
@@ -173,7 +173,7 @@ object Urticose:
 
 
     object TcpPort:
-      erased given underlying: Underlying[TcpPort, Int] = !!
+      inline given underlying: Underlying[TcpPort, Int] = !!
       given showable: TcpPort is Showable = _.number.show
       given encodable: TcpPort is Encodable in Text = _.number.show
 
@@ -187,7 +187,7 @@ object Urticose:
         else raise(PortError()) yet unsafe(1)
 
     object UdpPort:
-      erased given underlying: Underlying[UdpPort, Int] = !!
+      inline given underlying: Underlying[UdpPort, Int] = !!
       given showable: UdpPort is Showable = _.number.show
       given encodable: UdpPort is Encodable in Text = _.number.show
 

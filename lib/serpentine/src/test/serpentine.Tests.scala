@@ -372,7 +372,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Typelevel conjunction"):
         val path1: Path of ("data", "work", "home") on Linux = % / "home" / "work" / "data"
         val path2: Path of ("more", "work", "home") on Linux = % / "home" / "work" / "more"
-        val result: Path of ("work" , "home") = path1.conjunction(path2)
+        val result: Path of ("work", "home") = path1.conjunction(path2)
       . assert()
 
       test(m"Typelevel conjunction of unplatformed Linux paths"):

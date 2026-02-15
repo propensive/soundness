@@ -45,7 +45,7 @@ sealed trait Local
 object Local:
   // Note that Mac OS rules subsume Linux rules
   type Rules = Windows.Rules & MacOs.Rules
-  erased given nominative: Local is Nominative under Rules = !!
+  inline given nominative: Local is Nominative under Rules = !!
 
   given filesystem: System => Local is Filesystem:
     type UniqueRoot = false

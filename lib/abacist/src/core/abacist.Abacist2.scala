@@ -48,7 +48,7 @@ object Abacist2 extends Abacist3:
   opaque type Quanta[units <: Tuple] = Long
 
   object Quanta extends Quanta2:
-    erased given underlying: [units <: Tuple] => Underlying[Quanta[units], Long] = !!
+    inline given underlying: [units <: Tuple] => Underlying[Quanta[units], Long] = !!
     given zeroic: [units <: Tuple] => Quanta[units] is Zeroic:
       inline def zero: Quanta[units] = 0L
 

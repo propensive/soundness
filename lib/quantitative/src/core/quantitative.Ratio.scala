@@ -32,4 +32,9 @@
                                                                                                   */
 package quantitative
 
+object Ratio:
+  def apply[units <: Measure, ratio <: Double & Singleton](): Ratio[units, ratio] =
+    new Ratio[units, ratio]:
+      ()
+
 sealed trait Ratio[units <: Measure, ratio <: Double & Singleton]

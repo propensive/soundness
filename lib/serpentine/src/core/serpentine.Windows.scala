@@ -49,7 +49,7 @@ object Windows:
     & MustNotMatch["(?i)AUX(\\.[^.]+)?"] & MustNotMatch["(?i)NUL(\\.[^.]+)?"]
     & MustNotMatch["(?i)COM[0-9](\\.[^.]+)?"] & MustNotMatch["(?i)LPT[0-9](\\.[^.]+)?"]
 
-  erased given Windows is Nominative under Rules = !!
+  inline given Windows is Nominative under Rules = !!
 
   given filesystem: Windows is Filesystem:
     type UniqueRoot = false

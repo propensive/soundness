@@ -51,7 +51,7 @@ case class Group(org: Organization)
 case class Organization(leader: Person, name: Name[Person])
 
 object Person:
-  erased given Person is Nominative under MustMatch["[A-Z][a-z]+"] = !!
+  inline given Person is Nominative under MustMatch["[A-Z][a-z]+"] = !!
 
 case class Person(name: Name[Person], description: Text, email: EmailAddress)
 

@@ -38,4 +38,4 @@ import rudiments.*
 trait SiderealDays[Power <: Nat] extends Units[Power, Time]
 
 object SiderealDays:
-  erased given ratio: Ratio[Seconds[1] & SiderealDays[-1], 86164.0905] = !!
+  inline given ratio: Ratio[Seconds[1] & SiderealDays[-1], 86164.0905] = !!
