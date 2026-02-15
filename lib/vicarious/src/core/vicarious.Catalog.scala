@@ -60,15 +60,3 @@ case class Catalog[key, value: ClassTag](values: IArray[value]):
 
       Catalog(IArray.tabulate(values.length): index =>
         lambda(values(index), right.values(index)))
-
-
-extension [key, value: ClassTag](catalog: Catalog[key, value])
-  def brush(using proxy: Proxy[key, value, Nat])
-    ( lambda: (`*`: proxy.type) ?=> Proxy[key, value, Nat] ~> value )
-  : Catalog[key, value] =
-
-      val partialFunction = lambda(using proxy)
-
-      Catalog(IArray.tabulate(catalog.size): index =>
-        partialFunction.applyOrElse
-          ( Proxy[key, value, index.type](), _ => catalog.values(index)) )

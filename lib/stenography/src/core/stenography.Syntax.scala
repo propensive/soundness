@@ -185,7 +185,7 @@ object Syntax:
   : Syntax =
       import quotes.reflect.*
 
-      clause match
+      clause.absolve match
         case TermParamClause(termDefs) =>
           val contextual = termDefs.exists(_.symbol.flags.is(Flags.Given))
 

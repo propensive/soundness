@@ -44,7 +44,7 @@ object Stenography:
 
   def name(using Quotes)(typeRepr: quotes.reflect.TypeRepr): Text =
     import quotes.reflect.*
-    typeRepr.asType match
+    typeRepr.asType.absolve match
       case '[tpe] => name[tpe]
 
 

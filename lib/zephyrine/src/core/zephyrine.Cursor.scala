@@ -88,8 +88,6 @@ object Cursor:
       else
         new Cursor[data](addressable0.empty, 0, Iterator.empty, addressable0, lineation0)
 
-export Cursor.{Mark, Offset}
-
 class Cursor[data](initial:    data,
                    extent0:    Int,
                    iterator:   Iterator[data],

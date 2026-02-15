@@ -80,7 +80,9 @@ object Austronesian:
 
     inline given text2: Text is Decodable in Pojo = _.asInstanceOf[String].tt
     inline given string2: String is Decodable in Pojo = _.asInstanceOf[String]
+
     inline given int2: Int is Decodable in Pojo = _.asInstanceOf[Int]
+
     inline given long2: Long is Decodable in Pojo = _.asInstanceOf[Long]
     inline given float2: Float is Decodable in Pojo = _.asInstanceOf[Float]
     inline given double2: Double is Decodable in Pojo = _.asInstanceOf[Double]

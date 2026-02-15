@@ -48,8 +48,6 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-private given Realm = Realm(t"serpentine")
-
 object Path:
   inline given pathOnLinux: (Path on Linux) is Representative of Paths = !!
   inline given pathOnWindows: (Path on Windows) is Representative of Paths = !!

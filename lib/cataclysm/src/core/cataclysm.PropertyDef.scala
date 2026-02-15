@@ -53,7 +53,7 @@ object PropertyDef:
 
   inline given animationDirection: ("animationDirection" is PropertyDef[Text]) = !!
 
-  given animationDuration: [duration <: Measure]
+  inline given animationDuration: [duration <: Measure]
   =>  ( erased duration is Normalizable to Seconds[1] )
   =>  ( "animationDuration" is PropertyDef[Quantity[duration]] ) = !!
 
@@ -101,14 +101,13 @@ object PropertyDef:
   inline given backgroundSize: ("backgroundSize" is PropertyDef[Text]) = !!
   inline given backgroundSize2: ("backgroundSize" is PropertyDef[Length | Int]) = !!
 
-  inline given border: [color]
-  =>  ( inline color is Chromatic )
+  inline given border: [color] => (erased color is Chromatic)
   =>  ( "border" is PropertyDef[(BorderStyle, Length | Int, color)] ) = !!
 
-  inline given borderBottom: [color] => (inline color is Chromatic)
+  inline given borderBottom: [color] => (erased color is Chromatic)
   =>  ( "borderBottom" is PropertyDef[(BorderStyle, Length | Int, color)] ) = !!
 
-  inline given borderBottomColor: [color] => (inline color is Chromatic)
+  inline given borderBottomColor: [color] => (erased color is Chromatic)
   =>  ( "borderBottomColor" is PropertyDef[color] ) = !!
 
   inline given borderBottomColor2: ("borderBottomColor" is PropertyDef[Transparent.type]) = !!

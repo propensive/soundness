@@ -30,13 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package nomenclature
+package iridescence
 
-import scala.quoted.*
-
-import proscenium.*
-
-object Nomenclature3:
-  def staticCompanion[instance: Type]: Macro[Matchable] =
-    import quotes.reflect.*
-    Ident(TypeRepr.of[instance].typeSymbol.companionModule.termRef).asExprOf[Matchable]
+export Rgb12Opaque.Rgb12
+export Rgb24Opaque.Rgb24
+export Rgb32Opaque.Rgb32

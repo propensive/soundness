@@ -30,8 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package wisteria
+package vacuous
 
-package derivationContext:
-  given required: ContextRequirement.required.type = ContextRequirement.required
-  given relaxed: ContextRequirement.relaxed.type = ContextRequirement.relaxed
+import language.experimental.pureFunctions
+
+import java.util as ju
+
+import scala.quoted.*
+
+import anticipation.*
+import fulminate.*
+
+import errorDiagnostics.stackTraces
+
+object Unset:
+  override def toString(): String = "∅"

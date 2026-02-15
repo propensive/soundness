@@ -222,25 +222,21 @@ class Report(using Environment):
       val showStats = !lines.summaries.all(_.count < 2)
       val timeTitle = if showStats then t"Avg" else t"Time"
 
-      Table[Summary](
-        Column(e"")(_.status.symbol),
+      Table[Summary]
+        ( Column(e"")(_.status.symbol),
+          Column(e"$Bold(Hash)"): s =>
+            e"$CadetBlue(${s.id.id})",
+          Column(e"$Bold(Test)")(_.indentedName),
+          Column(e"$Bold(Count)", textAlign = TextAlignment.Right): s =>
+            e"$SteelBlue(${s.iterations})",
+          Column(e"$Bold(Min)", textAlign = TextAlignment.Right): s =>
+            if s.count < 2 then e"" else s.minTime,
 
-        Column(e"$Bold(Hash)"): s =>
-          e"$CadetBlue(${s.id.id})",
+          Column(e"$Bold($timeTitle)", textAlign = TextAlignment.Right)(_.avgTime),
 
-        Column(e"$Bold(Test)")(_.indentedName),
-
-        Column(e"$Bold(Count)", textAlign = TextAlignment.Right): s =>
-          e"$SteelBlue(${s.iterations})",
-
-        Column(e"$Bold(Min)", textAlign = TextAlignment.Right): s =>
-          if s.count < 2 then e"" else s.minTime,
-
-        Column(e"$Bold($timeTitle)", textAlign = TextAlignment.Right)(_.avgTime),
-
-        Column(e"$Bold(Max)", textAlign = TextAlignment.Right): s =>
-          if s.count < 2 then e"" else s.maxTime
-      )
+          Column(e"$Bold(Max)", textAlign = TextAlignment.Right): s =>
+            if s.count < 2 then e"" else s.maxTime
+        )
 
     val columns: Int = safely(Environment.columns.decode[Int]).or(120)
     val summaryLines = lines.summaries

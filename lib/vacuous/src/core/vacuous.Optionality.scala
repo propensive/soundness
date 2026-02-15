@@ -30,13 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package nomenclature
+package vacuous
+
+import language.experimental.pureFunctions
+
+import java.util as ju
 
 import scala.quoted.*
 
-import proscenium.*
+import anticipation.*
+import fulminate.*
 
-object Nomenclature3:
-  def staticCompanion[instance: Type]: Macro[Matchable] =
-    import quotes.reflect.*
-    Ident(TypeRepr.of[instance].typeSymbol.companionModule.termRef).asExprOf[Matchable]
+import errorDiagnostics.stackTraces
+
+object Optionality:
+  inline given default: [value] => Optionality[value] = ${Vacuous.check[value]}
+
+sealed trait Optionality[-value]

@@ -49,8 +49,6 @@ import vacuous.*
 
 import scala.quoted.*
 
-private given realm: Realm = realm"xylophone"
-
 object Xylophone:
   def extractor[parts <: Tuple: Type](scrutinee: Expr[Xml]): Macro[Extrapolation[Xml]] =
     import quotes.reflect.*

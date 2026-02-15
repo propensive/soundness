@@ -36,12 +36,15 @@ import scala.util.NotGiven
 
 import anticipation.*
 import contextual.*
+import fulminate.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
 
 import language.dynamics
+
+private given realm: Realm = realm"honeycomb"
 
 extension [renderable: Renderable](value: renderable)
   def html: Html of renderable.Form = renderable.render(value)

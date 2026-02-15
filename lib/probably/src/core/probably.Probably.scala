@@ -77,7 +77,7 @@ object Probably:
 
           val exp: Option[Expr[Any]] = lift(predicate)
 
-          val analyse = Expr.summon[Autopsy] match
+          val analyse = Expr.summon[Autopsy].absolve match
             case None =>
               Unset
 

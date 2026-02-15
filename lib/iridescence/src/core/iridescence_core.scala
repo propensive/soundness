@@ -35,5 +35,4 @@ package iridescence
 extension (inline context: StringContext)
   transparent inline def rgb(inline parts: Any*): Rgb24 = ${RgbHex.expand('context, 'parts)}
 
-private[iridescence] inline def unitary(d: Double): Double =
-  d - d.toInt + (if d < 0 then 1 else 0)
+private[iridescence] inline def unitary(d: Double): Double = d - d.toInt + (if d < 0 then 1 else 0)

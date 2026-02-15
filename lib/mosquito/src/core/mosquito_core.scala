@@ -32,4 +32,12 @@
                                                                                                   */
 package mosquito
 
+import proscenium.*
+import vacuous.*
+
 export Mosquito.Tensor
+
+extension [element](list: List[element])
+  def slide(size: Int): Stream[Tensor[element, size.type]] = list match
+    case Nil          => Stream()
+    case head :: tail => Tensor.take(list, size).lay(Stream())(_ #:: tail.slide(size))

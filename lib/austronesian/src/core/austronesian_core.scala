@@ -34,6 +34,7 @@ package austronesian
 
 import anticipation.*
 import distillate.*
+import fulminate.*
 import hellenism.*
 import prepositional.*
 
@@ -48,3 +49,5 @@ extension (classloader: Classloader)
 extension (context: StringContext)
   def o(): Proxy = Proxy(context.parts.head.tt, true)
   def c(): Proxy = Proxy(context.parts.head.tt, false)
+
+private given Realm = realm"austronesian"

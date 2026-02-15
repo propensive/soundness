@@ -339,7 +339,7 @@ trait Quantitative2:
 
 
   def multiply[left <: Measure: Type, right <: Measure: Type]
-    ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]], division: Boolean )
+    ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]] )
   : Macro[Any] =
 
       val left: UnitsMap = UnitsMap[left]
@@ -348,8 +348,25 @@ trait Quantitative2:
       val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
       val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
-      val resultUnits = if division then left2/right2 else left2*right2
-      val resultValue = if division then '{$leftValue/$rightValue} else '{$leftValue*$rightValue}
+      val resultUnits = left2*right2
+      val resultValue = '{$leftValue*$rightValue}
+
+      resultUnits.repr.map(_.asType).absolve match
+        case Some('[type units <: Measure; units]) => '{Quantity[units]($resultValue)}
+        case _                                     => resultValue
+
+  def divide[left <: Measure: Type, right <: Measure: Type]
+    ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]] )
+  : Macro[Any] =
+
+      val left: UnitsMap = UnitsMap[left]
+      val right: UnitsMap = UnitsMap[right]
+
+      val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
+      val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
+
+      val resultUnits = left2/right2
+      val resultValue = '{$leftValue/$rightValue}
 
       resultUnits.repr.map(_.asType).absolve match
         case Some('[type units <: Measure; units]) => '{Quantity[units]($resultValue)}
@@ -399,13 +416,13 @@ trait Quantitative2:
           ' {
               Multiplicable[multiplicand, multiplier, Quantity[result]]:
                 (left, right) =>
-                  ${Quantitative.multiply('left, 'right, false).asExprOf[Quantity[result]]}
+                  ${Quantitative.multiply('left, 'right).asExprOf[Quantity[result]]}
             }
 
         case None =>
           ' {
               Multiplicable[multiplicand, multiplier, Double]: (left, right) =>
-                ${Quantitative.multiply('left, 'right, false).asExprOf[Double]}
+                ${Quantitative.multiply('left, 'right).asExprOf[Double]}
             }
 
 
@@ -425,15 +442,14 @@ trait Quantitative2:
       (leftNorm/rightNorm).repr.map(_.asType).absolve match
         case Some('[type result <: Measure; result]) =>
           ' {
-              Divisible[dividend, divisor, Quantity[result]]:
-                (left, right) =>
-                  ${Quantitative.multiply('left, 'right, true).asExprOf[Quantity[result]]}
+              Divisible[dividend, divisor, Quantity[result]]: (left, right) =>
+                ${Quantitative.divide('left, 'right).asExprOf[Quantity[result]]}
             }
 
         case None =>
           ' {
               Divisible[dividend, divisor, Double]: (left, right) =>
-                ${Quantitative.multiply('left, 'right, true).asExprOf[Double]}
+                ${Quantitative.divide('left, 'right).asExprOf[Double]}
             }
 
 
@@ -449,18 +465,14 @@ trait Quantitative2:
       (leftNorm/rightNorm).repr.map(_.asType).absolve match
         case Some('[type result <: Measure; result]) =>
           ' {
-              Divisible[Double, divisor, Quantity[result]]:
-                (left, right) =>
-                  $ {
-                      Quantitative.multiply
-                        ('{Quantity(left)}, 'right, true).asExprOf[Quantity[result]]
-                    }
+              Divisible[Double, divisor, Quantity[result]]: (left, right) =>
+                ${Quantitative.divide('{Quantity(left)}, 'right).asExprOf[Quantity[result]]}
             }
 
         case None =>
           ' {
               Divisible[Double, divisor, Double]: (left, right) =>
-                ${Quantitative.multiply('{Quantity(left)}, 'right, true).asExprOf[Double]}
+                ${Quantitative.divide('{Quantity(left)}, 'right).asExprOf[Double]}
             }
 
 
@@ -479,10 +491,7 @@ trait Quantitative2:
               Divisible[Int, divisor, Quantity[result]]:
                 (left, right) =>
                   $ {
-                      Quantitative.multiply
-                        ( '{Quantity(left.toDouble)},
-                          'right,
-                          true )
+                      Quantitative.divide('{Quantity(left.toDouble)}, 'right)
                       . asExprOf[Quantity[result]]
                     }
             }
@@ -490,7 +499,7 @@ trait Quantitative2:
         case None =>
           ' {
               Divisible[Int, divisor, Double]: (left, right) =>
-                ${Quantitative.multiply('{Quantity(left.toDouble)}, 'right, true).asExprOf[Double]}
+                ${Quantitative.divide('{Quantity(left.toDouble)}, 'right).asExprOf[Double]}
             }
 
 

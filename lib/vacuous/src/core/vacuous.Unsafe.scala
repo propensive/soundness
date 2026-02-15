@@ -33,4 +33,3 @@
 package vacuous
 
 sealed trait Unsafe
-erased val Unsafe: Unsafe = caps.unsafe.unsafeErasedValue

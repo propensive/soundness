@@ -35,6 +35,7 @@ package escapade
 import language.experimental.pureFunctions
 
 import anticipation.*
+import contextual.*
 import fulminate.*
 
 type Escape = Ansi.Input.Escape
@@ -56,3 +57,5 @@ extension [teletypeable: Teletypeable](value: teletypeable) def teletype: Telety
 
 package printableTypes:
   given message: Message is Printable = summon[Teletype is Printable].contramap(_.teletype)
+
+type Stylize[T] = Substitution[Ansi.Input, T, "esc"]

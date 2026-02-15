@@ -50,5 +50,3 @@ object Rgb32Opaque:
     def green: Int = (color >> 10)&4095
     def blue: Int = color&1023
     def srgb: Srgb = Srgb(red/1023.0, green/4095.0, blue/1023.0)
-
-export Rgb32Opaque.Rgb32

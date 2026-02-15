@@ -43,6 +43,7 @@ import gossamer.*
 import hypotenuse.*
 import kaleidoscope.*
 import prepositional.*
+import proscenium.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -52,7 +53,7 @@ import errorDiagnostics.stackTraces
 object Semver:
   given encodable: Semver is Encodable in Text =
     semver =>
-      extension (element: Long | Text) def text: Text = element match
+      extension (element: Long | Text) def text: Text = element.absolve match
         case text: Text => text
         case long: Long => long.show
 

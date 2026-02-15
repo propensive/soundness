@@ -32,6 +32,9 @@
                                                                                                   */
 package nomenclature
 
+import anticipation.*
+import fulminate.*
+
 export Nomenclature.Name
 
 extension (inline context: StringContext)
@@ -39,3 +42,8 @@ extension (inline context: StringContext)
 
 transparent inline def disintersect[intersection] =
   ${Nomenclature2.disintersection[intersection]}
+
+private given realm: Realm = realm"nomenclature"
+
+transparent inline def staticCompanion[instance]: Matchable =
+  ${Nomenclature3.staticCompanion[instance]}

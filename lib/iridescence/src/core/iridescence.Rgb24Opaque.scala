@@ -60,5 +60,3 @@ object Rgb24Opaque:
         state+(next.hex.pipe { s => if s.s.length < 2 then "0"+s else s })
 
       . tt
-
-export Rgb24Opaque.Rgb24

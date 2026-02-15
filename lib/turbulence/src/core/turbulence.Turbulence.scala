@@ -44,8 +44,6 @@ import stenography.*
 import vacuous.*
 import scala.languageFeature.existentials
 
-private given Realm = Realm("turbulence")
-
 object Turbulence:
   import Stenography.name
 

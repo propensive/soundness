@@ -58,6 +58,7 @@ extension [minuend](left: minuend)
 
 
 extension [dividend](left: dividend)
+  @targetName("divide")
   inline infix def / [divisor](right: divisor)(using divisible: dividend is Divisible by divisor)
   : divisible.Result =
 

@@ -211,9 +211,3 @@ object Mosquito:
 
         val start = size.value - 1
         recur(start - 1, left.element(start)*right.element(start))
-
-
-extension [element](list: List[element])
-  def slide(size: Int): Stream[Tensor[element, size.type]] = list match
-    case Nil          => Stream()
-    case head :: tail => Tensor.take(list, size).lay(Stream())(_ #:: tail.slide(size))

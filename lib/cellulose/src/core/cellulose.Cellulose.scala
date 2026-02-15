@@ -48,8 +48,6 @@ import vacuous.*
 import wisteria.*
 import zephyrine.*
 
-export Cellulose.Codl
-
 object Cellulose extends Cellulose2:
   opaque type Codl = List[Codllike]
 

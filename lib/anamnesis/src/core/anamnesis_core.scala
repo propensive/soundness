@@ -62,3 +62,6 @@ extension [left](using db: Database)(left: Ref of left in db.type)
 extension [left](using db: Database)(left: left)
   inline def store(): Ref of left in db.type = db.store(left)
   inline def ref(): Ref of left in db.type raises DataError = db.ref(left)
+
+export Anamnesis.Ref
+export Anamnesis.Reference

@@ -49,8 +49,6 @@ import vacuous.*
 
 import scala.quoted.*
 
-private given realm: Realm = realm"honeycomb"
-
 object Honeycomb:
   def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Extrapolation[Html]] =
     import quotes.reflect.*

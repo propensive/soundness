@@ -42,8 +42,6 @@ import rudiments.*
 import scala.quoted.*
 import scala.compiletime.*
 
-private given realm: Realm = realm"nomenclature"
-
 object Nomenclature2:
   def build(using Quotes)(todo: List[quotes.reflect.TypeRepr]): quotes.reflect.TypeRepr =
     import quotes.reflect.*
@@ -80,13 +78,13 @@ object Nomenclature2:
   def makeName[system: Type](name: Expr[Text]): Macro[Name[system]] =
     import quotes.reflect.*
 
-    Expr.summon[system is Nominative] match
+    Expr.summon[system is Nominative].absolve match
       case Some('{type limit; $nominative: (Nominative { type Limit = limit })}) =>
         val checks = decompose(TypeRepr.of[limit]).to(List).map(_.asType).foldLeft('{()}):
           case (expr, '[type param <: String; type rule <: Check[param]; rule]) =>
             Nomenclature3.staticCompanion[rule] match
               case '{$rule: Rule} =>
-                TypeRepr.of[param] match
+                TypeRepr.of[param].absolve match
                   case ConstantType(StringConstant(string)) =>
                     ' {
                         if $rule.check($name, ${Expr(string)}.tt) then $expr

@@ -55,3 +55,5 @@ package lineation:
     type Operand = Byte
     inline def active: Boolean = true
     inline def track(datum: Byte): Boolean = datum == 13
+
+export Cursor.{Mark, Offset}

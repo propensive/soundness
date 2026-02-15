@@ -81,7 +81,7 @@ object Vacuous:
       case other =>
         other
 
-    recur(TypeRepr.of[typeRef]).asType match
+    recur(TypeRepr.of[typeRef]).asType.absolve match
       case '[type result <: typeRef; result] =>
         if seen then '{Mandatable[typeRef, result]()} else halt(m"the value is not an `Optional`")
 

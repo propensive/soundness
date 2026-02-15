@@ -71,7 +71,7 @@ class Issuer
   private val OAuthPath: Path on Www = redirect.path
 
   def oauth(using Http.Request, Online, HttpEvent is Loggable)
-    ( lambda: Issuer.Context of this.type ?=> Http.Response )
+    ( lambda: (erased Issuer.Context of this.type) ?=> Http.Response )
     ( using store: OAuth, session: Session )
   : Http.Response raises OAuthError =
 

@@ -34,3 +34,5 @@ package gossamer
 
 extension (inline ctx: StringContext)
   transparent inline def a(inline parts: Ascii*): Ascii = ${Gossamer.ascii('ctx, 'parts)}
+
+export Bidi.Ltr, Bidi.Rtl

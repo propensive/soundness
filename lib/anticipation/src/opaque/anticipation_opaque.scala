@@ -30,13 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package nomenclature
+package anticipation
 
-import scala.quoted.*
-
-import proscenium.*
-
-object Nomenclature3:
-  def staticCompanion[instance: Type]: Macro[Matchable] =
-    import quotes.reflect.*
-    Ident(TypeRepr.of[instance].typeSymbol.companionModule.termRef).asExprOf[Matchable]
+extension [alias](value: alias)
+  inline def underlying[primitive](using erased Underlying[alias, primitive]): primitive =
+    value.asInstanceOf[primitive]

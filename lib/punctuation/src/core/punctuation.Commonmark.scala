@@ -160,8 +160,8 @@ object Commonmark:
           case null => Unset
 
         val start: Int = node.nn.getMarkerStartNumber match
-          case null     => 1
           case int: Int => int
+          case _        => 1
 
         Layout.OrderedList(line(node), start, node.nn.isTight, delimiter, listItems(node)*)
 

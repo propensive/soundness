@@ -59,3 +59,8 @@ package compassBearings:
   given sixteenPointCompass: Compass[16] is Directional = Compass[16](_)
   given fromNorth: Angle is Directional = identity(_)
   given fromEast: Angle is Directional = radians => radians - Angle(math.Pi/2)
+
+type Compass[points <: 4 | 8 | 16] = points match
+  case 4  => CardinalWind
+  case 8  => CardinalWind | IntercardinalWind
+  case 16 => CardinalWind | IntercardinalWind | HalfWind

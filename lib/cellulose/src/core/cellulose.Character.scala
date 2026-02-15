@@ -42,9 +42,8 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-opaque type Character = Long
-
 object Character:
+  opaque type Character = Long
   val End: Character = Long.MaxValue
 
   def apply(int: Int, line: Int, col: Int): Character =

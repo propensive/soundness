@@ -33,6 +33,7 @@
 package stenography
 
 import java.net as jn
+import java.nio.charset as jnc
 
 import anticipation.*
 import denominative.*
@@ -89,7 +90,7 @@ enum Typename:
     case Term(parent, name) => s"${parent.render}${symbol("⌗")}$name".tt
 
   def url: Text =
-    val name2 = java.net.URLEncoder.encode(name.s).nn.tt
+    val name2 = java.net.URLEncoder.encode(name.s, jnc.StandardCharsets.UTF_8).nn.tt
 
     this match
       case Top(_)          => name2

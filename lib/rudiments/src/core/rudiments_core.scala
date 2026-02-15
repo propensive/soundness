@@ -50,6 +50,8 @@ import proscenium.*
 import symbolism.*
 import vacuous.*
 
+export Rudiments.{Bytes, Digit}
+
 def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => value)): value =
   def recurrence(fn: (recur: value => value) ?=> value => value): value => value =
     fn(using recurrence(fn(_)))

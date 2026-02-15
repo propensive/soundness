@@ -254,7 +254,7 @@ object Json extends Json2, Dynamic:
         val (keys, values) = value.root.obj
 
         keys.indices.fuse(Map[key, element]()):
-          focus(prior.or(JsonPointer()) / keys(next).tt):
+          //focus(prior.or(JsonPointer()) / keys(next).tt):
             state.updated(keys(next).tt.decode, decodable.decoded(Json.ast(values(next))))
 
   given mapEncodable: [key: Encodable in Text, element]

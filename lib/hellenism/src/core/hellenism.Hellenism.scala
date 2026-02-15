@@ -43,8 +43,6 @@ import proscenium.*
 import serpentine.*
 import vacuous.*
 
-private given Realm("hellenism")
-
 object Hellenism extends Hellenism2:
   opaque type ClassRef = Class[?]
 
@@ -75,7 +73,6 @@ object Hellenism extends Hellenism2:
 
 
 
-export Hellenism.ClassRef
 
 trait Hellenism2:
   def makeClass[template <: AnyKind: Type]: Macro[ClassRef] =

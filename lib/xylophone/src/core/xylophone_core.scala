@@ -38,6 +38,7 @@ import scala.annotation.*
 
 import anticipation.*
 import contextual.*
+import fulminate.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -72,3 +73,5 @@ extension (xml: Seq[Xml])
         index += 1
 
     array.immutable(using Unsafe)
+
+private given realm: Realm = realm"xylophone"

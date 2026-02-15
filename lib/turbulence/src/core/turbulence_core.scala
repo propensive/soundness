@@ -51,6 +51,8 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
+private given Realm = Realm("turbulence")
+
 extension [value](value: value)
   inline def stream[element]: Stream[element] = ${Turbulence.stream[value, element]('value)}
   inline def read[result]: result = ${Turbulence.read[value, result]('value)}

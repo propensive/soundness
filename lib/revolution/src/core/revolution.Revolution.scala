@@ -58,7 +58,7 @@ object Revolution:
     val minor = Expr(semver.minor)
     val patch = Expr(semver.patch)
 
-    def lift(elements: List[Text | Long]): Expr[List[Text | Long]] = elements match
+    def lift(elements: List[Text | Long]): Expr[List[Text | Long]] = elements.absolve match
       case Nil => '{Nil}
       case (text: Text) :: more => '{${Expr(text)} :: ${lift(more)}}
       case (long: Long) :: more => '{${Expr(long)} :: ${lift(more)}}
