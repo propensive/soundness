@@ -147,7 +147,7 @@ trait Json2:
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
 
-  given lens: [name <: Label: ValueOf] => DynamicJsonEnabler => Tactic[JsonError]
+  given lens: [name <: Label: ValueOf] => (erased DynamicJsonEnabler) => Tactic[JsonError]
   =>  name is Lens from Json onto Json =
 
       Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))

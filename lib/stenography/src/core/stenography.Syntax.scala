@@ -195,16 +195,17 @@ object Syntax:
 
           var parens = items0.length != 1 || showUsing
 
-          val items = items0.map:
-            case valDef@ValDef(name, meta, default) if !name.startsWith("evidence$") =>
-              val evidence = name.startsWith("x$")
-              val syntax =
-                if evidence then apply(meta.tpe)
-                else
-                  parens = true
-                  Named(contextual && showUsing, name.tt, apply(meta.tpe))
+          val items = items0.map: value =>
+            value.absolve match
+              case valDef@ValDef(name, meta, default) if !name.startsWith("evidence$") =>
+                val evidence = name.startsWith("x$")
+                val syntax =
+                  if evidence then apply(meta.tpe)
+                  else
+                    parens = true
+                    Named(contextual && showUsing, name.tt, apply(meta.tpe))
 
-              if valDef.symbol.flags.is(Flags.Inline) then Prefix("inline", syntax) else syntax
+                if valDef.symbol.flags.is(Flags.Inline) then Prefix("inline", syntax) else syntax
 
           if !parens then items(0) else Sequence('(', items)
 

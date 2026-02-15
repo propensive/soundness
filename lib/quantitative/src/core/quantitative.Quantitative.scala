@@ -286,5 +286,3 @@ object Quantitative extends Quantitative2:
           t"$unit$exponent"
 
       . join(t"·")
-
-export Quantitative.{Quantity, MetricUnit, Temperature}

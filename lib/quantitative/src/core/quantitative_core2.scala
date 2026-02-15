@@ -30,14 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package aviation
+package quantitative
 
-import proscenium.*
-
-object Base24:
-  def apply(int: Int): Base24 =
-    (((int%24) + 24)%24).absolve match
-      case value: Base24 => value
-
-  def unapply(value: Int): Option[Base24] =
-    if value < 0 || value > 23 then None else Some(value.asInstanceOf[Base24])
+export Quantitative.{Quantity, MetricUnit, Temperature}

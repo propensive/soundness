@@ -912,6 +912,7 @@ extends Node, Topical, Transportive, Dynamic:
     html.match
       case fragment: Fragment =>
         Element(label, attributes, IArray.from(fragment.nodes) ++ children, foreign)
+
       case node: Node =>
         Element(label, attributes, node +: children, foreign)
     . of[Topic]
@@ -922,6 +923,7 @@ extends Node, Topical, Transportive, Dynamic:
     html.match
       case fragment: Fragment =>
         Element(label, attributes, children ++ fragment.nodes, foreign)
+
       case node: Node =>
         Element(label, attributes, children :+ node, foreign)
     . of[Topic]
