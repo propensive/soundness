@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.captureChecking
-
 import java.util.concurrent as juc
 
 import anticipation.*

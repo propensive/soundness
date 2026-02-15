@@ -40,7 +40,7 @@ object Tests extends Suite(m"Vacuous Tests"):
   def run(): Unit =
     suite(m"Vacuous tests"):
       test(m"String is concrete"):
-        erased val x = summon[String is Concrete]
+        val x = summon[String is Concrete]
       . assert()
 
       test(m"Abstract method type is not concrete"):
@@ -62,28 +62,28 @@ object Tests extends Suite(m"Vacuous Tests"):
           inline def abstractType[notConcrete]: Unit =
             summon[notConcrete is Concrete]
 
-          erased val x = abstractType[Int]
+          val x = abstractType[Int]
 
         . map(_.message)
       . assert(_ == Nil)
 
       test(m"Int and String are distinct types"):
         demilitarize:
-          erased val x = summonInline[Int is Distinct from String]
+          val x = summonInline[Int is Distinct from String]
 
         . map(_.message)
       . assert(_ == Nil)
 
       test(m"Int and (Int | String) are not distinct types"):
         demilitarize:
-          erased val x = summonInline[Int is Distinct from (Int | String)]
+          val x = summonInline[Int is Distinct from (Int | String)]
 
         . map(_.message)
       . assert(_.nonEmpty)
 
       test(m"String is not distinct from itself"):
         demilitarize:
-          erased val x = summonInline[String is Distinct from String]
+          val x = summonInline[String is Distinct from String]
 
         . map(_.message)
       . assert(_.nonEmpty)
@@ -107,7 +107,7 @@ object Tests extends Suite(m"Vacuous Tests"):
       test(m"Inline abstract type not distinct from Int"):
         demilitarize:
           inline def foo[T]: Unit =
-            erased val x = infer[T is Distinct from String]
+            val x = infer[T is Distinct from String]
 
           foo[Int]
 
@@ -117,7 +117,7 @@ object Tests extends Suite(m"Vacuous Tests"):
       test(m"Inline abstract type not distinct from String"):
         demilitarize:
           inline def foo[T]: Unit =
-            erased val x = infer[T is Distinct from String]
+            val x = infer[T is Distinct from String]
 
           foo[String]
 
@@ -127,7 +127,7 @@ object Tests extends Suite(m"Vacuous Tests"):
       test(m"String is not distinct from String | Int"):
         demilitarize:
           inline def foo[T]: Unit =
-            erased val x = infer[T is Distinct from (String | Int)]
+            val x = infer[T is Distinct from (String | Int)]
 
           foo[String]
 
@@ -137,7 +137,7 @@ object Tests extends Suite(m"Vacuous Tests"):
       test(m"String singleton is not distinct from String"):
         demilitarize:
           inline def foo[T]: Unit =
-            erased val x = infer[T is Distinct from (String | Int)]
+            val x = infer[T is Distinct from (String | Int)]
 
           foo[""]
 
@@ -148,7 +148,7 @@ object Tests extends Suite(m"Vacuous Tests"):
       test(m"String singleton not distinct from another"):
         demilitarize:
           inline def foo[T]: Unit =
-            erased val x = infer[T is Distinct from "foo"]
+            val x = infer[T is Distinct from "foo"]
 
           foo[""]
 

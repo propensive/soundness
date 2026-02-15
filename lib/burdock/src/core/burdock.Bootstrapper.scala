@@ -130,8 +130,8 @@ object Bootstrapper:
         val entries: Map[(Text, Text), Requirement] = paths.compact.flatMap: (base, relative0) =>
           Out.println(m"Downloading $relative0 from $maven")
 
-          val relative: Relative = relative0.rename(summon[Text]+t".sha1").or:
-            panic(m"Path was unexpectedly a root")
+          val name: Text = relative0.name.or(panic(m"path was unexpectedly the root"))
+          val relative = relative0.parent / (name+t".sha1")
 
           val url = (maven + relative).encode.decode[HttpUrl]
           val url2 = (maven + relative0).encode.decode[HttpUrl]
