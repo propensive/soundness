@@ -108,7 +108,7 @@ object Geodesy:
 
 
       def recur(value: Long, latMin: Long, latMax: Long, longMin: Long, longMax: Long, count: Int)
-      : Long =
+      :   Long =
 
           if count >= bits then value else (count%2).absolve match
             case 0 =>

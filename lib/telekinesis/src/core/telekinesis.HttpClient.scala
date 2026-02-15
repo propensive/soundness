@@ -68,7 +68,7 @@ object HttpClient:
 
 
     def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
-    : Http.Response logs HttpEvent =
+    :   Http.Response logs HttpEvent =
 
         val url = httpRequest.on(origin)
 

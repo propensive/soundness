@@ -48,7 +48,7 @@ extension [units <: Measure](quantity: Quantity[units])
 
 
   inline def normalize[units2 <: Measure](using normalizable: units is Normalizable to units2)
-  : Quantity[units2] =
+  :   Quantity[units2] =
 
       normalizable.normalize(quantity)
 

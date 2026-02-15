@@ -79,16 +79,16 @@ object Honeycomb:
       var types: List[TypeRepr] = Nil
 
       def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
           '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           val children = '{$scrutinee.nodes}
 
@@ -104,7 +104,7 @@ object Honeycomb:
             '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
       def checkElement(array: Expr[Array[Any]], pattern: Element, scrutinee: Expr[Element])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
             case Nil => expr
@@ -151,7 +151,7 @@ object Honeycomb:
 
       def descend
         ( array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean] )
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           pattern match
             case Comment("\u0000") =>
@@ -416,7 +416,7 @@ object Honeycomb:
 
   def attributes[result: Type, thisType <: Tag to result: Type]
     ( tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]] )
-  : Macro[result] =
+  :   Macro[result] =
       import quotes.reflect.*
 
       val args = attributes0.absolve match

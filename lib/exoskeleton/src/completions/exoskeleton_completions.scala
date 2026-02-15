@@ -72,7 +72,7 @@ package executives:
         entrypoint:       Entrypoint,
         login:            Login )
       ( using interpreter: Interpreter )
-    : Cli =
+    :   Cli =
 
         arguments match
           case t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty

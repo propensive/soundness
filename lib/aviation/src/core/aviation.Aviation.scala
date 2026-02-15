@@ -67,7 +67,7 @@ object Aviation:
 
 
     def apply(year: Year)(using RomanCalendar)(using rounding: Anniversary.NonexistentLeapDay)
-    : Date =
+    :   Date =
 
         safely(Date(year, month, day)).or(rounding.round(year))
 
@@ -117,7 +117,7 @@ object Aviation:
           inline right:       Year,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           if left == right then !strict else (left < right)^greaterThan
 
@@ -163,7 +163,7 @@ object Aviation:
     def apply
       ( using calendar: Calendar )
       ( year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal )
-    : Date raises TimeError =
+    :   Date raises TimeError =
 
         calendar.jdn(year, month, day)
 
@@ -234,7 +234,7 @@ object Aviation:
           inline right:       Date,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           if left == right then !strict else (left < right)^greaterThan
 

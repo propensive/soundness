@@ -74,7 +74,7 @@ object Zipfile:
   private val cache: scc.TrieMap[Text, Semaphore] = scc.TrieMap()
 
   def write[path: Abstractable across Paths to Text](path: path)(stream: Iterable[ZipEntry])
-  : Unit raises ZipError =
+  :   Unit raises ZipError =
 
       val filename = path.generic
       val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(filename.s)))

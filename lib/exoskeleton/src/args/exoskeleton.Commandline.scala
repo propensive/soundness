@@ -49,7 +49,7 @@ case class Commandline
 
   def read[operand: Interpretable](flag: Flag)
     ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
-  : Optional[operand] =
+  :   Optional[operand] =
 
       cli.register(flag, discoverable)
 

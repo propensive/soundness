@@ -165,7 +165,7 @@ object Whatwg:
 
 
   def attribute[self  <: Label: ValueOf, plane <: Label: Reifiable to List[String], topic]()
-  : self is Attribute on plane of topic in Whatwg =
+  :   self is Attribute on plane of topic in Whatwg =
 
       new Attribute(valueOf[self].tt, plane.reify.map(_.tt).to(Set), false):
         type Plane = plane

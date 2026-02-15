@@ -47,7 +47,7 @@ object Message:
 
 
   transparent inline def make[tuple <: Tuple](inline messages: tuple, done: List[Message])
-  : List[Message] =
+  :   List[Message] =
 
       inline erasedValue[tuple] match
         case _: (message *: tail) => messages.absolve match

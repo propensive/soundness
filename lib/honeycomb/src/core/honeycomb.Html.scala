@@ -137,7 +137,7 @@ object Html extends Tag.Container
     emit(_).to(Stream)
 
   def emit(document: Document[Html], flat: Boolean = false)(using Monitor, Codicil)
-  : Iterator[Text] =
+  :   Iterator[Text] =
 
       val dom = document.metadata
       val emitter = Emitter[Text](4096)
@@ -250,7 +250,7 @@ object Html extends Tag.Container
   trait Populable:
     node: Element =>
       def apply(children: Optional[Html of (? <: node.Transport)]*)
-      : Element of node.Topic in node.Form =
+      :   Element of node.Topic in node.Form =
 
           new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
             type Topic = node.Topic
@@ -260,7 +260,7 @@ object Html extends Tag.Container
   trait Transparent:
     node: Element =>
       def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*)
-      : Element of labels in node.Form =
+      :   Element of labels in node.Form =
 
           new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
             type Topic = labels
@@ -373,7 +373,7 @@ object Html extends Tag.Container
       fastforward: Int                               = 0,
       doctypes:    Boolean = false )
     ( using dom: Dom)
-  : Html raises ParseError =
+  :   Html raises ParseError =
 
     import lineation.linefeedChars
 
@@ -526,7 +526,7 @@ object Html extends Tag.Container
     @tailrec
     def attributes(tag: Text, foreign: Boolean, entries: Map[Text, Optional[Text]] = ListMap())
       ( using Cursor.Held )
-    : Map[Text, Optional[Text]] =
+    :   Map[Text, Optional[Text]] =
 
         skip() yet cursor.lay(fail(ExpectedMore)):
           case '>' | '/' => entries
@@ -886,7 +886,7 @@ case class TextNode(text: Text) extends Node:
 
 object Element:
   def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
-  : Element of "#foreign" =
+  :   Element of "#foreign" =
 
       Element(label, attributes, children.nodes, true).of["#foreign"]
 
@@ -956,7 +956,7 @@ extends Node, Topical, Transportive, Dynamic:
 
 
   inline def updateDynamic[value](name: Label)(value: value)
-  : Element of Topic over Transport in Form =
+  :   Element of Topic over Transport in Form =
 
       compiletime.summonFrom:
         case attribute: (name.type is Attribute on (? >: Topic) in Form) =>

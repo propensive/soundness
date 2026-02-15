@@ -58,7 +58,7 @@ object Envelope:
       replyTo: EmailAddress | List[EmailAddress],
       subject: Text )
     ( using courier: Courier, sender: Sender )
-  : Envelope =
+  :   Envelope =
 
       Envelope
         ( sender.email,

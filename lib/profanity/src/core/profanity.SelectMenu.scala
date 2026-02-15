@@ -57,7 +57,7 @@ extends Question[item]:
             interaction:   Interaction[item, SelectMenu[item]] )
     [ result ]
     ( lambda: Interactivity[TerminalEvent] ?=> item => result )
-  : result raises DismissError =
+  :   result raises DismissError =
 
       interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())):
         (result, stream) => lambda(using Interactivity(stream))(result)

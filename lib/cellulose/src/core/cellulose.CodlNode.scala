@@ -98,7 +98,7 @@ case class CodlNode(data: Optional[Atom] = Unset, extra: Optional[Extra] = Unset
 
 
   def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)
-  : Atom raises CodlError =
+  :   Atom raises CodlError =
 
       selectDynamic(key)(idx)
 

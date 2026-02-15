@@ -43,7 +43,7 @@ object Currency:
       transport <: Int & Singleton: ValueOf,
       form      <: Label:           ValueOf ]
     ( )
-  : self is Currency of topic over transport in form =
+  :   self is Currency of topic over transport in form =
 
       new Currency:
         type Self = self

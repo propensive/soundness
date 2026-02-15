@@ -45,4 +45,4 @@ trait Compiler:
     [ path: Abstractable across Paths to Text ]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor )
-  : CompileProcess logs CompileEvent raises CompilerError
+  :   CompileProcess logs CompileEvent raises CompilerError

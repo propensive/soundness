@@ -99,7 +99,7 @@ case class Argument
     cli.suggest(this, update, prefix, suffix)
 
   def select[operand: Suggestible](options: Seq[operand])(using cli: Cli, interpreter: Interpreter)
-  : Optional[operand] =
+  :   Optional[operand] =
 
       val mapping: Map[Text, operand] =
         options.map { option => (operand.suggest(option).text, option) }.to(Map)

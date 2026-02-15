@@ -107,7 +107,7 @@ extension (bytes: Data)
 extension [textual](text: textual)
   def cut[delimiter](delimiter: delimiter, limit: Int = Int.MaxValue)
     ( using cuttable: textual is Cuttable by delimiter )
-  : List[textual] =
+  :   List[textual] =
 
     cuttable.cut(text, delimiter, limit)
 
@@ -221,7 +221,7 @@ extension [textual: Textual](text: textual)
     text.segment(start thru end)
 
   def where(pred: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
-  : Optional[Ordinal] =
+  :   Optional[Ordinal] =
     val step: Int = bidi match
       case Ltr => 1
       case Rtl => -1

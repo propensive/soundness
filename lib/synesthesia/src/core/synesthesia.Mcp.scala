@@ -69,7 +69,7 @@ object Mcp:
     ( dispatch: Json => Optional[Json] )
     ( using request: Http.Request )
     ( using Monitor, Codicil, Online )
-  : Http.Response =
+  :   Http.Response =
       import jsonPrinters.minimal
       import charEncoders.utf8
       import charDecoders.utf8
@@ -596,7 +596,7 @@ object Mcp:
         capabilities:    ClientCapabilities,
         clientInfo:      Implementation,
         _meta:           Optional[Json] )
-    : Initialize
+    :   Initialize
 
     @rpc
     def `completion/complete`
@@ -604,14 +604,14 @@ object Mcp:
         argument: Argument,
         context:  Optional[Context],
         _meta:    Optional[Json] )
-    : Complete
+    :   Complete
 
     @rpc
     def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit
 
     @rpc
     def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json])
-    : GetPrompt
+    :   GetPrompt
 
     @rpc
     def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts
@@ -621,7 +621,7 @@ object Mcp:
 
     @rpc
     def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json])
-    : ListResourceTemplates
+    :   ListResourceTemplates
 
     @rpc
     def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource
@@ -663,7 +663,7 @@ object Mcp:
         total:         Optional[Double],
         message:       Optional[Text],
         _meta:         Optional[Json] )
-    : Unit
+    :   Unit
 
     @rpc
     def `notifications/initialized`(_meta: Optional[Json]): Unit
@@ -681,7 +681,7 @@ object Mcp:
         ttl:           Optional[Int],
         pollInterval:  Optional[Int],
         _meta:         Optional[Json] )
-    : Unit
+    :   Unit
 
     @rpc
     def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit
@@ -698,7 +698,7 @@ object Mcp:
     @rpc
     def `notifications/message`
       ( level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json] )
-    : Unit
+    :   Unit
 
   object Interface:
 
@@ -708,7 +708,7 @@ object Mcp:
 
     inline def apply(sessionId: Text, server: McpServer from McpClient)
       ( using spec: server.type is McpSpecification )
-    : Interface =
+    :   Interface =
 
         cache.establish(sessionId):
           new Interface(sessionId, server, spec)
@@ -729,7 +729,7 @@ object Mcp:
         capabilities:    ClientCapabilities,
         clientInfo:      Implementation,
         _meta:           Optional[Json] )
-    : Initialize =
+    :   Initialize =
 
         Initialize
           (version,
@@ -742,7 +742,7 @@ object Mcp:
         argument: Argument,
         context:  Optional[Context],
         _meta:    Optional[Json] )
-    : Complete =
+    :   Complete =
 
         ???
 
@@ -751,7 +751,7 @@ object Mcp:
       loggingLevel = level
 
     def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json])
-    : GetPrompt =
+    :   GetPrompt =
 
         val messages = spec.invokePrompt(server, client, name, arguments.or(Map())).map:
           case Human(message) => PromptMessage(Role.User, TextContent(message))
@@ -766,7 +766,7 @@ object Mcp:
       ListResources(resources = spec.resources())
 
     def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json])
-    : ListResourceTemplates =
+    :   ListResourceTemplates =
 
         ???
 
@@ -797,7 +797,7 @@ object Mcp:
 
     def `notifications/cancelled`
       ( requestId: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json] )
-    : Unit =
+    :   Unit =
 
         ()
 
@@ -808,7 +808,7 @@ object Mcp:
         total:         Optional[Double],
         message:       Optional[Text],
         _meta:         Optional[Json] )
-    : Unit =
+    :   Unit =
 
         ()
 
@@ -832,7 +832,7 @@ object Mcp:
         ttl:           Optional[Int],
         pollInterval:  Optional[Int],
         _meta:         Optional[Json] )
-    : Unit = ???
+    :   Unit = ???
 
     def `notifications/prompts/list_changed`(_meta: Optional[Json]): Unit = ???
 
@@ -840,6 +840,6 @@ object Mcp:
 
     def `notifications/message`
       ( level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json] )
-    : Unit =
+    :   Unit =
 
         ???

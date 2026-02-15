@@ -45,7 +45,7 @@ import vacuous.*
 object Task:
   def apply[result](evaluate: Worker => result, daemon: Boolean, name: Optional[Text])
     ( using monitor: Monitor, codepoint: Codepoint, codicil: Codicil )
-  : Task[result] =
+  :   Task[result] =
 
       inline def evaluate0: Worker => result = evaluate
       inline def name0: Optional[Text] = name
@@ -73,10 +73,10 @@ trait Task[+result]:
   def cancel(): Unit
 
   def await[duration: Abstractable across Durations to Long](duration: duration)
-  : result raises AsyncError
+  :   result raises AsyncError
 
   def bind[result2](lambda: result => Task[result2])(using Monitor, Codicil)
-  : Task[result2] raises AsyncError
+  :   Task[result2] raises AsyncError
 
   def map[result2](lambda: result => result2)(using Monitor, Codicil)
-  : Task[result2] raises AsyncError
+  :   Task[result2] raises AsyncError

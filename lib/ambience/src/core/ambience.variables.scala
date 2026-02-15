@@ -45,7 +45,7 @@ object variables extends Dynamic:
   inline def applyDynamicNamed[result](apply: "apply")(variables: (String, Text)*)
     ( using environment0: Environment )
     ( block: Environment ?=> result )
-  : result =
+  :   result =
 
       val map = variables.map(_.tt.uncamel.snake.upper -> _).toMap
       val environment: Environment = name => map.at(name).or(environment0.variable(name))

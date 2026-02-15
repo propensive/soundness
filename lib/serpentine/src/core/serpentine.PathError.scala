@@ -44,7 +44,7 @@ object PathError:
 
   def apply(reason: PathError.Reason.type => PathError.Reason, path: Optional[Text] = Unset)
     ( using Diagnostics )
-  : PathError =
+  :   PathError =
 
       new PathError(reason(PathError.Reason), path)
 

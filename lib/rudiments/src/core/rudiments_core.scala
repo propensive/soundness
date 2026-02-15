@@ -149,7 +149,7 @@ extension [value](iterable: Iterable[value])
   transparent inline def total
     ( using addable:  value is Addable by value,
             equality: addable.Result =:= value )
-  : Optional[value] =
+  :   Optional[value] =
 
       compiletime.summonFrom:
         case zeroic: ((? <: value) is Zeroic) =>
@@ -164,7 +164,7 @@ extension [value](iterable: Iterable[value])
             equality:  addable.Result =:= value,
             divisible: value is Divisible by Double,
             eqality2:  divisible.Result =:= value )
-  : Optional[value] =
+  :   Optional[value] =
       iterable.total.let(_/iterable.size.toDouble)
 
   inline def mean2
@@ -175,7 +175,7 @@ extension [value](iterable: Iterable[value])
             equality2:    divisible.Result =:= subtractable.Result,
             addable2:     value is Addable by divisible.Result,
             equality3:    addable2.Result =:= value )
-  : Optional[value] =
+  :   Optional[value] =
 
       if iterable.nil then Unset else
         val arbitrary = iterable.head
@@ -193,7 +193,7 @@ extension [value](iterable: Iterable[value])
             zeroic2:       multiplicable.Result is Zeroic,
             equality3:     addable2.Result =:= multiplicable.Result,
             divisible2:    multiplicable.Result is Divisible by Double )
-  : Optional[divisible2.Result] =
+  :   Optional[divisible2.Result] =
 
       iterable.mean.let: mean =>
         iterable.map(_ - mean).map { value => value*value }.total/iterable.size.toDouble
@@ -208,7 +208,7 @@ extension [value](iterable: Iterable[value])
             equality3:     divisible2.Result =:= Double,
             multiplicable: value is Multiplicable by Double,
             equality4:     multiplicable.Result =:= value )
-  : Optional[value] =
+  :   Optional[value] =
 
       iterable.mean.let: mean0 =>
         val mean: value = mean0
@@ -228,7 +228,7 @@ extension [value](iterable: Iterable[value])
     ( using unital:        value is Unital,
             multiplicable: value is Multiplicable by value,
             equality:      multiplicable.Result =:= value )
-  : value =
+  :   value =
 
       iterable.foldLeft(unital.one)(multiplicable.multiply)
 
@@ -273,7 +273,7 @@ extension [value](iterable: Iterable[value])
   def longestTrain(predicate: value => Boolean): (Int, Int) =
     @tailrec
     def recur(index: Int, iterable: Iterable[value], bestStart: Int, bestLength: Int, length: Int)
-    :       (Int, Int) =
+    :   (Int, Int) =
 
       if iterable.nil then (bestStart, bestLength) else
         if predicate(iterable.head) then
@@ -330,7 +330,7 @@ extension [element](seq: Seq[element])
   def runsBy(lambda: element => Any): List[List[element]] =
     @tailrec
     def recur(current: Any, todo: Seq[element], run: List[element], done: List[List[element]])
-    :       List[List[element]] =
+    :   List[List[element]] =
       if todo.nil then (run.reverse :: done).reverse
       else
         val focus = lambda(todo.head)
@@ -427,7 +427,7 @@ extension (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
   inline def literal
     [ primitive <: Boolean | Byte | Short | Int | Long | Float | Double | Char | String
                             | Unit | Null]
-  : Optional[primitive] =
+  :   Optional[primitive] =
 
       import quotes.reflect.*
 

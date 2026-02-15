@@ -60,7 +60,7 @@ object Flag:
       aliases:     List[Text | Char] = Nil,
       description: Optional[Text]    = Unset,
       secret:      Boolean           = false )
-  : Flag of topic =
+  :   Flag of topic =
       new Flag(name, repeatable, aliases, description, secret):
         type Topic = topic
 
@@ -74,7 +74,7 @@ extends Topical:
 
   def suggest(using interpretable: Topic is Interpretable, discoverable: Topic is Discoverable)
     ( using cli: Cli )
-  : Unit =
+  :   Unit =
 
       cli.register(this, discoverable)
 
@@ -90,7 +90,7 @@ extends Topical:
             interpreter:   Interpreter,
             interpretable: Topic is Interpretable,
             suggestions:   (? <: Topic) is Discoverable = Discoverable.noSuggestions )
-  : Optional[Topic] =
+  :   Optional[Topic] =
 
       cli.register(this, suggestions)
       cli.parameter(this)
@@ -98,7 +98,7 @@ extends Topical:
 
   def select(options: Iterable[Topic])
     ( using cli: Cli, interpreter: Interpreter, suggestible: Topic is Suggestible )
-  : Optional[Topic] =
+  :   Optional[Topic] =
 
       val mapping: Map[Text, Topic] =
         options.map { option => (suggestible.suggest(option).text, option) }.to(Map)

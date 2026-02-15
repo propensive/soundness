@@ -58,7 +58,7 @@ object Cardinality:
 
 
   def apply[left <: Double: Type, right <: Double: Type](digits: Expr[String])
-  : Macro[left ~ right] =
+  :   Macro[left ~ right] =
 
       import quotes.reflect.*
 

@@ -96,7 +96,7 @@ object Hypotenuse:
           inline right:   F64,
           inline strict:  Boolean,
           inline greater: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greater
           then
@@ -115,7 +115,7 @@ object Hypotenuse:
           inline right:       Int,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then inline if strict then left > right else left >= right
@@ -143,7 +143,7 @@ object Hypotenuse:
           inline right:       Double,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then inline if strict then left > right else left >= right
@@ -198,7 +198,7 @@ object Hypotenuse:
           inline right:       F32,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then
@@ -255,7 +255,7 @@ object Hypotenuse:
           inline right:       U64,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan then
             inline if strict then JLong.compareUnsigned(left, right) == 1
@@ -287,7 +287,7 @@ object Hypotenuse:
           inline right:       S64,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then inline if strict then (left: Long) > (right: Long) else (left: Long) >= (right: Long)
@@ -313,7 +313,7 @@ object Hypotenuse:
           inline right:       U32,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan then
             inline if strict then JLong.compareUnsigned(left, right) == 1
@@ -344,7 +344,7 @@ object Hypotenuse:
           inline right:       S32,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then inline if strict then (left: Int) > (right: Int) else (left: Int) >= (right: Int)
@@ -370,7 +370,7 @@ object Hypotenuse:
           inline right:       U16,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           val left2 = JShort.toUnsignedInt(left)
           val right2 = JShort.toUnsignedInt(right)
@@ -402,7 +402,7 @@ object Hypotenuse:
           inline right:       S16,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then
@@ -431,7 +431,7 @@ object Hypotenuse:
           inline right:       U8,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           val left2 = JByte.toUnsignedInt(left)
           val right2 = JByte.toUnsignedInt(right)
@@ -462,7 +462,7 @@ object Hypotenuse:
           inline right:       S8,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then inline if strict then (left: Byte) > (right: Byte) else (left: Byte) >= (right: Byte)
@@ -581,7 +581,7 @@ object Hypotenuse:
 
     @targetName("divS64")
     inline infix def / (right: Conversion.into[S64])(using division: DivisionByZero)
-    : division.Wrap[S64] =
+    :   division.Wrap[S64] =
         division.divideS64(s64, right)
 
     @targetName("modS64")
@@ -601,7 +601,7 @@ object Hypotenuse:
   extension (s32: S32)
     @targetName("plusS32")
     inline infix def + (right: Conversion.into[S32])(using overflow: CheckOverflow)
-    : overflow.Wrap[S32] =
+    :   overflow.Wrap[S32] =
         overflow.addS32(s32, right)
 
     @targetName("intS32")
@@ -636,7 +636,7 @@ object Hypotenuse:
 
     @targetName("divS32")
     inline infix def / (right: Conversion.into[S32])(using division: DivisionByZero)
-    : division.Wrap[S32] =
+    :   division.Wrap[S32] =
         division.divideS32(s32, right)
 
     @targetName("modS32")
@@ -656,7 +656,7 @@ object Hypotenuse:
   extension (s16: S16)
     @targetName("plusS16")
     inline infix def + (right: Conversion.into[S16])(using overflow: CheckOverflow)
-    : overflow.Wrap[S16] =
+    :   overflow.Wrap[S16] =
         overflow.addS16(s16, right)
 
     @targetName("shortS16")
@@ -694,7 +694,7 @@ object Hypotenuse:
 
     @targetName("divS16")
     inline infix def / (right: Conversion.into[S16])(using division: DivisionByZero)
-    : division.Wrap[S16] =
+    :   division.Wrap[S16] =
         division.divideS16(s16, right)
 
     @targetName("modS16")
@@ -714,7 +714,7 @@ object Hypotenuse:
   extension (s8: S8)
     @targetName("plusS8")
     inline infix def + (right: Conversion.into[S8])(using overflow: CheckOverflow)
-    : overflow.Wrap[S8] =
+    :   overflow.Wrap[S8] =
         overflow.addS8(s8, right)
 
     @targetName("byteS8")
@@ -755,7 +755,7 @@ object Hypotenuse:
 
     @targetName("divS8")
     inline infix def / (right: Conversion.into[S8])(using division: DivisionByZero)
-    : division.Wrap[S8] =
+    :   division.Wrap[S8] =
         division.divideS8(s8, right)
 
     @targetName("modS8")
@@ -1356,7 +1356,7 @@ object Hypotenuse:
 
     @targetName("divU64")
     inline infix def / (right: Conversion.into[U64])(using division: DivisionByZero)
-    : division.Wrap[U64] =
+    :   division.Wrap[U64] =
         division.divideU64(u64, right)
 
     @targetName("modU64")
@@ -1371,7 +1371,7 @@ object Hypotenuse:
   extension (u32: U32)
     @targetName("plusU32")
     inline infix def + (right: Conversion.into[U32])(using overflow: CheckOverflow)
-    : overflow.Wrap[U32] =
+    :   overflow.Wrap[U32] =
         overflow.addU32(u32, right)
 
     @targetName("bitsU32")
@@ -1403,7 +1403,7 @@ object Hypotenuse:
 
     @targetName("divU32")
     inline infix def / (right: Conversion.into[U32])(using division: DivisionByZero)
-    : division.Wrap[U32] =
+    :   division.Wrap[U32] =
         division.divideU32(u32, right)
 
     @targetName("modU32")
@@ -1424,7 +1424,7 @@ object Hypotenuse:
   extension (u16: U16)
     @targetName("plusU16")
     inline infix def + (right: Conversion.into[U16])(using overflow: CheckOverflow)
-    : overflow.Wrap[U16] =
+    :   overflow.Wrap[U16] =
         overflow.addU16(u16, right)
 
     @targetName("bitsU16")
@@ -1460,7 +1460,7 @@ object Hypotenuse:
 
     @targetName("divU16")
     inline infix def / (right: Conversion.into[U16])(using division: DivisionByZero)
-    : division.Wrap[U16] =
+    :   division.Wrap[U16] =
         division.divideU16(u16, right)
 
     @targetName("modU16")
@@ -1490,7 +1490,7 @@ object Hypotenuse:
   extension (u8: U8)
     @targetName("plusU8")
     inline infix def + (right: Conversion.into[U8])(using overflow: CheckOverflow)
-    : overflow.Wrap[U8] =
+    :   overflow.Wrap[U8] =
         overflow.addU8(u8, right)
 
     @targetName("bitsU8")
@@ -1528,7 +1528,7 @@ object Hypotenuse:
 
     @targetName("divU8")
     inline infix def / (right: Conversion.into[U8])(using division: DivisionByZero)
-    : division.Wrap[U8] =
+    :   division.Wrap[U8] =
         division.divideU8(u8, right)
 
     @targetName("modU8")

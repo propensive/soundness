@@ -104,7 +104,7 @@ package executives:
         entrypoint:       Entrypoint,
         login:            Login )
       ( using interpreter: Interpreter )
-    : Invocation =
+    :   Invocation =
 
         Invocation
           ( Cli.arguments(arguments, Unset, Unset, Unset),
@@ -126,7 +126,7 @@ inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
 def application(using executive: Executive, interpreter: Interpreter)
   ( arguments: Iterable[Text], signals: List[Signal] = Nil )
   ( block: Cli ?=> executive.Return )
-: Unit =
+:   Unit =
 
   val spool: Spool[Signal] = Spool()
   signals.each: signal =>

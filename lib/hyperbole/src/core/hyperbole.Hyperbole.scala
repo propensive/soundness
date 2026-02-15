@@ -130,7 +130,7 @@ object Hyperbole:
           tree:      Optional[Tree],
           repr:      Optional[TypeRepr] = Unset,
           parameter: Optional[Text]     = Unset )
-      : TastyTree =
+      :   TastyTree =
 
           val shown = tree.let(_.show.tt).or(repr.let(_.show)).or(t"")
           val code = tree.let(source(_)).or(e"")

@@ -40,7 +40,7 @@ private given realm: Realm = realm"vicarious"
 
 inline def catalog[key](key: key)[value](inline lambda: [field] => (field: field) => value)
   ( using classTag: ClassTag[value] )
-: Catalog[key, value] =
+:   Catalog[key, value] =
 
     ${Vicarious.catalog[key, value]('lambda, 'key, 'classTag)}
 
@@ -48,7 +48,7 @@ inline def catalog[key](key: key)[value](inline lambda: [field] => (field: field
 extension [key, value: ClassTag](catalog: Catalog[key, value])
   def brush(using proxy: Proxy[key, value, Nat])
     ( lambda: (`*`: proxy.type) ?=> Proxy[key, value, Nat] ~> value )
-  : Catalog[key, value] =
+  :   Catalog[key, value] =
 
       val partialFunction = lambda(using proxy)
 

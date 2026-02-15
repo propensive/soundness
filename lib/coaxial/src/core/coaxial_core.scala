@@ -44,7 +44,7 @@ import Control.*
 
 extension [bindable: Bindable](socket: bindable)
   def listen[input](using Monitor, Codicil)[result](lambda: bindable.Input => bindable.Output)
-  : SocketService raises BindError =
+  :   SocketService raises BindError =
 
       val binding = bindable.bind(socket)
 
@@ -71,7 +71,7 @@ extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
 
   def exchange[state](initialState: state)[message: Ingressive](initialMessage: message = Data())
     ( handle: (state: state) ?=> message => Control[state] )
-  : state =
+  :   state =
 
       val connection = serviceable.connect(endpoint)
 
@@ -93,6 +93,6 @@ extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
 
 extension [endpoint: Routable as routable](endpoint: endpoint)
   def transmit[transmissible: Transmissible](message: transmissible)(using Monitor)
-  : Unit raises StreamError =
+  :   Unit raises StreamError =
 
       routable.transmit(routable.connect(endpoint), transmissible.serialize(message))

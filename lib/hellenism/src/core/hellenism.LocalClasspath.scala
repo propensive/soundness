@@ -69,7 +69,7 @@ object LocalClasspath:
                   [ClasspathEntry.Directory
                    | ClasspathEntry.Jar
                    | ClasspathEntry.JavaRuntime.type])
-  : LocalClasspath =
+  :   LocalClasspath =
 
       new LocalClasspath(entries, entries.to(Set))
 

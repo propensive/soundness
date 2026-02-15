@@ -42,7 +42,7 @@ object Journal:
 
   def apply[store: {Streamable by Data, Writable by Data}, entry: Encodable by Data]
     ( store: store )
-  : Journal by entry =
+  :   Journal by entry =
 
       new Journal:
         type Operand = entry

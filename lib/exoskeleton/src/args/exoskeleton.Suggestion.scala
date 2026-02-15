@@ -50,7 +50,7 @@ object Suggestion:
       prefix:      Text                      = t"",
       suffix:      Text                      = t"",
       expanded:    Boolean                   = false )
-  : Suggestion =
+  :   Suggestion =
 
       new Suggestion(core, description, hidden, incomplete, aliases, prefix, suffix, expanded)
 

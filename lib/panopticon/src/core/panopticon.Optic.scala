@@ -61,7 +61,7 @@ object Optic:
       def modify(origin: Origin)(lambda: Target => Target): Origin = lambda(origin)
 
   def apply[self, origin, target](lambda: (origin, target => target) => origin)
-  : self is Optic from origin onto target =
+  :   self is Optic from origin onto target =
 
       new Optic:
         type Self = self
@@ -85,21 +85,21 @@ trait Optic extends Typeclass, Dynamic:
   def modify(origin: Origin)(lambda: Target => Target): Origin
 
   def selectDynamic(name: Label)(using lens: name.type is Optic from Target)
-  : Optic from Origin onto lens.Target =
+  :   Optic from Origin onto lens.Target =
 
       Composable.optics.composition(this, lens)
 
 
   def updateDynamic(name: Label)(using lens: name.type is Optic from Target)
     ( value: (prior: lens.Target) ?=> lens.Target )
-  : Origin => Origin =
+  :   Origin => Origin =
 
       Composable.optics.composition(this, lens).modify(_)(value(using _))
 
 
   def update[target](traversal: Any, value: target)
     ( using optical: (? >: traversal.type) is Optical from Target onto (? >: target) )
-  : Origin => Origin =
+  :   Origin => Origin =
 
       Composable.optics.composition
         ( this, optical.optic(traversal)).modify(_)(_ => value )
@@ -109,13 +109,13 @@ trait Optic extends Typeclass, Dynamic:
     [ target, traversal ]
     ( traversal: traversal )
     ( using optical: (? >: traversal.type) is Optical from operand onto target )
-  : Optic from Origin onto target =
+  :   Optic from Origin onto target =
 
       Composable.optics.composition
         ( Composable.optics.composition(this, lens), optical.optic(traversal) )
 
   def apply[target, optic](traversal: optic)
     ( using optical: (? >: traversal.type) is Optical from Target onto target )
-  : Optic from Origin onto target =
+  :   Optic from Origin onto target =
 
       Composable.optics.composition(this, optical.optic(traversal))

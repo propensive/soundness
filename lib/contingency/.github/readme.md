@@ -160,7 +160,7 @@ in a single method, `processEvent`. We would be required to handle
 syntax  scala
 ##
 def processEvent(event: Text)
-        : Bytes raises ParseError raises AccessError raises AsciiError =
+        :   Bytes raises ParseError raises AccessError raises AsciiError =
   convert(Json.parse(event).as[Event].message)
 ```
 but multiple `raises` clauses are cumbersome: not only does the method need to
@@ -286,7 +286,7 @@ syntax  scala
 ##
 def second[ElementType](list: List[ElementType])
     (using Tactic[TooShort])
-        : ElementType =
+        :   ElementType =
   if list.length >= 2 then list(1)
   else abort(TooShortError(2))
 ```
@@ -295,7 +295,7 @@ which may be more easily expressed using the infix `raises` type:
 syntax  scala
 ##
 def second[ElementType](list: List[ElementType])
-        : ElementType raises TooShortError =
+        :   ElementType raises TooShortError =
   if list.length >= 2 then list(1)
   else abort(TooShortError(2))
 ```

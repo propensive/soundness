@@ -116,7 +116,7 @@ final case class Promise[value]():
 
 
   def await[generic: Abstractable across Durations to Long](duration: generic)
-  : value raises AsyncError =
+  :   value raises AsyncError =
 
       val deadline = jl.System.nanoTime() + duration.generic
 

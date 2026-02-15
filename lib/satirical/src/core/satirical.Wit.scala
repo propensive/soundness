@@ -172,7 +172,7 @@ object Wit:
 
 
     def topLevel(pkg: Optional[Package] = Unset, members: List[World | Interface] = Nil)
-    : List[World | Interface] =
+    :   List[World | Interface] =
 
         keyword() match
           case t"package"   => topLevel(packageDeclaration(), members)

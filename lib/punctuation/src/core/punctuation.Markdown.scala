@@ -130,7 +130,7 @@ object Markdown:
 
       @tailrec
       def merge(block: Boolean, nodes: List[Layout], done: List[Html of Flow], tight: Boolean)
-      : List[Html of Flow] =
+      :   List[Html of Flow] =
           nodes match
             case Nil =>
               if block then ((TextNode("\n"): Html of Flow) :: done).reverse else done.reverse

@@ -63,7 +63,7 @@ case class Javac(options: List[JavacOption]):
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor, Codicil )
-  : CompileProcess logs CompileEvent raises CompilerError =
+  :   CompileProcess logs CompileEvent raises CompilerError =
 
       Log.info(CompileEvent.Start)
       val process: CompileProcess = CompileProcess()

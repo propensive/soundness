@@ -75,7 +75,7 @@ import interfaces.paths.pathOnLinux
 
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
   ( using classloader: Classloader )
-: Bytecode =
+:   Bytecode =
 
     val uuid = Uuid()
     val out: Path on Linux = unsafely(temporaryDirectory/uuid)

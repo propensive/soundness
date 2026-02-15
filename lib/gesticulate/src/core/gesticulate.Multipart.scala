@@ -52,7 +52,7 @@ object Multipart:
     case Inline, Attachment, FormData
 
   def parse[input: Streamable by Data](input: input, boundary0: Optional[Text] = Unset)
-  : Multipart raises MultipartError =
+  :   Multipart raises MultipartError =
 
       val conduit = Conduit(input.stream[Data])
       conduit.mark()

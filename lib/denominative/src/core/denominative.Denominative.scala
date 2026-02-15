@@ -91,7 +91,7 @@ object Denominative:
 
     inline def fuse[value](inline initial: value)
       ( inline lambda: (state: value, next: Ordinal) ?=> value )
-    : value =
+    :   value =
 
         var i: Ordinal = start
         var acc: value = initial

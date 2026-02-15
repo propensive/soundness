@@ -50,7 +50,7 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
           BackgroundColorDetection,
           TerminalFocusDetection,
           TerminalSizeDetection)
-: result raises TerminalError =
+:   result raises TerminalError =
 
     given terminal: Terminal = Terminal(console.signals)
 

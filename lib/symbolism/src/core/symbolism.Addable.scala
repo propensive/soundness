@@ -38,7 +38,7 @@ import scala.annotation.targetName
 
 object Addable:
   def apply[augend, addend, result](lambda: (augend, addend) => result)
-  : augend is Addable by addend to result =
+  :   augend is Addable by addend to result =
 
       new Addable:
 

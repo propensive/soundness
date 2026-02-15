@@ -44,7 +44,7 @@ object Resolvable:
     ( using annotated:   result is Annotated by index,
             dereference: result is Dereferenceable to operand,
             encodable:   operand is Encodable in Text )
-  : result is Resolvable by operand raises ReferenceError =
+  :   result is Resolvable by operand raises ReferenceError =
 
       new Resolvable:
         type Self = result

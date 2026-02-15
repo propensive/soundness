@@ -54,7 +54,7 @@ trait Abacist3:
           inline right:       Quanta[units],
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then inline if strict then left.long > right.long else left.long >= right.long

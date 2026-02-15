@@ -65,7 +65,7 @@ object Adversaria:
     try Mapper.transformTerm(term)(Symbol.spliceOwner) catch case _: Exception => Unset
 
   def general[operand <: StaticAnnotation: Type, self: Type, plane: Type, limit: Type]
-  : Macro[self is Annotated by operand on plane under limit] =
+  :   Macro[self is Annotated by operand on plane under limit] =
 
       import quotes.reflect.{Annotated as _, *}
 

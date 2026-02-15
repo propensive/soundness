@@ -182,7 +182,7 @@ object Tzdb:
         lines:   Stream[Text],
         entries: List[Tzdb.Entry]        = Nil,
         zone:    Option[Tzdb.Entry.Zone] = None )
-    : List[Tzdb.Entry] =
+    :   List[Tzdb.Entry] =
 
         if lines.nil then entries ++ zone else
           val line: Text = lines.head.upto(_ == '#')

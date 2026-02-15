@@ -127,7 +127,7 @@ object Sheet:
       state:    State                    = State.Fresh,
       headings: Optional[Map[Text, Int]] = Unset )
     ( using format: DsvFormat, tactic: Tactic[DsvError] )
-  : Stream[Dsv] =
+  :   Stream[Dsv] =
 
       inline def putCell(): Array[Text] =
         val cells2 = if cells.length <= column then cells :+ builder() else

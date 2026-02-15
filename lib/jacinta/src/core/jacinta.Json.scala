@@ -321,25 +321,25 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
 
   def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler)
-  : Json raises JsonError =
+  :   Json raises JsonError =
 
       apply(field.tt)(index)
 
 
   def update[value: Encodable in Json](index: Int, value: value)(using erased DynamicJsonEnabler)
-  : Json raises JsonError =
+  :   Json raises JsonError =
 
       Json.ast(JsonAst(root.array.updated(index, value.encode.root)))
 
 
   def updateDynamic(field: String)[value: Encodable in Json](value: value)
     ( using erased DynamicJsonEnabler )
-  : Json raises JsonError =
+  :   Json raises JsonError =
 
       modify(field, value.encode)
 
   def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicJsonEnabler)
-  : Json raises JsonError =
+  :   Json raises JsonError =
 
       delete(field)
 

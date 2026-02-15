@@ -60,7 +60,7 @@ object Addressable:
     inline def grab(bytes: Data, start: Ordinal, end: Ordinal): Data = bytes.slice(start.n0, end.n0)
 
     inline def clone(source: Data, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
-    : Unit =
+    :   Unit =
 
         target.write(source.mutable(using Unsafe), start.n0, end.n0 - start.n0 + 1)
 
@@ -81,7 +81,7 @@ object Addressable:
 
 
     inline def clone(source: Text, start: Ordinal, end: Ordinal)(target: java.lang.StringBuilder)
-    : Unit =
+    :   Unit =
 
         target.append(source.s, start.n0, end.n1)
 

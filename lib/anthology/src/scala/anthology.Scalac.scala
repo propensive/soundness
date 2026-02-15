@@ -71,7 +71,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
     [ path: Abstractable across Paths to Text ]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor, Codicil )
-  : CompileProcess logs CompileEvent raises CompilerError =
+  :   CompileProcess logs CompileEvent raises CompilerError =
 
       val scalacProcess: CompileProcess = CompileProcess()
 
@@ -85,7 +85,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
       object ProgressApi extends dtdsi.ProgressCallback:
         private var last: Int = -1
         override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
-        : Unit =
+        :   Unit =
           ()
 
         override def progress
@@ -93,7 +93,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
             total:        Int,
             currentStage: String | Null,
             nextStage:    String | Null )
-        : Boolean =
+        :   Boolean =
 
           val int = (100.0*current/total).toInt
 

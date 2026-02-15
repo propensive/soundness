@@ -52,7 +52,7 @@ object Plutocrat:
     inline given underlying: [currency <: Label] => Underlying[Money in currency, Int] = !!
 
     protected[plutocrat] def apply[currency <: Label](currency: Text, value: Long)
-    : Money in currency =
+    :   Money in currency =
 
         val c1 = ((currency.s(0) - 'A') & 0b11111L) << 59
         val c2 = ((currency.s(1) - 'A') & 0b11111L) << 54
@@ -62,7 +62,7 @@ object Plutocrat:
 
 
     protected[plutocrat] def apply[currency <: Label](currency: Text, value: Double)
-    : Money in currency =
+    :   Money in currency =
 
         apply[currency](currency, Math.round(value))
 
@@ -130,7 +130,7 @@ object Plutocrat:
           inline right:       Money in currency,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           if left.value == right.value then !strict else (left.value < right.value)^greaterThan
 

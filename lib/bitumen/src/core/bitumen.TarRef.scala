@@ -57,7 +57,7 @@ object TarRef:
             navigable:  TarRef is Navigable[InvalidTarNames, Unset.type],
             rootParser: RootParser[TarRef, Unset.type],
             creator:    PathCreator[TarRef, InvalidTarNames, Unset.type] )
-    :      TarRef =
+    :   TarRef =
     Navigable.decode[TarRef](text)
 
   @targetName("child")

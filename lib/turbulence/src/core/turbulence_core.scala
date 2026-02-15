@@ -60,7 +60,7 @@ extension [value](value: value)
 
   def writeTo[target](target: target)[element]
     ( using streamable: value is Streamable by element, writable: target is Writable by element )
-  : Unit =
+  :   Unit =
 
       writable.write(target, streamable.stream(value))
 
@@ -104,7 +104,7 @@ extension [element](stream: Stream[element])
 
   inline def flow[result](inline termination: => result)
     ( inline proceed: (head: element, tail: Stream[element]) ?=> result )
-  : result =
+  :   result =
       stream match
         case head #:: tail => proceed(using head, tail)
         case _             => termination
@@ -116,7 +116,7 @@ extension [element](stream: Stream[element])
     [ generic: {Abstractable across Durations to Long, Instantiable across Durations from Long} ]
     ( duration: generic )
     ( using Monitor )
-  : Stream[element] raises AsyncError =
+  :   Stream[element] raises AsyncError =
 
       def recur(stream: Stream[element], last: Long): Stream[element] =
         stream.flow(Stream()):
@@ -137,7 +137,7 @@ extension [element](stream: Stream[element])
       ( active: Boolean,
         stream: Stream[Some[element] | Tap.Regulation],
         buffer: List[element] )
-    : Stream[element] =
+    :   Stream[element] =
 
         recur(active, stream, buffer)
 
@@ -145,7 +145,7 @@ extension [element](stream: Stream[element])
     @tailrec
     def recur
       ( active: Boolean, stream: Stream[Some[element] | Tap.Regulation], buffer: List[element] )
-    : Stream[element] =
+    :   Stream[element] =
 
         if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
         else if stream.nil then Stream()
@@ -165,7 +165,7 @@ extension [element](stream: Stream[element])
   def cluster[duration: Abstractable across Durations to Long]
     ( duration: duration, maxSize: Optional[Int] = Unset )
     ( using Monitor )
-  : Stream[List[element]] =
+  :   Stream[List[element]] =
 
       val Limit = maxSize.or(Int.MaxValue)
 
@@ -228,7 +228,7 @@ extension (obj: Stream.type)
 
 
   def metronome[generic: Abstractable across Durations to Long](duration: generic)(using Monitor)
-  : Stream[Unit] =
+  :   Stream[Unit] =
 
       val startTime: Long = jl.System.currentTimeMillis
 
@@ -284,7 +284,7 @@ extension (stream: Stream[Data])
     def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
 
     def recur(stream: Stream[Data], sourcePos: Int, dest: Array[Byte], destPos: Int)
-    : Stream[Data] =
+    :   Stream[Data] =
 
       stream match
         case source #:: more =>
@@ -312,7 +312,7 @@ extension (stream: Stream[Data])
 
 
     def recur(stream: Stream[Data], sourcePos: Int, dest: Array[Byte], destPos: Int)
-    : Stream[Data] =
+    :   Stream[Data] =
 
         stream match
           case source #:: more =>

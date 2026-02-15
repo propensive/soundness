@@ -100,7 +100,7 @@ package temporaryDirectories:
 
 
 inline def temporaryDirectory[path: Representative of Paths](using temporary: TemporaryDirectory)
-: path =
+:   path =
 
     compiletime.summonFrom:
       case given (`path` is Instantiable across Paths from Paths.Trusted) =>

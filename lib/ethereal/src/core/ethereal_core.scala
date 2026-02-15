@@ -89,7 +89,7 @@ def cli[bus <: Matchable](using executive: Executive)
           stderrSupport: StderrSupport = daemonConfig.supportStderr,
           threading:     Threading,
           handler:       Backstop)
-      : Unit =
+      :   Unit =
 
   given realm: Realm = realm"ethereal"
 
@@ -181,7 +181,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
 
   def makeClient(socket: jn.Socket)(using Monitor, Stdio, Codicil)
-  : Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
+  :   Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
 
       async:
         val in = socket.getInputStream.nn

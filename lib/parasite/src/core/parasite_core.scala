@@ -81,14 +81,14 @@ def daemon(using Codepoint)(evaluate: Worker ?=> Unit)(using Monitor, Codicil): 
   Daemon(evaluate(using _))
 
 def async[result](using Codepoint)(evaluate: Worker ?=> result)(using Monitor, Codicil)
-: Task[result] =
+:   Task[result] =
 
     Task(evaluate(using _), daemon = false, name = Unset)
 
 
 def task[result](using Codepoint)(name: Text)(evaluate: Worker ?=> result)
   ( using Monitor, Codicil )
-: Task[result] =
+:   Task[result] =
 
     Task(evaluate(using _), daemon = false, name = name)
 
@@ -98,7 +98,7 @@ def cancel[result]()(using Monitor): Unit = monitor.cancel()
 
 
 def snooze[duration: Abstractable across Durations to Long](duration: duration)(using Monitor)
-: Unit =
+:   Unit =
 
     monitor.snooze(duration)
 
@@ -111,7 +111,7 @@ def sleep[instant: Abstractable across Instants to Long](instant: instant)(using
 
 
 def hibernate[instant: Abstractable across Instants to Long](instant: instant)(using Monitor)
-: Unit =
+:   Unit =
 
     while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
 
@@ -133,14 +133,14 @@ extension [result](stream: Stream[result])
 
 
 def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)
-: result raises AsyncError =
+:   result raises AsyncError =
 
     block(using threading.supervisor())
 
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)
   ( using Tenacity, Monitor )
-: value raises RetryError =
+:   value raises RetryError =
 
     @tailrec
     def recur(attempt: Ordinal): value =
@@ -162,6 +162,6 @@ def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) 
 extension [target](value: target)
   def intercept[event](using interceptable: event is Interceptable onto target)
     ( action: (event: event) ?=> Unit )
-  : Hook =
+  :   Hook =
 
       Hook(interceptable.register(value, action(using _)))

@@ -80,16 +80,16 @@ object Xylophone:
       var types: List[TypeRepr] = Nil
 
       def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
           '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkCdata(array: Expr[Array[Any]], pattern: Cdata, scrutinee: Expr[Cdata])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           '{${Expr(pattern.text)} == $scrutinee.text}
 
@@ -97,7 +97,7 @@ object Xylophone:
         ( array:     Expr[Array[Any]],
           pattern:   ProcessingInstruction,
           scrutinee: Expr[ProcessingInstruction] )
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           ' {
               ${Expr(pattern.target)} == $scrutinee.target
@@ -105,12 +105,12 @@ object Xylophone:
             }
 
       def checkHeader(array: Expr[Array[Any]], pattern: Header, scrutinee: Expr[Header])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           '{${Expr(pattern.version)} == $scrutinee.version} // FIXME: Check encoding/standalone too
 
       def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           val children = '{$scrutinee.nodes}
 
@@ -126,7 +126,7 @@ object Xylophone:
             '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
       def checkElement(array: Expr[Array[Any]], pattern: Element, scrutinee: Expr[Element])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
             case Nil => expr
@@ -171,7 +171,7 @@ object Xylophone:
           '{$attributesChecked && $elementsChecked}
 
       def descend(array: Expr[Array[Any]], pattern: Xml, scrutinee: Expr[Xml], expr: Expr[Boolean])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           pattern match
             case Comment("\u0000") =>
@@ -502,7 +502,7 @@ object Xylophone:
 
   def attributes[result: Type, thisType <: Tag to result: Type]
     ( tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]] )
-  : Macro[result] =
+  :   Macro[result] =
       import quotes.reflect.*
 
       val args = attributes0.absolve match

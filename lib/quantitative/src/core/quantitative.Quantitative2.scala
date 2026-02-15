@@ -59,7 +59,7 @@ trait Quantitative2:
           inline right:   Temperature,
           inline strict:  Boolean,
           inline greater: Boolean )
-      : Boolean =
+      :   Boolean =
 
           !strict && left.kelvin == right.kelvin || (left.kelvin < right.kelvin) ^ greater
 
@@ -238,7 +238,7 @@ trait Quantitative2:
     override def toString(): String = name
 
   def normalizable[source <: Measure: Type, result <: Measure: Type]
-  : Macro[source is Normalizable to result] =
+  :   Macro[source is Normalizable to result] =
 
       import quotes.reflect.*
 
@@ -256,7 +256,7 @@ trait Quantitative2:
 
   def ratio
     ( from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true )
-  : Macro[Double] =
+  :   Macro[Double] =
 
       import quotes.reflect.*
 
@@ -293,10 +293,10 @@ trait Quantitative2:
 
   private def normalize(using Quotes)
     ( units: UnitsMap, other: UnitsMap, init: Expr[Double], force: Boolean = false )
-  : (UnitsMap, Expr[Double]) =
+  :   (UnitsMap, Expr[Double]) =
 
       def recur(dimensions: List[DimensionRef], target: UnitsMap, expr: Expr[Double])
-      : (UnitsMap, Expr[Double]) =
+      :   (UnitsMap, Expr[Double]) =
 
         dimensions match
           case Nil =>
@@ -340,7 +340,7 @@ trait Quantitative2:
 
   def multiply[left <: Measure: Type, right <: Measure: Type]
     ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]] )
-  : Macro[Any] =
+  :   Macro[Any] =
 
       val left: UnitsMap = UnitsMap[left]
       val right: UnitsMap = UnitsMap[right]
@@ -357,7 +357,7 @@ trait Quantitative2:
 
   def divide[left <: Measure: Type, right <: Measure: Type]
     ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]] )
-  : Macro[Any] =
+  :   Macro[Any] =
 
       val left: UnitsMap = UnitsMap[left]
       val right: UnitsMap = UnitsMap[right]
@@ -403,7 +403,7 @@ trait Quantitative2:
       multiplicand <: Quantity[left]:  Type,
       right        <: Measure:         Type,
       multiplier   <: Quantity[right]: Type ]
-  : Macro[multiplicand is Multiplicable by multiplier] =
+  :   Macro[multiplicand is Multiplicable by multiplier] =
 
       val left = UnitsMap[left]
       val right = UnitsMap[right]
@@ -431,7 +431,7 @@ trait Quantitative2:
       dividend <: Quantity[left]:  Type,
       right    <: Measure:         Type,
       divisor  <: Quantity[right]: Type ]
-  : Macro[dividend is Divisible by divisor] =
+  :   Macro[dividend is Divisible by divisor] =
 
       val left = UnitsMap[left]
       val right = UnitsMap[right]
@@ -454,7 +454,7 @@ trait Quantitative2:
 
 
   def divTypeclass2[right <: Measure: Type, divisor <: Quantity[right]: Type]
-  : Macro[Double is Divisible by divisor] =
+  :   Macro[Double is Divisible by divisor] =
 
       val left = UnitsMap(Map())
       val right = UnitsMap[right]
@@ -477,7 +477,7 @@ trait Quantitative2:
 
 
   def divTypeclass3[right <: Measure: Type, divisor <: Quantity[right]: Type]
-  : Macro[Int is Divisible by divisor] =
+  :   Macro[Int is Divisible by divisor] =
 
       val left = UnitsMap(Map())
       val right = UnitsMap[right]
@@ -550,7 +550,7 @@ trait Quantitative2:
       strict:    Expr[Boolean],
       invert:    Expr[Boolean] )
     ( using Quotes )
-  : Expr[Boolean] =
+  :   Expr[Boolean] =
 
       val left: UnitsMap = UnitsMap[left]
       val right: UnitsMap = UnitsMap[right]
@@ -568,7 +568,7 @@ trait Quantitative2:
   def add[left <: Measure: Type, right <: Measure: Type]
     ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]] )
     ( using Quotes )
-  : Expr[Any] =
+  :   Expr[Any] =
 
       val left: UnitsMap = UnitsMap[left]
       val right: UnitsMap = UnitsMap[right]
@@ -587,7 +587,7 @@ trait Quantitative2:
   def check[left <: Measure: Type, right <: Measure: Type]
     ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]] )
     ( using Quotes )
-  : Expr[Boolean] =
+  :   Expr[Boolean] =
 
       val left: UnitsMap = UnitsMap[left]
       val right: UnitsMap = UnitsMap[right]
@@ -602,7 +602,7 @@ trait Quantitative2:
   def sub[left <: Measure: Type, right <: Measure: Type]
     ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]] )
     ( using Quotes )
-  : Expr[Any] =
+  :   Expr[Any] =
 
       val left: UnitsMap = UnitsMap[left]
       val right: UnitsMap = UnitsMap[right]
@@ -625,7 +625,7 @@ trait Quantitative2:
       right     <: Measure:         Type,
       quantity2 <: Quantity[right]: Type ]
     ( using Quotes )
-  : Expr[quantity is Subtractable by quantity2] =
+  :   Expr[quantity is Subtractable by quantity2] =
 
       val (units, _) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
 
@@ -644,7 +644,7 @@ trait Quantitative2:
       right     <: Measure:         Type,
       quantity2 <: Quantity[right]: Type ]
     ( using Quotes )
-  : Expr[quantity is Addable by quantity2] =
+  :   Expr[quantity is Addable by quantity2] =
 
       val (units, other) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
 
@@ -661,7 +661,7 @@ trait Quantitative2:
       right     <: Measure:         Type,
       quantity2 <: Quantity[right]: Type ]
     ( using Quotes )
-  : Expr[quantity is Checkable against quantity2] =
+  :   Expr[quantity is Checkable against quantity2] =
 
       val (units, other) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
 
@@ -676,7 +676,7 @@ trait Quantitative2:
   def norm[units <: Measure: Type, norm[power <: Nat] <: Units[power, ?]: Type]
     ( expr: Expr[Quantity[units]] )
     ( using Quotes )
-  : Expr[Any] =
+  :   Expr[Any] =
 
       val units: UnitsMap = UnitsMap[units]
       val norm: UnitsMap = UnitsMap[norm[1]]

@@ -57,7 +57,7 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
 
   def selectDynamic[value: Decodable in Text](field: String)
     ( using DynamicDsvEnabler, DsvRedesignation )
-  : Optional[value] =
+  :   Optional[value] =
 
       apply(summon[DsvRedesignation].transform(field.tt))
 

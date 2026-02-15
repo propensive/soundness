@@ -68,7 +68,7 @@ extension [value](value: value)
             equality:             addable.Result =:= value,
             subtractable:         value is Subtractable by value,
             equality2:            subtractable.Result =:= value )
-  : Tolerance[value] =
+  :   Tolerance[value] =
 
       Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
 
@@ -80,7 +80,7 @@ extension [value](value: value)
             equality:             addable.Result =:= value,
             subtractable:         value is Subtractable by value,
             equality2:            subtractable.Result =:= value )
-  : Tolerance[value] =
+  :   Tolerance[value] =
 
       value +/- (tolerance)
 
@@ -91,7 +91,7 @@ def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): Te
 
 def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
   ( block: Testable ?=> Unit )
-: Unit =
+:   Unit =
 
     runner.suite(Testable(name, suite), block)
 

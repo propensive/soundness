@@ -77,7 +77,7 @@ object Cursor:
   transparent inline def apply[data](iterator: Iterator[data])
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
-  : Cursor[data] =
+  :   Cursor[data] =
 
       if iterator.hasNext then
         val initial = iterator.next()
@@ -203,7 +203,7 @@ class Cursor[data](initial:    data,
   inline def datum(using erased Unsafe): addressable.Operand = addressable.address(current, focus)
 
   inline def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)
-  : result =
+  :   result =
 
       if !finished then lambda(addressable.address(current, focus)) else otherwise
 

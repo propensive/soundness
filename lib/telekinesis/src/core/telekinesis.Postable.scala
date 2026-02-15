@@ -53,7 +53,7 @@ import alphabets.base256.alphanumericOrBraille
 
 object Postable:
   def apply[response](mediaType0: MediaType, stream0: response => Stream[Data])
-  : response is Postable =
+  :   response is Postable =
 
       new Postable:
         type Self = response

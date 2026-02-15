@@ -41,13 +41,13 @@ import vacuous.*
 
 def evolve[element: ClassTag]
   ( versions: List[List[element]], similar: Optional[(element, element) => Boolean] = Unset )
-: Evolution[element] =
+:   Evolution[element] =
 
     import Evolution.Atom
 
 
     def recur(iteration: Ordinal, todo: List[Seq[element]], evolution: Evolution[element])
-    : Evolution[element] =
+    :   Evolution[element] =
 
         todo match
           case Nil | _ :: Nil => evolution
@@ -64,7 +64,7 @@ def evolve[element: ClassTag]
                 done:    List[Atom[element]]   = Nil,
                 skips:   List[Atom[element]]   = Nil,
                 inserts: List[Atom[element]]   = Nil )
-            : List[Atom[element]] =
+            :   List[Atom[element]] =
 
                 def finish(): List[Atom[element]] =
                   val left = IArray.from(skips)
@@ -118,7 +118,7 @@ def diff[element]
   ( left:    IndexedSeq[element],
     right:   IndexedSeq[element],
     compare: (element, element) => Boolean = { (a: element, b: element) => a == b } )
-: Diff[element] =
+:   Diff[element] =
 
     type Edits = List[Edit[element]]
 

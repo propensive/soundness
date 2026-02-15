@@ -211,7 +211,7 @@ object Cellulose extends Cellulose2:
 
     def read[entity: {Decodable in Codl, CodlSchematic}](using Void)[streamable: Streamable by Text]
       ( source: streamable )
-    : entity raises ParseError raises CodlError =
+    :   entity raises ParseError raises CodlError =
 
         entity.schema().parse(source.stream[Text]).as[entity]
 
@@ -222,7 +222,7 @@ object Cellulose extends Cellulose2:
         subs:      List[Atom] = Nil,
         fromStart: Boolean    = false )
       ( using streamable: source is Streamable by Text, aggregate: Tactic[ParseError] )
-    : CodlDoc =
+    :   CodlDoc =
 
         val (margin, stream) =
           tokenize(streamable.stream(source), fromStart)(using aggregate.diagnostics)
@@ -287,7 +287,7 @@ object Cellulose extends Cellulose2:
             subs:    List[Atom],
             body:    Stream[Char],
             tabs:    List[Int] )
-        : CodlDoc =
+        :   CodlDoc =
 
             def schema: CodlSchema = stack.prim.lay(baseSchema)(_.head.schema)
 
@@ -301,7 +301,7 @@ object Cellulose extends Cellulose2:
                 subs:    List[Atom]                    = subs,
                 body:    Stream[Char]                  = Stream(),
                 tabs:    List[Int]                     = Nil )
-            : CodlDoc =
+            :   CodlDoc =
 
                 recur(tokens, focus, peers, peerIds, stack, lines, subs, body, tabs)
 
@@ -463,7 +463,7 @@ object Cellulose extends Cellulose2:
 
 
     def tokenize(in: Stream[Text], fromStart: Boolean = false)(using Diagnostics)
-    : (Int, Stream[CodlToken]) raises ParseError =
+    :   (Int, Stream[CodlToken]) raises ParseError =
 
         val reader: PositionReader = new PositionReader(in.map(identity))
 
@@ -488,7 +488,7 @@ object Cellulose extends Cellulose2:
             indent:  Int       = margin,
             count:   Int,
             padding: Boolean )
-        : Stream[CodlToken] =
+        :   Stream[CodlToken] =
 
             stream(char, state, indent, count, padding)
 
@@ -500,7 +500,7 @@ object Cellulose extends Cellulose2:
             indent:  Int       = margin,
             count:   Int       = start,
             padding: Boolean )
-        : Stream[CodlToken] =
+        :   Stream[CodlToken] =
 
             inline def next(): Character =
               try reader.next() catch
@@ -514,7 +514,7 @@ object Cellulose extends Cellulose2:
                 indent:  Int     = indent,
                 count:   Int     = count + 1,
                 padding: Boolean = padding )
-            : Stream[CodlToken] =
+            :   Stream[CodlToken] =
 
                 stream(next(), state, indent, count, padding)
 
@@ -536,7 +536,7 @@ object Cellulose extends Cellulose2:
                 indent:  Int     = indent,
                 count:   Int     = count + 1,
                 padding: Boolean = padding )
-            : Stream[CodlToken] =
+            :   Stream[CodlToken] =
 
                 istream(next(), state, indent, count, padding)
 
@@ -546,7 +546,7 @@ object Cellulose extends Cellulose2:
 
 
             def put(next: State, stop: Boolean = false, padding: Boolean = padding)
-            : Stream[CodlToken] =
+            :   Stream[CodlToken] =
 
                 token() #:: irecur(next, padding = padding)
 
@@ -576,7 +576,7 @@ object Cellulose extends Cellulose2:
 
 
             def fail(next: State, error: ParseError, adjust: Optional[Int] = Unset)
-            : Stream[CodlToken] =
+            :   Stream[CodlToken] =
 
                 CodlToken.Error(error) #:: irecur(next, indent = adjust.or(char.column))
 

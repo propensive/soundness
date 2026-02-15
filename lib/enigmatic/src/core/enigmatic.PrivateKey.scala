@@ -55,13 +55,13 @@ class PrivateKey[cipher <: Cipher](private[enigmatic] val privateData: Data):
 
 
   def decrypt[decodable: Decodable in Data](bytes: Data)(using cipher: cipher & Encryption)
-  : decodable raises CryptoError =
+  :   decodable raises CryptoError =
 
       decodable.decoded(cipher.decrypt(bytes, privateData))
 
 
   def sign[encodable: Encodable in Data](value: encodable)(using cipher: cipher & Signing)
-  : Signature[cipher] =
+  :   Signature[cipher] =
 
       Signature(cipher.sign(encodable.encode(value), privateData))
 

@@ -49,7 +49,7 @@ object Commensurable:
           inline right:       operand,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
 
@@ -60,7 +60,7 @@ object Commensurable:
         inline right:   Bytes,
         inline strict:  Boolean,
         inline greater: Boolean )
-    : Boolean =
+    :   Boolean =
 
         !strict && left.long == right.long || (left.long < right.long) ^ greater
 
@@ -71,7 +71,7 @@ object Commensurable:
         inline right:   Ordinal,
         inline strict:  Boolean,
         inline greater: Boolean )
-    : Boolean =
+    :   Boolean =
 
         inline if greater then inline if strict then left.gt(right) else left.ge(right)
         else inline if strict then left.lt(right) else left.le(right)
@@ -82,7 +82,7 @@ object Commensurable:
         inline right:   value,
         inline strict:  Boolean,
         inline greater: Boolean )
-    : Boolean =
+    :   Boolean =
 
         val n = value.compare(left, right)
         inline if greater
@@ -96,4 +96,4 @@ trait Commensurable extends Typeclass, Contrastive:
       inline right:       Contrast,
       inline strict:      Boolean,
       inline greaterThan: Boolean )
-  : Boolean
+  :   Boolean

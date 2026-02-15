@@ -147,7 +147,7 @@ object Syntax:
 
   def typeBounds(using Quotes)
     ( sub: Syntax, lower: quotes.reflect.TypeRepr, upper: quotes.reflect.TypeRepr )
-  : Syntax =
+  :   Syntax =
 
       import quotes.reflect.*
 
@@ -182,7 +182,7 @@ object Syntax:
 
   def clause(using Quotes)
     ( clause: quotes.reflect.ParamClause, showUsing: Boolean, context: Map[Text, Syntax] )
-  : Syntax =
+  :   Syntax =
       import quotes.reflect.*
 
       clause.absolve match

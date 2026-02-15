@@ -52,7 +52,7 @@ object Emittable:
     def allocate(size: Int): Array[Char] = new Array[Char](size)
 
     inline def copy(source: Text, start: Ordinal, target: Array[Char], index: Ordinal, size: Int)
-    : Unit =
+    :   Unit =
 
         source.s.getChars(start.n0, start.n0 + size, target, index.n0)
 
@@ -68,7 +68,7 @@ object Emittable:
     def allocate(size: Int): Array[Byte] = new Array[Byte](size)
 
     inline def copy(source: Data, start: Ordinal, target: Array[Byte], index: Ordinal, size: Int)
-    : Unit =
+    :   Unit =
 
         System.arraycopy(source.mutable(using Unsafe), start.n0, target, index.n0, index.n0 + size)
 
@@ -88,7 +88,7 @@ trait Emittable:
       target: Transport,
       index:  Ordinal,
       size:   Int )
-  : Unit
+  :   Unit
 
 
 class Emitter[data: Emittable](block: Int = 4096, window: Int = 2):

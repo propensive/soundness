@@ -50,7 +50,7 @@ private given realm: Realm = realm"legerdemain"
 def elicit[value: Formulaic]
   ( query: Optional[Query] = Unset, validation: Validation, submit: Optional[Text] )
   ( using formulation: Formulation )
-: Html of Flow =
+:   Html of Flow =
 
     formulation.form
       ( value.fields(Pointer.Self, t"", query.or(Query.empty), validation, formulation), submit )
@@ -58,7 +58,7 @@ def elicit[value: Formulaic]
 
 extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
   def edit(validation: Validation, submit: Optional[Text])(using formulation: Formulation)
-  : Html of Flow =
+  :   Html of Flow =
 
       formulation.form
         ( formulaic.fields(Pointer.Self, t"", formulaic.encoded(value), validation, formulation),
@@ -77,7 +77,7 @@ package formulations:
         legend:     Text,
         validation: Optional[Message],
         required:   Boolean )
-    : Html of Flow =
+    :   Html of Flow =
         given alertClass: (Stylesheet of "alert" | "required") = Stylesheet()
         Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required(t"*"))
 

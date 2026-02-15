@@ -216,7 +216,7 @@ object Contrastable:
       right:      IArray[Decomposition],
       leftDebug:  Text,
       rightDebug: Text )
-  : Juxtaposition =
+  :   Juxtaposition =
 
       if left == right then Juxtaposition.Same(leftDebug) else
         val comparison = IArray.from:

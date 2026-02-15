@@ -53,7 +53,7 @@ import vacuous.*
 
 object Mandible:
   def disassemble[target: Type](block: Expr[target => Any], classloader: Expr[Classloader])
-  : Macro[Optional[Bytecode]] =
+  :   Macro[Optional[Bytecode]] =
 
       import quotes.reflect.*
       given Realm = realm"mandible"

@@ -57,7 +57,7 @@ trait Interpolator[input, state, result]:
 
   def expand(context: Expr[StringContext], seq: Expr[Seq[Any]])(using thisType: Type[this.type])
     ( using Type[input], Type[state], Type[result] )
-  : Macro[result] =
+  :   Macro[result] =
 
       expansion(context, seq)(1)
 
@@ -66,7 +66,7 @@ trait Interpolator[input, state, result]:
     ( context: Expr[StringContext], seq: Expr[Seq[Any]] )
     ( using thisType: Type[this.type] )
     ( using Quotes, Type[input], Type[state], Type[result] )
-  : (state, Expr[result]) =
+  :   (state, Expr[result]) =
 
       import quotes.reflect.*
 
@@ -88,7 +88,7 @@ trait Interpolator[input, state, result]:
           positions: Seq[Position],
           state:     state,
           expr:      Expr[state] )
-      : (state, Expr[result]) throws PositionalError =
+      :   (state, Expr[result]) throws PositionalError =
 
         seq match
           case '{$head: head} +: tail =>

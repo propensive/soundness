@@ -42,5 +42,5 @@ extension [value](value: value)
 extension [value](left: value)
   def compose[operand, result](right: operand)
     ( using composable: value is Composable by operand to result )
-  : result =
+  :   result =
       composable.composition(left, right)

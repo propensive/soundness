@@ -52,6 +52,6 @@ trait Executive:
       entrypoint:       Entrypoint,
       login:            Login )
     ( using interpreter: Interpreter )
-  : Interface
+  :   Interface
 
   def process(cli: Interface)(result: Interface ?=> Return): Exit

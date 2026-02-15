@@ -120,7 +120,7 @@ case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
 
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux])
-  : Sandbox.Launcher =
+  :   Sandbox.Launcher =
 
       stage.remote: input =>
         unsafely:

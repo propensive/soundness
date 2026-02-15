@@ -37,7 +37,7 @@ import proscenium.*
 case class Polyglot[+value, language](values: Map[Language, value]):
   @targetName("or")
   transparent inline infix def | [value2 >: value, language2](polyglot: Polyglot[value2, language2])
-  : Polyglot[value2, language & language2] | value2 =
+  :   Polyglot[value2, language & language2] | value2 =
 
       compiletime.summonFrom:
         case locale: Locale[language & language2] =>

@@ -79,7 +79,7 @@ object Installer:
 
   def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
     ( using Environment, HomeDirectory, System )
-  : List[Path on Linux] logs DaemonLogEvent raises InstallError =
+  :   List[Path on Linux] logs DaemonLogEvent raises InstallError =
 
       mitigate:
         case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
@@ -109,7 +109,7 @@ object Installer:
   def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
     ( using service: DaemonService[?], environment: Environment, home: HomeDirectory )
     ( using Effectful, Diagnostics )
-  : Result logs DaemonLogEvent raises InstallError =
+  :   Result logs DaemonLogEvent raises InstallError =
 
       import workingDirectories.java
       import systems.java

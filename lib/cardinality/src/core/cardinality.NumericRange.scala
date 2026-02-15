@@ -72,14 +72,14 @@ object NumericRange:
 
       @annotation.targetName("add")
       infix def + [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
-      : (leftMin + rightMin) ~ (leftMax + rightMax) =
+      :   (leftMin + rightMin) ~ (leftMax + rightMax) =
 
           left + right
 
 
       @annotation.targetName("add2")
       infix def + [E <: Double & Singleton](right: E)
-      : (leftMin + right.type) ~ (leftMax + right.type) =
+      :   (leftMin + right.type) ~ (leftMax + right.type) =
 
           left + right
 
@@ -89,7 +89,7 @@ object NumericRange:
 
       @annotation.targetName("times")
       infix def * [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
-      : (Min4[leftMin*rightMin, leftMin*rightMax, leftMax*rightMax, leftMax*rightMin])
+      :   (Min4[leftMin*rightMin, leftMin*rightMax, leftMax*rightMax, leftMax*rightMin])
         ~ (Max4[leftMin*rightMin, leftMin*rightMax, leftMax*rightMax, leftMax*rightMin]) =
 
         left*right
@@ -97,7 +97,7 @@ object NumericRange:
 
       @annotation.targetName("times2")
       infix def * [right <: Double & Singleton](right: right)
-      : Min[leftMin*right, leftMax*right] ~ Max[leftMin*right, leftMax*right] =
+      :   Min[leftMin*right, leftMax*right] ~ Max[leftMin*right, leftMax*right] =
 
           left*right
 
@@ -108,14 +108,14 @@ object NumericRange:
 
       @annotation.targetName("minus")
       infix def - [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
-      : Min[leftMin - rightMin, leftMin - rightMax] ~ Max[leftMax - rightMin, leftMax - rightMax] =
+      :   Min[leftMin - rightMin, leftMin - rightMax] ~ Max[leftMax - rightMin, leftMax - rightMax] =
 
           left - right
 
 
       @annotation.targetName("minus2")
       infix def - [right <: Double & Singleton](right: right)
-      : Min[leftMin - right, leftMax - right] ~ Max[leftMin - right, leftMax - right] =
+      :   Min[leftMin - right, leftMax - right] ~ Max[leftMin - right, leftMax - right] =
 
           left - right
 
@@ -126,7 +126,7 @@ object NumericRange:
 
       @annotation.targetName("divide")
       infix def / [right <: Double & Singleton](right: right)
-      : Min[leftMin/right, leftMax/right] ~ Max[leftMin/right, leftMax/right] =
+      :   Min[leftMin/right, leftMax/right] ~ Max[leftMin/right, leftMax/right] =
 
           left/right
 
@@ -134,7 +134,7 @@ object NumericRange:
       @annotation.targetName("divide2")
       infix def / [rightMin <: Double, rightMax <: Double]
         ( right: rightMin ~ rightMax )
-      : Asym
+      :   Asym
         [ rightMin*rightMax,
           Min4[leftMin/rightMin, leftMax/rightMin, leftMin/rightMax, leftMax/rightMax],
           -1.0/0.0 ]

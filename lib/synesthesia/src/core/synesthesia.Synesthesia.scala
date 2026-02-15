@@ -199,7 +199,7 @@ object Synesthesia:
     // This has been written as a partial function because the more natural way of writing it,
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
     val promptInvocation
-    : Expr[interface ~> ((Text, Map[Text, Text], McpClient) => List[Discourse])] =
+    :   Expr[interface ~> ((Text, Map[Text, Text], McpClient) => List[Discourse])] =
         ' {
             {
               case target: `interface` =>
@@ -506,7 +506,7 @@ object Synesthesia:
 
           def invokePrompt
             ( server: interface, client: McpClient, method: Text, input: Map[Text, Text] )
-          : List[Discourse] =
+          :   List[Discourse] =
 
               $promptInvocation(server)(method, input, client)
 

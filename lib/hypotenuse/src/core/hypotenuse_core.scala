@@ -76,7 +76,7 @@ extension [value](iterable: Iterable[value])
             subtractable:  value is Subtractable by value,
             divisible:     subtractable.Result is Divisible by Double,
             addable:       value is Addable by divisible.Result )
-  : Optional[addable.Result] =
+  :   Optional[addable.Result] =
 
       def recur(n: Int, items: List[value]): value =
         val pivot = items.head
@@ -461,7 +461,7 @@ extension [left](inline left: left)
   @targetName("lt")
   inline infix def < [right](inline right: right)
   ( using inline commensurable: left is Commensurable against right )
-  : Boolean =
+  :   Boolean =
 
       commensurable.compare(left, right, true, false)
 
@@ -469,7 +469,7 @@ extension [left](inline left: left)
   @targetName("lte")
   inline infix def <= [right](inline right: right)
     ( using inline commensurable: left is Commensurable against right )
-  : Boolean =
+  :   Boolean =
 
       commensurable.compare(left, right, false, false)
 
@@ -477,7 +477,7 @@ extension [left](inline left: left)
   @targetName("gt")
   inline infix def > [right](inline right: right)
     ( using inline commensurable: left is Commensurable against right )
-  : Boolean =
+  :   Boolean =
 
       commensurable.compare(left, right, true, true)
 
@@ -485,7 +485,7 @@ extension [left](inline left: left)
   @targetName("gte")
   inline infix def >= [right](inline right: right)
     ( using inline commensurable: left is Commensurable against right )
-  : Boolean =
+  :   Boolean =
 
       commensurable.compare(left, right, false, true)
 

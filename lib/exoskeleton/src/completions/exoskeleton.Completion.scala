@@ -75,7 +75,7 @@ extends Cli:
   def proceed: Boolean = true
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
-  : Optional[operand] =
+  :   Optional[operand] =
 
       given cli: Cli = this
       interpreter.read(parameters, flag)

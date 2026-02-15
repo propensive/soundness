@@ -147,7 +147,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   private def findCycle(start: node): Option[List[node]] =
     @tailrec
     def recur(queue: List[(node, List[node])], finished: Set[node])
-    : Option[List[node]] =
+    :   Option[List[node]] =
 
       queue match
         case Nil => None

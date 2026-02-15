@@ -41,7 +41,7 @@ import filesystemOptions.overwritePreexisting.disabled
 extension (shell: Shell)
   def tmux(width: Int = 80, height: Int = 24)[result](action: (tmux: Tmux) ?=> result)
     ( using WorkingDirectory, Sandbox.Tool, Monitor )
-  : result raises TmuxError logs ExecEvent =
+  :   result raises TmuxError logs ExecEvent =
 
       mitigate:
         case ExecError(_, _, _) => TmuxError()

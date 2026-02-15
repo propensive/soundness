@@ -109,7 +109,7 @@ object Abacist2 extends Abacist3:
     def distributive[units <: Tuple]
       ( parts0: Quanta[units] => List[Long] )
       ( place0: (Quanta[units], List[Text]) => Text )
-    : Quanta[units] is Distributive by Long =
+    :   Quanta[units] is Distributive by Long =
 
         new Distributive:
           type Self = Quanta[units]
@@ -135,6 +135,6 @@ object Abacist2 extends Abacist3:
 
 
     transparent inline def collapse(length: Int)(using length.type < Tuple.Size[units] =:= true)
-    : Quanta[Tuple.Drop[units, length.type]] =
+    :   Quanta[Tuple.Drop[units, length.type]] =
 
         count

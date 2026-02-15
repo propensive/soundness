@@ -87,14 +87,14 @@ trait McpClient:
   @rpc
   protected def `notifications/message`
     ( level: LoggingLevel, logger: Optional[Text], data: Json )
-  : Unit
+  :   Unit
 
   @rpc
   protected def `elicitation/create`
     ( mode:            Optional[Text],
       message:         Text,
       requestedSchema: Json )
-  : Json
+  :   Json
 
   def log(message: Text): Unit =
     `notifications/message`(LoggingLevel.Info, "updates", Map("message" -> message).json)

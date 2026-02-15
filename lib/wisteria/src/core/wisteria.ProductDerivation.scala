@@ -49,7 +49,7 @@ object ProductDerivation:
                              default:   Default[Optional[field]],
                              label:     Text,
                              index:     Int & FieldIndex[field] ) ?=> field )
-    : derivation =
+    :   derivation =
 
         type Fields = reflection.MirroredElemTypes
         type Labels = reflection.MirroredElemLabels
@@ -74,7 +74,7 @@ object ProductDerivation:
                              default:   Default[Optional[field]],
                              label:     Text,
                              index:     Int & FieldIndex[field] ) ?=> constructor[field] )
-    : constructor[derivation] =
+    :   constructor[derivation] =
 
         type Fields = reflection.MirroredElemTypes
         type Labels = reflection.MirroredElemLabels
@@ -100,7 +100,7 @@ object ProductDerivation:
                              label:       Text,
                              dereference: derivation => field,
                              index:       Int & FieldIndex[field] ) ?=> result )
-    : IArray[result] =
+    :   IArray[result] =
 
         type Fields = reflection.MirroredElemTypes
         type Labels = reflection.MirroredElemLabels
@@ -129,7 +129,7 @@ object ProductDerivation:
       ( using fieldIndex:  Int & FieldIndex[field],
                                              reflection:  ProductReflection[derivation],
                                              requirement: ContextRequirement)
-    : field =
+    :   field =
 
         type Labels = reflection.MirroredElemLabels
         type Fields = reflection.MirroredElemTypes
@@ -151,7 +151,7 @@ object ProductDerivation:
                              default: Default[Optional[field]],
                              label:   Text,
                              index:   Int & FieldIndex[field] ) ?=> result )
-    : IArray[result] =
+    :   IArray[result] =
 
         provide[ClassTag[result]]:
           type Labels = reflection.MirroredElemLabels
@@ -180,7 +180,7 @@ object ProductDerivation:
                              default: Default[Optional[field]],
                              label:   Text,
                              index:   Int & FieldIndex[field] ) ?=> result )
-    : result =
+    :   result =
 
         inline tuple match
           case Zero => accumulator
@@ -214,7 +214,7 @@ object ProductDerivation:
                              label:       Text,
                              dereference: derivation => field,
                              index:       Int & FieldIndex[field] ) ?=> result )
-    : result =
+    :   result =
 
         inline !![fields] match
           case _: Zero => accumulator

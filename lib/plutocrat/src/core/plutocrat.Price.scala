@@ -46,7 +46,7 @@ object Price:
       Price(left.principal/right, left.tax/right)
 
   def apply[currency <: Label](principal0: Money in currency, tax0: Money in currency)
-  : Price in currency =
+  :   Price in currency =
 
       new Price:
         type Form = currency

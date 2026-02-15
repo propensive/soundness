@@ -56,7 +56,7 @@ object Abacist:
 
 
     def recur(multipliers: List[Multiplier], values: List[Expr[Int]], expr: Expr[Long])
-    : Expr[Long] =
+    :   Expr[Long] =
 
         values match
           case Nil =>
@@ -88,10 +88,10 @@ object Abacist:
 
 
   def describeQuanta[units <: Tuple: Type](count: Expr[Quanta[units]])
-  : Macro[ListMap[Text, Long]] =
+  :   Macro[ListMap[Text, Long]] =
 
       def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]])
-      : Expr[ListMap[Text, Long]] =
+      :   Expr[ListMap[Text, Long]] =
 
           slices match
             case Nil =>
@@ -112,7 +112,7 @@ object Abacist:
 
   def multiplyQuanta[units <: Tuple: Type]
     ( count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean )
-  : Macro[Any] =
+  :   Macro[Any] =
 
       if division then '{Quanta.fromLong[units](($count.long/$multiplier + 0.5).toLong)}
       else '{Quanta.fromLong[units](($count.long*$multiplier + 0.5).toLong)}
@@ -131,7 +131,7 @@ object Abacist:
 
   def fromQuantity[quantity <: Measure: Type, units <: Tuple: Type]
     ( quantity: Expr[Quantity[quantity]] )
-  : Macro[Quanta[units]] =
+  :   Macro[Quanta[units]] =
 
       import quotes.reflect.*
 
@@ -143,7 +143,7 @@ object Abacist:
 
 
   def get[units <: Tuple: Type, unit <: Units[1, ? <: Dimension]: Type](value: Expr[Quanta[units]])
-  : Macro[Int] =
+  :   Macro[Int] =
 
       import quotes.reflect.*
 
@@ -161,7 +161,7 @@ object Abacist:
 
 
     def untuple[tuple: Type](dimension: Optional[DimensionRef], result: List[UnitPower])
-    : List[UnitPower] =
+    :   List[UnitPower] =
 
       TypeRepr.of[tuple].dealias.asType match
         case '[head *: tail] =>

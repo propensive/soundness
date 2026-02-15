@@ -48,7 +48,7 @@ object Checkable:
 
 
   def apply[self, contrast](lambda: (self, contrast) => Boolean)
-  : self is Checkable against contrast =
+  :   self is Checkable against contrast =
 
       new Checkable:
         type Self = self

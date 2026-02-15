@@ -101,7 +101,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
             inclusion: Inclusion[report, Benchmark],
             suite:     Testable,
             codepoint: Codepoint )
-  : Unit raises CompilerError raises RemoteError =
+  :   Unit raises CompilerError raises RemoteError =
 
     val testId = TestId(name, suite, codepoint)
     val confidence0: Optional[Benchmark.Percentiles] = confidence

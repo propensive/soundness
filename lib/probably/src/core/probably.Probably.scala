@@ -50,7 +50,7 @@ object Probably:
     ( test:      Expr[Test[test]],
       predicate: Expr[test => Boolean],
       action:    Expr[Trial[test] => result] )
-  : Macro[result] =
+  :   Macro[result] =
 
       import quotes.reflect.*
 
@@ -155,7 +155,7 @@ object Probably:
       inc:          Inclusion[report, Verdict],
       inc2:         Inclusion[report, Verdict.Detail],
       decomposable: test is Decomposable )
-  : result =
+  :   result =
 
       runner.run(test).pipe: run =>
         val verdict = run match

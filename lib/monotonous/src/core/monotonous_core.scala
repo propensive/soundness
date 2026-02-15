@@ -152,7 +152,7 @@ extension (value: Text)
 
 extension (stream: Stream[Text])
   def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme)
-  : Stream[Data] =
+  :   Stream[Data] =
 
       deserializable.deserialize(stream)
 

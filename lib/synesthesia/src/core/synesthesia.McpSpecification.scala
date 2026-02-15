@@ -50,4 +50,4 @@ trait McpSpecification extends Typeclass:
   def invokeResource(target: Self, method: Text): Mcp.Contents
 
   def invokePrompt(target: Self, client: McpClient, method: Text, params: Map[Text, Text])
-  : List[Discourse]
+  :   List[Discourse]

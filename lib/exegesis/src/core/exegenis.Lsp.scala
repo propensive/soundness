@@ -72,7 +72,7 @@ trait Lsp:
       rootUri:          Text,
       capabilities:     Json,
       workspaceFolders: List[Lsp.Folder] )
-  : Json
+  :   Json
 
   @rpc
   def initialized(): Unit

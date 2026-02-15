@@ -82,7 +82,7 @@ object Git:
               (Path on Linux) is Decodable in Text,
               Tactic[ExecError])
     ( using command: GitCommand )
-  : GitRepo logs GitEvent raises NameError =
+  :   GitRepo logs GitEvent raises NameError =
 
       try
         throwErrors[PathError | IoError]:
@@ -105,7 +105,7 @@ object Git:
       Tactic[GitError],
       Tactic[ExecError],
       WorkingDirectory )
-  : GitProcess[GitRepo] logs GitEvent raises NameError =
+  :   GitProcess[GitRepo] logs GitEvent raises NameError =
 
       val sourceText = inline source match
         case source: SshUrl => source.text
@@ -127,7 +127,7 @@ object Git:
             (Path on Linux) is Decodable in Text,
             Tactic[ExecError],
             GitCommand )
-  : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError raises GitError =
+  :   GitProcess[GitRepo] logs GitEvent raises PathError raises NameError raises GitError =
 
       val sourceText = inline source match
         case source: SshUrl => source.text
@@ -144,7 +144,7 @@ object Git:
     ( using gitError:         Tactic[GitError],
             exec:             Tactic[ExecError],
             workingDirectory: WorkingDirectory )
-  : GitProcess[GitRepo] logs GitEvent raises NameError =
+  :   GitProcess[GitRepo] logs GitEvent raises NameError =
 
       val gitRepo = init(targetPath)
       val fetch = gitRepo.fetch(1, source, commit)
@@ -167,7 +167,7 @@ object Git:
                  Tactic[ExecError],
                  GitCommand)
     ( using gitError: Tactic[GitError] )
-  : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
+  :   GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
       val target: Path on Linux =
         try targetPath.generic.decode[Path on Linux]

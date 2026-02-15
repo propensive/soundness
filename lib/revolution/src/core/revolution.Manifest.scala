@@ -73,7 +73,7 @@ object Manifest:
 
 case class Manifest(entries: Map[Text, Text]):
   def apply[key <: Label: DecodableManifest](attribute: ManifestAttribute[key])
-  : Optional[key.Topic] =
+  :   Optional[key.Topic] =
 
       if entries.contains(attribute.key) then key.decoded(entries(attribute.key)) else Unset
 

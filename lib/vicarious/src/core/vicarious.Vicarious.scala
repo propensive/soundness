@@ -43,7 +43,7 @@ object Vicarious:
     ( lambda: Expr[[field] => (field: field) => value],
         value: Expr[key],
         classTag: Expr[ClassTag[value]])
-  : Macro[Catalog[key, value]] =
+  :   Macro[Catalog[key, value]] =
 
       import quotes.reflect.*
 
@@ -67,7 +67,7 @@ object Vicarious:
 
 
   def dereference[key: Type, value: Type, id <: Nat: Type](key: Expr[String])
-  : Macro[value | Proxy[key, value, Nat]] =
+  :   Macro[value | Proxy[key, value, Nat]] =
 
       import quotes.reflect.*
 

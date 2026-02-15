@@ -48,7 +48,7 @@ trait Tenacity:
 
 object Tenacity:
   def exponential[duration: Abstractable across Durations to Long](initial: duration, base: Double)
-  : Tenacity =
+  :   Tenacity =
 
       new:
         def delay(attempt: Ordinal): Optional[Long] raises RetryError =

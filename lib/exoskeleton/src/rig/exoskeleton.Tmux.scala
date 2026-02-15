@@ -67,7 +67,7 @@ object Tmux:
 
 
   def completions(text: Text)(using tool: Sandbox.Tool, tmux: Tmux)(using Monitor, WorkingDirectory)
-  : Text raises TmuxError =
+  :   Text raises TmuxError =
 
       enter(tool.command)
       enter(' ')
@@ -78,7 +78,7 @@ object Tmux:
   def progress(text: Text, decorate: Char => Text = char => t"^")
     ( using tool: Sandbox.Tool, tmux: Tmux )
     ( using Monitor, WorkingDirectory )
-  : Text raises TmuxError =
+  :   Text raises TmuxError =
 
       enter(tool.command)
       enter(' ')

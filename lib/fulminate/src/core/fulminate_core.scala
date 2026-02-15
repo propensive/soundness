@@ -47,7 +47,7 @@ package errorDiagnostics:
 def panic(message: Message): Nothing = throw Panic(message)
 
 def halt(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
-: Nothing =
+:   Nothing =
 
     import quotes.reflect.*
     import dotty.tools.dotc.config.Settings.Setting.value
@@ -70,7 +70,7 @@ def halt(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = n
 
 
 def warn(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
-: Unit =
+:   Unit =
 
     import quotes.reflect.*
     import dotty.tools.dotc.config.Settings.Setting.value

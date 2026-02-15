@@ -42,7 +42,7 @@ import vacuous.*
 
 object Cache:
   def apply[generic: Abstractable across Durations to Long, value](duration: generic)
-  : Cache[value] =
+  :   Cache[value] =
 
       new Cache[value](duration.generic/1_000_000L)
 

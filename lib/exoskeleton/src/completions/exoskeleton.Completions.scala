@@ -117,14 +117,14 @@ object Completions:
         case AlreadyInstalled(_, path) => path
 
   def ensure(force: Boolean = false)(using Entrypoint, WorkingDirectory, Diagnostics)
-  : List[Text] logs CliEvent =
+  :   List[Text] logs CliEvent =
 
       safely(effectful(install(force))).let(_.paths).or(Nil)
 
 
   def install(force: Boolean = false)(using entrypoint: Entrypoint)
     ( using WorkingDirectory, Effectful, Diagnostics )
-  : Installation raises InstallError logs CliEvent =
+  :   Installation raises InstallError logs CliEvent =
 
       mitigate:
         case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
@@ -179,7 +179,7 @@ object Completions:
 
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
     ( using Effectful, Diagnostics )
-  : Installation.InstallResult raises InstallError logs CliEvent =
+  :   Installation.InstallResult raises InstallError logs CliEvent =
 
     mitigate:
       case IoError(_, _, _)   => InstallError(InstallError.Reason.Io)

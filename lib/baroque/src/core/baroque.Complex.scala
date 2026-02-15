@@ -134,7 +134,7 @@ object Complex:
 
   def apply[component: Multiplicable by Double as multiplication]
     ( modulus: component, argument: Angle )
-  : Complex[multiplication.Result] =
+  :   Complex[multiplication.Result] =
 
       Complex(modulus*math.cos(argument.radians), modulus*math.sin(argument.radians))
 
@@ -146,7 +146,7 @@ case class Complex[component](real: component, imaginary: component):
             sqrt:           addition.Result is Rootable[2],
             division:       component is Divisible by sqrt.Result,
             equality:       division.Result =:= Double )
-  : Angle =
+  :   Angle =
 
       Angle(scala.math.atan2(imaginary/modulus, real/modulus))
 
@@ -155,7 +155,7 @@ case class Complex[component](real: component, imaginary: component):
     ( using multiplication: component is Multiplicable by component,
             addition:       multiplication.Result is Addable by multiplication.Result,
             squareRoot:     addition.Result is Rootable[2] )
-  : squareRoot.Result =
+  :   squareRoot.Result =
 
       squareRoot.root(real*real + imaginary*imaginary)
 
@@ -168,7 +168,7 @@ case class Complex[component](real: component, imaginary: component):
             equality:        division.Result =:= Double,
             sqrt2:           sqrt.Result is Rootable[2],
             multiplication2: sqrt2.Result is Multiplicable by Double )
-  : Complex[multiplication2.Result] =
+  :   Complex[multiplication2.Result] =
 
       Complex(modulus.sqrt, argument/2.0)
 

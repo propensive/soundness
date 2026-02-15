@@ -85,7 +85,7 @@ def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.tex
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.Response)
   ( using connection: HttpConnection )
-: Http.Response raises AuthError =
+:   Http.Response raises AuthError =
 
     connection.headers.authorization match
       case List(Auth.Basic(username, password)) =>

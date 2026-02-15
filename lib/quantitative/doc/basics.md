@@ -121,7 +121,7 @@ def distance
     (velocity0: Quantity[Metres[1] & Seconds[-1]],
      time: Quantity[Seconds[1]],
      acceleration: Quantity[Metres[1] & Seconds[-2]])
-        : Quantity[Metres[1]] =
+        :   Quantity[Metres[1]] =
 
   velocity0*time + 0.5*acceleration*time*time
 ```
