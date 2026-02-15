@@ -82,7 +82,7 @@ object PropertyDef:
   =>  ( "backgroundImage" is PropertyDef[path] ) = !!
 
 
-  //erased given backgroundImage4: ("backgroundImage" is PropertyDef[SimplePath]) = !!
+  //inline given backgroundImage4: ("backgroundImage" is PropertyDef[SimplePath]) = !!
   inline given backgroundOrigin: ("backgroundOrigin" is PropertyDef[Text]) = !!
   inline given backgroundPosition: ("backgroundPosition" is PropertyDef[Text]) = !!
   inline given backgroundPosition2: ("backgroundPosition" is PropertyDef[Length | Int]) = !!

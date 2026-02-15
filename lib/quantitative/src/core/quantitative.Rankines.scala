@@ -40,4 +40,4 @@ trait Rankines[Power <: Nat] extends Units[Power, Heat]
 
 object Rankines:
   given designation: Designation[Rankines[1]] = () => "°R".tt
-  given ratio: Ratio[Rankines[1] & Kelvins[-1], 1.8] = Ratio()
+  inline given ratio: Ratio[Rankines[1] & Kelvins[-1], 1.8] = !!

@@ -77,7 +77,7 @@ object Hypotenuse:
   object F64:
     final val Min: F64 = Double.MinValue
     final val Max: F64 = Double.MaxValue
-    erased given underlying: Underlying[F64, Double] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[F64, Double] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual
       [ F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte ] =
@@ -186,7 +186,7 @@ object Hypotenuse:
   object F32:
     final val Min: F32 = Float.MinValue
     final val Max: F32 = Float.MaxValue
-    erased given underlying: Underlying[F32, Float] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[F32, Float] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual
       [ F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte ] =
@@ -240,7 +240,7 @@ object Hypotenuse:
   object U64:
     final val Min: U64 = 0L
     final val Max: U64 = -1L
-    erased given underlying: Underlying[U64, Long] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[U64, Long] = caps.unsafe.unsafeErasedValue
     inline given canEqual: CanEqual[U64, U64] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U64]:
@@ -268,7 +268,7 @@ object Hypotenuse:
   object S64:
     final val Min: U64 = Long.MinValue
     final val Max: U64 = Long.MaxValue
-    erased given underlying: Underlying[S64, Long] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[S64, Long] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
                                     | Int | Short | Byte] =
@@ -297,7 +297,7 @@ object Hypotenuse:
   object U32:
     final val Min: U32 = Int.MinValue
     final val Max: U32 = Int.MaxValue
-    erased given underlying: Underlying[U32, Int] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[U32, Int] = caps.unsafe.unsafeErasedValue
     inline given canEqual: CanEqual[U32, U32] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U32]:
@@ -326,7 +326,7 @@ object Hypotenuse:
   object S32:
     final val Min: S32 = Int.MinValue
     final val Max: S32 = Int.MaxValue
-    erased given underlying: Underlying[S32, Int] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[S32, Int] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
                                     | Int | Short | Byte] =
@@ -354,7 +354,7 @@ object Hypotenuse:
   object U16:
     final val Min: S16 = 0
     final val Max: S16 = -1
-    erased given underlying: Underlying[U16, Short] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[U16, Short] = caps.unsafe.unsafeErasedValue
     inline given canEqual: CanEqual[U16, U16] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U16]:
@@ -383,7 +383,7 @@ object Hypotenuse:
   object S16:
     final val Min: S16 = Short.MinValue
     final val Max: S16 = Short.MaxValue
-    erased given underlying: Underlying[S16, Short] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[S16, Short] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S16,
                                     F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int
@@ -416,7 +416,7 @@ object Hypotenuse:
   object U8:
     final val Min: U8 = 0
     final val Max: U8 = -1
-    erased given underlying: Underlying[U8, Byte] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[U8, Byte] = caps.unsafe.unsafeErasedValue
     inline given canEqual: CanEqual[U8, U8] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U8]:
@@ -444,7 +444,7 @@ object Hypotenuse:
   object S8:
     final val Min: S8 = Byte.MinValue
     final val Max: S8 = Byte.MaxValue
-    erased given underlying: Underlying[S8, Byte] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[S8, Byte] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
                                     | Int | Short | Byte] =
@@ -470,7 +470,7 @@ object Hypotenuse:
 
 
   object B64:
-    erased given underlying: Underlying[B64, Long] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[B64, Long] = caps.unsafe.unsafeErasedValue
     inline def block(inline n: Int): B64 = (1L << n) - 1
     inline def set(inline ordinal: Ordinal): B64 = 1L << ordinal.n0
 
@@ -503,7 +503,7 @@ object Hypotenuse:
       b64
 
   object B32:
-    erased given underlying: Underlying[B32, Int] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[B32, Int] = caps.unsafe.unsafeErasedValue
     inline def block(inline n: Int): B32 = (1 << n) - 1
     inline def set(inline ordinal: Ordinal): B32 = 1 << ordinal.n0
     inline def set(inline interval: Interval): B32 = block(interval.size) << interval.start.n0
@@ -524,7 +524,7 @@ object Hypotenuse:
       b32
 
   object B16:
-    erased given underlying: Underlying[B16, Short] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[B16, Short] = caps.unsafe.unsafeErasedValue
     inline def block(inline n: Int): B16 = ((1 << n) - 1).toShort
     inline def set(inline ordinal: Ordinal): B16 = (1 << ordinal.n0).toShort
 
@@ -542,7 +542,7 @@ object Hypotenuse:
       b16.toShort
 
   object B8:
-    erased given underlying: Underlying[B8, Byte] = caps.unsafe.unsafeErasedValue
+    inline given underlying: Underlying[B8, Byte] = caps.unsafe.unsafeErasedValue
     inline def block(inline n: Int): B8 = ((1 << n) - 1).toByte
     inline def set(inline ordinal: Ordinal): B8 = (1 << ordinal.n0).toByte
 
