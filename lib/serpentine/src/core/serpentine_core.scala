@@ -35,6 +35,8 @@ package serpentine
 import anticipation.*
 import fulminate.*
 import gossamer.*
+import prepositional.*
+import vacuous.*
 
 export Path.`%`
 export Relative.{`^`, `?`}
@@ -43,3 +45,10 @@ extension (inline context: StringContext)
   transparent inline def p(): Path = ${Serpentine.path('context)}
 
 private given Realm = Realm("serpentine")
+
+extension [path <: Path: Precise](left: path)
+  transparent inline def conjunction[right <: Path: Precise](right: right): Optional[Path] =
+    ${Serpentine.conjunction[path, right]('left, 'right)}
+
+  transparent inline def relativeTo[right <: Path: Precise](right: right): Optional[Relative] =
+    ${Serpentine.relativeTo[path, right]('left, 'right)}

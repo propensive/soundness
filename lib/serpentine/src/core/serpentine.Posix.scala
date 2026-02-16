@@ -38,7 +38,8 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-trait Posix
+trait Posix:
+  type UniqueRoot = true
 
 object Posix:
   type Rules =

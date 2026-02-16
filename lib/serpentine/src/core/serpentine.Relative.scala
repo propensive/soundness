@@ -158,6 +158,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
     summonFrom:
       case compliant: (Plane is Compliant on `filesystem`) =>
         this.asInstanceOf[Relative of Topic under Limit on filesystem]
+
       case _ =>
         check[Topic, filesystem](descent.to(List))
         this.asInstanceOf[Relative of Topic under Limit on filesystem]
