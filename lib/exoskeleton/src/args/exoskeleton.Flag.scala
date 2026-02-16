@@ -54,12 +54,13 @@ object Flag:
     case name: Char => t"-$name"
 
   @targetName("make")
-  def apply[topic: Defaulting to Text]
+  def apply[topic]
     ( name:        Text | Char,
       repeatable:  Boolean           = false,
       aliases:     List[Text | Char] = Nil,
       description: Optional[Text]    = Unset,
       secret:      Boolean           = false )
+    ( using erased defaulting: topic is Defaulting to Text )
   :   Flag of topic =
 
     new Flag(name, repeatable, aliases, description, secret):

@@ -32,6 +32,8 @@
                                                                                                   */
 package abacist
 
+import anticipation.*
+import fulminate.*
 import quantitative.*
 
 import scala.quoted.*

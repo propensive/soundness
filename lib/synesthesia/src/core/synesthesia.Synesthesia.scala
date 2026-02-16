@@ -70,15 +70,16 @@ object Synesthesia:
     val parts: List[String] = context.valueOrAbort.parts.to(List)
     val Varargs(arguments) = args
 
-    val insertions = arguments.map:
-      case '{$argument: argument} =>
-        Expr.summon[argument is Showable] match
-          case Some(showable) =>
-            '{$showable.text($argument)}
+    val insertions = arguments.map: value =>
+      value.absolve match
+        case '{$argument: argument} =>
+          Expr.summon[argument is Showable] match
+            case Some(showable) =>
+              '{$showable.text($argument)}
 
-          case None =>
-            halt(m"""could not find a contextual `${TypeRepr.of[argument].show} is Showable`
-                    instance""")
+            case None =>
+              halt(m"""could not find a contextual `${TypeRepr.of[argument].show} is Showable`
+                      instance""")
 
     val result = insertions.zip(parts.tail.map(Expr(_))).foldLeft(Expr(parts.head)):
       case (result, (insertion, part)) =>
@@ -249,7 +250,7 @@ object Synesthesia:
                               block
                             """
 
-                        result.asType match
+                        result.asType.absolve match
                           case '[List[Discourse]] =>
                           case '[result] => halt:
                             m"""
