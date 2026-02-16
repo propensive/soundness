@@ -155,9 +155,9 @@ object Commonmark:
 
       override def visit(node: OrderedList | Null): Unit = add:
         val delimiter: Optional['.' | ')'] = node.nn.getMarkerDelimiter match
-          case "."  => '.'
-          case ")"  => ')'
-          case null => Unset
+          case "." => '.'
+          case ")" => ')'
+          case _   => Unset
 
         val start: Int = node.nn.getMarkerStartNumber match
           case int: Int => int

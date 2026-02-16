@@ -915,6 +915,7 @@ extends Node, Topical, Transportive, Dynamic:
 
       case node: Node =>
         Element(label, attributes, node +: children, foreign)
+
     . of[Topic]
     . over[Transport]
     . in[Form]
@@ -926,6 +927,7 @@ extends Node, Topical, Transportive, Dynamic:
 
       case node: Node =>
         Element(label, attributes, children :+ node, foreign)
+
     . of[Topic]
     . over[Transport]
     . in[Form]

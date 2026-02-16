@@ -98,7 +98,7 @@ object Tests extends Suite(m"Soundness tests"):
     kaleidoscope.Tests()
     larceny.Tests()
     //legerdemain.Tests()
-    //mercator.Tests()
+    mercator.Tests()
     metamorphose.Tests()
     monotonous.Tests()
     mosquito.Tests()

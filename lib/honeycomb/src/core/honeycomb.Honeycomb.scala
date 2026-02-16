@@ -411,7 +411,7 @@ object Honeycomb:
             '{
                 $ {
                     serialize(html).absolve match
-                      case List(one: Expr[?]) => html match
+                      case List(one: Expr[?]) => html.absolve match
                         case _: TextNode        => one.asExprOf[TextNode]
                         case _: Element         => one.asExprOf[Element]
                         case _: Comment         => one.asExprOf[Comment]
