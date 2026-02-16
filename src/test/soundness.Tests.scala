@@ -124,7 +124,7 @@ object Tests extends Suite(m"Soundness tests"):
     //savagery.Tests()
     scintillate.Tests()
     sedentary.Tests()
-    //serpentine.Tests()
+    serpentine.Tests()
     spectacular.Tests()
     stenography.Tests()
     //superlunary.Tests()
