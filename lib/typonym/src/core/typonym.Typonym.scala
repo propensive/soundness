@@ -54,7 +54,7 @@ object Typonym:
   def reify[phantom: Type]: Macro[Any] =
     import quotes.reflect.*
 
-    def constant(repr: TypeRepr): Expr[Any] = repr match
+    def constant(repr: TypeRepr): Expr[Any] = repr.absolve match
       case ConstantType(BooleanConstant(boolean)) => Expr(boolean)
       case ConstantType(IntConstant(int))         => Expr(int)
       case ConstantType(DoubleConstant(double))   => Expr(double)
@@ -63,7 +63,7 @@ object Typonym:
     Type.of[phantom] match
       case '[type list <: Tuple; TypeList[list]] =>
         untuple[list].map(_.asType).map:
-          _.runtimeChecked match
+          _.absolve match
             case '[element] => reify[element]
 
         . reverse
@@ -74,7 +74,7 @@ object Typonym:
           val pairs: List[TypeRepr] = untuple[map]
 
           val keyValues: List[Expr[(Any, Any)]] = pairs.map(_.asType).map:
-            _.runtimeChecked match
+            _.absolve match
               case '[(key, value)] => '{(${reify[key]}, ${reify[value]})}
 
           def recur(todo: List[Expr[(Any, Any)]]): Expr[List[(Any, Any)]] = todo match
@@ -97,7 +97,7 @@ object Typonym:
   def reflect(value: Any)(using Quotes): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    value.runtimeChecked match
+    value.absolve match
       case string: String   => ConstantType(StringConstant(string))
       case int: Int         => ConstantType(IntConstant(int))
       case double: Double   => ConstantType(DoubleConstant(double))
@@ -105,9 +105,9 @@ object Typonym:
 
       case list: List[?] =>
         val tuple = list.map(reflect).reverse.foldLeft(TypeRepr.of[Zero]): (tuple, next) =>
-          tuple.asType.runtimeChecked match
-            case '[type tuple <: Tuple; tuple] => next.asType.runtimeChecked match
+          tuple.asType.absolve match
+            case '[type tuple <: Tuple; tuple] => next.asType.absolve match
               case '[next] => TypeRepr.of[next *: tuple]
 
-        tuple.asType.runtimeChecked match
+        tuple.asType.absolve match
           case '[type tuple <: Tuple; tuple] => TypeRepr.of[TypeList[tuple]]

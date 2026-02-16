@@ -169,6 +169,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
 
   def result()(using cancel: Tactic[AsyncError]): Result =
     state.updateAndGet:
+      case null                        => abort(AsyncError(Reason.Incomplete))
       case Initializing                => abort(AsyncError(Reason.Incomplete))
       case Active(_)                   => abort(AsyncError(Reason.Incomplete))
       case Completed(duration, result) => Delivered(duration, result)
@@ -235,6 +236,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
         state.updateAndGet: state =>
           parent.remove(this)
           state match
+            case null                             => Cancelled.also(promise.cancel())
             case Initializing                     => Cancelled.also(promise.cancel())
             case Active(_)                        => Cancelled.also(promise.cancel())
             case state@Completed(duration, value) => state.also(promise.offer(value))

@@ -205,7 +205,7 @@ object Hyperbole:
           case constant: ConstantType =>
             def value = constant.constant.value.toString.tt
 
-            constant.constant match
+            constant.constant.absolve match
               case BooleanConstant(_) => TastyTree.repr(t"BooleanConstant", repr, value)
               case ByteConstant(_)    => TastyTree.repr(t"ByteConstant", repr, value)
               case ShortConstant(_)   => TastyTree.repr(t"ShortConstant", repr, value)

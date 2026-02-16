@@ -53,12 +53,13 @@ object Mosquito:
         case head :: tail => take(tail, size - 1).let(head *: _)
 
 
-    given addable: [ value,
-                     size <: Int,
-                     left <: Tensor[value, size],
-                     value2,
-                     right <: Tensor[value2, size],
-                     result ]
+    given addable
+    :   [ value,
+          size   <: Int,
+          left   <: Tensor[value, size],
+          value2,
+          right  <: Tensor[value2, size],
+          result ]
     =>  ( addable: value is Addable by value2 to result )
     =>  left is Addable:
 
@@ -90,12 +91,13 @@ object Mosquito:
         def negate(operand: tensor): Tensor[result, size] = operand.map(negatable.negate(_))
 
 
-    given subtractable: [ value,
-                          size <: Int,
-                          left <: Tensor[value, size],
-                          value2,
-                          right <: Tensor[value2, size],
-                          result ]
+    given subtractable
+    :   [ value,
+          size   <: Int,
+          left   <: Tensor[value, size],
+          value2,
+          right  <: Tensor[value2, size],
+          result ]
     =>  ( subtractable: value is Subtractable by value2 to result )
     =>  left is Subtractable:
 

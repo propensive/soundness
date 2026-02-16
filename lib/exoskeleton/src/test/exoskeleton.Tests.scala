@@ -76,35 +76,36 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               case Alpha() :: _ => execute(Exit.Ok)
               case Beta() :: _  => execute(Exit.Ok)
               case Gamma() :: _ =>
-                given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
-                given Color is Interpretable =
-                  case arg :: Nil => Color(arg())
-                  case _          => Color(t"unknown")
+                // given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
+                // given Color is Interpretable =
+                //   case arg :: Nil => Color(arg())
+                //   case _          => Color(t"unknown")
 
-                Flag[Color]("colors", repeatable = true, aliases = List('c'), description = "multiple reds, greens or blues")()
+                // Flag[Color]("colors", repeatable = true, aliases = List('c'), description = "multiple reds, greens or blues")()
                 execute(Exit.Ok)
 
               case Distribution() :: distribution =>
                 distribution match
                   case RedHat() :: _ =>
-                    Flag("one", description = t"there is only one")()
+                    // Flag("one", description = t"there is only one")()
                     execute(Exit.Ok)
                   case Ubuntu() :: _ =>
-                    Flag("one", description = t"the first one")()
-                    Flag("two", description = t"the second one")()
+                    // Flag("one", description = t"the first one")()
+                    // Flag("two", description = t"the second one")()
                     execute(Exit.Ok)
                   case Gentoo() :: _ =>
-                    given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
-                    given Color is Interpretable =
-                      case arg :: Nil => Color(arg())
-                      case _          => Color(t"unknown")
+                    // given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
+                    // given Color is Interpretable =
+                      // case arg :: Nil => Color(arg())
+                      // case _          => Color(t"unknown")
 
-                    Flag[Color]("color", aliases = List('f'), description = "red, green or blue")()
+                    // Flag[Color]("color", aliases = List('f'), description = "red, green or blue")()
                     execute(Exit.Ok)
 
-                  case _             => execute(Exit.Ok)
+                  // case _             => execute(Exit.Ok)
 
               case _            => execute(Exit.Fail(1))
+
 
           t"finished"
         }

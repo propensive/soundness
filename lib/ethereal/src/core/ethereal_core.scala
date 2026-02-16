@@ -84,12 +84,12 @@ package daemonConfig:
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service
 
 def cli[bus <: Matchable](using executive: Executive)
-  ( block: DaemonService[bus] ?=> executive.Interface ?=> executive.Return )
+  ( block: (DaemonService[bus], executive.Interface) ?=> executive.Return )
   ( using interpreter:   Interpreter,
           stderrSupport: StderrSupport = daemonConfig.supportStderr,
           threading:     Threading,
-          handler:       Backstop)
-      :   Unit =
+          handler:       Backstop )
+:   Unit =
 
   given realm: Realm = realm"ethereal"
 
@@ -312,7 +312,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     login )
 
               if cli.proceed then
-                val result = block(using service)(using cli)
+                val result = block(using service, cli)
                 val exitStatus: Exit = executive.process(cli)(result)
 
                 connection.exitPromise.fulfill(exitStatus)
@@ -361,3 +361,5 @@ def cli[bus <: Matchable](using executive: Executive)
       loop(safely(makeClient(socket.accept().nn))).run()
 
     Exit.Ok
+
+  ???

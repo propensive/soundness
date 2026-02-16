@@ -48,13 +48,13 @@ object embeddings:
   =>  Quotes
   =>  Conversion[value, Expr[value]] =
 
-      value =>
-        val encoded: stageable.Transport = stageable.embed[value](value)
-        val allocation: Int = refs.allocate(encoded)
+    value =>
+      val encoded: stageable.Transport = stageable.embed[value](value)
+      val allocation: Int = refs.allocate(encoded)
 
-        ' {
-            import strategies.throwUnsafely
+      ' {
+          import strategies.throwUnsafely
 
-            stageable.extract[value]
-              ( ${refs.array}(${Expr(allocation)}).asInstanceOf[refs.Transport] )
-          }
+          stageable.extract[value]
+            ( ${refs.array}(${Expr(allocation)}).asInstanceOf[refs.Transport] )
+        }

@@ -60,5 +60,3 @@ object Vexillology:
         value &= value - 1
 
       set
-
-export Vexillology.Flags

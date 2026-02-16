@@ -44,3 +44,5 @@ type TimeSeconds = (Hours[1], Minutes[1], Seconds[1])
 extension [units <: Measure](inline quantity: Quantity[units])
   inline def quanta[count <: Tuple]: Quanta[count] =
     ${Abacist.fromQuantity[units, count]('quantity)}
+
+private given realm: Realm = realm"abacist"

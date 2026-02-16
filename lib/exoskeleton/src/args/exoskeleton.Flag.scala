@@ -61,8 +61,10 @@ object Flag:
       description: Optional[Text]    = Unset,
       secret:      Boolean           = false )
   :   Flag of topic =
-      new Flag(name, repeatable, aliases, description, secret):
-        type Topic = topic
+
+    new Flag(name, repeatable, aliases, description, secret):
+      type Topic = topic
+
 
 case class Flag
   ( name:        Text | Char,
@@ -76,7 +78,8 @@ extends Topical:
     ( using cli: Cli )
   :   Unit =
 
-      cli.register(this, discoverable)
+    cli.register(this, discoverable)
+
 
   def matches(key: Argument): Boolean =
     val flag =
@@ -92,21 +95,21 @@ extends Topical:
             suggestions:   (? <: Topic) is Discoverable = Discoverable.noSuggestions )
   :   Optional[Topic] =
 
-      cli.register(this, suggestions)
-      cli.parameter(this)
+    cli.register(this, suggestions)
+    cli.parameter(this)
 
 
   def select(options: Iterable[Topic])
     ( using cli: Cli, interpreter: Interpreter, suggestible: Topic is Suggestible )
   :   Optional[Topic] =
 
-      val mapping: Map[Text, Topic] =
-        options.map { option => (suggestible.suggest(option).text, option) }.to(Map)
+    val mapping: Map[Text, Topic] =
+      options.map { option => (suggestible.suggest(option).text, option) }.to(Map)
 
-      given interpretable: Topic is Interpretable =
-        case List(value) => mapping.at(value())
-        case _           => Unset
+    given interpretable: Topic is Interpretable =
+      case List(value) => mapping.at(value())
+      case _           => Unset
 
-      given suggestions: Topic is Discoverable = _ => options.map(suggestible.suggest(_))
+    given suggestions: Topic is Discoverable = _ => options.map(suggestible.suggest(_))
 
-      this()
+    this()

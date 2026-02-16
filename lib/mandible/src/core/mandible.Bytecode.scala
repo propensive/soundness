@@ -631,7 +631,7 @@ object Bytecode:
         val classname = invocation.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn
         val method = invocation.name.nn.stringValue.nn
 
-        source.opcode.nn.bytecode match
+        source.opcode.nn.bytecode.absolve match
           case 182 => Invokevirtual(classname, method)
           case 183 => Invokespecial(classname, method)
           case 184 => Invokestatic(classname, method)

@@ -45,8 +45,6 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-private given realm: Realm = realm"abacist"
-
 object Abacist:
   import Quantitative.*
 

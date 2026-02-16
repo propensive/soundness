@@ -240,7 +240,7 @@ extension [accrual <: Exception,  lambda[_], focus]
 
 
 extension [element](sequence: Iterable[element])
-  transparent inline def survive[result](using Void)[error <: Exception]
+  transparent inline def survive[result](using erased Void)[error <: Exception]
     ( lambda: (OptionalTactic[error, result], Diagnostics, CanThrow[Exception] )
                ?=> element => result )
   :   Iterable[result] =

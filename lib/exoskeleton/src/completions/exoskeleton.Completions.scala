@@ -122,8 +122,8 @@ object Completions:
       safely(effectful(install(force))).let(_.paths).or(Nil)
 
 
-  def install(force: Boolean = false)(using entrypoint: Entrypoint)
-    ( using WorkingDirectory, Effectful, Diagnostics )
+  def install(force: Boolean = false)(using entrypoint: Entrypoint)(using erased Effectful)
+    ( using WorkingDirectory, Diagnostics )
   :   Installation raises InstallError logs CliEvent =
 
       mitigate:
@@ -178,7 +178,8 @@ object Completions:
 
 
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
-    ( using Effectful, Diagnostics )
+    ( using erased Effectful )
+    ( using Diagnostics )
   :   Installation.InstallResult raises InstallError logs CliEvent =
 
     mitigate:

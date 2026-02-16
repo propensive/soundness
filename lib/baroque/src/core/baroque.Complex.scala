@@ -102,10 +102,8 @@ object Complex:
               left.real*right.imaginary + left.imaginary*right.real )
 
 
-  given divisible: [ component,
-                     dividend <: Complex[component],
-                     component2,
-                     divisor <: Complex[component2] ]
+  given divisible
+  :   [ component, dividend <: Complex[component], component2, divisor <: Complex[component2] ]
   =>  ( multiplication:  component is Multiplicable by component2,
         multiplication2: component2 is Multiplicable by component2,
         negatable:       component is Negatable to component,
