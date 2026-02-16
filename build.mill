@@ -271,7 +271,7 @@ object test extends ScalaModule:
     //savagery.test,
     scintillate.test,
     sedentary.test,
-    //serpentine.test,
+    serpentine.test,
     spectacular.test,
     stenography.test,
     superlunary.test,
