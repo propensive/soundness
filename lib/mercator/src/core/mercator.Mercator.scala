@@ -51,27 +51,34 @@ object Mercator:
         case DefDef("apply", List(TypeParamClause(List(tpe)), terms), _, _) =>
           terms match
             case TermParamClause(List(ValDef(_, tRef, _))) => tRef.tpe.asMatchable match
-              case AppliedType(ap, List(tRef)) =>
-                ap.typeSymbol == defn.RepeatedParamClass && tRef.typeSymbol == tpe.symbol
+              case AnnotatedType(AppliedType(ap, List(tRef)), annotation) if annotation.tpe.typeSymbol == defn.RepeatedAnnot =>
+                tRef.typeSymbol == tpe.symbol
 
-              case _ =>
-                tRef.tpe.typeSymbol == tpe.symbol
+              case ByNameType(tRef) =>
+                tpe.symbol.typeRef <:< tRef
 
-            case _ => false
-        case _ => false
+              case other =>
+                tpe.symbol.typeRef <:< tRef.tpe
 
-    if applyMethods.length == 1
-    then '{
-      new Identity[typeConstructor]:
-        def point[value](value: value): typeConstructor[value] =
-          ${
-            companion
-            . select(applyMethods(0))
-            . appliedToType(TypeRepr.of[value])
-            . appliedTo('value.asTerm)
-            . asExprOf[typeConstructor[value]]
-          }
-    }
+            case other =>
+              false
+
+        case _ =>
+          false
+
+    if applyMethods.length == 1 then
+      ' {
+          new Identity[typeConstructor]:
+            def point[value](value: value): typeConstructor[value] =
+              $ {
+                  companion
+                  . select(applyMethods(0))
+                  . appliedToType(TypeRepr.of[value])
+                  . appliedTo('value.asTerm)
+                  . asExprOf[typeConstructor[value]]
+                }
+        }
+
     else if applyMethods.length == 0
     then halt(m"the companion object ${identityType.name} has no candidate apply methods")
     else halt(m"the companion object ${identityType.name} has more than one candidate apply method")
@@ -89,14 +96,19 @@ object Mercator:
     val pointExpr: Expr[Identity[functor]] = Expr.summon[Identity[functor]].getOrElse:
       halt(m"could not find Identity value for ${functorType.name}")
 
-    lazy val makeFunctor = '{
-      new Functor[functor]:
-        def point[value](value: value): functor[value] = ${pointExpr}.point(value)
+    lazy val makeFunctor =
+      ' {
+          new Functor[functor]:
+            def point[value](value: value): functor[value] = ${pointExpr}.point(value)
 
-        def apply[value, value2](value: functor[value])(lambda: value => value2): functor[value2] =
-          ${'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[value2])
-            . appliedTo('lambda.asTerm).asExprOf[functor[value2]]}
-    }
+            def apply[value, value2](value: functor[value])(lambda: value => value2)
+            :   functor[value2] =
+
+              $ {
+                  'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[value2])
+                  . appliedTo('lambda.asTerm).asExprOf[functor[value2]]
+                }
+        }
 
     if mapMethods.length == 1 then makeFunctor
     else if mapMethods.length == 0 then halt(m"the type ${functorType.name} has no map methods")
@@ -118,20 +130,20 @@ object Mercator:
       new Monad[monad]:
         def point[value](value: value): monad[value] = ${functorExpr}.point(value)
 
-        def apply
-          [ value, value2 ]
-          ( value: monad[value] )(lambda: value => value2): monad[value2] =
+        def apply[value, value2](value: monad[value])(lambda: value => value2): monad[value2] =
           ${functorExpr}.map(value)(lambda)
 
 
         def bind[value, value2](value: monad[value])(lambda: value => monad[value2])
         :   monad[value2] =
 
-            ${'value.asTerm
+          $ {
+              'value.asTerm
               . select(flatMapMethods(0))
               . appliedToType(TypeRepr.of[value2])
               . appliedTo('lambda.asTerm)
-              . asExprOf[monad[value2]]}
+              . asExprOf[monad[value2]]
+            }
 
     }
 

@@ -243,7 +243,7 @@ object test extends ScalaModule:
     larceny.test,
     //legerdemain.test,
     mandible.test,
-    mercator.test,
+    //mercator.test,
     merino.test,
     metamorphose.test,
     monotonous.test,

@@ -216,7 +216,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   transparent inline def sameRoot(right: Path): Boolean = summonFrom:
     case plane: (Plane is Filesystem) =>
-      inline if erasedValue[plane.UniqueRoot] then true else root == right.root
+      inline if caps.unsafe.unsafeErasedValue[plane.UniqueRoot] then true else root == right.root
     case _ =>
       root == right.root
 
@@ -239,7 +239,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
         val path = certain(right)
         inline val baseAscent: Int = count[Topic, right.Topic]
 
-        inline erasedValue[right.Topic] match
+        inline caps.unsafe.unsafeErasedValue[right.Topic] match
           case _: (_ *: _) | Zero =>
             inline val ascent = constValue[Tuple.Size[right.Topic]] - baseAscent
 
@@ -294,7 +294,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     case given ValueOf[Limit] => summonFrom:
       case given ValueOf[right.Limit] => summonFrom:
         case given (Limit =:= right.Limit) => certain(right)
-        case _                                       => Unset
+        case _                             => Unset
       case _ => if root != right.root then Unset else certain(right)
     case _ => if root != right.root then Unset else certain(right)
 
@@ -364,7 +364,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   transparent inline def peer(child: Any)(using child.type is Admissible on Plane)
   :   Path on Plane under Limit =
-    inline erasedValue[Topic] match
+    inline caps.unsafe.unsafeErasedValue[Topic] match
       case _: (head *: tail) =>
         Path.of[Plane, Limit, child.type *: tail]
           ( root, infer[child.type is Navigable on Plane].follow(child) +: descent* )
