@@ -414,7 +414,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
         demilitarize:
           val path1: Path on Linux = % / "home" / "work" / "data" / "foo"
           val path2: Path on Linux = % / "home" / "more"
-          val relative = path2.relativeTo(path1)
+          val relative = path1.toward(path2)
           relative: Optional[Relative on Linux]
         . map(_.message)
 
@@ -424,7 +424,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Relative types on unique-root System have certain `Relation`"):
         val path1: Path on Linux = % / "home" / "work" / "data" / "foo"
         val path2: Path on Linux = % / "home" / "more"
-        path2.relativeTo(path1)
+        path1.toward(path2)
 
       . assert()
 
@@ -432,7 +432,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Relative types on non-unique system still retain Plane"):
           val path1: Path on Windows = Drive('C') / "home" / "work" / "data" / "foo"
           val path2: Path on Windows = Drive('C') / "home" / "more"
-          val relative = path2.relativeTo(path1)
+          val relative = path1.toward(path2)
           relative: Optional[Relative on Windows]
 
 
@@ -440,7 +440,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
         demilitarize:
           val path1: Path on Linux = % / "home" / "work" / "data" / "foo"
           val path2: Path on MacOs = % / "home" / "more"
-          val relative = path2.relativeTo(path1)
+          val relative = path1.toward(path2)
           relative: Path on MacOs
         . map(_.message)
 
@@ -450,7 +450,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Calculate simple relative path"):
         val path1 = % / "home" / "work" / "data" / "foo"
         val path2 = % / "home" / "more"
-        path2.relativeTo(path1)
+        path1.toward(path2)
 
       . assert(_ == ? / ^ / ^ / ^ / "more")
 
@@ -458,7 +458,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Calculate simple relative path in reverse"):
         val path1 = % / "home" / "work" / "data" / "foo"
         val path2 = % / "home" / "more"
-        path1.relativeTo(path2)
+        path2.toward(path1)
 
       . assert(_ == ? / ^ / "work" / "data" / "foo")
 
@@ -466,7 +466,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Calculate simple relative path on plane"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
         val path2 = (% / "home" / "more").on[Linux]
-        path2.relativeTo(path1)
+        path1.toward(path2)
 
       . assert(_ == ? / ^ / ^ / ^ / "more")
 
@@ -474,7 +474,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
       test(m"Calculate simple relative path on plane in reverse"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
         val path2 = (% / "home" / "more").on[Linux]
-        path1.relativeTo(path2)
+        path2.toward(path1)
 
       . assert(_ == ? / ^ / "work" / "data" / "foo")
 

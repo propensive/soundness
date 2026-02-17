@@ -124,7 +124,7 @@ object Bootstrapper:
           classpath.map: entry =>
             entry.ancestors.find(_.name == t"repo1.maven.org").optional.let: base =>
               if base.parent.let(_.name) == t"https"
-              then (base, entry.relativeTo(base))
+              then (base, base.toward(entry))
               else Out.println(m"Cannot resolve online location of $entry") yet Unset
 
         val entries: Map[(Text, Text), Requirement] = paths.compact.flatMap: (base, relative0) =>

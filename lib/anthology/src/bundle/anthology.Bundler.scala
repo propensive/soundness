@@ -93,7 +93,7 @@ object Bundler:
                 val root = directory.decode[Path on Linux]
                 root.descendants.to(List).map: file =>
                   file.open: handle =>
-                    val ref = %.on[Zip] + file.relativeTo(root).on[Zip]
+                    val ref = %.on[Zip] + root.toward(file).on[Zip]
                     ZipEntry(ref, handle.read[Data])
 
             case ClasspathEntry.Jar(jar) =>

@@ -50,5 +50,5 @@ extension [path <: Path: Precise](left: path)
   transparent inline def conjunction[right <: Path: Precise](right: right): Optional[Path] =
     ${Serpentine.conjunction[path, right]('left, 'right)}
 
-  transparent inline def relativeTo[right <: Path: Precise](right: right): Optional[Relative] =
-    ${Serpentine.relativeTo[path, right]('left, 'right)}
+  transparent inline def toward[target <: Path: Precise](target: target): Optional[Relative] =
+    ${Serpentine.toward[path, target]('left, 'target)}

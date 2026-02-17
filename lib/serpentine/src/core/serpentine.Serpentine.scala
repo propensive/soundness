@@ -114,34 +114,34 @@ object Serpentine:
           case _: Throwable => false
       }
 
-  def relativeTo[left <: Path: Type, right <: Path: Type](left: Expr[left], right: Expr[right])
+  def toward[subject <: Path: Type, target <: Path: Type](subject: Expr[subject], target: Expr[target])
   :   Macro[Relative] =
 
     import quotes.reflect.*
 
-    conjunction[left, right](left, right) match
+    conjunction[target, subject](target, subject) match
       case '{type base <: Path; $base: base} =>
-        plane[left].let(_.typeRef.asType).or(Type.of[Any]) match
+        plane[target].let(_.typeRef.asType).or(Type.of[Any]) match
           case '[plane] =>
-            topic[right].let:
-              case Right(rightDescent) =>
+            topic[subject].let:
+              case Right(subjectDescent) =>
                 topic[base].let:
                   case Right(baseDescent) =>
-                    val ascent: Int = rightDescent.length - baseDescent.length
+                    val ascent: Int = subjectDescent.length - baseDescent.length
                     ConstantType(IntConstant(ascent)).asType match
                       case '[type limit <: Int; limit] =>
-                        topic[left].let:
-                          case Right(leftDescent) =>
-                            val descent = leftDescent.dropRight(baseDescent.length)
+                        topic[target].let:
+                          case Right(targetDescent) =>
+                            val descent = targetDescent.dropRight(baseDescent.length)
                             tuple(descent).asType match
                               case '[type tuple <: Tuple; tuple] =>
                                 val varargs = Varargs(descent.map(Expr[Text](_)))
                                 '{Relative[plane, tuple, limit](${Expr(ascent)}, $varargs*)}
 
             . or:
-                val ascent = '{$left.depth - $base.depth}
-                val rightAscent = '{$right.depth - $base.depth}
-                '{Relative[plane, Tuple, Nat]($rightAscent, $left.descent.take($ascent)*)}
+                val depth = '{$target.depth - $base.depth}
+                val ascent = '{$subject.depth - $base.depth}
+                '{Relative[plane, Tuple, Nat]($ascent, $target.descent.take($depth)*)}
 
 
   def conjunction[left <: Path: Type, right <: Path: Type](left: Expr[left], right: Expr[right])

@@ -111,7 +111,7 @@ def cli[bus <: Matchable](using executive: Executive)
             Out.println(e"$Bold(This application must be invoked with the Ethereal launch script)")
             Out.println(e"To build an Ethereal executable, run:")
             val work: Path on Linux = workingDirectory
-            val relativeJar: Relative on Linux = jarFile.relativeTo(work)
+            val relativeJar: Relative on Linux = work.toward(jarFile)
             Out.println(e"    java -Dbuild.executable=$Italic(<filename>) -jar $relativeJar")
             Out.println()
             Out.println(e"Other $Italic(-D) Java options:")

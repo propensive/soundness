@@ -179,7 +179,7 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
       val relativePath =
         workTree.let: workTree =>
-          safely(path.generic.decode[Path on Linux].relativeTo(workTree)).or:
+          safely(workTree.toward(path.generic.decode[Path on Linux])).or:
             abort(GitError(AddFailed))
 
         . or(abort(GitError(NoWorkTree)))
