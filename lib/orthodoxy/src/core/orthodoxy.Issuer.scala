@@ -60,7 +60,10 @@ import stdioSources.virtualMachine.ansi
 import jsonPrinters.indented
 
 object Issuer:
-  sealed trait Context extends Topical
+  trait Context extends Topical
+  object Context:
+    def apply[topic](): Context of topic = new Context:
+      type Topic = topic
 
 class Issuer
   ( init:     HttpUrl,
@@ -71,7 +74,7 @@ class Issuer
   private val OAuthPath: Path on Www = redirect.path
 
   def oauth(using Http.Request, Online, HttpEvent is Loggable)
-    ( lambda: (erased Issuer.Context of this.type) ?=> Http.Response )
+    ( lambda: (Issuer.Context of this.type) ?=> Http.Response )
     ( using store: OAuth, session: Session )
   :   Http.Response raises OAuthError =
 
@@ -144,10 +147,10 @@ class Issuer
 
                 Http.Response(new Redirect(state.redirect.show, false))
 
-            . or(lambda(using !![Issuer.Context of this.type]))
+            . or(lambda(using Issuer.Context[this.type]()))
 
         case _ =>
-          lambda(using !![Issuer.Context of this.type])
+          lambda(using Issuer.Context[this.type]())
 
 
   def require[scope <: Scope & Singleton: Precise](scopes: scope*)
