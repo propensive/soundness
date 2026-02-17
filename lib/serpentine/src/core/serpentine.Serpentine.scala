@@ -138,11 +138,10 @@ object Serpentine:
                                 val varargs = Varargs(descent.map(Expr[Text](_)))
                                 '{Relative[plane, tuple, limit](${Expr(ascent)}, $varargs*)}
 
-                          case _ =>
-                            '{Relative[plane, Tuple, limit](${Expr(ascent)})}
             . or:
-              val ascent = '{$left.depth - $base.depth}
-              '{Relative[plane, Tuple, Nat]($ascent, $right.descent.drop($base.depth)*)}
+                val ascent = '{$left.depth - $base.depth}
+                val rightAscent = '{$right.depth - $base.depth}
+                '{Relative[plane, Tuple, Nat]($rightAscent, $left.descent.take($ascent)*)}
 
 
   def conjunction[left <: Path: Type, right <: Path: Type](left: Expr[left], right: Expr[right])

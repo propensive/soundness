@@ -166,8 +166,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       case _ => false
 
   def resolve(text: Text)
-    ( using (Path on Plane) is Decodable in Text,
-            (Relative on Plane) is Decodable in Text)
+    ( using (Path on Plane) is Decodable in Text, (Relative on Plane) is Decodable in Text )
   :   Path on Plane raises PathError =
 
       safely(text.decode[Path on Plane]).or(safely(this + text.decode[Relative on Plane])).or:
@@ -272,6 +271,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   transparent inline def peer(child: Any)(using child.type is Admissible on Plane)
   :   Path on Plane under Limit =
+
     inline caps.unsafe.unsafeErasedValue[Topic] match
       case _: (head *: tail) =>
         Path.of[Plane, Limit, child.type *: tail]
@@ -280,6 +280,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       case _ =>
         Path.of[Plane, Limit, Tuple]
           ( root, infer[child.type is Navigable on Plane].follow(child) +: descent* )
+
 
   transparent inline def + (relative: Relative): Path =
     type Base = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Topic], relative.Limit]]
