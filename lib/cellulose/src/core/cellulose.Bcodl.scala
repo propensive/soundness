@@ -65,9 +65,9 @@ object Bcodl:
             write(out, key)
 
           case _ =>
-            val idx: Int = schema.keyMap.get(key).fold(0)(_ + 1)
-            write(out, idx)
-            write(out, schema.entry(idx - 1).schema, children)
+            val index: Int = schema.keyMap.get(key).fold(0)(_ + 1)
+            write(out, index)
+            write(out, schema.entry(index - 1).schema, children)
 
   def read(schema: CodlSchema, reader: ji.Reader)(using binary: Tactic[BcodlError]): CodlDoc =
     if reader.read() != '\u00b1' || reader.read() != '\u00c0' || reader.read() != '\u00d1'
@@ -83,7 +83,7 @@ object Bcodl:
           case schema =>
             val subschema = readNumber(reader) match
               case 0  => (Unset, CodlSchema.Free)
-              case idx => schema.entry(idx - 1).tuple
+              case index => schema.entry(index - 1).tuple
 
             val key = subschema(0).option.getOrElse(abort(BcodlError(t"unexpected key", 0)))
 
@@ -96,6 +96,6 @@ object Bcodl:
   private def readNumber(in: ji.Reader): Int = in.read - 32
 
   private def readText(in: ji.Reader, length: Int = -1): Text =
-    val buf = new Array[Char](if length == -1 then readNumber(in) else length)
-    in.read(buf)
-    String(buf).show
+    val buffer = new Array[Char](if length == -1 then readNumber(in) else length)
+    in.read(buffer)
+    String(buffer).show

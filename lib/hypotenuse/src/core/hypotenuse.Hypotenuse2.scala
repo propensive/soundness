@@ -53,10 +53,10 @@ object Hypotenuse2:
     bits.indexWhere { ch => ch != '0' && ch != '1' && ch != ' ' }.match
       case -1  => ()
 
-      case idx =>
-        val startPos = expr.asTerm.pos
-        val pos = Position(startPos.sourceFile, startPos.start + idx, startPos.start + idx + 1)
-        halt(m"a binary value can only contain characters '0' or '1'", pos)
+      case index =>
+        val startPosition = expr.asTerm.pos
+        val position = Position(startPosition.sourceFile, startPosition.start + index, startPosition.start + index + 1)
+        halt(m"a binary value can only contain characters '0' or '1'", position)
 
     val bits2 = bits.filter(_ != ' ')
 
@@ -72,7 +72,7 @@ object Hypotenuse2:
   def hex(expr: Expr[StringContext]): Macro[IArray[Byte]] =
     import quotes.reflect.*
 
-    val startPos = expr.asTerm.pos
+    val startPosition = expr.asTerm.pos
     val nibbles = expr.valueOrAbort.parts.head
     val nibbles2 = nibbles.map(_.toLower)
 
@@ -82,9 +82,9 @@ object Hypotenuse2:
     . match
         case -1  => ()
 
-        case idx =>
-          val pos = Position(startPos.sourceFile, startPos.start + idx, startPos.start + idx + 1)
-          halt(m"${nibbles(idx)} is not a valid hexadecimal character", pos)
+        case index =>
+          val position = Position(startPosition.sourceFile, startPosition.start + index, startPosition.start + index + 1)
+          halt(m"${nibbles(index)} is not a valid hexadecimal character", position)
 
     val nibbles3 = nibbles2.filterNot { ch => ch == ' ' || ch == '\n' }
 

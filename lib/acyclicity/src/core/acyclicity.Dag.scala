@@ -123,9 +123,9 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
       case (acc, (k, vs)) =>
         vs.fuse(acc)(state.updated(next, state.get(next).fold(Set(k))(_ + k)))
 
-  def remove(elem: node): Dag[node] = Dag:
-    (edgeMap - elem).view.mapValues:
-      map => if map(elem) then map ++ edgeMap(elem) - elem else map
+  def remove(element: node): Dag[node] = Dag:
+    (edgeMap - element).view.mapValues:
+      map => if map(element) then map ++ edgeMap(element) - element else map
     . to(Map)
 
   private def sort(todo: Map[node, Set[node]], done: List[node]): List[node] =
@@ -134,8 +134,8 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
       val (node, _) = todo.find { (k, vs) => (vs -- done).nil }.get
       sort((todo - node).view.mapValues(_.filter(_ != node)).to(Map), node :: done)
 
-  def filter(pred: node => Boolean): Dag[node] =
-    val deletions = keys.filter(!pred(_))
+  def filter(predicate: node => Boolean): Dag[node] =
+    val deletions = keys.filter(!predicate(_))
     val inverted = invert
 
     Dag:

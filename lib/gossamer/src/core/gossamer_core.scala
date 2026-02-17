@@ -82,12 +82,12 @@ extension (textObject: Text.type)
 
     String(array).tt
 
-extension (inline ctx: StringContext)
-  transparent inline def txt(inline parts: Any*): Text = ${Gossamer.Text.expand('ctx, 'parts)}
-  transparent inline def t(inline parts: Any*): Text = ${Gossamer.T.expand('ctx, 'parts)}
+extension (inline context: StringContext)
+  transparent inline def txt(inline parts: Any*): Text = ${Gossamer.Text.expand('context, 'parts)}
+  transparent inline def t(inline parts: Any*): Text = ${Gossamer.T.expand('context, 'parts)}
 
-extension (ctx: StringContext)
-  def t = SimpleTExtractor(ctx.parts.head.tt)
+extension (context: StringContext)
+  def t = SimpleTExtractor(context.parts.head.tt)
 
 extension (bytes: Data)
   def utf8: Text = String(bytes.mutable(using Unsafe), "UTF-8").tt
@@ -220,7 +220,7 @@ extension [textual: Textual](text: textual)
     val end = text.where(!_.isWhitespace, bidi = Rtl).or(Prim)
     text.segment(start thru end)
 
-  def where(pred: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
+  def where(predicate: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
   :   Optional[Ordinal] =
     val step: Int = bidi match
       case Ltr => 1
@@ -232,29 +232,29 @@ extension [textual: Textual](text: textual)
 
     def recur(ordinal: Ordinal): Optional[Ordinal] =
       if ordinal >= text.limit || ordinal < Prim then Unset
-      else if pred(textual.unsafeChar(text, ordinal)) then ordinal
+      else if predicate(textual.unsafeChar(text, ordinal)) then ordinal
       else recur(ordinal + step)
 
     recur(first)
 
-  def before(pred: Char => Boolean): textual =
-    val end: Ordinal = text.where(pred).or(text.limit - 1)
+  def before(predicate: Char => Boolean): textual =
+    val end: Ordinal = text.where(predicate).or(text.limit - 1)
     text.before(end)
 
-  def upto(pred: Char => Boolean): textual =
-    val end: Ordinal = text.where(pred).or(text.limit - 1)
+  def upto(predicate: Char => Boolean): textual =
+    val end: Ordinal = text.where(predicate).or(text.limit - 1)
     text.upto(end)
 
-  def dropWhile(pred: Char => Boolean): textual =
-    text.where(!pred(_)).lay(textual.empty): ordinal =>
+  def dropWhile(predicate: Char => Boolean): textual =
+    text.where(!predicate(_)).lay(textual.empty): ordinal =>
       text.segment(ordinal till text.limit)
 
-  def whilst(pred: Char => Boolean): textual =
-    text.where(!pred(_)).lay(textual.empty): ordinal =>
+  def whilst(predicate: Char => Boolean): textual =
+    text.where(!predicate(_)).lay(textual.empty): ordinal =>
       text.before(ordinal)
 
-  def snip(pred: Char => Boolean, index: Ordinal = Prim): Optional[(textual, textual)] =
-    text.where(pred, index).let(_.n0).let(text.snip(_))
+  def snip(predicate: Char => Boolean, index: Ordinal = Prim): Optional[(textual, textual)] =
+    text.where(predicate, index).let(_.n0).let(text.snip(_))
 
   def translate(lambda: Char => Char): textual = textual.map(text)(lambda)
 
@@ -265,9 +265,9 @@ extension [textual: Textual](text: textual)
         if !set.contains(char) then append(char)
         char
 
-  inline def count(pred: Char => Boolean): Int =
+  inline def count(predicate: Char => Boolean): Int =
     def recur(index: Ordinal, sum: Int): Int = if index >= text.limit then sum else
-      val increment = if pred(textual.unsafeChar(text, index)) then 1 else 0
+      val increment = if predicate(textual.unsafeChar(text, index)) then 1 else 0
       recur(index + 1, sum + increment)
 
     recur(Prim, 0)

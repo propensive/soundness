@@ -45,17 +45,17 @@ object Subcompiler:
   class CustomReporter() extends Reporter, HideNonSensicalMessages:
     val errors: scm.ListBuffer[CompileError] = scm.ListBuffer()
 
-    def doReport(diagnostic: Diagnostic)(using Context): Unit =
+    def doReport(diagnostic: Diagnostic)(using context: Context): Unit =
       try
-        var pos = diagnostic.pos
-        while pos.outer != NoSourcePosition do pos = pos.outer
-        val code = String(ctx.compilationUnit.source.content.slice(pos.start, pos.end))
-        val offset = pos.point - pos.start
+        var position = diagnostic.pos
+        while position.outer != NoSourcePosition do position = position.outer
+        val code = String(context.compilationUnit.source.content.slice(position.start, position.end))
+        val offset = position.point - position.start
         val ordinal = diagnostic.msg.errorId.ordinal
 
-        errors += CompileError(ordinal, diagnostic.msg.message, code, pos.start, offset)
+        errors += CompileError(ordinal, diagnostic.msg.message, code, position.start, offset)
 
-      catch case err: Throwable => ()
+      catch case error: Throwable => ()
 
 
   def compile
@@ -73,10 +73,10 @@ object Subcompiler:
   :   List[CompileError] =
 
       object driver extends Driver:
-        val currentCtx: Context =
-          val ctx = initCtx.fresh
-          val ctx2 = ctx.setSetting(ctx.settings.classpath, classpath)
-          setup(Array[String](""), ctx2).map(_(1)).get
+        val currentContext: Context =
+          val context = initCtx.fresh
+          val context2 = context.setSetting(context.settings.classpath, classpath)
+          setup(Array[String](""), context2).map(_(1)).get
 
 
         def run(source: String, regions: Set[(Int, Int)], errors: List[CompileError])
@@ -85,15 +85,15 @@ object Subcompiler:
             if regions.isEmpty then errors else
               val reporter: CustomReporter = CustomReporter()
               val sourceFile: SourceFile = SourceFile.virtual("<subcompilation>", source)
-              val ctx = currentCtx.fresh
+              val context = currentContext.fresh
 
-              given ctx0: Context =
-                ctx
+              given context0: Context =
+                context
                 . setReporter(reporter)
-                . setSetting(ctx.settings.language, language)
-                . setSetting(ctx.settings.classpath, classpath)
-                . setSetting(ctx.settings.YstopBefore, List("genSJSIR"))
-                . setSetting(ctx.settings.color, "never")
+                . setSetting(context.settings.language, language)
+                . setSetting(context.settings.classpath, classpath)
+                . setSetting(context.settings.YstopBefore, List("genSJSIR"))
+                . setSetting(context.settings.color, "never")
 
               Scala3.newRun.tap: run =>
                 run.compileSources(List(sourceFile))

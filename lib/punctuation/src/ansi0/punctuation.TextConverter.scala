@@ -110,9 +110,9 @@ open class TextConverter():
             state :+ TextBlock(indent, highlightedLines.join(e"\n"))
           else state :+ TextBlock(indent, e"${foreground.BrightGreen}($value)")
 
-        case Markdown.Ast.Block.BulletList(num, loose, _, items*) =>
-          state :+ TextBlock(indent, items.zipWithIndex.map: (item, idx) =>
-            e"${num.lay(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${item.toString.show}"
+        case Markdown.Ast.Block.BulletList(count, loose, _, items*) =>
+          state :+ TextBlock(indent, items.zipWithIndex.map: (item, index) =>
+            e"${count.lay(t"  » ") { n => t"${(n + index).show.fit(3)}. " }}${item.toString.show}"
 
           . join(e"\n"))
 
@@ -172,7 +172,7 @@ open class TextConverter():
     case Markdown.Ast.Inline.LineBreak                => e"\n"
     case Markdown.Ast.Inline.Emphasis(children*)      => e"$Italic(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.Strong(children*)        => e"$Bold(${children.map(phrasing).join})"
-    case Markdown.Ast.Inline.Prose(str)               => e"${str.sub(t"\n", t" ")}"
+    case Markdown.Ast.Inline.Prose(string)               => e"${string.sub(t"\n", t" ")}"
 
     case Markdown.Ast.Inline.SourceCode(code) =>
       e"${webColors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"

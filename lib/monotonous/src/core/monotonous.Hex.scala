@@ -36,6 +36,6 @@ import anticipation.*
 
 object Hex:
   def unapply(text: Text): Option[Int] =
-    try Some(Integer.parseInt(text.s, 16)) catch case err: NumberFormatException => None
+    try Some(Integer.parseInt(text.s, 16)) catch case error: NumberFormatException => None
 
 sealed trait Hex extends Serialization

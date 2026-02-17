@@ -35,4 +35,4 @@ package hieroglyph
 import vacuous.*
 
 trait TextSanitizer:
-  def sanitize(pos: Int, encoding: Encoding): Optional[Char]
+  def sanitize(position: Int, encoding: Encoding): Optional[Char]

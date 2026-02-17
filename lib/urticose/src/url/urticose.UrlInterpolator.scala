@@ -68,7 +68,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
       then throw InterpolationError(m"a port number must be specified after a colon")
 
       try throwErrors((state+port.show).decode[HttpUrl]) catch
-        case err: UrlError      => throw InterpolationError(Message(err.message.text))
+        case error: UrlError      => throw InterpolationError(Message(error.message.text))
 
       state+port.show
 
@@ -77,7 +77,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
       // then throw InterpolationError(m"a substitution may only be made after a slash")
 
       try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
-        case err: UrlError      => throw InterpolationError(Message(err.message.text))
+        case error: UrlError      => throw InterpolationError(Message(error.message.text))
 
       state+text.urlEncode
 
@@ -86,7 +86,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
       // then throw InterpolationError(m"a substitution may only be made after a slash")
 
       try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
-        case err: UrlError      => throw InterpolationError(Message(err.message.text))
+        case error: UrlError      => throw InterpolationError(Message(error.message.text))
 
       state+text
 

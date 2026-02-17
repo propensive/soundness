@@ -73,17 +73,17 @@ object TextEscapes:
     else Integer.parseInt(chars, 16).toChar
 
   def escape(text: Text): Text throws EscapeError =
-    val buf: StringBuilder = StringBuilder()
+    val buffer: StringBuilder = StringBuilder()
 
     @tailrec
     def recur(cur: Int = 0, esc: Boolean): Unit =
       if cur < text.s.length
       then
-        val (char, idx, escape) = standardEscape(text, cur, esc)
-        if char >= 0 then buf.append(char.toChar)
-        recur(idx, escape)
+        val (char, index, escape) = standardEscape(text, cur, esc)
+        if char >= 0 then buffer.append(char.toChar)
+        recur(index, escape)
       else if esc then throw EscapeError(Message("the final character cannot be an escape".tt))
 
     recur(0, false)
 
-    buf.toString.tt
+    buffer.toString.tt

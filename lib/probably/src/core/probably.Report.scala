@@ -118,19 +118,19 @@ class Report(using Environment):
       case Bench(testId, bench@Benchmark(_, _, _, _, _, _)) =>
         List(Summary(Status.Bench, testId, 0, 0, 0, 0))
 
-      case Test(testId, buf) =>
+      case Test(testId, buffer) =>
         val status =
-          if buf.all(_.typed[Verdict.Pass]) then Status.Pass
-          else if buf.all(_.typed[Verdict.Fail]) then Status.Fail
-          else if buf.all(_.typed[Verdict.Throws]) then Status.Throws
-          else if buf.all(_.typed[Verdict.CheckThrows]) then Status.CheckThrows
+          if buffer.all(_.typed[Verdict.Pass]) then Status.Pass
+          else if buffer.all(_.typed[Verdict.Fail]) then Status.Fail
+          else if buffer.all(_.typed[Verdict.Throws]) then Status.Throws
+          else if buffer.all(_.typed[Verdict.CheckThrows]) then Status.CheckThrows
           else Status.Mixed
 
-        val min: Long = buf.map(_.duration).min
-        val max: Long = buf.map(_.duration).max
-        val avg: Long = buf.fuse(0L)(state + next.duration)/buf.length
+        val min: Long = buffer.map(_.duration).min
+        val max: Long = buffer.map(_.duration).max
+        val avg: Long = buffer.fuse(0L)(state + next.duration)/buffer.length
 
-        List(Summary(status, testId, buf.length, min, max, avg))
+        List(Summary(status, testId, buffer.length, min, max, avg))
 
 
   def resolve(suite: Optional[Testable]): ReportLine.Suite =
@@ -153,7 +153,7 @@ class Report(using Environment):
     val tests = resolve(testId.suite).tests
 
     tests.getOrElseUpdate(testId, ReportLine.Test(testId, scm.ArrayBuffer[Verdict]())).absolve match
-      case ReportLine.Test(_, buf) => buf.append(verdict)
+      case ReportLine.Test(_, buffer) => buffer.append(verdict)
 
   def addDetail(testId: TestId, info: Verdict.Detail): Report =
     this.also(details(testId) = details(testId).append(info))
@@ -408,9 +408,9 @@ class Report(using Environment):
         if b.confidenceInterval == 0 then e""
         else e"$Thistle(±)${showTime(b.confidenceInterval)}"
 
-      def opsPerS(b: Benchmark): Teletype =
-        if b.throughput == 0 then e""
-        else e"$Silver(${b.throughput}) $Turquoise(op$Gray(·)s¯¹)"
+      def operationFrequency(benchmark: Benchmark): Teletype =
+        if benchmark.throughput == 0 then e""
+        else e"$Silver(${benchmark.throughput}) $Turquoise(op$Gray(·)s¯¹)"
 
       val bench: Table[ReportLine.Bench, Teletype] = Table[ReportLine.Bench](
         (List(
@@ -428,20 +428,20 @@ class Report(using Environment):
             e"P${s.benchmark.confidence: Int} ${confInt(s.benchmark)}",
 
           Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
-            e"${opsPerS(s.benchmark)}")
+            e"${operationFrequency(s.benchmark)}")
        ::: comparisons.map: c =>
           import Baseline.*
           val baseline = c.benchmark.baseline.vouch
           Column(e"$Bold($CadetBlue(${c.test.id}))", textAlign = TextAlignment.Right):
             (bench: ReportLine.Bench) =>
-              def op(left: Double, right: Double): Double = baseline.mode match
+              def operations(left: Double, right: Double): Double = baseline.mode match
                 case Arithmetic => left - right
                 case Geometric  => left/right
 
               def metric(value: Double) = if baseline.metric == ByTime then value else 1/value
 
               val value = baseline.compare match
-                case Compare.Mean => op(metric(bench.benchmark.mean), metric(c.benchmark.mean))
+                case Compare.Mean => operations(metric(bench.benchmark.mean), metric(c.benchmark.mean))
 
               val valueWithUnits = baseline.metric match
                 case ByTime  => showTime(value.toLong)

@@ -50,11 +50,11 @@ object TreeDiagram:
   def by[node](getChildren: node => Seq[node])(roots: node*): TreeDiagram[node] =
     def recur(level: List[TreeTile], input: Seq[node]): Stream[(List[TreeTile], node)] =
       val last = input.size - 1
-      input.zipWithIndex.to(Stream).flatMap: (item, idx) =>
-        val tiles: List[TreeTile] = ((if idx == last then Last else Branch) :: level).reverse
+      input.zipWithIndex.to(Stream).flatMap: (item, index) =>
+        val tiles: List[TreeTile] = ((if index == last then Last else Branch) :: level).reverse
 
         (tiles, item)
-        #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
+        #:: recur((if index == last then Space else Extender) :: level, getChildren(item))
 
     new TreeDiagram(recur(Nil, roots))
 

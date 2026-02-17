@@ -121,7 +121,7 @@ class Watch():
             case _ =>
               ()
 
-          catch case err: Exception => ()
+          catch case error: Exception => ()
 
   def stream: Stream[WatchEvent] = spool.stream
 

@@ -56,9 +56,9 @@ class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer):
   type Form = Data
 
   def decoded(bytes: Data, omit: Boolean): Text =
-    val buf: StringBuilder = StringBuilder()
-    decoded(Stream(bytes)).each { text => buf.append(text.s) }
-    buf.toString.tt
+    val buffer: StringBuilder = StringBuilder()
+    decoded(Stream(bytes)).each { text => buffer.append(text.s) }
+    buffer.toString.tt
 
   def decoded(bytes: Data): Text = decoded(bytes, false)
 

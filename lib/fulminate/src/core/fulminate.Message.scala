@@ -99,17 +99,17 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
         case _ => s"$acc$esc[3m$esc[1m$next$esc[0m"
 
   def unwrap(string: String): Text =
-    val buf: StringBuilder = StringBuilder()
+    val buffer: StringBuilder = StringBuilder()
 
     def recur(lines: List[String]): Text = lines match
       case Nil =>
-        buf.toString.nn.tt
+        buffer.toString.nn.tt
 
       case line :: tail =>
-        if line.forall(_.isWhitespace) then buf.append("\n") else
-          if !buf.isEmpty then buf.append(" ")
+        if line.forall(_.isWhitespace) then buffer.append("\n") else
+          if !buffer.isEmpty then buffer.append(" ")
 
-          buf.append:
+          buffer.append:
             line.nn.replaceAll("^ *", "").nn.replaceAll(" *$", "").nn.replaceAll("\\s+", " ")
 
         recur(tail)

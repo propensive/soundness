@@ -45,4 +45,4 @@ class Pulsar[duration: Abstractable across Durations to Long](duration: duration
     if !continue then Stream() else try
       snooze(duration)
       () #:: stream
-    catch case err: AsyncError => Stream()
+    catch case error: AsyncError => Stream()

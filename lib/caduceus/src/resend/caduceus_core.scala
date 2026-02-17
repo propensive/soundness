@@ -30,71 +30,82 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package caduceus
 
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gesticulate.*
+import hieroglyph.*
+import jacinta.*
+import merino.*
+import monotonous.*
 import prepositional.*
-import symbolism.*
+import proscenium.*
+import rudiments.*
+import telekinesis.*
+import turbulence.*
+import urticose.*
+import vacuous.*
+import zephyrine.*
 
-import scala.compiletime.*
-import scala.quoted.*
-import scala.reflect.*
-import scala.util.*
+import charEncoders.utf8
+import jsonPrinters.minimal
+import errorDiagnostics.stackTraces
+import stdioSources.virtualMachine.ansi
+import alphabets.base64.standard
 
-object Anticipation:
-  into opaque type Text <: Matchable = String
+package couriers:
+  given resend: (Tactic[CourierError], Online, HttpEvent is Loggable, HttpClient)
+  =>  ( apiKey: Resend.ApiKey )
+  =>  Courier:
 
-  object Text:
-    def apply(string: String): Text = string
-    def apply(chars: IArray[Char]): Text = String(chars.asInstanceOf[Array[Char]])
-    def apply(bytes: IArray[Byte]): Text = String(bytes.asInstanceOf[Array[Byte]], "ASCII")
+    type Result = Resend.Receipt
 
-    extension (text: Text) inline def s: String = text
+    private case class Attachment(filename: Text, content: Text)
+    private case class Request
+      ( from:         EmailAddress,
+        to:           List[EmailAddress],
+        subject:      Text,
+        bcc:          List[EmailAddress],
+        cc:           List[EmailAddress],
+        scheduled_at: Optional[Text],
+        replyTo:      List[EmailAddress],
+        headers:      Map[Text, Text],
+        html:         Optional[Text],
+        text:         Optional[Text],
+        attachments:  List[Attachment] )
 
-    given zeroic: Text is Zeroic:
-      inline def zero: Text = "".tt
+    def send(envelope: Envelope): Resend.Receipt =
+      val attachments = envelope.email.attachments.map: attachment =>
+        Attachment(attachment.name, attachment.stream.read[Data].serialize[Base64])
 
-    given concatenable: [text <: Text] => text is Concatenable:
-      type Self = text
-      type Operand = Text
-      type Result = Text
+      val request =
+        Request
+          ( envelope.from,
+            envelope.to,
+            envelope.subject,
+            envelope.bcc,
+            envelope.cc,
+            Unset,
+            envelope.replyTo,
+            envelope.email.headers,
+            envelope.email.html,
+            envelope.email.text,
+            attachments )
 
-      def concat(left: text, right: Text): Text = left+right
+      def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
 
-    given addableString: [text <: Text] => text is Addable:
-      type Self = text
-      type Operand = String
-      type Result = Text
+      mitigate:
+        case ConnectError(reason)     => Out.println(reason.communicate) yet error
+        case ParseError(_, _, reason) => Out.println(reason.describe) yet error
+        case HttpError(status, _)     => Out.println(status.communicate) yet error
+        case JsonError(reason)        => Out.println(reason.communicate) yet error
+        case MediaTypeError(_, _)     => error
 
-      def add(left: text, right: String): Text = (left.s+right).tt
-
-    private def recur(text: Text, n: Int, acc: Text): Text =
-      if n == 0 then acc else recur(text, n - 1, acc+text)
-
-    given multiplicable: [text <: Text] => text is Multiplicable:
-      type Self = Text
-      type Operand = Int
-      type Result = Text
-      def multiply(text: Text, n: Int): Text = recur(text, n.max(0), "".tt)
-
-    given ordering: Ordering[Text] = Ordering.String.on[Text](identity)
-    given fromString: CommandLineParser.FromString[Text] = identity(_)
-
-    given fromExpr: (fromExpr: FromExpr[String]) => FromExpr[Text]:
-      def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr)
-
-    given toExpr: ToExpr[Text]:
-      def apply(text: Text)(using Quotes) =
-        import quotes.reflect.*
-        val expr = Literal(StringConstant(text)).asExprOf[String]
-        '{Text($expr)}
-
-    given conversion: Conversion[String, Text] = identity(_)
-
-    inline given canEqual: CanEqual[Text, Text] = caps.unsafe.unsafeErasedValue
-    inline given canEqual2: CanEqual[String, Text] = caps.unsafe.unsafeErasedValue
-    inline given canEqual3: CanEqual[Text, String] = caps.unsafe.unsafeErasedValue
-
-    given typeable: Typeable[Text]:
-      def unapply(value: Any): Option[value.type & Text] = value.asMatchable match
-        case string: String => Some(string)
-        case _           => None
+      . within:
+          url"https://api.resend.com/emails".submit
+            ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
+            ( request.json )
+          . receive[Json]
+          . as[Resend.Receipt]

@@ -39,9 +39,9 @@ class Shader(options: List[String]) extends PluginPhase:
   override val runsAfter: Set[String] = Set("parser")
   override val runsBefore: Set[String] = Set("typer")
 
-  override def transformUnit(tree: tpd.Tree)(using Context): tpd.Tree =
+  override def transformUnit(tree: tpd.Tree)(using context: Context): tpd.Tree =
     import untpd.*
-    val untpdTree = ctx.compilationUnit.untpdTree
+    val untpdTree = context.compilationUnit.untpdTree
 
     val prefixes: List[(String, String)] =
       options.flatMap: opt =>
@@ -86,5 +86,5 @@ class Shader(options: List[String]) extends PluginPhase:
           case PackageDef(name: (Ident | Select), defs) => rewritePackage(name, "", defs, identity)
           case _                                        => super.transform(tree)
 
-    ctx.compilationUnit.untpdTree = transformer.transform(untpdTree)
+    context.compilationUnit.untpdTree = transformer.transform(untpdTree)
     super.transformUnit(tree)

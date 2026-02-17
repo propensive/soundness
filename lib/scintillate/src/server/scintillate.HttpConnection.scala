@@ -75,8 +75,8 @@ object HttpConnection:
     val buffer = new Array[Byte](65536)
 
     def stream(): Stream[Data] =
-      val len = in.read(buffer)
-      if len > 0 then buffer.slice(0, len).snapshot #:: stream() else Stream.empty
+      val length = in.read(buffer)
+      if length > 0 then buffer.slice(0, length).snapshot #:: stream() else Stream.empty
 
     val request =
       Http.Request

@@ -65,10 +65,13 @@ import stdioSources.virtualMachine.ansi
 object Synesthesia:
   given Realm = realm"synesthesia"
 
-  def prompt(context: Expr[StringContext], args: Expr[Seq[Any]], human: Boolean): Macro[Discourse] =
+  def prompt(context: Expr[StringContext], arguments0: Expr[Seq[Any]], human: Boolean)
+  :   Macro[Discourse] =
+
     import quotes.reflect.*
+
     val parts: List[String] = context.valueOrAbort.parts.to(List)
-    val Varargs(arguments) = args
+    val arguments = arguments0 match case Varargs(arguments) => arguments
 
     val insertions = arguments.map: value =>
       value.absolve match

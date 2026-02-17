@@ -165,8 +165,8 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
         case (`label`, value)                   => (t"", value)
         case (key, value) if key.starts(prefix) => (key.skip(prefix.length), value)
 
-  def prefix(str: Text): Query = Query:
-    values.map { (key, value) => if key.length == 0 then str -> value else t"$str.$key" -> value }
+  def prefix(string: Text): Query = Query:
+    values.map { (key, value) => if key.length == 0 then string -> value else t"$string.$key" -> value }
 
   def queryString: Text =
     values.map: (key, value) =>

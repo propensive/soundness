@@ -106,21 +106,21 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
           scalacProcess.continue
 
       object driver extends dtd.Driver:
-        val currentCtx =
-          val ctx = initCtx.fresh
+        val currentContext =
+          val context = initCtx.fresh
           //val pluginParams = plugins
           //val jsParams =
-          val args: List[Text] =
+          val arguments: List[Text] =
             List(t"-d", out.generic, t"-classpath", classpath())
             ::: commandLineArguments
             ::: List(t"")
 
-          Log.info(CompileEvent.Running(args))
-          setup(args.map(_.s).to(Array), ctx).map(_(1)).get
+          Log.info(CompileEvent.Running(arguments))
+          setup(arguments.map(_.s).to(Array), context).map(_(1)).get
 
         def run(): CompileProcess =
-          given dtdc.Contexts.Context = currentCtx.fresh.pipe: ctx =>
-            ctx
+          given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
+            context
             . setReporter(reporter)
             . setCompilerCallback(callbackApi)
             . setProgressCallback(ProgressApi)

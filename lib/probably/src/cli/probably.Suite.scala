@@ -49,8 +49,8 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
 
   var runner0: Runner[Report] =
     given stdio: Stdio = suiteIo
-    try Runner() catch case err: EnvironmentError =>
-      jl.System.out.nn.println(StackTrace(err).teletype.render)
+    try Runner() catch case error: EnvironmentError =>
+      jl.System.out.nn.println(StackTrace(error).teletype.render)
       ???
 
   given runner: Runner[Report] = runner0
@@ -62,14 +62,14 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
     runner0 = runner
     runner.suite(this, run())
 
-  final def main(args: IArray[Text]): Unit =
+  final def main(arguments: IArray[Text]): Unit =
     try runner.suite(this, run())
-    catch case err: Throwable =>
-      runner.terminate(err)
+    catch case error: Throwable =>
+      runner.terminate(error)
       jl.System.exit(2)
     finally try
       runner.complete()
       if runner.report.passed then jl.System.exit(0) else jl.System.exit(1)
-    catch case err: EnvironmentError =>
-      jl.System.out.nn.println(StackTrace(err).teletype)
+    catch case error: EnvironmentError =>
+      jl.System.out.nn.println(StackTrace(error).teletype)
       jl.System.exit(3)

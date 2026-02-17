@@ -59,6 +59,6 @@ object Timezone:
   object Tz extends Verifier[Timezone]:
     def verify(name: Text): Timezone =
       try throwErrors(name.decode[Timezone])
-      catch case err: TimezoneError =>
+      catch case error: TimezoneError =>
         import errorDiagnostics.empty
-        throw InterpolationError(err.message)
+        throw InterpolationError(error.message)

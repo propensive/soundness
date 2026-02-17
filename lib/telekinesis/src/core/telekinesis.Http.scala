@@ -197,7 +197,7 @@ object Http:
     given showable: Request is Showable = request =>
       val bodySample: Text =
         try request.body().read[Data].utf8 catch
-          case err: StreamError  => t"[-/-]"
+          case error: StreamError  => t"[-/-]"
 
       val headers: Text =
         request.textHeaders.map: header =>

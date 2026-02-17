@@ -123,10 +123,10 @@ def diff[element]
     type Edits = List[Edit[element]]
 
     @tailrec
-    def count(pos: Int, off: Int): Int =
-      if pos < left.length && pos + off < right.length && compare(left(pos), right(pos + off))
-      then count(pos + 1, off)
-      else pos
+    def count(position: Int, off: Int): Int =
+      if position < left.length && position + off < right.length && compare(left(position), right(position + off))
+      then count(position + 1, off)
+      else position
 
     @tailrec
     def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[Array[Int]]): Diff[element] =
@@ -140,20 +140,20 @@ def diff[element]
       else trace(0, deletes + 1, Nil, ((best :: focus).reverse).to(Array) :: rows)
 
     @tailrec
-    def backtrack(pos: Int, deletes: Int, rows: List[Array[Int]], edits: Edits): Edits =
-      val rpos = pos + rows.length - deletes*2
+    def backtrack(position: Int, deletes: Int, rows: List[Array[Int]], edits: Edits): Edits =
+      val rposition = position + rows.length - deletes*2
       lazy val ins = rows.head(deletes) - 1
       lazy val del = rows.head(deletes - 1)
 
-      if pos == -1 && rpos == -1 then edits else if rows.isEmpty
-      then backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
+      if position == -1 && rposition == -1 then edits else if rows.isEmpty
+      then backtrack(position - 1, deletes, rows, Par(position, rposition, left(position)) :: edits)
       else if deletes < rows.length && (deletes == 0 || ins >= del)
       then
-        if pos == ins then backtrack(pos, deletes, rows.tail, Ins(rpos, right(rpos)) :: edits)
-        else backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
+        if position == ins then backtrack(position, deletes, rows.tail, Ins(rposition, right(rposition)) :: edits)
+        else backtrack(position - 1, deletes, rows, Par(position, rposition, left(position)) :: edits)
       else
-        if pos == del then backtrack(del - 1, deletes - 1, rows.tail, Del(pos, left(pos)) :: edits)
-        else backtrack(pos - 1, deletes, rows, Par(pos, rpos, left(pos)) :: edits)
+        if position == del then backtrack(del - 1, deletes - 1, rows.tail, Del(position, left(position)) :: edits)
+        else backtrack(position - 1, deletes, rows, Par(position, rposition, left(position)) :: edits)
 
     trace(0, 0, Nil, Nil)
 

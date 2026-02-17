@@ -88,7 +88,7 @@ object Frontier:
                 case None =>
                   Missing(Stenography.name(repr), Nil)
 
-            case Apply(fun, args) =>
+            case Apply(fun, arguments) =>
               def resolve(methodType: TypeRepr): Missing = methodType match
                 case MethodType(_, types, more) =>
                   val name = Stenography.name(fun.symbol.termRef).show.skip(5, Rtl)

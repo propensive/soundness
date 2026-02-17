@@ -58,7 +58,7 @@ case class TextBlock(indent: Int, text: Teletype):
             throw RangeError(0, 0, 0)
 
           rest(text.after(pt), text.before(pt) :: lines)
-        catch case err: RangeError =>
+        catch case error: RangeError =>
           rest(text.skip(width - indent*2), text.keep(width - indent*2) :: lines)
 
     rest(text, Nil).map((e"  "*indent)+_).join(e"\n")

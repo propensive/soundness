@@ -84,12 +84,12 @@ object SourceCode:
 
   def apply(language: ProgrammingLanguage, text: Text): SourceCode =
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
-    val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
+    val context0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
 
-    ctx0.setSetting(ctx0.settings.source, "future")
+    context0.setSetting(context0.settings.source, "future")
 
-    given ctx: Contexts.Context =
-      ctx0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using ctx0))
+    given context: Contexts.Context =
+      context0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using context0))
 
     val trees = Trees()
     val parser = Parsers.Parser(source)
@@ -152,12 +152,12 @@ object SourceCode:
 
         unparsed #::: content #::: stream(end)
 
-    def lines(seq: List[SourceToken], acc: List[List[SourceToken]] = Nil): List[List[SourceToken]] =
-      seq match
+    def lines(sequence: List[SourceToken], acc: List[List[SourceToken]] = Nil): List[List[SourceToken]] =
+      sequence match
         case Nil => acc
         case xs  => xs.indexOf(SourceToken.Newline) match
           case -1  => xs :: acc
-          case idx => lines(xs.drop(idx + 1), xs.take(idx) :: acc)
+          case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
 
     SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).reverse*))
 

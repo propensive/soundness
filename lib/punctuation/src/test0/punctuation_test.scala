@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import autopsies.contrastExpectations
 
-case class Example(str: Text, int: Int)
+case class Example(string: Text, int: Int)
 
 object Tests extends Suite(m"Punctuation tests"):
 
@@ -46,7 +46,7 @@ object Tests extends Suite(m"Punctuation tests"):
   def run(): Unit =
     test(m"get a heading"):
       t"# Heading 1".read[Md] match
-        case Markdown(Heading(1, Prose(str))) => str
+        case Markdown(Heading(1, Prose(string))) => string
         case _                                  => t""
     .check(_ == t"Heading 1")
 

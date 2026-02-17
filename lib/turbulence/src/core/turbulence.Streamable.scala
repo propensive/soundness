@@ -72,7 +72,7 @@ object Streamable:
         try reader.read() match
           case -1  => Stream()
           case int => int.toChar #:: recur(count + 1.b)
-        catch case err: ji.IOException =>
+        catch case error: ji.IOException =>
           reader.close()
           raise(StreamError(count)) yet Stream()
 
@@ -86,7 +86,7 @@ object Streamable:
           try reader.readLine() match
             case null         => Stream()
             case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
-          catch case err: ji.IOException =>
+          catch case error: ji.IOException =>
             reader.close()
             raise(StreamError(count)) yet Stream()
 
@@ -101,19 +101,19 @@ object Streamable:
 
   given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Streamable by Data =
     channel =>
-      val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
+      val buffer: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
       def recur(total: Long): Stream[Data] =
-        try channel.read(buf) match
-          case -1 => Stream().also(try channel.close() catch case err: Exception => ())
+        try channel.read(buffer) match
+          case -1 => Stream().also(try channel.close() catch case error: Exception => ())
           case 0  => recur(total)
 
           case count =>
-            buf.flip()
+            buffer.flip()
             val size: Int = count.min(1024)
             val array: Array[Byte] = new Array[Byte](size)
-            buf.get(array)
-            buf.clear()
+            buffer.get(array)
+            buffer.clear()
 
             array.immutable(using Unsafe) #:: recur(total + count)
 

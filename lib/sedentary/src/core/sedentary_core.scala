@@ -58,11 +58,11 @@ import scala.collection.mutable as scm
 
   //     val times: scm.ArrayBuffer[Long] = scm.ArrayBuffer()
   //     times.sizeHint(4096)
-  //     val ctx = new Harness()
+  //     val context = new Harness()
 
   //     while System.currentTimeMillis < end do
   //       val t0 = System.nanoTime
-  //       val result = action(ctx)
+  //       val result = action(context)
   //       val t1 = System.nanoTime - t0
   //       times += t1
 
@@ -74,7 +74,7 @@ import scala.collection.mutable as scm
 
   //     while System.currentTimeMillis < end do
   //       val t0 = System.nanoTime
-  //       val result = action(ctx)
+  //       val result = action(context)
   //       val t1 = System.nanoTime - t0
   //       times += t1
 

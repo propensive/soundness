@@ -51,15 +51,15 @@ object Indexable:
 
     def access(array: IArray[element], index: Ordinal): Result = array(index.n0)
 
-  given seq: [element] => IndexedSeq[element] is Indexable:
+  given sequence: [element] => IndexedSeq[element] is Indexable:
     type Self = IndexedSeq[element]
     type Operand = Ordinal
     type Result = element
 
-    def contains(seq: IndexedSeq[element], index: Ordinal): Boolean =
-      index.n0 >= 0 && index.n0 < seq.length
+    def contains(sequence: IndexedSeq[element], index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < sequence.length
 
-    def access(seq: IndexedSeq[element], index: Ordinal): Result = seq(index.n0)
+    def access(sequence: IndexedSeq[element], index: Ordinal): Result = sequence(index.n0)
 
   given text: [element] => Text is Indexable:
     type Self = Text

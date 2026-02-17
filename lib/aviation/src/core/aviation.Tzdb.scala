@@ -84,7 +84,7 @@ object Tzdb:
     parse(name, lines)
 
   def parse(name: Text, lines: Stream[Text]): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
-    def parseDuration(lineNo: Int, str: Text) = str.cut(t":").to(List) match
+    def parseDuration(lineNo: Int, string: Text) = string.cut(t":").to(List) match
       case As[Base24](h) :: Nil                                   => Duration(h, 0, 0)
       case As[Base24](h) :: As[Base60](m) :: Nil                  => Duration(h, m, 0)
       case As[Base24](h) :: As[Base60](m) :: As[Base60](s) :: Nil => Duration(h, m, s)
@@ -92,7 +92,7 @@ object Tzdb:
       case other =>
         abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
 
-    def parseTime(lineNo: Int, str: Text) = str.cut(t":").to(List) match
+    def parseTime(lineNo: Int, string: Text) = string.cut(t":").to(List) match
       case As[Base24](h) :: r"${As[Base60](m)}([0-9]*)s" :: Nil   => Time(h, m, 0, 's')
       case As[Base24](h) :: r"${As[Base60](m)}([0-9]*)u" :: Nil   => Time(h, m, 0, 'u')
       case As[Base24](h) :: As[Base60](m) :: Nil                  => Time(h, m, 0, Unset)
@@ -101,27 +101,27 @@ object Tzdb:
       case other =>
         abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
 
-    def parseDay(lineNo: Int, month: Month, str: Text): MonthDate =
+    def parseDay(lineNo: Int, month: Month, string: Text): MonthDate =
       try throwErrors:
-        if str.starts(t"last") then MonthDate.Last(month, Weekday.valueOf(str.skip(4).s))
-        else if str.skip(3).keep(2) == t">="
-        then MonthDate.After(month, Weekday.valueOf(str.keep(3).s), str.skip(5).decode[Int])
-        else if str.skip(3).keep(2) == t"<="
-        then MonthDate.Before(month, Weekday.valueOf(str.keep(3).s), str.skip(5).decode[Int])
-        else MonthDate.Exact(month, str.decode[Int])
-      catch case err: NumberError =>
+        if string.starts(t"last") then MonthDate.Last(month, Weekday.valueOf(string.skip(4).s))
+        else if string.skip(3).keep(2) == t">="
+        then MonthDate.After(month, Weekday.valueOf(string.keep(3).s), string.skip(5).decode[Int])
+        else if string.skip(3).keep(2) == t"<="
+        then MonthDate.Before(month, Weekday.valueOf(string.keep(3).s), string.skip(5).decode[Int])
+        else MonthDate.Exact(month, string.decode[Int])
+      catch case error: NumberError =>
         abort(TzdbError(TzdbError.Reason.UnparsableDate, lineNo))
 
-    def parseLeap(lineNo: Int, args: List[Text]): Tzdb.Entry.Leap = args match
+    def parseLeap(lineNo: Int, arguments: List[Text]): Tzdb.Entry.Leap = arguments match
       case As[Int](year) :: month :: As[Int](day) :: time :: add :: s :: Nil =>
         Tzdb.Entry.Leap(year, parseMonth(month), day, parseTime(lineNo, time), add == t"+")
 
       case other =>
         abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
 
-    def parseMonth(str: Text) = Month.valueOf(str.s)
+    def parseMonth(string: Text) = Month.valueOf(string.s)
 
-    def parseZone(lineNo: Int, args: List[Text]): Tzdb.Entry.Zone = args match
+    def parseZone(lineNo: Int, arguments: List[Text]): Tzdb.Entry.Zone = arguments match
       case name :: rest =>
         name.cut(t"/", 2).to(List) match
           case area :: location :: Nil =>
@@ -135,22 +135,22 @@ object Tzdb:
       case _ =>
         abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
 
-    def parseZoneInfo(lineNo: Int, args: List[Text]): Tzdb.ZoneInfo = args match
+    def parseZoneInfo(lineNo: Int, arguments: List[Text]): Tzdb.ZoneInfo = arguments match
       case stdoff :: rules :: format :: until =>
         val s = parseDuration(lineNo, stdoff)
 
-        def f(str: Text) = format.cut(t"%s", 2).to(List).absolve match
+        def f(string: Text) = format.cut(t"%s", 2).to(List).absolve match
           case value :: Nil           => value
-          case before :: after :: Nil => before+str+after
+          case before :: after :: Nil => before+string+after
 
         ZoneInfo(s, rules, f, if until.nil then None else Some(until.join(t" ")))
 
       case other =>
         abort(TzdbError(TzdbError.Reason.BadZoneInfo(other), lineNo))
 
-    def parseLetters(str: Text): Option[Text] = if str == t"-" then None else Some(str)
+    def parseLetters(string: Text): Option[Text] = if string == t"-" then None else Some(string)
 
-    def parseRule(lineNo: Int, args: List[Text]): Tzdb.Entry.Rule = args match
+    def parseRule(lineNo: Int, arguments: List[Text]): Tzdb.Entry.Rule = arguments match
       case name :: from :: to :: _ :: month :: day :: time :: save :: letters :: _ =>
         try unsafely:
           val end = to match
@@ -163,18 +163,18 @@ object Tzdb:
           val s = parseDuration(lineNo, save)
           Tzdb.Entry.Rule(name, from.decode[Int], end, d, t, s, parseLetters(letters))
 
-        catch case err: NumberError =>
+        catch case error: NumberError =>
           abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
 
       case _ =>
         abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
 
-    def parseLink(lineNo: Int, args: List[Text]): Tzdb.Entry.Link = args match
+    def parseLink(lineNo: Int, arguments: List[Text]): Tzdb.Entry.Link = arguments match
       case from :: to :: Nil => Tzdb.Entry.Link(from, to)
       case _                 => abort(TzdbError(TzdbError.Reason.UnexpectedLink, lineNo))
 
-    def addToZone(lineNo: Int, args: List[Text], zone: Tzdb.Entry.Zone): Tzdb.Entry.Zone =
-      zone.copy(info = zone.info :+ parseZoneInfo(lineNo, args))
+    def addToZone(lineNo: Int, arguments: List[Text], zone: Tzdb.Entry.Zone): Tzdb.Entry.Zone =
+      zone.copy(info = zone.info :+ parseZoneInfo(lineNo, arguments))
 
     @tailrec
     def recur

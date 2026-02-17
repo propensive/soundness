@@ -38,7 +38,7 @@ import prepositional.*
 
 object Segmentable:
   given indexedSeq: [element] => IndexedSeq[element] is Segmentable =
-    (seq, interval) => seq.slice(interval.start.n0, interval.end.n0)
+    (sequence, interval) => sequence.slice(interval.start.n0, interval.end.n0)
 
   given iarray: [element] => IArray[element] is Segmentable =
     (iarray, interval) => iarray.slice(interval.start.n0, interval.end.n0)

@@ -55,8 +55,8 @@ case class Atom(key: Text, children: IArray[CodlNode] = IArray(), layout: Layout
 extends Indexed:
 
   lazy val paramIndex: Map[Text, Int] =
-    (0 until layout.params.min(schema.paramCount)).map: idx =>
-      schema.subschemas(idx).key -> idx
+    (0 until layout.params.min(schema.paramCount)).map: index =>
+      schema.subschemas(index).key -> index
 
     . to(Map)
 

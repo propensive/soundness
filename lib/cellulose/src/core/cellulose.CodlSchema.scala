@@ -80,7 +80,7 @@ extends Dynamic:
     Codl.parse(source, this)
 
   def apply(key: Text): Optional[CodlSchema] = dictionary.at(key).or(dictionary.at(Unset)).or(Unset)
-  def apply(idx: Int): Entry = subschemas(idx)
+  def apply(index: Int): Entry = subschemas(index)
 
   private lazy val fieldCount: Int = subschemas.indexWhere(!_.schema.typed[Field]) match
     case -1    => subschemas.size
@@ -88,13 +88,13 @@ extends Dynamic:
 
   private lazy val firstVariadic: Optional[Int] = subschemas.indexWhere(_.schema.variadic) match
     case -1  => Unset
-    case idx => idx
+    case index => index
 
   lazy val paramCount: Int = firstVariadic.lay(fieldCount) { f => (f + 1).min(fieldCount) }
   private lazy val endlessParams: Boolean = firstVariadic.lay(false)(_ < fieldCount)
 
-  def param(idx: Int): Optional[Entry] =
-    if idx < paramCount then subschemas(idx)
+  def param(index: Int): Optional[Entry] =
+    if index < paramCount then subschemas(index)
     else if endlessParams && paramCount > 0 then subschemas(paramCount - 1) else Unset
 
   def has(key: Optional[Text]): Boolean = dictionary.contains(key)
@@ -119,7 +119,7 @@ extends CodlSchema(IArray.from(structSubschemas), structArity):
   def optional: Struct = Struct(structSubschemas, Arity.AtMostOne)
   def uniqueIndex: Optional[Int] = subschemas.indexWhere(_.schema.arity == Arity.Unique) match
     case -1  => Unset
-    case idx => idx
+    case index => index
 
   lazy val params: IArray[Entry] =
     def recur(subschemas: List[Entry], fields: List[Entry]): IArray[Entry] = subschemas match

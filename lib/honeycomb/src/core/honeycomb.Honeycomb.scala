@@ -74,7 +74,7 @@ object Honeycomb:
 
       val holes2 = holes.to(List).sortBy(_(0)).map(_(1))
       val iterator = holes2.to(Iterator)
-      var idx: Int = -1
+      var index: Int = -1
 
       var types: List[TypeRepr] = Nil
 
@@ -109,21 +109,21 @@ object Honeycomb:
           def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
             case Nil => expr
             case "\u0000" :: tail =>
-              idx += 1
+              index += 1
               types ::= TypeRepr.of[Map[Text, Optional[Text]]]
               iterator.next()
               val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
-              '{$expr && { $array(${Expr(idx)}) = ${scrutinee}.attributes -- $others; true }}
+              '{$expr && { $array(${Expr(index)}) = ${scrutinee}.attributes -- $others; true }}
 
             case head :: tail =>
               attributes(tail):
                 val boolean: Expr[Boolean] = pattern.attributes(head).let(_.s).absolve match
                   case Unset      => '{$scrutinee.attributes(${Expr(head)}) == Unset}
                   case "\u0000"   =>
-                    idx += 1
+                    index += 1
                     types ::= TypeRepr.of[Text]
                     iterator.next()
-                    '{$array(${Expr(idx)}) = $scrutinee.attributes(${Expr(head)}); true}
+                    '{$array(${Expr(index)}) = $scrutinee.attributes(${Expr(head)}); true}
 
                   case text: Text =>
                     '{$scrutinee.attributes(${Expr(head)}) == ${Expr(text)}}
@@ -155,18 +155,18 @@ object Honeycomb:
 
         pattern match
           case Comment("\u0000") =>
-            idx += 1
+            index += 1
             iterator.next()
             types ::= TypeRepr.of[Text]
 
             ' {
                 $expr
                 && $scrutinee.isInstanceOf[Comment]
-                && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Comment].text; true }
+                && { $array(${Expr(index)}) = $scrutinee.asInstanceOf[Comment].text; true }
               }
 
           case TextNode("\u0000") =>
-            idx += 1
+            index += 1
             iterator.next() match
               case Html.Hole.Node(label) =>
                 types ::= whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
@@ -176,7 +176,7 @@ object Honeycomb:
               case _ =>
                 panic(m"unexpected hole type")
 
-            '{$expr && { $array(${Expr(idx)}) = $scrutinee; true }}
+            '{$expr && { $array(${Expr(index)}) = $scrutinee; true }}
 
           case textual@TextNode(text) =>
             val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[TextNode]})
@@ -196,7 +196,7 @@ object Honeycomb:
             halt(m"cannot match against a document type declaration")
 
           case Element("\u0000", _, _, _) =>
-            idx += 1
+            index += 1
             iterator.next() match
               case Html.Hole.Element(label) =>
                 types ::= whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
@@ -205,7 +205,7 @@ object Honeycomb:
               case _ =>
                 halt(m"unexpected hole type")
 
-            '{$expr && { $array(${Expr(idx)}) = $scrutinee; true }}
+            '{$expr && { $array(${Expr(index)}) = $scrutinee; true }}
 
           case element: Element =>
             def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Element]})
@@ -427,8 +427,8 @@ object Honeycomb:
 
     import quotes.reflect.*
 
-    val args = attributes0.absolve match
-      case Varargs(args) => args
+    val arguments = attributes0.absolve match
+      case Varargs(arguments) => arguments
 
     val attributes: Seq[Expr[Optional[(Text, Optional[Text])]]] =
       Type.of[thisType].absolve match
@@ -439,8 +439,8 @@ object Honeycomb:
               Tag { type Topic = topic; type Form = form }
             ] =>
 
-          args.map: arg =>
-            arg.absolve match
+          arguments.map: argument =>
+            argument.absolve match
               case '{($key, $value: value)} =>
                 TypeRepr.of[topic].literal[String].let: topic =>
                   key.asTerm match

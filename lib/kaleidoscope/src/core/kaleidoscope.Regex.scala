@@ -165,19 +165,19 @@ object Regex:
         Quantifier.Exactly(1)
 
     @tailrec
-    def number(required: Boolean, num: Int = 0, first: Boolean = true): Int = current() match
+    def number(required: Boolean, count: Int = 0, first: Boolean = true): Int = current() match
       case '\u0000' =>
         abort(RegexError(index, IncompleteRepetition))
 
       case ch if ch.isDigit =>
         index += 1
-        number(required, num*10 + (ch - '0').toInt, false)
+        number(required, count*10 + (ch - '0').toInt, false)
 
       case ',' =>
-        if !required then abort(RegexError(index, UnexpectedChar)) else num
+        if !required then abort(RegexError(index, UnexpectedChar)) else count
 
       case '}' =>
-        if first && required then abort(RegexError(index, UnexpectedChar)) else num
+        if first && required then abort(RegexError(index, UnexpectedChar)) else count
 
       case other =>
         abort(RegexError(index, UnexpectedChar))
