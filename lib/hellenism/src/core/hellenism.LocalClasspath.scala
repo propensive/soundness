@@ -71,7 +71,7 @@ object LocalClasspath:
                    | ClasspathEntry.JavaRuntime.type])
   :   LocalClasspath =
 
-      new LocalClasspath(entries, entries.to(Set))
+    new LocalClasspath(entries, entries.to(Set))
 
 
   given paths: [path: Abstractable across Paths to Text]

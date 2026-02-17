@@ -81,16 +81,14 @@ object Vacuous:
       case other =>
         other
 
-    recur(TypeRepr.of[typeRef]).asType.absolve match
-      case '[type result <: typeRef; result] =>
-        if seen then '{Mandatable[typeRef, result]()} else halt(m"the value is not an `Optional`")
+    recur(TypeRepr.of[typeRef]).asType.absolve match case '[type result <: typeRef; result] =>
+      if seen then '{Mandatable[typeRef, result]()} else halt(m"the value is not an `Optional`")
 
 
   def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value]): Macro[value] =
     import quotes.reflect.*
 
-    optional.absolve match
-      case '{$optional: optionalType} => check[optionalType]
+    optional.absolve match case '{$optional: optionalType} => check[optionalType]
 
     def optimize(term: Term): Term = term match
       case inlined@Inlined
@@ -102,7 +100,9 @@ object Vacuous:
           case term =>
             ' { $optional match
                   case Unset => $default
-                  case term  => term.asInstanceOf[value] } . asTerm
+                  case term  => term.asInstanceOf[value]
+              }
+            . asTerm
 
       case Inlined(call, bindings, term) =>
         Inlined(call, bindings, optimize(term))

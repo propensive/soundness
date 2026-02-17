@@ -134,8 +134,7 @@ object Adversaria:
       . typeSymbol
       . fieldMembers
       . filter(_.info <:< TypeRepr.of[value])
-      . map: field =>
-          '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
+      . map: field => '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
 
     def lambdaMap: Expr[List[(Text, entity => value)]] = Expr.ofList:
       TypeRepr.of[entity]

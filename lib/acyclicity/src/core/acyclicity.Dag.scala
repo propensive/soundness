@@ -56,8 +56,8 @@ object Dag:
 
   @targetName("fromEdges")
   def apply[node](edges: (node, node)*): Dag[node] = Dag:
-    edges.foldLeft(Map[node, Set[node]]()):
-      case (acc, (key, value)) => acc.updated(key, acc.get(key).fold(Set(value))(_ + value))
+    edges.foldLeft(Map[node, Set[node]]()): case (acc, (key, value)) =>
+      acc.updated(key, acc.get(key).fold(Set(value))(_ + value))
 
   @targetName("fromNodes")
   def apply[node](nodes: (node, Set[node])*): Dag[node] = Dag(Map(nodes*))

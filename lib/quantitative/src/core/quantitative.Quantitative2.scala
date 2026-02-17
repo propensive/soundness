@@ -91,8 +91,8 @@ trait Quantitative2:
           current
 
         case (dimension, n) :: tail =>
-          (current.asType, dimension.power(n).asType).absolve match
-            case ('[current], '[next]) => recur(tail, TypeRepr.of[current & next])
+          (current.asType, dimension.power(n).asType).absolve match case ('[current], '[next]) =>
+            recur(tail, TypeRepr.of[current & next])
 
       recur(map.to(List), TypeRepr.of[Units[?, ?]]).asType.absolve match
         case '[type units <: Units[?, ?]; units] =>
@@ -162,19 +162,19 @@ trait Quantitative2:
     def unitPower(dimension: DimensionRef): Int = map.get(dimension).map(_.power).getOrElse(0)
 
   class UnitRef(val unitType: Type[?], val name: String):
-    def designation: Macro[Text] = power(1).asType.absolve match
-      case '[unit]      => Expr.summon[Designation[unit]] match
+    def designation: Macro[Text] =
+      power(1).asType.absolve match case '[unit] => Expr.summon[Designation[unit]] match
         case None       => '{${Expr(name)}.tt}
         case Some(name) => '{$name.text}
 
     def ref(using Quotes): quotes.reflect.TypeRepr =
-      unitType.absolve match { case '[ref] => quotes.reflect.TypeRepr.of[ref] }
+      unitType.absolve match case '[ref] => quotes.reflect.TypeRepr.of[ref]
 
     def dimensionRef(using Quotes): DimensionRef =
       import quotes.reflect.*
 
-      unitType.absolve match
-        case '[Units[power, unit]] => TypeRepr.of[unit].asMatchable.absolve match
+      unitType.absolve match case '[Units[power, unit]] =>
+        TypeRepr.of[unit].asMatchable.absolve match
           case ref@TypeRef(_, _) => DimensionRef(ref.asType, ref.show)
 
     def power(n: Int)(using Quotes): quotes.reflect.TypeRepr =
@@ -190,8 +190,7 @@ trait Quantitative2:
 
   class DimensionRef(val dimensionType: Type[?], val name: String):
     def ref(using Quotes): quotes.reflect.TypeRepr =
-      dimensionType.absolve match
-        case '[ref] => quotes.reflect.TypeRepr.of[ref]
+      dimensionType.absolve match case '[ref] => quotes.reflect.TypeRepr.of[ref]
 
     def dimensionality(using Quotes): Dimensionality = Dimensionality(Map(this -> 1))
 
@@ -205,29 +204,28 @@ trait Quantitative2:
     def principal(using Quotes): UnitRef =
       import quotes.reflect.*
 
-      dimensionType.absolve match
-        case '[type dimension <: Dimension; dimension] =>
-          Expr.summon[Principal[dimension, ?]].absolve match
-            case None =>
-              val dimensionName =
-                dimensionality.quantityName.map: name =>
-                  "the physical quantity "+name
+      dimensionType.absolve match case '[type dimension <: Dimension; dimension] =>
+        Expr.summon[Principal[dimension, ?]].absolve match
+          case None =>
+            val dimensionName =
+              dimensionality.quantityName.map: name =>
+                "the physical quantity "+name
 
-                . getOrElse("the same quantity")
+              . getOrElse("the same quantity")
 
-              halt:
-                m"""the operands both represent $dimensionName, but there is no principal unit
-                      specified for this dimension"""
+            halt:
+              m"""the operands both represent $dimensionName, but there is no principal unit
+                    specified for this dimension"""
 
-            case Some('{$expr: principal}) => Type.of[principal].absolve match
-              case '[Principal[dimension, units]] =>
-                TypeRepr.of[units].asMatchable.absolve match
-                  case TypeLambda(_, _, appliedType) => appliedType.asMatchable.absolve match
-                    case AppliedType(typeRef, _) => typeRef.asMatchable.absolve match
-                      case typeRef@TypeRef(_, _) => UnitRef(typeRef.asType, typeRef.show)
+          case Some('{$expr: principal}) => Type.of[principal].absolve match
+            case '[Principal[dimension, units]] =>
+              TypeRepr.of[units].asMatchable.absolve match
+                case TypeLambda(_, _, appliedType) => appliedType.asMatchable.absolve match
+                  case AppliedType(typeRef, _) => typeRef.asMatchable.absolve match
+                    case typeRef@TypeRef(_, _) => UnitRef(typeRef.asType, typeRef.show)
 
-                  case other =>
-                    halt(m"principal units had an unexpected type: ${other.show}")
+                case other =>
+                  halt(m"principal units had an unexpected type: ${other.show}")
 
 
     override def equals(that: Any): Boolean = that.asMatchable match
@@ -511,16 +509,17 @@ trait Quantitative2:
     else
       val unitsType =
         UnitsMap:
-          units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/2) }.toMap
+          units.map.view.mapValues:
+            case UnitPower(unit, power) => UnitPower(unit, power/2)
+          . toMap
 
         . repr.get.asType
 
-      unitsType.absolve match
-        case '[type result <: Measure; result] =>
-          val sqrt = '{(value: Quantity[value]) => Quantity[result](math.sqrt(value.value))}
-          val cast = sqrt.asExprOf[Quantity[value] => Quantity[result]]
+      unitsType.absolve match case '[type result <: Measure; result] =>
+        val sqrt = '{(value: Quantity[value]) => Quantity[result](math.sqrt(value.value))}
+        val cast = sqrt.asExprOf[Quantity[value] => Quantity[result]]
 
-          '{Rootable[2, Quantity[value], Quantity[result]]($cast(_))}
+        '{Rootable[2, Quantity[value], Quantity[result]]($cast(_))}
 
   def cbrtTypeclass[value <: Measure: Type](using Quotes): Expr[Quantity[value] is Rootable[3]] =
 
@@ -532,16 +531,17 @@ trait Quantitative2:
     else
       val unitsType =
         UnitsMap:
-          units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/3) }.toMap
+          units.map.view.mapValues:
+            case UnitPower(unit, power) => UnitPower(unit, power/3)
+          . toMap
 
         . repr.get.asType
 
-      unitsType.absolve match
-        case '[type result <: Measure; result] =>
-          val cbrt = '{(value: Quantity[value]) => Quantity(math.cbrt(value.value))}
-          val cast = cbrt.asExprOf[Quantity[value] => Quantity[result]]
+      unitsType.absolve match case '[type result <: Measure; result] =>
+        val cbrt = '{(value: Quantity[value]) => Quantity(math.cbrt(value.value))}
+        val cast = cbrt.asExprOf[Quantity[value] => Quantity[result]]
 
-          '{Rootable[3, Quantity[value], Quantity[result]]($cast(_))}
+        '{Rootable[3, Quantity[value], Quantity[result]]($cast(_))}
 
 
   def greaterThan[left <: Measure: Type, right <: Measure: Type]
@@ -629,13 +629,12 @@ trait Quantitative2:
 
       val (units, _) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
 
-      units.repr.map(_.asType).absolve match
-        case Some('[type measure <: Measure; measure]) =>
-          ' {
-              Subtractable[quantity, quantity2, Quantity[measure]]:
-                (left, right) =>
-                  ${Quantitative.sub('left, 'right).asExprOf[Quantity[measure]]}
-            }
+      units.repr.map(_.asType).absolve match case Some('[type measure <: Measure; measure]) =>
+        ' {
+            Subtractable[quantity, quantity2, Quantity[measure]]:
+              (left, right) =>
+                ${Quantitative.sub('left, 'right).asExprOf[Quantity[measure]]}
+          }
 
 
   def addTypeclass
@@ -648,12 +647,11 @@ trait Quantitative2:
 
       val (units, other) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
 
-      units.repr.map(_.asType).absolve match
-        case Some('[type result <: Measure; result]) =>
-          ' {
-              Addable[quantity, quantity2, Quantity[result]]: (left, right) =>
-                ${Quantitative.add('left, 'right).asExprOf[Quantity[result]]}
-            }
+      units.repr.map(_.asType).absolve match case Some('[type result <: Measure; result]) =>
+        ' {
+            Addable[quantity, quantity2, Quantity[result]]: (left, right) =>
+              ${Quantitative.add('left, 'right).asExprOf[Quantity[result]]}
+          }
 
   def checkable
     [ left      <: Measure:         Type,
@@ -665,12 +663,11 @@ trait Quantitative2:
 
       val (units, other) = normalize(UnitsMap[left], UnitsMap[right], '{0.0})
 
-      units.repr.map(_.asType).absolve match
-        case Some('[type result <: Measure; result]) =>
-          ' {
-              Checkable[quantity, quantity2]: (left, right) =>
-                ${Quantitative.check('left, 'right)}
-            }
+      units.repr.map(_.asType).absolve match case Some('[type result <: Measure; result]) =>
+        ' {
+            Checkable[quantity, quantity2]: (left, right) =>
+              ${Quantitative.check('left, 'right)}
+          }
 
 
   def norm[units <: Measure: Type, norm[power <: Nat] <: Units[power, ?]: Type]
