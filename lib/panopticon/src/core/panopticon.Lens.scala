@@ -43,7 +43,7 @@ import language.dynamics
 
 object Lens:
   def apply[self, origin, target](get: origin => target, set: (origin, target) => origin)
-  : self is Lens from origin onto target =
+  :   self is Lens from origin onto target =
       new Lens:
         type Self = self
         type Origin = origin

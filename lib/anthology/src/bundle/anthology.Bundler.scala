@@ -74,7 +74,7 @@ object Bundler:
         unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
 
   def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
-  : Path on Linux =
+  :   Path on Linux =
       val jarfile = jarfile0.or(directory.peer("tmpfile.jar"))
 
       val manifest =
@@ -93,7 +93,7 @@ object Bundler:
                 val root = directory.decode[Path on Linux]
                 root.descendants.to(List).map: file =>
                   file.open: handle =>
-                    val ref = %.on[Zip] + file.relativeTo(root).on[Zip]
+                    val ref = %.on[Zip] + root.toward(file).on[Zip]
                     ZipEntry(ref, handle.read[Data])
 
             case ClasspathEntry.Jar(jar) =>

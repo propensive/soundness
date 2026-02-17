@@ -37,8 +37,14 @@ import prepositional.*
 import proscenium.*
 
 object Currency:
-  def apply[self <: Label: ValueOf, topic <: Label: ValueOf, transport <: Int & Singleton: ValueOf, form <: Label: ValueOf]()
-  : self is Currency of topic over transport in form =
+  def apply
+    [ self      <: Label:           ValueOf,
+      topic     <: Label:           ValueOf,
+      transport <: Int & Singleton: ValueOf,
+      form      <: Label:           ValueOf ]
+    ( )
+  :   self is Currency of topic over transport in form =
+
       new Currency:
         type Self = self
         type Topic = topic

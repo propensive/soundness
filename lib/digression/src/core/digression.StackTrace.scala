@@ -50,17 +50,17 @@ object StackTrace:
 
   val legend: Map[Text, Text] =
     Map
-     ("λₙ".tt -> "anonymous function".tt,
-      "αₙ".tt -> "anonymous class".tt,
-      "ι".tt  -> "initialization".tt,
-      "↑".tt  -> "super reference".tt,
-      "⊢".tt  -> "extension method".tt,
-      "∂".tt  -> "direct".tt,
-      "δ".tt  -> "default".tt,
-      "⁅⁆".tt -> "package file".tt,
-      "ⲛ".tt  -> "class initializer".tt,
-      "ℓ".tt  -> "lazy initializer".tt,
-      "Σ".tt  -> "specialized method".tt)
+      ( "λₙ".tt -> "anonymous function".tt,
+        "αₙ".tt -> "anonymous class".tt,
+        "ι".tt  -> "initialization".tt,
+        "↑".tt  -> "super reference".tt,
+        "⊢".tt  -> "extension method".tt,
+        "∂".tt  -> "direct".tt,
+        "δ".tt  -> "default".tt,
+        "⁅⁆".tt -> "package file".tt,
+        "ⲛ".tt  -> "class initializer".tt,
+        "ℓ".tt  -> "lazy initializer".tt,
+        "Σ".tt  -> "specialized method".tt )
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()

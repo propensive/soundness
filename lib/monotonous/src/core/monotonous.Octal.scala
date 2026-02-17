@@ -32,4 +32,4 @@
                                                                                                   */
 package monotonous
 
-erased trait Octal extends Serialization
+sealed trait Octal extends Serialization

@@ -51,7 +51,7 @@ object Vacuous:
 
     if TypeRepr.of[typeRef].typeSymbol.isAbstractType
     then halt(m"type ${TypeRepr.of[typeRef].show} is abstract")
-    else '{erasedValue[typeRef is Concrete]}
+    else '{Concrete[typeRef]()}
 
   def distinct[typeRef: Type, union: Type]: Macro[typeRef is Distinct from union] =
     import quotes.reflect.*
@@ -61,7 +61,7 @@ object Vacuous:
     if TypeRepr.of[typeRef] <:< TypeRepr.of[union]
     then halt(m"""type ${TypeRepr.of[typeRef].show} cannot be proven distinct from
                   ${TypeRepr.of[union].show}""")
-    else '{erasedValue[typeRef is Distinct from union]}
+    else '{Distinct[typeRef, union]()}
 
   def mandatable[typeRef: Type]: Macro[typeRef is Mandatable] =
     import quotes.reflect.*
@@ -81,10 +81,9 @@ object Vacuous:
       case other =>
         other
 
-    recur(TypeRepr.of[typeRef]).asType match
-      case '[result] =>
-        if seen then '{erasedValue[typeRef is Mandatable to result]}
-        else halt(m"the value is not an `Optional`")
+    recur(TypeRepr.of[typeRef]).asType.absolve match
+      case '[type result <: typeRef; result] =>
+        if seen then '{Mandatable[typeRef, result]()} else halt(m"the value is not an `Optional`")
 
 
   def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value]): Macro[value] =

@@ -57,7 +57,7 @@ object Permutation:
       if element >= sequence.length || element < 0
       then
         raise
-         (PermutationError(PermutationError.Reason.InvalidIndex(element, sequence.length - 1)))
+          ( PermutationError(PermutationError.Reason.InvalidIndex(element, sequence.length - 1)) )
 
       if seen.contains(element)
       then raise(PermutationError(PermutationError.Reason.DuplicateIndex(element, index)))
@@ -85,7 +85,7 @@ case class Permutation(factoradic: Factoradic):
         list:    List[element],
         current: Int,
         result:  List[element] )
-    : List[element] =
+    :   List[element] =
 
         lehmer match
           case head :: tail =>

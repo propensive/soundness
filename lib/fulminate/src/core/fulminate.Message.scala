@@ -47,7 +47,7 @@ object Message:
 
 
   transparent inline def make[tuple <: Tuple](inline messages: tuple, done: List[Message])
-  : List[Message] =
+  :   List[Message] =
 
       inline erasedValue[tuple] match
         case _: (message *: tail) => messages.absolve match
@@ -64,8 +64,8 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
   @targetName("append")
   infix def + (right: Message): Message =
     Message
-     (texts.init ++ ((texts.last+right.texts.head) :: right.texts.tail),
-      messages ++ right.messages)
+      ( texts.init ++ ((texts.last+right.texts.head) :: right.texts.tail),
+        messages ++ right.messages )
 
   def segments: List[Text | Message] =
     def recur(parts: List[Text], messages: List[Message]): List[Text | Message] = parts match

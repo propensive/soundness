@@ -40,4 +40,4 @@ trait Lightyears[Power <: Nat] extends Units[Power, Distance]
 
 object Lightyears:
   given designation: Designation[Lightyears[1]] = () => "ly".tt
-  erased given ratio: Ratio[Lightyears[1] & Metres[-1], 1.057E-16] = !!
+  inline given ratio: Ratio[Lightyears[1] & Metres[-1], 1.057E-16] = !!

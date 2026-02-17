@@ -117,14 +117,14 @@ object Completions:
         case AlreadyInstalled(_, path) => path
 
   def ensure(force: Boolean = false)(using Entrypoint, WorkingDirectory, Diagnostics)
-  : List[Text] logs CliEvent =
+  :   List[Text] logs CliEvent =
 
       safely(effectful(install(force))).let(_.paths).or(Nil)
 
 
-  def install(force: Boolean = false)(using entrypoint: Entrypoint)
-    ( using WorkingDirectory, Effectful, Diagnostics )
-  : Installation raises InstallError logs CliEvent =
+  def install(force: Boolean = false)(using entrypoint: Entrypoint)(using erased Effectful)
+    ( using WorkingDirectory, Diagnostics )
+  :   Installation raises InstallError logs CliEvent =
 
       mitigate:
         case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
@@ -156,12 +156,12 @@ object Completions:
               then Installation.InstallResult.ShellNotInstalled(Shell.Bash)
               else
                 install
-                 (Shell.Bash,
-                  command,
-                  Name[Linux](command),
-                  List
-                   (Xdg.dataDirs[Path on Linux].last/"bash-completion"/"completions",
-                    Xdg.dataHome[Path on Linux]/"bash-completion"/"completions"))
+                  ( Shell.Bash,
+                    command,
+                    Name[Linux](command),
+                    List
+                      ( Xdg.dataDirs[Path on Linux].last/"bash-completion"/"completions",
+                        Xdg.dataHome[Path on Linux]/"bash-completion"/"completions") )
 
             val fish: Installation.InstallResult =
               if sh"sh -c 'command -v fish'".exec[Exit]() != Exit.Ok
@@ -178,8 +178,9 @@ object Completions:
 
 
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
-    ( using Effectful, Diagnostics )
-  : Installation.InstallResult raises InstallError logs CliEvent =
+    ( using erased Effectful )
+    ( using Diagnostics )
+  :   Installation.InstallResult raises InstallError logs CliEvent =
 
     mitigate:
       case IoError(_, _, _)   => InstallError(InstallError.Reason.Io)

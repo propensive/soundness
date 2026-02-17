@@ -44,7 +44,7 @@ object Column:
     ( get: row => cell )
     ( using columnAlignment: ColumnAlignment[cell] = ColumnAlignment.topLeft )
     ( using text.Show[cell] )
-  : Column[row, text] =
+  :   Column[row, text] =
 
       def contents(row: row): text = text.show(get(row))
 

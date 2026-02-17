@@ -63,7 +63,7 @@ object SumDerivation:
     protected transparent inline def complement[derivation, variant](sum: derivation)
       ( using variantIndex: Int & VariantIndex[variant],
                                              reflection:   SumReflection[derivation])
-    : Optional[variant] =
+    :   Optional[variant] =
 
         type Labels = reflection.MirroredElemLabels
         type Variants = reflection.MirroredElemTypes
@@ -75,14 +75,14 @@ object SumDerivation:
 
 
     protected inline def variantLabels[derivation](using reflection: SumReflection[derivation])
-    : List[Text] =
+    :   List[Text] =
 
         constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
 
 
     protected transparent inline def singleton[derivation](input: Text)
       ( using reflection: SumReflection[derivation] )
-    : derivation =
+    :   derivation =
 
         type Variants = reflection.MirroredElemTypes
         type Labels = reflection.MirroredElemLabels
@@ -95,7 +95,7 @@ object SumDerivation:
     private transparent inline def singletonFold[derivation, variants <: Tuple, labels <: Tuple]
       ( using reflection: SumReflection[derivation] )
       ( predicate: Text => Boolean )
-    : Optional[derivation] =
+    :   Optional[derivation] =
 
         inline !![variants] match
           case _: (variant *: variants) => inline !![labels] match
@@ -118,7 +118,7 @@ object SumDerivation:
                        =>  ( context: requirement.Optionality[typeclass[variant]],
                              label:   Text,
                              index:   Int & VariantIndex[variant] ) ?=> result )
-    : result =
+    :   result =
 
         type Labels = reflection.MirroredElemLabels
         type Variants = reflection.MirroredElemTypes
@@ -141,7 +141,7 @@ object SumDerivation:
                        =>  ( context: requirement.Optionality[typeclass[variant]],
                              label:   Text,
                              index:   Int & VariantIndex[variant] ) ?=> result )
-    : result =
+    :   result =
 
         type Labels = reflection.MirroredElemLabels
         type Variants = reflection.MirroredElemTypes
@@ -164,7 +164,7 @@ object SumDerivation:
                        =>  ( context: requirement.Optionality[typeclass[variant]],
                              label:   Text,
                              index:   Int & VariantIndex[variant] ) ?=> result )
-    : Optional[result] =
+    :   Optional[result] =
 
         inline !![variants] match
           case _: (variant *: variants) => inline !![labels] match
@@ -204,7 +204,7 @@ object SumDerivation:
                        =>  ( context: requirement.Optionality[typeclass[variant]],
                              label: Text,
                              index: Int & VariantIndex[variant] ) ?=> result )
-    : Optional[result] =
+    :   Optional[result] =
 
         inline !![variants] match
           case _: (variant *: variants) => inline !![labels] match
@@ -223,8 +223,8 @@ object SumDerivation:
                       lambda[variant0](variant)(using context, label.tt, index3)
                     else
                       fold[derivation, variants, moreLabels](sum, size, index + 1, fallible)
-                       (predicate)
-                       (lambda)
+                        ( predicate )
+                        ( lambda )
 
           case _ =>
             inline if fallible

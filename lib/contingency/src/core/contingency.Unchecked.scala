@@ -34,4 +34,4 @@ package contingency
 
 import prepositional.*
 
-erased trait Unchecked extends Typeclass
+sealed trait Unchecked extends Typeclass

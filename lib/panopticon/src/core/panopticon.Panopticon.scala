@@ -65,13 +65,13 @@ object Panopticon:
       case '[target] =>
         '{
             Lens[self, origin, target]
-             ({value => ${'value.asTerm.select(field).asExprOf[target]}},
-              { (origin, value) =>
-                  ${
+              ( value => ${'value.asTerm.select(field).asExprOf[target]},
+                (origin, value) =>
+                  $ {
                       val params = symbol.caseFields.map: field =>
                         if field.name == name then 'value.asTerm else 'origin.asTerm.select(field)
 
                       Ref(symbol.companionModule).select(make).appliedToArgs(params)
                       . asExprOf[origin]
-                    }
-              })  }
+                    } )
+          }

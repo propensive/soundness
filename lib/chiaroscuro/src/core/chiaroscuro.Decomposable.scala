@@ -77,7 +77,8 @@ object Decomposable extends Decomposable2:
   =>  IArray[element] is Decomposable =
 
       iarray =>
-        Decomposition.Sequence(t"IArray", iarray.map(decomposable.decomposition(_)).to(List), iarray)
+        Decomposition.Sequence
+          ( t"IArray", iarray.map(decomposable.decomposition(_)).to(List), iarray )
 
 
   object Base:

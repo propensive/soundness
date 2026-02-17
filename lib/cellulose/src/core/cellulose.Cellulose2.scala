@@ -79,8 +79,9 @@ trait Cellulose2:
 
           context.decoded:
             Codl:
-              values.list.prim.let:
-                case doc: CodlDoc => doc.get(label2)
-                case data: Atom   => data.get(label2)
+              values.list.prim.let: value =>
+                value.absolve match
+                  case doc: CodlDoc => doc.get(label2)
+                  case data: Atom   => data.get(label2)
 
               . lest(CodlError(CodlError.Reason.BadFormat(label2)))

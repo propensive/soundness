@@ -65,7 +65,7 @@ object Adversaria:
     try Mapper.transformTerm(term)(Symbol.spliceOwner) catch case _: Exception => Unset
 
   def general[operand <: StaticAnnotation: Type, self: Type, plane: Type, limit: Type]
-  : Macro[self is Annotated by operand on plane under limit] =
+  :   Macro[self is Annotated by operand on plane under limit] =
 
       import quotes.reflect.{Annotated as _, *}
 
@@ -107,19 +107,22 @@ object Adversaria:
             case ('[topic], '[ type target <: Label; target ]) =>
               ' {
                   Annotated.AnnotatedField[operand, self, plane, limit, topic, target]
-                   ($annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map))
+                    ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
                 }
         else
           ' {
               Annotated.AnnotatedFields[operand, self, plane, limit]
-               ($annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map))
+                ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
             }
 
       else
         val subtypes = limit.typeSymbol.children.map: subtype =>
           '{(${Expr(subtype.name)}.tt, ${matching(subtype.annotations)}.to(Set))}
 
-        '{Annotated.AnnotatedSubtypes[operand, self, plane, limit](${Expr.ofList(subtypes)}.to(Map))}
+        ' {
+            Annotated.AnnotatedSubtypes[operand, self, plane, limit]
+              ( ${Expr.ofList(subtypes)}.to(Map) )
+          }
 
 
 

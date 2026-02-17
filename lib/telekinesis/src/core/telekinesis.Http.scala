@@ -53,7 +53,7 @@ import zephyrine.*
 
 import language.dynamics
 
-erased trait Http
+sealed trait Http
 
 object Http:
   object Version:
@@ -289,7 +289,7 @@ object Http:
       def selectDynamic(name: Label)
         ( using directive: name.type is Directive,
                 decoder:   directive.Topic is Decodable in Text )
-      : List[directive.Topic] =
+      :   List[directive.Topic] =
 
           val name2 = name.tt.uncamel.kebab.lower
           textHeaders.filter(_.key.lower == name2).map(_.value.decode)
@@ -303,7 +303,7 @@ object Http:
 
   object Response extends Dynamic:
     transparent inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
-    : Prototype | Response =
+    :   Prototype | Response =
 
         ${Telekinesis.response('headers)}
 
@@ -320,7 +320,7 @@ object Http:
       def apply[servable: Servable](body: servable): Response =
         val response = servable.serve(body)
         Response
-         (1.1, status0.or(response.status), headers.to(List) ++ response.textHeaders, response.body)
+          ( 1.1, status0.or(response.status), headers.to(List) ++ response.textHeaders, response.body )
 
     given streamable: Tactic[HttpError] => Response is Streamable by Data = response =>
       val body = response.status.category match
@@ -422,7 +422,7 @@ object Http:
   extends Dynamic:
 
     def updateDynamic[label <: Label: Directive of topic, topic](name: label)(value: topic)
-    : Response =
+    :   Response =
         val key2 = name.tt.uncamel.kebab.lower
         copy(textHeaders = Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2))
 
@@ -439,7 +439,7 @@ object Http:
       def selectDynamic(name: Label)
         ( using directive: name.type is Directive,
                 decoder:   directive.Topic is Decodable in Text )
-      : List[directive.Topic] =
+      :   List[directive.Topic] =
 
           val name2 = name.tt.uncamel.kebab.lower
           textHeaders.filter(_.key.lower == name2).map(_.value.decode)
@@ -460,7 +460,7 @@ object Http:
               loggable: HttpEvent is Loggable,
               postable: payload is Postable,
               client:   HttpClient onto target )
-    : Http.Response =
+    :   Http.Response =
 
         $ {
             ( Telekinesis.submit[target, payload]
@@ -473,11 +473,11 @@ object Http:
       ( using online:   Online,
               loggable: HttpEvent is Loggable,
               client:   HttpClient onto target )
-    : Http.Response =
+    :   Http.Response =
 
         $ {
             ( Telekinesis.submit[target, payload]
-               ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
+                ( 'this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client) )
           }
 
 
@@ -490,7 +490,7 @@ object Http:
               loggable: HttpEvent is Loggable,
               postable: Unit is Postable,
               client:   HttpClient onto target )
-    : Http.Response =
+    :   Http.Response =
 
         ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
 
@@ -499,6 +499,6 @@ object Http:
       ( using online:   Online,
               loggable: HttpEvent is Loggable,
               client:   HttpClient onto target )
-    : Http.Response =
+    :   Http.Response =
 
         ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}

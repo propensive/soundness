@@ -46,7 +46,7 @@ object Foci:
 
 
     def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
-    : accrual =
+    :   accrual =
 
         initial
 
@@ -58,7 +58,7 @@ trait Foci[focus]:
   def register(error: Exception): Unit
 
   def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
-  : accrual
+  :   accrual
 
   def supplement(count: Int, transform: Optional[focus] => focus): Unit
   def tainted: Boolean = length > 0
@@ -76,7 +76,7 @@ class TrackFoci[focus]() extends Foci[focus]:
 
 
   def fold[accrual](initial: accrual)(lambda: (Optional[focus], accrual) => Exception ~> accrual)
-  : accrual =
+  :   accrual =
 
       (0 until errors.length).fuse(initial)(lambda(focuses(next), state)(errors(next)))
 

@@ -55,9 +55,9 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
     val columns = map.map(_.swap)
     IArray.tabulate(columns.size)(columns(_))
 
-  def selectDynamic[value: Decodable in Text](field: String)
-    ( using DynamicDsvEnabler, DsvRedesignation )
-  : Optional[value] =
+  def selectDynamic[value: Decodable in Text](field: String)(using erased DynamicDsvEnabler)
+    ( using DsvRedesignation )
+  :   Optional[value] =
 
       apply(summon[DsvRedesignation].transform(field.tt))
 

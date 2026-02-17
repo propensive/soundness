@@ -84,13 +84,13 @@ object Tag:
 
   def void[label <: Label: ValueOf, dom <: Dom]
     ( presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false )
-  : Tag.Void of label in dom =
+  :   Tag.Void of label in dom =
 
       new Void(valueOf[label].tt, presets, boundary).of[label].in[dom]
 
 
   def foreign[dom <: Dom](label: Text, attributes0: Map[Text, Optional[Text]])
-  : Tag of "#foreign" over "#foreign" in dom =
+  :   Tag of "#foreign" over "#foreign" in dom =
 
       new Tag.Container(label, false, Html.Mode.Normal, attributes0, Set(), false, true)
       . of["#foreign"]
@@ -104,12 +104,12 @@ object Tag:
       presets:    Map[Text, Optional[Text]] = Map(),
       insertable: Boolean                   = false,
       boundary:   Boolean                   = false )
-  : Container of label over children in dom =
+  :   Container of label over children in dom =
 
       val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
 
       Container
-       (valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary)
+        ( valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary )
       . of[label]
       . over[children]
       . in[dom]
@@ -117,7 +117,7 @@ object Tag:
 
   def transparent[label <: Label: ValueOf, children <: Label: Reifiable to List[String], dom <: Dom]
     ( presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false )
-  : Transparent of label over children in dom =
+  :   Transparent of label over children in dom =
 
       val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
 
@@ -131,7 +131,7 @@ object Tag:
       children: Set[Text],
       presets:  Map[Text, Optional[Text]],
       boundary: Boolean )
-  : Transparent in dom =
+  :   Transparent in dom =
 
       Transparent(label, children, presets, boundary = boundary).in[dom]
 
@@ -155,7 +155,7 @@ object Tag:
     def applyDynamic[className <: Label: ValueOf](method: className)
       ( children: Optional[Html of (? <: Transport)]* )
       ( using css: Stylesheet of (? >: className) )
-    : Element of Topic over Transport in Form =
+    :   Element of Topic over Transport in Form =
 
         val nodes = children.compact.nodes
 
@@ -195,7 +195,7 @@ object Tag:
     def applyDynamic[className <: Label](method: className)
       ( children: Optional[Html of (? <: Transport)]* )
       ( using css: Stylesheet of (? >: className) )
-    : Element of Topic in Form =
+    :   Element of Topic in Form =
 
         val presets2 = if css.classes.nil then presets else
           val cls = css.classes.join(t" ")

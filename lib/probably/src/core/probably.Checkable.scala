@@ -41,12 +41,14 @@ object Checkable:
   given tolerance2: [value] => value is Checkable against Tolerance[value] =
     (value, tolerance) => tolerance.covers(value)
 
-  inline given commensurable: [value: Commensurable against value] => value is Checkable against value =
-    (left, right) => left <= right && right <= left
+  inline given commensurable: [value: Commensurable against value]
+  =>  value is Checkable against value =
+
+      (left, right) => left <= right && right <= left
 
 
   def apply[self, contrast](lambda: (self, contrast) => Boolean)
-  : self is Checkable against contrast =
+  :   self is Checkable against contrast =
 
       new Checkable:
         type Self = self

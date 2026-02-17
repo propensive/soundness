@@ -40,4 +40,4 @@ trait Hundredweights[Power <: Nat] extends Units[Power, Mass]
 
 object Hundredweights:
   given designation: Designation[Hundredweights[1]] = () => "cwt".tt
-  erased given ratio: Ratio[Kilograms[1] & Hundredweights[-1], 50.80234544] = !!
+  inline given ratio: Ratio[Kilograms[1] & Hundredweights[-1], 50.80234544] = !!

@@ -63,7 +63,7 @@ class Matrix[element, rows <: Int, columns <: Int]
   def * [right](right: right)
     ( using multiplication: element is Multiplicable by right )
     ( using ClassTag[multiplication.Result] )
-  : Matrix[multiplication.Result, rows, columns] =
+  :   Matrix[multiplication.Result, rows, columns] =
 
 
       val elements2 = IArray.create[multiplication.Result](elements.length): array =>
@@ -75,7 +75,7 @@ class Matrix[element, rows <: Int, columns <: Int]
 
   @targetName("scalarDiv")
   def / [right](right: right)(using div: element is Divisible by right)(using ClassTag[div.Result])
-  : Matrix[div.Result, rows, columns] =
+  :   Matrix[div.Result, rows, columns] =
 
       val elements2 = IArray.create[div.Result](elements.length): array =>
         elements.indices.foreach: index =>
@@ -93,7 +93,7 @@ class Matrix[element, rows <: Int, columns <: Int]
                rowValue:       ValueOf[rows],
                columnValue:    ValueOf[columns],
                classTag:       ClassTag[multiplication.Result])
-  : Matrix[multiplication.Result, rows, rightColumns] =
+  :   Matrix[multiplication.Result, rows, rightColumns] =
 
       val columns2 = valueOf[rightColumns]
       val inner = valueOf[columns]
@@ -130,7 +130,9 @@ object Matrix:
 
   private type Constraint[rows <: Tuple, element] =
     Tuple.Union
-      [ Tuple.Fold[rows, Zero, [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple]] & Tuple ]
+      [ Tuple.Fold
+          [ rows, Zero, [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple] ]
+          & Tuple ]
     <:< element
 
   private type ColumnConstraint[rows <: Tuple] =
@@ -143,17 +145,17 @@ object Matrix:
                                  Columns =:= ColumnConstraint[rows.type],
                                  Rows =:= Tuple.Size[rows.type],
                                  ClassTag[element])
-  : Any =
+  :   Any =
 
       val rowCount: Int = valueOf[Rows]
       val columnCount = valueOf[Columns]
 
       new Matrix[element, Rows, Columns]
-           (rowCount,
-            columnCount,
-            IArray.create[element](columnCount*rowCount): array =>
-              for row <- 0 until rowCount; column <- 0 until columnCount
-              do rows.productElement(row).asMatchable.absolve match
-                case tuple: Tuple =>
-                  array(columnCount*row + column) =
-                    tuple.productElement(column).asInstanceOf[element])
+        ( rowCount,
+          columnCount,
+          IArray.create[element](columnCount*rowCount): array =>
+            for row <- 0 until rowCount; column <- 0 until columnCount
+            do rows.productElement(row).asMatchable.absolve match
+              case tuple: Tuple =>
+                array(columnCount*row + column) =
+                  tuple.productElement(column).asInstanceOf[element] )

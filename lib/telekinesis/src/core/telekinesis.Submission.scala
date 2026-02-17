@@ -60,7 +60,7 @@ case class Submission[value](query: Optional[Query]):
       value:      Optional[value]      = Unset,
       validation: Optional[Validation] = Unset )
     ( using value is Formulaic, value is Encodable in Query, Formulation )
-  : Html of Flow =
+  :   Html of Flow =
 
       // FIXME: Check why `data` isn't used
       val data: Optional[Query] = query.or(value.let(_.encode))

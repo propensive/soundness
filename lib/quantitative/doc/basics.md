@@ -121,7 +121,7 @@ def distance
     (velocity0: Quantity[Metres[1] & Seconds[-1]],
      time: Quantity[Seconds[1]],
      acceleration: Quantity[Metres[1] & Seconds[-2]])
-        : Quantity[Metres[1]] =
+        :   Quantity[Metres[1]] =
 
   velocity0*time + 0.5*acceleration*time*time
 ```
@@ -374,7 +374,7 @@ val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
 The type parameter, `PowerType`, is a necessary part of this definition, and must be constrained on
 the `Nat` type defined in [Rudiments](https://github.com/propensive/rudiments/), which is just an
 alias for `Int & Singleton`. If you are using Scala's erased definitions, both `CpuPerformance` and
-`Flops` may be made `erased trait`s to reduce the bytecode size slightly.
+`Flops` may be made `sealed trait`s to reduce the bytecode size slightly.
 
 With these definitions, we can now write `Mega(Flop) * Minute` to get a result with the dimensions
 "FLOPS-seconds", represented by the type, `Quantity[Flops[1] & Seconds[1]]`.
@@ -435,4 +435,3 @@ and then a value such as, `2.8*Kilo(Joule)` will be rendered as `2800 J` instead
 
 Note that this only applies if the quantity's units exactly match the type parameter of
 `SubstituteUnits`, and units such as Joule-seconds would still be displayed as `kg⋅m²⋅s¯¹`.
-

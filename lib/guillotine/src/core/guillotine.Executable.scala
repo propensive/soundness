@@ -54,11 +54,11 @@ sealed trait Executable:
   type Exec <: Label
 
   def fork[result]()(using working: WorkingDirectory)
-  : Process[Exec, result] logs ExecEvent raises ExecError
+  :   Process[Exec, result] logs ExecEvent raises ExecError
 
 
   def exec[result: Computable]()(using working: WorkingDirectory)
-  : result logs ExecEvent raises ExecError =
+  :   result logs ExecEvent raises ExecError =
 
       fork[result]().await()
 
@@ -67,7 +67,7 @@ sealed trait Executable:
     ( using erased intelligible: Exec is Intelligible,
             working:             WorkingDirectory,
             computable:          intelligible.Result is Computable )
-  : intelligible.Result logs ExecEvent raises ExecError =
+  :   intelligible.Result logs ExecEvent raises ExecError =
 
       fork[intelligible.Result]().await()
 
@@ -105,7 +105,7 @@ object Command:
 
 case class Command(arguments: Text*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
-      : Process[Exec, result] logs ExecEvent raises ExecError =
+      :   Process[Exec, result] logs ExecEvent raises ExecError =
 
     val processBuilder = ProcessBuilder(arguments.ss*)
     processBuilder.directory(ji.File(working.directory().s))
@@ -127,7 +127,7 @@ object Pipeline:
 
 case class Pipeline(commands: Command*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
-      : Process[Exec, result] logs ExecEvent raises ExecError =
+      :   Process[Exec, result] logs ExecEvent raises ExecError =
 
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.arguments.ss*)

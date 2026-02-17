@@ -97,7 +97,7 @@ object Teletypeable:
 
 
     def dedup[element](todo: List[element], seen: Set[element] = Set(), done: List[element] = Nil)
-    : List[element] =
+    :   List[element] =
 
         todo match
           case Nil => done
@@ -173,7 +173,7 @@ object Teletypeable:
 
   given throwable: Throwable is Teletypeable = throwable =>
     Teletype.make[String]
-     (throwable.getClass.getName.nn.show.cut(t".").last.s, _.copy(fg = 0xdc133b))
+      ( throwable.getClass.getName.nn.show.cut(t".").last.s, _.copy(fg = 0xdc133b) )
 
 trait Teletypeable extends Typeclass:
   def teletype(value: Self): Teletype

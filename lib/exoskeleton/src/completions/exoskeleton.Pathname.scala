@@ -99,6 +99,6 @@ object Pathname:
             val slash = if directory then t"/" else t""
 
             suggest:
-              if absolute then path.encode+slash else path.relativeTo(workingDirectory).encode+slash
+              if absolute then path.encode+slash else workingDirectory.toward(path).encode+slash
 
     safely(workingDirectory.resolve(argument())).option

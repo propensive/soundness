@@ -38,16 +38,16 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-erased trait Amount[dimension <: Measure, label <: Label]()
+sealed trait Amount[dimension <: Measure, label <: Label]()
 
 object Amount:
   // base units
-  erased given distance: Amount[Units[1, Distance], "distance"] = !!
-  erased given mass: Amount[Units[1, Mass], "mass"] = !!
-  erased given time: Amount[Units[1, Time], "time"] = !!
-  erased given current: Amount[Units[1, Current], "current"] = !!
-  erased given heat: Amount[Units[1, Heat], "temperature"] = !!
-  erased given luminosity: Amount[Units[1, Luminosity], "luminosity"] = !!
+  inline given distance: Amount[Units[1, Distance], "distance"] = !!
+  inline given mass: Amount[Units[1, Mass], "mass"] = !!
+  inline given time: Amount[Units[1, Time], "time"] = !!
+  inline given current: Amount[Units[1, Current], "current"] = !!
+  inline given heat: Amount[Units[1, Heat], "temperature"] = !!
+  inline given luminosity: Amount[Units[1, Luminosity], "luminosity"] = !!
 
   inline def apply[units <: Measure]: Text = ${Quantitative.amount[units]}
 
@@ -142,65 +142,65 @@ object Amount:
   type ElectricalResistivity =
     Units[3, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
 
-  erased given absement: Amount[Absement, "absement"] = !!
-  erased given absorbedDoseRate: Amount[AbsorbedDoseRate, "absorbed dose rate"] = !!
-  erased given acceleration: Amount[Acceleration, "acceleration"] = !!
-  erased given area: Amount[Area, "area"] = !!
-  erased given areaDensity: Amount[AreaDensity, "area density"] = !!
-  erased given capacitance: Amount[Capacitance, "capacitance"] = !!
-  erased given crackle: Amount[Crackle, "crackle"] = !!
-  erased given currentDensity: Amount[CurrentDensity, "current density"] = !!
-  erased given dynamicViscosity: Amount[DynamicViscosity, "dynamic viscosity"] = !!
-  erased given electricCharge: Amount[ElectricCharge, "electric charge"] = !!
-  erased given energy: Amount[Energy, "energy"] = !!
-  erased given entropy: Amount[Entropy, "entropy"] = !!
-  erased given force: Amount[Force, "force"] = !!
-  erased given frequency: Amount[Frequency, "frequency"] = !!
-  erased given substance: Amount[Units[1, AmountOfSubstance], "amount of substance"] = !!
-  erased given illuminance: Amount[Illuminance, "illuminance"] = !!
-  erased given impedance: Amount[Impedance, "impedance"] = !!
-  erased given inductance: Amount[Inductance, "inductance"] = !!
-  erased given jerk: Amount[Jerk, "jerk"] = !!
-  erased given jounce: Amount[Jounce, "jounce"] = !!
-  erased given linearDensity: Amount[LinearDensity, "linear density"] = !!
-  erased given magneticFlux: Amount[MagneticFlux, "magnetic flux"] = !!
-  erased given magneticMoment: Amount[MagneticMoment, "magnetic moment"] = !!
-  erased given magnetization: Amount[Magnetization, "magnetization"] = !!
-  erased given massDensity: Amount[MassDensity, "mass density"] = !!
-  erased given molarConcentration: Amount[MolarConcentration, "molar concentration"] = !!
-  erased given chemicalPotential: Amount[ChemicalPotential, "chemical potential"] = !!
-  erased given molarEntropy: Amount[MolarEntropy, "molar entropy"] = !!
-  erased given momentOfInertia: Amount[MomentOfInertia, "moment of inertia"] = !!
-  erased given momentum: Amount[Momentum, "momentum"] = !!
-  erased given opticalPower: Amount[OpticalPower, "optical power"] = !!
-  erased given permeability: Amount[Permeability, "permeability"] = !!
-  erased given permittivity: Amount[Permittivity, "permittivity"] = !!
-  erased given power: Amount[Power, "power"] = !!
-  erased given pressure: Amount[Pressure, "pressure"] = !!
-  erased given pop: Amount[Pop, "pop"] = !!
-  erased given radiance: Amount[Radiance, "radiance"] = !!
-  erased given reactionRate: Amount[ReactionRate, "reaction rate"] = !!
-  erased given reluctance: Amount[Reluctance, "reluctance"] = !!
-  erased given specificEnergy: Amount[SpecificEnergy, "specific energy"] = !!
-  erased given specificVolume: Amount[SpecificVolume, "specific volume"] = !!
-  erased given spin: Amount[Spin, "spin"] = !!
-  erased given surfaceTension: Amount[SurfaceTension, "surface tension"] = !!
-  erased given thermalConductance: Amount[ThermalConductance, "thermal conductance"] = !!
-  erased given thermalResistance: Amount[ThermalResistance, "thermal resistance"] = !!
-  erased given thermalResistivity: Amount[ThermalResistivity, "thermal resistivity"] = !!
-  erased given velocity: Amount[Velocity, "velocity"] = !!
-  erased given volume: Amount[Volume, "volume"] = !!
-  erased given electricChargeDensity: Amount[ElectricChargeDensity, "electric charge density"] = !!
-  erased given electricDipoleMoment: Amount[ElectricDipoleMoment, "electric dipole moment"] = !!
-  erased given electricFieldStrength: Amount[ElectricFieldStrength, "electric field strength"] = !!
-  erased given electricalConductance: Amount[ElectricalConductance, "electric conductance"] = !!
-  erased given electricalConductivity: Amount[ElectricalConductivity, "electric conductivity"] = !!
-  erased given electricalPotential: Amount[ElectricalPotential, "electric potential"] = !!
-  erased given electricalResistivity: Amount[ElectricalResistivity, "electric resistivity"] = !!
-  erased given magneticFluxDensity: Amount[MagneticFluxDensity, "magnetic flux density"] = !!
-  erased given specificHeatCapacity: Amount[SpecificHeatCapacity, "specific heat capacity"] = !!
-  erased given thermalConductivity: Amount[ThermalConductivity, "thermal conductivity"] = !!
-  erased given volumetricFlowRate: Amount[VolumetricFlowRate, "volumetric flow rate"] = !!
+  inline given absement: Amount[Absement, "absement"] = !!
+  inline given absorbedDoseRate: Amount[AbsorbedDoseRate, "absorbed dose rate"] = !!
+  inline given acceleration: Amount[Acceleration, "acceleration"] = !!
+  inline given area: Amount[Area, "area"] = !!
+  inline given areaDensity: Amount[AreaDensity, "area density"] = !!
+  inline given capacitance: Amount[Capacitance, "capacitance"] = !!
+  inline given crackle: Amount[Crackle, "crackle"] = !!
+  inline given currentDensity: Amount[CurrentDensity, "current density"] = !!
+  inline given dynamicViscosity: Amount[DynamicViscosity, "dynamic viscosity"] = !!
+  inline given electricCharge: Amount[ElectricCharge, "electric charge"] = !!
+  inline given energy: Amount[Energy, "energy"] = !!
+  inline given entropy: Amount[Entropy, "entropy"] = !!
+  inline given force: Amount[Force, "force"] = !!
+  inline given frequency: Amount[Frequency, "frequency"] = !!
+  inline given substance: Amount[Units[1, AmountOfSubstance], "amount of substance"] = !!
+  inline given illuminance: Amount[Illuminance, "illuminance"] = !!
+  inline given impedance: Amount[Impedance, "impedance"] = !!
+  inline given inductance: Amount[Inductance, "inductance"] = !!
+  inline given jerk: Amount[Jerk, "jerk"] = !!
+  inline given jounce: Amount[Jounce, "jounce"] = !!
+  inline given linearDensity: Amount[LinearDensity, "linear density"] = !!
+  inline given magneticFlux: Amount[MagneticFlux, "magnetic flux"] = !!
+  inline given magneticMoment: Amount[MagneticMoment, "magnetic moment"] = !!
+  inline given magnetization: Amount[Magnetization, "magnetization"] = !!
+  inline given massDensity: Amount[MassDensity, "mass density"] = !!
+  inline given molarConcentration: Amount[MolarConcentration, "molar concentration"] = !!
+  inline given chemicalPotential: Amount[ChemicalPotential, "chemical potential"] = !!
+  inline given molarEntropy: Amount[MolarEntropy, "molar entropy"] = !!
+  inline given momentOfInertia: Amount[MomentOfInertia, "moment of inertia"] = !!
+  inline given momentum: Amount[Momentum, "momentum"] = !!
+  inline given opticalPower: Amount[OpticalPower, "optical power"] = !!
+  inline given permeability: Amount[Permeability, "permeability"] = !!
+  inline given permittivity: Amount[Permittivity, "permittivity"] = !!
+  inline given power: Amount[Power, "power"] = !!
+  inline given pressure: Amount[Pressure, "pressure"] = !!
+  inline given pop: Amount[Pop, "pop"] = !!
+  inline given radiance: Amount[Radiance, "radiance"] = !!
+  inline given reactionRate: Amount[ReactionRate, "reaction rate"] = !!
+  inline given reluctance: Amount[Reluctance, "reluctance"] = !!
+  inline given specificEnergy: Amount[SpecificEnergy, "specific energy"] = !!
+  inline given specificVolume: Amount[SpecificVolume, "specific volume"] = !!
+  inline given spin: Amount[Spin, "spin"] = !!
+  inline given surfaceTension: Amount[SurfaceTension, "surface tension"] = !!
+  inline given thermalConductance: Amount[ThermalConductance, "thermal conductance"] = !!
+  inline given thermalResistance: Amount[ThermalResistance, "thermal resistance"] = !!
+  inline given thermalResistivity: Amount[ThermalResistivity, "thermal resistivity"] = !!
+  inline given velocity: Amount[Velocity, "velocity"] = !!
+  inline given volume: Amount[Volume, "volume"] = !!
+  inline given electricChargeDensity: Amount[ElectricChargeDensity, "electric charge density"] = !!
+  inline given electricDipoleMoment: Amount[ElectricDipoleMoment, "electric dipole moment"] = !!
+  inline given electricFieldStrength: Amount[ElectricFieldStrength, "electric field strength"] = !!
+  inline given electricalConductance: Amount[ElectricalConductance, "electric conductance"] = !!
+  inline given electricalConductivity: Amount[ElectricalConductivity, "electric conductivity"] = !!
+  inline given electricalPotential: Amount[ElectricalPotential, "electric potential"] = !!
+  inline given electricalResistivity: Amount[ElectricalResistivity, "electric resistivity"] = !!
+  inline given magneticFluxDensity: Amount[MagneticFluxDensity, "magnetic flux density"] = !!
+  inline given specificHeatCapacity: Amount[SpecificHeatCapacity, "specific heat capacity"] = !!
+  inline given thermalConductivity: Amount[ThermalConductivity, "thermal conductivity"] = !!
+  inline given volumetricFlowRate: Amount[VolumetricFlowRate, "volumetric flow rate"] = !!
 
-  erased given electricDisplacementField: Amount[ElectricDisplacementField,
+  inline given electricDisplacementField: Amount[ElectricDisplacementField,
       "electric displacement field"] = !!

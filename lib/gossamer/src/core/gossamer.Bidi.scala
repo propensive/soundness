@@ -37,5 +37,3 @@ import language.experimental.into
 
 enum Bidi:
   case Ltr, Rtl
-
-export Bidi.Ltr, Bidi.Rtl

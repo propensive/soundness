@@ -40,4 +40,4 @@ trait Feet[Power <: Nat] extends Units[Power, Distance]
 
 object Feet:
   given designation: Designation[Feet[1]] = () => "ft".tt
-  erased given ratio: Ratio[Feet[-1] & Metres[1], 0.3048] = !!
+  inline given ratio: Ratio[Feet[-1] & Metres[1], 0.3048] = !!

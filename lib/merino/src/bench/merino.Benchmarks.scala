@@ -56,7 +56,7 @@ object Benchmarks extends Suite(m"Merino tests"):
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample1).nn)
 
       . benchmark
-         (warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
+        ( warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99 )
 
       test(m"Parse file with Merino"):
         JsonAst.parse(jsonExample1.nn.immutable(using Unsafe))
@@ -69,7 +69,7 @@ object Benchmarks extends Suite(m"Merino tests"):
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample2).nn)
 
       . benchmark
-         (warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
+        ( warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99 )
 
       test(m"Parse file with Merino"):
         JsonAst.parse(jsonExample2.nn.immutable(using Unsafe))
@@ -82,7 +82,7 @@ object Benchmarks extends Suite(m"Merino tests"):
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample3).nn)
 
       . benchmark
-         (warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
+        ( warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99 )
 
       test(m"Parse file with Merino"):
         JsonAst.parse(jsonExample3.nn.immutable(using Unsafe))

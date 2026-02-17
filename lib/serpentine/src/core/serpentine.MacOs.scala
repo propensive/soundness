@@ -38,14 +38,14 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-erased trait MacOs extends Posix
+sealed trait MacOs extends Posix
 
 object MacOs:
   type Rules =
     MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
     & MustNotEqual["Icon\r"] & MustNotContain[":"]
 
-  erased given MacOs is Nominative under Rules = !!
+  inline given MacOs is Nominative under Rules = !!
 
   given filesystem: MacOs is Filesystem:
     type UniqueRoot = true

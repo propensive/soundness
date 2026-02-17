@@ -61,7 +61,7 @@ object Cli:
       focus:         Optional[Int]     = Unset,
       position:      Optional[Int]     = Unset,
       tab:           Optional[Ordinal] = Unset )
-  : List[Argument] =
+  :   List[Argument] =
 
       textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
         Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
@@ -75,7 +75,7 @@ trait Cli extends Console:
   def login: Login
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
-  : Optional[operand]
+  :   Optional[operand]
 
   def register(flag: Flag, discoverable: Discoverable): Unit = ()
   def present(flag: Flag): Unit = ()

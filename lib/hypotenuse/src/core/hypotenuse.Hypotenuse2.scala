@@ -157,7 +157,7 @@ object Hypotenuse2:
       bound:       Expr[Int | Double | Char | Byte | Short | Long | Float],
       strict:      Expr[Boolean],
       greaterThan: Expr[Boolean] )
-  : Macro[Boolean] =
+  :   Macro[Boolean] =
 
       val errorMessage = m"this cannot be written as a range expression"
 

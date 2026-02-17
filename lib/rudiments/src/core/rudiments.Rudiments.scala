@@ -93,5 +93,3 @@ object Rudiments:
   def reflectClass[target: Type]: Macro[Class[target]] =
     import quotes.reflect.*
     '{Class.forName(${Expr(TypeRepr.of[target].typeSymbol.fullName)}).asInstanceOf[Class[target]]}
-
-export Rudiments.{Bytes, Digit}

@@ -46,7 +46,7 @@ object Price:
       Price(left.principal/right, left.tax/right)
 
   def apply[currency <: Label](principal0: Money in currency, tax0: Money in currency)
-  : Price in currency =
+  :   Price in currency =
 
       new Price:
         type Form = currency
@@ -76,7 +76,8 @@ trait Price:
 
   override def hashCode(): Int = (principal.asInstanceOf[Long] ^ tax.asInstanceOf[Long]*31).hashCode
 
-  override def toString(): String = s"Price(${principal.value} ${principal.currency}, ${tax.value} ${tax.currency})"
+  override def toString(): String =
+    s"Price(${principal.value} ${principal.currency}, ${tax.value} ${tax.currency})"
 
   override def equals(that: Any): Boolean = that match
     case that: Price => principal == that.principal && tax == that.tax

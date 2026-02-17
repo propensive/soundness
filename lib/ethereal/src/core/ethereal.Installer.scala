@@ -79,7 +79,7 @@ object Installer:
 
   def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
     ( using Environment, HomeDirectory, System )
-  : List[Path on Linux] logs DaemonLogEvent raises InstallError =
+  :   List[Path on Linux] logs DaemonLogEvent raises InstallError =
 
       mitigate:
         case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
@@ -92,13 +92,13 @@ object Installer:
 
           val preferences: List[Path on Linux] =
             List
-             (Xdg.bin[Path on Linux],
-              % / "usr" / "local" / "bin",
-              % / "usr" / "bin",
-              % / "usr" / "local" / "sbin",
-              % / "opt" / "bin",
-              % / "bin",
-              % / "bin")
+              ( Xdg.bin[Path on Linux],
+                % / "usr" / "local" / "bin",
+                % / "usr" / "bin",
+                % / "usr" / "local" / "sbin",
+                % / "opt" / "bin",
+                % / "bin",
+                % / "bin" )
 
           paths.filter(_.exists()).filter(_.writable()).sortBy: directory =>
             preferences.indexOf(directory) match
@@ -108,8 +108,9 @@ object Installer:
 
   def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
     ( using service: DaemonService[?], environment: Environment, home: HomeDirectory )
-    ( using Effectful, Diagnostics )
-  : Result logs DaemonLogEvent raises InstallError =
+    ( using erased Effectful )
+    ( using Diagnostics )
+  :   Result logs DaemonLogEvent raises InstallError =
 
       import workingDirectories.java
       import systems.java

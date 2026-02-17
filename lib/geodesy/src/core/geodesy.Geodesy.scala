@@ -108,7 +108,7 @@ object Geodesy:
 
 
       def recur(value: Long, latMin: Long, latMax: Long, longMin: Long, longMax: Long, count: Int)
-      : Long =
+      :   Long =
 
           if count >= bits then value else (count%2).absolve match
             case 0 =>
@@ -145,8 +145,8 @@ object Geodesy:
 
       val result: Double =
         math.atan2
-         (math.sin(dLng)*math.cos(right.latitude),
-          math.cos(left.latitude)*math.sin(right.latitude) -
-              math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng))
+          ( math.sin(dLng)*math.cos(right.latitude),
+            math.cos(left.latitude)*math.sin(right.latitude) -
+                math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng) )
 
       compass.direction(Angle(result))

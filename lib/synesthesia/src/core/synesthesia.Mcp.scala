@@ -69,7 +69,7 @@ object Mcp:
     ( dispatch: Json => Optional[Json] )
     ( using request: Http.Request )
     ( using Monitor, Codicil, Online )
-  : Http.Response =
+  :   Http.Response =
       import jsonPrinters.minimal
       import charEncoders.utf8
       import charDecoders.utf8
@@ -248,7 +248,10 @@ object Mcp:
 
 
   case class ListResources(nextCursor: Optional[Cursor] = Unset, resources: List[Resource] = Nil)
-  case class ListResourceTemplates(nextCursor: Optional[Cursor] = Unset, resourceTemplates: List[ResourceTemplate] = Nil)
+
+  case class ListResourceTemplates
+    ( nextCursor: Optional[Cursor] = Unset, resourceTemplates: List[ResourceTemplate] = Nil )
+
   case class ReadResource(contents: List[Contents] = Nil)
 
   case class Resource
@@ -272,9 +275,15 @@ object Mcp:
       annotations: Annotations          = Annotations(),
       _meta:       Optional[Json]       = Unset )
 
-  case class ResourceContents(uri: Text, mimeType: Optional[Text] = Unset, _meta: Optional[Json] = Unset)
-  case class TextResourceContents(uri: Text, mimeType: Optional[Text] = Unset, text: Text, _meta: Optional[Json] = Unset)
-  case class BlobResourceContents(uri: Text, mimeType: Optional[Text] = Unset, blob: Text, _meta: Optional[Json] = Unset)
+  case class ResourceContents
+    ( uri: Text, mimeType: Optional[Text] = Unset, _meta: Optional[Json] = Unset )
+
+  case class TextResourceContents
+    ( uri: Text, mimeType: Optional[Text] = Unset, text: Text, _meta: Optional[Json] = Unset )
+
+  case class BlobResourceContents
+    ( uri: Text, mimeType: Optional[Text] = Unset, blob: Text, _meta: Optional[Json] = Unset )
+
   case class ListPrompts(nextCursor: Optional[Cursor] = Unset, prompts: List[Prompt] = Nil)
 
   case class Annotations
@@ -283,7 +292,9 @@ object Mcp:
       lastModified: Optional[Text]       = Unset )
 
   case class Complete(completion: Completion)
-  case class Completion(values: List[Text] = Nil, total: Optional[Int] = Unset, hasMore: Optional[Boolean] = Unset)
+
+  case class Completion
+    ( values: List[Text] = Nil, total: Optional[Int] = Unset, hasMore: Optional[Boolean] = Unset )
 
   object Role:
     given encodable: Role is Encodable in Json =
@@ -433,7 +444,8 @@ object Mcp:
   enum Mode:
     case Auto, Required, None
 
-  case class SamplingMessage(role: Role, content: List[SamplingMessageContentBlock], _meta: Optional[Json] = Unset)
+  case class SamplingMessage
+    ( role: Role, content: List[SamplingMessageContentBlock], _meta: Optional[Json] = Unset )
 
   object SamplingMessageContentBlock:
     import dynamicJsonAccess.enabled
@@ -584,7 +596,7 @@ object Mcp:
         capabilities:    ClientCapabilities,
         clientInfo:      Implementation,
         _meta:           Optional[Json] )
-    : Initialize
+    :   Initialize
 
     @rpc
     def `completion/complete`
@@ -592,14 +604,14 @@ object Mcp:
         argument: Argument,
         context:  Optional[Context],
         _meta:    Optional[Json] )
-    : Complete
+    :   Complete
 
     @rpc
     def `logging/setLevel`(level: LoggingLevel, _meta: Optional[Json]): Unit
 
     @rpc
     def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json])
-    : GetPrompt
+    :   GetPrompt
 
     @rpc
     def `prompts/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListPrompts
@@ -608,7 +620,8 @@ object Mcp:
     def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources
 
     @rpc
-    def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates
+    def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json])
+    :   ListResourceTemplates
 
     @rpc
     def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource
@@ -650,7 +663,7 @@ object Mcp:
         total:         Optional[Double],
         message:       Optional[Text],
         _meta:         Optional[Json] )
-    : Unit
+    :   Unit
 
     @rpc
     def `notifications/initialized`(_meta: Optional[Json]): Unit
@@ -668,7 +681,7 @@ object Mcp:
         ttl:           Optional[Int],
         pollInterval:  Optional[Int],
         _meta:         Optional[Json] )
-    : Unit
+    :   Unit
 
     @rpc
     def `notifications/resources/list_changed`(_meta: Optional[Json]): Unit
@@ -683,7 +696,9 @@ object Mcp:
     def `notifications/tools/list_changed`(_meta: Optional[Json]): Unit
 
     @rpc
-    def `notifications/message`(level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json]): Unit
+    def `notifications/message`
+      ( level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json] )
+    :   Unit
 
   object Interface:
 
@@ -693,7 +708,7 @@ object Mcp:
 
     inline def apply(sessionId: Text, server: McpServer from McpClient)
       ( using spec: server.type is McpSpecification )
-    : Interface =
+    :   Interface =
 
         cache.establish(sessionId):
           new Interface(sessionId, server, spec)
@@ -714,7 +729,7 @@ object Mcp:
         capabilities:    ClientCapabilities,
         clientInfo:      Implementation,
         _meta:           Optional[Json] )
-    : Initialize =
+    :   Initialize =
 
         Initialize
           (version,
@@ -727,7 +742,7 @@ object Mcp:
         argument: Argument,
         context:  Optional[Context],
         _meta:    Optional[Json] )
-    : Complete =
+    :   Complete =
 
         ???
 
@@ -736,7 +751,7 @@ object Mcp:
       loggingLevel = level
 
     def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json])
-    : GetPrompt =
+    :   GetPrompt =
 
         val messages = spec.invokePrompt(server, client, name, arguments.or(Map())).map:
           case Human(message) => PromptMessage(Role.User, TextContent(message))
@@ -750,7 +765,11 @@ object Mcp:
     def `resources/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResources =
       ListResources(resources = spec.resources())
 
-    def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json]): ListResourceTemplates = ???
+    def `resources/templates/list`(cursor: Optional[Cursor], _meta: Optional[Json])
+    :   ListResourceTemplates =
+
+        ???
+
 
     def `resources/read`(uri: Text, _meta: Optional[Json]): ReadResource =
       ReadResource(List(spec.invokeResource(server, uri)))
@@ -778,7 +797,7 @@ object Mcp:
 
     def `notifications/cancelled`
       ( requestId: Optional[TextInt], reason: Optional[Text], _meta: Optional[Json] )
-    : Unit =
+    :   Unit =
 
         ()
 
@@ -789,7 +808,7 @@ object Mcp:
         total:         Optional[Double],
         message:       Optional[Text],
         _meta:         Optional[Json] )
-    : Unit =
+    :   Unit =
 
         ()
 
@@ -813,10 +832,14 @@ object Mcp:
         ttl:           Optional[Int],
         pollInterval:  Optional[Int],
         _meta:         Optional[Json] )
-    : Unit = ???
+    :   Unit = ???
 
     def `notifications/prompts/list_changed`(_meta: Optional[Json]): Unit = ???
 
     def `notifications/tools/list_changed`(_meta: Optional[Json]): Unit = ???
 
-    def `notifications/message`(level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json]): Unit = ???
+    def `notifications/message`
+      ( level: LoggingLevel, logger: Optional[Text], data: Json, _meta: Optional[Json] )
+    :   Unit =
+
+        ???

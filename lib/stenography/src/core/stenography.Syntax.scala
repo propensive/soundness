@@ -147,7 +147,7 @@ object Syntax:
 
   def typeBounds(using Quotes)
     ( sub: Syntax, lower: quotes.reflect.TypeRepr, upper: quotes.reflect.TypeRepr )
-  : Syntax =
+  :   Syntax =
 
       import quotes.reflect.*
 
@@ -180,47 +180,54 @@ object Syntax:
           case _ => Sequence('{', bounds.map(_(1)))
     . to(Map)
 
-  def clause(using Quotes)(clause: quotes.reflect.ParamClause, showUsing: Boolean, context: Map[Text, Syntax]): Syntax =
-    import quotes.reflect.*
+  def clause(using Quotes)
+    ( clause: quotes.reflect.ParamClause, showUsing: Boolean, context: Map[Text, Syntax] )
+  :   Syntax =
+      import quotes.reflect.*
 
-    clause match
-      case TermParamClause(termDefs) =>
-        val contextual = termDefs.exists(_.symbol.flags.is(Flags.Given))
+      clause.absolve match
+        case TermParamClause(termDefs) =>
+          val contextual = termDefs.exists(_.symbol.flags.is(Flags.Given))
 
-        val items0 = termDefs.filter:
-          case ValDef(name, _, _) if !name.startsWith("evidence$") => true
-          case _                                                   => false
+          val items0 = termDefs.filter:
+            case ValDef(name, _, _) if !name.startsWith("evidence$") => true
+            case _                                                   => false
 
-        var parens = items0.length != 1 || showUsing
+          var parens = items0.length != 1 || showUsing
 
-        val items = items0.map:
-          case valDef@ValDef(name, meta, default) if !name.startsWith("evidence$") =>
-            val evidence = name.startsWith("x$")
-            val syntax =
-              if evidence then apply(meta.tpe)
-              else
-                parens = true
-                Named(contextual && showUsing, name.tt, apply(meta.tpe))
+          val items = items0.map: value =>
+            value.absolve match
+              case valDef@ValDef(name, meta, default) if !name.startsWith("evidence$") =>
+                val evidence = name.startsWith("x$")
+                val syntax =
+                  if evidence then apply(meta.tpe)
+                  else
+                    parens = true
+                    Named(contextual && showUsing, name.tt, apply(meta.tpe))
 
-            if valDef.symbol.flags.is(Flags.Inline) then Prefix("inline", syntax) else syntax
+                if valDef.symbol.flags.is(Flags.Inline) then Prefix("inline", syntax) else syntax
 
-        if !parens then items(0) else Sequence('(', items)
+          if !parens then items(0) else Sequence('(', items)
 
-      case TypeParamClause(typeDefs) =>
-        val items = typeDefs.map:
-          case typeDef@TypeDef(name, bounds) =>
-            val flags = typeDef.symbol.flags
+        case TypeParamClause(typeDefs) =>
+          val items = typeDefs.map:
+            case typeDef@TypeDef(name, bounds) =>
+              val flags = typeDef.symbol.flags
 
-            val ref = symbolic(name)
+              val ref = symbolic(name)
 
-            val syntax = bounds match
-              case TypeBoundsTree(lower, upper)    => typeBounds(symbolic(name.tt), lower.tpe, upper.tpe)
-              case LambdaTypeTree(typeDefs, other) => symbolic(name) // FIXME: todo
-              case other                           => symbolic(name)
+              val syntax = bounds match
+                case LambdaTypeTree(typeDefs, other) => symbolic(name) // FIXME: todo
 
-            context.at(name.tt).lay(syntax)(Infix(syntax, ": ", _))
+                case TypeBoundsTree(lower, upper) =>
+                  typeBounds(symbolic(name.tt), lower.tpe, upper.tpe)
 
-        Sequence('[', items)
+                case other =>
+                  symbolic(name)
+
+              context.at(name.tt).lay(syntax)(Infix(syntax, ": ", _))
+
+          Sequence('[', items)
 
   def signature(using Quotes)(name: Text, repr: quotes.reflect.TypeRepr): Declaration =
     import quotes.reflect.*
@@ -341,11 +348,11 @@ object Syntax:
           case AppliedType(_, names) => apply(args0(1)).absolve match
             case Sequence(_, elements) =>
               Sequence
-               ('(',
-                names.zip(elements).map:
-                  _.absolve match
-                    case (ConstantType(StringConstant(name)), element) =>
-                      Named(false, name.tt, element))
+                ( '(',
+                  names.zip(elements).map:
+                    _.absolve match
+                      case (ConstantType(StringConstant(name)), element) =>
+                        Named(false, name.tt, element) )
 
           case ref@TypeRef(prefix, name) =>
             apply(ref)

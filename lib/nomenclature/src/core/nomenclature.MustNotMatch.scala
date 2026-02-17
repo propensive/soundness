@@ -37,6 +37,6 @@ import fulminate.*
 import proscenium.*
 
 object MustNotMatch extends Rule
-   ({ text => m"must not match $text" }, { (text, param) => !text.s.matches(param.s) })
+  ( { text => m"must not match $text" }, { (text, param) => !text.s.matches(param.s) } )
 
-erased trait MustNotMatch[text <: Label] extends Check[text]
+sealed trait MustNotMatch[text <: Label] extends Check[text]

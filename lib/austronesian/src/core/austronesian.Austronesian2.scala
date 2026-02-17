@@ -45,13 +45,11 @@ import proscenium.*
 import rudiments.*
 import wisteria.*
 
-private given Realm = realm"austronesian"
-
 object Austronesian2:
   object EncodableDerivation extends Derivation[[entity] =>> entity is Encodable in Pojo]:
 
     inline def join[derivation <: Product: ProductReflection]
-    : derivation is Encodable in _root_.austronesian.Austronesian.Pojo =
+    :   derivation is Encodable in _root_.austronesian.Austronesian.Pojo =
 
         fields(_):
           [field] => _.encode
@@ -99,7 +97,7 @@ object Austronesian2:
       arguments:   Expr[Seq[Any]],
       classloader: Expr[Classloader],
       singleton:   Expr[Boolean] )
-  : Macro[Any] =
+  :   Macro[Any] =
 
     import quotes.reflect.*
 

@@ -40,4 +40,4 @@ trait Quarters[Power <: Nat] extends Units[Power, Mass]
 
 object Quarters:
   given designation: Designation[Quarters[1]] = () => "qr".tt
-  erased given ratio: Ratio[Kilograms[1] & Quarters[-1], 12.700586360000001] = !!
+  inline given ratio: Ratio[Kilograms[1] & Quarters[-1], 12.700586360000001] = !!

@@ -101,7 +101,7 @@ object Regex:
         if quantifier.unitary then (index2, s"($groupName$subpattern)".tt)
         else (index2, s"($groupName($subpattern)${quantifier.serialize}${greed.serialize})".tt)
 
-  def make(parts: Seq[String])(using Unsafe): Regex =
+  def make(parts: Seq[String])(using erased Unsafe): Regex =
     import strategies.throwUnsafely
     parse(parts.to(List).map(_.tt))
 
@@ -184,7 +184,7 @@ object Regex:
 
 
     def group(start: Int, children: List[Group], top: Boolean, escape: Boolean, charClass: Boolean)
-    : Group =
+    :   Group =
 
         current() match
           case '\u0000' =>
@@ -231,14 +231,14 @@ object Regex:
             val greed2 = greed()
 
             Group
-             (start,
-              end,
-              index,
-              children.reverse,
-              quantifier2,
-              greed2,
-              captured.has(start - 1),
-              false)
+              ( start,
+                end,
+                index,
+                children.reverse,
+                quantifier2,
+                greed2,
+                captured.has(start - 1),
+                false )
 
           case _ =>
             index += 1
@@ -258,7 +258,7 @@ object Regex:
 
 
   def makePattern(pattern: Text, todo: List[Group], last: Int, text: Text, end: Int, index: Int)
-  : (Int, Text) =
+  :   (Int, Text) =
 
       todo match
         case Nil =>
@@ -305,7 +305,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
 
 
   def matchGroups(text: Text)(using scanner: Scanner)
-  : Option[IArray[List[Text | Char] | Optional[Text | Char]]] =
+  :   Option[IArray[List[Text | Char] | Optional[Text | Char]]] =
 
       val matcher: jur.Matcher = javaPattern.matcher(text.s).nn
 
@@ -314,7 +314,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
         ( todo:    List[Regex.Group],
           matches: List[Optional[Text | Char] | List[Text | Char]],
           index:   Int )
-      : List[Optional[Text | Char] | List[Text | Char]] =
+      :   List[Optional[Text | Char] | List[Text | Char]] =
 
           todo match
             case Nil =>

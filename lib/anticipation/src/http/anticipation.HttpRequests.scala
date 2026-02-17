@@ -34,4 +34,4 @@ package anticipation
 
 object HttpRequests
 
-erased trait HttpRequests
+sealed trait HttpRequests

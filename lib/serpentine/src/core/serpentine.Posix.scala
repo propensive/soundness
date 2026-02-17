@@ -38,14 +38,15 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-erased trait Posix
+trait Posix:
+  type UniqueRoot = true
 
 object Posix:
   type Rules =
     MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
     & MustNotEqual["Icon\r"] & MustNotContain[":"]
 
-  erased given Posix is Nominative under Rules = !!
+  inline given Posix is Nominative under Rules = !!
 
   given filesystem: Posix is Filesystem:
     type UniqueRoot = true

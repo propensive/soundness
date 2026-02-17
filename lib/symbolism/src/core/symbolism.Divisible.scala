@@ -38,7 +38,7 @@ import scala.annotation.targetName
 
 object Divisible:
   def apply[dividend, divisor, result](lambda: (dividend, divisor) => result)
-  : dividend is Divisible by divisor to result =
+  :   dividend is Divisible by divisor to result =
 
       new Divisible:
         type Self = dividend

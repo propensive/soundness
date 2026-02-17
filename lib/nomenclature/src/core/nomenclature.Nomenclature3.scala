@@ -40,6 +40,3 @@ object Nomenclature3:
   def staticCompanion[instance: Type]: Macro[Matchable] =
     import quotes.reflect.*
     Ident(TypeRepr.of[instance].typeSymbol.companionModule.termRef).asExprOf[Matchable]
-
-transparent inline def staticCompanion[instance]: Matchable =
-  ${Nomenclature3.staticCompanion[instance]}

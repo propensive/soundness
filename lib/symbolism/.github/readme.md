@@ -138,7 +138,7 @@ of the same type:
 ```scala
 def op[Operand, Result](lefts: List[Operand], right: List[Operand])
     (using Operand is Multiplicable by Operand into Result)
-        : List[Result] =
+        :   List[Result] =
   lefts.zip(rights).map(_*_)
 ```
 
@@ -169,7 +169,7 @@ def op2[A, B, C, D](a: A, b: B, c: C, d: D)
     (using product1: A is Multiplicable by B,
            product2: C is Multiplicable by D,
            sum:      product1.Result is Subtractable by product2.Result)
-        : sum.Result
+        :   sum.Result
   a*b - c*d
 ```
 
@@ -294,4 +294,3 @@ The logo shows three of the four arithmetic operators overlaid upon each other.
 
 Symbolism is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

@@ -76,7 +76,7 @@ trait McpServer():
   private given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
 
   def serve(using this.type is McpSpecification, Monitor, Codicil, Online, Http.Request)
-  : Http.Response =
+  :   Http.Response =
 
       unsafely:
         val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)

@@ -63,7 +63,8 @@ object Markdown:
       case ' '                          => builder.append("%20")
       case '\\'                         => builder.append("%5C")
 
-      case char@('-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '=' | ':' | '?') =>
+      case char@('-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '='
+                 | ':' | '?') =>
         builder.append(char)
 
       case char =>
@@ -129,7 +130,7 @@ object Markdown:
 
       @tailrec
       def merge(block: Boolean, nodes: List[Layout], done: List[Html of Flow], tight: Boolean)
-      : List[Html of Flow] =
+      :   List[Html of Flow] =
           nodes match
             case Nil =>
               if block then ((TextNode("\n"): Html of Flow) :: done).reverse else done.reverse
@@ -137,10 +138,10 @@ object Markdown:
             case Layout.Paragraph(_, contents*) :: tail if tight =>
               val content = Fragment(contents.map(phrasing(_))*)
               merge
-               (false,
-                tail,
-                (if block then Fragment("\n", content) else content) :: done,
-                tight)
+                ( false,
+                  tail,
+                  (if block then Fragment("\n", content) else content) :: done,
+                  tight )
 
             case head :: tail =>
               merge(true, tail, Fragment("\n", layout(head)) :: done, tight)

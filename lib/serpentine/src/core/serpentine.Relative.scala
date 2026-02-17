@@ -55,7 +55,7 @@ object Relative:
     type Limit = 0
 
   def of[topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
-  : Relative of topic under limit =
+  :   Relative of topic under limit =
 
       new Relative(ascent, descent.to(List)):
         type Topic = topic
@@ -63,7 +63,7 @@ object Relative:
 
 
   def apply[filesystem, topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
-  : Relative of topic on filesystem under limit =
+  :   Relative of topic on filesystem under limit =
 
       new Relative(ascent, descent.to(List)):
         type Plane = filesystem
@@ -127,7 +127,7 @@ object Relative:
 
           case _ => None
 
-  : relative is Quotient of Text over (Relative on filesystem) | Text
+  :   relative is Quotient of Text over (Relative on filesystem) | Text
 
 
 case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topical, Limited:
@@ -135,6 +135,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
   type Limit <: Int
 
   def delta: Int = descent.length - ascent
+  def name: Optional[Text] = descent.prim
 
   def self: Boolean = ascent == 0 && descent == Nil
 
@@ -157,6 +158,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
     summonFrom:
       case compliant: (Plane is Compliant on `filesystem`) =>
         this.asInstanceOf[Relative of Topic under Limit on filesystem]
+
       case _ =>
         check[Topic, filesystem](descent.to(List))
         this.asInstanceOf[Relative of Topic under Limit on filesystem]

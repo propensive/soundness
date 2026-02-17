@@ -60,9 +60,9 @@ object Zip:
     & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["<"] & MustNotContain[">"]
     & MustNotContain["|"]
 
-  erased given compliant: Linux is Compliant on Zip = !!
-  erased given compliant2: MacOs is Compliant on Zip = !!
-  erased given nominative: Zip is Nominative under Rules = !!
+  inline given compliant: Linux is Compliant on Zip = !!
+  inline given compliant2: MacOs is Compliant on Zip = !!
+  inline given nominative: Zip is Nominative under Rules = !!
   given submissible: %.type is Submissible on Zip = _ => ()
 
   class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t""):
@@ -82,4 +82,4 @@ object Zip:
     def decode(text: Text): %.type = %
     def encode(root: %.type): Text = t""
 
-erased trait Zip
+sealed trait Zip

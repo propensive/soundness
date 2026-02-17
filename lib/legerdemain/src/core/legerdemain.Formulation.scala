@@ -48,4 +48,4 @@ trait Formulation:
       legend:     Text,
       validation: Optional[Message],
       required:   Boolean )
-  : Html of Flow
+  :   Html of Flow

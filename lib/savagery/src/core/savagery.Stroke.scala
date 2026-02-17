@@ -52,7 +52,7 @@ enum Stroke:
   case Quadratic[point <: (Shift | Point)](ctrl1: Optional[point], point: point)
 
   case Arc
-     (rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, coords: Point | Shift)
+    ( rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, coords: Point | Shift )
 
 object Stroke:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"

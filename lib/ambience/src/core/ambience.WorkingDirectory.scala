@@ -35,6 +35,7 @@ package ambience
 import anticipation.*
 import prepositional.*
 
+object WorkingDirectory:
   def apply[path: Abstractable across Paths to Text](path: path): WorkingDirectory =
     () => path.generic
 

@@ -136,14 +136,14 @@ object Yossarian:
 
     given inspectable: Style is Inspectable = style =>
       Map
-       (t"Bo" -> Bit.Bold(style),
-        t"F"  -> Bit.Faint(style),
-        t"I"  -> Bit.Italic(style),
-        t"S"  -> Bit.Strike(style),
-        t"Bl" -> Bit.Blink(style),
-        t"U"  -> Bit.Underline(style),
-        t"C"  -> Bit.Conceal(style),
-        t"R"  -> Bit.Reverse(style))
+        ( t"Bo" -> Bit.Bold(style),
+          t"F"  -> Bit.Faint(style),
+          t"I"  -> Bit.Italic(style),
+          t"S"  -> Bit.Strike(style),
+          t"Bl" -> Bit.Blink(style),
+          t"U"  -> Bit.Underline(style),
+          t"C"  -> Bit.Conceal(style),
+          t"R"  -> Bit.Reverse(style) )
       .   map { (key, value) => if value then key else t"!$key" }
       .   join(t"[", t" ", t" ${Foreground(style).inspect} ${Background(style).inspect}]")
 
@@ -155,5 +155,3 @@ object Yossarian:
 
       def update(style: Style, boolean: Boolean): Style =
         if boolean then (style | (1L << bit)) else (style & ~(1L << bit))
-
-export Yossarian.{Style, Screen}

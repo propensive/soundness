@@ -52,7 +52,7 @@ trait Interaction[result, question]:
   final def recur
     ( stream: Stream[TerminalEvent], state: question, oldState: Optional[question] )
     ( key: (question, TerminalEvent) => question )
-  : Optional[(result, Stream[TerminalEvent])] =
+  :   Optional[(result, Stream[TerminalEvent])] =
 
       render(oldState, state)
 
@@ -66,7 +66,7 @@ trait Interaction[result, question]:
 
   def apply(stream: Stream[TerminalEvent], state: question)
     ( key: (question, TerminalEvent) => question )
-  : Optional[(result, Stream[TerminalEvent])] =
+  :   Optional[(result, Stream[TerminalEvent])] =
 
       before()
       recur(stream, state, Unset)(key).also(after())

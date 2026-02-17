@@ -57,7 +57,7 @@ object Property:
 
     def applyDynamic[property](key: String)()
       ( using properties: System, reader: (name+"."+key.type) is Property of property )
-    : property =
+    :   property =
 
         val name = property+"."+key
         reader.read(properties(name.tt), name.tt)
@@ -65,13 +65,13 @@ object Property:
 
     inline def apply[property]()
       ( using properties: System, reader: name is Property of property )
-    : property =
+    :   property =
 
         val name = valueOf[name]
         reader.read(properties(name.tt), name.tt)
 
   def apply[name <: String, property](lambda: Text => property)
-  : name is Property of property =
+  :   name is Property of property =
       (value, property) =>
         lambda(value.or(panic(m"the system property $property was unavailable")))
 

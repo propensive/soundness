@@ -47,7 +47,7 @@ object Environment extends Dynamic:
   def apply[variable]
     ( variable: Text )
     ( using environment: Environment, reader: EnvironmentVariable[Label, variable] )
-  : variable raises EnvironmentError =
+  :   variable raises EnvironmentError =
 
       environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable)))
       . yet(reader.read("".tt))
@@ -57,7 +57,7 @@ object Environment extends Dynamic:
     ( using environment:      Environment,
             reader:           EnvironmentVariable[key.type, variable],
             environmentError: Tactic[EnvironmentError] )
-  : variable =
+  :   variable =
 
       environment.variable(reader.defaultName).let(reader.read(_)).or:
         raise(EnvironmentError(reader.defaultName)) yet reader.read(Text(""))

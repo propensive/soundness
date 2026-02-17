@@ -74,7 +74,7 @@ object Stageable:
     type Form = Array[Pojo]
 
     inline def deserialize(value: Array[Pojo] | Null)
-    : Array[Object] = value.asInstanceOf[Array[Object]]
+    :   Array[Object] = value.asInstanceOf[Array[Object]]
 
     inline def serialize(value: Array[Object]): Array[Pojo] = value.asInstanceOf[Array[Pojo]]
 

@@ -71,6 +71,3 @@ object Anamnesis:
 
   extension [ref, database <: Database](ref: Ref of ref in database)
     def apply()(using db: database): ref = db.dereference(ref)
-
-export Anamnesis.Ref
-export Anamnesis.Reference

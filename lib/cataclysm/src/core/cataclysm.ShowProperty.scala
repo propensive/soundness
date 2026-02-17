@@ -64,10 +64,11 @@ object ShowProperty:
           property3.show(tuple(2)) )
       . join(t" ")
 
-  given quad: [ property:  ShowProperty,
-                property2: ShowProperty,
-                property3: ShowProperty,
-                property4: ShowProperty ]
+  given quad
+  :   [ property:  ShowProperty,
+        property2: ShowProperty,
+        property3: ShowProperty,
+        property4: ShowProperty ]
   =>  ShowProperty[(property, property2, property3, property4)] =
 
       tuple =>

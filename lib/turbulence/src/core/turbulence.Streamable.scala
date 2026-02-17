@@ -66,16 +66,17 @@ object Streamable:
 
     Stream.defer(recur(0L.b))
 
-  given reader: [input <: ji.Reader] => Tactic[StreamError] => input is Streamable by Char = reader =>
-    def recur(count: Bytes): Stream[Char] =
-      try reader.read() match
-        case -1  => Stream()
-        case int => int.toChar #:: recur(count + 1.b)
-      catch case err: ji.IOException =>
-        reader.close()
-        raise(StreamError(count)) yet Stream()
+  given reader: [input <: ji.Reader] => Tactic[StreamError] => input is Streamable by Char =
+    reader =>
+      def recur(count: Bytes): Stream[Char] =
+        try reader.read() match
+          case -1  => Stream()
+          case int => int.toChar #:: recur(count + 1.b)
+        catch case err: ji.IOException =>
+          reader.close()
+          raise(StreamError(count)) yet Stream()
 
-    Stream.defer(recur(0L.b))
+      Stream.defer(recur(0L.b))
 
   given bufferedReader: [input <: ji.BufferedReader] => Tactic[StreamError]
   =>  input is Streamable by Line =

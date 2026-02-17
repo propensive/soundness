@@ -40,7 +40,7 @@ import telekinesis.*
 
 object Redirect:
   def apply[link: Abstractable across Urls to Text](location: link, permanent: Boolean = false)
-  : Redirect =
+  :   Redirect =
 
       new Redirect(location.generic, permanent)
 

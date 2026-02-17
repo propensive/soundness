@@ -54,7 +54,7 @@ class Shader(options: List[String]) extends PluginPhase:
     object transformer extends UntypedTreeMap:
       private def rewritePackage
         ( tree: Ident | Select, fqn: String, defs: List[Tree], select: Select => Select )
-      : PackageDef =
+      :   PackageDef =
 
           tree match
             case Ident(name) =>
@@ -71,7 +71,7 @@ class Shader(options: List[String]) extends PluginPhase:
                 prefixes2.lastOption.fold(prefixes) { (k, v) => prefixes.filter(_(0) != k) }.map:
                   case (_, prefix) =>
                     Import
-                     (Ident(prefix.toTermName), List(ImportSelector(Ident(StdNames.nme.WILDCARD))))
+                      ( Ident(prefix.toTermName), List(ImportSelector(Ident(StdNames.nme.WILDCARD))) )
 
               PackageDef(ident, imports ::: defs)
 

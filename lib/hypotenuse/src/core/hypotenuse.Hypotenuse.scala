@@ -77,11 +77,11 @@ object Hypotenuse:
   object F64:
     final val Min: F64 = Double.MinValue
     final val Max: F64 = Double.MaxValue
-    erased given underlying: Underlying[F64, Double] = erasedValue
+    inline given underlying: Underlying[F64, Double] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual
       [ F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte ] =
-      erasedValue
+      caps.unsafe.unsafeErasedValue
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 = F64:
       (if sign then Long.MinValue else 0L) | ((exponent & 0xffL) << 52)
@@ -96,7 +96,7 @@ object Hypotenuse:
           inline right:   F64,
           inline strict:  Boolean,
           inline greater: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greater
           then
@@ -115,7 +115,7 @@ object Hypotenuse:
           inline right:       Int,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then inline if strict then left > right else left >= right
@@ -143,7 +143,7 @@ object Hypotenuse:
           inline right:       Double,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then inline if strict then left > right else left >= right
@@ -186,11 +186,11 @@ object Hypotenuse:
   object F32:
     final val Min: F32 = Float.MinValue
     final val Max: F32 = Float.MaxValue
-    erased given underlying: Underlying[F32, Float] = erasedValue
+    inline given underlying: Underlying[F32, Float] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual
       [ F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte ] =
-      erasedValue
+      caps.unsafe.unsafeErasedValue
 
     inline given orderable: F32 is Orderable:
       inline def compare
@@ -198,7 +198,7 @@ object Hypotenuse:
           inline right:       F32,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then
@@ -240,8 +240,8 @@ object Hypotenuse:
   object U64:
     final val Min: U64 = 0L
     final val Max: U64 = -1L
-    erased given underlying: Underlying[U64, Long] = erasedValue
-    inline given canEqual: CanEqual[U64, U64] = erasedValue
+    inline given underlying: Underlying[U64, Long] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U64, U64] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U64]:
       inline def fromDigits(digits: String): U64 = ${Hypotenuse2.parseU64('digits)}
@@ -255,7 +255,7 @@ object Hypotenuse:
           inline right:       U64,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan then
             inline if strict then JLong.compareUnsigned(left, right) == 1
@@ -268,11 +268,11 @@ object Hypotenuse:
   object S64:
     final val Min: U64 = Long.MinValue
     final val Max: U64 = Long.MaxValue
-    erased given underlying: Underlying[S64, Long] = erasedValue
+    inline given underlying: Underlying[S64, Long] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
                                     | Int | Short | Byte] =
-      erasedValue
+      caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[S64]:
       inline def fromDigits(digits: String): S64 = ${Hypotenuse2.parseS64('digits)}
@@ -287,7 +287,7 @@ object Hypotenuse:
           inline right:       S64,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then inline if strict then (left: Long) > (right: Long) else (left: Long) >= (right: Long)
@@ -297,8 +297,8 @@ object Hypotenuse:
   object U32:
     final val Min: U32 = Int.MinValue
     final val Max: U32 = Int.MaxValue
-    erased given underlying: Underlying[U32, Int] = erasedValue
-    inline given canEqual: CanEqual[U32, U32] = erasedValue
+    inline given underlying: Underlying[U32, Int] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U32, U32] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U32]:
       inline def fromDigits(digits: String): U32 = ${Hypotenuse2.parseU32('digits)}
@@ -313,7 +313,7 @@ object Hypotenuse:
           inline right:       U32,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan then
             inline if strict then JLong.compareUnsigned(left, right) == 1
@@ -326,11 +326,11 @@ object Hypotenuse:
   object S32:
     final val Min: S32 = Int.MinValue
     final val Max: S32 = Int.MaxValue
-    erased given underlying: Underlying[S32, Int] = erasedValue
+    inline given underlying: Underlying[S32, Int] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
                                     | Int | Short | Byte] =
-      erasedValue
+      caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[S32]:
       inline def fromDigits(digits: String): S32 = ${Hypotenuse2.parseS32('digits)}
@@ -344,7 +344,7 @@ object Hypotenuse:
           inline right:       S32,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then inline if strict then (left: Int) > (right: Int) else (left: Int) >= (right: Int)
@@ -354,8 +354,8 @@ object Hypotenuse:
   object U16:
     final val Min: S16 = 0
     final val Max: S16 = -1
-    erased given underlying: Underlying[U16, Short] = erasedValue
-    inline given canEqual: CanEqual[U16, U16] = erasedValue
+    inline given underlying: Underlying[U16, Short] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U16, U16] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U16]:
       inline def fromDigits(digits: String): U16 = ${Hypotenuse2.parseU16('digits)}
@@ -370,7 +370,7 @@ object Hypotenuse:
           inline right:       U16,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           val left2 = JShort.toUnsignedInt(left)
           val right2 = JShort.toUnsignedInt(right)
@@ -383,12 +383,12 @@ object Hypotenuse:
   object S16:
     final val Min: S16 = Short.MinValue
     final val Max: S16 = Short.MaxValue
-    erased given underlying: Underlying[S16, Short] = erasedValue
+    inline given underlying: Underlying[S16, Short] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S16,
                                     F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int
                                     | Short | Byte] =
-      erasedValue
+      caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[S16]:
       inline def fromDigits(digits: String): S16 = ${Hypotenuse2.parseS16('digits)}
@@ -402,7 +402,7 @@ object Hypotenuse:
           inline right:       S16,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then
@@ -416,8 +416,8 @@ object Hypotenuse:
   object U8:
     final val Min: U8 = 0
     final val Max: U8 = -1
-    erased given underlying: Underlying[U8, Byte] = erasedValue
-    inline given canEqual: CanEqual[U8, U8] = erasedValue
+    inline given underlying: Underlying[U8, Byte] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U8, U8] = caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[U8]:
       inline def fromDigits(digits: String): U8 = ${Hypotenuse2.parseU8('digits)}
@@ -431,7 +431,7 @@ object Hypotenuse:
           inline right:       U8,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           val left2 = JByte.toUnsignedInt(left)
           val right2 = JByte.toUnsignedInt(right)
@@ -444,11 +444,11 @@ object Hypotenuse:
   object S8:
     final val Min: S8 = Byte.MinValue
     final val Max: S8 = Byte.MaxValue
-    erased given underlying: Underlying[S8, Byte] = erasedValue
+    inline given underlying: Underlying[S8, Byte] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
                                     | Int | Short | Byte] =
-      erasedValue
+      caps.unsafe.unsafeErasedValue
 
     given fromDigits: FromDigits[S8]:
       inline def fromDigits(digits: String): S8 = ${Hypotenuse2.parseS8('digits)}
@@ -462,7 +462,7 @@ object Hypotenuse:
           inline right:       S8,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
-      : Boolean =
+      :   Boolean =
 
           inline if greaterThan
           then inline if strict then (left: Byte) > (right: Byte) else (left: Byte) >= (right: Byte)
@@ -470,7 +470,7 @@ object Hypotenuse:
 
 
   object B64:
-    erased given underlying: Underlying[B64, Long] = erasedValue
+    inline given underlying: Underlying[B64, Long] = caps.unsafe.unsafeErasedValue
     inline def block(inline n: Int): B64 = (1L << n) - 1
     inline def set(inline ordinal: Ordinal): B64 = 1L << ordinal.n0
 
@@ -503,7 +503,7 @@ object Hypotenuse:
       b64
 
   object B32:
-    erased given underlying: Underlying[B32, Int] = erasedValue
+    inline given underlying: Underlying[B32, Int] = caps.unsafe.unsafeErasedValue
     inline def block(inline n: Int): B32 = (1 << n) - 1
     inline def set(inline ordinal: Ordinal): B32 = 1 << ordinal.n0
     inline def set(inline interval: Interval): B32 = block(interval.size) << interval.start.n0
@@ -524,7 +524,7 @@ object Hypotenuse:
       b32
 
   object B16:
-    erased given underlying: Underlying[B16, Short] = erasedValue
+    inline given underlying: Underlying[B16, Short] = caps.unsafe.unsafeErasedValue
     inline def block(inline n: Int): B16 = ((1 << n) - 1).toShort
     inline def set(inline ordinal: Ordinal): B16 = (1 << ordinal.n0).toShort
 
@@ -542,7 +542,7 @@ object Hypotenuse:
       b16.toShort
 
   object B8:
-    erased given underlying: Underlying[B8, Byte] = erasedValue
+    inline given underlying: Underlying[B8, Byte] = caps.unsafe.unsafeErasedValue
     inline def block(inline n: Int): B8 = ((1 << n) - 1).toByte
     inline def set(inline ordinal: Ordinal): B8 = (1 << ordinal.n0).toByte
 
@@ -581,7 +581,7 @@ object Hypotenuse:
 
     @targetName("divS64")
     inline infix def / (right: Conversion.into[S64])(using division: DivisionByZero)
-    : division.Wrap[S64] =
+    :   division.Wrap[S64] =
         division.divideS64(s64, right)
 
     @targetName("modS64")
@@ -601,7 +601,7 @@ object Hypotenuse:
   extension (s32: S32)
     @targetName("plusS32")
     inline infix def + (right: Conversion.into[S32])(using overflow: CheckOverflow)
-    : overflow.Wrap[S32] =
+    :   overflow.Wrap[S32] =
         overflow.addS32(s32, right)
 
     @targetName("intS32")
@@ -636,7 +636,7 @@ object Hypotenuse:
 
     @targetName("divS32")
     inline infix def / (right: Conversion.into[S32])(using division: DivisionByZero)
-    : division.Wrap[S32] =
+    :   division.Wrap[S32] =
         division.divideS32(s32, right)
 
     @targetName("modS32")
@@ -656,7 +656,7 @@ object Hypotenuse:
   extension (s16: S16)
     @targetName("plusS16")
     inline infix def + (right: Conversion.into[S16])(using overflow: CheckOverflow)
-    : overflow.Wrap[S16] =
+    :   overflow.Wrap[S16] =
         overflow.addS16(s16, right)
 
     @targetName("shortS16")
@@ -694,7 +694,7 @@ object Hypotenuse:
 
     @targetName("divS16")
     inline infix def / (right: Conversion.into[S16])(using division: DivisionByZero)
-    : division.Wrap[S16] =
+    :   division.Wrap[S16] =
         division.divideS16(s16, right)
 
     @targetName("modS16")
@@ -714,7 +714,7 @@ object Hypotenuse:
   extension (s8: S8)
     @targetName("plusS8")
     inline infix def + (right: Conversion.into[S8])(using overflow: CheckOverflow)
-    : overflow.Wrap[S8] =
+    :   overflow.Wrap[S8] =
         overflow.addS8(s8, right)
 
     @targetName("byteS8")
@@ -755,7 +755,7 @@ object Hypotenuse:
 
     @targetName("divS8")
     inline infix def / (right: Conversion.into[S8])(using division: DivisionByZero)
-    : division.Wrap[S8] =
+    :   division.Wrap[S8] =
         division.divideS8(s8, right)
 
     @targetName("modS8")
@@ -1356,7 +1356,7 @@ object Hypotenuse:
 
     @targetName("divU64")
     inline infix def / (right: Conversion.into[U64])(using division: DivisionByZero)
-    : division.Wrap[U64] =
+    :   division.Wrap[U64] =
         division.divideU64(u64, right)
 
     @targetName("modU64")
@@ -1371,7 +1371,7 @@ object Hypotenuse:
   extension (u32: U32)
     @targetName("plusU32")
     inline infix def + (right: Conversion.into[U32])(using overflow: CheckOverflow)
-    : overflow.Wrap[U32] =
+    :   overflow.Wrap[U32] =
         overflow.addU32(u32, right)
 
     @targetName("bitsU32")
@@ -1403,7 +1403,7 @@ object Hypotenuse:
 
     @targetName("divU32")
     inline infix def / (right: Conversion.into[U32])(using division: DivisionByZero)
-    : division.Wrap[U32] =
+    :   division.Wrap[U32] =
         division.divideU32(u32, right)
 
     @targetName("modU32")
@@ -1424,7 +1424,7 @@ object Hypotenuse:
   extension (u16: U16)
     @targetName("plusU16")
     inline infix def + (right: Conversion.into[U16])(using overflow: CheckOverflow)
-    : overflow.Wrap[U16] =
+    :   overflow.Wrap[U16] =
         overflow.addU16(u16, right)
 
     @targetName("bitsU16")
@@ -1460,7 +1460,7 @@ object Hypotenuse:
 
     @targetName("divU16")
     inline infix def / (right: Conversion.into[U16])(using division: DivisionByZero)
-    : division.Wrap[U16] =
+    :   division.Wrap[U16] =
         division.divideU16(u16, right)
 
     @targetName("modU16")
@@ -1490,7 +1490,7 @@ object Hypotenuse:
   extension (u8: U8)
     @targetName("plusU8")
     inline infix def + (right: Conversion.into[U8])(using overflow: CheckOverflow)
-    : overflow.Wrap[U8] =
+    :   overflow.Wrap[U8] =
         overflow.addU8(u8, right)
 
     @targetName("bitsU8")
@@ -1528,7 +1528,7 @@ object Hypotenuse:
 
     @targetName("divU8")
     inline infix def / (right: Conversion.into[U8])(using division: DivisionByZero)
-    : division.Wrap[U8] =
+    :   division.Wrap[U8] =
         division.divideU8(u8, right)
 
     @targetName("modU8")

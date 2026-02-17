@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.captureChecking
-
 import scala.quoted.*
 
 import contingency.*

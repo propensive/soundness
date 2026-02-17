@@ -35,7 +35,7 @@ package galilei
 import java.nio.file as jnf
 
 object WriteAccess:
-  erased trait Ability
+  sealed trait Ability
 
 trait WriteAccess:
   type Transform[_]

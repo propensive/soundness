@@ -109,25 +109,25 @@ object Url:
               safely(value.where(_ == '#', qmark + 1)).asMatchable match
                 case Zerary(hash) =>
                   Url
-                   (Origin(scheme, auth),
-                    value.segment(pathStart till qmark),
-                    value.segment((qmark + 1) till hash),
-                    value.after(hash))
+                    ( Origin(scheme, auth),
+                      value.segment(pathStart till qmark),
+                      value.segment((qmark + 1) till hash),
+                      value.after(hash) )
 
                 case _ =>
                   Url
-                   (Origin(scheme, auth),
-                    value.segment(pathStart till qmark),
-                    value.after(qmark),
-                    Unset)
+                    ( Origin(scheme, auth),
+                      value.segment(pathStart till qmark),
+                      value.after(qmark),
+                      Unset )
 
             case _ => safely(value.where(_ == '#', pathStart)).asMatchable match
               case Zerary(hash) =>
                 Url
-                 (Origin(scheme, auth),
-                  value.segment(pathStart till hash),
-                  Unset,
-                  value.after(hash))
+                  ( Origin(scheme, auth),
+                    value.segment(pathStart till hash),
+                    Unset,
+                    value.after(hash) )
 
               case _ =>
                 Url(Origin(scheme, auth), value.from(pathStart), Unset, Unset)

@@ -32,5 +32,4 @@
                                                                                                   */
 package vacuous
 
-erased trait Unsafe
-erased val Unsafe: Unsafe = compiletime.erasedValue
+sealed trait Unsafe

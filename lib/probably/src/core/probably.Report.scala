@@ -222,25 +222,21 @@ class Report(using Environment):
       val showStats = !lines.summaries.all(_.count < 2)
       val timeTitle = if showStats then t"Avg" else t"Time"
 
-      Table[Summary](
-        Column(e"")(_.status.symbol),
+      Table[Summary]
+        ( Column(e"")(_.status.symbol),
+          Column(e"$Bold(Hash)"): s =>
+            e"$CadetBlue(${s.id.id})",
+          Column(e"$Bold(Test)")(_.indentedName),
+          Column(e"$Bold(Count)", textAlign = TextAlignment.Right): s =>
+            e"$SteelBlue(${s.iterations})",
+          Column(e"$Bold(Min)", textAlign = TextAlignment.Right): s =>
+            if s.count < 2 then e"" else s.minTime,
 
-        Column(e"$Bold(Hash)"): s =>
-          e"$CadetBlue(${s.id.id})",
+          Column(e"$Bold($timeTitle)", textAlign = TextAlignment.Right)(_.avgTime),
 
-        Column(e"$Bold(Test)")(_.indentedName),
-
-        Column(e"$Bold(Count)", textAlign = TextAlignment.Right): s =>
-          e"$SteelBlue(${s.iterations})",
-
-        Column(e"$Bold(Min)", textAlign = TextAlignment.Right): s =>
-          if s.count < 2 then e"" else s.minTime,
-
-        Column(e"$Bold($timeTitle)", textAlign = TextAlignment.Right)(_.avgTime),
-
-        Column(e"$Bold(Max)", textAlign = TextAlignment.Right): s =>
-          if s.count < 2 then e"" else s.maxTime
-      )
+          Column(e"$Bold(Max)", textAlign = TextAlignment.Right): s =>
+            if s.count < 2 then e"" else s.maxTime
+        )
 
     val columns: Int = safely(Environment.columns.decode[Int]).or(120)
     val summaryLines = lines.summaries
@@ -284,16 +280,16 @@ class Report(using Environment):
         . map(_.copy(children = Nil))
 
       Table[(Surface, Teletype)]
-       (Column(e""): row =>
-          if row(0).juncture.branch then e"⎇" else e"",
-        Column(e""): row =>
-          if coverage.hits.contains(row(0).juncture.id) then e"${Bg(ForestGreen)}(  )"
-          else if coverage.oldHits.contains(row(0).juncture.id) then e"${Bg(Goldenrod)}(  )"
-          else e"${Bg(Brown)}(  )",
-        Column(e"Juncture")(_(1)),
-        Column(e"Line"): row =>
-          e"$GreenYellow(${row(0).juncture.path})$Gray(:)$Gold(${row(0).juncture.lineNo})",
-        Column(e"Symbol")(_(0).juncture.symbolName))
+        ( Column(e""): row =>
+            if row(0).juncture.branch then e"⎇" else e"",
+          Column(e""): row =>
+            if coverage.hits.contains(row(0).juncture.id) then e"${Bg(ForestGreen)}(  )"
+            else if coverage.oldHits.contains(row(0).juncture.id) then e"${Bg(Goldenrod)}(  )"
+            else e"${Bg(Brown)}(  )",
+          Column(e"Juncture")(_(1)),
+          Column(e"Line"): row =>
+            e"$GreenYellow(${row(0).juncture.path})$Gray(:)$Gold(${row(0).juncture.lineNo})",
+          Column(e"Symbol")(_(0).juncture.symbolName) )
 
       . tabulate(render(junctures2))
       . grid(columns)(using tableStyles.horizontal)
@@ -303,23 +299,23 @@ class Report(using Environment):
       Out.println(e"")
 
       Table[CoverageData]
-       (Column(e"Source file", textAlign = TextAlignment.Left): data =>
-          data.path,
-        Column(e"Hits", textAlign = TextAlignment.Right)(_.hitsText),
-        Column(e"Size", textAlign = TextAlignment.Right)(_.branches),
-        Column(e"Coverage", textAlign = TextAlignment.Right): data =>
-          e"${(100*(data.hits + data.oldHits)/data.branches.toDouble)}%",
-        Column(e""): data =>
-          def width(n: Double): Text = if n == 0 then t"" else t"━"*(1 + (70*n).toInt)
-          val covered: Text = width(maxHits.map(data.hits.toDouble/_).getOrElse(0))
-          val oldCovered: Text = width(maxHits.map(data.oldHits.toDouble/_).getOrElse(0))
+        ( Column(e"Source file", textAlign = TextAlignment.Left): data =>
+            data.path,
+          Column(e"Hits", textAlign = TextAlignment.Right)(_.hitsText),
+          Column(e"Size", textAlign = TextAlignment.Right)(_.branches),
+          Column(e"Coverage", textAlign = TextAlignment.Right): data =>
+            e"${(100*(data.hits + data.oldHits)/data.branches.toDouble)}%",
+          Column(e""): data =>
+            def width(n: Double): Text = if n == 0 then t"" else t"━"*(1 + (70*n).toInt)
+            val covered: Text = width(maxHits.map(data.hits.toDouble/_).getOrElse(0))
+            val oldCovered: Text = width(maxHits.map(data.oldHits.toDouble/_).getOrElse(0))
 
-          val notCovered: Text = width(maxHits.map((data.branches.toDouble - data.hits -
-              data.oldHits)/_).getOrElse(0))
+            val notCovered: Text = width(maxHits.map((data.branches.toDouble - data.hits -
+                data.oldHits)/_).getOrElse(0))
 
-          val bars = List(ForestGreen -> covered, Goldenrod -> oldCovered, Brown -> notCovered)
+            val bars = List(ForestGreen -> covered, Goldenrod -> oldCovered, Brown -> notCovered)
 
-          bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join)
+            bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join )
       . tabulate(data).grid(columns).render.each(Out.println(_))
 
       Out.println(e"")
@@ -508,8 +504,8 @@ class Report(using Environment):
 
           case Verdict.Detail.Captures(map) =>
             Table[(Text, Text), Teletype]
-             (Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
-              Column(e"Value")(_(1)))
+              ( Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
+                Column(e"Value")(_(1)) )
 
             . tabulate(map.to(List)).grid(140).render.each(Out.println(_))
 

@@ -75,7 +75,7 @@ extends Cli:
   def proceed: Boolean = true
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
-  : Optional[operand] =
+  :   Optional[operand] =
 
       given cli: Cli = this
       interpreter.read(parameters, flag)
@@ -110,9 +110,10 @@ extends Cli:
 
   override def suggest
     ( argument: Argument,
-                 update:   (prior: List[Suggestion]) ?=> List[Suggestion],
-                 prefix:   Text,
-                 suffix:   Text) =
+      update:   (prior: List[Suggestion]) ?=> List[Suggestion],
+      prefix:   Text,
+      suffix:   Text ) =
+
     if focused(argument) then
       cursorSuggestions = update(using cursorSuggestions).map: suggestion =>
         if suggestion.expanded then suggestion
@@ -126,8 +127,8 @@ extends Cli:
         allFlags.collect { case text: Text => text }.match
           case main :: aliases =>
             List
-             (Suggestion
-               (Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
+              ( Suggestion
+                  ( Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))) )
 
           case Nil => Nil
 

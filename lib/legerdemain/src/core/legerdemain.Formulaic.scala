@@ -56,7 +56,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
         query:       Query,
         validation:  Validation,
         formulation: Formulation )
-    : Seq[Html of Flow] =
+    :   Seq[Html of Flow] =
 
         val message: Optional[Message] = validation(pointer)
         val widget = renderable.render(elicitable.widget(pointer.text, legend, query().or(t"")))
@@ -85,4 +85,4 @@ trait Formulaic extends Typeclass:
       query:       Query,
       validation:  Validation,
       formulation: Formulation )
-  : Seq[Html of Flow]
+  :   Seq[Html of Flow]

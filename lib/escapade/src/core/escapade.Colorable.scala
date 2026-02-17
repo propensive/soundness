@@ -45,7 +45,7 @@ object Colorable:
 
 
   def apply[value](using erased Void)[color: Chromatic](chooseColor: value -> color)
-  : value is Colorable =
+  :   value is Colorable =
 
       new Colorable:
         type Self = value

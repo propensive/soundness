@@ -124,5 +124,3 @@ object Feudalism:
         mutex.getAndUpdate:
           case state@Writing(_, _, _) => Inactive(value2)
           case _                      => panic(m"Status should be Writing")
-
-export Feudalism.Mutex

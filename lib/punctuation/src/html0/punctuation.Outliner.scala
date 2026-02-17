@@ -52,7 +52,7 @@ object Outliner extends HtmlTranslator():
 
   @tailrec
   def structure(minimum: Optional[Int], nodes: List[Markdown.Ast.Node], stack: List[List[Entry]])
-  : List[Entry] =
+  :   List[Entry] =
 
       nodes match
         case Nil => stack match

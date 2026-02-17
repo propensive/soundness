@@ -39,4 +39,4 @@ import proscenium.*
 
 object MustNotStart extends Rule({ text => m"must not start with $text"}, !_.starts(_))
 
-erased trait MustNotStart[text <: Label] extends Check[text]
+sealed trait MustNotStart[text <: Label] extends Check[text]

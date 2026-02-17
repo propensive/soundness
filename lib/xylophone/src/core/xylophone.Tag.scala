@@ -74,7 +74,7 @@ object Tag:
       children <: Label: Reifiable to List[String],
       schema   <: XmlSchema ]
     ( presets: Map[Text, Text] = Map() )
-  : Container of label over children in schema =
+  :   Container of label over children in schema =
 
       val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
 

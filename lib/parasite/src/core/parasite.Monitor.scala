@@ -144,13 +144,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
 
 
   def map[result2](lambda: Result => result2)(using Monitor, Codicil)
-  : Task[result2] raises AsyncError =
+  :   Task[result2] raises AsyncError =
 
       async(lambda(await()))
 
 
   def bind[result2](lambda: Result => Task[result2])(using Monitor, Codicil)
-  : Task[result2] raises AsyncError =
+  :   Task[result2] raises AsyncError =
 
       async(lambda(await()).await())
 
@@ -169,6 +169,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
 
   def result()(using cancel: Tactic[AsyncError]): Result =
     state.updateAndGet:
+      case null                        => abort(AsyncError(Reason.Incomplete))
       case Initializing                => abort(AsyncError(Reason.Incomplete))
       case Active(_)                   => abort(AsyncError(Reason.Incomplete))
       case Completed(duration, result) => Delivered(duration, result)
@@ -181,10 +182,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
         case other                => panic(m"impossible state")
 
 
-  def await[abstractable: Abstractable across Durations to Long](duration: abstractable): Result raises AsyncError =
-    promise.attend(duration)
-    thread.join()
-    result()
+  def await[abstractable: Abstractable across Durations to Long](duration: abstractable)
+  :   Result raises AsyncError =
+
+      promise.attend(duration)
+      thread.join()
+      result()
+
 
   def await(): Result raises AsyncError =
     promise.attend()
@@ -232,6 +236,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
         state.updateAndGet: state =>
           parent.remove(this)
           state match
+            case null                             => Cancelled.also(promise.cancel())
             case Initializing                     => Cancelled.also(promise.cancel())
             case Active(_)                        => Cancelled.also(promise.cancel())
             case state@Completed(duration, value) => state.also(promise.offer(value))

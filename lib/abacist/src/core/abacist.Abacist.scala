@@ -45,8 +45,6 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-private given realm: Realm = realm"abacist"
-
 object Abacist:
   import Quantitative.*
 
@@ -56,7 +54,7 @@ object Abacist:
 
 
     def recur(multipliers: List[Multiplier], values: List[Expr[Int]], expr: Expr[Long])
-    : Expr[Long] =
+    :   Expr[Long] =
 
         values match
           case Nil =>
@@ -75,7 +73,7 @@ object Abacist:
                         $max"""
 
                   recur
-                   (tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})})
+                    ( tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})} )
 
                 case None =>
                   recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
@@ -88,10 +86,10 @@ object Abacist:
 
 
   def describeQuanta[units <: Tuple: Type](count: Expr[Quanta[units]])
-  : Macro[ListMap[Text, Long]] =
+  :   Macro[ListMap[Text, Long]] =
 
       def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]])
-      : Expr[ListMap[Text, Long]] =
+      :   Expr[ListMap[Text, Long]] =
 
           slices match
             case Nil =>
@@ -103,16 +101,16 @@ object Abacist:
 
               val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
               recur
-               (tail,
-                '{($expr.updated
-                    (${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value))})
+                ( tail,
+                  '{($expr.updated
+                      (${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value))} )
 
       recur(multipliers[units], '{ListMap()})
 
 
   def multiplyQuanta[units <: Tuple: Type]
     ( count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean )
-  : Macro[Any] =
+  :   Macro[Any] =
 
       if division then '{Quanta.fromLong[units](($count.long/$multiplier + 0.5).toLong)}
       else '{Quanta.fromLong[units](($count.long*$multiplier + 0.5).toLong)}
@@ -131,7 +129,7 @@ object Abacist:
 
   def fromQuantity[quantity <: Measure: Type, units <: Tuple: Type]
     ( quantity: Expr[Quantity[quantity]] )
-  : Macro[Quanta[units]] =
+  :   Macro[Quanta[units]] =
 
       import quotes.reflect.*
 
@@ -143,7 +141,7 @@ object Abacist:
 
 
   def get[units <: Tuple: Type, unit <: Units[1, ? <: Dimension]: Type](value: Expr[Quanta[units]])
-  : Macro[Int] =
+  :   Macro[Int] =
 
       import quotes.reflect.*
 
@@ -161,7 +159,7 @@ object Abacist:
 
 
     def untuple[tuple: Type](dimension: Optional[DimensionRef], result: List[UnitPower])
-    : List[UnitPower] =
+    :   List[UnitPower] =
 
       TypeRepr.of[tuple].dealias.asType match
         case '[head *: tail] =>
@@ -189,7 +187,7 @@ object Abacist:
         val value = ratio(head.ref, cascade.head.ref, head.power).valueOrAbort
         val value2 = tail.prim.let(_.ref).let(ratio(_, head.ref, head.power).valueOrAbort + 0.5)
         recur
-         (tail,
-          Multiplier(head, (value + 0.5).toInt, value2.let(_.toInt).or(Int.MaxValue)) :: units)
+          ( tail,
+            Multiplier(head, (value + 0.5).toInt, value2.let(_.toInt).or(Int.MaxValue)) :: units )
 
     recur(cascade)

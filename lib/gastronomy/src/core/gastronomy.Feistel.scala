@@ -38,7 +38,7 @@ object Feistel:
       case Nil => value
       case next :: more =>
         recur
-         ((value.toInt.toLong << 32) | ((value >> 32).toInt ^ round(value.toInt, next)).toLong,
-          more)
+          ( (value.toInt.toLong << 32) | ((value >> 32).toInt ^ round(value.toInt, next)).toLong,
+            more )
 
     recur(input, subkeys)

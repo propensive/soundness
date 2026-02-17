@@ -87,4 +87,4 @@ object ContentLength:
       def next(): Text = ready.asInstanceOf[Text].also:
         ready = Unset
 
-erased trait ContentLength
+sealed trait ContentLength

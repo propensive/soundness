@@ -46,7 +46,7 @@ trait Intension[data, record <: Record in data]:
 
 
   def build(value: Expr[data])(using Type[record], Type[data])(using thisType: Type[this.type])
-  : Macro[record] =
+  :   Macro[record] =
 
       import quotes.reflect.*
 
@@ -61,8 +61,8 @@ trait Intension[data, record <: Record in data]:
         ( value:       Expr[data],
           fields:      List[(String, RecordField)],
           refinedType: TypeRepr,
-          caseDefs:    List[CaseDef]               = List(CaseDef(Wildcard(), None, '{???}.asTerm)) )
-      : (TypeRepr, List[CaseDef]) =
+          caseDefs:    List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)) )
+      :   (TypeRepr, List[CaseDef]) =
 
           fields match
             case Nil =>
@@ -104,7 +104,7 @@ trait Intension[data, record <: Record in data]:
                     case Some(' {
                                   type typeConstructor[_]
                                   $accessor: RecordAccessor
-                                               [ `record`, `data`, typeName, typeConstructor ]
+                                    [ `record`, `data`, typeName, typeConstructor ]
                                 }) =>
 
                       val nested = '{$target.access(${Expr(name)}, $value)}
@@ -135,10 +135,10 @@ trait Intension[data, record <: Record in data]:
                           val typeRepr = TypeRepr.of[typeConstructor[nestedRecordType]]
 
                           refine
-                           (value,
-                            tail,
-                            Refinement(refinedType, name, typeRepr),
-                            caseDef :: caseDefs)
+                            ( value,
+                              tail,
+                              Refinement(refinedType, name, typeRepr),
+                              caseDef :: caseDefs )
 
 
       val (refinedType, caseDefs) = refine(value, fields.to(List), TypeRepr.of[record])

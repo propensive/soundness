@@ -70,15 +70,16 @@ object Synesthesia:
     val parts: List[String] = context.valueOrAbort.parts.to(List)
     val Varargs(arguments) = args
 
-    val insertions = arguments.map:
-      case '{$argument: argument} =>
-        Expr.summon[argument is Showable] match
-          case Some(showable) =>
-            '{$showable.text($argument)}
+    val insertions = arguments.map: value =>
+      value.absolve match
+        case '{$argument: argument} =>
+          Expr.summon[argument is Showable] match
+            case Some(showable) =>
+              '{$showable.text($argument)}
 
-          case None =>
-            halt(m"""could not find a contextual `${TypeRepr.of[argument].show} is Showable`
-                    instance""")
+            case None =>
+              halt(m"""could not find a contextual `${TypeRepr.of[argument].show} is Showable`
+                      instance""")
 
     val result = insertions.zip(parts.tail.map(Expr(_))).foldLeft(Expr(parts.head)):
       case (result, (insertion, part)) =>
@@ -142,18 +143,26 @@ object Synesthesia:
                                 }
                               . asTerm
                             case None =>
-                              halt(m"""could not find a contextual
-                                      `${TypeRepr.of[param].show} is Decodable in Json` instance for
-                                      the parameter ${param.name} of ${method.name}""")
+                              halt:
+                                m"""
+                                  could not find a contextual `${TypeRepr.of[param].show} is
+                                  Decodable in Json` instance for the parameter ${param.name} of
+                                  ${method.name}
+                                """
 
 
                       val application = method.paramSymss.length match
                         case 1 => Apply(Select('target.asTerm, method), params)
-                        case 2 => Apply(Apply(Select('target.asTerm, method), params), List('client.asTerm))
+
+                        case 2 =>
+                          Apply(Apply(Select('target.asTerm, method), params), List('client.asTerm))
 
                         case _ =>
-                          halt(m"""MCP tool definitions should have exactly one explicit parameter
-                                   block and optionally one contextual parameter block""")
+                          halt:
+                            m"""
+                              MCP tool definitions should have exactly one explicit parameter block
+                              and optionally one contextual parameter block
+                            """
 
                       val rhs = result.asType.absolve match
                         case '[result] => Expr.summon[result is Encodable in Json] match
@@ -161,14 +170,18 @@ object Synesthesia:
                             ' {
                                 import jsonPrinters.indented
                                 val output =
-                                  Map("result".tt -> $encoder.encode(${application.asExprOf[result]}))
+                                  Map
+                                    ( "result".tt
+                                      -> $encoder.encode(${application.asExprOf[result]}) )
                                 output.json
                               }
 
                           case None =>
-                            halt(m"""could not find a contextual
-                                    `${TypeRepr.of[result].show} is Encodable in Json` instance for
-                                    the return type of ${method.name}""")
+                            halt:
+                              m"""
+                                could not find a contextual `${TypeRepr.of[result].show} is
+                                Encodable in Json` instance for the return type of ${method.name}
+                              """
 
                       CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
 
@@ -186,67 +199,75 @@ object Synesthesia:
 
     // This has been written as a partial function because the more natural way of writing it,
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
-    val promptInvocation: Expr[interface ~> ((Text, Map[Text, Text], McpClient) => List[Discourse])] =
-      ' {
-          {
-            case target: `interface` =>
-              (method: Text, input: Map[Text, Text], client: McpClient) =>
-                import dynamicJsonAccess.enabled
-                given Tactic[JsonError] = $jsonErrors
+    val promptInvocation
+    :   Expr[interface ~> ((Text, Map[Text, Text], McpClient) => List[Discourse])] =
+        ' {
+            {
+              case target: `interface` =>
+                (method: Text, input: Map[Text, Text], client: McpClient) =>
+                  import dynamicJsonAccess.enabled
+                  given Tactic[JsonError] = $jsonErrors
 
-                $ {
-                    val cases = promptMethods.map: method =>
-                      val result: TypeRepr = method.info.absolve match
-                        case MethodType(_, _, MethodType(_, _, result)) => result
-                        case MethodType(_, _, result)                   => result
-                        case result                                     => result
+                  $ {
+                      val cases = promptMethods.map: method =>
+                        val result: TypeRepr = method.info.absolve match
+                          case MethodType(_, _, MethodType(_, _, result)) => result
+                          case MethodType(_, _, result)                   => result
+                          case result                                     => result
 
-                      val params = method.paramSymss.headOption.map: paramList =>
-                        paramList.map: param =>
-                          param.info.asType.absolve match
-                            case '[param] => Expr.summon[param is Decodable in Text] match
-                              case Some(decodable) =>
-                                ' {
-                                    given param is Decodable in Text = $decodable
-                                    val key = ${Expr(param.name)}.tt
-                                    if input.has(key) then input(key).decode[param]
-                                    else provide[Tactic[McpError]](abort(McpError()))
-                                  }
-                                . asTerm
+                        val params = method.paramSymss.headOption.map: paramList =>
+                          paramList.map: param =>
+                            param.info.asType.absolve match
+                              case '[param] => Expr.summon[param is Decodable in Text] match
+                                case Some(decodable) =>
+                                  ' {
+                                      given param is Decodable in Text = $decodable
+                                      val key = ${Expr(param.name)}.tt
+                                      if input.has(key) then input(key).decode[param]
+                                      else provide[Tactic[McpError]](abort(McpError()))
+                                    }
+                                  . asTerm
 
-                              case None => halt:
-                                m"""
-                                 could not find a contextual `${TypeRepr.of[param].show} is
-                                 Decodable in Text` instance for the parameter ${param.name} of
-                                 ${method.name}
-                                 """
+                                case None => halt:
+                                  m"""
+                                    could not find a contextual `${TypeRepr.of[param].show} is
+                                    Decodable in Text` instance for the parameter ${param.name} of
+                                    ${method.name}
+                                  """
 
-                      val application = method.paramSymss.length match
-                        case 0 => Select('target.asTerm, method)
-                        case 1 => Apply(Select('target.asTerm, method), params.get)
-                        case 2 => Apply(Apply(Select('target.asTerm, method), params.get), List('client.asTerm))
+                        val application = method.paramSymss.length match
+                          case 0 => Select('target.asTerm, method)
+                          case 1 => Apply(Select('target.asTerm, method), params.get)
 
-                        case _ => halt:
-                          m"MCP prompt definitions should have exactly one explicit parameter block"
+                          case 2 =>
+                            Apply
+                              ( Apply(Select('target.asTerm, method), params.get),
+                                List('client.asTerm) )
 
-                      result.asType match
-                        case '[List[Discourse]] =>
-                        case '[result] => halt:
-                          m"""
-                           the MCP prompt method returns ${TypeRepr.of[result].show}, but it must
-                           return `List[Discourse]`
-                           """
+                          case _ => halt:
+                            m"""
+                              MCP prompt definitions should have exactly one explicit parameter
+                              block
+                            """
 
-                      CaseDef(Literal(StringConstant(method.name)), None, application)
+                        result.asType.absolve match
+                          case '[List[Discourse]] =>
+                          case '[result] => halt:
+                            m"""
+                              the MCP prompt method returns ${TypeRepr.of[result].show}, but it must
+                              return `List[Discourse]`
+                            """
 
-                    val wildcard =
-                      val rhs = '{provide[Tactic[McpError]](abort(McpError()))}
-                      CaseDef(Wildcard(), None, rhs.asTerm)
+                        CaseDef(Literal(StringConstant(method.name)), None, application)
 
-                    Match('method.asTerm, cases :+ wildcard).asExprOf[List[Discourse]]
-                  }
+                      val wildcard =
+                        val rhs = '{provide[Tactic[McpError]](abort(McpError()))}
+                        CaseDef(Wildcard(), None, rhs.asTerm)
+
+                      Match('method.asTerm, cases :+ wildcard).asExprOf[List[Discourse]]
+                    }
+              }
             }
-          }
 
     val resourceInvocation: Expr[interface ~> (Text => Mcp.Contents)] =
       ' {
@@ -255,14 +276,22 @@ object Synesthesia:
               (uri: Text) =>
                 $ {
                     val cases = resourceMethods.map: method =>
-                      val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+                      val allAnnotations =
+                        method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+
                       method.info.widen.asType.absolve match
                         case '[result] =>
                           val result: TypeRepr = method.info.widen
                           val value = Select('target.asTerm, method).asExprOf[result]
 
                           val uri: Expr[Text] =
-                            '{${allAnnotations.find(_.tpe.typeSymbol == resourceType).get.asExprOf[resource]}.uri}
+                            ' {
+                                $ {
+                                    allAnnotations.find(_.tpe.typeSymbol == resourceType).get
+                                    . asExprOf[resource]
+                                  }
+                                . uri
+                              }
 
                           val rhs = Expr.summon[result is Streamable by Text] match
                             case Some(streamable) =>
@@ -272,7 +301,7 @@ object Synesthesia:
                                   Mcp.Contents:
                                     Mcp.TextResourceContents
                                       ( $uri,
-                                        mimeType = t"text/html;profile=mcp-app", // FIXME: do not hardcode
+                                        mimeType = t"text/html;profile=mcp-app", // FIXME
                                         text = $value.read[Text])
                                 }
                             case None => Expr.summon[result is Streamable by Data] match
@@ -357,7 +386,12 @@ object Synesthesia:
                       required   = List(t"result") )
 
                 val uiJson: Optional[Json] = $ui.let: resource =>
-                  Map(t"ui" -> Map(t"visibility" -> List(t"model", t"app").json, t"resourceUri" -> resource.json).json).json
+                  val ui =
+                    Map
+                      ( t"visibility"  -> List(t"model", t"app").json,
+                        t"resourceUri" -> resource.json )
+
+                  Map(t"ui" -> ui.json).json
 
                 Mcp.Tool
                   ( name         = ${Expr(method.name)},
@@ -473,7 +507,7 @@ object Synesthesia:
 
           def invokePrompt
             ( server: interface, client: McpClient, method: Text, input: Map[Text, Text] )
-          : List[Discourse] =
+          :   List[Discourse] =
 
               $promptInvocation(server)(method, input, client)
 

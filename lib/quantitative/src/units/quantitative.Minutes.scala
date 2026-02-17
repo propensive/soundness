@@ -40,4 +40,4 @@ trait Minutes[Power <: Nat] extends Units[Power, Time]
 
 object Minutes:
   given designation: Designation[Minutes[1]] = () => "min".tt
-  erased given ratio: Ratio[Seconds[1] & Minutes[-1], 60.0] = !!
+  inline given ratio: Ratio[Seconds[1] & Minutes[-1], 60.0] = !!

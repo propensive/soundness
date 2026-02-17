@@ -49,6 +49,6 @@ extends PrivateKey[cipher](bytes):
 
   def verify[value: Encodable in Data](value: value, signature: Signature[cipher])
     ( using cipher & Signing )
-  : Boolean =
+  :   Boolean =
 
       public.verify(value, signature)

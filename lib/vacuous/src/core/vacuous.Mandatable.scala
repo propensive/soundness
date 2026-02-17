@@ -38,5 +38,9 @@ object Mandatable:
   transparent inline given mandatable: [typeRef] => typeRef is Mandatable =
     ${Vacuous.mandatable[typeRef]}
 
-erased trait Mandatable extends Typeclass:
+  def apply[self, result <: self](): self is Mandatable to result = new Mandatable():
+    type Self = self
+    type Result = result
+
+sealed trait Mandatable extends Typeclass:
   type Result <: Self

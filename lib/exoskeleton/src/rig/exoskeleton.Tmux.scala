@@ -67,24 +67,25 @@ object Tmux:
 
 
   def completions(text: Text)(using tool: Sandbox.Tool, tmux: Tmux)(using Monitor, WorkingDirectory)
-  : Text raises TmuxError =
+  :   Text raises TmuxError =
 
-      enter(tool.command)
-      enter(' ')
-      enter(text)
-      attend(enter(Ht))
-      screenshot().screen.filter(!_.starts(t"> ")).join(t"\n").trim
+    enter(tool.command)
+    enter(' ')
+    enter(text)
+    attend(enter(Ht))
+    screenshot().screen.filter(!_.starts(t"> ")).join(t"\n").trim
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
     ( using tool: Sandbox.Tool, tmux: Tmux )
     ( using Monitor, WorkingDirectory )
-  : Text raises TmuxError =
+  :   Text raises TmuxError =
 
-      enter(tool.command)
-      enter(' ')
-      enter(text)
-      attend(enter(Ht))
-      screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")
+    enter(tool.command)
+    enter(' ')
+    enter(text)
+    attend(enter(Ht))
+    screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")
+
 
 case class TmuxError()(using Diagnostics) extends Error(m"can't execute tmux")
 case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height: Int, shell: Shell)

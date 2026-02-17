@@ -39,7 +39,7 @@ object Rgb32Opaque:
   opaque type Rgb32 = Int
 
   object Rgb32:
-    given underlying: Underlying[Rgb32, Int] = !!
+    inline given underlying: Underlying[Rgb32, Int] = !!
     given chromatic: Rgb32 is Chromatic = _.srgb.rgb24.asInt
 
     def apply(red: Int, green: Int, blue: Int): Rgb32 =
@@ -50,5 +50,3 @@ object Rgb32Opaque:
     def green: Int = (color >> 10)&4095
     def blue: Int = color&1023
     def srgb: Srgb = Srgb(red/1023.0, green/4095.0, blue/1023.0)
-
-export Rgb32Opaque.Rgb32

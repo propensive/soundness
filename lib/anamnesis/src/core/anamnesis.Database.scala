@@ -38,7 +38,7 @@ import rudiments.*
 import vacuous.*
 
 object Database:
-  erased trait Relation[left, right]
+  sealed trait Relation[left, right]
 
   inline def apply[relations <: Tuple](): Database of relations =
     val size = valueOf[Tuple.Size[relations]]
@@ -88,7 +88,7 @@ class Database(size: Int):
   inline def assign[left, right]
     ( left: Ref of left in this.type, right: Ref of right in this.type )
     ( using (left -< right) <:< Tuple.Union[Topic] )
-  : Unit raises DataError =
+  :   Unit raises DataError =
 
       val relationIndex = !![Topic].indexOf[left -< right]
       val relation = relate[left, right]
@@ -101,7 +101,7 @@ class Database(size: Int):
 
 
   inline def lookup[left, right](left: Ref of left in this.type)
-  : Set[Ref of right in this.type] raises DataError =
+  :   Set[Ref of right in this.type] raises DataError =
 
       relate[left, right].at(left).or(Set()).asInstanceOf[Set[Ref of right in this.type]]
 
@@ -109,7 +109,7 @@ class Database(size: Int):
   inline def unassign[left, right]
     ( left: Ref of left in this.type, right: Ref of right in this.type )
     ( using (left -< right) <:< Tuple.Union[Topic] )
-  : Unit raises DataError =
+  :   Unit raises DataError =
 
       val relationIndex = !![Topic].indexOf[left -< right]
       val relation = relate[left, right]

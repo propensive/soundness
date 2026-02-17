@@ -45,12 +45,12 @@ import symbolism.*
 import scala.annotation.*
 
 object Complex:
-  inline given showable: [value: {Showable, Zeroic, Commensurable against value, Negatable to value}]
-  =>  Complex[value] is Showable =
+  inline given showable: [part: {Showable, Zeroic, Commensurable against part, Negatable to part}]
+  =>  Complex[part] is Showable =
 
       complex =>
         compiletime.summonFrom:
-          case distributive: (`value` is Distributive) =>
+          case distributive: (`part` is Distributive) =>
             provide[Complex[distributive.Operand] is Showable]:
               provide[distributive.Operand is Zeroic]:
                 val reParts: List[distributive.Operand] = distributive.parts(complex.real)
@@ -62,9 +62,9 @@ object Complex:
                 distributive.place(complex.real, parts2)
 
           case _ =>
-            if complex.imaginary == zero[value] then complex.real.show
-            else if complex.real == zero[value] then t"${complex.imaginary.show}ℐ"
-            else if complex.imaginary < zero[value]
+            if complex.imaginary == zero[part] then complex.real.show
+            else if complex.real == zero[part] then t"${complex.imaginary.show}ℐ"
+            else if complex.imaginary < zero[part]
             then t"${complex.real.show} - ${(-complex.imaginary).show}ℐ"
             else t"${complex.real.show} + ${complex.imaginary.show}ℐ"
 
@@ -102,10 +102,8 @@ object Complex:
               left.real*right.imaginary + left.imaginary*right.real )
 
 
-  given divisible: [ component,
-                     dividend <: Complex[component],
-                     component2,
-                     divisor <: Complex[component2] ]
+  given divisible
+  :   [ component, dividend <: Complex[component], component2, divisor <: Complex[component2] ]
   =>  ( multiplication:  component is Multiplicable by component2,
         multiplication2: component2 is Multiplicable by component2,
         negatable:       component is Negatable to component,
@@ -134,7 +132,7 @@ object Complex:
 
   def apply[component: Multiplicable by Double as multiplication]
     ( modulus: component, argument: Angle )
-  : Complex[multiplication.Result] =
+  :   Complex[multiplication.Result] =
 
       Complex(modulus*math.cos(argument.radians), modulus*math.sin(argument.radians))
 
@@ -146,7 +144,7 @@ case class Complex[component](real: component, imaginary: component):
             sqrt:           addition.Result is Rootable[2],
             division:       component is Divisible by sqrt.Result,
             equality:       division.Result =:= Double )
-  : Angle =
+  :   Angle =
 
       Angle(scala.math.atan2(imaginary/modulus, real/modulus))
 
@@ -155,7 +153,7 @@ case class Complex[component](real: component, imaginary: component):
     ( using multiplication: component is Multiplicable by component,
             addition:       multiplication.Result is Addable by multiplication.Result,
             squareRoot:     addition.Result is Rootable[2] )
-  : squareRoot.Result =
+  :   squareRoot.Result =
 
       squareRoot.root(real*real + imaginary*imaginary)
 
@@ -168,7 +166,7 @@ case class Complex[component](real: component, imaginary: component):
             equality:        division.Result =:= Double,
             sqrt2:           sqrt.Result is Rootable[2],
             multiplication2: sqrt2.Result is Multiplicable by Double )
-  : Complex[multiplication2.Result] =
+  :   Complex[multiplication2.Result] =
 
       Complex(modulus.sqrt, argument/2.0)
 

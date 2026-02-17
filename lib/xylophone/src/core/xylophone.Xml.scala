@@ -72,9 +72,9 @@ object Xml extends Tag.Container
   type Topic = "xml"
   type Transport = "head" | "body"
 
-  erased trait Integral
-  erased trait Decimal
-  erased trait Id
+  sealed trait Integral
+  sealed trait Decimal
+  sealed trait Id
 
   given textDecodable: [value: Decodable in Text] => Tactic[XmlError] => value is Decodable in Xml =
     case TextNode(text)                        =>  value.decoded(text)
@@ -104,7 +104,7 @@ object Xml extends Tag.Container
   inline given extrapolator: Xml is Extrapolable:
 
     transparent inline def extrapolate[parts <: Tuple](scrutinee: Xml)
-    : Boolean | Option[Tuple | Xml] =
+    :   Boolean | Option[Tuple | Xml] =
 
         ${Xylophone.extractor[parts]('scrutinee)}
 
@@ -437,7 +437,7 @@ object Xml extends Tag.Container
 
     @tailrec
     def key(mark: Mark, dictionary: Optional[Dictionary[XmlAttribute]])(using Cursor.Held)
-    : XmlAttribute =
+    :   XmlAttribute =
         cursor.lay(fail(ExpectedMore)):
           case chr if chr.isLetter || chr == '-' => dictionary.let(_(chr.minuscule)) match
             case Unset            =>  next() yet key(mark, Unset)
@@ -490,7 +490,7 @@ object Xml extends Tag.Container
 
     @tailrec
     def attributes(tag: Text, entries: Map[Text, Text] = ListMap())(using Cursor.Held)
-    : Map[Text, Text] =
+    :   Map[Text, Text] =
 
         skip() yet cursor.lay(fail(ExpectedMore)):
           case '>' | '/' => entries
@@ -870,14 +870,14 @@ extends Node, Topical, Transportive:
 
 
   def selectDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute on Topic in Form)
-  : Optional[Text] =
+  :   Optional[Text] =
 
       attributes.at(name.tt)
 
 
   def updateDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute in Form)
     ( value: Text )
-  : Element of Topic over Transport in Form =
+  :   Element of Topic over Transport in Form =
 
       Element(label, attributes.updated(name, value), children)
       . of[Topic]

@@ -61,7 +61,7 @@ case class SourceCode
 
 
   def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
-  : SourceCode =
+  :   SourceCode =
 
       SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)
 
@@ -111,6 +111,7 @@ object SourceCode:
     def soften(stream: Stream[SourceToken]): Stream[SourceToken] = stream match
       case (SourceToken(text@(t"using" | t"erased"), Accent.Ident)) #:: more =>
         SourceToken(text, Accent.Modifier) #:: soften(more)
+
       case (token@SourceToken(text, Accent.Ident)) #:: more if soft.has(text) =>
         if hard(more) then SourceToken(text, Accent.Modifier) #:: soften(more)
         else token #:: soften(more)
@@ -118,7 +119,7 @@ object SourceCode:
       case token #:: more =>
         token #:: soften(more)
 
-      case Stream() =>
+      case _ =>
         Stream()
 
     def stream(lastEnd: Int = 0): Stream[SourceToken] = scanner.token match
@@ -146,7 +147,7 @@ object SourceCode:
           if start == end then Stream() else
             text.segment(start.z thru end.u).cut(t"\n").to(Stream).flatMap: line =>
               Stream
-               (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
+                ( SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline )
             . init
 
         unparsed #::: content #::: stream(end)

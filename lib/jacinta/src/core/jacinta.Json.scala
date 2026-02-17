@@ -136,8 +136,8 @@ trait Json2:
                   values += encoded
 
           Json.ast
-           (JsonAst
-             ((labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))))
+            ( JsonAst
+              ( (labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))) )
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Json = value =>
       val discriminable = infer[derivation is Discriminable in Json]
@@ -147,7 +147,7 @@ trait Json2:
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
 
-  given lens: [name <: Label: ValueOf] => DynamicJsonEnabler => Tactic[JsonError]
+  given lens: [name <: Label: ValueOf] => (erased DynamicJsonEnabler) => Tactic[JsonError]
   =>  name is Lens from Json onto Json =
 
       Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
@@ -232,9 +232,9 @@ object Json extends Json2, Dynamic:
 
 
   given array: [collection <: Iterable, element]
-  =>  ( factory:    Factory[element, collection[element]],
-        jsonAccess: Tactic[JsonError],
-        foci:       Foci[JsonPointer] )
+  =>  ( factory: Factory[element, collection[element]],
+        tactic:  Tactic[JsonError],
+        foci:    Foci[JsonPointer] )
   =>  ( decodable: => element is Decodable in Json)
   =>  collection[element] is Decodable in Json =
 
@@ -246,8 +246,7 @@ object Json extends Json2, Dynamic:
 
         builder.result()
 
-  given map: [key: Decodable in Text, element]
-  =>  ( decodable: => element is Decodable in Json )
+  given map: [key: Decodable in Text, element] => (decodable: => element is Decodable in Json)
   =>  Tactic[JsonError]
   =>  Map[key, element] is Decodable in Json =
 
@@ -255,7 +254,7 @@ object Json extends Json2, Dynamic:
         val (keys, values) = value.root.obj
 
         keys.indices.fuse(Map[key, element]()):
-          focus(prior.or(JsonPointer()) / keys(next).tt):
+          //focus(prior.or(JsonPointer()) / keys(next).tt):
             state.updated(keys(next).tt.decode, decodable.decoded(Json.ast(values(next))))
 
   given mapEncodable: [key: Encodable in Text, element]
@@ -322,25 +321,25 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
 
   def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler)
-  : Json raises JsonError =
+  :   Json raises JsonError =
 
       apply(field.tt)(index)
 
 
   def update[value: Encodable in Json](index: Int, value: value)(using erased DynamicJsonEnabler)
-  : Json raises JsonError =
+  :   Json raises JsonError =
 
       Json.ast(JsonAst(root.array.updated(index, value.encode.root)))
 
 
   def updateDynamic(field: String)[value: Encodable in Json](value: value)
     ( using erased DynamicJsonEnabler )
-  : Json raises JsonError =
+  :   Json raises JsonError =
 
       modify(field, value.encode)
 
   def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicJsonEnabler)
-  : Json raises JsonError =
+  :   Json raises JsonError =
 
       delete(field)
 

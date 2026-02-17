@@ -32,8 +32,4 @@
                                                                                                   */
 package anticipation
 
-erased trait Underlying[alias, primitive]
-
-extension [alias](value: alias)
-  def underlying[primitive](using erased Underlying[alias, primitive]): primitive =
-    value.asInstanceOf[primitive]
+sealed trait Underlying[alias, primitive]

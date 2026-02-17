@@ -68,19 +68,19 @@ import textSanitizers.skip
 import scala.annotation.tailrec
 
 object Html extends Tag.Container
-         (label       = "html",
-          autoclose   = true,
-          admissible  = Set("head", "body"),
-          mode        = Html.Mode.Whitespace,
-          insertable  = true,
-          foreign     = false,
-          boundary    = true), Format:
+  ( label       = "html",
+    autoclose   = true,
+    admissible  = Set("head", "body"),
+    mode        = Html.Mode.Whitespace,
+    insertable  = true,
+    foreign     = false,
+    boundary    = true), Format:
   type Topic = "html"
   type Transport = "head" | "body"
 
-  erased trait Integral
-  erased trait Decimal
-  erased trait Id
+  sealed trait Integral
+  sealed trait Decimal
+  sealed trait Id
 
   given media: Document[Html] is Media =
     _ => media"text/html"(charset = "UTF-8")
@@ -137,7 +137,7 @@ object Html extends Tag.Container
     emit(_).to(Stream)
 
   def emit(document: Document[Html], flat: Boolean = false)(using Monitor, Codicil)
-  : Iterator[Text] =
+  :   Iterator[Text] =
 
       val dom = document.metadata
       val emitter = Emitter[Text](4096)
@@ -250,7 +250,7 @@ object Html extends Tag.Container
   trait Populable:
     node: Element =>
       def apply(children: Optional[Html of (? <: node.Transport)]*)
-      : Element of node.Topic in node.Form =
+      :   Element of node.Topic in node.Form =
 
           new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
             type Topic = node.Topic
@@ -260,7 +260,7 @@ object Html extends Tag.Container
   trait Transparent:
     node: Element =>
       def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*)
-      : Element of labels in node.Form =
+      :   Element of labels in node.Form =
 
           new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
             type Topic = labels
@@ -324,25 +324,33 @@ object Html extends Tag.Container
     case InvalidAttributeUse(attribute: Text, element: Text)
 
     def describe: Message = this match
-      case BadInsertion                   =>  m"a value cannot be inserted into HTML at this point"
-      case ExpectedMore                   =>  m"the content ended prematurely"
-      case UnexpectedDoctype              =>  m"the document type declaration was not expected here"
-      case BadDocument                    =>  m"the document did not contain a single root tag"
-      case InvalidCdata                   =>  m"CDATA content is only permitted in foreign namespaces"
-      case InvalidTag(name)               =>  m"<$name> is not a valid tag"
-      case InvalidTagStart(prefix)        =>  m"there is no valid tag whose name starts $prefix"
-      case DuplicateAttribute(name)       =>  m"the attribute $name already exists on this tag"
-      case InadmissibleTag(name, parent)  =>  m"<$name> cannot be a child of <$parent>"
-      case OnlyWhitespace(char)           =>  m"the character $char was found where only whitespace is permitted"
-      case Unexpected(char)               =>  m"the character $char was not expected"
-      case UnknownEntity(name)            =>  m"the entity &$name is not defined"
-      case ForbiddenUnquoted(char)        =>  m"the character $char is forbidden in an unquoted attribute"
-      case MismatchedTag(open, close)     =>  m"the tag </$close> did not match the opening tag <$open>"
-      case UnopenedTag(close)             =>  m"the tag </$close> has no corresponding opening tag"
-      case Incomplete(tag)                =>  m"the content ended while the tag <$tag> was left open"
-      case UnknownAttribute(name)         =>  m"$name is not a recognized attribute"
-      case UnknownAttributeStart(name)    =>  m"there is no valid attribute whose name starts $name"
-      case InvalidAttributeUse(name, tag) =>  m"the attribute $name cannot be used on the tag <$tag>"
+      case BadInsertion                   => m"a value cannot be inserted into HTML at this point"
+      case ExpectedMore                   => m"the content ended prematurely"
+      case UnexpectedDoctype              => m"the document type declaration was not expected here"
+      case BadDocument                    => m"the document did not contain a single root tag"
+      case InvalidTag(name)               => m"<$name> is not a valid tag"
+      case InvalidTagStart(prefix)        => m"there is no valid tag whose name starts $prefix"
+      case DuplicateAttribute(name)       => m"the attribute $name already exists on this tag"
+      case InadmissibleTag(name, parent)  => m"<$name> cannot be a child of <$parent>"
+      case Unexpected(char)               => m"the character $char was not expected"
+      case UnknownEntity(name)            => m"the entity &$name is not defined"
+      case UnopenedTag(close)             => m"the tag </$close> has no corresponding opening tag"
+      case Incomplete(tag)                => m"the content ended while the tag <$tag> was left open"
+      case UnknownAttribute(name)         => m"$name is not a recognized attribute"
+      case UnknownAttributeStart(name)    => m"there is no valid attribute whose name starts $name"
+      case InvalidAttributeUse(name, tag) => m"the attribute $name cannot be used on the tag <$tag>"
+
+      case InvalidCdata =>
+        m"CDATA content is only permitted in foreign namespaces"
+
+      case OnlyWhitespace(char) =>
+        m"the character $char was found where only whitespace is permitted"
+
+      case ForbiddenUnquoted(char) =>
+        m"the character $char is forbidden in an unquoted attribute"
+
+      case MismatchedTag(open, close) =>
+        m"the tag </$close> did not match the opening tag <$open>"
 
   case class Position(line: Ordinal, column: Ordinal) extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
@@ -359,12 +367,13 @@ object Html extends Tag.Container
     case Node(parent: Text)
 
   private[honeycomb] def parse[dom <: Dom]
-       (input:       Iterator[Text],
-        root:        Tag,
-        callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
-        fastforward: Int                               = 0,
-        doctypes:    Boolean = false)
-       (using dom: Dom): Html raises ParseError =
+    ( input:       Iterator[Text],
+      root:        Tag,
+      callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
+      fastforward: Int                               = 0,
+      doctypes:    Boolean = false )
+    ( using dom: Dom)
+  :   Html raises ParseError =
 
     import lineation.linefeedChars
 
@@ -517,7 +526,7 @@ object Html extends Tag.Container
     @tailrec
     def attributes(tag: Text, foreign: Boolean, entries: Map[Text, Optional[Text]] = ListMap())
       ( using Cursor.Held )
-    : Map[Text, Optional[Text]] =
+    :   Map[Text, Optional[Text]] =
 
         skip() yet cursor.lay(fail(ExpectedMore)):
           case '>' | '/' => entries
@@ -547,18 +556,28 @@ object Html extends Tag.Container
       case '#'   => next() yet numericEntity(mark)
       case other => textEntity(mark, dom.entities)
 
-    def numericEntity(mark: Mark)(using Cursor.Held): Optional[Text] = cursor.lay(fail(ExpectedMore)):
-      case 'x' => next() yet hexEntity(mark, 0)
-      case _   => decimalEntity(mark, 0)
+    def numericEntity(mark: Mark)(using Cursor.Held): Optional[Text] =
+      cursor.lay(fail(ExpectedMore)):
+        case 'x' => next() yet hexEntity(mark, 0)
+        case _   => decimalEntity(mark, 0)
 
     @tailrec
     def hexEntity(mark: Mark, value: Int)(using Cursor.Held): Optional[Text] =
       cursor.lay(fail(ExpectedMore)):
-        case digit if digit.isDigit         => cursor.next() yet hexEntity(mark, 16*value + (digit - '0'))
-        case letter if 'a' <= letter <= 'f' => cursor.next() yet hexEntity(mark, 16*value + (letter - 87))
-        case letter if 'A' <= letter <= 'F' => cursor.next() yet hexEntity(mark, 16*value + (letter - 55))
-        case ';'                            => cursor.next() yet value.unicode
-        case char                           => Unset
+        case digit if digit.isDigit =>
+          cursor.next() yet hexEntity(mark, 16*value + (digit - '0'))
+
+        case letter if 'a' <= letter <= 'f' =>
+          cursor.next() yet hexEntity(mark, 16*value + (letter - 87))
+
+        case letter if 'A' <= letter <= 'F' =>
+          cursor.next() yet hexEntity(mark, 16*value + (letter - 55))
+
+        case ';' =>
+          cursor.next() yet value.unicode
+
+        case char =>
+          Unset
 
     @tailrec
     def decimalEntity(mark: Mark, value: Int): Optional[Text] = cursor.lay(fail(ExpectedMore)):
@@ -678,7 +697,10 @@ object Html extends Tag.Container
 
       case '\u0000' => fail(BadInsertion)
       case char =>
-        content = cursor.hold(if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label)
+        content =
+          cursor.hold:
+            if foreign then foreignTag(cursor.mark) else tagname(cursor.mark, dom.elements).label
+
         extra = cursor.hold(attributes(content, foreign))
 
         cursor.lay(fail(ExpectedMore)):
@@ -864,7 +886,7 @@ case class TextNode(text: Text) extends Node:
 
 object Element:
   def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
-  : Element of "#foreign" =
+  :   Element of "#foreign" =
 
       Element(label, attributes, children.nodes, true).of["#foreign"]
 
@@ -890,8 +912,10 @@ extends Node, Topical, Transportive, Dynamic:
     html.match
       case fragment: Fragment =>
         Element(label, attributes, IArray.from(fragment.nodes) ++ children, foreign)
+
       case node: Node =>
         Element(label, attributes, node +: children, foreign)
+
     . of[Topic]
     . over[Transport]
     . in[Form]
@@ -900,8 +924,10 @@ extends Node, Topical, Transportive, Dynamic:
     html.match
       case fragment: Fragment =>
         Element(label, attributes, children ++ fragment.nodes, foreign)
+
       case node: Node =>
         Element(label, attributes, children :+ node, foreign)
+
     . of[Topic]
     . over[Transport]
     . in[Form]
@@ -934,7 +960,7 @@ extends Node, Topical, Transportive, Dynamic:
 
 
   inline def updateDynamic[value](name: Label)(value: value)
-  : Element of Topic over Transport in Form =
+  :   Element of Topic over Transport in Form =
 
       compiletime.summonFrom:
         case attribute: (name.type is Attribute on (? >: Topic) in Form) =>

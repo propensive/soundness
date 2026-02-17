@@ -78,7 +78,7 @@ class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signing:
       case key: js.PrivateKey     => panic(m"unexpected private key type")
 
     val params = key.getParams.nn
-    val y = params.getG.nn.modPow(key.getX, params.getP.nn)
+    val y = params.getG.nn.modPow(key.getX, params.getP)
     val spec = jss.DSAPublicKeySpec(y, params.getP, params.getQ, params.getG)
     keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
 

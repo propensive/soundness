@@ -113,14 +113,14 @@ case class Sandbox(name: Text)(using Classloader, Environment) extends Rig:
       val bundle = Bundler.bundle(out, jarfile, fqcn"superlunary.Executor2")
 
       sh"java -Dbuild.executable=$target -jar $jarfile '[]'".exec[Exit]() match
-        case Exit.Ok      => target
-        case Exit.Fail(_) => ???
+        case Exit.Ok         => target
+        case Exit.Fail(fail) => ???
 
   protected val scalac: Scalac[3.7] = Scalac(List(scalacOptions.experimental))
 
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux])
-  : Sandbox.Launcher =
+  :   Sandbox.Launcher =
 
       stage.remote: input =>
         unsafely:

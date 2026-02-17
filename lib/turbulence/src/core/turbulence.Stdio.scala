@@ -44,7 +44,7 @@ object Stdio:
       err:     ji.PrintStream | Null,
       in:      ji.InputStream | Null,
       termcap: Termcap )
-  : Stdio =
+  :   Stdio =
 
       val safeOut: ji.PrintStream = Optional(out).or(MutePrintStream)
       val safeErr: ji.PrintStream = Optional(err).or(MutePrintStream)

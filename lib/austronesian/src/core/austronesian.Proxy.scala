@@ -42,6 +42,6 @@ class Proxy(name: Text, singleton: Boolean) extends Dynamic:
     ( method: String )
     ( inline arguments: Any* )
     ( using classloader: Classloader )
-  : Any =
+  :   Any =
 
       ${Austronesian2.proxy('name, 'method, 'arguments, 'classloader, 'singleton)}

@@ -49,13 +49,14 @@ object OAuthError:
   import Reason.*
 
   given Reason is Communicable =
-    case Connection(url, reason)       => m"""could not connect to the OAuth provider at $url because
-                                              $reason"""
     case InvalidJsonResponse           => m"Invalid JSON response"
     case UnexpectedHttpStatus(status)  => m"the provider returne an unexpected HTTP status: $status"
     case InsufficientPrivileges(scope) => m"the user has not granted access to $scope"
     case Unauthorized                  => m"authorization was not granted"
     case Other                         => m"an unexpected error occurred"
+
+    case Connection(url, reason) =>
+      m"could not connect to the OAuth provider at $url because $reason"
 
 case class OAuthError(reason: OAuthError.Reason)(using Diagnostics)
 extends Error(m"OAuth failed because $reason")

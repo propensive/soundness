@@ -51,7 +51,7 @@ object Austronesian:
       ( pojo: Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character
               | java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float
               | java.lang.Double )
-    : Pojo =
+    :   Pojo =
 
         pojo
 
@@ -80,7 +80,9 @@ object Austronesian:
 
     inline given text2: Text is Decodable in Pojo = _.asInstanceOf[String].tt
     inline given string2: String is Decodable in Pojo = _.asInstanceOf[String]
+
     inline given int2: Int is Decodable in Pojo = _.asInstanceOf[Int]
+
     inline given long2: Long is Decodable in Pojo = _.asInstanceOf[Long]
     inline given float2: Float is Decodable in Pojo = _.asInstanceOf[Float]
     inline given double2: Double is Decodable in Pojo = _.asInstanceOf[Double]
@@ -88,7 +90,7 @@ object Austronesian:
     inline given boolean2: Boolean is Decodable in Pojo = _.asInstanceOf[Boolean]
 
     inline given collection
-    : [ collection <: Iterable, element: Decodable in Pojo ]
+    :   [ collection <: Iterable, element: Decodable in Pojo ]
     =>  Tactic[PojoError]
     =>  ( factory: scala.collection.Factory[element, collection[element]] )
     =>  collection[element] is Decodable in Pojo =

@@ -54,15 +54,18 @@ object Flag:
     case name: Char => t"-$name"
 
   @targetName("make")
-  def apply[topic: Defaulting to Text]
+  def apply[topic]
     ( name:        Text | Char,
       repeatable:  Boolean           = false,
       aliases:     List[Text | Char] = Nil,
       description: Optional[Text]    = Unset,
       secret:      Boolean           = false )
-  : Flag of topic =
-      new Flag(name, repeatable, aliases, description, secret):
-        type Topic = topic
+    ( using erased defaulting: topic is Defaulting to Text )
+  :   Flag of topic =
+
+    new Flag(name, repeatable, aliases, description, secret):
+      type Topic = topic
+
 
 case class Flag
   ( name:        Text | Char,
@@ -74,9 +77,10 @@ extends Topical:
 
   def suggest(using interpretable: Topic is Interpretable, discoverable: Topic is Discoverable)
     ( using cli: Cli )
-  : Unit =
+  :   Unit =
 
-      cli.register(this, discoverable)
+    cli.register(this, discoverable)
+
 
   def matches(key: Argument): Boolean =
     val flag =
@@ -90,23 +94,23 @@ extends Topical:
             interpreter:   Interpreter,
             interpretable: Topic is Interpretable,
             suggestions:   (? <: Topic) is Discoverable = Discoverable.noSuggestions )
-  : Optional[Topic] =
+  :   Optional[Topic] =
 
-      cli.register(this, suggestions)
-      cli.parameter(this)
+    cli.register(this, suggestions)
+    cli.parameter(this)
 
 
   def select(options: Iterable[Topic])
     ( using cli: Cli, interpreter: Interpreter, suggestible: Topic is Suggestible )
-  : Optional[Topic] =
+  :   Optional[Topic] =
 
-      val mapping: Map[Text, Topic] =
-        options.map { option => (suggestible.suggest(option).text, option) }.to(Map)
+    val mapping: Map[Text, Topic] =
+      options.map { option => (suggestible.suggest(option).text, option) }.to(Map)
 
-      given interpretable: Topic is Interpretable =
-        case List(value) => mapping.at(value())
-        case _           => Unset
+    given interpretable: Topic is Interpretable =
+      case List(value) => mapping.at(value())
+      case _           => Unset
 
-      given suggestions: Topic is Discoverable = _ => options.map(suggestible.suggest(_))
+    given suggestions: Topic is Discoverable = _ => options.map(suggestible.suggest(_))
 
-      this()
+    this()

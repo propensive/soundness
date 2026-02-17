@@ -40,4 +40,4 @@ trait Picas[Power <: Nat] extends Units[Power, Distance]
 
 object Picas:
   given designation: Designation[Picas[1]] = () => "pc".tt
-  erased given ratio: Ratio[Picas[-1] & Metres[1], 0.004233333333333333] = !!
+  inline given ratio: Ratio[Picas[-1] & Metres[1], 0.004233333333333333] = !!

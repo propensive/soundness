@@ -38,7 +38,7 @@ object Panic:
   def apply(error: Exception): Panic =
     Panic(m"""
       an ${error.getClass.getName.nn.tt} exception was unexpectedly thrown;
-      the error was: ${Option(error.getMessage).getOrElse("[null]").nn.tt}
+      the error was: ${Option(error.getMessage).getOrElse("[null]").tt}
     """)
 
 case class Panic(message: Message) extends java.lang.Error(message.text.s)

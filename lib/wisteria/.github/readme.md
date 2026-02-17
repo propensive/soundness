@@ -257,7 +257,7 @@ Here's what a call to `fields` looks like:
 ```scala
 object Show extends ProductDerivation[Show]:
   inline def join[DerivationType <: Product: ProductReflection]
-          : Show[DerivationType] =
+          :   Show[DerivationType] =
     new Show[DerivationType]:
       def show(value: DerivationType): Text =
         val array: IArray[Nothing] = fields(value):
@@ -316,7 +316,7 @@ each field in a product, which we can join together to surround the :
 ```scala
 object Show extends ProductDerivation[Show]:
   inline def join[DerivationType <: Product: ProductReflection]
-          : Show[DerivationType] =
+          :   Show[DerivationType] =
     new Show[DerivationType]:
       def show(value: DerivationType): Text =
         val array: IArray[Text] = fields(value):
@@ -371,7 +371,7 @@ this:
 ```scala
 object Show extends ProductDerivation[Show]:
   inline def join[DerivationType <: Product: ProductReflection]
-          : Show[DerivationType] =
+          :   Show[DerivationType] =
     value =>
       if singleton then typeName else
         fields(value):
@@ -510,10 +510,10 @@ Here are the adjusted stub implementations for the `Show` typeclass:
 ```scala
 object Show extends Derivation[Show]:
   inline def join[DerivationType <: Product: ProductReflection]
-          : Show[DerivationType] = ???
+          :   Show[DerivationType] = ???
 
   inline def split[DerivationType: SumReflection]
-          : Show[DerivationType] = ???
+          :   Show[DerivationType] = ???
 ```
 
 Note that `split`'s signature is similar to `join`'s, but lacks the subtype constraint on `DerivationType` and
@@ -534,7 +534,7 @@ have one more piece of useful information about `VariantType` which we didn't kn
 `[VariantType <: DerivationType]`:
 ```scala
 inline def split[DerivationType: SumReflection]
-        : Show[DerivationType] =
+        :   Show[DerivationType] =
   value =>
     variant(value):
       [VariantType <: DerivationType] => variant =>
@@ -553,7 +553,7 @@ value is available.
 
 ```scala
 inline def split[DerivationType: SumReflection]
-        : Show[DerivationType] =
+        :   Show[DerivationType] =
   value =>
     variant(value):
       [VariantType <: DerivationType] => variant => variant.show
@@ -573,7 +573,7 @@ type.
 Here is an implementation of `split` for `Eq`:
 ```scala
 inline def split[DerivationType: SumReflection]
-        : Eq[DerivationType] =
+        :   Eq[DerivationType] =
   (left, right) =>
     variant(left):
       [VariantType <: DerivationType] => leftValue =>
@@ -634,7 +634,7 @@ For our `Decoder` example, we have:
 ```scala
 object Decoder extends Derivation[Decoder]:
   inline def split[DerivationType: SumReflection]
-          : Decoder[DerivationType] =
+          :   Decoder[DerivationType] =
     text =>
       val prefix = text.cut(t":").head
       delegate(prefix):
@@ -647,7 +647,7 @@ Having discerned which variant's decoder should be used, we can then use this to
 ```scala
 object Decoder extends Derivation[Decoder]:
   inline def split[DerivationType: SumReflection]
-          : Decoder[DerivationType] =
+          :   Decoder[DerivationType] =
     text =>
       text.cut(t":") match
         case List(prefix, content) => delegate(prefix):
@@ -682,11 +682,11 @@ trait Show[ValueType]:
 
 object Show extends Derivation[Show]:
   inline def join[DerivationType <: Product: ProductReflection]
-          : Show[DerivationType] =
+          :   Show[DerivationType] =
     value => ???
 
   inline def split[DerivationType: SumReflection]
-          : Show[DerivationType] =
+          :   Show[DerivationType] =
     value =>
       inline if !choice then compiletime.error("cannot derive") else
         variant(value): [VariantType <: DerivationType] =>
@@ -718,7 +718,7 @@ We could take the `Show` example from earlier and adjust it to fall back to a fi
 ```scala
 object Show extends ProductDerivation[Show]:
   inline def join[DerivationType <: Product: ProductReflection]
-          : Show[DerivationType] =
+          :   Show[DerivationType] =
     value =>
       fields(value):
         [FieldType] => field => context.layGiven(field.toString.tt)(field.show)
@@ -785,7 +785,7 @@ given called `derived` directly in the companion object, like so:
 ```scala
 object Unrelated extends ProductDerivation[Typeclass]:
   def join[DerivationType <: Product: ProductReflection]
-          : Typeclass[DerivationType] = ???
+          :   Typeclass[DerivationType] = ???
 
 object Typeclass:
   inline given derived[DerivationType]: Typeclass[DerivationType] =

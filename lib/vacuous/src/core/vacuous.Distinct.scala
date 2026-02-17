@@ -38,4 +38,8 @@ object Distinct:
   inline given distinct: [typeRef, otherType] => typeRef is Distinct from otherType =
     ${Vacuous.distinct[typeRef, otherType]}
 
-erased trait Distinct extends Typeclass, Original
+  def apply[self, origin](): self is Distinct from origin = new Distinct():
+    type Self = self
+    type Origin = origin
+
+sealed trait Distinct extends Typeclass, Original

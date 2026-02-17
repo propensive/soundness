@@ -39,7 +39,7 @@ import rudiments.*
 
 case class Scope(names: Text*):
   def apply()(using authorization: Authorization of (? >: this.type))
-  : Authorization of this.type raises OAuthError =
+  :   Authorization of this.type raises OAuthError =
       names.each: name =>
         if !authorization.scopes.contains(name)
         then raise(OAuthError(OAuthError.Reason.InsufficientPrivileges(name)))

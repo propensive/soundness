@@ -52,7 +52,7 @@ object Keyboard:
 
 
   def modified(code: Char, keypress: EditKey | FunctionKey)
-  : EditKey | FunctionKey | Shift | Alt | Ctrl | Meta =
+  :   EditKey | FunctionKey | Shift | Alt | Ctrl | Meta =
       val n = code - '1'
       val shift: EditKey | FunctionKey | Shift = if (n&1) == 1 then Shift(keypress) else keypress
       val alt: EditKey | FunctionKey | Shift | Alt = if (n&2) == 2 then Alt(shift) else shift

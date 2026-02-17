@@ -50,7 +50,7 @@ object Telekinesis:
       status: Optional[Expr[Http.Status]] = Unset,
       done:   List[Expr[Http.Header]]     = Nil )
     ( using Quotes )
-  : (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
+  :   (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
 
       import quotes.reflect.*
 
@@ -114,7 +114,7 @@ object Telekinesis:
       payload:  Expr[payload],
       postable: Expr[payload is Postable],
       client:   Expr[HttpClient onto target] )
-  : Macro[Http.Response] =
+  :   Macro[Http.Response] =
 
       headers.absolve match
         case Varargs(exprs) =>
@@ -146,7 +146,7 @@ object Telekinesis:
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable],
       client:   Expr[HttpClient onto target] )
-  : Macro[Http.Response] =
+  :   Macro[Http.Response] =
 
       headers.absolve match
         case Varargs(exprs) =>

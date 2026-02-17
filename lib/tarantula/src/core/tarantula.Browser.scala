@@ -52,7 +52,7 @@ trait Browser(name: Text):
 
   def session[result](port: Int = 4444)(block: (session: WebDriver#Session) ?=> result)
     ( using WorkingDirectory, Monitor )
-  : result logs HttpEvent logs ExecEvent =
+  :   result logs HttpEvent logs ExecEvent =
 
       val server = launch(port)
       try block(using WebDriver(server).startSession()) finally server.stop()

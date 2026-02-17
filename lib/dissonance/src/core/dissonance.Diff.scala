@@ -47,7 +47,7 @@ object Diff:
   private def parse(lines: Stream[Text]): Diff[Text] raises DiffError =
     def recur
       ( todo: Stream[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int )
-    : Diff[Text] =
+    :   Diff[Text] =
 
         if pos < target
         then recur(todo, line + 1, Par(pos, rpos, Unset) :: edits, pos + 1, rpos + 1, target)
@@ -102,7 +102,7 @@ case class Diff[element](edits: Edit[element]*):
 
 
   def patch(seq: Seq[element], update: (element, element) => element = (left, right) => left)
-  : Stream[element] =
+  :   Stream[element] =
 
       def recur(todo: List[Edit[element]], seq: Seq[element]): Stream[element] = todo match
         case Nil                   => seq.to(Stream)

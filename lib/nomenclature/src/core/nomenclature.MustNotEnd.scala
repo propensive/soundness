@@ -39,4 +39,4 @@ import proscenium.*
 
 object MustNotEnd extends Rule({ text => m"must not end with $text"}, !_.ends(_))
 
-erased trait MustNotEnd[text <: Label] extends Check[text]
+sealed trait MustNotEnd[text <: Label] extends Check[text]

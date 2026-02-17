@@ -105,9 +105,9 @@ object Sheet:
         . or(Nil)
 
       Table[Dsv]
-       ((columns.map: name =>
-          Column[Dsv, Text, Text](name, sizing = columnar.Collapsible(0.5))
-           (_[Text](name).or(t"")))*)
+        ( (columns.map: name =>
+            Column[Dsv, Text, Text](name, sizing = columnar.Collapsible(0.5))
+              ( _[Text](name).or(t"")))* )
 
 
   given aggregable: (format: DsvFormat) => Tactic[DsvError] => Sheet is Aggregable by Text = text =>
@@ -127,7 +127,7 @@ object Sheet:
       state:    State                    = State.Fresh,
       headings: Optional[Map[Text, Int]] = Unset )
     ( using format: DsvFormat, tactic: Tactic[DsvError] )
-  : Stream[Dsv] =
+  :   Stream[Dsv] =
 
       inline def putCell(): Array[Text] =
         val cells2 = if cells.length <= column then cells :+ builder() else

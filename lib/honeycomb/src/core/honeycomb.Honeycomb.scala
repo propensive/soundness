@@ -49,8 +49,6 @@ import vacuous.*
 
 import scala.quoted.*
 
-private given realm: Realm = realm"honeycomb"
-
 object Honeycomb:
   def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Extrapolation[Html]] =
     import quotes.reflect.*
@@ -71,7 +69,8 @@ object Honeycomb:
       var holes: Map[Ordinal, Html.Hole] = Map()
       def capture(ordinal: Ordinal, hole: Html.Hole) = holes = holes.updated(ordinal, hole)
 
-      val html: Html = Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
+      val html: Html =
+        Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
       val holes2 = holes.to(List).sortBy(_(0)).map(_(1))
       val iterator = holes2.to(Iterator)
@@ -80,16 +79,16 @@ object Honeycomb:
       var types: List[TypeRepr] = Nil
 
       def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
           '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           val children = '{$scrutinee.nodes}
 
@@ -105,7 +104,7 @@ object Honeycomb:
             '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
       def checkElement(array: Expr[Array[Any]], pattern: Element, scrutinee: Expr[Element])
-      : Expr[Boolean] =
+      :   Expr[Boolean] =
 
           def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
             case Nil => expr
@@ -150,67 +149,71 @@ object Honeycomb:
 
           '{$attributesChecked && $elementsChecked}
 
-      def descend(array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean])
-      : Expr[Boolean] =
+      def descend
+        ( array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean] )
+      :   Expr[Boolean] =
 
-          pattern match
-            case Comment("\u0000") =>
-              idx += 1
-              iterator.next()
-              types ::= TypeRepr.of[Text]
+        pattern match
+          case Comment("\u0000") =>
+            idx += 1
+            iterator.next()
+            types ::= TypeRepr.of[Text]
 
-              ' {
-                  $expr
-                  && $scrutinee.isInstanceOf[Comment]
-                  && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Comment].text; true }
-                }
+            ' {
+                $expr
+                && $scrutinee.isInstanceOf[Comment]
+                && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Comment].text; true }
+              }
 
-            case TextNode("\u0000") =>
-              idx += 1
-              iterator.next() match
-                case Html.Hole.Node(label) =>
-                  types ::= whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
-                    intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
-                      case '[type children <: Label; children] => TypeRepr.of[Node of children]
+          case TextNode("\u0000") =>
+            idx += 1
+            iterator.next() match
+              case Html.Hole.Node(label) =>
+                types ::= whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
+                  intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
+                    case '[type children <: Label; children] => TypeRepr.of[Node of children]
 
-                case _ =>
-                  panic(m"unexpected hole type")
+              case _ =>
+                panic(m"unexpected hole type")
 
-              '{$expr && { $array(${Expr(idx)}) = $scrutinee; true }}
+            '{$expr && { $array(${Expr(idx)}) = $scrutinee; true }}
 
-            case textual@TextNode(text) =>
-              val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[TextNode]})
-              '{$expr && $scrutinee.isInstanceOf[TextNode] && $checked}
+          case textual@TextNode(text) =>
+            val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[TextNode]})
+            '{$expr && $scrutinee.isInstanceOf[TextNode] && $checked}
 
-            case comment@Comment(text) =>
-              if text.contains("\u0000")
-              then halt(m"""only the entire comment text can be matched; write the extractor as
-                            ${t"<!--$$text-->"}""")
-              val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Comment]})
-              '{$expr && $scrutinee.isInstanceOf[Comment] && $checked}
+          case comment@Comment(text) =>
+            if text.contains("\u0000") then halt:
+              m"""
+                only the entire comment text can be matched; write the extractor as
+                ${t"<!--$$text-->"}
+              """
 
-            case Doctype(_) =>
-              halt(m"cannot match against a document type declaration")
+            val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Comment]})
+            '{$expr && $scrutinee.isInstanceOf[Comment] && $checked}
 
-            case Element("\u0000", _, _, _) =>
-              idx += 1
-              iterator.next() match
-                case Html.Hole.Element(label) =>
-                  types ::= whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
-                    intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
-                      case '[type children <: Label; children] => TypeRepr.of[Element of children]
-                case _ =>
-                  halt(m"unexpected hole type")
+          case Doctype(_) =>
+            halt(m"cannot match against a document type declaration")
 
-              '{$expr && { $array(${Expr(idx)}) = $scrutinee; true }}
+          case Element("\u0000", _, _, _) =>
+            idx += 1
+            iterator.next() match
+              case Html.Hole.Element(label) =>
+                types ::= whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
+                  intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
+                    case '[type children <: Label; children] => TypeRepr.of[Element of children]
+              case _ =>
+                halt(m"unexpected hole type")
 
-            case element: Element =>
-              def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Element]})
-              '{$expr && $scrutinee.isInstanceOf[Element] && $checked}
+            '{$expr && { $array(${Expr(idx)}) = $scrutinee; true }}
 
-            case fragment@Fragment(nodes*) =>
-              val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Fragment]})
-              '{$expr && $scrutinee.isInstanceOf[Fragment] && $checked}
+          case element: Element =>
+            def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Element]})
+            '{$expr && $scrutinee.isInstanceOf[Element] && $checked}
+
+          case fragment@Fragment(nodes*) =>
+            val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Fragment]})
+            '{$expr && $scrutinee.isInstanceOf[Fragment] && $checked}
 
 
       val result: Expr[Extrapolation[Html]] =
@@ -281,7 +284,11 @@ object Honeycomb:
                               '{$attributive.attribute(${Expr(attribute)}, $expr).let(_(1))}
 
                             case _ =>
-                              halt(m"""${TypeRepr.of[value].show} cannot be attributed to an attribute of ${Syntax(TypeRepr.of[result]).show}""")
+                              halt:
+                                m"""
+                                  ${TypeRepr.of[value].show} cannot be attributed to an attribute of
+                                  ${Syntax(TypeRepr.of[result]).show}
+                                """
 
                         case _ =>
                           halt(m"the attribute $attribute cannot be used on the element <$tag>")
@@ -292,9 +299,11 @@ object Honeycomb:
                     case Some('{$renderable: Renderable}) =>
                       '{$renderable.render($expr)}
 
-                    case _ =>
-                      halt(m"""a value of ${TypeRepr.of[value].show} is not renderable inside a
-                               <$tag> element""")
+                    case _ => halt:
+                      m"""
+                        a value of ${TypeRepr.of[value].show} is not renderable inside a <$tag>
+                        element
+                      """
 
               case Hole.Node(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match
@@ -307,9 +316,11 @@ object Honeycomb:
                         case Some('{$showable: Showable}) =>
                           '{TextNode($showable.text($expr))}
 
-                        case _ =>
-                          halt(m"""a value of ${TypeRepr.of[value].show} is not renderable
-                                  or showable inside a <$tag> element""")
+                        case _ => halt:
+                          m"""
+                            a value of ${TypeRepr.of[value].show} is not renderable or showable
+                            inside a <$tag> element
+                          """
 
               case Hole.Comment => Expr.summon[(? >: value) is Showable] match
                 case Some(showable) =>
@@ -400,7 +411,7 @@ object Honeycomb:
             '{
                 $ {
                     serialize(html).absolve match
-                      case List(one: Expr[?]) => html match
+                      case List(one: Expr[?]) => html.absolve match
                         case _: TextNode        => one.asExprOf[TextNode]
                         case _: Element         => one.asExprOf[Element]
                         case _: Comment         => one.asExprOf[Comment]
@@ -412,49 +423,51 @@ object Honeycomb:
 
   def attributes[result: Type, thisType <: Tag to result: Type]
     ( tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]] )
-  : Macro[result] =
-      import quotes.reflect.*
+  :   Macro[result] =
 
-      val args = attributes0.absolve match
-        case Varargs(args) => args
+    import quotes.reflect.*
 
-      val attributes: Seq[Expr[Optional[(Text, Optional[Text])]]] =
-        Type.of[thisType].absolve match
-          case
-            ' [
-                type topic <: Label
-                type form
-                Tag { type Topic = topic; type Form = form }
-              ] =>
+    val args = attributes0.absolve match
+      case Varargs(args) => args
 
-            args.map: arg =>
-              arg.absolve match
-                case '{($key, $value: value)} =>
-                  TypeRepr.of[topic].literal[String].let: topic =>
-                    key.asTerm match
-                      case Literal(StringConstant(key)) =>
-                        if key == "" then panic(m"Empty key")
-                        else ConstantType(StringConstant(key)).asType.absolve match
-                          case '[type key <: Label; key] =>
-                            Expr.summon[key is Attribute in form on (? >: topic)]
-                            . orElse(Expr.summon[key is Attribute in form]) match
-                              case Some('{type result; $expr: Attribute { type Topic = result }}) =>
-                                Expr.summon[(? >: value) is Attributive to result] match
-                                  case Some('{$converter: Attributive}) =>
-                                    '{$converter.attribute(${Expr(key.tt)}, $value)}
+    val attributes: Seq[Expr[Optional[(Text, Optional[Text])]]] =
+      Type.of[thisType].absolve match
+        case
+          ' [
+              type topic <: Label
+              type form
+              Tag { type Topic = topic; type Form = form }
+            ] =>
 
-                                  case _ =>
-                                    halt(m"""$key has attribute type ${TypeRepr.of[result].show},
-                                            but ${TypeRepr.of[value].show} cannot be attributed as
-                                            a ${TypeRepr.of[result].show} without a contextual
-                                            instance of
-                                            ${TypeRepr.of[value is Attributive to result].show}""")
+          args.map: arg =>
+            arg.absolve match
+              case '{($key, $value: value)} =>
+                TypeRepr.of[topic].literal[String].let: topic =>
+                  key.asTerm match
+                    case Literal(StringConstant(key)) =>
+                      if key == "" then panic(m"Empty key")
+                      else ConstantType(StringConstant(key)).asType.absolve match
+                        case '[type key <: Label; key] =>
+                          Expr.summon[key is Attribute in form on (? >: topic)]
+                          . orElse(Expr.summon[key is Attribute in form]) match
+                            case Some('{type result; $expr: Attribute { type Topic = result }}) =>
+                              Expr.summon[(? >: value) is Attributive to result] match
+                                case Some('{$converter: Attributive}) =>
+                                  '{$converter.attribute(${Expr(key.tt)}, $value)}
 
-                              case _ =>
-                                halt(m"the attribute $key cannot be used on the element <$topic>")
+                                case _ => halt:
+                                  m"""
+                                    $key has attribute type ${TypeRepr.of[result].show}, but
+                                    ${TypeRepr.of[value].show} cannot be attributed as a
+                                    ${TypeRepr.of[result].show} without a contextual instance of
+                                    ${TypeRepr.of[value is Attributive to result].show}
+                                  """
 
-                      case _ =>
-                        halt(m"unable to determine attribute key type")
-                  . or(halt(m"unexpected type"))
+                            case _ =>
+                              halt(m"the attribute $key cannot be used on the element <$topic>")
 
-      '{$tag.node(${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]
+                    case _ =>
+                      halt(m"unable to determine attribute key type")
+                . or(halt(m"unexpected type"))
+
+    '{$tag.node(${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]
