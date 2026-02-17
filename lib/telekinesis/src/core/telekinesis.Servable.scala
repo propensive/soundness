@@ -42,7 +42,7 @@ import spectacular.*
 import turbulence.*
 
 object Servable:
-  def apply[response](mediaType: response => MediaType)(lambda: response => Stream[Data])
+  def apply[response](mediaType: response => MediaType)(lambda: response => Http.Body)
   :   response is Servable = response =>
 
       val headers = List(Http.Header(t"content-type", mediaType(response).show))
@@ -53,31 +53,32 @@ object Servable:
     def serve(content: Content): Http.Response =
       val headers = List(Http.Header(t"content-type", content.media.show))
 
-      Http.Response.make(Http.Ok, headers, content.stream)
+      Http.Response.make(Http.Ok, headers, Http.Body.Streaming(content.stream))
 
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  response is Servable =
 
       Servable[response](value => unsafely(Media.parse(response.generic(value)(0)))): value =>
-        response.generic(value)(1)
+        Http.Body.Streaming(response.generic(value)(1))
 
-  given data: Data is Servable = Servable[Data](_ => media"application/octet-stream")(Stream(_))
+  given data: Data is Servable = Servable[Data](_ => media"application/octet-stream"):
+    Http.Body.Fixed(_)
 
   inline given media: [media: Media] => media is Servable = compiletime.summonFrom:
     case encodable: (`media` is Encodable in Data) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Response.make(Http.Ok, headers, Stream(encodable.encode(value)))
+        Http.Response.make(Http.Ok, headers, Http.Body.Fixed(encodable.encode(value)))
 
     case given (`media` is Streamable by Data) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Response.make(Http.Ok, headers, value.stream[Data])
+        Http.Response.make(Http.Ok, headers, Http.Body.Streaming(value.stream[Data]))
 
     case given (`media` is Streamable by Text) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Response.make(Http.Ok, headers, value.stream[Data])
+        Http.Response.make(Http.Ok, headers, Http.Body.Streaming(value.stream[Data]))
 
 trait Servable extends Typeclass:
   def serve(content: Self): Http.Response

@@ -71,7 +71,7 @@ object Synesthesia:
     import quotes.reflect.*
 
     val parts: List[String] = context.valueOrAbort.parts.to(List)
-    val arguments = arguments0 match case Varargs(arguments) => arguments
+    val arguments = arguments0.absolve match case Varargs(arguments) => arguments
 
     val insertions = arguments.map: value =>
       value.absolve match

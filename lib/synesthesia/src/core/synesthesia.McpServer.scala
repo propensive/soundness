@@ -78,10 +78,10 @@ trait McpServer():
   def serve(using this.type is McpSpecification, Monitor, Codicil, Online, Http.Request)
   :   Http.Response =
 
-      unsafely:
-        val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)
-        val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
-        Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))
+    unsafely:
+      val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)
+      val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
+      Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))
 
   def name: Text
   def description: Text
