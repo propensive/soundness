@@ -123,9 +123,9 @@ def diff[element]
     type Edits = List[Edit[element]]
 
     @tailrec
-    def count(position: Int, off: Int): Int =
-      if position < left.length && position + off < right.length && compare(left(position), right(position + off))
-      then count(position + 1, off)
+    def count(position: Int, offset: Int): Int =
+      if position < left.length && position + offset < right.length && compare(left(position), right(position + offset))
+      then count(position + 1, offset)
       else position
 
     @tailrec
@@ -141,19 +141,19 @@ def diff[element]
 
     @tailrec
     def backtrack(position: Int, deletes: Int, rows: List[Array[Int]], edits: Edits): Edits =
-      val rposition = position + rows.length - deletes*2
+      val rightPosition = position + rows.length - deletes*2
       lazy val ins = rows.head(deletes) - 1
       lazy val del = rows.head(deletes - 1)
 
-      if position == -1 && rposition == -1 then edits else if rows.isEmpty
-      then backtrack(position - 1, deletes, rows, Par(position, rposition, left(position)) :: edits)
+      if position == -1 && rightPosition == -1 then edits else if rows.isEmpty
+      then backtrack(position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits)
       else if deletes < rows.length && (deletes == 0 || ins >= del)
       then
-        if position == ins then backtrack(position, deletes, rows.tail, Ins(rposition, right(rposition)) :: edits)
-        else backtrack(position - 1, deletes, rows, Par(position, rposition, left(position)) :: edits)
+        if position == ins then backtrack(position, deletes, rows.tail, Ins(rightPosition, right(rightPosition)) :: edits)
+        else backtrack(position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits)
       else
         if position == del then backtrack(del - 1, deletes - 1, rows.tail, Del(position, left(position)) :: edits)
-        else backtrack(position - 1, deletes, rows, Par(position, rposition, left(position)) :: edits)
+        else backtrack(position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits)
 
     trace(0, 0, Nil, Nil)
 

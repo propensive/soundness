@@ -45,9 +45,12 @@ object Weekday:
     val total = end.jdn - start.jdn
     val extras = total%7
 
-    val d = day.ordinal
-    val s = start.weekday.ordinal
-    val extra = if d + (if d < s then 7 else 0) < s + extras then 1 else 0
+    val dayOrdinal = day.ordinal
+    val startOrdinal = start.weekday.ordinal
+
+    val extra =
+      if dayOrdinal + (if dayOrdinal < startOrdinal then 7 else 0) < startOrdinal + extras
+      then 1 else 0
 
     (total/7) + extra
 

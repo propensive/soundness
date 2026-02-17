@@ -75,12 +75,12 @@ trait Interpolator[input, state, result]:
 
       def rethrow[success](block: => success, start: Int, end: Int): success =
         try block catch case error: InterpolationError => error match
-          case InterpolationError(msg, off, length) =>
+          case InterpolationError(msg, offset, length) =>
             inline given canThrow: CanThrow[PositionalError] = unsafeExceptions.canThrowAny
             given diagnostics: Diagnostics = Diagnostics.omit
 
             throw PositionalError
-                  (msg, start + off.or(0), start + off.or(0) + length.or(end - start - off.or(0)))
+                  (msg, start + offset.or(0), start + offset.or(0) + length.or(end - start - offset.or(0)))
 
       def recur
         ( sequence:  Seq[Expr[Any]],

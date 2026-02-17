@@ -52,7 +52,8 @@ case class Decimalizer
     nan:                Text           = "\u2209\u211d".tt )
 extends DecimalConverter:
 
-  def exponentScale(i: Int, a: Int): Int = if i == 0 then a else exponentScale(i/10, a + 1)
+  def exponentScale(index: Int, a: Int): Int =
+    if index == 0 then a else exponentScale(index/10, a + 1)
 
   def decimalize(double: Double): Text =
     if double.isFinite then
@@ -104,24 +105,24 @@ extends DecimalConverter:
           val array = new Array[Char](fullLength + suffix)
 
           if exponentiate then
-            var i = 0
-            while i < exponent.length do
-              array(i + fullLength) = exponent.s.charAt(i)
-              i += 1
+            var index = 0
+            while index < exponent.length do
+              array(index + fullLength) = exponent.s.charAt(index)
+              index += 1
 
-            if exponentValue < 0 then array(i + fullLength) = if superscript then '¯' else '-'
-            i = fullLength + suffix - 1
+            if exponentValue < 0 then array(index + fullLength) = if superscript then '¯' else '-'
+            index = fullLength + suffix - 1
             var exp = exponentValue.abs
 
             while exp > 0 do
-              val d = exp%10
-              array(i) = if !superscript then ('0' + d).toChar else d match
+              val digit = exp%10
+              array(index) = if !superscript then ('0' + digit).toChar else digit match
                 case 1     => '\u00b9'
-                case 2 | 3 => ('\u00b0' + d).toChar
-                case d     => ('⁰' + d).toChar
+                case 2 | 3 => ('\u00b0' + digit).toChar
+                case digit => ('⁰' + digit).toChar
 
               exp /= 10
-              i -= 1
+              index -= 1
 
           write
             ( array,

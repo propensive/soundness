@@ -46,18 +46,18 @@ object Diff:
 
   private def parse(lines: Stream[Text]): Diff[Text] raises DiffError =
     def recur
-      ( todo: Stream[Text], line: Int, edits: List[Edit[Text]], position: Int, rposition: Int, target: Int )
+      ( todo: Stream[Text], line: Int, edits: List[Edit[Text]], position: Int, rightPosition: Int, target: Int )
     :   Diff[Text] =
 
         if position < target
-        then recur(todo, line + 1, Par(position, rposition, Unset) :: edits, position + 1, rposition + 1, target)
+        then recur(todo, line + 1, Par(position, rightPosition, Unset) :: edits, position + 1, rightPosition + 1, target)
         else todo match
           case head #:: tail =>
-            if head == Text("---") then recur(tail, line + 1, edits, position, rposition, 0)
+            if head == Text("---") then recur(tail, line + 1, edits, position, rightPosition, 0)
             else if head.s.startsWith("< ")
-            then recur(tail, line + 1, Del(position, Text(head.s.drop(2))) :: edits, position + 1, rposition, 0)
+            then recur(tail, line + 1, Del(position, Text(head.s.drop(2))) :: edits, position + 1, rightPosition, 0)
             else if head.s.startsWith("> ")
-            then recur(tail, line + 1, Ins(rposition, Text(head.s.drop(2))) :: edits, position, rposition + 1, 0)
+            then recur(tail, line + 1, Ins(rightPosition, Text(head.s.drop(2))) :: edits, position, rightPosition + 1, 0)
             else
               def unpair(string: String): (Int, Int) =
                 try string.split(",").nn.to(List) match
@@ -73,10 +73,10 @@ object Diff:
 
               pairs match
                 case Some(((leftStart, leftEnd), (rightStart, rightEnd))) =>
-                  recur(tail, line + 1, edits, position, rposition, leftStart)
+                  recur(tail, line + 1, edits, position, rightPosition, leftStart)
 
                 case None =>
-                  raise(DiffError(line, head)) yet recur(tail, line + 1, edits, position, rposition, 0)
+                  raise(DiffError(line, head)) yet recur(tail, line + 1, edits, position, rightPosition, 0)
 
           case _ =>
             Diff(edits.reverse*)
@@ -149,7 +149,7 @@ case class Diff[element](edits: Edit[element]*):
                                          xs.collect { case ins: Ins[element] => ins })
 
   def chunks: Stream[Chunk[element]] =
-    def recur(todo: List[Edit[element]], position: Int, rposition: Int): Stream[Chunk[element]] =
+    def recur(todo: List[Edit[element]], position: Int, rightPosition: Int): Stream[Chunk[element]] =
       todo match
         case Nil                         => Stream()
         case Par(pos2, rpos2, _) :: tail => recur(tail, pos2 + 1, rpos2 + 1)
@@ -161,7 +161,7 @@ case class Diff[element](edits: Edit[element]*):
           val inss = todo.drop(dels.length).takeWhile(_.typed[Ins[element]]).collect:
             case ins: Ins[element] => ins
 
-          Chunk(position, rposition, dels, inss) #::
+          Chunk(position, rightPosition, dels, inss) #::
               recur(todo.drop(dels.size + inss.size), position + dels.length, position + inss.length)
 
     recur(edits.to(List), 0, 0)
