@@ -56,15 +56,41 @@ object Austronesian:
         pojo
 
 
-    inline given text: Text is Encodable in Pojo = _.s
-    inline given string: String is Encodable in Pojo = identity(_)
-    inline given int: Int is Encodable in Pojo = identity(_)
-    inline given long: Long is Encodable in Pojo = identity(_)
-    inline given float: Float is Encodable in Pojo = identity(_)
-    inline given double: Double is Encodable in Pojo = identity(_)
-    inline given char: Char is Encodable in Pojo = identity(_)
-    inline given boolean: Boolean is Encodable in Pojo = identity(_)
-    inline given byte: Byte is Encodable in Pojo = identity(_)
+    given text: Text is Encodable:
+      type Form = Pojo
+      inline def encoded(text: Text): Pojo = text.s
+
+    given string: String is Encodable:
+      type Form = Pojo
+      inline def encoded(value: String): Pojo = value
+
+    given int: Int is Encodable:
+      type Form = Pojo
+      inline def encoded(value: Int): Pojo = value
+
+    given long: Long is Encodable:
+      type Form = Pojo
+      inline def encoded(value: Long): Pojo = value
+
+    given float: Float is Encodable:
+      type Form = Pojo
+      inline def encoded(value: Float): Pojo = value
+
+    given double: Double is Encodable:
+      type Form = Pojo
+      inline def encoded(value: Double): Pojo = value
+
+    given char: Char is Encodable:
+      type Form = Pojo
+      inline def encoded(value: Char): Pojo = value
+
+    given boolean: Boolean is Encodable:
+      type Form = Pojo
+      inline def encoded(value: Boolean): Pojo = value
+
+    given byte: Byte is Encodable:
+      type Form = Pojo
+      inline def encoded(value: Byte): Pojo = value
 
     // Check whether these should be kept, or the `inline given` below
     // given list: [list <: List, element: Encodable in Pojo] => list[element] is Encodable in Pojo =
@@ -73,21 +99,44 @@ object Austronesian:
     // given trie: [trie <: Trie, element: Encodable in Pojo] => trie[element] is Encodable in Pojo =
     //   trie => IArray.from(trie.map(_.encode))
 
-    inline given list: [collection <: Iterable, element: Encodable in Pojo]
+    given list: [collection <: Iterable, element: Encodable in Pojo]
     =>  collection[element] is Encodable in Pojo =
 
         iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
 
-    inline given text2: Text is Decodable in Pojo = _.asInstanceOf[String].tt
-    inline given string2: String is Decodable in Pojo = _.asInstanceOf[String]
+    given text2: Text is Decodable:
+      type Form = Pojo
+      inline def decoded(value: Pojo): Text = value.asInstanceOf[Text]
 
-    inline given int2: Int is Decodable in Pojo = _.asInstanceOf[Int]
+    given string2: String is Decodable:
+      type Form = Pojo
+      inline def decoded(value: Pojo): String = value.asInstanceOf[String]
 
-    inline given long2: Long is Decodable in Pojo = _.asInstanceOf[Long]
-    inline given float2: Float is Decodable in Pojo = _.asInstanceOf[Float]
-    inline given double2: Double is Decodable in Pojo = _.asInstanceOf[Double]
-    inline given char2: Char is Decodable in Pojo = _.asInstanceOf[Char]
-    inline given boolean2: Boolean is Decodable in Pojo = _.asInstanceOf[Boolean]
+
+    given int2: Int is Decodable:
+      type Form = Pojo
+      inline def decoded(value: Pojo): Int = value.asInstanceOf[Int]
+
+
+    given long2: Long is Decodable:
+      type Form = Pojo
+      inline def decoded(value: Pojo): Long = value.asInstanceOf[Long]
+
+    given float2: Float is Decodable:
+      type Form = Pojo
+      inline def decoded(value: Pojo): Float = value.asInstanceOf[Float]
+
+    given double2: Double is Decodable:
+      type Form = Pojo
+      inline def decoded(value: Pojo): Double = value.asInstanceOf[Double]
+
+    given char2: Char is Decodable:
+      type Form = Pojo
+      inline def decoded(value: Pojo): Char = value.asInstanceOf[Char]
+
+    given boolean2: Boolean is Decodable:
+      type Form = Pojo
+      inline def decoded(value: Pojo): Boolean = value.asInstanceOf[Boolean]
 
     inline given collection
     :   [ collection <: Iterable, element: Decodable in Pojo ]
@@ -107,8 +156,10 @@ object Austronesian:
       inline def as[entity: Decodable in Pojo]: entity = entity.decoded(pojo)
 
   trait Pojo2:
-    inline given checkable: Pojo is Checkable against Pojo = (left, right) =>
-      left match
+    given checkable: Pojo is Checkable:
+      type Contrast = Pojo
+
+      def check(left: Pojo, right: Pojo): Boolean = left match
         case left: Array[?] => right match
           case right: Array[?] =>
             left.length == right.length && left.indices.forall: index =>

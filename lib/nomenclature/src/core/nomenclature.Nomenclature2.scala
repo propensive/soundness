@@ -80,17 +80,19 @@ object Nomenclature2:
 
     Expr.summon[system is Nominative].absolve match
       case Some('{type limit; $nominative: (Nominative { type Limit = limit })}) =>
-        val checks = decompose(TypeRepr.of[limit]).to(List).map(_.asType).foldLeft('{()}):
-          case (expr, '[type param <: String; type rule <: Check[param]; rule]) =>
-            Nomenclature3.staticCompanion[rule].absolve match
-              case '{$rule: Rule} =>
-                TypeRepr.of[param].absolve match
-                  case ConstantType(StringConstant(string)) =>
-                    ' {
-                        if $rule.check($name, ${Expr(string)}.tt) then $expr
-                        else provide[Tactic[NameError]]:
-                          raise(NameError($name, $rule, ${Expr(string)}))
-                      }
+        val checks =
+          decompose(TypeRepr.of[limit]).to(List).map(_.asType).foldLeft('{()}): (expr, next) =>
+            next.absolve match
+              case '[type param <: String; type rule <: Check[param]; rule] =>
+                Nomenclature3.staticCompanion[rule].absolve match
+                  case '{$rule: Rule} =>
+                    TypeRepr.of[param].absolve match
+                      case ConstantType(StringConstant(string)) =>
+                        ' {
+                            if $rule.check($name, ${Expr(string)}.tt) then $expr
+                            else provide[Tactic[NameError]]:
+                              raise(NameError($name, $rule, ${Expr(string)}))
+                          }
 
         '{$checks; $name.asInstanceOf[Name[system]]}
 

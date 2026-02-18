@@ -50,6 +50,7 @@ object Tmux:
         keypresses.each:
           case text: Text => sh"tmux send-keys -t ${tmux.id} '$text'".exec[Unit]()
           case char: Char => sh"tmux send-keys -t ${tmux.id} '$char'".exec[Unit]()
+          case _          => panic(m"unreachable case")
 
   def screenshot()(using tmux: Tmux)(using WorkingDirectory): Screenshot = unsafely:
     import logging.silent

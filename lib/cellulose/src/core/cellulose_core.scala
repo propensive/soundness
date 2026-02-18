@@ -32,6 +32,8 @@
                                                                                                   */
 package cellulose
 
+import language.dynamics
+
 import anticipation.*
 import prepositional.*
 import rudiments.*
@@ -42,9 +44,7 @@ extension (inline context: StringContext)
 extension [encodable: {Encodable in Codl, CodlSchematic}](value: encodable)
   def codl: CodlDoc of encodable =
     new CodlDoc
-      ( IArray.from(encodable.encoded(value).list.map(_.children).flatten),
-        encodable.schema(),
-        0 ):
+      ( IArray.from(encodable.encoded(value).list.map(_.children).flatten), encodable.schema(), 0 ):
 
       type Topic = encodable
 

@@ -50,6 +50,7 @@ object Stenography:
 
   def name[typename <: AnyKind: Type](using Quotes): Text =
     import quotes.reflect.*
+
     val outer = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
         given context: core.Contexts.Context = quotes.ctx

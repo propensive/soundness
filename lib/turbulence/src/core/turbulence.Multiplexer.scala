@@ -66,5 +66,5 @@ case class Multiplexer[key, element]()(using Monitor):
       active -= key
       if active.nil then Stream() else stream
 
-    case value: `element` =>
-      value #:: stream
+    case value =>
+      value.asInstanceOf[element] #:: stream

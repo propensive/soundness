@@ -115,7 +115,7 @@ class Report(using Environment):
         if suite.absent then rest
         else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
 
-      case Bench(testId, bench@Benchmark(_, _, _, _, _, _)) =>
+      case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _)) =>
         List(Summary(Status.Bench, testId, 0, 0, 0, 0))
 
       case Test(testId, buffer) =>
@@ -429,10 +429,11 @@ class Report(using Environment):
 
           Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
             e"${operationFrequency(s.benchmark)}")
-       ::: comparisons.map: c =>
+       ::: comparisons.map: comparison =>
           import Baseline.*
-          val baseline = c.benchmark.baseline.vouch
-          Column(e"$Bold($CadetBlue(${c.test.id}))", textAlign = TextAlignment.Right):
+          val baseline = comparison.benchmark.baseline.vouch
+
+          Column(e"$Bold($CadetBlue(${comparison.test.id}))", textAlign = TextAlignment.Right):
             (bench: ReportLine.Bench) =>
               def operations(left: Double, right: Double): Double = baseline.mode match
                 case Arithmetic => left - right
@@ -441,7 +442,11 @@ class Report(using Environment):
               def metric(value: Double) = if baseline.metric == ByTime then value else 1/value
 
               val value = baseline.compare match
-                case Compare.Mean => operations(metric(bench.benchmark.mean), metric(c.benchmark.mean))
+                case Compare.Min => metric(bench.benchmark.min)
+                case Compare.Max => metric(bench.benchmark.max)
+
+                case Compare.Mean =>
+                  operations(metric(bench.benchmark.mean), metric(comparison.benchmark.mean))
 
               val valueWithUnits = baseline.metric match
                 case ByTime  => showTime(value.toLong)

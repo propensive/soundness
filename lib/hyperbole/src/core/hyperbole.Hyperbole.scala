@@ -42,6 +42,7 @@ import denominative.*
 import escapade.*
 import escritoire.*, tableStyles.minimal, columnAttenuation.ignore
 import digression.*
+import fulminate.*
 import galilei.*
 import gossamer.*
 import harlequin.*
@@ -475,11 +476,14 @@ object Hyperbole:
           case DefDef(name, paramss, tpt, rhs) =>
             val typeName = tpt.show.tt
             val clauses = paramss.map:
-             case TermParamClause(params) =>
-               TastyTree('a', typeName, t"TermParamClause", tree).add('a', params*)
+              case TermParamClause(params) =>
+                TastyTree('a', typeName, t"TermParamClause", tree).add('a', params*)
 
-             case TypeParamClause(params) =>
-               TastyTree('t', typeName, t"TypeParamClause", tree).add('a', params*)
+              case TypeParamClause(params) =>
+                TastyTree('t', typeName, t"TypeParamClause", tree).add('a', params*)
+
+              case clause =>
+                panic(m"unexpected parameter clause: ${clause.toString}")
 
             TastyTree(tag, typeName, t"DefDef", tree, parameter = name.tt)
             . copy(nodes = clauses)

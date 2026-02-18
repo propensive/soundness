@@ -909,7 +909,7 @@ extends Node, Topical, Transportive, Dynamic:
     Fragment[Topic](children.map(_.of[Topic])*).over[Transport].in[Form]
 
   def ^+ (html: Html of Transport): Element of Topic over Transport in Form =
-    html.match
+    (html: Html).match
       case fragment: Fragment =>
         Element(label, attributes, IArray.from(fragment.nodes) ++ children, foreign)
 
@@ -921,7 +921,7 @@ extends Node, Topical, Transportive, Dynamic:
     . in[Form]
 
   def +^ (html: Html of Transport): Element of Topic over Transport in Form =
-    html.match
+    (html: Html).match
       case fragment: Fragment =>
         Element(label, attributes, children ++ fragment.nodes, foreign)
 
