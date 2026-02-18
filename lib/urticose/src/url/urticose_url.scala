@@ -34,11 +34,11 @@ package urticose
 
 import proscenium.*
 
-extension (inline ctx: StringContext)
+extension (inline context: StringContext)
   transparent inline def url(inline parts: Any*): Url[Label] =
-    ${UrlInterpolator.refined('ctx, 'parts)}
+    ${UrlInterpolator.refined('context, 'parts)}
 
-  transparent inline def email(): EmailAddress = ${EmailAddress.expand('ctx)}
-  transparent inline def host(): Hostname = ${Hostname.expand('ctx)}
+  transparent inline def email(): EmailAddress = ${EmailAddress.expand('context)}
+  transparent inline def host(): Hostname = ${Hostname.expand('context)}
 
 type HttpUrl = Url["https" | "http"]

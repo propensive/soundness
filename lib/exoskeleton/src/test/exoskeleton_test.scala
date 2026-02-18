@@ -78,8 +78,8 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               case Gamma() :: _ =>
                 given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
                 given Color is Interpretable =
-                  case arg :: Nil => Color(arg())
-                  case _          => Color(t"unknown")
+                  case argument :: Nil => Color(argument())
+                  case _               => Color(t"unknown")
 
                 Flag[Color]("colors", repeatable = true, aliases = List('c'), description = "multiple reds, greens or blues")()
                 execute(Exit.Ok)
@@ -96,8 +96,8 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                   case Gentoo() :: _ =>
                     given Color is Discoverable = _ => List(t"red", t"green", t"blue").map(Suggestion(_))
                     given Color is Interpretable =
-                      case arg :: Nil => Color(arg())
-                      case _          => Color(t"unknown")
+                      case argument :: Nil => Color(argument())
+                      case _               => Color(t"unknown")
 
                     Flag[Color]("color", aliases = List('f'), description = "red, green or blue")()
                     execute(Exit.Ok)

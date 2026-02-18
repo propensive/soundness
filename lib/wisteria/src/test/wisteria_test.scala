@@ -115,7 +115,7 @@ object Readable extends Derivation[Readable]:
               if index < array.length then readable.read(array(index).tt) else default().or(???)
 
   inline def split[derivation: SumReflection]: Readable[derivation] = text =>
-    text.s.split(":").nn.to(List).map(_.nn.tt) match
+    text.s.split(":").nn.to(List).map(_.nn.tt).absolve match
       case List(variant, text2) => delegate(variant):
         [variant <: derivation] =>
           context => context.read(text2)

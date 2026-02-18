@@ -66,10 +66,11 @@ object Hellenism extends Hellenism2:
 
     import classloaders.system
 
-    '{
+    ' {
         Resource:
           Path.of[Classpath, Classpath.type, Tuple]
-            ( ${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)  }
+            ( ${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)
+      }
 
 
 

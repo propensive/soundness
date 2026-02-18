@@ -196,8 +196,8 @@ object Tests extends Suite(m"Rudiments Tests"):
       //.assert(_ == DuplicateIndexError())
 
       test(m"Sift some options"):
-        List(None, Some(1), Some(2), None).sift[Some[Int]]
-      .assert(_ == List(Some(1), Some(2)))
+        List(None, Some(1), Some(2), None).sift[None.type]
+      .assert(_ == List(None, None))
 
       test(m"Sift on singleton type"):
         List.range(0, 10).sift[5]

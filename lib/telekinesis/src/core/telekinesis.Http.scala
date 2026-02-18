@@ -197,7 +197,7 @@ object Http:
     given showable: Request is Showable = request =>
       val bodySample: Text =
         try request.body().read[Data].utf8 catch
-          case err: StreamError  => t"[-/-]"
+          case error: StreamError  => t"[-/-]"
 
       val headers: Text =
         request.textHeaders.map: header =>
@@ -253,6 +253,16 @@ object Http:
         newline()
 
       text.data #:: request.body()
+
+  enum Body:
+    case Streaming(data: Stream[Data])
+    case Fixed(data: Data)
+    case Empty
+
+    def stream: Stream[Data] = this match
+      case Body.Fixed(data)       => Stream(data)
+      case Body.Empty             => Stream()
+      case Body.Streaming(stream) => stream
 
   class Request
     ( val method:      Http.Method,
@@ -313,8 +323,7 @@ object Http:
       ${Telekinesis.response('headers)}
 
     case class Prototype(status0: Optional[Status], headers: Seq[Header]):
-
-      def apply(body: Stream[Data] = Stream()): Response =
+      def apply(body: Body = Body.Empty): Response =
         Response(1.1, status0.or(Ok), headers.to(List), body)
 
       def apply[servable: Servable](body: servable): Response =
@@ -323,17 +332,13 @@ object Http:
           ( 1.1, status0.or(response.status), headers.to(List) ++ response.textHeaders, response.body )
 
     given streamable: Tactic[HttpError] => Response is Streamable by Data = response =>
-      val body = response.status.category match
-        case Http.Status.Category.Successful => response.body
+      response.status.category match
+        case Http.Status.Category.Successful => response.body.stream
 
         case _ =>
-          raise(HttpError(response.status, response.textHeaders)) yet response.body
+          raise(HttpError(response.status, response.textHeaders)) yet response.body.stream
 
-      body match
-        case data:   Data         => Stream(data)
-        case stream: Stream[Data] => stream
-
-    def make(status: Status, headers: List[Header], body: Data | Stream[Data]): Response =
+    def make(status: Status, headers: List[Header], body: Body): Response =
       new Response(1.1, status, headers, body)
 
     def parse(stream: Stream[Data]): Response raises HttpResponseError =
@@ -410,15 +415,12 @@ object Http:
       val headers = readHeaders(Nil)
 
       conduit.break()
-      val body = conduit.remainder
+      val body = Http.Body.Streaming(conduit.remainder)
 
       Response(version, status, headers.reverse, body)
 
   into case class Response private
-    ( version:     Http.Version,
-      status:      Http.Status,
-      textHeaders: List[Http.Header],
-      body:        Data | Stream[Data] )
+    ( version: Version, status: Status, textHeaders: List[Header], body: Body )
   extends Dynamic:
 
     def updateDynamic[label <: Label: Directive of topic, topic](name: label)(value: topic)
@@ -428,9 +430,7 @@ object Http:
 
 
     def successBody: Optional[Stream[Data]] =
-      if status.category != Http.Status.Category.Successful then Unset else body match
-        case data:   Data         => Stream(data)
-        case stream: Stream[Data] => stream
+      if status.category != Http.Status.Category.Successful then Unset else body.stream
 
 
     def receive[body: Receivable as receivable]: body = receivable.read(this)

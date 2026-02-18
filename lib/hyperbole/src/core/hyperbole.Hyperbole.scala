@@ -42,6 +42,7 @@ import denominative.*
 import escapade.*
 import escritoire.*, tableStyles.minimal, columnAttenuation.ignore
 import digression.*
+import fulminate.*
 import galilei.*
 import gossamer.*
 import harlequin.*
@@ -74,19 +75,19 @@ object Hyperbole:
     val sources: scm.HashMap[Text, SourceCode] = scm.HashMap()
 
     def source(tree: Tree): Teletype = tree.pos match
-      case pos: dtdu.SourcePosition =>
-        val init: Ordinal = pos.lineContent.tt.where(_ != ' ').or(Prim)
+      case position: dtdu.SourcePosition =>
+        val init: Ordinal = position.lineContent.tt.where(_ != ' ').or(Prim)
         val content: Teletype =
-          val sourceCode = sources.establish(pos.source.toString.tt):
-            val text = Scala.highlight(new String(pos.source.content()).tt)
+          val sourceCode = sources.establish(position.source.toString.tt):
+            val text = Scala.highlight(new String(position.source.content()).tt)
             text
 
-          val lineContent: Teletype = sourceCode.lines(pos.line).map(_.teletype).join
+          val lineContent: Teletype = sourceCode.lines(position.line).map(_.teletype).join
 
-          try lineContent.segment(pos.startColumn.z thru pos.endColumn.u)
+          try lineContent.segment(position.startColumn.z thru position.endColumn.u)
           catch case e: Exception => e""
 
-        ((e" "*(pos.startColumn - init.n0))+content)
+        ((e" "*(position.startColumn - init.n0))+content)
 
       case _ =>
         e""
@@ -147,8 +148,8 @@ object Hyperbole:
           case AndType(left, right) => TastyTree.repr(t"AndType", repr).typeChildren(left, right)
           case OrType(left, right)  => TastyTree.repr(t"OrType", repr).typeChildren(left, right)
 
-          case AppliedType(tycon, args) =>
-            TastyTree.repr(t"AppliedType", repr).typeChildren(tycon :: args*)
+          case AppliedType(tycon, arguments) =>
+            TastyTree.repr(t"AppliedType", repr).typeChildren(tycon :: arguments*)
 
           case AnnotatedType(underlying, term) =>
             TastyTree.repr(t"AnnotatedType", repr).typeChildren(underlying).children(term)
@@ -272,9 +273,9 @@ object Hyperbole:
             TastyTree(tag, typeName, t"New", tree)
             . children(tpt)
 
-          case NamedArg(name, arg) =>
+          case NamedArg(name, argument) =>
             TastyTree(tag, typeName, t"NamedArg", tree, parameter = name.tt)
-            . add('a', arg)
+            . add('a', argument)
 
           case Bind(name, term) =>
             TastyTree(tag, typeName, t"Bind", tree, parameter = name.tt)
@@ -299,20 +300,20 @@ object Hyperbole:
               . add('b', bindings*)
               . children(child)
 
-          case Apply(fun, args) =>
+          case Apply(fun, arguments) =>
             TastyTree(tag, typeName, t"Apply", tree)
             . children(fun)
-            . add('a', args*)
+            . add('a', arguments*)
 
           case Assign(lhs, rhs) =>
             TastyTree(tag, typeName, t"Assign", tree)
             . add('d', lhs)
             . children(rhs)
 
-          case TypeApply(fun, args) =>
+          case TypeApply(fun, arguments) =>
             TastyTree(tag, typeName, t"TypeApply", tree)
             . children(fun)
-            . add('a', args*)
+            . add('a', arguments*)
 
           case Select(qualifier, name) =>
             TastyTree(tag, typeName, t"Select", tree, parameter = name.tt)
@@ -426,16 +427,16 @@ object Hyperbole:
             . add('c', cases*)
             . typeNode
 
-          case Applied(tpt, args) =>
+          case Applied(tpt, arguments) =>
             val typeName = tpt.show.tt
             TastyTree(tag, typeName, t"Applied", tree)
             . typed(tpt)
-            . add('a', args*)
+            . add('a', arguments*)
             . typeNode
 
-          case Annotated(arg, annotation) =>
+          case Annotated(argument, annotation) =>
             TastyTree(tag, typeName, t"Annotated", tree)
-            . add('a', arg)
+            . add('a', argument)
             . children(annotation)
 
           case Repeated(elems, tpt) =>
@@ -475,11 +476,14 @@ object Hyperbole:
           case DefDef(name, paramss, tpt, rhs) =>
             val typeName = tpt.show.tt
             val clauses = paramss.map:
-             case TermParamClause(params) =>
-               TastyTree('a', typeName, t"TermParamClause", tree).add('a', params*)
+              case TermParamClause(params) =>
+                TastyTree('a', typeName, t"TermParamClause", tree).add('a', params*)
 
-             case TypeParamClause(params) =>
-               TastyTree('t', typeName, t"TypeParamClause", tree).add('a', params*)
+              case TypeParamClause(params) =>
+                TastyTree('t', typeName, t"TypeParamClause", tree).add('a', params*)
+
+              case clause =>
+                panic(m"unexpected parameter clause: ${clause.toString}")
 
             TastyTree(tag, typeName, t"DefDef", tree, parameter = name.tt)
             . copy(nodes = clauses)
@@ -509,7 +513,7 @@ object Hyperbole:
 
     val tree: TastyTree = TastyTree.expand(' ', expr.asTerm)
 
-    val seq: Seq[Expansion] = TreeDiagram.by[TastyTree](_.nodes)(tree).map: node =>
+    val sequence: Seq[Expansion] = TreeDiagram.by[TastyTree](_.nodes)(tree).map: node =>
       val color = (node.term, node.definitional) match
         case (true, true)   => webColors.Tomato
         case (false, true)  => webColors.YellowGreen
@@ -535,7 +539,7 @@ object Hyperbole:
           if node.typeName.nil then e"" else e"${webColors.Gray}(: $Italic(${name}))",
         Column(e"Source")(_.source) )
 
-    . tabulate(seq)
+    . tabulate(sequence)
     . grid(10000)
     . render
     . join(e"\n")

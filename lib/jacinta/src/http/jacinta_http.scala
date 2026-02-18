@@ -49,4 +49,4 @@ package postables:
 package servables:
   given jsonIsServable: (encoder: CharEncoder, printer: JsonPrinter) => Json is Servable =
     Servable[Json](_ => media"application/json"(charset = "UTF-8")): value =>
-      Stream(value.show.data)
+      Http.Body.Fixed(value.show.data)

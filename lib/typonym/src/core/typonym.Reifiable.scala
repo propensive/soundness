@@ -41,8 +41,12 @@ import proscenium.*
 object Reifiable:
   transparent inline given listUnion: [phantom, value] => phantom is Reifiable to List[value] =
     val result: List[value] = reifyAs[TypeSet[phantom], List[value]]
+    apply(result)
 
-    () => result
+  def apply[phantom, result](value: result): phantom is Reifiable to result = new Reifiable:
+    type Self = phantom
+    type Result = result
+    def reification(): Result = value
 
 trait Reifiable extends Typeclass, Resultant:
   def reify: Result = reification()

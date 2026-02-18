@@ -303,8 +303,8 @@ extension [key, value](map: sc.Map[key, value])
   inline def bijection: Bijection[key, value] = Bijection(map.to(Map))
 
 extension [key, value](map: Map[key, value])
-  def upsert(key: key, op: Optional[value] => value): Map[key, value] =
-    map.updated(key, op(if map.contains(key) then map(key) else Unset))
+  def upsert(key: key, optional: Optional[value] => value): Map[key, value] =
+    map.updated(key, optional(if map.contains(key) then map(key) else Unset))
 
   def collate(right: Map[key, value])(merge: (value, value) => value): Map[key, value] =
     right.fuse(map)(state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1)))))
@@ -319,13 +319,13 @@ extension [key, value](map: Map[key, List[value]])
 extension [value](list: List[value])
   def unwind(tail: List[value]): List[value] = tail.reverse_:::(list)
 
-extension [element](seq: Seq[element])
+extension [element](sequence: Seq[element])
   def runs: List[List[element]] = runsBy(identity)
 
-  inline def prim: Optional[element] = if seq.nil then Unset else seq.head
-  inline def sec: Optional[element] = if seq.length < 2 then Unset else seq(1)
-  inline def ter: Optional[element] = if seq.length < 3 then Unset else seq(2)
-  inline def unique: Optional[element] = if seq.length == 1 then seq.head else Unset
+  inline def prim: Optional[element] = if sequence.nil then Unset else sequence.head
+  inline def sec: Optional[element] = if sequence.length < 2 then Unset else sequence(1)
+  inline def ter: Optional[element] = if sequence.length < 3 then Unset else sequence(2)
+  inline def unique: Optional[element] = if sequence.length == 1 then sequence.head else Unset
 
   def runsBy(lambda: element => Any): List[List[element]] =
     @tailrec
@@ -337,10 +337,10 @@ extension [element](seq: Seq[element])
         if current == focus then recur(current, todo.tail, todo.head :: run, done)
         else recur(focus, todo.tail, List(todo.head), run.reverse :: done)
 
-    if seq.nil then Nil else recur(lambda(seq.head), seq.tail, List(seq.head), Nil)
+    if sequence.nil then Nil else recur(lambda(sequence.head), sequence.tail, List(sequence.head), Nil)
 
-extension [element](seq: IndexedSeq[element])
-  transparent inline def has(index: Int): Boolean = index >= 0 && index < seq.length
+extension [element](sequence: IndexedSeq[element])
+  transparent inline def has(index: Int): Boolean = index >= 0 && index < sequence.length
 
 extension (iarray: IArray.type)
   def create[element: ClassTag](size: Int)(lambda: Array[element] => Unit): IArray[element] =

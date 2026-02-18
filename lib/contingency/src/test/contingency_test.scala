@@ -34,8 +34,8 @@ package contingency
 
 import soundness.*
 
-case class VarargsError(args: Text*)(using Diagnostics) extends Error(m"varargs error")
-case class VarargsError2(arg: Text, args: Text*)(using Diagnostics) extends Error(m"varargs error 2")
+case class VarargsError(arguments: Text*)(using Diagnostics) extends Error(m"varargs error")
+case class VarargsError2(argument: Text, arguments: Text*)(using Diagnostics) extends Error(m"varargs error 2")
 
 object Tests extends Suite(m"Contingency tests"):
 
@@ -45,13 +45,13 @@ object Tests extends Suite(m"Contingency tests"):
     test(m"Ensure varargs parameter is handled exhaustively"):
       demilitarize:
         recover:
-          case VarargsError(args) => ()
+          case VarargsError(arguments) => ()
         . within(action())
 
     . assert(_.nonEmpty)
 
     test(m"Varargs are handled safely"):
       recover:
-        case VarargsError(args*) => ()
+        case VarargsError(arguments*) => ()
       . within(action())
     . assert()

@@ -51,7 +51,8 @@ import zephyrine.*
 object Sse:
   given servable: LazyList[Sse] is Servable =
     import charEncoders.utf8
-    Servable[LazyList[Sse]](_ => media"text/event-stream")(_.map(_.encode.data))
+    Servable[LazyList[Sse]](_ => media"text/event-stream"): stream =>
+      Http.Body.Streaming(stream.map(_.encode.data))
 
   given framable: Text is Framable by Sse = input =>
     val cursor = Cursor(input)
@@ -90,7 +91,8 @@ object Sse:
     text.cut(Lf).each: line =>
       line.s.indexOf(':') match
         case -1 => raise(SseError())
-        case n  =>
+
+        case n =>
           val value = line.skip(if line.at(n.z + 1) == ' ' then n + 2 else n + 1)
 
           line.keep(n) match

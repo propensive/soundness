@@ -93,13 +93,13 @@ object Denominative:
       ( inline lambda: (state: value, next: Ordinal) ?=> value )
     :   value =
 
-        var i: Ordinal = start
-        var acc: value = initial
+      var i: Ordinal = start
+      var acc: value = initial
 
-        while i <= end do
-          acc = lambda(using acc, i)
-          i = i.next
-        acc
+      while i <= end do
+        acc = lambda(using acc, i)
+        i = i.next
+      acc
 
 
     inline def empty: Boolean = end < start

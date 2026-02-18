@@ -233,8 +233,8 @@ object Syntax:
     import quotes.reflect.*
 
     repr.absolve match
-      case MethodType(args0, types, result) =>
-        val params = args0.zip(types).map { (arg, tpe) => Named(false, arg, apply(tpe)) }
+      case MethodType(arguments0, types, result) =>
+        val params = arguments0.zip(types).map { (argument, tpe) => Named(false, argument, apply(tpe)) }
         Declaration(true, List(Sequence('(', params)), apply(result))
 
       case ByNameType(tpe) =>
@@ -243,11 +243,11 @@ object Syntax:
       case TypeBounds(lower, upper) =>
         Declaration(false, Nil, typeBounds(symbolic("?"), lower, upper))
 
-      case TypeLambda(args0, bounds, tpe) =>
-        val args = args0.zip(bounds).map:
-          case (arg, TypeBounds(lower, upper)) => typeBounds(symbolic(arg), lower, upper)
+      case TypeLambda(arguments0, bounds, tpe) =>
+        val arguments = arguments0.zip(bounds).map:
+          case (argument, TypeBounds(lower, upper)) => typeBounds(symbolic(argument), lower, upper)
 
-        Declaration(false, List(Sequence('[', args)), apply(tpe))
+        Declaration(false, List(Sequence('[', arguments)), apply(tpe))
 
       case other =>
         Declaration(true, List(), apply(other))
@@ -330,22 +330,22 @@ object Syntax:
       case ByNameType(tpe)       => Prefix("=>", apply(tpe))
       case FlexibleType(tpe)     => Suffix(apply(tpe), "?")
 
-      case typ@AppliedType(base, args0) =>
+      case typ@AppliedType(base, arguments0) =>
         if typ.isFunctionType then
-          val args = args0.init match
+          val arguments = arguments0.init match
             case List(one) => apply(one)
             case many      => Sequence('(', many.map(apply(_)))
 
           val arrow = if typ.isContextFunctionType then "?=>" else "=>"
 
-          Infix(args, arrow, apply(args0.last))
-        else if args0.length == 2 && repr.typeSymbol.flags.is(Flags.Infix)
-        then Application(apply(base), args0.map(apply(_)), true)
+          Infix(arguments, arrow, apply(arguments0.last))
+        else if arguments0.length == 2 && repr.typeSymbol.flags.is(Flags.Infix)
+        then Application(apply(base), arguments0.map(apply(_)), true)
         else if defn.isTupleClass(base.typeSymbol)
-        then Sequence('(', args0.map(apply(_)))
+        then Sequence('(', arguments0.map(apply(_)))
         else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
-        then args0(0).absolve match
-          case AppliedType(_, names) => apply(args0(1)).absolve match
+        then arguments0(0).absolve match
+          case AppliedType(_, names) => apply(arguments0(1)).absolve match
             case Sequence(_, elements) =>
               Sequence
                 ( '(',
@@ -357,7 +357,7 @@ object Syntax:
           case ref@TypeRef(prefix, name) =>
             apply(ref)
 
-        else Application(apply(base), args0.map(apply(_)), false)
+        else Application(apply(base), arguments0.map(apply(_)), false)
 
       case ConstantType(constant) => constant.absolve match
         case ByteConstant(byte)     => Primitive(s"$byte.toByte")
@@ -366,7 +366,7 @@ object Syntax:
         case LongConstant(long)     => Primitive(s"${long}L")
         case BooleanConstant(true)  => Primitive("true")
         case BooleanConstant(false) => Primitive("false")
-        case StringConstant(str)    => Primitive(s"\"$str\"")
+        case StringConstant(string)    => Primitive(s"\"$string\"")
         case CharConstant(char)     => Primitive(s"'$char'")
         case DoubleConstant(double) => Primitive(s"${double.toString}")
         case FloatConstant(float)   => Primitive(s"${float.toString}F")
@@ -391,33 +391,33 @@ object Syntax:
 
       case TypeBounds(lower, upper) => typeBounds(Symbolic("?"), lower, upper)
 
-      case method@MethodType(args0, types, result) =>
-        val unnamed = args0.forall(_.startsWith("x$"))
+      case method@MethodType(arguments0, types, result) =>
+        val unnamed = arguments0.forall(_.startsWith("x$"))
 
-        val args =
-          if args0.nil then Sequence('(', Nil)
+        val arguments =
+          if arguments0.nil then Sequence('(', Nil)
           else if unnamed then Sequence('(', types.map(apply(_)))
           else Sequence
                 ('(',
-                 args0.zip(types).map { (member, typ) => Named(false, member, apply(typ)) })
+                 arguments0.zip(types).map { (member, typ) => Named(false, member, apply(typ)) })
 
         val arrow = if method.isContextual then "?=>" else "=>"
-        if unnamed && args0.length == 1
+        if unnamed && arguments0.length == 1
         then Infix(apply(types.head), arrow, apply(result))
-        else Infix(args, arrow, apply(result))
+        else Infix(arguments, arrow, apply(result))
 
-      case typ@PolyType(args0, types, result) =>
-        val args = args0.zip(types).map:
+      case typ@PolyType(arguments0, types, result) =>
+        val arguments = arguments0.zip(types).map:
           case (name, TypeBounds(lower, upper)) =>
             typeBounds(symbolic(name), lower, upper)
 
-        Infix(Sequence('[', args), "=>", apply(result))
+        Infix(Sequence('[', arguments), "=>", apply(result))
 
-      case TypeLambda(args0, bounds, tpe) =>
-        val args = args0.zip(bounds).map:
-          case (arg, TypeBounds(lower, upper)) => typeBounds(symbolic(arg), lower, upper)
+      case TypeLambda(arguments0, bounds, tpe) =>
+        val arguments = arguments0.zip(bounds).map:
+          case (argument, TypeBounds(lower, upper)) => typeBounds(symbolic(argument), lower, upper)
 
-        Infix(Sequence('[', args), "=>>", apply(tpe))
+        Infix(Sequence('[', arguments), "=>>", apply(tpe))
 
       case ParamRef(binder, n) => binder match
         case TypeLambda(params, _, _) => symbolic(params(n))

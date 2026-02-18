@@ -43,7 +43,6 @@ import publish.*
 import os.Path
 
 object settings:
-  //val scalaVersion = "3.6.2"
   val scalaVersion = "3.8.1"
   val scalaOptions = Seq(
     "-experimental",
@@ -62,12 +61,17 @@ object settings:
     "-Ycheck-all-patmat",
     // "-explain-cyclic",
     "-language:experimental.modularity",
+    "-language:experimental.dependent",
+    "-language:experimental.relaxedLambdaSyntax",
     "-language:experimental.genericNumberLiterals",
     "-language:experimental.into",
     "-language:experimental.erasedDefinitions",
-    // "-language:experimental.packageObjectValues",
+    "-language:experimental.packageObjectValues",
     "-language:implicitConversions",
     "-language:experimental.saferExceptions",
+    "-language:experimental.strictEqualityPatternMatching",
+    "-language:experimental.subCases",
+    "-language:experimental.multiSpreads",
     "-language:experimental.namedTypeArguments"
   )
 
@@ -871,11 +875,8 @@ object yossarian extends Library:
   object test extends Tests(core)
 
 object zephyrine extends Library:
-  object core extends Component(hieroglyph.core, hypotenuse.core):
-    override def scalacOptions = settings.scalaOptionsCC
-
-  object test extends Tests(core):
-    override def scalacOptions = settings.scalaOptionsCC
+  object core extends Component(hieroglyph.core, hypotenuse.core)
+  object test extends Tests(core)
 
 object zeppelin extends Library:
   object core extends Component(galilei.core, zephyrine.core)

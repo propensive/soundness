@@ -87,7 +87,7 @@ object Serpentine:
     :   Optional[Either[List[String], List[String]]] =
       Type.of[path] match
         case '[type head; type tail <: Tuple; head *: tail] =>
-          TypeRepr.of[head] match
+          TypeRepr.of[head].absolve match
             case ConstantType(StringConstant(element)) =>
               decompose[tail](element :: done)
 
@@ -107,7 +107,7 @@ object Serpentine:
 
     limit[left].present && limit[left] == limit[right] || plane[left] == plane[right] &&
       {
-        try plane[left].let(_.typeMember("UniqueRoot").typeRef.dealias) match
+        try plane[left].let(_.typeMember("UniqueRoot").typeRef.dealias).lay(false):
           case ConstantType(BooleanConstant(boolean)) => boolean
           case _                                      => false
         catch
@@ -119,25 +119,27 @@ object Serpentine:
 
     import quotes.reflect.*
 
-    conjunction[target, subject](target, subject) match
+    conjunction[target, subject](target, subject).absolve match
       case '{type base <: Path; $base: base} =>
-        plane[target].let(_.typeRef.asType).or(Type.of[Any]) match
+        plane[target].let(_.typeRef.asType).or(Type.of[Any]).absolve match
           case '[plane] =>
             topic[subject].let:
               case Right(subjectDescent) =>
                 topic[base].let:
                   case Right(baseDescent) =>
                     val ascent: Int = subjectDescent.length - baseDescent.length
-                    ConstantType(IntConstant(ascent)).asType match
+                    ConstantType(IntConstant(ascent)).asType.absolve match
                       case '[type limit <: Int; limit] =>
                         topic[target].let:
                           case Right(targetDescent) =>
                             val descent = targetDescent.dropRight(baseDescent.length)
-                            tuple(descent).asType match
+                            tuple(descent).asType.absolve match
                               case '[type tuple <: Tuple; tuple] =>
                                 val varargs = Varargs(descent.map(Expr[Text](_)))
                                 '{Relative[plane, tuple, limit](${Expr(ascent)}, $varargs*)}
-
+                          case Left(_) => Unset
+                  case Left(_) => Unset
+              case Left(_) => Unset
             . or:
                 val depth = '{$target.depth - $base.depth}
                 val ascent = '{$subject.depth - $base.depth}
@@ -153,7 +155,7 @@ object Serpentine:
       topic[left] match
         case Right(leftDescent) => topic[right] match
           case Right(rightDescent) =>
-            calculate(leftDescent, rightDescent).asType match
+            calculate(leftDescent, rightDescent).asType.absolve match
               case '[type tuple <: Tuple; tuple] =>
                 '{$left.calculate($right).asInstanceOf[Path of tuple]}
 
@@ -168,8 +170,11 @@ object Serpentine:
 
     elements.map: string =>
       ConstantType(StringConstant(string)).asType
-    . foldLeft(Type.of[EmptyTuple]: Type[? <: Tuple]):
-      case ('[type tuple <: Tuple; tuple], '[element]) => Type.of[element *: tuple]
+    . foldLeft(Type.of[EmptyTuple]: Type[? <: Tuple]): (tuple, element) =>
+        tuple.absolve match
+          case '[type tuple <: Tuple; tuple] => element.absolve match
+            case '[element] => Type.of[element *: tuple]
+    . absolve
     . match
         case '[type tuple <: Tuple; tuple] => TypeRepr.of[tuple]
 

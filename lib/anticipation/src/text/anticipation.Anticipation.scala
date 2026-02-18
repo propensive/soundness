@@ -96,5 +96,5 @@ object Anticipation:
 
     given typeable: Typeable[Text]:
       def unapply(value: Any): Option[value.type & Text] = value.asMatchable match
-        case str: String => Some(str)
+        case string: String => Some(string)
         case _           => None

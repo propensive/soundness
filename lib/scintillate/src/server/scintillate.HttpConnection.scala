@@ -75,8 +75,8 @@ object HttpConnection:
     val buffer = new Array[Byte](65536)
 
     def stream(): Stream[Data] =
-      val len = in.read(buffer)
-      if len > 0 then buffer.slice(0, len).snapshot #:: stream() else Stream.empty
+      val length = in.read(buffer)
+      if length > 0 then buffer.slice(0, length).snapshot #:: stream() else Stream.empty
 
     val request =
       Http.Request
@@ -101,29 +101,33 @@ object HttpConnection:
           exchange.getResponseHeaders.nn.add(key.s, value.s)
 
       val length = if chunked then 0 else response.body match
-        case Stream()   => -1
-        case data: Data => data.length
-        case _          => 0
+        case Http.Body.Empty        => -1
+        case Http.Body.Fixed(data)  => data.length
+        case Http.Body.Streaming(_) => 0
 
       exchange.sendResponseHeaders(response.status.code, length)
       val responseBody = exchange.getResponseBody.nn
 
       var count: Int = 0
       response.body match
-        case data: Data =>
+        case Http.Body.Fixed(data) =>
           try
             responseBody.write(data.mutable(using Unsafe))
             count += data.length
             responseBody.flush()
           catch case _: ji.IOException => abort(StreamError(count.b))
 
-        case stream: Stream[Data] =>
+        case Http.Body.Streaming(stream) =>
           stream.foreach: block =>
             try
               responseBody.write(block.mutable(using Unsafe))
               count += block.length
               responseBody.flush()
             catch case _: ji.IOException => abort(StreamError(count.b))
+
+        case Http.Body.Empty =>
+          try responseBody.flush()
+          catch case _: ji.IOException => abort(StreamError(count.b))
 
       exchange.close()
 

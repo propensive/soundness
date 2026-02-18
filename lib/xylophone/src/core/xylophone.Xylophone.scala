@@ -75,7 +75,7 @@ object Xylophone:
 
       val holes2 = holes.to(List).sortBy(_(0)).map(_(1))
       val iterator = holes2.to(Iterator)
-      var idx: Int = -1
+      var index: Int = -1
 
       var types: List[TypeRepr] = Nil
 
@@ -131,20 +131,20 @@ object Xylophone:
           def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
             case Nil => expr
             case "\u0000" :: tail =>
-              idx += 1
+              index += 1
               types ::= TypeRepr.of[Map[Text, Text]]
               iterator.next()
               val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
-              '{$expr && { $array(${Expr(idx)}) = ${scrutinee}.attributes -- $others; true }}
+              '{$expr && { $array(${Expr(index)}) = ${scrutinee}.attributes -- $others; true }}
 
             case head :: tail =>
               attributes(tail):
                 val boolean: Expr[Boolean] = pattern.attributes(head).s.absolve match
                   case "\u0000"   =>
-                    idx += 1
+                    index += 1
                     types ::= TypeRepr.of[Text]
                     iterator.next()
-                    '{$array(${Expr(idx)}) = $scrutinee.attributes(${Expr(head)}); true}
+                    '{$array(${Expr(index)}) = $scrutinee.attributes(${Expr(head)}); true}
 
                   case text: Text =>
                     '{$scrutinee.attributes(${Expr(head)}) == ${Expr(text)}}
@@ -175,7 +175,7 @@ object Xylophone:
 
           pattern match
             case Comment("\u0000") =>
-              idx += 1
+              index += 1
               iterator.next()
               types ::= TypeRepr.of[Text]
 
@@ -184,36 +184,36 @@ object Xylophone:
                   && $scrutinee.isInstanceOf[Comment]
                   &&
                     {
-                      $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Comment].text
+                      $array(${Expr(index)}) = $scrutinee.asInstanceOf[Comment].text
                       true
                     }
                 }
 
             case ProcessingInstruction("\u0000", t"") =>
-              idx += 1
+              index += 1
               iterator.next()
               types ::= TypeRepr.of[ProcessingInstruction]
 
               ' {
                   $expr
                   && $scrutinee.isInstanceOf[ProcessingInstruction]
-                  && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[ProcessingInstruction].data
+                  && { $array(${Expr(index)}) = $scrutinee.asInstanceOf[ProcessingInstruction].data
                        true }
                 }
 
             case Cdata("\u0000") =>
-              idx += 1
+              index += 1
               iterator.next()
               types ::= TypeRepr.of[Cdata]
 
               ' {
                   $expr
                   && $scrutinee.isInstanceOf[Cdata]
-                  && { $array(${Expr(idx)}) = $scrutinee.asInstanceOf[Cdata].text; true }
+                  && { $array(${Expr(index)}) = $scrutinee.asInstanceOf[Cdata].text; true }
                 }
 
             case TextNode("\u0000") =>
-              idx += 1
+              index += 1
               iterator.next() match
                 case Xml.Hole.Node(label) =>
                   types ::= TypeRepr.of[Node]
@@ -221,7 +221,7 @@ object Xylophone:
                 case _ =>
                   panic(m"unexpected hole type")
 
-              '{$expr && { $array(${Expr(idx)}) = $scrutinee; true }}
+              '{$expr && { $array(${Expr(index)}) = $scrutinee; true }}
 
             case textual@TextNode(text) =>
               val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[TextNode]})
@@ -248,14 +248,14 @@ object Xylophone:
               '{$expr && $scrutinee.isInstanceOf[ProcessingInstruction] && $checked}
 
             case Element("\u0000", _, _) =>
-              idx += 1
+              index += 1
               iterator.next() match
                 case Xml.Hole.Element(label) =>
                   types ::= TypeRepr.of[Element]
                 case _ =>
                   halt(m"unexpected hole type")
 
-              '{$expr && { $array(${Expr(idx)}) = $scrutinee; true }}
+              '{$expr && { $array(${Expr(index)}) = $scrutinee; true }}
 
             case element: Element =>
               def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Element]})
@@ -505,8 +505,8 @@ object Xylophone:
   :   Macro[result] =
       import quotes.reflect.*
 
-      val args = attributes0.absolve match
-        case Varargs(args) => args
+      val arguments = attributes0.absolve match
+        case Varargs(arguments) => arguments
 
       val attributes: Seq[Expr[Optional[(Text, Text)]]] =
         Type.of[thisType].absolve match
@@ -517,8 +517,8 @@ object Xylophone:
                 Tag { type Topic = topic; type Form = form }
               ] =>
 
-            args.map: arg =>
-              arg.absolve match
+            arguments.map: argument =>
+              argument.absolve match
                 case '{($key, $value: value)} =>
                   TypeRepr.of[topic].literal[String].let: topic =>
                     key.asTerm match

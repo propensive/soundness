@@ -65,8 +65,8 @@ object StackTrace:
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()
 
-    inline def char(idx: Int): Optional[Char] =
-      if idx < 0 || idx >= name.length then Unset else name.charAt(idx)
+    inline def char(index: Int): Optional[Char] =
+      if index < 0 || index >= name.length then Unset else name.charAt(index)
 
     def primitive(char: Char) = char match
       case 'Z' => "Boolean"
@@ -81,131 +81,131 @@ object StackTrace:
       case _   => "?"
 
     @tailrec
-    def recur(idx: Int, digits: Boolean = false): Text =
-      inline def token(idx: Int, str: String, text: String, digits: Boolean = false): Text =
-        if (0 until str.length).all { i => char(idx + i) == str(i) }
-        then buffer.append(text) yet recur(idx + str.length, digits)
-        else buffer.append('#') yet recur(idx + 1, digits)
+    def recur(index: Int, digits: Boolean = false): Text =
+      inline def token(index: Int, string: String, text: String, digits: Boolean = false): Text =
+        if (0 until string.length).all { i => char(index + i) == string(i) }
+        then buffer.append(text) yet recur(index + string.length, digits)
+        else buffer.append('#') yet recur(index + 1, digits)
 
-      inline def skip(): Text = token(idx, "$", if method then "()." else "#")
+      inline def skip(): Text = token(index, "$", if method then "()." else "#")
 
-      if idx >= name.length then Text(buffer.toString+(if method then "()" else ""))
-      else if digits then char(idx) match
-        case '0' => token(idx, "0", "₀", true)
-        case '1' => token(idx, "1", "₁", true)
-        case '2' => token(idx, "2", "₂", true)
-        case '3' => token(idx, "3", "₃", true)
-        case '4' => token(idx, "4", "₄", true)
-        case '5' => token(idx, "5", "₅", true)
-        case '6' => token(idx, "6", "₆", true)
-        case '7' => token(idx, "7", "₇", true)
-        case '8' => token(idx, "8", "₈", true)
-        case '9' => token(idx, "9", "₉", true)
-        case _   => recur(idx, false)
-      else char(idx) match
+      if index >= name.length then Text(buffer.toString+(if method then "()" else ""))
+      else if digits then char(index) match
+        case '0' => token(index, "0", "₀", true)
+        case '1' => token(index, "1", "₁", true)
+        case '2' => token(index, "2", "₂", true)
+        case '3' => token(index, "3", "₃", true)
+        case '4' => token(index, "4", "₄", true)
+        case '5' => token(index, "5", "₅", true)
+        case '6' => token(index, "6", "₆", true)
+        case '7' => token(index, "7", "₇", true)
+        case '8' => token(index, "8", "₈", true)
+        case '9' => token(index, "9", "₉", true)
+        case _   => recur(index, false)
+      else char(index) match
         case '<' =>
-          if (0 until 6).all { i => char(idx + i) == "<init>"(i) }
+          if (0 until 6).all { i => char(index + i) == "<init>"(i) }
           then
             buffer.append("ⲛ")
-            recur(idx + 6)
+            recur(index + 6)
           else
             buffer.append("<")
-            recur(idx + 1)
+            recur(index + 1)
         case 'i' =>
-          if (0 until 8).all { i => char(idx + i) == "initial$"(i) }
+          if (0 until 8).all { i => char(index + i) == "initial$"(i) }
           then
             buffer.append("ι")
-            recur(idx + 8)
+            recur(index + 8)
           else
             buffer.append("i")
-            recur(idx + 1)
+            recur(index + 1)
         case 'l' =>
-          if (0 until 7).all { i => char(idx + i) == "lzyINIT"(i) }
+          if (0 until 7).all { i => char(index + i) == "lzyINIT"(i) }
           then
             buffer.append("ℓ")
-            recur(idx + 7, true)
+            recur(index + 7, true)
           else
             buffer.append("l")
-            recur(idx + 1)
+            recur(index + 1)
         case 's' =>
-          if (0 until 6).all { i => char(idx + i) == "super$"(i) }
+          if (0 until 6).all { i => char(index + i) == "super$"(i) }
           then
             buffer.append("↑")
-            recur(idx + 6)
+            recur(index + 6)
           else
             buffer.append("s")
-            recur(idx + 1)
-        case '$' => char(idx + 1) match
-          case '_' => token(idx,           "$_avoid_name_clash_$", "′")
-          case 'a' => char(idx + 2) match
-            case 'm' => token(idx,         "$amp",                 "&")
-            case 'n' => char(idx + 5) match
-              case 'f' => token(idx,       "$anonfun",             "λ")
-              case _   => token(idx,       "$anon",                "α")
-            case 't' => token(idx,         "$at",                  "@")
+            recur(index + 1)
+        case '$' => char(index + 1) match
+          case '_' => token(index,           "$_avoid_name_clash_$", "′")
+          case 'a' => char(index + 2) match
+            case 'm' => token(index,         "$amp",                 "&")
+            case 'n' => char(index + 5) match
+              case 'f' => token(index,       "$anonfun",             "λ")
+              case _   => token(index,       "$anon",                "α")
+            case 't' => token(index,         "$at",                  "@")
             case _   => skip()
-          case 'b' => char(idx + 2) match
-            case 'a' => char(idx + 3) match
-              case 'n' => token(idx,       "$bang",                "!")
-              case 'r' => token(idx,       "$bar",                 "|")
+          case 'b' => char(index + 2) match
+            case 'a' => char(index + 3) match
+              case 'n' => token(index,       "$bang",                "!")
+              case 'r' => token(index,       "$bar",                 "|")
               case _   => skip()
-            case 's' => token(idx,         "$bslash",              "\\")
+            case 's' => token(index,         "$bslash",              "\\")
             case _   => skip()
-          case 'c' => token(idx,           "$colon",               ":")
-          case 'd' => char(idx + 2) match
-            case 'e' => token(idx,         "$default",             "δ")
-            case 'i' => char(idx + 3) match
-              case 'r' => token(idx,       "$direct",              "∂")
-              case 'v' => token(idx,       "$div",                 "/")
+          case 'c' => token(index,           "$colon",               ":")
+          case 'd' => char(index + 2) match
+            case 'e' => token(index,         "$default",             "δ")
+            case 'i' => char(index + 3) match
+              case 'r' => token(index,       "$direct",              "∂")
+              case 'v' => token(index,       "$div",                 "/")
               case _   => skip()
             case _   => skip()
-          case 'e' => char(idx + 2) match
-            case 'q' => token(idx,         "$eq",                  "=")
-            case 'x' => token(idx,         "$extension",           "⊢")
+          case 'e' => char(index + 2) match
+            case 'q' => token(index,         "$eq",                  "=")
+            case 'x' => token(index,         "$extension",           "⊢")
             case _   => skip()
-          case 'g' => token(idx,           "$greater",             ">")
-          case 'h' => token(idx,           "$hash",                "#")
-          case 'l' => token(idx,           "$less",                "<")
-          case 'm' => char(idx + 2) match
+          case 'g' => token(index,           "$greater",             ">")
+          case 'h' => token(index,           "$hash",                "#")
+          case 'l' => token(index,           "$less",                "<")
+          case 'm' => char(index + 2) match
             case 'c' =>
-              var index: Int = idx + 3
-              var args: List[Text] = Nil
-              var current = char(index)
+              var index2: Int = index + 3
+              var arguments: List[Text] = Nil
+              var current = char(index2)
 
               while current != '$' do
-                args = primitive(current.or('?')) :: args
-                index += 1
-                current = char(index)
+                arguments = primitive(current.or('?')) :: arguments
+                index2 += 1
+                current = char(index2)
 
               val name2 =
-                if args.length == 2 then "Σ("+args.last+" -> "+args.head+")"
-                else args.tail.mkString("Σ((", ", ", ")")+" -> "+args.head+")"
+                if arguments.length == 2 then "Σ("+arguments.last+" -> "+arguments.head+")"
+                else arguments.tail.mkString("Σ((", ", ", ")")+" -> "+arguments.head+")"
 
-              val mc = name.substring(idx, index + 3).nn
-              token(idx, mc, name2)
-            case 'i' => token(idx,         "$minus",               "-")
+              val mc = name.substring(index, index + 3).nn
+              token(index, mc, name2)
+            case 'i' => token(index,         "$minus",               "-")
             case _   => skip()
-          case 'p' => char(idx + 2) match
-            case 'a' => token(idx,         "$package",             "⁆")
-            case 'e' => token(idx,         "$percent",             "%")
-            case 'l' => token(idx,         "$plus",                "+")
+          case 'p' => char(index + 2) match
+            case 'a' => token(index,         "$package",             "⁆")
+            case 'e' => token(index,         "$percent",             "%")
+            case 'l' => token(index,         "$plus",                "+")
             case _   => skip()
-          case 'q' => token(idx,           "$qmark",               "?")
-          case 's' => char(idx + 2) match
-            case 'p' => token(idx,         "$sp",                  "ζ")
+          case 'q' => token(index,           "$qmark",               "?")
+          case 's' => char(index + 2) match
+            case 'p' => token(index,         "$sp",                  "ζ")
             case _   => skip()
-          case 't' => char(idx + 2) match
-            case 'i' => char(idx + 3) match
-              case 'l' => token(idx,       "$tilde",               "~")
-              case 'm' => token(idx,       "$times",               "*")
+          case 't' => char(index + 2) match
+            case 'i' => char(index + 3) match
+              case 'l' => token(index,       "$tilde",               "~")
+              case 'm' => token(index,       "$times",               "*")
               case _   => skip()
             case _  => skip()
-          case 'u' => token(idx,           "$up",                  "^")
-          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => recur(idx + 1, true)
+          case 'u' => token(index,           "$up",                  "^")
+          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => recur(index + 1, true)
           case _   => skip()
         case ch  =>
           buffer.append(ch.toString)
-          recur(idx + 1)
+          recur(index + 1)
 
     val rewritten = recur(0)
 

@@ -30,64 +30,82 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package sedentary
+package caduceus
 
 import anticipation.*
-import probably.*
+import contingency.*
+import fulminate.*
+import gesticulate.*
+import hieroglyph.*
+import jacinta.*
+import merino.*
+import monotonous.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
+import telekinesis.*
+import turbulence.*
+import urticose.*
 import vacuous.*
+import zephyrine.*
 
-import scala.collection.mutable as scm
+import charEncoders.utf8
+import jsonPrinters.minimal
+import errorDiagnostics.stackTraces
+import stdioSources.virtualMachine.ansi
+import alphabets.base64.standard
 
-// extension [test](test: Test[test])
-  // inline def benchmark[duration, report]
-  //             (confidence: Optional[Benchmark.Percentiles] = Unset,
-  //              iterations: Optional[Int]                   = Unset,
-  //              duration:   Optional[duration]              = Unset,
-  //              warmup:     Optional[duration]              = Unset,
-  //              baseline:   Optional[Baseline]              = Unset)
-  //             (using runner:           Runner[report],
-  //                    inc:              Inclusion[report, Benchmark],
-  //                    specificDuration: duration is SpecificDuration = interfaces.durations.javaLong,
-  //                    genericDuration:  duration is GenericDuration  = interfaces.durations.javaLong)
-  // : Unit =
+package couriers:
+  given resend: (Tactic[CourierError], Online, HttpEvent is Loggable, HttpClient)
+  =>  ( apiKey: Resend.ApiKey )
+  =>  Courier:
 
-  //     val action = test.action
+    type Result = Resend.Receipt
 
-  //     var end =
-  //       System.currentTimeMillis + genericDuration.milliseconds(warmup.or(SpecificDuration(10000L)))
+    private case class Attachment(filename: Text, content: Text)
+    private case class Request
+      ( from:         EmailAddress,
+        to:           List[EmailAddress],
+        subject:      Text,
+        bcc:          List[EmailAddress],
+        cc:           List[EmailAddress],
+        scheduled_at: Optional[Text],
+        replyTo:      List[EmailAddress],
+        headers:      Map[Text, Text],
+        html:         Optional[Text],
+        text:         Optional[Text],
+        attachments:  List[Attachment] )
 
-  //     val times: scm.ArrayBuffer[Long] = scm.ArrayBuffer()
-  //     times.sizeHint(4096)
-  //     val ctx = new Harness()
+    def send(envelope: Envelope): Resend.Receipt =
+      val attachments = envelope.email.attachments.map: attachment =>
+        Attachment(attachment.name, attachment.stream.read[Data].serialize[Base64])
 
-  //     while System.currentTimeMillis < end do
-  //       val t0 = System.nanoTime
-  //       val result = action(ctx)
-  //       val t1 = System.nanoTime - t0
-  //       times += t1
+      val request =
+        Request
+          ( envelope.from,
+            envelope.to,
+            envelope.subject,
+            envelope.bcc,
+            envelope.cc,
+            Unset,
+            envelope.replyTo,
+            envelope.email.headers,
+            envelope.email.html,
+            envelope.email.text,
+            attachments )
 
-  //     times.clear()
+      def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
 
-  //     end =
-  //       System.currentTimeMillis
-  //       + genericDuration.milliseconds(duration.or(SpecificDuration(10000L)))
+      mitigate:
+        case ConnectError(reason)     => Out.println(reason.communicate) yet error
+        case ParseError(_, _, reason) => Out.println(reason.describe) yet error
+        case HttpError(status, _)     => Out.println(status.communicate) yet error
+        case JsonError(reason)        => Out.println(reason.communicate) yet error
+        case MediaTypeError(_, _)     => error
 
-  //     while System.currentTimeMillis < end do
-  //       val t0 = System.nanoTime
-  //       val result = action(ctx)
-  //       val t1 = System.nanoTime - t0
-  //       times += t1
-
-  //     val count = times.size
-  //     val total = times.sum
-  //     val min: Long = times.min
-  //     val mean: Double = total.toDouble/count
-  //     val max: Long = times.max
-  //     val variance: Double = (times.map { t => (mean - t)*(mean - t) }.sum)/count
-  //     val stdDev: Double = math.sqrt(variance)
-
-  //     val benchmark =
-  //       Benchmark
-  //        (total, times.size, min.toDouble, mean, max.toDouble, stdDev, confidence.or(95), baseline)
-
-  //     inc.include(runner.report, test.id, benchmark)
+      . within:
+          url"https://api.resend.com/emails".submit
+            ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
+            ( request.json )
+          . receive[Json]
+          . as[Resend.Receipt]

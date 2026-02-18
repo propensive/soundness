@@ -96,6 +96,7 @@ object Obligatory:
                           case Some(decoder) =>
                             '{$decoder.decoded(request.params(${Expr(param.name)}))}
                             . asTerm
+
                           case None =>
                             halt(m"""could not find a contextual
                                     `${TypeRepr.of[param].show} is Decodable in Json` instance for

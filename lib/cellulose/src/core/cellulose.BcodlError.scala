@@ -35,5 +35,5 @@ package cellulose
 import anticipation.*
 import fulminate.*
 
-case class BcodlError(expectation: Text, pos: Int)(using Diagnostics)
-extends Error(m"expected $expectation at position $pos")
+case class BcodlError(expectation: Text, position: Int)(using Diagnostics)
+extends Error(m"expected $expectation at position $position")

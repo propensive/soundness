@@ -171,20 +171,20 @@ object Xml extends Tag.Container
               emitter.put("?>")
 
             case TextNode(text) =>
-              var pos: Int = 0
-              while pos < text.length do
-                val amp = text.s.indexOf('&', pos)
-                val lt = text.s.indexOf('<', pos)
+              var position: Int = 0
+              while position < text.length do
+                val amp = text.s.indexOf('&', position)
+                val lt = text.s.indexOf('<', position)
                 val next = if amp < 0 then lt else if lt < 0 then amp else amp.min(lt)
 
                 if next >= 0 then
-                  emitter.put(text, pos.z, next - pos)
+                  emitter.put(text, position.z, next - position)
                   if next == lt then emitter.put("&lt;")
                   if next == amp then emitter.put("&amp;")
-                  pos = next + 1
+                  position = next + 1
                 else
-                  emitter.put(text, pos.z, text.length - pos)
-                  pos = text.length
+                  emitter.put(text, position.z, text.length - position)
+                  position = text.length
 
             case Element(label, attributes, nodes) =>
               emitter.put("<")
@@ -195,21 +195,21 @@ object Xml extends Tag.Container
                   emitter.put(" ")
                   emitter.put(key)
                   emitter.put("=\"")
-                  var pos: Int = 0
+                  var position: Int = 0
 
-                  while pos < value.length do
-                    val amp = value.s.indexOf('&', pos)
-                    val quot = value.s.indexOf(Sqt, pos)
+                  while position < value.length do
+                    val amp = value.s.indexOf('&', position)
+                    val quot = value.s.indexOf(Sqt, position)
                     val next = if amp < 0 then quot else if quot < 0 then amp else amp.min(quot)
 
                     if next >= 0 then
-                      emitter.put(value, pos.z, next - pos)
+                      emitter.put(value, position.z, next - position)
                       if next == quot then emitter.put("&quot;")
                       if next == amp then emitter.put("&amp;")
-                      pos = next + 1
+                      position = next + 1
                     else
-                      emitter.put(value, pos.z, value.length - pos)
-                      pos = value.length
+                      emitter.put(value, position.z, value.length - position)
+                      position = value.length
 
                   emitter.put("\"")
 
@@ -293,8 +293,8 @@ object Xml extends Tag.Container
   given sequences: [nodal, xml <: Xml] => (conversion: Conversion[nodal, xml])
   =>  Conversion[Seq[nodal], Seq[xml]] =
 
-      (seq: Seq[nodal]) =>
-        seq.map(conversion(_))
+      (sequence: Seq[nodal]) =>
+        sequence.map(conversion(_))
 
   enum Issue extends Format.Issue:
     case BadInsertion

@@ -56,7 +56,7 @@ object Adversaria:
       override def transformTerm(tree: Term)(sym: Symbol): Term =
         tree match
           case Ident(id)               => Ident(tree.symbol.termRef)
-          case Apply(fn, args)         => Apply(transformTerm(fn)(sym), transformTerms(args)(sym))
+          case Apply(fn, arguments)         => Apply(transformTerm(fn)(sym), transformTerms(arguments)(sym))
           case Select(qualifier, name) => Select(transformTerm(qualifier)(sym), tree.symbol)
           case New(tpt)                => New(transformTypeTree(tpt)(sym))
           case Literal(constant)       => Literal(constant)
@@ -134,8 +134,7 @@ object Adversaria:
       . typeSymbol
       . fieldMembers
       . filter(_.info <:< TypeRepr.of[value])
-      . map: field =>
-          '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
+      . map: field => '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
 
     def lambdaMap: Expr[List[(Text, entity => value)]] = Expr.ofList:
       TypeRepr.of[entity]

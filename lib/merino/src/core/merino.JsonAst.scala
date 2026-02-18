@@ -189,9 +189,9 @@ object JsonAst extends Format:
           arrayBuffers += newBuffer
           newBuffer
         else
-          val buf = arrayBuffers(arrayBufferId)
-          buf.clear()
-          buf
+          val buffer = arrayBuffers(arrayBufferId)
+          buffer.clear()
+          buffer
 
       def relinquishArrayBuffer(): Unit = arrayBufferId -= 1
 
@@ -202,9 +202,9 @@ object JsonAst extends Format:
           stringArrayBuffers += newBuffer
           newBuffer
         else
-          val buf = stringArrayBuffers(stringArrayBufferId)
-          buf.clear()
-          buf
+          val buffer = stringArrayBuffers(stringArrayBufferId)
+          buffer.clear()
+          buffer
 
       def relinquishStringArrayBuffer(): Unit = stringArrayBufferId -= 1
 
@@ -273,7 +273,7 @@ object JsonAst extends Format:
           current match
             case Quote =>
               next()
-              val str = parseString()
+              val string = parseString()
               skip()
               current match
                 case Colon =>
@@ -284,12 +284,12 @@ object JsonAst extends Format:
                   current match
                     case Comma =>
                       next()
-                      keys += str
+                      keys += string
                       values += value
                       skip()
                     case CloseBrace =>
                       next()
-                      keys += str
+                      keys += string
                       values += value
                       continue = false
                     case ch  => error(Issue.UnexpectedChar(ch.toChar))
@@ -460,7 +460,7 @@ object JsonAst extends Format:
         null
 
       def parseNumber(first: Int, negative: Boolean): Double | Long | BigDecimal =
-        var str: StringBuilder = StringBuilder((if negative then "-" else "")+first)
+        var string: StringBuilder = StringBuilder((if negative then "-" else "")+first)
         var ch: Byte = 0
         var floating: Boolean = false
         continue = true
@@ -471,29 +471,29 @@ object JsonAst extends Format:
             ch match
               case Period =>
                 floating = true
-                str.append('.')
+                string.append('.')
                 next()
 
               case UpperE | LowerE =>
                 floating = true
-                str.append('e')
+                string.append('e')
                 next()
 
               case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 | Minus
                    | Plus =>
-                str.append(ch.toChar)
+                string.append(ch.toChar)
                 next()
 
               case _ =>
                 continue = false
 
-          if floating then java.lang.Double.parseDouble(str.toString)
-          else java.lang.Long.parseLong(str.toString)
+          if floating then java.lang.Double.parseDouble(string.toString)
+          else java.lang.Long.parseLong(string.toString)
 
         catch
-          case err: ArrayIndexOutOfBoundsException =>
-            if floating then java.lang.Double.parseDouble(str.toString)
-            else java.lang.Long.parseLong(str.toString)
+          case error: ArrayIndexOutOfBoundsException =>
+            if floating then java.lang.Double.parseDouble(string.toString)
+            else java.lang.Long.parseLong(string.toString)
 
       def parseNumberOld(first: Long, negative: Boolean): Double | Long | BigDecimal =
         var mantissa: Long = first
@@ -593,7 +593,7 @@ object JsonAst extends Format:
           end while
           number
         catch
-          case err: ArrayIndexOutOfBoundsException =>
+          case exception: ArrayIndexOutOfBoundsException =>
             cur -= 1
             if decimalPosition != 0 && scale == 0 then scale = decimalPosition - cur
             if current <= Num9 && current >= Num0 then
@@ -645,7 +645,7 @@ object JsonAst extends Format:
                 line += 1
               number =
                 try BigDecimal(numberText.toCharArray).also(numberText.setLength(0))
-                catch case err: NumberFormatException => throw err
+                catch case error: NumberFormatException => throw error
 
               continue = false
 
@@ -668,5 +668,5 @@ object JsonAst extends Format:
       result
 
     catch
-      case err: ArrayIndexOutOfBoundsException =>
+      case error: ArrayIndexOutOfBoundsException =>
         abort(ParseError(this, Position(line, stream.head.length), Issue.PrematureEnd))

@@ -69,8 +69,8 @@ object Cosmopolite:
 //   @targetName("make")
 //   def apply[L <: String: ValueOf]: Language[L] = Language(summon[ValueOf[L]].value)
 
-//   inline def parse[L <: String](str: String): Option[Language[L]] =
-//     Option.when(reifyToSet[L].contains(str))(Language(str))
+//   inline def parse[L <: String](string: String): Option[Language[L]] =
+//     Option.when(reifyToSet[L].contains(string))(Language(string))
 
 //   private inline def reifyToSet[L <: String]: Set[String] = ${reifyToSetMacro[L]}
 
@@ -85,10 +85,10 @@ object Cosmopolite:
 //     Expr(langs(TypeRepr.of[L]))
 
 // object Messages:
-//   def apply[L <: String: ValueOf](seq: Seq[Text], parts: Seq[Messages[? >: L]]): Messages[L] =
-//     val string: Text = parts.zip(seq.tail).map: (msg, s) =>
+//   def apply[L <: String: ValueOf](sequence: Seq[Text], parts: Seq[Messages[? >: L]]): Messages[L] =
+//     val string: Text = parts.zip(sequence.tail).map: (msg, s) =>
 //       t"${msg(using summon[ValueOf[L]])}$s"
-//     .join(seq.head, t"", t"")
+//     .join(sequence.head, t"", t"")
 
 //     Messages[L](Map(summon[ValueOf[L]].value.show -> string))
 
@@ -99,21 +99,21 @@ object Cosmopolite:
 //     Messages(text ++ messages.text)
 
 //   def apply[L2 <: L: ValueOf]: Text = text(summon[ValueOf[L2]].value.show)
-//   def apply[L2 <: L]()(using ctx: Language[L2]): Text = text(ctx.value.show)
+//   def apply[L2 <: L]()(using context: Language[L2]): Text = text(context.value.show)
 
 // import languages.common.*
 
-// extension [L <: String](str: Text)
-//   def as(using ValueOf[L]): Messages[L] = Messages[L](List(str), Nil)
+// extension [L <: String](string: Text)
+//   def as(using ValueOf[L]): Messages[L] = Messages[L](List(string), Nil)
 
-// extension (ctx: StringContext)
-//   def en(msgs: Messages[En]*): Messages[En] = Messages(ctx.parts.map(_.show), msgs)
-//   def ru(msgs: Messages[Ru]*): Messages[Ru] = Messages(ctx.parts.map(_.show), msgs)
-//   def de(msgs: Messages[De]*): Messages[De] = Messages(ctx.parts.map(_.show), msgs)
-//   def es(msgs: Messages[Es]*): Messages[Es] = Messages(ctx.parts.map(_.show), msgs)
-//   def fr(msgs: Messages[Fr]*): Messages[Fr] = Messages(ctx.parts.map(_.show), msgs)
-//   def ja(msgs: Messages[Ja]*): Messages[Ja] = Messages(ctx.parts.map(_.show), msgs)
-//   def pt(msgs: Messages[Pt]*): Messages[Pt] = Messages(ctx.parts.map(_.show), msgs)
-//   def zh(msgs: Messages[Zh]*): Messages[Zh] = Messages(ctx.parts.map(_.show), msgs)
-//   def it(msgs: Messages[It]*): Messages[It] = Messages(ctx.parts.map(_.show), msgs)
-//   def pl(msgs: Messages[Pl]*): Messages[Pl] = Messages(ctx.parts.map(_.show), msgs)
+// extension (context: StringContext)
+//   def en(msgs: Messages[En]*): Messages[En] = Messages(context.parts.map(_.show), msgs)
+//   def ru(msgs: Messages[Ru]*): Messages[Ru] = Messages(context.parts.map(_.show), msgs)
+//   def de(msgs: Messages[De]*): Messages[De] = Messages(context.parts.map(_.show), msgs)
+//   def es(msgs: Messages[Es]*): Messages[Es] = Messages(context.parts.map(_.show), msgs)
+//   def fr(msgs: Messages[Fr]*): Messages[Fr] = Messages(context.parts.map(_.show), msgs)
+//   def ja(msgs: Messages[Ja]*): Messages[Ja] = Messages(context.parts.map(_.show), msgs)
+//   def pt(msgs: Messages[Pt]*): Messages[Pt] = Messages(context.parts.map(_.show), msgs)
+//   def zh(msgs: Messages[Zh]*): Messages[Zh] = Messages(context.parts.map(_.show), msgs)
+//   def it(msgs: Messages[It]*): Messages[It] = Messages(context.parts.map(_.show), msgs)
+//   def pl(msgs: Messages[Pl]*): Messages[Pl] = Messages(context.parts.map(_.show), msgs)

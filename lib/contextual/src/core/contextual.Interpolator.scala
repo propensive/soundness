@@ -55,15 +55,15 @@ trait Interpolator[input, state, result]:
   case class PositionalError(positionalMessage: Message, start: Int, end: Int)(using Diagnostics)
   extends Error(m"error $positionalMessage at position $start")
 
-  def expand(context: Expr[StringContext], seq: Expr[Seq[Any]])(using thisType: Type[this.type])
+  def expand(context: Expr[StringContext], sequence: Expr[Seq[Any]])(using thisType: Type[this.type])
     ( using Type[input], Type[state], Type[result] )
   :   Macro[result] =
 
-      expansion(context, seq)(1)
+      expansion(context, sequence)(1)
 
 
   def expansion
-    ( context: Expr[StringContext], seq: Expr[Seq[Any]] )
+    ( context: Expr[StringContext], sequence: Expr[Seq[Any]] )
     ( using thisType: Type[this.type] )
     ( using Quotes, Type[input], Type[state], Type[result] )
   :   (state, Expr[result]) =
@@ -74,23 +74,23 @@ trait Interpolator[input, state, result]:
       val target = ref.asExprOf[Interpolator[input, state, result]]
 
       def rethrow[success](block: => success, start: Int, end: Int): success =
-        try block catch case err: InterpolationError => err match
-          case InterpolationError(msg, off, len) =>
+        try block catch case error: InterpolationError => error match
+          case InterpolationError(msg, offset, length) =>
             inline given canThrow: CanThrow[PositionalError] = unsafeExceptions.canThrowAny
             given diagnostics: Diagnostics = Diagnostics.omit
 
             throw PositionalError
-                  (msg, start + off.or(0), start + off.or(0) + len.or(end - start - off.or(0)))
+                  (msg, start + offset.or(0), start + offset.or(0) + length.or(end - start - offset.or(0)))
 
       def recur
-        ( seq:       Seq[Expr[Any]],
+        ( sequence:  Seq[Expr[Any]],
           parts:     Seq[String],
           positions: Seq[Position],
           state:     state,
           expr:      Expr[state] )
       :   (state, Expr[result]) throws PositionalError =
 
-        seq match
+        sequence match
           case '{$head: head} +: tail =>
             def notFound: Nothing =
               val typeName: String = TypeRepr.of[head].widen.show
@@ -135,7 +135,7 @@ trait Interpolator[input, state, result]:
             rethrow(complete(state), Position.ofMacroExpansion.start, Position.ofMacroExpansion.end)
             (state, '{$target.complete($expr)})
 
-      val exprs: Seq[Expr[Any]] = seq match
+      val exprs: Seq[Expr[Any]] = sequence match
         case Varargs(exprs) => exprs
         case _              => Nil
 
@@ -156,9 +156,9 @@ trait Interpolator[input, state, result]:
             rethrow(parse(initial, Text(parts.head)), positions.head.start, positions.head.end),
             '{$target.parse($target.initial, Text(${Expr(parts.head)}))})
       catch
-        case err: PositionalError => err match
+        case error: PositionalError => error match
           case PositionalError(message, start, end) =>
             halt(message, Position(Position.ofMacroExpansion.sourceFile, start, end))
 
-        case err: InterpolationError => err match
+        case error: InterpolationError => error match
           case InterpolationError(message, _, _) => halt(message, Position.ofMacroExpansion)

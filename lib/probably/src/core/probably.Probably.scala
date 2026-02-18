@@ -183,7 +183,7 @@ object Probably:
               then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
 
               Verdict.Fail(duration)
-            catch case err: Exception => Verdict.CheckThrows(err, duration)
+            catch case error: Exception => Verdict.CheckThrows(error, duration)
 
         inc.include(runner.report, test.id, verdict)
         result(run)
@@ -193,8 +193,8 @@ object Probably:
     import quotes.reflect.*
 
     val exprName: Text = expr.asTerm.pos match
-      case pos: dtdu.SourcePosition =>
-        pos.lineContent.show.segment(pos.startColumn.z thru pos.endColumn.u)
+      case position: dtdu.SourcePosition =>
+        position.lineContent.show.segment(position.startColumn.z thru position.endColumn.u)
 
       case _ =>
         t"<unknown>"

@@ -58,18 +58,18 @@ object Regex:
       case Possessive => "+".tt
 
   enum Quantifier:
-    case Exactly(n: Int)
-    case AtLeast(n: Int)
-    case Between(n: Int, m: Int)
+    case Exactly(start: Int)
+    case AtLeast(start: Int)
+    case Between(start: Int, end: Int)
 
     def serialize: Text = this match
-      case Exactly(1)    => "".tt
-      case Exactly(n)    => s"{$n}".tt
-      case AtLeast(1)    => "+".tt
-      case AtLeast(0)    => "*".tt
-      case AtLeast(n)    => s"{$n,}".tt
-      case Between(0, 1) => "?".tt
-      case Between(n, m) => s"{$n,$m}".tt
+      case Exactly(1)          => "".tt
+      case Exactly(start)      => s"{$start}".tt
+      case AtLeast(1)          => "+".tt
+      case AtLeast(0)          => "*".tt
+      case AtLeast(start)      => s"{$start,}".tt
+      case Between(0, 1)       => "?".tt
+      case Between(start, end) => s"{$start,$end}".tt
 
     def unitary: Boolean = this == Exactly(1)
 
@@ -84,7 +84,7 @@ object Regex:
       charClass:  Boolean     = false ):
 
     def outerStart: Int = (start - 1).max(0)
-    def allGroups: List[Regex.Group] = groups.flatMap { group => group :: group.allGroups }
+    def allGroups: List[Regex.Group] = groups.flatMap: group => group :: group.allGroups
     def captureGroups: List[Regex.Group] = allGroups.filter(_.capture)
 
     def serialize(pattern: Text, index: Int): (Int, Text) =
@@ -165,19 +165,19 @@ object Regex:
         Quantifier.Exactly(1)
 
     @tailrec
-    def number(required: Boolean, num: Int = 0, first: Boolean = true): Int = current() match
+    def number(required: Boolean, count: Int = 0, first: Boolean = true): Int = current() match
       case '\u0000' =>
         abort(RegexError(index, IncompleteRepetition))
 
       case ch if ch.isDigit =>
         index += 1
-        number(required, num*10 + (ch - '0').toInt, false)
+        number(required, count*10 + (ch - '0').toInt, false)
 
       case ',' =>
-        if !required then abort(RegexError(index, UnexpectedChar)) else num
+        if !required then abort(RegexError(index, UnexpectedChar)) else count
 
       case '}' =>
-        if first && required then abort(RegexError(index, UnexpectedChar)) else num
+        if first && required then abort(RegexError(index, UnexpectedChar)) else count
 
       case other =>
         abort(RegexError(index, UnexpectedChar))

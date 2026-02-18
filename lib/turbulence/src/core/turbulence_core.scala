@@ -192,8 +192,7 @@ extension [element](stream: Stream[element])
     val out: Spool[element2] = Spool()
 
     async:
-      stream.map: elem =>
-        async(out.put(lambda(elem)))
+      stream.map: element => async(out.put(lambda(element)))
 
     out.stream
 

@@ -48,25 +48,25 @@ class Runner[report]()(using reporter: Reporter[report]):
 
   def run[result](test: Test[result]): Trial[result] =
     synchronized { active += test.id }
-    val ctx = Harness()
-    Runner.harnessThreadLocal.set(Some(ctx))
+    val context = Harness()
+    Runner.harnessThreadLocal.set(Some(context))
     val ns0 = System.nanoTime
 
     try
       val ns0: Long = System.nanoTime
-      val result: result = test.action(ctx)
+      val result: result = test.action(context)
       val ns: Long = System.nanoTime - ns0
-      Trial.Returns(result, ns, ctx.captured.to(Map)).also:
+      Trial.Returns(result, ns, context.captured.to(Map)).also:
         synchronized { active -= test.id }
 
-    catch case err: Exception =>
+    catch case error: Exception =>
       val ns: Long = System.nanoTime - ns0
 
       def lazyException(): Nothing =
         given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
-        throw err
+        throw error
 
-      Trial.Throws(lazyException, ns, ctx.captured.to(Map)).also:
+      Trial.Throws(lazyException, ns, context.captured.to(Map)).also:
         synchronized { active -= test.id }
 
     finally

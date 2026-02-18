@@ -44,7 +44,7 @@ object Checkable:
   inline given commensurable: [value: Commensurable against value]
   =>  value is Checkable against value =
 
-      (left, right) => left <= right && right <= left
+    apply[value, value]: (left, right) => left <= right && right <= left
 
 
   def apply[self, contrast](lambda: (self, contrast) => Boolean)

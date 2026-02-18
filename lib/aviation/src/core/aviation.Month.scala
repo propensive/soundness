@@ -52,7 +52,7 @@ object Month:
 
   def unapply(value: Text): Option[Month] =
     try Some(Month.valueOf(value.lower.capitalize.s))
-    catch case err: IllegalArgumentException => None
+    catch case error: IllegalArgumentException => None
 
   def unapply(value: Int): Option[Month] =
     if value < 1 || value > 12 then None else Some(fromOrdinal(value - 1))

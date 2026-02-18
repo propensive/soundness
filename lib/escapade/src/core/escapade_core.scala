@@ -49,8 +49,8 @@ object Strike
 object Reverse
 object Conceal
 
-extension (inline ctx: StringContext)
-  transparent inline def e(inline parts: Any*): Teletype = ${Ansi.Interpolator.expand('ctx, 'parts)}
+extension (inline context: StringContext)
+  transparent inline def e(inline parts: Any*): Teletype = ${Ansi.Interpolator.expand('context, 'parts)}
 
 extension [teletypeable: Teletypeable](value: teletypeable) def teletype: Teletype =
   teletypeable.teletype(value)

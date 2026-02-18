@@ -98,9 +98,9 @@ object Ansi extends Ansi2:
     def add(span: CharSpan, transform: Transform): State =
       copy(spans = spans.updated(span, spans.get(span).fold(transform)(transform.andThen(_))))
 
-    def add(pos: Int, esc: Escape): State =
-      val insertions2 = insertions.get(pos).fold(t"\e"+esc.on)(_+t"\e"+esc.on)
-      copy(insertions = insertions.updated(pos, insertions2))
+    def add(position: Int, esc: Escape): State =
+      val insertions2 = insertions.get(position).fold(t"\e"+esc.on)(_+t"\e"+esc.on)
+      copy(insertions = insertions.updated(position, insertions2))
 
   object Interpolator extends contextual.Interpolator[Input, State, Teletype]:
     private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')
@@ -126,12 +126,12 @@ object Ansi extends Ansi2:
             case Unset =>
               state.copy(text = state.text+text)
 
-            case idx: Int =>
-              val text2 = state.text+text.keep(idx)
-              val span2: CharSpan = CharSpan(frame.start, state.text.length + idx)
+            case index: Int =>
+              val text2 = state.text+text.keep(index)
+              val span2: CharSpan = CharSpan(frame.start, state.text.length + index)
               val state2: State = state.add(span2, frame.transform)
               val state3: State = state2.copy(text = text2, last = None, stack = state.stack.tail)
-              closures(state3, text.skip(idx + 1))
+              closures(state3, text.skip(index + 1))
 
       catch case error: EscapeError => error match
         case EscapeError(message) => throw InterpolationError(message)
@@ -142,7 +142,7 @@ object Ansi extends Ansi2:
           case (span, transform) => (span.shift(state.text.length): CharSpan) -> transform
 
         val textInsertions: TreeMap[Int, Text] = text.insertions.map:
-          case (pos, ins) => (pos + state.text.length) -> ins
+          case (position, ins) => (position + state.text.length) -> ins
 
         state.copy(text = state.text+text.plain, last = None, spans = state.spans ++ textSpans,
             insertions = state.insertions ++ textInsertions)

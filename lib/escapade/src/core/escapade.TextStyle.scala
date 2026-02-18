@@ -63,12 +63,12 @@ case class TextStyle
   private def concealEsc: Text = if conceal then styles.Conceal.on else styles.Conceal.off
   private def strikeEsc: Text = if strike then styles.Strike.on else styles.Strike.off
 
-  def addChanges(buf: StringBuilder, next: TextStyle, colorDepth: ColorDepth): Unit =
-    if fg != next.fg then buf.add(next.fg.let(Fg(_).ansi(colorDepth)).or(t"$esc[39m"))
-    if bg != next.bg then buf.add(next.bg.let(Bg(_).ansi(colorDepth)).or(t"$esc[49m"))
-    if italic != next.italic then buf.add(t"${esc}${next.italicEsc}")
-    if bold != next.bold then buf.add(t"${esc}${next.boldEsc}")
-    if reverse != next.reverse then buf.add(t"${esc}${next.reverseEsc}")
-    if underline != next.underline then buf.add(t"${esc}${next.underlineEsc}")
-    if conceal != next.conceal then buf.add(t"${esc}${next.concealEsc}")
-    if strike != next.strike then buf.add(t"${esc}${next.strikeEsc}")
+  def addChanges(buffer: StringBuilder, next: TextStyle, colorDepth: ColorDepth): Unit =
+    if fg != next.fg then buffer.add(next.fg.let(Fg(_).ansi(colorDepth)).or(t"$esc[39m"))
+    if bg != next.bg then buffer.add(next.bg.let(Bg(_).ansi(colorDepth)).or(t"$esc[49m"))
+    if italic != next.italic then buffer.add(t"${esc}${next.italicEsc}")
+    if bold != next.bold then buffer.add(t"${esc}${next.boldEsc}")
+    if reverse != next.reverse then buffer.add(t"${esc}${next.reverseEsc}")
+    if underline != next.underline then buffer.add(t"${esc}${next.underlineEsc}")
+    if conceal != next.conceal then buffer.add(t"${esc}${next.concealEsc}")
+    if strike != next.strike then buffer.add(t"${esc}${next.strikeEsc}")

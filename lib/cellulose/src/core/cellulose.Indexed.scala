@@ -56,24 +56,24 @@ trait Indexed extends Codllike, Dynamic:
 
   lazy val index: Map[Text, List[Int]] =
     children.map(_.data).zipWithIndex.foldLeft(Map[Text, List[Int]]()):
-      case (acc, (data: Atom, idx)) =>
-        if idx < layout.params then schema.param(idx).lay(acc): entry =>
-          acc.upsert(entry.key, _.lay(List(idx))(idx :: _))
-        else acc.upsert(data.key, _.lay(List(idx))(idx :: _))
+      case (acc, (data: Atom, index)) =>
+        if index < layout.params then schema.param(index).lay(acc): entry =>
+          acc.upsert(entry.key, _.lay(List(index))(index :: _))
+        else acc.upsert(data.key, _.lay(List(index))(index :: _))
       case (acc, _) => acc
 
     . view.mapValues(_.reverse).to(Map)
 
   protected lazy val idIndex: Map[Text, Int] =
-    def recur(idx: Int, map: Map[Text, Int] = Map()): Map[Text, Int] =
-      if idx < 0 then map else recur(idx - 1, children(idx).id.lay(map)(map.updated(_, idx)))
+    def recur(index: Int, map: Map[Text, Int] = Map()): Map[Text, Int] =
+      if index < 0 then map else recur(index - 1, children(index).id.lay(map)(map.updated(_, index)))
 
     recur(children.length - 1)
 
   def ids: Set[Text] = idIndex.keySet
 
-  def apply(idx: Int = 0): CodlNode raises CodlError =
-    children.at(idx.z).lest(CodlError(CodlError.Reason.MissingIndexValue(idx)))
+  def apply(index: Int = 0): CodlNode raises CodlError =
+    children.at(index.z).lest(CodlError(CodlError.Reason.MissingIndexValue(index)))
 
   def apply(key: Text): List[CodlNode] = index.at(key).or(Nil).map(children(_))
 
@@ -81,18 +81,18 @@ trait Indexed extends Codllike, Dynamic:
     paramIndex.lift(key) match
       case None => index.lift(key) match
         case None       => Nil
-        case Some(idxs) => idxs.map(children(_).data.vouch)
+        case Some(indexes) => indexes.map(children(_).data.vouch)
 
-      case Some(idx) =>
-        List.range(idx, layout.params).map: idx =>
-          Atom(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
+      case Some(index) =>
+        List.range(index, layout.params).map: index =>
+          Atom(key, IArray(unsafely(children(index))), Layout.empty, CodlSchema.Free)
 
   def selectDynamic(key: String)(using erased DynamicCodlEnabler): List[Atom] raises CodlError =
     index(key.show).map(children(_).data).collect:
       case data: Atom => data
 
 
-  def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)
+  def applyDynamic(key: String)(index: Int = 0)(using erased DynamicCodlEnabler)
   :   Atom raises CodlError =
 
-      selectDynamic(key)(idx)
+      selectDynamic(key)(index)

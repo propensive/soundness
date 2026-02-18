@@ -60,15 +60,12 @@ object ClasspathEntry:
   case object JavaRuntime extends ClasspathEntry
 
   def apply(url: jn.URL): Optional[ClasspathEntry] = url.getProtocol.nn.tt match
-    case t"jrt" =>
-      ClasspathEntry.JavaRuntime
+    case t"jrt"             => ClasspathEntry.JavaRuntime
+    case t"http" | t"https" => ClasspathEntry.Url(url.toString.tt)
 
     case t"file" =>
       val path: Text = url.getPath.nn.tt
       if path.ends(t"/") then ClasspathEntry.Directory(path) else ClasspathEntry.Jar(path)
-
-    case t"http" | t"https" =>
-      ClasspathEntry.Url(url.toString.tt)
 
     case _ =>
       Unset

@@ -40,11 +40,11 @@ enum CompileEvent:
   case Start
   case CompilerCrash
   case Notice(diagnostic: Text)
-  case Running(args: List[Text])
+  case Running(arguments: List[Text])
 
 object CompileEvent:
   given communicable: CompileEvent is Communicable =
     case Start              => m"Starting compilation"
     case CompilerCrash      => m"Compiler crashed"
     case Notice(diagnostic) => m"The compiler emitted a diagnostic message: $diagnostic"
-    case Running(args)      => m"Running compiler with arguments ${args.join(t" ")}"
+    case Running(arguments)      => m"Running compiler with arguments ${arguments.join(t" ")}"

@@ -75,28 +75,27 @@ object Sh:
     def initial: State = State(Awaiting, false, Nil)
     def skip(state: State): State = insert(state, Parameters(t"x"))
 
-    def insert(state: State, value: Parameters): State =
-      value.params.to(List) match
-        case h :: t =>
-          if state.escape then throw InterpolationError(m"""
-            escaping with '\\' is not allowed immediately before a substitution
-          """)
+    def insert(state: State, value: Parameters): State = value.params.to(List) match
+      case head :: tail =>
+        if state.escape then throw InterpolationError(m"""
+          escaping with '\\' is not allowed immediately before a substitution
+        """)
 
-          state.absolve match
-            case State(Awaiting, false, arguments) =>
-              State(Unquoted, false, arguments ++ (h :: t))
+        state.absolve match
+          case State(Awaiting, false, arguments) =>
+            State(Unquoted, false, arguments ++ (head :: tail))
 
-            case State(Unquoted, false, arguments :+ last) =>
-              State(Unquoted, false, arguments ++ (t"$last$h" :: t))
+          case State(Unquoted, false, arguments :+ last) =>
+            State(Unquoted, false, arguments ++ (t"$last$head" :: tail))
 
-            case State(Quotes1, false, arguments :+ last) =>
-              State(Quotes1, false, arguments :+ (t"$last$h" :: t).join(t" "))
+          case State(Quotes1, false, arguments :+ last) =>
+            State(Quotes1, false, arguments :+ (t"$last$head" :: tail).join(t" "))
 
-            case State(Quotes2, false, arguments :+ last) =>
-              State(Quotes2, false, arguments :+ (t"$last$h" :: t).join(t" "))
+          case State(Quotes2, false, arguments :+ last) =>
+            State(Quotes2, false, arguments :+ (t"$last$head" :: tail).join(t" "))
 
-        case _ =>
-          state
+      case _ =>
+        state
 
     def parse(state: State, next: Text): State = next.chars.to(List).fuse(state):
         (state, next).absolve match
@@ -148,4 +147,4 @@ object Sh:
   given parameterizable: [parameterizable: Parameterizable]
   =>  Insertion[Parameters, parameterizable] =
 
-      value => Parameters(parameterizable.show(value))
+    value => Parameters(parameterizable.show(value))

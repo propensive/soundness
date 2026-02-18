@@ -50,10 +50,11 @@ object Stenography:
 
   def name[typename <: AnyKind: Type](using Quotes): Text =
     import quotes.reflect.*
+
     val outer = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
-        given ctx: core.Contexts.Context = quotes.ctx
-        ctx.compilationUnit.tpdTree.absolve match
+        given context: core.Contexts.Context = quotes.ctx
+        context.compilationUnit.tpdTree.absolve match
           case ast.tpd.PackageDef(root, statements) =>
             Typename(root.show) :: statements.collect:
               case ast.tpd.Import(name, List(SimpleSelector("_"))) => Typename(name.show)

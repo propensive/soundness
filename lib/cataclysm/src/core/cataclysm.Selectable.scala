@@ -43,7 +43,7 @@ object Selectable:
     selectable.selection(_).s match
       case s".$cls" => Selector.Class(cls.tt)
       case s"#$id"  => Selector.Id(id.tt)
-      case elem     => Selector.Element(elem.tt)
+      case element  => Selector.Element(element.tt)
 
 trait Selectable extends Typeclass:
   def selector(value: Self): Selector

@@ -101,7 +101,7 @@ object Austronesian2:
 
     import quotes.reflect.*
 
-    val args: IArray[Expr[Pojo]] = arguments.absolve match
+    val arguments2: IArray[Expr[Pojo]] = arguments.absolve match
       case Varargs(arguments) => IArray.from(arguments).map:
         case '{$argument: argument} =>
 

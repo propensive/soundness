@@ -53,7 +53,7 @@ class PositionReader(private var in: Stream[Text]):
   private var startCol: Int = 0
   private var requireCr: Optional[Boolean] = Unset
   private var finished: Boolean = false
-  private val buf: StringBuilder = StringBuilder()
+  private val buffer: StringBuilder = StringBuilder()
 
   private var current: Ordinal = Prim - 1
 
@@ -133,11 +133,11 @@ class PositionReader(private var in: Stream[Text]):
         Character(ch, lastLine, lastCol).tap(advance)
 
   def start(): (Int, Int) = (startLine, startCol)
-  def get(): Text = buf.toString.show.also(buf.clear())
+  def get(): Text = buffer.toString.show.also(buffer.clear())
 
   def put(char: Character): Unit =
-    if buf.nil then
+    if buffer.nil then
       startLine = char.line
       startCol = char.column
 
-    buf.append(char.char)
+    buffer.append(char.char)

@@ -174,49 +174,49 @@ case class Teletype
       Teletype(plain.keep(n), newSpans)
 
   def render(termcap: Termcap): Text =
-    val buf = StringBuilder()
+    val buffer = StringBuilder()
 
 
     @tailrec
     def recur
       ( spans:      TreeMap[CharSpan, Ansi.Transform],
-        pos:        Int                               = 0,
+        position:        Int                               = 0,
         style:      TextStyle                         = TextStyle(),
         stack:      List[(CharSpan, TextStyle)]       = Nil,
         insertions: TreeMap[Int, Text]                = TreeMap() )
     :   Text =
 
         inline def addSpan(): Text =
-          val newInsertions = addText(pos, spans.head(0).start, insertions)
+          val newInsertions = addText(position, spans.head(0).start, insertions)
           val newStyle = spans.head(1)(style)
-          style.addChanges(buf, newStyle, termcap.color)
+          style.addChanges(buffer, newStyle, termcap.color)
           val newStack = if spans.head(0).nil then stack else (spans.head(0) -> style) :: stack
           recur(spans.tail, spans.head(0).start, newStyle, newStack, newInsertions)
 
         @tailrec
         def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
           if insertions.nil then
-            buf.add(plain.segment(from.max(0).z thru to.max(0).u))
+            buffer.add(plain.segment(from.max(0).z thru to.max(0).u))
             insertions
           else if insertions.head(0) < to then
-            buf.add(plain.segment(pos.z thru insertions.head(0).u))
-            buf.add(insertions.head(1))
+            buffer.add(plain.segment(position.z thru insertions.head(0).u))
+            buffer.add(insertions.head(1))
             addText(insertions.head(0), to, insertions.tail)
           else
-            buf.add(plain.segment(from.z thru to.u))
+            buffer.add(plain.segment(from.z thru to.u))
             insertions
 
         if stack.nil then
           if spans.nil then
-            val remaining = addText(pos, plain.length, insertions)
-            remaining.values.each(buf.add(_))
-            buf.text
+            val remaining = addText(position, plain.length, insertions)
+            remaining.values.each(buffer.add(_))
+            buffer.text
           else addSpan()
         else
           if spans.nil || stack.head(0).end <= spans.head(0).start then
-            val newInsertions = addText(pos, stack.head(0).end, insertions)
+            val newInsertions = addText(position, stack.head(0).end, insertions)
             val newStyle = stack.head(1)
-            style.addChanges(buf, newStyle, termcap.color)
+            style.addChanges(buffer, newStyle, termcap.color)
             recur(spans, stack.head(0).end, newStyle, stack.tail, newInsertions)
           else addSpan()
 

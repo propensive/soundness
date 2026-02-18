@@ -44,6 +44,8 @@ case class Benchmark
   ( nanoseconds: Long,
     iterations:  Long,
     mean:        Double,
+    min:         Double,
+    max:         Double,
     sd:          Double,
     confidence:  Benchmark.Percentiles,
     baseline:    Optional[Baseline] ):

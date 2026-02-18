@@ -43,7 +43,7 @@ object Countable:
   given iarray: [element] => IArray[element] is Countable = _.length
   given int: Int is Countable = identity(_)
 
-  given seq: [element] => Seq[element] is Countable:
+  given sequence: [element] => Seq[element] is Countable:
     def size(self: Seq[element]): Int = self.length
     override def empty(self: Seq[element]): Boolean = self.isEmpty
 

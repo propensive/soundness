@@ -148,10 +148,10 @@ object Inspectable extends Inspectable2:
 
     . mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
 
-  private def arrayPrefix(str: String): String =
-    val brackets = str.count(_ == '[')
+  private def arrayPrefix(string: String): String =
+    val brackets = string.count(_ == '[')
 
-    val arrayType = str(brackets) match
+    val arrayType = string(brackets) match
       case 'B' => "🅱" // Byte
       case 'C' => "🅲" // Char
       case 'D' => "🅳" // Double
@@ -165,7 +165,7 @@ object Inspectable extends Inspectable2:
 
     val dimension = if brackets < 2 then "".tt else brackets.toString.map("⁰¹²³⁴⁵⁶⁷⁸⁹"(_)).tt
 
-    arrayType+dimension//+renderBraille(str.split("@").nn(1).nn)
+    arrayType+dimension//+renderBraille(string.split("@").nn(1).nn)
 
   given option: [value: Inspectable] => Option[value] is Inspectable =
     case None        => "None".tt

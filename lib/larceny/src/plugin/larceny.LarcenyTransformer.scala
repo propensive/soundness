@@ -46,25 +46,25 @@ class LarcenyTransformer() extends PluginPhase:
   override val runsAfter = Set("parser")
   override val runsBefore = Set("typer")
 
-  override def transformUnit(tree: Tree)(using Context): Tree =
+  override def transformUnit(tree: Tree)(using context: Context): Tree =
     import ast.untpd.*
-    val classpath = ctx.settings.classpath.value
-    val language = ctx.settings.language.value
+    val classpath = context.settings.classpath.value
+    val language = context.settings.language.value
 
     object collector extends UntypedTreeMap:
       val regions: scm.ListBuffer[(Int, Int)] = scm.ListBuffer()
 
       override def transform(tree: Tree)(using Context): Tree = tree match
         case Apply(Ident(name), List(body)) if name.toString == "demilitarize" =>
-          try regions += (body.span.start -> body.span.end) catch case err: AssertionError => ()
+          try regions += (body.span.start -> body.span.end) catch case error: AssertionError => ()
           tree
 
         case _ =>
           super.transform(tree)
 
-    collector.transform(ctx.compilationUnit.untpdTree)
+    collector.transform(context.compilationUnit.untpdTree)
     val regions = collector.regions.to(Set)
-    val source = String(ctx.compilationUnit.source.content)
+    val source = String(context.compilationUnit.source.content)
 
     val errors: List[CompileError] =
       Subcompiler.compile(language, classpath, source, regions)
@@ -82,13 +82,13 @@ class LarcenyTransformer() extends PluginPhase:
                       "Subcompiler".toTermName ),
                   "compile".toTermName ),
               List
-                ( Literal(Constant(javaClasspath+":"+ctx.settings.classpath.value)),
+                ( Literal(Constant(javaClasspath+":"+context.settings.classpath.value)),
                   Literal(Constant(source2)) ) )
 
         case Apply(Ident(name), List(content)) if name.toString == "demilitarize" =>
           val captured = errors.filter: error =>
             try error.point >= content.span.start && error.point <= content.span.end
-            catch case err: AssertionError => false
+            catch case error: AssertionError => false
 
           val msgs = captured.map: error =>
             Apply
@@ -108,5 +108,5 @@ class LarcenyTransformer() extends PluginPhase:
         case _ =>
           super.transform(tree)
 
-    ctx.compilationUnit.untpdTree = transformer.transform(ctx.compilationUnit.untpdTree)
+    context.compilationUnit.untpdTree = transformer.transform(context.compilationUnit.untpdTree)
     super.transformUnit(tree)

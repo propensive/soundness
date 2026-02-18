@@ -127,8 +127,8 @@ object Dot:
       Stream(t"$key=\"$value\"")
 
     case Target(directed, dest, link) =>
-      val op = if directed then t"->" else t"--"
-      op #:: tokenize(dest) #::: link.to(Stream).flatMap(tokenize(_)) #::: Stream(t";")
+      val operator = if directed then t"->" else t"--"
+      operator #:: tokenize(dest) #::: link.to(Stream).flatMap(tokenize(_)) #::: Stream(t";")
 
     case Statement.Node(id, attrs*) =>
       t"\"${id.key}\"" #:: (if attrs.nil then Stream() else (Stream(t"[") #:::

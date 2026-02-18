@@ -107,7 +107,7 @@ object Media:
 
       lines.to(Set)
 
-    catch case err: InterpolationError => Set()
+    catch case error: InterpolationError => Set()
 
   object Prefix extends Interpolator[Unit, Text, MediaType]:
     def parse(state: Text, next: Text): Text = next
@@ -120,8 +120,8 @@ object Media:
 
     def complete(value: Text): MediaType =
       val parsed = try throwErrors(Media.parse(value)) catch
-        case err: MediaTypeError =>
-          throw InterpolationError(m"${err.value} is not a valid media type; ${err.reason.message}")
+        case error: MediaTypeError =>
+          throw InterpolationError(m"${error.value} is not a valid media type; ${error.reason.message}")
 
       parsed.subtype match
         case Subtype.Standard(_) =>
@@ -149,36 +149,36 @@ object Media:
         try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
           raise(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix))) yet Nil
 
-    def parseInit(str: Text): (Subtype, List[Suffix]) =
-      val xs: List[Text] = str.cut(t"+").to(List)
+    def parseInit(string: Text): (Subtype, List[Suffix]) =
+      val xs: List[Text] = string.cut(t"+").to(List)
 
       xs.absolve match
       case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
 
-    def parseBasic(str: Text): (Group, Subtype, List[Suffix]) = str.cut(t"/").to(List) match
+    def parseBasic(string: Text): (Group, Subtype, List[Suffix]) = string.cut(t"/").to(List) match
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
 
       case _ =>
         raise(MediaTypeError(string, MediaTypeError.Reason.NotOneSlash))
         Group.Text *: parseInit(string)
 
-    def parseGroup(str: Text): Group =
-      try Group.valueOf(str.lower.capitalize.s) catch IllegalArgumentException =>
+    def parseGroup(string: Text): Group =
+      try Group.valueOf(string.lower.capitalize.s) catch IllegalArgumentException =>
         raise(MediaTypeError(string, MediaTypeError.Reason.InvalidGroup)) yet Group.Text
 
-    def parseSubtype(str: Text): Subtype =
+    def parseSubtype(string: Text): Subtype =
       def notAllowed(char: Char): Boolean =
         char.isWhitespace || char.isControl || specials.contains(char)
 
-      str.chars.find(notAllowed(_)).map: char =>
+      string.chars.find(notAllowed(_)).map: char =>
         raise(MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)))
-        Subtype.X(str.chars.filter(!notAllowed(_)).text)
+        Subtype.X(string.chars.filter(!notAllowed(_)).text)
 
       . getOrElse:
-          if str.starts(t"vnd.") then Subtype.Vendor(str.skip(4))
-          else if str.starts(t"prs.") then Subtype.Personal(str.skip(4))
-          else if str.starts(t"x.") || str.starts(t"x-") then Subtype.X(str.skip(2))
-          else Subtype.Standard(str)
+          if string.starts(t"vnd.") then Subtype.Vendor(string.skip(4))
+          else if string.starts(t"prs.") then Subtype.Personal(string.skip(4))
+          else if string.starts(t"x.") || string.starts(t"x-") then Subtype.X(string.skip(2))
+          else Subtype.Standard(string)
 
     val xs: List[Text] = string.cut(t";").to(List).map(_.trim)
 

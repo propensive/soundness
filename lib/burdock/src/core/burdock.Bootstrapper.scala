@@ -96,7 +96,7 @@ object Bootstrapper:
 
   case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
 
-  def main(args: IArray[Text]): Unit = application(args):
+  def main(input: IArray[Text]): Unit = application(input):
     recover:
       case error: Error =>
         Err.println(error.message)

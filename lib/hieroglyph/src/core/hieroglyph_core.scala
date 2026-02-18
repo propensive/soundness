@@ -73,11 +73,11 @@ package charEncoders:
   given iso88591: CharEncoder = CharEncoder.unapply("ISO-8859-1".tt).get
 
 package textSanitizers:
-  given strict: Tactic[CharDecodeError] => TextSanitizer = (pos, encoding) =>
-    raise(CharDecodeError(pos, encoding)) yet '?'
+  given strict: Tactic[CharDecodeError] => TextSanitizer = (position, encoding) =>
+    raise(CharDecodeError(position, encoding)) yet '?'
 
-  given skip: TextSanitizer = (pos, encoding) => Unset
-  given substitute: TextSanitizer = (pos, encoding) => '?'
+  given skip: TextSanitizer = (position, encoding) => Unset
+  given substitute: TextSanitizer = (position, encoding) => '?'
 
 package communication:
   given unicodeCharNames: Char is Communicable = char => Message:

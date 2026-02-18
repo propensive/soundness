@@ -32,6 +32,6 @@
                                                                                                   */
 package kaleidoscope
 
-extension (inline ctx: StringContext)
-  transparent inline def r: Any = ${Kaleidoscope.regex('ctx)}
-  transparent inline def g: Any = ${Kaleidoscope.glob('ctx)}
+extension (inline context: StringContext)
+  transparent inline def r: Any = ${Kaleidoscope.regex('context)}
+  transparent inline def g: Any = ${Kaleidoscope.glob('context)}

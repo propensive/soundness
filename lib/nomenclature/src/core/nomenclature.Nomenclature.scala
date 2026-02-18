@@ -52,7 +52,13 @@ object Nomenclature:
     inline given decodable: [plane] => (plane is Nominative, Tactic[NameError])
     =>  Name[plane] is Decodable in Text =
 
-      apply[plane](_)
+      decoder[plane](apply)
+
+    private def decoder[plane](lambda: Text => Name[plane]): Name[plane] is Decodable in Text =
+      new Decodable:
+        type Self = Name[plane]
+        type Form = Text
+        def decoded(text: Text): Name[plane] = lambda(text)
 
     inline def verify[NameType <: Label, plane] =
       ${Nomenclature2.parse[plane, NameType]}

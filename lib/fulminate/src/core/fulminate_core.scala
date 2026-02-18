@@ -46,7 +46,7 @@ package errorDiagnostics:
 
 def panic(message: Message): Nothing = throw Panic(message)
 
-def halt(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
+def halt(using Quotes)(message: Message, position: quotes.reflect.Position | Null = null)(using Realm)
 :   Nothing =
 
     import quotes.reflect.*
@@ -66,10 +66,10 @@ def halt(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = n
       then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
       else s"${summon[Realm].name}: ${message.text}"
 
-    if pos == null then report.errorAndAbort(text) else report.errorAndAbort(text, pos)
+    if position == null then report.errorAndAbort(text) else report.errorAndAbort(text, position)
 
 
-def warn(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
+def warn(using Quotes)(message: Message, position: quotes.reflect.Position | Null = null)(using Realm)
 :   Unit =
 
     import quotes.reflect.*
@@ -89,7 +89,7 @@ def warn(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = n
       then s"$esc[38;2;0;190;255m$esc[1m${summon[Realm].name}$esc[0m ${message.colorText}"
       else s"${summon[Realm].name}: ${message.text}"
 
-    if pos == null then report.warning(text) else report.warning(text, pos)
+    if position == null then report.warning(text) else report.warning(text, position)
 
 
 extension (inline context: StringContext)
