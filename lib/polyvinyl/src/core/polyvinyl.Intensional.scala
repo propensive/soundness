@@ -32,8 +32,10 @@
                                                                                                   */
 package polyvinyl
 
+import anticipation.*
 import prepositional.*
 import proscenium.*
 
 trait Intensional[record <: Record in data, data, label <: Label, value]:
-  def transform(data: data, params: List[String]): value
+  type Result = value
+  def transform(data: data, params: List[Text]): value
