@@ -422,7 +422,7 @@ object Honeycomb:
                 . in[Whatwg]  }
 
   def attributes[result: Type, thisType <: Tag to result: Type]
-    ( tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]] )
+    ( tag: Expr[Tag], presets: Expr[Map[Text, Text]], attributes0: Expr[Seq[(String, Any)]] )
   :   Macro[result] =
 
     import quotes.reflect.*
@@ -445,7 +445,7 @@ object Honeycomb:
                 TypeRepr.of[topic].literal[String].let: topic =>
                   key.asTerm match
                     case Literal(StringConstant(key)) =>
-                      if key == "" then panic(m"Empty key")
+                      if key == "" then halt(m"HTML tag attributes must be named")
                       else ConstantType(StringConstant(key)).asType.absolve match
                         case '[type key <: Label; key] =>
                           Expr.summon[key is Attribute in form on (? >: topic)]
@@ -470,4 +470,4 @@ object Honeycomb:
                       halt(m"unable to determine attribute key type")
                 . or(halt(m"unexpected type"))
 
-    '{$tag.node(${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]
+    '{$tag.node($presets ++ ${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]

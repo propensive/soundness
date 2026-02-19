@@ -238,7 +238,17 @@ extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
   type Result <: Element
 
 
-  inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Result =
-    ${Honeycomb.attributes[Result, this.type]('this, 'attributes)}
+  inline def applyDynamicNamed[label <: Label: Precise](inline method: label)
+    ( inline attributes: (String, Any)* )
+  :   Result =
+
+    inline if method == "apply" then make(Map(), attributes*) else
+      val stylesheet = infer[Stylesheet of (? >: label)]
+      make(Map(t"class" -> stylesheet.classes.to(List).join(t" ")), attributes*)
+
+
+
+  inline def make(presets: Map[Text, Text], inline attributes: (String, Any)*): Result =
+    ${Honeycomb.attributes[Result, this.type]('this, 'presets, 'attributes)}
 
   def node(attributes: Map[Text, Optional[Text]]): Result

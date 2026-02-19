@@ -359,6 +359,8 @@ object Tests extends Suite(m"Honeycomb Tests"):
       . assert(_ == 50)
 
       suite(m"Interpolator tests"):
+        import attributives.textAttributes
+
         test(m"simple interpolator"):
           val comment = "comment"
           val attribute = "attribute"
@@ -370,6 +372,16 @@ object Tests extends Suite(m"Honeycomb Tests"):
           val img = Img(alt = "hello")
           img.alt = img.alt+" world"
         . assert(_ == Img(alt = "hello world"))
+
+        test(m"class can be added to element with children"):
+          import honeycomb.stylesheets.uncheckedClasses
+          Div.foo(P("hello"))
+        . assert(_ == Div(`class` = t"foo")(P("hello")))
+
+        test(m"class can be added to element with attributes"):
+          import honeycomb.stylesheets.uncheckedClasses
+          Img.foo(alt = t"bar")
+        . assert(_ == Img(`class` = t"foo", alt = t"bar"))
 
         test(m"interpolate multiple attributes"):
           val dirname = "dirname"
