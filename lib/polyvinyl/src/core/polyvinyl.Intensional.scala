@@ -36,6 +36,7 @@ import anticipation.*
 import prepositional.*
 import proscenium.*
 
-trait Intensional[record <: Record in data, data, label <: Label, value]:
-  type Result = value
-  def transform(data: data, params: List[Text]): value
+trait Intensional extends Typeclass, Resultant, Formal:
+  type Self <: Label
+  type Topic <: Record in Form
+  def transform(data: Form, params: List[Text]): Result
