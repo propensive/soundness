@@ -137,6 +137,7 @@ object Tests extends Suite(m"Soundness tests"):
     vexillology.Tests()
     vacuous.Tests()
     vicarious.Tests()
+    villainy.Tests()
     wisteria.Tests()
     xylophone.Tests()
     yossarian.Tests()
