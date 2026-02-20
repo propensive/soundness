@@ -41,13 +41,12 @@ import proscenium.*
 
 trait Specification:
   type Form
-  type Plane <: Record in Form
 
   def fields: Map[Text, Member]
   def make(data: Form, transform: Text => Form => Any): Record
   def access(name: Text, value: Form): Form
 
-  def build(value: Expr[Form])(using Type[Plane], Type[Form])(using thisType: Type[this.type])
+  def build(value: Expr[Form])(using Type[Form])(using thisType: Type[this.type])
   :   Macro[Record] =
 
     import quotes.reflect.*
@@ -57,7 +56,7 @@ trait Specification:
     val target = thisType.absolve match
       case '[thisType] =>
         Ref(TypeRepr.of[thisType].typeSymbol.companionModule)
-        . asExprOf[Specification in Form on Plane]
+        . asExprOf[Specification in Form]
 
 
     def refine
@@ -74,7 +73,7 @@ trait Specification:
           case (name, Member.Value(label, params*)) :: tail =>
             ConstantType(StringConstant(label.s)).asType.absolve match
               case '[type label <: Label; label] =>
-                Expr.summon[label is Intensional in Form on Plane].absolve match
+                Expr.summon[label is Intensional in Form].absolve match
                   case None =>
                     halt:
                       m"""
@@ -82,7 +81,7 @@ trait Specification:
                       """
 
                   case Some
-                    ( '{$accessor: label `is` Intensional `on` Plane `in` Form `to` result} ) =>
+                    ( '{$accessor: label `is` Intensional `in` Form `to` result} ) =>
 
                     val rhs: Expr[Form => Any] =
                       ' {
@@ -101,7 +100,7 @@ trait Specification:
           case (name, Member.Record(label, map)) :: tail =>
             ConstantType(StringConstant(label.s)).asType.absolve match
               case '[type label <: Label; label] =>
-                Expr.summon[label is Accessor[?] in Form on Plane].absolve match
+                Expr.summon[label is Accessor[?] in Form].absolve match
                   case None =>
                     halt:
                       m"""
@@ -111,11 +110,11 @@ trait Specification:
                   case Some
                     ( ' {
                           type constructor[_]
-                          $accessor: (label `is` Accessor[constructor] `in` Form `on` Plane)
+                          $accessor: (label `is` Accessor[constructor] `in` Form)
                         } ) =>
 
                     val nested = '{$target.access(${Expr(name)}, $value)}
-                    val recordTypeRepr = TypeRepr.of[Plane]
+                    val recordTypeRepr = TypeRepr.of[Record]
 
                     val (nestedType, nestedCaseDefs) =
                       refine(nested, map.to(List), recordTypeRepr)

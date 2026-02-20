@@ -32,6 +32,8 @@ import vacuous.*
 import errorDiagnostics.stackTraces
 import strategies.throwUnsafely
 
+import JsonRecord.given
+
 object Tests extends Suite(m"Villainy tests"):
   def run(): Unit =
     val record = test(m"Construct a new record"):

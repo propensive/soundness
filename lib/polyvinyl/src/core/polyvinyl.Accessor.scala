@@ -38,5 +38,4 @@ import proscenium.*
 trait Accessor[constructor[_]]:
   type Self <: Label
   type Form
-  type Plane <: Record in Form
   def transform(data: Form, make: Form => Record): constructor[Record]
