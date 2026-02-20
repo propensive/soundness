@@ -37,109 +37,96 @@ import scala.compiletime.*
 import strategies.throwUnsafely
 
 object JsonRecord:
-  given boolean: ("boolean" is Intensional in Json to Boolean) =
+  given boolean: ("boolean" is Intensional from Json to Boolean) =
     JsonSchema.intensional(_.as[Boolean])
 
-  given string: ("string" is Intensional in Json to Text) =
+  given string: ("string" is Intensional from Json to Text) =
     JsonSchema.intensional(_.as[Text])
 
-  given integer: ("integer" is Intensional in Json to Int) =
+  given integer: ("integer" is Intensional from Json to Int) =
     JsonSchema.intensional(_.as[Int])
 
-  given number: ("number" is Intensional in Json to Double) =
+  given number: ("number" is Intensional from Json to Double) =
     JsonSchema.intensional(_.as[Double])
 
-  given dateTime: ("date-time" is Intensional in Json to Text) =
+  given dateTime: ("date-time" is Intensional from Json to Text) =
     JsonSchema.intensional(_.as[Text])
 
-  given date: ("date" is Intensional in Json to Text) =
+  given date: ("date" is Intensional from Json to Text) =
     JsonSchema.intensional(_.as[Text])
 
-  given time: ("time" is Intensional in Json to Text) =
+  given time: ("time" is Intensional from Json to Text) =
     JsonSchema.intensional(_.as[Text])
 
-  given duration: ("duration" is Intensional in Json to Text) =
+  given duration: ("duration" is Intensional from Json to Text) =
     JsonSchema.intensional(_.as[Text])
 
-  given uriReference: ("uri-reference" is Intensional in Json to Text) =
+  given uriReference: ("uri-reference" is Intensional from Json to Text) =
     JsonSchema.intensional(_.as[Text])
 
-  given email
-  :   ("email" is Intensional in Json to
-          (EmailAddress raises EmailAddressError)) =
-
+  given email: ("email" is Intensional from Json to (EmailAddress raises EmailAddressError)) =
     JsonSchema.intensional(_.as[EmailAddress])
 
-  given idnEmail
-  :   ("idn-email" is Intensional in Json to
-          (EmailAddress raises EmailAddressError)) =
-
+  given idnEmail: ("idn-email" is Intensional from Json to (EmailAddress raises EmailAddressError)) =
     JsonSchema.intensional(_.as[EmailAddress])
 
-  given hostname
-  :   ("hostname" is Intensional in Json to (Hostname raises
-          HostnameError)) =
-
+  given hostname: ("hostname" is Intensional from Json to (Hostname raises HostnameError)) =
     JsonSchema.intensional(_.as[Hostname])
 
-  given ipv4
-  :   ("ipv4" is Intensional in Json to (Ipv4 raises IpAddressError)) =
-
+  given ipv4: ("ipv4" is Intensional from Json to (Ipv4 raises IpAddressError)) =
     JsonSchema.intensional(_.as[Ipv4])
 
-  given ipv6
-  :   ("ipv6" is Intensional in Json to (Ipv6 raises IpAddressError)) =
-
+  given ipv6: ("ipv6" is Intensional from Json to (Ipv6 raises IpAddressError)) =
     JsonSchema.intensional(_.as[Ipv6])
 
   given uri[url: Instantiable across Urls from Text]: ("uri" is Intensional to url) =
     JsonSchema.intensional: value => url.instantiate(value.as[Text])
 
   given iri: [url: Instantiable across Urls from Text]
-  =>  ("iri" is Intensional in Json to url) =
+  =>  ("iri" is Intensional from Json to url) =
 
     JsonSchema.intensional:
       value => url.instantiate(value.as[Text])
 
 
-  given iriReference: ("iri-reference" is Intensional in Json to Text) =
+  given iriReference: ("iri-reference" is Intensional from Json to Text) =
     JsonSchema.intensional(_.as[Text])
 
-  given uuid: ("uuid" is Intensional in Json to (Uuid raises UuidError)) =
+  given uuid: ("uuid" is Intensional from Json to (Uuid raises UuidError)) =
     JsonSchema.intensional(_.as[Uuid])
 
-  given uriTemplate: ("uri-template" is Intensional in Json to Text) =
+  given uriTemplate: ("uri-template" is Intensional from Json to Text) =
     JsonSchema.intensional(_.as[Text])
 
-  given jsonPointer: ("json-pointer" is Intensional in Json to Text) =
+  given jsonPointer: ("json-pointer" is Intensional from Json to Text) =
     JsonSchema.intensional(_.as[Text])
 
 
   given relativeJsonPointer
-  :   ("relative-json-pointer" is Intensional in Json to Text) =
+  :   ("relative-json-pointer" is Intensional from Json to Text) =
 
     JsonSchema.intensional(_.as[Text])
 
-  given regex: ("regex" is Intensional in Json to Regex) =
+  given regex: ("regex" is Intensional from Json to Regex) =
     JsonSchema.intensional: value => Regex(value.as[Text])
 
-  given array: ("array" is Accessor[List] in Json) = _.as[List[Json]].map(_)
+  given array: ("array" is Accessor[List] from Json) = _.as[List[Json]].map(_)
 
-  given obj: ("object" is Accessor[[Type] =>> Type] in Json) =
+  given obj: ("object" is Accessor[[Type] =>> Type] from Json) =
     (value, make) => make(value)
 
 
   given optionalBoolean
-  :   ("boolean?" is Intensional in Json to Optional[Boolean]) =
+  :   ("boolean?" is Intensional from Json to Optional[Boolean]) =
 
     (value, params) => value.as[Optional[Boolean]]
 
 
-  given optionalText: ("string?" is Intensional in Json to Optional[Text]) =
+  given optionalText: ("string?" is Intensional from Json to Optional[Text]) =
     (value, params) => value.as[Optional[Text]]
 
   given pattern: ("pattern" is Intensional):
-    type Form = Json
+    type Origin = Json
     type Result = Text
 
     def transform(value: Json, params: List[Text]): Text = params.absolve match
@@ -149,7 +136,7 @@ object JsonRecord:
         else abort(JsonSchemaError(JsonSchemaError.Reason.PatternMismatch(value.as[Text], regex)))
 
   given optionalPattern: ("pattern?" is Intensional):
-    type Form = Json
+    type Origin = Json
     type Result = Optional[Text]
 
     def transform(value: Json, params: List[Text] = Nil): Optional[Text] = params.absolve match
@@ -158,13 +145,13 @@ object JsonRecord:
         if regex.matches(value.as[Text]) then value.as[Text]
         else abort(JsonSchemaError(JsonSchemaError.Reason.PatternMismatch(value.as[Text], regex)))
 
-  given optionalInteger: ("integer?" is Intensional in Json to Optional[Int]) =
+  given optionalInteger: ("integer?" is Intensional from Json to Optional[Int]) =
     (value, params) => value.as[Optional[Int]]
 
-  given boundedInteger: ("integer!" is Intensional in Json to (Int raises BoundsError)) =
+  given boundedInteger: ("integer!" is Intensional from Json to (Int raises BoundsError)) =
     new Intensional:
       type Self = "integer!"
-      type Form = Json
+      type Origin = Json
       type Result = Int raises BoundsError
 
       def transform(json: Json, params: List[Text] = Nil): Int raises BoundsError =
@@ -180,18 +167,13 @@ object JsonRecord:
           case _ :: As[Int](max) :: Nil =>
             if int > max then abort(BoundsError(int, Double.MinValue, max)) else int
 
-  given optionalNumber: ("number?" is Intensional in Json to Optional[Double]) =
+  given optionalNumber: ("number?" is Intensional from Json to Optional[Double]) =
     (value, params) => value.as[Optional[Double]]
 
   given optionalArray
-  :   ("array?" is Accessor[[element] =>> Optional[List[element]]] in Json) =
+  :   ("array?" is Accessor[[element] =>> Optional[List[element]]] from Json) =
 
     (value, make) => value.as[List[Json]].map(make)
 
-  given optionalObject: ("object?" is Accessor[[value] =>> Optional[value]] in Json) =
+  given optionalObject: ("object?" is Accessor[[value] =>> Optional[value]] from Json) =
     (value, make) => make(value)
-
-class JsonRecord(data0: Json, access0: Text => Json => Any) extends Record:
-  type Form = Json
-  val data: Json = data0
-  def access: Text => Json => Any = access0

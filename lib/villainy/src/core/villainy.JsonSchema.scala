@@ -37,25 +37,30 @@ import strategies.throwUnsafely
 
 object JsonSchema:
 
+  def record(data0: Json, access0: Text => Json => Any): Record = new Record:
+    type Origin = Json
+    val data: Json = data0
+    def access: Text => Json => Any = access0
+
   def intensional[name <: Label, value](accessor: Json => value)
-  :   name is Intensional in Json to value =
+  :   name is Intensional from Json to value =
     new Intensional:
       type Self = name
-      type Form = Json
+      type Origin = Json
       type Result = value
 
       def access(value: Json): value = accessor(value)
       def transform(value: Json, params: List[Text]): value = access(value)
 
   case class Property
-     (`type`:     Text,
+    ( `type`:     Text,
       properties: Optional[Map[Text, Json]],
       items:      Optional[Map[Text, Json]],
       required:   Optional[Set[Text]],
       minimum:    Optional[Int],
       maximum:    Optional[Int],
       format:     Optional[Text],
-      pattern:    Optional[Text]):
+      pattern:    Optional[Text] ):
 
     def requiredFields: Set[Text] = required.or(Set())
 
@@ -92,10 +97,7 @@ object JsonSchema:
         Member.Value(if required then other else other+"?")
 
 abstract class JsonSchema(val doc: JsonSchemaDoc) extends Specification:
-  type Form = Json
-  type Plane = JsonRecord
+  type Origin = Json
   def access(name: Text, json: Json): Json = json(name)
-
-  def make(data: Json, access: Text => Json => Any): JsonRecord = JsonRecord(data, access)
-
+  def make(data: Json, access: Text => Json => Any): Record = JsonSchema.record(data, access)
   def fields: Map[Text, Member] = unsafely(doc.fields)

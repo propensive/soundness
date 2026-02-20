@@ -38,5 +38,5 @@ import proscenium.*
 
 trait Intensional extends Typeclass, Resultant:
   type Self <: Label
-  type Form
-  def transform(data: Form, params: List[Text]): Result
+  type Origin
+  def transform(data: Origin, params: List[Text]): Result

@@ -37,5 +37,5 @@ import proscenium.*
 
 trait Accessor[constructor[_]]:
   type Self <: Label
-  type Form
-  def transform(data: Form, make: Form => Record): constructor[Record]
+  type Origin
+  def transform(data: Origin, make: Origin => Record): constructor[Record]

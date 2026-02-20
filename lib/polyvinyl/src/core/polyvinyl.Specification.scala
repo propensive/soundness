@@ -40,13 +40,13 @@ import prepositional.*
 import proscenium.*
 
 trait Specification:
-  type Form
+  type Origin
 
   def fields: Map[Text, Member]
-  def make(data: Form, transform: Text => Form => Any): Record
-  def access(name: Text, value: Form): Form
+  def make(data: Origin, transform: Text => Origin => Any): Record
+  def access(name: Text, value: Origin): Origin
 
-  def build(value: Expr[Form])(using Type[Form])(using thisType: Type[this.type])
+  def build(value: Expr[Origin])(using Type[Origin])(using thisType: Type[this.type])
   :   Macro[Record] =
 
     import quotes.reflect.*
@@ -56,11 +56,11 @@ trait Specification:
     val target = thisType.absolve match
       case '[thisType] =>
         Ref(TypeRepr.of[thisType].typeSymbol.companionModule)
-        . asExprOf[Specification in Form]
+        . asExprOf[Specification from Origin]
 
 
     def refine
-      ( value:    Expr[Form],
+      ( value:    Expr[Origin],
         fields:   List[(Text, Member)],
         refined:  TypeRepr,
         caseDefs: List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)) )
@@ -73,7 +73,7 @@ trait Specification:
           case (name, Member.Value(label, params*)) :: tail =>
             ConstantType(StringConstant(label.s)).asType.absolve match
               case '[type label <: Label; label] =>
-                Expr.summon[label is Intensional in Form].absolve match
+                Expr.summon[label is Intensional from Origin].absolve match
                   case None =>
                     halt:
                       m"""
@@ -81,11 +81,11 @@ trait Specification:
                       """
 
                   case Some
-                    ( '{$accessor: label `is` Intensional `in` Form `to` result} ) =>
+                    ( '{$accessor: label `is` Intensional `from` Origin `to` result} ) =>
 
-                    val rhs: Expr[Form => Any] =
+                    val rhs: Expr[Origin => Any] =
                       ' {
-                          (data: Form) =>
+                          (data: Origin) =>
                             $accessor.transform
                               ( $target.access(${Expr(name)}, data), ${Expr(params.to(List))} )
                         }
@@ -100,7 +100,7 @@ trait Specification:
           case (name, Member.Record(label, map)) :: tail =>
             ConstantType(StringConstant(label.s)).asType.absolve match
               case '[type label <: Label; label] =>
-                Expr.summon[label is Accessor[?] in Form].absolve match
+                Expr.summon[label is Accessor[?] from Origin].absolve match
                   case None =>
                     halt:
                       m"""
@@ -110,7 +110,7 @@ trait Specification:
                   case Some
                     ( ' {
                           type constructor[_]
-                          $accessor: (label `is` Accessor[constructor] `in` Form)
+                          $accessor: (label `is` Accessor[constructor] `from` Origin)
                         } ) =>
 
                     val nested = '{$target.access(${Expr(name)}, $value)}
@@ -119,15 +119,15 @@ trait Specification:
                     val (nestedType, nestedCaseDefs) =
                       refine(nested, map.to(List), recordTypeRepr)
 
-                    val matchFn: Expr[Text => Form => Any] =
+                    val matchFn: Expr[Text => Origin => Any] =
                       ' {
                           (name: Text) =>
-                            ${Match('name.asTerm, nestedCaseDefs).asExprOf[Form => Any]}
+                            ${Match('name.asTerm, nestedCaseDefs).asExprOf[Origin => Any]}
                         }
 
-                    val maker: Expr[Form => Record] = '{field => $target.make(field, $matchFn)}
+                    val maker: Expr[Origin => Record] = '{field => $target.make(field, $matchFn)}
 
-                    val rhs: Expr[Form => Any] =
+                    val rhs: Expr[Origin => Any] =
                       '{data => $accessor.transform($target.access(${Expr(name)}, data), $maker)}
 
                     val caseDef = CaseDef(Literal(StringConstant(name.s)), None, rhs.asTerm)
@@ -145,8 +145,8 @@ trait Specification:
 
     val (refined, caseDefs) = refine(value, fields.to(List), TypeRepr.of[Record])
 
-    val matchFn: Expr[Text => Form => Any] =
-      '{(name: Text) => ${Match('name.asTerm, caseDefs).asExprOf[Form => Any]}}
+    val matchFn: Expr[Text => Origin => Any] =
+      '{(name: Text) => ${Match('name.asTerm, caseDefs).asExprOf[Origin => Any]}}
 
     refined.asType.absolve match
       case '[type refined <: Record; refined] =>
