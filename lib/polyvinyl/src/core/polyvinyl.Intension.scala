@@ -39,13 +39,16 @@ import fulminate.*
 import prepositional.*
 import proscenium.*
 
-trait Intension[data, record <: Record in data]:
-  def fields: Map[Text, RecordField]
-  def make(data: data, transform: Text => data => Any): record
-  def access(name: Text, value: data): data
+trait Intension:
+  type Form
+  type Plane <: Record in Form
 
-  def build(value: Expr[data])(using Type[record], Type[data])(using thisType: Type[this.type])
-  :   Macro[record] =
+  def fields: Map[Text, RecordField]
+  def make(data: Form, transform: Text => Form => Any): Plane
+  def access(name: Text, value: Form): Form
+
+  def build(value: Expr[Form])(using Type[Plane], Type[Form])(using thisType: Type[this.type])
+  :   Macro[Plane] =
 
     import quotes.reflect.*
 
@@ -53,11 +56,11 @@ trait Intension[data, record <: Record in data]:
 
     val target = thisType.absolve match
       case '[thisType] =>
-        Ref(TypeRepr.of[thisType].typeSymbol.companionModule).asExprOf[Intension[data, record]]
+        Ref(TypeRepr.of[thisType].typeSymbol.companionModule).asExprOf[Intension in Form on Plane]
 
 
     def refine
-      ( value:    Expr[data],
+      ( value:    Expr[Form],
         fields:   List[(Text, RecordField)],
         refined:  TypeRepr,
         caseDefs: List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)) )
@@ -67,65 +70,64 @@ trait Intension[data, record <: Record in data]:
           case Nil =>
             (refined, caseDefs)
 
-          case (name, RecordField.Value(identifier, params*)) :: tail =>
-            ConstantType(StringConstant(identifier.s)).asType.absolve match
-              case '[type identifier <: Label; identifier] =>
-                Expr.summon[identifier is Intensional in data on record].absolve match
+          case (name, RecordField.Value(label, params*)) :: tail =>
+            ConstantType(StringConstant(label.s)).asType.absolve match
+              case '[type label <: Label; label] =>
+                Expr.summon[label is Intensional in Form on Plane].absolve match
                   case None =>
                     halt:
                       m"""
-                        could not find an Intensional instance for the field $name with type
-                        $identifier
+                        could not find an Intensional instance for the field $name with type $label
                       """
 
-                  case Some('{$accessor: Intensional { type Self = identifier; type Form = `data`; type Result = valueType; type Plane = `record` }}) =>
+                  case Some
+                    ( '{$accessor: label `is` Intensional `on` Plane `in` Form `to` result} ) =>
 
-                    val rhs: Expr[data => Any] =
-                      '{
-                        (data: data) =>
-                          $accessor.transform
-                            ( $target.access(${Expr(name)}, data), ${Expr(params.to(List))} )
-                      }
+                    val rhs: Expr[Form => Any] =
+                      ' {
+                          (data: Form) =>
+                            $accessor.transform
+                              ( $target.access(${Expr(name)}, data), ${Expr(params.to(List))} )
+                        }
 
                     val caseDefs2 =
                       CaseDef(Literal(StringConstant(name.s)), None, rhs.asTerm) :: caseDefs
 
-                    val refinement = Refinement(refined, name.s, TypeRepr.of[valueType])
+                    val refinement = Refinement(refined, name.s, TypeRepr.of[result])
 
                     refine(value, tail, refinement, caseDefs2)
 
-          case (name, RecordField.Record(identifier, map)) :: tail =>
-            ConstantType(StringConstant(identifier.s)).asType.absolve match
-              case '[type identifier <: Label; identifier] =>
-                Expr.summon[Accessor[record, data, identifier, ?]].absolve match
+          case (name, RecordField.Record(label, map)) :: tail =>
+            ConstantType(StringConstant(label.s)).asType.absolve match
+              case '[type label <: Label; label] =>
+                Expr.summon[label is Accessor[?] in Form on Plane].absolve match
                   case None =>
                     halt:
                       m"""
-                        could not find an Accessor instance for the field $name with type
-                        $identifier
+                        could not find an Accessor instance for the field $name with type $label
                       """
 
                   case Some
                     ( ' {
                           type constructor[_]
-                          $accessor: Accessor[`record`, `data`, identifier, constructor]
+                          $accessor: (label `is` Accessor[constructor] `in` Form `on` Plane)
                         } ) =>
 
                     val nested = '{$target.access(${Expr(name)}, $value)}
-                    val recordTypeRepr = TypeRepr.of[record]
+                    val recordTypeRepr = TypeRepr.of[Plane]
 
                     val (nestedType, nestedCaseDefs) =
                       refine(nested, map.to(List), recordTypeRepr)
 
-                    val matchFn: Expr[Text => data => Any] =
+                    val matchFn: Expr[Text => Form => Any] =
                       ' {
                           (name: Text) =>
-                            ${Match('name.asTerm, nestedCaseDefs).asExprOf[data => Any]}
+                            ${Match('name.asTerm, nestedCaseDefs).asExprOf[Form => Any]}
                         }
 
-                    val maker: Expr[data => record] = '{field => $target.make(field, $matchFn)}
+                    val maker: Expr[Form => Plane] = '{field => $target.make(field, $matchFn)}
 
-                    val rhs: Expr[data => Any] =
+                    val rhs: Expr[Form => Any] =
                       '{data => $accessor.transform($target.access(${Expr(name)}, data), $maker)}
 
                     val caseDef = CaseDef(Literal(StringConstant(name.s)), None, rhs.asTerm)
@@ -141,11 +143,11 @@ trait Intension[data, record <: Record in data]:
                             caseDef :: caseDefs )
 
 
-    val (refined, caseDefs) = refine(value, fields.to(List), TypeRepr.of[record])
+    val (refined, caseDefs) = refine(value, fields.to(List), TypeRepr.of[Plane])
 
-    val matchFn: Expr[Text => data => Any] =
-      '{(name: Text) => ${Match('name.asTerm, caseDefs).asExprOf[data => Any]}}
+    val matchFn: Expr[Text => Form => Any] =
+      '{(name: Text) => ${Match('name.asTerm, caseDefs).asExprOf[Form => Any]}}
 
     refined.asType.absolve match
-      case '[type refined <: record; refined] =>
+      case '[type refined <: Plane; refined] =>
         '{$target.make($value, $matchFn).asInstanceOf[refined]}

@@ -93,10 +93,11 @@ object JsonSchema:
       case other =>
         RecordField.Value(if required then other else other+"?")
 
-abstract class JsonSchema(val doc: JsonSchemaDoc) extends Intension[Json, JsonRecord]:
+abstract class JsonSchema(val doc: JsonSchemaDoc) extends Intension:
+  type Form = Json
+  type Plane = JsonRecord
   def access(name: Text, json: Json): Json = json(name)
 
-  def make(data: Json, access: Text => Json => Any): JsonRecord =
-    JsonRecord(data, access)
+  def make(data: Json, access: Text => Json => Any): JsonRecord = JsonRecord(data, access)
 
   def fields: Map[Text, RecordField] = unsafely(doc.fields)

@@ -123,10 +123,10 @@ object JsonRecord:
   given regex: ("regex" is Intensional on JsonRecord in Json to Regex) =
     JsonSchema.intensional: value => Regex(value.as[Text])
 
-  given array: Accessor[JsonRecord, Json, "array", List] =
-    _.as[List[Json]].map(_)
+  given array: ("array" is Accessor[List] in Json on JsonRecord) = _.as[List[Json]].map(_)
 
-  given obj: Accessor[JsonRecord, Json, "object", [Type] =>> Type] = (value, make) => make(value)
+  given obj: ("object" is Accessor[[Type] =>> Type] in Json on JsonRecord) =
+    (value, make) => make(value)
 
 
   given optionalBoolean
@@ -186,10 +186,12 @@ object JsonRecord:
   given optionalNumber: ("number?" is Intensional in Json on JsonRecord to Optional[Double]) =
     (value, params) => value.as[Optional[Double]]
 
-  given optionalArray: Accessor[JsonRecord, Json, "array?", [T] =>> Optional[List[T]]] =
+  given optionalArray
+  :   ("array?" is Accessor[[element] =>> Optional[List[element]]] in Json on JsonRecord) =
+
     (value, make) => value.as[List[Json]].map(make)
 
-  given optionalObject: Accessor[JsonRecord, Json, "object?", [T] =>> Optional[T]] =
+  given optionalObject: ("object?" is Accessor[[value] =>> Optional[value]] in Json on JsonRecord) =
     (value, make) => make(value)
 
 class JsonRecord(data0: Json, access0: Text => Json => Any) extends Record:

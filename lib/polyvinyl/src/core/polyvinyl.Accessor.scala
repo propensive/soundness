@@ -35,5 +35,8 @@ package polyvinyl
 import prepositional.*
 import proscenium.*
 
-trait Accessor[record <: Record in data, data, label <: Label, constructor[_]]:
-  def transform(data: data, make: data => record): constructor[record]
+trait Accessor[constructor[_]]:
+  type Self <: Label
+  type Form
+  type Plane <: Record in Form
+  def transform(data: Form, make: Form => Plane): constructor[Plane]

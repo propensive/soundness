@@ -72,10 +72,8 @@ object Tests extends Suite(m"Villainy tests"):
     .assert(_ == 0.8)
 
     test(m"A bad pattern-checked value throws an exception"):
-      // FIXME: This should use `capture` to grab the error, but it doesn't seem to work, perhaps because
-      // `throwUnsafely` has higher precedence.
       capture[JsonSchemaError]:
-        val result = record.children.head.color
+        record.children.head.color
     .assert(_ == JsonSchemaError(JsonSchemaError.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}")))
 
     test(m"Get a color"):
@@ -87,8 +85,8 @@ object Tests extends Suite(m"Villainy tests"):
     .assert(_ == t"11/12/20")
 
     test(m"Get a regex value"):
-      record.pattern
-    .assert(_ == Regex(t"a.b"))
+      record.pattern.matches(t"acb")
+    .assert(identity)
 
     test(m"Get some values in a list"):
       capture:
