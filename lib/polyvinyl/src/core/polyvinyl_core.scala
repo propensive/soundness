@@ -32,10 +32,8 @@
                                                                                                   */
 package polyvinyl
 
-import anticipation.*
 import prepositional.*
 import proscenium.*
 
-trait Intensional extends Typeclass, Resultant, Original, Formal:
-  type Self <: Label
-  def transform(data: Origin, params: List[Text]): Result
+// extension [data, record <: Record in data](intension: Specification[data, record] & Singleton)
+//   transparent inline def rec(data: data): record = ${intension.build('data)}

@@ -51,12 +51,10 @@ package strategies:
   given throwSafely: [error <: Exception: CanThrow, success] => ThrowTactic[error, success] =
     ThrowTactic()
 
-
   given mitigation: [error <: Exception: Tactic, error2 <: Exception: Mitigable to error]
   =>  Tactic[error2] =
 
       error.contramap(error2.mitigate(_))
-
 
   given fatalErrors: [exception <: Exception: Fatal] => Tactic[exception]:
     given diagnostics: Diagnostics = errorDiagnostics.stackTraces
@@ -114,17 +112,22 @@ def throwErrors[error <: Exception](using CanThrow[error])[success]
     block(using ThrowTactic())
 
 
-def capture[error <: Exception](using erased Void)[success]
-  ( block: EitherTactic[error, success] ?=> success )
+def capture[error <: Exception: ClassTag](using erased Void)[success]
+  ( block: Tactic[error] ?=> success )
   ( using Tactic[ExpectationError[success]], Diagnostics )
 :   error =
 
-    val value: Either[error, success] = boundary: label ?=>
-      Right(block(using EitherTactic(label)))
+    try
+      val value: Either[error, success] =
+        boundary: label ?=> Right(block(using EitherTactic(label)))
 
-    value match
-      case Left(error)  => error
-      case Right(value) => abort(ExpectationError(value))
+      value match
+        case Left(error)  => error
+        case Right(value) => abort(ExpectationError(value))
+
+    catch
+      case exception: `error`   => exception
+      case exception: Throwable => throw exception
 
 
 def attempt[error <: Exception](using erased Void)[success]
