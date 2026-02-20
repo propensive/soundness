@@ -56,4 +56,4 @@ object ExampleSchema extends JsonSchema(t"""{
   }
 }""".read[Json].as[JsonSchemaDoc]):
 
-  transparent inline def record(json: Json): JsonRecord = ${build('json)}
+  transparent inline def record(json: Json): Record = ${build('json)}

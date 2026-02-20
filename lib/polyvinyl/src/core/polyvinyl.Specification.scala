@@ -44,11 +44,11 @@ trait Specification:
   type Plane <: Record in Form
 
   def fields: Map[Text, Member]
-  def make(data: Form, transform: Text => Form => Any): Plane
+  def make(data: Form, transform: Text => Form => Any): Record
   def access(name: Text, value: Form): Form
 
   def build(value: Expr[Form])(using Type[Plane], Type[Form])(using thisType: Type[this.type])
-  :   Macro[Plane] =
+  :   Macro[Record] =
 
     import quotes.reflect.*
 
@@ -126,7 +126,7 @@ trait Specification:
                             ${Match('name.asTerm, nestedCaseDefs).asExprOf[Form => Any]}
                         }
 
-                    val maker: Expr[Form => Plane] = '{field => $target.make(field, $matchFn)}
+                    val maker: Expr[Form => Record] = '{field => $target.make(field, $matchFn)}
 
                     val rhs: Expr[Form => Any] =
                       '{data => $accessor.transform($target.access(${Expr(name)}, data), $maker)}
@@ -144,11 +144,11 @@ trait Specification:
                             caseDef :: caseDefs )
 
 
-    val (refined, caseDefs) = refine(value, fields.to(List), TypeRepr.of[Plane])
+    val (refined, caseDefs) = refine(value, fields.to(List), TypeRepr.of[Record])
 
     val matchFn: Expr[Text => Form => Any] =
       '{(name: Text) => ${Match('name.asTerm, caseDefs).asExprOf[Form => Any]}}
 
     refined.asType.absolve match
-      case '[type refined <: Plane; refined] =>
+      case '[type refined <: Record; refined] =>
         '{$target.make($value, $matchFn).asInstanceOf[refined]}
