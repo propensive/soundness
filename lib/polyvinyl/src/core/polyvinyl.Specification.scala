@@ -39,11 +39,11 @@ import fulminate.*
 import prepositional.*
 import proscenium.*
 
-trait Intension:
+trait Specification:
   type Form
   type Plane <: Record in Form
 
-  def fields: Map[Text, RecordField]
+  def fields: Map[Text, Member]
   def make(data: Form, transform: Text => Form => Any): Plane
   def access(name: Text, value: Form): Form
 
@@ -56,12 +56,13 @@ trait Intension:
 
     val target = thisType.absolve match
       case '[thisType] =>
-        Ref(TypeRepr.of[thisType].typeSymbol.companionModule).asExprOf[Intension in Form on Plane]
+        Ref(TypeRepr.of[thisType].typeSymbol.companionModule)
+        . asExprOf[Specification in Form on Plane]
 
 
     def refine
       ( value:    Expr[Form],
-        fields:   List[(Text, RecordField)],
+        fields:   List[(Text, Member)],
         refined:  TypeRepr,
         caseDefs: List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)) )
     :   (TypeRepr, List[CaseDef]) =
@@ -70,7 +71,7 @@ trait Intension:
           case Nil =>
             (refined, caseDefs)
 
-          case (name, RecordField.Value(label, params*)) :: tail =>
+          case (name, Member.Value(label, params*)) :: tail =>
             ConstantType(StringConstant(label.s)).asType.absolve match
               case '[type label <: Label; label] =>
                 Expr.summon[label is Intensional in Form on Plane].absolve match
@@ -97,7 +98,7 @@ trait Intension:
 
                     refine(value, tail, refinement, caseDefs2)
 
-          case (name, RecordField.Record(label, map)) :: tail =>
+          case (name, Member.Record(label, map)) :: tail =>
             ConstantType(StringConstant(label.s)).asType.absolve match
               case '[type label <: Label; label] =>
                 Expr.summon[label is Accessor[?] in Form on Plane].absolve match

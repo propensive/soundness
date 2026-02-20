@@ -35,5 +35,5 @@ package polyvinyl
 import prepositional.*
 import proscenium.*
 
-// extension [data, record <: Record in data](intension: Intension[data, record] & Singleton)
+// extension [data, record <: Record in data](intension: Specification[data, record] & Singleton)
 //   transparent inline def rec(data: data): record = ${intension.build('data)}

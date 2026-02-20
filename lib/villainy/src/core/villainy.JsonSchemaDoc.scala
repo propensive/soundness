@@ -42,5 +42,5 @@ case class JsonSchemaDoc
 
   lazy val requiredFields: Set[Text] = required.or(Set())
 
-  def fields: Map[Text, RecordField] =
+  def fields: Map[Text, Member] =
     properties.map { (key, value) => key -> value.field(requiredFields.contains(key)) }

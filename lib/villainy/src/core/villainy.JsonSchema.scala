@@ -74,30 +74,29 @@ object JsonSchema:
       . or:
           panic(m"Some properties were missing")
 
-    def field(required: Boolean): RecordField = `type` match
-      case "array"  => RecordField.Record(if required then "array" else "array?", arrayFields)
-      case "object" => RecordField.Record(if required then "object" else "object?", objectFields)
+    def field(required: Boolean): Member = `type` match
+      case "array"  => Member.Record(if required then "array" else "array?", arrayFields)
+      case "object" => Member.Record(if required then "object" else "object?", objectFields)
 
       case "string" =>
         val suffix = if required then "" else "?"
 
-        pattern.let(RecordField.Value("pattern"+suffix, _)).or:
-          RecordField.Value(format.or("string".tt)+suffix)
+        pattern.let(Member.Value("pattern"+suffix, _)).or:
+          Member.Value(format.or("string".tt)+suffix)
 
       case "integer" =>
         val end = if minimum.absent && maximum.absent then (if required then "" else "?") else "!"
 
-        RecordField.Value
-         ("integer"+end, minimum.let(_.toString).or(""), maximum.let(_.toString).or(""))
+        Member.Value("integer"+end, minimum.let(_.toString).or(""), maximum.let(_.toString).or(""))
 
       case other =>
-        RecordField.Value(if required then other else other+"?")
+        Member.Value(if required then other else other+"?")
 
-abstract class JsonSchema(val doc: JsonSchemaDoc) extends Intension:
+abstract class JsonSchema(val doc: JsonSchemaDoc) extends Specification:
   type Form = Json
   type Plane = JsonRecord
   def access(name: Text, json: Json): Json = json(name)
 
   def make(data: Json, access: Text => Json => Any): JsonRecord = JsonRecord(data, access)
 
-  def fields: Map[Text, RecordField] = unsafely(doc.fields)
+  def fields: Map[Text, Member] = unsafely(doc.fields)
