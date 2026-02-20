@@ -57,28 +57,28 @@ trait Intension[data, record <: Record in data]:
 
 
     def refine
-      ( value:       Expr[data],
-        fields:      List[(Text, RecordField)],
-        refinedType: TypeRepr,
-        caseDefs:    List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)) )
+      ( value:    Expr[data],
+        fields:   List[(Text, RecordField)],
+        refined:  TypeRepr,
+        caseDefs: List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)) )
     :   (TypeRepr, List[CaseDef]) =
 
         fields match
           case Nil =>
-            (refinedType, caseDefs)
+            (refined, caseDefs)
 
-          case (name, RecordField.Value(typeName, params*)) :: tail =>
-            ConstantType(StringConstant(typeName.s)).asType.absolve match
-              case '[type typeName <: Label; typeName] =>
-                Expr.summon[typeName is Intensional in data of record].absolve match
+          case (name, RecordField.Value(identifier, params*)) :: tail =>
+            ConstantType(StringConstant(identifier.s)).asType.absolve match
+              case '[type identifier <: Label; identifier] =>
+                Expr.summon[identifier is Intensional in data on record].absolve match
                   case None =>
                     halt:
                       m"""
-                        could not find a Intensional instance for the field $name with type
-                        $typeName
+                        could not find an Intensional instance for the field $name with type
+                        $identifier
                       """
 
-                  case Some('{$accessor: Intensional { type Self = typeName; type Form = `data`; type Result = valueType; type Topic = `record` }}) =>
+                  case Some('{$accessor: Intensional { type Self = identifier; type Form = `data`; type Result = valueType; type Plane = `record` }}) =>
 
                     val rhs: Expr[data => Any] =
                       '{
@@ -90,24 +90,25 @@ trait Intension[data, record <: Record in data]:
                     val caseDefs2 =
                       CaseDef(Literal(StringConstant(name.s)), None, rhs.asTerm) :: caseDefs
 
-                    val refinement = Refinement(refinedType, name.s, TypeRepr.of[valueType])
+                    val refinement = Refinement(refined, name.s, TypeRepr.of[valueType])
 
                     refine(value, tail, refinement, caseDefs2)
 
-          case (name, RecordField.Record(typeName, map)) :: tail =>
-            ConstantType(StringConstant(typeName.s)).asType.absolve match
-              case '[type typeName <: Label; typeName] =>
-                Expr.summon[Accessor[record, data, typeName, ?]].absolve match
+          case (name, RecordField.Record(identifier, map)) :: tail =>
+            ConstantType(StringConstant(identifier.s)).asType.absolve match
+              case '[type identifier <: Label; identifier] =>
+                Expr.summon[Accessor[record, data, identifier, ?]].absolve match
                   case None =>
                     halt:
                       m"""
-                        could not find an Accessor instance for the field $name with type $typeName
+                        could not find an Accessor instance for the field $name with type
+                        $identifier
                       """
 
                   case Some
                     ( ' {
                           type constructor[_]
-                          $accessor: Accessor[`record`, `data`, typeName, constructor]
+                          $accessor: Accessor[`record`, `data`, identifier, constructor]
                         } ) =>
 
                     val nested = '{$target.access(${Expr(name)}, $value)}
@@ -136,15 +137,15 @@ trait Intension[data, record <: Record in data]:
                         refine
                           ( value,
                             tail,
-                            Refinement(refinedType, name.s, typeRepr),
+                            Refinement(refined, name.s, typeRepr),
                             caseDef :: caseDefs )
 
 
-    val (refinedType, caseDefs) = refine(value, fields.to(List), TypeRepr.of[record])
+    val (refined, caseDefs) = refine(value, fields.to(List), TypeRepr.of[record])
 
     val matchFn: Expr[Text => data => Any] =
       '{(name: Text) => ${Match('name.asTerm, caseDefs).asExprOf[data => Any]}}
 
-    refinedType.asType.absolve match
-      case '[type refinedType <: record; refinedType] =>
-        '{$target.make($value, $matchFn).asInstanceOf[refinedType]}
+    refined.asType.absolve match
+      case '[type refined <: record; refined] =>
+        '{$target.make($value, $matchFn).asInstanceOf[refined]}

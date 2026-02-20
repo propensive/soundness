@@ -36,7 +36,7 @@ import anticipation.*
 import prepositional.*
 import proscenium.*
 
-trait Intensional extends Typeclass, Resultant, Formal:
+trait Intensional extends Typeclass, Resultant, Formal, Planar:
   type Self <: Label
-  type Topic <: Record in Form
+  type Plane <: Record in Form
   def transform(data: Form, params: List[Text]): Result

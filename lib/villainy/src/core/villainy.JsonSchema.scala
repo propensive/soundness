@@ -38,11 +38,11 @@ import strategies.throwUnsafely
 object JsonSchema:
 
   def intensional[name <: Label, value](accessor: Json => value)
-  :   name is Intensional in Optional[Json] of JsonRecord to value =
+  :   name is Intensional in Optional[Json] on JsonRecord to value =
     new Intensional:
       type Self = name
       type Form = Optional[Json]
-      type Topic = JsonRecord
+      type Plane = JsonRecord
       type Result = value
 
       def access(value: Json): value = accessor(value)
