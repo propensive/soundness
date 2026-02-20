@@ -17,4 +17,4 @@
 package soundness
 
 export villainy
-. { JsonRecord, JsonSchema, JsonSchemaDoc, JsonSchemaError }
+. { JsonSchema, JsonSchemaDoc, JsonSchemaError }

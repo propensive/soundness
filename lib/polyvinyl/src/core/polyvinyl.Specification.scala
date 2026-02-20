@@ -40,13 +40,14 @@ import prepositional.*
 import proscenium.*
 
 trait Specification:
+  type Form
   type Origin
 
   def fields: Map[Text, Member]
   def make(data: Origin, transform: Text => Origin => Any): Record
   def access(name: Text, value: Origin): Origin
 
-  def build(value: Expr[Origin])(using Type[Origin])(using thisType: Type[this.type])
+  def build(value: Expr[Origin])(using Type[Origin], Type[Form])(using thisType: Type[this.type])
   :   Macro[Record] =
 
     import quotes.reflect.*
@@ -56,7 +57,7 @@ trait Specification:
     val target = thisType.absolve match
       case '[thisType] =>
         Ref(TypeRepr.of[thisType].typeSymbol.companionModule)
-        . asExprOf[Specification from Origin]
+        . asExprOf[Specification in Form from Origin]
 
 
     def refine
@@ -73,7 +74,7 @@ trait Specification:
           case (name, Member.Value(label, params*)) :: tail =>
             ConstantType(StringConstant(label.s)).asType.absolve match
               case '[type label <: Label; label] =>
-                Expr.summon[label is Intensional from Origin].absolve match
+                Expr.summon[label is Intensional in Form from Origin].absolve match
                   case None =>
                     halt:
                       m"""
@@ -81,7 +82,7 @@ trait Specification:
                       """
 
                   case Some
-                    ( '{$accessor: label `is` Intensional `from` Origin `to` result} ) =>
+                    ( '{$accessor: label `is` Intensional `in` Form `from` Origin `to` result} ) =>
 
                     val rhs: Expr[Origin => Any] =
                       ' {
@@ -100,7 +101,7 @@ trait Specification:
           case (name, Member.Record(label, map)) :: tail =>
             ConstantType(StringConstant(label.s)).asType.absolve match
               case '[type label <: Label; label] =>
-                Expr.summon[label is Accessor[?] from Origin].absolve match
+                Expr.summon[label is Accessor[?] in Form from Origin].absolve match
                   case None =>
                     halt:
                       m"""
@@ -110,7 +111,7 @@ trait Specification:
                   case Some
                     ( ' {
                           type constructor[_]
-                          $accessor: (label `is` Accessor[constructor] `from` Origin)
+                          $accessor: (label `is` Accessor[constructor] `in` Form `from` Origin)
                         } ) =>
 
                     val nested = '{$target.access(${Expr(name)}, $value)}

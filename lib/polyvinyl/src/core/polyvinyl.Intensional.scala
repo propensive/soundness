@@ -36,7 +36,6 @@ import anticipation.*
 import prepositional.*
 import proscenium.*
 
-trait Intensional extends Typeclass, Resultant:
+trait Intensional extends Typeclass, Resultant, Original, Formal:
   type Self <: Label
-  type Origin
   def transform(data: Origin, params: List[Text]): Result
