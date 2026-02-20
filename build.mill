@@ -446,7 +446,7 @@ object dendrology extends Library:
   object test extends Tests(tree, dag)
 
 object denominative extends Library:
-  object core extends Component(anticipation.text)
+  object core extends Component(fulminate.core)
   object test extends Tests(core)
 
 object digression extends Library:
