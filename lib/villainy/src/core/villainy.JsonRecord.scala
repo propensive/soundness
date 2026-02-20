@@ -20,6 +20,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
+import gossamer.*
 import inimitable.*
 import jacinta.*
 import kaleidoscope.*
@@ -162,25 +163,25 @@ object JsonRecord:
   given optionalInteger: ("integer?" is Intensional in Json on JsonRecord to Optional[Int]) =
     (value, params) => value.as[Optional[Int]]
 
-  given boundedInteger: ("integer!" is Intensional in Json on JsonRecord to (Int raises IntRangeError)) =
+  given boundedInteger: ("integer!" is Intensional in Json on JsonRecord to (Int raises BoundsError)) =
     new Intensional:
       type Self = "integer!"
       type Form = Json
       type Plane = JsonRecord
-      type Result = Int raises IntRangeError
+      type Result = Int raises BoundsError
 
-      def transform(json: Json, params: List[Text] = Nil): Int raises IntRangeError =
+      def transform(json: Json, params: List[Text] = Nil): Int raises BoundsError =
         val int = json.as[Int]
 
         params.absolve match
           case As[Int](min) :: As[Int](max) :: Nil =>
-            if int < min || int > max then abort(IntRangeError(int, min, max)) else int
+            if int < min || int > max then abort(BoundsError(int, min, max)) else int
 
           case As[Int](min) :: _ :: Nil =>
-            if int < min then abort(IntRangeError(int, min, Unset)) else int
+            if int < min then abort(BoundsError(int, min, Double.MaxValue)) else int
 
           case _ :: As[Int](max) :: Nil =>
-            if int > max then abort(IntRangeError(int, Unset, max)) else int
+            if int > max then abort(BoundsError(int, Double.MinValue, max)) else int
 
   given optionalNumber: ("number?" is Intensional in Json on JsonRecord to Optional[Double]) =
     (value, params) => value.as[Optional[Double]]

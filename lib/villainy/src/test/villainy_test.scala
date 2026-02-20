@@ -29,9 +29,8 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 
-import unsafeExceptions.canThrowAny
-import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
+import strategies.throwUnsafely
 
 object Tests extends Suite(m"Villainy tests"):
   def run(): Unit =
@@ -75,10 +74,8 @@ object Tests extends Suite(m"Villainy tests"):
     test(m"A bad pattern-checked value throws an exception"):
       // FIXME: This should use `capture` to grab the error, but it doesn't seem to work, perhaps because
       // `throwUnsafely` has higher precedence.
-      try
+      capture[JsonSchemaError]:
         val result = record.children.head.color
-        throw ExpectationError(result)
-      catch case error: JsonSchemaError => error
     .assert(_ == JsonSchemaError(JsonSchemaError.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}")))
 
     test(m"Get a color"):
@@ -96,4 +93,4 @@ object Tests extends Suite(m"Villainy tests"):
     test(m"Get some values in a list"):
       capture:
         record.children.map { elem => elem.height }.to(List)
-    .assert(_ == IntRangeError(100, 1, 99))
+    .assert(_ == BoundsError(100, 1, 99))
