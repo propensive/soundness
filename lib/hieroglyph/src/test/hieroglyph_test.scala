@@ -82,13 +82,11 @@ object Tests extends Suite(m"Hieroglyph tests"):
       .assert(_ == t"-?10")
 
       test(m"Decode invalid UTF-8 sequence, throwing exception"):
-        import unsafeExceptions.canThrowAny
         import textSanitizers.strict
         capture[CharDecodeError](charDecoders.utf8.decoded(badUtf8))
       .assert(_ == CharDecodeError(1, enc"UTF-8"))
 
       test(m"Ensure that decoding is finished"):
-        import unsafeExceptions.canThrowAny
         import textSanitizers.strict
         given CharEncoder = enc"UTF-8".encoder
         capture[CharDecodeError](charDecoders.utf8.decoded(t"café".data.dropRight(1)))
@@ -100,6 +98,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
       .assert(_ == List(t"hieroglyph: the encoding ABCDEF was not available"))
 
       test(m"Non-encoding has a decoder method"):
+        // This import is required
         import textSanitizers.skip
         demilitarize(enc"ISO-2022-CN".decoder).map(_.message)
       .assert(_ == List())

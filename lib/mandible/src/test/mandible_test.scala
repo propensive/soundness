@@ -35,9 +35,6 @@ package mandible
 import soundness.*
 
 import classloaders.threadContext
-import stdioSources.virtualMachine.ansi
-import temporaryDirectories.java
-
 
 object Tests extends Suite(m"Mandible tests"):
   def run(): Unit =

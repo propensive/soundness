@@ -33,7 +33,6 @@
 package cataclysm
 
 import fulminate.*
-import gossamer.*
 import probably.*
 
 object Tests extends Suite(m"Cataclysm Tests"):

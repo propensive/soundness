@@ -34,7 +34,6 @@ package hellenism
 
 import soundness.*
 
-import autopsies.contrastExpectations
 import classloaders.threadContext
 
 object Tests extends Suite(m"Proscenium Tests"):

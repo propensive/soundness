@@ -34,8 +34,6 @@ package geodesy
 
 import soundness.*
 
-import strategies.throwUnsafely
-
 object Tests extends Suite(m"Geodesy tests"):
   def run(): Unit =
     test(m"render a simple angle"):

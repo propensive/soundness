@@ -40,8 +40,6 @@ import vacuous.*
 
 class OptionalTactic[error <: Exception, success](label: boundary.Label[Optional[success]])
 extends Tactic[error]:
-  private given boundary.Label[Optional[success]] = label
-
   type Result = Optional[success]
   type Return = Optional[success]
 

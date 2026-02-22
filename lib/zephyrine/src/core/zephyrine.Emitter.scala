@@ -92,7 +92,7 @@ trait Emittable:
 class Emitter[data: Emittable](block: Int = 4096, window: Int = 2):
   private object Done
   private val queue: juc.ArrayBlockingQueue[data | Done.type] = juc.ArrayBlockingQueue(window)
-  private var current: data.Transport = data.allocate(block)
+  private val current: data.Transport = data.allocate(block)
   private var index: Ordinal = Prim
 
   inline def free: Int = block - index.n0

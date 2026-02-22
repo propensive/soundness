@@ -34,17 +34,15 @@ package merino
 
 import java.io as ji
 
-import ambience.*, systems.java
+import ambience.*
 import anticipation.*, interfaces.paths.javaIoFile
 import contingency.*, strategies.throwUnsafely
-import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
 import probably.*
 import rudiments.*, workingDirectories.system
 import turbulence.*
-import sedentary.*
 import zephyrine.*
 import errorDiagnostics.stackTraces
 

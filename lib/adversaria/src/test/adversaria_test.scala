@@ -32,12 +32,7 @@
                                                                                                   */
 package adversaria
 
-import scala.annotation.StaticAnnotation
-import scala.annotation.ConstantAnnotation
-
 import soundness.*
-
-import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Adversaria tests"):
 

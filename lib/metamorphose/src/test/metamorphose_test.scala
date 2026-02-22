@@ -33,7 +33,6 @@
 package metamorphose
 
 import contingency.*, strategies.throwUnsafely
-import gossamer.*
 import language.experimental.genericNumberLiterals
 import probably.*
 import fulminate.*

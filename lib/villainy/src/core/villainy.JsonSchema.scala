@@ -66,7 +66,7 @@ object JsonSchema:
       type Form = JsonSchema
       type Result = Int raises BoundsError
 
-      def transform(json: Json, params: List[Text] = Nil): Int raises BoundsError =
+      def transform(json: Json, params: List[Text]): Int raises BoundsError =
         val int = json.as[Int]
 
         params.absolve match

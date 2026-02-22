@@ -81,7 +81,6 @@ class Report(using Environment):
 
   private var failure: Optional[(Throwable, Set[TestId])] = Unset
   private var pass: Boolean = false
-  private var coverage: Option[Coverage] = None
   private val lines: ReportLine.Suite = ReportLine.Suite(Unset)
 
   private val details: scm.SortedMap[TestId, scm.ArrayBuffer[Verdict.Detail]] =

@@ -36,7 +36,6 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
-import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Aviation Tests"):
   def run(): Unit =
@@ -656,6 +655,5 @@ object Tests extends Suite(m"Aviation Tests"):
 
           test(m"Check there are 253 working days in a year"):
             import hebdomads.european
-            import dateFormats.iso8601
             2025-Jan-3 + WorkingDays(253)
           . assert(_ == 2026-Jan-1)

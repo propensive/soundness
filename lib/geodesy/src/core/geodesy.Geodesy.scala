@@ -41,7 +41,6 @@ import spectacular.*
 import symbolism.*
 
 object Geodesy:
-  private val range = math.pow(2, 32) - 2
   private given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 6)
 
   opaque type Location = Long

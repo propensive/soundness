@@ -36,8 +36,6 @@ import soundness.*
 
 import randomization.unseeded
 
-import autopsies.contrastExpectations
-import threading.virtual
 import supervisors.global
 import codicils.panic
 

@@ -35,12 +35,10 @@ package dissonance
 import anticipation.*
 import contingency.*
 import denominative.*
-import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import probably.*
 import proscenium.*
-import rudiments.*
 import turbulence.*
 
 import proximities.levenshteinDistance
@@ -49,8 +47,6 @@ import caseSensitivity.sensitive
 import strategies.throwUnsafely
 
 object Tests extends Suite(m"Dissonance tests"):
-  private given Realm = realm"tests"
-
   def run(): Unit =
     suite(m"Diff tests"):
       test(m"Empty lists"):

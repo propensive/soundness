@@ -34,18 +34,7 @@ package sedentary
 
 import soundness.*
 
-import classloaders.system
-import environments.java
-import systems.java
-import temporaryDirectories.environment
-import jsonPrinters.minimal
-import autopsies.contrastExpectations
-import embeddings.automatic
-
 given BenchmarkDevice = LocalhostDevice
-//given BenchmarkDevice = NetworkDevice(t"propensive", host"europium.local")
-
-import strategies.throwUnsafely
 
 object Tests extends Suite(m"Sedentary Tests"):
   def run(): Unit = ()

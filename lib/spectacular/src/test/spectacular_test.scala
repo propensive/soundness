@@ -36,7 +36,6 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import probably.*
-import rudiments.*
 import spectacular.*
 
 case class Person(name: Text, age: Int)

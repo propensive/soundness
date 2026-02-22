@@ -81,10 +81,6 @@ object Teletypeable:
 
         append(e"\n")
 
-  private val pkgColor = Fg(0xffff00)
-  private val clsColor = Fg(0xff0000)
-  private val methColor = Fg(0x00ffff)
-
   given stackTrace: (Text is Measurable) => StackTrace is Teletypeable = stack =>
     def heat(level: Int): Int = level match
       case 0 => 0xf84020

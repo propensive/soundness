@@ -34,9 +34,6 @@ package gastronomy
 
 import soundness.*
 
-import strategies.throwUnsafely
-import charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
-
 import alphabets.hex.upperCase
 
 object Tests extends Suite(m"Gastronomy tests"):

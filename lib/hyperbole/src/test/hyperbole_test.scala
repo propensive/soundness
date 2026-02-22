@@ -34,9 +34,5 @@ package hyperbole
 
 import soundness.*
 
-import temporaryDirectories.environment
-import classloaders.threadContext
-import stdioSources.virtualMachine.ansi
-
 object Tests extends Suite(m"Hyperbole Tests"):
   def run(): Unit = ()

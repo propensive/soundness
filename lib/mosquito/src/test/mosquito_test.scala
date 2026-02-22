@@ -32,18 +32,14 @@
                                                                                                   */
 package mosquito
 
-import baroque.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import larceny.*
 import probably.*
 import quantitative.*
-import rudiments.*
 import spectacular.*
 import symbolism.*
-
-import autopsies.contrastExpectations
 
 given Decimalizer(4)
 

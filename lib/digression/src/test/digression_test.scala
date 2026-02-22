@@ -32,14 +32,7 @@
                                                                                                   */
 package digression
 
-import anticipation.*
-import eucalyptus.*, logging.stdout
-import fulminate.*
-import gossamer.*
-import probably.*
-import rudiments.*
-
-import unsafeExceptions.canThrowAny
+import soundness.*
 
 case class Person(name: Text, age: Int)
 

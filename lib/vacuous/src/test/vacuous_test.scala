@@ -32,8 +32,6 @@
                                                                                                   */
 package vacuous
 
-import scala.compiletime.*
-
 import soundness.*
 
 object Tests extends Suite(m"Vacuous Tests"):
@@ -69,21 +67,21 @@ object Tests extends Suite(m"Vacuous Tests"):
 
       test(m"Int and String are distinct types"):
         demilitarize:
-          val x = summonInline[Int is Distinct from String]
+          val x = compiletime.summonInline[Int is Distinct from String]
 
         . map(_.message)
       . assert(_ == Nil)
 
       test(m"Int and (Int | String) are not distinct types"):
         demilitarize:
-          val x = summonInline[Int is Distinct from (Int | String)]
+          val x = compiletime.summonInline[Int is Distinct from (Int | String)]
 
         . map(_.message)
       . assert(_.nonEmpty)
 
       test(m"String is not distinct from itself"):
         demilitarize:
-          val x = summonInline[String is Distinct from String]
+          val x = compiletime.summonInline[String is Distinct from String]
 
         . map(_.message)
       . assert(_.nonEmpty)

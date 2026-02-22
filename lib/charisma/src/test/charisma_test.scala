@@ -33,7 +33,6 @@
 package charisma
 
 import fulminate.*
-import gossamer.*
 import probably.*
 
 object Tests extends Suite(m"Charisma Tests"):

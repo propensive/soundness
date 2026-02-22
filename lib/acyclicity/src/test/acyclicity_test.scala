@@ -33,7 +33,6 @@
 package acyclicity
 
 import fulminate.*
-import gossamer.*
 import probably.*
 
 object Tests extends Suite(m"Acyclicity Tests"):

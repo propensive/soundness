@@ -43,34 +43,20 @@ import galilei.*
 import gossamer.*
 import guillotine.*
 import hellenism.*
-import hieroglyph.*
 import jacinta.*
 import parasite.*
 import prepositional.*
-import revolution.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
 import superlunary.*
 import symbolism.*
-import turbulence.*
 import vacuous.*
-import zeppelin.*
 
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.createNonexistent.disabled
-import filesystemOptions.createNonexistentParents.disabled
-import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.deleteRecursively.disabled
-import filesystemTraversal.preOrder
-import manifestAttributes.*
 
 import logging.silent
 import workingDirectories.java
-import homeDirectories.java
-import charEncoders.utf8
 import codicils.cancel
 
 

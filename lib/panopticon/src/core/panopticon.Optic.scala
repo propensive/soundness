@@ -44,14 +44,11 @@ object Optic:
   transparent inline given deref: [name <: Label, product <: Product] => name is Lens from product =
     ${Panopticon.lens[name, product]}
 
-  def identity[value]: Optic from value onto value =
-    new Optic:
-      type Origin = value
-      type Target = value
+  def identity[value]: Optic from value onto value = new Optic:
+    type Origin = value
+    type Target = value
 
-      def apply(origin: Origin): Target = origin
-      def update(origin: Origin, value: Target): Origin = value
-      def modify(origin: Origin)(lambda: Target => Target): Origin = lambda(origin)
+    def modify(origin: Origin)(lambda: Target => Target): Origin = lambda(origin)
 
   def apply[self, origin, target](lambda: (origin, target => target) => origin)
   :   self is Optic from origin onto target =

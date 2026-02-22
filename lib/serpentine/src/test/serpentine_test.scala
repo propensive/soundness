@@ -34,8 +34,6 @@ package serpentine
 
 import soundness.*
 
-import autopsies.contrastExpectations
-
 object Tests extends Suite(m"Serpentine Benchmarks"):
   def run(): Unit =
     suite(m"Constructions"):
