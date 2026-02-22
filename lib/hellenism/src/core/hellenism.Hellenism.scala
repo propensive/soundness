@@ -64,8 +64,6 @@ object Hellenism extends Hellenism2:
     Optional(classOf[Hellenism.type].getResourceAsStream(name)).or:
       halt(m"the path $name is not on the classpath")
 
-    import classloaders.system
-
     ' {
         Resource:
           Path.of[Classpath, Classpath.type, Tuple]

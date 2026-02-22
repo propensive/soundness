@@ -33,15 +33,7 @@
 package xylophone
 
 import anticipation.*
-import gossamer.*
-import hieroglyph.*
-import kaleidoscope.*
 import prepositional.*
-import proscenium.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import urticose.*
 import vacuous.*
 
 object Attributive:

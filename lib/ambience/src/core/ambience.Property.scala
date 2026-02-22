@@ -40,7 +40,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
-import gossamer.*
 import prepositional.*
 import proscenium.*
 import vacuous.*

@@ -34,8 +34,6 @@ package symbolism
 
 import prepositional.*
 
-import scala.annotation.targetName
-
 object Divisible:
   def apply[dividend, divisor, result](lambda: (dividend, divisor) => result)
   :   dividend is Divisible by divisor to result =

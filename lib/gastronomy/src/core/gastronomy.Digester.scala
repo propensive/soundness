@@ -32,8 +32,6 @@
                                                                                                   */
 package gastronomy
 
-import scala.compiletime.*, ops.int.*
-
 import prepositional.*
 import rudiments.*
 

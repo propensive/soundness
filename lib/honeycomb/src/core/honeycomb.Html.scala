@@ -37,10 +37,8 @@ import language.dynamics
 import java.lang as jl
 import java.util as ju
 
-import scala.collection.mutable as scm
 import scala.quoted.*
 
-import adversaria.*
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -48,7 +46,6 @@ import denominative.*
 import fulminate.*
 import gesticulate.*
 import gossamer.*
-import hellenism.*
 import hieroglyph.*
 import hypotenuse.*
 import parasite.*
@@ -62,9 +59,6 @@ import typonym.*
 import vacuous.*
 import zephyrine.*
 
-import classloaders.threadContext
-import charDecoders.utf8
-import textSanitizers.skip
 import scala.annotation.tailrec
 
 object Html extends Tag.Container

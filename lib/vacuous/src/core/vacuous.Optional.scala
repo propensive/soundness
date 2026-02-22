@@ -34,14 +34,7 @@ package vacuous
 
 import language.experimental.pureFunctions
 
-import java.util as ju
-
 import scala.quoted.*
-
-import anticipation.*
-import fulminate.*
-
-import errorDiagnostics.stackTraces
 
 object Optional:
   inline def apply[value](value: value | Null): Optional[value] =

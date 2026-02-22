@@ -40,17 +40,11 @@ import anticipation.*
 import contingency.*
 import digression.*
 import distillate.*
-import galilei.*
 import hellenism.*
 import inimitable.*
-import nomenclature.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import serpentine.*
-import spectacular.*
-import symbolism.*
-import vacuous.*
 
 import interfaces.paths.pathOnLinux
 import systems.java

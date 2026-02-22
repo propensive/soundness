@@ -37,7 +37,6 @@ import contingency.*
 import prepositional.*
 import proscenium.*
 import serpentine.*
-import spectacular.*
 import turbulence.*
 
 import java.nio.channels as jnc

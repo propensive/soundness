@@ -32,20 +32,13 @@
                                                                                                   */
 package panopticon
 
-import anticipation.*
 import denominative.*
-import fulminate.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
-import vacuous.*
 
 import scala.quoted.*
-import scala.compiletime.*
 
 import language.dynamics
-import scala.annotation.internal.preview
-
 
 object Optic:
   transparent inline given deref: [name <: Label, product <: Product] => name is Lens from product =

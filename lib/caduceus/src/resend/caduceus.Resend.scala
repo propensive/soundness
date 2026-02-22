@@ -33,27 +33,6 @@
 package caduceus
 
 import anticipation.*
-import contingency.*
-import fulminate.*
-import gesticulate.*
-import hieroglyph.*
-import jacinta.*
-import merino.*
-import monotonous.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import telekinesis.*
-import turbulence.*
-import urticose.*
-import vacuous.*
-import zephyrine.*
-
-import charEncoders.utf8
-import jsonPrinters.minimal
-import errorDiagnostics.stackTraces
-import stdioSources.virtualMachine.ansi
-import alphabets.base64.standard
 
 object Resend:
   case class ApiKey(key: Text)

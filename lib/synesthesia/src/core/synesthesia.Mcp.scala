@@ -37,11 +37,8 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import distillate.*
-import eucalyptus.*
-import fulminate.*
 import gossamer.*
 import hieroglyph.*
-import inimitable.*
 import jacinta.*
 import obligatory.*
 import parasite.*
@@ -57,9 +54,6 @@ import vacuous.*
 import zephyrine.*
 
 import scala.annotation.*
-import scala.quoted.*
-
-import errorDiagnostics.stackTraces
 
 object Mcp:
   val version = t"2025-11-25"
@@ -72,8 +66,6 @@ object Mcp:
   :   Http.Response =
       import jsonPrinters.minimal
       import charEncoders.utf8
-      import charDecoders.utf8
-      import textSanitizers.skip
 
       given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
       given mcpProtocolVersion: ("mcpProtocolVersion" is Directive of Text) = identity(_)
@@ -786,8 +778,6 @@ object Mcp:
 
     def `tools/list`(_meta: Optional[Json]): ListTools =
       ListTools(tools = spec.tools())
-      . tap: tools =>
-        import jsonPrinters.indented
 
     def `tasks/get`(taskId: Text, _meta: Optional[Json]): Task = ???
 

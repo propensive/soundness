@@ -35,7 +35,6 @@ package urticose
 import scala.compiletime.*
 
 import anticipation.*
-import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*

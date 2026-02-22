@@ -32,8 +32,6 @@
                                                                                                   */
 package octogenarian
 
-import scala.compiletime.*
-
 import fulminate.*
 
 object GitError:

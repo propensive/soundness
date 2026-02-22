@@ -34,14 +34,12 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import scala.compiletime.*
 import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import vacuous.*
 
 package strategies:

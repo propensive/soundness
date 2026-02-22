@@ -35,7 +35,6 @@ package ambience
 import language.dynamics
 
 import anticipation.*
-import contingency.*
 import distillate.*
 import gossamer.*
 import prepositional.*

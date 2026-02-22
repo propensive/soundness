@@ -35,9 +35,6 @@ package contextual
 import language.dynamics
 
 import prepositional.*
-import proscenium.*
-
-import scala.quoted.*
 
 trait Interpolable extends Typeclass:
   type Self

@@ -35,7 +35,5 @@ package parasite
 import language.experimental.into
 import language.experimental.pureFunctions
 
-import prepositional.*
-
 class Hook(unregister: () => Unit):
   def cancel(): Unit = unregister()

@@ -34,7 +34,6 @@ package hallucination
 
 import anticipation.*
 import gesticulate.*
-import prepositional.*
 
 sealed trait Gif
 

@@ -33,17 +33,10 @@
 package caduceus
 
 import anticipation.*
-import contingency.*
-import fulminate.*
 import gesticulate.*
-import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import turbulence.*
-import urticose.*
-import vacuous.*
-
-import charEncoders.utf8
 
 object Attachable:
   given generic: [entity: {Nominable, Media, Streamable by Data}] => entity is Attachable =

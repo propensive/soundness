@@ -35,6 +35,4 @@ package urticose
 import anticipation.*
 import fulminate.*
 
-import IpAddressError.Reason, Reason.*
-
 case class PortError()(using Diagnostics) extends Error(m"the port is not in the valid range")

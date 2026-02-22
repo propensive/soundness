@@ -32,18 +32,7 @@
                                                                                                   */
 package caduceus
 
-import anticipation.*
-import contingency.*
-import fulminate.*
-import gesticulate.*
-import hieroglyph.*
 import prepositional.*
-import proscenium.*
-import turbulence.*
-import urticose.*
-import vacuous.*
-
-import charEncoders.utf8
 
 trait Courier extends Resultant:
   def send(envelope: Envelope): Result

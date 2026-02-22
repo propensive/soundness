@@ -32,23 +32,10 @@
                                                                                                   */
 package punctuation
 
-import scala.collection.mutable as scm
-
 import anticipation.*
-import contingency.*
 import denominative.*
-import distillate.*
-import gossamer.*
-import honeycomb.*
-import prepositional.*
 import proscenium.*
-import rudiments.*
-import turbulence.*
 import vacuous.*
-import zephyrine.*
-
-import doms.html.whatwg
-import attributives.textAttributes
 
 enum Layout extends Markdown.Node:
   case BlockQuote(line: Ordinal, layout: Layout*)

@@ -32,10 +32,6 @@
                                                                                                   */
 package mandible
 
-import java.lang.classfile as jlc
-import java.lang.classfile.instruction as jlci
-
-import scala.reflect.*
 import scala.quoted.*
 
 import ambience.*
@@ -43,28 +39,18 @@ import anthology.*
 import anticipation.*
 import contingency.*
 import digression.*
-import escritoire.*
-import escapade.*
 import fulminate.*
 import galilei.*
 import gossamer.*
 import hellenism.*
-import hieroglyph.*
 import inimitable.*
-import iridescence.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import serpentine.*
-import spectacular.*
-import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import tableStyles.minimal
-import textMetrics.uniform
-import columnAttenuation.ignore
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistent.disabled
 import filesystemOptions.readAccess.enabled

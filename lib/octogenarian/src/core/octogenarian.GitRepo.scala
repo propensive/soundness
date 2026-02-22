@@ -32,8 +32,6 @@
                                                                                                   */
 package octogenarian
 
-import scala.compiletime.*
-
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -50,8 +48,6 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import serpentine.*
-import spectacular.*
-import symbolism.*
 import urticose.*
 import vacuous.*
 

@@ -34,7 +34,6 @@ package galilei
 
 import ambience.*
 import anticipation.*
-import contextual.*
 import contingency.*
 import fulminate.*
 import guillotine.*
@@ -42,11 +41,7 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import serpentine.*
-import spectacular.*
 
-import scala.jdk.StreamConverters.*
-
-import java.nio as jn
 import java.nio.file as jnf
 import java.nio.channels as jnc
 

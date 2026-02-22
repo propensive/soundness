@@ -35,7 +35,6 @@ package nomenclature
 import anticipation.*
 import contingency.*
 import fulminate.*
-import gossamer.*
 import proscenium.*
 import rudiments.*
 

@@ -28,12 +28,9 @@ import merino.*
 import polyvinyl.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import symbolism.*
 import urticose.*
 import vacuous.*
-
-import scala.compiletime.*
 
 import strategies.throwUnsafely
 

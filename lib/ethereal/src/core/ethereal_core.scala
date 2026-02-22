@@ -38,8 +38,6 @@ import java.net as jn
 import java.io as ji
 import java.lang as jl
 
-import scala.compiletime.*
-
 import scala.collection.concurrent as scc
 import ambience.*, systems.java
 import anticipation.*

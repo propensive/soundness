@@ -34,10 +34,7 @@ package zephyrine
 
 import scala.quoted.*
 
-import contingency.*
-import fulminate.*
 import proscenium.*
-import rudiments.*
 
 object Zephyrine:
   def consume(cursor: Expr[Cursor[?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =

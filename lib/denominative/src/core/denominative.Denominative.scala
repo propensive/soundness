@@ -32,7 +32,6 @@
                                                                                                   */
 package denominative
 
-import anticipation.*
 import prepositional.*
 import symbolism.*
 

@@ -37,7 +37,6 @@ import anticipation.*
 import profanity.*
 import rudiments.*
 import turbulence.*
-import vacuous.*
 
 trait Executive:
   type Return

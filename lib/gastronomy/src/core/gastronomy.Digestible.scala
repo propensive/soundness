@@ -34,9 +34,6 @@ package gastronomy
 
 import java.lang as jl
 
-import scala.collection as sc
-import scala.compiletime.*, ops.int.*
-
 import anticipation.*
 import gossamer.*
 import hieroglyph.*

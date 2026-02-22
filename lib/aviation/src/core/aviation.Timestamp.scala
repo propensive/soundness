@@ -90,5 +90,4 @@ case class Timestamp(date: Date, time: Clockface):
     . nn
 
   def instant(using timezone: Timezone, calendar: RomanCalendar): Instant =
-    import dateFormats.european
     Instant(stdlib.atZone(timezone.stdlib).nn.toInstant.nn.toEpochMilli())

@@ -33,7 +33,6 @@
 package serpentine
 
 import anticipation.*
-import gossamer.*
 import prepositional.*
 
 trait Filesystem extends Typeclass:

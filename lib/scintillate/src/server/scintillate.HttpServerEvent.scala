@@ -34,7 +34,6 @@ package scintillate
 
 import fulminate.*
 import rudiments.*
-import spectacular.*
 import telekinesis.*
 
 enum HttpServerEvent:

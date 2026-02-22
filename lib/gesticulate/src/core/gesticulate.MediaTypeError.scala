@@ -33,7 +33,6 @@
 package gesticulate
 
 import anticipation.*
-import contextual.*
 import fulminate.*
 import gossamer.*
 import rudiments.*

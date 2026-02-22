@@ -36,16 +36,12 @@ import java.time as jt
 
 import anticipation.*
 import contingency.*
-import distillate.*
-import gossamer.*
 import hypotenuse.*
-import kaleidoscope.*
 import prepositional.*
 import proscenium.*
 import quantitative.*
 import rudiments.*
 import symbolism.*
-import vacuous.*
 
 object Aviation2:
   opaque type Instant = Long

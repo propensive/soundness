@@ -34,7 +34,6 @@ package jacinta
 
 import anticipation.*
 import contingency.*
-import merino.*
 import prepositional.*
 import proscenium.*
 import turbulence.*

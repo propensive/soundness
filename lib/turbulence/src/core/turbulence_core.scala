@@ -42,7 +42,6 @@ import anticipation.*
 import capricious.*
 import contingency.*
 import denominative.*
-import hieroglyph.*
 import hypotenuse.*
 import parasite.*, codicils.await
 import prepositional.*

@@ -33,7 +33,6 @@
 package urticose
 
 import anticipation.*
-import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*

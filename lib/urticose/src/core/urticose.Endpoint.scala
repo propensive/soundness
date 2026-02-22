@@ -34,6 +34,4 @@ package urticose
 
 import anticipation.*
 
-import IpAddressError.Reason, Reason.*
-
 case class Endpoint[+port](remote: Text, port: port)

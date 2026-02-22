@@ -35,8 +35,6 @@ package urticose
 import anticipation.*
 import fulminate.*
 
-import scala.compiletime.*
-
 case class EmailAddressError(reason: EmailAddressError.Reason)(using Diagnostics)
 extends Error(m"the email address is not valid because $reason")
 

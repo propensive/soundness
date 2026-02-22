@@ -32,7 +32,7 @@
                                                                                                   */
 package umbrageous
 
-import dotty.tools.dotc.*, ast.*, core.*, Contexts.*, Decorators.*, Names.*, plugins.*
+import dotty.tools.dotc.*, ast.*, core.*, Contexts.*, Decorators.*, plugins.*
 
 class Shader(options: List[String]) extends PluginPhase:
   val phaseName: String = "shade"

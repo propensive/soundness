@@ -32,11 +32,9 @@
                                                                                                   */
 package anticipation
 
-import contingency.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import scala.sys.SystemProperties
 
 package interfaces.paths:
 

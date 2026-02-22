@@ -32,6 +32,4 @@
                                                                                                   */
 package gastronomy
 
-import proscenium.*
-
 trait Algorithm

@@ -34,11 +34,7 @@ package contextual
 
 import language.dynamics
 
-import scala.quoted.*
-
 import prepositional.*
-import prepositional.*
-import proscenium.*
 
 trait Extrapolable extends Typeclass:
   type Self

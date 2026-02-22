@@ -35,7 +35,6 @@ package synesthesia
 import anticipation.*
 import jacinta.*
 import prepositional.*
-import vacuous.*
 
 object McpSpecification:
   inline given mcpSpecification: [server <: McpServer] => server is McpSpecification =

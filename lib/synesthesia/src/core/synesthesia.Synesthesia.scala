@@ -32,35 +32,24 @@
                                                                                                   */
 package synesthesia
 
-import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*
-import hyperbole.*
-import inimitable.*
 import jacinta.*
 import monotonous.*
-import parasite.*
 import prepositional.*
 import proscenium.*
-import revolution.*
 import rudiments.*
 import spectacular.*
-import telekinesis.*
 import turbulence.*
-import urticose.*
 import vacuous.*
-import zephyrine.*
 
 import scala.annotation.*
 import scala.quoted.*
 
-import errorDiagnostics.stackTraces
-import stdioSources.virtualMachine.ansi
 
 object Synesthesia:
   given Realm = realm"synesthesia"
@@ -125,7 +114,6 @@ object Synesthesia:
           {
             case target: `interface` =>
               (method: Text, input: Json, client: McpClient) =>
-                import dynamicJsonAccess.enabled
                 given Tactic[JsonError] = $jsonErrors
 
                 val request = input.as[Map[Text, Json]]
@@ -171,7 +159,6 @@ object Synesthesia:
                         case '[result] => Expr.summon[result is Encodable in Json] match
                           case Some(encoder) =>
                             ' {
-                                import jsonPrinters.indented
                                 val output =
                                   Map
                                     ( "result".tt
@@ -208,7 +195,6 @@ object Synesthesia:
             {
               case target: `interface` =>
                 (method: Text, input: Map[Text, Text], client: McpClient) =>
-                  import dynamicJsonAccess.enabled
                   given Tactic[JsonError] = $jsonErrors
 
                   $ {

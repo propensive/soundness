@@ -32,23 +32,14 @@
                                                                                                   */
 package mandible
 
-import java.lang.classfile as jlc
-
 import scala.quoted.*
 
 import anticipation.*
-import contingency.*
 import fulminate.*
 import gossamer.*
 import hellenism.*
-import hyperbole.*
-import nomenclature.*
-import prepositional.*
 import proscenium.*
-import rudiments.*
-import spectacular.*
 import symbolism.*
-import turbulence.*
 import vacuous.*
 
 object Mandible:

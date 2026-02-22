@@ -32,7 +32,7 @@
                                                                                                   */
 package profanity
 
-import anticipation.*, interfaces.durations.javaLong
+import anticipation.*
 import contingency.*
 import gossamer.*
 import parasite.*

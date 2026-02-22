@@ -34,7 +34,6 @@ package octogenarian
 
 import anticipation.*
 import guillotine.*
-import serpentine.*
 
 object GitCommand:
   given parameterizable: GitCommand is Parameterizable = _.path

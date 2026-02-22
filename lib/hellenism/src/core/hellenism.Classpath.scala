@@ -37,7 +37,6 @@ import java.io as ji
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import galilei.*
 import gossamer.*
 import nomenclature.*

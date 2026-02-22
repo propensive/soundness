@@ -34,8 +34,6 @@ package symbolism
 
 import prepositional.*
 
-import scala.annotation.targetName
-
 object Multiplicable:
   def apply[multiplicand, multiplier, result](lambda: (multiplicand, multiplier) => result)
   :   multiplicand is Multiplicable by multiplier to result =

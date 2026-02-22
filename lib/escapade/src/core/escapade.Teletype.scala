@@ -33,7 +33,6 @@
 package escapade
 
 import anticipation.*
-import contextual.*
 import denominative.*
 import gossamer.*
 import mercator.*

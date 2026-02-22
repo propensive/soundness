@@ -36,29 +36,17 @@ import java.lang.classfile as jlc
 import java.lang.classfile.instruction as jlci
 import java.lang.classfile.attribute as jlca
 
-import scala.reflect.*
-
 import anticipation.*
 import contingency.*
-import escritoire.*
-import escapade.*
 import fulminate.*
 import gossamer.*
 import hellenism.*
-import hieroglyph.*
-import iridescence.*
-import nomenclature.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
-
-import tableStyles.minimal
-import textMetrics.uniform
-import columnAttenuation.ignore
-import jlc.attribute.UnknownAttribute
 
 object Classfile:
   given aggregable: Classfile is Aggregable by Data = stream => new Classfile(stream.read[Data])

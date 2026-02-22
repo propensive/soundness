@@ -33,10 +33,6 @@
 package quantitative
 
 import anticipation.*
-import gossamer.*
-import prepositional.*
-import spectacular.*
-import symbolism.*
 
 trait TemperatureScale:
   def suffix: Text

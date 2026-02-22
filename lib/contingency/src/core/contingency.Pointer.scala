@@ -35,10 +35,6 @@ package contingency
 import anticipation.*
 import fulminate.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
-
-import scala.collection.mutable as scm
 
 object Pointer:
   def apply(): Pointer = Pointer.Self

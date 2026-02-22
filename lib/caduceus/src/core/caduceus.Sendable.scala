@@ -33,20 +33,11 @@
 package caduceus
 
 import anticipation.*
-import contingency.*
-import fulminate.*
-import gesticulate.*
-import hieroglyph.*
 import honeycomb.*
 import parasite.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import turbulence.*
-import urticose.*
-import vacuous.*
-
-import charEncoders.utf8
 
 object Sendable:
   given text: Text is Sendable =

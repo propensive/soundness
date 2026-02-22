@@ -34,7 +34,6 @@ package legerdemain
 
 import anticipation.*
 import contingency.*
-import distillate.*
 import fulminate.*
 import gossamer.*
 import honeycomb.*

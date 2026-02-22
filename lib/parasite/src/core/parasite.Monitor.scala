@@ -43,7 +43,6 @@ import scala.annotation.*
 import anticipation.*
 import contingency.*
 import digression.*
-import feudalism.*
 import fulminate.*
 import prepositional.*
 import proscenium.*

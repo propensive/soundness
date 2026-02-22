@@ -33,7 +33,7 @@
 package profanity
 
 import anticipation.*
-import gossamer.{where as _, *}
+import gossamer.*
 import proscenium.*
 import rudiments.*
 import spectacular.*

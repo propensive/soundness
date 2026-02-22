@@ -34,8 +34,6 @@ package kaleidoscope
 
 import fulminate.*
 
-import RegexError.Reason.*
-
 object RegexError:
   enum Reason:
     case UnclosedGroup, ExpectedGroup, BadRepetition, Uncapturable, UnexpectedChar, NotInGroup,

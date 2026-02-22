@@ -38,7 +38,6 @@ import contingency.*
 import gossamer.*
 import guillotine.*
 import parasite.*
-import rudiments.*
 import telekinesis.*
 
 import strategies.throwUnsafely

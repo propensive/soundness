@@ -35,8 +35,6 @@ package parasite
 import language.experimental.into
 import language.experimental.pureFunctions
 
-import java.lang.ref as jlr
-
 import prepositional.*
 
 trait Interceptable extends Typeclass, Targetable:

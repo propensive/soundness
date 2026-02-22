@@ -130,7 +130,6 @@ case class Teletype2(plain: Text, ansi: IArray[Escapade.AnsiStyle]):
   def + (that: Teletype2): Teletype2 = Teletype2(plain+that.plain, ansi ++ that.ansi)
 
   def render(using escapes: TerminalEscapes): Text =
-    import Escapade.indexes.*
     Text.construct:
       def recur(current: AnsiStyle, index: Ordinal): Unit =
         if index.n0 < plain.length then

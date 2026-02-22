@@ -32,17 +32,7 @@
                                                                                                   */
 package abacist
 
-import anticipation.*
-import gossamer.*
 import hypotenuse.*
-import quantitative.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-import spectacular.*
-import symbolism.*
-
-import scala.compiletime.*, ops.int.*
 
 trait Abacist3:
   trait Quanta2:

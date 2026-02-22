@@ -40,7 +40,6 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import hypotenuse.*
 import kaleidoscope.*
 import prepositional.*
 import proscenium.*

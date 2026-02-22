@@ -36,7 +36,6 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import distillate.*
-import fulminate.*
 import prepositional.*
 import spectacular.*
 

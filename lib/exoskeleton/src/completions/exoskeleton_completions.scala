@@ -41,12 +41,10 @@ import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import guillotine.*
-import parasite.*
 import profanity.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
-import symbolism.*
 import turbulence.*
 import vacuous.*
 

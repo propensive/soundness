@@ -32,9 +32,6 @@
                                                                                                   */
 package superlunary
 
-import java.io as ji
-import scala.reflect.Selectable.reflectiveSelectable
-
 object Executor:
   def run(input: String): String =
     val cls = Class.forName("Generated$Code$From$Quoted").nn

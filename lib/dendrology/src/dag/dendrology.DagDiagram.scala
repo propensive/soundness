@@ -39,8 +39,6 @@ import anticipation.*
 import gossamer.*
 import spectacular.*
 
-import DagTile.*
-
 object DagDiagram:
   def apply[node](dag: Dag[node]): DagDiagram[node] =
     val nodes = dag.sorted.to(Vector)

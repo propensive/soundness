@@ -32,7 +32,6 @@
                                                                                                   */
 package orthodoxy
 
-import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
@@ -47,17 +46,13 @@ import rudiments.*
 import scintillate.*
 import serpentine.*
 import spectacular.*
-import symbolism.*
 import telekinesis.*
-import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
 
 import errorDiagnostics.stackTraces
 import queryParameters.arbitrary
-import stdioSources.virtualMachine.ansi
-import jsonPrinters.indented
 
 object Issuer:
   trait Context extends Topical

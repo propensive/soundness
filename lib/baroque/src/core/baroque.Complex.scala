@@ -32,7 +32,6 @@
                                                                                                   */
 package baroque
 
-import anticipation.*
 import geodesy.*
 import gossamer.*
 import hypotenuse.*

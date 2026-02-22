@@ -32,15 +32,5 @@
                                                                                                   */
 package turbulence
 
-import language.experimental.captureChecking
-
-import java.util.concurrent as juc
-
-import anticipation.*
-import denominative.*
-import fulminate.*
-import prepositional.*
-import rudiments.*
-
 case class Document[content <: Documentary](root: content, metadata: root.Metadata):
   def apply(): content = root

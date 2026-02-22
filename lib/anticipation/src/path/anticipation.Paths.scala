@@ -35,8 +35,6 @@ package anticipation
 import java.nio.file as jnf
 import java.io as ji
 
-import compiletime.*
-
 import prepositional.*
 
 object Paths:

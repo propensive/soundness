@@ -32,28 +32,15 @@
                                                                                                   */
 package superlunary
 
-import scala.reflect.Selectable.reflectiveSelectable
-
-import ambience.*, systems.java
 import anthology.*
 import anticipation.*
 import austronesian.*
-import contingency.*
-import distillate.*
-import eucalyptus.*
 import gossamer.*
-import guillotine.*
 import hellenism.*
-import hieroglyph.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
-import turbulence.*
 import vacuous.*
 
-import charDecoders.utf8
-import textSanitizers.skip
-import systems.java
 import classloaders.system
 
 object Isolation extends Rig:
@@ -66,9 +53,6 @@ object Isolation extends Rig:
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    import workingDirectories.system
-    import logging.silent
-
     stage.remote: input =>
       val classloader: Classloader = stage.target
       val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)

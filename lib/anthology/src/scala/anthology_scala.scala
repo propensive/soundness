@@ -39,7 +39,6 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import dotty.tools.dotc as dtd
 import dotty.tools.dotc.reporting.*
 
 import language.adhocExtensions

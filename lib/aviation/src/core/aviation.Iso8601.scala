@@ -39,7 +39,6 @@ import fulminate.*
 import gossamer.*
 import quantitative.*
 import rudiments.*
-import spectacular.*
 import symbolism.*
 import vacuous.*
 

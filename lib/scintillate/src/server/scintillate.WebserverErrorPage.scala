@@ -32,7 +32,6 @@
                                                                                                   */
 package scintillate
 
-import fulminate.*
 import telekinesis.*
 
 trait WebserverErrorPage:

@@ -42,12 +42,8 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 
-import scala.compiletime.*
-
 import java.net as jn
 import java.nio.channels as jnc
-
-import Control.*
 
 trait Bindable extends Typeclass:
   type Binding

@@ -33,11 +33,8 @@
 package aviation
 
 import anticipation.*
-import contextual.*
 import contingency.*
 import fulminate.*
-import gossamer.*
-import spectacular.*
 import symbolism.*
 import vacuous.*
 

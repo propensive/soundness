@@ -32,12 +32,8 @@
                                                                                                   */
 package plutocrat
 
-import denominative.*
 import gossamer.*
 import prepositional.*
-import proscenium.*
-import rudiments.*
-import symbolism.*
 
 package currencyStyles:
   given local: CurrencyStyle = (code, symbol, unit, subunit) => t"$symbol$unit.$subunit"

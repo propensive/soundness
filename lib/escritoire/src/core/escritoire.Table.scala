@@ -36,8 +36,6 @@ import anticipation.*
 import gossamer.*
 import proscenium.*
 
-import scala.collection.immutable as sci
-
 object Table:
   @targetName("make")
   def apply[row](using erased Void)[text: ClassTag: Textual](columns0: Column[row, text]*)

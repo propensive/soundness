@@ -32,6 +32,4 @@
                                                                                                   */
 package anticipation
 
-import prepositional.*
-
 sealed trait Times

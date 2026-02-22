@@ -34,8 +34,6 @@ package symbolism
 
 import prepositional.*
 
-import scala.annotation.targetName
-
 object Subtractable:
   def apply[minuend, subtrahend, result](lambda: (minuend, subtrahend) => result)
   :   minuend is Subtractable by subtrahend to result =

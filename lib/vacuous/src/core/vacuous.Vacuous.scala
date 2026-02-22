@@ -33,7 +33,6 @@
 package vacuous
 
 import scala.quoted.*
-import scala.compiletime.*
 
 import fulminate.*
 import prepositional.*

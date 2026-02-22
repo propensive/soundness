@@ -32,13 +32,8 @@
                                                                                                   */
 package dissonance
 
-import contingency.*
 import denominative.*
-import fulminate.*
 import proscenium.*
-import rudiments.*
-import symbolism.*
-import vacuous.*
 
 case class Evolution[element](sequence: List[Evolution.Atom[element]]):
   def apply(version: Ordinal): List[element] =

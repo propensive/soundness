@@ -45,8 +45,6 @@ import java.nio.ByteBuffer
 import java.nio.channels as jnc
 import java.nio.file as jnf
 
-import Control.*
-
 object Serviceable:
   given domainSocket: Tactic[StreamError] => DomainSocket is Serviceable:
     type Output = Data

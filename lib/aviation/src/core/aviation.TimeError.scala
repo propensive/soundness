@@ -35,7 +35,6 @@ package aviation
 import anticipation.*
 import denominative.*
 import fulminate.*
-import gossamer.*
 
 object TimeError:
   inline def apply(inline lambda: Reason.type => Reason)(using Diagnostics): TimeError =

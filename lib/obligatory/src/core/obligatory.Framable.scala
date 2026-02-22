@@ -32,30 +32,9 @@
                                                                                                   */
 package obligatory
 
-import scala.collection.mutable as scm
-
-import anticipation.*
-import contingency.*
-import distillate.*
-import eucalyptus.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*
-import inimitable.*
-import jacinta.*
-import parasite.*
 import prepositional.*
-import revolution.*
-import rudiments.*
-import telekinesis.*
-import urticose.*
-import vacuous.*
-import zephyrine.*
 
 import scala.annotation.*
-import scala.quoted.*
-
-import errorDiagnostics.stackTraces
 
 trait Framable extends Typeclass, Operable:
   def frames(input: Iterator[Self]): Iterator[Self]

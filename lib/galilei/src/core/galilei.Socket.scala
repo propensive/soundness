@@ -32,8 +32,6 @@
                                                                                                   */
 package galilei
 
-import scala.jdk.StreamConverters.*
-
 import java.nio.channels as jnc
 
 import language.experimental.pureFunctions

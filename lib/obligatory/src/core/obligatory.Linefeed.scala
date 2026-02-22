@@ -33,10 +33,8 @@
 package obligatory
 
 import anticipation.*
-import contingency.*
 import hieroglyph.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*

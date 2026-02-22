@@ -46,7 +46,6 @@ import gossamer.*
 import hellenism.*
 import hieroglyph.*
 import monotonous.*
-import nomenclature.*
 import parasite.*
 import prepositional.*
 import proscenium.*
@@ -67,7 +66,6 @@ import stdioSources.virtualMachine.ansi
 import backstops.stackTrace
 import executives.direct
 import interpreters.posix
-import systems.java
 import workingDirectories.system
 import internetAccess.enabled
 import logging.silent

@@ -33,7 +33,6 @@
 package monotonous
 
 import scala.collection.*
-import scala.compiletime.*, ops.int.*
 
 import anticipation.*
 import contingency.*

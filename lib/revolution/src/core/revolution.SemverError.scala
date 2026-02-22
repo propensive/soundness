@@ -35,15 +35,7 @@ package revolution
 import scala.collection as sc
 
 import anticipation.*
-import contingency.*
-import distillate.*
 import fulminate.*
-import gossamer.*
-import kaleidoscope.*
-import prepositional.*
-import vacuous.*
-
-import errorDiagnostics.stackTraces
 
 case class SemverError(version: Text)(using Diagnostics)
 extends Error(m"$version is not a valid semantic version")

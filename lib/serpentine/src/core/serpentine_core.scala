@@ -33,9 +33,6 @@
 package serpentine
 
 import anticipation.*
-import fulminate.*
-import gossamer.*
-import prepositional.*
 import vacuous.*
 
 export Path.`%`

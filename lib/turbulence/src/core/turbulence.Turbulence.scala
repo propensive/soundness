@@ -42,13 +42,11 @@ import prepositional.*
 import proscenium.*
 import stenography.*
 import vacuous.*
-import scala.languageFeature.existentials
 
 object Turbulence:
   import Stenography.name
 
   def read[source: Type, result: Type](source: Expr[source]): Macro[result] =
-    import quotes.reflect.*
     lazy val streamableData: Optional[Expr[source is Streamable by Data]] =
       Expr.summon[source is Streamable by Data].optional
 

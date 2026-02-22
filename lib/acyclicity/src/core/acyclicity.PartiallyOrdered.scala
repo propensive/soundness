@@ -32,11 +32,6 @@
                                                                                                   */
 package acyclicity
 
-import scala.collection.mutable as scm
-
-import proscenium.*
-import rudiments.*
-
 trait PartiallyOrdered:
   type Self
   def compare(left: Self, right: Self): Boolean

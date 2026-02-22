@@ -47,8 +47,6 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-import Fulfillment.*
-
 object Promise:
   enum State[+value]:
     case Incomplete(waiting: Set[Thread])

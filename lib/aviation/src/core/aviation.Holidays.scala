@@ -34,7 +34,6 @@ package aviation
 
 import scala.collection.immutable.*
 
-import anticipation.*
 import rudiments.*
 import vacuous.*
 

@@ -37,10 +37,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import distillate.*
-import eucalyptus.*
 import fulminate.*
-import gossamer.*
-import hieroglyph.*
 import inimitable.*
 import jacinta.*
 import obligatory.*
@@ -50,18 +47,12 @@ import proscenium.*
 import revolution.*
 import rudiments.*
 import scintillate.*
-import spectacular.*
 import telekinesis.*
-import turbulence.*
 import urticose.*
 import vacuous.*
 import wisteria.*
-import zephyrine.*
 
 import scala.annotation.*
-import scala.quoted.*
-
-import errorDiagnostics.stackTraces
 
 trait McpServer():
   import Mcp.*

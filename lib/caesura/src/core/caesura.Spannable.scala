@@ -33,16 +33,9 @@
 package caesura
 
 import anticipation.*
-import contingency.*
-import denominative.*
 import distillate.*
 import prepositional.*
-import proscenium.*
-import rudiments.*
-import vacuous.*
 import wisteria.*
-
-import scala.compiletime.*
 
 object Spannable extends ProductDerivable[Spannable]:
   inline def join[derivation <: Product: ProductReflection]: derivation is Spannable =

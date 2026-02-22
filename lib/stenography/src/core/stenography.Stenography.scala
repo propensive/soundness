@@ -43,7 +43,6 @@ object Stenography:
   def typename[typename <: AnyKind: Type]: Macro[Text] = Expr(name[typename])
 
   def name(using Quotes)(typeRepr: quotes.reflect.TypeRepr): Text =
-    import quotes.reflect.*
     typeRepr.asType.absolve match
       case '[tpe] => name[tpe]
 
@@ -57,7 +56,8 @@ object Stenography:
         context.compilationUnit.tpdTree.absolve match
           case ast.tpd.PackageDef(root, statements) =>
             Typename(root.show) :: statements.collect:
-              case ast.tpd.Import(name, List(SimpleSelector("_"))) => Typename(name.show)
+              case ast.tpd.Import(name, selectors) if selectors.exists(_.isWildcard) =>
+                Typename(name.show)
 
           case _ =>
             Nil

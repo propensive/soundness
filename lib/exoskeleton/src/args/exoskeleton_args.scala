@@ -36,7 +36,6 @@ import anticipation.*
 import denominative.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
 import vacuous.*
 
 private given realm: Realm = realm"exoskeleton"

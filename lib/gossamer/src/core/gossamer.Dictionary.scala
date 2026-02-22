@@ -33,7 +33,6 @@
 package gossamer
 
 import anticipation.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 

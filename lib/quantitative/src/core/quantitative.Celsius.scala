@@ -34,9 +34,6 @@ package quantitative
 
 import anticipation.*
 import gossamer.*
-import prepositional.*
-import spectacular.*
-import symbolism.*
 
 object Celsius extends TemperatureScale:
   def suffix: Text = t"°C"

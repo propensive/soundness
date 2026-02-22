@@ -32,8 +32,6 @@
                                                                                                   */
 package geodesy
 
-import scala.compiletime.*
-
 import rudiments.*
 
 object Compass:

@@ -32,10 +32,7 @@
                                                                                                   */
 package guillotine
 
-import scala.compiletime.*
-
 import anticipation.*
-import contextual.*
 import fulminate.*
 import gossamer.*
 import spectacular.*

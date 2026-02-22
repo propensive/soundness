@@ -40,11 +40,9 @@ import distillate.*
 import eucalyptus.*
 import galilei.*
 import gossamer.*
-import guillotine.*
 import hellenism.*
 import prepositional.*
 import revolution.*
-import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
@@ -58,9 +56,6 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistent.disabled
-import filesystemOptions.createNonexistentParents.disabled
-import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.deleteRecursively.disabled
 import filesystemTraversal.preOrder
 
 object Bundler:

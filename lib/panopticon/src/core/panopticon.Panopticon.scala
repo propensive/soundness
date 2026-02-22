@@ -40,15 +40,9 @@ import rudiments.*
 import vacuous.*
 
 import scala.quoted.*
-import scala.compiletime.*
-
-import language.dynamics
-import scala.annotation.internal.preview
-
 
 object Panopticon:
   private given realm: Realm = realm"panopticon"
-
 
   def lens[self: Type, origin <: Product: Type]: Macro[self is Lens from origin] =
     import quotes.reflect.*

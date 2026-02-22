@@ -48,8 +48,6 @@ object Cataclysm:
     '{Keyframe(Text($name), ${read(props)})}
 
   def read(properties: Expr[Seq[(Label, Any)]]): Macro[CssStyle] =
-    import quotes.reflect.*
-
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[CssProperty]] = exprs match
       case '{type key <: Label; ($key: key, $value: value)} +: tail =>
         val exp: Expr[key is PropertyDef[value]] =
@@ -57,9 +55,7 @@ object Cataclysm:
             val typeName = Type.of[value].show
             halt(m"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
 
-        '{
-            CssProperty(Text($key).uncamel.kebab, infer[ShowProperty[value]]
-            . show($value))  }
+        '{CssProperty(Text($key).uncamel.kebab, infer[ShowProperty[value]].show($value))}
         :: recur(tail)
 
       case _ =>

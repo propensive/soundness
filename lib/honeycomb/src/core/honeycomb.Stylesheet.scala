@@ -36,10 +36,8 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
-import spectacular.*
 import symbolism.*
 import typonym.*
-import vacuous.*
 
 object Stylesheet:
   given generic: Stylesheet is GenericCssSelection = _.classes.join(t".", t".", t"")

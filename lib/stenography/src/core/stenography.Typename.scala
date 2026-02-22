@@ -32,7 +32,6 @@
                                                                                                   */
 package stenography
 
-import java.net as jn
 import java.nio.charset as jnc
 
 import anticipation.*

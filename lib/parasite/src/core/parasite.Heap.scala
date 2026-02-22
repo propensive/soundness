@@ -34,12 +34,8 @@ package parasite
 
 import java.lang.management as jlm
 
-import anticipation.*
-import denominative.*
-import prepositional.*
 import proscenium.*
 import rudiments.*
-import symbolism.*
 
 object Heap:
   def used: Bytes = Bytes:

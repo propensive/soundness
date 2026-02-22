@@ -33,7 +33,7 @@
 package savagery
 
 import anticipation.*
-import cataclysm.{Float as _, Length as _, *}
+import cataclysm.{Float as _, *}
 import contingency.*
 import geodesy.*
 import gossamer.*

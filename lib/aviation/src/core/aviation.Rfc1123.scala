@@ -37,7 +37,6 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
-import quantitative.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

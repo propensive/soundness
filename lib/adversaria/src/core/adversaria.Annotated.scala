@@ -35,7 +35,6 @@ package adversaria
 import anticipation.*
 import prepositional.*
 import proscenium.*
-import vacuous.*
 
 import scala.quoted.*
 

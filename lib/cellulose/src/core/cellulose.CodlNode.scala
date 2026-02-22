@@ -34,12 +34,10 @@ package cellulose
 
 import anticipation.*
 import chiaroscuro.*
-import contextual.*
 import contingency.*
 import denominative.*
 import dissonance.*
-import gossamer.{where as _, *}
-import rudiments.*
+import gossamer.*
 import spectacular.*
 import vacuous.*
 

@@ -36,8 +36,6 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import eucalyptus.*
-import fulminate.*
-import gossamer.*
 import guillotine.*
 import inimitable.*
 import prepositional.*
@@ -46,7 +44,6 @@ import serpentine.*
 import urticose.*
 
 import workingDirectories.java
-import errorDiagnostics.stackTraces
 import logging.silent
 
 trait BenchmarkDevice:

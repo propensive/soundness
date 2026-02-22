@@ -35,10 +35,6 @@ package parasite
 import language.experimental.into
 import language.experimental.pureFunctions
 
-import java.lang.ref as jlr
-
-import prepositional.*
-
 object Shutdown:
   private val instance: Shutdown = Shutdown()
   given interceptable: Shutdown is Interceptable:

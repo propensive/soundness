@@ -32,7 +32,5 @@
                                                                                                   */
 package revolution
 
-import scala.collection as sc
-
 enum Compatibility:
   case Breaking, Additions, Internal, Unchanged

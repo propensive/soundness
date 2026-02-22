@@ -33,7 +33,6 @@
 package gossamer
 
 import anticipation.*
-import proscenium.*
 import rudiments.*
 
 import language.experimental.pureFunctions

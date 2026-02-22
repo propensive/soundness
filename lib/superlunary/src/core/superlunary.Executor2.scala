@@ -32,9 +32,6 @@
                                                                                                   */
 package superlunary
 
-import java.io as ji
-import scala.reflect.Selectable.reflectiveSelectable
-
 import vacuous.*
 
 object Executor2:

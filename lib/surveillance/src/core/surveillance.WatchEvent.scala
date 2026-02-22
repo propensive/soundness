@@ -32,7 +32,7 @@
                                                                                                   */
 package surveillance
 
-import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
+import java.nio.file as jnf
 
 import anticipation.*
 import contingency.*

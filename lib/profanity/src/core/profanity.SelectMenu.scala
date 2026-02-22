@@ -35,7 +35,7 @@ package profanity
 import anticipation.*
 import contingency.*
 import fulminate.*
-import gossamer.{where as _, *}
+import gossamer.*
 import vacuous.*
 
 case class SelectMenu[item](options: List[item], current: item)

@@ -61,7 +61,7 @@ case class Multiplexer[key, element]()(using Monitor):
   def add(key: key, stream: Stream[element]): Unit = active(key) = async(pump(key, stream))
   private def remove(key: key): Unit = if !active.nil then queue.put(Removal(key))
 
-  def stream: Stream[element] = queue.take().nn match
+  def stream: Stream[element] = queue.take().nn.absolve match
     case Removal(key) =>
       active -= key
       if active.nil then Stream() else stream

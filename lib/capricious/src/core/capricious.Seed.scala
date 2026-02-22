@@ -34,8 +34,6 @@ package capricious
 
 import language.experimental.genericNumberLiterals
 
-import scala.compiletime.*
-
 import anticipation.*
 import hypotenuse.*
 import proscenium.*

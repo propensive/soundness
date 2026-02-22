@@ -32,7 +32,6 @@
                                                                                                   */
 package sedentary
 
-import contingency.*
 import fulminate.*
 
 case class BenchError()(using Diagnostics) extends Error(m"unable to run benchmarks")

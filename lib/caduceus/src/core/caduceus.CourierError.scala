@@ -33,17 +33,9 @@
 package caduceus
 
 import anticipation.*
-import contingency.*
 import fulminate.*
-import gesticulate.*
-import hieroglyph.*
-import prepositional.*
 import proscenium.*
-import turbulence.*
 import urticose.*
-import vacuous.*
-
-import charEncoders.utf8
 
 case class CourierError(from: EmailAddress, to: EmailAddress, subject: Text)(using Diagnostics)
 extends Error(m"unable to send email from $from to $to with subject $subject")

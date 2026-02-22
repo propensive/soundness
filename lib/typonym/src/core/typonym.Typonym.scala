@@ -48,7 +48,6 @@ object Typonym:
         Nil
 
   def reifyAs[phantom: Type, result: Type]: Macro[result] =
-    import quotes.reflect.*
     reify[phantom].asExprOf[result]
 
   def reify[phantom: Type]: Macro[Any] =

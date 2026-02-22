@@ -39,7 +39,6 @@ import gossamer.*
 import hypotenuse.*
 import parasite.*
 import proscenium.*
-import rudiments.*
 import spectacular.*
 import vacuous.*
 

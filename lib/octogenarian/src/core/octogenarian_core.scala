@@ -32,21 +32,15 @@
                                                                                                   */
 package octogenarian
 
-import scala.compiletime.*
-
 import ambience.*
 import anticipation.*
 import contingency.*
-import distillate.*
 import fulminate.*
 import galilei.*
 import guillotine.*
 import nomenclature.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
-
-import GitError.Reason.*
 
 private given realm: Realm = realm"octogenarian"
 

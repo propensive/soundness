@@ -33,7 +33,6 @@
 package austronesian
 
 import anticipation.*
-import distillate.*
 import fulminate.*
 import hellenism.*
 import prepositional.*
