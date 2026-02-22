@@ -32,6 +32,8 @@
                                                                                                   */
 package polyvinyl
 
-enum RecordField:
-  case Value(fieldType: String, params: String*)
-  case Record(fieldType: String, map: Map[String, RecordField])
+import anticipation.*
+
+enum Member:
+  case Value(fieldType: Text, params: Text*)
+  case Record(fieldType: Text, map: Map[Text, Member])

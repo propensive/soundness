@@ -32,10 +32,9 @@
                                                                                                   */
 package polyvinyl
 
-import anticipation.*
 import prepositional.*
 import proscenium.*
 
-trait Intensional extends Typeclass, Resultant, Original, Formal:
+trait Structural[constructor[_]] extends Original, Formal:
   type Self <: Label
-  def transform(data: Origin, params: List[Text]): Result
+  def transform(data: Origin, make: Origin => Record): constructor[Record]

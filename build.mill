@@ -155,7 +155,7 @@ object soundness extends ScalaModule:
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
     gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core, panopticon.core,
     camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core, xylophone.core,
-    anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core)
+    anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, villainy.core, vexillology.core)
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
     charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
@@ -292,6 +292,7 @@ object test extends ScalaModule:
     vacuous.test,
     vexillology.test,
     vicarious.test,
+    villainy.test,
     wisteria.test,
     xylophone.test,
     yossarian.test,
@@ -445,7 +446,7 @@ object dendrology extends Library:
   object test extends Tests(tree, dag)
 
 object denominative extends Library:
-  object core extends Component(anticipation.text)
+  object core extends Component(fulminate.core)
   object test extends Tests(core)
 
 object digression extends Library:
@@ -862,6 +863,10 @@ object vicarious extends Library:
   object core extends Component(rudiments.core)
   object test extends Tests(core)
 
+object villainy extends Library:
+  object core extends Component(polyvinyl.core, jacinta.core)
+  object test extends Tests(core)
+
 object wisteria extends Library:
   object core extends Component(contingency.core)
   object test extends Tests(core)
@@ -1025,7 +1030,9 @@ object publishing extends Module:
     ulysses.core.publishLocal()()
     umbrageous.plugin.publishLocal()()
     vacuous.core.publishLocal()()
+    vexillology.core.publishLocal()()
     vicarious.core.publishLocal()()
+    villainy.core.publishLocal()()
     wisteria.core.publishLocal()()
     xylophone.core.publishLocal()()
     yossarian.core.publishLocal()()

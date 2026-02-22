@@ -30,12 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package polyvinyl
+package anticipation
 
-import anticipation.*
 import prepositional.*
-import proscenium.*
 
-trait Intensional extends Typeclass, Resultant, Original, Formal:
-  type Self <: Label
-  def transform(data: Origin, params: List[Text]): Result
+sealed trait Times

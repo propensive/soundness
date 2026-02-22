@@ -30,12 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package polyvinyl
+package anticipation
 
 import prepositional.*
-import proscenium.*
 
-trait RecordAccessor
-  [ record <: Record in data, data, label <: Label, typeConstructor[_] ]:
-
-  def transform(data: data, make: data => record): typeConstructor[record]
+sealed trait Dates
