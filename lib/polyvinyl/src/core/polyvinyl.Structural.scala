@@ -35,6 +35,6 @@ package polyvinyl
 import prepositional.*
 import proscenium.*
 
-trait Accessor[constructor[_]] extends Original, Formal:
+trait Structural[constructor[_]] extends Original, Formal:
   type Self <: Label
   def transform(data: Origin, make: Origin => Record): constructor[Record]

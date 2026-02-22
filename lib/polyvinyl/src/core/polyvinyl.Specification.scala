@@ -39,9 +39,10 @@ import fulminate.*
 import prepositional.*
 import proscenium.*
 
-trait Specification:
-  type Form
+trait Specification extends Original:
+ specification =>
   type Origin
+  type Form <: { type Origin = specification.Origin }
 
   def fields: Map[Text, Member]
   def make(data: Origin, transform: Text => Origin => Any): Record
@@ -101,24 +102,22 @@ trait Specification:
           case (name, Member.Record(label, map)) :: tail =>
             ConstantType(StringConstant(label.s)).asType.absolve match
               case '[type label <: Label; label] =>
-                Expr.summon[label is Accessor[?] in Form from Origin].absolve match
+                Expr.summon[label is Structural[?] in Form from Origin].absolve match
                   case None =>
                     halt:
                       m"""
-                        could not find an Accessor instance for the field $name with type $label
+                        could not find a Structural instance for the field $name with type $label
                       """
 
                   case Some
                     ( ' {
                           type constructor[_]
-                          $accessor: (label `is` Accessor[constructor] `in` Form `from` Origin)
+                          $structural: (label `is` Structural[constructor] `in` Form `from` Origin)
                         } ) =>
 
                     val nested = '{$target.access(${Expr(name)}, $value)}
                     val recordTypeRepr = TypeRepr.of[Record]
-
-                    val (nestedType, nestedCaseDefs) =
-                      refine(nested, map.to(List), recordTypeRepr)
+                    val (nestedType, nestedCaseDefs) = refine(nested, map.to(List), recordTypeRepr)
 
                     val matchFn: Expr[Text => Origin => Any] =
                       ' {
@@ -129,7 +128,7 @@ trait Specification:
                     val maker: Expr[Origin => Record] = '{field => $target.make(field, $matchFn)}
 
                     val rhs: Expr[Origin => Any] =
-                      '{data => $accessor.transform($target.access(${Expr(name)}, data), $maker)}
+                      '{data => $structural.transform($target.access(${Expr(name)}, data), $maker)}
 
                     val caseDef = CaseDef(Literal(StringConstant(name.s)), None, rhs.asTerm)
 

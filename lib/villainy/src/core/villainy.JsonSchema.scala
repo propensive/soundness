@@ -112,9 +112,9 @@ object JsonSchema:
   given regex: ("regex" is Intensional in JsonSchema from Json to Regex) =
     JsonSchema.intensional: value => Regex(value.as[Text])
 
-  given array: ("array" is Accessor[List] in JsonSchema from Json) = _.as[List[Json]].map(_)
+  given array: ("array" is Structural[List] in JsonSchema from Json) = _.as[List[Json]].map(_)
 
-  given obj: ("object" is Accessor[[Type] =>> Type] in JsonSchema from Json) =
+  given obj: ("object" is Structural[[Type] =>> Type] in JsonSchema from Json) =
     (value, make) => make(value)
 
 
@@ -176,11 +176,11 @@ object JsonSchema:
     (value, params) => value.as[Optional[Double]]
 
   given optionalArray
-  :   ("array?" is Accessor[[element] =>> Optional[List[element]]] in JsonSchema from Json) =
+  :   ("array?" is Structural[[element] =>> Optional[List[element]]] in JsonSchema from Json) =
 
     (value, make) => value.as[List[Json]].map(make)
 
-  given optionalObject: ("object?" is Accessor[[value] =>> Optional[value]] in JsonSchema from Json) =
+  given optionalObject: ("object?" is Structural[[value] =>> Optional[value]] in JsonSchema from Json) =
     (value, make) => make(value)
 
   def record(data0: Json, access0: Text => Json => Any): Record = new Record:
