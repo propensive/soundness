@@ -46,7 +46,8 @@ package errorDiagnostics:
 
 def panic(message: Message): Nothing = throw Panic(message)
 
-def halt(using Quotes)(message: Message, position: quotes.reflect.Position | Null = null)(using Realm)
+def halt(using Quotes)(message: Message, position: quotes.reflect.Position | Null = null)
+  ( using Realm )
 :   Nothing =
 
     import quotes.reflect.*
@@ -69,7 +70,8 @@ def halt(using Quotes)(message: Message, position: quotes.reflect.Position | Nul
     if position == null then report.errorAndAbort(text) else report.errorAndAbort(text, position)
 
 
-def warn(using Quotes)(message: Message, position: quotes.reflect.Position | Null = null)(using Realm)
+def warn(using Quotes)(message: Message, position: quotes.reflect.Position | Null = null)
+  ( using Realm )
 :   Unit =
 
     import quotes.reflect.*

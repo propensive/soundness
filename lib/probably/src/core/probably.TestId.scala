@@ -50,5 +50,7 @@ case class TestId(name: Message, suite: Optional[Testable], codepoint: Codepoint
   lazy val id: Text = (suite.hashCode ^ name.hashCode).hex.pad(6, Rtl, '0').keep(6, Rtl)
   lazy val ids: List[Text] =  id :: suite.let(_.id.ids).or(Nil)
 
-  def apply[result](context: Harness ?=> result): Test[result] = Test[result](this, context(using _))
+  def apply[result](context: Harness ?=> result): Test[result] =
+    Test[result](this, context(using _))
+
   def depth: Int = suite.let(_.id.depth).or(0) + 1

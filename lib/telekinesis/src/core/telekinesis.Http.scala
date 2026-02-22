@@ -328,8 +328,12 @@ object Http:
 
       def apply[servable: Servable](body: servable): Response =
         val response = servable.serve(body)
+
         Response
-          ( 1.1, status0.or(response.status), headers.to(List) ++ response.textHeaders, response.body )
+          ( 1.1,
+            status0.or(response.status),
+            headers.to(List) ++ response.textHeaders,
+            response.body )
 
     given streamable: Tactic[HttpError] => Response is Streamable by Data = response =>
       response.status.category match

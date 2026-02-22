@@ -56,11 +56,15 @@ object Adversaria:
       override def transformTerm(tree: Term)(sym: Symbol): Term =
         tree match
           case Ident(id)               => Ident(tree.symbol.termRef)
-          case Apply(fn, arguments)    => Apply(transformTerm(fn)(sym), transformTerms(arguments)(sym))
           case Select(qualifier, name) => Select(transformTerm(qualifier)(sym), tree.symbol)
           case New(tpt)                => New(transformTypeTree(tpt)(sym))
           case Literal(constant)       => Literal(constant)
-          case _                       => throw Exception()
+
+          case Apply(fn, arguments) =>
+            Apply(transformTerm(fn)(sym), transformTerms(arguments)(sym))
+
+          case _ =>
+            throw Exception()
 
     try Mapper.transformTerm(term)(Symbol.spliceOwner) catch case _: Exception => Unset
 

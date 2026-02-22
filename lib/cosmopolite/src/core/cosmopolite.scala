@@ -85,7 +85,8 @@ object Cosmopolite:
 //     Expr(langs(TypeRepr.of[L]))
 
 // object Messages:
-//   def apply[L <: String: ValueOf](sequence: Seq[Text], parts: Seq[Messages[? >: L]]): Messages[L] =
+//   def apply[L <: String: ValueOf](sequence: Seq[Text], parts: Seq[Messages[? >: L]])
+//   :   Messages[L] =
 //     val string: Text = parts.zip(sequence.tail).map: (msg, s) =>
 //       t"${msg(using summon[ValueOf[L]])}$s"
 //     .join(sequence.head, t"", t"")

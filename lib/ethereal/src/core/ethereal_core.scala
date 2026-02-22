@@ -280,7 +280,10 @@ def cli[bus <: Matchable](using executive: Executive)
 
             val stdio: Stdio =
               Stdio
-                ( ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap )
+                ( ji.PrintStream(socket.getOutputStream.nn),
+                  ji.PrintStream(lazyStderr),
+                  in,
+                  termcap )
 
             def deliver(sourcePid: Pid, message: bus): Unit =
               clients.each: (pid, client) =>

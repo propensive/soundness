@@ -234,7 +234,9 @@ object Syntax:
 
     repr.absolve match
       case MethodType(arguments0, types, result) =>
-        val params = arguments0.zip(types).map { (argument, tpe) => Named(false, argument, apply(tpe)) }
+        val params =
+          arguments0.zip(types).map: (argument, tpe) => Named(false, argument, apply(tpe))
+
         Declaration(true, List(Sequence('(', params)), apply(result))
 
       case ByNameType(tpe) =>

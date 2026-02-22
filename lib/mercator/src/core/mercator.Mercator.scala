@@ -51,7 +51,8 @@ object Mercator:
         case DefDef("apply", List(TypeParamClause(List(tpe)), terms), _, _) =>
           terms match
             case TermParamClause(List(ValDef(_, tRef, _))) => tRef.tpe.asMatchable match
-              case AnnotatedType(AppliedType(ap, List(tRef)), annotation) if annotation.tpe.typeSymbol == defn.RepeatedAnnot =>
+              case AnnotatedType(AppliedType(ap, List(tRef)), annotation)
+              if annotation.tpe.typeSymbol == defn.RepeatedAnnot =>
                 tRef.typeSymbol == tpe.symbol
 
               case ByNameType(tRef) =>

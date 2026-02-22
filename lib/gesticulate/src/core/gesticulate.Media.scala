@@ -121,7 +121,8 @@ object Media:
     def complete(value: Text): MediaType =
       val parsed = try throwErrors(Media.parse(value)) catch
         case error: MediaTypeError =>
-          throw InterpolationError(m"${error.value} is not a valid media type; ${error.reason.message}")
+          throw
+            InterpolationError(m"${error.value} is not a valid media type; ${error.reason.message}")
 
       parsed.subtype match
         case Subtype.Standard(_) =>

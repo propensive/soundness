@@ -209,7 +209,8 @@ object Cellulose extends Cellulose2:
           m"two # symbols terminates the document and must appear alone on a line"
 
 
-    def read[entity: {Decodable in Codl, CodlSchematic}](using erased Void)[streamable: Streamable by Text]
+    def read[entity: {Decodable in Codl, CodlSchematic}](using erased Void)
+      [ streamable: Streamable by Text ]
       ( source: streamable )
     :   entity raises ParseError raises CodlError =
 
@@ -323,7 +324,8 @@ object Cellulose extends Cellulose2:
                   case _ =>
                     val proto =
                       Proto
-                        ( Unset, extra = focus.extra.or(if lines == 0 then Unset else Extra(lines)) )
+                        ( Unset,
+                          extra = focus.extra.or(if lines == 0 then Unset else Extra(lines)) )
 
                     go(focus = proto)
 
@@ -372,7 +374,10 @@ object Cellulose extends Cellulose2:
                             val first = peerIds(uniqueId(0))
                             val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
                             raise
-                              ( ParseError(Codl, Position(line, col, uniqueId(0).length), duplicate) )
+                              ( ParseError
+                                  ( Codl,
+                                    Position(line, col, uniqueId(0).length),
+                                    duplicate ) )
 
                         val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                         go(focus = focus2, peerIds = peerIds2, lines = 0)
@@ -386,7 +391,10 @@ object Cellulose extends Cellulose2:
                             val first = peerIds(uniqueId(0))
                             val duplicate = DuplicateId(uniqueId(0), first(0), first(1))
                             raise
-                              ( ParseError(Codl, Position(line, col, uniqueId(0).length), duplicate) )
+                              ( ParseError
+                                  ( Codl,
+                                    Position(line, col, uniqueId(0).length),
+                                    duplicate ) )
 
                         val peerIds2 = uniqueId.let(peerIds.updated(_, _)).or(peerIds)
                         go(focus = focus2, peerIds = peerIds2, lines = 0)

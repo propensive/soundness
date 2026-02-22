@@ -49,7 +49,10 @@ object Subcompiler:
       try
         var position = diagnostic.pos
         while position.outer != NoSourcePosition do position = position.outer
-        val code = String(context.compilationUnit.source.content.slice(position.start, position.end))
+
+        val code =
+          String(context.compilationUnit.source.content.slice(position.start, position.end))
+
         val offset = position.point - position.start
         val ordinal = diagnostic.msg.errorId.ordinal
 

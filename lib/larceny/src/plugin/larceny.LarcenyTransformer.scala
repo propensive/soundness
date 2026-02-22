@@ -103,7 +103,9 @@ class LarcenyTransformer() extends PluginPhase:
           Apply
             ( Ident(name),
               List
-                ( Block(List(), Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala), nme.List), msgs))) )
+                ( Block
+                    ( Nil,
+                      Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala), nme.List), msgs) ) ) )
 
         case _ =>
           super.transform(tree)

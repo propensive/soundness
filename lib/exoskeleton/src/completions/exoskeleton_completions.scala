@@ -138,11 +138,23 @@ package executives:
                 Exit.Fail(1)
 
             Invocation
-              ( Cli.arguments(arguments), environment, workingDirectory, stdio, signals, false, login )
+              ( Cli.arguments(arguments),
+                environment,
+                workingDirectory,
+                stdio,
+                signals,
+                false,
+                login )
 
           case other =>
             Invocation
-              ( Cli.arguments(arguments), environment, workingDirectory, stdio, signals, true, login )
+              ( Cli.arguments(arguments),
+                environment,
+                workingDirectory,
+                stdio,
+                signals,
+                true,
+                login )
 
 
     def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match

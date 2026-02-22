@@ -336,7 +336,8 @@ extension [element](sequence: Seq[element])
         if current == focus then recur(current, todo.tail, todo.head :: run, done)
         else recur(focus, todo.tail, List(todo.head), run.reverse :: done)
 
-    if sequence.nil then Nil else recur(lambda(sequence.head), sequence.tail, List(sequence.head), Nil)
+    if sequence.nil then Nil
+    else recur(lambda(sequence.head), sequence.tail, List(sequence.head), Nil)
 
 extension [element](sequence: IndexedSeq[element])
   transparent inline def has(index: Int): Boolean = index >= 0 && index < sequence.length

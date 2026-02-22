@@ -56,7 +56,6 @@ class NetworkDevice(user: Text, host: Hostname) extends BenchmarkDevice:
     safely(sh"scp $path $user@$host:$uuid.jar".exec[Exit]()).lest(BenchError())
 
   def invoke(path: Path on Linux, input: Text): Text raises BenchError =
-    //val command = sh"sudo taskset -c 2 chrt -b 0 nice -n -20 ionice -c1 -n0 java -XX:+AlwaysPreTouch -Xms1g -Xmx1g -XX:CICompilerCount=2 -XX:+UseSerialGC -jar ${path.name} '$input' 2> /dev/null"
     val command =
       sh"""
         java

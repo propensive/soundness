@@ -62,7 +62,9 @@ object Timestamp:
           Timestamp
             ( Date(year.decode[Year], Month(month.decode[Int]), Day(day.decode[Int])),
               Clockface
-                ( Base24(hour.decode[Int]), Base60(minute.decode[Int]), Base60(second.decode[Int])) )
+                ( Base24(hour.decode[Int]),
+                  Base60(minute.decode[Int]),
+                  Base60(second.decode[Int])) )
 
     case value =>
       raise(TimestampError(value)) yet Timestamp(2000-Jan-1, Clockface(0, 0, 0))
