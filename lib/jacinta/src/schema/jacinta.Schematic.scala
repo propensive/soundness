@@ -32,26 +32,13 @@
                                                                                                   */
 package jacinta
 
-import scala.collection.mutable as scm
 import scala.annotation.*
 
-import adversaria.*
 import anticipation.*
-import contingency.*
-import denominative.*
-import distillate.*
-import fulminate.*
-import gossamer.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
-import serpentine.*
-import telekinesis.*
-import turbulence.*
 import urticose.*
 import vacuous.*
-import wisteria.*
-import zephyrine.*
 
 object Schematic:
   given byte: Byte is Schematic in JsonSchema = () => JsonSchema.Integer()

@@ -33,7 +33,6 @@
 package gesticulate
 
 import anticipation.*
-import contextual.*
 import contingency.*
 import distillate.*
 import gossamer.{where as _, *}

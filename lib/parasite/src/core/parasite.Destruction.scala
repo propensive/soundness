@@ -37,7 +37,6 @@ import language.experimental.pureFunctions
 
 import java.lang.ref as jlr
 
-import prepositional.*
 import rudiments.*
 
 object Destruction:

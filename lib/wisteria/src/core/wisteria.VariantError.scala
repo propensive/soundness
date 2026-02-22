@@ -35,7 +35,6 @@ package wisteria
 import anticipation.*
 import fulminate.*
 
-import scala.deriving.*
 import scala.compiletime.*
 
 object VariantError:

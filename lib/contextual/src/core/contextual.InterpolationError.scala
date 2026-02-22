@@ -32,8 +32,6 @@
                                                                                                   */
 package contextual
 
-import scala.compiletime.*
-
 import fulminate.*
 import vacuous.*
 

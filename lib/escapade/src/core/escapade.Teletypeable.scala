@@ -37,11 +37,9 @@ import digression.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
-import iridescence.*
 import prepositional.*
 import proscenium.*
 import spectacular.*
-import symbolism.*
 import vacuous.*
 
 object Teletypeable:

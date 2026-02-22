@@ -32,7 +32,6 @@
                                                                                                   */
 package jacinta
 
-import scala.collection.mutable as scm
 import scala.annotation.*
 
 import anticipation.*

@@ -35,7 +35,6 @@ package parasite
 import language.experimental.into
 import language.experimental.pureFunctions
 
-import java.lang.ref as jlr
 import java.lang.management as jlm
 import javax.management as jm
 import javax.management.openmbean as jmo
@@ -43,7 +42,6 @@ import com.sun.management as csm
 
 import anticipation.*
 import denominative.*
-import prepositional.*
 import proscenium.*
 import rudiments.*
 import symbolism.*

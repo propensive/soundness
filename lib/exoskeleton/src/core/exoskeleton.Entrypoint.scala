@@ -33,8 +33,6 @@
 package exoskeleton
 
 import anticipation.*
-import galilei.*
-import nomenclature.*
 import prepositional.*
 import serpentine.*
 

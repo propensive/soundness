@@ -33,7 +33,6 @@
 package distillate
 
 import scala.deriving.*
-import scala.util.*
 
 import anticipation.*
 import denominative.*

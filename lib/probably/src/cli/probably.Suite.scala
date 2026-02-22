@@ -40,7 +40,6 @@ import contingency.*
 import digression.*
 import escapade.*
 import fulminate.*
-import hieroglyph.*
 import turbulence.*
 import vacuous.*
 

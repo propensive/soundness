@@ -35,14 +35,12 @@ package urticose
 import scala.compiletime.*
 
 import anticipation.*
-import contextual.*
 import contingency.*
 import denominative.*
 import distillate.*
 import escapade.*
 import fulminate.*
 import gossamer.*
-import nomenclature.*
 import prepositional.*
 import proscenium.*
 import rudiments.*

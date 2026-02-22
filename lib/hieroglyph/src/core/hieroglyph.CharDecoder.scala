@@ -38,8 +38,6 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-import scala.collection.mutable as scm
-
 import java.nio as jn, jn.charset as jnc
 
 import language.experimental.pureFunctions

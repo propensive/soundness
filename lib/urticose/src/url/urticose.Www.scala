@@ -33,11 +33,8 @@
 package urticose
 
 import anticipation.*
-import contingency.*
 import gossamer.*
-import nomenclature.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
 
 sealed trait Www

@@ -45,22 +45,22 @@ import scala.quoted.*
 object Adversaria:
   private def rebuild(using Quotes)(term: quotes.reflect.Term): Optional[quotes.reflect.Term] =
     import quotes.reflect.*
-    import unsafeExceptions.canThrowAny
 
     object Mapper extends TreeMap:
+      import unsafeExceptions.canThrowAny
       override def transformTypeTree(tree: TypeTree)(owner: Symbol): TypeTree =
         tree match
           case ident: TypeIdent => TypeIdent(tree.symbol)
-          case tree             => throw Exception()
+          case _                => throw Exception()
 
       override def transformTerm(tree: Term)(sym: Symbol): Term =
         tree match
           case Ident(id)               => Ident(tree.symbol.termRef)
-          case Apply(fn, arguments)         => Apply(transformTerm(fn)(sym), transformTerms(arguments)(sym))
+          case Apply(fn, arguments)    => Apply(transformTerm(fn)(sym), transformTerms(arguments)(sym))
           case Select(qualifier, name) => Select(transformTerm(qualifier)(sym), tree.symbol)
           case New(tpt)                => New(transformTypeTree(tpt)(sym))
           case Literal(constant)       => Literal(constant)
-          case tree                    => throw Exception()
+          case _                       => throw Exception()
 
     try Mapper.transformTerm(term)(Symbol.spliceOwner) catch case _: Exception => Unset
 

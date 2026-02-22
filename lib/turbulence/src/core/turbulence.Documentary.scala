@@ -32,17 +32,6 @@
                                                                                                   */
 package turbulence
 
-import language.experimental.captureChecking
-
-import java.util.concurrent as juc
-
-import anticipation.*
-import denominative.*
-import fulminate.*
-import prepositional.*
-import proscenium.*
-import rudiments.*
-
 trait Documentary:
   type Self <: Documentary
   type Metadata

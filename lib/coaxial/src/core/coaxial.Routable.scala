@@ -41,8 +41,6 @@ import vacuous.*
 
 import java.net as jn
 
-import Control.*
-
 object Routable:
   given udpEndpoint: Endpoint[UdpPort] is Routable:
     case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)

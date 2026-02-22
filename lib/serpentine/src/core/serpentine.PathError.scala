@@ -38,8 +38,6 @@ import gossamer.*
 import symbolism.*
 import vacuous.*
 
-import scala.compiletime.*
-
 object PathError:
 
   def apply(reason: PathError.Reason.type => PathError.Reason, path: Optional[Text] = Unset)

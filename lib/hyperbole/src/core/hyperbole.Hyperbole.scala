@@ -34,7 +34,6 @@ package hyperbole
 
 import scala.collection.mutable as scm
 
-import anthology.*
 import anticipation.*
 import contingency.*
 import dendrology.*
@@ -43,18 +42,12 @@ import escapade.*
 import escritoire.*, tableStyles.minimal, columnAttenuation.ignore
 import digression.*
 import fulminate.*
-import galilei.*
 import gossamer.*
 import harlequin.*
-import hellenism.*
 import hieroglyph.*, textMetrics.uniform
-import inimitable.*
 import iridescence.*
-import nomenclature.*
-import prepositional.*
 import proscenium.*
 import rudiments.*
-import serpentine.*
 import spectacular.*
 import symbolism.*
 import vacuous.*

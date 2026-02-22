@@ -39,8 +39,6 @@ import turbulence.*
 
 import java.io as ji
 
-import Control.*
-
 case class Connection
   ( private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream ):
   def stream(): Stream[Data] raises StreamError = in.stream[Data]

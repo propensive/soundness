@@ -32,20 +32,14 @@
                                                                                                   */
 package punctuation
 
-import scala.collection.mutable as scm
-
 import anticipation.*
-import contingency.*
 import denominative.*
-import distillate.*
 import gossamer.*
 import honeycomb.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import turbulence.*
 import vacuous.*
-import zephyrine.*
 
 import doms.html.whatwg, whatwg.*
 import attributives.textAttributes
@@ -121,7 +115,6 @@ object Markdown:
     type Form = doms.html.whatwg.Flow
 
     def render(markdown: Markdown of Layout across domains): Html of whatwg.Flow =
-      import Markdown.*
       import doms.html.whatwg.*
 
       def tightItem(node: Layout): Html of Flow = node match

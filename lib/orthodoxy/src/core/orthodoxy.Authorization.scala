@@ -33,7 +33,6 @@
 package orthodoxy
 
 import anticipation.*
-import distillate.*
 import gossamer.*
 import prepositional.*
 import telekinesis.*

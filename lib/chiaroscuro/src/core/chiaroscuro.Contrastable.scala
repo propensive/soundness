@@ -36,7 +36,6 @@ import anticipation.*
 import denominative.*
 import dissonance.*
 import gossamer.*
-import hieroglyph.*
 import hypotenuse.*
 import prepositional.*
 import proscenium.*

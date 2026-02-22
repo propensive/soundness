@@ -33,13 +33,10 @@
 package galilei
 
 import anticipation.*
-import contextual.*
 import gossamer.*
 import prepositional.*
 import serpentine.*
 import spectacular.*
-
-import scala.jdk.StreamConverters.*
 
 import language.experimental.pureFunctions
 

@@ -33,8 +33,6 @@
 package probably
 
 import anticipation.*
-import ambience.*
-import contingency.*
 import chiaroscuro.*
 import digression.*
 import fulminate.*
@@ -43,7 +41,6 @@ import hypotenuse.*
 import prepositional.*
 import proscenium.*
 import symbolism.*
-import vacuous.*
 
 private given realm: Realm = realm"probably"
 

@@ -32,9 +32,6 @@
                                                                                                   */
 package synesthesia
 
-import anticipation.*
-import proscenium.*
-
 extension (inline context: StringContext)
   transparent inline def human(inline substitutions: Any*): Discourse =
     ${Synesthesia.prompt('context, 'substitutions, true)}

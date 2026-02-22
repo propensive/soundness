@@ -33,7 +33,6 @@
 package cellulose
 
 import anticipation.*
-import contextual.*
 import gossamer.*
 import proscenium.*
 import spectacular.*, affirmations.trueFalse

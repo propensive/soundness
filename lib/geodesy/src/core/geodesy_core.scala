@@ -33,7 +33,6 @@
 package geodesy
 
 import hypotenuse.*
-import prepositional.*
 import symbolism.*
 
 export Geodesy.{Location, Angle}

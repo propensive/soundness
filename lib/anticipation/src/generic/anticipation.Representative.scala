@@ -32,10 +32,6 @@
                                                                                                   */
 package anticipation
 
-import java.io as ji
-import java.nio.file as jnf
-
-import anticipation.*
 import prepositional.*
 
 sealed trait Representative extends Typeclass, Topical

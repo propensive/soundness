@@ -32,18 +32,9 @@
                                                                                                   */
 package zeppelin
 
-import java.io as ji
-import java.net as jn
 import java.nio.file as jnf
-import java.util.zip as juz
-import scala.collection.concurrent as scc
-import scala.collection.mutable as scm
 
 import anticipation.*
-import contingency.*
-import feudalism.*
-import fulminate.*
-import galilei.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
@@ -51,8 +42,6 @@ import proscenium.*
 import rudiments.*
 import serpentine.*
 import vacuous.*
-
-import juz.ZipFile
 
 object Zip:
   type Rules =

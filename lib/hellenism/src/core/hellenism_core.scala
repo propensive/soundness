@@ -32,11 +32,6 @@
                                                                                                   */
 package hellenism
 
-import anticipation.*
-import fulminate.*
-import prepositional.*
-import serpentine.*
-
 package classloaders:
   given threadContext: Classloader = Classloader.threadContext
   given system: Classloader = new Classloader(ClassLoader.getSystemClassLoader.nn)

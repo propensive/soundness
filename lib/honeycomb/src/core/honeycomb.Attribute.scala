@@ -33,17 +33,7 @@
 package honeycomb
 
 import anticipation.*
-import gesticulate.*
-import gossamer.*
-import hieroglyph.*
-import kaleidoscope.*
-import prepositional.*
 import proscenium.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import urticose.*
-import vacuous.*
 
 case class Attribute(label: Text, elements: Set[Text], global: Boolean):
   type Self <: Label

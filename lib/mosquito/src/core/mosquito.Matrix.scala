@@ -42,7 +42,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import scala.compiletime.*, ops.int.*
+import scala.compiletime.*
 
 class Matrix[element, rows <: Int, columns <: Int]
   ( val rows: Int, val columns: Int, val elements: IArray[element] ):

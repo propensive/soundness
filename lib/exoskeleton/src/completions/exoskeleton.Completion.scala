@@ -40,10 +40,8 @@ import gossamer.*
 import guillotine.*
 import hieroglyph.*, textMetrics.uniform
 import hypotenuse.*
-import inimitable.*
 import profanity.*
 import proscenium.*
-import rudiments.*
 import spectacular.*
 import symbolism.*
 import turbulence.*

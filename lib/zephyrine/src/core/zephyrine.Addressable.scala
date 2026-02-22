@@ -35,11 +35,8 @@ package zephyrine
 import java.io as ji
 import java.lang as jl
 
-import scala.collection.mutable as scm
-
 import anticipation.*
 import denominative.*
-import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*

@@ -36,28 +36,19 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
-import gossamer.*
-import hieroglyph.*
-import hyperbole.*
 import inimitable.*
 import jacinta.*
 import parasite.*
 import prepositional.*
 import proscenium.*
-import revolution.*
 import rudiments.*
 import spectacular.*
-import telekinesis.*
-import turbulence.*
 import urticose.*
 import vacuous.*
-import zephyrine.*
 
 import scala.annotation.*
 import scala.quoted.*
 
-import errorDiagnostics.stackTraces
-import stdioSources.virtualMachine.ansi
 
 object Obligatory:
   given Realm = realm"obligatory"

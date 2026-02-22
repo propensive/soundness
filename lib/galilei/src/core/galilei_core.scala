@@ -36,13 +36,10 @@ import java.io as ji
 import java.nio.file as jnf
 import jnf.attribute as jnfa
 
-import scala.jdk.StreamConverters.*
-
 import anticipation.*
 import contingency.*
 import denominative.*
 import fulminate.*
-import nomenclature.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -315,8 +312,6 @@ package filesystemOptions:
     =>  ( explorable: plane is Explorable )
     =>  DeleteRecursively on plane:
 
-        import filesystemOptions.dereferenceSymlinks.disabled
-
         type World = plane
 
         def recur(path: Path on plane): Unit =
@@ -332,7 +327,6 @@ package filesystemOptions:
         type Plane = plane
 
         def conditionally[result](path: Path on Plane)(operation: => result): result =
-          import filesystemOptions.dereferenceSymlinks.disabled
           if !path.children.nil
           then abort(IoError(path, IoError.Operation.Delete, Reason.DirectoryNotEmpty))
           else operation

@@ -35,12 +35,9 @@ package parasite
 import language.experimental.into
 import language.experimental.pureFunctions
 
-import java.lang.ref as jlr
 import java.util.concurrent.atomic as juca
 
-import prepositional.*
 import rudiments.*
-import vacuous.*
 
 object Fault:
   private object Handler extends Thread.UncaughtExceptionHandler:

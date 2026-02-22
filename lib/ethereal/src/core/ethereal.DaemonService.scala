@@ -34,9 +34,7 @@ package ethereal
 
 import anticipation.*
 import exoskeleton.*
-import galilei.*
 import guillotine.*
-import nomenclature.*
 import prepositional.*
 import proscenium.*
 import serpentine.*

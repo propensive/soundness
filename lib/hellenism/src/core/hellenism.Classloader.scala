@@ -35,12 +35,9 @@ package hellenism
 import java.io as ji
 import java.net as jn
 
-import scala.reflect.*
-
 import anticipation.*
 import contingency.*
 import rudiments.*
-import serpentine.*
 import vacuous.*
 
 object Classloader:

@@ -32,8 +32,6 @@
                                                                                                   */
 package escapade
 
-import contextual.*
-
 import language.experimental.pureFunctions
 
 object Stylize:

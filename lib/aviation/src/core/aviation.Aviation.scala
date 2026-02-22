@@ -52,8 +52,6 @@ import vacuous.*
 
 import scala.quoted.*
 
-import java.util as ju
-
 object Aviation:
   opaque type Date = Int
   opaque type Year = Int

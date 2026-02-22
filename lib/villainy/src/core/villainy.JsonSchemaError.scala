@@ -17,20 +17,10 @@
 package villainy
 
 import anticipation.*
-import contingency.*
 import fulminate.*
-import inimitable.*
 import jacinta.*
 import kaleidoscope.*
-import merino.*
-import urticose.*
-import polyvinyl.*
-import rudiments.*
 import vacuous.*
-
-import scala.compiletime.*
-
-import strategies.throwUnsafely
 
 object JsonSchemaError:
   enum Reason:

@@ -34,8 +34,6 @@ package symbolism
 
 import prepositional.*
 
-import scala.annotation.targetName
-
 trait Quotient extends Typeclass, Topical, Transportive:
   type Numerator = Topic
   type Denominator = Transport

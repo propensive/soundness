@@ -34,12 +34,8 @@ package superlunary
 
 import scala.quoted.*
 
-import anticipation.*
 import contingency.*
-import distillate.*
-import jacinta.*
 import prepositional.*
-import rudiments.*
 
 object embeddings:
   inline given automatic: [value]

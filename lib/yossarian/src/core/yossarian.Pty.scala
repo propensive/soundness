@@ -45,8 +45,6 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 
-import scala.compiletime.*
-
 import PtyEscapeError.Reason, Reason.*
 
 object Pty:

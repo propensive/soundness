@@ -32,29 +32,14 @@
                                                                                                   */
 package punctuation
 
-import scala.collection.mutable as scm
-
-import ambience.*
 import anticipation.*
-import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*
-import honeycomb.*
 import kaleidoscope.*
 import prepositional.*
 import rudiments.*
-import turbulence.*
 import vacuous.*
-
-import charDecoders.utf8
-import charEncoders.utf8
-import textSanitizers.skip
-import environments.java
-import temporaryDirectories.system
-
-import doms.html.whatwg
 
 object Commonmark:
   import org.commonmark.*, node.*, parser.{IncludeSourceSpans, Parser}

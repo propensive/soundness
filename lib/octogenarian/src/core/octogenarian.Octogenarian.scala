@@ -43,8 +43,6 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 
-import GitError.Reason.*
-
 object Octogenarian:
   opaque type Refspec = anticipation.Text
   opaque type GitTag <: Refspec = anticipation.Text

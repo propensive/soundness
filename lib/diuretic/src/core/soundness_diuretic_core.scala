@@ -32,8 +32,6 @@
                                                                                                   */
 package soundness
 
-import diuretic.*
-
 package interfaces:
   package instants:
     export anticipation.interfaces.instants.{javaTimeInstant, javaLong, javaUtilDate}

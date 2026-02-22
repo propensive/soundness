@@ -40,9 +40,7 @@ import galilei.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
-import spectacular.*
 import symbolism.*
 import vacuous.*
 

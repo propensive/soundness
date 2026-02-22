@@ -39,7 +39,6 @@ import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte
     Float as JFloat}
 
 import scala.annotation.*
-import scala.compiletime.*
 import scala.util.FromDigits
 
 import anticipation.*

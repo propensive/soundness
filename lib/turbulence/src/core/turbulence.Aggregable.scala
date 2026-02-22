@@ -32,8 +32,6 @@
                                                                                                   */
 package turbulence
 
-import java.io as ji
-
 import anticipation.*
 import denominative.*
 import hieroglyph.*
@@ -41,7 +39,6 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import symbolism.*
-import vacuous.*
 
 object Aggregable:
   given bytesData: Data is Aggregable by Data = source0 =>

@@ -34,13 +34,11 @@ package hallucination
 
 import anticipation.*
 import contingency.*
-import gossamer.*
 import iridescence.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
-import vacuous.*
 
 import java.awt.image as jai
 import java.awt as ja

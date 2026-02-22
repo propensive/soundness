@@ -34,8 +34,6 @@ package enigmatic
 
 import javax.crypto.spec.SecretKeySpec
 
-import scala.compiletime.*, ops.int.*
-
 import anticipation.*
 import contingency.*
 import gastronomy.*

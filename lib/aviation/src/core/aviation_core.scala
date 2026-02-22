@@ -34,17 +34,12 @@ package aviation
 
 import anticipation.*
 import contingency.*
-import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
-import kaleidoscope.*
 import prepositional.*
-import quantitative.*
-import rudiments.*
 import spectacular.*
-import symbolism.*
 import vacuous.*
 
 export Aviation2.{Instant, Duration}

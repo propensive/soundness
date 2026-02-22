@@ -37,7 +37,6 @@ import inimitable.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
-import spectacular.*
 
 object Navigable:
   given label: [plane, string <: Label] => string is Navigable on plane = _.tt

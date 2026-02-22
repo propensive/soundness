@@ -36,8 +36,6 @@ import language.experimental.pureFunctions
 
 import java.io as ji
 
-import scala.compiletime.*
-
 import anticipation.*
 import contingency.*
 import gossamer.*

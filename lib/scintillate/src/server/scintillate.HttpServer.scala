@@ -35,16 +35,13 @@ package scintillate
 import anticipation.*
 import contingency.*
 import digression.*
-import fulminate.*
 import parasite.*
 import proscenium.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
-import vacuous.*
 
-import scala.compiletime.*
 
 import java.net as jn
 import com.sun.net.httpserver as csnh

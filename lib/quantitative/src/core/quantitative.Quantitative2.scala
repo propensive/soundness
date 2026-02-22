@@ -238,18 +238,16 @@ trait Quantitative2:
   def normalizable[source <: Measure: Type, result <: Measure: Type]
   :   Macro[source is Normalizable to result] =
 
-      import quotes.reflect.*
+    val sourceUnits = UnitsMap[source]
+    val resultUnits = UnitsMap[result]
 
-      val sourceUnits = UnitsMap[source]
-      val resultUnits = UnitsMap[result]
+    if sourceUnits.dimensionality != resultUnits.dimensionality
+    then incompatibleTypes(sourceUnits, resultUnits)
 
-      if sourceUnits.dimensionality != resultUnits.dimensionality
-      then incompatibleTypes(sourceUnits, resultUnits)
+    val ratio = normalize(resultUnits, sourceUnits, Expr(1.0))(1)
+    val ratio2 = normalize(sourceUnits, resultUnits, Expr(1.0))(1)
 
-      val ratio = normalize(resultUnits, sourceUnits, Expr(1.0))(1)
-      val ratio2 = normalize(sourceUnits, resultUnits, Expr(1.0))(1)
-
-      '{() => $ratio/$ratio2}
+    '{() => $ratio/$ratio2}
 
 
   def ratio

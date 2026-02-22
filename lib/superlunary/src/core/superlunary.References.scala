@@ -34,13 +34,11 @@ package superlunary
 
 import anticipation.*
 import fulminate.*
-import jacinta.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import vacuous.*
 
-import scala.compiletime.*
 import scala.quoted.*
 
 object References:

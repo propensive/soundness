@@ -32,7 +32,5 @@
                                                                                                   */
 package gossamer
 
-import hieroglyph.*
-
 trait CaseSensitivity:
   def compare(left: Char, right: Char): Boolean

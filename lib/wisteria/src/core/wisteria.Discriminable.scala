@@ -34,7 +34,6 @@ package wisteria
 
 import anticipation.*
 import prepositional.*
-import proscenium.*
 import vacuous.*
 
 trait Discriminable extends Typeclass, Formal, Operable:

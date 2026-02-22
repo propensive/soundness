@@ -33,9 +33,6 @@
 package hellenism
 
 import anticipation.*
-import fulminate.*
-import prepositional.*
-import serpentine.*
 
 private given Realm("hellenism")
 

@@ -44,16 +44,10 @@ import escritoire.*
 import escapade.*
 import fulminate.*
 import gossamer.*
-import hellenism.*
 import hieroglyph.*
 import iridescence.*
-import nomenclature.*
-import prepositional.*
 import proscenium.*
-import rudiments.*
 import spectacular.*
-import symbolism.*
-import turbulence.*
 import vacuous.*
 
 import tableStyles.minimal

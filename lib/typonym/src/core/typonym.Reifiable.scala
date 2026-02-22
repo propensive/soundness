@@ -32,9 +32,6 @@
                                                                                                   */
 package typonym
 
-import scala.quoted.*
-
-import anticipation.*
 import prepositional.*
 import proscenium.*
 

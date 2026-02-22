@@ -33,18 +33,10 @@
 package caduceus
 
 import anticipation.*
-import contingency.*
 import denominative.*
-import fulminate.*
 import gesticulate.*
-import hieroglyph.*
-import prepositional.*
 import proscenium.*
-import turbulence.*
-import urticose.*
 import vacuous.*
-
-import charEncoders.utf8
 
 object Email:
   def apply[sendable: Sendable](value: sendable): Email = sendable.email(value)

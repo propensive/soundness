@@ -45,7 +45,6 @@ import escapade.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
-import nomenclature.*
 import prepositional.*
 import profanity.*
 import rudiments.*

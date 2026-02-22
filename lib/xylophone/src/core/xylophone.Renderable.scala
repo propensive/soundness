@@ -32,15 +32,7 @@
                                                                                                   */
 package xylophone
 
-import anticipation.*
-import digression.*
-import fulminate.*
-import gossamer.*
 import prepositional.*
-import proscenium.*
-import rudiments.*
-import spectacular.*
-import vacuous.*
 
 trait Renderable extends Typeclass, Formal:
   def render(value: Self): Xml of Form

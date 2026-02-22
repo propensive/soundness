@@ -32,12 +32,8 @@
                                                                                                   */
 package cellulose
 
-import contingency.*
-import rudiments.*
 import vacuous.*
 import wisteria.*
-
-import scala.deriving.*
 
 object CodlSchematicDerivation extends ProductDerivable[CodlSchematic]:
   inline def join[derivation <: Product: ProductReflection]: derivation is CodlSchematic =

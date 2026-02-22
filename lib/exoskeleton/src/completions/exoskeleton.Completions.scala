@@ -38,14 +38,12 @@ import ambience.*, environments.java, systems.java
 import anticipation.*
 import contingency.*
 import denominative.*
-import digression.*
 import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.{where as _, *}
 import guillotine.*
 import nomenclature.*
-import parasite.*
 import prepositional.*
 import rudiments.*, homeDirectories.system
 import serpentine.*

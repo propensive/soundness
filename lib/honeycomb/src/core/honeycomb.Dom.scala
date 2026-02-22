@@ -34,30 +34,12 @@ package honeycomb
 
 import language.dynamics
 
-import java.lang as jl
-
 import scala.collection.mutable as scm
 
-import adversaria.*
 import anticipation.*
-import contingency.*
-import denominative.*
-import fulminate.*
 import gossamer.*
-import hellenism.*
-import hieroglyph.*
-import prepositional.*
 import proscenium.*
-import rudiments.*
-import symbolism.*
-import turbulence.*
-import typonym.*
 import vacuous.*
-import zephyrine.*
-
-import classloaders.threadContext
-import charDecoders.utf8
-import textSanitizers.skip
 
 object Dom:
   private[honeycomb] val elements: scm.HashMap[Dom, Dictionary[Tag]] = scm.HashMap()

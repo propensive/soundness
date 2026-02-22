@@ -32,8 +32,6 @@
                                                                                                   */
 package iridescence
 
-import scala.util.chaining.*
-
 import anticipation.*
 
 object Hsl:

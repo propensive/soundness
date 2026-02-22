@@ -32,12 +32,7 @@
                                                                                                   */
 package panopticon
 
-import anticipation.*
-import fulminate.*
 import prepositional.*
-import proscenium.*
-import rudiments.*
-import vacuous.*
 
 object Composable:
 

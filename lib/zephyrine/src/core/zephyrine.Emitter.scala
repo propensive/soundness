@@ -36,8 +36,6 @@ import java.util.concurrent as juc
 
 import anticipation.*
 import denominative.*
-import fulminate.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 

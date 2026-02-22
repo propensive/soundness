@@ -35,8 +35,6 @@ package gastronomy
 import java.security as js
 import javax.crypto as jc
 
-import scala.compiletime.*, ops.int.*
-
 import anticipation.*
 import prepositional.*
 

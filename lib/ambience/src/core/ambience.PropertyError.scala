@@ -34,8 +34,6 @@ package ambience
 
 import language.dynamics
 
-import scala.compiletime.ops.string.*
-
 import anticipation.*
 import fulminate.*
 

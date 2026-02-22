@@ -38,7 +38,6 @@ import scala.annotation.*
 import anticipation.*
 import contingency.*
 import denominative.*
-import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*

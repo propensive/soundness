@@ -34,7 +34,6 @@ package exoskeleton
 
 import anticipation.*
 import denominative.*
-import fulminate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*

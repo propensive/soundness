@@ -41,8 +41,6 @@ import distillate.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
-import stenography.*
 import vacuous.*
 
 object Serpentine:
@@ -149,8 +147,6 @@ object Serpentine:
   def conjunction[left <: Path: Type, right <: Path: Type](left: Expr[left], right: Expr[right])
   :   Macro[Path] =
 
-    import quotes.reflect.*
-
     if !sameRoot[left, right].or(false) then '{$left.calculate($right)} else
       topic[left] match
         case Right(leftDescent) => topic[right] match
@@ -180,8 +176,6 @@ object Serpentine:
 
   private def calculate(left: List[String], right: List[String])(using Quotes)
   :   quotes.reflect.TypeRepr =
-
-    import quotes.reflect.*
 
     val difference = left.length - right.length
     val left0 = left.drop(difference).to(List)

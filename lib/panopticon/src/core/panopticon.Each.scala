@@ -32,12 +32,8 @@
                                                                                                   */
 package panopticon
 
-import anticipation.*
-import fulminate.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
-import vacuous.*
 
 object Each:
   given optical: [element] => Each.type is Optical from List[element] onto element =

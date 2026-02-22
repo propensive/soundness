@@ -35,7 +35,6 @@ package acyclicity
 import language.dynamics
 
 import anticipation.*
-import contextual.*
 import denominative.*
 import gossamer.*
 import proscenium.*

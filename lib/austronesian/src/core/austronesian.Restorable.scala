@@ -33,10 +33,8 @@
 package austronesian
 
 import scala.quoted.*
-import scala.compiletime.*
 
 import anticipation.*
-import fulminate.*
 import hellenism.*
 import prepositional.*
 import proscenium.*

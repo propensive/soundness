@@ -38,7 +38,6 @@ import gesticulate.*
 import prepositional.*
 import rudiments.*
 import proscenium.*
-import spectacular.*
 import turbulence.*
 
 import javax.imageio as ji

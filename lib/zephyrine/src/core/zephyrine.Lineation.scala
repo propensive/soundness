@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import anticipation.*
-import fulminate.*
 import prepositional.*
 
 object Lineation:

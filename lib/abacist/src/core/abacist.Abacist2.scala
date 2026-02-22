@@ -34,7 +34,6 @@ package abacist
 
 import anticipation.*
 import gossamer.*
-import hypotenuse.*
 import quantitative.*
 import prepositional.*
 import proscenium.*

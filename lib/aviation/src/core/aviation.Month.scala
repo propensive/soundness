@@ -36,7 +36,6 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import prepositional.*
-import rudiments.*
 import spectacular.*
 import symbolism.*
 

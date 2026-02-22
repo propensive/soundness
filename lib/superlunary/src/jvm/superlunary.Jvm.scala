@@ -32,23 +32,17 @@
                                                                                                   */
 package superlunary
 
-import ambience.*, systems.java
+import ambience.*
 import anthology.*
 import anticipation.*
 import contingency.*
-import distillate.*
 import eucalyptus.*
 import guillotine.*
 import hellenism.*
-import hieroglyph.*
 import jacinta.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
-import turbulence.*
 
-import charDecoders.utf8
-import textSanitizers.skip
 import systems.java
 import classloaders.system
 

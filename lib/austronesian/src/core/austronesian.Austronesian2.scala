@@ -32,7 +32,6 @@
                                                                                                   */
 package austronesian
 
-import scala.compiletime.*
 import scala.quoted.*
 
 import anticipation.*

@@ -33,15 +33,10 @@
 package cellulose
 
 import anticipation.*
-import contingency.*
 import distillate.*
-import gossamer.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 import wisteria.*
-
-import scala.deriving.*
 
 object CodlSchematic:
   inline given derived: [value] => value is CodlSchematic = compiletime.summonFrom:

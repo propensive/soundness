@@ -34,9 +34,6 @@ package telekinesis
 
 import scala.collection.mutable as scm
 
-import anticipation.*
-import distillate.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 

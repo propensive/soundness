@@ -34,8 +34,6 @@ package hypotenuse
 
 import scala.annotation.*
 
-import prepositional.*
-
 trait Orderable extends Commensurable:
   private inline def orderable: this.type = this
   type Contrast = Self

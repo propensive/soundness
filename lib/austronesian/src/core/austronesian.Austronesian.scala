@@ -37,7 +37,6 @@ import contingency.*
 import distillate.*
 import prepositional.*
 import probably.*
-import proscenium.*
 import rudiments.*
 import wisteria.*
 

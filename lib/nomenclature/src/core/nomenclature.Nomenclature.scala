@@ -32,16 +32,11 @@
                                                                                                   */
 package nomenclature
 
-import scala.compiletime.*
-
 import anticipation.*
 import contingency.*
 import distillate.*
-import fulminate.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
-import spectacular.*
 
 object Nomenclature:
   opaque type Name[plane] <: anticipation.Text = anticipation.Text

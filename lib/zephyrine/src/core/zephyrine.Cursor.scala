@@ -33,12 +33,8 @@
 package zephyrine
 
 import scala.collection.mutable as scm
-import scala.annotation.publicInBinary
-import scala.caps as sc
 
-import anticipation.*
 import denominative.*
-import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*

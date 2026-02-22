@@ -35,7 +35,6 @@ package stenography
 import language.experimental.pureFunctions
 
 import anticipation.*
-import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
@@ -43,10 +42,7 @@ import probably.*
 import spectacular.*
 import symbolism.*
 
-import autopsies.contrastExpectations
-
 object Tests extends Suite(m"Stenography Tests"):
-
   def run(): Unit =
     import anticipation.*
     test(m"Decode a term"):

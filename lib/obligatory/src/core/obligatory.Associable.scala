@@ -32,14 +32,7 @@
                                                                                                   */
 package obligatory
 
-import anticipation.*
-import denominative.*
-import distillate.*
-import inimitable.*
 import prepositional.*
-import rudiments.*
-import telekinesis.*
-import vacuous.*
 
 trait Associable extends Operable, Typeclass, Targetable:
   def association(operand: Operand): Self

@@ -33,7 +33,6 @@
 package chiaroscuro
 
 import anticipation.*
-import fulminate.*
 import gossamer.*
 import kaleidoscope.*
 import larceny.*
@@ -45,7 +44,6 @@ import vacuous.*
 import wisteria.*
 
 import scala.compiletime.*
-import scala.deriving.*
 import scala.reflect.*
 
 trait Decomposable extends Typeclass:

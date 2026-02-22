@@ -34,8 +34,6 @@ package guillotine
 
 import language.experimental.pureFunctions
 
-import scala.compiletime.*
-
 import anticipation.*
 import contextual.*
 import fulminate.*

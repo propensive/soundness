@@ -32,9 +32,4 @@
                                                                                                   */
 package superlunary
 
-import anticipation.*
-import gossamer.*
-import hellenism.*
-import serpentine.*
-
 case class Stage[output, form, target](target: target, remote: (form => form) => output)

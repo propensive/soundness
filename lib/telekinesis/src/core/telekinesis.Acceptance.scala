@@ -33,8 +33,6 @@
 package telekinesis
 
 import contingency.*
-import honeycomb.*
-import legerdemain.*
 
 enum Acceptance[value]:
   case Accept(value: value)
