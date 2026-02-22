@@ -27,6 +27,7 @@ import probably.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 
 import errorDiagnostics.stackTraces
@@ -39,13 +40,15 @@ object Tests extends Suite(m"Villainy tests"):
       val spec: Json =
         t"""{
           "name": "Jim",
+          "active": true,
           "sub": { "date": "11/12/20" },
           "children": [
             {"height": 100, "weight": 0.8, "color": "green" },
             {"height": 9, "weight": 30.0, "color": "#ff0000"}
           ],
           "pattern": "a.b",
-          "domain": "example.com"
+          "domain": "example.com",
+          "email": "test@example.com"
         }""".read[Json]
 
       ExampleSchema.record(spec)
@@ -92,3 +95,27 @@ object Tests extends Suite(m"Villainy tests"):
       capture:
         record.children.map { elem => elem.height }.to(List)
     .assert(_ == BoundsError(100, 1, 99))
+
+    test(m"Get a boolean value"):
+      record.active
+    .assert(_ == true)
+
+    test(m"Get an absent optional boolean value"):
+      record.verified
+    .assert(_ == Unset)
+
+    test(m"Get an absent optional string value"):
+      record.nickname
+    .assert(_ == Unset)
+
+    test(m"Get an absent optional number value"):
+      record.score
+    .assert(_ == Unset)
+
+    test(m"Get an email address"):
+      record.email
+    .assert(_ == email"test@example.com")
+
+    test(m"Get an optional email address"):
+      record.maybeEmail
+    .assert(_ == Unset)
