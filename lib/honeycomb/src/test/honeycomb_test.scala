@@ -34,9 +34,8 @@ package honeycomb
 
 import scala.collection.immutable as sci
 
-import soundness.{Table as _, *}
+import soundness.*
 
-import autopsies.contrastExpectations
 import errorDiagnostics.stackTraces
 import strategies.throwUnsafely
 

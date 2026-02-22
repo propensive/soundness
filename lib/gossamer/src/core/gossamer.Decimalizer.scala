@@ -71,7 +71,10 @@ extends DecimalConverter:
       val sign = (negative || plusSign.present) && double != 0.0
 
       @tailrec
-      def write(chars: Array[Char], bcd: Long, index: Int, carry: Boolean, point: Int): Array[Char] =
+      def write
+        ( chars: Array[Char], bcd: Long, index: Int, carry: Boolean, point: Int )
+      :   Array[Char] =
+
         if index >= 0 then
           var digit = bcd & 15
           var carry2 = carry

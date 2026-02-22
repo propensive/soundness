@@ -124,7 +124,7 @@ object Query extends Dynamic:
     (left, right) => new Query(left.values ++ right.values)
 
 case class Query private (values: List[(Text, Text)]) extends Dynamic:
-  private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))
+  // private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))
   def append(more: Query): Query = new Query(values ++ more.values)
   def nil: Boolean = values.nil
 
@@ -166,7 +166,8 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
         case (key, value) if key.starts(prefix) => (key.skip(prefix.length), value)
 
   def prefix(string: Text): Query = Query:
-    values.map { (key, value) => if key.length == 0 then string -> value else t"$string.$key" -> value }
+    values.map: (key, value) =>
+      if key.length == 0 then string -> value else t"$string.$key" -> value
 
   def queryString: Text =
     values.map: (key, value) =>

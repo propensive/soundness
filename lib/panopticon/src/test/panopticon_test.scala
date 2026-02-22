@@ -34,8 +34,6 @@ package panopticon
 
 import soundness.*
 
-import autopsies.contrastExpectations
-
 case class Organization(name: String, leader: Person)
 case class Person(name: String, age: Int, role: Role)
 case class Role(name: String, salary: Int)

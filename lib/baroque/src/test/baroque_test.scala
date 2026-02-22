@@ -40,8 +40,6 @@ import quantitative.*
 import spectacular.*
 import symbolism.*
 
-import autopsies.contrastExpectations
-
 given Decimalizer = Decimalizer(3)
 
 object Tests extends Suite(m"Baroque tests"):

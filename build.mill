@@ -51,7 +51,7 @@ object settings:
     "-preview",
     //"-explain",
     "-deprecation",
-    //"-Wunused:imports",
+    "-Wunused:imports,privates",
     "-Wimplausible-patterns",
     // "-Wsafe-init",
     "-Xmax-inlines", "100",

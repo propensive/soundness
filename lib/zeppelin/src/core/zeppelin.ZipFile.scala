@@ -36,11 +36,9 @@ import java.io as ji
 import java.net as jn
 import java.nio.file as jnf
 import java.util.zip as juz
-import scala.collection.concurrent as scc
 
 import anticipation.*
 import contingency.*
-import feudalism.*
 import fulminate.*
 import galilei.*
 import gossamer.*
@@ -65,32 +63,26 @@ object Zipfile:
       catch case exception: jnf.ProviderNotFoundException =>
         panic(m"There was unexpectedly no filesystem provider for ZIP files")
 
-    def handle(transport: jnf.FileSystem): Zip.ZipRoot = Zip.ZipRoot(transport)
+    def handle(transport: jnf.FileSystem): Zip.ZipRoot = Zip.ZipRoot()
 
     def close(transport: Transport): Unit = transport.close()
-
-  private val cache: scc.TrieMap[Text, Semaphore] = scc.TrieMap()
 
   def write[path: Abstractable across Paths to Text](path: path)(stream: Iterable[ZipEntry])
   :   Unit raises ZipError =
 
-      val filename = path.generic
-      val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(filename.s)))
+    val filename = path.generic
+    val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(filename.s)))
 
-      for entry <- stream do
-        val ref = entry.ref.encode
-        val ref2 = if ref.starts("/") then ref.skip(1).s else ref.s
-        out.putNextEntry(juz.ZipEntry(ref2))
+    for entry <- stream do
+      val ref = entry.ref.encode
+      val ref2 = if ref.starts("/") then ref.skip(1).s else ref.s
+      out.putNextEntry(juz.ZipEntry(ref2))
+      entry.content().each: bytes => out.write(bytes.mutable(using Unsafe))
+      out.closeEntry()
 
-        entry.content().each: bytes =>
-          out.write(bytes.mutable(using Unsafe))
-
-        out.closeEntry()
-
-      out.close()
+    out.close()
 
 
 case class Zipfile(path: Text):
   protected lazy val zipFile: juz.ZipFile = juz.ZipFile(ji.File(path.s)).nn
   protected lazy val uri: jn.URI = jn.URI.create(t"jar:file:$path".s).nn
-  private def semaphore = Zipfile.cache.getOrElseUpdate(path, Semaphore())

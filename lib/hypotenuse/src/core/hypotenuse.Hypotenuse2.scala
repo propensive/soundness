@@ -55,7 +55,13 @@ object Hypotenuse2:
 
       case index =>
         val startPosition = expr.asTerm.pos
-        val position = Position(startPosition.sourceFile, startPosition.start + index, startPosition.start + index + 1)
+
+        val position =
+          Position
+            ( startPosition.sourceFile,
+              startPosition.start + index,
+              startPosition.start + index + 1 )
+
         halt(m"a binary value can only contain characters '0' or '1'", position)
 
     val bits2 = bits.filter(_ != ' ')
@@ -83,7 +89,12 @@ object Hypotenuse2:
         case -1  => ()
 
         case index =>
-          val position = Position(startPosition.sourceFile, startPosition.start + index, startPosition.start + index + 1)
+          val position =
+            Position
+              ( startPosition.sourceFile,
+                startPosition.start + index,
+                startPosition.start + index + 1 )
+
           halt(m"${nibbles(index)} is not a valid hexadecimal character", position)
 
     val nibbles3 = nibbles2.filterNot { ch => ch == ' ' || ch == '\n' }

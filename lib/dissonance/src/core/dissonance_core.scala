@@ -124,7 +124,9 @@ def diff[element]
 
     @tailrec
     def count(position: Int, offset: Int): Int =
-      if position < left.length && position + offset < right.length && compare(left(position), right(position + offset))
+      if
+        position < left.length && position + offset < right.length
+        && compare(left(position), right(position + offset))
       then count(position + 1, offset)
       else position
 
@@ -146,14 +148,25 @@ def diff[element]
       lazy val del = rows.head(deletes - 1)
 
       if position == -1 && rightPosition == -1 then edits else if rows.isEmpty
-      then backtrack(position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits)
+      then
+        backtrack
+          ( position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits )
+
       else if deletes < rows.length && (deletes == 0 || ins >= del)
       then
-        if position == ins then backtrack(position, deletes, rows.tail, Ins(rightPosition, right(rightPosition)) :: edits)
-        else backtrack(position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits)
+        if position == ins
+        then
+          backtrack
+            ( position, deletes, rows.tail, Ins(rightPosition, right(rightPosition)) :: edits )
+        else
+          backtrack
+            ( position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits )
       else
-        if position == del then backtrack(del - 1, deletes - 1, rows.tail, Del(position, left(position)) :: edits)
-        else backtrack(position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits)
+        if position == del
+        then backtrack(del - 1, deletes - 1, rows.tail, Del(position, left(position)) :: edits)
+        else
+          backtrack
+            ( position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits )
 
     trace(0, 0, Nil, Nil)
 

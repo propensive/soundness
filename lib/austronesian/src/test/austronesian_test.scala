@@ -32,7 +32,6 @@
                                                                                                   */
 package austronesian
 
-import java.util as ju
 import soundness.*
 
 sealed trait Something

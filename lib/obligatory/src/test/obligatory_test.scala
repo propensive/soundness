@@ -35,12 +35,6 @@ package synesthesia
 import soundness.*
 
 import strategies.throwUnsafely
-import autopsies.contrastExpectations
-import servables.jsonIsServable
-import charEncoders.utf8
-import charDecoders.utf8
-import textSanitizers.skip
-import jsonPrinters.minimal
 
 object Tests extends Suite(m"Obligatory Tests"):
   def run(): Unit =

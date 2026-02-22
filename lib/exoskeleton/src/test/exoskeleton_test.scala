@@ -34,7 +34,6 @@ package exoskeleton
 
 import soundness.*
 
-import unsafeExceptions.canThrowAny
 import classloaders.system
 import environments.java
 import systems.java
@@ -42,14 +41,10 @@ import temporaryDirectories.system
 import workingDirectories.default
 import supervisors.global
 import logging.silent
-import embeddings.automatic
-import autopsies.contrastExpectations
 import threading.platform
 
 import strategies.throwUnsafely
 import backstops.silent
-import errorDiagnostics.stackTraces
-import stdioSources.virtualMachine.ansi
 
 import Shell.*
 

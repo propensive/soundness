@@ -77,11 +77,6 @@ object Urticose:
 
     . to(Map)
 
-  private lazy val serviceNumbers: Map[(Boolean, Int), Text] =
-    serviceNames.map:
-      case ((tcp, name), number) => (tcp, number) -> name
-    . to(Map)
-
   object Opaques:
     opaque type Ipv4 <: Matchable = Int
     opaque type MacAddress <: Matchable = Long

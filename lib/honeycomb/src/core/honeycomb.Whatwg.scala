@@ -140,18 +140,8 @@ object Whatwg:
   private type FormTags =
     "button" | "fieldset" | "input" | "object" | "output" | "select" | "textarea"
 
-  private type NameTags =
-    "button" | "form" | "fieldset" | "iframe" | "input" | "object" | "output" | "select"
-    | "textarea" | "map" | "meta" | "param"
-
   private type SrcTags =
     "audio" | "embed" | "iframe" | "img" | "input" | "script" | "source" | "track" | "video"
-
-  private type TypeTags =
-    "button" | "input" | "embed" | "object" | "ol" | "script" | "source" | "style" | "menu" | "link"
-
-  private type ValueTags =
-    "button" | "data" | "input" | "li" | "meter" | "option" | "progress" | "param"
 
   private type WidthTags =
     "canvas" | "embed" | "iframe" | "img" | "input" | "object" | "video" | "svg"
@@ -164,13 +154,11 @@ object Whatwg:
         type Plane = plane
         type Topic = topic
         type Self = self
-        type Form = Whatwg
 
   def globalAttribute[self  <: Label: ValueOf, topic](): self is Attribute of topic in Whatwg =
     new Attribute(valueOf[self].tt, Set(), true):
       type Topic = topic
       type Self = self
-      type Form = Whatwg
 
   given abbr: ("abbr" is Attribute on "th" of Textual) = attribute()
   given accept: ("accept" is Attribute on "input" of MimeList) = attribute()

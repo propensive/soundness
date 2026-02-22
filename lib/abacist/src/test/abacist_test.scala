@@ -36,7 +36,6 @@ import anticipation.*
 import fulminate.*
 import gossamer.{t, Decimalizer}
 import larceny.*
-import prepositional.*
 import probably.*
 import quantitative.*
 import rudiments.*

@@ -33,10 +33,8 @@
 package cardinality
 
 import fulminate.*
-import gossamer.*
 import larceny.*
 import probably.*
-import rudiments.*
 
 object Tests extends Suite(m"Cardinality tests"):
   def run(): Unit =

@@ -34,8 +34,6 @@ package rudiments
 
 import soundness.*
 
-import autopsies.contrastExpectations
-
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(m"Rudiments Tests"):

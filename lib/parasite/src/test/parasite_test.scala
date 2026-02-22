@@ -40,7 +40,6 @@ import gossamer.*
 import probably.*
 import proscenium.*
 import quantitative.*
-import rudiments.*
 import symbolism.*
 import turbulence.*
 
@@ -48,13 +47,6 @@ import strategies.throwUnsafely
 
 import threading.virtual
 import codicils.cancel
-
-import errorDiagnostics.stackTraces
-
-// given Interceptor = (path, error) =>
-//   println(s"An async exception occurred in ${path.stack}:")
-//   error.printStackTrace()
-//   Mitigation.Escalate
 
 object Tests extends Suite(m"Parasite tests"):
 

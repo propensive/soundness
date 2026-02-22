@@ -126,7 +126,9 @@ extends Cli:
           case main :: aliases =>
             List
               ( Suggestion
-                  ( Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))) )
+                  ( Flag.serialize(main),
+                    flag.description,
+                    aliases = aliases.map(Flag.serialize(_)) ) )
 
           case Nil => Nil
 

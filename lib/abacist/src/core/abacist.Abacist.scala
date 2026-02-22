@@ -73,7 +73,9 @@ object Abacist:
                         $max"""
 
                   recur
-                    ( tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})} )
+                    ( tail,
+                      valuesTail,
+                      '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})} )
 
                 case None =>
                   recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})

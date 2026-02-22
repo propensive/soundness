@@ -66,7 +66,8 @@ trait Indexed extends Codllike, Dynamic:
 
   protected lazy val idIndex: Map[Text, Int] =
     def recur(index: Int, map: Map[Text, Int] = Map()): Map[Text, Int] =
-      if index < 0 then map else recur(index - 1, children(index).id.lay(map)(map.updated(_, index)))
+      if index < 0 then map
+      else recur(index - 1, children(index).id.lay(map)(map.updated(_, index)))
 
     recur(children.length - 1)
 

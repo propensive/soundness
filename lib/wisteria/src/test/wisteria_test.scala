@@ -34,11 +34,8 @@ package wisteria
 
 import soundness.*
 
-import scala.util.Try
 import scala.deriving.Mirror.ProductOf
 import scala.deriving.Mirror.SumOf
-
-import autopsies.contrastExpectations
 
 object SumOnly extends SumDerivation[SumOnly]:
 

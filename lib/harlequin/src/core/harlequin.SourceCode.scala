@@ -147,12 +147,15 @@ object SourceCode:
           if start == end then Stream() else
             text.segment(start.z thru end.u).cut(t"\n").to(Stream).flatMap: line =>
               Stream
-                ( SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline )
+                ( SourceToken(line, trees(start, end).getOrElse(accent(token))),
+                  SourceToken.Newline )
             . init
 
         unparsed #::: content #::: stream(end)
 
-    def lines(sequence: List[SourceToken], acc: List[List[SourceToken]] = Nil): List[List[SourceToken]] =
+    def lines(sequence: List[SourceToken], acc: List[List[SourceToken]] = Nil)
+    :   List[List[SourceToken]] =
+
       sequence match
         case Nil => acc
         case xs  => xs.indexOf(SourceToken.Newline) match

@@ -32,8 +32,6 @@
                                                                                                   */
 package obligatory
 
-import java.util.concurrent.atomic as juca
-
 import anticipation.*
 import contingency.*
 import prepositional.*
@@ -44,7 +42,6 @@ import vacuous.*
 
 class SseSource(capacity: Int):
   private val buffer: Array[Sse] = new Array(capacity)
-  private val counter: juca.AtomicInteger = new juca.AtomicInteger(0)
   private var current: Int = 0
   private var spool: Spool[Sse] = Spool()
 

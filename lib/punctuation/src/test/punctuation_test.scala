@@ -35,17 +35,6 @@ package punctuation
 import soundness.*
 
 import strategies.throwUnsafely
-import autopsies.contrastExpectations
-
-import internetAccess.enabled
-import charDecoders.utf8
-import charEncoders.utf8
-import textSanitizers.skip
-import logging.silent
-import classloaders.system
-import environments.java
-import systems.java
-import temporaryDirectories.system
 
 import doms.html.whatwg
 import classloaders.system

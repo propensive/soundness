@@ -137,7 +137,9 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     val sd = math.sqrt(variance)
     val min = results.min.toDouble
     val max = results.max.toDouble
-    val benchmark = Benchmark(total, count, total.toDouble/count, min, max, sd, confidence0.or(95), baseline)
+    val benchmark =
+      Benchmark(total, count, total.toDouble/count, min, max, sd, confidence0.or(95), baseline)
+
     inclusion.include(runner.report, testId, benchmark)
 
   def stage(out: Path on Linux): Path on Linux = unsafely:

@@ -108,7 +108,8 @@ object NumericRange:
 
       @annotation.targetName("minus")
       infix def - [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
-      :   Min[leftMin - rightMin, leftMin - rightMax] ~ Max[leftMax - rightMin, leftMax - rightMax] =
+      :   Min[leftMin - rightMin, leftMin - rightMax]
+            ~ Max[leftMax - rightMin, leftMax - rightMax] =
 
           left - right
 

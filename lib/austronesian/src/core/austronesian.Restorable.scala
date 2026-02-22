@@ -80,7 +80,8 @@ object Restorable extends ProductDerivation[[entity] =>> entity is Restorable]:
   //   new Restorable:
   //     type Self = derivation
 
-  //     def restore(value: Expr[Pojo])(using quotes: Quotes, classloader: Classloader): Expr[Self] =
+  //     def restore(value: Expr[Pojo])(using quotes: Quotes, classloader: Classloader)
+  //     :   Expr[Self] =
   //       import quotes.reflect.*
   //       given Type[derivation] = infer[Type[derivation]]
 

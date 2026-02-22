@@ -24,8 +24,6 @@ import jacinta.*
 import kaleidoscope.*
 import polyvinyl.*
 import probably.*
-import rudiments.*
-import spectacular.*
 import turbulence.*
 import urticose.*
 import vacuous.*

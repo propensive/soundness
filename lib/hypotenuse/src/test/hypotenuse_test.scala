@@ -34,8 +34,6 @@ package hypotenuse
 
 import soundness.*
 
-import autopsies.contrastExpectations
-
 object Tests extends Suite(m"Hypotenuse tests"):
   def run(): Unit =
     suite(m"Addition tests"):

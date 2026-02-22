@@ -32,6 +32,8 @@
                                                                                                   */
 package adversaria
 
+import java.lang as jl
+
 import anticipation.*
 import denominative.*
 import fulminate.*
@@ -47,22 +49,25 @@ object Adversaria:
     import quotes.reflect.*
 
     object Mapper extends TreeMap:
-      import unsafeExceptions.canThrowAny
       override def transformTypeTree(tree: TypeTree)(owner: Symbol): TypeTree =
         tree match
           case ident: TypeIdent => TypeIdent(tree.symbol)
-          case _                => throw Exception()
+          case _                => throw jl.Error()
 
       override def transformTerm(tree: Term)(sym: Symbol): Term =
         tree match
           case Ident(id)               => Ident(tree.symbol.termRef)
-          case Apply(fn, arguments)    => Apply(transformTerm(fn)(sym), transformTerms(arguments)(sym))
           case Select(qualifier, name) => Select(transformTerm(qualifier)(sym), tree.symbol)
           case New(tpt)                => New(transformTypeTree(tpt)(sym))
           case Literal(constant)       => Literal(constant)
-          case _                       => throw Exception()
 
-    try Mapper.transformTerm(term)(Symbol.spliceOwner) catch case _: Exception => Unset
+          case Apply(fn, arguments) =>
+            Apply(transformTerm(fn)(sym), transformTerms(arguments)(sym))
+
+          case _ =>
+            throw jl.Error()
+
+    try Mapper.transformTerm(term)(Symbol.spliceOwner) catch case _: jl.Error => Unset
 
   def general[operand <: StaticAnnotation: Type, self: Type, plane: Type, limit: Type]
   :   Macro[self is Annotated by operand on plane under limit] =

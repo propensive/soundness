@@ -32,16 +32,12 @@
                                                                                                   */
 package zeppelin
 
-import java.nio.file as jnf
-
 import anticipation.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import serpentine.*
-import vacuous.*
 
 object Zip:
   type Rules =
@@ -54,7 +50,7 @@ object Zip:
   inline given nominative: Zip is Nominative under Rules = !!
   given submissible: %.type is Submissible on Zip = _ => ()
 
-  class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t""):
+  class ZipRoot() extends Root(t""):
     type Plane = Zip
 
   given filesystem: Zip is Filesystem:

@@ -34,10 +34,8 @@ package xylophone
 
 import soundness.*
 
-import unsafeExceptions.canThrowAny
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
-import autopsies.contrastExpectations
 import threading.virtual
 import codicils.cancel
 

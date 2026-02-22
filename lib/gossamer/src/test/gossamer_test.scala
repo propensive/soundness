@@ -35,7 +35,6 @@ package gossamer
 import soundness.*
 
 import textMetrics.uniform
-import autopsies.contrastExpectations
 import caseSensitivity.sensitive
 
 case class Person(name: Text, age: Int)

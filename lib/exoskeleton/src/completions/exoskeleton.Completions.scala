@@ -63,7 +63,7 @@ object Completions:
     def next: Tab = copy(count = count + 1)
     def zero: Tab = copy(count = 0)
 
-  private var cache: scm.HashMap[Text, Tab] = scm.HashMap()
+  private val cache: scm.HashMap[Text, Tab] = scm.HashMap()
 
   def tab(tty: Text, tab0: Tab): Ordinal =
     cache.at(tty).let { tab => tab.next.unless(tab.zero != tab0) }.or(tab0).tap { cache(tty) = _ }

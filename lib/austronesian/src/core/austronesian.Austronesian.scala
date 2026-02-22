@@ -92,10 +92,12 @@ object Austronesian:
       inline def encoded(value: Byte): Pojo = value
 
     // Check whether these should be kept, or the `inline given` below
-    // given list: [list <: List, element: Encodable in Pojo] => list[element] is Encodable in Pojo =
+    // given list: [list <: List, element: Encodable in Pojo]
+    // => list[element] is Encodable in Pojo =
     //   list => IArray.from(list.map(_.encode))
 
-    // given trie: [trie <: Trie, element: Encodable in Pojo] => trie[element] is Encodable in Pojo =
+    // given trie: [trie <: Trie, element: Encodable in Pojo]
+    // => trie[element] is Encodable in Pojo =
     //   trie => IArray.from(trie.map(_.encode))
 
     given list: [collection <: Iterable, element: Encodable in Pojo]

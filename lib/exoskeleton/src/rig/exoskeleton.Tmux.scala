@@ -35,8 +35,6 @@ package exoskeleton
 import soundness.*
 
 import errorDiagnostics.stackTraces
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.overwritePreexisting.disabled
 
 object Tmux:
   def enter(keypresses: (Text | Char)*)(using tmux: Tmux): Unit raises TmuxError =

@@ -34,4 +34,5 @@ package dissonance
 
 import proscenium.*
 
-case class Chunk[element](position: Int, rightPosition: Int, dels: List[Del[element]], inss: List[Ins[element]])
+case class Chunk[element]
+  ( position: Int, rightPosition: Int, dels: List[Del[element]], inss: List[Ins[element]] )

@@ -39,7 +39,6 @@ import fulminate.*
 import gossamer.*
 import larceny.*
 import probably.*
-import rudiments.*
 
 import errorDiagnostics.stackTraces
 

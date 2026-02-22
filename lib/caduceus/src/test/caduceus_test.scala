@@ -34,7 +34,5 @@ package caduceus
 
 import soundness.*
 
-import strategies.throwUnsafely
-
 object Tests extends Suite(m"Caduceus tests"):
   def run(): Unit = ()

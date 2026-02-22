@@ -37,7 +37,6 @@ import soundness.*
 import charEncoders.utf8
 import strategies.throwUnsafely
 import jsonPrinters.minimal
-import autopsies.contrastExpectations
 
 import jsonDiscriminables.discriminatedUnionByKind
 

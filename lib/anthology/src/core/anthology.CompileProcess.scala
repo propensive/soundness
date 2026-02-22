@@ -60,6 +60,9 @@ class CompileProcess():
   def put(result: CompileResult): Unit = completion.offer(result)
   def put(task: Task[Unit]): Unit = compilation = task
 
+  def errors: Int = errorCount
+  def warnings: Int = warningCount
+
   def complete()(using Monitor): CompileResult logs CompileEvent raises AsyncError =
     try completion.await() finally
       safely(compilation.let(_.await()))

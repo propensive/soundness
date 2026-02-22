@@ -33,7 +33,6 @@
 package ambience
 
 import fulminate.*
-import gossamer.*
 import probably.*
 
 object Tests extends Suite(m"Ambience Tests"):

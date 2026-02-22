@@ -34,9 +34,6 @@ package dendrology
 
 import soundness.*
 
-import stdioSources.virtualMachine
-import unsafeExceptions.canThrowAny
-
 object Tests extends Suite(m"Dendrology tests"):
 
   case class Tree(value: Text, children: List[Tree] = Nil)
@@ -80,6 +77,5 @@ object Tests extends Suite(m"Dendrology tests"):
   )
 
   def run(): Unit =
-    import treeStyles.default
     import dagStyles.default
     DagDiagram(types).render { node => t"▪ $node" }

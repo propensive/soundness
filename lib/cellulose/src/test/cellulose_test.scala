@@ -35,17 +35,15 @@ package cellulose
 import anticipation.*
 import contingency.*
 import distillate.*
-import eucalyptus.*, logging.stdout
 import fulminate.*
 import gossamer.*
-import hieroglyph.*
 import parasite.*, threading.virtual
 import prepositional.*
 import probably.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
-import turbulence.*, stdioSources.virtualMachine
+import turbulence.*
 import vacuous.*
 import zephyrine.*
 
@@ -61,8 +59,6 @@ case class User(id: Int, email: Text, privilege: List[Privilege])
 case class Privilege(name: Text, grant: Boolean)
 
 object Tests extends Suite(m"Cellulose tests (Part 1)"):
-
-  private given Realm = realm"tests"
 
   def run(): Unit = supervise:
     import CodlToken.*
@@ -1053,8 +1049,6 @@ object Tests extends Suite(m"Cellulose tests (Part 1)"):
     Tests2()
 
 object Tests2 extends Suite(m"Cellulose tests (Part 2)"):
-
-  private given Realm = realm"tests"
 
   def run(): Unit = supervise:
     def roundtrip[T: {Encodable in Codl, Decodable in Codl, CodlSchematic}](value: T): T = value.codl.as[T]

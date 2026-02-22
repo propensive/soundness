@@ -34,8 +34,6 @@ package plutocrat
 
 import soundness.*
 
-import autopsies.contrastExpectations
-
 import currencies.{Gbp, Eur}
 
 object Tests extends Suite(m"Plutocrat tests"):

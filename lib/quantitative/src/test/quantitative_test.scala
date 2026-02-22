@@ -37,8 +37,6 @@ import soundness.*
 import language.strictEquality
 import language.experimental.into
 
-import autopsies.contrastExpectations
-
 given decimalizer: Decimalizer = Decimalizer(3)
 
 object Tests extends Suite(m"Quantitative Tests"):

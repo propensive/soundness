@@ -55,7 +55,8 @@ trait Interpolator[input, state, result]:
   case class PositionalError(positionalMessage: Message, start: Int, end: Int)(using Diagnostics)
   extends Error(m"error $positionalMessage at position $start")
 
-  def expand(context: Expr[StringContext], sequence: Expr[Seq[Any]])(using thisType: Type[this.type])
+  def expand(context: Expr[StringContext], sequence: Expr[Seq[Any]])
+    ( using thisType: Type[this.type] )
     ( using Type[input], Type[state], Type[result] )
   :   Macro[result] =
 
@@ -79,8 +80,11 @@ trait Interpolator[input, state, result]:
             inline given canThrow: CanThrow[PositionalError] = unsafeExceptions.canThrowAny
             given diagnostics: Diagnostics = Diagnostics.omit
 
-            throw PositionalError
-                  (msg, start + offset.or(0), start + offset.or(0) + length.or(end - start - offset.or(0)))
+            throw
+              PositionalError
+                ( msg,
+                  start + offset.or(0),
+                  start + offset.or(0) + length.or(end - start - offset.or(0)) )
 
       def recur
         ( sequence:  Seq[Expr[Any]],

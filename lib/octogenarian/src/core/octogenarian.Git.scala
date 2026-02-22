@@ -158,9 +158,9 @@ object Git:
   private def uncheckedClone[path: Abstractable across Paths to Text]
     ( source:     Text,
       targetPath: path,
-      bare:       Boolean             = false,
-      branch:     Optional[GitBranch] = Unset,
-      recursive:  Boolean             = false)
+      bare:       Boolean,
+      branch:     Optional[GitBranch],
+      recursive:  Boolean )
     ( using Internet,
                  WorkingDirectory,
                    ( Path on Linux) is Decodable in Text,

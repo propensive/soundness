@@ -21,14 +21,16 @@ object Frontier:
 
   object SafeInlined:
     def unapply(using Quotes)(scrutinee: quotes.reflect.ImplicitSearchFailure)
-    :   Option[(Option[quotes.reflect.Tree], List[quotes.reflect.Definition], quotes.reflect.Term)] =
+    :   Option
+          [ (Option[quotes.reflect.Tree], List[quotes.reflect.Definition], quotes.reflect.Term) ] =
 
-        import quotes.reflect.*
-        try
-          scrutinee match
-            case inlined: Inlined => Some((inlined.call, inlined.bindings, inlined.body))
-            case _                => None
-        catch case error: Throwable => None
+      import quotes.reflect.*
+
+      try
+        scrutinee match
+          case inlined: Inlined => Some((inlined.call, inlined.bindings, inlined.body))
+          case _                => None
+      catch case error: Throwable => None
 
 
   object NoCandidates:

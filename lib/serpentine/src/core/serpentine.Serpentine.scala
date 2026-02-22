@@ -112,7 +112,8 @@ object Serpentine:
           case _: Throwable => false
       }
 
-  def toward[subject <: Path: Type, target <: Path: Type](subject: Expr[subject], target: Expr[target])
+  def toward[subject <: Path: Type, target <: Path: Type]
+    ( subject: Expr[subject], target: Expr[target] )
   :   Macro[Relative] =
 
     import quotes.reflect.*
