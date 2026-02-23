@@ -32,12 +32,24 @@
                                                                                                   */
 package punctuation
 
-import escapade.*
-import proscenium.*
+import denominative.*
+import prepositional.*
 
-extension (value: Markdown[Markdown.Ast.Node])
-  def render(width: Int): Teletype = TextConverter().convert(value.nodes, 0).serialize(width)
+extension (markdown: Markdown of Layout)
+  def themes: List[Markdown of Layout] =
+    def recur(todo: List[Layout], current: List[Layout], done: List[Markdown of Layout])
+    :   List[Markdown of Layout] =
 
-extension (value: Markdown.Ast.Inline)
-  @targetName("ansi2")
-  def render(width: Int): Teletype = TextConverter().phrasing(value)
+      todo match
+        case Nil =>
+          if current.nil then done.reverse
+          else recur(Nil, Nil, Markdown(Nil, current.reverse*) :: done)
+
+        case Layout.ThematicBreak(_) :: more =>
+          recur(more, Nil, Markdown(Nil, current.reverse*) :: done)
+
+        case head :: more =>
+          recur(more, head :: current, done)
+
+
+    recur(markdown.children.to(List), Nil, Nil)
