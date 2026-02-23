@@ -44,8 +44,7 @@ import autopsies.contrastExpectations
 
 export context.explainMissingContext
 
-object Delta:
-  ()
+object Delta
 
 class Alpha()
 class Beta()
@@ -58,7 +57,6 @@ object Gamma:
 
 object Beta:
   given beta: Delta => Beta = Beta()
-  ()
 
 trait Alpha2:
   given alpha2: Delta => Alpha = Alpha()

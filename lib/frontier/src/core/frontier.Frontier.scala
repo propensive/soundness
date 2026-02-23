@@ -7,8 +7,6 @@ import dendrology.*
 import escapade.*
 import fulminate.*
 import gossamer.*
-import iridescence.*
-import prepositional.*
 import proscenium.*
 import spectacular.*
 import stenography.*
@@ -19,7 +17,7 @@ import dotty.tools.dotc.*
 object Frontier:
   inline def explanation[target]: target = ${explain[target]}
 
-  object SafeInlined:
+  private object SafeInlined:
     def unapply(using Quotes)(scrutinee: quotes.reflect.ImplicitSearchFailure)
     :   Option
           [ (Option[quotes.reflect.Tree], List[quotes.reflect.Definition], quotes.reflect.Term) ] =
@@ -28,8 +26,8 @@ object Frontier:
 
       try
         scrutinee match
-          case inlined: Inlined => Some((inlined.call, inlined.bindings, inlined.body))
-          case _                => None
+          case inlined: Inlined @unchecked => Some((inlined.call, inlined.bindings, inlined.body))
+          case _                           => None
       catch case error: Throwable => None
 
 
@@ -66,59 +64,60 @@ object Frontier:
     case class Found(name: Text, expr: Expr[Any]) extends Result
 
     def seek(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
-      Implicits.searchIgnoring(repr)(self :: exclusions*) match
+      Implicits.searchIgnoring(repr)(self :: exclusions*).absolve match
         case success: ImplicitSearchSuccess =>
           Found(t"${Stenography.name(repr)}", success.tree.asExpr)
 
         case failure: ImplicitSearchFailure =>
           failure match
-            case x: dotty.tools.dotc.ast.untpd.SearchFailureIdent =>
+            case _: dotty.tools.dotc.ast.untpd.SearchFailureIdent =>
               Missing(Stenography.name(repr), Nil)
 
-            case SafeInlined(call, bindings, body) =>
-              call match
-                case Some(term) =>
-                  term match
-                    case TypeApply(left, right) =>
-                      if term.symbol.name == "explainMissingContext"
-                      then Missing(Stenography.name(repr), Nil)
-                      else
-                        Candidate
-                          ( "???",
-                            List(seek(right.head.tpe, term.symbol :: exclusions, depth + 1)) )
+            case SafeInlined(call, bindings, body) => call match
+              case None =>
+                Missing(Stenography.name(repr), Nil)
 
-                case None =>
+              case Some(term) => term match
+                case TypeApply(left, right) =>
+                  if term.symbol.name == "explainMissingContext"
+                  then Missing(Stenography.name(repr), Nil)
+                  else
+                    Candidate
+                      ( "???", List(seek(right.head.tpe, term.symbol :: exclusions, depth + 1)) )
+
+                case _ =>
                   Missing(Stenography.name(repr), Nil)
 
-            case Apply(fun, arguments) =>
-              def resolve(methodType: TypeRepr): Missing = methodType match
-                case MethodType(_, types, more) =>
-                  val name = Stenography.name(fun.symbol.termRef).show.skip(5, Rtl)
-                  val candidate =
-                    Candidate(name, types.map(seek(_, Nil, depth + 1)))
 
-                  val candidates = seek(repr, fun.symbol :: exclusions, depth) match
+            case apply: Apply @unchecked => apply match case Apply(function, arguments) =>
+              def resolve(methodType: TypeRepr): Missing = methodType match
+                case PolyType(_, _, _) =>
+                  resolve(function.tpe.simplified)
+
+                case MethodType(_, types, more) =>
+                  val name = Stenography.name(function.symbol.termRef).show.skip(5, Rtl)
+                  val candidate = Candidate(name, types.map(seek(_, Nil, depth + 1)))
+
+                  val candidates = seek(repr, function.symbol :: exclusions, depth) match
                     case Missing(_, candidates) => candidate :: candidates
                     case _                      => Nil
 
                   Missing(Stenography.name(repr), candidates)
 
-                case polytype@PolyType(_, _, _) =>
-                  resolve(fun.tpe.simplified)
-
-                case other =>
+                case _ =>
                   Missing(Stenography.name(repr), Nil)
 
-              resolve(fun.symbol.info)
+              resolve(function.symbol.info)
+
+            case _ =>
+              Missing(Stenography.name(repr), Nil)
 
 
-    val result = seek(TypeRepr.of[target], Nil, 1)
+    seek(TypeRepr.of[target], Nil, 1).absolve match
+      case Found(_, expr) =>
+        expr.asExprOf[target]
 
-    result match
-      case Found(name, expr) => expr.asExprOf[target]
-      case other =>
-        val Missing(_, results) = result
-
+      case Missing(_, results) =>
         report.errorAndAbort:
           given Result is Expandable =
             case Candidate(_, missing)  => missing
