@@ -145,7 +145,8 @@ object soundness extends ScalaModule:
     hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     parasite.core, rudiments.core, spectacular.core, symbolism.core, prepositional.core,
-    vacuous.core, wisteria.core, vicarious.core, serpentine.core, typonym.core, zephyrine.core)
+    vacuous.core, wisteria.core, vicarious.core, serpentine.core, typonym.core, zephyrine.core,
+    frontier.core)
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi,
@@ -951,6 +952,7 @@ object publishing extends Module:
     exoskeleton.completions.publishLocal()()
     exoskeleton.core.publishLocal()()
     feudalism.core.publishLocal()()
+    frontier.core.publishLocal()()
     fulminate.core.publishLocal()()
     galilei.core.publishLocal()()
     gastronomy.core.publishLocal()()

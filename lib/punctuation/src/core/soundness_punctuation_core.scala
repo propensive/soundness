@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export punctuation.{Markdown, Commonmark, Layout, Prose, Formattable}
+export punctuation.{Markdown, Commonmark, Layout, Prose, Formattable, Translator}
