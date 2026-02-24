@@ -70,7 +70,7 @@ object Tests extends Suite(m"Turbulence tests"):
         asc1 <- List(t"", t"a", t"ab", t"abc") // 32
         cp3  <- List(t"", t"€")                // 64
         asc2 <- List(t"", t"a", t"ab", t"abc") // 256
-        cp4  <- List(t"")//, t"𐍈")                // 512
+        cp4  <- List(t"", t"𐍈")                // 512
         asc3 <- List(t"", t"a", t"ab", t"abc") // 2048
       yield asc0+cp2+asc1+cp3+asc2+cp4
 
