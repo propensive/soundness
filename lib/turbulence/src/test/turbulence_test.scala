@@ -37,7 +37,6 @@ import soundness.*
 import charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
 import threading.platform
 import strategies.throwUnsafely
-import autopsies.contrastExpectations
 
 import scala.collection.mutable as scm
 
@@ -418,6 +417,11 @@ object Tests extends Suite(m"Turbulence tests"):
         Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].decompress[Gzip]
       . assert: stream => stream === Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
 
+      val longData = Stream.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+
+      test(m"Roundtrip compress/decompress a long repetitive stream with Gzip"):
+        longData.compress[Gzip].decompress[Gzip]
+      . assert(_.flatten == longData.flatten)
       test(m"Compress a single block with Zlib"):
         Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].to(List).map(_.to(List))
       . assert(_ == List(List(120, -100, 98, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, 0, 0, -1, -1), List(3, 0, 0, -26, 0, 89)))
@@ -425,3 +429,19 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Roundtrip compress/decompress a single block with Zlib"):
         Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].decompress[Zlib]
       . assert: stream => stream === Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+
+      test(m"Roundtrip compress/decompress a long repetitive stream with Zlib"):
+        longData.compress[Zlib].decompress[Zlib]
+      . assert: stream => stream === longData
+
+      test(m"Compress a single block with Deflate"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].to(List).map(_.to(List))
+      . assert(_ == List(List(98, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, 0, 0, -1, -1), List(3, 0)))
+
+      test(m"Roundtrip compress/decompress a single block with Deflate"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].decompress[Deflate]
+      . assert: stream => stream === Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+
+      test(m"Roundtrip compress/decompress a long repetitive stream with Deflate"):
+        longData.compress[Deflate].decompress[Deflate]
+      . assert: stream => stream === longData

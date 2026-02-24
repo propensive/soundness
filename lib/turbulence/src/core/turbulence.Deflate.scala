@@ -42,10 +42,10 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-object Zlib:
-  given compression: Zlib is Compression:
+object Deflate:
+  given compression: Deflate is Compression:
     def compress(stream: Stream[Data]): Stream[Data] =
-      val deflater = juz.Deflater()
+      val deflater = juz.Deflater(-1, true)
       val buffer: Array[Byte] = new Array(4096)
       val out = new ji.ByteArrayOutputStream()
 
@@ -77,7 +77,7 @@ object Zlib:
       recur(stream)
 
     def decompress(stream: Stream[Data]): Stream[Data] =
-      val inflater = juz.Inflater(false)
+      val inflater = juz.Inflater(true)
       val buffer: Array[Byte] = new Array(4096)
 
       def recur(stream: Stream[Data]): Stream[Data] = stream match
@@ -96,8 +96,9 @@ object Zlib:
         case _ =>
           val finished = inflater.finished()
           inflater.end()
+
           LazyList.empty
 
       recur(stream)
 
-sealed trait Zlib extends Compressor
+sealed trait Deflate extends Compressor

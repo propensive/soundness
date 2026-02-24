@@ -50,6 +50,7 @@ object Gzip:
       def recur(stream: Stream[Data]): Stream[Data] = stream match
         case head #:: tail =>
           out2.write(head.mutable(using Unsafe))
+          out2.flush()
           if out.size == 0 then recur(tail) else
             val data = out.toByteArray().nn.immutable(using Unsafe)
             out.reset()
