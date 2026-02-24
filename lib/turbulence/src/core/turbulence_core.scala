@@ -270,10 +270,10 @@ extension (stream: Stream[Data])
 
     recur(stream, bytes)
 
-  def compress[compression <: CompressionAlgorithm: Compression]: Stream[Data] =
+  def compress[compression <: Compressor: Compression]: Stream[Data] =
     compression.compress(stream)
 
-  def decompress[compression <: CompressionAlgorithm: Compression]: Stream[Data] =
+  def decompress[compression <: Compressor: Compression]: Stream[Data] =
     compression.decompress(stream)
 
   def shred(mean: Double, variance: Double)(using Random): Stream[Data] =

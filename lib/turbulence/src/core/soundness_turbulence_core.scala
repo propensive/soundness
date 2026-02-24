@@ -33,7 +33,7 @@
 package soundness
 
 export turbulence
-. { Aggregable, Compression, CompressionAlgorithm, Eof, Err, Spool, Gzip, In, Io, Line,
+. { Aggregable, Compression, Compressor, Eof, Err, Spool, Gzip, In, Io, Line,
     LineSeparation, Multiplexer, Out, Pistol, Pulsar, Streamable, Stdio, StreamError, Tap, Writable,
     Zlib, stream, read, writeTo, deduplicate, rate, multiplex, regulate, cluster, parallelMap,
     multiplexer, defer, metronome, gzip, gunzip, discard, compress, decompress, shred,

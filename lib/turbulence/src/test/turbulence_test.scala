@@ -70,7 +70,7 @@ object Tests extends Suite(m"Turbulence tests"):
         asc1 <- List(t"", t"a", t"ab", t"abc") // 32
         cp3  <- List(t"", t"€")                // 64
         asc2 <- List(t"", t"a", t"ab", t"abc") // 256
-        cp4  <- List(t"")//, t"𐍈")                // 512
+        cp4  <- List(t"", t"𐍈")                // 512
         asc3 <- List(t"", t"a", t"ab", t"abc") // 2048
       yield asc0+cp2+asc1+cp3+asc2+cp4
 
@@ -407,3 +407,41 @@ object Tests extends Suite(m"Turbulence tests"):
       do test(m"Multiplexed streams preserve second stream order"):
         supervise(l1.multiplex(l2).filter(_%2 == 1))
       .assert(_ == l2)
+
+    suite(m"Compression tests"):
+      test(m"Compress a single block with GZip"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].to(List).map(_.to(List))
+      . assert(_ == List(List(31, -117, 8, 0, 0, 0, 0, 0, 0, -1), List(99, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, -56, -16, -118, -53, 9, 0, 0, 0)))
+
+      test(m"Roundtrip compress/decompress a single block with GZip"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].decompress[Gzip]
+      . assert: stream => stream === Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+
+      val longData = Stream.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+
+      test(m"Roundtrip compress/decompress a long repetitive stream with Gzip"):
+        longData.compress[Gzip].decompress[Gzip]
+      . assert(_.flatten == longData.flatten)
+      test(m"Compress a single block with Zlib"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].to(List).map(_.to(List))
+      . assert(_ == List(List(120, -100, 98, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, 0, 0, -1, -1), List(3, 0, 0, -26, 0, 89)))
+
+      test(m"Roundtrip compress/decompress a single block with Zlib"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].decompress[Zlib]
+      . assert: stream => stream === Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+
+      test(m"Roundtrip compress/decompress a long repetitive stream with Zlib"):
+        longData.compress[Zlib].decompress[Zlib]
+      . assert: stream => stream === longData
+
+      test(m"Compress a single block with Deflate"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].to(List).map(_.to(List))
+      . assert(_ == List(List(98, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, 0, 0, -1, -1), List(3, 0)))
+
+      test(m"Roundtrip compress/decompress a single block with Deflate"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].decompress[Deflate]
+      . assert: stream => stream === Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+
+      test(m"Roundtrip compress/decompress a long repetitive stream with Deflate"):
+        longData.compress[Deflate].decompress[Deflate]
+      . assert: stream => stream === longData

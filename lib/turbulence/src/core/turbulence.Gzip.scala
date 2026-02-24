@@ -32,4 +32,37 @@
                                                                                                   */
 package turbulence
 
-sealed trait Gzip extends CompressionAlgorithm
+import java.io as ji
+import java.util.zip as juz
+
+import anticipation.*
+import contingency.*
+import proscenium.*
+import rudiments.*
+import vacuous.*
+
+object Gzip:
+  given compression: Gzip is Compression:
+    def compress(stream: Stream[Data]): Stream[Data] =
+      val out = ji.ByteArrayOutputStream()
+      val out2 = juz.GZIPOutputStream(out)
+
+      def recur(stream: Stream[Data]): Stream[Data] = stream match
+        case head #:: tail =>
+          out2.write(head.mutable(using Unsafe))
+          out2.flush()
+          if out.size == 0 then recur(tail) else
+            val data = out.toByteArray().nn.immutable(using Unsafe)
+            out.reset()
+            data #:: recur(tail)
+
+        case _ =>
+          out2.close()
+          if out.size == 0 then Stream() else Stream(out.toByteArray().nn.immutable(using Unsafe))
+
+      recur(stream)
+
+    def decompress(stream: Stream[Data]): Stream[Data] =
+      unsafely(juz.GZIPInputStream(stream.inputStream).stream[Data])
+
+sealed trait Gzip extends Compressor
