@@ -108,7 +108,7 @@ object Markdown:
     def render(markdown: Markdown of Prose): Html of Phrasing =
       Fragment(markdown.children.map(phrasing(_))*)
 
-  given layout: (Markdown of Layout) is Renderable = markdown =>
+  given layout: (Markdown of Layout) is Renderable in doms.html.whatwg.Flow = markdown =>
     layout2[EmptyTuple].render(markdown.asInstanceOf[Markdown of Layout across EmptyTuple])
 
   given layout2: [domains: Formattable] => (Markdown of Layout across domains) is Renderable:
@@ -124,20 +124,21 @@ object Markdown:
       @tailrec
       def merge(block: Boolean, nodes: List[Layout], done: List[Html of Flow], tight: Boolean)
       :   List[Html of Flow] =
-          nodes match
-            case Nil =>
-              if block then ((TextNode("\n"): Html of Flow) :: done).reverse else done.reverse
 
-            case Layout.Paragraph(_, contents*) :: tail if tight =>
-              val content = Fragment(contents.map(phrasing(_))*)
-              merge
-                ( false,
-                  tail,
-                  (if block then Fragment("\n", content) else content) :: done,
-                  tight )
+        nodes match
+          case Nil =>
+            if block then ((TextNode("\n"): Html of Flow) :: done).reverse else done.reverse
 
-            case head :: tail =>
-              merge(true, tail, Fragment("\n", layout(head)) :: done, tight)
+          case Layout.Paragraph(_, contents*) :: tail if tight =>
+            val content = Fragment(contents.map(phrasing(_))*)
+            merge
+              ( false,
+                tail,
+                (if block then Fragment("\n", content) else content) :: done,
+                tight )
+
+          case head :: tail =>
+            merge(true, tail, Fragment("\n", layout(head)) :: done, tight)
 
       def block(node: Layout): Boolean = node match
         case Layout.Paragraph(_, content*) => false

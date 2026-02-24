@@ -36,7 +36,7 @@ import denominative.*
 import prepositional.*
 
 extension (markdown: Markdown of Layout)
-  def themes: List[Markdown of Layout] =
+  def sections: List[Markdown of Layout] =
     def recur(todo: List[Layout], current: List[Layout], done: List[Markdown of Layout])
     :   List[Markdown of Layout] =
 
