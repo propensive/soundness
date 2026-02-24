@@ -35,6 +35,7 @@ package plutocrat
 import soundness.*
 
 import currencies.{Gbp, Eur}
+import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Plutocrat tests"):
   def run(): Unit =
@@ -136,3 +137,53 @@ object Tests extends Suite(m"Plutocrat tests"):
       test(m"Prices in different currencies cannot be combined"):
         demilitarize(Eur(1.00).tax(0.175) + Gbp(1.00).tax(0.2))
       . assert(!_.nil)
+
+
+    suite(m"ISINs"):
+      test(m"Luhn check"):
+        Luhn.check(17893729974L)
+      . assert(_ == true)
+
+      test(m"Luhn check 2"):
+        Luhn.check(49927398716L)
+      . assert(_ == true)
+
+      test(m"Luhn check 3"):
+        Luhn.check("79927398713")
+      . assert(_ == true)
+
+      test(m"Create an ISIN and get country code"):
+        unsafely(Isin("US0378331005")).countryCode
+      . assert(_ == t"US")
+
+      test(m"Create an ISIN and get NSIN"):
+        unsafely(Isin("US0378331005")).nsin
+      . assert(_ == t"0378331005")
+
+      test(m"Create an ISIN and get it back"):
+        unsafely(Isin("US0378331005")).isin
+      . assert(_ == t"US0378331005")
+
+      test(m"Create a more complex ISIN and get it back"):
+        unsafely(Isin("GB00BH4HKS39")).isin
+      . assert(_ == t"GB00BH4HKS39")
+
+      test(m"Compiletime ISIN"):
+        isin"GB00BH4HKS39"
+      . assert(_ == unsafely(Isin(t"GB00BH4HKS39")))
+
+      test(m"Compiletime ISIN length error"):
+        demilitarize(isin"GB00BH4HKS3").map(_.message)
+      . assert(_ == List(t"plutocrat: the ISIN number is not valid because it had length 11, but it should be 12 characters long"))
+
+      test(m"Compiletime ISIN bad country code"):
+        demilitarize(isin"5500BH4HKS30").map(_.message)
+      . assert(_ == List(t"plutocrat: the ISIN number is not valid because its country code 55 was not valid"))
+
+      test(m"Compiletime ISIN invalid character"):
+        demilitarize(isin"US00Bx4HKS30").map(_.message)
+      . assert(_ == List(t"plutocrat: the ISIN number is not valid because the character x at position 5 is not a digit or uppercase letter"))
+
+      test(m"Compiletime ISIN Luhn check failure"):
+        demilitarize(isin"GB00BH4HKS34").map(_.message)
+      . assert(_ == List(t"plutocrat: the ISIN number is not valid because its last digit failed the Luhn check"))
