@@ -37,6 +37,7 @@ import soundness.*
 import charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
 import threading.platform
 import strategies.throwUnsafely
+import autopsies.contrastExpectations
 
 import scala.collection.mutable as scm
 
@@ -407,3 +408,20 @@ object Tests extends Suite(m"Turbulence tests"):
       do test(m"Multiplexed streams preserve second stream order"):
         supervise(l1.multiplex(l2).filter(_%2 == 1))
       .assert(_ == l2)
+
+    suite(m"Compression tests"):
+      test(m"Compress a single block with GZip"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].to(List).map(_.to(List))
+      . assert(_ == List(List(31, -117, 8, 0, 0, 0, 0, 0, 0, -1), List(99, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, -56, -16, -118, -53, 9, 0, 0, 0)))
+
+      test(m"Roundtrip compress/decompress a single block with GZip"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].decompress[Gzip]
+      . assert: stream => stream === Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+
+      test(m"Compress a single block with Zlib"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].to(List).map(_.to(List))
+      . assert(_ == List(List(120, -100, 98, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, 0, 0, -1, -1), List(3, 0, 0, -26, 0, 89)))
+
+      test(m"Roundtrip compress/decompress a single block with Zlib"):
+        Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].decompress[Zlib]
+      . assert: stream => stream === Stream(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))

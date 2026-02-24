@@ -32,4 +32,75 @@
                                                                                                   */
 package turbulence
 
-sealed trait Zlib extends CompressionAlgorithm
+import java.io as ji
+import java.util.zip as juz
+
+import anticipation.*
+import contingency.*
+import denominative.*
+import proscenium.*
+import rudiments.*
+import vacuous.*
+
+object Zlib:
+  given compression: Zlib is Compression:
+    def compress(stream: Stream[Data]): Stream[Data] =
+      val deflater = juz.Deflater()
+      val buffer: Array[Byte] = new Array(4096)
+      val out = new ji.ByteArrayOutputStream()
+
+      def recur(stream: Stream[Data]): Stream[Data] = stream match
+        case head #:: tail =>
+          deflater.setInput(head.mutable(using Unsafe))
+          var count = deflater.deflate(buffer, 0, buffer.length, juz.Deflater.SYNC_FLUSH)
+
+          while count > 0 do
+            out.write(buffer, 0, count)
+            count = deflater.deflate(buffer, 0, buffer.length, juz.Deflater.SYNC_FLUSH)
+
+          val data = out.toByteArray.nn.immutable(using Unsafe)
+          out.reset()
+
+          if !data.nil then data #:: recur(tail) else recur(tail)
+
+        case _ =>
+          deflater.finish()
+          while !deflater.finished() do
+            val count= deflater.deflate(buffer, 0, buffer.length)
+            if count > 0 then out.write(buffer, 0, count)
+
+          val data = out.toByteArray.nn.immutable(using Unsafe)
+          out.reset()
+          deflater.end()
+          if !data.nil then Stream(data) else Stream.empty
+
+      recur(stream)
+
+    def decompress(stream: Stream[Data]): Stream[Data] =
+      val inflater = juz.Inflater(false)
+      val buffer: Array[Byte] = new Array(4096)
+
+      def recur(stream: Stream[Data]): Stream[Data] = stream match
+        case head #:: tail =>
+          inflater.setInput(head.mutable(using Unsafe))
+          val out = new ji.ByteArrayOutputStream()
+          var count = inflater.inflate(buffer)
+
+          while count > 0 do
+            out.write(buffer, 0, count)
+            count = inflater.inflate(buffer)
+
+          val data = out.toByteArray.nn.immutable(using Unsafe)
+          if !data.nil then data #:: recur(tail) else recur(tail)
+
+        case _ =>
+          val finished = inflater.finished()
+          inflater.end()
+
+          //if !finished then throw new DataFormatException("Truncated zlib stream: input ended before inflater.finished()")
+
+          LazyList.empty
+
+      recur(stream)
+
+sealed trait Zlib extends Compressor

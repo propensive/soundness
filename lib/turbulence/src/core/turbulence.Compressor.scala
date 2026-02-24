@@ -32,4 +32,4 @@
                                                                                                   */
 package turbulence
 
-trait CompressionAlgorithm
+trait Compressor
