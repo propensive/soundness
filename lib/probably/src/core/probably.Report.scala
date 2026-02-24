@@ -221,7 +221,7 @@ class Report(using Environment):
       val showStats = !lines.summaries.all(_.count < 2)
       val timeTitle = if showStats then t"Avg" else t"Time"
 
-      Table[Summary]
+      Scaffold[Summary]
         ( Column(e"")(_.status.symbol),
           Column(e"$Bold(Hash)"): s =>
             e"$CadetBlue(${s.id.id})",
@@ -278,7 +278,7 @@ class Report(using Environment):
         . filter(!_.covered(allHits))
         . map(_.copy(children = Nil))
 
-      Table[(Surface, Teletype)]
+      Scaffold[(Surface, Teletype)]
         ( Column(e""): row =>
             if row(0).juncture.branch then e"⎇" else e"",
           Column(e""): row =>
@@ -297,7 +297,7 @@ class Report(using Environment):
 
       Out.println(e"")
 
-      Table[CoverageData]
+      Scaffold[CoverageData]
         ( Column(e"Source file", textAlign = TextAlignment.Left): data =>
             data.path,
           Column(e"Hits", textAlign = TextAlignment.Right)(_.hitsText),
@@ -411,7 +411,7 @@ class Report(using Environment):
         if benchmark.throughput == 0 then e""
         else e"$Silver(${benchmark.throughput}) $Turquoise(op$Gray(·)s¯¹)"
 
-      val bench: Table[ReportLine.Bench, Teletype] = Table[ReportLine.Bench](
+      val bench: Scaffold[ReportLine.Bench, Teletype] = Scaffold[ReportLine.Bench](
         (List(
           Column(e"$Bold(Hash)"): s =>
             e"$CadetBlue(${s.test.id})",
@@ -507,7 +507,7 @@ class Report(using Environment):
             Out.println(cmp.teletype)
 
           case Verdict.Detail.Captures(map) =>
-            Table[(Text, Text), Teletype]
+            Scaffold[(Text, Text), Teletype]
               ( Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
                 Column(e"Value")(_(1)) )
 

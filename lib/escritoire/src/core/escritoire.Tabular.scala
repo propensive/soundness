@@ -36,6 +36,6 @@ import prepositional.*
 
 trait Tabular[text] extends Typeclass:
   type Element
-  def table(value: Self): Table[Element, text]
+  def table(value: Self): Scaffold[Element, text]
   def rows(value: Self): Seq[Element]
   def tabulate(value: Self): Tabulation[text] = table(value).tabulate(rows(value))

@@ -36,28 +36,28 @@ import anticipation.*
 import gossamer.*
 import proscenium.*
 
-object Table:
+object Scaffold:
   @targetName("make")
-  def apply[row](using erased Void)[text: ClassTag: Textual](columns0: Column[row, text]*)
-  :   Table[row, text] =
+  def apply[row](using erased Void)[text: ClassTag: Textual](columns: Column[row, text]*)
+  :   Scaffold[row, text] =
 
-      new Table(columns0*)
+    new Scaffold(columns*)
 
 
-case class Table[row, text: {ClassTag, Textual as textual}](columns0: Column[row, text]*):
-  table =>
+case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[row, text]*):
+  scaffold =>
 
     val columns: IArray[Column[row, text]] = IArray.from(columns0)
+
     val titles: Seq[IArray[IArray[text]]] =
       Seq(IArray.from(columns.map { column => IArray.from(column.title.cut(t"\n")) }))
 
-    def tabulate(data: Seq[row]): Tabulation[text] { type Row = row } =
-      new Tabulation[text]:
-        type Row = row
+    def tabulate(data: Seq[row]): Tabulation[text] { type Row = row } = new Tabulation[text]:
+      type Row = row
 
-        val columns: IArray[Column[Row, text]] = table.columns
-        val titles: Seq[IArray[IArray[text]]] = table.titles
-        val dataLength: Int = data.length
+      val columns: IArray[Column[Row, text]] = scaffold.columns
+      val titles: Seq[IArray[IArray[text]]] = scaffold.titles
+      val dataLength: Int = data.length
 
-        val rows: Seq[IArray[IArray[text]]] =
-          data.map { row => columns.map { column => IArray.from(column.get(row).lines) } }
+      val rows: Seq[IArray[IArray[text]]] =
+        data.map { row => columns.map { column => IArray.from(column.get(row).lines) } }

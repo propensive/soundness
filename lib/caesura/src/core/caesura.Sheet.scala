@@ -96,7 +96,7 @@ object Sheet:
     type Element = Dsv
     def rows(value: Sheet) = value.rows
 
-    def table(dsv: Sheet): Table[Dsv, Text] =
+    def table(dsv: Sheet): Scaffold[Dsv, Text] =
       val columns: List[Text] =
         dsv.columns.let(_.to(List)).or:
           dsv.rows.prim.let: head =>
@@ -104,7 +104,7 @@ object Sheet:
 
         . or(Nil)
 
-      Table[Dsv]
+      Scaffold[Dsv]
         ( (columns.map: name =>
             Column[Dsv, Text, Text](name, sizing = columnar.Collapsible(0.5))
               ( _[Text](name).or(t"")))* )

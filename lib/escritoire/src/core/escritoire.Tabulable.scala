@@ -41,8 +41,8 @@ import vacuous.*
 import wisteria.*, derivationContext.required
 
 trait Tabulable[text] extends Typeclass:
-  def table(): Table[Self, text]
-  private lazy val tableValue: Table[Self, text] = table()
+  def table(): Scaffold[Self, text]
+  private lazy val tableValue: Scaffold[Self, text] = table()
   def tabulate(data: Seq[Self]): Tabulation[text] = tableValue.tabulate(data)
 
 object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
@@ -50,7 +50,7 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
   class JoinTabulable[derivation <: Product](columns: IArray[Column[derivation, Text]])
   extends Tabulable[Text]:
     type Self = derivation
-    def table(): Table[derivation, Text] = Table[derivation](columns*)
+    def table(): Scaffold[derivation, Text] = Scaffold[derivation](columns*)
 
   inline def join[derivation <: Product: ProductReflection]: derivation is Tabulable[Text] =
     val labels: Map[Text, Text] = compiletime.summonFrom:
@@ -68,10 +68,11 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
     new JoinTabulable[derivation](columns)
 
   given int: Int is Tabulable[Text] = () =>
-    Table[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
+    Scaffold[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
 
   given double: Decimalizer => Double is Tabulable[Text] = () =>
-    Table[Double, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
+    Scaffold[Double, Text]
+      ( Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show) )
 
   given text: Text is Tabulable[Text] = () =>
-    Table[Text, Text](Column(t"", TextAlignment.Left, Unset, columnar.Prose)(identity))
+    Scaffold[Text, Text](Column(t"", TextAlignment.Left, Unset, columnar.Prose)(identity))
