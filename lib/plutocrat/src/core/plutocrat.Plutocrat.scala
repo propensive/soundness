@@ -32,7 +32,11 @@
                                                                                                   */
 package plutocrat
 
+import scala.quoted.*
+
 import anticipation.*
+import contingency.*
+import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import hypotenuse.*
@@ -43,10 +47,64 @@ import spectacular.*
 import symbolism.*
 
 object Plutocrat:
+  private given realm: Realm = realm"plutocrat"
   opaque type Money = Long
+  opaque type Isin = Long
 
   extension (value: Long) protected def in[currency <: Label]: Money in currency =
     value.asInstanceOf[Money in currency]
+
+  object Isin:
+    def apply(isin: Text): Isin raises IsinError =
+      if isin.length != 12 then abort(IsinError(IsinError.WrongLength(isin.length))) else
+        var result: Long = 0L
+        val cc0 = isin.s(0)
+
+        if 'A' <= cc0 <= 'Z' then result |= ((cc0.toLong - 'A') & 0b11111) << 59
+        else raise(IsinError(IsinError.BadCountryCode(isin.keep(2))))
+
+        val cc1 = isin.s(1)
+
+        if 'A' <= cc1 <= 'Z' then result |= ((cc1.toLong - 'A') & 0b11111) << 54
+        else raise(IsinError(IsinError.BadCountryCode(isin.keep(2))))
+
+        for index <- 2 until 11 do
+          val char = isin.s(index)
+          if '0' <= char <= '9' || 'A' <= char <= 'Z'
+          then result |= ((char.toLong - '0') & 0b111111) << (60 - index*6)
+          else raise(IsinError(IsinError.InvalidCharacter(index, char)))
+
+        if result.isin != isin then abort(IsinError(IsinError.LuhnCheck))
+        result
+
+  extension (isin: Isin)
+    private[Plutocrat] def payload: Text =
+      val chars: Array[Char] = new Array(9)
+      var numeric = 0L
+
+      for index <- 2 until 11 do
+        val char = (isin >>> (60 - index*6)) & 0b111111
+        numeric = numeric*10 + char
+        chars(index - 2) = (char + '0').toChar
+
+      String(chars).tt
+
+    def countryCode: Text =
+      t"${((isin >>> 59) + 'A').toChar}${(((isin >>> 54) & 0b11111) + 'A').toChar}"
+
+    def nsin: Text =
+      val data = t"$countryCode$payload".s.flatMap:
+        case char if char.isDigit => char.toString
+        case letter               => (letter - 55).toString
+
+      t"$payload${Luhn.digit(data)}"
+
+    def isin: Text = t"$countryCode$nsin"
+
+  def interpolator(context: Expr[StringContext]): Macro[Isin] =
+    abortive:
+      val isin = Isin(context.valueOrAbort.parts.head)
+      '{${Expr[Long](isin)}.asInstanceOf[Isin]}
 
   object Money:
     inline given underlying: [currency <: Label] => Underlying[Money in currency, Int] = !!
