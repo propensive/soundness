@@ -32,11 +32,13 @@
                                                                                                   */
 package aviation
 
+import abacist.*
 import anticipation.*
 import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
+import proscenium.*
 import quantitative.*
 import rudiments.*
 import symbolism.*
@@ -44,7 +46,7 @@ import vacuous.*
 
 object Iso8601 extends Date.Format(t"ISO 8601"):
   given Issue is Communicable =
-    case Issue.Expect(char  ) => m"$char was expected"
+    case Issue.Expect(char)   => m"$char was expected"
     case Issue.Digit          => m"a digit was expected"
     case Issue.DigitOrDash    => m"a digit or ${'-'} was expected"
     case Issue.DigitOrDashOrW => m"a digit, ${'-'} or ${'W'} was expected"
@@ -83,10 +85,24 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
     if !digit then fail(Digit)
     val year: Year = Year(number(4))
 
+    def yearWeekDay(week: Int, day: Int): Date =
+      val days: Int = (week - 1)*7 + day - 1
+      val jan4 = Date(year, Jan, Day(4))
+      import hebdomads.european
+      val firstMonday = jan4 - Quanta[Mono[Days[1]]](jan4.weekday.number.n0)
+      firstMonday + Quanta[Mono[Days[1]]](days)
+
     val date: Date = next() match
       case '-' =>
         next()
-        if !digit then fail(Digit) yet today() else
+        if focus == 'W' then
+          next()
+          val week = number(2)
+          if next() != '-' then fail(Expect('-'))
+          next()
+          yearWeekDay(week, number(1))
+
+        else if !digit then fail(Digit) yet today() else
           val month: Month = Month(number(2))
 
           next() match
@@ -101,7 +117,9 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
               fail(DigitOrDash) yet today()
 
       case 'W' =>
-        2000-Jan-1
+        next()
+        val digits = number(3)
+        yearWeekDay(digits/10, digits%10)
 
       case d if digit =>
         val month: Month = Month(number(2))
