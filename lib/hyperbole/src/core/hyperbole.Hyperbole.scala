@@ -523,7 +523,7 @@ object Hyperbole:
           node.shortCode,
           node.source )
 
-    Table[Expansion]
+    Scaffold[Expansion]
       ( Column(e"TASTy"): node =>
           val param = node.param.let { param => e"$Italic(${webColors.Orange}($param))" }.or(e"")
           e"${node.text} $param",

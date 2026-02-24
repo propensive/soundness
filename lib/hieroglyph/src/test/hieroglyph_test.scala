@@ -98,9 +98,12 @@ object Tests extends Suite(m"Hieroglyph tests"):
       .assert(_ == List(t"hieroglyph: the encoding ABCDEF was not available"))
 
       test(m"Non-encoding has a decoder method"):
-        // This import is required
-        import textSanitizers.skip
-        demilitarize(enc"ISO-2022-CN".decoder).map(_.message)
+        demilitarize:
+          import textSanitizers.skip
+          enc"ISO-2022-CN".decoder
+
+        . map(_.message)
+
       .assert(_ == List())
 
       test(m"Check that a non-encoding encoding has no encoder method"):

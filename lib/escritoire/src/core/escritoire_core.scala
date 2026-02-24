@@ -41,12 +41,12 @@ import symbolism.*
 import vacuous.*
 
 extension [row](data: Seq[row])
-  def table[text: Textual](using tabulable: row is Tabulable[text]): Tabulation[text] =
+  def tabulation[text: Textual](using tabulable: row is Tabulable[text]): Tabulation[text] =
 
     tabulable.tabulate(data)
 
 extension [value](value: value)
-  def table[text: Textual](using tabular: value is Tabular[text]): Tabulation[text] =
+  def tabulation[text: Textual](using tabular: value is Tabular[text]): Tabulation[text] =
     tabular.tabulate(value)
 
 package columnAttenuation:

@@ -160,7 +160,7 @@ object Juxtaposition:
 
               else Row(line(t"■"), e"${rgb"#667799"}($left)", e"${rgb"#667799"}($right)", e"")
 
-        val table = Table[Row]
+        val table = Scaffold[Row]
           ( Column(e"$name")(_.treeLine),
             Column(e"Expected", textAlign = TextAlignment.Left)(_.left),
             Column(e"Observed")(_.right),

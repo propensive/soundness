@@ -56,7 +56,7 @@ import columnAttenuation.ignore
 
 object Bytecode:
   given teletypeable: Bytecode is Teletypeable = bytecode =>
-    val table = Table[Instruction]
+    val table = Scaffold[Instruction]
       ( Column(e"$Bold(Source)", textAlign = TextAlignment.Right): line =>
           line.line.let: line =>
             val source = e"${rgb"#88aabb"}(${bytecode.sourceFile.or(t"")})"
