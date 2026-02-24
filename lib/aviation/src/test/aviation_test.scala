@@ -37,6 +37,8 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 
+import autopsies.contrastExpectations
+
 object Tests extends Suite(m"Aviation Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
@@ -391,13 +393,17 @@ object Tests extends Suite(m"Aviation Tests"):
           t"2023-05-28T14Z".decode[Instant]
         . assert(_ == Instant(1685282400000L))
 
-        // test(m"Week date, Sunday of week 21, full time, Z"):
-        //   t"2023-W21-7T14:30:59Z".decode[Instant]
-        // . assert(_ == Instant(1685284259000L))
+        test(m"Week date, Sunday of week 21, full time, Z"):
+          t"2023-W21-7T14:30:59Z".decode[Instant]
+        . assert(_ == Instant(1685284259000L))
 
-        // test(m"Week date, basic format, Sunday of week 21, full time, Z"):
-        //   t"2023W217T143059Z".decode[Instant]
-        // . assert(_ == Instant(1685284259000L))
+        test(m"Week date, Monday of week 21, full time, Z"):
+          t"2023-W21-1T14:30:59Z".decode[Instant]
+        . assert(_ == Instant(1684765859000L))
+
+        test(m"Week date, basic format, Sunday of week 21, full time, Z"):
+          t"2023W217T143059Z".decode[Instant]
+        . assert(_ == Instant(1685284259000L))
 
         test(m"Start of UNIX epoch"):
           t"1970-01-01T00:00:00Z".decode[Instant]
