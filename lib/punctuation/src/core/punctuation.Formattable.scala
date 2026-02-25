@@ -44,9 +44,7 @@ import doms.html.whatwg, whatwg.*
 object Formattable extends ProductDerivable[Formattable]:
   inline def join[derivation <: Product: ProductReflection]: derivation is Formattable =
     (language, content) =>
-      contexts:
-        [field] => (context: field is Formattable) => context
-
+      contexts: [field] => (context: field is Formattable) => context
       . foldLeft(Unset: Optional[Html of Flow]): (acc, next) =>
         acc.or(next.format(language, content))
 

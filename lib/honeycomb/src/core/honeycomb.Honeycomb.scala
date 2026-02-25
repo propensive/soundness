@@ -340,8 +340,11 @@ object Honeycomb:
                 case '[Map[Text, Optional[Text]]] =>
                   expr
                 case _ =>
-                  halt(m"""only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a
-                           tag body""")
+                  halt:
+                    m"""
+                      only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a
+                      tag body
+                    """
         . iterator
 
       def serialize(html: Html): Seq[Expr[Node]] = html match

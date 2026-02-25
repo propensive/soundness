@@ -88,11 +88,11 @@ class Matrix[element, rows <: Int, columns <: Int]
   def * [right, rightColumns <: Int: ValueOf]
     ( right: Matrix[right, columns, rightColumns] )
     ( using multiplication: element is Multiplicable by right,
-               addition:       multiplication.Result is Addable by multiplication.Result,
-               equality:       addition.Result =:= multiplication.Result,
-               rowValue:       ValueOf[rows],
-               columnValue:    ValueOf[columns],
-               classTag:       ClassTag[multiplication.Result])
+            addition:       multiplication.Result is Addable by multiplication.Result,
+            equality:       addition.Result =:= multiplication.Result,
+            rowValue:       ValueOf[rows],
+            columnValue:    ValueOf[columns],
+            classTag:       ClassTag[multiplication.Result] )
   :   Matrix[multiplication.Result, rows, rightColumns] =
 
       val columns2 = valueOf[rightColumns]
@@ -142,9 +142,9 @@ object Matrix:
     [ element ]
     ( rows: Tuple )
     ( using Constraint[rows.type, element],
-                                 Columns =:= ColumnConstraint[rows.type],
-                                 Rows =:= Tuple.Size[rows.type],
-                                 ClassTag[element])
+            Columns =:= ColumnConstraint[rows.type],
+            Rows =:= Tuple.Size[rows.type],
+            ClassTag[element] )
   :   Any =
 
       val rowCount: Int = valueOf[Rows]

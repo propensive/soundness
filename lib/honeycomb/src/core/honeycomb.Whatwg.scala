@@ -150,15 +150,12 @@ object Whatwg:
   def attribute[self  <: Label: ValueOf, plane <: Label: Reifiable to List[String], topic]()
   :   self is Attribute on plane of topic in Whatwg =
 
-      new Attribute(valueOf[self].tt, plane.reify.map(_.tt).to(Set), false):
-        type Plane = plane
-        type Topic = topic
-        type Self = self
+    new Attribute(valueOf[self].tt, plane.reify.map(_.tt).to(Set), false)
+    . asInstanceOf[self is Attribute on plane of topic in Whatwg]
 
   def globalAttribute[self  <: Label: ValueOf, topic](): self is Attribute of topic in Whatwg =
-    new Attribute(valueOf[self].tt, Set(), true):
-      type Topic = topic
-      type Self = self
+    new Attribute(valueOf[self].tt, Set(), true)
+    . asInstanceOf[self is Attribute of topic in Whatwg]
 
   given abbr: ("abbr" is Attribute on "th" of Textual) = attribute()
   given accept: ("accept" is Attribute on "input" of MimeList) = attribute()

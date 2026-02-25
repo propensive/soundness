@@ -73,47 +73,48 @@ package executives:
     :   Cli =
 
         arguments match
-          case t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty
-               :: t"--"
-               :: command
-               :: rest =>
+          case
+            t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty
+            :: t"--"
+            :: command
+            :: rest =>
 
-            val shell = shellName match
-              case t"zsh"  => Shell.Zsh
-              case t"fish" => Shell.Fish
-              case _       => Shell.Bash
+              val shell = shellName match
+                case t"zsh"  => Shell.Zsh
+                case t"fish" => Shell.Fish
+                case _       => Shell.Bash
 
-            val focus1 =
-              if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
+              val focus1 =
+                if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
 
 
-            def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
-              case Nil                                 => done.reverse
-              case t"=" :: tail if shell == Shell.Bash => read(tail, false, done)
+              def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
+                case Nil                                 => done.reverse
+                case t"=" :: tail if shell == Shell.Bash => read(tail, false, done)
 
-              case head :: tail =>
-                read(tail, head.starts(t"--"), head :: done)
+                case head :: tail =>
+                  read(tail, head.starts(t"--"), head :: done)
 
-            val rest2 = read(rest.to(List), false, Nil)
-            val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
-            val position = if shell == Shell.Bash then Unset else position0
-            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
-            val equalses = rest.take(focus0).count(_ == t"=")
-            val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
+              val rest2 = read(rest.to(List), false, Nil)
+              val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
+              val position = if shell == Shell.Bash then Unset else position0
+              val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
+              val equalses = rest.take(focus0).count(_ == t"=")
+              val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 
-            Completion
-              ( Cli.arguments(arguments, focus2, position, tab),
-                Cli.arguments(rest2, focus2, position, tab),
-                environment,
-                workingDirectory,
-                shell,
-                focus2,
-                position,
-                stdio,
-                signals,
-                tty,
-                tab,
-                login )
+              Completion
+                ( Cli.arguments(arguments, focus2, position, tab),
+                  Cli.arguments(rest2, focus2, position, tab),
+                  environment,
+                  workingDirectory,
+                  shell,
+                  focus2,
+                  position,
+                  stdio,
+                  signals,
+                  tty,
+                  tab,
+                  login )
 
           case t"{admin}" :: command :: Nil =>
             given Stdio = stdio

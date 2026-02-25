@@ -180,8 +180,7 @@ object Xylophone:
               types ::= TypeRepr.of[Text]
 
               ' {
-                  $expr
-                  && $scrutinee.isInstanceOf[Comment]
+                  $expr && $scrutinee.isInstanceOf[Comment]
                   &&
                     {
                       $array(${Expr(index)}) = $scrutinee.asInstanceOf[Comment].text
@@ -195,10 +194,12 @@ object Xylophone:
               types ::= TypeRepr.of[ProcessingInstruction]
 
               ' {
-                  $expr
-                  && $scrutinee.isInstanceOf[ProcessingInstruction]
-                  && { $array(${Expr(index)}) = $scrutinee.asInstanceOf[ProcessingInstruction].data
-                       true }
+                  $expr && $scrutinee.isInstanceOf[ProcessingInstruction]
+                  &&
+                  {
+                    $array(${Expr(index)}) = $scrutinee.asInstanceOf[ProcessingInstruction].data
+                    true
+                  }
                 }
 
             case Cdata("\u0000") =>
@@ -207,8 +208,7 @@ object Xylophone:
               types ::= TypeRepr.of[Cdata]
 
               ' {
-                  $expr
-                  && $scrutinee.isInstanceOf[Cdata]
+                  $expr && $scrutinee.isInstanceOf[Cdata]
                   && { $array(${Expr(index)}) = $scrutinee.asInstanceOf[Cdata].text; true }
                 }
 
@@ -228,22 +228,30 @@ object Xylophone:
               '{$expr && $scrutinee.isInstanceOf[TextNode] && $checked}
 
             case comment@Comment(text) =>
-              if text.contains("\u0000")
-              then halt(m"""only the entire comment text can be matched; write the extractor as
-                            ${t"<!--$$text-->"}""")
+              if text.contains("\u0000") then halt:
+                m"""
+                  only the entire comment text can be matched; write the extractor as
+                  ${t"<!--$$text-->"}
+                """
+
               val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Comment]})
+
               '{$expr && $scrutinee.isInstanceOf[Comment] && $checked}
 
             case cdata@Cdata(content) =>
-              if content.contains("\u0000")
-              then halt(m"""only the entire CDATA content can be matched; write the extractor as
-                            ${t"<![CDATA[$$text]]>"}""")
+              if content.contains("\u0000") then halt:
+                m"""
+                  only the entire CDATA content can be matched; write the extractor as
+                  ${t"<![CDATA[$$text]]>"}
+                """
+
               val checked = checkCdata(array, cdata, '{$scrutinee.asInstanceOf[Cdata]})
+
               '{$expr && $scrutinee.isInstanceOf[Cdata] && $checked}
 
             case pi@ProcessingInstruction(target, data) =>
               if data.contains("\u0000") || target.contains("\u0000")
-              then halt(m"""only the entire data part of a processing instruction can be matched""")
+              then halt(m"only the entire data part of a processing instruction can be matched")
               val checked = checkPi(array, pi, '{$scrutinee.asInstanceOf[ProcessingInstruction]})
               '{$expr && $scrutinee.isInstanceOf[ProcessingInstruction] && $checked}
 
@@ -362,8 +370,11 @@ object Xylophone:
                       '{$encodable.encode($expr)}
 
                     case _ =>
-                      halt(m"""a value of ${TypeRepr.of[value].show} is not encodable inside a
-                               <$tag> element""")
+                      halt:
+                        m"""
+                          a value of ${TypeRepr.of[value].show} is not encodable inside a
+                          <$tag> element
+                        """
 
               case Hole.Node(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match

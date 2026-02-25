@@ -58,8 +58,10 @@ object Urticose:
     val stream =
       Optional(getClass.getResourceAsStream("/urticose/service-names-port-numbers.csv")).or:
         safely:
-          val uri = new java.net.URI("https://www.iana.org/assignments/service-names-port-numbers/"
-                                     + "service-names-port-numbers.csv")
+          val uri =
+            new java.net.URI
+              ( "https://www.iana.org/assignments/service-names-port-numbers/"
+                + "service-names-port-numbers.csv" )
 
           uri.toURL().nn.openStream().nn: ji.InputStream
       .or:

@@ -304,18 +304,18 @@ object Synesthesia:
                                   }
                               case None => halt:
                                 m"""
-                                 there was no contextual `${TypeRepr.of[result].show} is Streamable`
-                                 instance for the return type of ${method.name}
-                                 """
+                                  there was no contextual ${TypeRepr.of[result is Streamable].show}
+                                  instance for the return type of ${method.name}
+                                """
 
                           val application = method.paramSymss.length match
                             case 0 => Select('target.asTerm, method)
 
                             case _ => halt:
                               m"""
-                               MCP resource definitions should have exactly one explicit parameter
-                               block and optionally one contextual parameter block
-                               """
+                                MCP resource definitions should have exactly one explicit parameter
+                                block and optionally one contextual parameter block
+                              """
 
                           (uri, rhs)
 
@@ -392,9 +392,9 @@ object Synesthesia:
               }
           case None => halt:
             m"""
-             there was no contextual `${TypeRepr.of[result].show} is Schematic in JsonSchema`
-             instance for the return type of ${method.name}
-             """
+              there was no contextual ${TypeRepr.of[result is Schematic in JsonSchema].show}
+              instance for the return type of ${method.name}
+            """
 
     val promptEntries = promptMethods.map: method =>
       val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
@@ -480,9 +480,9 @@ object Synesthesia:
 
               case None => halt:
                 m"""
-                 there was no contextual `${TypeRepr.of[result].show} is Streamable` instance for
-                 the return type of ${method.name}
-                 """
+                  there was no contextual ${TypeRepr.of[result is Streamable].show} instance for the
+                  return type of ${method.name}
+                """
 
     ' {
         new McpSpecification:

@@ -104,8 +104,8 @@ object Contrastable:
         val rightOnly: Set[Text] = (right -- left).map(_.show)
 
         def describe(set: Set[Text]): Text =
-          (if set.size > 5
-           then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}" else set.to(List))
+          ( if set.size > 5
+            then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}" else set.to(List) )
           . join(t"{", t", ", t"}")
 
         val message =
@@ -155,7 +155,7 @@ object Contrastable:
       (left, right) =>
         if left == right then Juxtaposition.Same(left) else
           def decompose(chars: IArray[Char]): IArray[Decomposition] = chars.map: char =>
-             Decomposition.Primitive(t"Char", char.show, char)
+            Decomposition.Primitive(t"Char", char.show, char)
           comparison[Char](t"Text", decompose(left.chars), decompose(right.chars), left, right)
 
     given string: String is Contrastable.Foundation =

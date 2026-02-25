@@ -62,10 +62,8 @@ object LocalClasspath:
 
 
   def apply
-    ( entries: List
-                  [ClasspathEntry.Directory
-                   | ClasspathEntry.Jar
-                   | ClasspathEntry.JavaRuntime.type])
+    ( entries
+      : List [ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type] )
   :   LocalClasspath =
 
     new LocalClasspath(entries, entries.to(Set))
@@ -75,22 +73,20 @@ object LocalClasspath:
   =>  ( Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks )
   =>  LocalClasspath is Addable by path to LocalClasspath =
 
-      (classpath, path) =>
-        path.generic.decode[Path on Linux].pipe: path =>
-          val entry: ClasspathEntry.Directory | ClasspathEntry.Jar = path.entry() match
-            case Directory => ClasspathEntry.Directory(path.encode)
-            case _         => ClasspathEntry.Jar(path.encode)
+    (classpath, path) =>
+      path.generic.decode[Path on Linux].pipe: path =>
+        val entry: ClasspathEntry.Directory | ClasspathEntry.Jar = path.entry() match
+          case Directory => ClasspathEntry.Directory(path.encode)
+          case _         => ClasspathEntry.Jar(path.encode)
 
-          if classpath.entrySet.contains(entry) then classpath
-          else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)
+        if classpath.entrySet.contains(entry) then classpath
+        else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)
 
 
 class LocalClasspath private
-  ( val entries: List
-                  [ClasspathEntry.Directory
-                   | ClasspathEntry.Jar
-                   | ClasspathEntry.JavaRuntime.type],
-    val entrySet: Set[ClasspathEntry])
+  ( val entries
+    : List[ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type],
+    val entrySet: Set[ClasspathEntry] )
 extends Classpath:
 
   def apply()(using System): Text =

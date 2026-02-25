@@ -212,8 +212,8 @@ object Http:
 
       ListMap[Text, Text](
         t"content"
-        -> safely(request.headers.contentType.prim.or(media"application/octet-stream").show)
-           . or(t"?"),
+        ->  ( safely(request.headers.contentType.prim.or(media"application/octet-stream").show)
+              . or(t"?") ),
         t"method"   -> request.method.show,
         t"query"    -> request.query.show,
         t"hostname" -> request.host.show,

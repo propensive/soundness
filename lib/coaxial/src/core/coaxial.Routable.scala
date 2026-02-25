@@ -65,11 +65,12 @@ object Routable:
 
     def transmit(connection: Connection, input: Stream[Data]): Unit =
       input.each: bytes =>
-        val packet = jn.DatagramPacket
-                      (bytes.mutable(using Unsafe),
-                       input.length,
-                       jn.InetAddress.getLocalHost.nn,
-                       connection.port)
+        val packet =
+          jn.DatagramPacket
+            ( bytes.mutable(using Unsafe),
+              input.length,
+              jn.InetAddress.getLocalHost.nn,
+              connection.port )
 
         connection.socket.send(packet)
 

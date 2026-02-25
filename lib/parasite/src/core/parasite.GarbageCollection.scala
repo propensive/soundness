@@ -73,8 +73,10 @@ object GarbageCollection:
       case other                 => Some(Other(name))
 
   enum Cause:
-    case AllocationFailure, SystemGc, GcLocker, Metadata, Ergonomics, CmsInitialMark,
-         CmsFinalRemark, FullGc, HeapInspection, NoGc, G1EvacuationPause, G1HumongousAllocation
+    case
+      AllocationFailure, SystemGc, GcLocker, Metadata, Ergonomics, CmsInitialMark, CmsFinalRemark,
+      FullGc, HeapInspection, NoGc, G1EvacuationPause, G1HumongousAllocation
+
     case Other(cause: Text)
 
   object Cause:
@@ -101,8 +103,9 @@ object GarbageCollection:
         jlm.ManagementFactory.getGarbageCollectorMXBeans().nn.asScala.to(List).flatMap:
           case emitter: jm.NotificationEmitter =>
             val listener: jm.NotificationListener = (notification, handback) =>
-              if notification.nn.getType()
-                 == csm.GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION
+              if
+                notification.nn.getType()
+                == csm.GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION
               then
                 notification.nn.getUserData.nn match
                   case info: jmo.CompositeData =>

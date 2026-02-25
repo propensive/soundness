@@ -89,16 +89,23 @@ object Obligatory:
                             . asTerm
 
                           case None =>
-                            halt(m"""could not find a contextual
-                                    `${TypeRepr.of[param].show} is Decodable in Json` instance for
-                                    the parameter ${param.name} of ${method.name}""")
+                            halt:
+                              m"""
+                                could not find a contextual
+                                ${TypeRepr.of[param is Decodable in Json].show} instance for the
+                                parameter ${param.name} of ${method.name}
+                              """
 
                     val application = Apply(Select(target.asTerm, method), params)
 
                     val result: TypeRepr = method.info.absolve match
                       case MethodType(_, _, result) => result
-                      case _ => halt(m"""the type of method ${method.name} has the unexpected type,
-                                         ${method.info.show}""")
+                      case _ =>
+                        halt:
+                          m"""
+                            the type of method ${method.name} has the unexpected type,
+                            ${method.info.show}
+                          """
 
                     val rhs = result.asType.absolve match
                       case '[Unit] => '{${application.asExpr} yet Unset}
@@ -113,9 +120,12 @@ object Obligatory:
                             }
 
                         case None =>
-                          halt(m"""could not find a contextual
-                                  `${TypeRepr.of[result].show} is Encodable in Json` instance for
-                                  the return type of ${method.name}""")
+                          halt:
+                            m"""
+                              could not find a contextual
+                              ${TypeRepr.of[result is Encodable in Json].show} instance for the
+                              return type of ${method.name}
+                            """
 
                     CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
 
@@ -172,18 +182,24 @@ object Obligatory:
                     '{$name -> ${encoder}.encoded(${ident.asExprOf[param]})}
 
                   case _ =>
-                    halt(m"""could not find a contextual
-                             `${TypeRepr.of[param].show} is Encodable in Json` instance for
-                             parameter ${param.name} of ${method.name}""")
+                    halt:
+                      m"""
+                        could not find a contextual ${TypeRepr.of[param is Encodable in Json].show}
+                        instance for parameter parameter ${param.name} of ${method.name}
+                      """
 
               case _ =>
-                halt(m"""all remote methods in ${TypeRepr.of[interface].show} must have a single
-                         parameter list""")
+                halt:
+                  m"""
+                    all remote methods in ${TypeRepr.of[interface].show} must have a single
+                    parameter list
+                  """
 
           val result: TypeRepr = runSym.info.absolve match
             case MethodType(_, _, result) => result
-            case _ => halt(m"""the type of method ${method.name} has the unexpected type,
-                               ${method.info.show}""")
+            case _ =>
+              halt:
+                m"the type of method ${method.name} has the unexpected type, ${method.info.show}"
 
           val notification = result.typeSymbol == TypeRepr.of[Unit].typeSymbol
           val id = if notification then '{Unset} else Expr(Uuid().show)
@@ -216,9 +232,13 @@ object Obligatory:
                             }
                           . asTerm
 
-                      case _ => halt(m"""a contextual
-                                         ${TypeRepr.of[result is Decodable in Json].show} was not
-                                         found""")
+                      case _ =>
+                        halt:
+                          m"""
+                            a contextual ${TypeRepr.of[result is Decodable in Json].show} was not
+                            found
+                          """
+
                 case _ => halt(m"a contextual `Online` instance is required")
               case _ => halt(m"a contextual `Codicil` instance is required")
             case _ => halt(m"a contextual `Monitor` instance is required")
@@ -270,12 +290,18 @@ object Obligatory:
                     val name = Expr(param.name)
                     '{$name -> ${encoder}.encoded(${ident.asExprOf[param]})}
                   case _ =>
-                    halt(m"""could not find a contextual
-                             `${TypeRepr.of[param].show} is Encodable in Json` instance for
-                             parameter ${param.name} of ${method.name}""")
+                    halt:
+                      m"""
+                        could not find a contextual ${TypeRepr.of[param is Encodable in Json].show}
+                        instance for parameter ${param.name} of ${method.name}
+                      """
+
               case _ =>
-                halt(m"""all remote methods in ${TypeRepr.of[interface].show} must have a single
-                         parameter list""")
+                halt:
+                  m"""
+                    all remote methods in ${TypeRepr.of[interface].show} must have a single
+                    parameter list
+                  """
 
           val result: TypeRepr = runSym.info.absolve match
             case MethodType(_, _, result) => result
@@ -304,9 +330,12 @@ object Obligatory:
                   . asTerm
 
               case _ =>
-                halt(m"""could not find a contextual
-                         `${TypeRepr.of[result].show} is Decodable in Json` instance for the return
-                         type of ${method.name}""")
+                halt:
+                  m"""
+                    could not find a contextual ${TypeRepr.of[result is Decodable in Json].show}
+                    instance for the return type of ${method.name}
+                  """
+
         case _ => halt(m"the method ${method.name} must have exactly one parameter list")
       })
 

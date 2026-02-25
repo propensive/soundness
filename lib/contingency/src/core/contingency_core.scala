@@ -196,21 +196,21 @@ transparent inline def track[focus](using erased Void)[accrual <: Exception](acc
   ( inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual )
 :   Tracking[accrual, ?, focus] =
 
-    ${Contingency.track[accrual, focus]('accrual, 'block)}
+  ${Contingency.track[accrual, focus]('accrual, 'block)}
 
 
 transparent inline def validate[focus](using erased Void)[accrual](accrual: accrual)
   ( inline block: (focus: Optional[focus], accrual: accrual) ?=> Exception ~> accrual )
 :   Any =
 
-    ${Contingency.validate[accrual, focus]('accrual, 'block)}
+  ${Contingency.validate[accrual, focus]('accrual, 'block)}
 
 
 transparent inline def accrue[accrual <: Exception](accrual: accrual)[result]
   ( inline block: (accrual: accrual) ?=> Exception ~> accrual )
 :   Any =
 
-    ${Contingency.accrue[accrual]('accrual, 'block)}
+  ${Contingency.accrue[accrual]('accrual, 'block)}
 
 
 extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lambda])
@@ -218,7 +218,7 @@ extension [accrual <: Exception,  lambda[_]](inline accrue: Accrue[accrual, lamb
     ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
   :   result =
 
-      ${Contingency.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic, 'diagnostics)}
+    ${Contingency.accrueWithin[accrual, lambda, result]('accrue, 'lambda, 'tactic, 'diagnostics)}
 
 
 extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
@@ -226,10 +226,10 @@ extension [accrual <: Exception,  lambda[_], focus](inline track: Tracking[accru
     ( using tactic: Tactic[accrual], diagnostics: Diagnostics )
   :   result =
 
-      $ {
-          Contingency.trackWithin[accrual, lambda, result, focus]
-            ( 'track, 'lambda, 'tactic, 'diagnostics )
-        }
+    $ {
+        Contingency.trackWithin[accrual, lambda, result, focus]
+          ( 'track, 'lambda, 'tactic, 'diagnostics )
+      }
 
 
 extension [accrual <: Exception,  lambda[_], focus]
@@ -237,16 +237,17 @@ extension [accrual <: Exception,  lambda[_], focus]
   inline def within(inline lambda: Foci[focus] ?=> lambda[Any])(using diagnostics: Diagnostics)
   :   accrual =
 
-      ${Contingency.validateWithin[accrual, lambda, focus]('validate, 'lambda, 'diagnostics)}
+    ${Contingency.validateWithin[accrual, lambda, focus]('validate, 'lambda, 'diagnostics)}
 
 
 extension [element](sequence: Iterable[element])
   transparent inline def survive[result](using erased Void)[error <: Exception]
-    ( lambda: (OptionalTactic[error, result], Diagnostics, CanThrow[Exception] )
-               ?=> element => result )
+    ( lambda
+      : (OptionalTactic[error, result], Diagnostics, CanThrow[Exception])
+          ?=> element => result )
   :   Iterable[result] =
 
-      sequence.map { element => safely(lambda(element)) }.compact
+    sequence.map { element => safely(lambda(element)) }.compact
 
 
 extension [value](optional: Optional[value])
@@ -259,6 +260,6 @@ extension [value](optional: Optional[value])
                 value => success )
   :   Optional[success] =
 
-      try boundary: label ?=>
-        optional.let(block(using Diagnostics.omit, OptionalTactic(label)))
-      catch case error: Exception => Unset
+    try boundary: label ?=>
+      optional.let(block(using Diagnostics.omit, OptionalTactic(label)))
+    catch case error: Exception => Unset

@@ -46,10 +46,9 @@ object Inspectable extends Inspectable2:
   object Derivation extends Derivable[Inspectable]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Inspectable =
       value =>
-        fields(value):
-          [field] => field =>
-            val text = context.text(field)
-            if tuple then text else s"$label:$text"
+        fields(value): [field] => field =>
+          val text = context.text(field)
+          if tuple then text else s"$label:$text"
 
         . mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 

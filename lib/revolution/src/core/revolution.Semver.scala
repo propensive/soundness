@@ -56,8 +56,9 @@ object Semver:
         case text: Text => text
         case long: Long => long.show
 
-      val prerelease = if semver.prerelease.nil then t""
-                       else t"-"+semver.prerelease.map(_.text).join(t".")
+      val prerelease =
+        if semver.prerelease.nil then t""
+        else t"-"+semver.prerelease.map(_.text).join(t".")
 
       val build = if semver.build.nil then t"" else t"+"+semver.build.map(_.text).join(t".")
 

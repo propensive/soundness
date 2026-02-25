@@ -46,4 +46,4 @@ extension [sendable: Sendable](email: sendable)
     ( using courier: Courier, sender: Sender )
   :   courier.Result =
 
-     courier.send(Envelope(email, to, cc, bcc, replyTo, subject))
+    courier.send(Envelope(email, to, cc, bcc, replyTo, subject))

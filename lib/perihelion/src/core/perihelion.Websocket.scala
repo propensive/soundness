@@ -53,8 +53,9 @@ import alphabets.base64.standard
 object Websocket:
   val magic: Text = t"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
   enum Opcode:
-    case Continuation, Text, Binary, Reserved0, Reserved1, Reserved2, Reserved3, Reserved4, Close,
-         Ping, Pong
+    case
+      Continuation, Text, Binary, Reserved0, Reserved1, Reserved2, Reserved3, Reserved4, Close,
+      Ping, Pong
 
   given servable: [ResultType] => Websocket[ResultType] is Servable:
     def serve(websocket: Websocket[ResultType]): Http.Response =

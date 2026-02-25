@@ -139,12 +139,16 @@ object Html extends Tag.Container
         def recur(node: Html, indent: Int, block: Boolean, mode: Mode): Unit =
           node match
             case Fragment(nodes*) => nodes.each(recur(_, indent, block, mode))
-            case Comment(comment) => emitter.put("<!--")
-                                     emitter.put(comment)
-                                     emitter.put("-->")
-            case Doctype(text)    => emitter.put("<!DOCTYPE ")
-                                     emitter.put(text) // FIXME: entities
-                                     emitter.put(">")
+
+            case Comment(comment) =>
+              emitter.put("<!--")
+              emitter.put(comment)
+              emitter.put("-->")
+
+            case Doctype(text) =>
+              emitter.put("<!DOCTYPE ")
+              emitter.put(text) // FIXME: entities
+              emitter.put(">")
 
             case TextNode(text) =>
               mode match
@@ -152,6 +156,7 @@ object Html extends Tag.Container
                   emitter.put(text)
                 case _ =>
                   var position: Int = 0
+
                   while position < text.length do
                     val amp = text.s.indexOf('&', position)
                     val lt = text.s.indexOf('<', position)
@@ -175,6 +180,7 @@ object Html extends Tag.Container
                 attributes.each: (key, value) =>
                   emitter.put(" ")
                   emitter.put(key)
+
                   value.let: value =>
                     emitter.put("=\"")
                     var position: Int = 0
@@ -437,16 +443,22 @@ object Html extends Tag.Container
     def tagname(mark: Mark, dictionary: Dictionary[Tag])(using Cursor.Held): Tag =
       cursor.lay(fail(ExpectedMore)):
         case char if char.isLetter || char.isDigit => dictionary(char.minuscule) match
-          case Dictionary.Empty => cursor.next()
-                                   val name = cursor.grab(mark, cursor.mark)
-                                   cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
-          case other            => next() yet tagname(mark, other)
+          case Dictionary.Empty =>
+            cursor.next()
+            val name = cursor.grab(mark, cursor.mark)
+            cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
+
+          case other =>
+            next() yet tagname(mark, other)
 
         case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => dictionary match
-          case Dictionary.Just("", tag)       =>  tag
-          case Dictionary.Branch(tag: Tag, _) =>  tag
-          case other                          =>  val name = cursor.grab(mark, cursor.mark)
-                                                  cursor.cue(mark) yet fail(InvalidTag(name))
+          case Dictionary.Just("", tag)       => tag
+          case Dictionary.Branch(tag: Tag, _) => tag
+
+          case other =>
+            val name = cursor.grab(mark, cursor.mark)
+            cursor.cue(mark) yet fail(InvalidTag(name))
+
         case '\u0000' =>
           fail(BadInsertion)
 
@@ -728,10 +740,11 @@ object Html extends Tag.Container
         parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
 
       cursor.lay(finish(parent, count)):
-        case '\u0000' => callback.let(_(cursor.position, Hole.Node(parent.label)))
-                         next()
-                         append(TextNode("\u0000"))
-                         read(parent, admissible, map, count + 1)
+        case '\u0000' =>
+          callback.let(_(cursor.position, Hole.Node(parent.label)))
+          next()
+          append(TextNode("\u0000"))
+          read(parent, admissible, map, count + 1)
 
         case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
           var level: Level = Level.Peer
@@ -804,14 +817,19 @@ object Html extends Tag.Container
                   current = Element(content, map, array(count), parent.foreign)
 
           level match
-            case Level.Ascend  =>  current
-            case Level.Peer    =>  append(current)
-                                   read(parent, admissible, map, count + 1)
-            case Level.Descend =>  push(focus)
-                                   val child = descend(focus, admissible)
-                                   pop()
-                                   append(child)
-                                   read(parent, admissible, map, count + 1)
+            case Level.Ascend =>
+              current
+
+            case Level.Peer =>
+              append(current)
+              read(parent, admissible, map, count + 1)
+
+            case Level.Descend =>
+              push(focus)
+              val child = descend(focus, admissible)
+              pop()
+              append(child)
+              read(parent, admissible, map, count + 1)
 
         case char => parent.mode match
           case Mode.Whitespace =>

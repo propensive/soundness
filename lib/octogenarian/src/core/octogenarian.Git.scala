@@ -162,10 +162,10 @@ object Git:
       branch:     Optional[GitBranch],
       recursive:  Boolean )
     ( using Internet,
-                 WorkingDirectory,
-                   ( Path on Linux) is Decodable in Text,
-                 Tactic[ExecError],
-                 GitCommand)
+            WorkingDirectory,
+            (Path on Linux) is Decodable in Text,
+            Tactic[ExecError],
+            GitCommand )
     ( using gitError: Tactic[GitError] )
   :   GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 

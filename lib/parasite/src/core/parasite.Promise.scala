@@ -62,8 +62,8 @@ final case class Promise[value]():
   def cancelled: Boolean = state.get() == Cancelled
 
   def apply(): Optional[value] = state.get() match
-     case Complete(value) => value
-     case _               => Unset
+    case Complete(value) => value
+    case _               => Unset
 
   def ready: Boolean = state.get() match
     case Incomplete(_) => false

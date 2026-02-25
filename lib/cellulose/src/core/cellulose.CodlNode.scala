@@ -107,7 +107,7 @@ case class CodlNode(data: Optional[Atom] = Unset, extra: Optional[Extra] = Unset
 
   def uncommented: CodlNode =
     val data2 = data.let: data =>
-       Atom(data.key, children = data.children.map(_.uncommented), Layout.empty, data.schema)
+      Atom(data.key, children = data.children.map(_.uncommented), Layout.empty, data.schema)
 
     CodlNode(data2, Unset)
 

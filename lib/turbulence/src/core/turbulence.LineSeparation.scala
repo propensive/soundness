@@ -36,10 +36,10 @@ import anticipation.*
 
 object LineSeparation:
   inline def readByte
-    ( inline read:      => Byte,
-                      next:      => Unit,
-               inline mkNewline: => Unit,
-               inline put: Byte  => Unit)
+    ( inline  read:      => Byte,
+              next:      => Unit,
+      inline  mkNewline: => Unit,
+      inline  put: Byte  => Unit )
     ( lineSeparators: LineSeparation )
   :   Unit =
 

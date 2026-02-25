@@ -108,7 +108,7 @@ enum Syntax:
 
     case Application(left, elements, infix) => left match
       case Simple(Typename.Type(parent, name)) if infix && imports.has(parent) =>
-       Infix(elements(0), name, elements(1)).text
+        Infix(elements(0), name, elements(1)).text
 
       case _ =>
         left.text+elements.map(_.text).mkString("[", ", ", "]").tt
@@ -399,9 +399,10 @@ object Syntax:
         val arguments =
           if arguments0.nil then Sequence('(', Nil)
           else if unnamed then Sequence('(', types.map(apply(_)))
-          else Sequence
-                ('(',
-                 arguments0.zip(types).map { (member, typ) => Named(false, member, apply(typ)) })
+          else
+            Sequence
+              ( '(',
+                arguments0.zip(types).map { (member, typ) => Named(false, member, apply(typ)) } )
 
         val arrow = if method.isContextual then "?=>" else "=>"
         if unnamed && arguments0.length == 1

@@ -131,12 +131,16 @@ object Xml extends Tag.Container
         def recur(node: Xml, indent: Int): Unit =
           node match
             case Fragment(nodes*) => nodes.each(recur(_, indent))
-            case Comment(comment) => emitter.put("<!--")
-                                     emitter.put(comment)
-                                     emitter.put("-->")
-            case Cdata(text)      => emitter.put("<![CDATA[")
-                                     emitter.put(text)
-                                     emitter.put("]]>")
+
+            case Comment(comment) =>
+              emitter.put("<!--")
+              emitter.put(comment)
+              emitter.put("-->")
+
+            case Cdata(text) =>
+              emitter.put("<![CDATA[")
+              emitter.put(text)
+              emitter.put("]]>")
 
             case ProcessingInstruction(target, data) =>
               emitter.put("<?")
@@ -412,10 +416,13 @@ object Xml extends Tag.Container
         case chr if chr.isLetter || chr.isDigit =>
           dictionary.lay(next() yet tagname(mark, Unset)): dictionary =>
             dictionary(chr.minuscule) match
-              case Dictionary.Empty => cursor.next()
-                                       val name = cursor.grab(mark, cursor.mark)
-                                       cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
-              case other            => next() yet tagname(mark, other)
+              case Dictionary.Empty =>
+                cursor.next()
+                val name = cursor.grab(mark, cursor.mark)
+                cursor.cue(mark) yet fail(InvalidTagStart(name.lower))
+
+              case other =>
+                next() yet tagname(mark, other)
 
         case ' ' | Ff | Lf | Cr | Ht | '/' | '>' => dictionary match
           case Dictionary.Just("", tag)            =>  tag
@@ -433,9 +440,9 @@ object Xml extends Tag.Container
     :   XmlAttribute =
         cursor.lay(fail(ExpectedMore)):
           case chr if chr.isLetter || chr == '-' => dictionary.let(_(chr.minuscule)) match
-            case Unset            =>  next() yet key(mark, Unset)
-            case Dictionary.Empty =>  fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
-            case dictionary       =>  next() yet key(mark, dictionary)
+            case Unset            => next() yet key(mark, Unset)
+            case Dictionary.Empty => fail(UnknownAttributeStart(cursor.grab(mark, cursor.mark)))
+            case dictionary       => next() yet key(mark, dictionary)
 
           case ' ' | Ff | Lf | Cr | Ht | '=' | '>' =>
             dictionary.let: dictionary =>
@@ -451,17 +458,24 @@ object Xml extends Tag.Container
 
     @tailrec
     def value(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '&' =>  val start = cursor.mark
-                   next()
-                   val mark2 = entity(cursor.mark).lay(mark): text =>
-                     cursor.clone(mark, start)(buffer)
-                     buffer.append(text)
-                     cursor.mark
-                   value(mark2)
-      case '"' =>  cursor.clone(mark, cursor.mark)(buffer)
-                   next() yet result()
-      case Nul =>  callback.let(_(cursor.position, Hole.Text)) yet next() yet value(mark)
-      case chr =>  next() yet value(mark)
+      case '&' =>
+        val start = cursor.mark
+        next()
+        val mark2 = entity(cursor.mark).lay(mark): text =>
+          cursor.clone(mark, start)(buffer)
+          buffer.append(text)
+          cursor.mark
+        value(mark2)
+
+      case '"' =>
+        cursor.clone(mark, cursor.mark)(buffer)
+        next() yet result()
+
+      case Nul =>
+        callback.let(_(cursor.position, Hole.Text)) yet next() yet value(mark)
+
+      case chr =>
+        next() yet value(mark)
 
     @tailrec
     def singleQuoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
@@ -470,10 +484,10 @@ object Xml extends Tag.Container
 
     @tailrec
     def unquoted(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '>' | ' ' | Ff | Lf | Cr | Ht     =>  cursor.grab(mark, cursor.mark)
-      case chr@('"' | Sqt | '<' | '=' | '`') =>  fail(ForbiddenUnquoted(chr))
-      case Nul                               =>  fail(BadInsertion)
-      case chr                               =>  next() yet unquoted(mark)
+      case '>' | ' ' | Ff | Lf | Cr | Ht     => cursor.grab(mark, cursor.mark)
+      case chr@('"' | Sqt | '<' | '=' | '`') => fail(ForbiddenUnquoted(chr))
+      case Nul                               => fail(BadInsertion)
+      case chr                               => next() yet unquoted(mark)
 
     def equality(): Unit = skip() yet cursor.lay(fail(ExpectedMore)):
       case '=' =>  next() yet skip() yet true
@@ -487,10 +501,13 @@ object Xml extends Tag.Container
 
         skip() yet cursor.lay(fail(ExpectedMore)):
           case '>' | '/' => entries
-          case Nul       => callback.let(_(cursor.position, Hole.Tagbody))
-                            next()
-                            skip()
-                            attributes(tag, entries.updated(t"\u0000", t""))
+
+          case Nul =>
+            callback.let(_(cursor.position, Hole.Tagbody))
+            next()
+            skip()
+            attributes(tag, entries.updated(t"\u0000", t""))
+
           case _ =>
             val key2 =
               key(cursor.mark, schema.attributes.unless(schema.freeform)).tap: key =>
@@ -503,11 +520,18 @@ object Xml extends Tag.Container
             equality()
 
             val assignment: Text = cursor.lay(fail(ExpectedMore)):
-              case Nul =>  callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
-                           next() yet t"\u0000"
-              case Dqt =>  next() yet value(cursor.mark)
-              case Sqt =>  next() yet singleQuoted(cursor.mark)
-              case _   =>  fail(UnquotedAttribute)
+              case Nul =>
+                callback.let(_(cursor.position, Hole.Attribute(tag, key2)))
+                next() yet t"\u0000"
+
+              case Dqt =>
+                next() yet value(cursor.mark)
+
+              case Sqt =>
+                next() yet singleQuoted(cursor.mark)
+
+              case _ =>
+                fail(UnquotedAttribute)
 
             attributes(tag, entries.updated(key2, assignment))
 
@@ -592,30 +616,41 @@ object Xml extends Tag.Container
           cursor.next() yet textual(mark, close, entities)
 
     def comment(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '-' =>  val end = cursor.mark
-                   next()
-                   cursor.lay(fail(ExpectedMore)):
-                     case '-' => expect('>') yet cursor.grab(mark, end)
-                     case _   => comment(mark)
-      case Nul =>  callback.let(_(cursor.position, Hole.Comment))
-                   next() yet comment(mark)
-      case chr =>  next() yet comment(mark)
+      case '-' =>
+        val end = cursor.mark
+        next()
+        cursor.lay(fail(ExpectedMore)):
+          case '-' => expect('>') yet cursor.grab(mark, end)
+          case _   => comment(mark)
+
+      case Nul =>
+        callback.let(_(cursor.position, Hole.Comment))
+        next() yet comment(mark)
+
+      case chr =>
+        next() yet comment(mark)
 
     def cdata(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case ']' =>  val end = cursor.mark
-                   next()
-                   cursor.lay(fail(ExpectedMore)):
-                     case ']' => expect('>') yet cursor.grab(mark, end)
-                     case _   => cdata(mark)
-      case chr =>  next() yet cdata(mark)
+      case ']' =>
+        val end = cursor.mark
+        next()
+        cursor.lay(fail(ExpectedMore)):
+          case ']' => expect('>') yet cursor.grab(mark, end)
+          case _   => cdata(mark)
+
+      case chr =>
+        next() yet cdata(mark)
 
     def piData(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
-      case '?' =>  val end = cursor.mark
-                   next()
-                   cursor.lay(fail(ExpectedMore)):
-                     case '>' => cursor.grab(mark, end)
-                     case _   => piData(mark)
-      case chr =>  next() yet piData(mark)
+      case '?' =>
+        val end = cursor.mark
+        next()
+        cursor.lay(fail(ExpectedMore)):
+          case '>' => cursor.grab(mark, end)
+          case _   => piData(mark)
+
+      case chr =>
+        next() yet piData(mark)
 
     def piTarget(mark: Mark)(using Cursor.Held): Text = cursor.lay(fail(ExpectedMore)):
       case ' ' | Lf | Cr | Ff | Ht => cursor.grab(mark, cursor.mark)
@@ -767,13 +802,17 @@ object Xml extends Tag.Container
 
           level match
             case Level.Ascend  =>  current
-            case Level.Peer    =>  append(current)
-                                   read(parent, map, count + 1)
-            case Level.Descend =>  push(focus)
-                                   val child = descend(focus, admissible)
-                                   pop()
-                                   append(child)
-                                   read(parent, map, count + 1)
+
+            case Level.Peer =>
+              append(current)
+              read(parent, map, count + 1)
+
+            case Level.Descend =>
+              push(focus)
+              val child = descend(focus, admissible)
+              pop()
+              append(child)
+              read(parent, map, count + 1)
 
         case chr =>
           val text = cursor.hold(textual(cursor.mark, Unset, true))

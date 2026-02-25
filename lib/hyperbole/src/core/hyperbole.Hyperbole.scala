@@ -355,9 +355,9 @@ object Hyperbole:
 
           case Try(expr, cases, finalizer) =>
             TastyTree(tag, typeName, t"Try", tree)
-             . add('t', expr)
-             . add('c', cases*)
-             . add('f', finalizer.to(List)*)
+            . add('t', expr)
+            . add('c', cases*)
+            . add('f', finalizer.to(List)*)
 
           case Block(statements, last) =>
             TastyTree(tag, typeName, t"Block", tree)

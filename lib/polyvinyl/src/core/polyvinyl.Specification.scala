@@ -40,9 +40,9 @@ import prepositional.*
 import proscenium.*
 
 trait Specification extends Original:
- specification =>
   type Origin
-  type Form <: { type Origin = specification.Origin }
+  protected type Origin0 = Origin
+  type Form <: { type Origin = Origin0 }
 
   def fields: Map[Text, Member]
   def make(data: Origin, transform: Text => Origin => Any): Record

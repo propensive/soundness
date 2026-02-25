@@ -47,24 +47,30 @@ object Legerdemain:
     :   Expr[Query] =
 
         exprs match
-          case ' {
-                   type keyType <: Label
-                   ($key: keyType, $value: valueType)
-                 } :: tail =>
+          case
+            ' {
+                type keyType <: Label
+                ($key: keyType, $value: valueType)
+              } :: tail =>
             Expr.summon[keyType is Parametric to (? >: valueType)].getOrElse:
               Expr.summon[keyType is Parametric].absolve match
                 case Some('{$parametric: (Parametric { type Result = resultType })}) =>
-                  halt(m"""the parameter ${key.valueOrAbort} takes values of
-                           ${Type.of[resultType].show} but the provided value had type
-                           ${Type.of[valueType].show}""")
+                  halt:
+                    m"""
+                      the parameter ${key.valueOrAbort} takes values of ${Type.of[resultType].show}
+                      but the provided value had type ${Type.of[valueType].show}
+                    """
 
                 case None =>
                   halt(m"could not find a contextual Parametric value for ${key.valueOrAbort}")
 
 
             val encodable = Expr.summon[valueType is Encodable in Query].getOrElse:
-              halt(m"""there is no contextual ${Type.of[Encodable in Query].show} instance for
-                       values of ${Type.of[valueType].show}""")
+              halt:
+                m"""
+                  there is no contextual ${Type.of[Encodable in Query].show} instance for values of
+                  ${Type.of[valueType].show}
+                """
 
             val parameters =
               ' {

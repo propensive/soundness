@@ -71,8 +71,7 @@ trait Cellulose2:
   class DecodableDerivation()(using Tactic[CodlError]) extends ProductDerivable[Decodable in Codl]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Codl =
       values =>
-       construct:
-        [field] => context =>
+        construct: [field] => context =>
           val label2 = compiletime.summonFrom:
             case relabelling: CodlRelabelling[derivation] => relabelling(label).or(label)
             case _                                        => label

@@ -102,12 +102,12 @@ class PositionReader(private var in: Stream[Text]):
           case true  =>
             ()
 
-        if read() != '\n'
-        then raise
-              (ParseError
-                (Codl,
-                 Codl.Position(lastLine, lastCol, 1),
-                 Codl.Issue.UnexpectedCarriageReturn))
+        if read() != '\n' then
+          raise
+            ( ParseError
+                ( Codl,
+                  Codl.Position(lastLine, lastCol, 1),
+                  Codl.Issue.UnexpectedCarriageReturn ) )
 
         Character('\n', lastLine, lastCol).tap(advance)
 

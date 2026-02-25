@@ -264,7 +264,7 @@ class Report(using Environment):
 
       def describe(surface: Surface): Teletype =
         if surface.juncture.treeName == t"DefDef" then e"• ${surface.juncture.method.teletype}"
-         else e"• ${surface.juncture.shortCode}"
+        else e"• ${surface.juncture.shortCode}"
 
       def render(junctures: List[Surface]): Stream[(Surface, Teletype)] =
         val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
@@ -428,7 +428,7 @@ class Report(using Environment):
 
           Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
             e"${operationFrequency(s.benchmark)}")
-       ::: comparisons.map: comparison =>
+        ::: comparisons.map: comparison =>
           import Baseline.*
           val baseline = comparison.benchmark.baseline.vouch
 
@@ -452,12 +452,14 @@ class Report(using Environment):
                 case BySpeed => e"$Silver(${value}) $Turquoise(op$Gray(·)s¯¹)"
 
               baseline.mode match
-                case Arithmetic => if value == 0 then e"★"
-                                   else if value < 0
-                                   then e"$Thistle(-)${valueWithUnits.dropChars(1)}"
-                                   else e"$Thistle(+)$valueWithUnits"
+                case Arithmetic =>
+                  if value == 0 then e"★"
+                  else if value < 0
+                  then e"$Thistle(-)${valueWithUnits.dropChars(1)}"
+                  else e"$Thistle(+)$valueWithUnits"
 
-                case Geometric  => if value == 1 then e"★" else e"$Silver($value)"
+                case Geometric =>
+                  if value == 1 then e"★" else e"$Silver($value)"
         )*
       )
 

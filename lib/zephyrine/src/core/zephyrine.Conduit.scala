@@ -164,8 +164,11 @@ class Conduit(input0: Stream[Data]):
   def search(chars: Char*): Boolean =
     def recur(chars: Char*): Boolean =
       !chars.nil && seek(chars.head.toByte)
-      && { mark()
-           if expect(chars*) then revert() yet true else revert() yet recur(chars*) }
+      &&
+      {
+        mark()
+        if expect(chars*) then revert() yet true else revert() yet recur(chars*)
+      }
 
     mark()
     if expect(chars*) then revert() yet true else recur(chars*)

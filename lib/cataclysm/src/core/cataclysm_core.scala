@@ -76,7 +76,7 @@ package pseudo:
   def dir(direction: Dir) = Selector.PseudoClass(t"dir(${direction.show.lower})")
 
   def has[selectable: Selectable](selector: selectable) =
-     Selector.PseudoClass(t"has(${selectable.selector(selector).value})")
+    Selector.PseudoClass(t"has(${selectable.selector(selector).value})")
 
   def webkitScrollbar = Selector.PseudoClass(t":-webkit-scrollbar")
   def lang(language: Text) = Selector.PseudoClass(t"lang($language)")

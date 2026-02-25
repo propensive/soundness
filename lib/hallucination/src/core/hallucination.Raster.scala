@@ -71,9 +71,9 @@ case class Raster(private[hallucination] val image: jai.BufferedImage) extends F
 
 object Raster:
   def apply(width: Int, height: Int)(pixel: (Int, Int) => Rgb24): Raster =
-   val image = jai.BufferedImage(width, height, jai.BufferedImage.TYPE_INT_RGB)
-   for x <- 0 until width; y <- 0 until height do image.setRGB(x, y, pixel(x, y).asInt)
-   new Raster(image)
+    val image = jai.BufferedImage(width, height, jai.BufferedImage.TYPE_INT_RGB)
+    for x <- 0 until width; y <- 0 until height do image.setRGB(x, y, pixel(x, y).asInt)
+    new Raster(image)
 
   def apply[streamable: Streamable by Data](input: streamable): Raster =
     new Raster(ji.ImageIO.read(input.read[Data].javaInputStream).nn)
@@ -104,7 +104,7 @@ object Raster:
   given aggregable: [format: Rasterizable as rasterizable] => Tactic[RasterError]
   =>  (Raster in format) is Aggregable by Data =
 
-      rasterizable.read(_)
+    rasterizable.read(_)
 
 
   given aggregable2: Tactic[RasterError] => Raster is Aggregable by Data = Raster(_)

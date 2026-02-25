@@ -108,24 +108,30 @@ object Relative:
 
   given showable: [filesystem: Filesystem, relative <: Relative on filesystem]
   =>  relative is Showable =
-       _.encode
 
+    _.encode
+
+  // The explicit type ascription after this method is used to force silent failure of this `given`
+  // definition, so that contextual search can continue normally if it fails. This would not be the
+  // case for a non-`transparent` `inline given`, which would cause contextual resolution to fail.
+  // However, we do not wish the return type to be refined further, as would typically be the case
+  // for a `transparent` method.
   transparent inline given quotient: [filesystem, relative <: (Relative on filesystem) | Text]
   =>  relative is Quotient =
 
-      relative0 =>
-        relative0 match
-          case _: Relative =>
-            val relative = relative0.asInstanceOf[Relative on filesystem]
+    relative0 =>
+      relative0 match
+        case _: Relative =>
+          val relative = relative0.asInstanceOf[Relative on filesystem]
 
-            relative.descent match
-              case Nil | _ :: Nil => None
-              case _ :: _ :: Nil  => Some((relative.descent(1), relative.descent(0)))
+          relative.descent match
+            case Nil | _ :: Nil => None
+            case _ :: _ :: Nil  => Some((relative.descent(1), relative.descent(0)))
 
-              case _ =>
-                Some((relative.descent.last, Relative(0, relative.descent.init*)))
+            case _ =>
+              Some((relative.descent.last, Relative(0, relative.descent.init*)))
 
-          case _ => None
+        case _ => None
 
   :   relative is Quotient of Text over (Relative on filesystem) | Text
 

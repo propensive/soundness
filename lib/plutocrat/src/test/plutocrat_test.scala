@@ -35,7 +35,6 @@ package plutocrat
 import soundness.*
 
 import currencies.{Gbp, Eur}
-import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Plutocrat tests"):
   def run(): Unit =

@@ -83,12 +83,12 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
   extends TarEntry(path, mode, user, group, mtime)
 
   case CharSpecial
-        (path:   TarRef,
-         mode:   UnixMode,
-         user:   UnixUser,
-         group:  UnixGroup,
-         mtime:  U32,
-         device: (U32, U32))
+    ( path:   TarRef,
+      mode:   UnixMode,
+      user:   UnixUser,
+      group:  UnixGroup,
+      mtime:  U32,
+      device: (U32, U32) )
   extends TarEntry(path, mode, user, group, mtime)
 
   case BlockSpecial

@@ -37,7 +37,6 @@ import scala.quoted.*
 type Macro[result] = Quotes ?=> Expr[result]
 
 object Macro:
-  def example(param: Expr[Int]): Macro[Int] =
-   '{34}
+  def example(param: Expr[Int]): Macro[Int] = '{34}
 
   inline def example(param: Int): Int = ${example('param)}

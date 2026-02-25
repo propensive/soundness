@@ -73,9 +73,9 @@ object Completions:
   enum Installation:
     case CommandNotOnPath(script: Text)
     case Shells
-          (zsh:  Installation.InstallResult,
-           bash: Installation.InstallResult,
-           fish: Installation.InstallResult)
+      ( zsh:  Installation.InstallResult,
+        bash: Installation.InstallResult,
+        fish: Installation.InstallResult )
 
     def paths: List[Text] =
       this match
@@ -164,13 +164,14 @@ object Completions:
             val fish: Installation.InstallResult =
               if sh"sh -c 'command -v fish'".exec[Exit]() != Exit.Ok
               then Installation.InstallResult.ShellNotInstalled(Shell.Fish)
-              else install
-                    (Shell.Fish,
-                     command,
-                     Name[Linux](t"$command.fish"),
-                     List
-                      (Xdg.dataDirs[Path on Linux].last/"fish"/"vendor_completions.d",
-                       Xdg.configHome[Path on Linux]/"fish"/"completions"))
+              else
+                install
+                  ( Shell.Fish,
+                    command,
+                    Name[Linux](t"$command.fish"),
+                    List
+                      ( Xdg.dataDirs[Path on Linux].last/"fish"/"vendor_completions.d",
+                        Xdg.configHome[Path on Linux]/"fish"/"completions" ) )
 
             Installation.Shells(zsh, bash, fish)
 

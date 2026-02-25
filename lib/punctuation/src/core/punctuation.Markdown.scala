@@ -57,9 +57,10 @@ object Markdown:
       case ' '                          => builder.append("%20")
       case '\\'                         => builder.append("%5C")
 
-      case char@('-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '='
-                 | ':' | '?') =>
-        builder.append(char)
+      case char
+        @ ( '-' | '.' | '+' | ',' | '&' | '@' | '#' | '~' | '/' | '*' | '_' | '(' | ')' | '=' | ':'
+            | '?' ) =>
+          builder.append(char)
 
       case char =>
         builder.append(char.toString.urlEncode)

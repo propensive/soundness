@@ -208,4 +208,4 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
         instant + (if negate then hour*Hour + minute*Minute else -hour*Hour - minute*Minute)
 
       case _ =>
-         abort(TimeError(_.Format(text, Iso8601, index)(Timezone)))
+        abort(TimeError(_.Format(text, Iso8601, index)(Timezone)))

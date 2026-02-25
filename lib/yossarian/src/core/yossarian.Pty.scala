@@ -293,106 +293,106 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
       if index >= input.length
       then Pty(buffer2, state.copy(cursor = cursor(), style = style, link = link), output = output)
       else
-       val current: Char = unsafely(input.s.charAt(index))
+        val current: Char = unsafely(input.s.charAt(index))
 
-       context match
-        case Normal => (current: @switch) match
-          case '\u0000' => proceed(Normal) // nul()
-          case '\u0001' => proceed(Normal) // soh()
-          case '\u0002' => proceed(Normal) // stx()
-          case '\u0003' => proceed(Normal) // etx()
-          case '\u0004' => proceed(Normal) // eot()
-          case '\u0005' => proceed(Normal) // enq()
-          case '\u0006' => proceed(Normal) // ack()
-          case '\u0007' => proceed(Normal) // bel()
-          case '\u0008' => bs()
-          case '\u0009' => proceed(Normal) // ht()
-          case '\u000a' => lf()
-          case '\u000b' => proceed(Normal) // vt()
-          case '\u000c' => ff()
-          case '\u000d' => cr()
-          case '\u000e' => proceed(Normal) // so()
-          case '\u000f' => proceed(Normal) // si()
-          case '\u0010' => proceed(Normal) // dle()
-          case '\u0011' => proceed(Normal) // dc1()
-          case '\u0012' => proceed(Normal) // dc2()
-          case '\u0013' => proceed(Normal) // dc3()
-          case '\u0014' => proceed(Normal) // dc4()
-          case '\u0015' => proceed(Normal) // nak()
-          case '\u0016' => proceed(Normal) // syn()
-          case '\u0017' => proceed(Normal) // etb()
-          case '\u0018' => proceed(Normal) // can()
-          case '\u0019' => proceed(Normal) // em()
-          case '\u001a' => proceed(Normal) // sub()
-          case '\u001b' => proceed(Escape)
-          case '\u001c' => proceed(Normal) // fs()
-          case '\u001d' => proceed(Normal) // gs()
-          case '\u001e' => proceed(Normal) // rs()
-          case '\u001f' => proceed(Normal) // us()
-          case ch       => put(ch)
+        context match
+          case Normal => (current: @switch) match
+            case '\u0000' => proceed(Normal) // nul()
+            case '\u0001' => proceed(Normal) // soh()
+            case '\u0002' => proceed(Normal) // stx()
+            case '\u0003' => proceed(Normal) // etx()
+            case '\u0004' => proceed(Normal) // eot()
+            case '\u0005' => proceed(Normal) // enq()
+            case '\u0006' => proceed(Normal) // ack()
+            case '\u0007' => proceed(Normal) // bel()
+            case '\u0008' => bs()
+            case '\u0009' => proceed(Normal) // ht()
+            case '\u000a' => lf()
+            case '\u000b' => proceed(Normal) // vt()
+            case '\u000c' => ff()
+            case '\u000d' => cr()
+            case '\u000e' => proceed(Normal) // so()
+            case '\u000f' => proceed(Normal) // si()
+            case '\u0010' => proceed(Normal) // dle()
+            case '\u0011' => proceed(Normal) // dc1()
+            case '\u0012' => proceed(Normal) // dc2()
+            case '\u0013' => proceed(Normal) // dc3()
+            case '\u0014' => proceed(Normal) // dc4()
+            case '\u0015' => proceed(Normal) // nak()
+            case '\u0016' => proceed(Normal) // syn()
+            case '\u0017' => proceed(Normal) // etb()
+            case '\u0018' => proceed(Normal) // can()
+            case '\u0019' => proceed(Normal) // em()
+            case '\u001a' => proceed(Normal) // sub()
+            case '\u001b' => proceed(Escape)
+            case '\u001c' => proceed(Normal) // fs()
+            case '\u001d' => proceed(Normal) // gs()
+            case '\u001e' => proceed(Normal) // rs()
+            case '\u001f' => proceed(Normal) // us()
+            case ch       => put(ch)
 
-        case Escape => current match
-          case '['                                      => recur(index + 1, Csi)
-          case ']'                                      => recur(index + 1, Osc)
-          case 'N' | 'O' | 'P' | '\\' | 'X' | '^' | '_' => proceed(Normal)
+          case Escape => current match
+            case '['                                      => recur(index + 1, Csi)
+            case ']'                                      => recur(index + 1, Osc)
+            case 'N' | 'O' | 'P' | '\\' | 'X' | '^' | '_' => proceed(Normal)
 
-          case char =>
-            raise(PtyEscapeError(BadFeEscape(char)))
-            proceed(Normal)
+            case char =>
+              raise(PtyEscapeError(BadFeEscape(char)))
+              proceed(Normal)
 
-        case Osc => current match
-          case '\u0007' =>
-            osc(escBuffer.text.also(escBuffer.clear()))
-            proceed(Normal)
+          case Osc => current match
+            case '\u0007' =>
+              osc(escBuffer.text.also(escBuffer.clear()))
+              proceed(Normal)
 
-          case '\u0027' =>
-            proceed(Osc2)
+            case '\u0027' =>
+              proceed(Osc2)
 
-          case char =>
-            escBuffer.append(char)
-            proceed(Osc)
+            case char =>
+              escBuffer.append(char)
+              proceed(Osc)
 
-        case Osc2 => current match
-          case '\\' =>
-            osc(escBuffer.text.also(escBuffer.clear()))
-            proceed(Normal)
+          case Osc2 => current match
+            case '\\' =>
+              osc(escBuffer.text.also(escBuffer.clear()))
+              proceed(Normal)
 
-          case char =>
-            escBuffer.append(char)
-            proceed(Normal)
+            case char =>
+              escBuffer.append(char)
+              proceed(Normal)
 
-        case Csi => current match
-          case char if '\u0000' <= char <= '\u001f' =>
-            raise(PtyEscapeError(BadCsiEscape(char)))
-            proceed(Csi)
+          case Csi => current match
+            case char if '\u0000' <= char <= '\u001f' =>
+              raise(PtyEscapeError(BadCsiEscape(char)))
+              proceed(Csi)
 
-          case char if '\u0020' <= char <= '\u002f' =>
-            escBuffer.append(char)
-            proceed(Csi2)
+            case char if '\u0020' <= char <= '\u002f' =>
+              escBuffer.append(char)
+              proceed(Csi2)
 
-          case char if '\u0030' <= char <= '\u003f' =>
-            escBuffer.append(char)
-            proceed(Csi)
+            case char if '\u0030' <= char <= '\u003f' =>
+              escBuffer.append(char)
+              proceed(Csi)
 
-          case char if '\u0040' <= char <= '\u007e' =>
-            csi(escBuffer.text.also(escBuffer.clear()), char)
-            proceed(Normal)
+            case char if '\u0040' <= char <= '\u007e' =>
+              csi(escBuffer.text.also(escBuffer.clear()), char)
+              proceed(Normal)
 
-          case char =>
-            raise(PtyEscapeError(BadCsiEscape(char)))
-            proceed(Normal)
+            case char =>
+              raise(PtyEscapeError(BadCsiEscape(char)))
+              proceed(Normal)
 
-        case Csi2 => current match
-          case char if '\u0020' <= char <= '\u002f' =>
-            escBuffer.append(char)
-            proceed(Csi2)
+          case Csi2 => current match
+            case char if '\u0020' <= char <= '\u002f' =>
+              escBuffer.append(char)
+              proceed(Csi2)
 
-          case char if '\u0040' <= char <= '\u007e' =>
-            csi(escBuffer.text.also(escBuffer.clear()), char)
-            proceed(Normal)
+            case char if '\u0040' <= char <= '\u007e' =>
+              csi(escBuffer.text.also(escBuffer.clear()), char)
+              proceed(Normal)
 
-          case char =>
-            raise(PtyEscapeError(BadCsiEscape(char)))
-            proceed(Normal)
+            case char =>
+              raise(PtyEscapeError(BadCsiEscape(char)))
+              proceed(Normal)
 
     recur(0, Normal)

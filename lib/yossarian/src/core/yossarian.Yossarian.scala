@@ -61,9 +61,9 @@ object Yossarian:
       case -1 => Unset
 
       case index =>
-        (text.length, styleBuffer.slice(index, index + text.length),
-         charBuffer.slice(index, index + text.length),
-         linkBuffer.slice(index, index + text.length))
+        ( text.length, styleBuffer.slice(index, index + text.length),
+          charBuffer.slice(index, index + text.length),
+          linkBuffer.slice(index, index + text.length) )
 
     def styles: IArray[Style] = styleBuffer.clone().immutable(using Unsafe)
 

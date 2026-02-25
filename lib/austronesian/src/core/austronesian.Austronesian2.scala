@@ -50,19 +50,17 @@ object Austronesian2:
     inline def join[derivation <: Product: ProductReflection]
     :   derivation is Encodable in _root_.austronesian.Austronesian.Pojo =
 
-        fields(_):
-          [field] => _.encode
-        .asInstanceOf[Pojo]
+      fields(_): [field] => _.encode
+      . asInstanceOf[Pojo]
 
 
     inline def split[derivation: SumReflection]: derivation is Encodable in Pojo =
-      variant(_):
-        [variant <: derivation] => value =>
-          IArray.create[Pojo](2): array =>
-            array(0) = label.s.asInstanceOf[Pojo]
-            array(1) = value.encode
+      variant(_): [variant <: derivation] => value =>
+        IArray.create[Pojo](2): array =>
+          array(0) = label.s.asInstanceOf[Pojo]
+          array(1) = value.encode
 
-          . asInstanceOf[Pojo]
+        . asInstanceOf[Pojo]
 
   object DecodableDerivation extends Derivable[Decodable in Pojo]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Pojo =
@@ -75,8 +73,7 @@ object Austronesian2:
 
     inline def split[derivation: SumReflection]: derivation is Decodable in Pojo =
       case Array(label: String @unchecked, pojo: Pojo @unchecked) =>
-        delegate(label): [variant <: derivation] =>
-          _.decoded(pojo)
+        delegate(label): [variant <: derivation] => _.decoded(pojo)
 
       case other =>
         provide[Tactic[PojoError]](abort(PojoError()))

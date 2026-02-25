@@ -54,14 +54,14 @@ object arithmetic:
 
     inline def join[derivation <: Product: ProductReflection]
     :   derivation is Addable by derivation to derivation =
-        (left, right) =>
-          construct:
-            [field] => _.add(complement(left), complement(right))
+
+      (left, right) => construct: [field] => _.add(complement(left), complement(right))
+
 
   inline given addable: [value <: Product: ProductReflection]
   =>  value is Addable by value to value =
 
-      AddableDerivation.derived[value]
+    AddableDerivation.derived[value]
 
 
   object SubtractableDerivation
@@ -69,9 +69,8 @@ object arithmetic:
 
     inline def join[derivation <: Product: ProductReflection]
     :   derivation is Subtractable by derivation to derivation =
-        (left, right) =>
-          construct:
-            [field] => _.subtract(complement(left), complement(right))
+
+      (left, right) => construct: [field] => _.subtract(complement(left), complement(right))
 
 
   inline given subtractable: [value <: Product: ProductReflection]
@@ -85,15 +84,15 @@ object arithmetic:
 
     inline def join[derivation <: Product: ProductReflection]
     :   derivation is Multiplicable by derivation to derivation =
-        (left, right) =>
-          construct:
-            [field] => _.multiply(complement(left), complement(right))
+
+      (left, right) =>
+        construct: [field] => _.multiply(complement(left), complement(right))
 
 
   inline given multiplicable: [value <: Product: ProductReflection]
   =>  value is Multiplicable by value to value =
 
-      MultiplicableDerivation.derived[value]
+    MultiplicableDerivation.derived[value]
 
 
   object DivisibleDerivation
@@ -101,9 +100,8 @@ object arithmetic:
 
     inline def join[derivation <: Product: ProductReflection]
     :   derivation is Divisible by derivation to derivation =
-        (left, right) =>
-          construct:
-            [field] => _.divide(complement(left), complement(right))
+      (left, right) =>
+        construct: [field] => _.divide(complement(left), complement(right))
 
   inline given divisible: [value <: Product: ProductReflection]
   =>  value is Divisible by value to value =

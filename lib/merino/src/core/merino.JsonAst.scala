@@ -150,8 +150,9 @@ object JsonAst extends Format:
       | Null | Unset.type
 
   def apply
-    ( value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any]
-               | Boolean | Null | Unset.type)
+    ( value
+      : Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
+        | Null | Unset.type )
   :   JsonAst =
 
       value
@@ -479,10 +480,11 @@ object JsonAst extends Format:
                 string.append('e')
                 next()
 
-              case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 | Minus
-                   | Plus =>
-                string.append(ch.toChar)
-                next()
+              case
+                Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 | Minus | Plus
+                =>
+                  string.append(ch.toChar)
+                  next()
 
               case _ =>
                 continue = false

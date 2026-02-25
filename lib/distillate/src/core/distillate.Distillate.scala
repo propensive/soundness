@@ -56,8 +56,8 @@ object Distillate:
                     val ref = TypeRepr.of[companion].typeSymbol.declaredMethod("values")
                               . headOption
                               . getOrElse:
-                                  halt(m"""enum ${TypeRepr.of[enumeration].show} is not a simple
-                                           choice""")
+                                  halt:
+                                    m"enum ${TypeRepr.of[enumeration].show} is not a simple choice"
 
                     companion.asTerm.select(ref).asExprOf[Array[enumeration]]
               }

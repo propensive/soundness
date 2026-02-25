@@ -76,9 +76,10 @@ object Complex:
           Complex[result](left.real + right.real, left.imaginary + right.imaginary)
 
 
-  given subtractable: [result,
-                       component2,
-                       component: Subtractable by component2 to result as subtractable]
+  given subtractable
+  :   [ result,
+        component2,
+        component: Subtractable by component2 to result as subtractable ]
   =>  Complex[component] is Subtractable by Complex[component2] to Complex[result] =
 
       Subtractable[Complex[component], Complex[component2], Complex[result]]:

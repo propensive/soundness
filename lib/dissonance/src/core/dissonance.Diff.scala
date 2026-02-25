@@ -172,11 +172,13 @@ case class Diff[element](edits: Edit[element]*):
       case Par(_, _, _) => true
       case _            => false
     . map:
-        case xs@(Par(_, _, _) :: _) => Region.Unchanged
-                                        (xs.collect { case par: Par[element] => par })
-        case xs                     => Region.Changed
-                                        (xs.collect { case del: Del[element] => del },
-                                         xs.collect { case ins: Ins[element] => ins })
+        case xs@(Par(_, _, _) :: _) =>
+          Region.Unchanged(xs.collect { case par: Par[element] => par })
+
+        case xs                     =>
+          Region.Changed
+            ( xs.collect { case del: Del[element] => del },
+              xs.collect { case ins: Ins[element] => ins } )
 
   def chunks: Stream[Chunk[element]] =
     def recur(todo: List[Edit[element]], position: Int, rightPosition: Int)

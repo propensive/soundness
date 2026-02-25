@@ -89,35 +89,62 @@ object Turbulence:
 
         val reason =
           if streamables.nil && aggregables.nil
-          then m"""no ${name[source is Streamable]} or ${name[result is Aggregable]} instance exists
-                   in context"""
+          then
+            m"""
+              no ${name[source is Streamable]} or ${name[result is Aggregable]} instance exists in
+              context
+            """
           else if streamableData.present && aggregableText.present
-          then m"""although ${name[source is Streamable by Data]} and
-                  ${name[result is Aggregable by Text]} instances exist in context, a
-                  ${name[CharDecoder]} instance is required to convert between them"""
+          then
+            m"""
+              although ${name[source is Streamable by Data]} and
+              ${name[result is Aggregable by Text]} instances exist in context, a
+              ${name[CharDecoder]} instance is required to convert between them
+            """
           else if streamableText.present && aggregableData.present
-          then m"""although ${name[source is Streamable by Text]} and
-                  ${name[result is Aggregable by Data]} instances exist in context, a
-                  ${name[CharEncoder]} instance is required to convert between them"""
+          then
+            m"""
+              although ${name[source is Streamable by Text]} and
+              ${name[result is Aggregable by Data]} instances exist in context, a
+              ${name[CharEncoder]} instance is required to convert between them
+            """
           else if streamables.length == 2
-          then m"""although ${name[source is Streamable by Data]} and
-                   ${name[source is Streamable by Text]} instances exist in context, no
-                   ${name[result is Aggregable]} was found"""
+          then
+            m"""
+              although ${name[source is Streamable by Data]} and
+              ${name[source is Streamable by Text]} instances exist in context, no
+              ${name[result is Aggregable]} was found
+            """
           else if streamableData.present
-          then m"""although a ${name[source is Streamable by Data]} instance exists in context, no
-                   ${name[result is Aggregable]} was found"""
+          then
+            m"""
+              although a ${name[source is Streamable by Data]} instance exists in context, no
+              ${name[result is Aggregable]} was found
+            """
           else if streamableText.present
-          then m"""although a ${name[source is Streamable by Text]} instance exists in context, no
-                   ${name[result is Aggregable]} was found"""
+          then
+            m"""
+              although a ${name[source is Streamable by Text]} instance exists in context, no
+              ${name[result is Aggregable]} was found
+            """
           else if aggregables.length == 2
-          then m"""although ${name[result is Aggregable by Data]} and
-                   ${name[result is Aggregable by Text]} instances exist in context, no
-                   ${name[source is Streamable]} was found"""
+          then
+            m"""
+              although ${name[result is Aggregable by Data]} and
+              ${name[result is Aggregable by Text]} instances exist in context, no
+              ${name[source is Streamable]} was found
+            """
           else if aggregableData.present
-          then m"""although a ${name[result is Aggregable by Data]} instance exists in context, no
-                  ${name[source is Streamable]} was found"""
-          else m"""although a ${name[result is Aggregable by Text]} instance exists in context, no
-                  ${name[source is Streamable]} was found"""
+          then
+            m"""
+              although a ${name[result is Aggregable by Data]} instance exists in context, no
+              ${name[source is Streamable]} was found
+            """
+          else
+            m"""
+              although a ${name[result is Aggregable by Text]} instance exists in context, no
+              ${name[source is Streamable]} was found
+            """
 
         halt(m"unable to read ${name[source]} as ${name[result]}: "+reason)
 
