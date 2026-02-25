@@ -45,7 +45,7 @@ object Distillate:
 
     val companion = Ref(TypeRepr.of[enumeration].typeSymbol.companionModule).asExpr
 
-    '{
+    ' {
         new Enumerable:
           type Self = enumeration
           val name: Text = ${Expr(TypeRepr.of[enumeration].show)}.tt
@@ -61,4 +61,5 @@ object Distillate:
 
                     companion.asTerm.select(ref).asExprOf[Array[enumeration]]
               }
-            . asInstanceOf[IArray[enumeration]]  }
+            . asInstanceOf[IArray[enumeration]]
+      }

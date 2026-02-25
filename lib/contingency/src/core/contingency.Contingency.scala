@@ -189,8 +189,10 @@ object Contingency:
 
     typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] =>
-        '{Tracking[accrual, typeLambda, focus]($accrual, (focus, accrual) ?=> $handler(using
-            focus, accrual))}
+        ' {
+            Tracking[accrual, typeLambda, focus]
+              ( $accrual, (focus, accrual) ?=> $handler(using focus, accrual) )
+          }
 
 
   def validate[accrual: Type, focus: Type]
@@ -211,8 +213,10 @@ object Contingency:
 
     typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] =>
-        '{Validate[accrual, typeLambda, focus]($accrual, (focus, accrual) ?=> $handler(using
-            focus, accrual))}
+        ' {
+            Validate[accrual, typeLambda, focus]
+              ( $accrual, (focus, accrual) ?=> $handler(using focus, accrual) )
+          }
 
 
   def accrue[accrual <: Exception: Type]
@@ -285,11 +289,12 @@ object Contingency:
 
     type ContextResult = context[result]
 
-    '{
+    ' {
         boundary[result]: label ?=>
           val tactic: Tactic[Break[result]] = EscapeTactic(label)
-          ${
+          $ {
               import quotes.reflect.*
+
               val partialFunction = unwrap(recovery.asTerm) match
                 case Apply(_, List(Inlined(_, _, matches))) => matches
 
@@ -301,14 +306,15 @@ object Contingency:
               val pfExpr = partialFunction.asExprOf[Exception ~> result]
 
               val tactics = mapping(partialFunction).map: (_, _) =>
-                '{
-                    tactic.contramap: error =>
-                      Break[result]($pfExpr(error))
-                }.asTerm
+                ' {
+                    tactic.contramap: error => Break[result]($pfExpr(error))
+                  }
+                . asTerm
 
               val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head
-              lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]  }
-    }
+              lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+            }
+      }
 
 
   def accrueWithin[accrual <: Exception: Type, context[_]: Type, result: Type]

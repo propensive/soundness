@@ -350,7 +350,7 @@ object Synesthesia:
         param.info.asType.absolve match
           case '[param] => Expr.summon[param is Schematic in JsonSchema] match
             case Some(schematic) =>
-              ' {(${Expr(param.name)}.tt, $schematic.schema())}
+              '{(${Expr(param.name)}.tt, $schematic.schema())}
 
             case None =>
               halt(m"There was no JSON schema for ${param.name}")

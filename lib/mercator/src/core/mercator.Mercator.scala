@@ -127,26 +127,27 @@ object Mercator:
     val functorExpr: Expr[Functor[monad]] = Expr.summon[Functor[monad]].getOrElse:
       halt(m"could not find Functor value for ${monadType.name}")
 
-    lazy val makeMonad = '{
-      new Monad[monad]:
-        def point[value](value: value): monad[value] = ${functorExpr}.point(value)
+    lazy val makeMonad =
+      ' {
+          new Monad[monad]:
+            def point[value](value: value): monad[value] = ${functorExpr}.point(value)
 
-        def apply[value, value2](value: monad[value])(lambda: value => value2): monad[value2] =
-          ${functorExpr}.map(value)(lambda)
+            def apply[value, value2](value: monad[value])(lambda: value => value2): monad[value2] =
+              ${functorExpr}.map(value)(lambda)
 
 
-        def bind[value, value2](value: monad[value])(lambda: value => monad[value2])
-        :   monad[value2] =
+            def bind[value, value2](value: monad[value])(lambda: value => monad[value2])
+            :   monad[value2] =
 
-          $ {
-              'value.asTerm
-              . select(flatMapMethods(0))
-              . appliedToType(TypeRepr.of[value2])
-              . appliedTo('lambda.asTerm)
-              . asExprOf[monad[value2]]
-            }
+              $ {
+                  'value.asTerm
+                  . select(flatMapMethods(0))
+                  . appliedToType(TypeRepr.of[value2])
+                  . appliedTo('lambda.asTerm)
+                  . asExprOf[monad[value2]]
+                }
 
-    }
+        }
 
     if flatMapMethods.length == 1 then makeMonad
     else if flatMapMethods.length == 0

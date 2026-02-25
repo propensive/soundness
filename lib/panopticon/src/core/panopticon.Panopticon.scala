@@ -57,7 +57,7 @@ object Panopticon:
 
     field.info.asType.absolve match
       case '[target] =>
-        '{
+        ' {
             Lens[self, origin, target]
               ( value => ${'value.asTerm.select(field).asExprOf[target]},
                 (origin, value) =>

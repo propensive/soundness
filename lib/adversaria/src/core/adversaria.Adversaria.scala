@@ -149,11 +149,11 @@ object Adversaria:
       . map: field =>
           val name = '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
           '{($name, (value: entity) => ${'value.asTerm.select(field).asExprOf[value]})}
-    '{
+    ' {
         new Dereferenceable:
           type Self = entity
           type Result = value
           private val lambdas: Map[Text, Self => Result] = ${lambdaMap}.toMap
           def names(entity: Self): List[Text] = ${namesList}
           def select(entity: entity, name: Text): Result = lambdas(name)(entity)
-    }
+      }

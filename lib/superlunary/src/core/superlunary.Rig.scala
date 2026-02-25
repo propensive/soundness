@@ -125,11 +125,11 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
                   val array = new Array[Object](1)
                   array(0) =
-                    stageable.embed[output]
-                      ( $ {
-                            references() = '{stageable.deserialize(form)}
-                            body(using references)
-                          } )
+                    stageable.embed[output]:
+                      $ {
+                          references() = '{stageable.deserialize(form)}
+                          body(using references)
+                        }
                   array
             }
 

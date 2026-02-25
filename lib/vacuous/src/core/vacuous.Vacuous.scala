@@ -97,7 +97,8 @@ object Vacuous:
             Inlined(call, bindings, Typed(Apply(select, List(default.asTerm)), typeTree))
 
           case term =>
-            ' { $optional match
+            ' {
+                $optional match
                   case Unset => $default
                   case term  => term.asInstanceOf[value]
               }
@@ -107,8 +108,11 @@ object Vacuous:
         Inlined(call, bindings, optimize(term))
 
       case term =>
-        ' { $optional match
+        ' {
+            $optional match
               case Unset => $default
-              case term  => term.asInstanceOf[value] } . asTerm
+              case term  => term.asInstanceOf[value]
+          }
+        . asTerm
 
     '{${optimize(optional.asTerm).asExpr}.asInstanceOf[value]}.asExprOf[value]

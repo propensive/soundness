@@ -104,8 +104,10 @@ object Abacist:
           val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
           recur
             ( tail,
-              '{($expr.updated
-                  (${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value))} )
+              ' {
+                  ( $expr.updated
+                      ( ${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value ) )
+                } )
 
     recur(multipliers[units], '{ListMap()})
 

@@ -177,7 +177,7 @@ object Obligatory:
             param.info.asType match
               case '[param] =>
                 Expr.summon[param is Encodable in Json] match
-                  case Some('{$encoder: (`param` `is` Encodable `in` Json) }) =>
+                  case Some('{$encoder: (`param` `is` Encodable `in` Json)}) =>
                     val name = Expr(param.name)
                     '{$name -> ${encoder}.encoded(${ident.asExprOf[param]})}
 
@@ -286,9 +286,10 @@ object Obligatory:
             param.info.asType match
               case '[param] =>
                 Expr.summon[param is Encodable in Json] match
-                  case Some('{$encoder: (`param` `is` Encodable `in` Json) }) =>
+                  case Some('{$encoder: (`param` `is` Encodable `in` Json)}) =>
                     val name = Expr(param.name)
                     '{$name -> ${encoder}.encoded(${ident.asExprOf[param]})}
+
                   case _ =>
                     halt:
                       m"""

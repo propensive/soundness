@@ -274,10 +274,12 @@ object Honeycomb:
                     case '[attribute] =>
                       Expr.summon[attribute is Attribute in Whatwg on (? >: tag)]
                       . orElse(Expr.summon[attribute is Attribute in Whatwg]) match
-                        case Some(' {
-                                      type result
-                                      $typeclass: Attribute { type Topic = result }
-                                    }) =>
+                        case
+                          Some
+                            ( ' {
+                                  type result
+                                  $typeclass: Attribute { type Topic = result }
+                                } ) =>
 
                           Expr.summon[(? >: value) is Attributive to result] match
                             case Some('{$attributive}) =>
@@ -353,11 +355,11 @@ object Honeycomb:
           val exprs = attributes.to(List).map: (key, value) =>
             ' {
                 ( ${Expr(key)},
-                  ${
+                  $ {
                       if value == "\u0000".tt then iterator.next().asExprOf[Optional[Text]]
                       else if value == Unset then '{Unset}
                       else Expr[Text](value.asInstanceOf[Text])
-                  } )
+                    } )
               }
             . asExprOf[(Text, Optional[Text])]
 
@@ -411,7 +413,7 @@ object Honeycomb:
       . asType
       . absolve match
           case '[type topic <: Label; topic] =>
-            '{
+            ' {
                 $ {
                     serialize(html).absolve match
                       case List(one: Expr[?]) => html.absolve match
@@ -422,7 +424,8 @@ object Honeycomb:
                       case many               => '{Fragment(${Expr.ofList(many)}*)}
                   }
                 . of[topic]
-                . in[Whatwg]  }
+                . in[Whatwg]
+              }
 
   def attributes[result: Type, thisType <: Tag to result: Type]
     ( tag: Expr[Tag], presets: Expr[Map[Text, Text]], attributes0: Expr[Seq[(String, Any)]] )

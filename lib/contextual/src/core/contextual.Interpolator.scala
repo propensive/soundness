@@ -110,28 +110,28 @@ trait Interpolator[input, state, result]:
                   case ConstantType(StringConstant(string)) =>
                     string
 
-                (rethrow
-                  (parse
-                    (rethrow
-                      (substitute(state, substitution.tt),
-                      expr.asTerm.pos.start,
-                      expr.asTerm.pos.end),
-                    parts.head.tt),
-                  positions.head.start,
-                  positions.head.end),
-                typeclass)
+                ( rethrow
+                    ( parse
+                        ( rethrow
+                            ( substitute(state, substitution.tt),
+                              expr.asTerm.pos.start,
+                              expr.asTerm.pos.end),
+                              parts.head.tt ),
+                          positions.head.start,
+                          positions.head.end),
+                          typeclass )
 
               case typeclass =>
-                (rethrow
-                  (parse
-                    (rethrow(skip(state), expr.asTerm.pos.start, expr.asTerm.pos.end),
-                    parts.head.tt),
-                  positions.head.start,
-                  positions.head.end),
-                typeclass)
+                ( rethrow
+                    ( parse
+                        ( rethrow(skip(state), expr.asTerm.pos.start, expr.asTerm.pos.end),
+                          parts.head.tt ),
+                      positions.head.start,
+                      positions.head.end ),
+                typeclass )
 
-          val next = '{$target.parse($target.insert($expr, $typeclass.embed($head)),
-              Text(${Expr(parts.head)}))}
+          val next =
+            '{$target.parse($target.insert($expr, $typeclass.embed($head)), ${Expr(parts.head)}.tt)}
 
           recur(tail, parts.tail, positions.tail, newState, next)
 
