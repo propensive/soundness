@@ -48,7 +48,6 @@ import scala.reflect.*
 import scala.compiletime.*
 
 object Contrastable:
-
   inline given derived: [entity] => entity is Contrastable = summonFrom:
     case contrastable: (`entity` is Contrastable.Foundation) => contrastable
     case given ProductReflection[`entity`]                   => Derivation.derived[entity]
@@ -87,7 +86,6 @@ object Contrastable:
 
         if left == right then Juxtaposition.Same(show(left))
         else juxtaposition(typeName, decompose(left), decompose(right))
-
 
   trait Foundation extends Contrastable:
     def juxtaposition(left: Self, right: Self): Juxtaposition
@@ -159,7 +157,6 @@ object Contrastable:
     given string: String is Contrastable.Foundation =
       (left, right) => text.juxtaposition(left.tt, right.tt)
 
-
   inline def nothing[value]: value is Contrastable = (left, right) =>
     provide[value is Decomposable]:
       Juxtaposition.Same(left.decompose.text)
@@ -207,6 +204,7 @@ object Contrastable:
 
         Juxtaposition.Different(kind(left), kind(right))
 
+
   def comparison[value]
     ( name:       Text,
       left:       IArray[Decomposition],
@@ -239,6 +237,7 @@ object Contrastable:
             label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
 
       Juxtaposition.Collation(name, comparison.to(List), leftDebug, rightDebug)
+
 
   trait Foundation2:
     given showable: [value: Showable] => value is Contrastable = (left, right) =>

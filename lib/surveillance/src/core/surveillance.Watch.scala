@@ -51,7 +51,9 @@ import vacuous.*
 object Watch:
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
     import codicils.await
+
     def stop(): Unit = pollLoop.stop()
+
     val async: Optional[Task[Unit]] = safely(supervise(task("surveillance".tt)(pollLoop.run())))
 
   private var serviceValue: Optional[WatchService] = Unset
@@ -96,6 +98,7 @@ class Watch():
   private val spool: Spool[WatchEvent] = Spool()
   private val watches: scm.HashSet[PathWatch] = scm.HashSet[PathWatch]()
 
+
   private class PathWatch
     ( private[Watch]  val key:    jnf.WatchKey,
       private[Watch]  val base:   jnf.Path,
@@ -122,6 +125,7 @@ class Watch():
               ()
 
           catch case error: Exception => ()
+
 
   def stream: Stream[WatchEvent] = spool.stream
 

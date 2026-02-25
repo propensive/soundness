@@ -59,8 +59,10 @@ object Aviation:
   opaque type WorkingDays = Int
   opaque type Anniversary = Short
 
+
   extension (anniversary: Anniversary)
     inline def day: Day = anniversary%64
+
     inline def month: Month = Month.fromOrdinal(anniversary >> 6)
 
 
@@ -81,6 +83,7 @@ object Aviation:
 
     def apply(month: Month, day: Day): Anniversary = ((month.ordinal << 6) + day).toShort
 
+
     given showable: (endianness: Endianness, months: Months, separation: DateSeparation)
     =>  Anniversary is Showable =
 
@@ -91,23 +94,26 @@ object Aviation:
           case Endianness.LittleEndian => t"${anniversary.day}${separation.separator}$month"
           case _                       => t"$month${separation.separator}${anniversary.day}"
 
+
   extension (year: Year)
     @targetName("yearValue")
     inline def apply(): Int = year
+
 
   extension (day: Day)
     @targetName("dayValue")
     inline def apply(): Int = day
 
+
   object Year:
     inline def apply(year: Int): Year = year
+
     given showable: Year is Showable = _.toString.tt
     given addable: Year is Addable by Int to Year = _ + _
     given subtractable: Year is Subtractable by Int to Year = _ - _
 
     given decodable: (Int is Decodable in Text) => Year is Decodable in Text = year =>
       Year(year.decode[Int])
-
 
     given orderable: Year is Orderable:
       inline def compare
@@ -118,7 +124,6 @@ object Aviation:
       :   Boolean =
 
         if left == right then !strict else (left < right)^greaterThan
-
 
   object Day:
     inline def apply(day: Int): Day = day
@@ -156,7 +161,9 @@ object Aviation:
 
   object Date:
     inline given underlying: Underlying[Date, Int] = !!
+
     def of(day: Int): Date = day
+
 
     def apply
       ( using calendar: Calendar )
@@ -164,6 +171,7 @@ object Aviation:
     :   Date raises TimeError =
 
       calendar.jdn(year, month, day)
+
 
     trait Format(val name: Text):
       type Issue: Communicable
@@ -183,6 +191,7 @@ object Aviation:
     given showable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable = date =>
       import DateNumerics.*, Years.*
       import textMetrics.uniform
+
       given calendar: RomanCalendar = calendars.gregorian
 
       def pad(n: Int): Text = (n%100).show.pad(2, Rtl, '0')
@@ -215,7 +224,6 @@ object Aviation:
         case cnt =>
           raise(TimeError(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit))) yet 2000-Jan-1
 
-
     given encodable: RomanCalendar => Date is Encodable in Text = date =>
       import hieroglyph.textMetrics.uniform
       List
@@ -234,7 +242,6 @@ object Aviation:
       :   Boolean =
 
         if left == right then !strict else (left < right)^greaterThan
-
 
     given ordering: Ordering[Date] = Ordering.Int
 
@@ -262,11 +269,13 @@ object Aviation:
     given plus: (calendar: Calendar) => Date is Addable:
       type Result = Date
       type Operand = Timespan
+
       def add(date: Date, timespan: Timespan): Date = calendar.add(date, timespan)
 
 
   extension (date: Date)
     def day(using calendar: Calendar): calendar.Diurnal = calendar.diurnal(date)
+
     def month(using calendar: Calendar): calendar.Mensual = calendar.mensual(date)
     def year(using calendar: Calendar): calendar.Annual = calendar.annual(date)
     def weekday: Weekday = Weekday.fromOrdinal(jdn%7)

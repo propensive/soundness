@@ -46,7 +46,6 @@ import typonym.*
 import vacuous.*
 
 object Tag:
-
   given optical: [html <: Html] => Tag is Optical from html onto Node = tag =>
     Optic: (origin, lambda) =>
       origin match
@@ -120,9 +119,9 @@ object Tag:
 
     Transparent(label, children, presets, boundary = boundary).in[dom]
 
+
   def foreign[label <: Label: ValueOf, dom <: Dom](): Container of label over "#foreign" =
     Container(valueOf[label], foreign = true).of[label].over["#foreign"].in[dom]
-
 
   class Container
     ( label:      Text,
@@ -219,7 +218,6 @@ abstract class Tag
     val transparent: Boolean                   = false,
     val boundary:    Boolean                   = false )
 extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
-
   type Result <: Element
 
 
@@ -230,7 +228,6 @@ extends Element(label, presets, IArray(), foreign), Formal, Dynamic:
     inline if method == "apply" then make(Map(), attributes*) else
       val stylesheet = infer[Stylesheet of (? >: label)]
       make(Map(t"class" -> stylesheet.classes.to(List).join(t" ")), attributes*)
-
 
 
   inline def make(presets: Map[Text, Text], inline attributes: (String, Any)*): Result =

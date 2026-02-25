@@ -76,11 +76,9 @@ case class MediaType
     suffixes:   List[Media.Suffix] = Nil,
     parameters: List[(Text, Text)] = Nil )
 extends Dynamic:
-
   private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
   def basic: Text = t"${group.name}/${subtype.name}$suffixString"
   def base: MediaType = MediaType(group, subtype, suffixes)
-
   def at(name: Text): Optional[Text] = parameters.where(_(0) == name).let(_(1))
 
   def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): MediaType =

@@ -590,7 +590,6 @@ object Bytecode:
       case 3 => rgb"#b31250"
       case _ => rgb"#777777"
 
-
     def transform(stack: List[Frame]): List[Frame] =
       import Frame.*
       this match

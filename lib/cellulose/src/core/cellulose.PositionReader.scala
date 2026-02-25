@@ -52,6 +52,7 @@ class PositionReader(private var in: Stream[Text]):
   private var startCol: Int = 0
   private var requireCr: Optional[Boolean] = Unset
   private var finished: Boolean = false
+
   private val buffer: StringBuilder = StringBuilder()
 
   private var current: Ordinal = Prim - 1

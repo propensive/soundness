@@ -40,6 +40,7 @@ import proscenium.*
 
 object Hieroglyph:
   private given realm: Realm = realm"hieroglyph"
+
   opaque type CharRange = Long
 
   object CharRange:
@@ -51,10 +52,13 @@ object Hieroglyph:
 
   given ordering: Ordering[CharRange] = Ordering.Long
 
+
   extension (range: CharRange)
     def from: Int = (range >> 32).toInt
+
     def to: Int = range.toInt
     def contains(char: Char): Boolean = char.toInt >= from && char.toInt <= to
+
 
   def encoding(contextExpr: Expr[StringContext]): Macro[Encoding] =
     import quotes.reflect.*

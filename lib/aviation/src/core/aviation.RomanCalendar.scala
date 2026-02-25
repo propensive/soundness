@@ -73,7 +73,6 @@ abstract class RomanCalendar(val name: Text) extends Calendar:
     val db = dc%1461
     val a = ((db/365 + 1)*3)/4
     val da = db - a * 365
-
     val y = g*400 + c*100 + b*4 + a
     val m = (da*5 + 308)/153 - 2
     val d = da - (m + 4) * 153/5 + 122

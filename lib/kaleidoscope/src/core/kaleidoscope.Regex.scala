@@ -73,6 +73,7 @@ object Regex:
 
     def unitary: Boolean = this == Exactly(1)
 
+
   case class Group
     ( start:      Int,
       end:        Int,
@@ -101,6 +102,7 @@ object Regex:
         if quantifier.unitary then (index2, s"($groupName$subpattern)".tt)
         else (index2, s"($groupName($subpattern)${quantifier.serialize}${greed.serialize})".tt)
 
+
   def make(parts: Seq[String])(using erased Unsafe): Regex =
     import strategies.throwUnsafely
     parse(parts.to(List).map(_.tt))
@@ -121,9 +123,11 @@ object Regex:
       if parts.length > 1 then captures(parts.tail, parts.head.s.length, Set()) else Set()
 
     val text: Text = parts.mkString.tt
+
     var index: Int = 0
 
     def current(): Char = if index >= text.s.length then '\u0000' else text.s.charAt(index)
+
     extension [value](value: value) def adv(): value = value.also { index += 1 }
 
     def greed(): Greed = current() match
@@ -285,7 +289,6 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
   def seek(input: Text, start: Ordinal = Prim): Optional[Interval] =
     val matcher: jur.Matcher = javaPattern.matcher(input.s).nn
     if matcher.find(start.n0) then Interval.zerary(matcher.start, matcher.end) else Unset
-
 
   def search(input: Text, start: Ordinal = Prim, overlap: Boolean = false): Stream[Interval] =
     val matcher: jur.Matcher = javaPattern.matcher(input.s).nn

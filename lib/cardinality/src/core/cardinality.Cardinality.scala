@@ -46,13 +46,18 @@ object Cardinality:
       case true  => truth
       case false => falsehood
 
+
   type Min4
     [ Value1Type <: Double, Value2Type <: Double, Value3Type <: Double, Value4Type <: Double ] =
+
     Min[Min[Value1Type, Value2Type], Min[Value3Type, Value4Type]]
+
 
   type Max4
     [ Value1Type <: Double, Value2Type <: Double, Value3Type <: Double, Value4Type <: Double ] =
+
     Max[Max[Value1Type, Value2Type], Max[Value3Type, Value4Type]]
+
 
   private given realm: Realm = realm"cardinality"
 

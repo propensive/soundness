@@ -67,8 +67,10 @@ object Bundler:
       case _ =>
         unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
 
+
   def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
   :   Path on Linux =
+
     val jarfile = jarfile0.or(directory.peer("tmpfile.jar"))
 
     val manifest =

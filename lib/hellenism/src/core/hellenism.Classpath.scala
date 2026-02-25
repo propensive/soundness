@@ -55,13 +55,13 @@ object Classpath extends Root(t""):
 
   given radical: Tactic[PathError] => Classpath.type is Radical:
     type Plane = Classpath
+
     def length(text: Text): Int = 1
 
     def decode(text: Text): Classpath.type =
       if text.starts(t"/") then Classpath else raise(PathError(_.InvalidRoot)) yet Classpath
 
     def encode(root: Classpath.type): Text = t""
-
 
   object Directory:
     def apply[path: Abstractable across Paths to Text](path: path): ClasspathEntry.Directory =
@@ -73,6 +73,7 @@ object Classpath extends Root(t""):
 
   given filesystem: Classpath is Filesystem:
     type UniqueRoot = true
+
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."

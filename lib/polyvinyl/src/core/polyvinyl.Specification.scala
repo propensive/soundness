@@ -48,6 +48,7 @@ trait Specification extends Original:
   def make(data: Origin, transform: Text => Origin => Any): Record
   def access(name: Text, value: Origin): Origin
 
+
   def build(value: Expr[Origin])(using Type[Origin], Type[Form])(using thisType: Type[this.type])
   :   Macro[Record] =
 

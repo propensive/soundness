@@ -54,7 +54,6 @@ object CodlSchema:
     def unique = schema.arity.unique
     def schema: CodlSchema = getSchema()
     def tuple: (Text, CodlSchema) = key -> schema
-
     override def toString(): String = t"$key[${schema.toString}]".s
 
   // FIXME
@@ -117,6 +116,7 @@ extends CodlSchema(IArray.from(structSubschemas), structArity):
   import CodlSchema.Entry
 
   def optional: Struct = Struct(structSubschemas, Arity.AtMostOne)
+
   def uniqueIndex: Optional[Int] = subschemas.indexWhere(_.schema.arity == Arity.Unique) match
     case -1    => Unset
     case index => index

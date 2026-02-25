@@ -46,7 +46,6 @@ import wisteria.*
 
 object Austronesian2:
   object EncodableDerivation extends Derivation[[entity] =>> entity is Encodable in Pojo]:
-
     inline def join[derivation <: Product: ProductReflection]
     :   derivation is Encodable in _root_.austronesian.Austronesian.Pojo =
 

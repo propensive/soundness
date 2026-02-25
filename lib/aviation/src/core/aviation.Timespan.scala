@@ -63,6 +63,7 @@ object Timespan:
     case StandardTime.Minute => Timespan(0, 0, 0, 0, n, 0)
     case StandardTime.Second => Timespan(0, 0, 0, 0, 0, n)
 
+
   def fixed
     ( denomination: StandardTime.Second.type | StandardTime.Minute.type | StandardTime.Hour.type,
       n:            Int )
@@ -77,6 +78,7 @@ object Timespan:
   given addable: Chronology[StandardTime] => Timespan is Addable:
     type Result = Timespan
     type Operand = Timespan
+
     def add(left: Timespan, right: Timespan): Timespan =
       Timespan
         ( left.years + right.years,

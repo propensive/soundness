@@ -130,6 +130,7 @@ object SourceCode:
 
         unparsed #::: content #::: stream(end)
 
+
     def lines(sequence: List[SourceToken], acc: List[List[SourceToken]] = Nil)
     :   List[List[SourceToken]] =
 
@@ -147,6 +148,7 @@ object SourceCode:
     import ast.*, untpd.*
 
     private val trees: scm.HashMap[(Int, Int), Accent] = scm.HashMap()
+
     def apply(start: Int, end: Int): Option[Accent] = trees.get((start, end))
 
     def ignored(tree: NameTree): Boolean =

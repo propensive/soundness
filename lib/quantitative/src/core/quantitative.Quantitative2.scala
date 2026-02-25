@@ -49,10 +49,10 @@ trait Quantitative2:
 
   case class UnitPower(ref: UnitRef, power: Int)
 
-
   trait Temperature2:
     inline given orderable: Temperature is Commensurable:
       type Contrast = Temperature
+
 
       inline def compare
         ( inline left:    Temperature,
@@ -62,8 +62,6 @@ trait Quantitative2:
       :   Boolean =
 
         !strict && left.kelvin == right.kelvin || (left.kelvin < right.kelvin) ^ greater
-
-
 
   private object UnitsMap:
     def apply[measure <: Measure: Type](using Quotes): UnitsMap =
@@ -85,6 +83,7 @@ trait Quantitative2:
   case class Dimensionality(map: Map[DimensionRef, Int]):
     def quantityName(using Quotes): Option[String] =
       import quotes.reflect.*
+
       def recur(todo: List[(DimensionRef, Int)], current: TypeRepr): TypeRepr = todo match
         case Nil => current
 
@@ -226,13 +225,13 @@ trait Quantitative2:
                 case other =>
                   halt(m"principal units had an unexpected type: ${other.show}")
 
-
     override def equals(that: Any): Boolean = that.asMatchable match
       case that: DimensionRef => name == that.name
       case _                  => false
 
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
+
 
   def normalizable[source <: Measure: Type, result <: Measure: Type]
   :   Macro[source is Normalizable to result] =
@@ -314,6 +313,7 @@ trait Quantitative2:
 
     recur(units.dimensions, units, init)
 
+
   def collectUnits[units <: Measure: Type]: Macro[Map[Text, Int]] =
     def recur(expr: Expr[Map[Text, Int]], todo: List[UnitPower]): Expr[Map[Text, Int]] =
       todo match
@@ -339,10 +339,8 @@ trait Quantitative2:
 
     val left: UnitsMap = UnitsMap[left]
     val right: UnitsMap = UnitsMap[right]
-
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
-
     val resultUnits = left2*right2
     val resultValue = '{$leftValue*$rightValue}
 
@@ -350,22 +348,22 @@ trait Quantitative2:
       case Some('[type units <: Measure; units]) => '{Quantity[units]($resultValue)}
       case _                                     => resultValue
 
+
   def divide[left <: Measure: Type, right <: Measure: Type]
     ( leftExpr: Expr[Quantity[left]], rightExpr: Expr[Quantity[right]] )
   :   Macro[Any] =
 
     val left: UnitsMap = UnitsMap[left]
     val right: UnitsMap = UnitsMap[right]
-
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
-
     val resultUnits = left2/right2
     val resultValue = '{$leftValue/$rightValue}
 
     resultUnits.repr.map(_.asType).absolve match
       case Some('[type units <: Measure; units]) => '{Quantity[units]($resultValue)}
       case _                                     => resultValue
+
 
   def amount[units <: Measure: Type]: Macro[Text] =
     val amount = UnitsMap[units].dimensionality.quantityName.getOrElse:
@@ -404,7 +402,6 @@ trait Quantitative2:
 
     val left = UnitsMap[left]
     val right = UnitsMap[right]
-
     val (leftNorm, _) = normalize(left, right, '{1.0})
     val (rightNorm, _) = normalize(right, left, '{1.0})
 
@@ -432,7 +429,6 @@ trait Quantitative2:
 
     val left = UnitsMap[left]
     val right = UnitsMap[right]
-
     val (leftNorm, _) = normalize(left, right, '{1.0})
     val (rightNorm, _) = normalize(right, left, '{1.0})
 
@@ -455,7 +451,6 @@ trait Quantitative2:
 
     val left = UnitsMap(Map())
     val right = UnitsMap[right]
-
     val (leftNorm, _) = normalize(left, right, '{1.0})
     val (rightNorm, _) = normalize(right, left, '{1.0})
 
@@ -478,7 +473,6 @@ trait Quantitative2:
 
     val left = UnitsMap(Map())
     val right = UnitsMap[right]
-
     val (leftNorm, _) = normalize(left, right, '{1.0})
     val (rightNorm, _) = normalize(right, left, '{1.0})
 
@@ -521,7 +515,6 @@ trait Quantitative2:
         '{Rootable[2, Quantity[value], Quantity[result]]($cast(_))}
 
   def cbrtTypeclass[value <: Measure: Type](using Quotes): Expr[Quantity[value] is Rootable[3]] =
-
     val units = UnitsMap[value]
 
     if !units.map.values.all(_.power%3 == 0)
@@ -554,7 +547,6 @@ trait Quantitative2:
     val left: UnitsMap = UnitsMap[left]
     val right: UnitsMap = UnitsMap[right]
     val closed = !strict.valueOrAbort
-
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
@@ -571,7 +563,6 @@ trait Quantitative2:
 
     val left: UnitsMap = UnitsMap[left]
     val right: UnitsMap = UnitsMap[right]
-
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
@@ -590,7 +581,6 @@ trait Quantitative2:
 
     val left: UnitsMap = UnitsMap[left]
     val right: UnitsMap = UnitsMap[right]
-
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
@@ -605,7 +595,6 @@ trait Quantitative2:
 
     val left: UnitsMap = UnitsMap[left]
     val right: UnitsMap = UnitsMap[right]
-
     val (left2, leftValue) = normalize(left, right, '{$leftExpr.underlying})
     val (right2, rightValue) = normalize(right, left, '{$rightExpr.underlying})
 
@@ -615,7 +604,6 @@ trait Quantitative2:
       left2.repr.map(_.asType).absolve match
         case Some('[type unitsType <: Measure; unitsType]) => '{Quantity[unitsType]($resultValue)}
         case _                                             => resultValue
-
 
 
   def subTypeclass
@@ -651,6 +639,7 @@ trait Quantitative2:
           Addable[quantity, quantity2, Quantity[result]]: (left, right) =>
             ${Quantitative.add('left, 'right).asExprOf[Quantity[result]]}
         }
+
 
   def checkable
     [ left      <: Measure:         Type,

@@ -77,12 +77,16 @@ object Serpentine:
       case _ =>
         Unset
 
+
   private def topic[path <: Path: Type](using Quotes)
   :   Optional[Either[List[String], List[String]]] =
+
     import quotes.reflect.*
+
 
     def decompose[path: Type](done: List[String] = Nil)
     :   Optional[Either[List[String], List[String]]] =
+
       Type.of[path] match
         case '[type head; type tail <: Tuple; head *: tail] =>
           TypeRepr.of[head].absolve match
@@ -111,6 +115,7 @@ object Serpentine:
         catch
           case _: Throwable => false
       }
+
 
   def toward[subject <: Path: Type, target <: Path: Type]
     ( subject: Expr[subject], target: Expr[target] )
@@ -163,6 +168,7 @@ object Serpentine:
         case _ =>
           '{$left.calculate($right)}
 
+
   private def tuple(elements: List[String])(using Quotes): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
@@ -175,6 +181,7 @@ object Serpentine:
     . absolve
     . match
         case '[type tuple <: Tuple; tuple] => TypeRepr.of[tuple]
+
 
   private def calculate(left: List[String], right: List[String])(using Quotes)
   :   quotes.reflect.TypeRepr =

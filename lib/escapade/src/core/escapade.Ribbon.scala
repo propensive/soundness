@@ -41,6 +41,7 @@ object Ribbon:
 case class Ribbon(colors: Bg*):
   def fill(parts: Teletype*): Teletype =
     import escapes.*
+
     val array = IArray.from(colors.zip(parts))
     array.indices.map: index =>
       val (background, text) = array(index)

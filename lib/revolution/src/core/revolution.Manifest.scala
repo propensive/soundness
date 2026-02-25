@@ -66,6 +66,7 @@ object Manifest:
   given addable: Manifest is Addable by ManifestEntry to Manifest = (manifest, entry) =>
     Manifest(manifest.entries.updated(entry.key, entry.value))
 
+
   given subtractable: [key <: Label, attribute <: ManifestAttribute[key]]
   =>  Manifest is Subtractable by attribute to Manifest =
 

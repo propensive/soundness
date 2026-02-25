@@ -84,11 +84,8 @@ trait Stdio extends Io:
 
   def write(bytes: Data): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def print(text: Text): Unit = out.print(text.s)
-
   def writeErr(bytes: Data): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def printErr(text: Text): Unit = err.print(text.s)
-
   def read(array: Array[Byte]): Int = in.read(array, 0, array.length)
   def read(array: Array[Char]): Int = reader.read(array, 0, array.length)
-
   def platform: Boolean = System.out == out && System.in == in && System.err == err

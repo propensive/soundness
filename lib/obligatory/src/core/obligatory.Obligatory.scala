@@ -140,9 +140,9 @@ object Obligatory:
                 }
         }
 
-
   def remote[interface: Type](url: Expr[HttpUrl]): Macro[interface] =
     import quotes.reflect.*
+
     val rpcType = TypeRepr.of[rpc].typeSymbol
     val interface = TypeRepr.of[interface]
 
@@ -254,6 +254,7 @@ object Obligatory:
 
   def client[interface: Type](rpc: Expr[JsonRpc]): Macro[interface] =
     import quotes.reflect.*
+
     val rpcType = TypeRepr.of[rpc].typeSymbol
     val interface = TypeRepr.of[interface]
 

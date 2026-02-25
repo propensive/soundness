@@ -65,6 +65,7 @@ object Geodesy:
 
   object Angle:
     private val c = 2*π
+
     def apply(value: Double): Angle = value
     def degrees(value: Double): Angle = value*π/180
 
@@ -85,14 +86,18 @@ object Geodesy:
       given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
       t"${angle.degrees}°"
 
+
   extension (angle: Angle)
     def degrees: Double = angle*180/π
+
     def radians: Double = angle
     def principal: Angle = angle%%(2*π)
     def canonical: Angle = (angle + π).principal - π
 
+
   extension (left: Location)
     def latitude: Angle = ((left >>> 32) & 0xffffffffL).toInt.toDouble/2/Int.MaxValue*π
+
     def longitude: Angle = (left & 0xffffffffL).toInt.toDouble/Int.MaxValue*π + π
     def pair: (Angle, Angle) = (latitude, longitude)
 

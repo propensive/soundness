@@ -48,7 +48,6 @@ import wisteria.*
 
 
 object JsonSchema extends Derivable[Schematic in JsonSchema]:
-
   given encodable: JsonSchema is Encodable in Json = Json.EncodableDerivation.derived
 
   given discriminatedUnion: JsonSchema is Discriminable:
@@ -108,7 +107,6 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
       UriTemplate, Uuid, JsonPointer, RelativeJsonPointer, Regex
 
 enum JsonSchema extends Documentary:
-
   def optional: scala.Boolean
   def description: Optional[Text]
 
@@ -120,7 +118,6 @@ enum JsonSchema extends Documentary:
     case entity: Integer => entity.copy(description = description)
     case entity: Boolean => entity.copy(description = description)
     case entity: Null    => entity.copy(description = description)
-
 
   case Object
     ( description:          Optional[Text]             = Unset,

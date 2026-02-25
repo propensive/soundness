@@ -46,6 +46,5 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack):
   def fullClass: List[Text] = List(getClass.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
   def className: Text = fullClass.last
   def component: Text = fullClass.head
-
   override def getMessage: String = component.s+": "+message.text
   override def getCause: Throwable | Null = cause

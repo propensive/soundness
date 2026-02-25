@@ -57,6 +57,7 @@ package columnAttenuation:
 
 package tableStyles:
   import BoxLine.*
+
   given default: TableStyle = TableStyle(1, Thick, Thick, Thin, Thick, Thin, LineCharset.Default)
   given thinRounded: TableStyle = TableStyle(1, Thin, Thin, Thin, Thin, Thin, LineCharset.Rounded)
   given horizontal: TableStyle = TableStyle(1, Thin, Thin, Thin, Blank, Blank, LineCharset.Default)
@@ -66,7 +67,6 @@ package tableStyles:
 
 package columnar:
   object Prose extends Columnar:
-
     def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
     :   Optional[Int] =
 
@@ -83,7 +83,6 @@ package columnar:
 
     def fit[textual: Textual](lines: IArray[textual], width: Int, textAlign: TextAlignment)
     :   IndexedSeq[textual] =
-
 
       def format
         ( text: textual, position: Int, lineStart: Int, lastSpace: Int, lines: List[textual] )
@@ -108,7 +107,6 @@ package columnar:
 
       lines.to(IndexedSeq).flatMap(format(_, 0, 0, 0, Nil).reverse)
 
-
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double): Optional[Int] =
       fixedWidth
@@ -119,7 +117,6 @@ package columnar:
 
       lines.to(IndexedSeq).map: line =>
         if line.length > width then line.keep(width - ellipsis.length)+text(ellipsis) else line
-
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double): Optional[Int] =
@@ -132,7 +129,6 @@ package columnar:
 
       lines.to(IndexedSeq).map: line =>
         if line.length > width then line.keep(width - ellipsis.length)+text(ellipsis) else line
-
 
   case class Collapsible(threshold: Double) extends Columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double): Optional[Int] =

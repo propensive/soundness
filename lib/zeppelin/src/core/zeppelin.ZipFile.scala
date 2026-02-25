@@ -55,7 +55,6 @@ object Zipfile:
     type Self = Zipfile
     type Operand = Unit
     type Result = Zip.ZipRoot
-
     protected type Transport = jnf.FileSystem
 
     def init(value: Zipfile, options: List[Operand]): Transport =
@@ -64,8 +63,8 @@ object Zipfile:
         panic(m"There was unexpectedly no filesystem provider for ZIP files")
 
     def handle(transport: jnf.FileSystem): Zip.ZipRoot = Zip.ZipRoot()
-
     def close(transport: Transport): Unit = transport.close()
+
 
   def write[path: Abstractable across Paths to Text](path: path)(stream: Iterable[ZipEntry])
   :   Unit raises ZipError =

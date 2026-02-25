@@ -91,10 +91,12 @@ object Deserializable:
 
     base(2)
 
+
   given binary: (Alphabet[Binary], Tactic[SerializationError]) => Deserializable in Binary = base(1)
 
 trait Deserializable:
   type Form <: Serialization
+
   protected val atomicity: Int = 1
 
   def deserialize(previous: Text, current: Text, index0: Int, last: Boolean): Data

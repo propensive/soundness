@@ -40,6 +40,7 @@ import rudiments.*
 
 object Linux:
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+
   inline given nominative: Linux is Nominative under Rules = !!
 
   given filesystem: Linux is Filesystem:

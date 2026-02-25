@@ -117,6 +117,7 @@ object Mercator:
 
   def monad[monad[_]](using Type[monad], Quotes): Expr[Monad[monad]] =
     import quotes.reflect.*
+
     val monadType = TypeRepr.of[monad].typeSymbol
 
     val flatMapMethods = monadType.methodMembers.filter: method =>

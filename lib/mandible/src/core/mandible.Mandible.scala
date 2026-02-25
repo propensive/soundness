@@ -47,6 +47,7 @@ object Mandible:
   :   Macro[Optional[Bytecode]] =
 
     import quotes.reflect.*
+
     given Realm = realm"mandible"
 
     val name = block.asTerm match

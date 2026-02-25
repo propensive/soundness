@@ -47,10 +47,12 @@ object EnvironmentVariable extends EnvironmentVariable2:
 
     _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
 
+
   given xdgDataDirs: [path: Instantiable across Paths from Text] => (system: System)
   =>  EnvironmentVariable["xdgDataDirs", List[path]] =
 
     _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+
 
   given xdgConfigDirs: [path: Instantiable across Paths from Text] => (system: System)
   =>  EnvironmentVariable["xdgConfigDirs", List[path]] =

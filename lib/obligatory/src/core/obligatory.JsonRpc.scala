@@ -83,8 +83,10 @@ object JsonRpc:
 
   def receive(id: Text, result: Json): Unit = promises.at(id).let(_.offer(result))
 
+
   def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Codicil, Online)
   :   Promise[Json] =
+
     val uuid = Uuid().text
     val promise: Promise[Json] = Promise()
     promises(uuid) = promise
@@ -99,6 +101,7 @@ object JsonRpc:
         promise.fulfill(target.submit(Http.Post)(request).receive[Json])
 
     promise
+
 
   def notification(target: HttpUrl, method: Text, payload: Json)
     ( using Monitor, Codicil, Online )
@@ -119,6 +122,7 @@ trait JsonRpc extends Original:
   private val channel: Spool[Json] = Spool()
 
   inline def client: Origin = ${Obligatory.client[Origin]('this)}
+
   def put(json: Json): Unit =
     channel.put(json)
 

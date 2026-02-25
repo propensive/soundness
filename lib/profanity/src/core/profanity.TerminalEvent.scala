@@ -90,7 +90,6 @@ enum Keypress extends TerminalEvent:
   case EscapeSeq(id: Char, content: Char*)
   case Shift(keypress: Keypress.EditKey | FunctionKey)
   case Alt(keypress: Shift | Keypress.EditKey | FunctionKey)
-
   case Ctrl
     ( keypress
       : Alt | Shift | Keypress.EditKey | FunctionKey | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'

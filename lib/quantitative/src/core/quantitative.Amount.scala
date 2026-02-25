@@ -202,5 +202,6 @@ object Amount:
   inline given thermalConductivity: Amount[ThermalConductivity, "thermal conductivity"] = !!
   inline given volumetricFlowRate: Amount[VolumetricFlowRate, "volumetric flow rate"] = !!
 
+
   inline given electricDisplacementField: Amount[ElectricDisplacementField,
       "electric displacement field"] = !!

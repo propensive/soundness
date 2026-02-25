@@ -129,7 +129,6 @@ object Http:
     case Continue                      extends Status(100, t"Continue")
     case SwitchingProtocols            extends Status(101, t"Switching Protocols")
     case EarlyHints                    extends Status(103, t"Early Hints")
-
     case Ok                            extends Status(200, t"OK")
     case Created                       extends Status(201, t"Created")
     case Accepted                      extends Status(202, t"Accepted")
@@ -137,7 +136,6 @@ object Http:
     case NoContent                     extends Status(204, t"No Content")
     case ResetContent                  extends Status(205, t"Reset Content")
     case PartialContent                extends Status(206, t"Partial Content")
-
     case MultipleChoices               extends Status(300, t"Multiple Choices")
     case MovedPermanently              extends Status(301, t"Moved Permanently")
     case Found                         extends Status(302, t"Found")
@@ -145,7 +143,6 @@ object Http:
     case NotModified                   extends Status(304, t"Not Modified")
     case TemporaryRedirect             extends Status(307, t"Temporary Redirect")
     case PermanentRedirect             extends Status(308, t"Permanent Redirect")
-
     case BadRequest                    extends Status(400, t"Bad Request")
     case Unauthorized                  extends Status(401, t"Unauthorized")
     case PaymentRequired               extends Status(402, t"Payment Required")
@@ -171,7 +168,6 @@ object Http:
     case TooManyRequests               extends Status(429, t"Too Many Requests")
     case RequestHeaderFieldsTooLarge   extends Status(431, t"Request Header Fields Too Large")
     case UnavailableForLegalReasons    extends Status(451, t"Unavailable For Legal Reasons")
-
     case InternalServerError           extends Status(500, t"Internal Server Error")
     case NotImplemented                extends Status(501, t"Not Implemented")
     case BadGateway                    extends Status(502, t"Bad Gateway")
@@ -264,6 +260,7 @@ object Http:
       case Body.Empty             => Stream()
       case Body.Streaming(stream) => stream
 
+
   class Request
     ( val method:      Http.Method,
       val version:     Http.Version,
@@ -311,11 +308,13 @@ object Http:
         cookie.bi.map(_.name -> _.value)
       . to(Map)
 
+
   object Response extends Dynamic:
     transparent inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
     :   Prototype | Response =
 
       ${Telekinesis.response('headers)}
+
 
     given conversion: [servable: Servable] => Conversion[servable, Response] = servable.serve(_)
 
@@ -487,7 +486,6 @@ object Http:
 
   case class Fetch[target](originForm: Text, target: target, host: Hostname)
     extends Dynamic:
-
 
     inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
       ( using online:   Online,

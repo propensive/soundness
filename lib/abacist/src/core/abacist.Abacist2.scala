@@ -48,6 +48,7 @@ object Abacist2 extends Abacist3:
 
   object Quanta extends Quanta2:
     inline given underlying: [units <: Tuple] => Underlying[Quanta[units], Long] = !!
+
     given zeroic: [units <: Tuple] => Quanta[units] is Zeroic:
       inline def zero: Quanta[units] = 0L
 
@@ -57,6 +58,7 @@ object Abacist2 extends Abacist3:
         case _           => None
 
     def fromLong[units <: Tuple](long: Long): Quanta[units] = long
+
     given integral: [units <: Tuple] => Integral[Quanta[units]] = summon[Integral[Long]]
 
     inline def apply[units <: Tuple](inline values: Int*): Quanta[units] =
@@ -107,6 +109,7 @@ object Abacist2 extends Abacist3:
           t"$number $units"
         . join(t", ")
 
+
     def distributive[units <: Tuple]
       ( parts0: Quanta[units] => List[Long] )
       ( place0: (Quanta[units], List[Text]) => Text )
@@ -118,11 +121,14 @@ object Abacist2 extends Abacist3:
         def parts(value: Quanta[units]): List[Long] = parts0(value)
         def place(value: Quanta[units], parts: List[Text]): Text = place0(value, parts)
 
+
   extension [units <: Tuple](count: Quanta[units])
     def long: Long = count
 
+
   extension [units <: Tuple](inline count: Quanta[units])
     inline def apply[unit[power <: Nat] <: Units[power, ? <: Dimension]]: Int =
+
       ${Abacist.get[units, unit[1]]('count)}
 
     transparent inline def quantity: Any = ${Abacist.toQuantity[units]('count)}

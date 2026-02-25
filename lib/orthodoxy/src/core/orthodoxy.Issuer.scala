@@ -56,6 +56,7 @@ import queryParameters.arbitrary
 
 object Issuer:
   trait Context extends Topical
+
   object Context:
     def apply[topic](): Context of topic = new Context:
       type Topic = topic

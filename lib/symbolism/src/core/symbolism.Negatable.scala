@@ -44,7 +44,6 @@ object Negatable:
 
       def negate(operand: Self): Result = lambda(operand)
 
-
   given double: Double is Negatable to Double = Negatable(-_)
   given float: Float is Negatable to Float = Negatable(-_)
   given long: Long is Negatable to Long = Negatable(-_)
@@ -58,6 +57,7 @@ object Negatable:
 
 trait Negatable extends Typeclass, Resultant:
   def negate(operand: Self): Result
+
 
   extension (operand: Self)
     @targetName("negate")

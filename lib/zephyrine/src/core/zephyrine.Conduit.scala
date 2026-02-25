@@ -51,12 +51,12 @@ object Conduit:
 
 class Conduit(input0: Stream[Data]):
   private val input: Stream[Data] = input0.filter(_.nonEmpty)
+
   private var stream: Stream[Data] = if input.nil then Stream() else input.tail
   private var current: Data = if input.nil then Data() else input.head
   private var index: Ordinal = Prim
   private var done: Int = 0
   private var clutch: Boolean = false
-
   private var stream0: Stream[Data] = stream
   private var current0: Data = current
   private var index0: Ordinal = index
@@ -66,7 +66,6 @@ class Conduit(input0: Stream[Data]):
   def block: Data = current
   def datum: Int = try current(index.n0) catch case _: ArrayIndexOutOfBoundsException => -1
   def ordinal: Ordinal = index
-
   def remainder: Stream[Data] = stream
 
   def next(): Boolean = step() match
@@ -96,8 +95,6 @@ class Conduit(input0: Stream[Data]):
     current = prefix
     val stream0 = stream
     stream = suffix #:: stream0
-
-
 
   final def save(): Data =
     val rnd = math.random()

@@ -40,6 +40,7 @@ import vacuous.*
 
 object Ci:
   import environments.java
+
   def apply(): Boolean =
     githubActions || gitlabCi || circleCi || travisCi || jenkins || azurePipelines || teamCity
     || bitbucketPipelines || buildkite || appVeyor || drone || semaphore || buddy

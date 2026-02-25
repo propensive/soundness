@@ -42,7 +42,6 @@ import proscenium.*
 import rudiments.*
 
 object Permutation:
-
   def bySize(n: Int): Stream[Permutation] = Stream.range[BigInt](0, Factorial(n)).map: i =>
     Permutation(Factoradic(i))
 
@@ -71,7 +70,6 @@ case class Permutation(factoradic: Factoradic):
   lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.length)))
 
   def bytes: Data = unsafely(factoradic.number.toByteArray.immutable)
-
   def apply(n: Int): Int = expansion(n)
 
   def apply[element](sequence: List[element]): List[element] raises PermutationError =

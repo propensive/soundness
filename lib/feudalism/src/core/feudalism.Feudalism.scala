@@ -79,8 +79,10 @@ object Feudalism:
     def apply[value](value: value): Mutex[value] =
       juca.AtomicReference[State[value]](Inactive(value))
 
+
   extension [value](mutex: Mutex[value])
     def isolate[result](lambda: value => result): result =
+
       @tailrec
       def recur(): result = mutex.getAndUpdate(_.nn.write(Thread.currentThread.nn)) match
         case Inactive(value) => lambda(value)

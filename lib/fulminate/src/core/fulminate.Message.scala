@@ -42,6 +42,7 @@ import scala.annotation.targetName
 
 object Message:
   def apply(value: Text): Message = Message(List(value))
+
   given printable: Message is Printable = (message, termcap) => message.text
   given communicable: [event: Communicable] => Message transcribes event = _.communicate
 
@@ -87,7 +88,6 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
     recur(initial, texts, messages, 0)
 
   def text: Text = unwrap(fold[String]("") { (acc, next, level) => acc+next })
-
   override def toString(): String = text.s
 
   def colorText: Text = unwrap:

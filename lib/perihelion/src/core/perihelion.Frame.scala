@@ -49,7 +49,6 @@ enum Frame(payload: Data):
   case Close(code: Int) extends Frame(Data())
 
   private def mask: Optional[Data] = Unset
-
   def length = payload.length
 
   private def byte0: Byte = this match

@@ -41,6 +41,7 @@ class Shader(options: List[String]) extends PluginPhase:
 
   override def transformUnit(tree: tpd.Tree)(using context: Context): tpd.Tree =
     import untpd.*
+
     val untpdTree = context.compilationUnit.untpdTree
 
     val prefixes: List[(String, String)] =

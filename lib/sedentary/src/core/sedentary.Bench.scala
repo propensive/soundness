@@ -62,6 +62,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
   type Target = Path on Linux
   type Transport = Json
 
+
   inline def apply[duration: Abstractable across Durations to Long, report]
     ( name: Message )
     ( target:     duration,
@@ -80,7 +81,6 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
 
     val testId = TestId(name, suite, codepoint)
     val confidence0: Optional[Benchmark.Percentiles] = confidence
-
 
     val body: (References over Transport) ?=> Quotes ?=> Expr[List[Long]] =
       val iterations0: Optional[Int] = iterations
@@ -125,8 +125,6 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     val results0 = dispatch(body)
     val sample: Long = results0(0)
     val results = results0.drop(1)
-
-
     val total = results.sum
     val iterations0: Optional[Int] = iterations
     val count = sample*iterations0.or(5)
@@ -137,10 +135,12 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     val sd = math.sqrt(variance)
     val min = results.min.toDouble
     val max = results.max.toDouble
+
     val benchmark =
       Benchmark(total, count, total.toDouble/count, min, max, sd, confidence0.or(95), baseline)
 
     inclusion.include(runner.report, testId, benchmark)
+
 
   def stage(out: Path on Linux): Path on Linux = unsafely:
     val uuid = Uuid()

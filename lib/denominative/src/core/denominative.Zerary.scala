@@ -33,7 +33,6 @@
 package denominative
 
 object Zerary:
-
   final class Match(val int: Int) extends AnyVal:
     def isEmpty: false = false
     def get: Ordinal = int.z

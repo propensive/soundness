@@ -50,8 +50,10 @@ object Aviation2:
   object TaiInstant:
     inline given underlying: Underlying[TaiInstant, Long] = !!
 
+
     given generic: Aviation2.TaiInstant is Abstractable & Instantiable across Instants to
                     Long from Long =
+
       new Abstractable with Instantiable:
         type Self = Aviation2.TaiInstant
         type Origin = Long
@@ -64,6 +66,7 @@ object Aviation2:
     given instant: Instant is InstantSubtractable to Duration = new InstantSubtractable:
       type Self = Instant
       type Result = Duration
+
       def subtract(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
 
 
@@ -77,7 +80,6 @@ object Aviation2:
         def subtract(left: Instant, right: Quantity[units]): Instant =
           left - (right.normalize.value*1000.0).toLong
 
-
   trait InstantSubtractable extends Typeclass, Resultant:
     def subtract(left: Instant, right: Self): Result
 
@@ -89,10 +91,13 @@ object Aviation2:
       of(instant.generic)
 
     inline given underlying: Underlying[Instant, Long] = !!
+
     def of(millis: Long): Instant = millis
+
 
     given generic: Aviation2.Instant is Abstractable & Instantiable across Instants to Long from
                     Long =
+
       new Abstractable with Instantiable:
         type Self = Aviation2.Instant
         type Result = Long
@@ -100,6 +105,7 @@ object Aviation2:
         type Domain = Instants
         def apply(long: Long): Aviation2.Instant = long
         def genericize(instant: Aviation2.Instant): Long = instant
+
 
     inline given orderable: Instant is Orderable:
       inline def compare
@@ -113,6 +119,7 @@ object Aviation2:
 
     given ordering: Ordering[Instant] = Ordering.Long
 
+
     given plus: [units <: Measure: Normalizable to Seconds[1]]
     =>  Instant is Addable by Quantity[units] to Instant = new Addable:
 
@@ -123,6 +130,7 @@ object Aviation2:
       def add(instant: Instant, duration: Quantity[units]): Instant =
         instant + (duration.normalize.value*1000.0).toLong
 
+
     given minus: [operand: InstantSubtractable]
     =>  Instant is Subtractable by operand to operand.Result =
 
@@ -132,6 +140,7 @@ object Aviation2:
 
   object Duration:
     def of(millis: Long): Duration = Quantity(millis/1000.0)
+
 
     given generic: [units <: Measure: Normalizable to Seconds[1]]
     =>  Quantity[units] is Abstractable & Instantiable across Durations from Long to Long =
@@ -171,6 +180,7 @@ object Aviation2:
       in(timezone).timestamp
 
     def long: Long = instant
+
 
   extension (duration: into[Duration])
     def from(instant: into[Instant]): Period = Period(instant, Instant.plus.add(instant, duration))

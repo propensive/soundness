@@ -60,6 +60,7 @@ object Cookie:
 
     new Cookie[value](name, domain, expiry.let(_.generic/1_000_000L), secure, httpOnly, path)
 
+
   object Value:
     given showable: Value is Showable = cookie =>
       List
@@ -85,7 +86,6 @@ object Cookie:
         _.cut(t"=", 2) match
           case List(key, value) => List(Cookie.Value(key.urlDecode, value.urlDecode))
           case _                => Nil
-
 
   case class Value
     ( name:     Text,

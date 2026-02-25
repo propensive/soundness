@@ -40,6 +40,7 @@ import vacuous.*
 object csi:
   val esc: Text = t"\e"
   val csi: Text = t"\e["
+
   def cuu(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}A"
   def cud(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}B"
   def cuf(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}C"

@@ -30,7 +30,6 @@ object Frontier:
           case _                           => None
       catch case error: Throwable => None
 
-
   object NoCandidates:
     def unapply(using Quotes)(scrutinee: quotes.reflect.ImplicitSearchFailure): Option[Text] =
       scrutinee match
@@ -50,8 +49,8 @@ object Frontier:
 
   def explain[target: Type]: Macro[target] =
     import quotes.reflect.*
-    val id = next()
 
+    val id = next()
     val self = Symbol.requiredMethod("frontier.missingContext.explain")
 
     sealed trait Result

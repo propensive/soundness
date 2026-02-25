@@ -50,6 +50,7 @@ object Isolation extends Rig:
   type Transport = Pojo
 
   def stage(out: Path on Linux): Classloader = classpath(out).classloader()
+
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Form, Target]): output =

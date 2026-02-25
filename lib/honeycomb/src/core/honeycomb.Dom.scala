@@ -50,7 +50,7 @@ trait Dom:
   val elements: Dictionary[Tag]
   val attributes: Dictionary[Attribute]
   val entities: Dictionary[Text]
-  def doctype: Doctype
 
+  def doctype: Doctype
   def infer(parent: Tag, child: Tag): Optional[Tag]
   def generic: Tag = Tag.root(elements.iterator.map(_.label).to(Set))

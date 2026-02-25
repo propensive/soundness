@@ -67,6 +67,7 @@ case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
 
     object cursor:
       private var index: Int = state0.cursor
+
       def apply(): Int = index
       def update(value: Int): Unit = index = value
       def x: Int = index%buffer2.width

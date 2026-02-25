@@ -103,8 +103,6 @@ object Semver:
         case _ =>
           abort(SemverError(text))
 
-
-
   given ordering: Ordering[Semver] = Ordering.fromLessThan: (left, right) =>
     def compare(left: List[Long | Text], right: List[Long | Text]): Boolean =
       (left, right).absolve match

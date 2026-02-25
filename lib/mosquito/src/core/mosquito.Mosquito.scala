@@ -88,6 +88,7 @@ object Mosquito:
     =>  tensor is Negatable:
 
       type Result = Tensor[result, size]
+
       def negate(operand: tensor): Tensor[result, size] = operand.map(negatable.negate(_))
 
 
@@ -154,6 +155,7 @@ object Mosquito:
 
   extension [size <: Int, left](left: Tensor[left, size])
     def element(index: Int): left = left.toArray(index).asInstanceOf[left]
+
     def apply(index: Int): left = left.toArray(index).asInstanceOf[left]
     def list: List[left] = left.toList.asInstanceOf[List[left]]
     def iarray: IArray[left] = left.toIArray.asInstanceOf[IArray[left]]

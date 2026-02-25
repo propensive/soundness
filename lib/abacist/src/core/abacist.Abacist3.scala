@@ -39,6 +39,7 @@ trait Abacist3:
     inline given commensurable: [units <: Tuple] => Quanta[units] is Commensurable:
       type Contrast = Quanta[units]
 
+
       inline def compare
         ( inline left:        Quanta[units],
           inline right:       Quanta[units],

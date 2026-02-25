@@ -42,8 +42,10 @@ object Vexillology:
   object Flags:
     def apply[enumeration](): Flags[enumeration] = 0L
 
+
   extension [enumeration: Enumerable](flags: Flags[enumeration])
     def apply(value: enumeration & Singleton): Boolean =
+
       (flags & (1L << enumeration.index(value))) > 0
 
     def update(value: enumeration & Singleton, enabled: Boolean): Flags[enumeration] =

@@ -65,8 +65,10 @@ object Property:
       val name = valueOf[name]
       reader.read(properties(name.tt), name.tt)
 
+
   def apply[name <: String, property](lambda: Text => property)
   :   name is Property of property =
+
     (value, property) =>
       lambda(value.or(panic(m"the system property $property was unavailable")))
 
@@ -154,4 +156,5 @@ object Property:
 
 trait Property extends Typeclass, Topical:
   type Self <: String
+
   def read(value: Optional[Text], property: Text): Topic

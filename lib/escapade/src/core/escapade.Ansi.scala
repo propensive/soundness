@@ -73,7 +73,6 @@ object Ansi extends Ansi2:
 
   given bg: Stylize[Bg] = bgColor => Stylize(_.copy(bg = bgColor.color))
   given fg: Stylize[Fg] = fgColor => Stylize(_.copy(fg = fgColor.color))
-
   given bold: Stylize[Bold.type] = _ => Stylize(_.copy(bold = true))
   given italic: Stylize[Italic.type] = _ => Stylize(_.copy(italic = true))
   given underline: Stylize[Underline.type] = _ => Stylize(_.copy(underline = true))
@@ -87,6 +86,7 @@ object Ansi extends Ansi2:
     case Escape(on: Text, off: Text)
 
   case class Frame(bracket: Char, start: Int, transform: Transform)
+
 
   case class State
     ( text:       Text                         = t"",
@@ -102,8 +102,10 @@ object Ansi extends Ansi2:
       val insertions2 = insertions.get(position).fold(t"\e"+esc.on)(_+t"\e"+esc.on)
       copy(insertions = insertions.updated(position, insertions2))
 
+
   object Interpolator extends contextual.Interpolator[Input, State, Teletype]:
     private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')
+
     def initial: State = State()
 
     def parse(state: State, text: Text): State =

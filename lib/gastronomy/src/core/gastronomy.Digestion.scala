@@ -41,6 +41,7 @@ import vacuous.*
 object Digestion:
   class Java(md: js.MessageDigest) extends Digestion:
     private val messageDigest: js.MessageDigest = md
+
     def append(bytes: Data): Unit = messageDigest.update(bytes.mutable(using Unsafe))
     def digest(): Data = messageDigest.digest.nn.immutable(using Unsafe)
 

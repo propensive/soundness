@@ -46,14 +46,17 @@ object Www:
 
   given radical: %.type is Radical:
     type Plane = Www
+
     def length(text: Text): Int = if text.starts(t"/") then 1 else 0
     def encode(root: %.type): Text = "/"
     def decode(text: Text): %.type = %
 
   given filesystem: Www is Filesystem:
     type UniqueRoot = false
+
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."
+
     override def escape(part: Text): Text = part.urlEncode
     override def unescape(part: Text): Text = part.urlDecode

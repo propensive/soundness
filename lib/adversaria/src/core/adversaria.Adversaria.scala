@@ -69,6 +69,7 @@ object Adversaria:
 
     try Mapper.transformTerm(term)(Symbol.spliceOwner) catch case _: jl.Error => Unset
 
+
   def general[operand <: StaticAnnotation: Type, self: Type, plane: Type, limit: Type]
   :   Macro[self is Annotated by operand on plane under limit] =
 
@@ -78,10 +79,8 @@ object Adversaria:
     val plane = TypeRepr.of[plane]
     val operand = TypeRepr.of[operand]
     val limit = TypeRepr.of[limit]
-
     val paramss = self.classSymbol.get.primaryConstructor.paramSymss
     val params = paramss.find(_.headOption.fold(false)(_.isTerm)).getOrElse(Nil)
-
 
     def matching(annotations: List[Term]): Expr[List[operand]] =
       Expr.ofList:
@@ -128,7 +127,6 @@ object Adversaria:
           Annotated.AnnotatedSubtypes[operand, self, plane, limit]
             ( ${Expr.ofList(subtypes)}.to(Map) )
         }
-
 
 
   def dereferenceable[entity: Type, value: Type]: Macro[entity is Dereferenceable to value] =

@@ -114,6 +114,7 @@ extension (logObject: Log.type)
 package logging:
   given silent: [format] => format is Loggable = Log.silent[format]
 
+
   given stdout: [format: Printable, inscribable: Inscribable in format] => Stdio
   =>  inscribable is Loggable =
 

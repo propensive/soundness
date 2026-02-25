@@ -59,14 +59,18 @@ object Cursor:
 
     given ordered: Ordering[Offset] = Ordering.Long
 
+
   extension (mark: Mark)
     inline def block: Ordinal = (mark >> 32 & 0xffffffff).toInt.z
+
     inline def index: Ordinal = mark.toInt.z
     private[zephyrine] inline def increment: Mark = mark + 1
     private[zephyrine] inline def decrement: Mark = mark - 1
 
+
   extension (offset: Offset)
     inline def line: Ordinal = (offset >> 32 & 0xffffffff).toInt.z
+
     inline def column: Ordinal = offset.toInt.z
 
 

@@ -72,6 +72,7 @@ object Report:
 
 class Report(using Environment):
   val metrics = textMetrics.eastAsianScripts
+
   given measurable: Char is Measurable:
     def width(char: Char): Int = char match
       case '✓' | '✗' | '⎇' => 1
@@ -79,6 +80,7 @@ class Report(using Environment):
 
   private var failure: Optional[(Throwable, Set[TestId])] = Unset
   private var pass: Boolean = false
+
   private val lines: ReportLine.Suite = ReportLine.Suite(Unset)
 
   private val details: scm.SortedMap[TestId, scm.ArrayBuffer[Verdict.Detail]] =
@@ -87,9 +89,9 @@ class Report(using Environment):
 
   def passed: Boolean = failure.absent && pass
 
-
   class TestsMap():
     private var tests: ListMap[TestId, ReportLine] = ListMap()
+
     def list: List[(TestId, ReportLine)] = synchronized(tests.to(List))
     def apply(testId: TestId): ReportLine = synchronized(tests(testId))
 
@@ -99,7 +101,6 @@ class Report(using Environment):
     def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine = synchronized:
       if !tests.contains(testId) then tests = tests.updated(testId, reportLine)
       tests(testId)
-
 
   enum ReportLine:
     case Suite(suite: Optional[Testable], tests: TestsMap = TestsMap())
@@ -128,7 +129,6 @@ class Report(using Environment):
         val avg: Long = buffer.fuse(0L)(state + next.duration)/buffer.length
 
         List(Summary(status, testId, buffer.length, min, max, avg))
-
 
   def resolve(suite: Optional[Testable]): ReportLine.Suite =
     suite.option.map: suite =>

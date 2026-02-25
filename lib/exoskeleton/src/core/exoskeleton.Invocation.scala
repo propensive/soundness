@@ -55,5 +55,6 @@ extends Cli, Stdio:
 
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   :   Optional[operand] =
+
     given cli: Cli = this
     interpreter.read[operand](parameters, flag)

@@ -57,7 +57,6 @@ object Cellulose extends Cellulose2:
 
   object Codl extends Format:
     def name: Text = t"CoDL"
-
     def apply(value: List[Codllike]): Codl = value
     def wrap(value: Text): Codl = Codl(List(Codllike(IArray(CodlNode(Atom(value))))))
 
@@ -87,6 +86,7 @@ object Cellulose extends Cellulose2:
       value => Codl.wrap(if value then t"yes" else t"no")
 
     given textEncodable: Text is Encodable in Codl = value => Codl.wrap(value)
+
 
     given optionalEncodable: [inner, value >: Unset.type: Mandatable to inner]
     =>  ( encoder: => inner is Encodable in Codl )
@@ -129,6 +129,7 @@ object Cellulose extends Cellulose2:
 
       codl => if codl.list.nil then Unset else decoder.decoded(codl)
 
+
     given optionDecodable: [decodable] => (decoder: => decodable is Decodable in Codl)
     =>  Option[decodable] is Decodable in Codl =
 
@@ -147,6 +148,7 @@ object Cellulose extends Cellulose2:
         case struct: Struct =>
           value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_))
 
+
     given setDecodable: [element: CodlSchematic] => (decodable: => element is Decodable in Codl)
     =>  Set[element] is Decodable in Codl =
 
@@ -160,6 +162,7 @@ object Cellulose extends Cellulose2:
           case struct: Struct =>
             value.list.map(List(_)).map(Codl(_)).map(decodable.decoded(_)).to(Set)
 
+
     enum Issue extends Format.Issue:
       case UnexpectedCarriageReturn
       case BadSubstitution
@@ -167,7 +170,6 @@ object Cellulose extends Cellulose2:
       case CarriageReturnMismatch(required: Boolean)
       case UnevenIndent(initial: Int, indent: Int)
       case IndentAfterComment, SurplusIndent, InsufficientIndent
-
       case MissingKey(point: Text, key: Text)
       case DuplicateKey(point: Text, key: Text)
       case SurplusParams(point: Text, cmd: Text)
@@ -238,6 +240,7 @@ object Cellulose extends Cellulose2:
 
       val baseSchema: CodlSchema = schema
 
+
       case class Proto
         ( key:       Optional[Text]  = Unset,
           line:      Int             = 0,
@@ -299,6 +302,7 @@ object Cellulose extends Cellulose2:
       :   CodlDoc =
 
         def schema: CodlSchema = stack.prim.lay(baseSchema)(_.head.schema)
+
 
         inline def go
           ( tokens:  Stream[CodlToken]             = tokens.tail,

@@ -56,6 +56,7 @@ import scala.annotation.*
 
 trait McpServer():
   import Mcp.*
+
   private val sessions: scm.HashMap[Text, Session] = scm.HashMap()
 
   type Session <: McpSession
@@ -66,6 +67,7 @@ trait McpServer():
 
   private given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
 
+
   def serve(using this.type is McpSpecification, Monitor, Codicil, Online, Http.Request)
   :   Http.Response =
 
@@ -73,6 +75,7 @@ trait McpServer():
       val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)
       val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
       Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))
+
 
   def name: Text
   def description: Text

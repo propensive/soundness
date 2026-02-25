@@ -44,6 +44,7 @@ import vacuous.*
 
 case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) extends Question[Text]:
   val position = position0.or(value.length)
+
   import Keypress.*
 
   def apply(keypress: TerminalEvent): LineEditor = try keypress match

@@ -39,5 +39,6 @@ import language.adhocExtensions
 class LarcenyPlugin() extends StandardPlugin:
   val name: String = "larceny"
   override val description: String = "capture errors"
+
   override def initialize(options: List[String])(using Context): List[PluginPhase] =
     List(LarcenyTransformer())

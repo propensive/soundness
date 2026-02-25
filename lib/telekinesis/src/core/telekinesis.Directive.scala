@@ -50,7 +50,6 @@ object Directive:
 
   given accept: ("accept" is Directive of MediaType) = _.show
   given accept2: ("accept" is Directive of List[MediaType]) = _.map(_.show).join(t",")
-
   given authorization: ("authorization" is Directive of Auth) = _.show
   given cacheControl: ("cacheControl" is Directive of Text) = identity(_)
   given connection: ("connection" is Directive of Text) = identity(_)
@@ -134,5 +133,6 @@ object Directive:
 
 trait Directive extends Topical:
   type Self <: Label
+
   def encode(value: Topic): Text
   inline def key: Text = valueOf[Self]

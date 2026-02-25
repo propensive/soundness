@@ -47,15 +47,19 @@ object PropertyDef:
   inline given all: ("all" is PropertyDef[Text]) = !!
   inline given animation: ("animation" is PropertyDef[Text]) = !!
 
+
   inline given animationDelay: [duration <: Measure]
   =>  ( erased duration is Normalizable to Seconds[1] )
   =>  ( "animationDelay" is PropertyDef[Quantity[duration]] ) = !!
 
+
   inline given animationDirection: ("animationDirection" is PropertyDef[Text]) = !!
+
 
   inline given animationDuration: [duration <: Measure]
   =>  ( erased duration is Normalizable to Seconds[1] )
   =>  ( "animationDuration" is PropertyDef[Quantity[duration]] ) = !!
+
 
   inline given animationFillMode: ("animationFillMode" is PropertyDef[AnimationFillMode]) = !!
   inline given animationIterationCount: ("animationIterationCount" is PropertyDef[Text]) = !!
@@ -68,9 +72,11 @@ object PropertyDef:
   inline given backgroundBlendMode: ("backgroundBlendMode" is PropertyDef[Text]) = !!
   inline given backgroundClip: ("backgroundClip" is PropertyDef[Text]) = !!
 
+
   inline given backgroundColor1: [color]
   =>  ( erased color is Chromatic )
   =>  ( "backgroundColor" is PropertyDef[color] ) = !!
+
 
   inline given backgroundColor2: ("backgroundColor" is PropertyDef[Transparent.type]) = !!
   inline given backgroundImage: ("backgroundImage" is PropertyDef[Text]) = !!
@@ -87,28 +93,38 @@ object PropertyDef:
   inline given backgroundPosition: ("backgroundPosition" is PropertyDef[Text]) = !!
   inline given backgroundPosition2: ("backgroundPosition" is PropertyDef[Length | Int]) = !!
 
+
   inline given backgroundPosition3: ("backgroundPosition" is PropertyDef[(Length | Int,
                                                                           Length | Int)]) =
+
     !!
+
 
   inline given backgroundRepeat: ("backgroundRepeat" is PropertyDef[Text]) = !!
   inline given backgroundRepeat2: ("backgroundRepeat" is PropertyDef[BackgroundRepeat]) = !!
 
+
   inline given backgroundRepeat3: ("backgroundRepeat" is PropertyDef
                                                           [(BackgroundRepeat, BackgroundRepeat)]) =
+
       !!
+
 
   inline given backgroundSize: ("backgroundSize" is PropertyDef[Text]) = !!
   inline given backgroundSize2: ("backgroundSize" is PropertyDef[Length | Int]) = !!
 
+
   inline given border: [color] => (erased color is Chromatic)
   =>  ( "border" is PropertyDef[(BorderStyle, Length | Int, color)] ) = !!
+
 
   inline given borderBottom: [color] => (erased color is Chromatic)
   =>  ( "borderBottom" is PropertyDef[(BorderStyle, Length | Int, color)] ) = !!
 
+
   inline given borderBottomColor: [color] => (erased color is Chromatic)
   =>  ( "borderBottomColor" is PropertyDef[color] ) = !!
+
 
   inline given borderBottomColor2: ("borderBottomColor" is PropertyDef[Transparent.type]) = !!
   inline given borderBottomLeftRadius: ("borderBottomLeftRadius" is PropertyDef[Length | Int]) = !!
@@ -120,8 +136,10 @@ object PropertyDef:
   inline given borderBottomWidth: ("borderBottomWidth" is PropertyDef[Length | Int]) = !!
   inline given borderCollapse: ("borderCollapse" is PropertyDef[Text]) = !!
 
+
   inline given borderColor1: [color] => (erased color is Chromatic)
   =>  ( "borderColor" is PropertyDef[color] ) = !!
+
 
   inline given borderColor2: ("borderColor" is PropertyDef[Transparent.type]) = !!
   inline given borderImage: ("borderImage" is PropertyDef[Text]) = !!
@@ -131,22 +149,28 @@ object PropertyDef:
   inline given borderImageSource: ("borderImageSource" is PropertyDef[Text]) = !!
   inline given borderImageWidth: ("borderImageWidth" is PropertyDef[Length | Int]) = !!
 
+
   inline given borderLeft: [color] => (erased color is Chromatic)
   =>  ( "borderLeft" is PropertyDef[(BorderStyle, Length | Int, color)] ) = !!
 
+
   inline given borderLeftColor1: [color] => (erased color is Chromatic)
   =>  ( "borderLeftColor" is PropertyDef[color] ) = !!
+
 
   inline given borderLeftColor2: ("borderLeftColor" is PropertyDef[Transparent.type]) = !!
   inline given borderLeftStyle: ("borderLeftStyle" is PropertyDef[BorderStyle]) = !!
   inline given borderLeftWidth: ("borderLeftWidth" is PropertyDef[Length | Int]) = !!
   inline given borderRadius: ("borderRadius" is PropertyDef[Length | Int]) = !!
 
+
   inline given borderRight: [color] => (erased color is Chromatic)
   =>  ( "borderRight" is PropertyDef[(BorderStyle, Length | Int, color)] ) = !!
 
+
   inline given borderRightColor1: [color] => (erased color is Chromatic)
   =>  ( "borderRightColor" is PropertyDef[color] ) = !!
+
 
   inline given borderRightColor2: ("borderRightColor" is PropertyDef[Transparent.type]) = !!
   inline given borderRightStyle: ("borderRightStyle" is PropertyDef[BorderStyle]) = !!
@@ -154,11 +178,14 @@ object PropertyDef:
   inline given borderSpacing: ("borderSpacing" is PropertyDef[Length | Int]) = !!
   inline given borderStyle: ("borderStyle" is PropertyDef[BorderStyle]) = !!
 
+
   inline given borderTop: [color] => (erased color is Chromatic)
   =>  ( "borderTop" is PropertyDef[(BorderStyle, Length | Int, color)] ) = !!
 
+
   inline given borderTopColor1: [color] => (erased color is Chromatic)
   =>  ( "borderTopColor" is PropertyDef[color] ) = !!
+
 
   inline given borderTopColor2: ("borderTopColor" is PropertyDef[Transparent.type]) = !!
   inline given borderTopLeftRadius: ("borderTopLeftRadius" is PropertyDef[Length | Int]) = !!
@@ -169,9 +196,12 @@ object PropertyDef:
   inline given bottom: ("bottom" is PropertyDef[Length | Int]) = !!
   inline given boxDecorationBreak: ("boxDecorationBreak" is PropertyDef[Text]) = !!
 
+
   inline given boxShadow: [color] => (erased color is Chromatic)
   =>  ( "boxShadow" is PropertyDef[(Length | Int, Length | Int, Length | Int, color)] ) =
+
     !!
+
 
   inline given boxSizing: ("boxSizing" is PropertyDef[Text]) = !!
   inline given breakAfter: ("breakAfter" is PropertyDef[Text]) = !!
@@ -179,15 +209,19 @@ object PropertyDef:
   inline given breakInside: ("breakInside" is PropertyDef[Text]) = !!
   inline given captionSide: ("captionSide" is PropertyDef[Text]) = !!
 
+
   inline given caretColor1: [color] => (erased color is Chromatic)
   =>  ( "caretColor" is PropertyDef[color] ) = !!
+
 
   inline given caretColor2: ("caretColor" is PropertyDef[Transparent.type]) = !!
   inline given clear: ("clear" is PropertyDef[Text]) = !!
   inline given clip: ("clip" is PropertyDef[Text]) = !!
 
+
   inline given color1: [color] => (erased color is Chromatic)
   =>  ( "color" is PropertyDef[color] ) = !!
+
 
   inline given color2: ("color" is PropertyDef[Transparent.type]) = !!
   inline given columnCount: ("columnCount" is PropertyDef[Text]) = !!
@@ -195,8 +229,10 @@ object PropertyDef:
   inline given columnGap: ("columnGap" is PropertyDef[Text]) = !!
   inline given columnRule: ("columnRule" is PropertyDef[Text]) = !!
 
+
   inline given columnRuleColor1: [color] => (erased color is Chromatic)
   =>  ( "columnRuleColor" is PropertyDef[color] ) = !!
+
 
   inline given columnRuleColor2: ("columnRuleColor" is PropertyDef[Transparent.type]) = !!
   inline given columnRuleStyle: ("columnRuleStyle" is PropertyDef[Text]) = !!
@@ -276,11 +312,14 @@ object PropertyDef:
   inline given margin2: ("margin" is PropertyDef[(Length | Int, Length | Int)]) = !!
   inline given margin3: ("margin" is PropertyDef[(Length | Int, Length | Int, Length | Int)]) = !!
 
+
   inline given margin4: ("margin" is PropertyDef[(Length | Int,
                                                   Length | Int,
                                                   Length | Int,
                                                   Length | Int)]) =
+
     !!
+
 
   inline given marginBottom: ("marginBottom" is PropertyDef[Length | Int]) = !!
   inline given marginLeft: ("marginLeft" is PropertyDef[Length | Int]) = !!
@@ -300,8 +339,10 @@ object PropertyDef:
   inline given orphans: ("orphans" is PropertyDef[Text]) = !!
   inline given outline: ("outline" is PropertyDef[Text]) = !!
 
+
   inline given outlineColor1: [color] => (erased color is Chromatic)
   =>  ( "outlineColor" is PropertyDef[color] ) = !!
+
 
   inline given outlineColor2: ("outlineColor" is PropertyDef[Transparent.type]) = !!
   inline given outlineOffset: ("outlineOffset" is PropertyDef[Text]) = !!
@@ -316,11 +357,14 @@ object PropertyDef:
   inline given padding2: ("padding" is PropertyDef[(Length | Int, Length | Int)]) = !!
   inline given padding3: ("padding" is PropertyDef[(Length | Int, Length | Int, Length | Int)]) = !!
 
+
   inline given padding4: ("padding" is PropertyDef[(Length | Int,
                                                     Length | Int,
                                                     Length | Int,
                                                     Length | Int)]) =
+
     !!
+
 
   inline given paddingBottom: ("paddingBottom" is PropertyDef[Length | Int]) = !!
   inline given paddingLeft: ("paddingLeft" is PropertyDef[Length | Int]) = !!
@@ -346,14 +390,18 @@ object PropertyDef:
   inline given textCombineUpright: ("textCombineUpright" is PropertyDef[Text]) = !!
   inline given textDecoration1: ("textDecoration" is PropertyDef[TextDecorationLine]) = !!
 
+
   inline given textDecoration2: ("textDecoration" is PropertyDef
                                                       [(TextDecorationLine,
                                                         Text,
                                                         TextDecorationStyle)]) =
+
     !!
+
 
   inline given textDecorationColor1: [color] => (erased color is Chromatic)
   =>  ( "textDecorationColor" is PropertyDef[color] ) = !!
+
 
   inline given textDecorationColor2: ("textDecorationColor" is PropertyDef[Transparent.type]) = !!
   inline given textDecorationLine: ("textDecorationLine" is PropertyDef[TextDecorationLine]) = !!
@@ -390,7 +438,6 @@ object PropertyDef:
   inline given wordWrap: ("wordWrap" is PropertyDef[Text]) = !!
   inline given writingMode: ("writingMode" is PropertyDef[Text]) = !!
   inline given zIndex: ("zIndex" is PropertyDef[Int]) = !!
-
   inline given inherit: [label <: Label] => label is PropertyDef[Inherit.type] = !!
   inline given initial: [label <: Label] => label is PropertyDef[Initial.type] = !!
 

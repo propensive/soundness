@@ -37,6 +37,7 @@ import spectacular.*
 
 object Weekday:
   def apply(ordinal: Ordinal)(using hebdomad: Hebdomad): Weekday = hebdomad.weekday(ordinal)
+
   val all: IArray[Weekday] = IArray(Mon, Tue, Wed, Thu, Fri, Sat, Sun)
 
   given showable: (weekdays: Weekdays) => Weekday is Showable = weekdays.name(_)
@@ -44,7 +45,6 @@ object Weekday:
   def count(start: Date, end: Date, day: Weekday): Int =
     val total = end.jdn - start.jdn
     val extras = total%7
-
     val dayOrdinal = day.ordinal
     val startOrdinal = start.weekday.ordinal
 

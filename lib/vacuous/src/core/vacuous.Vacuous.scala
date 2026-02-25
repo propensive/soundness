@@ -83,7 +83,6 @@ object Vacuous:
     recur(TypeRepr.of[typeRef]).asType.absolve match case '[type result <: typeRef; result] =>
       if seen then '{Mandatable[typeRef, result]()} else halt(m"the value is not an `Optional`")
 
-
   def optimizeOr[value: Type](optional: Expr[Optional[value]], default: Expr[value]): Macro[value] =
     import quotes.reflect.*
 

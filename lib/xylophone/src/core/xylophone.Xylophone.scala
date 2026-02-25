@@ -306,7 +306,6 @@ object Xylophone:
             case '[type result <: Tuple; result] =>
               '{$result.asInstanceOf[Option[result]]}
 
-
   def interpolator[parts <: Tuple: Type](insertions0: Expr[Seq[Any]]): Macro[Xml] =
     import quotes.reflect.*
     import Xml.Hole
@@ -520,6 +519,7 @@ object Xylophone:
   def attributes[result: Type, thisType <: Tag to result: Type]
     ( tag: Expr[Tag], attributes0: Expr[Seq[(String, Any)]] )
   :   Macro[result] =
+
     import quotes.reflect.*
 
     val arguments = attributes0.absolve match

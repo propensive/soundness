@@ -55,7 +55,6 @@ package interpreters:
 
       Unset
 
-
   given posixClustering: Interpreter:
     type Topic = Commandline
 
@@ -70,7 +69,6 @@ package interpreters:
 
       commandline.read(flag)
 
-
   given posix: Interpreter:
     type Topic = Commandline
 
@@ -84,7 +82,6 @@ package interpreters:
     :   Optional[operand] =
 
       commandline.read(flag)
-
 
   private def interpreter(arguments: List[Argument], clustering: Boolean): Commandline =
     def recur

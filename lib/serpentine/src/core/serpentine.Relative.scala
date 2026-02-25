@@ -54,6 +54,7 @@ object Relative:
     type Topic = Zero
     type Limit = 0
 
+
   def of[topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
   :   Relative of topic under limit =
 
@@ -106,6 +107,7 @@ object Relative:
         . reverse
         . join(ascender*relative.ascent, filesystem.separator, t"")
 
+
   given showable: [filesystem: Filesystem, relative <: Relative on filesystem]
   =>  relative is Showable =
 
@@ -143,7 +145,6 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
 
   def delta: Int = descent.length - ascent
   def name: Optional[Text] = descent.prim
-
   def self: Boolean = ascent == 0 && descent == Nil
 
   transparent inline def rename(lambda: (prior: Text) ?=> Text): Optional[Relative] =
@@ -177,7 +178,6 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
     case _ =>
       if descent.nil then Relative[Plane, Topic, S[Limit]](ascent + 1)
       else Relative[Plane, Topic, Limit](ascent, descent.tail*)
-
 
   transparent inline def / (child: Any): Relative of (child.type *: Topic) under Limit =
     summonFrom:

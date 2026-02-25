@@ -36,8 +36,8 @@ import prepositional.*
 
 trait Chromatic extends Typeclass:
   extension (color: Self) def asRgb24Int: Int = convert(color)
-  def convert(color: Self): Int
 
+  def convert(color: Self): Int
   def red(color: Self): Int = asRgb24Int(color)&255
   def green(color: Self): Int = (asRgb24Int(color) >> 8)&255
   def blue(color: Self): Int = (asRgb24Int(color) >> 16)&255

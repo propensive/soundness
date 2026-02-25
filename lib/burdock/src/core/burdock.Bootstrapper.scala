@@ -91,7 +91,6 @@ object Bootstrapper:
     def text = t"$digest:$url"
 
   case class Entry(name: Text, data: Data)
-
   case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
 
   def main(input: IArray[Text]): Unit = application(input):

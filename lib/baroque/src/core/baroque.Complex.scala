@@ -124,6 +124,7 @@ object Complex:
             ( (left.real*right.real + left.imaginary*right.imaginary)/denominator,
               (left.imaginary*right.real + (-left.real)*right.imaginary)/denominator )
 
+
   given negatable: [component: Negatable]
   =>  Complex[component] is Negatable to Complex[component.Result] = complex =>
 

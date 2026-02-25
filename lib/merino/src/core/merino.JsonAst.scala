@@ -149,6 +149,7 @@ object JsonAst extends Format:
     Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
     | Null | Unset.type
 
+
   def apply
     ( value
       : Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
@@ -164,6 +165,7 @@ object JsonAst extends Format:
 
   def parse(source: Data): JsonAst raises ParseError =
     val stream: Stream[Data] = Stream(source)
+
     var line: Int = 0
     var colStart: Int = 0
 

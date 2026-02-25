@@ -106,6 +106,7 @@ class Classfile(data: Data):
               case other =>
                 panic(m"did not handle ${other.toString.tt}")
 
+
       val instructions = recur(code.elementList.nn.asScala.to(List), Unset, Nil, Nil, 0)
 
       Bytecode(sourceFile, instructions)

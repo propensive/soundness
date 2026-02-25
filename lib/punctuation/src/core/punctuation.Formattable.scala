@@ -50,4 +50,5 @@ object Formattable extends ProductDerivable[Formattable]:
 
 trait Formattable:
   type Self
+
   def format(language: List[Text], content: Text): Optional[Html of Flow]

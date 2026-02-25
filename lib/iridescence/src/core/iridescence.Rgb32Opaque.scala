@@ -45,8 +45,10 @@ object Rgb32Opaque:
     def apply(red: Int, green: Int, blue: Int): Rgb32 =
       ((red&1023) << 22) + ((green&4095) << 10) + (blue&1023)
 
+
   extension (color: Rgb32)
     def red: Int = (color >> 22)&1023
+
     def green: Int = (color >> 10)&4095
     def blue: Int = color&1023
     def srgb: Srgb = Srgb(red/1023.0, green/4095.0, blue/1023.0)

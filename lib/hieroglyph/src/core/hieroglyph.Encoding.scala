@@ -69,7 +69,9 @@ object Encoding:
 
 class Encoding(name0: Text):
   def name: Text = charset.displayName.nn.tt
+
   type CanEncode <: Boolean
+
   def decoder(using TextSanitizer): CharDecoder = CharDecoder(this)
   lazy val charset: jnc.Charset = jnc.Charset.forName(name0.s).nn
 

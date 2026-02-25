@@ -46,6 +46,7 @@ import attributives.textAttributes
 
 object Markdown:
   trait Node
+
   case class LinkRef(label: Text, title: Optional[Text], destination: Text)
 
   // FIXME: This implementation needs to be cleaned up
@@ -137,6 +138,7 @@ object Markdown:
           case head :: tail =>
             merge(true, tail, Fragment("\n", layout(head)) :: done, tight)
 
+
       def block(node: Layout): Boolean = node match
         case Layout.Paragraph(_, content*) => false
         case node                          => true
@@ -186,15 +188,16 @@ object Markdown:
 
       Fragment(markdown.children.map { node => Fragment(layout(node), "\n") }*)
 
-
   def apply(linkRefs0: List[Markdown.LinkRef], layout: Layout*): Markdown of Layout = new Markdown:
     type Topic = Layout
+
     val linkRefs: List[Markdown.LinkRef] = linkRefs0
     val children: Seq[Layout] = layout
 
   @targetName("applyProse")
   def apply(prose: Prose*): Markdown of Prose = new Markdown:
     type Topic = Prose
+
     val linkRefs: List[Markdown.LinkRef] = Nil
     val children: Seq[Prose] = prose
 

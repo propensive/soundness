@@ -57,8 +57,11 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   type Transport <: Object
 
   protected val scalac: Scalac[?]
+
   protected def invoke[output](stage: Stage[output, Form, Target]): Result[output]
+
   private var cache: Map[Codepoint, (Target, juf.Function[Form, Form])] = Map()
+
   protected val classloader = classloader0
 
   def classpath(out: Path on Linux): LocalClasspath = LocalClasspath:
@@ -75,6 +78,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   lazy val compiler2: staging.Compiler = staging.Compiler.make(classloader.java)(using settings2)
 
   def stage(path: Path on Linux): Target
+
 
   inline def dispatch[output]
     ( body: (References over Transport) ?=> Quotes ?=> Expr[output] )

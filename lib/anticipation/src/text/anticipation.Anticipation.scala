@@ -73,6 +73,7 @@ object Anticipation:
       type Self = Text
       type Operand = Int
       type Result = Text
+
       def multiply(text: Text, n: Int): Text = recur(text, n.max(0), "".tt)
 
     given ordering: Ordering[Text] = Ordering.String.on[Text](identity)
@@ -84,11 +85,11 @@ object Anticipation:
     given toExpr: ToExpr[Text]:
       def apply(text: Text)(using Quotes) =
         import quotes.reflect.*
+
         val expr = Literal(StringConstant(text)).asExprOf[String]
         '{Text($expr)}
 
     given conversion: Conversion[String, Text] = identity(_)
-
     inline given canEqual: CanEqual[Text, Text] = caps.unsafe.unsafeErasedValue
     inline given canEqual2: CanEqual[String, Text] = caps.unsafe.unsafeErasedValue
     inline given canEqual3: CanEqual[Text, String] = caps.unsafe.unsafeErasedValue

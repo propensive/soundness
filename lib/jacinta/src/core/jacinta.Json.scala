@@ -78,6 +78,7 @@ trait Json2:
 
       if json.root.isAbsent then Unset else decodable.decoded(json)
 
+
   given bytes: Tactic[JsonError] => Bytes is Decodable in Json = json => json.root.long.b
 
   inline given decodable: [value] => value is Decodable in Json = summonFrom:
@@ -146,10 +147,12 @@ trait Json2:
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
 
+
   given lens: [name <: Label: ValueOf] => (erased DynamicJsonEnabler) => Tactic[JsonError]
   =>  name is Lens from Json onto Json =
 
     Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+
 
   given ordinal: [element] => Ordinal is Optical from Json onto Json =
     ordinal =>
@@ -178,6 +181,7 @@ object Json extends Json2, Dynamic:
 
   given string: Tactic[JsonError] => String is Decodable in Json =
     value => value.root.string.s
+
 
   given option: [value: Decodable in Json] => Tactic[JsonError]
   =>  Option[value] is Decodable in Json =
@@ -221,6 +225,7 @@ object Json extends Json2, Dynamic:
 
   given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Json)
   =>  set[element] is Encodable in Json =
+
     values => Json.ast(JsonAst(IArray.from(values.map(encodable.encoded(_).root))))
 
 
@@ -245,6 +250,7 @@ object Json extends Json2, Dynamic:
 
       builder.result()
 
+
   given map: [key: Decodable in Text, element] => (decodable: => element is Decodable in Json)
   =>  Tactic[JsonError]
   =>  Map[key, element] is Decodable in Json =
@@ -256,6 +262,7 @@ object Json extends Json2, Dynamic:
         //focus(prior.or(JsonPointer()) / keys(next).tt):
           state.updated(keys(next).tt.decode, decodable.decoded(Json.ast(values(next))))
 
+
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: element is Encodable in Json )
   =>  Map[key, element] is Encodable in Json =
@@ -265,17 +272,21 @@ object Json extends Json2, Dynamic:
       val values = IArray.from(keys.map(map(_).encode.root))
       Json.ast(JsonAst((IArray.from(keys.map(_.encode.s)), values)))
 
+
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
   given aggregable: Tactic[ParseError] => Json is Aggregable by Data =
     bytes => Json(bytes.read[JsonAst])
+
 
   given aggregableDirect: [value: Decodable in Json] => Tactic[ParseError] => Tactic[JsonError]
   =>  (value over Json) is Aggregable by Data =
 
     bytes => Json(bytes.read[JsonAst]).as[value].asInstanceOf[value over Json]
 
+
   given showable: JsonPrinter => Json is Showable = _.root.show
+
 
   given abstractable: (encoder: CharEncoder, printer: JsonPrinter)
   =>  Json is Abstractable across HttpStreams to HttpStreams.Content =
@@ -287,6 +298,7 @@ object Json extends Json2, Dynamic:
 
       def genericize(json: Json): HttpStreams.Content =
         (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.data))
+
 
   given decodable: Tactic[ParseError] => Json is Decodable in Text =
     text => Stream(text.data(using charEncoders.utf8)).read[Json]
@@ -337,6 +349,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
     modify(field, value.encode)
 
+
   def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicJsonEnabler)
   :   Json raises JsonError =
 
@@ -362,7 +375,6 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         System.arraycopy(values, 0, values2, 0, index)
         System.arraycopy(values, index + 1, values2, index, values.length - index - 1)
         Json.ast(JsonAst(keys2.immutable(using Unsafe) -> values2.immutable(using Unsafe)))
-
 
   def apply(field: Text): Json raises JsonError =
     if root.isAbsent then Json.ast(JsonAst(Unset))

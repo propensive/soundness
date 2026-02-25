@@ -57,38 +57,47 @@ object Austronesian:
 
     given text: Text is Encodable:
       type Form = Pojo
+
       inline def encoded(text: Text): Pojo = text.s
 
     given string: String is Encodable:
       type Form = Pojo
+
       inline def encoded(value: String): Pojo = value
 
     given int: Int is Encodable:
       type Form = Pojo
+
       inline def encoded(value: Int): Pojo = value
 
     given long: Long is Encodable:
       type Form = Pojo
+
       inline def encoded(value: Long): Pojo = value
 
     given float: Float is Encodable:
       type Form = Pojo
+
       inline def encoded(value: Float): Pojo = value
 
     given double: Double is Encodable:
       type Form = Pojo
+
       inline def encoded(value: Double): Pojo = value
 
     given char: Char is Encodable:
       type Form = Pojo
+
       inline def encoded(value: Char): Pojo = value
 
     given boolean: Boolean is Encodable:
       type Form = Pojo
+
       inline def encoded(value: Boolean): Pojo = value
 
     given byte: Byte is Encodable:
       type Form = Pojo
+
       inline def encoded(value: Byte): Pojo = value
 
     // Check whether these should be kept, or the `inline given` below
@@ -105,39 +114,47 @@ object Austronesian:
 
       iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
 
+
     given text2: Text is Decodable:
       type Form = Pojo
+
       inline def decoded(value: Pojo): Text = value.asInstanceOf[Text]
 
     given string2: String is Decodable:
       type Form = Pojo
-      inline def decoded(value: Pojo): String = value.asInstanceOf[String]
 
+      inline def decoded(value: Pojo): String = value.asInstanceOf[String]
 
     given int2: Int is Decodable:
       type Form = Pojo
-      inline def decoded(value: Pojo): Int = value.asInstanceOf[Int]
 
+      inline def decoded(value: Pojo): Int = value.asInstanceOf[Int]
 
     given long2: Long is Decodable:
       type Form = Pojo
+
       inline def decoded(value: Pojo): Long = value.asInstanceOf[Long]
 
     given float2: Float is Decodable:
       type Form = Pojo
+
       inline def decoded(value: Pojo): Float = value.asInstanceOf[Float]
 
     given double2: Double is Decodable:
       type Form = Pojo
+
       inline def decoded(value: Pojo): Double = value.asInstanceOf[Double]
 
     given char2: Char is Decodable:
       type Form = Pojo
+
       inline def decoded(value: Pojo): Char = value.asInstanceOf[Char]
 
     given boolean2: Boolean is Decodable:
       type Form = Pojo
+
       inline def decoded(value: Pojo): Boolean = value.asInstanceOf[Boolean]
+
 
     inline given collection
     :   [ collection <: Iterable, element: Decodable in Pojo ]
@@ -152,6 +169,7 @@ object Austronesian:
 
       case other =>
         raise(PojoError()) yet factory.newBuilder.result()
+
 
     extension (pojo: Pojo)
       inline def as[entity: Decodable in Pojo]: entity = entity.decoded(pojo)

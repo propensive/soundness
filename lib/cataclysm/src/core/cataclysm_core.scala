@@ -80,6 +80,7 @@ package pseudo:
 
   def webkitScrollbar = Selector.PseudoClass(t":-webkit-scrollbar")
   def lang(language: Text) = Selector.PseudoClass(t"lang($language)")
+
   val after = Selector.PseudoClass(t":after")
   val before = Selector.PseudoClass(t":before")
   val selection = Selector.PseudoClass(t":selection")

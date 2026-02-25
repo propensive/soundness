@@ -58,6 +58,7 @@ object Path:
     type Topic = EmptyTuple
     type Limit = %.type
 
+
   given decodable: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
   =>  (Path on filesystem) is Decodable in Text =
 
@@ -67,6 +68,7 @@ object Path:
       val parts2 = if parts.last == t"" then parts.init else parts
 
       Path.of(root, parts2.reverse.map(filesystem.unescape(_))*)
+
 
   given decodable2: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
   =>  (Path on filesystem under root) is Decodable in Text =
@@ -78,8 +80,10 @@ object Path:
 
       Path.of(root, parts2.reverse.map(filesystem.unescape(_))*)
 
+
   given nominable: [filesystem] => (Path on filesystem) is Nominable = path =>
     path.descent.prim.or(path.root)
+
 
   given trustedInstantiable: [filesystem: Filesystem]
   =>  ( radical: Tactic[PathError] ?=> Radical on filesystem )
@@ -88,11 +92,13 @@ object Path:
     given Radical on filesystem = radical(using strategies.throwUnsafely)
     _.text.decode[Path on filesystem]
 
+
   given instantiable: [filesystem: Filesystem]
   =>  Radical on filesystem
   =>  (Path on filesystem) is Instantiable across Paths from Text =
 
     _.decode[Path on filesystem]
+
 
   def unplatformed[root, topic <: Tuple](root: Text, descent: Text*): Path of topic under root =
     new Path(root, descent*):
@@ -118,6 +124,7 @@ object Path:
   given communicable: [filesystem: Filesystem] => Path on filesystem is Communicable =
     path => Message(path.encode)
 
+
   given generic: [filesystem: Filesystem, path <: Path on filesystem]
   =>  path is Abstractable across Paths to Text =
 
@@ -125,6 +132,7 @@ object Path:
 
 
   private def conversion[from, to](lambda: from => to): Conversion[from, to] = lambda(_)
+
 
   inline given convert: [topic, root, filesystem, path <: Path of topic under root]
   =>  Conversion[path, Path of topic on filesystem under root] =
@@ -168,12 +176,14 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       case _ =>
         false
 
+
   def resolve(text: Text)
     ( using (Path on Plane) is Decodable in Text, (Relative on Plane) is Decodable in Text )
   :   Path on Plane raises PathError =
 
     safely(text.decode[Path on Plane]).or(safely(this + text.decode[Relative on Plane])).or:
       abort(PathError(_.InvalidRoot))
+
 
   def precedes(path: Path on Plane): Boolean =
     path.root == root && path.descent.drop(path.descent.length - descent.length) == descent

@@ -78,7 +78,6 @@ object Tag:
 abstract class Tag
   ( label: Text, val presets: Map[Text, Text] = Map(), val admissible:  Set[Text] = Set() )
 extends Element(label, presets, IArray()), Formal, Dynamic:
-
   type Result <: Element
 
   inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Result =

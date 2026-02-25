@@ -85,6 +85,7 @@ object Hyperbole:
       case _ =>
         e""
 
+
     case class TastyTree
       ( tag:          Char,
         typeName:     Text,
@@ -222,7 +223,6 @@ object Hyperbole:
 
           case _ =>
             TastyTree.repr(t"unknown", repr)
-
 
       def expand(tag: Char, tree: Tree): TastyTree =
         val typeName =

@@ -48,6 +48,7 @@ import java.nio.file as jnf
 object Serviceable:
   given domainSocket: Tactic[StreamError] => DomainSocket is Serviceable:
     type Output = Data
+
     case class Connection(channel: jnc.SocketChannel)
 
     def connect(domainSocket: DomainSocket): Connection =
@@ -99,7 +100,6 @@ object Serviceable:
         out.flush()
 
     def close(socket: jn.Socket): Unit = socket.close()
-
     def receive(socket: jn.Socket): Stream[Data] = socket.getInputStream.nn.stream[Data]
 
   given tcpPort: Tactic[StreamError] => TcpPort is Serviceable:

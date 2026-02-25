@@ -86,6 +86,7 @@ trait Interpolator[input, state, result]:
                 start + offset.or(0),
                 start + offset.or(0) + length.or(end - start - offset.or(0)) )
 
+
     def recur
       ( sequence:  Seq[Expr[Any]],
         parts:     Seq[String],
@@ -138,6 +139,7 @@ trait Interpolator[input, state, result]:
         case _ =>
           rethrow(complete(state), Position.ofMacroExpansion.start, Position.ofMacroExpansion.end)
           (state, '{$target.complete($expr)})
+
 
     val exprs: Seq[Expr[Any]] = sequence match
       case Varargs(exprs) => exprs

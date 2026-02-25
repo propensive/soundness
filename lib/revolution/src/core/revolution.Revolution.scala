@@ -53,7 +53,6 @@ object Revolution:
         case _                  => panic(m"did not expect more than one part in StringContext")
 
     val semver = semver0.or(halt(m"invalid semantic version"))
-
     val major = Expr(semver.major)
     val minor = Expr(semver.minor)
     val patch = Expr(semver.patch)

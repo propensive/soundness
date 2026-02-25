@@ -43,6 +43,7 @@ import vacuous.*
 
 object Rudiments:
   private given realm: Realm = realm"rudiments"
+
   opaque type Bytes = Long
   opaque type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
@@ -57,13 +58,18 @@ object Rudiments:
       case digit: Digit => digit
       case _            => Unset
 
+
   extension (digit: Digit)
     def int: Int = digit
+
     def char: Char = ('0' + int).toChar
+
 
   object Bytes:
     def apply(long: Long): Bytes = long
+
     given ordering: Ordering[Bytes] = Ordering.Long.on(_.long)
+
     given zeroic: Bytes is Zeroic:
       inline def zero: Bytes = 0L
 
@@ -77,8 +83,10 @@ object Rudiments:
     given divisible: Bytes is Divisible by Int to Bytes = _/_
     given divisible2: Bytes is Divisible by Bytes to Double = _.toDouble/_
 
+
     extension (left: Bytes)
       def long: Long = left
+
       def text: Text = (left.toString+" bytes").tt
 
   def probe[target: Type]: Macro[Nothing] =
@@ -87,6 +95,7 @@ object Rudiments:
 
   def name[target: Type]: Macro[Text] =
     import quotes.reflect.*
+
     val name = TypeRepr.of[target].show
     Expr[Text](name)
 

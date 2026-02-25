@@ -72,12 +72,14 @@ object Octogenarian:
   object GitTag:
     def unsafe(text: Text): GitTag = text
     def apply(text: Text)(using Tactic[GitRefError]): GitTag = Refspec.parse(text)
+
     given decoder: Tactic[GitRefError] => GitTag is Decodable in Text = apply(_)
     given showable: GitTag is Showable = identity(_)
 
   object GitBranch:
     def unsafe(text: Text): GitBranch = text
     def apply(text: Text)(using Tactic[GitRefError]): GitBranch = Refspec.parse(text)
+
     given decoder: Tactic[GitRefError] => GitBranch is Decodable in Text = apply(_)
     given showable: GitBranch is Showable = identity(_)
 

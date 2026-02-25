@@ -47,12 +47,14 @@ import vacuous.*
 object Writable:
   given outputStreamData: [output <: ji.OutputStream] => (streamCut: Tactic[StreamError])
   =>  output is Writable by Data =
+
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
         outputStream.flush()
 
       outputStream.close()
+
 
   given outputStreamText: (streamCut: Tactic[StreamError], encoder: CharEncoder)
   =>  ji.OutputStream is Writable by Text =
@@ -63,6 +65,7 @@ object Writable:
         outputStream.flush()
 
       outputStream.close()
+
 
   given decodingAdapter: [writable: Writable by Text] => (decoder: CharDecoder)
   =>  writable is Writable by Data =

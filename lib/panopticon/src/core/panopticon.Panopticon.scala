@@ -46,10 +46,12 @@ object Panopticon:
 
   def lens[self: Type, origin <: Product: Type]: Macro[self is Lens from origin] =
     import quotes.reflect.*
+
     val name: String = TypeRepr.of[self].literal[String].or:
       halt(m"cannot derive non-String field names")
 
     val symbol = TypeRepr.of[origin].typeSymbol
+
     val field = symbol.caseFields.find(_.name == name).getOrElse:
       halt(m"${TypeRepr.of[origin].show} has no field called $name")
 

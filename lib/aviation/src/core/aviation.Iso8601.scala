@@ -65,8 +65,11 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
   def parse(text: Text): Instant raises TimeError =
     import calendars.gregorian
+
     given Timezone = tz"UTC"
+
     var index: Ordinal = Prim
+
     def fail(issue: Iso8601.Issue): Unit = raise(TimeError(_.Format(text, Iso8601, index)(issue)))
     def focus: Char = text.at(index).or('\u0000')
     def next(): Char = (index += 1) yet focus
@@ -88,7 +91,9 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
     def yearWeekDay(week: Int, day: Int): Date =
       val days: Int = (week - 1)*7 + day - 1
       val jan4 = Date(year, Jan, Day(4))
+
       import hebdomads.european
+
       val firstMonday = jan4 - Quanta[Mono[Days[1]]](jan4.weekday.number.n0)
       firstMonday + Quanta[Mono[Days[1]]](days)
 
@@ -129,7 +134,6 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
       case _ =>
         fail(Digit) yet 2000-Jan-1
-
 
     val instant: Instant = next() match
       case '\u0000' => date.at(Clockface(Base24(0), Base60(0), Base60(0))).instant

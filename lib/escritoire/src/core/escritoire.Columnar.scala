@@ -37,6 +37,5 @@ import vacuous.*
 
 trait Columnar:
   def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double): Optional[Int]
-
   def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
   :   IndexedSeq[text]

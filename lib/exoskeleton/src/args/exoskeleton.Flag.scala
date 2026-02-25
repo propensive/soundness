@@ -73,7 +73,6 @@ case class Flag
     description: Optional[Text],
     secret:      Boolean )
 extends Topical:
-
   def suggest(using interpretable: Topic is Interpretable, discoverable: Topic is Discoverable)
     ( using cli: Cli )
   :   Unit =
@@ -87,6 +86,7 @@ extends Topical:
       then key().at(Sec) else Unset
 
     flag == name || aliases.contains(flag)
+
 
   def apply()
     ( using cli:           Cli,

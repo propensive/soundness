@@ -55,12 +55,13 @@ object Syntax:
   val CloseType: Symbolic = Symbolic("]")
   val Plus: Symbolic = Symbolic("+")
   val Minus: Symbolic = Symbolic("-")
-
   private val cache: scm.HashMap[Any, Syntax] = scm.HashMap()
+
   def clear(): Unit = cache.clear()
 
   def symbolic(name: Text): Symbolic =
     Symbolic(if name.s.startsWith("_$") then name.s.drop(2).tt else name)
+
 
   def typeBounds(using Quotes)
     ( sub: Syntax, lower: quotes.reflect.TypeRepr, upper: quotes.reflect.TypeRepr )
@@ -74,6 +75,7 @@ object Syntax:
     else if lower.typeSymbol == defn.NothingClass then Infix(sub, "<:", apply(upper))
     else if upper.typeSymbol == defn.AnyClass then Infix(sub, ">:", apply(lower))
     else Infix(Infix(sub, ">:", apply(lower)), "<:", apply(upper))
+
 
   def contextBounds(using Quotes)(clauses: List[quotes.reflect.ParamClause]): Map[Text, Syntax] =
     import quotes.reflect.*
@@ -99,9 +101,11 @@ object Syntax:
           case _ => Sequence('{', bounds.map(_(1)))
     . to(Map)
 
+
   def clause(using Quotes)
     ( clause: quotes.reflect.ParamClause, showUsing: Boolean, context: Map[Text, Syntax] )
   :   Syntax =
+
     import quotes.reflect.*
 
     clause.absolve match
@@ -148,6 +152,7 @@ object Syntax:
 
         Sequence('[', items)
 
+
   def signature(using Quotes)(name: Text, repr: quotes.reflect.TypeRepr): Declaration =
     import quotes.reflect.*
 
@@ -172,7 +177,6 @@ object Syntax:
 
       case other =>
         Declaration(true, List(), apply(other))
-
 
   def apply(using Quotes)(repr: quotes.reflect.TypeRepr): Syntax = cache.establish(repr):
     import quotes.reflect.*

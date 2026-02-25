@@ -109,7 +109,6 @@ object Teletypeable:
     val methodWidth = stack.frames.map(_.method.method.length).maxOption.getOrElse(0)
     val classWidth = stack.frames.map(_.method.className.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.length).maxOption.getOrElse(0)
-
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
     val init = e"${Fg(0xffffff)}($fullClass): ${stack.message}"
 

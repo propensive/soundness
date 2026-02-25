@@ -59,15 +59,19 @@ object Anamnesis:
 
     def apply[entity <: Entity](entity: Entity): Reference[entity] = entity.ref
 
+
   extension [entity <: Entity](reference: Reference[entity])
     def expose(using referenceable: entity is Referenceable): referenceable.Operand =
+
       reference.asInstanceOf[referenceable.Operand]
 
     def apply[entity0 >: entity: Referenceable](): entity0 =
       entity0.lookup(reference.asInstanceOf[entity0.Operand])
 
+
   object Ref:
     def apply[ref](db: Database): Ref of ref in db.type = db.allocate[ref]()
+
 
   extension [ref, database <: Database](ref: Ref of ref in database)
     def apply()(using db: database): ref = db.dereference(ref)

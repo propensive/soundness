@@ -41,12 +41,14 @@ object Savagery:
   object SvgId:
     def apply(id: Text): SvgId = id
 
+
   extension (point: Point)
     @targetName("plus")
     infix def + (vector: Shift): Point = Point(point.x + vector.dx, point.y + vector.dy)
 
     @targetName("asVector")
     def `unary_~`: Shift = Shift(point.x, point.y)
+
 
   extension (vector: Shift)
     @targetName("plus2")

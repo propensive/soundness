@@ -39,6 +39,7 @@ object WriteAccess:
 
 trait WriteAccess:
   type Transform[_]
+
   def options(): List[jnf.OpenOption]
 
   def transform[HandleType](handle: HandleType): Transform[HandleType] =

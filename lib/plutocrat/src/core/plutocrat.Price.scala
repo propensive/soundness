@@ -45,6 +45,7 @@ object Price:
     def divide(left: price, right: Double): Price in currency =
       Price(left.principal/right, left.tax/right)
 
+
   def apply[currency <: Label](principal0: Money in currency, tax0: Money in currency)
   :   Price in currency =
 
@@ -71,9 +72,7 @@ trait Price:
 
   @targetName("negate")
   def `unary_-`: Price in Form = Price(-principal, -tax)
-
   def inclusive: Money in Form = principal + tax
-
   override def hashCode(): Int = (principal.asInstanceOf[Long] ^ tax.asInstanceOf[Long]*31).hashCode
 
   override def toString(): String =

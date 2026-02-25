@@ -52,7 +52,6 @@ object ZipStream:
     new ZipStream(() => source.stream[Data], _ => true)
 
 class ZipStream(stream: () => Stream[Data], filter: (Path on Zip) => Boolean):
-
   def keep(predicate: (Path on Zip) => Boolean): ZipStream =
     new ZipStream(stream, { (ref: Path on Zip) => filter(ref) && predicate(ref) })
 

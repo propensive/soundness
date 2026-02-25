@@ -57,13 +57,16 @@ import scala.annotation.*
 
 object Mcp:
   val version = t"2025-11-25"
+
   type Cursor = Text
+
 
   def send[interface <: McpServer](id: Text, server: interface, mcpInterface: Interface)
     ( dispatch: Json => Optional[Json] )
     ( using request: Http.Request )
     ( using Monitor, Codicil, Online )
   :   Http.Response =
+
     import jsonPrinters.minimal
     import charEncoders.utf8
 
@@ -132,6 +135,7 @@ object Mcp:
             Http.Response(Http.Ok):
               JsonRpc.error(-32603, t"Internal error: ${error.toString}".show).json
 
+
   case class TaskAugmented(task: Optional[TaskMetadata] = Unset)
   case class Error(code: Int, message: Text, data: Optional[Json] = Unset)
 
@@ -161,7 +165,6 @@ object Mcp:
       theme:    Optional[Text]       = Unset )
 
   case class BaseMetadata(name: Text, title: Optional[Text] = Unset)
-
   case class Implementation
     ( name:        Text,
       title:       Optional[Text]       = Unset,
@@ -193,20 +196,17 @@ object Mcp:
 
   case class ListChanged(listChanged: Optional[Boolean] = Unset)
   case class Resources(subscribe: Optional[Boolean] = true, listChanged: Optional[Boolean] = true)
-
   case class Sampling(context: Optional[Json] = Unset, tools: Optional[Json] = Unset)
   case class Elicitation(form: Optional[Json] = Unset, url: Optional[Json] = Unset)
   case class RequestsElicitation(create: Optional[Json] = Unset)
   case class Call(call: Optional[Json] = Unset)
   case class RequestsSampling(createMessage: Optional[Json] = Unset)
-
   case class Tasks
     ( list:     Optional[Json]     = Unset,
       cancel:   Optional[Json]     = Unset,
       requests: Optional[Requests] = Unset )
 
   case class ListTasks(nextCursor: Optional[Cursor] = Unset, tasks: List[Task] = Nil)
-
   case class Requests
     ( sampling:    Optional[RequestsSampling]    = Unset,
       elicitation: Optional[RequestsElicitation] = Unset,
@@ -238,15 +238,11 @@ object Mcp:
 
   case class Contents(contents: TextResourceContents | BlobResourceContents)
   case class Context(arguments: Optional[Map[Text, Text]] = Unset)
-
-
   case class ListResources(nextCursor: Optional[Cursor] = Unset, resources: List[Resource] = Nil)
-
   case class ListResourceTemplates
     ( nextCursor: Optional[Cursor] = Unset, resourceTemplates: List[ResourceTemplate] = Nil )
 
   case class ReadResource(contents: List[Contents] = Nil)
-
   case class Resource
     ( name:        Text,
       uri:         Text,
@@ -278,14 +274,12 @@ object Mcp:
     ( uri: Text, mimeType: Optional[Text] = Unset, blob: Text, _meta: Optional[Json] = Unset )
 
   case class ListPrompts(nextCursor: Optional[Cursor] = Unset, prompts: List[Prompt] = Nil)
-
   case class Annotations
     ( audience:     Optional[List[Role]] = Unset,
       priority:     Optional[Double]     = Unset,
       lastModified: Optional[Text]       = Unset )
 
   case class Complete(completion: Completion)
-
   case class Completion
     ( values: List[Text] = Nil, total: Optional[Int] = Unset, hasMore: Optional[Boolean] = Unset )
 
@@ -369,6 +363,7 @@ object Mcp:
       arguments:   Optional[List[PromptArgument]] = Unset,
       _meta:       Optional[Json]                 = Unset )
   case class Argument(name: Text, value: Text)
+
   object Reference:
     import dynamicJsonAccess.enabled
 
@@ -383,13 +378,11 @@ object Mcp:
         case _              => abort(JsonError(JsonError.Reason.OutOfRange))
 
   sealed trait Reference
+
   case class PromptReference(name: Text, title: Optional[Text] = Unset) extends Reference
   case class ResourceTemplateReference(uri: Text) extends Reference
-
   case class PromptMessage(role: Role, content: ContentBlock)
-
   case class GetPrompt(description: Optional[Text] = Unset, messages: List[PromptMessage] = Nil)
-
   case class CallTool
     ( content:           List[ContentBlock] = Nil,
       structuredContent: Optional[Json]     = Unset,
@@ -397,9 +390,7 @@ object Mcp:
 
   case class ListTools(nextCursor: Optional[Cursor] = Unset, tools: List[Tool] = Nil)
   case class ListRoots(roots: List[Root] = Nil)
-
   case class Root(uri: Text, name: Optional[Text] = Unset, _meta: Optional[Json] = Unset)
-
   case class Tool
     ( name:         Text,
       inputSchema:  JsonSchema,
@@ -412,7 +403,6 @@ object Mcp:
       _meta:        Optional[Json]            = Unset )
 
   case class ToolExecution(taskSupport: Optional[TaskSupport] = Unset)
-
   case class ToolAnnotations
     ( title:           Optional[Text]    = Unset,
       readOnlyHint:    Optional[Boolean] = Unset,
@@ -489,6 +479,7 @@ object Mcp:
         case _               => abort(JsonError(JsonError.Reason.OutOfRange))
 
   sealed trait ContentBlock
+
   case class TextContent(text: Text, annotations: Optional[Annotations] = Unset)
   extends ContentBlock, SamplingMessageContentBlock
 
@@ -577,7 +568,6 @@ object Mcp:
   case class ElicitationComplete(elicitationId: Text)
 
   trait Api extends JsonRpc:
-
     type Origin = McpClient
 
     @rpc
@@ -694,10 +684,10 @@ object Mcp:
     :   Unit
 
   object Interface:
-
     private val cache: scm.HashMap[Text, Interface] = scm.HashMap()
 
     given streamable: Interface is Streamable by Sse = _.stream
+
 
     inline def apply(sessionId: Text, server: McpServer from McpClient)
       ( using spec: server.type is McpSpecification )
@@ -705,7 +695,6 @@ object Mcp:
 
       cache.establish(sessionId):
         new Interface(sessionId, server, spec)
-
 
   class Interface
     (     sessionId: Text,

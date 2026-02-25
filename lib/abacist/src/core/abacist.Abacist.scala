@@ -123,7 +123,6 @@ object Abacist:
 
 
   def toQuantity[units <: Tuple: Type](count: Expr[Quanta[units]]): Macro[Any] =
-
     val lastUnit = multipliers[units].last
     val quantityUnit = lastUnit.unitPower.ref.dimensionRef.principal
     val ratioExpr = ratio(lastUnit.unitPower.ref, quantityUnit, lastUnit.unitPower.power)
@@ -157,6 +156,7 @@ object Abacist:
       halt(m"the Quanta does not include this unit")
 
     '{(($value.long/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
+
 
   private case class Multiplier(unitPower: UnitPower, subdivision: Int, max: Int)
 

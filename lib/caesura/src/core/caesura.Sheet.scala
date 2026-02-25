@@ -75,6 +75,7 @@ object Sheet:
 
   given tabular: Sheet is Tabular[Text]:
     type Element = Dsv
+
     def rows(value: Sheet) = value.rows
 
     def table(dsv: Sheet): Scaffold[Dsv, Text] =
@@ -89,7 +90,6 @@ object Sheet:
         ( ( columns.map: name =>
               Column[Dsv, Text, Text](name, sizing = columnar.Collapsible(0.5))
                 ( _[Text](name).or(t"") ) )* )
-
 
   given aggregable: (format: DsvFormat) => Tactic[DsvError] => Sheet is Aggregable by Text = text =>
     val rows = recur(text)

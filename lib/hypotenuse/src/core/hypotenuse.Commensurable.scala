@@ -44,6 +44,7 @@ object Commensurable:
 
     type Contrast = operand
 
+
     inline def compare
       ( inline left:        Boolean,
         inline right:       operand,
@@ -63,7 +64,6 @@ object Commensurable:
     :   Boolean =
 
       !strict && left.long == right.long || (left.long < right.long) ^ greater
-
 
   inline given ordinal: Ordinal is Orderable:
     inline def compare

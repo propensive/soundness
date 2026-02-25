@@ -59,12 +59,13 @@ object Scalac:
   case class Option[-version <: Versions](flags: Text*)
 
   private var Scala3: dtd.Compiler = new dtd.Compiler()
+
   def refresh(): Unit = synchronized { Scala3 = new dtd.Compiler() }
   def compiler(): dtd.Compiler = Scala3
 
 case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[version]]):
-
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
+
 
   def apply
     ( classpath: LocalClasspath )
@@ -84,9 +85,13 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
 
     object ProgressApi extends dtdsi.ProgressCallback:
       private var last: Int = -1
+
+
       override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
       :   Unit =
+
         ()
+
 
       override def progress
         ( current:      Int,

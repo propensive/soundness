@@ -36,7 +36,6 @@ import scala.compiletime.*
 
 trait Derivation[typeclass[_]]
 extends ProductDerivation.Methods[typeclass], SumDerivation.Methods[typeclass]:
-
   inline given derived: [derivation] => (Reflection[derivation]) => typeclass[derivation] =
     inline summon[Reflection[derivation]] match
       case reflection: ProductReflection[derivationType] =>

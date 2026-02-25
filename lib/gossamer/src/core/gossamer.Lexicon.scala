@@ -54,11 +54,13 @@ object Lexicon:
   def apply(terms: List[Text])(using Proximity { type Triangulable = true } by Int): Lexicon[Text] =
     apply(terms.bi.to(Map))
 
+
   def apply[element](terms: Map[Text, element])(using Proximity { type Triangulable = true } by Int)
   :   Lexicon[element] =
 
     if terms.nil then empty[element] else Node(terms.head(0), terms.head(1)).tap: tree =>
       terms.drop(1).each(tree(_) = _)
+
 
   class Node[element](term: Text, value: element)(using Proximity by Int) extends Lexicon[element]:
     val children: scm.HashMap[Int, Lexicon[element]] = scm.HashMap()

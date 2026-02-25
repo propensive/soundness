@@ -66,6 +66,7 @@ package httpServers:
     def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
       HttpServer(port.number, true).handle(lambda)
 
+
   given stdlibPublic: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
   =>  WebserverErrorPage
@@ -116,5 +117,6 @@ package webserverErrorPages:
 
   given stackTraces: Classloader => WebserverErrorPage = (throwable, request) =>
     import charEncoders.utf8
+
     val stack = t"<pre>${throwable.stackTrace}</pre>".read[Data]
     Http.Response(Unfulfilled(Stream(prefix, stack, postfix).ascribe(media"text/html")))

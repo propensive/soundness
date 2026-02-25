@@ -43,6 +43,7 @@ class AmalgamateTactic[error <: Exception, success]
 extends Tactic[error]:
   type Result = success | error
   type Return = success | error
+
   def diagnostics: Diagnostics = summon[Diagnostics]
   def record(error: Diagnostics ?=> error): Unit = boundary.break(error)(using label)
   def abort(error: Diagnostics ?=> error): Nothing = boundary.break(error)(using label)

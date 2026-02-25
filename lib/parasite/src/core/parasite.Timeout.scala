@@ -59,6 +59,7 @@ object Timeout:
 
 class Timeout private(duration: Long, makeProcess: juca.AtomicLong => Task[Unit]):
   private val expiry: juca.AtomicLong = juca.AtomicLong(jl.System.currentTimeMillis + duration)
+
   private var process: Task[Unit] = makeProcess(expiry)
 
   def alive: Boolean = expiry.get() != Long.MinValue

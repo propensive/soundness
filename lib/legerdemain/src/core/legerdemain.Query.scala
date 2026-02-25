@@ -73,7 +73,6 @@ object Query extends Dynamic:
           . to(List)
           . flatMap(_.values)
 
-
   object DecodableDerivation extends ProductDerivation[[Type] =>> Type is Decodable in Query]:
     inline def join[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Query =
@@ -84,7 +83,6 @@ object Query extends Dynamic:
             [field] => context =>
               focus(prior.lay(Pointer(label))(_(label))):
                 context.decoded(value(label))
-
 
   given booleanEncodable: Boolean is Encodable in Query =
     boolean => if boolean then Query.of(t"on") else Query.empty
@@ -138,10 +136,12 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
 
     decodable.decoded(apply(label.tt))
 
+
   def updateDynamic(label: String)[result: Encodable in Query]
     ( using erased (label.type is Parametric to result) )
     ( value: result )
   :   Query =
+
     val updates: List[(Text, Text)] = value.encode.values
 
     val values2 =
@@ -150,6 +150,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
       else values ++ (updates.map { (key, value) => (t"$label.$key", value) })
 
     new Query(values2)
+
 
   def at[value: Decodable in Text](name: Text): Optional[value] = apply(name)().let(_.decode)
   def as[value: Decodable in Query]: value tracks Pointer = value.decoded(this)

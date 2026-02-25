@@ -55,5 +55,4 @@ abstract class References():
   def array: Expr[Array[Object]] = ref.vouch
   def current: Int = allocations.length
   def allocate(value: => Transport): Int = allocations.length.also { allocations ::= value }
-
   inline def apply(): Array[Object] = Array.from[Object](allocations.reverse)

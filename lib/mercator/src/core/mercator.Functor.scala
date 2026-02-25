@@ -38,8 +38,11 @@ object Functor:
 trait Functor[functor[_]]:
   def point[value](value: value): functor[value]
 
+
   extension [value](value: functor[value])
     def map[value2](lambda: value => value2): functor[value2] =
+
       apply(value)(lambda)
+
 
   def apply[value, value2](value: functor[value])(lambda: value => value2): functor[value2]

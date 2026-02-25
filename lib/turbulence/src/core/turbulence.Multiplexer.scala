@@ -46,6 +46,7 @@ import codicils.await
 
 case class Multiplexer[key, element]()(using Monitor):
   private case class Removal(key: key)
+
   private val active: TrieMap[key, Task[Unit]] = TrieMap()
   private val queue: juc.LinkedBlockingQueue[element | Removal] = juc.LinkedBlockingQueue()
 

@@ -81,7 +81,6 @@ object Bindable:
     type Input = jn.Socket
 
     def bind(port: TcpPort): Binding = jn.ServerSocket(port.number)
-
     def connect(binding: Binding): jn.Socket = binding.accept().nn
 
     def transmit(socket: jn.ServerSocket, input: Input, bytes: Data): Unit =

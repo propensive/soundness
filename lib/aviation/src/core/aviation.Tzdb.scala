@@ -75,6 +75,7 @@ object Tzdb:
   def parseFile(name: Text): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
     val lines: Stream[Text] =
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn)
+
       val stream2 = stream.or:
         abort(TzdbError(TzdbError.Reason.NoTzdbFile(name), 0))
 

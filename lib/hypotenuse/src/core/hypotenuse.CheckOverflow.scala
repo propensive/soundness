@@ -37,6 +37,7 @@ import language.experimental.into
 
 trait CheckOverflow:
   type Wrap[result]
+
   inline def addU64(left: U64, right: U64): Wrap[U64]
   inline def addS64(left: S64, right: S64): Wrap[S64]
   inline def addU32(left: U32, right: U32): Wrap[U32]

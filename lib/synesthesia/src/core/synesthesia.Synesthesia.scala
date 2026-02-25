@@ -54,6 +54,7 @@ import scala.quoted.*
 object Synesthesia:
   given Realm = realm"synesthesia"
 
+
   def prompt(context: Expr[StringContext], arguments0: Expr[Seq[Any]], human: Boolean)
   :   Macro[Discourse] =
 
@@ -84,6 +85,7 @@ object Synesthesia:
 
   def spec[interface: Type]: Macro[interface is McpSpecification] =
     import quotes.reflect.*
+
     val toolType = TypeRepr.of[tool].typeSymbol
     val promptType = TypeRepr.of[prompt].typeSymbol
     val aboutType = TypeRepr.of[about].typeSymbol
@@ -191,6 +193,7 @@ object Synesthesia:
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
     val promptInvocation
     :   Expr[interface ~> ((Text, Map[Text, Text], McpClient) => List[Discourse])] =
+
       ' {
           {
             case target: `interface` =>
@@ -254,6 +257,7 @@ object Synesthesia:
                   }
             }
           }
+
 
     val resourceInvocation: Expr[interface ~> (Text => Mcp.Contents)] =
       ' {

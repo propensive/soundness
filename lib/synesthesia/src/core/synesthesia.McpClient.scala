@@ -84,5 +84,4 @@ trait McpClient:
   def elicit[result: Schematic in JsonSchema](message: Text): Json =
     `elicitation/create`(t"form", message, result.schema().json)
 
-
   def sample(message: Text): Unit = ???

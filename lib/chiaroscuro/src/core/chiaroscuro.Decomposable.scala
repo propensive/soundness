@@ -128,7 +128,6 @@ trait Decomposable2 extends Decomposable3:
   def any[value]: value is Decomposable =
     value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
-
   object Derivation extends Derivable[Decomposable]:
     inline def join[derivation <: Product: ProductReflection]: derivation is Decomposable =
       value =>
@@ -144,6 +143,7 @@ trait Decomposable2 extends Decomposable3:
             Decomposition.Sum(typeName, context.decomposition(variant), variant)
 
   protected inline def shortName[entity]: Text = rewrite(typeName[entity])
+
   private def rewrite(text: Text): Text = text match
     case r"(.*\.)*$basic([^\]]*)(\[.*\])?" => basic
     case other                             => other

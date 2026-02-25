@@ -133,6 +133,7 @@ object Probably:
                     Decomposable.any[test] ) )
             }
 
+
   def check[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[test] =
     handle[test, test](test, predicate, '{(t: Trial[test]) => t.get})
 

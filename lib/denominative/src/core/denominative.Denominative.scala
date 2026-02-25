@@ -41,6 +41,7 @@ object Denominative:
   opaque type Ordinal = Int
   opaque type Interval = Long
 
+
   extension (ordinal: Ordinal)
     @targetName("minus2")
     infix def - (right: Ordinal): Int = ordinal - right
@@ -48,8 +49,10 @@ object Denominative:
     inline infix def thru (right: Ordinal): Interval = Interval(ordinal, right)
     inline infix def till (right: Ordinal): Interval = Interval(ordinal, right - 1)
 
+
   extension (inline ordinal: Ordinal)
     inline def le(inline right: Ordinal): Boolean = (ordinal: Int) <= (right: Int)
+
     inline def lt(inline right: Ordinal): Boolean = (ordinal: Int) < (right: Int)
     inline def ge(inline right: Ordinal): Boolean = (ordinal: Int) >= (right: Int)
     inline def gt(inline right: Ordinal): Boolean = (ordinal: Int) > (right: Int)
@@ -61,6 +64,7 @@ object Denominative:
     inline def subsequent(size: Int): Interval = Interval(ordinal + 1, ordinal + size + 1)
     inline def preceding(size: Int): Interval = Interval((ordinal - size).max(0), ordinal - 1)
 
+
   object Ordinal:
     inline def zerary(inline cardinal: Int): Ordinal = cardinal
     inline def uniary(inline cardinal: Int): Ordinal = cardinal - 1
@@ -70,8 +74,10 @@ object Denominative:
     given subtractable2: Ordinal is Subtractable by Int to Ordinal = _ - _
     given ordering: Ordering[Ordinal] = Ordering[Int]
 
+
   extension (interval: Interval)
     inline def start: Ordinal = ((interval >> 32) & 0xffffffff).toInt
+
     inline def end: Ordinal = (interval & 0xffffffff).toInt
     inline def contains(ordinal: Ordinal): Boolean = start <= ordinal && ordinal <= end
     inline def size: Int = (end - start) max 0
@@ -102,6 +108,7 @@ object Denominative:
 
 
     inline def empty: Boolean = end < start
+
 
   object Interval:
     inline def initial(size: Int): Interval = size.toLong

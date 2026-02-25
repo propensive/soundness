@@ -45,4 +45,5 @@ object Console:
 
 trait Console:
   val stdio: Stdio
+
   def signals: Spool[Signal]

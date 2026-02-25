@@ -274,19 +274,23 @@ package filesystemOptions:
   object readAccess:
     given enabled: ReadAccess:
       type Transform[HandleType] = HandleType & ReadAccess.Ability
+
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.READ)
 
     given disabled: ReadAccess:
       type Transform[HandleType] = HandleType
+
       def options(): List[jnf.OpenOption] = Nil
 
   object writeAccess:
     given enabled: WriteAccess:
       type Transform[HandleType] = HandleType & WriteAccess.Ability
+
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.WRITE)
 
     given disabled: WriteAccess:
       type Transform[HandleType] = HandleType
+
       def options(): List[jnf.OpenOption] = Nil
 
   object dereferenceSymlinks:
@@ -320,6 +324,7 @@ package filesystemOptions:
       def conditionally[result](path: Path on Plane)(operation: => result): result =
         path.children.each(recur(_)) yet operation
 
+
     given disabled: [plane: {Filesystem, Explorable}] => Tactic[IoError]
     =>  DeleteRecursively on plane:
 
@@ -350,7 +355,6 @@ package filesystemOptions:
         try operation catch case error: jnf.FileAlreadyExistsException =>
           abort(IoError(path, IoError.Operation.Write, Reason.AlreadyExists))
 
-
   object createNonexistentParents:
     given enabled: [plane: Filesystem] => Tactic[IoError] => (Path on plane) is Substantiable
     =>  CreateNonexistentParents on plane:
@@ -364,6 +368,7 @@ package filesystemOptions:
           then jnf.Files.createDirectories(jnf.Path.of(parent.show.s))
 
         operation
+
 
     given disabled: [plane: Filesystem] => Tactic[IoError]
     =>  CreateNonexistentParents on plane:

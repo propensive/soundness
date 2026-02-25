@@ -893,7 +893,6 @@ case class Element
     attributes: Map[Text, Text],
     children:   IArray[Node] )
 extends Node, Topical, Transportive:
-
   override def toString(): String =
     s"<$label>${children.mkString}</$label>"
 
@@ -941,7 +940,6 @@ case class Fragment(nodes: Node*) extends Xml:
 
 case class Header(version: Text, encoding: Optional[Text], standalone: Optional[Boolean])
 extends Node:
-
   override def hashCode: Int = List(this).hashCode
 
   override def equals(that: Any): Boolean = that match

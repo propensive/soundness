@@ -269,10 +269,8 @@ object StackTrace:
     val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
     val classWidth = stack.frames.map(_.method.className.s.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.s.length).maxOption.getOrElse(0)
-
     val fullClass = s"${stack.component}.${stack.className}".tt
     val init = s"$fullClass: ${stack.message}".tt
-
     val nbsp = "\u00a0".tt
 
     val root = stack.frames.fuse(init):

@@ -43,8 +43,10 @@ object Yossarian:
   opaque type Style = Long
   opaque type Screen = (Int, Array[Style], Array[Char], Array[Text])
 
+
   extension (buffer: Screen)
     def width: Int = buffer(0)
+
     def styleBuffer: Array[Style] = buffer(1)
     def charBuffer: Array[Char] = buffer(2)
     def linkBuffer: Array[Text] = buffer(3)
@@ -103,6 +105,7 @@ object Yossarian:
       System.arraycopy(linkBuffer, 0, links, 0, links.length)
       (width, styles, chars, links)
 
+
   object Screen:
     def apply(width: Int, height: Int): Screen =
       val chars = Array.fill[Char](width*height)(' ')
@@ -110,8 +113,10 @@ object Yossarian:
       val links = Array.fill[Text](width*height)(t"")
       (width, styles, chars, links)
 
+
   extension (style: Style)
     def bold: Boolean = Style.Bit.Bold(style)
+
     def italic: Boolean = Style.Bit.Italic(style)
     def blink: Boolean = Style.Bit.Blink(style)
     def faint: Boolean = Style.Bit.Faint(style)
@@ -121,6 +126,7 @@ object Yossarian:
     def reverse: Boolean = Style.Bit.Reverse(style)
     def foreground: Rgb24 = Style.Foreground(style)
     def background: Rgb24 = Style.Background(style)
+
 
   object Style:
     def apply(): Style = Foreground(0L) = Rgb24(255, 255, 255)

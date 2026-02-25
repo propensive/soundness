@@ -58,6 +58,7 @@ object Wit:
 
   def parse(input: Stream[Data]): Wit =
     val conduit = Conduit(input)
+
     def fail(msg: Message): Nothing = panic(msg)
 
     @tailrec
@@ -150,7 +151,6 @@ object Wit:
 
         case other =>
           fail(m"expected ':'")
-
 
     def interfaceItems(members: List[Primitive | Func] = Nil): List[Primitive | Func] = Nil
 

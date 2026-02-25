@@ -58,6 +58,7 @@ object Vicarious:
         Catalog(IArray(${Varargs(fields[key](value.asTerm).map(_.asExprOf[value]))}*))
       }
 
+
   def fieldNames[product: Type](prefix: String)(using Quotes): List[String] =
     import quotes.reflect.*
     TypeRepr.of[product].typeSymbol.caseFields.flatMap: field =>
@@ -75,7 +76,6 @@ object Vicarious:
       case ConstantType(IntConstant(index)) => index
 
     val fields = fieldNames[key]("")
-
     val label = fields(index)+"."+key.valueOrAbort
     ConstantType(IntConstant(fields.indexOf(label))).asType.absolve match
       case '[ type id <: Nat; id ] => '{Proxy[key, value, id]()}

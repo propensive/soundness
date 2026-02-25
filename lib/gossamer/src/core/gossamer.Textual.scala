@@ -45,7 +45,9 @@ object Textual:
 
   given text: Text is Textual:
     type Show[value] = value is spectacular.Showable
+
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
+
     def show[value](value: value)(using show: Show[value]): Text = show.text(value)
     def apply(char: Char): Text = char.toString.tt
     def text(text: Text): Text = text

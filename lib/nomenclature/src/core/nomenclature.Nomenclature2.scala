@@ -68,13 +68,13 @@ object Nomenclature2:
 
   def extractor(context: Expr[StringContext]): Macro[Any] =
     import quotes.reflect.*
+
     val string = context.valueOrAbort.parts.head
 
     ConstantType(StringConstant(string)).asType match
       case '[type stringType <: Label; stringType] => '{NameExtractor[stringType]()}
       case _ =>
         panic(m"StringContext did not contains Strings")
-
 
   def makeName[system: Type](name: Expr[Text]): Macro[Name[system]] =
     import quotes.reflect.*
@@ -99,6 +99,7 @@ object Nomenclature2:
 
       case None =>
         halt(m"Couldn't find a `Nominative` instance on ${TypeRepr.of[system].show}")
+
 
   def parse2[plane: Type, name <: String: Type](scrutinee: Expr[Name[plane]])
   :   Macro[Boolean] =

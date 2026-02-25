@@ -49,13 +49,16 @@ package strategies:
   given throwSafely: [error <: Exception: CanThrow, success] => ThrowTactic[error, success] =
     ThrowTactic()
 
+
   given mitigation: [error <: Exception: Tactic, error2 <: Exception: Mitigable to error]
   =>  Tactic[error2] =
 
     error.contramap(error2.mitigate(_))
 
+
   given fatalErrors: [exception <: Exception: Fatal] => Tactic[exception]:
     given diagnostics: Diagnostics = errorDiagnostics.stackTraces
+
     def record(error: Diagnostics ?=> exception): Unit = exception.status(error).terminate()
     def abort(error: Diagnostics ?=> exception): Nothing = exception.status(error).terminate()
     def certify(): Unit = ()
@@ -63,6 +66,7 @@ package strategies:
   given uncheckedErrors: [error <: Exception] => (erased error is Unchecked) => Tactic[error]:
     given diagnostics: Diagnostics = errorDiagnostics.stackTraces
     given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
+
     def record(error: Diagnostics ?=> error): Unit = throw error
     def abort(error: Diagnostics ?=> error): Nothing = throw error
     def certify(): Unit = ()

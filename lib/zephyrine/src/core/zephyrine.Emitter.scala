@@ -49,6 +49,7 @@ object Emittable:
     def produce(block: Array[Char], size: Int): Text = new String(block, 0, size).tt
     def allocate(size: Int): Array[Char] = new Array[Char](size)
 
+
     inline def copy(source: Text, start: Ordinal, target: Array[Char], index: Ordinal, size: Int)
     :   Unit =
 
@@ -65,6 +66,7 @@ object Emittable:
     def length(bytes: Data): Int = bytes.length
     def allocate(size: Int): Array[Byte] = new Array[Byte](size)
 
+
     inline def copy(source: Data, start: Ordinal, target: Array[Byte], index: Ordinal, size: Int)
     :   Unit =
 
@@ -79,7 +81,6 @@ trait Emittable:
   def allocate(size: Int): Transport
   def length(input: Source): Int
   def produce(block: Transport, size: Int): Self
-
   inline def copy
     ( source: Source,
       start:  Ordinal,
@@ -91,11 +92,14 @@ trait Emittable:
 
 class Emitter[data: Emittable](block: Int = 4096, window: Int = 2):
   private object Done
+
   private val queue: juc.ArrayBlockingQueue[data | Done.type] = juc.ArrayBlockingQueue(window)
   private val current: data.Transport = data.allocate(block)
+
   private var index: Ordinal = Prim
 
   inline def free: Int = block - index.n0
+
   inline def finish(): Unit =
     publish()
     queue.put(Done)

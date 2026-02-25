@@ -121,6 +121,7 @@ object ProductDerivation:
         case given (reflection.MirroredMonoType <:< Singleton) => true
         case _                                                 => false
 
+
     protected transparent inline def complement[derivation <: Product, field]
       ( product: derivation )
       ( using fieldIndex:  Int & FieldIndex[field],
@@ -130,6 +131,7 @@ object ProductDerivation:
 
       type Labels = reflection.MirroredElemLabels
       type Fields = reflection.MirroredElemTypes
+
       val tuple: Fields = Tuple.fromProductTyped(product)
 
       fold[derivation, Fields, Labels, Optional[field]](tuple, Unset, 0):

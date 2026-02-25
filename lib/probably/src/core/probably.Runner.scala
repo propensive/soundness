@@ -40,7 +40,9 @@ object Runner:
 
 class Runner[report]()(using reporter: Reporter[report]):
   private var active: Set[TestId] = Set()
+
   def skip(id: TestId): Boolean = false
+
   val report: report = reporter.make()
 
   def maybeRun[result](test: Test[result]): Optional[Trial[result]] =

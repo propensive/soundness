@@ -42,6 +42,7 @@ import zephyrine.*
 object LengthPrefix:
   given framable: Tactic[FrameError] => Data is Framable by LengthPrefix = input =>
     def fail() = abort(FrameError())
+
     val cursor = Cursor(input)
 
     def length: Optional[Int] =
@@ -54,7 +55,6 @@ object LengthPrefix:
             cursor.lay(fail()): byte3 =>
               cursor.next()
               byte0 << 24 | byte1 << 16 | byte2 << 8 | byte3
-
 
     def frame(): Optional[Data] = length.let: length =>
       cursor.take(fail())(length)

@@ -40,12 +40,16 @@ import rudiments.*
 object Checkable:
   given iarray: [left, right] => IArray[left] is Checkable against IArray[right] = _.sameElements(_)
 
+
   given stream: [left, right] => (left is Checkable against right)
   =>  Stream[left] is Checkable against Stream[right] =
+
     _.zip(_).all(_ === _)
+
 
   given tolerance2: [value] => value is Checkable against Tolerance[value] =
     (value, tolerance) => tolerance.covers(value)
+
 
   inline given commensurable: [value: Commensurable against value]
   =>  value is Checkable against value =

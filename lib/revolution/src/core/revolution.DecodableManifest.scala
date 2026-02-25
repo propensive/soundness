@@ -44,4 +44,5 @@ object DecodableManifest:
 
 trait DecodableManifest extends Topical:
   type Self <: Label
+
   def decoded(text: Text): Topic

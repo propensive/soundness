@@ -183,6 +183,7 @@ case class Diff[element](edits: Edit[element]*):
   def chunks: Stream[Chunk[element]] =
     def recur(todo: List[Edit[element]], position: Int, rightPosition: Int)
     :   Stream[Chunk[element]] =
+
       todo match
         case Nil                         => Stream()
         case Par(pos2, rpos2, _) :: tail => recur(tail, pos2 + 1, rpos2 + 1)

@@ -65,7 +65,6 @@ object GitRepo:
 
 
 case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Unset):
-
   val repoOptions = workTree.lay(sh"--git-dir=$gitDir"): path =>
     sh"--git-dir=$gitDir --work-tree=$path"
 
@@ -197,7 +196,6 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
 
       sh"$git $repoOptions config --get $variable".exec[Text]().decode[value]
 
-
   def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[GitTag] logs GitEvent =
     sh"$git $repoOptions tag".exec[Stream[Text]]().to(List).map(GitTag.unsafe(_))
 
@@ -280,7 +278,6 @@ case class GitRepo(gitDir: Path on Linux, workTree: Optional[Path on Linux] = Un
           commit()
 
     recur(sh"$git $repoOptions log --format=raw --color=never".exec[Stream[Text]]())
-
 
   def reflog(): Unit = ()
 

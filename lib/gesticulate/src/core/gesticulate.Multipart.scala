@@ -51,6 +51,7 @@ object Multipart:
   enum Disposition:
     case Inline, Attachment, FormData
 
+
   def parse[input: Streamable by Data](input: input, boundary0: Optional[Text] = Unset)
   :   Multipart raises MultipartError =
 

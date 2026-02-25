@@ -77,7 +77,6 @@ case class Timestamp(date: Date, time: Clockface):
   def hour: Int = time.hour
   def minute: Int = time.minute
   def second: Int = time.second
-
   def in(timezone: Timezone): Moment = Moment(date, time, timezone)
 
   def stdlib(using RomanCalendar): jt.LocalDateTime =

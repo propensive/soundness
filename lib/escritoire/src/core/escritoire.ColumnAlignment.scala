@@ -36,6 +36,7 @@ import anticipation.*
 
 object ColumnAlignment:
   val topLeft: ColumnAlignment[Any] = ColumnAlignment(TextAlignment.Left, VerticalAlignment.Top)
+
   given byte: ColumnAlignment[Byte] = ColumnAlignment(TextAlignment.Right, VerticalAlignment.Top)
   given short: ColumnAlignment[Short] = ColumnAlignment(TextAlignment.Right, VerticalAlignment.Top)
   given int: ColumnAlignment[Int] = ColumnAlignment(TextAlignment.Right, VerticalAlignment.Top)

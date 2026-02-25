@@ -85,4 +85,5 @@ object Addable:
 trait Addable extends Typeclass, Operable, Resultant:
   type Augend = Self
   type Addend = Operand
+
   def add(augend: Augend, addend: Addend): Result

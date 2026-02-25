@@ -48,6 +48,7 @@ object Hypotenuse2:
 
   def bin(expr: Expr[StringContext]): Macro[AnyVal] =
     import quotes.reflect.*
+
     val bits = expr.valueOrAbort.parts.head
 
     bits.indexWhere { ch => ch != '0' && ch != '1' && ch != ' ' }.match
@@ -65,7 +66,6 @@ object Hypotenuse2:
         halt(m"a binary value can only contain characters '0' or '1'", position)
 
     val bits2 = bits.filter(_ != ' ')
-
     val long: Long = bits2.fuse(0L)((state << 1) + (if next == '1' then 1 else 0))
 
     bits2.length match

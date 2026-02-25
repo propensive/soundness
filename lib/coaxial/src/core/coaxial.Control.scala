@@ -59,7 +59,6 @@ object Control:
 
       Conclude(transmissible.serialize(message), state)
 
-
   object Reply:
     def apply[transmissible: Transmissible, state]
       ( message: transmissible, state: Optional[state] = Unset )

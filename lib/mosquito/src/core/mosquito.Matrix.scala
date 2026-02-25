@@ -76,6 +76,7 @@ object Matrix:
   private type ColumnConstraint[rows <: Tuple] =
     Tuple.Union[Tuple.Map[rows, [tuple] =>> Tuple.Size[tuple & Tuple]]]
 
+
   transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using erased Void)
     [ element ]
     ( rows: Tuple )

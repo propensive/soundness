@@ -47,7 +47,6 @@ import vacuous.*
 
 object Showable:
   given showable: [value: Textualizable] => value is Showable = value.textual(_)
-
   given text: [text <: Text] => text is Showable = identity(_)
   given string: String is Showable = _.tt
   given char: Char is Showable = char => char.toString.tt

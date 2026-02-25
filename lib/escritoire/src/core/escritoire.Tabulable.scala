@@ -41,7 +41,6 @@ import vacuous.*
 import wisteria.*, derivationContext.required
 
 object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
-
   class JoinTabulable[derivation <: Product](columns: IArray[Column[derivation, Text]])
   extends Tabulable[Text]:
     type Self = derivation

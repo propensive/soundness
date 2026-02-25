@@ -42,6 +42,7 @@ import anticipation.*
 open class HaltTactic[error <: Error, success]()(using Quotes, Realm)
 extends Tactic[error]:
   given diagnostics: Diagnostics = Diagnostics.omit
+
   def record(error: Diagnostics ?=> error): Unit = halt(error.message)
   def abort(error: Diagnostics ?=> error): Nothing = halt(error.message)
   def certify(): Unit = ()

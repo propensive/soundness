@@ -34,4 +34,5 @@ package acyclicity
 
 trait PartiallyOrdered:
   type Self
+
   def compare(left: Self, right: Self): Boolean

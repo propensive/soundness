@@ -79,7 +79,6 @@ extends RequestServable:
 
     val cancel: Promise[Unit] = Promise[Unit]()
     val server = startServer()
-
     val asyncTask = async(cancel.attend() yet server.stop(1))
 
     Service(() => safely(cancel.fulfill(())))

@@ -52,6 +52,7 @@ object LeapSeconds:
 
   private def before(n: Int): Int =
     inline def ones(long: Long): Int = long.bits.ones.int
+
     val decemberShift = n.min(127)/2
     val juneShift = decemberShift + n%2
 

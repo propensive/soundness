@@ -46,7 +46,6 @@ import vacuous.*
 object Streamable:
   given bytes: Data is Streamable by Data = Stream(_)
   given text: [textual <: Text] => textual is Streamable by Text = Stream(_)
-
   given stream: [element] => Stream[element] is Streamable by element = identity(_)
 
   given inCharReader: (stdio: Stdio) => In.type is Streamable by Char = in =>
@@ -76,6 +75,7 @@ object Streamable:
           raise(StreamError(count)) yet Stream()
 
       Stream.defer(recur(0L.b))
+
 
   given bufferedReader: [input <: ji.BufferedReader] => Tactic[StreamError]
   =>  input is Streamable by Line =

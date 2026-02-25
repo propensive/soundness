@@ -68,7 +68,6 @@ object CodlDoc:
 case class CodlDoc
   ( children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: Stream[Char] = Stream() )
 extends Indexed:
-
   type Topic
 
   override def toString: String = s"^[${children.mkString(", ")}]"
@@ -81,10 +80,8 @@ extends Indexed:
       false
 
   override def hashCode: Int = children.toSeq.hashCode ^ schema.hashCode ^ margin.hashCode
-
   def layout: Layout = Layout.empty
   def paramIndex: Map[Text, Int] = Map()
-
   def materialize(using Topic is Decodable in Codl): Topic raises CodlError = as[Topic]
 
   def merge(input: CodlDoc): CodlDoc =

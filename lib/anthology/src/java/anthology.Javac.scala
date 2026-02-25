@@ -51,6 +51,7 @@ import java.net as jn
 
 object Javac:
   private var Javac: jt.JavaCompiler = jt.ToolProvider.getSystemJavaCompiler().nn
+
   def refresh(): Unit = Javac = jt.ToolProvider.getSystemJavaCompiler().nn
   def compiler(): jt.JavaCompiler = Javac
 
@@ -69,7 +70,6 @@ case class Javac(options: List[JavacOption]):
     val process: CompileProcess = CompileProcess()
 
     val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
-
       def report(diagnostic: jt.Diagnostic[? <: jt.JavaFileObject] | Null): Unit =
         if diagnostic != null then
           val importance = diagnostic.getKind match

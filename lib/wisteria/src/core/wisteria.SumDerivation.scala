@@ -69,6 +69,7 @@ object SumDerivation:
 
       type Labels = reflection.MirroredElemLabels
       type Variants = reflection.MirroredElemTypes
+
       val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
 
       fold[derivation, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):

@@ -50,7 +50,6 @@ import symbolism.*
 import vacuous.*
 
 object Url:
-
   given abstractable: HttpUrl is Abstractable across Urls to Text = _.show
 
   given showable: [scheme <: Label] => Url[scheme] is Showable = url =>

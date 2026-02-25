@@ -93,8 +93,10 @@ object Urticose:
 
       def apply(text: Text): DnsLabel = text
 
+
     extension (label: DnsLabel)
       def text: Text = label
+
 
     object Ipv4:
       inline given underlying: Underlying[Ipv4, Int] = !!
@@ -132,6 +134,7 @@ object Urticose:
 
     object MacAddress:
       import MacAddressError.Reason.*
+
       inline given underlying: Underlying[MacAddress, Long] = !!
       given showable: MacAddress is Showable = _.text
       given encodable: MacAddress is Encodable in Text = _.text
@@ -170,7 +173,6 @@ object Urticose:
 
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
 
-
     object TcpPort:
       inline given underlying: Underlying[TcpPort, Int] = !!
       given showable: TcpPort is Showable = _.number.show
@@ -199,12 +201,16 @@ object Urticose:
         if 1 <= value <= 65535 then value.asInstanceOf[UdpPort]
         else raise(PortError()) yet unsafe(1)
 
+
     extension (port: TcpPort | UdpPort)
       def number: Int = port
+
       def privileged: Boolean = port < 1024
+
 
     extension (macAddress: MacAddress)
       def byte0: Int = (macAddress >>> 40).toInt
+
       def byte1: Int = (macAddress >>> 32).toInt & 255
       def byte2: Int = (macAddress >>> 24).toInt & 255
       def byte3: Int = (macAddress >>> 16).toInt & 255
@@ -216,8 +222,10 @@ object Urticose:
 
       def long: Long = macAddress
 
+
     extension (ip: Ipv4)
       def byte0: Int = ip >>> 24
+
       def byte1: Int = (ip >>> 16) & 255
       def byte2: Int = (ip >>> 8) & 255
       def byte3: Int = ip & 255
@@ -230,7 +238,6 @@ object Urticose:
     given showable: Ipv4Subnet is Showable = subnet => t"${subnet.ipv4}/${subnet.size}"
 
   case class Ipv4Subnet(ipv4: Ipv4, size: Int)
-
   case class Ipv6(highBits: Long, lowBits: Long)
 
 

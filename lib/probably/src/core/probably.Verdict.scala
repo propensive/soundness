@@ -51,4 +51,5 @@ enum Verdict:
   case CheckThrows(exception: Exception, duration: Long)
 
   val timestamp: Long = System.currentTimeMillis
+
   def duration: Long

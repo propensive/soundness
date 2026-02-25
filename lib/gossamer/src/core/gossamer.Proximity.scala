@@ -37,4 +37,5 @@ import anticipation.*
 trait Proximity:
   type Operand
   type Triangulable <: Boolean
+
   def distance(left: Text, right: Text): Operand

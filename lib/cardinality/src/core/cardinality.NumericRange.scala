@@ -58,6 +58,7 @@ object NumericRange:
         then Some(value.asInstanceOf[(min ~ max) & value.type])
         else None
 
+
     class RangeParser[min <: Double, max <: Double]
     extends FromDigits.Decimal[min ~ max]:
       def fromDigits(digits: String): Double = apply(digits.toDouble)
@@ -66,9 +67,9 @@ object NumericRange:
       override inline def fromDigits(digits: String): min ~ max =
         ${Cardinality('digits)}
 
+
     extension [leftMin <: Double, leftMax <: Double](left: leftMin ~ leftMax)
       def double: Double = left
-
 
       @annotation.targetName("add")
       infix def + [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)

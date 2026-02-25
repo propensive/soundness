@@ -36,4 +36,5 @@ import prepositional.*
 
 trait Textualizable extends Typeclass:
   extension (value: Self) def textual: Text = convert(value)
+
   def convert(value: Self): Text

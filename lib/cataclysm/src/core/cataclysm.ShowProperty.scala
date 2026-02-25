@@ -64,6 +64,7 @@ object ShowProperty:
           property3.show(tuple(2)) )
       . join(t" ")
 
+
   given quad
   :   [ property:  ShowProperty,
         property2: ShowProperty,
@@ -78,6 +79,7 @@ object ShowProperty:
           property3.show(tuple(2)),
           property4.show(tuple(3)) )
       . join(t" ")
+
 
   given font: ShowProperty[Font] = _.names.map: f =>
     if f.contains(t" ") then t"'$f'" else f

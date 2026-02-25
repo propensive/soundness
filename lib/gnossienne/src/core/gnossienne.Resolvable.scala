@@ -63,5 +63,6 @@ object Resolvable:
 trait Resolvable:
   type Self
   type Operand
+
   def resolve(reference: Operand): Self raises ReferenceError
   def field: Text

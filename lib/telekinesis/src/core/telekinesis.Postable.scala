@@ -69,12 +69,12 @@ object Postable:
 
   given unit: Unit is Postable = Postable(media"text/plain", unit => Stream())
   given data: Data is Postable = Postable(media"application/octet-stream", Stream(_))
-
   given byteStream: Stream[Data] is Postable = Postable(media"application/octet-stream", identity)
 
   given query: Query is Postable =
     import charEncoders.utf8
     Postable(media"application/x-www-form-urlencoded", query => Stream(query.queryString.data))
+
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  Tactic[MediaTypeError]

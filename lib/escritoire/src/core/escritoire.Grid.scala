@@ -54,7 +54,6 @@ object Grid:
       layout.render.map(printable.print(_, termcap)).join(t"\n")
 
 case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
-
   def render(using metrics: Text is Measurable, textual: text is Textual): Stream[text] =
     val pad = t" "*style.padding
     val leftEdge = Textual(t"${style.charset(top = style.sideLines, bottom = style.sideLines)}$pad")

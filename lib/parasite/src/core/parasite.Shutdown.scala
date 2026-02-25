@@ -37,6 +37,7 @@ import language.experimental.pureFunctions
 
 object Shutdown:
   private val instance: Shutdown = Shutdown()
+
   given interceptable: Shutdown is Interceptable:
     type Target = Os.type
 

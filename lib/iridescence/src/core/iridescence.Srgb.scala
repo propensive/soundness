@@ -41,7 +41,6 @@ object Srgb:
 
 case class Srgb(red: Double, green: Double, blue: Double):
   def css: Text = Text(s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})")
-
   def rgb24: Rgb24 = Rgb24((red*255).toInt, (green*255).toInt, (blue*255).toInt)
   def srgb: Srgb = this
   def highContrast(using ColorProfile): Srgb = if xyz.y >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)
@@ -50,7 +49,6 @@ case class Srgb(red: Double, green: Double, blue: Double):
     def limit(v: Double): Double = if v > 0.04045 then ((v + 0.055)/1.055)**2.4 else v/12.92
 
     val List(r, g, b) = List(red, green, blue).map(limit(_)*100)
-
     val x = r*0.4124 + g*0.3576 + b*0.1805
     val y = r*0.2126 + g*0.7152 + b*0.0722
     val z = r*0.0193 + g*0.1192 + b*0.9505

@@ -51,7 +51,6 @@ case class FontFace
     src:                   Optional[Text] = Unset,
     unicodeRange:          Optional[Text] = Unset )
 extends CssStylesheet.Item:
-
   def text: Text =
     val params = List(
       t"ascent-override"         -> ascentOverride,

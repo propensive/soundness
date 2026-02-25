@@ -37,5 +37,6 @@ import prepositional.*
 
 trait Record extends Selectable, Original:
   val data: Origin
+
   def access: Text => Origin => Any
   def selectDynamic(name: String): Any = access(name)(data)

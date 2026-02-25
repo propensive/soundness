@@ -48,6 +48,7 @@ object CodlNode:
     t"${data.key}[${data.children.map(_.inspect).join(t",")}]"
 
   val empty: CodlNode = CodlNode()
+
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Atom(key, IArray.from(child)))
 
   given contrastable: (CodlNode is Inspectable) => CodlNode is Contrastable = (left, right) =>
@@ -84,7 +85,6 @@ case class CodlNode(data: Optional[Atom] = Unset, extra: Optional[Extra] = Unset
   def structValue: Optional[Text] = if children.size == 1 then children.head.paramValue else Unset
   def fieldValue: Optional[Text] = paramValue.or(structValue)
   def promote(n: Int) = copy(data = data.let(_.promote(n)))
-
   override def toString: String = data.toString
 
   def apply(key: Text): List[Atom] = data.lay(List[CodlNode]())(_(key)).map(_.data).collect:

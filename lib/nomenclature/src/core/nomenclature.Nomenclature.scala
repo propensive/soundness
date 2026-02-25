@@ -44,10 +44,12 @@ object Nomenclature:
   object Name:
     given encodable: [plane] => Name[plane] is Encodable in Text = identity(_)
 
+
     inline given decodable: [plane] => (plane is Nominative, Tactic[NameError])
     =>  Name[plane] is Decodable in Text =
 
       decoder[plane](apply)
+
 
     private def decoder[plane](lambda: Text => Name[plane]): Name[plane] is Decodable in Text =
       new Decodable:

@@ -36,15 +36,14 @@ import anticipation.*
 
 object Glob:
   import GlobToken.*
-  def parse(text: Text): Glob =
 
+  def parse(text: Text): Glob =
     def range(text: String): GlobToken =
       val inverse = text.startsWith("!")
       val text2 = if inverse then text.drop(1) else text
 
       if text2.length == 3 && text2(1) == '-' then GlobToken.Range(text2(0), text2(2), inverse)
       else GlobToken.Specific(text2, inverse)
-
 
     def recur(index: Int, tokens: List[GlobToken]): Glob =
       if index >= text.s.length then Glob(tokens.reverse*) else text.s(index) match

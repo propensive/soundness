@@ -47,8 +47,10 @@ object Rgb24Opaque:
 
     def apply(packedInt: Int): Rgb24 = packedInt & 0x00ffffff
 
+
   extension (color: Rgb24)
     def red: Int = (color >> 16) & 255
+
     def green: Int = (color >> 8) & 255
     def blue: Int = color&255
 

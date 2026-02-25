@@ -48,6 +48,7 @@ import symbolism.*
 
 object Plutocrat:
   private given realm: Realm = realm"plutocrat"
+
   opaque type Money = Long
   opaque type Isin = Long
 
@@ -77,9 +78,12 @@ object Plutocrat:
         if result.isin != isin then abort(IsinError(IsinError.LuhnCheck))
         result
 
+
   extension (isin: Isin)
     private[Plutocrat] def payload: Text =
+
       val chars: Array[Char] = new Array(9)
+
       var numeric = 0L
 
       for index <- 2 until 11 do
@@ -101,6 +105,7 @@ object Plutocrat:
 
     def isin: Text = t"$countryCode$nsin"
 
+
   def interpolator(context: Expr[StringContext]): Macro[Isin] =
     abortive:
       val isin = Isin(context.valueOrAbort.parts.head)
@@ -108,6 +113,7 @@ object Plutocrat:
 
   object Money:
     inline given underlying: [currency <: Label] => Underlying[Money in currency, Int] = !!
+
 
     protected[plutocrat] def apply[currency <: Label](currency: Text, value: Long)
     :   Money in currency =
@@ -128,6 +134,7 @@ object Plutocrat:
     def apply[currency <: Label: ValueOf](value: Long): Money in currency =
       apply(valueOf[currency], value).in[currency]
 
+
     given showable: [currency: Currency] => (currencyStyle: CurrencyStyle)
     =>  Money in currency is Showable =
 
@@ -137,10 +144,13 @@ object Plutocrat:
 
         currencyStyle.format(currency.code, currency.symbol, units, subunit)
 
+
     given addable: [currency <: Label]
     =>  (Money in currency) is Addable by (Money in currency) to (Money in currency) =
+
       (left, right) =>
         Money(left.currency, left.value + right.value).in[currency]
+
 
     given subtractable: [currency <: Label]
     =>  (Money in currency) is Subtractable by (Money in currency) to (Money in currency) =
@@ -148,20 +158,24 @@ object Plutocrat:
       (left, right) =>
         Money(left.currency, left.value - right.value).in[currency]
 
+
     given multiplicable: [currency <: Label]
     =>  (Money in currency) is Multiplicable by Double to (Money in currency) =
 
       (left, right) =>
         Money(left.currency, left.value*right).in[currency]
 
+
     given divisible: [currency <: Label, money <: (Money in currency)]
     =>  money is Divisible:
+
       type Self = money
       type Operand = Double
       type Result = Money in currency
 
       def divide(left: money, right: Double): Money in currency =
         Money(left.currency, left.value/right).in[currency]
+
 
     given divisible2: [currency <: Label, left <: Money in currency, right <: Money in currency]
     =>  left is Divisible:
@@ -181,7 +195,6 @@ object Plutocrat:
       def divide(left: money, right: Int): Money in currency =
         Money(left.currency, left.value/right).in[currency]
 
-
     inline given orderable: [currency <: Label] => (Money in currency) is Orderable:
       inline def compare
         ( inline left:        Money in currency,
@@ -192,7 +205,6 @@ object Plutocrat:
 
         if left.value == right.value then !strict else (left.value < right.value)^greaterThan
 
-
     given zeroic: [currency <: Label: Currency] => (Money in currency) is Zeroic:
       def zero: Money in currency = Money(currency.code, 0L).in[currency]
 
@@ -202,8 +214,10 @@ object Plutocrat:
       def negate(money: Money in currency): Money in currency =
         Money(money.currency, -money.value).in[currency]
 
+
   extension (money: Money)
     def currency: Text =
+
       val c1: Char = (((money >> 59) & 0b00011111) + 'A').toChar
       val c2: Char = (((money >> 54) & 0b00011111) + 'A').toChar
       val c3: Char = (((money >> 49) & 0b00011111) + 'A').toChar
@@ -212,8 +226,10 @@ object Plutocrat:
 
     def value: Long = (money << 15) >> 15
 
+
   extension [currency <: Label: ValueOf](left: Money in currency)
     def tax(rate: Double): Price in currency =
+
       Price(left, Money(left.currency, left.value*rate).in[currency])
 
     @tailrec

@@ -43,6 +43,7 @@ object Reifiable:
   def apply[phantom, result](value: result): phantom is Reifiable to result = new Reifiable:
     type Self = phantom
     type Result = result
+
     def reification(): Result = value
 
 trait Reifiable extends Typeclass, Resultant:

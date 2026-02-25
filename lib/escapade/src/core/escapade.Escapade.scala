@@ -47,11 +47,15 @@ object Escapade:
 
   object CharSpan:
     def apply(start: Int, end: Int): CharSpan = (start.toLong << 32) + (Int.MaxValue - end)
+
     given ordering: Ordering[CharSpan] = Ordering.Long.on[CharSpan](identity(_))
+
     val Nowhere: CharSpan = CharSpan(Int.MaxValue, Int.MaxValue)
+
 
   extension (span: CharSpan)
     def start: Int = (span >> 32).toInt
+
     def end: Int = Int.MaxValue - span.toInt
     def nil: Boolean = start == end
 
@@ -63,6 +67,7 @@ object Escapade:
       if n <= start then CharSpan.Nowhere else if n >= end then span else CharSpan(start, n)
 
     def shift(n: Int): CharSpan = CharSpan(start + n, end + n)
+
 
   opaque type AnsiStyle = B64
 
@@ -96,8 +101,10 @@ object Escapade:
 
   import indexes.*
 
+
   extension (style: AnsiStyle)
     def setBold: Boolean = (style: B64).bit(SetBold)
+
     def bold: Boolean = style.bit(Bold)
     def setItalic: Boolean = style.bit(SetItalic)
     def italic: Boolean = style.bit(Italic)
@@ -123,7 +130,6 @@ object Escapade:
       if setBackground then (newFlags2 & ~BgMask) | (changes & BgMask) else newFlags2
 
 case class Teletype2(plain: Text, ansi: IArray[Escapade.AnsiStyle]):
-
   import Escapade.AnsiStyle
 
   @targetName("concat")

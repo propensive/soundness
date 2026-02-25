@@ -114,7 +114,6 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
       removals.foldLeft(edgeMap):
         case (m, (k, v)) => m.updated(k, m(k) - v)
 
-
   def reachable(node: node): Set[node] =
     reachableCache.getOrElseUpdate(node, edgeMap(node).flatMap(reachable) + node)
 

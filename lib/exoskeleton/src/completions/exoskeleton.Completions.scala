@@ -114,6 +114,7 @@ object Completions:
         case Installed(_, path)        => path
         case AlreadyInstalled(_, path) => path
 
+
   def ensure(force: Boolean = false)(using Entrypoint, WorkingDirectory, Diagnostics)
   :   List[Text] logs CliEvent =
 
@@ -198,6 +199,7 @@ object Completions:
             Installation.InstallResult.Installed(shell, path.encode)
 
         . or(Installation.InstallResult.NoWritableLocation(shell))
+
 
   def script(shell: Shell, command: Text): Text = shell match
     case Shell.Zsh =>

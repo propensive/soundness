@@ -44,6 +44,7 @@ import vacuous.*
 
 object Character:
   opaque type Character = Long
+
   val End: Character = Long.MaxValue
 
   def apply(int: Int, line: Int, col: Int): Character =
@@ -75,7 +76,9 @@ object Character:
   inline given charCharacter: CanEqual[Char, Character] = !!
   inline given characterChar: CanEqual[Character, Char] = !!
 
+
   extension (char: Character)
     def char: Char = if char == -1 then '\u0000' else char.toChar
+
     def line: Int = ((char >> 48) & 0xffffff).toInt
     def column: Int = if char == End then 0 else ((char >> 24) & 0xffffff).toInt

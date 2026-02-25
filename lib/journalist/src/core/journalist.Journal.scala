@@ -39,7 +39,6 @@ import prepositional.*
 import turbulence.*
 
 object Journal:
-
   def apply[store: {Streamable by Data, Writable by Data}, entry: Encodable by Data]
     ( store: store )
   :   Journal by entry =

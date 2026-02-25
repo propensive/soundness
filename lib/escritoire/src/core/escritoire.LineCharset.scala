@@ -40,6 +40,7 @@ enum LineCharset:
     case Rounded => BoxDrawing.roundedChars
     case Ascii   => BoxDrawing.asciiChars
 
+
   def apply
     ( top:    BoxLine = BoxLine.Blank,
       right:  BoxLine = BoxLine.Blank,

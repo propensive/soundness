@@ -55,6 +55,7 @@ import AsyncError.Reason
 
 sealed trait Monitor extends Resultant:
   val promise: Promise[Result]
+
   protected[parasite] var workers: Set[Worker] = Set()
 
   def name: Optional[Text]
@@ -74,8 +75,10 @@ sealed abstract class Supervisor() extends Monitor:
   type Result = Unit
 
   def chain: Optional[Chain] = Unset
+
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
+
   def name: Text
   def fork(name: Optional[Text])(block: => Unit): Thread
   def supervisor: Supervisor = this
@@ -111,6 +114,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
     juca.AtomicReference(Fulfillment.Initializing)
 
   private var relents: Int = 1
+
   private val startTime: Long = jl.System.currentTimeMillis
   val promise: Promise[Result] = Promise()
 

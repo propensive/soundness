@@ -51,11 +51,14 @@ object Quantitative extends Quantitative2:
   opaque type MetricUnit[units <: Measure] <: Quantity[units] = Double
   opaque type Temperature = Double
 
+
   extension (temperature: Temperature)
     def kelvin: Double = temperature
+
     def celsius: Double = temperature - 273.15
     def fahrenheit: Double = celsius*9/5 + 32
     def rankine: Double = temperature*9/5
+
 
   object Temperature extends Temperature2:
     def apply(value: Double): Temperature = value
@@ -82,12 +85,12 @@ object Quantitative extends Quantitative2:
       (left, right) => Quantity(left.kelvin - right.kelvin)
 
 
-
   extension [units <: Measure](quantity: Quantity[units])
     def underlying: Double = quantity
 
     inline def value: Double = quantity
     inline def amount[name <: Label]: Text = ${Quantitative.amount[units]}
+
 
   object MetricUnit:
     inline given underlying: [units <: Measure] => Underlying[MetricUnit[units], Double] = !!
@@ -109,6 +112,7 @@ object Quantitative extends Quantitative2:
 
     given numeric: [units <: Measure] => Numeric[Quantity[units]] = summon[Numeric[Double]]
 
+
     given genericDuration: [units <: Measure: Normalizable to Seconds[1]]
     =>  Quantity[units] is Abstractable across Durations to Long =
 
@@ -117,7 +121,9 @@ object Quantitative extends Quantitative2:
 
     given specificDuration: [units <: Measure: Normalizable to Seconds[1]]
     =>  Quantity[units] is Instantiable across Durations from Long =
+
       long => Quantity[units](long*units.ratio()/1_000_000_000.0)
+
 
     transparent inline given addable
     :   [ left      <: Measure,
@@ -128,6 +134,7 @@ object Quantitative extends Quantitative2:
 
       ${Quantitative.addTypeclass[left, quantity, right, quantity2]}
 
+
     inline given checkable
     :   [ left      <: Measure,
           quantity  <: Quantity[left],
@@ -137,6 +144,7 @@ object Quantitative extends Quantitative2:
 
       ${Quantitative.checkable[left, quantity, right, quantity2]}
 
+
     transparent inline given subtractable
     :   [ left      <: Measure,
           quantity  <: Quantity[left],
@@ -145,6 +153,7 @@ object Quantitative extends Quantitative2:
     =>  quantity is Subtractable by quantity2 =
 
       ${Quantitative.subTypeclass[left, quantity, right, quantity2]}
+
 
     transparent inline given multiplicable
     :   [ left         <: Measure,
@@ -159,7 +168,9 @@ object Quantitative extends Quantitative2:
     given negatable: [left <: Measure, operand <: Quantity[left]] => operand is Negatable:
       type Self = operand
       type Result = Quantity[left]
+
       def negate(operand: Self): Quantity[left] = -operand
+
 
     given multiplicable2: [left <: Measure, multiplicand <: Quantity[left]]
     =>  multiplicand is Multiplicable:
@@ -170,6 +181,7 @@ object Quantitative extends Quantitative2:
 
       inline def multiply(left: multiplicand, right: Double): Quantity[left] = left*right
 
+
     given multiplicable3: [right <: Measure, multiplier <: Quantity[right]]
     =>  Double is Multiplicable:
 
@@ -179,12 +191,14 @@ object Quantitative extends Quantitative2:
 
       inline def multiply(left: Double, right: multiplier): Quantity[right] = left*right
 
+
     given multiplicable4: [right <: Measure, multiplier <: Quantity[right]] => Int is Multiplicable:
       type Self = Int
       type Operand = multiplier
       type Result = Quantity[right]
 
       inline def multiply(left: Int, right: multiplier): Quantity[right] = left*right
+
 
     given multiplicable5: [left <: Measure, multiplicand <: Quantity[left]]
     =>  multiplicand is Multiplicable:
@@ -252,7 +266,6 @@ object Quantitative extends Quantitative2:
       :   Boolean =
 
         ${Quantitative.greaterThan[units, units2]('left, 'right, 'strict, 'greaterThan)}
-
 
     class ShowableQuantity[units <: Measure](fn: Quantity[units] => Text)(using Decimalizer)
     extends Showable:

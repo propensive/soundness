@@ -94,7 +94,9 @@ object Dsv:
 
     inline def join[derivation <: Product: ProductReflection]: derivation is Decodable in Dsv =
       var rowNumber: Ordinal = Prim
+
       val spans: IArray[Int] = Spannable.derived[derivation].spans()
+
       var count = 0
 
       provide[Foci[CellRef]]:
@@ -123,6 +125,7 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
   def header: Optional[IArray[Text]] = columns.let: map =>
     val columns = map.map(_.swap)
     IArray.tabulate(columns.size)(columns(_))
+
 
   def selectDynamic[value: Decodable in Text](field: String)(using erased DynamicDsvEnabler)
     ( using DsvRedesignation )

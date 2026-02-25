@@ -40,6 +40,7 @@ import proscenium.*
 
 object Distillate:
   private given realm: Realm = realm"distillate"
+
   def enumerable[enumeration <: reflect.Enum: Type]: Macro[enumeration is Enumerable] =
     import quotes.reflect.*
 

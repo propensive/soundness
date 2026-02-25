@@ -45,8 +45,8 @@ import serpentine.*
 import symbolism.*
 
 object LocalClasspath:
-
   given encodable: System => LocalClasspath is Encodable in Text = _()
+
 
   given decodable: (System, Tactic[PropertyError])
   =>  LocalClasspath is Decodable in Text =
@@ -88,7 +88,6 @@ class LocalClasspath private
     : List[ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type],
     val entrySet: Set[ClasspathEntry] )
 extends Classpath:
-
   def apply()(using System): Text =
     entries.flatMap:
       case ClasspathEntry.Directory(directory) => List(directory)

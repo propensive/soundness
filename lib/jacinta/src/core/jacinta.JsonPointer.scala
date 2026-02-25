@@ -51,6 +51,7 @@ object JsonPointer extends Root(""):
 
   trait Registry:
     private val documents: scm.HashMap[HttpUrl, Json] = scm.HashMap()
+
     def update(url: HttpUrl, document: Json): Unit = documents(url) = document
     def apply(url: HttpUrl): Optional[Json] = documents.at(url).or(lookup(url))
     protected def lookup(url: HttpUrl): Optional[Json]

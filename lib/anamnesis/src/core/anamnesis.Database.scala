@@ -55,7 +55,6 @@ class Database(size: Int):
 
   type Topic <: Tuple
   type AllRelations = Tuple.Union[Topic]
-
   type Has[relation <: Relation[?, ?]] = relation <:< AllRelations
 
   private var references: Map[Any, Ref] = Map()
@@ -93,7 +92,6 @@ class Database(size: Int):
     val relationIndex = !![Topic].indexOf[left -< right]
     val relation = relate[left, right]
     val corelation = corelate[left, right]
-
     val relation2 = relation.updated(left, relation.at(left).or(Set()) + right)
     val corelation2 = corelation.updated(right, left)
     relations(relationIndex) = relation2

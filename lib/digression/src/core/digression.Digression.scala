@@ -43,6 +43,7 @@ import proscenium.*
 object Digression:
   def location: Macro[Codepoint] =
     import quotes.*, reflect.*
+
     val path = Expr(Position.ofMacroExpansion.sourceFile.path)
     val line = Expr(Position.ofMacroExpansion.startLine + 1)
 

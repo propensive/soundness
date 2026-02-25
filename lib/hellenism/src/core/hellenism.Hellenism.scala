@@ -50,14 +50,17 @@ object Hellenism extends Hellenism2:
     def apply(javaClass: Class[?]): ClassRef = javaClass
     inline def apply[template <: AnyKind]: ClassRef = ${Hellenism.makeClass[template]}
 
+
   extension (classRef: ClassRef)
     def classloader: Classloader = new Classloader(classRef.getClassLoader().nn)
 
     def classpathEntry: Optional[ClasspathEntry] =
       ClasspathEntry(classRef.getProtectionDomain.nn.getCodeSource.nn.getLocation.nn)
 
+
   def classpath(context: Expr[StringContext]): Macro[Resource] =
     val name: String = context.valueOrAbort.parts.head
+
     val path = safely(name.tt.decode[Path on Classpath]).or:
       halt(m"the path $name is not a valid classpath path")
 

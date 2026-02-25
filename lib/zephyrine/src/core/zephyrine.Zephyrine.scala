@@ -39,6 +39,7 @@ import proscenium.*
 object Zephyrine:
   def consume(cursor: Expr[Cursor[?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =
     import quotes.reflect.*
+
     val text = text0.valueOrAbort
 
     def recur(index: Int, checks: Expr[Unit]): Expr[Unit] =

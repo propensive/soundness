@@ -73,6 +73,7 @@ object LineSeparation:
       case Action.LfNl => put(10); mkNewline
       case Action.Skip => ()
 
+
   enum NewlineSeq:
     case Cr, Lf, CrLf, LfCr
 

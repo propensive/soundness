@@ -870,7 +870,6 @@ sealed into trait Html extends Topical, Documentary, Formal:
     asInstanceOf[this.type over transport]
 
   def / (tag: Tag): Fragment of tag.Topic in tag.Form = Fragment().of[tag.Topic].in[tag.Form]
-
   def body: Fragment of Topic over Transport in Form
 
 sealed trait Node extends Html
@@ -908,7 +907,6 @@ case class Element
     children:   IArray[Node],
     foreign:    Boolean )
 extends Node, Topical, Transportive, Dynamic:
-
   override def toString(): String = this.show.s
 
   override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
@@ -956,7 +954,6 @@ extends Node, Topical, Transportive, Dynamic:
 
   override def hashCode: Int =
     ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashCode ^ label.hashCode
-
 
   transparent inline def selectDynamic(name: Label): Any =
 
@@ -1017,7 +1014,6 @@ case class Fragment(nodes: Node*) extends Html:
   def body: Fragment of Topic over Transport in Form = this
 
 case class Doctype(text: Text) extends Node:
-
   override def equals(that: Any): Boolean = that match
     case Doctype(text0)           => text0 == text
     case Fragment(Doctype(text0)) => text0 == text

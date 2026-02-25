@@ -41,7 +41,6 @@ object Wisteria:
   inline def default[product, field](index: Int): Optional[field] =
     ${getDefault[product, field]('index)}
 
-
   def getDefault[product: Type, field: Type](index: Expr[Int]): Macro[Optional[field]] =
     import quotes.reflect.*
 

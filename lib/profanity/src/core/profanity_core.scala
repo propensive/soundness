@@ -81,10 +81,12 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
 package keyboards:
   given raw: Keyboard:
     type Keypress = Char
+
     def process(stream: Stream[Char]): Stream[Keypress] = stream
 
   given numeric: Keyboard:
     type Keypress = Int
+
     def process(stream: Stream[Char]): Stream[Int] = stream.map(_.toInt)
 
   given standard: (monitor: Monitor, codicil: Codicil) => Keyboard.Standard = Keyboard.Standard()

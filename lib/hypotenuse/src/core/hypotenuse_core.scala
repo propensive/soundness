@@ -553,6 +553,7 @@ package arithmeticOptions:
   object overflow:
     inline given unchecked: CheckOverflow:
       type Wrap[result] = result
+
       inline def addU64(left: U64, right: U64): U64 = U64((Long(left.bits) + Long(right.bits)).bits)
       inline def addS64(left: S64, right: S64): S64 = S64((left.long + right.long).bits)
       inline def addU32(left: U32, right: U32): U32 = U32((Int(left.bits) + Int(right.bits)).bits)
