@@ -49,7 +49,7 @@ import vacuous.*
 
 import scala.quoted.*
 
-object internal:
+object Honeycomb:
   def extractor[parts <: Tuple: Type](scrutinee: Expr[Html]): Macro[Extrapolation[Html]] =
     import quotes.reflect.*
     import doms.html.whatwg

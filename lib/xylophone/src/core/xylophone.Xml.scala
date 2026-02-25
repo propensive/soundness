@@ -424,9 +424,9 @@ object Xml extends Tag.Container
 
         case ' ' | Ff | Lf | Cr | Ht | '/' | '>' =>
           dictionary match
-            case Dictionary.Just("", tag)            =>  tag
-            case Dictionary.Branch(tag: Tag, _)      =>  tag
-            case _                                   =>  Tag.freeform(cursor.grab(mark, cursor.mark))
+            case Dictionary.Just("", tag)       => tag
+            case Dictionary.Branch(tag: Tag, _) => tag
+            case _                              => Tag.freeform(cursor.grab(mark, cursor.mark))
 
         case Nul =>
           fail(BadInsertion)
@@ -574,8 +574,8 @@ object Xml extends Tag.Container
       cursor.lay(fail(ExpectedMore)):
         case chr if chr.isLetter | chr.isDigit =>
           dictionary(chr) match
-            case Dictionary.Empty                  =>  Unset
-            case dictionary                        =>  cursor.next() yet textEntity(mark, dictionary)
+            case Dictionary.Empty => Unset
+            case dictionary       => cursor.next() yet textEntity(mark, dictionary)
 
         case ';' =>
           cursor.next() yet dictionary(';').element
@@ -679,9 +679,9 @@ object Xml extends Tag.Container
         equality()
         content = cursor.hold:
           cursor.lay(fail(ExpectedMore)):
-            case Dqt =>  next() yet value(cursor.mark)
-            case Sqt =>  next() yet singleQuoted(cursor.mark)
-            case _   =>  fail(UnquotedAttribute)
+            case Dqt => next() yet value(cursor.mark)
+            case Sqt => next() yet singleQuoted(cursor.mark)
+            case _   => fail(UnquotedAttribute)
 
         ensure('?')
         expect('>')
@@ -727,10 +727,10 @@ object Xml extends Tag.Container
         extra = cursor.hold(attributes(content))
 
         cursor.lay(fail(ExpectedMore)):
-          case '/' =>  expect('>') yet cursor.next() yet Token.Empty
-          case '>' =>  cursor.next() yet Token.Open
-          case Nul =>  fail(BadInsertion)
-          case chr =>  fail(Unexpected(chr))
+          case '/' => expect('>') yet cursor.next() yet Token.Empty
+          case '>' => cursor.next() yet Token.Open
+          case Nul => fail(BadInsertion)
+          case chr => fail(Unexpected(chr))
 
     def finish(parent: Tag, count: Int): Node =
       if parent != root then fail(Incomplete(parent.label)) else
@@ -811,11 +811,8 @@ object Xml extends Tag.Container
                   current = Element(content, map, array(count))
 
           level match
-            case Level.Ascend  =>  current
-
-            case Level.Peer =>
-              append(current)
-              read(parent, map, count + 1)
+            case Level.Ascend  => current
+            case Level.Peer    => append(current) yet read(parent, map, count + 1)
 
             case Level.Descend =>
               push(focus)
