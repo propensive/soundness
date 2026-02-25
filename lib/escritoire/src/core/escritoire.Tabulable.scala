@@ -40,11 +40,6 @@ import spectacular.*
 import vacuous.*
 import wisteria.*, derivationContext.required
 
-trait Tabulable[text] extends Typeclass:
-  def table(): Scaffold[Self, text]
-  private lazy val tableValue: Scaffold[Self, text] = table()
-  def tabulate(data: Seq[Self]): Tabulation[text] = tableValue.tabulate(data)
-
 object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
 
   class JoinTabulable[derivation <: Product](columns: IArray[Column[derivation, Text]])
@@ -76,3 +71,8 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
 
   given text: Text is Tabulable[Text] = () =>
     Scaffold[Text, Text](Column(t"", TextAlignment.Left, Unset, columnar.Prose)(identity))
+
+trait Tabulable[text] extends Typeclass:
+  def table(): Scaffold[Self, text]
+  private lazy val tableValue: Scaffold[Self, text] = table()
+  def tabulate(data: Seq[Self]): Tabulation[text] = tableValue.tabulate(data)

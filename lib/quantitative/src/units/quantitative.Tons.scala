@@ -35,7 +35,7 @@ package quantitative
 import proscenium.*
 import rudiments.*
 
-trait Tons[Power <: Nat] extends Units[Power, Mass]
-
 object Tons:
   inline given ratio: Ratio[Kilograms[1] & Tons[-1], 1016.0469088] = !!
+
+trait Tons[Power <: Nat] extends Units[Power, Mass]

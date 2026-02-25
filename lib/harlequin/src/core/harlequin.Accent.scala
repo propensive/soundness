@@ -36,8 +36,8 @@ import anticipation.*
 import gossamer.*
 import spectacular.*
 
-enum Accent:
-  case Error, Number, String, Ident, Term, Typed, Keyword, Symbol, Parens, Modifier, Unparsed
-
 object Accent:
   given showable: Accent is Showable = _.toString.tt.lower
+
+enum Accent:
+  case Error, Number, String, Ident, Term, Typed, Keyword, Symbol, Parens, Modifier, Unparsed

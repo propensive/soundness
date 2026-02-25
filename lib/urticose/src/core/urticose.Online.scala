@@ -34,5 +34,5 @@ package urticose
 
 import language.adhocExtensions
 
-class Online() extends Internet(true)
 object Online extends Online()
+class Online() extends Internet(true)

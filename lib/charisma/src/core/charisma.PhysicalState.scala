@@ -36,12 +36,12 @@ import anticipation.*
 import gossamer.*
 import spectacular.*
 
-enum PhysicalState:
-  case Solid, Liquid, Gas, Aqueous
-
 object PhysicalState:
   given showable: PhysicalState is Showable =
     case Solid   => t"(s)"
     case Liquid  => t"(l)"
     case Gas     => t"(g)"
     case Aqueous => t"(aq)"
+
+enum PhysicalState:
+  case Solid, Liquid, Gas, Aqueous

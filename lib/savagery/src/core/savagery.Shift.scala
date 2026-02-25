@@ -36,8 +36,8 @@ import anticipation.*
 import gossamer.*
 import spectacular.*
 
-case class Shift(dx: Float, dy: Float)
-
 object Shift:
   given showable: Shift is Showable =
     value => t"${value.dx.toString} ${value.dy.toString}"
+
+case class Shift(dx: Float, dy: Float)

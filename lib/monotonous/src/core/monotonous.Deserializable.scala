@@ -44,24 +44,6 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-trait Deserializable:
-  type Form <: Serialization
-  protected val atomicity: Int = 1
-
-  def deserialize(previous: Text, current: Text, index0: Int, last: Boolean): Data
-  def deserialize(value: Text): Data = deserialize(t"", value, 0, true)
-
-  def deserialize(stream: Stream[Text]): Stream[Data] =
-    def recur(stream: Stream[Text], previous: Text, carry: Int): Stream[Data] = stream match
-      case head #:: tail =>
-        val carry2 = (carry + head.length)%atomicity
-        deserialize(previous, head, -carry, tail.nil) #:: recur(tail, head, carry2)
-
-      case _ =>
-        if carry > 0 then Stream(deserialize(previous, t"", -carry, true)) else Stream()
-
-    recur(stream, t"", 0)
-
 object Deserializable:
   def base[base <: Serialization](base: Int)(using alphabet: Alphabet[base])
   :   Deserializable in base raises SerializationError =
@@ -110,3 +92,21 @@ object Deserializable:
     base(2)
 
   given binary: (Alphabet[Binary], Tactic[SerializationError]) => Deserializable in Binary = base(1)
+
+trait Deserializable:
+  type Form <: Serialization
+  protected val atomicity: Int = 1
+
+  def deserialize(previous: Text, current: Text, index0: Int, last: Boolean): Data
+  def deserialize(value: Text): Data = deserialize(t"", value, 0, true)
+
+  def deserialize(stream: Stream[Text]): Stream[Data] =
+    def recur(stream: Stream[Text], previous: Text, carry: Int): Stream[Data] = stream match
+      case head #:: tail =>
+        val carry2 = (carry + head.length)%atomicity
+        deserialize(previous, head, -carry, tail.nil) #:: recur(tail, head, carry2)
+
+      case _ =>
+        if carry > 0 then Stream(deserialize(previous, t"", -carry, true)) else Stream()
+
+    recur(stream, t"", 0)

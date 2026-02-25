@@ -40,9 +40,6 @@ import rudiments.*
 
 import scala.compiletime.*
 
-trait JsonPrinter:
-  def print(json: JsonAst): Text
-
 object JsonPrinter:
   def print(json: JsonAst, indentation: Boolean): Text = Text.construct:
     def appendString(string: String): Unit =
@@ -116,3 +113,6 @@ object JsonPrinter:
         append("null")
 
     recur(json, 1)
+
+trait JsonPrinter:
+  def print(json: JsonAst): Text

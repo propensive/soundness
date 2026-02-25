@@ -49,22 +49,6 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-class Url[+scheme <: Label]
-  ( val origin:   Origin[scheme],
-    val location: Text,
-    val query:    Optional[Text] = Unset,
-    val fragment: Optional[Text] = Unset )
-extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$location"):
-
-  type Plane = Www
-  type Topic = Zero
-
-  def scheme: Scheme[scheme] = origin.scheme
-  def authority: Optional[Authority] = origin.authority
-  def requestTarget: Text = location+query.lay(t"")(t"?"+_)
-  def host: Optional[Hostname] = authority.let(_.host)
-  def path: Path on Www = location.decode[Path on Www]
-
 object Url:
 
   given abstractable: HttpUrl is Abstractable across Urls to Text = _.show
@@ -135,3 +119,19 @@ object Url:
 
   given instantiable: (Tactic[UrlError]) => HttpUrl is Instantiable across Urls from Text =
     _.decode[HttpUrl]
+
+class Url[+scheme <: Label]
+  ( val origin:   Origin[scheme],
+    val location: Text,
+    val query:    Optional[Text] = Unset,
+    val fragment: Optional[Text] = Unset )
+extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$location"):
+
+  type Plane = Www
+  type Topic = Zero
+
+  def scheme: Scheme[scheme] = origin.scheme
+  def authority: Optional[Authority] = origin.authority
+  def requestTarget: Text = location+query.lay(t"")(t"?"+_)
+  def host: Optional[Hostname] = authority.let(_.host)
+  def path: Path on Www = location.decode[Path on Www]

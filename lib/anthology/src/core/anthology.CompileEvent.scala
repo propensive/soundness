@@ -36,15 +36,15 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 
-enum CompileEvent:
-  case Start
-  case CompilerCrash
-  case Notice(diagnostic: Text)
-  case Running(arguments: List[Text])
-
 object CompileEvent:
   given communicable: CompileEvent is Communicable =
     case Start              => m"Starting compilation"
     case CompilerCrash      => m"Compiler crashed"
     case Notice(diagnostic) => m"The compiler emitted a diagnostic message: $diagnostic"
     case Running(arguments) => m"Running compiler with arguments ${arguments.join(t" ")}"
+
+enum CompileEvent:
+  case Start
+  case CompilerCrash
+  case Notice(diagnostic: Text)
+  case Running(arguments: List[Text])

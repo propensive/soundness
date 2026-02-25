@@ -40,9 +40,6 @@ import proscenium.*
 import rudiments.*
 import vacuous.*
 
-trait Environment:
-  def variable(name: Text): Optional[Text]
-
 object Environment extends Dynamic:
   def apply[variable]
     ( variable: Text )
@@ -61,3 +58,6 @@ object Environment extends Dynamic:
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:
       raise(EnvironmentError(reader.defaultName)) yet reader.read(Text(""))
+
+trait Environment:
+  def variable(name: Text): Optional[Text]

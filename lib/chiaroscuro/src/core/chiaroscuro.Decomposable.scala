@@ -46,9 +46,6 @@ import wisteria.*
 import scala.compiletime.*
 import scala.reflect.*
 
-trait Decomposable extends Typeclass:
-  def decomposition(value: Self): Decomposition
-
 object Decomposable extends Decomposable2:
   trait Base extends Decomposable:
     def decomposition(value: Self): Decomposition
@@ -93,6 +90,9 @@ object Decomposable extends Decomposable2:
       value => Decomposition.Primitive("CompileError", value.toString.tt, value)
 
     given decomposition: Decomposition is Base = identity(_)
+
+trait Decomposable extends Typeclass:
+  def decomposition(value: Self): Decomposition
 
 
 trait Decomposable2 extends Decomposable3:

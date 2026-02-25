@@ -38,11 +38,6 @@ import spectacular.*
 
 import language.implicitConversions
 
-trait Designation[-value]:
-  def siPrefix: Metric = NoPrefix
-  def name(): Text
-  def text: Text = t"${siPrefix.symbol}${name()}"
-
 object Designation:
   given metres: Designation[Metres[1]] = () => t"m"
   given candelas: Designation[Candelas[1]] = () => t"cd"
@@ -54,3 +49,8 @@ object Designation:
   given kilograms: Designation[Kilograms[1]]:
     override def siPrefix: Metric = Kilo
     def name(): Text = t"g"
+
+trait Designation[-value]:
+  def siPrefix: Metric = NoPrefix
+  def name(): Text
+  def text: Text = t"${siPrefix.symbol}${name()}"

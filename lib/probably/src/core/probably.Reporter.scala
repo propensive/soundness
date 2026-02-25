@@ -35,12 +35,6 @@ package probably
 import ambience.*
 import turbulence.*
 
-trait Reporter[report]:
-  def make(): report
-  def fail(report: report, error: Throwable, active: Set[TestId]): Unit
-  def declare(report: report, suite: Testable): Unit
-  def complete(report: report): Unit
-
 object Reporter:
   given report: (Stdio, Environment) => Reporter[Report]:
     def make(): Report = Report()
@@ -50,3 +44,9 @@ object Reporter:
       report.fail(error, active)
 
     def complete(report: Report): Unit = report.complete(Coverage())
+
+trait Reporter[report]:
+  def make(): report
+  def fail(report: report, error: Throwable, active: Set[TestId]): Unit
+  def declare(report: report, suite: Testable): Unit
+  def complete(report: report): Unit

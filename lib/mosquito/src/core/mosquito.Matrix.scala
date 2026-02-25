@@ -44,6 +44,61 @@ import vacuous.*
 
 import scala.compiletime.*
 
+object Matrix:
+  given showable: [element: Showable] => Text is Measurable => Matrix[element, ?, ?] is Showable =
+    matrix =>
+      val textElements = matrix.elements.map(_.show)
+      val sizes = textElements.map(_.length)
+
+      val columnWidths: IArray[Int] = IArray.from:
+        (0 until matrix.columns).map: column =>
+          sizes:
+            column + matrix.columns*(0 until matrix.rows).maxBy: row =>
+              sizes(matrix.columns*row + column)
+
+      (0 until matrix.rows).map: row =>
+        val before = if row == 0 then t"⎡ " else if row == matrix.rows - 1 then t"⎣ " else t"⎪ "
+        val after = if row == 0 then t" ⎤" else if row == matrix.rows - 1 then t" ⎦" else t" ⎪"
+
+        (0 until matrix.columns).map: column =>
+          textElements(matrix.columns*row + column).pad(columnWidths(column), Rtl)
+
+        . join(before, t" ", after)
+      . join(t"\n")
+
+  private type Constraint[rows <: Tuple, element] =
+    Tuple.Union
+      [ Tuple.Fold
+          [ rows, Zero, [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple] ]
+          & Tuple ]
+    <:< element
+
+  private type ColumnConstraint[rows <: Tuple] =
+    Tuple.Union[Tuple.Map[rows, [tuple] =>> Tuple.Size[tuple & Tuple]]]
+
+  transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using erased Void)
+    [ element ]
+    ( rows: Tuple )
+    ( using Constraint[rows.type, element],
+            Columns =:= ColumnConstraint[rows.type],
+            Rows =:= Tuple.Size[rows.type],
+            ClassTag[element] )
+  :   Any =
+
+    val rowCount: Int = valueOf[Rows]
+    val columnCount = valueOf[Columns]
+
+    new Matrix[element, Rows, Columns]
+      ( rowCount,
+        columnCount,
+        IArray.create[element](columnCount*rowCount): array =>
+          for row <- 0 until rowCount; column <- 0 until columnCount
+          do rows.productElement(row).asMatchable.absolve match
+            case tuple: Tuple =>
+              array(columnCount*row + column) =
+                tuple.productElement(column).asInstanceOf[element] )
+
+
 class Matrix[element, rows <: Int, columns <: Int]
   ( val rows: Int, val columns: Int, val elements: IArray[element] ):
 
@@ -104,58 +159,3 @@ class Matrix[element, rows <: Int, columns <: Int]
         (0 until inner).map { index => apply(row, index)*right(index, column) }.reduce(_ + _)
 
     new Matrix(rows, columns2, elements)
-
-
-object Matrix:
-  given showable: [element: Showable] => Text is Measurable => Matrix[element, ?, ?] is Showable =
-    matrix =>
-      val textElements = matrix.elements.map(_.show)
-      val sizes = textElements.map(_.length)
-
-      val columnWidths: IArray[Int] = IArray.from:
-        (0 until matrix.columns).map: column =>
-          sizes:
-            column + matrix.columns*(0 until matrix.rows).maxBy: row =>
-              sizes(matrix.columns*row + column)
-
-      (0 until matrix.rows).map: row =>
-        val before = if row == 0 then t"⎡ " else if row == matrix.rows - 1 then t"⎣ " else t"⎪ "
-        val after = if row == 0 then t" ⎤" else if row == matrix.rows - 1 then t" ⎦" else t" ⎪"
-
-        (0 until matrix.columns).map: column =>
-          textElements(matrix.columns*row + column).pad(columnWidths(column), Rtl)
-
-        . join(before, t" ", after)
-      . join(t"\n")
-
-  private type Constraint[rows <: Tuple, element] =
-    Tuple.Union
-      [ Tuple.Fold
-          [ rows, Zero, [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple] ]
-          & Tuple ]
-    <:< element
-
-  private type ColumnConstraint[rows <: Tuple] =
-    Tuple.Union[Tuple.Map[rows, [tuple] =>> Tuple.Size[tuple & Tuple]]]
-
-  transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using erased Void)
-    [ element ]
-    ( rows: Tuple )
-    ( using Constraint[rows.type, element],
-            Columns =:= ColumnConstraint[rows.type],
-            Rows =:= Tuple.Size[rows.type],
-            ClassTag[element] )
-  :   Any =
-
-    val rowCount: Int = valueOf[Rows]
-    val columnCount = valueOf[Columns]
-
-    new Matrix[element, Rows, Columns]
-      ( rowCount,
-        columnCount,
-        IArray.create[element](columnCount*rowCount): array =>
-          for row <- 0 until rowCount; column <- 0 until columnCount
-          do rows.productElement(row).asMatchable.absolve match
-            case tuple: Tuple =>
-              array(columnCount*row + column) =
-                tuple.productElement(column).asInstanceOf[element] )

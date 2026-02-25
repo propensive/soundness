@@ -45,17 +45,6 @@ import vacuous.*
 import java.net as jn
 import java.nio.channels as jnc
 
-trait Bindable extends Typeclass:
-  type Binding
-  type Input
-  type Output
-
-  def bind(socket: Self): Binding
-  def connect(binding: Binding): Input
-  def transmit(binding: Binding, input: Input, output: Output): Unit
-  def close(connection: Input): Unit
-  def stop(binding: Binding): Unit
-
 object Bindable:
   given domainSocket: Tactic[StreamError] => DomainSocket is Bindable:
     type Binding = jnc.ServerSocketChannel
@@ -159,3 +148,14 @@ object Bindable:
 
     def stop(binding: Binding): Unit = binding.close()
     def close(input: Packet): Unit = ()
+
+trait Bindable extends Typeclass:
+  type Binding
+  type Input
+  type Output
+
+  def bind(socket: Self): Binding
+  def connect(binding: Binding): Input
+  def transmit(binding: Binding, input: Input, output: Output): Unit
+  def close(connection: Input): Unit
+  def stop(binding: Binding): Unit

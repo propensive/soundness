@@ -34,9 +34,6 @@ package kaleidoscope
 
 import anticipation.*
 
-case class Glob(tokens: GlobToken*):
-  def regex: Text = Text(tokens.flatMap(_.regex).mkString)
-
 object Glob:
   import GlobToken.*
   def parse(text: Text): Glob =
@@ -67,3 +64,6 @@ object Glob:
           recur(index + 1, Exact(char) :: tokens)
 
     recur(0, Nil)
+
+case class Glob(tokens: GlobToken*):
+  def regex: Text = Text(tokens.flatMap(_.regex).mkString)

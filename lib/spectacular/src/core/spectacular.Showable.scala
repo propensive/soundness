@@ -45,10 +45,6 @@ import rudiments.*
 import stenography.*
 import vacuous.*
 
-trait Showable extends Typeclass, Communicable:
-  def text(value: Self): Text
-  def message(value: Self): Message = Message(text(value))
-
 object Showable:
   given showable: [value: Textualizable] => value is Showable = value.textual(_)
 
@@ -112,3 +108,7 @@ object Showable:
 
     stack.cause.lay(root): cause =>
       s"$root\ncaused by:\n$cause".tt
+
+trait Showable extends Typeclass, Communicable:
+  def text(value: Self): Text
+  def message(value: Self): Message = Message(text(value))

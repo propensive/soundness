@@ -50,9 +50,6 @@ import javax.net.ssl as jns
 
 import language.dynamics
 
-trait HttpClient extends Targetable:
-  def request(request: Http.Request, target: Target): Http.Response logs HttpEvent
-
 object HttpClient:
   private lazy val client: jnh.HttpClient = jnh.HttpClient.newHttpClient().nn
 
@@ -133,3 +130,6 @@ object HttpClient:
 
       Http.Response.make
         ( status2, headers2, Http.Body.Streaming(unsafely(response.body().nn.stream[Data])) )
+
+trait HttpClient extends Targetable:
+  def request(request: Http.Request, target: Target): Http.Response logs HttpEvent

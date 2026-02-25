@@ -41,6 +41,36 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
+object Interaction:
+  given selectMenu: [item: Showable] => Stdio => Interaction[item, SelectMenu[item]]:
+    override def before(): Unit = Out.print(t"\e[?25l")
+    override def after(): Unit = Out.print(t"\e[J\e[?25h")
+
+    def render(old: Optional[SelectMenu[item]], menu: SelectMenu[item]) =
+      menu.options.each: option =>
+        Out.print((if option == menu.current then t" > $option" else t"   $option")+t"\e[K\n")
+      Out.print(t"\e[${menu.options.length}A")
+
+    def result(state: SelectMenu[item]): item = state.current
+
+  given lineEditor: Stdio => Interaction[Text, LineEditor]:
+    override def after(): Unit = Out.println()
+
+    def render(editor: Optional[LineEditor], editor2: LineEditor): Unit = Out.print:
+      Text.construct:
+        editor.let { editor => if editor.position > 0 then append(t"\e[${editor.position}D") }
+        append(t"\e[K")
+
+        val line =
+          t"${editor2.value}${t" "*(editor.or(editor2).value.length - editor2.value.length)}"
+
+        append(line)
+        if line.length > 0 then append(t"\e[${line.length}D")
+        if editor2.position > 0 then append(t"\e[${editor2.position}C")
+
+    def result(editor: LineEditor): Text = editor.value
+
+
 trait Interaction[result, question]:
   def before(): Unit = ()
   def render(state: Optional[question], menu: question): Unit
@@ -70,33 +100,3 @@ trait Interaction[result, question]:
 
     before()
     recur(stream, state, Unset)(key).also(after())
-
-
-object Interaction:
-  given selectMenu: [item: Showable] => Stdio => Interaction[item, SelectMenu[item]]:
-    override def before(): Unit = Out.print(t"\e[?25l")
-    override def after(): Unit = Out.print(t"\e[J\e[?25h")
-
-    def render(old: Optional[SelectMenu[item]], menu: SelectMenu[item]) =
-      menu.options.each: option =>
-        Out.print((if option == menu.current then t" > $option" else t"   $option")+t"\e[K\n")
-      Out.print(t"\e[${menu.options.length}A")
-
-    def result(state: SelectMenu[item]): item = state.current
-
-  given lineEditor: Stdio => Interaction[Text, LineEditor]:
-    override def after(): Unit = Out.println()
-
-    def render(editor: Optional[LineEditor], editor2: LineEditor): Unit = Out.print:
-      Text.construct:
-        editor.let { editor => if editor.position > 0 then append(t"\e[${editor.position}D") }
-        append(t"\e[K")
-
-        val line =
-          t"${editor2.value}${t" "*(editor.or(editor2).value.length - editor2.value.length)}"
-
-        append(line)
-        if line.length > 0 then append(t"\e[${line.length}D")
-        if editor2.position > 0 then append(t"\e[${editor2.position}C")
-
-    def result(editor: LineEditor): Text = editor.value

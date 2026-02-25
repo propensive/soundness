@@ -37,8 +37,6 @@ import gossamer.*
 import spectacular.*
 import symbolism.*
 
-case class Monthstamp(year: Year, month: Month)
-
 object Monthstamp:
   given showable: (months: Months, separation: DateSeparation, endianness: Endianness, years: Years)
   =>  Monthstamp is Showable =
@@ -58,3 +56,5 @@ object Monthstamp:
 
     def subtract(monthstamp: Monthstamp, day: Int): Date =
       unsafely(calendars.gregorian.jdn(monthstamp.year, monthstamp.month, Day(day)))
+
+case class Monthstamp(year: Year, month: Month)

@@ -43,112 +43,6 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-enum Syntax:
-  case Simple(typename: Typename)
-  case Symbolic(text: Text)
-  case Primitive(text: Text)
-  case Projection(base: Syntax, text: Text)
-  case Structural(syntax: Syntax, types: ListMap[Text, Syntax], terms: ListMap[Text, Syntax])
-  case Infix(left: Syntax, middle: Text, right: Syntax)
-  case Prefix(middle: Text, right: Syntax)
-  case Suffix(left: Syntax, suffix: Text)
-  case Application(left: Syntax, elements: List[Syntax], infix: Boolean)
-  case Selection(left: Syntax, right: Text)
-  case Named(isUsing: Boolean, name: Text, syntax: Syntax)
-  case Sequence(style: '(' | '[' | '{', syntaxes: List[Syntax])
-  case Declaration(method: Boolean, syntaxes: List[Syntax], result: Syntax)
-  case Value(typename: Typename)
-  case Compound(syntaxes: List[Syntax])
-
-  def precedence: Int = this match
-    case Structural(_, _, _) => 0
-    case Prefix(_, _)        => 0
-    case Named(_, _, _)      => 0
-    case Suffix(_, _)        => 0
-    case Infix(_, "<:", _)   => 10
-    case Infix(_, ">:", _)   => 10
-
-    case Infix(_, middle, _) =>
-      middle.s.head match
-        case '|'                   => 1
-        case '^'                   => 2
-        case '&'                   => 3
-        case '!' | '='             => 4
-        case '<' | '>'             => 5
-        case ':'                   => 6
-        case '+' | '-'             => 7
-        case '%' | '*' | '/'       => 8
-        case char if char.isLetter => 0
-        case _                     => 9
-
-    case Projection(_, _) =>
-      9
-
-    case Compound(_) =>
-      10
-
-    case Simple(_) =>
-      10
-
-    case Symbolic(_) =>
-      10
-
-    case Primitive(_) =>
-      10
-
-    case Application(_, _, _) =>
-      10
-
-    case Selection(_, _) =>
-      10
-
-    case Sequence(_, _) =>
-      10
-
-    case Declaration(_, _, _) =>
-      10
-
-    case Value(_) =>
-      10
-
-  def text(using imports: Imports): Text = this match
-    case Simple(typename)        => typename.text
-    case Symbolic(text)          => text
-    case Projection(base, text)  => s"${base.text}#$text".tt
-    case Primitive(text)         => text
-    case Selection(left, right)  => s"${left.text}.${right}"
-    case Prefix(prefix, base)    => s"$prefix ${base.text}".tt
-    case Suffix(base, suffix)    => s"${base.text}$suffix".tt
-    case Sequence('(', elements) => s"(${elements.map(_.text).mkString(", ")})".tt
-    case Sequence('[', elements) => s"[${elements.map(_.text).mkString(", ")}]".tt
-    case Sequence('{', elements) => s"{${elements.map(_.text).mkString(", ")}}".tt
-    case Value(typename)         => s"${typename.text}.type".tt
-    case Compound(syntaxes)      => syntaxes.map(_.text).mkString.tt
-
-    case Declaration(method, syntaxes, result) =>
-      s"${syntaxes.map(_.text).mkString}${if method then ": " else ""}${result.text}".tt
-
-    case Application(left, elements, infix) =>
-      left match
-        case Simple(Typename.Type(parent, name)) if infix && imports.has(parent) =>
-          Infix(elements(0), name, elements(1)).text
-
-        case _ =>
-          left.text+elements.map(_.text).mkString("[", ", ", "]").tt
-
-    case Structural(base, members, defs) =>
-      val members2 = members.map { (name, syntax) => s"type $name = ${syntax.text}".tt }
-      val defs2 = defs.map { (name, syntax) => s"def $name${syntax.text}".tt }
-      s"${base.text} { ${(members2 ++ defs2).mkString("; ")} }".tt
-
-    case Infix(left: Syntax, middle, right: Syntax) =>
-      val left2 = if left.precedence < precedence then Sequence('(', List(left)) else left
-      val right2 = if right.precedence < precedence then Sequence('(', List(right)) else right
-      s"${left2.text} $middle ${right2.text}".tt
-
-    case Named(isUsing, name, syntax) =>
-      if isUsing then s"using $name: ${syntax.text}".tt else s"$name: ${syntax.text}".tt
-
 object Syntax:
   inline def name[typename <: AnyKind]: Text = ${Stenography.typename[typename]}
 
@@ -472,3 +366,109 @@ object Syntax:
 
       case other =>
         Primitive(s"...other: ${other.toString}...")
+
+enum Syntax:
+  case Simple(typename: Typename)
+  case Symbolic(text: Text)
+  case Primitive(text: Text)
+  case Projection(base: Syntax, text: Text)
+  case Structural(syntax: Syntax, types: ListMap[Text, Syntax], terms: ListMap[Text, Syntax])
+  case Infix(left: Syntax, middle: Text, right: Syntax)
+  case Prefix(middle: Text, right: Syntax)
+  case Suffix(left: Syntax, suffix: Text)
+  case Application(left: Syntax, elements: List[Syntax], infix: Boolean)
+  case Selection(left: Syntax, right: Text)
+  case Named(isUsing: Boolean, name: Text, syntax: Syntax)
+  case Sequence(style: '(' | '[' | '{', syntaxes: List[Syntax])
+  case Declaration(method: Boolean, syntaxes: List[Syntax], result: Syntax)
+  case Value(typename: Typename)
+  case Compound(syntaxes: List[Syntax])
+
+  def precedence: Int = this match
+    case Structural(_, _, _) => 0
+    case Prefix(_, _)        => 0
+    case Named(_, _, _)      => 0
+    case Suffix(_, _)        => 0
+    case Infix(_, "<:", _)   => 10
+    case Infix(_, ">:", _)   => 10
+
+    case Infix(_, middle, _) =>
+      middle.s.head match
+        case '|'                   => 1
+        case '^'                   => 2
+        case '&'                   => 3
+        case '!' | '='             => 4
+        case '<' | '>'             => 5
+        case ':'                   => 6
+        case '+' | '-'             => 7
+        case '%' | '*' | '/'       => 8
+        case char if char.isLetter => 0
+        case _                     => 9
+
+    case Projection(_, _) =>
+      9
+
+    case Compound(_) =>
+      10
+
+    case Simple(_) =>
+      10
+
+    case Symbolic(_) =>
+      10
+
+    case Primitive(_) =>
+      10
+
+    case Application(_, _, _) =>
+      10
+
+    case Selection(_, _) =>
+      10
+
+    case Sequence(_, _) =>
+      10
+
+    case Declaration(_, _, _) =>
+      10
+
+    case Value(_) =>
+      10
+
+  def text(using imports: Imports): Text = this match
+    case Simple(typename)        => typename.text
+    case Symbolic(text)          => text
+    case Projection(base, text)  => s"${base.text}#$text".tt
+    case Primitive(text)         => text
+    case Selection(left, right)  => s"${left.text}.${right}"
+    case Prefix(prefix, base)    => s"$prefix ${base.text}".tt
+    case Suffix(base, suffix)    => s"${base.text}$suffix".tt
+    case Sequence('(', elements) => s"(${elements.map(_.text).mkString(", ")})".tt
+    case Sequence('[', elements) => s"[${elements.map(_.text).mkString(", ")}]".tt
+    case Sequence('{', elements) => s"{${elements.map(_.text).mkString(", ")}}".tt
+    case Value(typename)         => s"${typename.text}.type".tt
+    case Compound(syntaxes)      => syntaxes.map(_.text).mkString.tt
+
+    case Declaration(method, syntaxes, result) =>
+      s"${syntaxes.map(_.text).mkString}${if method then ": " else ""}${result.text}".tt
+
+    case Application(left, elements, infix) =>
+      left match
+        case Simple(Typename.Type(parent, name)) if infix && imports.has(parent) =>
+          Infix(elements(0), name, elements(1)).text
+
+        case _ =>
+          left.text+elements.map(_.text).mkString("[", ", ", "]").tt
+
+    case Structural(base, members, defs) =>
+      val members2 = members.map { (name, syntax) => s"type $name = ${syntax.text}".tt }
+      val defs2 = defs.map { (name, syntax) => s"def $name${syntax.text}".tt }
+      s"${base.text} { ${(members2 ++ defs2).mkString("; ")} }".tt
+
+    case Infix(left: Syntax, middle, right: Syntax) =>
+      val left2 = if left.precedence < precedence then Sequence('(', List(left)) else left
+      val right2 = if right.precedence < precedence then Sequence('(', List(right)) else right
+      s"${left2.text} $middle ${right2.text}".tt
+
+    case Named(isUsing, name, syntax) =>
+      if isUsing then s"using $name: ${syntax.text}".tt else s"$name: ${syntax.text}".tt

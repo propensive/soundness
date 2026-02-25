@@ -47,9 +47,6 @@ import wisteria.*
 import scala.reflect.*
 import scala.compiletime.*
 
-trait Contrastable extends Typeclass:
-  def juxtaposition(left: Self, right: Self): Juxtaposition
-
 object Contrastable:
 
   inline given derived: [entity] => entity is Contrastable = summonFrom:
@@ -247,3 +244,6 @@ object Contrastable:
     given showable: [value: Showable] => value is Contrastable = (left, right) =>
       if left == right then Juxtaposition.Same(left.show)
       else Juxtaposition.Different(left.show, right.show)
+
+trait Contrastable extends Typeclass:
+  def juxtaposition(left: Self, right: Self): Juxtaposition

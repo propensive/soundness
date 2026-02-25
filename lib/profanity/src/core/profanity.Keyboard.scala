@@ -42,10 +42,6 @@ import proscenium.*
 import spectacular.*
 import vacuous.*
 
-trait Keyboard:
-  type Keypress
-  def process(stream: Stream[Char]): Stream[Keypress]
-
 object Keyboard:
   import Keypress.*
 
@@ -162,3 +158,7 @@ object Keyboard:
 
       case _ =>
         Stream()
+
+trait Keyboard:
+  type Keypress
+  def process(stream: Stream[Char]): Stream[Keypress]

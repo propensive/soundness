@@ -53,21 +53,6 @@ case class Use(namespace: Ident, ident: Ident)
 case class Import(ident: Ident)
 case class Export(ident: Ident)
 
-case class Wit(entries: (World | Interface | Package)*)
-enum Primitive:
-  case Bool, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64, Char, String
-  case List(elements: Primitive)
-  case Option(element: Primitive)
-  case Result(success: Primitive, failure: Primitive)
-  case Tuple(elements: Primitive*)
-  case Record(fields: (Ident, Primitive)*)
-  case Variant(variants: (Ident, Optional[Primitive])*)
-  case Enum(variants: Ident*)
-  case Resource(interface: Interface)
-  case Alias(name: Ident)
-
-extension (context: StringContext) def w(): Ident = Ident(context.parts.head.tt.cut(t"-"))
-
 object Wit:
   given aggregable: Wit is Aggregable by Data = parse(_)
 
@@ -190,3 +175,18 @@ object Wit:
 
     whitespace()
     Wit(topLevel()*)
+
+case class Wit(entries: (World | Interface | Package)*)
+enum Primitive:
+  case Bool, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64, Char, String
+  case List(elements: Primitive)
+  case Option(element: Primitive)
+  case Result(success: Primitive, failure: Primitive)
+  case Tuple(elements: Primitive*)
+  case Record(fields: (Ident, Primitive)*)
+  case Variant(variants: (Ident, Optional[Primitive])*)
+  case Enum(variants: Ident*)
+  case Resource(interface: Interface)
+  case Alias(name: Ident)
+
+extension (context: StringContext) def w(): Ident = Ident(context.parts.head.tt.cut(t"-"))

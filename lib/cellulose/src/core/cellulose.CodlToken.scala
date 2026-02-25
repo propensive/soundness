@@ -38,14 +38,6 @@ import proscenium.*
 import spectacular.*, affirmations.trueFalse
 import zephyrine.*
 
-enum CodlToken:
-  case Indent, Peer, Blank, Argument
-  case Outdent(n: Int)
-  case Item(text: Text, line: Int, col: Int, block: Boolean = false)
-  case Comment(text: Text, line: Int, col: Int)
-  case Error(error: ParseError)
-  case Body(stream: Stream[Char])
-
 object CodlToken:
   given inspectable: CodlToken is Inspectable =
     case Indent                       => t"Indent"
@@ -57,3 +49,11 @@ object CodlToken:
     case Item(text, line, col, block) => t"Item($text, $line, $col, $block)"
     case Comment(text, line, col)     => t"Comment($text, $line, $col)"
     case Error(error)                 => t"Error(${error.message})"
+
+enum CodlToken:
+  case Indent, Peer, Blank, Argument
+  case Outdent(n: Int)
+  case Item(text: Text, line: Int, col: Int, block: Boolean = false)
+  case Comment(text: Text, line: Int, col: Int)
+  case Error(error: ParseError)
+  case Body(stream: Stream[Char])

@@ -51,25 +51,6 @@ import scala.compiletime.*
 
 import java.util as ju
 
-case class Sheet
-  ( rows:    Stream[Dsv],
-    format:  Optional[DsvFormat]    = Unset,
-    columns: Optional[IArray[Text]] = Unset ):
-
-  def as[value: Decodable in Dsv]: Stream[value] tracks CellRef = rows.map(_.as[value])
-
-  override def hashCode: Int =
-    (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
-      ju.Arrays.hashCode(array.mutable(using Unsafe))
-
-  override def equals(that: Any): Boolean = that.asMatchable match
-    case dsv: Sheet =>
-      dsv.rows == rows && dsv.format == format && columns.lay(dsv.columns == Unset): columns =>
-        dsv.columns.lay(false)(columns.sameElements(_))
-
-    case _ =>
-      false
-
 object Sheet:
   private enum State:
     case Fresh, Quoted, DoubleQuoted
@@ -188,3 +169,22 @@ object Sheet:
           case char =>
             builder.put(char)
             recur(content, index + 1, column, cells, builder, state, headings)
+
+case class Sheet
+  ( rows:    Stream[Dsv],
+    format:  Optional[DsvFormat]    = Unset,
+    columns: Optional[IArray[Text]] = Unset ):
+
+  def as[value: Decodable in Dsv]: Stream[value] tracks CellRef = rows.map(_.as[value])
+
+  override def hashCode: Int =
+    (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
+      ju.Arrays.hashCode(array.mutable(using Unsafe))
+
+  override def equals(that: Any): Boolean = that.asMatchable match
+    case dsv: Sheet =>
+      dsv.rows == rows && dsv.format == format && columns.lay(dsv.columns == Unset): columns =>
+        dsv.columns.lay(false)(columns.sameElements(_))
+
+    case _ =>
+      false

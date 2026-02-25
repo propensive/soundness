@@ -46,11 +46,6 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 
-case class TarRef(descent: List[Name[InvalidTarNames]]):
-  def parent: Optional[TarRef] = descent match
-    case Nil       => Unset
-    case _ :: tail => TarRef(tail)
-
 object TarRef:
   def apply(text: Text)
     ( using pathError:  Tactic[PathError],
@@ -77,3 +72,8 @@ object TarRef:
     (root, descent) => TarRef(descent)
 
   given showable: TarRef is Showable = _.descent.reverse.map(_.render).join(t"/")
+
+case class TarRef(descent: List[Name[InvalidTarNames]]):
+  def parent: Optional[TarRef] = descent match
+    case Nil       => Unset
+    case _ :: tail => TarRef(tail)

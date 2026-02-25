@@ -44,10 +44,6 @@ import prepositional.*
 import proscenium.*
 import vacuous.*
 
-trait Property extends Typeclass, Topical:
-  type Self <: String
-  def read(value: Optional[Text], property: Text): Topic
-
 object Property:
   case class Access[name <: String](property: String) extends Dynamic:
     def selectDynamic(key: String): Access[name+"."+key.type] =
@@ -155,3 +151,7 @@ object Property:
 
     (value, name) =>
       decoder.decoded(value.lest(PropertyError(name)))
+
+trait Property extends Typeclass, Topical:
+  type Self <: String
+  def read(value: Optional[Text], property: Text): Topic

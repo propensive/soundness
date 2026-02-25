@@ -32,6 +32,9 @@
                                                                                                   */
 package kaleidoscope
 
+object GlobToken:
+  private val needsEscaping: Set[Char] = "\\.[]{}()<>*+-=!?^$|".to(Set)
+
 enum GlobToken:
   case Star, Globstar, OneChar
   case Exact(char: Char)
@@ -56,6 +59,3 @@ enum GlobToken:
 
     case Specific(chars, inverse) =>
       chars.flatMap(Exact(_).regex).mkString(s"[${if inverse then "^" else ""}", "", "]")
-
-object GlobToken:
-  private val needsEscaping: Set[Char] = "\\.[]{}()<>*+-=!?^$|".to(Set)

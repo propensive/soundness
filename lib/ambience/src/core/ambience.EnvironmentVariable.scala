@@ -41,11 +41,6 @@ import prepositional.*
 import proscenium.*
 import vacuous.*
 
-trait EnvironmentVariable[alias <: Label, +variable]:
-  inline def defaultName: Text = name.or(valueOf[alias].tt.uncamel.snake.upper)
-  def name: Optional[Text] = Unset
-  def read(value: Text): variable
-
 object EnvironmentVariable extends EnvironmentVariable2:
   given path: [path: Instantiable across Paths from Text] => (system: System)
   =>  EnvironmentVariable["path", List[path]] =
@@ -151,3 +146,8 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given lang: EnvironmentVariable["lang", Text] = identity(_)
   given display: EnvironmentVariable["display", Text] = identity(_)
   given term: EnvironmentVariable["term", Text] = identity(_)
+
+trait EnvironmentVariable[alias <: Label, +variable]:
+  inline def defaultName: Text = name.or(valueOf[alias].tt.uncamel.snake.upper)
+  def name: Optional[Text] = Unset
+  def read(value: Text): variable

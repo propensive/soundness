@@ -44,14 +44,6 @@ import scala.runtime.coverage.*
 
 import java.io.*
 
-case class Coverage(path: Text, spec: IArray[Juncture], oldHits: Set[Int], hits: Set[Int]):
-  lazy val structure: Map[Text, List[Surface]] =
-    val index: Int = spec.lastIndexWhere(_.id == 0)
-    spec.to(List).drop(index).groupBy(_.path).map: (path, junctures) =>
-      path -> Surface.collapse(junctures.sortBy(-_.end).sortBy(_.start), Nil)
-
-    . to(Map)
-
 object Coverage:
   def apply(): Option[Coverage] = currentDir.map: dir =>
     val currentFile = Invoker.measurementFile(dir.s)
@@ -98,3 +90,11 @@ object Coverage:
       ids(id.toInt) = true
 
     ids.to(Set)
+
+case class Coverage(path: Text, spec: IArray[Juncture], oldHits: Set[Int], hits: Set[Int]):
+  lazy val structure: Map[Text, List[Surface]] =
+    val index: Int = spec.lastIndexWhere(_.id == 0)
+    spec.to(List).drop(index).groupBy(_.path).map: (path, junctures) =>
+      path -> Surface.collapse(junctures.sortBy(-_.end).sortBy(_.start), Nil)
+
+    . to(Map)

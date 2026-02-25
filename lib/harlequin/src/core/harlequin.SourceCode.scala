@@ -44,28 +44,6 @@ import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
 
 import scala.collection.mutable as scm
 
-case class SourceCode
-  ( language: ProgrammingLanguage,
-    offset:   Int,
-    lines:    IArray[List[SourceToken]],
-    focus:    Optional[((Int, Int), (Int, Int))] = Unset ):
-
-  def lastLine: Int = offset + lines.length - 1
-  def apply(line: Int): List[SourceToken] = lines(line - offset)
-
-  def extract(range: CodeRange): SourceCode =
-    val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))
-    if range.startLine != range.endLine
-    then fragment(range.startLine, (range.endLine + 2).min(lastLine), focus)
-    else fragment(range.startLine, (range.endLine + 1).min(lastLine), focus)
-
-
-  def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
-  :   SourceCode =
-
-    SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)
-
-
 object SourceCode:
   private def accent(token: Int): Accent =
     if token <= 2 then Accent.Error
@@ -197,3 +175,25 @@ object SourceCode:
           ()
 
       traverseChildren(tree)
+
+
+case class SourceCode
+  ( language: ProgrammingLanguage,
+    offset:   Int,
+    lines:    IArray[List[SourceToken]],
+    focus:    Optional[((Int, Int), (Int, Int))] = Unset ):
+
+  def lastLine: Int = offset + lines.length - 1
+  def apply(line: Int): List[SourceToken] = lines(line - offset)
+
+  def extract(range: CodeRange): SourceCode =
+    val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))
+    if range.startLine != range.endLine
+    then fragment(range.startLine, (range.endLine + 2).min(lastLine), focus)
+    else fragment(range.startLine, (range.endLine + 1).min(lastLine), focus)
+
+
+  def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
+  :   SourceCode =
+
+    SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)

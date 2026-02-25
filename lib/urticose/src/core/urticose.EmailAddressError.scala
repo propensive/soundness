@@ -35,9 +35,6 @@ package urticose
 import anticipation.*
 import fulminate.*
 
-case class EmailAddressError(reason: EmailAddressError.Reason)(using Diagnostics)
-extends Error(m"the email address is not valid because $reason")
-
 object EmailAddressError:
   enum Reason:
     case Empty
@@ -71,3 +68,6 @@ object EmailAddressError:
         error match
           case error: IpAddressError => m"the domain is not a valid IP address: ${error.message}"
           case error: HostnameError  => m"the domain is not a valid hostname: ${error.message}"
+
+case class EmailAddressError(reason: EmailAddressError.Reason)(using Diagnostics)
+extends Error(m"the email address is not valid because $reason")
