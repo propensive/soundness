@@ -76,6 +76,7 @@ object Bundler:
     val manifest =
       main.let(MainClass(_)).let: main =>
         Manifest(ManifestVersion(()), CreatedBy(t"Soundness"), main)
+
       . or:
           Manifest(ManifestVersion(()), CreatedBy(t"Soundness"))
 

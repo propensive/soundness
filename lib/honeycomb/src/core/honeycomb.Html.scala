@@ -236,6 +236,7 @@ object Html extends Tag.Container
       val tagContent = if attributes.nil then t"" else
         attributes.map:
           case (key, value) => value.lay(key) { value => t"""$key="$value"""" }
+
         . join(t" ", t" ", t"")
 
       t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
@@ -550,6 +551,7 @@ object Html extends Tag.Container
           val key2 = if foreign then foreignKey(cursor.mark) else
             key(cursor.mark, dom.attributes).tap: key =>
               if !key.targets(tag) then fail(InvalidAttributeUse(key.label, tag))
+
             . label
 
           if entries.has(key2) then fail(DuplicateAttribute(key2))

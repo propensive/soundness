@@ -204,6 +204,7 @@ object Http:
       val params: Text =
         request.query.values.map: (key, value) =>
           t"$key = \"$value\""
+
         . join(t"\n          ")
 
       ListMap[Text, Text](
@@ -306,6 +307,7 @@ object Http:
     lazy val textCookies: Map[Text, Text] =
       headers.cookie.flatMap: cookie =>
         cookie.bi.map(_.name -> _.value)
+
       . to(Map)
 
 

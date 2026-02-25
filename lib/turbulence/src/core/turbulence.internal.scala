@@ -79,6 +79,7 @@ object internal:
           aggregableText.let: aggregable =>
             decoder.let: decoder =>
               '{$aggregable.aggregate($decoder.decoded($streamable.stream($source)))}
+
     . or:
         streamableText.let: streamable =>
           aggregableData.let: aggregable =>
@@ -171,16 +172,19 @@ object internal:
 
     Expr.summon[source is Streamable by operand].optional.let: streamable =>
       '{$streamable.stream($source)}
+
     . or:
         if text && streamableData.present then decoder.let: decoder =>
           '{$decoder.decoded(${streamableData.vouch}.stream($source))}.absolve match
             case '{$stream: Stream[`operand`]} => stream
+
         . or:
             halt(m"can not stream ${name[source]} as ${name[Text]} without a ${name[CharDecoder]}")
 
         else if bytes && streamableText.present then encoder.let: encoder =>
           '{$encoder.encoded(${streamableText.vouch}.stream($source))}.absolve match
             case '{$stream: Stream[`operand`]} => stream
+
         . or:
             halt(m"can not stream ${name[source]} as ${name[Data]} without a ${name[CharEncoder]}")
 

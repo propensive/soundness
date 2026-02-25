@@ -118,6 +118,7 @@ package interpreters:
                   -> (key.copy(format = Argument.Format.FlagSuffix) :: values)
 
             else List(key -> values)
+
           . to(Map)
 
         val focus2 = current.let: current =>

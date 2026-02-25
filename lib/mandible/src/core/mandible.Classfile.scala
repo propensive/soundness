@@ -64,6 +64,7 @@ class Classfile(data: Data):
     model.attributes.nn.iterator.nn.asScala.to(List).collect:
       case attribute: jlca.SourceFileAttribute =>
         attribute.sourceFile().nn.stringValue.nn.tt
+
     . prim
 
   class Method(model: jlc.MethodModel):

@@ -129,6 +129,7 @@ object Completions:
       case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
       case NameError(_, _, _) => InstallError(InstallError.Reason.Environment)
       case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
+
     . within:
         val scriptPath = sh"sh -c 'command -v ${entrypoint.script}'".exec[Text]()
         val command: Text = entrypoint.script
@@ -146,6 +147,7 @@ object Completions:
               val dirs =
                 dirNames.filter(_.trim != t"").map: dir =>
                   safely(dir.decode[Path on Linux])
+
                 . compact
 
               install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs)

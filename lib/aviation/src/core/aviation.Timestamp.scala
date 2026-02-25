@@ -88,6 +88,7 @@ case class Timestamp(date: Date, time: Clockface):
         time.minute,
         time.second,
         time.nanos )
+
     . nn
 
   def instant(using timezone: Timezone, calendar: RomanCalendar): Instant =

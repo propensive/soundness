@@ -157,6 +157,7 @@ object internal extends protointernal:
           case Field(_) =>
             value.list.flatMap(_.children).map: node =>
               decodable.decoded(Codl(List(CodlDoc(node))))
+
             . to(Set)
 
           case struct: Struct =>

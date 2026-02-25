@@ -136,5 +136,6 @@ object internal:
                 +e"\e[38;5;208m$Italic(${stenography.internal.name[target]})\e[0m\n",
                 e"\n",
                 e"\n" )
+
           . render(termcapDefinitions.xterm256)
           . s

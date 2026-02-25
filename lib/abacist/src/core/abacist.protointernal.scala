@@ -107,6 +107,7 @@ object protointernal extends anteprotointernal:
       distributive[units](_.components.map(_(1)).to(List)): (value, parts) =>
         parts.zip(value.components.map(_(0))).map: (number, units) =>
           t"$number $units"
+
         . join(t", ")
 
 

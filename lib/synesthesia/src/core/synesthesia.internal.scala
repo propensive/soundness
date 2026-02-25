@@ -332,16 +332,19 @@ object internal:
       val about: Expr[Optional[Text]] =
         allAnnotations.find(_.tpe.typeSymbol == aboutType).map: annotation =>
           '{${annotation.asExprOf[about]}.text}
+
         . getOrElse('{Unset})
 
       val title: Expr[Optional[Text]] =
         allAnnotations.find(_.tpe.typeSymbol == titleType).map: annotation =>
           '{${annotation.asExprOf[title]}.text}
+
         . getOrElse('{Unset})
 
       val ui: Expr[Optional[Text]] =
         allAnnotations.find(_.tpe.typeSymbol == uiType).map: annotation =>
           '{${annotation.asExprOf[ui]}.uri}
+
         . getOrElse('{Unset})
 
       val paramNames = method.paramSymss.head.map: param =>
@@ -403,11 +406,13 @@ object internal:
       val about: Expr[Optional[Text]] =
         allAnnotations.find(_.tpe.typeSymbol == aboutType).map: annotation =>
           '{${annotation.asExprOf[about]}.text}
+
         . getOrElse('{Unset})
 
       val title: Expr[Optional[Text]] =
         allAnnotations.find(_.tpe.typeSymbol == titleType).map: annotation =>
           '{${annotation.asExprOf[title]}.text}
+
         . getOrElse('{Unset})
 
       val params =
@@ -418,14 +423,17 @@ object internal:
             val title: Expr[Optional[Text]] =
               annotations.find(_.tpe.typeSymbol == titleType).map: annotation =>
                 '{${annotation.asExprOf[title]}.text}
+
               . getOrElse('{Unset})
 
             val about: Expr[Optional[Text]] =
               allAnnotations.find(_.tpe.typeSymbol == aboutType).map: annotation =>
                 '{${annotation.asExprOf[about]}.text}
+
               . getOrElse('{Unset})
 
             '{Mcp.PromptArgument(${Expr(param.name.tt)}, $title, $about)}
+
         . getOrElse(Nil)
 
       ' {
@@ -446,11 +454,13 @@ object internal:
       val about: Expr[Optional[Text]] =
         allAnnotations.find(_.tpe.typeSymbol == aboutType).map: annotation =>
           '{${annotation.asExprOf[about]}.text}
+
         . getOrElse('{Unset})
 
       val title: Expr[Optional[Text]] =
         allAnnotations.find(_.tpe.typeSymbol == titleType).map: annotation =>
           '{${annotation.asExprOf[title]}.text}
+
         . getOrElse('{Unset})
 
       if method.paramSymss.length > 0 then halt(m"MCP resource methods cannot have any parameters")

@@ -115,6 +115,7 @@ object Subcompiler:
               case error :: tail =>
                 regions.find: (start, end) =>
                   error.point >= start && error.point <= end
+
                 . match
                     case None                    => recompile(tail, done, source)
                     case Some(region@(from, to)) =>

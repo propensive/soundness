@@ -74,6 +74,7 @@ object Lexicon:
       children.collect:
         case (key, tree) if (distance - radius) <= key <= (distance + radius) =>
           tree.search(query, radius)
+
       . to(Set)
       . flatten
       ++ (if distance <= radius then Set(value) else Set())

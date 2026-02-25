@@ -230,6 +230,7 @@ object internal:
             tree.asExpr match
               case '{$term: tpe} => TypeRepr.of[tpe].show
               case _             => Unset
+
           . or(t"")
 
         tree match

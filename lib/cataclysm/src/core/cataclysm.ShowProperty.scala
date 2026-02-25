@@ -62,6 +62,7 @@ object ShowProperty:
         ( property.show(tuple(0)),
           property2.show(tuple(1)),
           property3.show(tuple(2)) )
+
       . join(t" ")
 
 
@@ -78,6 +79,7 @@ object ShowProperty:
           property2.show(tuple(1)),
           property3.show(tuple(2)),
           property4.show(tuple(3)) )
+
       . join(t" ")
 
 

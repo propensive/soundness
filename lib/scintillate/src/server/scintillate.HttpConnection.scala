@@ -68,6 +68,7 @@ object HttpConnection:
     val host = unsafely:
       Optional(uri.getHost).let(_.tt).or:
         exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName.nn.tt
+
       . decode[Hostname]
 
     lazy val in = exchange.getRequestBody.nn

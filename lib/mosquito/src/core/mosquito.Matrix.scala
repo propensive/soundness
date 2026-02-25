@@ -64,6 +64,7 @@ object Matrix:
           textElements(matrix.columns*row + column).pad(columnWidths(column), Rtl)
 
         . join(before, t" ", after)
+
       . join(t"\n")
 
   private type Constraint[rows <: Tuple, element] =

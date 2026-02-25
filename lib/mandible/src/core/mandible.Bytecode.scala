@@ -61,6 +61,7 @@ object Bytecode:
           line.line.let: line =>
             val source = e"${rgb"#88aabb"}(${bytecode.sourceFile.or(t"")})"
             e"$source:${rgb"#ddddbb"}(${line.show})"
+
           . or(e""),
         Column(e"")(_.offset.show.subscripts),
         Column(e"$Bold(Opcode)")(_.opcode.teletype),

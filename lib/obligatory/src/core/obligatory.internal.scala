@@ -116,6 +116,7 @@ object internal:
                                 ( "2.0",
                                   $encoder.encode(${application.asExprOf[result]}),
                                   request.id )
+
                               . json
                             }
 
@@ -215,6 +216,7 @@ object internal:
                         unsafely:
                           JsonRpc.notification($url, $methodName, json)
                             ( using $monitor, $codicil, $online )
+
                           . await()
                       }
                     . asTerm
@@ -227,6 +229,7 @@ object internal:
                               unsafely:
                                 JsonRpc.request($url, $methodName, json)
                                   ( using $monitor, $codicil, $online )
+
                                 . await()
                                 . decode[result](using $decoder)
                             }

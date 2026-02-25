@@ -48,6 +48,7 @@ object internal:
     val name: String = context.valueOrAbort.parts.head
     safely(name.tt.decode[Path on Posix]).let: path =>
       '{Path.of[Posix, %.type, Tuple](${Expr(path.root)}, ${Varargs(path.descent.map(Expr(_)))}*)}
+
     . or:
         safely(name.tt.decode[Path on Windows]).let: path =>
           val varargs = Varargs(path.descent.map(Expr(_)))
@@ -144,6 +145,7 @@ object internal:
                           case Left(_) => Unset
                   case Left(_) => Unset
               case Left(_) => Unset
+
             . or:
                 val depth = '{$target.depth - $base.depth}
                 val ascent = '{$subject.depth - $base.depth}
@@ -174,10 +176,12 @@ object internal:
 
     elements.map: string =>
       ConstantType(StringConstant(string)).asType
+
     . foldLeft(Type.of[EmptyTuple]: Type[? <: Tuple]): (tuple, element) =>
         tuple.absolve match
           case '[type tuple <: Tuple; tuple] => element.absolve match
             case '[element] => Type.of[element *: tuple]
+
     . absolve
     . match
         case '[type tuple <: Tuple; tuple] => TypeRepr.of[tuple]

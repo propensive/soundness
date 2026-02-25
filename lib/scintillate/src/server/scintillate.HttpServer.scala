@@ -58,6 +58,7 @@ extends RequestServable:
         recover:
           case StreamError(length) =>
             Log.warn(HttpServerEvent.BrokenStream(length))
+
         . within:
             connection.respond:
               try handler(using connection) catch case throwable: Throwable =>

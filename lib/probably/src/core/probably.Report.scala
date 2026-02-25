@@ -312,6 +312,7 @@ class Report(using Environment):
             val bars = List(ForestGreen -> covered, Goldenrod -> oldCovered, Brown -> notCovered)
 
             bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join )
+
       . tabulate(data).grid(columns).render.each(Out.println(_))
 
       Out.println(e"")

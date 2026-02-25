@@ -684,6 +684,7 @@ class Whatwg() extends Dom:
       Whatwg.membersOfType[honeycomb.Attribute]
       . foldLeft(sci.Map[Text, Attribute]()): (map, next) =>
           map.updated(next.label, map.at(next.label).let(_.merge(next)).or(next))
+
       . to(List)
 
     Dictionary(list*)

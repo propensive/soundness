@@ -72,6 +72,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
             val label2 = if pointer == Pointer.Self then Pointer(label) else pointer(label)
             val legend = label.uncamel.map(_.lower.capitalize).spaced
             context.fields(label2, legend, query(label), errors, formulation)
+
         . flatten
 
       List(Fieldset(Legend(legend): Html of Flow, Fragment(content*): Html of Flow))

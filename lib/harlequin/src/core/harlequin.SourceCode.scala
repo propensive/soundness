@@ -126,6 +126,7 @@ object SourceCode:
               Stream
                 ( SourceToken(line, trees(start, end).getOrElse(accent(token))),
                   SourceToken.Newline )
+
             . init
 
         unparsed #::: content #::: stream(end)

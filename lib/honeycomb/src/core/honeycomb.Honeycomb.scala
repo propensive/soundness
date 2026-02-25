@@ -347,6 +347,7 @@ object Honeycomb:
                       only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a tag
                       body
                     """
+
         . iterator
 
       def serialize(html: Html): Seq[Expr[Node]] = html match
@@ -475,6 +476,7 @@ object Honeycomb:
 
                     case _ =>
                       halt(m"unable to determine attribute key type")
+
                 . or(halt(m"unexpected type"))
 
     '{$tag.node($presets ++ ${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]

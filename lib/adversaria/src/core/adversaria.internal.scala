@@ -86,6 +86,7 @@ object internal:
       Expr.ofList:
         annotations.map(_.asExpr).collect:
             case '{$annotation: `operand`} => rebuild(annotation.asTerm)
+
         . compact
         . map(_.asExprOf[operand])
         . reverse
@@ -100,6 +101,7 @@ object internal:
         params2.flatMap: param =>
           if param.annotations.nil then Nil else
             List(param.name ->'{(${Expr(param.name)}.tt, ${matching(param.annotations)}.to(Set))})
+
         . to(Map)
 
       if fields.size == 1

@@ -94,6 +94,7 @@ object Tag:
 
     Container
       ( valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary )
+
     . of[label]
     . over[children]
     . in[dom]

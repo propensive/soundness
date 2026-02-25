@@ -114,6 +114,7 @@ object Dsv:
         val cells =
           fields(value):
             [field] => field => context.encode(field).data
+
           . to(List)
           . flatten
 

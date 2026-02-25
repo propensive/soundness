@@ -78,11 +78,13 @@ object Mcp:
       case error: ParseError =>
         Http.Response(Http.Ok):
           JsonRpc.error(-32700, t"Parse error: ${error.message}".show).json
+
         . mcpSessionId = id
 
       case error: JsonError =>
         Http.Response(Http.Ok):
           JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).json
+
         . mcpSessionId = id
 
     . within:

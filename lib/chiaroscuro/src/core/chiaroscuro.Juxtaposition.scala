@@ -73,12 +73,14 @@ object Juxtaposition:
             case (_, Same(char))            => e"${Bg(rgb"#111111")}(${rgb"#99ccff"}(${pad(char)}))"
             case (_, Different(char, _, _)) => e"${Bg(rgb"#003300")}(${pad(char)})"
             case _                          => e""
+
           . join
 
           val expected = comparison2.map:
             case (_, Same(char))            => e"${Bg(rgb"#111111")}(${rgb"#99ccff"}(${pad(char)}))"
             case (_, Different(_, char, _)) => e"${Bg(rgb"#660000")}(${pad(char)})"
             case _                          => e""
+
           . join
 
           val margin1 = topSum.show.superscripts.pad(4, Rtl, ' ')

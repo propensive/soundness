@@ -504,6 +504,7 @@ trait protointernal:
         UnitsMap:
           units.map.view.mapValues:
             case UnitPower(unit, power) => UnitPower(unit, power/2)
+
           . toMap
 
         . repr.get.asType
@@ -525,6 +526,7 @@ trait protointernal:
         UnitsMap:
           units.map.view.mapValues:
             case UnitPower(unit, power) => UnitPower(unit, power/3)
+
           . toMap
 
         . repr.get.asType

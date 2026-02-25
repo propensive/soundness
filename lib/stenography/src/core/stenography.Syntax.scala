@@ -99,6 +99,7 @@ object Syntax:
         bounds.length match
           case 1 => bounds(0)(1)
           case _ => Sequence('{', bounds.map(_(1)))
+
     . to(Map)
 
 

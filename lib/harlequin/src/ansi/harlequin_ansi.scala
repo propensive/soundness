@@ -77,6 +77,7 @@ package syntaxHighlighting:
       . let: focus =>
           val prefix = lineNo.show.pad(indent, Rtl)
           e"${Bg(rgb"#003333")}(${rgb"#99cc99"}($prefix)${rgb"#336666"}(┋))  $content"
+
       . or:
           val prefix = lineNo.show.pad(indent, Rtl)
           e"${Bg(rgb"#003333")}(${rgb"#99cc99"}($prefix)${rgb"#336666"}(┋)) $error$content"

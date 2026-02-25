@@ -413,6 +413,7 @@ object internal:
                   expr
                 case _ =>
                   halt(m"only a ${TypeRepr.of[Map[Text, Text]].show} can be applied in a tag body")
+
         . iterator
 
       def serialize(xml: Xml): Seq[Expr[Node]] = xml match
@@ -570,6 +571,7 @@ object internal:
 
                     case _ =>
                       halt(m"unable to determine attribute key type")
+
                 . or(halt(m"unexpected type"))
 
     '{$tag.node(${Expr.ofList(attributes)}.compact.to(Map))}.asExprOf[result]

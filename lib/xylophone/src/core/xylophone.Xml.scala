@@ -245,6 +245,7 @@ object Xml extends Tag.Container
       val tagContent = if attributes.nil then t"" else
         attributes.map:
           case (key, value) => t"""$key="$value""""
+
         . join(t" ", t" ", t"")
 
       if children.nil then t"<$tagname$tagContent/>"
@@ -450,6 +451,7 @@ object Xml extends Tag.Container
               val name = cursor.grab(mark, cursor.mark)
               cursor.cue(mark)
               fail(UnknownAttribute(name))
+
           . or:
               XmlAttribute(cursor.grab(mark, cursor.mark), Set(), true)
 
@@ -513,6 +515,7 @@ object Xml extends Tag.Container
             key(cursor.mark, schema.attributes.unless(schema.freeform)).tap: key =>
               if !schema.freeform && !key.targets(tag)
               then fail(InvalidAttributeUse(key.label, tag))
+
             . label
 
           if entries.has(key2) then fail(DuplicateAttribute(key2))

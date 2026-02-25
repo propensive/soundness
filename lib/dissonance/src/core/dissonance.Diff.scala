@@ -171,6 +171,7 @@ case class Diff[element](edits: Edit[element]*):
     edits.runsBy:
       case Par(_, _, _) => true
       case _            => false
+
     . map:
         case xs@(Par(_, _, _) :: _) =>
           Region.Unchanged(xs.collect { case par: Par[element] => par })
