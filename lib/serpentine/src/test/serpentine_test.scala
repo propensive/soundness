@@ -130,7 +130,7 @@ object Tests extends Suite(m"Serpentine Benchmarks"):
         def receive(path: into[Path on Linux]): Unit = ()
         receive(% / "foo" / "bar")
 
-      .assert()
+      . assert()
 
       test(m"Can't construct invalid path"):
         demilitarize:

@@ -86,16 +86,16 @@ object Hypotenuse2:
       !(char >= '0' && char <= '9') && !(char >= 'a' && char <= 'f') && char != ' ' && char != '\n'
 
     . match
-      case -1 => ()
+        case -1 => ()
 
-      case index =>
-        val position =
-          Position
-            ( startPosition.sourceFile,
-              startPosition.start + index,
-              startPosition.start + index + 1 )
+        case index =>
+          val position =
+            Position
+              ( startPosition.sourceFile,
+                startPosition.start + index,
+                startPosition.start + index + 1 )
 
-        halt(m"${nibbles(index)} is not a valid hexadecimal character", position)
+          halt(m"${nibbles(index)} is not a valid hexadecimal character", position)
 
     val nibbles3 = nibbles2.filterNot { ch => ch == ' ' || ch == '\n' }
 

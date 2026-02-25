@@ -84,59 +84,59 @@ object Tests extends Suite(m"Metamorphose tests"):
       test(m"(3, 2, 1, 0) permutation")(Factoradic(List(3, 2, 1, 0))).assert(_ == Factoradic(23))
 
       test(m"six-element reversal permutation")(Factoradic(List(5, 4, 3, 2, 1, 0)))
-       .assert(_ == Factoradic(719))
+       . assert(_ == Factoradic(719))
 
       test(m"ensure that an error occurs for out-of-range bases"):
         capture[PermutationError](Factoradic(List(2, 1)))
-      .assert(_ == PermutationError(PermutationError.Reason.BaseRange(2, 2)))
+      . assert(_ == PermutationError(PermutationError.Reason.BaseRange(2, 2)))
 
       test(m"error for complex out-of-range base"):
         capture[PermutationError](Factoradic(List(0, 0, 8, 3, 0, 1, 0)))
-      .assert(_ == PermutationError(PermutationError.Reason.BaseRange(8, 5)))
+      . assert(_ == PermutationError(PermutationError.Reason.BaseRange(8, 5)))
 
     suite(m"Factoradic decoding"):
       test(m"Check distinctness of factoradic expansions"):
         (0 to 1000).map(Factoradic(_).expand).to(Set).size
-      .assert(_ == 1001)
+      . assert(_ == 1001)
 
     suite(m"Permutations"):
       test(m"Construct an identity permutation"):
         Permutation(Vector(0, 1, 2, 3, 4, 5))
-      .assert(_ == Permutation(Factoradic(0)))
+      . assert(_ == Permutation(Factoradic(0)))
 
       test(m"Construct a reversal permutation"):
         Permutation(Vector(5, 4, 3, 2, 1, 0))
-      .assert(_ == Permutation(Factoradic(719)))
+      . assert(_ == Permutation(Factoradic(719)))
 
       test(m"Reverse a list of numbers"):
         Permutation(Vector(5, 4, 3, 2, 1, 0))(List("one", "two", "three", "four", "five", "six"))
-      .assert(_ == List("six", "five", "four", "three", "two", "one"))
+      . assert(_ == List("six", "five", "four", "three", "two", "one"))
 
       test(m"Reorder a list of numbers"):
         Permutation(Vector(3, 1, 4, 2, 0, 5))(List("zero", "one", "two", "three", "four", "five"))
-      .assert(_ == List("three", "one", "four", "two", "zero", "five"))
+      . assert(_ == List("three", "one", "four", "two", "zero", "five"))
 
       test(m"Check duplicate indexes are caught"):
         capture[PermutationError](Permutation(Vector(3, 1, 4, 2, 3, 5)))
-      .assert(_ == PermutationError(PermutationError.Reason.DuplicateIndex(3, 4)))
+      . assert(_ == PermutationError(PermutationError.Reason.DuplicateIndex(3, 4)))
 
       test(m"Check negative indexes are caught"):
         capture[PermutationError](Permutation(Vector(3, 1, 4, 2, -3, 5)))
-      .assert(_ == PermutationError(PermutationError.Reason.InvalidIndex(-3, 5)))
+      . assert(_ == PermutationError(PermutationError.Reason.InvalidIndex(-3, 5)))
 
       test(m"Check high indexes are caught"):
         capture[PermutationError](Permutation(Vector(3, 1, 4, 6, 0, 5)))
-      .assert(_ == PermutationError(PermutationError.Reason.InvalidIndex(6, 5)))
+      . assert(_ == PermutationError(PermutationError.Reason.InvalidIndex(6, 5)))
 
       test(m"Check input is long enough"):
         val permutation = Permutation(Vector(3, 1, 4, 2, 0, 5))
         capture[PermutationError](permutation(List(1, 2, 3)))
-      .assert(_ == PermutationError(PermutationError.Reason.TooShort(3, 6)))
+      . assert(_ == PermutationError(PermutationError.Reason.TooShort(3, 6)))
 
       test(m"Check uniqueness of permutations"):
         val list = List("one", "two", "three", "four", "five", "six", "seven")
         Permutation.bySize(7).map(_(list)).to(Set).size
-      .assert(_ == 5040)
+      . assert(_ == 5040)
 
       Permutation.bySize(6).each: permutation =>
         val list = List("one", "two", "three", "four", "five", "six")
@@ -144,7 +144,7 @@ object Tests extends Suite(m"Metamorphose tests"):
           val applied = permutation(list)
           val inversion = permutation.inverse
           inversion(applied)
-        .assert(_ == list)
+        . assert(_ == list)
 
 
       val indices = Vector(6, 2, 1, 0, 3, 5, 4)
@@ -152,4 +152,4 @@ object Tests extends Suite(m"Metamorphose tests"):
       for i <- 0 to 6 do
         test(m"Apply permutation indexwise"):
           permutation(i)
-        .assert(_ == indices(i))
+        . assert(_ == indices(i))

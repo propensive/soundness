@@ -54,66 +54,66 @@ object Tests extends Suite(m"Villainy tests"):
 
     test(m"Get a text value"):
       record.name
-    .assert(_ == t"Jim")
+    . assert(_ == t"Jim")
 
     test(m"Get an integer value"):
       record.age
-    .assert(_ == Unset)
+    . assert(_ == Unset)
 
     test(m"Get an array value"):
       record.children
-    .assert()
+    . assert()
 
     test(m"Get the head of an array"):
       record.children.head
-    .assert()
+    . assert()
 
     test(m"Get a nested value"):
       record.children.head.weight
-    .assert(_ == 0.8)
+    . assert(_ == 0.8)
 
     test(m"A bad pattern-checked value throws an exception"):
       capture[JsonSchemaError]:
         record.children.head.color
-    .assert(_ == JsonSchemaError(JsonSchemaError.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}")))
+    . assert(_ == JsonSchemaError(JsonSchemaError.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}")))
 
     test(m"Get a color"):
       record.children(1).color
-    .assert(_ == t"#ff0000")
+    . assert(_ == t"#ff0000")
 
     test(m"Get a nested item value"):
       record.sub.date
-    .assert(_ == t"11/12/20")
+    . assert(_ == t"11/12/20")
 
     test(m"Get a regex value"):
       record.pattern.matches(t"acb")
-    .assert(identity)
+    . assert(identity)
 
     test(m"Get some values in a list"):
       capture:
         record.children.map { elem => elem.height }.to(List)
-    .assert(_ == BoundsError(100, 1, 99))
+    . assert(_ == BoundsError(100, 1, 99))
 
     test(m"Get a boolean value"):
       record.active
-    .assert(_ == true)
+    . assert(_ == true)
 
     test(m"Get an absent optional boolean value"):
       record.verified
-    .assert(_ == Unset)
+    . assert(_ == Unset)
 
     test(m"Get an absent optional string value"):
       record.nickname
-    .assert(_ == Unset)
+    . assert(_ == Unset)
 
     test(m"Get an absent optional number value"):
       record.score
-    .assert(_ == Unset)
+    . assert(_ == Unset)
 
     test(m"Get an email address"):
       record.email
-    .assert(_ == email"test@example.com")
+    . assert(_ == email"test@example.com")
 
     test(m"Get an optional email address"):
       record.maybeEmail
-    .assert(_ == Unset)
+    . assert(_ == Unset)

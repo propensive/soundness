@@ -177,8 +177,8 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
       case Cancelled                   => abort(AsyncError(Reason.Cancelled))
 
     . match
-      case Delivered(_, result) => result
-      case other                => panic(m"impossible state")
+        case Delivered(_, result) => result
+        case other                => panic(m"impossible state")
 
 
   def await[abstractable: Abstractable across Durations to Long](duration: abstractable)
@@ -219,8 +219,8 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
             case state                                => state
 
           . match
-            case Cancelled => workers.each { child => if child.daemon then child.cancel() }
-            case _         => ()
+              case Cancelled => workers.each { child => if child.daemon then child.cancel() }
+              case _         => ()
 
         case error: Throwable =>
           state.set(Failed(error))

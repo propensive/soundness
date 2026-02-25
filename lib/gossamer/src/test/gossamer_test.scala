@@ -1001,42 +1001,42 @@ object Tests extends Suite(m"Gossamer Tests"):
       test(m"One-entry dictionary size"):
         val dictionary = Dictionary(t"color" -> 0)
         dictionary.size
-      .assert(_ == 1)
+      . assert(_ == 1)
 
       test(m"One-entry dictionary lookup"):
         val dictionary = Dictionary(t"color" -> 0)
         dictionary(t"color")
-      .assert(_ == 0)
+      . assert(_ == 0)
 
       test(m"One-entry dictionary absent lookup"):
         val dictionary = Dictionary(t"color" -> 0)
         dictionary(t"colo")
-      .assert(_ == Unset)
+      . assert(_ == Unset)
 
       test(m"One-entry dictionary absent lookup 2"):
         val dictionary = Dictionary(t"color" -> 0)
         dictionary(t"colors")
-      .assert(_ == Unset)
+      . assert(_ == Unset)
 
       test(m"Two-entry dictionary lookups"):
         val dictionary = Dictionary(t"color" -> "COLOR", t"size" -> "SIZE")
         (dictionary(t"color"), dictionary(t"size"))
-      .assert(_ == ("COLOR", "SIZE"))
+      . assert(_ == ("COLOR", "SIZE"))
 
       test(m"Two-entry dictionary lookups with overlap"):
         val dictionary = Dictionary(t"color" -> "COLOR", t"change" -> "CHANGE")
         (dictionary(t"color"), dictionary(t"change"))
-      .assert(_ == ("COLOR", "CHANGE"))
+      . assert(_ == ("COLOR", "CHANGE"))
 
       test(m"Two-entry dictionary lookups with more overlap"):
         val dictionary = Dictionary(t"color" -> "COLOR", t"colors" -> "COLORS")
         (dictionary(t"color"), dictionary(t"colors"))
-      .assert(_ == ("COLOR", "COLORS"))
+      . assert(_ == ("COLOR", "COLORS"))
 
       test(m"Two-entry dictionary lookups with more overlap, reverse order"):
         val dictionary = Dictionary(t"colors" -> "COLORS", t"color" -> "COLOR")
         (dictionary(t"color"), dictionary(t"colors"))
-      .assert(_ == ("COLOR", "COLORS"))
+      . assert(_ == ("COLOR", "COLORS"))
 
       test(m"Large dictionary size"):
         val dictionary = Dictionary(words.map { word => (word, word.upper) }*)

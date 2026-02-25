@@ -48,11 +48,11 @@ object Tests extends Suite(m"Kaleidoscope tests"):
 
         test(m"Parse (aaa)")(Regex.parse(List(t"(aaa)")))
         . assert:
-          _ == Regex(t"(aaa)", List(Group(1, 4, 5)))
+            _ == Regex(t"(aaa)", List(Group(1, 4, 5)))
 
         test(m"Parse (aa)bb")(Regex.parse(List(t"(aa)bb")))
         . assert:
-          _ == Regex(t"(aa)bb", List(Group(1, 3, 4)))
+            _ == Regex(t"(aa)bb", List(Group(1, 3, 4)))
 
         test(m"Parse aa(bb)")(Regex.parse(List(t"aa(bb)")))
         . assert(_ == Regex(t"aa(bb)", List(Group(3, 5, 6))))
@@ -79,31 +79,31 @@ object Tests extends Suite(m"Kaleidoscope tests"):
           Regex.parse(List(t"aa(bb(cc)*dd)ee"))
 
         . assert:
-          _ == Regex(t"aa(bb(cc)*dd)ee", List(Group(3, 12, 13, List(Group(6, 8, 10, Nil, AtLeast(0))))))
+            _ == Regex(t"aa(bb(cc)*dd)ee", List(Group(3, 12, 13, List(Group(6, 8, 10, Nil, AtLeast(0))))))
 
         test(m"Parse aa(bb)+cc(dd)ee"):
           Regex.parse(List(t"aa(bb)+cc(dd)ee"))
 
         . assert:
-          _ == Regex(t"aa(bb)+cc(dd)ee", List(Group(3, 5, 7, Nil, AtLeast(1)), Group(10, 12, 13)))
+            _ == Regex(t"aa(bb)+cc(dd)ee", List(Group(3, 5, 7, Nil, AtLeast(1)), Group(10, 12, 13)))
 
         test(m"Parse aa(bb){4}cc(dd)ee"):
           Regex.parse(List(t"aa(bb){4}cc(dd)ee"))
 
         . assert:
-          _ == Regex(t"aa(bb){4}cc(dd)ee", List(Group(3, 5, 9, Nil, Exactly(4)), Group(12, 14, 15)))
+            _ == Regex(t"aa(bb){4}cc(dd)ee", List(Group(3, 5, 9, Nil, Exactly(4)), Group(12, 14, 15)))
 
         test(m"Parse aa(bb){4,}cc(dd)ee"):
           Regex.parse(List(t"aa(bb){4,}cc(dd)ee"))
 
         . assert:
-          _ == Regex(t"aa(bb){4,}cc(dd)ee", List(Group(3, 5, 10, Nil, AtLeast(4)), Group(13, 15, 16)))
+            _ == Regex(t"aa(bb){4,}cc(dd)ee", List(Group(3, 5, 10, Nil, AtLeast(4)), Group(13, 15, 16)))
 
         test(m"Parse aa(bb){4,6}cc(dd)ee"):
           Regex.parse(List(t"aa(bb){4,6}cc(dd)ee"))
 
         . assert:
-          _ == Regex(t"aa(bb){4,6}cc(dd)ee", List(Group(3, 5, 11, Nil, Between(4, 6)), Group(14, 16, 17)))
+            _ == Regex(t"aa(bb){4,6}cc(dd)ee", List(Group(3, 5, 11, Nil, Between(4, 6)), Group(14, 16, 17)))
 
         test(m"Parse aa(bb){14,16}ccddee"):
           Regex.parse(List(t"aa(bb){14,16}ccddee"))
@@ -113,7 +113,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
         test(m"Capture character class"):
           Regex.parse(List(t"w[aeiou]rld"))
 
-        .assert(_ == Regex(t"w[aeiou]rld", List(Group(2, 7, 8, Nil, Exactly(1), Greedy, false, true))))
+        . assert(_ == Regex(t"w[aeiou]rld", List(Group(2, 7, 8, Nil, Exactly(1), Greedy, false, true))))
 
       suite(m"Parsing failures"):
         test(m"Fail to parse aa(bb){14,16ccddee"):

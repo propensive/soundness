@@ -82,14 +82,14 @@ object Tests extends Suite(m"Turbulence tests"):
           val stream = string.data.grouped(bs).to(Stream)
           val result = stream.read[Text]
           result.data.length
-        .assert(_ == string.data.length)
+        . assert(_ == string.data.length)
 
         test(m"roundtrip tests"):
           val stream = string.data.grouped(bs).to(Stream)
           val result = stream.read[Text]
 
           result
-        .assert(_ == string)
+        . assert(_ == string)
 
     val qbf = t"The quick brown fox\njumps over the lazy dog"
     val qbfData = qbf.data
@@ -113,67 +113,67 @@ object Tests extends Suite(m"Turbulence tests"):
     suite(m"Reading tests"):
       test(m"Stream Text"):
         qbf.stream[Text].join
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Stream Data"):
         qbf.stream[Data].reduce(_ ++ _).to(List)
-      .assert(_ == qbfData.to(List))
+      . assert(_ == qbfData.to(List))
 
       test(m"Read Text as Text"):
         qbf.read[Text]
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Read type as Text with Text and Byte Streamable"):
         Ref().read[Text]
-      .assert(_ == t"abcdef")
+      . assert(_ == t"abcdef")
 
       test(m"Read type as Data with Text and Byte Streamable"):
         Ref().read[Data].to(List)
-      .assert(_ == t"abcdef".data.to(List))
+      . assert(_ == t"abcdef".data.to(List))
 
       test(m"Read some type as Text with only Text Streamable instance"):
         Ref2().read[Text]
-      .assert(_ == t"abcdef")
+      . assert(_ == t"abcdef")
 
       test(m"Read some type as Data with only Text Streamable instance"):
         Ref2().read[Data].to(List)
-      .assert(_ == t"abcdef".data.to(List))
+      . assert(_ == t"abcdef".data.to(List))
 
       test(m"Read some type as Text with only Data Streamable instance"):
         Ref3().read[Text]
-      .assert(_ == t"abcdef")
+      . assert(_ == t"abcdef")
 
       test(m"Read some type as Data with only Data Streamable instance"):
         Ref3().read[Data].to(List)
-      .assert(_ == t"abcdef".data.to(List))
+      . assert(_ == t"abcdef".data.to(List))
 
       test(m"Read Text as Stream[Text]"):
         qbf.read[Stream[Text]].join
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Read Text as Data"):
         qbf.read[Data]
-      .assert(_.to(List) == qbfData.to(List))
+      . assert(_.to(List) == qbfData.to(List))
 
       test(m"Read Text as Stream[Data]"):
         qbf.read[Stream[Data]]
-      .assert(_.reduce(_ ++ _).to(List) == qbfData.to(List))
+      . assert(_.reduce(_ ++ _).to(List) == qbfData.to(List))
 
       test(m"Read Data as Text"):
         qbfData.read[Text]
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Read Data as Stream[Text]"):
         qbfData.read[Stream[Text]].join
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Read Data as Data"):
         qbfData.read[Data]
-      .assert(_.to(List) == qbfData.to(List))
+      . assert(_.to(List) == qbfData.to(List))
 
       test(m"Read Data as Stream[Data]"):
         qbfData.read[Stream[Data]]
-      .assert(_.reduce(_ ++ _).to(List) == qbfData.to(List))
+      . assert(_.reduce(_ ++ _).to(List) == qbfData.to(List))
 
       // test(m"Read Text as Lines"):
       //   qbf.read[Stream[Line]]
@@ -219,73 +219,73 @@ object Tests extends Suite(m"Turbulence tests"):
         val store = GeneralStore()
         qbf.writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Write Data to some reference with Text and Data instances"):
         val store = GeneralStore()
         qbfData.writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Write Stream[Text] with Text and Data instances"):
         val store = GeneralStore()
         Stream(qbf).writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Write Stream[Data] with Text and Data instances"):
         val store = GeneralStore()
         Stream(qbfData).writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Write Text to some reference with only a Data instance"):
         val store = ByteStore()
         qbf.writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Write Data to some reference with only a Data instance"):
         val store = ByteStore()
         qbfData.writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Write Stream[Text] with only Data instance"):
         val store = ByteStore()
         Stream(qbf).writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Write Stream[Data] with only Data instance"):
         val store = ByteStore()
         Stream(qbfData).writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Write Text to some reference with only a Text instance"):
         val store = TextStore()
         qbf.writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Write Data to some reference with only a Text instance"):
         val store = TextStore()
         qbfData.writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Write Stream[Text] with only Text instance"):
         val store = TextStore()
         Stream(qbf).writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
       test(m"Write Stream[Data] with only Text instance"):
         val store = TextStore()
         Stream(qbfData).writeTo(store)
         store()
-      .assert(_ == qbf)
+      . assert(_ == qbf)
 
     // suite(m"Appending tests"):
 
@@ -397,16 +397,16 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Check that two multiplexed streams contain all elements"):
         supervise(l1.multiplex(l2).to(Set))
-      .assert(_ == Set.range(1, 11))
+      . assert(_ == Set.range(1, 11))
 
       test(m"Multiplexed streams preserve first stream order"):
         supervise(l1.multiplex(l2).filter(_%2 == 0))
-      .assert(_ == l1)
+      . assert(_ == l1)
 
       for i <- 1 to 10
       do test(m"Multiplexed streams preserve second stream order"):
         supervise(l1.multiplex(l2).filter(_%2 == 1))
-      .assert(_ == l2)
+      . assert(_ == l2)
 
     suite(m"Compression tests"):
       test(m"Compress a single block with GZip"):

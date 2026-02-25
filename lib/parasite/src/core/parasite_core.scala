@@ -150,9 +150,9 @@ def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) 
       Perseverance.Prevail(evaluate(using surrender, persevere))
 
     . match
-      case Perseverance.Surrender      => abort(RetryError(attempt.n1))
-      case Perseverance.Prevail(value) => value
-      case Perseverance.Persevere      => recur(attempt + 1)
+        case Perseverance.Surrender      => abort(RetryError(attempt.n1))
+        case Perseverance.Prevail(value) => value
+        case Perseverance.Persevere      => recur(attempt + 1)
 
   recur(Prim)
 

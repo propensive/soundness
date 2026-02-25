@@ -70,10 +70,10 @@ object Authority:
                 raise(UrlError(value, colon + 1, Expected(Number))) yet 0
 
             . pipe:
-              Authority
-                ( value.segment((arobase + 1) till colon).decode[Hostname],
-                  value.keep(arobase.n0),
-                  _ )
+                Authority
+                  ( value.segment((arobase + 1) till colon).decode[Hostname],
+                    value.keep(arobase.n0),
+                    _ )
 
           case _ =>
             Authority(value.after(arobase).decode[Hostname], value.before(arobase))

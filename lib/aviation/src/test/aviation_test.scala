@@ -48,271 +48,271 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"Parse a date with a single-digit month"):
         t"2011-09-13".decode[Date]
-      .assert(_ == 2011-Sep-13)
+      . assert(_ == 2011-Sep-13)
 
       test(m"Parse a date in the distant past"):
         t"59-09-13".decode[Date]
-      .assert(_ == 59-Sep-13)
+      . assert(_ == 59-Sep-13)
 
       test(m"Month cannot be higher than 12"):
         capture(t"59-13-13".decode[Date])
-      .assert(_ == TimeError(_.Unknown(t"13", t"month")))
+      . assert(_ == TimeError(_.Unknown(t"13", t"month")))
 
       test(m"Month cannot be less than 1"):
         capture(t"59-0-13".decode[Date])
-      .assert(_ == TimeError(_.Unknown(t"0", t"month")))
+      . assert(_ == TimeError(_.Unknown(t"0", t"month")))
 
       test(m"Day cannot be over 31"):
         capture(t"59-11-32".decode[Date])
-      .assert(_ == TimeError(_.Invalid(59, 11, 32, calendars.gregorian)))
+      . assert(_ == TimeError(_.Invalid(59, 11, 32, calendars.gregorian)))
 
       test(m"Day must exist in month"):
         capture(t"59-11-31".decode[Date])
-      .assert(_ == TimeError(_.Invalid(59, 11, 31, calendars.gregorian)))
+      . assert(_ == TimeError(_.Invalid(59, 11, 31, calendars.gregorian)))
 
 
     suite(m"Leap Seconds tests"):
       test(m"There are 10 leap seconds for any year before 1972"):
         LeapSeconds.during(Year(1900), false)
-      .assert(_ == 10)
+      . assert(_ == 10)
 
       test(m"There are 10 leap seconds in the first half of 1972"):
         LeapSeconds.during(Year(1972), false)
-      .assert(_ == 10)
+      . assert(_ == 10)
 
       test(m"There are 11 leap seconds in the second half of 1972"):
         LeapSeconds.during(Year(1972), true)
-      .assert(_ == 11)
+      . assert(_ == 11)
 
       test(m"There are 12 leap seconds in the first half of 1973"):
         LeapSeconds.during(Year(1973), false)
-      .assert(_ == 12)
+      . assert(_ == 12)
 
       test(m"There are 12 leap seconds in the second half of 1973"):
         LeapSeconds.during(Year(1973), true)
-      .assert(_ == 12)
+      . assert(_ == 12)
 
       test(m"There are 13 leap seconds in the first half of 1974"):
         LeapSeconds.during(Year(1974), false)
-      .assert(_ == 13)
+      . assert(_ == 13)
 
       test(m"There are 13 leap seconds in the second half of 1974"):
         LeapSeconds.during(Year(1974), true)
-      .assert(_ == 13)
+      . assert(_ == 13)
 
       test(m"There are 19 leap seconds in the first half of 1980"):
         LeapSeconds.during(Year(1980), false)
-      .assert(_ == 19)
+      . assert(_ == 19)
 
       test(m"There are 19 leap seconds in the first half of 1981"):
         LeapSeconds.during(Year(1981), false)
-      .assert(_ == 19)
+      . assert(_ == 19)
 
       test(m"There are 20 leap seconds in the second half of 1981"):
         LeapSeconds.during(Year(1981), true)
-      .assert(_ == 20)
+      . assert(_ == 20)
 
       test(m"There are 20 leap seconds in the first half of 1982"):
         LeapSeconds.during(Year(1982), false)
-      .assert(_ == 20)
+      . assert(_ == 20)
 
       test(m"There are 21 leap seconds in the second half of 1982"):
         LeapSeconds.during(Year(1982), true)
-      .assert(_ == 21)
+      . assert(_ == 21)
 
       test(m"There are 24 leap seconds in the second half of 1988"):
         LeapSeconds.during(Year(1988), true)
-      .assert(_ == 24)
+      . assert(_ == 24)
 
       test(m"There are 32 leap seconds in the first half of 2000"):
         LeapSeconds.during(Year(2000), false)
-      .assert(_ == 32)
+      . assert(_ == 32)
 
       test(m"There are 37 leap seconds in the first half of 2017"):
         LeapSeconds.during(Year(2017), false)
-      .assert(_ == 37)
+      . assert(_ == 37)
 
       test(m"There are 37 leap seconds in the first half of 2100"):
         LeapSeconds.during(Year(2100), false)
-      .assert(_ == 37)
+      . assert(_ == 37)
 
     suite(m"Gregorian Calendar Tests"):
       test(m"2000 is a leap year"):
         calendars.gregorian.leapYear(Year(2000))
-      .assert(_ == true)
+      . assert(_ == true)
 
       test(m"1800, 1900, 2100, 2200 are not leap years"):
         List(Year(1800), Year(1900), Year(2100), Year(2200)).map(calendars.gregorian.leapYear)
-      .assert(_.all(!_))
+      . assert(_.all(!_))
 
       test(m"Years not divisble by 4 are never leap years"):
         List(Year(1985), Year(200), Year(202), Year(1843)).map(calendars.gregorian.leapYear)
-      .assert(_.all(!_))
+      . assert(_.all(!_))
 
       test(m"Check recent Julian Day"):
         (2022-Dec-16).jdn
-      .assert(_ == 2459930)
+      . assert(_ == 2459930)
 
       test(m"Check Julian Day in 1950"):
         (1950-Mar-10).jdn
-      .assert(_ == 2433351)
+      . assert(_ == 2433351)
 
       test(m"Check Julian Day in 1650"):
         (1650-Mar-10).jdn
-      .assert(_ == 2323779)
+      . assert(_ == 2323779)
 
       test(m"Check Julian Day in Year 1582"):
         (1582-Oct-15).jdn
-      .assert(_ == 2299161)
+      . assert(_ == 2299161)
 
       test(m"Check Julian Day in Year 1600"):
         (1600-Jan-1).jdn
-      .assert(_ == 2305448)
+      . assert(_ == 2305448)
 
       test(m"Check Julian Day in Year 1"):
         (1-Jan-1).jdn
-      .assert(_ == 1721426)
+      . assert(_ == 1721426)
 
       test(m"Get zeroth day of year"):
         (2010-Jan-1).jdn -> (calendars.gregorian.zerothDayOfYear(Year(2010)).jdn + 1)
-      .assert(_ == _)
+      . assert(_ == _)
 
       test(m"Get days in non-leap-year"):
         calendars.gregorian.daysInYear(Year(1995))
-      .assert(_ == 365)
+      . assert(_ == 365)
 
       test(m"Get days in leap-year"):
         calendars.gregorian.daysInYear(Year(1996))
-      .assert(_ == 366)
+      . assert(_ == 366)
 
       test(m"Get Year from Date"):
         given calendar: Calendar = calendars.gregorian
         val date = 2016-Jul-11
         calendar.annual(date)
-      .assert(_ == 2016)
+      . assert(_ == 2016)
 
       test(m"Check Gregorian date"):
         given calendar: Calendar = calendars.gregorian
         2016-Apr-11
-      .assert(_ == 2016-Apr-11)
+      . assert(_ == 2016-Apr-11)
 
       test(m"Subtract dates"):
         2018-Nov-19 - (2017-Sep-1)
-      .assert(_ == Quanta[Mono[Days[1]]](444))
+      . assert(_ == Quanta[Mono[Days[1]]](444))
 
       test(m"Subtract days from a date"):
         2018-Nov-19 - Quanta[Mono[Days[1]]](2)
-      .assert(_ == 2018-Nov-17)
+      . assert(_ == 2018-Nov-17)
 
       test(m"Add days to a date"):
         2018-Nov-19 + Quanta[Mono[Days[1]]](2)
-      .assert(_ == 2018-Nov-21)
+      . assert(_ == 2018-Nov-21)
 
       test(m"Add days to a date, order reversed"):
         Quanta[Mono[Days[1]]](2) + (2018-Nov-19)
-      .assert(_ == 2018-Nov-21)
+      . assert(_ == 2018-Nov-21)
 
       test(m"Get Gregorian date"):
         given calendar: Calendar = calendars.gregorian
         val date = 2016-Jul-11
         (date.year, date.month, date.day)
-      .assert(_ == (2016, Jul, 11))
+      . assert(_ == (2016, Jul, 11))
 
       test(m"Add two periods"):
         val period = 1.days + 2.months
         val period2 = 3.days + 1.years
         period + period2
-      .assert(_ == 4.days + 2.months + 1.years)
+      . assert(_ == 4.days + 2.months + 1.years)
 
       test(m"Simplify a period"):
         (8.months + 6.months).simplify
-      .assert(_ == 1.years + 2.months)
+      . assert(_ == 1.years + 2.months)
 
       test(m"Hours do not simplify"):
         (1.days + 25.hours).simplify
-      .assert(_ == 25.hours + 1.days)
+      . assert(_ == 25.hours + 1.days)
 
       test(m"Minutes simplify"):
         123.minutes.simplify
-      .assert(_ == 2.hours + 3.minutes)
+      . assert(_ == 2.hours + 3.minutes)
 
       test(m"Seconds simplify"):
         123.seconds.simplify
-      .assert(_ == 2.minutes + 3.seconds)
+      . assert(_ == 2.minutes + 3.seconds)
 
       test(m"Cascading simplification"):
         (1.hours + 59.minutes + 59.seconds + 2.seconds).simplify
-      .assert(_ == 2.hours + 1.seconds)
+      . assert(_ == 2.hours + 1.seconds)
 
       test(m"Simple multiplication"):
         (1.hours + 5.minutes)*100
-      .assert(_ == 100.hours + 500.minutes)
+      . assert(_ == 100.hours + 500.minutes)
 
       test(m"Simplified multiplication"):
         ((1.hours + 5.seconds)*100).simplify
-      .assert(_ == 100.hours + 8.minutes + 20.seconds)
+      . assert(_ == 100.hours + 8.minutes + 20.seconds)
 
       test(m"Specify times"):
         2.01.am
-      .assert(_ == Clockface(2, 1, 0))
+      . assert(_ == Clockface(2, 1, 0))
 
       test(m"Specify times 2"):
         2.59.am
-      .assert(_ == Clockface(2, 59, 0))
+      . assert(_ == Clockface(2, 59, 0))
 
       test(m"Specify times 3"):
         11.40.am
-      .assert(_ == Clockface(11, 40, 0))
+      . assert(_ == Clockface(11, 40, 0))
 
       test(m"Specify times 4"):
         7.25.pm
-      .assert(_ == Clockface(19, 25, 0))
+      . assert(_ == Clockface(19, 25, 0))
 
       test(m"Time with too many minutes is invalid"):
         demilitarize(7.88.am)
-      .assert(_.nonEmpty)
+      . assert(_.nonEmpty)
 
       test(m"Time with too few minute digits is invalid"):
         demilitarize(7.8.am)
-      .assert(_.nonEmpty)
+      . assert(_.nonEmpty)
 
       test(m"Time with too many minute digits is invalid"):
         demilitarize(7.585.am)
-      .assert(_.nonEmpty)
+      . assert(_.nonEmpty)
 
       test(m"Specify afternoon time with hour `12`"):
         12.25.pm
-      .assert(_ == Clockface(12, 25, 0))
+      . assert(_ == Clockface(12, 25, 0))
 
       test(m"Specify morning time with hour `12`"):
         12.25.am
-      .assert(_ == Clockface(0, 25, 0))
+      . assert(_ == Clockface(0, 25, 0))
 
       import calendars.gregorian
 
       test(m"Specify datetime"):
         2018-Aug-11 at 5.25.pm
-      .assert(_ == Timestamp(Date(Year(2018), Aug, Day(11)), Clockface(17, 25, 0)))
+      . assert(_ == Timestamp(Date(Year(2018), Aug, Day(11)), Clockface(17, 25, 0)))
 
       test(m"Add two months to a date"):
         2014-Nov-20 + 2.months
-      .assert(_ == 2015-Jan-20)
+      . assert(_ == 2015-Jan-20)
 
       test(m"Add two days to a date"):
         2014-Nov-20 + 2.days
-      .assert(_ == 2014-Nov-22)
+      . assert(_ == 2014-Nov-22)
 
       test(m"Add one year to a date"):
         2014-Nov-20 + 1.years
-      .assert(_ == 2015-Nov-20)
+      . assert(_ == 2015-Nov-20)
 
       test(m"Add two years to a date"):
         2014-Nov-20 + 2.years
-      .assert(_ == 2016-Nov-20)
+      . assert(_ == 2016-Nov-20)
 
       test(m"Add three years to a date"):
         2014-Nov-20 + 3.years
-      .assert(_ == 2017-Nov-20)
+      . assert(_ == 2017-Nov-20)
 
       // test(m"Read TZDB file"):
       //   Tzdb.parseFile(t"europe")

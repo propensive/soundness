@@ -51,85 +51,85 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"simple empty tag"):
         t"""<div></div>""".read[Html]
-      .assert(_ == Div)
+      . assert(_ == Div)
 
       test(m"List"):
         t"""<ul><li>item</li></ul>""".read[Html of Flow]
-      .assert(_ == Ul(Li("item")))
+      . assert(_ == Ul(Li("item")))
 
       test(m"simple tag with text"):
         t"""<div>content</div>""".read[Html of "div"]
-      .assert(_ == Div("content"))
+      . assert(_ == Div("content"))
 
       test(m"more than one node"):
         t"""<div>content</div><p>more content</p>""".read[Html of Flow]
-      .assert(_ == Fragment(Div("content"), P("more content")))
+      . assert(_ == Fragment(Div("content"), P("more content")))
 
       test(m"more than one node with comment"):
         t"""<div>content</div><!-- comment --><div>more content</div>""".read[Html of "div"]
-      .assert(_ == Fragment(Div("content"), Comment(" comment "), Div("more content")))
+      . assert(_ == Fragment(Div("content"), Comment(" comment "), Div("more content")))
 
       test(m"simple self-closing tag"):
         t"""<div />""".read[Html of "div"]
-      .assert(_ == Div)
+      . assert(_ == Div)
 
       test(m"self-closing tag with attributes"):
         t"""<div style="bar"/>""".read[Html of "div"]
-      .assert(_ == Div(style = t"bar"))
+      . assert(_ == Div(style = t"bar"))
 
       test(m"case-insensitive element"):
         t"""<DIV style="bar">hello world</DIV>""".read[Html of "div"]
-      .assert(_ == Div(style = t"bar")("hello world"))
+      . assert(_ == Div(style = t"bar")("hello world"))
 
       test(m"simple comment tag"):
         t"""<!--This is a comment-->""".read[Html of Flow]
-      .assert(_ == Comment("This is a comment"))
+      . assert(_ == Comment("This is a comment"))
 
       test(m"simple void tag"):
         t"""<br>""".read[Html of Flow]
-      .assert(_ == Br)
+      . assert(_ == Br)
 
       test(m"void tag with an attribute"):
         t"""<area style="bar">""".read[Html of "area"]
-      .assert(_ == Area(style = t"bar"))
+      . assert(_ == Area(style = t"bar"))
 
       test(m"void tag with an unquoted attribute"):
         t"""<area style=bar>""".read[Html of Flow]
-      .assert(_ == Area(style = t"bar"))
+      . assert(_ == Area(style = t"bar"))
 
       test(m"void tag with a boolean attribute"):
         t"""<input disabled>""".read[Html of "input"]
-      .assert(_ == Input(disabled = true))
+      . assert(_ == Input(disabled = true))
 
       test(m"void tag with a single-quoted attribute"):
         t"""<br style='bar baz'>""".read[Html of Flow]
-      .assert(_ == Br(style = t"bar baz"))
+      . assert(_ == Br(style = t"bar baz"))
 
       test(m"simple nested tag"):
         t"""<div><area></div>""".read[Html of Flow]
-      .assert(_ == Div(Area))
+      . assert(_ == Div(Area))
 
       test(m"just text"):
         t"""hello world""".read[Html of Flow]
-      .assert(_ == TextNode("hello world"))
+      . assert(_ == TextNode("hello world"))
 
       test(m"just text with entity"):
         t"""to &amp; fro""".read[Html of Flow]
-      .assert(_ == TextNode("to & fro"))
+      . assert(_ == TextNode("to & fro"))
 
       test(m"just an entity"):
         t"""&amp;""".read[Html of Flow]
-      .assert(_ == TextNode("&"))
+      . assert(_ == TextNode("&"))
 
       test(m"mismatched closing tag"):
         try t"""<em><b></em></b>""".read[Html of Phrasing]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(1.u, 8.u), Html.Issue.MismatchedTag("b", "em")))
+      . assert(_ == ParseError(Html, Html.Position(1.u, 8.u), Html.Issue.MismatchedTag("b", "em")))
 
       test(m"unknown tag"):
         try t"""<scrip>""".read[Html of Phrasing]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(1.u, 2.u), Html.Issue.InvalidTag("scrip")))
+      . assert(_ == ParseError(Html, Html.Position(1.u, 2.u), Html.Issue.InvalidTag("scrip")))
 
       test(m"raw text"):
         t"<head><script>some content</script></head>".read[Html of "head"]
@@ -157,41 +157,41 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"autoclosing tag"):
         t"""<ul><li>First item</ul>""".read[Html of Flow]
-      .assert(_ == Ul(Li("First item")))
+      . assert(_ == Ul(Li("First item")))
 
       test(m"unclosed paragraph"):
         t"""<p>para""".read[Html of Flow]
-      .assert(_ == P("para"))
+      . assert(_ == P("para"))
 
       test(m"follow-on whitespace"):
         t"""<p>para</p>\n""".read[Html of Flow]
-      .assert(_ == Fragment(P("para"), t"\n"))
+      . assert(_ == Fragment(P("para"), t"\n"))
 
       test(m"empty content"):
         t"".read[Html of Flow]
-      .assert(_ == Fragment())
+      . assert(_ == Fragment())
 
       test(m"failing example"):
         t"""<p>x<img></p>\n""".read[Html of Flow]
-      .assert(_ == Fragment(P("x", Img), t"\n"))
+      . assert(_ == Fragment(P("x", Img), t"\n"))
 
       test(m"autoclosing adjacent tags"):
         t"""<ul><li>First item<li>Second item</ul>""".read[Html of Flow]
-      .assert(_ == Ul(Li("First item"), Li("Second item")))
+      . assert(_ == Ul(Li("First item"), Li("Second item")))
 
       test(m"unclosed tag 1"):
         try t"""<ul><li>First item</li>""".read[Html of Flow]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(1.u, 23.u), Html.Issue.Incomplete("ul")))
+      . assert(_ == ParseError(Html, Html.Position(1.u, 23.u), Html.Issue.Incomplete("ul")))
 
       test(m"unclosed tag 2"):
         try t"""<ul><li>First item""".read[Html of Flow]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(1.u, 18.u), Html.Issue.Incomplete("ul")))
+      . assert(_ == ParseError(Html, Html.Position(1.u, 18.u), Html.Issue.Incomplete("ul")))
 
       test(m"infer both <head> and <body>"):
         t"""<title>Page title</title><p>A paragraph</p>""".read[Html of "html"]
-      .assert(_ == Html(Head(Title("Page title")), Body(P("A paragraph"))))
+      . assert(_ == Html(Head(Title("Page title")), Body(P("A paragraph"))))
 
 
       suite(m"Table tests"):
@@ -247,7 +247,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
-      .assert(_ == Div(Svg(Element.foreign("circle", sci.Map(t"r" -> t"1")))))
+      . assert(_ == Div(Svg(Element.foreign("circle", sci.Map(t"r" -> t"1")))))
 
       test(m"Nontrivial MathML example"):
         t"""<div>The equation is <math><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""
@@ -261,7 +261,7 @@ object Tests extends Suite(m"Honeycomb Tests"):
       test(m"transparent tag only allows the right children"):
         try t"""<div><a href="#"><li>list item</li></a></div>""".read[Html of Flow]
         catch case exception: Exception => exception
-      .assert(_ == ParseError(Html, Html.Position(1.u, 18.u), Html.Issue.InadmissibleTag("li", "a")))
+      . assert(_ == ParseError(Html, Html.Position(1.u, 18.u), Html.Issue.InadmissibleTag("li", "a")))
 
       test(m"transparent tag with element"):
         t"""<p>Go <a href="https://example.com"><em>home</em></a>.</p>""".read[Html of "p"]

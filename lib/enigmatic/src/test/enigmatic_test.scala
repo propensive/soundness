@@ -63,32 +63,32 @@ object Tests extends Suite(m"Gastronomy tests"):
   def run(): Unit =
     test(m"Sha256, Hex"):
       t"Hello world".digest[Sha2[256]].serialize[Hex]
-    .assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
+    . assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
 
     test(m"Md5, Base64"):
       import alphabets.base64.standard
       t"Hello world".digest[Md5].serialize[Base64]
-    .assert(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
+    . assert(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
 
     test(m"Sha1, Base64Url"):
       import alphabets.base64.url
       t"Hello world".digest[Sha1].data.serialize[Base64]
-    .assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
+    . assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
 
     test(m"Sha384, Base64"):
       import alphabets.base64.standard
       t"Hello world".digest[Sha2[384]].serialize[Base64]
-    .assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
+    . assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
 
     test(m"Sha512, Base64"):
       import alphabets.base64.standard
       t"Hello world".digest[Sha2[512]].serialize[Base64]
-    .assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
+    . assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
 
     test(m"Encode to Binary"):
       import alphabets.binary.standard
       IArray[Byte](1, 2, 3, 4).serialize[Binary]
-    .assert(_ == t"00000001000000100000001100000100")
+    . assert(_ == t"00000001000000100000001100000100")
 
     test(m"Extract PEM message type"):
       val example = t"""
@@ -98,42 +98,42 @@ object Tests extends Suite(m"Gastronomy tests"):
         """.s.stripMargin.show
 
       Pem.parse(example).label
-    .assert(_ == PemLabel.Proprietary(t"EXAMPLE"))
+    . assert(_ == PemLabel.Proprietary(t"EXAMPLE"))
 
     test(m"Decode PEM certificate"):
       import alphabets.base64.standard
       Pem.parse(request).data.digest[Md5].serialize[Base64]
-    .assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
+    . assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
 
     test(m"PEM roundtrip"):
       Pem.parse(request).serialize
-    .assert(_ == request.trim)
+    . assert(_ == request.trim)
 
     test(m"RSA roundtrip"):
       val privateKey: PrivateKey[Rsa[1024]] = PrivateKey.generate[Rsa[1024]]()
       val message: Data = privateKey.public.encrypt(t"Hello world")
       privateKey.decrypt(message).text
-    .assert(_ == t"Hello world")
+    . assert(_ == t"Hello world")
 
     test(m"AES roundtrip"):
       val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
       val message: Data = key.encrypt(t"Hello world")
       key.decrypt(message).text
-    .assert(_ == t"Hello world")
+    . assert(_ == t"Hello world")
 
     test(m"Sign some data with DSA"):
       val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
       val message = t"Hello world"
       val signature = privateKey.sign(message)
       privateKey.public.verify(message, signature)
-    .assert(identity)
+    . assert(identity)
 
     test(m"Check bad signature"):
       val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
       val message = t"Hello world"
       val signature = privateKey.sign(t"Something else")
       privateKey.public.verify(message, signature)
-    .assert(!identity(_))
+    . assert(!identity(_))
 
     test(m"MD5 HMAC"):
       pangram.hmac[Md5](t"key".data).serialize[Hex]
@@ -141,18 +141,18 @@ object Tests extends Suite(m"Gastronomy tests"):
 
     test(m"SHA1 HMAC"):
       pangram.hmac[Sha1](t"key".data).serialize[Hex]
-    .assert(_ == t"DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
+    . assert(_ == t"DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
 
     test(m"SHA256 HMAC"):
       pangram.hmac[Sha2[256]](t"key".data).serialize[Hex]
-    .assert(_ == t"F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
+    . assert(_ == t"F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
 
     test(m"SHA384 HMAC"):
       import alphabets.base64.standard
       pangram.hmac[Sha2[384]](t"key".data).serialize[Base64]
-    .assert(_ == t"1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
+    . assert(_ == t"1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
 
     test(m"SHA512 HMAC"):
       import alphabets.base64.standard
       pangram.hmac[Sha2[512]](t"key".data).serialize[Base64]
-    .assert(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")
+    . assert(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")

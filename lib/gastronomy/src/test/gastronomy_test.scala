@@ -59,29 +59,29 @@ object Tests extends Suite(m"Gastronomy tests"):
   def run(): Unit =
     test(m"Sha256, Hex"):
       t"Hello world".digest[Sha2[256]].serialize[Hex]
-    .assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
+    . assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
 
     test(m"Md5, Base64"):
       import alphabets.base64.standard
       t"Hello world".digest[Md5].serialize[Base64]
-    .assert(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
+    . assert(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
 
     test(m"Sha1, Base64Url"):
       import alphabets.base64.url
       t"Hello world".digest[Sha1].data.serialize[Base64]
-    .assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
+    . assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
 
     test(m"Sha384, Base64"):
       import alphabets.base64.standard
       t"Hello world".digest[Sha2[384]].serialize[Base64]
-    .assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
+    . assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
 
     test(m"Sha512, Base64"):
       import alphabets.base64.standard
       t"Hello world".digest[Sha2[512]].serialize[Base64]
-    .assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
+    . assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
 
     test(m"Encode to Binary"):
       import alphabets.binary.standard
       IArray[Byte](1, 2, 3, 4).serialize[Binary]
-    .assert(_ == t"00000001000000100000001100000100")
+    . assert(_ == t"00000001000000100000001100000100")

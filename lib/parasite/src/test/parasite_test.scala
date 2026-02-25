@@ -170,7 +170,7 @@ object Tests extends Suite(m"Parasite tests"):
       //     val task = async(100)
       //     task.flatMap: x =>
       //       async(x + 1)
-      //     .await()
+      //     . await()
       //   .assert(_ == 101)
 
         // test(m"Async name"):
@@ -259,7 +259,7 @@ object Tests extends Suite(m"Parasite tests"):
           task.cancel() // halt
           safely(task.await())
           value
-        .assert(_ == 2)
+        . assert(_ == 2)
 
         test(m"Incomplete child is awaited"):
           import codicils.await
@@ -272,7 +272,7 @@ object Tests extends Suite(m"Parasite tests"):
           snooze(20L)
           task.await()
           value
-        .assert(_ == 3)
+        . assert(_ == 3)
 
         test(m"Incomplete child is cancelled"):
           import codicils.cancel
@@ -285,7 +285,7 @@ object Tests extends Suite(m"Parasite tests"):
           snooze(0.025*Second)
           task.await()
           value
-        .assert(_ == 2)
+        . assert(_ == 2)
 
         test(m"Cancel read on slow Stream"):
           var count = 0
@@ -300,7 +300,7 @@ object Tests extends Suite(m"Parasite tests"):
           snooze(300L)
           task.cancel()
           count
-        .assert(_ == 2)
+        . assert(_ == 2)
 
       //   test(m"Check that asynchronous exceptions are handled"):
       //     async:

@@ -144,7 +144,7 @@ object Eq extends Derivation[Eq]:
     (left, right) =>
       fields(left):
         [field] => leftValue => leftValue === complement(right)
-      .all { boolean => boolean }
+      . all { boolean => boolean }
 
   inline def split[derivation: SumReflection]: Eq[derivation] =
     (left, right) =>

@@ -58,106 +58,106 @@ object Tests extends Suite(m"Guillotine tests"):
     suite(m"Parsing tests"):
       test(m"parse simple command"):
         sh"ls -la"
-      .assert(_ == Command(t"ls", t"-la"))
+      . assert(_ == Command(t"ls", t"-la"))
 
       test(m"parse a substitution"):
         val flags = t"-la"
         val file = t"filename"
         sh"ls $flags"
-      .assert(_ == Command(t"ls", t"-la"))
+      . assert(_ == Command(t"ls", t"-la"))
 
       test(m"parse two substitutions"):
         val flags = t"-la"
         val file = t"filename"
         sh"ls $flags $file"
-      .assert(_ == Command(t"ls", t"-la", t"filename"))
+      . assert(_ == Command(t"ls", t"-la", t"filename"))
 
       test(m"parse irregular spacing"):
         val flags = t"-la"
         val file = t"filename"
         sh"ls  $flags     $file"
-      .assert(_ == Command(t"ls", t"-la", t"filename"))
+      . assert(_ == Command(t"ls", t"-la", t"filename"))
 
       test(m"parse irregular spacing 2"):
         val flags = t"-la"
         val file = t"filename"
         sh"ls  $flags $file"
-      .assert(_ == Command(t"ls", t"-la", t"filename"))
+      . assert(_ == Command(t"ls", t"-la", t"filename"))
 
       test(m"adjacent substitutions"):
         val a = t"a"
         val b = t"b"
         sh"ls $a$b"
-      .assert(_ == Command(t"ls", t"ab"))
+      . assert(_ == Command(t"ls", t"ab"))
 
       test(m"substitute a list"):
         val a = List(t"a", t"b")
         sh"ls $a"
-      .assert(_ == Command(t"ls", t"a", t"b"))
+      . assert(_ == Command(t"ls", t"a", t"b"))
 
       test(m"substitute a single-quoted list"):
         val a = List(t"a", t"b")
         sh"ls '$a'"
-      .assert(_ == Command(t"ls", t"a b"))
+      . assert(_ == Command(t"ls", t"a b"))
 
       test(m"substitute in a double-quoted list"):
         val a = List(t"a", t"b")
         sh"""ls "$a""""
-      .assert(_ == Command(t"ls", t"a b"))
+      . assert(_ == Command(t"ls", t"a b"))
 
       test(m"insertion after arg"):
         val a = List(t"a", t"b")
         sh"""ls ${a}x"""
-      .assert(_ == Command(t"ls", t"a", t"bx"))
+      . assert(_ == Command(t"ls", t"a", t"bx"))
 
       test(m"insertion before arg"):
         val a = List(t"a", t"b")
         sh"""ls x${a}"""
-      .assert(_ == Command(t"ls", t"xa", t"b"))
+      . assert(_ == Command(t"ls", t"xa", t"b"))
 
       test(m"insertion before quoted arg"):
         val a = List(t"a", t"b")
         sh"""ls ${a}'x'"""
-      .assert(_ == Command(t"ls", t"a", t"bx"))
+      . assert(_ == Command(t"ls", t"a", t"bx"))
 
       test(m"insertion after quoted arg"):
         val a = List(t"a", t"b")
         sh"""ls 'x'${a}"""
-      .assert(_ == Command(t"ls", t"xa", t"b"))
+      . assert(_ == Command(t"ls", t"xa", t"b"))
 
       test(m"empty list insertion unquoted"):
         val a = List()
         sh"""ls ${a}"""
-      .assert(_ == Command(t"ls"))
+      . assert(_ == Command(t"ls"))
 
       test(m"empty list insertion quoted"):
         val a = List()
         sh"""ls '${a}'"""
-      .assert(_ == Command(t"ls", t""))
+      . assert(_ == Command(t"ls", t""))
 
       test(m"empty parameters"):
         sh"""ls '' ''"""
-      .assert(_ == Command(t"ls", t"", t""))
+      . assert(_ == Command(t"ls", t"", t""))
 
       test(m"one empty parameter, specified twice"):
         sh"""ls ''''"""
-      .assert(_ == Command(t"ls", t""))
+      . assert(_ == Command(t"ls", t""))
 
       test(m"single quote inside double quotes"):
         sh"""ls "'" """
-      .assert(_ == Command(t"ls", t"'"))
+      . assert(_ == Command(t"ls", t"'"))
 
       test(m"double quote inside single quotes"):
         sh"""ls '"' """
-      .assert(_ == Command(t"ls", t"\""))
+      . assert(_ == Command(t"ls", t"\""))
 
       test(m"escaped double quote"):
         sh"""ls \" """
-      .assert(_ == Command(t"ls", t"\""))
+      . assert(_ == Command(t"ls", t"\""))
 
       test(m"escaped single quote"):
         sh"""ls \' """
-      .assert(_ == Command(t"ls", t"'"))
+      . assert(_ == Command(t"ls", t"'"))
 
     suite(m"rendering Debug")
       test(m"simple command"):
@@ -183,11 +183,11 @@ object Tests extends Suite(m"Guillotine tests"):
     suite(m"equality tests"):
       test(m"check that two commands written differently are equivalent"):
         sh"echo 'hello world'"
-      .assert(_ == sh"""echo "hello world"""")
+      . assert(_ == sh"""echo "hello world"""")
 
       test(m"commands with different whitespace are equal"):
         sh"one two   three"
-      .assert(_ == sh"one   two three")
+      . assert(_ == sh"one   two three")
 
     suite(m"Execution tests"):
 
@@ -208,52 +208,52 @@ object Tests extends Suite(m"Guillotine tests"):
 
       test(m"read stream of strings"):
         sh"echo 'Hello world'".exec[Stream[Text]]().to(List)
-      .assert(_ == List("Hello world"))
+      . assert(_ == List("Hello world"))
 
       test(m"read stream of bytes"):
         sh"echo 'Hello world'".exec[Stream[Data]]().read[Data].to(List)
-      .assert(_ == Data(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to(List))
+      . assert(_ == Data(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to(List))
 
       test(m"fork sleeping process"):
         val t0 = System.currentTimeMillis
         sh"sleep 0.2".fork[Unit]()
         System.currentTimeMillis - t0
-      .assert(_ <= 100L)
+      . assert(_ <= 100L)
 
       test(m"exec sleeping process"):
         val t0 = System.currentTimeMillis
         sh"sleep 0.2".exec[Unit]()
         System.currentTimeMillis - t0
-      .assert(_ >= 200L)
+      . assert(_ >= 200L)
 
       test(m"fork and await sleeping process"):
         val t0 = System.currentTimeMillis
         val proc = sh"sleep 0.2".fork[Unit]()
         proc.await()
         System.currentTimeMillis - t0
-      .assert(_ >= 200L)
+      . assert(_ >= 200L)
 
       test(m"fork and abort sleeping process"):
         val t0 = System.currentTimeMillis
         val proc = sh"sleep 0.2".fork[Unit]()
         proc.abort()
         System.currentTimeMillis - t0
-      .assert(_ <= 100L)
+      . assert(_ <= 100L)
 
       test(m"fork and kill sleeping process"):
         val t0 = System.currentTimeMillis
         val proc = sh"sleep 0.2".fork[Unit]()
         proc.kill()
         System.currentTimeMillis - t0
-      .assert(_ <= 100L)
+      . assert(_ <= 100L)
 
       test(m"successful exit status"):
         sh"echo hello".exec[Exit]()
-      .assert(_ == Exit.Ok)
+      . assert(_ == Exit.Ok)
 
       test(m"failed exit status"):
         sh"false".exec[Exit]()
-      .assert(_ == Exit.Fail(1))
+      . assert(_ == Exit.Fail(1))
 
       test(m"nested command"):
         val cmd = sh"echo 'Hello world'"
@@ -262,8 +262,8 @@ object Tests extends Suite(m"Guillotine tests"):
 
       test(m"implied return type"):
         sh"echo 'Hello world'"()
-      .assert(_ == t"Hello world")
+      . assert(_ == t"Hello world")
 
       test(m"implied return type for `which`"):
         sh"which cat"()
-      .assert(_ == Unix / "bin" / "cat")
+      . assert(_ == Unix / "bin" / "cat")

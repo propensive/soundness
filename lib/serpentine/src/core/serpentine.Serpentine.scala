@@ -174,7 +174,7 @@ object Serpentine:
             case '[element] => Type.of[element *: tuple]
     . absolve
     . match
-      case '[type tuple <: Tuple; tuple] => TypeRepr.of[tuple]
+        case '[type tuple <: Tuple; tuple] => TypeRepr.of[tuple]
 
   private def calculate(left: List[String], right: List[String])(using Quotes)
   :   quotes.reflect.TypeRepr =

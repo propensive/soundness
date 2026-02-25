@@ -63,12 +63,12 @@ object Tests extends Suite(m"Coaxial tests"):
 
         test(m"Test UDP server"):
           udpServer(udp"3962")
-        .assert()
+        . assert()
 
 
       test(m"Send UDP messages until port opens"):
         Thread.sleep(5000)
         udp"3962".transmit(jvmInstanceId.show)
-      .assert()
+      . assert()
 
       task.await()

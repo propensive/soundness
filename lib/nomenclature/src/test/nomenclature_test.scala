@@ -50,37 +50,37 @@ object Tests extends Suite(m"Nomenclature tests"):
 
     test(m"Create a successful new name"):
       Name[Id](t"hello!")
-    .assert(_ == t"hello!")
+    . assert(_ == t"hello!")
 
     test(m"Create a successful new name with inference"):
       val name: Name[Id] = Name[Id](t"hello!")
       name
-    .assert(_ == t"hello!")
+    . assert(_ == t"hello!")
 
     test(m"Name must not start with 0"):
       capture[NameError](Name[Id](t"0hello!")).message.show
-    .assert(_ == t"the name 0hello! is not valid because it must not start with 0")
+    . assert(_ == t"the name 0hello! is not valid because it must not start with 0")
 
     test(m"Name must end with !"):
       capture[NameError](Name[Id](t"hello!9")).message.show
-    .assert(_ == t"the name hello!9 is not valid because it must end with !")
+    . assert(_ == t"the name hello!9 is not valid because it must end with !")
 
     test(m"Name must not contain ."):
       capture[NameError](Name[Id](t"hello.world!")).message.show
-    .assert(_ == t"the name hello.world! is not valid because it must not contain .")
+    . assert(_ == t"the name hello.world! is not valid because it must not contain .")
 
     test(m"Name must not equal ."):
       capture[NameError](Name[Id2](t".")).message.show
-    .assert(_ == t"the name . is not valid because it must not equal .")
+    . assert(_ == t"the name . is not valid because it must not equal .")
 
     test(m"Name must not equal .."):
       capture[NameError](Name[Id2](t"..")).message.show
-    .assert(_ == t"the name .. is not valid because it must not equal ..")
+    . assert(_ == t"the name .. is not valid because it must not equal ..")
 
     test(m"Construct a new name at compiletime"):
       n"hello": Name[Id2]
-    .assert(_ == t"hello")
+    . assert(_ == t"hello")
 
     test(m"Name is required"):
       capture[NameError](Name[Required](t"")).message.show
-    .assert(_ == t"""the name “” is not valid because it must not be empty""")
+    . assert(_ == t"""the name “” is not valid because it must not be empty""")

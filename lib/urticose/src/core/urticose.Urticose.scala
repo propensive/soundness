@@ -64,7 +64,8 @@ object Urticose:
                 + "service-names-port-numbers.csv" )
 
           uri.toURL().nn.openStream().nn: ji.InputStream
-      .or:
+
+      . or:
           panic(m"could not read /urticose/service-names-port-numbers.csv from classpath")
 
     val lines: Iterator[List[Text]] =
@@ -75,6 +76,7 @@ object Urticose:
         if list(2) == t"tcp" then List((true, list(0)) -> list(1).decode[Int])
         else if list(2) == t"udp" then List((false, list(0)) -> list(1).decode[Int])
         else Nil
+
       . or(Nil)
 
     . to(Map)
